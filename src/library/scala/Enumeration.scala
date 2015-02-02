@@ -121,7 +121,8 @@ abstract class Enumeration (initial: Int) extends Serializable {
    * @throws   NoSuchElementException if no `Value` with a matching
    *           name is in this `Enumeration`
    */
-  final def withName(s: String): Value = values.find(_.toString == s).get
+  final def withName(s: String): Value = values.find(_.toString == s).getOrElse(
+    throw new NoSuchElementException(s"No value found for '$s'"))
 
   /** Creates a fresh value, part of this enumeration. */
   protected final def Value: Value = Value(nextId)
@@ -239,6 +240,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
    *
    *  @param nnIds The set of ids of values (adjusted so that the lowest value does
    *    not fall below zero), organized as a `BitSet`.
+   *  @define Coll `collection.immutable.SortedSet`
    */
   class ValueSet private[ValueSet] (private[this] var nnIds: immutable.BitSet)
   extends AbstractSet[Value]

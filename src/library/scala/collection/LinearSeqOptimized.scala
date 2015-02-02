@@ -13,10 +13,24 @@ import mutable.ListBuffer
 import immutable.List
 import scala.annotation.tailrec
 
-/** A template trait for linear sequences of type `LinearSeq[A]`  which optimizes
- *  the implementation of several methods under the assumption of fast linear access.
+/** A template trait for linear sequences of type `LinearSeq[A]` which optimizes
+ *  the implementation of various methods under the assumption of fast linear access.
  *
- *  $linearSeqInfo
+ *  $linearSeqOptim
+ *
+ *  @define  linearSeqOptim
+ *  Linear-optimized sequences implement most operations in in terms of three methods,
+ *  which are assumed to have efficient implementations. These are:
+ *  {{{
+ *     def isEmpty: Boolean
+ *     def head: A
+ *     def tail: Repr
+ *  }}}
+ *  Here, `A` is the type of the sequence elements and `Repr` is the type of the sequence itself.
+ *  Note that default implementations are provided via inheritance, but these
+ *  should be overridden for performance.
+ *
+ *
  */
 trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends LinearSeqLike[A, Repr] { self: Repr =>
 
@@ -30,7 +44,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
    *
    *  $willNotTerminateInf
    *
-   *  Note: the execution of `length` may take time proportial to the length of the sequence.
+   *  Note: the execution of `length` may take time proportional to the length of the sequence.
    */
   def length: Int = {
     var these = self
@@ -43,8 +57,8 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
   }
 
   /** Selects an element by its index in the $coll.
-   *  Note: the execution of `apply` may take time proportial to the index value.
-   *  @throws `IndexOutOfBoundsException` if `idx` does not satisfy `0 <= idx < length`.
+   *  Note: the execution of `apply` may take time proportional to the index value.
+   *  @throws IndexOutOfBoundsException if `idx` does not satisfy `0 <= idx < length`.
    */
   def apply(n: Int): A = {
     val rest = drop(n)
@@ -235,13 +249,16 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
   override /*IterableLike*/
   def sameElements[B >: A](that: GenIterable[B]): Boolean = that match {
     case that1: LinearSeq[_] =>
-      var these = this
-      var those = that1
-      while (!these.isEmpty && !those.isEmpty && these.head == those.head) {
-        these = these.tail
-        those = those.tail
+      // Probably immutable, so check reference identity first (it's quick anyway)
+      (this eq that1) || {
+        var these = this
+        var those = that1
+        while (!these.isEmpty && !those.isEmpty && these.head == those.head) {
+          these = these.tail
+          those = those.tail
+        }
+        these.isEmpty && those.isEmpty
       }
-      these.isEmpty && those.isEmpty
     case _ =>
       super.sameElements(that)
   }

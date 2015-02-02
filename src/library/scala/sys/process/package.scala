@@ -119,7 +119,7 @@ package scala.sys {
     * ==Handling Input and Output==
     *
     * In the underlying Java model, once a `Process` has been started, one can
-    * get `java.io.InputStream` and `java.io.OutpuStream` representing its
+    * get `java.io.InputStream` and `java.io.OutputStream` representing its
     * output and input respectively. That is, what one writes to an
     * `OutputStream` is turned into input to the process, and the output of a
     * process can be read from an `InputStream` -- of which there are two, one

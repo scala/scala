@@ -402,7 +402,7 @@ abstract class LambdaLift extends InfoTransform {
     }
 
 /*  SI-6231: Something like this will be necessary to eliminate the implementation
- *  restiction from paramGetter above:
+ *  restriction from paramGetter above:
  *  We need to pass getters to the interface of an implementation class.
     private def fixTraitGetters(lifted: List[Tree]): List[Tree] =
       for (stat <- lifted) yield stat match {

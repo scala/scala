@@ -1,0 +1,5 @@
+Some(@Ljava/lang/Deprecated;())
+None
+None
+Some(@LCAnnotation;() // invisible)
+Some(@LRAnnotation;())

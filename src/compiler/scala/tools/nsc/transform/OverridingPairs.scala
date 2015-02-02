@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package transform
 
-import symtab.Flags._
 import scala.reflect.internal.SymbolPairs
 
 /** A class that yields a kind of iterator (`Cursor`),
@@ -36,7 +35,7 @@ abstract class OverridingPairs extends SymbolPairs {
      */
     override protected def matches(lo: Symbol, high: Symbol) = lo.isType || (
          (lo.owner != high.owner)     // don't try to form pairs from overloaded members
-      && !high.isPrivate              // private or private[this] members never are overriden
+      && !high.isPrivate              // private or private[this] members never are overridden
       && !exclude(lo)                 // this admits private, as one can't have a private member that matches a less-private member.
       && relatively.matches(lo, high)
     ) // TODO we don't call exclude(high), should we?

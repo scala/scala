@@ -24,6 +24,8 @@ import scala.collection.generic.Signalling
  *
  *  @tparam K    the key type of the map
  *  @tparam V    the value type of the map
+ *  @define Coll `ParMap`
+ *  @define coll parallel map
  *
  *  @author Aleksandar Prokopec
  *  @since 2.9

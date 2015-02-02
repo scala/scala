@@ -80,6 +80,7 @@ import java.io.{ObjectOutputStream, ObjectInputStream}
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+@SerialVersionUID(-6084104484083858598L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 sealed abstract class List[+A] extends AbstractSeq[A]
                                   with LinearSeq[A]
                                   with Product
@@ -290,7 +291,6 @@ sealed abstract class List[+A] extends AbstractSeq[A]
       if (this eq Nil) Nil.asInstanceOf[That] else {
         var rest = this
         var h: ::[B] = null
-        var x: A = null.asInstanceOf[A]
         // Special case for first element
         do {
           val x: Any = pf.applyOrElse(rest.head, List.partialNotApplied)
@@ -428,13 +428,14 @@ case object Nil extends List[Nothing] {
 }
 
 /** A non empty list characterized by a head and a tail.
- *  @param hd   the first element of the list
+ *  @param head the first element of the list
  *  @param tl   the list containing the remaining elements of this list after the first one.
  *  @tparam B   the type of the list elements.
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
  *  @since   2.8
  */
+@SerialVersionUID(509929039250432923L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 final case class ::[B](override val head: B, private[scala] var tl: List[B]) extends List[B] {
   override def tail : List[B] = tl
   override def isEmpty: Boolean = false

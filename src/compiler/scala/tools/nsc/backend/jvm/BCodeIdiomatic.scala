@@ -271,7 +271,7 @@ abstract class BCodeIdiomatic extends SubComponent {
       assert(from != BOOL && to != BOOL, s"inconvertible types : $from -> $to")
 
       // We're done with BOOL already
-      from match {
+      (from: @unchecked) match {
 
         // using `asm.Type.SHORT` instead of `BType.SHORT` because otherwise "warning: could not emit switch for @switch annotated match"
 
@@ -361,7 +361,7 @@ abstract class BCodeIdiomatic extends SubComponent {
           assert(elem.isNonVoidPrimitiveType)
           val rand = {
             // using `asm.Type.SHORT` instead of `BType.SHORT` because otherwise "warning: could not emit switch for @switch annotated match"
-            elem match {
+            (elem: @unchecked) match {
               case BOOL   => Opcodes.T_BOOLEAN
               case BYTE   => Opcodes.T_BYTE
               case SHORT  => Opcodes.T_SHORT

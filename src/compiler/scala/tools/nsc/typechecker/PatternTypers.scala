@@ -336,7 +336,7 @@ trait PatternTypers {
       val app  = atPos(uncheckedPattern.pos)(Apply(classTagExtractor, args))
       // must call doTypedUnapply directly, as otherwise we get undesirable rewrites
       // and re-typechecks of the target of the unapply call in PATTERNmode,
-      // this breaks down when the classTagExtractor (which defineds the unapply member) is not a simple reference to an object,
+      // this breaks down when the classTagExtractor (which defines the unapply member) is not a simple reference to an object,
       // but an arbitrary tree as is the case here
       val res = doTypedUnapply(app, classTagExtractor, classTagExtractor, args, PATTERNmode, pt)
 

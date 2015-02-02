@@ -821,7 +821,7 @@ the following holds:
   parameters by another, the result types as well as variances, lower and upper
   bounds of corresponding type parameters are equivalent.
 
-[^congruence]: A congruence is an equivalence relation which is closed under formation of contexts
+[^congruence]: A congruence is an equivalence relation which is closed under formation of contexts.
 [^implicit]: A method type is implicit if the parameter section that defines it starts with the `implicit` keyword.
 
 ### Conformance
@@ -864,15 +864,15 @@ transitive relation that satisfies the following conditions.
   if $T$ conforms to one of the [type instances](#existential-types)
   of `$U$ forSome {$\,Q\,$}`.
 - If
-  $T_i \equiv T'_i$ for $i \in \{ 1 , \ldots , n\}$ and $U$ conforms to $U'$
+  $T_i \equiv T_i'$ for $i \in \{ 1 , \ldots , n\}$ and $U$ conforms to $U'$
   then the method type $(p_1:T_1 , \ldots , p_n:T_n) U$ conforms to
-  $(p'_1:T'_1 , \ldots , p'_n:T'_n) U'$.
+  $(p_1':T_1' , \ldots , p_n':T_n') U'$.
 - The polymorphic type
   $[a_1 >: L_1 <: U_1 , \ldots , a_n >: L_n <: U_n] T$ conforms to the
   polymorphic type
-  $[a_1 >: L'_1 <: U'_1 , \ldots , a_n >: L'_n <: U'_n] T'$ if, assuming
-  $L'_1 <: a_1 <: U'_1 , \ldots , L'_n <: a_n <: U'_n$
-  one has $T <: T'$ and $L_i <: L'_i$ and $U'_i <: U_i$
+  $[a_1 >: L_1' <: U_1' , \ldots , a_n >: L_n' <: U_n'] T'$ if, assuming
+  $L_1' <: a_1 <: U_1' , \ldots , L_n' <: a_n <: U_n'$
+  one has $T <: T'$ and $L_i <: L_i'$ and $U_i' <: U_i$
   for $i \in \{ 1 , \ldots , n \}$.
 - Type constructors $T$ and $T'$ follow a similar discipline. We characterize
   $T$ and $T'$ by their type parameter clauses
@@ -939,7 +939,7 @@ limit [^4].
 
 The least upper bound or greatest lower bound might also not be
 unique. For instance `A with B` and `B with A` are both
-greatest lower of `A` and `B`. If there are several
+greatest lower bounds of `A` and `B`. If there are several
 least upper bounds or greatest lower bounds, the Scala compiler is
 free to pick any one of them.
 

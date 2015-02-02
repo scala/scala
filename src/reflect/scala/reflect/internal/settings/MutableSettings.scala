@@ -31,6 +31,9 @@ abstract class MutableSettings extends AbsSettings {
       v = arg
       postSetHook()
     }
+
+    /** Returns Some(value) in the case of a value set by user and None otherwise. */
+    def valueSetByUser: Option[T] = if (isSetByUser) Some(value) else None
   }
 
   def Xexperimental: BooleanSetting

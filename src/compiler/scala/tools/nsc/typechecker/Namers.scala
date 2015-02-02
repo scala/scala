@@ -171,7 +171,7 @@ trait Namers extends MethodSynthesis {
       val newFlags = (sym.flags & LOCKED) | flags
       sym.rawInfo match {
         case tr: TypeRef =>
-          // !!! needed for: pos/t5954d; the uniques type cache will happilly serve up the same TypeRef
+          // !!! needed for: pos/t5954d; the uniques type cache will happily serve up the same TypeRef
           // over this mutated symbol, and we witness a stale cache for `parents`.
           tr.invalidateCaches()
         case _ =>
@@ -296,7 +296,7 @@ trait Namers extends MethodSynthesis {
       }
       tree.symbol match {
         case NoSymbol => try dispatch() catch typeErrorHandler(tree, this.context)
-        case sym      => enterExistingSym(sym)
+        case sym      => enterExistingSym(sym, tree)
       }
     }
 
@@ -413,6 +413,7 @@ trait Namers extends MethodSynthesis {
         if (isRedefinition) {
           updatePosFlags(existing, tree.pos, tree.mods.flags)
           setPrivateWithin(tree, existing)
+          clearRenamedCaseAccessors(existing)
           existing
         }
         else assignAndEnterSymbol(tree) setFlag inConstructorFlag
@@ -583,7 +584,7 @@ trait Namers extends MethodSynthesis {
           // more than one hidden name, the second will not be warned.
           // So it is the position of the actual hidden name.
           //
-          // Note: java imports have precence over definitions in the same package
+          // Note: java imports have precedence over definitions in the same package
           //       so don't warn for them. There is a corresponding special treatment
           //       in the shadowing rules in typedIdent to (SI-7232). In any case,
           //       we shouldn't be emitting warnings for .java source files.
@@ -736,7 +737,9 @@ trait Namers extends MethodSynthesis {
     }
 
     // Hooks which are overridden in the presentation compiler
-    def enterExistingSym(sym: Symbol): Context = this.context
+    def enterExistingSym(sym: Symbol, tree: Tree): Context = {
+      this.context
+    }
     def enterIfNotThere(sym: Symbol) { }
 
     def enterSyntheticSym(tree: Tree): Symbol = {
@@ -1643,6 +1646,7 @@ trait Namers extends MethodSynthesis {
         def symbolAllowsDeferred = (
              sym.isValueParameter
           || sym.isTypeParameterOrSkolem
+          || (sym.isAbstractType && sym.owner.isClass)
           || context.tree.isInstanceOf[ExistentialTypeTree]
         )
         // Does the symbol owner require no undefined members?

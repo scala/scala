@@ -84,7 +84,7 @@ private[remote] class Proxy(node: Node, name: Symbol, @transient var kernel: Net
 }
 
 // Proxy is private[remote], but these classes are public and use it in a public
-// method signature.  That makes the only method they have non-overriddable.
+// method signature.  That makes the only method they have non-overridable.
 // So I made them final, which seems appropriate anyway.
 
 final class LinkToFun extends Function2[AbstractActor, Proxy, Unit] with Serializable {

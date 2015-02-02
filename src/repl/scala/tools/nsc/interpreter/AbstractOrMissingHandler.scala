@@ -30,7 +30,7 @@ class AbstractOrMissingHandler[T](onError: String => Unit, value: T) extends Par
         |Failed to initialize compiler: %s not found.
         |** Note that as of 2.8 scala does not assume use of the java classpath.
         |** For the old behavior pass -usejavacp to scala, or if using a Settings
-        |** object programatically, settings.usejavacp.value = true.""".stripMargin.format(x.req)
+        |** object programmatically, settings.usejavacp.value = true.""".stripMargin.format(x.req)
       )
       value
   }

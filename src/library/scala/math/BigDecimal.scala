@@ -364,7 +364,7 @@ object BigDecimal {
  *  to a decimal text representation, and build a `BigDecimal` based on that.
  *  `BigDecimal.binary` will expand the binary fraction to the requested or default
  *  precision.  `BigDecimal.exact` will expand the binary fraction to the
- *  full number of digits, thus producing the exact decimal value corrsponding to
+ *  full number of digits, thus producing the exact decimal value corresponding to
  *  the binary fraction of that floating-point number.  `BigDecimal` equality
  *  matches the decimal expansion of `Double`: `BigDecimal.decimal(0.1) == 0.1`.
  *  Note that since `0.1f != 0.1`, the same is not true for `Float`.  Instead,
@@ -417,7 +417,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
   private final def computeHashCode(): Unit = {
     computedHashCode =
       if (isWhole && (precision - scale) < BigDecimal.maximumHashScale) toBigInt.hashCode
-      else if (isValidDouble) doubleValue.##
+      else if (isDecimalDouble) doubleValue.##
       else {
         val temp = bigDecimal.stripTrailingZeros
         scala.util.hashing.MurmurHash3.mixLast( temp.scaleByPowerOfTen(temp.scale).toBigInteger.hashCode, temp.scale )
@@ -477,7 +477,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
     * `isExactDouble`, `isBinaryDouble`, or `isDecimalDouble`, depending on the intended meaning.
     * By default, `decimal` creation is used, so `isDecimalDouble` is probably what you want.
     */
-  @deprecated("Validity has two distinct meanings.  Use `isExactBinaryDouble` or `equivalentToDouble` instead.", "2.11")
+  @deprecated("Validity has distinct meanings.  Use `isExactDouble`, `isBinaryDouble`, or `isDecimalDouble` instead.", "2.11")
   def isValidDouble = {
     val d = toDouble
     !d.isInfinity && bigDecimal.compareTo(new BigDec(d)) == 0

@@ -12,7 +12,7 @@ import java.util.Map;
  * A simple profiler class that counts method invocations. It is being used in byte-code instrumentation by inserting
  * call to {@link Profiler#methodCalled(String, String, String)} at the beginning of every instrumented class.
  *
- * WARANING: This class is INTERNAL implementation detail and should never be used directly. It's made public only
+ * WARNING: This class is INTERNAL implementation detail and should never be used directly. It's made public only
  * because it must be universally accessible for instrumentation needs. If you want to profile your test use
  * {@link Instrumentation} instead.
  */

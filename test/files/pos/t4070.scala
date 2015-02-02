@@ -20,7 +20,7 @@ package b {
 
 
 /*
-// With crash below the clasess:
+// With crash below the classes:
 % scalac -Dscalac.debug.tvar ./a.scala
 [    create] ?_$1                     ( In Foo#crash )
 [   setInst] tv[Int]                  ( In Foo#crash, _$1=tv[Int] )

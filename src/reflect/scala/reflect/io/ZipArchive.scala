@@ -74,12 +74,6 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
   def container = unsupported()
   def absolute  = unsupported()
 
-  private def walkIterator(its: Iterator[AbstractFile]): Iterator[AbstractFile] = {
-    its flatMap { f =>
-      if (f.isDirectory) walkIterator(f.iterator)
-      else Iterator(f)
-    }
-  }
   /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
   sealed abstract class Entry(path: String) extends VirtualFile(baseName(path), path) {
     // have to keep this name for compat with sbt's compiler-interface
@@ -87,6 +81,7 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
     override def underlyingSource = Some(self)
     override def toString = self.path + "(" + path + ")"
   }
+
   /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
   class DirEntry(path: String) extends Entry(path) {
     val entries = mutable.HashMap[String, Entry]()
@@ -125,14 +120,15 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
 }
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 final class FileZipArchive(file: JFile) extends ZipArchive(file) {
-  def iterator: Iterator[Entry] = {
+  lazy val (root, allDirs) = {
+    val root = new DirEntry("/")
+    val dirs = mutable.HashMap[String, DirEntry]("/" -> root)
     val zipFile = try {
       new ZipFile(file)
     } catch {
       case ioe: IOException => throw new IOException("Error accessing " + file.getPath, ioe)
     }
-    val root    = new DirEntry("/")
-    val dirs    = mutable.HashMap[String, DirEntry]("/" -> root)
+
     val enum    = zipFile.entries()
 
     while (enum.hasMoreElements) {
@@ -150,10 +146,10 @@ final class FileZipArchive(file: JFile) extends ZipArchive(file) {
         dir.entries(f.name) = f
       }
     }
-
-    try root.iterator
-    finally dirs.clear()
+    (root, dirs)
   }
+
+  def iterator: Iterator[Entry] = root.iterator
 
   def name         = file.getName
   def path         = file.getPath
@@ -244,11 +240,9 @@ final class ManifestResources(val url: URL) extends ZipArchive(null) {
     val manifest = new Manifest(input)
     val iter     = manifest.getEntries().keySet().iterator().filter(_.endsWith(".class")).map(new ZipEntry(_))
 
-    while (iter.hasNext) {
-      val zipEntry = iter.next()
+    for (zipEntry <- iter) {
       val dir = getDir(dirs, zipEntry)
-      if (zipEntry.isDirectory) dir
-      else {
+      if (!zipEntry.isDirectory) {
         class FileEntry() extends Entry(zipEntry.getName) {
           override def lastModified = zipEntry.getTime()
           override def input        = resourceInputStream(path)
@@ -284,14 +278,14 @@ final class ManifestResources(val url: URL) extends ZipArchive(null) {
   private def resourceInputStream(path: String): InputStream = {
     new FilterInputStream(null) {
       override def read(): Int = {
-        if(in == null) in = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
+        if(in == null) in = Thread.currentThread().getContextClassLoader().getResourceAsStream(path)
         if(in == null) throw new RuntimeException(path + " not found")
-        super.read();
+        super.read()
       }
 
       override def close(): Unit = {
-        super.close();
-        in = null;
+        super.close()
+        in = null
       }
     }
   }

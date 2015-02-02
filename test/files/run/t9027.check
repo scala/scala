@@ -1,0 +1,19 @@
+{
+  {
+    val $buf = new _root_.scala.xml.NodeBuffer();
+    $buf.$amp$plus(new _root_.scala.xml.Elem(null, "a", _root_.scala.xml.Null, $scope, true));
+    $buf.$amp$plus(new _root_.scala.xml.Elem(null, "b", _root_.scala.xml.Null, $scope, true));
+    $buf
+  };
+  println("hello, world.")
+}
+{
+  {
+    val $buf = new _root_.scala.xml.NodeBuffer();
+    $buf.$amp$plus(new _root_.scala.xml.Elem(null, "a", _root_.scala.xml.Null, $scope, true));
+    $buf.$amp$plus(new _root_.scala.xml.Elem(null, "b", _root_.scala.xml.Null, $scope, true));
+    $buf.$amp$plus(new _root_.scala.xml.Elem(null, "c", _root_.scala.xml.Null, $scope, true));
+    $buf
+  };
+  println("hello, world.")
+}

@@ -20,20 +20,20 @@ import scala.language.implicitConversions
  *
  * For example, to create a class named `C` one would write something like:
  * {{{
- *  ClassDef(Modifiers(NoFlags), newTypeName("C"), Nil, ...)
+ *  ClassDef(Modifiers(NoFlags), TypeName("C"), Nil, ...)
  * }}}
  *
  * Here, the flag set is empty.
  *
  * To make `C` private, one would write something like:
  * {{{
- *  ClassDef(Modifiers(PRIVATE), newTypeName("C"), Nil, ...)
+ *  ClassDef(Modifiers(PRIVATE), TypeName("C"), Nil, ...)
  * }}}
  *
  * Flags can also be combined with the vertical bar operator (`|`).
  * For example, a private final class is written something like:
  * {{{
- *  ClassDef(Modifiers(PRIVATE | FINAL), newTypeName("C"), Nil, ...)
+ *  ClassDef(Modifiers(PRIVATE | FINAL), TypeName("C"), Nil, ...)
  * }}}
  *
  * The list of all available flags is defined in [[scala.reflect.api.FlagSets#FlagValues]], available via

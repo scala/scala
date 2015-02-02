@@ -31,7 +31,7 @@ object OpenHashMap {
 
 /** A mutable hash map based on an open hashing scheme. The precise scheme is
  *  undefined, but it should make a reasonable effort to ensure that an insert
- *  with consecutive hash codes is not unneccessarily penalised. In particular,
+ *  with consecutive hash codes is not unnecessarily penalised. In particular,
  *  mappings of consecutive integer keys should work without significant
  *  performance loss.
  *

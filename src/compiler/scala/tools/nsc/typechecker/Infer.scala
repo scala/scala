@@ -295,11 +295,17 @@ trait Infer extends Checkable {
         && !isByNameParamType(tp)
         && isCompatible(tp, dropByName(pt))
       )
+      def isCompatibleSam(tp: Type, pt: Type): Boolean = {
+        val samFun = typer.samToFunctionType(pt)
+        (samFun ne NoType) && isCompatible(tp, samFun)
+      }
+
       val tp1 = normalize(tp)
 
       (    (tp1 weak_<:< pt)
         || isCoercible(tp1, pt)
         || isCompatibleByName(tp, pt)
+        || isCompatibleSam(tp, pt)
       )
     }
     def isCompatibleArgs(tps: List[Type], pts: List[Type]) = (tps corresponds pts)(isCompatible)
@@ -1011,7 +1017,7 @@ trait Infer extends Checkable {
     /** Substitute free type variables `undetparams` of type constructor
      *  `tree` in pattern, given prototype `pt`.
      *
-     *  @param tree        the constuctor that needs to be instantiated
+     *  @param tree        the constructor that needs to be instantiated
      *  @param undetparams the undetermined type parameters
      *  @param pt0         the expected result type of the instance
      */

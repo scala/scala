@@ -4,7 +4,7 @@ package backend.jvm
 import scala.annotation.switch
 
 /**
- * Core BTypes and some other definitions. The initialization of these definitions requies access
+ * Core BTypes and some other definitions. The initialization of these definitions requires access
  * to symbols / types (global).
  *
  * The symbols used to initialize the ClassBTypes may change from one compiler run to the next. To
@@ -18,11 +18,11 @@ import scala.annotation.switch
  *
  * The definitions in `CoreBTypes` need to be lazy vals to break an initialization cycle. When
  * creating a new instance to assign to the proxy, the `classBTypeFromSymbol` invoked in the
- * constructor will actucally go through the proxy. The lazy vals make sure the instance is assigned
+ * constructor will actually go through the proxy. The lazy vals make sure the instance is assigned
  * in the proxy before the fields are initialized.
  *
  * Note: if we did not re-create the core BTypes on each compiler run, BType.classBTypeFromInternalNameMap
- * could not be a perRunCache anymore: the classes defeined here need to be in that map, they are
+ * could not be a perRunCache anymore: the classes defined here need to be in that map, they are
  * added when the ClassBTypes are created. The per run cache removes them, so they would be missing
  * in the second run.
  */
@@ -192,7 +192,7 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
 }
 
 /**
- * This trait make some core BTypes availalbe that don't depend on a Global instance. Some core
+ * This trait make some core BTypes available that don't depend on a Global instance. Some core
  * BTypes are required to be accessible in the BTypes trait, which does not have access to Global.
  *
  * BTypes cannot refer to CoreBTypesProxy because some of its members depend on global, for example

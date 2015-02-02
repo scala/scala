@@ -211,7 +211,12 @@ abstract class UnPickler {
         def fromName(name: Name) = name.toTermName match {
           case nme.ROOT     => loadingMirror.RootClass
           case nme.ROOTPKG  => loadingMirror.RootPackage
-          case _            => adjust(owner.info.decl(name))
+          case _            =>
+            val decl = owner match {
+              case stub: StubSymbol => NoSymbol // SI-8502 Don't call .info and fail the stub
+              case _ => owner.info.decl(name)
+            }
+            adjust(decl)
         }
         def nestedObjectSymbol: Symbol = {
           // If the owner is overloaded (i.e. a method), it's not possible to select the
@@ -243,8 +248,14 @@ abstract class UnPickler {
            } getOrElse "")
         }
 
+        def localDummy = {
+          if (nme.isLocalDummyName(name))
+            owner.newLocalDummy(NoPosition)
+          else NoSymbol
+        }
+
         // (1) Try name.
-        fromName(name) orElse {
+        localDummy orElse fromName(name) orElse {
           // (2) Try with expanded name.  Can happen if references to private
           // symbols are read from outside: for instance when checking the children
           // of a class.  See #1722.
@@ -298,6 +309,7 @@ abstract class UnPickler {
          * (.) ...
          * (1) `local child` represents local child classes, see comment in Pickler.putSymbol.
          *     Since it is not a member, it should not be entered in the owner's scope.
+         * (2) Similarly, we ignore local dummy symbols, as seen in SI-8868
          */
         def shouldEnterInOwnerScope = {
           sym.owner.isClass &&
@@ -307,7 +319,8 @@ abstract class UnPickler {
             !sym.isRefinementClass &&
             !sym.isTypeParameter &&
             !sym.isExistentiallyBound &&
-            sym.rawname != tpnme.LOCAL_CHILD // (1)
+            sym.rawname != tpnme.LOCAL_CHILD && // (1)
+            !nme.isLocalDummyName(sym.rawname)  // (2)
         }
 
         markFlagsCompleted(sym)(mask = AllFlags)
@@ -381,14 +394,24 @@ abstract class UnPickler {
         case CLASSINFOtpe => ClassInfoType(parents, symScope(clazz), clazz)
       }
 
+      def readThisType(): Type = {
+        val sym = readSymbolRef() match {
+          case stub: StubSymbol if !stub.isClass =>
+            // SI-8502 This allows us to create a stub for a unpickled reference to `missingPackage.Foo`.
+            stub.owner.newStubSymbol(stub.name.toTypeName, stub.missingMessage)
+          case sym => sym
+        }
+        ThisType(sym)
+      }
+
       // We're stuck with the order types are pickled in, but with judicious use
       // of named parameters we can recapture a declarative flavor in a few cases.
       // But it's still a rat's nest of adhockery.
       (tag: @switch) match {
         case NOtpe                     => NoType
         case NOPREFIXtpe               => NoPrefix
-        case THIStpe                   => ThisType(readSymbolRef())
-        case SINGLEtpe                 => SingleType(readTypeRef(), readSymbolRef())
+        case THIStpe                   => readThisType()
+        case SINGLEtpe                 => SingleType(readTypeRef(), readSymbolRef().filter(_.isStable)) // SI-7596 account for overloading
         case SUPERtpe                  => SuperType(readTypeRef(), readTypeRef())
         case CONSTANTtpe               => ConstantType(readConstantRef())
         case TYPEREFtpe                => TypeRef(readTypeRef(), readSymbolRef(), readTypes())

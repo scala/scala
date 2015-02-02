@@ -47,7 +47,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *
    *  @param  idx  The index to select.
    *  @return the element of this $coll at index `idx`, where `0` indicates the first element.
-   *  @throws `IndexOutOfBoundsException` if `idx` does not satisfy `0 <= idx < length`.
+   *  @throws IndexOutOfBoundsException if `idx` does not satisfy `0 <= idx < length`.
    */
   def apply(idx: Int): A
 
@@ -397,7 +397,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *    @inheritdoc
    *
    *    Another way to express this
-   *    is that `xs union ys` computes the order-presevring multi-set union of `xs` and `ys`.
+   *    is that `xs union ys` computes the order-preserving multi-set union of `xs` and `ys`.
    *    `union` is hence a counter-part of `diff` and `intersect` which also work on multi-sets.
    *
    *    $willNotTerminateInf

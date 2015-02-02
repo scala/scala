@@ -17,11 +17,11 @@ import scala.language.implicitConversions
  *  To search for the `map` method (which is a term) declared in the `List` class, one can do:
  *
  * {{{
- *   scala> typeOf[List[_]].member(newTermName("map"))
+ *   scala> typeOf[List[_]].member(TermName("map"))
  *   res0: reflect.runtime.universe.Symbol = method map
  * }}}
  *
- *  To search for a type member, one can follow the same procedure, using `newTypeName` instead.
+ *  To search for a type member, one can follow the same procedure, using `TypeName` instead.
  *
  *  For more information about creating and using `Name`s, see the [[http://docs.scala-lang.org/overviews/reflection/annotations-names-scopes.html Reflection Guide: Annotations, Names, Scopes, and More]]
  *
@@ -30,14 +30,14 @@ import scala.language.implicitConversions
  */
 trait Names {
   /** An implicit conversion from String to TermName.
-   *  Enables an alternative notation `"map": TermName` as opposed to `newTermName("map")`.
+   *  Enables an alternative notation `"map": TermName` as opposed to `TermName("map")`.
    *  @group Names
    */
   @deprecated("Use explicit `TermName(s)` instead", "2.11.0")
   implicit def stringToTermName(s: String): TermName = TermName(s)
 
   /** An implicit conversion from String to TypeName.
-   *  Enables an alternative notation `"List": TypeName` as opposed to `newTypeName("List")`.
+   *  Enables an alternative notation `"List": TypeName` as opposed to `TypeName("List")`.
    *  @group Names
    */
   @deprecated("Use explicit `TypeName(s)` instead", "2.11.0")
@@ -72,10 +72,10 @@ trait Names {
    *  @group API
    */
   abstract class NameApi {
-    /** Checks wether the name is a term name */
+    /** Checks whether the name is a term name */
     def isTermName: Boolean
 
-    /** Checks wether the name is a type name */
+    /** Checks whether the name is a type name */
     def isTypeName: Boolean
 
     /** Returns a term name that wraps the same string as `this` */

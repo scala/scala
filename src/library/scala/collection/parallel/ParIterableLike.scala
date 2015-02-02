@@ -150,7 +150,8 @@ import scala.collection.parallel.ParallelCollectionImplicits._
  *  @define indexsignalling
  *  This method will use `indexFlag` signalling capabilities. This means
  *  that splitters may set and read the `indexFlag` state.
- *
+ *  @define Coll `ParIterable`
+ *  @define coll parallel iterable
  */
 trait ParIterableLike[+T, +Repr <: ParIterable[T], +Sequential <: Iterable[T] with IterableLike[T, Sequential]]
 extends GenIterableLike[T, Repr]
@@ -743,7 +744,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *  The index flag is initially set to maximum integer value.
    *
    *  @param pred   the predicate used to test the elements
-   *  @return       the longest prefix of this $coll of elements that satisy the predicate `pred`
+   *  @return       the longest prefix of this $coll of elements that satisfy the predicate `pred`
    */
   def takeWhile(pred: T => Boolean): Repr = {
     val cbf = combinerFactory

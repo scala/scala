@@ -38,7 +38,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
 
   override lazy val rootMirror: Mirror = createMirror(NoSymbol, rootClassLoader)
 
-  // overriden by ReflectGlobal
+  // overridden by ReflectGlobal
   def rootClassLoader: ClassLoader = this.getClass.getClassLoader
 
   trait JavaClassCompleter
@@ -1191,7 +1191,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
      *   - top-level classes
      *   - Scala classes that were generated via jclassToScala
      *   - classes that have a class owner that has a corresponding Java class
-     *  @throws A `ClassNotFoundException` for all Scala classes not in one of these categories.
+     *  @throws ClassNotFoundException for all Scala classes not in one of these categories.
      */
     @throws(classOf[ClassNotFoundException])
     def classToJava(clazz: ClassSymbol): jClass[_] = classCache.toJava(clazz) {

@@ -14,7 +14,7 @@ object BackendStats {
 
   val bcodeInitTimer  = newSubTimer("bcode initialization", bcodeTimer)
   val bcodeGenStat    = newSubTimer("code generation", bcodeTimer)
-  val bcodeDceTimer   = newSubTimer("dead code elimination", bcodeTimer)
+  val methodOptTimer  = newSubTimer("intra-method optimizations", bcodeTimer)
   val bcodeWriteTimer = newSubTimer("classfile writing", bcodeTimer)
 
   def timed[T](timer: Statistics.Timer)(body: => T): T = {

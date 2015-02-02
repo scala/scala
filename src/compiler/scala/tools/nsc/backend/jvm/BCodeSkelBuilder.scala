@@ -118,7 +118,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       addClassFields()
 
-      innerClassBufferASM ++= classBTypeFromSymbol(claszSymbol).info.memberClasses
+      innerClassBufferASM ++= classBTypeFromSymbol(claszSymbol).info.nestedClasses
       gen(cd.impl)
       addInnerClassesASM(cnode, innerClassBufferASM.toList)
 

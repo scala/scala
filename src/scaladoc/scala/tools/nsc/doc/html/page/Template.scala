@@ -110,7 +110,9 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
               <img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/>
         }}
         { owner }
-        <h1>{ displayName }</h1> { permalink(tpl) }
+        <h1>{ displayName }</h1>{
+          if (tpl.isPackage) NodeSeq.Empty else <h3>{companionAndPackage(tpl)}</h3>
+        }{ permalink(tpl) }
       </div>
 
       { signature(tpl, isSelf = true) }
@@ -611,7 +613,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
             <dd>{
               val exceptionsXml: List[NodeSeq] =
                 for((name, body) <- comment.throws.toList.sortBy(_._1) ) yield
-                  <span class="cmt">{Text(name) ++ bodyToHtml(body)}</span>
+                  <span class="cmt">{bodyToHtml(body)}</span>
               exceptionsXml.reduceLeft(_ ++ Text("") ++ _)
             }</dd>
           }

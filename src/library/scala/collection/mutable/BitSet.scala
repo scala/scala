@@ -110,7 +110,7 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
    *  @return  the bitset itself.
    */
   def |= (other: BitSet): this.type = {
-    ensureCapacity(other.nwords)
+    ensureCapacity(other.nwords - 1)
     for (i <- 0 until other.nwords)
       elems(i) = elems(i) | other.word(i)
     this
@@ -121,7 +121,7 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
    *  @return  the bitset itself.
    */
   def &= (other: BitSet): this.type = {
-    ensureCapacity(other.nwords)
+    ensureCapacity(other.nwords - 1)
     for (i <- 0 until other.nwords)
       elems(i) = elems(i) & other.word(i)
     this
@@ -132,7 +132,7 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
    *  @return  the bitset itself.
    */
   def ^= (other: BitSet): this.type = {
-    ensureCapacity(other.nwords)
+    ensureCapacity(other.nwords - 1)
     for (i <- 0 until other.nwords)
       elems(i) = elems(i) ^ other.word(i)
     this
@@ -143,7 +143,7 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
    *  @return  the bitset itself.
    */
   def &~= (other: BitSet): this.type = {
-    ensureCapacity(other.nwords)
+    ensureCapacity(other.nwords - 1)
     for (i <- 0 until other.nwords)
       elems(i) = elems(i) & ~other.word(i)
     this

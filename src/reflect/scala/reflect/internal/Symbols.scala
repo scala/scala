@@ -173,7 +173,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
              with HasFlags
              with Annotatable[Symbol]
              with Attachable {
-
     // makes sure that all symbols that runtime reflection deals with are synchronized
     private def isSynchronized = this.isInstanceOf[scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol]
     private def isAprioriThreadsafe = isThreadsafe(AllOps)
@@ -182,7 +181,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     type AccessBoundaryType = Symbol
     type AnnotationType     = AnnotationInfo
 
-    // TODO - don't allow names to be renamed in this unstructured a fashion.
+    // TODO - don't allow names to be renamed in this unstructured fashion.
     // Rename as little as possible.  Enforce invariants on all renames.
     type TypeOfClonedSymbol >: Null <: Symbol { type NameType = Symbol.this.NameType }
 
@@ -683,7 +682,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  to fix the core of the compiler risk stability a few weeks before the final release.
      *  upd. Haha, "a few weeks before the final release". This surely sounds familiar :)
      *
-     *  However we do need to fix this for runtime reflection, since this idionsynchrazy is not something
+     *  However we do need to fix this for runtime reflection, since this idiosyncrasy is not something
      *  we'd like to expose to reflection users. Therefore a proposed solution is to check whether we're in a
      *  runtime reflection universe, and if yes and if we've not yet loaded the requested info, then to commence initialization.
      */
@@ -735,31 +734,31 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def hasGetter = isTerm && nme.isLocalName(name)
 
-    /** A little explanation for this confusing situation.
-     *  Nested modules which have no static owner when ModuleDefs
-     *  are eliminated (refchecks) are given the lateMETHOD flag,
-     *  which makes them appear as methods after refchecks.
-     *  Here's an example where one can see all four of FF FT TF TT
-     *  for (isStatic, isMethod) at various phases.
+    /**
+     * Nested modules which have no static owner when ModuleDefs are eliminated (refchecks) are
+     * given the lateMETHOD flag, which makes them appear as methods after refchecks.
      *
-     *    trait A1 { case class Quux() }
-     *    object A2 extends A1 { object Flax }
-     *    // --  namer         object Quux in trait A1
-     *    // -M  flatten       object Quux in trait A1
-     *    // S-  flatten       object Flax in object A2
-     *    // -M  posterasure   object Quux in trait A1
-     *    // -M  jvm           object Quux in trait A1
-     *    // SM  jvm           object Quux in object A2
+     * Note: the lateMETHOD flag is added lazily in the info transformer of the RefChecks phase.
+     * This means that forcing the `sym.info` may change the value of `sym.isMethod`. Forcing the
+     * info is in the responsibility of the caller. Doing it eagerly here was tried (0ccdb151f) but
+     * has proven to lead to bugs (SI-8907).
      *
-     *  So "isModuleNotMethod" exists not for its achievement in
-     *  brevity, but to encapsulate the relevant condition.
+     * Here's an example where one can see all four of FF FT TF TT for (isStatic, isMethod) at
+     * various phases.
+     *
+     *   trait A1 { case class Quux() }
+     *   object A2 extends A1 { object Flax }
+     *   // --  namer         object Quux in trait A1
+     *   // -M  flatten       object Quux in trait A1
+     *   // S-  flatten       object Flax in object A2
+     *   // -M  posterasure   object Quux in trait A1
+     *   // -M  jvm           object Quux in trait A1
+     *   // SM  jvm           object Quux in object A2
+     *
+     * So "isModuleNotMethod" exists not for its achievement in brevity, but to encapsulate the
+     * relevant condition.
      */
-    def isModuleNotMethod = {
-      if (isModule) {
-        if (phase.refChecked) this.info // force completion to make sure lateMETHOD is there.
-        !isMethod
-      } else false
-    }
+    def isModuleNotMethod = isModule && !isMethod
 
     // After RefChecks, the `isStatic` check is mostly redundant: all non-static modules should
     // be methods (and vice versa). There's a corner case on the vice-versa with mixed-in module
@@ -792,6 +791,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isDelambdafyFunction = isSynthetic && (name containsName tpnme.DELAMBDAFY_LAMBDA_CLASS_NAME)
     final def isDefinedInPackage  = effectiveOwner.isPackageClass
     final def needsFlatClasses    = phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass
+
+    // TODO introduce a flag for these?
+    final def isPatternTypeVariable: Boolean =
+      isAbstractType && !isExistential && !isTypeParameterOrSkolem && isLocalToBlock
 
     /** change name by appending $$<fully-qualified-name-of-class `base`>
      *  Do the same for any accessed symbols or setters/getters.
@@ -1464,11 +1467,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def info: Type = try {
       var cnt = 0
       while (validTo == NoPeriod) {
-        //if (settings.debug.value) System.out.println("completing " + this);//DEBUG
         assert(infos ne null, this.name)
         assert(infos.prev eq null, this.name)
         val tp = infos.info
-        //if (settings.debug.value) System.out.println("completing " + this.rawname + tp.getClass());//debug
 
         if ((_rawflags & LOCKED) != 0L) { // rolled out once for performance
           lock {
@@ -1477,6 +1478,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           }
         } else {
           _rawflags |= LOCKED
+          // TODO another commented out lines - this should be solved in one way or another
 //          activeLocks += 1
  //         lockedSyms += this
         }
@@ -1598,13 +1600,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       assert(isCompilerUniverse)
       if (infos == null || runId(infos.validFrom) == currentRunId) {
         infos
-      } else if (isPackageClass) {
-        // SI-7801 early phase package scopes are mutated in new runs (Namers#enterPackage), so we have to
-        //         discard transformed infos, rather than just marking them as from this run.
-        val oldest = infos.oldest
-        oldest.validFrom = validTo
-        this.infos = oldest
-        oldest
+      } else if (infos ne infos.oldest) {
+        // SI-8871 Discard all but the first element of type history. Specialization only works in the resident
+        // compiler / REPL if re-run its info transformer in this run to correctly populate its
+        // per-run caches, e.g. typeEnv
+        adaptInfos(infos.oldest)
       } else {
         val prev1 = adaptInfos(infos.prev)
         if (prev1 ne infos.prev) prev1
@@ -2029,12 +2029,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       info.decls.filter(sym => !sym.isMethod && sym.isParamAccessor).toList
 
     /** The symbol accessed by this accessor (getter or setter) function. */
-    final def accessed: Symbol = accessed(owner.info)
-
-    /** The symbol accessed by this accessor function, but with given owner type. */
-    final def accessed(ownerTp: Type): Symbol = {
+    final def accessed: Symbol = {
       assert(hasAccessorFlag, this)
-      ownerTp decl localName
+      val localField = owner.info decl localName
+
+      if (localField == NoSymbol && this.hasFlag(MIXEDIN)) {
+        // SI-8087: private[this] fields don't have a `localName`. When searching the accessed field
+        // for a mixin accessor of such a field, we need to look for `name` instead.
+        // The phase travel ensures that the field is found (`owner` is the trait class symbol, the
+        // field gets removed from there in later phases).
+        enteringPhase(picklerPhase)(owner.info).decl(name).suchThat(!_.isAccessor)
+      } else {
+        localField
+      }
     }
 
     /** The module corresponding to this module class (note that this
@@ -2155,6 +2162,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (isTopLevel) {
         if (isClass) this else moduleClass
       } else owner.enclosingTopLevelClass
+
+    /** The top-level class or local dummy symbol containing this symbol. */
+    def enclosingTopLevelClassOrDummy: Symbol =
+      if (isTopLevel) {
+        if (isClass) this else moduleClass.orElse(this)
+      } else owner.enclosingTopLevelClassOrDummy
 
     /** Is this symbol defined in the same scope and compilation unit as `that` symbol? */
     def isCoDefinedWith(that: Symbol) = (
@@ -2805,7 +2818,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def outerSource: Symbol =
       // SI-6888 Approximate the name to workaround the deficiencies in `nme.originalName`
-      //         in the face of clases named '$'. SI-2806 remains open to address the deeper problem.
+      //         in the face of classes named '$'. SI-2806 remains open to address the deeper problem.
       if (originalName endsWith (nme.OUTER)) initialize.referenced
       else NoSymbol
 
@@ -3420,10 +3433,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   trait StubSymbol extends Symbol {
     devWarning("creating stub symbol to defer error: " + missingMessage)
 
-    protected def missingMessage: String
+    def missingMessage: String
 
     /** Fail the stub by throwing a [[scala.reflect.internal.MissingRequirementError]]. */
-    override final def failIfStub() = {MissingRequirementError.signal(missingMessage)} //
+    override final def failIfStub() =
+      MissingRequirementError.signal(missingMessage)
 
     /** Fail the stub by reporting an error to the reporter, setting the IS_ERROR flag
       * on this symbol, and returning the dummy value `alt`.
@@ -3448,8 +3462,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def rawInfo         = fail(NoType)
     override def companionSymbol = fail(NoSymbol)
   }
-  class StubClassSymbol(owner0: Symbol, name0: TypeName, protected val missingMessage: String) extends ClassSymbol(owner0, owner0.pos, name0) with StubSymbol
-  class StubTermSymbol(owner0: Symbol, name0: TermName, protected val missingMessage: String) extends TermSymbol(owner0, owner0.pos, name0) with StubSymbol
+  class StubClassSymbol(owner0: Symbol, name0: TypeName, val missingMessage: String) extends ClassSymbol(owner0, owner0.pos, name0) with StubSymbol
+  class StubTermSymbol(owner0: Symbol, name0: TermName, val missingMessage: String) extends TermSymbol(owner0, owner0.pos, name0) with StubSymbol
 
   trait FreeSymbol extends Symbol {
     def origin: String
@@ -3500,6 +3514,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def enclClassChain = Nil
     override def enclClass: Symbol = this
     override def enclosingTopLevelClass: Symbol = this
+    override def enclosingTopLevelClassOrDummy: Symbol = this
     override def enclosingPackageClass: Symbol = this
     override def enclMethod: Symbol = this
     override def associatedFile = NoAbstractFile
@@ -3557,7 +3572,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    *  @param    syms    the prototypical symbols
    *  @param    symFn   the function to create new symbols
    *  @param    tpe     the prototypical type
-   *  @return           the new symbol-subsituted type
+   *  @return           the new symbol-substituted type
    */
   def deriveType(syms: List[Symbol], symFn: Symbol => Symbol)(tpe: Type): Type = {
     val syms1 = deriveSymbols(syms, symFn)
@@ -3572,7 +3587,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    *  @param    as      arguments to be passed to symFn together with symbols from syms (must be same length)
    *  @param    symFn   the function to create new symbols based on `as`
    *  @param    tpe     the prototypical type
-   *  @return           the new symbol-subsituted type
+   *  @return           the new symbol-substituted type
    */
   def deriveType2[A](syms: List[Symbol], as: List[A], symFn: (Symbol, A) => Symbol)(tpe: Type): Type = {
     val syms1 = deriveSymbols2(syms, as, symFn)

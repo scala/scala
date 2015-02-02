@@ -5,10 +5,11 @@
 
 package scala.tools.nsc.backend.jvm
 
-import scala.tools.asm.tree.{ClassNode, MethodNode}
-import java.io.PrintWriter
+import scala.tools.asm.tree.{InsnList, AbstractInsnNode, ClassNode, MethodNode}
+import java.io.{StringWriter, PrintWriter}
 import scala.tools.asm.util.{TraceClassVisitor, TraceMethodVisitor, Textifier}
 import scala.tools.asm.ClassReader
+import scala.collection.convert.decorateAsScala._
 
 object AsmUtils {
 
@@ -36,19 +37,12 @@ object AsmUtils {
 
   def traceMethod(mnode: MethodNode): Unit = {
     println(s"Bytecode for method ${mnode.name}")
-    val p = new Textifier
-    val tracer = new TraceMethodVisitor(p)
-    mnode.accept(tracer)
-    val w = new PrintWriter(System.out)
-    p.print(w)
-    w.flush()
+    println(textify(mnode))
   }
 
   def traceClass(cnode: ClassNode): Unit = {
     println(s"Bytecode for class ${cnode.name}")
-    val w = new PrintWriter(System.out)
-    cnode.accept(new TraceClassVisitor(w))
-    w.flush()
+    println(textify(cnode))
   }
 
   def traceClass(bytes: Array[Byte]): Unit = traceClass(readClass(bytes))
@@ -58,4 +52,57 @@ object AsmUtils {
     new ClassReader(bytes).accept(node, 0)
     node
   }
+
+  /**
+   * Returns a human-readable representation of the cnode ClassNode.
+   */
+  def textify(cnode: ClassNode): String = {
+    val trace = new TraceClassVisitor(new PrintWriter(new StringWriter))
+    cnode.accept(trace)
+    val sw = new StringWriter
+    val pw = new PrintWriter(sw)
+    trace.p.print(pw)
+    sw.toString
+  }
+
+  /**
+   * Returns a human-readable representation of the code in the mnode MethodNode.
+   */
+  def textify(mnode: MethodNode): String = {
+    val trace = new TraceClassVisitor(new PrintWriter(new StringWriter))
+    mnode.accept(trace)
+    val sw = new StringWriter
+    val pw = new PrintWriter(sw)
+    trace.p.print(pw)
+    sw.toString
+  }
+
+  /**
+   * Returns a human-readable representation of the given instruction.
+   */
+  def textify(insn: AbstractInsnNode): String = {
+    val trace = new TraceMethodVisitor(new Textifier)
+    insn.accept(trace)
+    val sw = new StringWriter
+    val pw = new PrintWriter(sw)
+    trace.p.print(pw)
+    sw.toString.trim
+  }
+
+  /**
+   * Returns a human-readable representation of the given instruction sequence.
+   */
+  def textify(insns: Iterator[AbstractInsnNode]): String = {
+    val trace = new TraceMethodVisitor(new Textifier)
+    insns.foreach(_.accept(trace))
+    val sw: StringWriter = new StringWriter
+    val pw: PrintWriter = new PrintWriter(sw)
+    trace.p.print(pw)
+    sw.toString.trim
+  }
+
+  /**
+   * Returns a human-readable representation of the given instruction sequence.
+   */
+  def textify(insns: InsnList): String = textify(insns.iterator().asScala)
 }

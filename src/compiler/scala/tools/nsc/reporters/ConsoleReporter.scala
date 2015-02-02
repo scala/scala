@@ -29,7 +29,7 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
     case INFO    => null
   }
 
-  private def clabel(severity: Severity): String = {
+  protected def clabel(severity: Severity): String = {
     val label0 = label(severity)
     if (label0 eq null) "" else label0 + ": "
   }

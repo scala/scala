@@ -28,12 +28,12 @@ trait CompileOutputCommon {
  *  @author  Martin Odersky
  *  @version 1.0
  */
-abstract class SocketServer extends CompileOutputCommon {
+abstract class SocketServer(fixPort: Int = 0) extends CompileOutputCommon {
   def shutdown: Boolean
   def session(): Unit
   def timeout(): Unit = ()  // called after a timeout is detected for subclasses to cleanup
   // a hook for subclasses
-  protected def createServerSocket(): ServerSocket = new ServerSocket(0)
+  protected def createServerSocket(): ServerSocket = new ServerSocket(fixPort)
 
   var in: BufferedReader = _
   var out: PrintWriter   = _

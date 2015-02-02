@@ -117,7 +117,7 @@ trait MemberEntity extends Entity {
   def toRoot: List[MemberEntity]
 
   /** The templates in which this member has been declared. The first element of the list is the template that contains
-    * the currently active declaration of this member, subsequent elements are declarations that have been overriden. If
+    * the currently active declaration of this member, subsequent elements are declarations that have been overridden. If
     * the first element is equal to `inTemplate`, the member is declared locally, if not, it has been inherited. All
     * elements of this list are in the linearization of `inTemplate`. */
   def inDefinitionTemplates: List[TemplateEntity]

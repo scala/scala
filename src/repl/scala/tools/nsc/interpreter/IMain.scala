@@ -15,12 +15,16 @@ import scala.concurrent.{ Future, ExecutionContext }
 import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.{ ClassTag, classTag }
 import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
-import scala.tools.util.PathResolver
+import scala.tools.util.PathResolverFactory
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.typechecker.{ TypeStrings, StructuredTypeStrings }
-import scala.tools.nsc.util.{ ScalaClassLoader, stringFromReader, stringFromWriter, StackTraceOps }
+import scala.tools.nsc.util.{ ScalaClassLoader, stringFromReader, stringFromWriter, StackTraceOps, ClassPath, MergedClassPath }
+import ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.util.Exceptional.unwrap
+import scala.tools.nsc.backend.JavaPlatform
 import javax.script.{AbstractScriptEngine, Bindings, ScriptContext, ScriptEngine, ScriptEngineFactory, ScriptException, CompiledScript, Compilable}
+import java.net.URL
+import java.io.File
 
 /** An interpreter for Scala code.
  *
@@ -41,7 +45,7 @@ import javax.script.{AbstractScriptEngine, Bindings, ScriptContext, ScriptEngine
  *  all variables defined by that code.  To extract the result of an
  *  interpreted line to show the user, a second "result object" is created
  *  which imports the variables exported by the above object and then
- *  exports members called "$eval" and "$print". To accomodate user expressions
+ *  exports members called "$eval" and "$print". To accommodate user expressions
  *  that read from variables or methods defined in previous statements, "import"
  *  statements are used.
  *
@@ -82,9 +86,11 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   private var _classLoader: util.AbstractFileClassLoader = null                              // active classloader
   private val _compiler: ReplGlobal                 = newCompiler(settings, reporter)   // our private compiler
 
+  private var _runtimeClassLoader: URLClassLoader = null              // wrapper exposing addURL
+
   def compilerClasspath: Seq[java.net.URL] = (
     if (isInitializeComplete) global.classPath.asURLs
-    else new PathResolver(settings).result.asURLs  // the compiler's classpath
+    else PathResolverFactory.create(settings).resultAsURLs  // the compiler's classpath
   )
   def settings = initialSettings
   // Run the code body with the given boolean settings flipped to true.
@@ -237,6 +243,18 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     new Global(settings, reporter) with ReplGlobal { override def toString: String = "<global>" }
   }
 
+  /**
+   * Adds all specified jars to the compile and runtime classpaths.
+   *
+   * @note  Currently only supports jars, not directories.
+   * @param urls The list of items to add to the compile and runtime classpaths.
+   */
+  def addUrlsToClassPath(urls: URL*): Unit = {
+    new Run //  force some initialization
+    urls.foreach(_runtimeClassLoader.addURL) // Add jars to runtime classloader
+    global.extendCompilerClassPath(urls: _*) // Add jars to compile-time classpath
+  }
+
   /** Parent classloader.  Overridable. */
   protected def parentClassLoader: ClassLoader =
     settings.explicitParentLoader.getOrElse( this.getClass.getClassLoader() )
@@ -295,27 +313,43 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   def originalPath(name: Name): String   = typerOp path name
   def originalPath(sym: Symbol): String  = typerOp path sym
   def flatPath(sym: Symbol): String      = flatOp shift sym.javaClassName
+
   def translatePath(path: String) = {
     val sym = if (path endsWith "$") symbolOfTerm(path.init) else symbolOfIdent(path)
     sym.toOption map flatPath
   }
+
+  /** If path represents a class resource in the default package,
+   *  see if the corresponding symbol has a class file that is a REPL artifact
+   *  residing at a different resource path. Translate X.class to $line3/$read$$iw$$iw$X.class.
+   */
+  def translateSimpleResource(path: String): Option[String] = {
+    if (!(path contains '/') && (path endsWith ".class")) {
+      val name = path stripSuffix ".class"
+      val sym = if (name endsWith "$") symbolOfTerm(name.init) else symbolOfIdent(name)
+      def pathOf(s: String) = s"${s.replace('.', '/')}.class"
+      sym.toOption map (s => pathOf(flatPath(s)))
+    } else {
+      None
+    }
+  }
   def translateEnclosingClass(n: String) = symbolOfTerm(n).enclClass.toOption map flatPath
 
+  /** If unable to find a resource foo.class, try taking foo as a symbol in scope
+   *  and use its java class name as a resource to load.
+   *
+   *  $intp.classLoader classBytes "Bippy" or $intp.classLoader getResource "Bippy.class" just work.
+   */
   private class TranslatingClassLoader(parent: ClassLoader) extends util.AbstractFileClassLoader(replOutput.dir, parent) {
-    /** Overridden here to try translating a simple name to the generated
-     *  class name if the original attempt fails.  This method is used by
-     *  getResourceAsStream as well as findClass.
-     */
-    override protected def findAbstractFile(name: String): AbstractFile =
-      super.findAbstractFile(name) match {
-        case null if _initializeComplete => translatePath(name) map (super.findAbstractFile(_)) orNull
-        case file => file
-      }
+    override protected def findAbstractFile(name: String): AbstractFile = super.findAbstractFile(name) match {
+      case null if _initializeComplete => translateSimpleResource(name) map super.findAbstractFile orNull
+      case file => file
+    }
   }
   private def makeClassLoader(): util.AbstractFileClassLoader =
-    new TranslatingClassLoader(parentClassLoader match {
-      case null   => ScalaClassLoader fromURLs compilerClasspath
-      case p      => new ScalaClassLoader.URLClassLoader(compilerClasspath, p)
+    new TranslatingClassLoader({
+      _runtimeClassLoader = new URLClassLoader(compilerClasspath, parentClassLoader)
+      _runtimeClassLoader
     })
 
   // Set the current Java "context" class loader to this interpreter's class loader
@@ -1174,6 +1208,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     finally isettings.unwrapStrings = saved
   }
 
+  def withoutTruncating[A](body: => A): A = reporter withoutTruncating body
+
   def symbolDefString(sym: Symbol) = {
     TypeStrings.quieter(
       exitingTyper(sym.defString),
@@ -1246,9 +1282,11 @@ object IMain {
 
     def getProgram(statements: String*): String = null
 
-    def getScriptEngine: ScriptEngine = new IMain(this, new Settings() {
-      usemanifestcp.value = true
-    })
+    def getScriptEngine: ScriptEngine = {
+      val settings = new Settings()
+      settings.usemanifestcp.value = true
+      new IMain(this, settings)
+    }
   }
 
   // The two name forms this is catching are the two sides of this assignment:

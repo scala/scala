@@ -1,0 +1,7 @@
+t8291.scala:5: error: Could not find implicit for Int or String
+  implicitly[X[Int, String]]
+            ^
+t8291.scala:6: error: Could not find implicit for Int or String
+  implicitly[Z[String]]
+            ^
+two errors found

@@ -224,7 +224,7 @@ extends AbstractMap[K, V]
   override def put(key: K, value: V): Option[V] = {
     val h = hashOf(key)
     val k = key
-    var i = seekEntryOrOpen(h, k)
+    val i = seekEntryOrOpen(h, k)
     if (i < 0) {
       val j = i & IndexMask
       _hashes(j) = h
@@ -251,7 +251,7 @@ extends AbstractMap[K, V]
   override def update(key: K, value: V): Unit = {
     val h = hashOf(key)
     val k = key
-    var i = seekEntryOrOpen(h, k)
+    val i = seekEntryOrOpen(h, k)
     if (i < 0) {
       val j = i & IndexMask
       _hashes(j) = h

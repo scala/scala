@@ -52,7 +52,7 @@ trait Liftables { self: Universe =>
   object Unliftable extends StandardUnliftableInstances {
     /** A helper method that simplifies creation of `Unliftable` instances.
      *  Takes a partial function which is defined on correct representations of `T`
-     *  and returns corresponing instances.
+     *  and returns corresponding instances.
      *
      *  For example to extract a reference to an object as object itself:
      *

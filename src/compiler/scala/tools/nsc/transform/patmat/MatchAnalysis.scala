@@ -6,10 +6,11 @@
 
 package scala.tools.nsc.transform.patmat
 
+import scala.annotation.tailrec
+import scala.collection.immutable.{IndexedSeq, Iterable}
 import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
-import scala.reflect.internal.util.Position
 
 trait TreeAndTypeAnalysis extends Debugging {
   import global._
@@ -173,7 +174,6 @@ trait TreeAndTypeAnalysis extends Debugging {
     // a type is "uncheckable" (for exhaustivity) if we don't statically know its subtypes (i.e., it's unsealed)
     // we consider tuple types with at least one component of a checkable type as a checkable type
     def uncheckableType(tp: Type): Boolean = {
-      def tupleComponents(tp: Type) = tp.normalize.typeArgs
       val checkable = (
            (isTupleType(tp) && tupleComponents(tp).exists(tp => !uncheckableType(tp)))
         || enumerateSubtypes(tp).nonEmpty)
@@ -268,7 +268,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
       // the type of the binder passed to the first invocation
       // determines the type of the tree that'll be returned for that binder as of then
       final def binderToUniqueTree(b: Symbol) =
-        unique(accumSubst(normalize(CODE.REF(b))), b.tpe)
+        unique(accumSubst(normalize(gen.mkAttributedStableRef(b))), b.tpe)
 
       // note that the sequencing of operations is important: must visit in same order as match execution
       // binderToUniqueTree uses the type of the first symbol that was encountered as the type for all future binders
@@ -365,7 +365,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
         def handleUnknown(tm: TreeMaker) = handler(tm)
       }
 
-      // used for CSE -- rewrite all unknowns to False (the most conserative option)
+      // used for CSE -- rewrite all unknowns to False (the most conservative option)
       object conservative extends TreeMakerToProp {
         def handleUnknown(tm: TreeMaker) = False
       }
@@ -399,7 +399,7 @@ trait MatchAnalysis extends MatchApproximation {
 
   trait MatchAnalyzer extends MatchApproximator  {
     def uncheckedWarning(pos: Position, msg: String) = currentRun.reporting.uncheckedWarning(pos, msg)
-    def warn(pos: Position, ex: AnalysisBudget.Exception, kind: String) = uncheckedWarning(pos, s"Cannot check match for $kind.\n${ex.advice}")
+    def reportWarning(message: String) = global.reporter.warning(typer.context.tree.pos, message)
 
   // TODO: model dependencies between variables: if V1 corresponds to (x: List[_]) and V2 is (x.hd), V2 cannot be assigned when V1 = null or V1 = Nil
     // right now hackily implement this by pruning counter-examples
@@ -429,49 +429,44 @@ trait MatchAnalysis extends MatchApproximation {
       val propsCasesOk   = approximate(True)  map caseWithoutBodyToProp
       val propsCasesFail = approximate(False) map (t => Not(caseWithoutBodyToProp(t)))
 
-      try {
-        val (eqAxiomsFail, symbolicCasesFail) = removeVarEq(propsCasesFail, modelNull = true)
-        val (eqAxiomsOk, symbolicCasesOk)     = removeVarEq(propsCasesOk,   modelNull = true)
-        val eqAxioms = simplifyFormula(andFormula(eqAxiomsOk, eqAxiomsFail)) // I'm pretty sure eqAxiomsOk == eqAxiomsFail, but not 100% sure.
+      val (eqAxiomsFail, symbolicCasesFail) = removeVarEq(propsCasesFail, modelNull = true)
+      val (eqAxiomsOk, symbolicCasesOk)     = removeVarEq(propsCasesOk, modelNull = true)
+      val eqAxioms = simplify(And(eqAxiomsOk, eqAxiomsFail)) // I'm pretty sure eqAxiomsOk == eqAxiomsFail, but not 100% sure.
 
-        val prefix   = formulaBuilder
-        addFormula(prefix, eqAxioms)
+      val prefix = mutable.ArrayBuffer[Prop]()
+      prefix += eqAxioms
 
-        var prefixRest = symbolicCasesFail
-        var current    = symbolicCasesOk
-        var reachable  = true
-        var caseIndex  = 0
+      var prefixRest = symbolicCasesFail
+      var current = symbolicCasesOk
+      var reachable = true
+      var caseIndex = 0
 
-        debug.patmat("reachability, vars:\n"+ ((propsCasesFail flatMap gatherVariables).distinct map (_.describe) mkString ("\n")))
-        debug.patmat("equality axioms:\n"+ cnfString(eqAxiomsOk))
+      debug.patmat("reachability, vars:\n" + ((propsCasesFail flatMap gatherVariables).distinct map (_.describe) mkString ("\n")))
+      debug.patmat(s"equality axioms:\n$eqAxiomsOk")
 
-        // invariant (prefixRest.length == current.length) && (prefix.reverse ++ prefixRest == symbolicCasesFail)
-        // termination: prefixRest.length decreases by 1
-        while (prefixRest.nonEmpty && reachable) {
-          val prefHead = prefixRest.head
-          caseIndex += 1
-          prefixRest = prefixRest.tail
-          if (prefixRest.isEmpty) reachable = true
-          else {
-            addFormula(prefix, prefHead)
-            current = current.tail
-            val model = findModelFor(andFormula(current.head, toFormula(prefix)))
+      // invariant (prefixRest.length == current.length) && (prefix.reverse ++ prefixRest == symbolicCasesFail)
+      // termination: prefixRest.length decreases by 1
+      while (prefixRest.nonEmpty && reachable) {
+        val prefHead = prefixRest.head
+        caseIndex += 1
+        prefixRest = prefixRest.tail
+        if (prefixRest.isEmpty) reachable = true
+        else {
+          prefix += prefHead
+          current = current.tail
+          val and = And((current.head +: prefix): _*)
+          val model = findModelFor(eqFreePropToSolvable(and))
 
-            // debug.patmat("trying to reach:\n"+ cnfString(current.head) +"\nunder prefix:\n"+ cnfString(prefix))
-            // if (NoModel ne model) debug.patmat("reached: "+ modelString(model))
+          // debug.patmat("trying to reach:\n"+ cnfString(current.head) +"\nunder prefix:\n"+ cnfString(prefix))
+          // if (NoModel ne model) debug.patmat("reached: "+ modelString(model))
 
-            reachable = NoModel ne model
-          }
+          reachable = NoModel ne model
         }
-
-        if (Statistics.canEnable) Statistics.stopTimer(patmatAnaReach, start)
-
-        if (reachable) None else Some(caseIndex)
-      } catch {
-        case ex: AnalysisBudget.Exception =>
-          warn(prevBinder.pos, ex, "unreachability")
-          None // CNF budget exceeded
       }
+
+      if (Statistics.canEnable) Statistics.stopTimer(patmatAnaReach, start)
+
+      if (reachable) None else Some(caseIndex)
     }
 
     // exhaustivity
@@ -519,22 +514,25 @@ trait MatchAnalysis extends MatchApproximation {
         // debug.patmat("\nvars:\n"+ (vars map (_.describe) mkString ("\n")))
         // debug.patmat("\nmatchFails as CNF:\n"+ cnfString(propToSolvable(matchFails)))
 
-        try {
-          // find the models (under which the match fails)
-          val matchFailModels = findAllModelsFor(propToSolvable(matchFails))
+        // find the models (under which the match fails)
+        val matchFailModels = findAllModelsFor(propToSolvable(matchFails))
 
-          val scrutVar = Var(prevBinderTree)
-          val counterExamples = matchFailModels.map(modelToCounterExample(scrutVar))
-
-          val pruned = CounterExample.prune(counterExamples).map(_.toString).sorted
-
-          if (Statistics.canEnable) Statistics.stopTimer(patmatAnaExhaust, start)
-          pruned
-        } catch {
-          case ex : AnalysisBudget.Exception =>
-            warn(prevBinder.pos, ex, "exhaustivity")
-            Nil // CNF budget exceeded
+        val scrutVar = Var(prevBinderTree)
+        val counterExamples = {
+          matchFailModels.flatMap {
+            model =>
+              val varAssignments = expandModel(model)
+              varAssignments.flatMap(modelToCounterExample(scrutVar) _)
+          }
         }
+
+        // sorting before pruning is important here in order to
+        // keep neg/t7020.scala stable
+        // since e.g. List(_, _) would cover List(1, _)
+        val pruned = CounterExample.prune(counterExamples.sortBy(_.toString)).map(_.toString)
+
+        if (Statistics.canEnable) Statistics.stopTimer(patmatAnaExhaust, start)
+        pruned
       }
     }
 
@@ -599,6 +597,8 @@ trait MatchAnalysis extends MatchApproximation {
     case object WildcardExample extends CounterExample { override def toString = "_" }
     case object NoExample extends CounterExample { override def toString = "??" }
 
+    // returns a mapping from variable to
+    // equal and notEqual symbols
     def modelToVarAssignment(model: Model): Map[Var, (Seq[Const], Seq[Const])] =
       model.toSeq.groupBy{f => f match {case (sym, value) => sym.variable} }.mapValues{ xs =>
         val (trues, falses) = xs.partition(_._2)
@@ -612,20 +612,110 @@ trait MatchAnalysis extends MatchApproximation {
          v +"(="+ v.path +": "+ v.staticTpCheckable +") "+ assignment
        }.mkString("\n")
 
-    // return constructor call when the model is a true counter example
-    // (the variables don't take into account type information derived from other variables,
-    //  so, naively, you might try to construct a counter example like _ :: Nil(_ :: _, _ :: _),
-    //  since we didn't realize the tail of the outer cons was a Nil)
-    def modelToCounterExample(scrutVar: Var)(model: Model): CounterExample = {
+    /**
+     * The models we get from the DPLL solver need to be mapped back to counter examples.
+     * However there's no precalculated mapping model -> counter example. Even worse,
+     * not every valid model corresponds to a valid counter example.
+     * The reason is that restricting the valid models further would for example require
+     * a quadratic number of additional clauses. So to keep the optimistic case fast
+     * (i.e., all cases are covered in a pattern match), the infeasible counter examples
+     * are filtered later.
+     *
+     * The DPLL procedure keeps the literals that do not contribute to the solution
+     * unassigned, e.g., for  `(a \/ b)`
+     * only {a = true} or {b = true} is required and the other variable can have any value.
+     *
+     * This function does a smart expansion of the model and avoids models that
+     * have conflicting mappings.
+     *
+     * For example for in case of the given set of symbols (taken from `t7020.scala`):
+     *  "V2=2#16"
+     *  "V2=6#19"
+     *  "V2=5#18"
+     *  "V2=4#17"
+     *  "V2=7#20"
+     *
+     * One possibility would be to group the symbols by domain but
+     * this would only work for equality tests and would not be compatible
+     * with type tests.
+     * Another observation leads to a much simpler algorithm:
+     * Only one of these symbols can be set to true,
+     * since `V2` can at most be equal to one of {2,6,5,4,7}.
+     */
+    def expandModel(solution: Solution): List[Map[Var, (Seq[Const], Seq[Const])]] = {
+
+      val model = solution.model
+
       // x1 = ...
       // x1.hd = ...
       // x1.tl = ...
       // x1.hd.hd = ...
       // ...
       val varAssignment = modelToVarAssignment(model)
+      debug.patmat("var assignment for model " + model + ":\n" + varAssignmentString(varAssignment))
 
-      debug.patmat("var assignment for model "+ model +":\n"+ varAssignmentString(varAssignment))
+      // group symbols that assign values to the same variables (i.e., symbols are mutually exclusive)
+      // (thus the groups are sets of disjoint assignments to variables)
+      val groupedByVar: Map[Var, List[Sym]] = solution.unassigned.groupBy(_.variable)
 
+      val expanded = for {
+        (variable, syms) <- groupedByVar.toList
+      } yield {
+
+        val (equal, notEqual) = varAssignment.getOrElse(variable, Nil -> Nil)
+
+        def addVarAssignment(equalTo: List[Const], notEqualTo: List[Const]) = {
+          Map(variable ->(equal ++ equalTo, notEqual ++ notEqualTo))
+        }
+
+        // this assignment is needed in case that
+        // there exists already an assign
+        val allNotEqual = addVarAssignment(Nil, syms.map(_.const))
+
+        // this assignment is conflicting on purpose:
+        // a list counter example could contain wildcards: e.g. `List(_,_)`
+        val allEqual = addVarAssignment(syms.map(_.const), Nil)
+
+        if(equal.isEmpty) {
+          val oneHot = for {
+            s <- syms
+          } yield {
+            addVarAssignment(List(s.const), syms.filterNot(_ == s).map(_.const))
+          }
+          allEqual :: allNotEqual :: oneHot
+        } else {
+          allEqual :: allNotEqual :: Nil
+        }
+      }
+
+      if (expanded.isEmpty) {
+        List(varAssignment)
+      } else {
+        // we need the cartesian product here,
+        // since we want to report all missing cases
+        // (i.e., combinations)
+        val cartesianProd = expanded.reduceLeft((xs, ys) =>
+          for {map1 <- xs
+               map2 <- ys} yield {
+            map1 ++ map2
+          })
+
+        // add expanded variables
+        // note that we can just use `++`
+        // since the Maps have disjoint keySets
+        for {
+          m <- cartesianProd
+        } yield {
+          varAssignment ++ m
+        }
+      }
+    }
+
+    // return constructor call when the model is a true counter example
+    // (the variables don't take into account type information derived from other variables,
+    //  so, naively, you might try to construct a counter example like _ :: Nil(_ :: _, _ :: _),
+    //  since we didn't realize the tail of the outer cons was a Nil)
+    def modelToCounterExample(scrutVar: Var)(varAssignment: Map[Var, (Seq[Const], Seq[Const])]): Option[CounterExample] = {
       // chop a path into a list of symbols
       def chop(path: Tree): List[Symbol] = path match {
         case Ident(_) => List(path.symbol)
@@ -674,6 +764,7 @@ trait MatchAnalysis extends MatchApproximation {
         private val fields: mutable.Map[Symbol, VariableAssignment] = mutable.HashMap.empty
         // need to prune since the model now incorporates all super types of a constant (needed for reachability)
         private lazy val uniqueEqualTo = equalTo filterNot (subsumed => equalTo.exists(better => (better ne subsumed) && instanceOfTpImplies(better.tp, subsumed.tp)))
+        private lazy val inSameDomain = uniqueEqualTo forall (const => variable.domainSyms.exists(_.exists(_.const.tp =:= const.tp)))
         private lazy val prunedEqualTo = uniqueEqualTo filterNot (subsumed => variable.staticTpCheckable <:< subsumed.tp)
         private lazy val ctor       = (prunedEqualTo match { case List(TypeConst(tp)) => tp case _ => variable.staticTpCheckable }).typeSymbol.primaryConstructor
         private lazy val ctorParams = if (ctor.paramss.isEmpty) Nil else ctor.paramss.head
@@ -694,13 +785,13 @@ trait MatchAnalysis extends MatchApproximation {
         // NoExample if the constructor call is ill-typed
         // (thus statically impossible -- can we incorporate this into the formula?)
         // beBrief is used to suppress negative information nested in tuples -- it tends to get too noisy
-        def toCounterExample(beBrief: Boolean = false): CounterExample =
-          if (!allFieldAssignmentsLegal) NoExample
+        def toCounterExample(beBrief: Boolean = false): Option[CounterExample] =
+          if (!allFieldAssignmentsLegal) Some(NoExample)
           else {
             debug.patmat("describing "+ ((variable, equalTo, notEqualTo, fields, cls, allFieldAssignmentsLegal)))
             val res = prunedEqualTo match {
               // a definite assignment to a value
-              case List(eq: ValueConst) if fields.isEmpty => ValueExample(eq)
+              case List(eq: ValueConst) if fields.isEmpty => Some(ValueExample(eq))
 
               // constructor call
               // or we did not gather any information about equality but we have information about the fields
@@ -713,30 +804,50 @@ trait MatchAnalysis extends MatchApproximation {
                   // figure out the constructor arguments from the field assignment
                   val argLen = (caseFieldAccs.length min ctorParams.length)
 
-                  (0 until argLen).map(i => fields.get(caseFieldAccs(i)).map(_.toCounterExample(brevity)) getOrElse WildcardExample).toList
+                  val examples = (0 until argLen).map(i => fields.get(caseFieldAccs(i)).map(_.toCounterExample(brevity)) getOrElse Some(WildcardExample)).toList
+                  sequence(examples)
                 }
 
                 cls match {
-                  case ConsClass               => ListExample(args())
-                  case _ if isTupleSymbol(cls) => TupleExample(args(brevity = true))
-                  case _ => ConstructorExample(cls, args())
+                  case ConsClass                                =>
+                    args().map {
+                      case List(NoExample, l: ListExample) =>
+                        // special case for neg/t7020.scala:
+                        // if we find a counter example `??::*` we report `*::*` instead
+                        // since the `??` originates from uniqueEqualTo containing several instanced of the same type
+                        List(WildcardExample, l)
+                      case args                            => args
+                    }.map(ListExample)
+                  case _ if isTupleSymbol(cls)                  => args(brevity = true).map(TupleExample)
+                  case _ if cls.isSealed && cls.isAbstractClass =>
+                    // don't report sealed abstract classes, since
+                    // 1) they can't be instantiated
+                    // 2) we are already reporting any missing subclass (since we know the full domain)
+                    // (see patmatexhaust.scala)
+                    None
+                  case _                                        => args().map(ConstructorExample(cls, _))
                 }
 
               // a definite assignment to a type
-              case List(eq) if fields.isEmpty => TypeExample(eq)
+              case List(eq) if fields.isEmpty => Some(TypeExample(eq))
 
               // negative information
               case Nil if nonTrivialNonEqualTo.nonEmpty =>
                 // negation tends to get pretty verbose
-                if (beBrief) WildcardExample
+                if (beBrief) Some(WildcardExample)
                 else {
                   val eqTo = equalTo.headOption getOrElse TypeConst(variable.staticTpCheckable)
-                  NegativeExample(eqTo, nonTrivialNonEqualTo)
+                  Some(NegativeExample(eqTo, nonTrivialNonEqualTo))
                 }
+
+              // if uniqueEqualTo contains more than one symbol of the same domain
+              // then we can safely ignore these counter examples since we will eventually encounter
+              // both counter examples separately
+              case _ if inSameDomain => None
 
               // not a valid counter-example, possibly since we have a definite type but there was a field mismatch
               // TODO: improve reasoning -- in the mean time, a false negative is better than an annoying false positive
-              case _ => NoExample
+              case _ => Some(NoExample)
             }
             debug.patmatResult("described as")(res)
           }
@@ -752,12 +863,12 @@ trait MatchAnalysis extends MatchApproximation {
     }
 
     def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit = {
-      if (!suppression.unreachable) {
+      if (!suppression.suppressUnreachable) {
         unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
           reportUnreachable(cases(caseIndex).last.pos)
         }
       }
-      if (!suppression.exhaustive) {
+      if (!suppression.suppressExhaustive) {
         val counterExamples = exhaustive(prevBinder, cases, pt)
         if (counterExamples.nonEmpty)
           reportMissingCases(prevBinder.pos, counterExamples)

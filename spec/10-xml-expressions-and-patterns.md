@@ -59,7 +59,7 @@ sequence of XML nodes (an instance of a subclass of
 `scala.Seq[scala.xml.Node]`).
 
 If an XML expression is an entity reference, CDATA section, processing
-instructions or a comments, it is represented by an instance of the
+instruction, or a comment, it is represented by an instance of the
 corresponding Scala runtime class.
 
 By default, beginning and trailing whitespace in element content is removed,

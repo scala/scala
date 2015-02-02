@@ -94,6 +94,7 @@ object Option {
  *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the result class `That` from the current
  *    representation type `Repr` and the new element type `B`.
  */
+@SerialVersionUID(-114498752079829388L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 sealed abstract class Option[+A] extends Product with Serializable {
   self =>
 
@@ -107,7 +108,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
 
   /** Returns the option's value.
    *  @note The option must be nonEmpty.
-   *  @throws Predef.NoSuchElementException if the option is empty.
+   *  @throws java.util.NoSuchElementException if the option is empty.
    */
   def get: A
 
@@ -124,8 +125,8 @@ sealed abstract class Option[+A] extends Product with Serializable {
    * Although the use of null is discouraged, code written to use
    * $option must often interface with code that expects and returns nulls.
    * @example {{{
-   * val initalText: Option[String] = getInitialText
-   * val textField = new JComponent(initalText.orNull,20)
+   * val initialText: Option[String] = getInitialText
+   * val textField = new JComponent(initialText.orNull,20)
    * }}}
    */
   @inline final def orNull[A1 >: A](implicit ev: Null <:< A1): A1 = this getOrElse ev(null)
@@ -328,6 +329,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
  *  @author  Martin Odersky
  *  @version 1.0, 16/07/2003
  */
+@SerialVersionUID(1234815782226070388L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 final case class Some[+A](x: A) extends Option[A] {
   def isEmpty = false
   def get = x
@@ -339,6 +341,7 @@ final case class Some[+A](x: A) extends Option[A] {
  *  @author  Martin Odersky
  *  @version 1.0, 16/07/2003
  */
+@SerialVersionUID(5066590221178148012L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 case object None extends Option[Nothing] {
   def isEmpty = true
   def get = throw new NoSuchElementException("None.get")

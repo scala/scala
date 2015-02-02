@@ -169,9 +169,20 @@ object Source {
     createBufferedSource(is, reset = () => fromInputStream(is)(codec), close = () => is.close())(codec)
 }
 
-/** The class `Source` implements an iterable representation of source data.
- *  Calling method `reset` returns an identical, resetted source, where
- *  possible.
+/** An iterable representation of source data.
+ *  It may be reset with the optional `reset` method.
+ *
+ *  Subclasses must supply [[scala.io.Source@iter the underlying iterator]].
+ *
+ *  Error handling may be customized by overriding the [[scala.io.Source@report report]] method.
+ *
+ *  The [[scala.io.Source@ch current input]] and [[scala.io.Source@pos position]],
+ *  as well as the [[scala.io.Source@next next character]] methods delegate to
+ *  [[scala.io.Source$Positioner the positioner]].
+ *
+ *  The default positioner encodes line and column numbers in the position passed to `report`.
+ *  This behavior can be changed by supplying a
+ *  [[scala.io.Source@withPositioning(pos:Source.this.Positioner):Source.this.type custom positioner]].
  *
  *  @author  Burak Emir
  *  @version 1.0

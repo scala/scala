@@ -128,7 +128,7 @@ consists of the following steps.
   occurrence in the linearization.
 - Finally the statement sequence $\mathit{stats}\,$ is evaluated.
 
-###### Delayed Initializaton
+###### Delayed Initialization
 The initialization code of an object or class (but not a trait) that follows
 the superclass
 constructor invocation and the mixin-evaluation of the template's base

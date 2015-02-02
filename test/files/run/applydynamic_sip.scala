@@ -40,7 +40,7 @@ object Test extends App {
   // qual.sel(arg = a, a2: _*)
   // qual.sel(arg, arg2 = "a2", a2: _*)
 
-  // If qual.sel appears immediately on the left-hand side of an assigment
+  // If qual.sel appears immediately on the left-hand side of an assignment
   // qual.updateDynamic(“sel”)(expr)
   qual.sel = expr
 

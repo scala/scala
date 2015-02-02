@@ -1,0 +1,6 @@
+t8597b.scala:18: warning: non-variable type argument T in type pattern Some[T] is unchecked since it is eliminated by erasure
+        case _: Some[T] => // warn
+                ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

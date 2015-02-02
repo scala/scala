@@ -2,8 +2,6 @@ package scala
 package reflect
 package macros
 
-import scala.reflect.internal.{Mode => InternalMode}
-
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
@@ -72,7 +70,7 @@ trait Typers {
    *    `withImplicitViewsDisabled` recursively prohibits implicit views (though, implicit vals will still be looked up and filled in), default value is false
    *    `withMacrosDisabled` recursively prohibits macro expansions and macro-based implicits, default value is false
    *
-   *  @throws [[scala.reflect.macros.TypecheckException]]
+   *  @throws scala.reflect.macros.TypecheckException
    */
   def typecheck(tree: Tree, mode: TypecheckMode = TERMmode, pt: Type = universe.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree
 
@@ -84,7 +82,7 @@ trait Typers {
    *  Such errors don't vanish and can be inspected by turning on -Xlog-implicits.
    *  Unlike in `typecheck`, `silent` is true by default.
    *
-   *  @throws [[scala.reflect.macros.TypecheckException]]
+   *  @throws scala.reflect.macros.TypecheckException
    */
   def inferImplicitValue(pt: Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: Position = enclosingPosition): Tree
 
@@ -96,7 +94,7 @@ trait Typers {
    *  Such errors don't vanish and can be inspected by turning on -Xlog-implicits.
    *  Unlike in `typecheck`, `silent` is true by default.
    *
-   *  @throws [[scala.reflect.macros.TypecheckException]]
+   *  @throws scala.reflect.macros.TypecheckException
    */
   def inferImplicitView(tree: Tree, from: Type, to: Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: Position = enclosingPosition): Tree
 

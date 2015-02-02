@@ -98,7 +98,7 @@ abstract class Erasure extends AddInterfaces
     val len = sig.length
     val copy: Array[Char] = sig.toCharArray
     var changed = false
-    while (i < sig.length) {
+    while (i < len) {
       val ch = copy(i)
       if (ch == '.' && last != '>') {
          copy(i) = '$'
@@ -185,6 +185,25 @@ abstract class Erasure extends AddInterfaces
 
   private def isErasedValueType(tpe: Type) = tpe.isInstanceOf[ErasedValueType]
 
+  /* Drop redundant types (ones which are implemented by some other parent) from the immediate parents.
+   * This is important on Android because there is otherwise an interface explosion.
+   */
+  def minimizeParents(parents: List[Type]): List[Type] = {
+    var rest   = parents
+    var leaves = collection.mutable.ListBuffer.empty[Type]
+    while(rest.nonEmpty) {
+      val candidate = rest.head
+      val nonLeaf = leaves exists { t => t.typeSymbol isSubClass candidate.typeSymbol }
+      if(!nonLeaf) {
+        leaves = leaves filterNot { t => candidate.typeSymbol isSubClass t.typeSymbol }
+        leaves += candidate
+      }
+      rest = rest.tail
+    }
+    leaves.toList
+  }
+
+
   /** The Java signature of type 'info', for symbol sym. The symbol is used to give the right return
    *  type for constructors.
    */
@@ -192,16 +211,24 @@ abstract class Erasure extends AddInterfaces
     val isTraitSignature = sym0.enclClass.isTrait
 
     def superSig(parents: List[Type]) = {
-      val ps = (
-        if (isTraitSignature) {
+      def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait
+
+      // a signature should always start with a class
+      def ensureClassAsFirstParent(tps: List[Type]) = tps match {
+        case Nil => ObjectTpe :: Nil
+        case head :: tail if isInterfaceOrTrait(head.typeSymbol) => ObjectTpe :: tps
+        case _ => tps
+      }
+
+      val minParents = minimizeParents(parents)
+      val validParents =
+        if (isTraitSignature)
           // java is unthrilled about seeing interfaces inherit from classes
-          val ok = parents filter (p => p.typeSymbol.isTrait || p.typeSymbol.isInterface)
-          // traits should always list Object.
-          if (ok.isEmpty || ok.head.typeSymbol != ObjectClass) ObjectTpe :: ok
-          else ok
-        }
-        else parents
-      )
+          minParents filter (p => isInterfaceOrTrait(p.typeSymbol))
+        else minParents
+
+      val ps = ensureClassAsFirstParent(validParents)
+
       (ps map boxedSig).mkString
     }
     def boxedSig(tp: Type) = jsig(tp, primitiveOK = false)
@@ -403,14 +430,13 @@ abstract class Erasure extends AddInterfaces
      *  a name clash. The present method guards against these name clashes.
      *
      *  @param  member   The original member
-     *  @param  other    The overidden symbol for which the bridge was generated
+     *  @param  other    The overridden symbol for which the bridge was generated
      *  @param  bridge   The bridge
      */
     def checkBridgeOverrides(member: Symbol, other: Symbol, bridge: Symbol): Seq[(Position, String)] = {
       def fulldef(sym: Symbol) =
         if (sym == NoSymbol) sym.toString
         else s"$sym: ${sym.tpe} in ${sym.owner}"
-      var noclash = true
       val clashErrors = mutable.Buffer[(Position, String)]()
       def clashError(what: String) = {
         val pos = if (member.owner == root) member.pos else root.pos
@@ -1127,7 +1153,7 @@ abstract class Erasure extends AddInterfaces
       }
     }
 
-    /** The main transform function: Pretransfom the tree, and then
+    /** The main transform function: Pretransform the tree, and then
      *  re-type it at phase erasure.next.
      */
     override def transform(tree: Tree): Tree = {

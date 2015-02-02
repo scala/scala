@@ -7,7 +7,7 @@ package scala.test.scaladoc {
    *             /   /   /   |   \   \   \
    *            Mon Tue Wed Thu Fri Sat Sun
    *
-   *  - each member should receive an inhertiance diagram:
+   *  - each member should receive an inheritance diagram:
    *                       Value
    *                         |
    *                         |

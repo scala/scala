@@ -11,7 +11,7 @@ object Test extends IcodeComparison {
       def bar = {
         var kept1 = new Object
         val result = new java.lang.ref.WeakReference(kept1)
-        kept1 = null // we can't eliminate this assigment because result can observe
+        kept1 = null // we can't eliminate this assignment because result can observe
                    // when the object has no more references. See SI-5313
         kept1 = new Object // but we can eliminate this one because kept1 has already been clobbered
         var erased2 = null // we can eliminate this store because it's never used

@@ -23,9 +23,6 @@ import scala.collection.parallel.mutable.ParArrayCombiner
  *
  *  @author Aleksandar Prokopec
  *  @since 2.9
- *
- *  @define Coll `ParIterable`
- *  @define coll parallel iterable
  */
 trait ParIterable[+T]
 extends GenIterable[T]

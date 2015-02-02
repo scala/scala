@@ -21,7 +21,6 @@ abstract class Reifier extends States
   import global._
   import definitions._
   private val runDefinitions = currentRun.runDefinitions
-  import runDefinitions._
 
   val typer: global.analyzer.Typer
   val universe: Tree

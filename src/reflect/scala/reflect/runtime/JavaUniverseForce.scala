@@ -170,6 +170,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.dropSingletonType
     this.abstractTypesToBounds
     this.dropIllegalStarTypes
+    this.wildcardExtrapolation
     this.IsDependentCollector
     this.ApproximateDependentMap
     this.wildcardToTypeVarMap
@@ -309,6 +310,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.QuasiquoteClass_api_unapply
     definitions.ScalaSignatureAnnotation
     definitions.ScalaLongSignatureAnnotation
+    definitions.MethodHandle
     definitions.OptionClass
     definitions.OptionModule
     definitions.SomeClass
@@ -360,6 +362,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.AnnotationClass
     definitions.ClassfileAnnotationClass
     definitions.StaticAnnotationClass
+    definitions.AnnotationRetentionAttr
+    definitions.AnnotationRetentionPolicyAttr
     definitions.BridgeClass
     definitions.ElidableMethodClass
     definitions.ImplicitNotFoundClass

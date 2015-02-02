@@ -6,6 +6,8 @@ layout: toc
 # The Scala Language Specification
 # Version 2.11
 
+### Maintained online at [https://github.com/scala/scala/tree/2.11.x/spec](https://github.com/scala/scala/tree/2.11.x/spec)
+
 ### Martin Odersky, Philippe Altherr, Vincent Cremet, Gilles Dubochet, Burak Emir, Philipp Haller, Stéphane Micheloud, Nikolay Mihaylov, Adriaan Moors, Lukas Rytz, Michel Schinz, Erik Stenman, Matthias Zenger
 
 ### Markdown Conversion by Iain McGinniss.

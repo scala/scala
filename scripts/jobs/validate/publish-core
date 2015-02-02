@@ -1,0 +1,44 @@
+#!/bin/bash -e
+# This script publishes the core of Scala to maven for use as locker downstream,
+# and saves the relevant properties used in its build artifacts, versions.properties.
+# (This means we'll use locker instead of quick downstream in dbuild.
+#  The only downside is that backend improvements don't improve compiler performance itself until they are in STARR).
+# The version is suffixed with "-${sha:0:7}-SNAPSHOT"
+
+baseDir=${WORKSPACE-`pwd`}
+scriptsDir="$baseDir/scripts"
+. $scriptsDir/common
+
+case $prDryRun in
+  yep)
+    echo "DRY RUN"
+    mkdir -p build/pack ; mkdir -p dists/maven/latest
+    ;;
+  *)
+    sha=$(git rev-parse HEAD) # TODO: warn if $repo_ref != $sha (we shouldn't do PR validation using symbolic gitrefs)
+    echo "sha/repo_ref == $sha/$repo_ref ?"
+
+    parseScalaProperties build.number
+
+    ./pull-binary-libs.sh
+    # "noyoudont" is there juuuust in case
+    antDeployArgs="-Dmaven.version.suffix=\"-${sha:0:7}-SNAPSHOT\" -Dremote.snapshot.repository=$prRepoUrl -Drepository.credentials.id=pr-scala -Dremote.release.repository=noyoudont"
+
+    echo ">>> Getting Scala version number."
+    ant -q $antDeployArgs init
+    parseScalaProperties buildcharacter.properties # produce maven_version_number
+
+    echo ">>> Checking availability of Scala ${maven_version_number} in $prRepoUrl."
+    checkAvailability "org.scala-lang" "scala-library"  "${maven_version_number}" $prRepoUrl; libraryAvailable=$RES
+    checkAvailability "org.scala-lang" "scala-reflect"  "${maven_version_number}" $prRepoUrl; reflectAvailable=$RES
+    checkAvailability "org.scala-lang" "scala-compiler" "${maven_version_number}" $prRepoUrl; compilerAvailable=$RES
+
+    if $libraryAvailable && $reflectAvailable && $compilerAvailable; then
+      echo "Scala core already built!"
+    else
+      ant $antDeployArgs $antBuildArgs publish-opt-nodocs
+    fi
+
+    mv buildcharacter.properties jenkins.properties # parsed by the jenkins job
+    ;;
+esac

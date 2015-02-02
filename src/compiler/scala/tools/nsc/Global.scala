@@ -8,18 +8,17 @@ package tools
 package nsc
 
 import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
+import java.net.URL
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
-import java.util.UUID._
 import scala.compat.Platform.currentTime
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString }
+import util.{ ClassFileLookup, ClassPath, MergedClassPath, StatisticsInfo, returning }
 import scala.reflect.ClassTag
-import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
-import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
-import scala.reflect.io.VirtualFile
-import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
+import scala.reflect.internal.util.{ SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
+import scala.reflect.internal.pickling.PickleBuffer
+import symtab.{ Flags, SymbolTable, SymbolTrackers }
 import symtab.classfile.Pickler
 import plugins.Plugins
 import ast._
@@ -28,13 +27,15 @@ import typechecker._
 import transform.patmat.PatternMatching
 import transform._
 import backend.icode.{ ICodes, GenICode, ICodeCheckers }
-import backend.{ ScalaPrimitives, Platform, JavaPlatform }
+import backend.{ ScalaPrimitives, JavaPlatform }
 import backend.jvm.GenBCode
 import backend.jvm.GenASM
 import backend.opt.{ Inliners, InlineExceptionHandlers, ConstantOptimization, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
 import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
+import scala.tools.nsc.classpath.FlatClassPath
+import scala.tools.nsc.settings.ClassPathRepresentationType
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
     extends SymbolTable
@@ -58,7 +59,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: self.type = self
-    def rootLoader: LazyType = new loaders.PackageLoader(classPath)
+    def rootLoader: LazyType = {
+      settings.YclasspathImpl.value match {
+        case ClassPathRepresentationType.Flat => new loaders.PackageLoaderUsingFlatClassPath(FlatClassPath.RootPackage, flatClassPath)
+        case ClassPathRepresentationType.Recursive => new loaders.PackageLoader(recursiveClassPath)
+      }
+    }
     override def toString = "compiler mirror"
   }
   implicit val MirrorTag: ClassTag[Mirror] = ClassTag[Mirror](classOf[GlobalMirror])
@@ -104,7 +110,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   type PlatformClassPath = ClassPath[AbstractFile]
   type OptClassPath = Option[PlatformClassPath]
 
-  def classPath: PlatformClassPath = platform.classPath
+  def classPath: ClassFileLookup[AbstractFile] = settings.YclasspathImpl.value match {
+    case ClassPathRepresentationType.Flat => flatClassPath
+    case ClassPathRepresentationType.Recursive => recursiveClassPath
+  }
+
+  private def recursiveClassPath: ClassPath[AbstractFile] = platform.classPath
+
+  private def flatClassPath: FlatClassPath = platform.flatClassPath
 
   // sub-components --------------------------------------------------
 
@@ -221,7 +234,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** Called by ScalaDocAnalyzer when a doc comment has been parsed. */
   def signalParsedDocComment(comment: String, pos: Position) = {
-    // TODO: this is all very borken (only works for scaladoc comments, not regular ones)
+    // TODO: this is all very broken (only works for scaladoc comments, not regular ones)
     //       --> add hooks to parser and refactor Interactive global to handle comments directly
     //       in any case don't use reporter for parser hooks
     reporter.comment(pos, comment)
@@ -319,7 +332,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           None
       }
 
-    val charset = ( if (settings.encoding.isSetByUser) Some(settings.encoding.value) else None ) flatMap loadCharset getOrElse {
+    val charset = settings.encoding.valueSetByUser flatMap loadCharset getOrElse {
       settings.encoding.value = defaultEncoding // A mandatory charset
       Charset.forName(defaultEncoding)
     }
@@ -334,16 +347,16 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
-    ( if (settings.sourceReader.isSetByUser) Some(settings.sourceReader.value) else None ) flatMap loadReader getOrElse {
+    settings.sourceReader.valueSetByUser flatMap loadReader getOrElse {
       new SourceReader(charset.newDecoder(), reporter)
     }
   }
 
-  if (settings.verbose || settings.Ylogcp) {
+  if (settings.verbose || settings.Ylogcp)
     reporter.echo(
-      s"[search path for source files: ${classPath.sourcepaths.mkString(",")}]\n"+
-      s"[search path for class files: ${classPath.asClasspathString}")
-  }
+      s"[search path for source files: ${classPath.asSourcePathString}]\n" +
+      s"[search path for class files: ${classPath.asClassPathString}]"
+    )
 
   // The current division between scala.reflect.* and scala.tools.nsc.* is pretty
   // clunky.  It is often difficult to have a setting influence something without having
@@ -842,6 +855,156 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     } reverse
   }
 
+  // ------------ REPL utilities ---------------------------------
+
+  /** Extend classpath of `platform` and rescan updated packages. */
+  def extendCompilerClassPath(urls: URL*): Unit = {
+    if (settings.YclasspathImpl.value == ClassPathRepresentationType.Flat)
+      throw new UnsupportedOperationException("Flat classpath doesn't support extending the compiler classpath")
+
+    val newClassPath = platform.classPath.mergeUrlsIntoClassPath(urls: _*)
+    platform.currentClassPath = Some(newClassPath)
+    // Reload all specified jars into this compiler instance
+    invalidateClassPathEntries(urls.map(_.getPath): _*)
+  }
+
+  // ------------ Invalidations ---------------------------------
+
+  /** Is given package class a system package class that cannot be invalidated?
+   */
+  private def isSystemPackageClass(pkg: Symbol) =
+    pkg == RootClass || (pkg.hasTransOwner(definitions.ScalaPackageClass) && !pkg.hasTransOwner(this.rootMirror.staticPackage("scala.tools").moduleClass.asClass))
+
+  /** Invalidates packages that contain classes defined in a classpath entry, and
+   *  rescans that entry.
+   *
+   *  First, the classpath entry referred to by one of the `paths` is rescanned,
+   *  so that any new files or changes in subpackages are picked up.
+   *  Second, any packages for which one of the following conditions is met is invalidated:
+   *   - the classpath entry contained during the last compilation run now contains classfiles
+   *     that represent a member in the package;
+   *   - the classpath entry now contains classfiles that represent a member in the package;
+   *   - the set of subpackages has changed.
+   *
+   *  The invalidated packages are reset in their entirety; all member classes and member packages
+   *  are re-accessed using the new classpath.
+   *
+   *  System packages that the compiler needs to access as part of standard definitions
+   *  are not invalidated. A system package is:
+   *  Any package rooted in "scala", with the exception of packages rooted in "scala.tools".
+   *
+   *  @param paths  Fully-qualified names that refer to directories or jar files that are
+   *                entries on the classpath.
+   */
+  def invalidateClassPathEntries(paths: String*): Unit = {
+    if (settings.YclasspathImpl.value == ClassPathRepresentationType.Flat)
+      throw new UnsupportedOperationException("Flat classpath doesn't support the classpath invalidation")
+
+    implicit object ClassPathOrdering extends Ordering[PlatformClassPath] {
+      def compare(a:PlatformClassPath, b:PlatformClassPath) = a.asClassPathString compare b.asClassPathString
+    }
+    val invalidated, failed = new mutable.ListBuffer[ClassSymbol]
+    classPath match {
+      case cp: MergedClassPath[_] =>
+        def assoc(path: String): List[(PlatformClassPath, PlatformClassPath)] = {
+          val dir = AbstractFile.getDirectory(path)
+          val canonical = dir.canonicalPath
+          def matchesCanonical(e: ClassPath[_]) = e.origin match {
+            case Some(opath) =>
+              AbstractFile.getDirectory(opath).canonicalPath == canonical
+            case None =>
+              false
+          }
+          cp.entries find matchesCanonical match {
+            case Some(oldEntry) =>
+              List(oldEntry -> cp.context.newClassPath(dir))
+            case None =>
+              error(s"Error adding entry to classpath. During invalidation, no entry named $path in classpath $classPath")
+              List()
+          }
+        }
+        val subst = immutable.TreeMap(paths flatMap assoc: _*)
+        if (subst.nonEmpty) {
+          platform updateClassPath subst
+          informProgress(s"classpath updated on entries [${subst.keys mkString ","}]")
+          def mkClassPath(elems: Iterable[PlatformClassPath]): PlatformClassPath =
+            if (elems.size == 1) elems.head
+            else new MergedClassPath(elems, recursiveClassPath.context)
+          val oldEntries = mkClassPath(subst.keys)
+          val newEntries = mkClassPath(subst.values)
+          mergeNewEntries(newEntries, RootClass, Some(recursiveClassPath), Some(oldEntries), invalidated, failed)
+        }
+    }
+    def show(msg: String, syms: scala.collection.Traversable[Symbol]) =
+      if (syms.nonEmpty)
+        informProgress(s"$msg: ${syms map (_.fullName) mkString ","}")
+    show("invalidated packages", invalidated)
+    show("could not invalidate system packages", failed)
+  }
+
+  /** Merges new classpath entries into the symbol table
+   *
+   *  @param newEntries   The new classpath entries
+   *  @param root         The root symbol to be resynced (a package class)
+   *  @param allEntries   Optionally, the corresponding package in the complete current classpath
+   *  @param oldEntries   Optionally, the corresponding package in the old classpath entries
+   *  @param invalidated  A listbuffer collecting the invalidated package classes
+   *  @param failed       A listbuffer collecting system package classes which could not be invalidated
+   *
+   * The merging strategy is determined by the absence or presence of classes and packages.
+   *
+   * If either oldEntries or newEntries contains classes, root is invalidated provided that a corresponding package
+   * exists in allEntries. Otherwise it is removed.
+   * Otherwise, the action is determined by the following matrix, with columns:
+   *
+   *      old sym   action
+   *       +   +    recurse into all child packages of newEntries
+   *       -   +    invalidate root
+   *       -   -    create and enter root
+   *
+   *  Here, old means classpath, and sym means symboltable. + is presence of an entry in its column, - is absence.
+   */
+  private def mergeNewEntries(newEntries: PlatformClassPath, root: ClassSymbol,
+             allEntries: OptClassPath, oldEntries: OptClassPath,
+             invalidated: mutable.ListBuffer[ClassSymbol], failed: mutable.ListBuffer[ClassSymbol]) {
+    ifDebug(informProgress(s"syncing $root, $oldEntries -> $newEntries"))
+
+    val getName: ClassPath[AbstractFile] => String = (_.name)
+    def hasClasses(cp: OptClassPath) = cp.isDefined && cp.get.classes.nonEmpty
+    def invalidateOrRemove(root: ClassSymbol) = {
+      allEntries match {
+        case Some(cp) => root setInfo new loaders.PackageLoader(cp)
+        case None => root.owner.info.decls unlink root.sourceModule
+      }
+      invalidated += root
+    }
+    def subPackage(cp: PlatformClassPath, name: String): OptClassPath =
+      cp.packages find (cp1 => getName(cp1) == name)
+
+    val classesFound = hasClasses(oldEntries) || newEntries.classes.nonEmpty
+    if (classesFound && !isSystemPackageClass(root)) {
+      invalidateOrRemove(root)
+    } else {
+      if (classesFound) {
+        if (root.isRoot) invalidateOrRemove(EmptyPackageClass)
+        else failed += root
+      }
+      if (!oldEntries.isDefined) invalidateOrRemove(root)
+      else
+        for (pstr <- newEntries.packages.map(getName)) {
+          val pname = newTermName(pstr)
+          val pkg = (root.info decl pname) orElse {
+            // package does not exist in symbol table, create symbol to track it
+            assert(!subPackage(oldEntries.get, pstr).isDefined)
+            loaders.enterPackage(root, pstr, new loaders.PackageLoader(allEntries.get))
+          }
+          mergeNewEntries(subPackage(newEntries, pstr).get, pkg.moduleClass.asClass,
+                          subPackage(allEntries.get, pstr), subPackage(oldEntries.get, pstr),
+                          invalidated, failed)
+        }
+    }
+  }
+
   // ----------- Runs ---------------------------------------
 
   private var curRun: Run = null
@@ -1232,13 +1395,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
     /** does this run compile given class, module, or case factory? */
     // NOTE: Early initialized members temporarily typechecked before the enclosing class, see typedPrimaryConstrBody!
-    //       Here we work around that wrinkle by claiming that a top-level, early-initialized member is compiled in
+    //       Here we work around that wrinkle by claiming that a early-initialized member is compiled in
     //       *every* run. This approximation works because this method is exclusively called with `this` == `currentRun`.
     def compiles(sym: Symbol): Boolean =
       if (sym == NoSymbol) false
       else if (symSource.isDefinedAt(sym)) true
-      else if (sym.isTopLevel && sym.isEarlyInitialized) true
-      else if (!sym.isTopLevel) compiles(sym.enclosingTopLevelClass)
+      else if (!sym.isTopLevel) compiles(sym.enclosingTopLevelClassOrDummy)
       else if (sym.isModuleClass) compiles(sym.sourceModule)
       else false
 
@@ -1299,7 +1461,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
 
 
-    /** Caching member symbols that are def-s in Defintions because they might change from Run to Run. */
+    /** Caching member symbols that are def-s in Definitions because they might change from Run to Run. */
     val runDefinitions: definitions.RunDefinitions = new definitions.RunDefinitions
 
     /** Compile list of source files,
@@ -1447,10 +1609,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
-    /** Reset package class to state at typer (not sure what this
-     *  is needed for?)
+    /** Reset package class to state at typer (not sure what this is needed for?)
      */
-    private def resetPackageClass(pclazz: Symbol) {
+    private def resetPackageClass(pclazz: Symbol): Unit = if (typerPhase != NoPhase) {
       enteringPhase(firstPhase) {
         pclazz.setInfo(enteringPhase(typerPhase)(pclazz.info))
       }

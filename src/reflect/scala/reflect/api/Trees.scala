@@ -33,7 +33,7 @@ package api
  *
  *  The following creates an AST representing `print("Hello World")`:
  *  {{{
- *    Apply(Select(Select(This(newTypeName("scala")), newTermName("Predef")), newTermName("print")), List(Literal(Constant("Hello World"))))
+ *    Apply(Select(Select(This(TypeName("scala")), TermName("Predef")), TermName("print")), List(Literal(Constant("Hello World"))))
  *  }}}
  *
  *  The following creates an AST from a literal 5, and then uses `showRaw` to print it in a readable format.
@@ -158,7 +158,7 @@ trait Trees { self: Universe =>
     /** Do all parts of this tree satisfy predicate `p`? */
     def forAll(p: Tree => Boolean): Boolean
 
-    /** Tests whether two trees are structurall equal.
+    /** Tests whether two trees are structurally equal.
      *  Note that `==` on trees is reference equality.
      */
     def equalsStructure(that : Tree): Boolean
@@ -1098,11 +1098,11 @@ trait Trees { self: Universe =>
    *            // a dummy node that carries the type of unapplication to patmat
    *            // the <unapply-selector> here doesn't have an underlying symbol
    *            // it only has a type assigned, therefore after `untypecheck` this tree is no longer typeable
-   *            Apply(Select(Ident(Foo), newTermName("unapply")), List(Ident(newTermName("<unapply-selector>")))),
+   *            Apply(Select(Ident(Foo), TermName("unapply")), List(Ident(TermName("<unapply-selector>")))),
    *            // arguments of the unapply => nothing synthetic here
-   *            List(Bind(newTermName("x"), Ident(nme.WILDCARD)))),
+   *            List(Bind(TermName("x"), Ident(nme.WILDCARD)))),
    *          EmptyTree,
-   *          Ident(newTermName("x")))))
+   *          Ident(TermName("x")))))
    *  }}}
    *
    * Introduced by typer. Eliminated by compiler phases patmat (in the new pattern matcher of 2.10) or explicitouter (in the old pre-2.10 pattern matcher).

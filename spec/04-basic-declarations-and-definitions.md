@@ -631,7 +631,7 @@ For every parameter $p_{i,j}$ with a default argument a method named
 expression. Here, $n$ denotes the parameter's position in the method
 declaration. These methods are parametrized by the type parameter clause
 `[$\mathit{tps}\,$]` and all value parameter clauses
-`($\mathit{ps}_1$)$\ldots$($\mathit{ps}_{i-1}$)` preceeding $p_{i,j}$.
+`($\mathit{ps}_1$)$\ldots$($\mathit{ps}_{i-1}$)` preceding $p_{i,j}$.
 The `$f\$$default$\$$n` methods are inaccessible for
 user programs.
 
@@ -720,7 +720,7 @@ variable number of integer arguments.
 ```scala
 def sum(args: Int*) = {
   var result = 0
-  for (arg <- args) result += arg * arg
+  for (arg <- args) result += arg
   result
 }
 ```

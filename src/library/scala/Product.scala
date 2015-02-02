@@ -22,7 +22,7 @@ trait Product extends Any with Equals {
    *  product `A(x,,1,,, ..., x,,k,,)`, returns `x,,(n+1),,` where `0 < n < k`.
    *
    *  @param    n   the index of the element to return
-   *  @throws       `IndexOutOfBoundsException`
+   *  @throws       IndexOutOfBoundsException
    *  @return       the element `n` elements after the first element
    */
   def productElement(n: Int): Any

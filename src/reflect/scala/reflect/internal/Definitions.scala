@@ -514,6 +514,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaSignatureAnnotation = requiredClass[scala.reflect.ScalaSignature]
     lazy val ScalaLongSignatureAnnotation = requiredClass[scala.reflect.ScalaLongSignature]
 
+    lazy val MethodHandle = getClassIfDefined("java.lang.invoke.MethodHandle")
+
     // Option classes
     lazy val OptionClass: ClassSymbol   = requiredClass[Option[_]]
     lazy val OptionModule: ModuleSymbol = requiredModule[scala.Option.type]
@@ -653,6 +655,7 @@ trait Definitions extends api.StandardDefinitions {
     // tends to change the course of events by forcing types.
     def isFunctionType(tp: Type)       = isFunctionTypeDirect(tp.dealiasWiden)
     def isTupleType(tp: Type)          = isTupleTypeDirect(tp.dealiasWiden)
+    def tupleComponents(tp: Type)      = tp.dealiasWiden.typeArgs
 
     lazy val ProductRootClass: ClassSymbol = requiredClass[scala.Product]
       def Product_productArity          = getMemberMethod(ProductRootClass, nme.productArity)
@@ -789,7 +792,7 @@ trait Definitions extends api.StandardDefinitions {
      * The class defining the method is a supertype of `tp` that
      * has a public no-arg primary constructor.
      */
-    def samOf(tp: Type): Symbol = {
+    def samOf(tp: Type): Symbol = if (!settings.Xexperimental) NoSymbol else {
       // if tp has a constructor, it must be public and must not take any arguments
       // (not even an implicit argument list -- to keep it simple for now)
       val tpSym  = tp.typeSymbol
@@ -837,7 +840,7 @@ trait Definitions extends api.StandardDefinitions {
     def typeOfMemberNamedApply(tp: Type) = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.apply)(IntTpe))
     def typeOfMemberNamedDrop(tp: Type)  = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.drop)(IntTpe))
     def typesOfSelectors(tp: Type)       =
-      if (isTupleType(tp)) tp.typeArgs
+      if (isTupleType(tp)) tupleComponents(tp)
       else getterMemberTypes(tp, productSelectors(tp))
 
     // SI-8128 Still using the type argument of the base type at Seq/Option if this is an old-style (2.10 compatible)
@@ -904,12 +907,14 @@ trait Definitions extends api.StandardDefinitions {
         )
     }
 
-    def EnumType(sym: Symbol) =
+    def EnumType(sym: Symbol) = {
       // given (in java): "class A { enum E { VAL1 } }"
       //  - sym: the symbol of the actual enumeration value (VAL1)
       //  - .owner: the ModuleClassSymbol of the enumeration (object E)
       //  - .linkedClassOfClass: the ClassSymbol of the enumeration (class E)
-      sym.owner.linkedClassOfClass.tpe
+      // SI-6613 Subsequent runs of the resident compiler demand the phase discipline here.
+      enteringPhaseNotLaterThan(picklerPhase)(sym.owner.linkedClassOfClass).tpe
+    }
 
     /** Given a class symbol C with type parameters T1, T2, ... Tn
      *  which have upper/lower bounds LB1/UB1, LB1/UB2, ..., LBn/UBn,
@@ -928,7 +933,7 @@ trait Definitions extends api.StandardDefinitions {
 
     // members of class scala.Any
 
-    // TODO these aren't final! They are now overriden in AnyRef/Object. Prior to the fix
+    // TODO these aren't final! They are now overridden in AnyRef/Object. Prior to the fix
     //      for SI-8129, they were actually *overloaded* by the members in AnyRef/Object.
     //      We should unfinalize these, override in AnyValClass, and make the overrides final.
     //      Refchecks never actually looks at these, so its just for consistency.
@@ -1087,6 +1092,10 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ClassfileAnnotationClass   = requiredClass[scala.annotation.ClassfileAnnotation]
     lazy val StaticAnnotationClass      = requiredClass[scala.annotation.StaticAnnotation]
 
+    // Java retention annotations
+    lazy val AnnotationRetentionAttr       = requiredClass[java.lang.annotation.Retention]
+    lazy val AnnotationRetentionPolicyAttr = requiredClass[java.lang.annotation.RetentionPolicy]
+
     // Annotations
     lazy val BridgeClass                = requiredClass[scala.annotation.bridge]
     lazy val ElidableMethodClass        = requiredClass[scala.annotation.elidable]
@@ -1111,7 +1120,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaInlineClass           = requiredClass[scala.inline]
     lazy val ScalaNoInlineClass         = requiredClass[scala.noinline]
     lazy val SerialVersionUIDAttr       = requiredClass[scala.SerialVersionUID]
-    lazy val SerialVersionUIDAnnotation = AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
+    lazy val SerialVersionUIDAnnotation = AnnotationInfo(SerialVersionUIDAttr.tpe, List(), List(nme.value -> LiteralAnnotArg(Constant(0))))
     lazy val SpecializedClass           = requiredClass[scala.specialized]
     lazy val ThrowsClass                = requiredClass[scala.throws[_]]
     lazy val TransientAttr              = requiredClass[scala.transient]
@@ -1432,6 +1441,10 @@ trait Definitions extends api.StandardDefinitions {
       lazy val isUnbox          = unboxMethod.values.toSet[Symbol]
       lazy val isBox            = boxMethod.values.toSet[Symbol]
 
+      lazy val Boolean_and = definitions.Boolean_and
+      lazy val Boolean_or = definitions.Boolean_or
+      lazy val Boolean_not = definitions.Boolean_not
+
       lazy val Option_apply = getMemberMethod(OptionModule, nme.apply)
       lazy val List_apply = DefinitionsClass.this.List_apply
 
@@ -1497,6 +1510,9 @@ trait Definitions extends api.StandardDefinitions {
 
       lazy val PartialManifestClass  = getTypeMember(ReflectPackage, tpnme.ClassManifest)
       lazy val ManifestSymbols = Set[Symbol](PartialManifestClass, FullManifestClass, OptManifestClass)
+
+      def isPolymorphicSignature(sym: Symbol) = PolySigMethods(sym)
+      private lazy val PolySigMethods: Set[Symbol] = Set[Symbol](MethodHandle.info.decl(sn.Invoke), MethodHandle.info.decl(sn.InvokeExact)).filter(_.exists)
     }
   }
 }

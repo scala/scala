@@ -364,7 +364,14 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *           it omits the first `n` values.
    *  @note    Reuse: $consumesAndProducesIterator
    */
-  def drop(n: Int): Iterator[A] = sliceIterator(n, -1)
+  def drop(n: Int): Iterator[A] = {
+    var j = 0
+    while (j < n && hasNext) {
+      next()
+      j += 1
+    }
+    this
+  }
 
   /** Creates an iterator returning an interval of the values produced by this iterator.
    *
@@ -511,7 +518,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
     }
   }
 
-  /** Produces a collection containing cummulative results of applying the
+  /** Produces a collection containing cumulative results of applying the
    *  operator going left to right.
    *
    *  $willNotTerminateInf
@@ -534,8 +541,8 @@ trait Iterator[+A] extends TraversableOnce[A] {
     } else Iterator.empty.next()
   }
 
-  /** Produces a collection containing cummulative results of applying the operator going right to left.
-   *  The head of the collection is the last cummulative result.
+  /** Produces a collection containing cumulative results of applying the operator going right to left.
+   *  The head of the collection is the last cumulative result.
    *
    *  $willNotTerminateInf
    *  $orderDependent

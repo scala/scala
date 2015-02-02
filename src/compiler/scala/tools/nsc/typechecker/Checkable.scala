@@ -11,12 +11,28 @@ import scala.language.postfixOps
 
 /** On pattern matcher checkability:
  *
+ *  The spec says that case _: List[Int] should be always issue
+ *  an unchecked warning:
+ *
+ *  > Types which are not of one of the forms described above are
+ *  > also accepted as type patterns. However, such type patterns
+ *  > will be translated to their erasure (§3.7). The Scala compiler
+ *  > will issue an “unchecked” warning for these patterns to flag
+ *  > the possible loss of type-safety.
+ *
+ *  But the implementation goes a little further to omit warnings
+ *  based on the static type of the scrutinee. As a trivial example:
+ *
+ *    def foo(s: Seq[Int]) = s match { case _: List[Int] => }
+ *
+ *  need not issue this warning.
+ *
  *  Consider a pattern match of this form: (x: X) match { case _: P => }
  *
  *  There are four possibilities to consider:
  *     [P1] X will always conform to P
  *     [P2] x will never conform to P
- *     [P3] X <: P if some runtime test is true
+ *     [P3] X will conform to P if some runtime test is true
  *     [P4] X cannot be checked against P
  *
  *  The first two cases correspond to those when there is enough
@@ -27,6 +43,11 @@ import scala.language.postfixOps
  *  The third case is the interesting one.  We designate another type, XR,
  *  which is essentially the intersection of X and |P|, where |P| is
  *  the erasure of P.  If XR <: P, then no warning is emitted.
+ *
+ *  We evaluate "X with conform to P" by checking `X <: P_wild, where
+ *  P_wild is the result of substituting wildcard types in place of
+ *  pattern type variables. This is intentionally stricter than
+ *  (X matchesPattern P), see SI-8597 for motivating test cases.
  *
  *  Examples of how this info is put to use:
  *  sealed trait A[T] ; class B[T] extends A[T]
@@ -100,7 +121,7 @@ trait Checkable {
   private def typeArgsInTopLevelType(tp: Type): List[Type] = {
     val tps = tp match {
       case RefinedType(parents, _)              => parents flatMap typeArgsInTopLevelType
-      case TypeRef(_, ArrayClass, arg :: Nil)   => typeArgsInTopLevelType(arg)
+      case TypeRef(_, ArrayClass, arg :: Nil)   => if (arg.typeSymbol.isAbstractType) arg :: Nil else typeArgsInTopLevelType(arg)
       case TypeRef(pre, sym, args)              => typeArgsInTopLevelType(pre) ++ args
       case ExistentialType(tparams, underlying) => tparams.map(_.tpe) ++ typeArgsInTopLevelType(underlying)
       case _                                    => Nil
@@ -108,14 +129,31 @@ trait Checkable {
     tps filterNot isUnwarnableTypeArg
   }
 
+  private def scrutConformsToPatternType(scrut: Type, pattTp: Type): Boolean = {
+    def typeVarToWildcard(tp: Type) = {
+      // The need for typeSymbolDirect is demonstrated in neg/t8597b.scala
+      if (tp.typeSymbolDirect.isPatternTypeVariable) WildcardType else tp
+    }
+    val pattTpWild = pattTp.map(typeVarToWildcard)
+    scrut <:< pattTpWild
+  }
+
   private class CheckabilityChecker(val X: Type, val P: Type) {
     def Xsym = X.typeSymbol
     def Psym = P.typeSymbol
-    def XR   = if (Xsym == AnyClass) classExistentialType(Psym) else propagateKnownTypes(X, Psym)
+    def PErased = {
+      P match {
+        case erasure.GenericArray(n, core) => existentialAbstraction(core.typeSymbol :: Nil, P)
+        case _ => existentialAbstraction(Psym.typeParams, Psym.tpe_*)
+      }
+    }
+    def XR   = if (Xsym == AnyClass) PErased else propagateKnownTypes(X, Psym)
+
+
     // sadly the spec says (new java.lang.Boolean(true)).isInstanceOf[scala.Boolean]
-    def P1   = X matchesPattern P
+    def P1   = scrutConformsToPatternType(X, P)
     def P2   = !Psym.isPrimitiveValueClass && isNeverSubType(X, P)
-    def P3   = isNonRefinementClassType(P) && (XR matchesPattern P)
+    def P3   = isNonRefinementClassType(P) && scrutConformsToPatternType(XR, P)
     def P4   = !(P1 || P2 || P3)
 
     def summaryString = f"""

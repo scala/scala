@@ -9,7 +9,7 @@ trait Validators {
   import global._
   import analyzer._
   import definitions._
-  import runDefinitions.{Predef_???, _}
+  import runDefinitions.Predef_???
 
   trait Validator {
     self: MacroImplRefCompiler =>

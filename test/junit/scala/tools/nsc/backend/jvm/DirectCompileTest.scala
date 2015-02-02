@@ -10,13 +10,12 @@ import scala.tools.partest.ASMConverters._
 
 @RunWith(classOf[JUnit4])
 class DirectCompileTest {
-  val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode")
+  val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:method")
 
   @Test
   def testCompile(): Unit = {
     val List(("C.class", bytes)) = compile(compiler)(
-      """
-        |class C {
+      """class C {
         |  def f = 1
         |}
       """.stripMargin)
@@ -26,19 +25,12 @@ class DirectCompileTest {
 
   @Test
   def testCompileClasses(): Unit = {
-    val List(cClass, cModuleClass) = compileClasses(compiler)(
-      """
-        |class C
-        |object C
-      """.stripMargin)
+    val List(cClass, cModuleClass) = compileClasses(compiler)("class C; object C")
 
     assertTrue(cClass.name == "C")
     assertTrue(cModuleClass.name == "C$")
 
-    val List(dMirror, dModuleClass) = compileClasses(compiler)(
-      """
-        |object D
-      """.stripMargin)
+    val List(dMirror, dModuleClass) = compileClasses(compiler)("object D")
 
     assertTrue(dMirror.name == "D")
     assertTrue(dModuleClass.name == "D$")
@@ -47,35 +39,35 @@ class DirectCompileTest {
   @Test
   def testCompileMethods(): Unit = {
     val List(f, g) = compileMethods(compiler)(
-      """
-        |def f = 10
+      """def f = 10
         |def g = f
       """.stripMargin)
     assertTrue(f.name == "f")
     assertTrue(g.name == "g")
 
-    assertTrue(instructionsFromMethod(f).dropNonOp ===
+    assertSameCode(instructionsFromMethod(f).dropNonOp,
       List(IntOp(BIPUSH, 10), Op(IRETURN)))
 
-    assertTrue(instructionsFromMethod(g).dropNonOp ===
-      List(VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "f", "()I", false), Op(IRETURN)))
+    assertSameCode(instructionsFromMethod(g).dropNonOp,
+      List(VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "f", "()I", itf = false), Op(IRETURN)))
   }
 
   @Test
   def testDropNonOpAliveLabels(): Unit = {
+    // makes sure that dropNoOp doesn't drop labels that are being used
     val List(f) = compileMethods(compiler)("""def f(x: Int) = if (x == 0) "a" else "b"""")
-    assertTrue(instructionsFromMethod(f).dropNonOp === List(
-        VarOp(ILOAD, 1),
-        Op(ICONST_0),
-        Jump(IF_ICMPEQ, Label(6)),
-        Jump(GOTO, Label(10)),
-        Label(6),
-        Ldc(LDC, "a"),
-        Jump(GOTO, Label(13)),
-        Label(10),
-        Ldc(LDC, "b"),
-        Label(13),
-        Op(ARETURN)
+    assertSameCode(instructionsFromMethod(f).dropLinesFrames, List(
+      Label(0),
+      VarOp(ILOAD, 1),
+      Op(ICONST_0),
+      Jump(IF_ICMPNE,
+      Label(7)),
+      Ldc(LDC, "a"),
+      Op(ARETURN),
+      Label(7),
+      Ldc(LDC, "b"),
+      Op(ARETURN),
+      Label(11)
     ))
   }
 }

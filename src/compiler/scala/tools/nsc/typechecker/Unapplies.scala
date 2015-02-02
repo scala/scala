@@ -142,17 +142,30 @@ trait Unapplies extends ast.TreeDSL {
   /** The unapply method corresponding to a case class
    */
   def caseModuleUnapplyMeth(cdef: ClassDef): DefDef = {
-    val tparams   = constrTparamsInvariant(cdef)
-    val method    = constrParamss(cdef) match {
+    val tparams    = constrTparamsInvariant(cdef)
+    val method     = constrParamss(cdef) match {
       case xs :: _ if xs.nonEmpty && isRepeatedParamType(xs.last.tpt) => nme.unapplySeq
       case _                                                          => nme.unapply
     }
-    val cparams   = List(ValDef(Modifiers(PARAM | SYNTHETIC), unapplyParamName, classType(cdef, tparams), EmptyTree))
-    val ifNull    = if (constrParamss(cdef).head.isEmpty) FALSE else REF(NoneModule)
-    val body      = nullSafe({ case Ident(x) => caseClassUnapplyReturnValue(x, cdef) }, ifNull)(Ident(unapplyParamName))
+    val cparams    = List(ValDef(Modifiers(PARAM | SYNTHETIC), unapplyParamName, classType(cdef, tparams), EmptyTree))
+    val resultType = if (!settings.isScala212) TypeTree() else { // fix for SI-6541 under -Xsource:2.12
+    def repeatedToSeq(tp: Tree) = tp match {
+        case AppliedTypeTree(Select(_, tpnme.REPEATED_PARAM_CLASS_NAME), tps) => AppliedTypeTree(gen.rootScalaDot(tpnme.Seq), tps)
+        case _                                                                => tp
+      }
+      constrParamss(cdef) match {
+        case Nil | Nil :: _ =>
+          gen.rootScalaDot(tpnme.Boolean)
+        case params :: _ =>
+          val constrParamTypes = params.map(param => repeatedToSeq(param.tpt))
+          AppliedTypeTree(gen.rootScalaDot(tpnme.Option), List(treeBuilder.makeTupleType(constrParamTypes)))
+      }
+    }
+    val ifNull     = if (constrParamss(cdef).head.isEmpty) FALSE else REF(NoneModule)
+    val body       = nullSafe({ case Ident(x) => caseClassUnapplyReturnValue(x, cdef) }, ifNull)(Ident(unapplyParamName))
 
     atPos(cdef.pos.focus)(
-      DefDef(caseMods, method, tparams, List(cparams), TypeTree(), body)
+      DefDef(caseMods, method, tparams, List(cparams), resultType, body)
     )
   }
 

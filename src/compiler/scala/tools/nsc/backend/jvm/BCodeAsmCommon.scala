@@ -6,7 +6,6 @@
 package scala.tools.nsc.backend.jvm
 
 import scala.tools.nsc.Global
-import PartialFunction._
 
 /**
  * This trait contains code shared between GenBCode and GenASM that depends on types defined in
@@ -14,6 +13,13 @@ import PartialFunction._
  */
 final class BCodeAsmCommon[G <: Global](val global: G) {
   import global._
+  import definitions._
+
+  val ExcludedForwarderFlags = {
+    import scala.tools.nsc.symtab.Flags._
+    // Should include DEFERRED but this breaks findMember.
+    SPECIALIZED | LIFTED | PROTECTED | STATIC | EXPANDEDNAME | BridgeAndPrivateFlags | MACRO
+  }
 
   /**
    * True if `classSym` is an anonymous class or a local class. I.e., false if `classSym` is a
@@ -23,10 +29,10 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
    */
   def isAnonymousOrLocalClass(classSym: Symbol): Boolean = {
     assert(classSym.isClass, s"not a class: $classSym")
-    val res = (classSym.isAnonymousClass || !classSym.originalOwner.isClass)
-    // lambda classes are always top-level classes.
-    if (res) assert(!classSym.isDelambdafyFunction)
-    res
+    // Here used to be an `assert(!classSym.isDelambdafyFunction)`: delambdafy lambda classes are
+    // always top-level. However, SI-8900 shows an example where the weak name-based implementation
+    // of isDelambdafyFunction failed (for a function declared in a package named "lambda").
+    classSym.isAnonymousClass || !classSym.originalOwner.isClass
   }
 
   /**
@@ -124,4 +130,64 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
       assert(r != NoSymbol, sym.fullLocationString)
       r
   })(collection.breakOut)
+
+  lazy val AnnotationRetentionPolicyModule       = AnnotationRetentionPolicyAttr.companionModule
+  lazy val AnnotationRetentionPolicySourceValue  = AnnotationRetentionPolicyModule.tpe.member(TermName("SOURCE"))
+  lazy val AnnotationRetentionPolicyClassValue   = AnnotationRetentionPolicyModule.tpe.member(TermName("CLASS"))
+  lazy val AnnotationRetentionPolicyRuntimeValue = AnnotationRetentionPolicyModule.tpe.member(TermName("RUNTIME"))
+
+  /** Whether an annotation should be emitted as a Java annotation
+    * .initialize: if 'annot' is read from pickle, atp might be un-initialized
+    */
+  def shouldEmitAnnotation(annot: AnnotationInfo) = {
+    annot.symbol.initialize.isJavaDefined &&
+      annot.matches(ClassfileAnnotationClass) &&
+      retentionPolicyOf(annot) != AnnotationRetentionPolicySourceValue &&
+      annot.args.isEmpty
+  }
+
+  def isRuntimeVisible(annot: AnnotationInfo): Boolean = {
+    annot.atp.typeSymbol.getAnnotation(AnnotationRetentionAttr) match {
+      case Some(retentionAnnot) =>
+        retentionAnnot.assocs.contains(nme.value -> LiteralAnnotArg(Constant(AnnotationRetentionPolicyRuntimeValue)))
+      case _ =>
+        // SI-8926: if the annotation class symbol doesn't have a @RetentionPolicy annotation, the
+        // annotation is emitted with visibility `RUNTIME`
+        true
+    }
+  }
+
+  private def retentionPolicyOf(annot: AnnotationInfo): Symbol =
+    annot.atp.typeSymbol.getAnnotation(AnnotationRetentionAttr).map(_.assocs).map(assoc =>
+      assoc.collectFirst {
+        case (`nme`.value, LiteralAnnotArg(Constant(value: Symbol))) => value
+      }).flatten.getOrElse(AnnotationRetentionPolicyClassValue)
+
+  def implementedInterfaces(classSym: Symbol): List[Symbol] = {
+    // Additional interface parents based on annotations and other cues
+    def newParentForAnnotation(ann: AnnotationInfo): Option[Type] = ann.symbol match {
+      case RemoteAttr => Some(RemoteInterfaceClass.tpe)
+      case _          => None
+    }
+
+    def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait
+
+    val allParents = classSym.info.parents ++ classSym.annotations.flatMap(newParentForAnnotation)
+
+    // We keep the superClass when computing minimizeParents to eliminate more interfaces.
+    // Example: T can be eliminated from D
+    //   trait T
+    //   class C extends T
+    //   class D extends C with T
+    val interfaces = erasure.minimizeParents(allParents) match {
+      case superClass :: ifs if !isInterfaceOrTrait(superClass.typeSymbol) =>
+        ifs
+      case ifs =>
+        // minimizeParents removes the superclass if it's redundant, for example:
+        //  trait A
+        //  class C extends Object with A  // minimizeParents removes Object
+        ifs
+    }
+    interfaces.map(_.typeSymbol)
+  }
 }

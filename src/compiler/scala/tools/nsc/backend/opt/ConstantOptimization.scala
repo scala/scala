@@ -7,7 +7,6 @@ package scala
 package tools.nsc
 package backend.opt
 
-import scala.tools.nsc.backend.icode.analysis.LubException
 import scala.annotation.tailrec
 
 /**
@@ -19,7 +18,7 @@ import scala.annotation.tailrec
  *
  * With some more work it could be extended to
  * - cache stable values (final fields, modules) in locals
- * - replace the copy propagation in ClosureElilmination
+ * - replace the copy propagation in ClosureElimination
  * - fold constants
  * - eliminate unnecessary stores and loads
  * - propagate knowledge gathered from conditionals for further optimization
@@ -438,7 +437,7 @@ abstract class ConstantOptimization extends SubComponent {
         // TODO if we do all that we need to be careful in the
         // case that success and failure are the same target block
         // because we're using a Map and don't want one possible state to clobber the other
-        // alternative mayb we should just replace the conditional with a jump if both targets are the same
+        // alternative maybe we should just replace the conditional with a jump if both targets are the same
 
         def mightEqual = val1 mightEqual val2
         def mightNotEqual = val1 mightNotEqual val2

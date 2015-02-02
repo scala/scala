@@ -346,12 +346,11 @@ trait MarkupParsers {
 
         // parse more XML ?
         if (charComingAfter(xSpaceOpt()) == '<') {
-          xSpaceOpt()
-          while (ch == '<') {
+          do {
+            xSpaceOpt()
             nextch()
             ts append element
-            xSpaceOpt()
-          }
+          } while (charComingAfter(xSpaceOpt()) == '<')
           handle.makeXMLseq(r2p(start, start, curOffset), ts)
         }
         else {
@@ -426,11 +425,10 @@ trait MarkupParsers {
               if (ch != '/') ts append xPattern   // child
               else return false                   // terminate
 
-            case '{'  => // embedded Scala patterns
-              while (ch == '{') {
-                nextch()
+            case '{' if xCheckEmbeddedBlock => // embedded Scala patterns, if not double brace
+              do {
                 ts ++= xScalaPatterns
-              }
+              } while (xCheckEmbeddedBlock)
               assert(!xEmbeddedBlock, "problem with embedded block")
 
             case SU   =>

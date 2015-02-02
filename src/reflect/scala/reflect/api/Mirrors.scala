@@ -292,7 +292,7 @@ trait Mirrors { self: Universe =>
      *  that can be used to create instances of the class, inspect its companion object or perform further reflections.
      *
      *  To get a class symbol by the name of the class you would like to reflect,
-     *  use `<this mirror>.symbol.info.member(newTypeName(<name of the class>)).asClass`.
+     *  use `<this mirror>.symbol.info.member(TypeName(<name of the class>)).asClass`.
      *  For further information about member lookup refer to `Symbol.info`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
@@ -338,7 +338,7 @@ trait Mirrors { self: Universe =>
      *  with getting a field or invoking a getter method of the field.
      *
      *  If `symbol` represents a field of a base class with respect to the class of the receiver,
-     *  and this base field is overriden in the class of the receiver, then this method will retrieve
+     *  and this base field is overridden in the class of the receiver, then this method will retrieve
      *  the value of the base field. To achieve overriding behavior, use reflectMethod on an accessor.
      */
     def get: Any
@@ -352,7 +352,7 @@ trait Mirrors { self: Universe =>
      *  with setting a field or invoking a setter method of the field.
      *
      *  If `symbol` represents a field of a base class with respect to the class of the receiver,
-     *  and this base field is overriden in the class of the receiver, then this method will set
+     *  and this base field is overridden in the class of the receiver, then this method will set
      *  the value of the base field. To achieve overriding behavior, use reflectMethod on an accessor.
      */
     def set(value: Any): Unit

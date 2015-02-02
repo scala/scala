@@ -10,11 +10,16 @@ package tools.scalap
 
 import java.io.{ PrintStream, OutputStreamWriter, ByteArrayOutputStream }
 import scala.reflect.NameTransformer
-import scalax.rules.scalasig._
-import scala.tools.nsc.util.{ ClassPath, JavaClassPath }
-import scala.tools.util.PathResolver
-import ClassPath.DefaultJavaContext
+import scala.tools.nsc.Settings
+import scala.tools.nsc.classpath.AggregateFlatClassPath
+import scala.tools.nsc.classpath.FlatClassPathFactory
 import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.settings.ClassPathRepresentationType
+import scala.tools.nsc.util.ClassFileLookup
+import scala.tools.nsc.util.ClassPath.DefaultJavaContext
+import scala.tools.nsc.util.JavaClassPath
+import scala.tools.util.PathResolverFactory
+import scalax.rules.scalasig._
 
 /**The main object used to execute scalap on the command-line.
  *
@@ -42,12 +47,12 @@ class Main {
    *
    * @param clazz the class file to be processed.
    */
-  def processJavaClassFile(clazz: Classfile) {
+  def processJavaClassFile(clazz: Classfile): Unit = {
     // construct a new output stream writer
     val out = new OutputStreamWriter(Console.out)
     val writer = new JavaWriter(clazz, out)
     // print the class
-    writer.printClass
+    writer.printClass()
     out.flush()
   }
 
@@ -60,21 +65,20 @@ class Main {
 
     syms.head.parent match {
       // Partial match
-      case Some(p) if (p.name != "<empty>") => {
+      case Some(p) if p.name != "<empty>" =>
         val path = p.path
         if (!isPackageObject) {
-          stream.print("package ");
-          stream.print(path);
+          stream.print("package ")
+          stream.print(path)
           stream.print("\n")
         } else {
           val i = path.lastIndexOf(".")
           if (i > 0) {
-            stream.print("package ");
+            stream.print("package ")
             stream.print(path.substring(0, i))
             stream.print("\n")
           }
         }
-      }
       case _ =>
     }
     // Print classes
@@ -96,7 +100,7 @@ class Main {
   /** Executes scalap with the given arguments and classpath for the
    *  class denoted by `classname`.
    */
-  def process(args: Arguments, path: ClassPath[AbstractFile])(classname: String): Unit = {
+  def process(args: Arguments, path: ClassFileLookup[AbstractFile])(classname: String): Unit = {
     // find the classfile
     val encName = classname match {
       case "scala.AnyRef" => "java.lang.Object"
@@ -106,92 +110,115 @@ class Main {
         // we can afford allocations because this is not a performance critical code
         classname.split('.').map(NameTransformer.encode).mkString(".")
     }
-    val cls = path.findClass(encName)
-    if (cls.isDefined && cls.get.binary.isDefined) {
-      val cfile = cls.get.binary.get
-      if (verbose) {
-        Console.println(Console.BOLD + "FILENAME" + Console.RESET + " = " + cfile.path)
-      }
-      val bytes = cfile.toByteArray
-      if (isScalaFile(bytes)) {
-        Console.println(decompileScala(bytes, isPackageObjectFile(encName)))
-      } else {
-        // construct a reader for the classfile content
-        val reader = new ByteArrayReader(cfile.toByteArray)
-        // parse the classfile
-        val clazz = new Classfile(reader)
-        processJavaClassFile(clazz)
-      }
-      // if the class corresponds to the artificial class scala.Any.
-      // (see member list in class scala.tool.nsc.symtab.Definitions)
+
+    path.findClassFile(encName) match {
+      case Some(classFile) =>
+        if (verbose) {
+          Console.println(Console.BOLD + "FILENAME" + Console.RESET + " = " + classFile.path)
+        }
+        val bytes = classFile.toByteArray
+        if (isScalaFile(bytes)) {
+          Console.println(decompileScala(bytes, isPackageObjectFile(encName)))
+        } else {
+          // construct a reader for the classfile content
+          val reader = new ByteArrayReader(classFile.toByteArray)
+          // parse the classfile
+          val clazz = new Classfile(reader)
+          processJavaClassFile(clazz)
+        }
+        // if the class corresponds to the artificial class scala.Any.
+        // (see member list in class scala.tool.nsc.symtab.Definitions)
+      case _ =>
+        Console.println(s"class/object $classname not found.")
     }
-    else
-      Console.println("class/object " + classname + " not found.")
-  }
-
-  object EmptyClasspath extends ClassPath[AbstractFile] {
-    /**
-     * The short name of the package (without prefix)
-     */
-    def name              = ""
-    def asURLs            = Nil
-    def asClasspathString = ""
-
-    val context     = DefaultJavaContext
-    val classes     = IndexedSeq()
-    val packages    = IndexedSeq()
-    val sourcepaths = IndexedSeq()
   }
 }
 
 object Main extends Main {
+
+  private object opts {
+    val cp = "-cp"
+    val help = "-help"
+    val classpath = "-classpath"
+    val showPrivateDefs = "-private"
+    val verbose = "-verbose"
+    val version = "-version"
+
+    val classPathImplType = "-YclasspathImpl"
+    val disableFlatClassPathCaching = "-YdisableFlatCpCaching"
+    val logClassPath = "-Ylog-classpath"
+  }
+
   /** Prints usage information for scalap. */
-  def usage() {
-    Console println """
+  def usage(): Unit = {
+    Console println s"""
       |Usage: scalap {<option>} <name>
       |where <name> is fully-qualified class name or <package_name>.package for package objects
       |and <option> is
-      |  -private           print private definitions
-      |  -verbose           print out additional information
-      |  -version           print out the version number of scalap
-      |  -help              display this usage message
-      |  -classpath <path>  specify where to find user class files
-      |  -cp <path>         specify where to find user class files
+      |  ${opts.showPrivateDefs}           print private definitions
+      |  ${opts.verbose}           print out additional information
+      |  ${opts.version}           print out the version number of scalap
+      |  ${opts.help}              display this usage message
+      |  ${opts.classpath} <path>  specify where to find user class files
+      |  ${opts.cp} <path>         specify where to find user class files
     """.stripMargin.trim
   }
 
-  def main(args: Array[String]) {
-    // print usage information if there is no command-line argument
-    if (args.isEmpty)
-      return usage()
+  def main(args: Array[String]): Unit =
+  // print usage information if there is no command-line argument
+    if (args.isEmpty) usage()
+    else {
+      val arguments = parseArguments(args)
 
-    val arguments = Arguments.Parser('-')
-            .withOption("-private")
-            .withOption("-verbose")
-            .withOption("-version")
-            .withOption("-help")
-            .withOptionalArg("-classpath")
-            .withOptionalArg("-cp")
-            .parse(args);
+      if (arguments contains opts.version)
+        Console.println(versionMsg)
+      if (arguments contains opts.help)
+        usage()
 
-    if (arguments contains "-version")
-      Console.println(versionMsg)
-    if (arguments contains "-help")
-      usage()
+      verbose = arguments contains opts.verbose
+      printPrivates = arguments contains opts.showPrivateDefs
+      // construct a custom class path
+      val cpArg = List(opts.classpath, opts.cp) map arguments.getArgument reduceLeft (_ orElse _)
 
-    verbose       = arguments contains "-verbose"
-    printPrivates = arguments contains "-private"
-    // construct a custom class path
-    val cparg = List("-classpath", "-cp") map (arguments getArgument _) reduceLeft (_ orElse _)
-    val path = cparg match {
-      case Some(cp) => new JavaClassPath(DefaultJavaContext.classesInExpandedPath(cp), DefaultJavaContext)
-      case _        => PathResolver.fromPathString(".") // include '.' in the default classpath SI-6669
+      val settings = new Settings()
+
+      arguments getArgument opts.classPathImplType foreach settings.YclasspathImpl.tryToSetFromPropertyValue
+      settings.YdisableFlatCpCaching.value = arguments contains opts.disableFlatClassPathCaching
+      settings.Ylogcp.value = arguments contains opts.logClassPath
+
+      val path = createClassPath(cpArg, settings)
+
+      // print the classpath if output is verbose
+      if (verbose)
+        Console.println(Console.BOLD + "CLASSPATH" + Console.RESET + " = " + path.asClassPathString)
+
+      // process all given classes
+      arguments.getOthers foreach process(arguments, path)
     }
-    // print the classpath if output is verbose
-    if (verbose)
-      Console.println(Console.BOLD + "CLASSPATH" + Console.RESET + " = " + path)
 
-    // process all given classes
-    arguments.getOthers foreach process(arguments, path)
+  private def parseArguments(args: Array[String]) =
+    Arguments.Parser('-')
+      .withOption(opts.showPrivateDefs)
+      .withOption(opts.verbose)
+      .withOption(opts.version)
+      .withOption(opts.help)
+      .withOptionalArg(opts.classpath)
+      .withOptionalArg(opts.cp)
+      // TODO three temporary, hidden options to be able to test different classpath representations
+      .withOptionalArg(opts.classPathImplType)
+      .withOption(opts.disableFlatClassPathCaching)
+      .withOption(opts.logClassPath)
+      .parse(args)
+
+  private def createClassPath(cpArg: Option[String], settings: Settings) = cpArg match {
+    case Some(cp) => settings.YclasspathImpl.value match {
+      case ClassPathRepresentationType.Flat =>
+        AggregateFlatClassPath(new FlatClassPathFactory(settings).classesInExpandedPath(cp))
+      case ClassPathRepresentationType.Recursive =>
+        new JavaClassPath(DefaultJavaContext.classesInExpandedPath(cp), DefaultJavaContext)
+    }
+    case _ =>
+      settings.classpath.value = "." // include '.' in the default classpath SI-6669
+      PathResolverFactory.create(settings).result
   }
 }

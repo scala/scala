@@ -2,8 +2,6 @@ package scala
 package reflect
 package runtime
 
-import scala.reflect.internal.Flags._
-
 /**
  *  This symbol table trait fills in the definitions so that class information is obtained by refection.
  *  It can be used either from a reflexive universe (class scala.reflect.runtime.JavaUniverse), or else from

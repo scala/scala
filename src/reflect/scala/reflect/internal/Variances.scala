@@ -32,7 +32,7 @@ trait Variances {
 
     /** Is every symbol in the owner chain between `site` and the owner of `sym`
      *  either a term symbol or private[this]? If not, add `sym` to the set of
-     *  esacped locals.
+     *  escaped locals.
      *  @pre  sym.isLocalToThis
      */
     @tailrec final def checkForEscape(sym: Symbol, site: Symbol) {

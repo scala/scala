@@ -30,8 +30,8 @@ import parallel.mutable.ParArray
  *
  *  @tparam A    the type of this arraybuffer's elements.
  *
- *  @define Coll `ArrayBuffer`
- *  @define coll arraybuffer
+ *  @define Coll `mutable.ArrayBuffer`
+ *  @define coll array buffer
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `ArrayBuffer[B]` because an implicit of type `CanBuildFrom[ArrayBuffer, B, ArrayBuffer[B]]`
  *    is defined in object `ArrayBuffer`.
@@ -128,21 +128,22 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   override def ++=:(xs: TraversableOnce[A]): this.type = { insertAll(0, xs.toTraversable); this }
 
   /** Inserts new elements at the index `n`. Opposed to method
-   *  `update`, this method will not replace an element with a
+   *  `update`, this method will not replace an element with a new
    *  one. Instead, it will insert a new element at index `n`.
    *
    *  @param n     the index where a new element will be inserted.
    *  @param seq   the traversable object providing all elements to insert.
-   *  @throws Predef.IndexOutOfBoundsException if `n` is out of bounds.
+   *  @throws IndexOutOfBoundsException if `n` is out of bounds.
    */
   def insertAll(n: Int, seq: Traversable[A]) {
     if (n < 0 || n > size0) throw new IndexOutOfBoundsException(n.toString)
-    val xs = seq.toList
-    val len = xs.length
-    ensureSize(size0 + len)
+    val len = seq.size
+    val newSize = size0 + len
+    ensureSize(newSize)
+
     copy(n, n + len, size0 - n)
-    xs.copyToArray(array.asInstanceOf[scala.Array[Any]], n)
-    size0 += len
+    seq.copyToArray(array.asInstanceOf[Array[Any]], n)
+    size0 = newSize
   }
 
   /** Removes the element on a given index position. It takes time linear in
@@ -150,7 +151,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *
    *  @param n       the index which refers to the first element to delete.
    *  @param count   the number of elements to delete
-   *  @throws Predef.IndexOutOfBoundsException if `n` is out of bounds.
+   *  @throws IndexOutOfBoundsException if `n` is out of bounds.
    */
   override def remove(n: Int, count: Int) {
     require(count >= 0, "removing negative number of elements")

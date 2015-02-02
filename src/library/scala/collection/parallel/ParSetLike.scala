@@ -20,6 +20,8 @@ import scala.collection.Set
  *  $sideeffects
  *
  *  @tparam T    the element type of the set
+ *  @define Coll `ParSet`
+ *  @define coll parallel set
  *
  *  @author Aleksandar Prokopec
  *  @since 2.9

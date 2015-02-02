@@ -5,10 +5,11 @@
 
 package scala.tools.nsc
 
-import scala.tools.util.PathResolver
+import java.net.URL
+import scala.tools.util.PathResolverFactory
 
 class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
-  def classpathURLs = new PathResolver(this).asURLs
+  def classpathURLs: Seq[URL] = PathResolverFactory.create(this).resultAsURLs
 
   val howtorun =
     ChoiceSetting(

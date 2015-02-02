@@ -410,6 +410,19 @@ The final result of the transformation is a block of the form
 }
 ```
 
+### Signature Polymorphic Methods
+
+For invocations of signature polymorphic methods of the target platform `$f$($e_1 , \ldots , e_m$)`,
+the invoked function has a different method type `($p_1$:$T_1 , \ldots , p_n$:$T_n$)$U$` at each call
+site. The parameter types `$T_ , \ldots , T_n$` are the types of the argument expressions
+`$e_1 , \ldots , e_m$` and `$U$` is the expected type at the call site. If the expected type is
+undefined then `$U$` is `scala.AnyRef`. The parameter names `$p_1 , \ldots , p_n$` are fresh.
+
+###### Note
+
+On the Java platform version 7 and later, the methods `invoke` and `invokeExact` in class
+`java.lang.invoke.MethodHandle` are signature polymorphic.
+
 ## Method Values
 
 ```ebnf
@@ -666,7 +679,7 @@ followed by operators starting with ``|`', etc.
 
 There's one exception to this rule, which concerns
 [_assignment operators_](#assignment-operators).
-The precedence of an assigment operator is the same as the one
+The precedence of an assignment operator is the same as the one
 of simple assignment `(=)`. That is, it is lower than the
 precedence of any other operator.
 
@@ -1571,7 +1584,7 @@ $T$ is a value type; if it is a method type we apply
 means finding a substitution $\sigma$ of types $T_i$ for the type
 parameters $a_i$ such that
 
-- None of inferred types $T_i$ is a [singleton type](03-types.html#singleton-types)
+- None of the inferred types $T_i$ is a [singleton type](03-types.html#singleton-types)
 - All type parameter bounds are respected, i.e.
   $\sigma L_i <: \sigma a_i$ and $\sigma a_i <: \sigma U_i$ for $i = 1 , \ldots , n$.
 - The expression's type conforms to the expected type, i.e.
@@ -1608,7 +1621,7 @@ constraint system means
 finding a substitution $\sigma$ of types $T_i$ for the type parameters
 $a_i$ such that
 
-- None of inferred types $T_i$ is a [singleton type](03-types.html#singleton-types)
+- None of the inferred types $T_i$ is a [singleton type](03-types.html#singleton-types)
 - All type parameter bounds are respected, i.e. $\sigma L_i <: \sigma a_i$ and
   $\sigma a_i <: \sigma U_i$ for $i = 1 , \ldots , n$.
 - The method's result type $T'$ conforms to the expected type, i.e. $\sigma T' <: \sigma \mathit{pt}$.
@@ -1750,7 +1763,7 @@ a sub-expression of parameterless method type, is not evaluated in the expanded 
 ### Dynamic Member Selection
 
 The standard Scala library defines a trait `scala.Dynamic` which defines a member
-\@invokeDynamic@ as follows:
+`applyDynamic` as follows:
 
 ```scala
 package scala
@@ -1761,7 +1774,7 @@ trait Dynamic {
 ```
 
 Assume a selection of the form $e.x$ where the type of $e$ conforms to `scala.Dynamic`.
-Further assuming the selection is not followed by any function arguments, such an expression can be rewitten under the conditions given [here](#implicit-conversions) to:
+Further assuming the selection is not followed by any function arguments, such an expression can be rewritten under the conditions given [here](#implicit-conversions) to:
 
 ```scala
 $e$.applyDynamic("$x$")

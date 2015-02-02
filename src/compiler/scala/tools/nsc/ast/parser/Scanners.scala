@@ -453,18 +453,15 @@ trait Scanners extends ScannersCommon {
             getOperatorRest()
           }
         case '0' =>
-          def fetchZero() = {
-            putChar(ch)
+          def fetchLeadingZero(): Unit = {
             nextChar()
-            if (ch == 'x' || ch == 'X') {
-              nextChar()
-              base = 16
-            } else {
-              base = 8
+            ch match {
+              case 'x' | 'X' => base = 16 ; nextChar()
+              case _         => base = 8    // single decimal zero, perhaps
             }
-            getNumber()
           }
-          fetchZero()
+          fetchLeadingZero()
+          getNumber()
         case '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
           base = 10
           getNumber()
@@ -902,62 +899,61 @@ trait Scanners extends ScannersCommon {
      */
     def charVal: Char = if (strVal.length > 0) strVal.charAt(0) else 0
 
-    /** Convert current strVal, base to long value
+    /** Convert current strVal, base to long value.
      *  This is tricky because of max negative value.
+     *
+     *  Conversions in base 10 and 16 are supported. As a permanent migration
+     *  path, attempts to write base 8 literals except `0` emit a verbose error.
      */
     def intVal(negated: Boolean): Long = {
-      if (token == CHARLIT && !negated) {
-        charVal.toLong
-      } else {
-        var value: Long = 0
-        val divider = if (base == 10) 1 else 2
-        val limit: Long =
-          if (token == LONGLIT) Long.MaxValue else Int.MaxValue
-        var i = 0
-        val len = strVal.length
-        while (i < len) {
-          val d = digit2int(strVal charAt i, base)
-          if (d < 0) {
-            syntaxError("malformed integer number")
-            return 0
-          }
-          if (value < 0 ||
-              limit / (base / divider) < value ||
-              limit - (d / divider) < value * (base / divider) &&
-              !(negated && limit == value * base - 1 + d)) {
-                syntaxError("integer number too large")
-                return 0
-              }
-          value = value * base + d
-          i += 1
-        }
-        if (negated) -value else value
+      def malformed: Long = {
+        if (base == 8) syntaxError("Decimal integer literals may not have a leading zero. (Octal syntax is obsolete.)")
+        else syntaxError("malformed integer number")
+        0
       }
+      def tooBig: Long = {
+        syntaxError("integer number too large")
+        0
+      }
+      def intConvert: Long = {
+        val len = strVal.length
+        if (len == 0) {
+          if (base != 8) syntaxError("missing integer number")  // e.g., 0x;
+          0
+        } else {
+          val divider     = if (base == 10) 1 else 2
+          val limit: Long = if (token == LONGLIT) Long.MaxValue else Int.MaxValue
+          @tailrec def convert(value: Long, i: Int): Long =
+            if (i >= len) value
+            else {
+              val d = digit2int(strVal charAt i, base)
+              if (d < 0)
+                malformed
+              else if (value < 0 ||
+                  limit / (base / divider) < value ||
+                  limit - (d / divider) < value * (base / divider) &&
+                  !(negated && limit == value * base - 1 + d))
+                tooBig
+              else
+                convert(value * base + d, i + 1)
+            }
+          val result = convert(0, 0)
+          if (base == 8) malformed else if (negated) -result else result
+        }
+      }
+      if (token == CHARLIT && !negated) charVal.toLong else intConvert
     }
 
     def intVal: Long = intVal(negated = false)
 
     /** Convert current strVal, base to double value
-    */
+     */
     def floatVal(negated: Boolean): Double = {
-
-      val limit: Double =
-        if (token == DOUBLELIT) Double.MaxValue else Float.MaxValue
+      val limit: Double = if (token == DOUBLELIT) Double.MaxValue else Float.MaxValue
       try {
         val value: Double = java.lang.Double.valueOf(strVal).doubleValue()
-        def isDeprecatedForm = {
-          val idx = strVal indexOf '.'
-          (idx == strVal.length - 1) || (
-               (idx >= 0)
-            && (idx + 1 < strVal.length)
-            && (!Character.isDigit(strVal charAt (idx + 1)))
-          )
-        }
         if (value > limit)
           syntaxError("floating point number too large")
-        if (isDeprecatedForm)
-          syntaxError("floating point number is missing digit after dot")
-
         if (negated) -value else value
       } catch {
         case _: NumberFormatException =>
@@ -968,86 +964,44 @@ trait Scanners extends ScannersCommon {
 
     def floatVal: Double = floatVal(negated = false)
 
-    def checkNoLetter(): Unit =  {
+    def checkNoLetter(): Unit = {
       if (isIdentifierPart(ch) && ch >= ' ')
         syntaxError("Invalid literal number")
     }
 
-    /** Read a number into strVal and set base */
-    protected def getNumber(): Unit =  {
-      val base1 = if (base < 10) 10 else base
-      // Read 8,9's even if format is octal, produce a malformed number error afterwards.
-      // At this point, we have already read the first digit, so to tell an innocent 0 apart
-      // from an octal literal 0123... (which we want to disallow), we check whether there
-      // are any additional digits coming after the first one we have already read.
-      var notSingleZero = false
-      while (digit2int(ch, base1) >= 0) {
-        putChar(ch)
-        nextChar()
-        notSingleZero = true
-      }
-      token = INTLIT
-
-      /* When we know for certain it's a number after using a touch of lookahead */
-      def restOfNumber() = {
-        putChar(ch)
-        nextChar()
+    /** Read a number into strVal.
+     *
+     *  The `base` can be 8, 10 or 16, where base 8 flags a leading zero.
+     *  For ints, base 8 is legal only for the case of exactly one zero.
+     */
+    protected def getNumber(): Unit = {
+      // consume digits of a radix
+      def consumeDigits(radix: Int): Unit =
+        while (digit2int(ch, radix) >= 0) {
+          putChar(ch)
+          nextChar()
+        }
+      // adding decimal point is always OK because `Double valueOf "0."` is OK
+      def restOfNonIntegralNumber(): Unit = {
+        putChar('.')
+        if (ch == '.') nextChar()
         getFraction()
       }
-      def restOfUncertainToken() = {
-        def isEfd = ch match { case 'e' | 'E' | 'f' | 'F' | 'd' | 'D' => true ; case _ => false }
-        def isL   = ch match { case 'l' | 'L' => true ; case _ => false }
-
-        if (base <= 10 && isEfd)
-          getFraction()
-        else {
-          // Checking for base == 8 is not enough, because base = 8 is set
-          // as soon as a 0 is read in `case '0'` of method fetchToken.
-          if (base == 8 && notSingleZero) syntaxError("Non-zero integral values may not have a leading zero.")
-          setStrVal()
-          if (isL) {
-            nextChar()
-            token = LONGLIT
-          }
-          else checkNoLetter()
+      // after int: 5e7f, 42L, 42.toDouble but not 42b. Repair 0d.
+      def restOfNumber(): Unit = {
+        ch match {
+          case 'e' | 'E' | 'f' | 'F' |
+               'd' | 'D' => if (cbuf.isEmpty) putChar('0'); restOfNonIntegralNumber()
+          case 'l' | 'L' => token = LONGLIT ; setStrVal() ; nextChar()
+          case _         => token = INTLIT  ; setStrVal() ; checkNoLetter()
         }
       }
 
-      if (base > 10 || ch != '.')
-        restOfUncertainToken()
-      else {
-        val lookahead = lookaheadReader
-        val c = lookahead.getc()
+      // consume leading digits, provisionally an Int
+      consumeDigits(if (base == 16) 16 else 10)
 
-        /* Prohibit 1. */
-        if (!isDigit(c))
-          return setStrVal()
-
-        val isDefinitelyNumber = (c: @switch) match {
-          /** Another digit is a giveaway. */
-          case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'  =>
-            true
-
-          /* Backquoted idents like 22.`foo`. */
-          case '`' =>
-            return setStrVal()  /** Note the early return */
-
-          /* These letters may be part of a literal, or a method invocation on an Int.
-           */
-          case 'd' | 'D' | 'f' | 'F' =>
-            !isIdentifierPart(lookahead.getc())
-
-          /* A little more special handling for e.g. 5e7 */
-          case 'e' | 'E' =>
-            val ch = lookahead.getc()
-            !isIdentifierPart(ch) || (isDigit(ch) || ch == '+' || ch == '-')
-
-          case x  =>
-            !isIdentifierStart(x)
-        }
-        if (isDefinitelyNumber) restOfNumber()
-        else restOfUncertainToken()
-      }
+      val detectedFloat: Boolean = base != 16 && ch == '.' && isDigit(lookaheadReader.getc)
+      if (detectedFloat) restOfNonIntegralNumber() else restOfNumber()
     }
 
     /** Parse character literal if current character is followed by \',

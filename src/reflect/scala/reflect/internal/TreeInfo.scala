@@ -588,7 +588,7 @@ abstract class TreeInfo {
 
   private def hasNoSymbol(t: Tree) = t.symbol == null || t.symbol == NoSymbol
 
-  /** Is this pattern node a synthetic catch-all case, added during PartialFuction synthesis before we know
+  /** Is this pattern node a synthetic catch-all case, added during PartialFunction synthesis before we know
     * whether the user provided cases are exhaustive. */
   def isSyntheticDefaultCase(cdef: CaseDef) = cdef match {
     case CaseDef(Bind(nme.DEFAULT_CASE, _), EmptyTree, _) => true
@@ -815,7 +815,7 @@ abstract class TreeInfo {
   object Unapplied {
     // Duplicated with `spliceApply`
     def unapply(tree: Tree): Option[Tree] = tree match {
-      // SI-7868 Admit Select() to account for numeric widening, e.g. <unappplySelector>.toInt
+      // SI-7868 Admit Select() to account for numeric widening, e.g. <unapplySelector>.toInt
       case Apply(fun, (Ident(nme.SELECTOR_DUMMY)| Select(Ident(nme.SELECTOR_DUMMY), _)) :: Nil)
                          => Some(fun)
       case Apply(fun, _) => unapply(fun)

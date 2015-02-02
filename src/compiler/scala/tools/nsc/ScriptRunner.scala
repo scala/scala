@@ -8,7 +8,10 @@ package tools.nsc
 
 import io.{ AbstractFile, Directory, File, Path }
 import java.io.IOException
+import scala.tools.nsc.classpath.DirectoryFlatClassPath
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
+import scala.tools.nsc.settings.ClassPathRepresentationType
+import scala.tools.nsc.util.ClassPath.DefaultJavaContext
 import util.Exceptional.unwrap
 
 /** An object that runs Scala code in script files.
@@ -112,8 +115,10 @@ class ScriptRunner extends HasCompileSocket {
     }
 
     def hasClassToRun(d: Directory): Boolean = {
-      import util.ClassPath.{ DefaultJavaContext => ctx }
-      val cp = ctx.newClassPath(AbstractFile.getDirectory(d))
+      val cp = settings.YclasspathImpl.value match {
+        case ClassPathRepresentationType.Recursive => DefaultJavaContext.newClassPath(AbstractFile.getDirectory(d))
+        case ClassPathRepresentationType.Flat => DirectoryFlatClassPath(d.jfile)
+      }
       cp.findClass(mainClass).isDefined
     }
 

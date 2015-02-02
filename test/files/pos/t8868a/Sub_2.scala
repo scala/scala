@@ -1,0 +1,1 @@
+class Sub extends T

@@ -18,6 +18,8 @@ import scala.collection.parallel.mutable.ParMap
 /** A template trait for mutable maps.
  *  $mapNote
  *  $mapTags
+ *  @define Coll `mutable.Map`
+ *  @define coll mutable map
  *  @since   2.8
  *
  * @define mapNote
@@ -143,7 +145,7 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
   /** Creates a new map containing the key/value mappings provided by the specified traversable object
    *  and all the key/value mappings of this map.
    *
-   *  Note that existing mappings from this map with the same key as those in `xs` will be overriden.
+   *  Note that existing mappings from this map with the same key as those in `xs` will be overridden.
    *
    *  @param xs     the traversable object.
    *  @return       a new map containing mappings of this map and those provided by `xs`.

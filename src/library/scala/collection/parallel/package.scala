@@ -206,7 +206,7 @@ package parallel {
    *  Methods `beforeCombine` and `afterCombine` are called before and after
    *  combining the buckets, respectively, given that the argument to `combine`
    *  is not `this` (as required by the `combine` contract).
-   *  They can be overriden in subclasses to provide custom behaviour by modifying
+   *  They can be overridden in subclasses to provide custom behaviour by modifying
    *  the receiver (which will be the return value).
    */
   private[parallel] abstract class BucketCombiner[-Elem, +To, Buck, +CombinerType <: BucketCombiner[Elem, To, Buck, CombinerType]]

@@ -7,7 +7,6 @@ package scala
 package tools
 package nsc
 
-import reporters.{ Reporter, ConsoleReporter }
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.util.StringOps.countElementsAsString
 

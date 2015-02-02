@@ -1,0 +1,1 @@
+-Xplugin:. -Xplugin-require:timebomb -Ystop-after:parser
