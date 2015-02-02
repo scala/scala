@@ -18,6 +18,14 @@ object Test extends BytecodeTest {
 
   def ownInnerClassNode(n: String) = innerClassNodes(n).filter(_.name == n).head
 
+  def testInner(cls: String, fs: (InnerClassNode => Unit)*) = {
+    val ns = innerClassNodes(cls)
+    assert(ns.length == fs.length, ns)
+    (ns zip fs.toList) foreach { case (n, f) => f(n) }
+  }
+
+
+
   final case class EnclosingMethod(name: String, descriptor: String, outerClass: String)
   def enclosingMethod(className: String) = {
     val n = loadClassNode(className)
@@ -318,12 +326,11 @@ object Test extends BytecodeTest {
   }
 
   def testA24() {
-    val List(defsCls, abs, conc, defsApi, defsApiImpl) = innerClassNodes("A24$DefinitionsClass")
+    val List(defsCls, abs, conc, defsApi) = innerClassNodes("A24$DefinitionsClass")
     assertMember(defsCls, "A24", "DefinitionsClass")
     assertMember(abs, "A24$DefinitionsClass", "Abs$")
     assertMember(conc, "A24$DefinitionsClass", "Conc$")
     assertMember(defsApi, "A24Base", "DefinitionsApi", flags = publicAbstractInterface)
-    assertMember(defsApiImpl, "A24Base", "DefinitionsApi$class", flags = Flags.ACC_PUBLIC | Flags.ACC_ABSTRACT)
   }
 
   def testSI_9105() {
@@ -423,6 +430,82 @@ object Test extends BytecodeTest {
     assertMember(ownInnerClassNode("SI_9124$O$"), "SI_9124", "O$")
   }
 
+  def testImplClassesTopLevel() {
+    val classes = List(
+      "ImplClassesAreTopLevel$$anon$14",
+      "ImplClassesAreTopLevel$$anon$15",
+      "ImplClassesAreTopLevel$$anon$16",
+      "ImplClassesAreTopLevel$B1$class",
+      "ImplClassesAreTopLevel$B1",
+      "ImplClassesAreTopLevel$B2$1$class",
+      "ImplClassesAreTopLevel$B2$1",
+      "ImplClassesAreTopLevel$B3$1$class",
+      "ImplClassesAreTopLevel$B3$1",
+      "ImplClassesAreTopLevel$B4$class",
+      "ImplClassesAreTopLevel$B4$1",
+      "ImplClassesAreTopLevel$class",
+      "ImplClassesAreTopLevel")
+
+    classes.filter(_.endsWith("$class")).foreach(assertNoEnclosingMethod)
+    classes.flatMap(innerClassNodes).foreach(icn => assert(!icn.name.endsWith("$class"), icn))
+
+    assertNoEnclosingMethod("ImplClassesAreTopLevel$B1") // member, no encl meth attr
+
+    // no encl meth, but encl class
+    List("ImplClassesAreTopLevel$B2$1", "ImplClassesAreTopLevel$B3$1",
+         "ImplClassesAreTopLevel$$anon$14", "ImplClassesAreTopLevel$$anon$15").foreach(assertEnclosingMethod(_, "ImplClassesAreTopLevel", null, null))
+
+    // encl meth n
+    List("ImplClassesAreTopLevel$B4$1", "ImplClassesAreTopLevel$$anon$16").foreach(assertEnclosingMethod(_, "ImplClassesAreTopLevel", "n", "()Ljava/lang/Object;"))
+
+    val an14 = assertAnonymous(_: InnerClassNode, "ImplClassesAreTopLevel$$anon$14")
+    val an15 = assertAnonymous(_: InnerClassNode, "ImplClassesAreTopLevel$$anon$15")
+    val an16 = assertAnonymous(_: InnerClassNode, "ImplClassesAreTopLevel$$anon$16")
+    val b1 = assertMember(_: InnerClassNode, "ImplClassesAreTopLevel", "B1", flags = publicAbstractInterface)
+    val b2 = assertLocal(_ : InnerClassNode, "ImplClassesAreTopLevel$B2$1", "B2$1", flags = publicAbstractInterface)
+    val b3 = assertLocal(_ : InnerClassNode, "ImplClassesAreTopLevel$B3$1", "B3$1", flags = publicAbstractInterface)
+    val b4 = assertLocal(_ : InnerClassNode, "ImplClassesAreTopLevel$B4$1", "B4$1", flags = publicAbstractInterface)
+
+    testInner("ImplClassesAreTopLevel$$anon$14", an14, b3)
+    testInner("ImplClassesAreTopLevel$$anon$15", an15, b2)
+    testInner("ImplClassesAreTopLevel$$anon$16", an16, b4)
+
+    testInner("ImplClassesAreTopLevel$B1$class", b1)
+    testInner("ImplClassesAreTopLevel$B2$1$class", b2)
+    testInner("ImplClassesAreTopLevel$B3$1$class", b3)
+    testInner("ImplClassesAreTopLevel$B4$class", b4)
+ 
+    testInner("ImplClassesAreTopLevel$B1", b1)
+    testInner("ImplClassesAreTopLevel$B2$1", b2)
+    testInner("ImplClassesAreTopLevel$B3$1", b3)
+    testInner("ImplClassesAreTopLevel$B4$1", b4)
+
+    testInner("ImplClassesAreTopLevel$class", an14, an15, an16)
+    testInner("ImplClassesAreTopLevel", an14, an15, an16, b1, b2, b3, b4)
+  }
+
+  def testSpecializedClassesTopLevel() {
+    val cls = List(
+      "SpecializedClassesAreTopLevel$A$mcI$sp",
+      "SpecializedClassesAreTopLevel$A",
+      "SpecializedClassesAreTopLevel$T$",
+      "SpecializedClassesAreTopLevel$T$B$mcI$sp",
+      "SpecializedClassesAreTopLevel$T$B",
+      "SpecializedClassesAreTopLevel")
+
+    // all classes are members, no local (can't test local, they crash in specialize)
+    cls.foreach(assertNoEnclosingMethod)
+    cls.flatMap(innerClassNodes).foreach(icn => assert(!icn.name.endsWith("$sp"), icn))
+
+    val a = assertMember(_: InnerClassNode, "SpecializedClassesAreTopLevel", "A")
+    val t = assertMember(_: InnerClassNode, "SpecializedClassesAreTopLevel", "T$")
+    val b = assertMember(_: InnerClassNode, "SpecializedClassesAreTopLevel$T$", "B", Some("SpecializedClassesAreTopLevel$T$B"))
+
+    List("SpecializedClassesAreTopLevel$A$mcI$sp", "SpecializedClassesAreTopLevel$A").foreach(testInner(_, a))
+    testInner("SpecializedClassesAreTopLevel", a, t)
+    List("SpecializedClassesAreTopLevel$T$", "SpecializedClassesAreTopLevel$T$B$mcI$sp", "SpecializedClassesAreTopLevel$T$B").foreach(testInner(_, t, b))
+  }
+
   def show(): Unit = {
     testA1()
     testA2()
@@ -448,5 +531,7 @@ object Test extends BytecodeTest {
     testA24()
     testSI_9105()
     testSI_9124()
+    testImplClassesTopLevel()
+    testSpecializedClassesTopLevel()
   }
 }

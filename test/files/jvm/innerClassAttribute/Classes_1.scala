@@ -240,3 +240,40 @@ trait SI_9124 {
           val f1 = { new A { def f5 = 0 }; 1 } // encl class SI_9124, no encl meth
   private val f2 = { new A { def f6 = 0 }; 1 } // like above
 }
+
+trait ImplClassesAreTopLevel {
+  // all impl classes are top-level, so they don't appear in any InnerClass entry, and none of them have an EnclosingMethod attr
+  trait B1 { def f = 1 }
+  { trait B2 { def f = 1 }; new B2 {} }
+  val m = {
+    trait B3 { def f = 1 }
+    new B3 {}
+  }
+  def n = {
+    trait B4 { def f = 1 }
+    new B4 {}
+  }
+}
+
+class SpecializedClassesAreTopLevel {
+  // all specialized classes are top-level
+  class A[@specialized(Int) T]; new A[Int]
+
+  object T {
+    class B[@specialized(Int) T]; new B[Int]
+  }
+
+  // these crash the compiler, SI-7625
+
+  // { class B[@specialized(Int) T]; new B[Int] }
+
+  // val m: Object = {
+  //   class C[@specialized(Int) T]
+  //   new C[Int]
+  // }
+
+  // def n: Object = {
+  //   class D[@specialized(Int) T]
+  //   new D[Int]
+  // }
+}
