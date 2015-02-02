@@ -223,3 +223,20 @@ class SI_9105 {
     val f: Object = { class L; new L } //     closure             null (*)            SI_9105            bnM
   }
 }
+
+trait SI_9124 {
+  trait A // member class, no enclosing method attribute
+
+  new A { def f1 = 0 } // nested class, enclosing class SI_9124, no encl meth
+
+  def f = new A { def f2 = 0 } // enclosing method is f in the interface SI_9124
+
+  private def g = new A { def f3 = 0 } // only encl class (SI_9124), encl meth is null because the interface SI_9124 doesn't have a method g
+
+  object O { // member, no encl meth attribute
+    new A { def f4 = 0 } // enclosing class is O$, no enclosing method
+  }
+
+          val f1 = { new A { def f5 = 0 }; 1 } // encl class SI_9124, no encl meth
+  private val f2 = { new A { def f6 = 0 }; 1 } // like above
+}

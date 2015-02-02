@@ -393,6 +393,36 @@ object Test extends BytecodeTest {
     }
   }
 
+  def testSI_9124() {
+    val classes: Map[String, String] = {
+      List("SI_9124$$anon$10",
+           "SI_9124$$anon$11",
+           "SI_9124$$anon$12",
+           "SI_9124$$anon$8",
+           "SI_9124$$anon$9",
+           "SI_9124$O$$anon$13").map({ name =>
+        val node = loadClassNode(name)
+        val fMethod = node.methods.asScala.find(_.name.startsWith("f")).get.name
+        (fMethod, node.name)
+      }).toMap
+    }
+
+    // println(classes)
+
+    assertNoEnclosingMethod("SI_9124$A")
+    assertEnclosingMethod(classes("f1"), "SI_9124", null, null)
+    assertEnclosingMethod(classes("f2"), "SI_9124", "f", "()LSI_9124$A;")
+    assertEnclosingMethod(classes("f3"), "SI_9124", null, null)
+    assertEnclosingMethod(classes("f4"), "SI_9124$O$", null, null)
+    assertEnclosingMethod(classes("f5"), "SI_9124", null, null)
+    assertEnclosingMethod(classes("f6"), "SI_9124", null, null)
+    assertNoEnclosingMethod("SI_9124$O$")
+
+    assertMember(ownInnerClassNode("SI_9124$A"), "SI_9124", "A", flags = publicAbstractInterface)
+    classes.values.foreach(n => assertAnonymous(ownInnerClassNode(n), n))
+    assertMember(ownInnerClassNode("SI_9124$O$"), "SI_9124", "O$")
+  }
+
   def show(): Unit = {
     testA1()
     testA2()
@@ -417,5 +447,6 @@ object Test extends BytecodeTest {
     testA23()
     testA24()
     testSI_9105()
+    testSI_9124()
   }
 }
