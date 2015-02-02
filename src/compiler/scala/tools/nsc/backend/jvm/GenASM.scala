@@ -595,7 +595,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
           val x = innerClassSymbolFor(s)
           if(x ne NoSymbol) {
             assert(x.isClass, "not an inner-class symbol")
-            val isInner = !x.rawowner.isPackageClass
+            // impl classes are considered top-level, see comment in BTypes
+            val isInner = !considerAsTopLevelImplementationArtifact(s) && !x.rawowner.isPackageClass
             if (isInner) {
               innerClassBuffer += x
               collectInnerClass(x.rawowner)
@@ -700,23 +701,29 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
       }
 
       innerClassBuffer ++= {
-        val members = exitingPickler(memberClassesOf(csym))
+        val members = exitingPickler(memberClassesForInnerClassTable(csym))
         // lambdalift makes all classes (also local, anonymous) members of their enclosing class
-        val allNested = exitingPhase(currentRun.lambdaliftPhase)(memberClassesOf(csym))
+        val allNested = exitingPhase(currentRun.lambdaliftPhase)(memberClassesForInnerClassTable(csym))
 
         // for the mirror class, we take the members of the companion module class (Java compat,
         // see doc in BTypes.scala). for module classes, we filter out those members.
-        if (isMirror)  members
+        if (isMirror) members
         else if (isTopLevelModule(csym)) allNested diff members
         else allNested
       }
 
-      // If this is a top-level class, add members of the companion object.
-      val linkedClass = exitingPickler(csym.linkedClassOfClass) // linkedCoC does not work properly in late phases
-      if (isTopLevelModule(linkedClass)) {
-        // phase travel to exitingPickler: this makes sure that memberClassesOf only sees member classes,
-        // not local classes that were lifted by lambdalift.
-        innerClassBuffer ++= exitingPickler(memberClassesOf(linkedClass))
+      if (!considerAsTopLevelImplementationArtifact(csym)) {
+        // If this is a top-level non-impl class, add members of the companion object.
+        // We exclude impl classes: if the classfile for the impl class exists on the classpath, a
+        // linkedClass symbol is found for which isTopLevelModule is true, so we end up searching
+        // members of that weird impl-class-module-class-symbol. that search probably cannot return
+        // any classes, but it's better to exclude it.
+        val linkedClass = exitingPickler(csym.linkedClassOfClass) // linkedCoC does not work properly in late phases
+        if (linkedClass != NoSymbol && isTopLevelModule(linkedClass)) {
+          // phase travel to exitingPickler: this makes sure that memberClassesForInnerClassTable only
+          // sees member classes, not local classes that were lifted by lambdalift.
+          innerClassBuffer ++= exitingPickler(memberClassesForInnerClassTable(linkedClass))
+        }
       }
 
       val allInners: List[Symbol] = innerClassBuffer.toList filterNot deadCode.elidedClosures
