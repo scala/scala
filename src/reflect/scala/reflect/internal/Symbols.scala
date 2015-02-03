@@ -2054,7 +2054,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  where it is the outer class of the enclosing class.
      */
     final def outerClass: Symbol =
-      if (owner.isClass) owner
+      if (this == NoSymbol) {
+        // ideally we shouldn't get here, but its better to harden against this than suffer the infinite loop in SI-9133
+        devWarningDumpStack("NoSymbol.outerClass", 15)
+        NoSymbol
+      } else if (owner.isClass) owner
       else if (isClassLocalToConstructor) owner.enclClass.outerClass
       else owner.outerClass
 
