@@ -125,11 +125,21 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
      * nested classes, but NOT nested in C, that are used within C.
      */
     val nestedClassSymbols = {
+      val linkedClass = exitingPickler(classSym.linkedClassOfClass) // linkedCoC does not work properly in late phases
+
       // The lambdalift phase lifts all nested classes to the enclosing class, so if we collect
       // member classes right after lambdalift, we obtain all nested classes, including local and
       // anonymous ones.
       val nestedClasses = {
-        val nested = exitingPhase(currentRun.lambdaliftPhase)(memberClassesForInnerClassTable(classSym))
+        val allNested = exitingPhase(currentRun.lambdaliftPhase)(memberClassesForInnerClassTable(classSym))
+        val nested = {
+          // Classes nested in value classes are nested in the companion at this point. For InnerClass /
+          // EnclosingMethod, we use the value class as the outer class. So we remove nested classes
+          // from the companion that were originally nested in the value class.
+          if (exitingPickler(linkedClass.isDerivedValueClass)) allNested.filterNot(classOriginallyNestedInClass(_, linkedClass))
+          else allNested
+        }
+
         if (isTopLevelModuleClass(classSym)) {
           // For Java compatibility, member classes of top-level objects are treated as members of
           // the top-level companion class, see comment below.
@@ -158,13 +168,28 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
         // a linkedClass symbol is found for which isTopLevelModule is true, so we end up searching
         // members of that weird impl-class-module-class-symbol. that search probably cannot return
         // any classes, but it's better to exclude it.
-        val linkedClass = exitingPickler(classSym.linkedClassOfClass) // linkedCoC does not work properly in late phases
-        if (linkedClass != NoSymbol && isTopLevelModuleClass(linkedClass))
+        val javaCompatMembers = {
+          if (linkedClass != NoSymbol && isTopLevelModuleClass(linkedClass))
           // phase travel to exitingPickler: this makes sure that memberClassesForInnerClassTable only sees member
           // classes, not local classes of the companion module (E in the exmaple) that were lifted by lambdalift.
-          exitingPickler(memberClassesForInnerClassTable(linkedClass))
-        else
-          Nil
+            exitingPickler(memberClassesForInnerClassTable(linkedClass))
+          else
+            Nil
+        }
+
+        // Classes nested in value classes are nested in the companion at this point. For InnerClass /
+        // EnclosingMethod we use the value class as enclosing class. Here we search nested classes
+        // in the companion that were originally nested in the value class, and we add them as nested
+        // in the value class.
+        val valueClassCompanionMembers = {
+          if (linkedClass != NoSymbol && exitingPickler(classSym.isDerivedValueClass)) {
+            val moduleMemberClasses = exitingPhase(currentRun.lambdaliftPhase)(memberClassesForInnerClassTable(linkedClass))
+            moduleMemberClasses.filter(classOriginallyNestedInClass(_, classSym))
+          } else
+            Nil
+        }
+
+        javaCompatMembers ++ valueClassCompanionMembers
       }
 
       nestedClasses ++ companionModuleMembers

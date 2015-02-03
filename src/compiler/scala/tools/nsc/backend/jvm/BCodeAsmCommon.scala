@@ -109,6 +109,15 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
     }
   }
 
+  def nextEnclosingClass(sym: Symbol): Symbol = {
+    if (sym.isClass) sym
+    else nextEnclosingClass(nextEnclosing(sym))
+  }
+
+  def classOriginallyNestedInClass(nestedClass: Symbol, enclosingClass: Symbol) ={
+    nextEnclosingClass(nextEnclosing(nestedClass)) == enclosingClass
+  }
+
   /**
    * Returns the enclosing method for non-member classes. In the following example
    *
@@ -134,12 +143,23 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
    */
   private def enclosingMethodForEnclosingMethodAttribute(classSym: Symbol): Option[Symbol] = {
     assert(classSym.isClass, classSym)
+
+    def doesNotExist(method: Symbol) = {
+      // (1) SI-9124, some trait methods don't exist in the generated interface. see comment in BTypes.
+      // (2) Value classes. Member methods of value classes exist in the generated box class. However,
+      //     nested methods lifted into a value class are moved to the companion object and don't exist
+      //     in the value class itself. We can identify such nested methods: the initial enclosing class
+      //     is a value class, but the current owner is some other class (the module class).
+      method.owner.isTrait && method.isImplOnly || { // (1)
+        val enclCls = nextEnclosingClass(method)
+        exitingPickler(enclCls.isDerivedValueClass) && method.owner != enclCls // (2)
+      }
+    }
+
     def enclosingMethod(sym: Symbol): Option[Symbol] = {
       if (sym.isClass || sym == NoSymbol) None
       else if (sym.isMethod) {
-        // SI-9124, some trait methods don't exist in the generated interface. see comment in BTypes.
-        if (sym.owner.isTrait && sym.isImplOnly) None
-        else Some(sym)
+        if (doesNotExist(sym)) None else Some(sym)
       }
       else enclosingMethod(nextEnclosing(sym))
     }
@@ -152,11 +172,7 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
    */
   private def enclosingClassForEnclosingMethodAttribute(classSym: Symbol): Symbol = {
     assert(classSym.isClass, classSym)
-    def enclosingClass(sym: Symbol): Symbol = {
-      if (sym.isClass) sym
-      else enclosingClass(nextEnclosing(sym))
-    }
-    val r = enclosingClass(nextEnclosing(classSym))
+    val r = nextEnclosingClass(nextEnclosing(classSym))
     // this should be an assertion, but we are more cautious for now as it was introduced before the 2.11.6 minor release
     if (considerAsTopLevelImplementationArtifact(r)) devWarning(s"enclosing class of $classSym should not be an implementation artifact class: $r")
     r
@@ -175,10 +191,20 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
   def enclosingMethodAttribute(classSym: Symbol, classDesc: Symbol => String, methodDesc: Symbol => String): Option[EnclosingMethodEntry] = {
     // trait impl classes are always top-level, see comment in BTypes
     if (isAnonymousOrLocalClass(classSym) && !considerAsTopLevelImplementationArtifact(classSym)) {
-      val methodOpt = enclosingMethodForEnclosingMethodAttribute(classSym)
-      debuglog(s"enclosing method for $classSym is $methodOpt (in ${methodOpt.map(_.enclClass)})")
+      val enclosingClass = enclosingClassForEnclosingMethodAttribute(classSym)
+      val methodOpt = enclosingMethodForEnclosingMethodAttribute(classSym) match {
+        case some @ Some(m) =>
+          if (m.owner != enclosingClass) {
+            // This should never happen. In case it does, it prevents emitting an invalid
+            // EnclosingMethod attribute: if the attribute specifies an enclosing method,
+            // it needs to exist in the specified enclosing class.
+            devWarning(s"the owner of the enclosing method ${m.locationString} should be the same as the enclosing class $enclosingClass")
+            None
+          } else some
+        case none => none
+      }
       Some(EnclosingMethodEntry(
-        classDesc(enclosingClassForEnclosingMethodAttribute(classSym)),
+        classDesc(enclosingClass),
         methodOpt.map(_.javaSimpleName.toString).orNull,
         methodOpt.map(methodDesc).orNull))
     } else {
