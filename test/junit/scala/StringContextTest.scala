@@ -65,14 +65,23 @@ class StringContextTest {
 
   @Test def fIf() = {
     val res = f"${if (true) 2.5 else 2.5}%.2f"
-    assertEquals("2.50", res)
+    val expected = formatUsingCurrentLocale(2.50)
+    assertEquals(expected, res)
   }
+
   @Test def fIfNot() = {
     val res = f"${if (false) 2.5 else 3.5}%.2f"
-    assertEquals("3.50", res)
+    val expected = formatUsingCurrentLocale(3.50)
+    assertEquals(expected, res)
   }
+
   @Test def fHeteroArgs() = {
     val res = f"${3.14}%.2f rounds to ${3}%d"
-    assertEquals("3.14 rounds to 3", res)
+    val expected = formatUsingCurrentLocale(3.14) + " rounds to 3"
+    assertEquals(expected, res)
   }
+
+  // Use this method to avoid problems with a locale-dependent decimal mark.
+  // The string interpolation is not used here intentionally as this method is used to test string interpolation.
+  private def formatUsingCurrentLocale(number: Double, decimalPlaces: Int = 2) = ("%." + decimalPlaces + "f").format(number)
 }
