@@ -225,6 +225,10 @@ abstract class UnCurry extends InfoTransform
           if (inlineFunctionExpansion || !canUseDelamdafyMethod) {
             val parents = addSerializable(abstractFunctionForFunctionType(fun.tpe))
             val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation SerialVersionUIDAnnotation
+            // The original owner is used in the backend for the EnclosingMethod attribute. If fun is
+            // nested in a value-class method, its owner was already changed to the extension method.
+            // Saving the original owner allows getting the source structure from the class symbol.
+            defineOriginalOwner(anonClass, fun.symbol.originalOwner)
             anonClass setInfo ClassInfoType(parents, newScope, anonClass)
 
             val applyMethodDef = mkMethod(anonClass, nme.apply)
