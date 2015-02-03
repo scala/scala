@@ -1177,7 +1177,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     def instantiatePossiblyExpectingUnit(tree: Tree, mode: Mode, pt: Type): Tree = {
-      if (mode.typingExprNotFun && pt.typeSymbol == UnitClass)
+      if (mode.typingExprNotFun && pt.typeSymbol == UnitClass && !tree.tpe.isInstanceOf[MethodType])
         instantiateExpectingUnit(tree, mode)
       else
         instantiate(tree, mode, pt)
