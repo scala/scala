@@ -44,4 +44,9 @@ class SymbolTableTest {
     assertFalse("Foo should be a superclass of Foo", fooSymbol.tpe <:< barSymbol.tpe)
   }
 
+  @Test
+  def noSymbolOuterClass_t9133: Unit = {
+    import symbolTable._
+    assert(NoSymbol.outerClass == NoSymbol)
+  }
 }
