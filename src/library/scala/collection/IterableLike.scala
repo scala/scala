@@ -195,7 +195,7 @@ self =>
    *
    *  @param size the number of elements per group
    *  @param step the distance between the first elements of successive
-   *         groups (defaults to 1)
+   *         groups
    *  @return An iterator producing ${coll}s of size `size`, except the
    *          last and the only element will be truncated if there are
    *          fewer elements than size.
