@@ -1536,7 +1536,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val cbody1 = treeCopy.Block(cbody, preSuperStats, superCall1)
           val clazz = context.owner
             assert(clazz != NoSymbol, templ)
-          val dummy = context.outer.owner.newLocalDummy(templ.pos)
+          // SI-9086 The position of this symbol is material: implicit search will avoid triggering
+          //         cyclic errors in an implicit search in argument to the super constructor call on
+          //         account of the "ignore symbols without complete info that succeed the implicit search"
+          //         in this source file. See `ImplicitSearch#isValid` and `ImplicitInfo#isCyclicOrErroneous`.
+          val dummy = context.outer.owner.newLocalDummy(context.owner.pos)
           val cscope = context.outer.makeNewScope(ctor, dummy)
           if (dummy.isTopLevel) currentRun.symSource(dummy) = currentUnit.source.file
           val cbody2 = { // called both during completion AND typing.
