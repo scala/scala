@@ -362,8 +362,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       else if (sym == definitions.NullClass) RT_NULL
       else {
        val r = classBTypeFromSymbol(sym)
-        if (r.isNestedClass) innerClassBufferASM += r
-        r
+       if (r.isNestedClass) innerClassBufferASM += r
+       r
       }
     }
 
