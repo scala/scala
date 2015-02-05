@@ -1622,7 +1622,7 @@ trait Trees extends api.Trees {
     }
     private def invalidateSingleTypeCaches(tree: Tree): Unit = {
       if (mutatedSymbols.nonEmpty)
-        for (t <- tree)
+        for (t <- tree if t.tpe != null)
           for (tp <- t.tpe) {
             tp match {
               case s: SingleType if mutatedSymbols contains s.sym =>
