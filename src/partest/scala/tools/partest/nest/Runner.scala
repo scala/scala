@@ -159,6 +159,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
       "-Dpartest.output="+outDir.getAbsolutePath,
       "-Dpartest.lib="+libraryUnderTest.getAbsolutePath,
       "-Dpartest.reflect="+reflectUnderTest.getAbsolutePath,
+      "-Dpartest.comp="+compilerUnderTest.getAbsolutePath,
       "-Dpartest.cwd="+outDir.getParent,
       "-Dpartest.test-path="+testFullPath,
       "-Dpartest.testname="+fileBase,
