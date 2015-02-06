@@ -1,6 +1,10 @@
 # Welcome! Thank you for contributing to Scala!
+We follow the standard GitHub [fork & pull](https://help.github.com/articles/using-pull-requests/#fork--pull) approach to pull requests. Just fork the official repo, develop in a branch, and submit a PR!
 
-Last year, you -- the Scala community -- matched the core team at EPFL in number of commits contributed to Scala 2.11, doubling the percentage of commits from outside EPFL/Typesafe since 2.10. Excellent work!
+You're always welcome to submit your PR straight away and start the discussion (without reading the rest of this wonderful doc, or the `READMEnot^H^H^H.md`). The goal of these notes is to make your experience contributing to Scala as smooth and pleasant as possible.
+
+## The Scala Community
+Last year, you -- the Scala community -- matched the core team at EPFL in number of commits contributed to Scala 2.11, doubling the percentage of commits from outside EPFL/Typesafe since 2.10. Excellent work! (The split is roughly 25/25/50 for you/epfl/typesafe. By the way, the team at Typesafe is: @adriaanm, @gkossakowski, @lrytz and @retronym.)
 
 We are super happy about this, and are eager to make your experience contributing to Scala productive and satisfying, so that we can keep up this growth. We can't do this alone (nor do we want to)!
 
@@ -18,12 +22,9 @@ You can make these changes directly in your browser in GitHub, or follow the sam
 For bigger documentation changes, you may want to poll the (scala-internals) mailing list first, to quickly gauge whether others support the direction you're taking, so there won't be any surprises when it comes to reviewing your PR.
 
 ### Code
+For bigger changes, we do recommend announcing your intentions on scala-internals first, to avoid duplicated effort, or spending a lot of time reworking something we are not able to change at this time in the release cycle, for example.
 
-You're always welcome to submit a PR straight away, although we recommend announcing your intentions on scala-internals first, to avoid duplicated effort, or spending a lot of time reworking something we are not able to change at this time in the release cycle, for example.
-
-To reduce friction, we use the [fork & pull](https://help.github.com/articles/using-pull-requests/#fork--pull) approach to pull requests: you fork the official repository, develop your pull request in a branch in your fork, and send us a request to have your work pulled into the official fork (i.e., a Pull Request).
-
-The kind of code we can accept depends on the life cycle for the release you're targeting. The current maintenance release (2.11.x) cannot break source/binary compatibility, which means public APIs cannot change. It also means we are reluctanct to change, e.g., type inference or implicit search, as this can have unforeseen consequences for source compatibility.
+The kind of code we can accept depends on the life cycle for the release you're targeting. The current maintenance release (2.11.x) cannot break source/binary compatibility, which means public APIs cannot change. It also means we are reluctant to change, e.g., type inference or implicit search, as this can have unforeseen consequences for source compatibility.
 
 #### Bug Fix
 
@@ -49,28 +50,3 @@ A new language feature requires a SIP (Scala Improvement Process) proposal. For 
 
 Please also have a look at our [Pull Request Policy](https://github.com/scala/scala/wiki/Pull-Request-Policy), as well as the [Scala Hacker Guide](http://www.scala-lang.org/contribute/hacker-guide.html) by @xeno-by.
 
-
-## Git Hygiene
-
-As git history is forever, we take great pride in the quality of the commits we merge into the repository. The title of your commit will be read hundreds (of thousands? :-)) of times, so it pays off to spend just a little bit more time to polish it, making it descriptive and concise. Please take a minute to read the advice [most projects agree on](https://github.com/erlang/otp/wiki/Writing-good-commit-messages), and stick to 50-60 characters for the first line, wrapping subsequent ones at 80 (at most).
-
-When not sure how to formulate your commit message, imagine you're writing a bullet item for the next release notes, or describing what the commit does to the code base (use active verbs in the present tense). When your commit title is featured in the next release notes, it will be read by a lot of curious Scala users, looking for the latest improvements. Satisfy their thirst for information with as few words as possible! Also, a commit should convey clearly to your (future) fellow contributors what it does to the code base.
-
-Writing the commit message is a great sanity check that the commit is of the right size. If it does too many things, the description will be unwieldy and tedious to write. Chop it up (`git add -u --patch` and `git rebase` are your friends) and simplify!
-
-To pinpoint bugs, we often use git bisect, which is only effective when we can count on each commit building (and passing the test suite). Thus, the CI bot enforces this. Please rebase your development history into a sensible list of self-contained commits that tell the story of your bug fix or improvement. Carve them up so that the riskier bits can be reverted independently. Keep changes focussed by splitting out cleanups from refactorings from actual changes to the logic.
-
-This facilitates reviewing: a commit that reformats code can be judged quickly not to affect anything, so we can focus on the meat of the PR. It also helps when merging between long-running branches, reducing conflicts (or providing at least a limited scope for each one).
-
-Please do not @mention anyone in the commit message -- that's what the PR description and comments are for. Every time a commit is shuffled through github (in a merge in some fork, say), every @mention results in an email to that person (the core team treats them as personal email, straight to their inbox, so please don't flood us :-)).
-
-
-## Reviewing
-
-Please consider nominating a reviewer for your PR in the PR's description or a comment. If unsure, not to worry -- the core team will assign one for you.
-
-Your reviewer is also your mentor, who will help you rework your PR so that it meets our requirements. We strive to give timely feedback, and apologize for those times when we are overwhelmed by the volume of contributions. Please feel free to ping us. You are entitled to regular progress updates and at least a quick assessment of feasibility of a bigger PR.
-
-To help you plan your contributions, we communicate our plans on a regular basis on scala-internals, and deadlines are tracked as due dates for [GitHub milestones](https://github.com/scala/scala/milestones).
-
-Once you've established some history submitting PRs, we will invite you to become a reviewer for others's code. The main goal of this whole process, in the end, is to ensure the health of the Scala project by improving the quality of the code base, the documentation, as well as this process itself. Thank you for doing your part!
