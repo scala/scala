@@ -72,6 +72,29 @@ To help you plan your contributions, we communicate our plans on a regular basis
 
 Once you've established some history submitting PRs, we will invite you to become a reviewer for others's code. The main goal of this whole process, in the end, is to ensure the health of the Scala project by improving the quality of the code base, the documentation, as well as this process itself. Thank you for doing your part!
 
+## IDE Setup
+### Eclipse
+Download the [Scala IDE bundle](http://scala-ide.org/download/sdk.html). It comes preconfigured for optimal performance.
+
+  - Run `ant init` to download some necessary jars.
+  - Import the project (in `src/eclipse`) via `File` → `Import Existing Projects into Workspace`. Check all projects and click ok.
+
+For important details on building, debugging and file encodings, please see [the excellent tutorial on scala-ide.org](http://scala-ide.org/docs/tutorials/scalac-trunk/index.html) and the included README.md in src/eclipse.
+
+### IntelliJ 14
+Use the latest IntelliJ IDEA release and install the Scala plugin from within the IDE.
+
+The following steps are required to use IntelliJ IDEA on Scala trunk
+ - Run `ant init`. This will download some JARs to `./build/deps`, which are included in IntelliJ's classpath.
+ - Run src/intellij-14/setup.sh
+ - Open ./src/intellij-14/scala.ipr in IntelliJ
+ - File, Project Settings, Project, SDK. Create an SDK entry named "1.6" containing the Java 1.6 SDK.
+   (You may use a later SDK for local development, but the CI will verify against Java 6.)
+
+Compilation within IDEA is performed in "-Dlocker.skip=1" mode: the sources are built
+directly using the STARR compiler (which is downloaded from maven, according to `starr.version` in `versions.properties`).
+
+
 ## Building with Ant
 
 NOTE: we are working on migrating the build to sbt.
@@ -122,7 +145,7 @@ compiles Scala in layers. Each layer is a complete compiled Scala compiler and l
 A superior layer is always compiled by the layer just below it. Here is a short
 description of the four layers that the build uses, from bottom to top:
 
-  - `starr`: the stable reference Scala release. We use an official version of Scala (specified by starr.version in versions.properties), downloaded from maven central.
+  - `starr`: the stable reference Scala release. We use an official version of Scala (specified by `starr.version` in `versions.properties`), downloaded from maven central.
   - `locker`: the local reference which is compiled by starr and is the work compiler in a typical development cycle. Add `locker.skip=true` to `build.properties` to skip this step and speed up development when you're not changing code generation. In any case, after it has been built once, it is “frozen” in this state. Updating it to fit the current source code must be explicitly requested (`ant locker.unlock`).
   - `quick`: the layer which is incrementally built when testing changes in the compiler or library. This is considered an actual new version when locker is up-to-date in relation to the source code.
   - `strap`: a test layer used to check stability of the build.
