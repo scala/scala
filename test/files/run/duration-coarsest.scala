@@ -25,4 +25,7 @@ object Test extends App {
     23 hours,
     40 days
   ) foreach (x => assert(x == x.toCoarsest, x))
+
+  // toCoarsest on a FiniteDuration should return a FiniteDuration
+  val finite: FiniteDuration = 1.second.toCoarsest
 }
