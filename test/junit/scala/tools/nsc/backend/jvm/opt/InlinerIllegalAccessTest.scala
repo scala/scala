@@ -31,7 +31,7 @@ class InlinerIllegalAccessTest extends ClearAfterClass {
   val compiler = InlinerIllegalAccessTest.compiler
   import compiler.genBCode.bTypes._
 
-  def addToRepo(cls: List[ClassNode]): Unit = for (c <- cls) byteCodeRepository.classes(c.name) = Some((c, ByteCodeRepository.Classfile))
+  def addToRepo(cls: List[ClassNode]): Unit = for (c <- cls) byteCodeRepository.add(c, ByteCodeRepository.Classfile)
   def assertEmpty(ins: Option[AbstractInsnNode]) = for (i <- ins) throw new AssertionError(textify(i))
 
   @Test

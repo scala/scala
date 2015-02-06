@@ -133,7 +133,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       if (settings.YoptInlinerEnabled) {
         // The inliner needs to find all classes in the code repo, also those being compiled
-        byteCodeRepository.classes(cnode.name) = Some((cnode, ByteCodeRepository.CompilationUnit))
+        byteCodeRepository.add(cnode, ByteCodeRepository.CompilationUnit)
       }
 
       assert(cd.symbol == claszSymbol, "Someone messed up BCodePhase.claszSymbol during genPlainClass().")
