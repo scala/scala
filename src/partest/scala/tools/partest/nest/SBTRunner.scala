@@ -23,7 +23,7 @@ import java.net.URLClassLoader
 // called reflectively from scala-partest-test-interface
 class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, loggers: Array[Logger],
     srcDir: String, testClassLoader: URLClassLoader, javaCmd: File, javacCmd: File, scalacArgs: Array[String])
-    extends AntRunner(srcDir, testClassLoader, javaCmd, javacCmd, scalacArgs) {
+    extends AntRunner(srcDir, testClassLoader, javaCmd, javacCmd, scalacArgs, None) {
   override def error(msg: String): Nothing = sys.error(msg)
   def echo(msg: String): Unit = loggers foreach { l => l.info(msg) }
   def log(msg: String): Unit = loggers foreach { l => l.debug(msg) }

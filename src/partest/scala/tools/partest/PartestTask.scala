@@ -47,6 +47,7 @@ class PartestTask extends Task with CompilationPathProperty with ScalaTask {
   private var jUnitReportDir: Option[File] = None
   private var javaccmd: Option[File] = None
   private var javacmd: Option[File] = Option(sys.props("java.home")) map (x => new File(x, "bin/java"))
+  private var javaOpts: Option[Seq[String]] = None
   private var scalacArgs: Option[Seq[Argument]] = None
   private var srcDir: Option[String] = None
   private var colors: Int = 0
@@ -82,6 +83,11 @@ class PartestTask extends Task with CompilationPathProperty with ScalaTask {
 
   def setJavaCmd(input: File) {
     javacmd = Some(input)
+  }
+
+  def setJavaOpts(input: String) {
+    val s = input.split(' ')
+    javaOpts = Some(javaOpts.getOrElse(Seq()) ++ s)
   }
 
   def setKinds(input: String) {
@@ -124,7 +130,7 @@ class PartestTask extends Task with CompilationPathProperty with ScalaTask {
     })
 
     var failureCount = 0
-    val summary = new scala.tools.partest.nest.AntRunner(srcDir.getOrElse(null), new URLClassLoader(compilationPath.get.list.map(Path(_).toURL)), javacmd.getOrElse(null), javaccmd.getOrElse(null), scalacArgsFlat) {
+    val summary = new scala.tools.partest.nest.AntRunner(srcDir.getOrElse(null), new URLClassLoader(compilationPath.get.list.map(Path(_).toURL)), javacmd.getOrElse(null), javaccmd.getOrElse(null), scalacArgsFlat, javaOpts) {
       def echo(msg: String): Unit = PartestTask.this.log(msg)
       def log(msg: String): Unit = PartestTask.this.log(msg)
 

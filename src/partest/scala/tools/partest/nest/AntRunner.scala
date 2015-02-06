@@ -12,7 +12,7 @@ package nest
 import java.net.URLClassLoader
 
 // not using any Scala types to ease calling across different scala versions
-abstract class AntRunner(srcDir: String, testClassLoader: URLClassLoader, javaCmd: File, javacCmd: File, scalacArgs: Array[String]) extends SuiteRunner(
+abstract class AntRunner(srcDir: String, testClassLoader: URLClassLoader, javaCmd: File, javacCmd: File, scalacArgs: Array[String], javaOpts: Option[Seq[String]]) extends SuiteRunner(
   testSourcePath = Option(srcDir) getOrElse PartestDefaults.sourcePath,
   new FileManager(testClassLoader = testClassLoader),
   updateCheck = false,
@@ -20,6 +20,8 @@ abstract class AntRunner(srcDir: String, testClassLoader: URLClassLoader, javaCm
   javaCmdPath = Option(javaCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd,
   javacCmdPath = Option(javacCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd,
   scalacExtraArgs = scalacArgs) {
+
+  for (jOpts <- javaOpts) System.setProperty("partest.java_opts", jOpts mkString " ")
 
   def error(msg: String): Nothing = sys.error(msg)
   def echo(msg: String): Unit
