@@ -115,7 +115,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
   final def entityRef(pos: Position, n: String) =
     atPos(pos)( New(_scala_xml_EntityRef, LL(const(n))) )
 
-  private def coalescing = settings.YxmlSettings.isCoalescing
+  private def coalescing = settings.XxmlSettings.isCoalescing
 
   // create scala.xml.Text here <: scala.xml.Node
   final def text(pos: Position, txt: String): Tree = atPos(pos) {

@@ -234,7 +234,7 @@ trait MarkupParsers {
 
     def content: Buffer[Tree] = {
       val ts = new ArrayBuffer[Tree]
-      val coalescing = settings.YxmlSettings.isCoalescing
+      val coalescing = settings.XxmlSettings.isCoalescing
       @tailrec def loopContent(): Unit =
         if (xEmbeddedBlock) {
           ts append xEmbeddedExpr

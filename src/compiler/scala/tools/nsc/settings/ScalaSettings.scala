@@ -139,6 +139,18 @@ trait ScalaSettings extends AbsScalaSettings
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
   val XfullLubs         = BooleanSetting ("-Xfull-lubs", "Retains pre 2.10 behavior of less aggressive truncation of least upper bounds.")
 
+  // XML parsing options
+  object XxmlSettings extends MultiChoiceEnumeration {
+    val coalescing   = Value
+    def isCoalescing = Xxml contains coalescing
+  }
+  val Xxml = MultiChoiceSetting(
+    name    = "-Xxml",
+    helpArg = "property",
+    descr   = "Configure XML parsing",
+    domain  = XxmlSettings
+  )
+
   /** Compatibility stubs for options whose value name did
    *  not previously match the option name.
    */
@@ -304,18 +316,6 @@ trait ScalaSettings extends AbsScalaSettings
       default = Some(List("_"))
     ) withPostSetHook { _ => scala.reflect.internal.util.Statistics.enabled = true }
   }
-
-  // XML parsing options (transitional in 2.11)
-  object YxmlSettings extends MultiChoiceEnumeration {
-    val coalescing   = Value
-    def isCoalescing = Yxml contains coalescing
-  }
-  val Yxml = MultiChoiceSetting(
-    name    = "-Yxml",
-    helpArg = "property",
-    descr   = "Configure XML parsing",
-    domain  = YxmlSettings
-  )
 
   def YstatisticsEnabled = Ystatistics.value.nonEmpty
 
