@@ -217,7 +217,7 @@ dl.attributes > dd {
   height: 18px;
 }
 
-#values ol li:last-child {
+.values ol li:last-child {
   margin-bottom: 5px;
 }
 

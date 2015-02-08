@@ -191,8 +191,8 @@ abstract class TreeGen {
       )
       val pkgQualifier =
         if (needsPackageQualifier) {
-          val packageObject = rootMirror.getPackageObjectWithMember(qual.tpe, sym)
-          Select(qual, nme.PACKAGE) setSymbol packageObject setType singleType(qual.tpe, packageObject)
+          val packageObject = qualsym.packageObject
+          Select(qual, nme.PACKAGE) setSymbol packageObject setType packageObject.typeOfThis
         }
         else qual
 

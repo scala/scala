@@ -126,7 +126,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   def optManifest[T](implicit m: OptManifest[T])     = m
 
   // Minor variations on identity functions
-  def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
+  @inline def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
   @inline def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world -- TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
   @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
 

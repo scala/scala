@@ -111,6 +111,7 @@ trait StdNames {
     val PACKAGE: NameType                      = "package"
     val ROOT: NameType                         = "<root>"
     val SPECIALIZED_SUFFIX: NameType           = "$sp"
+    val CASE_ACCESSOR: NameType                = "$access"
 
     // value types (and AnyRef) are all used as terms as well
     // as (at least) arguments to the @specialize annotation.

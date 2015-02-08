@@ -221,7 +221,7 @@ object BasicIO {
     */
   def transferFully(in: InputStream, out: OutputStream): Unit =
     try transferFullyImpl(in, out)
-    catch onInterrupt(())
+    catch onIOInterrupt(())
 
   private[this] def appendLine(buffer: Appendable): String => Unit = line => {
     buffer append line

@@ -12,7 +12,7 @@ package mutable
 
 import generic._
 import immutable.{List, Nil, ::}
-import java.io._
+import java.io.{ObjectOutputStream, ObjectInputStream}
 import scala.annotation.migration
 
 /** A `Buffer` implementation back up by a list. It provides constant time
@@ -408,9 +408,6 @@ final class ListBuffer[A]
       }
   }
 
-  @deprecated("The result of this method will change along with this buffer, which is often not what's expected.", "2.11.0")
-  override def readOnly: List[A] = start
-
   // Private methods
 
   /** Copy contents of this buffer */
@@ -426,7 +423,7 @@ final class ListBuffer[A]
   }
 
   override def equals(that: Any): Boolean = that match {
-    case that: ListBuffer[_] => this.readOnly equals that.readOnly
+    case that: ListBuffer[_] => this.start equals that.start
     case _                   => super.equals(that)
   }
 

@@ -26,12 +26,6 @@ import scala.util.{ Try, Success, Failure }
  *  Note: Using this method may result in non-deterministic concurrent programs.
  */
 trait Promise[T] {
-
-  // used for internal callbacks defined in
-  // the lexical scope of this trait;
-  // _never_ for application callbacks.
-  private implicit def internalExecutor: ExecutionContext = Future.InternalCallbackExecutor
-
   /** Future containing the value of this promise.
    */
   def future: Future[T]
@@ -67,7 +61,9 @@ trait Promise[T] {
    *  @return   This promise
    */
   final def completeWith(other: Future[T]): this.type = {
-    other onComplete { this complete _ }
+    if (other ne this.future) { // this completeWith this doesn't make much sense
+      other.onComplete(this complete _)(Future.InternalCallbackExecutor)
+    }
     this
   }
 
@@ -76,7 +72,9 @@ trait Promise[T] {
    *  @return   This promise
    */
   final def tryCompleteWith(other: Future[T]): this.type = {
-    other onComplete { this tryComplete _ }
+    if (other ne this.future) { // this tryCompleteWith this doesn't make much sense
+      other.onComplete(this tryComplete _)(Future.InternalCallbackExecutor)
+    }
     this
   }
 
@@ -142,5 +140,5 @@ object Promise {
    *  @tparam T       the type of the value in the promise
    *  @return         the newly created `Promise` object
    */
-  def fromTry[T](result: Try[T]): Promise[T] = new impl.Promise.KeptPromise[T](result)
+  def fromTry[T](result: Try[T]): Promise[T] = impl.Promise.KeptPromise[T](result)
 }
