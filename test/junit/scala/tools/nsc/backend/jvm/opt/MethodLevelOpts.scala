@@ -13,10 +13,18 @@ import scala.tools.testing.AssertUtil._
 import CodeGenTools._
 import scala.tools.partest.ASMConverters
 import ASMConverters._
+import scala.tools.testing.ClearAfterClass
+
+object MethodLevelOpts extends ClearAfterClass.Clearable {
+  var methodOptCompiler = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:l:method")
+  def clear(): Unit = { methodOptCompiler = null }
+}
 
 @RunWith(classOf[JUnit4])
-class MethodLevelOpts {
-  val methodOptCompiler = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:l:method")
+class MethodLevelOpts extends ClearAfterClass {
+  ClearAfterClass.stateToClear = MethodLevelOpts
+
+  val methodOptCompiler = MethodLevelOpts.methodOptCompiler
 
   def wrapInDefault(code: Instruction*) = List(Label(0), LineNumber(1, Label(0))) ::: code.toList ::: List(Label(1))
 

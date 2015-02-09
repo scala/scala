@@ -10,9 +10,14 @@ package opt
 import scala.annotation.{tailrec, switch}
 import scala.collection.mutable
 import scala.reflect.internal.util.Collections._
-import scala.tools.asm.Opcodes
+import scala.tools.asm.tree.analysis._
+import scala.tools.asm.{MethodWriter, ClassWriter, Label, Opcodes}
 import scala.tools.asm.tree._
 import scala.collection.convert.decorateAsScala._
+import GenBCode._
+import scala.collection.convert.decorateAsScala._
+import scala.collection.convert.decorateAsJava._
+import scala.tools.nsc.backend.jvm.BTypes._
 
 object BytecodeUtils {
 
@@ -67,6 +72,16 @@ object BytecodeUtils {
   }
 
   def isExecutable(instruction: AbstractInsnNode): Boolean = instruction.getOpcode >= 0
+
+  def isConstructor(methodNode: MethodNode): Boolean = {
+    methodNode.name == INSTANCE_CONSTRUCTOR_NAME || methodNode.name == CLASS_CONSTRUCTOR_NAME
+  }
+
+  def isStaticMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_STATIC) != 0
+
+  def isAbstractMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_ABSTRACT) != 0
+
+  def isSynchronizedMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_SYNCHRONIZED) != 0
 
   def nextExecutableInstruction(instruction: AbstractInsnNode, alsoKeep: AbstractInsnNode => Boolean = Set()): Option[AbstractInsnNode] = {
     var result = instruction
@@ -179,6 +194,114 @@ object BytecodeUtils {
         if (handler.start == from) handler.start = to
         if (handler.handler == from) handler.handler = to
         if (handler.end == from) handler.end = to
+    }
+  }
+
+  /**
+   * In order to run an Analyzer, the maxLocals / maxStack fields need to be available. The ASM
+   * framework only computes these values during bytecode generation.
+   *
+   * Since there's currently no better way, we run a bytecode generator on the method and extract
+   * the computed values. This required changes to the ASM codebase:
+   *   - the [[MethodWriter]] class was made public
+   *   - accessors for maxLocals / maxStack were added to the MethodWriter class
+   *
+   * We could probably make this faster (and allocate less memory) by hacking the ASM framework
+   * more: create a subclass of MethodWriter with a /dev/null byteVector. Another option would be
+   * to create a separate visitor for computing those values, duplicating the functionality from the
+   * MethodWriter.
+   */
+  def computeMaxLocalsMaxStack(method: MethodNode) {
+    val cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
+    val excs = method.exceptions.asScala.toArray
+    val mw = cw.visitMethod(method.access, method.name, method.desc, method.signature, excs).asInstanceOf[MethodWriter]
+    method.accept(mw)
+    method.maxLocals = mw.getMaxLocals
+    method.maxStack = mw.getMaxStack
+  }
+
+  def removeLineNumberNodes(classNode: ClassNode): Unit = {
+    for (m <- classNode.methods.asScala) removeLineNumberNodes(m.instructions)
+  }
+
+  def removeLineNumberNodes(instructions: InsnList): Unit = {
+    val iter = instructions.iterator()
+    while (iter.hasNext) iter.next() match {
+      case _: LineNumberNode => iter.remove()
+      case _ =>
+    }
+  }
+
+  def cloneLabels(methodNode: MethodNode): Map[LabelNode, LabelNode] = {
+    methodNode.instructions.iterator().asScala.collect({
+      case labelNode: LabelNode => (labelNode, newLabelNode)
+    }).toMap
+  }
+
+  /**
+   * Create a new [[LabelNode]] with a correctly associated [[Label]].
+   */
+  def newLabelNode: LabelNode = {
+    val label = new Label
+    val labelNode = new LabelNode(label)
+    label.info = labelNode
+    labelNode
+  }
+
+  /**
+   * Clone the instructions in `methodNode` into a new [[InsnList]], mapping labels according to
+   * the `labelMap`. Returns the new instruction list and a map from old to new instructions.
+   */
+  def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode]): (InsnList, Map[AbstractInsnNode, AbstractInsnNode]) = {
+    val javaLabelMap = labelMap.asJava
+    val result = new InsnList
+    var map = Map.empty[AbstractInsnNode, AbstractInsnNode]
+    for (ins <- methodNode.instructions.iterator.asScala) {
+      val cloned = ins.clone(javaLabelMap)
+      result add cloned
+      map += ((ins, cloned))
+    }
+    (result, map)
+  }
+
+  /**
+   * Clone the local variable descriptors of `methodNode` and map their `start` and `end` labels
+   * according to the `labelMap`.
+   */
+  def cloneLocalVariableNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], prefix: String): List[LocalVariableNode] = {
+    methodNode.localVariables.iterator().asScala.map(localVariable => new LocalVariableNode(
+      prefix + localVariable.name,
+      localVariable.desc,
+      localVariable.signature,
+      labelMap(localVariable.start),
+      labelMap(localVariable.end),
+      localVariable.index
+    )).toList
+  }
+
+  /**
+   * Clone the local try/catch blocks of `methodNode` and map their `start` and `end` and `handler`
+   * labels according to the `labelMap`.
+   */
+  def cloneTryCatchBlockNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode]): List[TryCatchBlockNode] = {
+    methodNode.tryCatchBlocks.iterator().asScala.map(tryCatch => new TryCatchBlockNode(
+      labelMap(tryCatch.start),
+      labelMap(tryCatch.end),
+      labelMap(tryCatch.handler),
+      tryCatch.`type`
+    )).toList
+  }
+
+  class BasicAnalyzer(methodNode: MethodNode, classInternalName: InternalName) {
+    val analyzer = new Analyzer(new BasicInterpreter)
+    analyzer.analyze(classInternalName, methodNode)
+    def frameAt(instruction: AbstractInsnNode): Frame[BasicValue] = analyzer.getFrames()(methodNode.instructions.indexOf(instruction))
+  }
+
+  implicit class `frame extensions`[V <: Value](val frame: Frame[V]) extends AnyVal {
+    def peekDown(n: Int): V = {
+      val topIndex = frame.getStackSize - 1
+      frame.getStack(topIndex - n)
     }
   }
 }

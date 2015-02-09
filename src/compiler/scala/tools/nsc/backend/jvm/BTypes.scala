@@ -6,10 +6,12 @@
 package scala.tools.nsc
 package backend.jvm
 
+import scala.annotation.switch
 import scala.tools.asm
 import asm.Opcodes
 import scala.tools.asm.tree.{InnerClassNode, ClassNode}
-import opt.ByteCodeRepository
+import scala.tools.nsc.backend.jvm.opt.{CallGraph, ByteCodeRepository, Inliner}
+import opt.OptimizerReporting._
 import scala.collection.convert.decorateAsScala._
 
 /**
@@ -34,8 +36,15 @@ abstract class BTypes {
    */
   val byteCodeRepository: ByteCodeRepository
 
+  val inliner: Inliner[this.type]
+
+  val callGraph: CallGraph[this.type]
+
   // Allows to define per-run caches here and in the CallGraph component, which don't have a global
   def recordPerRunCache[T <: collection.generic.Clearable](cache: T): T
+
+  // When building the call graph, we need to know if global inlining is allowed (the component doesn't have a global)
+  def inlineGlobalEnabled: Boolean
 
   /**
    * A map from internal names to ClassBTypes. Every ClassBType is added to this map on its
@@ -51,10 +60,55 @@ abstract class BTypes {
   val classBTypeFromInternalName: collection.concurrent.Map[InternalName, ClassBType] = recordPerRunCache(collection.concurrent.TrieMap.empty[InternalName, ClassBType])
 
   /**
-   * Parse the classfile for `internalName` and construct the [[ClassBType]].
+   * Build the [[InlineInfo]] for the methods of a class, given its internal name.
+   *
+   * The InlineInfo is part of the ClassBType's [[ClassInfo]]. Note that there are two ways to build
+   * a ClassBType: from a class symbol (methods in [[BTypesFromSymbols]]) or from a [[ClassNode]].
+   * The InlineInfo however contains information that can only be retrieved from the symbol of
+   * the class (e.g., is a method annotated @inline).
+   *
+   * This method (implemented in [[BTypesFromSymbols]]) looks up the class symbol in the symbol
+   * table, using the classfile name of the class.
+   *
+   * The method tries to undo some of the name mangling, but the lookup does not succeed for all
+   * classes. In case it fails, the resulting ClassBType will simply not have an InlineInfo, and
+   * we won't be able to inline its methods.
    */
-  def classBTypeFromParsedClassfile(internalName: InternalName): ClassBType = {
-    classBTypeFromClassNode(byteCodeRepository.classNode(internalName))
+  def inlineInfosFromSymbolLookup(internalName: InternalName): Map[String, InlineInfo]
+
+  /**
+   * Obtain the BType for a type descriptor or internal name. For class descriptors, the ClassBType
+   * is constructed by parsing the corresponding classfile.
+   * 
+   * Some JVM operations use either a full descriptor or only an internal name. Example:
+   *   ANEWARRAY java/lang/String    // a new array of strings (internal name for the String class)
+   *   ANEWARRAY [Ljava/lang/String; // a new array of array of string (full descriptor for the String class)
+   *
+   * This method supports both descriptors and internal names.
+   */
+  def bTypeForDescriptorOrInternalNameFromClassfile(desc: String): Option[BType] = (desc(0): @switch) match {
+    case 'V'                     => Some(UNIT)
+    case 'Z'                     => Some(BOOL)
+    case 'C'                     => Some(CHAR)
+    case 'B'                     => Some(BYTE)
+    case 'S'                     => Some(SHORT)
+    case 'I'                     => Some(INT)
+    case 'F'                     => Some(FLOAT)
+    case 'J'                     => Some(LONG)
+    case 'D'                     => Some(DOUBLE)
+    case '['                     => bTypeForDescriptorOrInternalNameFromClassfile(desc.substring(1)) map ArrayBType
+    case 'L' if desc.last == ';' => classBTypeFromParsedClassfile(desc.substring(1, desc.length - 1))
+    case _                       => classBTypeFromParsedClassfile(desc)
+  }
+
+  /**
+   * Parse the classfile for `internalName` and construct the [[ClassBType]]. Returns `None` if the
+   * classfile cannot be found in the `byteCodeRepository`.
+   */
+  def classBTypeFromParsedClassfile(internalName: InternalName): Option[ClassBType] = {
+    classBTypeFromInternalName.get(internalName) orElse {
+      byteCodeRepository.classNode(internalName) map classBTypeFromClassNode
+    }
   }
 
   /**
@@ -62,20 +116,31 @@ abstract class BTypes {
    */
   def classBTypeFromClassNode(classNode: ClassNode): ClassBType = {
     classBTypeFromInternalName.getOrElse(classNode.name, {
-      setClassInfo(classNode, ClassBType(classNode.name))
+      setClassInfoFromParsedClassfile(classNode, ClassBType(classNode.name))
     })
   }
 
-  private def setClassInfo(classNode: ClassNode, classBType: ClassBType): ClassBType = {
+  private def setClassInfoFromParsedClassfile(classNode: ClassNode, classBType: ClassBType): ClassBType = {
+    def ensureClassBTypeFromParsedClassfile(internalName: InternalName): ClassBType = {
+      classBTypeFromParsedClassfile(internalName) getOrElse {
+        // When building a ClassBType from a parsed classfile, we need the ClassBTypes for all
+        // referenced types.
+        // TODO: make this more robust with respect to incomplete classpaths.
+        // Maybe not those parts of the ClassBType that require the missing class are not actually
+        // queried during the backend, so every part of a ClassBType that requires parsing a
+        // (potentially missing) classfile should be computed lazily.
+        assertionError(s"Could not find bytecode for class $internalName")
+      }
+    }
     val superClass = classNode.superName match {
       case null =>
         assert(classNode.name == ObjectReference.internalName, s"class with missing super type: ${classNode.name}")
         None
       case superName =>
-        Some(classBTypeFromParsedClassfile(superName))
+        Some(ensureClassBTypeFromParsedClassfile(superName))
     }
 
-    val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(classBTypeFromParsedClassfile)(collection.breakOut)
+    val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(ensureClassBTypeFromParsedClassfile)(collection.breakOut)
 
     val flags = classNode.access
 
@@ -89,15 +154,19 @@ abstract class BTypes {
      * For local and anonymous classes, innerClassNode.outerName is null. Such classes are required
      * to have an EnclosingMethod attribute declaring the outer class. So we keep those local and
      * anonymous classes whose outerClass is classNode.name.
-     *
      */
     def nestedInCurrentClass(innerClassNode: InnerClassNode): Boolean = {
       (innerClassNode.outerName != null && innerClassNode.outerName == classNode.name) ||
-      (innerClassNode.outerName == null && byteCodeRepository.classNode(innerClassNode.name).outerClass == classNode.name)
+      (innerClassNode.outerName == null && {
+        val classNodeForInnerClass = byteCodeRepository.classNode(innerClassNode.name) getOrElse {
+          assertionError(s"Could not find bytecode for class ${innerClassNode.name}")
+        }
+        classNodeForInnerClass.outerClass == classNode.name
+      })
     }
 
     val nestedClasses: List[ClassBType] = classNode.innerClasses.asScala.collect({
-      case i if nestedInCurrentClass(i) => classBTypeFromParsedClassfile(i.name)
+      case i if nestedInCurrentClass(i) => ensureClassBTypeFromParsedClassfile(i.name)
     })(collection.breakOut)
 
     // if classNode is a nested class, it has an innerClass attribute for itself. in this
@@ -107,16 +176,17 @@ abstract class BTypes {
         val enclosingClass =
           if (innerEntry.outerName != null) {
             // if classNode is a member class, the outerName is non-null
-            classBTypeFromParsedClassfile(innerEntry.outerName)
+            ensureClassBTypeFromParsedClassfile(innerEntry.outerName)
           } else {
             // for anonymous or local classes, the outerName is null, but the enclosing class is
             // stored in the EnclosingMethod attribute (which ASM encodes in classNode.outerClass).
-            classBTypeFromParsedClassfile(classNode.outerClass)
+            ensureClassBTypeFromParsedClassfile(classNode.outerClass)
           }
         val staticFlag = (innerEntry.access & Opcodes.ACC_STATIC) != 0
         NestedInfo(enclosingClass, Option(innerEntry.outerName), Option(innerEntry.innerName), staticFlag)
     }
-    classBType.info = ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo)
+
+    classBType.info = ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo, inlineInfosFromSymbolLookup(classBType.internalName))
     classBType
   }
 
@@ -245,7 +315,7 @@ abstract class BTypes {
         ObjectReference
 
       case _: MethodBType =>
-        throw new AssertionError(s"unexpected method type when computing maxType: $this")
+        assertionError(s"unexpected method type when computing maxType: $this")
     }
 
     /**
@@ -336,7 +406,7 @@ abstract class BTypes {
      */
     final def maxValueType(other: BType): BType = {
 
-      def uncomparable: Nothing = throw new AssertionError(s"Cannot compute maxValueType: $this, $other")
+      def uncomparable: Nothing = assertionError(s"Cannot compute maxValueType: $this, $other")
 
       if (!other.isPrimitive && !other.isNothingType) uncomparable
 
@@ -643,8 +713,10 @@ abstract class BTypes {
   /**
    * A ClassBType represents a class or interface type. The necessary information to build a
    * ClassBType is extracted from compiler symbols and types, see BTypesFromSymbols.
+   *
+   * Currently non-final due to SI-9111
    */
-  final case class ClassBType(internalName: InternalName) extends RefBType {
+  /*final*/ case class ClassBType(internalName: InternalName) extends RefBType {
     /**
      * Write-once variable allows initializing a cyclic graph of infos. This is required for
      * nested classes. Example: for the definition `class A { class B }` we have
@@ -702,6 +774,19 @@ abstract class BTypes {
       case None => Nil
       case Some(sc) => sc :: sc.superClassesTransitive
     }
+
+    /**
+     * The prefix of the internal name until the last '/', or the empty string.
+     */
+    def packageInternalName: String = {
+      val name = internalName
+      name.lastIndexOf('/') match {
+        case -1 => ""
+        case i  => name.substring(0, i)
+      }
+    }
+
+    def isPublic = (info.flags & asm.Opcodes.ACC_PUBLIC) != 0
 
     def isNestedClass = info.nestedInfo.isDefined
 
@@ -837,9 +922,13 @@ abstract class BTypes {
    * @param nestedClasses Classes nested in this class. Those need to be added to the
    *                      InnerClass table, see the InnerClass spec summary above.
    * @param nestedInfo    If this describes a nested class, information for the InnerClass table.
+   * @param inlineInfos   The [[InlineInfo]]s for the methods declared in this class. The map is
+   *                      indexed by the string s"$name$descriptor" (to disambiguate overloads).
+   *                      Entries may be missing, see comment on [[inlineInfosFromSymbolLookup]].
    */
   final case class ClassInfo(superClass: Option[ClassBType], interfaces: List[ClassBType], flags: Int,
-                             nestedClasses: List[ClassBType], nestedInfo: Option[NestedInfo])
+                             nestedClasses: List[ClassBType], nestedInfo: Option[NestedInfo],
+                             inlineInfos: Map[String, InlineInfo])
 
   /**
    * Information required to add a class to an InnerClass table.
@@ -860,6 +949,16 @@ abstract class BTypes {
                               outerName: Option[String],
                               innerName: Option[String],
                               isStaticNestedClass: Boolean)
+
+  /**
+   * Metadata of a method that is useful for the inliner.
+   * @param effectivelyFinal  True if the method cannot be overridden in Scala
+   * @param annotatedInline   True if the method is annotated `@inline`
+   * @param annotatedNoInline True if the method is annotated `@noinline`
+   */
+  final case class InlineInfo(effectivelyFinal: Boolean,
+                              annotatedInline: Boolean,
+                              annotatedNoInline: Boolean)
 
   /**
    * This class holds the data for an entry in the InnerClass table. See the InnerClass summary

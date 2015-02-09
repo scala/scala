@@ -19,7 +19,8 @@ import scala.collection.convert.decorateAsScala._
 
 @RunWith(classOf[JUnit4])
 class BTypesFromClassfileTest {
-  val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode")
+  // inliner enabled -> inlineInfos are collected (and compared) in ClassBTypes
+  val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:inline-global")
 
   import compiler._
   import definitions._
@@ -29,6 +30,7 @@ class BTypesFromClassfileTest {
   def duringBackend[T](f: => T) = compiler.exitingDelambdafy(f)
 
   val run = new compiler.Run() // initializes some of the compiler
+  duringBackend(compiler.scalaPrimitives.init()) // needed: it's only done when running the backend, and we don't actually run the compiler
   duringBackend(bTypes.initializeCoreBTypes())
 
   def clearCache() = bTypes.classBTypeFromInternalName.clear()
@@ -57,6 +59,15 @@ class BTypesFromClassfileTest {
       else (fromSym.flags | ACC_PRIVATE | ACC_PUBLIC) == (fromClassfile.flags | ACC_PRIVATE | ACC_PUBLIC)
     }, s"class flags differ\n$fromSym\n$fromClassfile")
 
+    // when parsing from classfile, the inline infos are obtained through the classSymbol, which
+    // is searched based on the classfile name. this lookup can fail.
+    assert(fromSym.inlineInfos.size == fromClassfile.inlineInfos.size || fromClassfile.inlineInfos.isEmpty,
+      s"wrong # of inline infos:\n${fromSym.inlineInfos.keys.toList.sorted}\n${fromClassfile.inlineInfos.keys.toList.sorted}")
+    fromClassfile.inlineInfos foreach {
+      case (signature, inlineInfo) =>
+        assert(fromSym.inlineInfos(signature) == inlineInfo, s"inline infos differ for $signature:\n$inlineInfo\n${fromClassfile.inlineInfos(signature)}")
+    }
+
     val chk1 = sameBTypes(fromSym.superClass, fromClassfile.superClass, checked)
 
     val chk2 = sameBTypes(fromSym.interfaces, fromClassfile.interfaces, chk1)
@@ -79,7 +90,7 @@ class BTypesFromClassfileTest {
     clearCache()
     val fromSymbol = classBTypeFromSymbol(classSym)
     clearCache()
-    val fromClassfile = bTypes.classBTypeFromParsedClassfile(fromSymbol.internalName)
+    val fromClassfile = bTypes.classBTypeFromParsedClassfile(fromSymbol.internalName).get
     sameBType(fromSymbol, fromClassfile)
   }
 

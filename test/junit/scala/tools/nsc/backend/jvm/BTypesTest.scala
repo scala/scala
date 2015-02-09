@@ -7,35 +7,41 @@ import org.junit.Test
 import scala.tools.asm.Opcodes
 import org.junit.Assert._
 
+import scala.tools.nsc.backend.jvm.CodeGenTools._
+import scala.tools.testing.ClearAfterClass
+
+object BTypesTest extends ClearAfterClass.Clearable {
+  var compiler = {
+    val comp = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:none")
+    new comp.Run() // initializes some of the compiler
+    comp.exitingDelambdafy(comp.scalaPrimitives.init()) // needed: it's only done when running the backend, and we don't actually run the compiler
+    comp.exitingDelambdafy(comp.genBCode.bTypes.initializeCoreBTypes())
+    comp
+  }
+  def clear(): Unit = { compiler = null }
+}
+
 @RunWith(classOf[JUnit4])
-class BTypesTest {
-  val settings = new Settings()
-  settings.processArgumentString("-usejavacp")
-  val g: Global = new Global(settings)
-  val run = new g.Run() // initializes some compiler internals
-  import g.{definitions => d, Symbol}
+class BTypesTest extends ClearAfterClass {
+  ClearAfterClass.stateToClear = BTypesTest
 
-  def duringBackend[T](f: => T) = g.exitingDelambdafy(f)
+  val compiler = BTypesTest.compiler
+  import compiler.genBCode.bTypes._
 
-  val btypes = new BTypesFromSymbols[g.type](g)
-  import btypes._
-  duringBackend(btypes.initializeCoreBTypes())
+  def classBTFS(sym: compiler.Symbol) = compiler.exitingDelambdafy(classBTypeFromSymbol(sym))
 
-  def classBTypeFromSymbol(sym: Symbol) = duringBackend(btypes.classBTypeFromSymbol(sym))
-
-  val jlo = d.ObjectClass
-  val jls = d.StringClass
-
-  val o = classBTypeFromSymbol(jlo)
-  val s = classBTypeFromSymbol(jls)
-  val oArr = ArrayBType(o)
-  val method = MethodBType(List(oArr, INT, DOUBLE, s), UNIT)
+  def jlo = compiler.definitions.ObjectClass
+  def jls = compiler.definitions.StringClass
+  def o = classBTFS(jlo)
+  def s = classBTFS(jls)
+  def oArr = ArrayBType(o)
+  def method = MethodBType(List(oArr, INT, DOUBLE, s), UNIT)
 
   @Test
   def classBTypesEquality() {
-    val s1 = classBTypeFromSymbol(jls)
-    val s2 = classBTypeFromSymbol(jls)
-    val o  = classBTypeFromSymbol(jlo)
+    val s1 = classBTFS(jls)
+    val s2 = classBTFS(jls)
+    val o  = classBTFS(jlo)
     assertEquals(s1, s2)
     assertEquals(s1.hashCode, s2.hashCode)
     assert(s1 != o)
@@ -53,7 +59,7 @@ class BTypesTest {
     assert(FLOAT.typedOpcode(Opcodes.IALOAD)  == Opcodes.FALOAD)
     assert(LONG.typedOpcode(Opcodes.IALOAD)   == Opcodes.LALOAD)
     assert(DOUBLE.typedOpcode(Opcodes.IALOAD) == Opcodes.DALOAD)
-    assert(classBTypeFromSymbol(jls).typedOpcode(Opcodes.IALOAD) == Opcodes.AALOAD)
+    assert(classBTFS(jls).typedOpcode(Opcodes.IALOAD) == Opcodes.AALOAD)
 
     assert(UNIT.typedOpcode(Opcodes.IRETURN)   == Opcodes.RETURN)
     assert(BOOL.typedOpcode(Opcodes.IRETURN)   == Opcodes.IRETURN)
@@ -64,7 +70,7 @@ class BTypesTest {
     assert(FLOAT.typedOpcode(Opcodes.IRETURN)  == Opcodes.FRETURN)
     assert(LONG.typedOpcode(Opcodes.IRETURN)   == Opcodes.LRETURN)
     assert(DOUBLE.typedOpcode(Opcodes.IRETURN) == Opcodes.DRETURN)
-    assert(classBTypeFromSymbol(jls).typedOpcode(Opcodes.IRETURN)   == Opcodes.ARETURN)
+    assert(classBTFS(jls).typedOpcode(Opcodes.IRETURN)   == Opcodes.ARETURN)
   }
 
   @Test

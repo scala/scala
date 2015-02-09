@@ -10,12 +10,14 @@ package backend
 package jvm
 
 import scala.collection.{ mutable, immutable }
+import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository
 import scala.tools.nsc.symtab._
 import scala.annotation.switch
 
 import scala.tools.asm
 import scala.tools.asm.util.{TraceMethodVisitor, ASMifier}
 import java.io.PrintWriter
+import GenBCode._
 
 /*
  *
@@ -125,9 +127,12 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       if (AsmUtils.traceClassEnabled && cnode.name.contains(AsmUtils.traceClassPattern))
         AsmUtils.traceClass(cnode)
 
-      cnode.innerClasses
-      assert(cd.symbol == claszSymbol, "Someone messed up BCodePhase.claszSymbol during genPlainClass().")
+      if (settings.YoptInlinerEnabled) {
+        // The inliner needs to find all classes in the code repo, also those being compiled
+        byteCodeRepository.classes(cnode.name) = Some((cnode, ByteCodeRepository.CompilationUnit))
+      }
 
+      assert(cd.symbol == claszSymbol, "Someone messed up BCodePhase.claszSymbol during genPlainClass().")
     } // end of method genPlainClass()
 
     /*

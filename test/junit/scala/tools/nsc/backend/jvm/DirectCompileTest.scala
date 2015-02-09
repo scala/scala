@@ -7,10 +7,18 @@ import org.junit.Assert._
 import CodeGenTools._
 import scala.tools.asm.Opcodes._
 import scala.tools.partest.ASMConverters._
+import scala.tools.testing.ClearAfterClass
+
+object DirectCompileTest extends ClearAfterClass.Clearable {
+  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:method")
+  def clear(): Unit = { compiler = null }
+}
 
 @RunWith(classOf[JUnit4])
-class DirectCompileTest {
-  val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:method")
+class DirectCompileTest extends ClearAfterClass {
+  ClearAfterClass.stateToClear = DirectCompileTest
+
+  val compiler = DirectCompileTest.compiler
 
   @Test
   def testCompile(): Unit = {

@@ -5,20 +5,24 @@
 
 package scala.tools.nsc
 package backend.jvm
+package opt
 
 import scala.tools.asm
 import asm.tree._
+import scala.tools.nsc.backend.jvm.BTypes.InternalName
 
 /**
  * Reporting utilities used in the optimizer.
+ *
+ * TODO: move out of opt package, rename: it's already used outside the optimizer.
+ * Centralize backend reporting here.
  */
 object OptimizerReporting {
-  def methodSignature(className: String, methodName: String, methodDescriptor: String): String = {
-    className + "::" + methodName + methodDescriptor
+  def methodSignature(classInternalName: InternalName, method: MethodNode): String = {
+    classInternalName + "::" + method.name + method.desc
   }
 
-  def methodSignature(className: String, method: MethodNode): String = methodSignature(className, method.name, method.desc)
-
+  // TODO: clean up reporting of the inliner, test inline failure warnings, etc
   def inlineFailure(reason: String): Nothing = MissingRequirementError.signal(reason)
   def assertionError(message: String): Nothing = throw new AssertionError(message)
 }

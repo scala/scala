@@ -10,6 +10,7 @@ package backend.jvm
 import scala.tools.asm
 import scala.annotation.switch
 import scala.collection.mutable
+import GenBCode._
 
 /*
  *  A high-level facade to the ASM API for bytecode generation.
@@ -41,9 +42,6 @@ abstract class BCodeIdiomatic extends SubComponent {
   )
 
   val StringBuilderClassName = "scala/collection/mutable/StringBuilder"
-
-  val CLASS_CONSTRUCTOR_NAME    = "<clinit>"
-  val INSTANCE_CONSTRUCTOR_NAME = "<init>"
 
   val EMPTY_STRING_ARRAY   = Array.empty[String]
   val EMPTY_INT_ARRAY      = Array.empty[Int]
