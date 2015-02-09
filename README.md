@@ -19,6 +19,7 @@ If you need some help with your PR at any time, please feel free to @-mention an
  Ichoran      | Rex Kerr             | the collections library                           |
  lrytz        | Lukas Rytz           | optimizer, named & default arguments              |
  dickwall     | Dick Wall            | process & documentation                           |
+ VladUreche   | Vlad Ureche          | specialization & scaladoc, the tool               |
 
 PS: If you have some spare time to help out around here, we would be delighted to add your name to this list! 
 
