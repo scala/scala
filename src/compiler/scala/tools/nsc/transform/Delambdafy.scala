@@ -113,7 +113,9 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     // after working on the entire compilation until we'll have a set of
     // new class definitions to add to the top level
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
-      super.transformStats(stats, exprOwner) ++ lambdaClassDefs(exprOwner)
+      // Need to remove from the lambdaClassDefs map: there may be multiple PackageDef for the same
+      // package when defining a package object. We only add the lambda class to one. See SI-9097.
+      super.transformStats(stats, exprOwner) ++ lambdaClassDefs.remove(exprOwner).getOrElse(Nil)
     }
 
     private def optionSymbol(sym: Symbol): Option[Symbol] = if (sym.exists) Some(sym) else None

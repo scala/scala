@@ -539,12 +539,11 @@ abstract class LambdaLift extends InfoTransform {
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       def addLifted(stat: Tree): Tree = stat match {
         case ClassDef(_, _, _, _) =>
-          val lifted = liftedDefs get stat.symbol match {
+          val lifted = liftedDefs remove stat.symbol match {
             case Some(xs) => xs reverseMap addLifted
             case _        => log("unexpectedly no lifted defs for " + stat.symbol) ; Nil
           }
-          try deriveClassDef(stat)(impl => deriveTemplate(impl)(_ ::: lifted))
-          finally liftedDefs -= stat.symbol
+          deriveClassDef(stat)(impl => deriveTemplate(impl)(_ ::: lifted))
 
         case DefDef(_, _, _, _, _, Block(Nil, expr)) if !stat.symbol.isConstructor =>
           deriveDefDef(stat)(_ => expr)
