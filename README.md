@@ -8,6 +8,20 @@ For more information on building and developing the core of Scala, read on! Plea
 We're still using Jira for issue reporting, so please [report any issues](https://issues.scala-lang.org) over there.
 (We would love to start using GitHub Issues, but we're too resource-constrained to take on this migration right now.)
 
+# Get in touch!
+If you need some help with your PR at any time, please feel free to @-mention anyone from the list below, and we will do our best to help you out:
+
+ username     |      full name       | talk to me about...                               |
+--------------|----------------------|---------------------------------------------------| 
+ adriaanm     | Adriaan Moors        | anything (type checker, pattern matcher, CI)      |
+ gkossakowski | Grzegorz Kossakowski | infrastructure, incremental compilation, back-end |
+ retronym     | Jason Zaugg          | Java 8 lambdas, tricky bug detective work         |
+ Ichoran      | Rex Kerr             | the collections library                           |
+ lrytz        | Lukas Rytz           | optimizer, named & default arguments              |
+ dickwall     | Dick Wall            | process & documentation                           |
+ VladUreche   | Vlad Ureche          | specialization & scaladoc, the tool               |
+
+PS: If you have some spare time to help out around here, we would be delighted to add your name to this list! 
 
 # Handy Links
   - [A wealth of documentation](http://docs.scala-lang.org)
