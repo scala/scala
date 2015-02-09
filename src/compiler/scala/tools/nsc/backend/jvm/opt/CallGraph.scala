@@ -10,7 +10,7 @@ package opt
 import scala.tools.asm.tree._
 import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
-import scala.tools.nsc.backend.jvm.opt.BytecodeUtils.BasicAnalyzer
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils.AsmAnalyzer
 import ByteCodeRepository.{Source, CompilationUnit}
 
 class CallGraph[BT <: BTypes](val btypes: BT) {
@@ -68,7 +68,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
 
     // TODO: for now we run a basic analyzer to get the stack height at the call site.
     // once we run a more elaborate analyzer (types, nullness), we can get the stack height out of there.
-    val analyzer = new BasicAnalyzer(methodNode, definingClass.internalName)
+    val analyzer = new AsmAnalyzer(methodNode, definingClass.internalName)
 
     methodNode.instructions.iterator.asScala.collect({
       case call: MethodInsnNode =>

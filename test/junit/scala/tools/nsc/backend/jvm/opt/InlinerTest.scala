@@ -13,7 +13,7 @@ import org.junit.Assert._
 
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
-import scala.tools.nsc.backend.jvm.opt.BytecodeUtils.BasicAnalyzer
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils.AsmAnalyzer
 import scala.tools.nsc.io._
 import scala.tools.testing.AssertUtil._
 
@@ -84,7 +84,7 @@ class InlinerTest extends ClearAfterClass {
     val List(f, g) = cls.methods.asScala.filter(m => Set("f", "g")(m.name)).toList.sortBy(_.name)
     val fCall = g.instructions.iterator.asScala.collect({ case i: MethodInsnNode if i.name == "f" => i }).next()
 
-    val analyzer = new BasicAnalyzer(g, clsBType.internalName)
+    val analyzer = new AsmAnalyzer(g, clsBType.internalName)
 
     val r = inliner.inline(
       fCall,
@@ -222,7 +222,7 @@ class InlinerTest extends ClearAfterClass {
       case m: MethodInsnNode if m.name == "g" => m
     }).next()
 
-    val analyzer = new BasicAnalyzer(h, dTp.internalName)
+    val analyzer = new AsmAnalyzer(h, dTp.internalName)
 
     val r = inliner.inline(
       gCall,
@@ -374,7 +374,7 @@ class InlinerTest extends ClearAfterClass {
     val f = c.methods.asScala.find(_.name == "f").get
     val callsiteIns = f.instructions.iterator().asScala.collect({ case c: MethodInsnNode => c }).next()
     val clsBType = classBTypeFromParsedClassfile(c.name).get
-    val analyzer = new BasicAnalyzer(f, clsBType.internalName)
+    val analyzer = new AsmAnalyzer(f, clsBType.internalName)
 
     val integerClassBType = classBTypeFromInternalName("java/lang/Integer")
     val lowestOneBitMethod = byteCodeRepository.methodNode(integerClassBType.internalName, "lowestOneBit", "(I)I").get._1
@@ -719,5 +719,22 @@ class InlinerTest extends ClearAfterClass {
     val List(c, d, t, tC) = compile(code)
     assertNoInvoke(getSingleMethod(d, "m"))
     assertNoInvoke(getSingleMethod(c, "m"))
+  }
+
+  @Test
+  def inlineTraitCastReceiverToSelf(): Unit = {
+    val code =
+      """class C { def foo(x: Int) = x }
+        |trait T { self: C =>
+        |  @inline final def f(x: Int) = foo(x)
+        |  def t1 = f(1)
+        |  def t2(t: T) = t.f(2)
+        |}
+      """.stripMargin
+    val List(c, t, tc) = compile(code)
+    val t1 = getSingleMethod(tc, "t1")
+    val t2 = getSingleMethod(tc, "t2")
+    val cast = TypeOp(CHECKCAST, "C")
+    Set(t1, t2).foreach(m => assert(m.instructions.contains(cast), m.instructions))
   }
 }

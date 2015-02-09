@@ -296,10 +296,13 @@ object BytecodeUtils {
     )).toList
   }
 
-  class BasicAnalyzer(methodNode: MethodNode, classInternalName: InternalName) {
-    val analyzer = new Analyzer(new BasicInterpreter)
+  /**
+   * A wrapper to make ASM's Analyzer a bit easier to use.
+   */
+  class AsmAnalyzer[V <: Value](methodNode: MethodNode, classInternalName: InternalName, interpreter: Interpreter[V] = new BasicInterpreter) {
+    val analyzer = new Analyzer(interpreter)
     analyzer.analyze(classInternalName, methodNode)
-    def frameAt(instruction: AbstractInsnNode): Frame[BasicValue] = analyzer.getFrames()(methodNode.instructions.indexOf(instruction))
+    def frameAt(instruction: AbstractInsnNode): Frame[V] = analyzer.getFrames()(methodNode.instructions.indexOf(instruction))
   }
 
   implicit class `frame extensions`[V <: Value](val frame: Frame[V]) extends AnyVal {

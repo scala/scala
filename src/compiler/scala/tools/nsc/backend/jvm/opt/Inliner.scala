@@ -17,6 +17,7 @@ import AsmUtils._
 import BytecodeUtils._
 import OptimizerReporting._
 import collection.mutable
+import scala.tools.asm.tree.analysis.{SourceInterpreter, Analyzer}
 
 class Inliner[BT <: BTypes](val btypes: BT) {
   import btypes._
@@ -92,19 +93,38 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
       val traitMethodArgumentTypes = asm.Type.getArgumentTypes(callee.desc)
 
-      val selfParamTypeName = calleeDeclarationClass.info.inlineInfo.traitImplClassSelfType.getOrElse(calleeDeclarationClass.internalName)
-      val selfParamType = asm.Type.getObjectType(selfParamTypeName)
+      val selfParamType = calleeDeclarationClass.info.inlineInfo.traitImplClassSelfType match {
+        case Some(internalName) => classBTypeFromParsedClassfile(internalName)
+        case None               => Some(calleeDeclarationClass)
+      }
 
-      val implClassMethodDescriptor = asm.Type.getMethodDescriptor(asm.Type.getReturnType(callee.desc), selfParamType +: traitMethodArgumentTypes: _*)
       val implClassInternalName = calleeDeclarationClass.internalName + "$class"
 
       // The rewrite reading the implementation class and the implementation method from the bytecode
       // repository. If either of the two fails, the rewrite is not performed.
       for {
-        // TODO: inline warnings if impl class or method cannot be found
-        (implClassMethod, _) <- byteCodeRepository.methodNode(implClassInternalName, callee.name, implClassMethodDescriptor)
-        implClassBType       <- classBTypeFromParsedClassfile(implClassInternalName)
+        // TODO: inline warnings if selfClassType, impl class or impl method cannot be found
+        selfType                  <- selfParamType
+        implClassMethodDescriptor =  asm.Type.getMethodDescriptor(asm.Type.getReturnType(callee.desc), selfType.toASMType +: traitMethodArgumentTypes: _*)
+        (implClassMethod, _)      <- byteCodeRepository.methodNode(implClassInternalName, callee.name, implClassMethodDescriptor)
+        implClassBType            <- classBTypeFromParsedClassfile(implClassInternalName)
       } yield {
+
+        // The self parameter type may be incompatible with the trait type.
+        //   trait T { self: S => def foo = 1 }
+        // The $self parameter type of T$class.foo is S, which may be unrelated to T. If we re-write
+        // a call to T.foo to T$class.foo, we need to cast the receiver to S, otherwise we get a
+        // VerifyError. We run a `SourceInterpreter` to find all producer instructions of the
+        // receiver value and add a cast to the self type after each.
+        if (!calleeDeclarationClass.isSubtypeOf(selfType)) {
+          val analyzer = new AsmAnalyzer(callsite.callsiteMethod, callsite.callsiteClass.internalName, new SourceInterpreter)
+          val receiverValue = analyzer.frameAt(callsite.callsiteInstruction).peekDown(traitMethodArgumentTypes.length)
+          for (i <- receiverValue.insns.asScala) {
+            val cast = new TypeInsnNode(CHECKCAST, selfType.internalName)
+            callsite.callsiteMethod.instructions.insert(i, cast)
+          }
+        }
+
         val newCallsiteInstruction = new MethodInsnNode(INVOKESTATIC, implClassInternalName, callee.name, implClassMethodDescriptor, false)
         callsite.callsiteMethod.instructions.insert(callsite.callsiteInstruction, newCallsiteInstruction)
         callsite.callsiteMethod.instructions.remove(callsite.callsiteInstruction)
@@ -291,7 +311,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
       // We run an interpreter to know the stack height at each xRETURN instruction and the sizes
       // of the values on the stack.
-      val analyzer = new BasicAnalyzer(callee, calleeDeclarationClass.internalName)
+      val analyzer = new AsmAnalyzer(callee, calleeDeclarationClass.internalName)
 
       for (originalReturn <- callee.instructions.iterator().asScala if isReturn(originalReturn)) {
         val frame = analyzer.frameAt(originalReturn)

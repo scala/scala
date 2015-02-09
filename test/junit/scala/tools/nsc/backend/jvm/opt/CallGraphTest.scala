@@ -11,7 +11,6 @@ import org.junit.Assert._
 
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
-import scala.tools.nsc.backend.jvm.opt.BytecodeUtils.BasicAnalyzer
 import scala.tools.testing.AssertUtil._
 
 import CodeGenTools._

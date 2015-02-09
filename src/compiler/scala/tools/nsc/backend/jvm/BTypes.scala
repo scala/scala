@@ -16,11 +16,11 @@ import opt.OptimizerReporting._
 import scala.collection.convert.decorateAsScala._
 
 /**
- * The BTypes component defines The BType class hierarchy. BTypes encapsulate all type information
+ * The BTypes component defines The BType class hierarchy. A BType stores all type information
  * that is required after building the ASM nodes. This includes optimizations, generation of
  * InnerClass attributes and generation of stack map frames.
  *
- * This representation is immutable and independent of the compiler data structures, hence it can
+ * The representation is immutable and independent of the compiler data structures, hence it can
  * be queried by concurrent threads.
  */
 abstract class BTypes {
