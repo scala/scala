@@ -8,5 +8,5 @@ object Test {
 
   val a = new A
   wrongf(a)(a.b)
-  wrongf(new A)(a.b) // should not compile -- TODO: improve error message? the "a" is ambiguous
+  wrongf(new A)(a.b) // should not compile
 }
