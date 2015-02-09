@@ -554,15 +554,19 @@ trait NamesDefaults { self: Analyzer =>
       arg match {
         case arg @ AssignOrNamedArg(Ident(name), rhs) =>
           def matchesName(param: Symbol) = {
-            def checkDeprecation = when(param.deprecatedParamName) { case Some(`name`) => true }
+            def checkDeprecation(anonOK: Boolean) =
+              when (param.deprecatedParamName) {
+                case Some(`name`)      => true
+                case Some(nme.NO_NAME) => anonOK
+              }
             def checkName = {
               val res = param.name == name
-              if (res && checkDeprecation)
+              if (res && checkDeprecation(true))
                 context0.deprecationWarning(arg.pos, param, s"naming parameter $name has been deprecated.")
               res
             }
             def checkAltName = {
-              val res = checkDeprecation
+              val res = checkDeprecation(false)
               if (res) context0.deprecationWarning(arg.pos, param,
                   s"the parameter name $name has been deprecated. Use ${param.name} instead.")
               res
