@@ -18,17 +18,36 @@ abstract class AbstractPromise {
     private volatile Object _ref;
 
     final static long _refoffset;
-
+    /*
+     * In a runtime with a security manager installed, or a non-Oracle runtime,
+     * the Unsafe class may be unavailable. In this case, _refoffset will be
+     * set to -1.
+     *
+     * We assume that a valid field offset will be non-negative, and likely a
+     * multiple of 4.
+     */
     static {
+    	long refoffset = -1;
 	try {
-	    _refoffset = Unsafe.instance.objectFieldOffset(AbstractPromise.class.getDeclaredField("_ref"));
+	    refoffset = Unsafe.instance.objectFieldOffset(AbstractPromise.class.getDeclaredField("_ref"));
 	} catch (Throwable t) {
-	    throw new ExceptionInInitializerError(t);
+	    /* Unsafe object instance access failed */
 	}
+	_refoffset = refoffset;
     }
-
+    
+    /*
+     * The Hotspot compiler can identify that the value of _refoffset never
+     * changes, and compile only the branch below that is used. When the Unsafe
+     * object is available, the compare-and-swap operation will be inlined
+     * directly into *this* method's caller.
+     */
     protected final boolean updateState(Object oldState, Object newState) {
-	return Unsafe.instance.compareAndSwapObject(this, _refoffset, oldState, newState);
+    	if (_refoffset == -1) {
+	    return updater.compareAndSet(this, oldState, newState);
+	} else {
+	    return Unsafe.instance.compareAndSwapObject(this, _refoffset, oldState, newState);
+	}
     }
 
     protected final Object getState() {
