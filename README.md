@@ -8,6 +8,23 @@ For more information on building and developing the core of Scala, read on! Plea
 We're still using Jira for issue reporting, so please [report any issues](https://issues.scala-lang.org) over there.
 (We would love to start using GitHub Issues, but we're too resource-constrained to take on this migration right now.)
 
+# Get in touch!
+If you need some help with your PR at any time, please feel free to @-mention anyone from the list below (or simply `@scala/team-core-scala`), and we will do our best to help you out:
+
+                                                                                                  | username                                                       | talk to me about...                               |
+--------------------------------------------------------------------------------------------------|----------------------------------------------------------------|---------------------------------------------------|
+ <img src="https://avatars.githubusercontent.com/adriaanm"     height="50px" title="Adriaan Moors"/>        | [`@adriaanm`](https://github.com/adriaanm)           | anything (type checker, pattern matcher, CI,...)  |
+ <img src="https://avatars.githubusercontent.com/gkossakowski" height="50px" title="Grzegorz Kossakowski"/> | [`@gkossakowski`](https://github.com/gkossakowski)   | infrastructure, incremental compilation, back-end |
+ <img src="https://avatars.githubusercontent.com/retronym"     height="50px" title="Jason Zaugg"/>          | [`@retronym`](https://github.com/retronym)           | Java 8 lambdas, tricky bug detective work         |
+ <img src="https://avatars.githubusercontent.com/Ichoran"      height="50px" title="Rex Kerr"/>             | [`@Ichoran`](https://github.com/Ichoran)             | the collections library, performance              |
+ <img src="https://avatars.githubusercontent.com/lrytz"        height="50px" title="Lukas Rytz"/>           | [`@lrytz`](https://github.com/lrytz)                 | optimizer, named & default arguments              |
+ <img src="https://avatars.githubusercontent.com/dickwall"     height="50px" title="Dick Wall"/>            | [`@dickwall`](https://github.com/dickwall)           | process & documentation                           |
+ <img src="https://avatars.githubusercontent.com/VladUreche"   height="50px" title="Vlad Ureche"/>          | [`@VladUreche`](https://github.com/VladUreche)       | specialization & the scaladoc tool                |
+ <img src="https://avatars.githubusercontent.com/densh"        height="50px" title="Denys Shabalin"/>       | [`@densh`](https://github.com/densh)                 | quasiquotes, parser, string interpolators, macros in standard library |
+ <img src="https://avatars.githubusercontent.com/xeno-by"      height="50px" title="Eugene Burmako"/>       | [`@xeno-by`](https://github.com/xeno-by)             | macros and reflection |
+
+
+PS: If you have some spare time to help out around here, we would be delighted to add your name to this list! 
 
 # Handy Links
   - [A wealth of documentation](http://docs.scala-lang.org)
