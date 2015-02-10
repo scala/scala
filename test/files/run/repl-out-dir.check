@@ -16,7 +16,6 @@ repl-out-dir-run.obj
         $eval$.class
         $eval.class
         $read$$iw$.class
-        $read$$iw$delayedInit$body.class
         $read$.class
         $read.class
     $line3
@@ -31,7 +30,6 @@ repl-out-dir-run.obj
         $eval$.class
         $eval.class
         $read$$iw$$iw$.class
-        $read$$iw$$iw$delayedInit$body.class
         $read$$iw$.class
         $read$.class
         $read.class
@@ -39,7 +37,6 @@ repl-out-dir-run.obj
         $eval$.class
         $eval.class
         $read$$iw$$iw$.class
-        $read$$iw$$iw$delayedInit$body.class
         $read$$iw$.class
         $read$.class
         $read.class
