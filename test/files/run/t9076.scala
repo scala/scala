@@ -1,5 +1,7 @@
 import scala.tools.partest.SessionTest
 
+import scala.tools.nsc.Settings
+
 object Test extends SessionTest {
   /* avoid objects that don't override toString
   // was: timeout
@@ -8,6 +10,10 @@ object Test extends SessionTest {
     |val y = Future { 9 } ; val z = Future { 7 } ; val r = Await.result(for (a <- y; b <- z) yield (a+b), 5.seconds)
   """.stripMargin
   */
+  override def transformSettings(s: Settings): Settings = {
+    s.YreplWrap.value = "app"
+    s
+  }
   // was: hang
   def session =
 s"""|Type in expressions to have them evaluated.
