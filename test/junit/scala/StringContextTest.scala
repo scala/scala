@@ -86,13 +86,20 @@ class StringContextTest {
     assertEquals("""Forty-two is "42"""", s"Forty-two is \"42\"")
     assertEquals("""dir\""", s"dir\\")
     assertEquals("""\\""", s"\\\\")
-    // dollar is not escaped
-    assertEquals("""\\\42""", raw"\\\$i")
     // colon separator, in case we like to escape dollar someday
     assertEquals("""\\\:42""", raw"\\\:$i")
     assertThrows[StringContext.InvalidEscapeException] {
       s"\\\:$i"
     }
+  }
+
+  @Test def `SI-6476: escape dollar`(): Unit = {
+    val name = "world"
+    assertEquals("Hello, world.", s"Hello, $name.")
+    assertEquals("Hello, $name.", s"Hello, $$name.")
+    assertEquals("Hello, $name.", s"Hello, \$name.")
+    assertEquals("Hello, $world$.", s"Hello, \$$name\$.")
+    assertEquals("Hello, $world$.", s"Hello, \$$name$$.")
   }
 
   // Use this method to avoid problems with a locale-dependent decimal mark.

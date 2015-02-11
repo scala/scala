@@ -688,13 +688,10 @@ trait Scanners extends ScannersCommon {
       } else unclosedStringLit()
     }
 
-    private def unclosedStringLit(): Unit = {
+    private def unclosedStringLit(): Unit = syntaxError {
       val message    = "unclosed string literal"
       val supplement = """ (\" is an escaped quote, not the end of string)"""
-      syntaxError {
-        if (cbuf contains '"') message + supplement
-        else message
-      }
+      if (cbuf contains '"') message + supplement else message
     }
 
     private def getRawStringLit(): Unit = {
@@ -733,22 +730,20 @@ trait Scanners extends ScannersCommon {
             token = STRINGLIT
           } else
             loop(escaped = false)
+        case '"' | '$' if escaped =>
+          putChar(ch)
+          nextRawChar()
+          loop(escaped = false)
         case '"' =>
-          if (escaped) {
-            putChar(ch)
-            nextRawChar()
-            loop(escaped = false)
-          } else {
-            nextChar()
-            setStrVal()
-            token = STRINGLIT
-          }
+          nextChar()
+          setStrVal()
+          token = STRINGLIT
         case '$' =>
           nextRawChar()
           if (ch == '$') {
             putChar(ch)
             nextRawChar()
-            loop(escaped = false) // ignore escape of dollar?
+            loop(escaped = false)
           } else if (ch == '{') {
             finishStringPart()
             nextRawChar()

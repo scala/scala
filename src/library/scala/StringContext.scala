@@ -186,7 +186,7 @@ object StringContext {
   /** Expands standard Scala escape sequences in a string.
    *  Escape sequences are:
    *   control: `\b`, `\t`, `\n`, `\f`, `\r`
-   *   escape:  `\\`, `\"`, `\'`
+   *   escape:  `\\`, `\"`, `\'`, `\$`
    *   octal:   `\d` `\dd` `\ddd` where `d` is an octal digit between `0` and `7`.
    *
    *  @param  str  A string that may contain escape sequences
@@ -218,6 +218,7 @@ object StringContext {
             case '"'  => '"'
             case '\'' => '\''
             case '\\' => '\\'
+            case '$'  => '$'
             case o if '0' <= o && o <= '7' =>
               if (strict) throw new InvalidEscapeException(str, next)
               val leadch = str(idx)
