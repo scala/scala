@@ -48,3 +48,6 @@
 
 # Standard symbolic link to build/quick/bin
 /qbin
+
+# Sbt's target directory for the project defintion
+/project/target
