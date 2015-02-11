@@ -282,8 +282,8 @@ abstract class FormatInterpolator {
       args foreach { case boxed @ BoxedArgExpr(arg, restpe, rhstpe, rhs) =>
         val target = rhstpe orElse restpe
         rhs match {
-          case Literal(Constant(_: Symbol)) => nextArg(boxed)
-          case Literal(Constant(_: Type))   => nextArg(boxed)
+          case Literal(Constant(s: Symbol)) => nextLiteral(boxed, s.name)
+          case Literal(Constant(t: Type))   => nextLiteral(boxed, t.typeSymbol.fullName)
           case Literal(k @ Constant(_)) =>
             if (arg.tpe weak_<:< target) {
               k convertTo target match {
@@ -330,7 +330,6 @@ abstract class FormatInterpolator {
           val nflags = orEmpty(flags).replace("<", "")
           s"%${nindex}${nflags}${orEmpty(width)}${orEmpty(precision)}${cc}"
         }
-        //def atNewIndex(i: Int) = indexer replaceAllIn (specifier, (m: Match) => s"%$i$$") // emit modified index
         def unindexed(i: Int)  = atNewIndex(0)                                            // strip index
         def replaceAt(f: String, i: Int) = Some(String.format(f, literal(i)))             // this format should always succeed
         def noncompat()        = { c.error(cc.pos, s"Specifier '$specifier' not compatible with indexed arg") ; None }
