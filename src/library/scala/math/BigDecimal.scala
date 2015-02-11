@@ -122,7 +122,18 @@ object BigDecimal {
   /** Constructs a `BigDecimal` that exactly represents the number
    *  specified in a `String`.
    */
-  def exact(s: String): BigDecimal = exact(new BigDec(s))
+  def exact(s: String): BigDecimal =
+    try exact(new BigDec(s))
+    catch {
+      // if it fails because exp is MinValue, construct by hand.
+      // BigDec throws for reasons of backward compatibility.
+      case e: NumberFormatException if s endsWith "+2147483648" =>
+        val r = """(\+|-)?(\d+)(\.\d+)?(e|E)\+2147483648""".r
+        s match {
+          case r(_*) => exact(new BigDec(s.init + "7").scaleByPowerOfTen(1))
+          case _     => throw e
+        }
+    }
   
   /** Constructs a 'BigDecimal` that exactly represents the number
    *  specified in base 10 in a character array.

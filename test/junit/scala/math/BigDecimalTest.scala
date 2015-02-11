@@ -3,7 +3,8 @@ package scala.math
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
-import java.math.{BigDecimal => BD, MathContext => MC}
+import org.junit.Assert._
+import java.math.{BigDecimal => BD, BigInteger => BI, MathContext => MC}
 
 /* Tests various maps by making sure they all agree on the same answers. */
 @RunWith(classOf[JUnit4])
@@ -227,5 +228,9 @@ class BigDecimalTest {
   @Test
   def test_SI8970() {
     assert((0.1).## == BigDecimal(0.1).##)
+  }
+  @Test def `string factory accepts exp at MinValue`(): Unit = {
+    assertEquals(new math.BigDecimal(new BD(BI.ZERO, Int.MinValue, MC.UNLIMITED)), math.BigDecimal("0E+2147483648"))
+    assertEquals(new math.BigDecimal(new BD(BI.ZERO, Int.MinValue, MC.UNLIMITED)).toString, math.BigDecimal("0E+2147483648").toString)
   }
 }
