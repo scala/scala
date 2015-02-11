@@ -156,9 +156,6 @@ abstract class FormatInterpolator {
       val fstring = new StringBuilder
       val evals   = ListBuffer[ArgExpr]()
 
-      // an arg with the type that it must bear when handed to format
-      def defval(value: Tree, tpe: Type): Unit = evals += ArgExpr(value, tpe)
-
       // Append the nth part to the string builder, possibly prepending an omitted %s first.
       // Sanity-check the % fields in this part.
       def copyPart(part: Tree, n: Int): Unit = {
@@ -178,6 +175,11 @@ abstract class FormatInterpolator {
         // a conversion for the arg is required at the beginning of the next part
         def checkLeading(): Unit = {
           val arg = args(n - 1)
+          // an arg with the type that it must bear when handed to format
+          def defval(value: Tree, tpe: Type): Unit = {
+            val t = if (AnyRefTpe <:< tpe && !(arg.tpe =:= AnyTpe)) arg.tpe else tpe  // keep narrower type than anyref
+            evals += ArgExpr(value, t)
+          }
           def s_%() = {
             fstring append "%s"
             defval(arg, AnyRefTpe)
@@ -385,7 +387,11 @@ abstract class FormatInterpolator {
 
     def mkTmp(b: BoxedArgExpr): ValDef = {
       val n = TermName(c.freshName("arg$"))
-      val x = if (b.rhstpe != NoType) coerce(b.rhs, b.rhstpe.typeSymbol.asType) else b.rhs
+      val x =
+        if (b.rhstpe != NoType) coerce(b.rhs, b.rhstpe.typeSymbol.asType)
+        else if (b.arg.tpe =:= AnyTpe && b.restpe =:= AnyRefTpe)
+          TypeApply(Select(b.rhs, TermName("asInstanceOf")), List(Ident(TypeName("AnyRef"))))
+        else b.rhs
       ValDef(Modifiers(), n, TypeTree(b.restpe), x)
     }
     def emitOptimized(): Tree = {
