@@ -27,8 +27,12 @@ lazy val commonSettings = Seq[Setting[_]](
   artifactPath in packageBin in Compile := {
     // two lines below are copied over from sbt's sources:
     // https://github.com/sbt/sbt/blob/0.13/main/src/main/scala/sbt/Defaults.scala#L628
-    val resolvedScalaVersion = ScalaVersion((scalaVersion in artifactName).value, (scalaBinaryVersion in artifactName).value)
-    val resolvedArtifactName = artifactName.value(resolvedScalaVersion, projectID.value, artifact.value)
+    //val resolvedScalaVersion = ScalaVersion((scalaVersion in artifactName).value, (scalaBinaryVersion in artifactName).value)
+    //val resolvedArtifactName = artifactName.value(resolvedScalaVersion, projectID.value, artifact.value)
+    // if you would like to get a jar with version number embedded in it (as normally sbt does)
+    // uncomment the other definition of the `resolvedArtifactName`
+    val resolvedArtifact = artifact.value
+    val resolvedArtifactName = s"${resolvedArtifact.name}.${resolvedArtifact.extension}"
     baseDirectory.value / "build/pack/lib" / resolvedArtifactName
   },
   // given that classDirectory is overriden to be _outside_ of target directory, we have
