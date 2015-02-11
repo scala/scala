@@ -178,6 +178,10 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    *
    *  Otherwise, computes value from given expression `op`, stores with key
    *  in map and returns that value.
+   *
+   *  Concurrent map implementations may evaluate the expression `op`
+   *  multiple times, or may evaluate `op` without inserting the result.
+   *  
    *  @param  key the key to test
    *  @param  op  the computation yielding the value to associate with `key`, if
    *              `key` is previously unbound.
