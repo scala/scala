@@ -143,6 +143,7 @@ class StringContextTest {
       f"${null}%b"  -> "false",
       f"${false}%b" -> "false",
       f"${true}%b"  -> "true",
+      f"${true && false}%b"                 -> "false",
       f"${new java.lang.Boolean(false)}%b"  -> "false",
       f"${new java.lang.Boolean(true)}%b"   -> "true",
 
@@ -178,17 +179,17 @@ class StringContextTest {
       // -------------------------------
       f"${120:Char}%c"   -> "x",
       f"${120:Byte}%c"   -> "x",
-      f"${120:Short}%c"   -> "x",
-      f"${120:Int}%c"   -> "x",
+      f"${120:Short}%c"  -> "x",
+      f"${120:Int}%c"    -> "x",
       f"${new java.lang.Character('x')}%c"   -> "x",
       f"${new java.lang.Byte(120:Byte)}%c"   -> "x",
-      f"${new java.lang.Short(120:Short)}%c"   -> "x",
-      f"${new java.lang.Integer(120)}%c"   -> "x",
+      f"${new java.lang.Short(120:Short)}%c" -> "x",
+      f"${new java.lang.Integer(120)}%c"     -> "x",
 
-      f"${'x' : java.lang.Character}%c"   -> "x",
+      f"${'x' : java.lang.Character}%c"     -> "x",
       f"${(120:Byte) : java.lang.Byte}%c"   -> "x",
-      f"${(120:Short) : java.lang.Short}%c"   -> "x",
-      f"${120 : java.lang.Integer}%c"   -> "x",
+      f"${(120:Short) : java.lang.Short}%c" -> "x",
+      f"${120 : java.lang.Integer}%c"       -> "x",
 
       f"${"Scala"}%c"   -> "S",
 
@@ -196,21 +197,24 @@ class StringContextTest {
       // ------------------------------------------
       f"${120:Byte}%d"    -> "120",
       f"${120:Short}%d"   -> "120",
-      f"${120:Int}%d"   -> "120",
+      f"${120:Int}%d"     -> "120",
       f"${120:Long}%d"    -> "120",
-      f"${new java.lang.Byte(120:Byte)}%d"    -> "120",
-      f"${new java.lang.Short(120:Short)}%d"    -> "120",
-      f"${new java.lang.Integer(120)}%d"    -> "120",
-      f"${new java.lang.Long(120)}%d"   -> "120",
-      f"${120 : java.lang.Integer}%d"   -> "120",
-      f"${120 : java.lang.Long}%d"    -> "120",
-      f"${BigInt(120)}%d"   -> "120",
-      f"${new java.math.BigInteger("120")}%d"   -> "120",
-      f"${4}%#10X" ->  "       0X4",
+      f"${60 * 2}%d"      -> "120",
+      f"${new java.lang.Byte(120:Byte)}%d"   -> "120",
+      f"${new java.lang.Short(120:Short)}%d" -> "120",
+      f"${new java.lang.Integer(120)}%d"     -> "120",
+      f"${new java.lang.Long(120)}%d"        -> "120",
+      f"${120 : java.lang.Integer}%d"        -> "120",
+      f"${120 : java.lang.Long}%d"           -> "120",
+      f"${BigInt(120)}%d"                    -> "120",
 
-      f"She is ${fff}%#s feet tall."  -> "She is 4 feet tall.",
+      f"${new java.math.BigInteger("120")}%d" -> "120",
 
-      f"Just want to say ${"hello, world"}%#s..."  -> "Just want to say hello, world...",
+      f"${4}%#10X" -> "       0X4",
+
+      f"She is ${fff}%#s feet tall." -> "She is 4 feet tall.",
+
+      f"Just want to say ${"hello, world"}%#s..." -> "Just want to say hello, world...",
 
       { implicit val strToShort = (s: String) => java.lang.Short.parseShort(s) ; f"${"120"}%d" } -> "120",
       { implicit val strToInt = (s: String) => 42 ; f"${"120"}%d" } -> "42",
@@ -218,21 +222,23 @@ class StringContextTest {
       // 'e' | 'E' | 'g' | 'G' | 'f' | 'a' | 'A' (category: floating point)
       // ------------------------------------------------------------------
       f"${3.4f}%e" -> "3.400000e+00",
-      f"${3.4}%e" -> "3.400000e+00",
+      f"${3.4}%e"  -> "3.400000e+00",
       f"${3.4f : java.lang.Float}%e" -> "3.400000e+00",
       f"${3.4 : java.lang.Double}%e" -> "3.400000e+00",
+
       f"${BigDecimal(3.4)}%e" -> "3.400000e+00",
+
       f"${new java.math.BigDecimal(3.4)}%e" -> "3.400000e+00",
-      f"${3}%e" -> "3.000000e+00",
+
+      f"${3}%e"  -> "3.000000e+00",
       f"${3L}%e" -> "3.000000e+00",
 
       // 't' | 'T' (category: date/time)
       // -------------------------------
-      f"${c}%TD" -> "05/26/12",
-      f"${c.getTime}%TD" -> "05/26/12",
+      f"${c}%TD"                 -> "05/26/12",
+      f"${c.getTime}%TD"         -> "05/26/12",
       f"${c.getTime.getTime}%TD" -> "05/26/12",
-
-      f"""${"1234"}%TD""" -> "05/26/12",
+      f"""${"1234"}%TD"""        -> "05/26/12",
 
       // literals and arg indexes
       f"%%" -> "%",
@@ -241,8 +247,8 @@ class StringContextTest {
           |------
           |matter
           |""".stripMargin,
-      f"${i}%d %<d ${9}%d" -> "42 42 9",
-      f"${7}%d %<d ${9}%d" -> "7 7 9",
+      f"${i}%d %<d ${9}%d"   -> "42 42 9",
+      f"${7}%d %<d ${9}%d"   -> "7 7 9",
       f"${7}%d %2$$d ${9}%d" -> "7 9 9",
 
       f"${null}%d %<B" -> "null FALSE",
