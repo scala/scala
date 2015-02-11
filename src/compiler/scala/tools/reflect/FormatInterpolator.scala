@@ -268,7 +268,6 @@ abstract class FormatInterpolator {
     }
 
     // For each arg, either its index (after inlining literals) or a literal value to inline.
-    // To test for inlining, try evaluating the tmp.  Success may include conversions such as numeric widening.
     def indexed(args: List[BoxedArgExpr]): List[IndexedArgExpr] = {
       var ai = ListBuffer[IndexedArgExpr]()
       var index = 0
@@ -277,33 +276,31 @@ abstract class FormatInterpolator {
         index += 1
         ai += b.indexed(index)
       }
-      // tree to eval for literal: { val tmp: restpe = (x: rhstpe) ; tmp }
-      def evaluator(b: BoxedArgExpr): Tree = {
-        val n = TermName(c.freshName("tmp$"))
-        // not TypeTree(t)
-        def selectTypeForType(t: Type): Tree = selectType(t.typeSymbol.asType)
-        // e.g., Select(Select(Ident(TermName("java")), TermName("util")), TypeName("Formattable"))
-        def selectType(s: TypeSymbol): Tree = global.gen.mkUnattributedRef(TypeName(s.fullName))
-        val x = if (b.rhstpe != NoType) coerce(b.rhs, b.rhstpe.typeSymbol.asType) else b.rhs
-        val v = ValDef(Modifiers(), n, selectTypeForType(b.restpe), x)
-        Block (
-          List(v),
-          Ident(n)
-        )
-      }
-      // if the rhs is a constant, see if we can eval it (possibly with coercions)
+      // if the rhs is a constant expression, extract the value
       args foreach { case boxed @ BoxedArgExpr(arg, restpe, rhstpe, rhs) =>
+        val target = rhstpe orElse restpe
         rhs match {
           case Literal(Constant(_: Symbol)) => nextArg(boxed)
           case Literal(Constant(_: Type))   => nextArg(boxed)
-          case Literal(Constant(_)) if arg.tpe weak_<:< (rhstpe orElse restpe) =>
-            val expr = evaluator(boxed)
-            //if (settings.debug) Console println s"expr to eval: ${ showRaw(expr) }"
-            Try(c eval c.Expr[AnyRef](expr)) match {
-              case Success(x) => nextLiteral(boxed, x)
-              case Failure(e) => nextArg(boxed) ; if (settings.debug) c.warning(arg.pos, s"Failed to eval constant: $e")
-            }
-          case _ => nextArg(boxed)
+          case Literal(k @ Constant(_)) =>
+            if (arg.tpe weak_<:< target) {
+              k convertTo target match {
+                case Constant(x) => nextLiteral(boxed, x.asInstanceOf[AnyRef])
+                case _           => nextArg(boxed)
+              }
+            } else nextArg(boxed)
+          case _ =>
+            if (arg.tpe weak_<:< target) {
+              // see if it's a foldable constant op
+              global.constfold(rhs) match {
+                case Literal(k @ Constant(_)) =>
+                  k convertTo target match {
+                    case Constant(x) => nextLiteral(boxed, x.asInstanceOf[AnyRef])
+                    case _           => nextArg(boxed)
+                  }
+                case _ => nextArg(boxed)
+              }
+            } else nextArg(boxed)
         }
       }
       ai.toList
