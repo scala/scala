@@ -24,6 +24,13 @@ lazy val commonSettings = Seq[Setting[_]](
   javaSource in Compile := (sourceDirectory in Compile).value,
   target := baseDirectory.value / "target" / name.value,
   classDirectory in Compile := baseDirectory.value / "build/quick/classes" / name.value,
+  artifactPath in packageBin in Compile := {
+    // two lines below are copied over from sbt's sources:
+    // https://github.com/sbt/sbt/blob/0.13/main/src/main/scala/sbt/Defaults.scala#L628
+    val resolvedScalaVersion = ScalaVersion((scalaVersion in artifactName).value, (scalaBinaryVersion in artifactName).value)
+    val resolvedArtifactName = artifactName.value(resolvedScalaVersion, projectID.value, artifact.value)
+    baseDirectory.value / "build/pack/lib" / resolvedArtifactName
+  },
   // given that classDirectory is overriden to be _outside_ of target directory, we have
   // to make sure its being cleaned properly
   cleanFiles += (classDirectory in Compile).value
