@@ -174,6 +174,9 @@ class StringContextTest {
       f"${s}%S"     -> "SCALA",
       f"${5}"       -> "5",
       f"${i}"       -> "42",
+      f"${'foo}"    -> "'foo",
+
+      f"${Thread.State.NEW}" -> "NEW",
 
       // 'c' | 'C' (category: character)
       // -------------------------------
