@@ -252,6 +252,11 @@ class StringContextTest {
       f"${7}%d %2$$d ${9}%d" -> "7 9 9",
 
       f"${null}%d %<B" -> "null FALSE",
+
+      f"${5: Any}"      -> "5",
+      f"${5}%s%<d"      -> "55",
+      f"${3.14}%s,%<f"  -> "3.14,3.140000",
+
       f"z" -> "z"
     )
 
