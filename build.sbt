@@ -1,3 +1,41 @@
+/*
+ * The new, sbt-based build definition for Scala.
+ *
+ * What you see below is very much work-in-progress. Basics like compiling and packaging jars
+ * (into right location) work. Everything else is missing:
+ *    building docs, placing shell scripts in right locations (so you can run compiler easily),
+ *    running partest test, compiling and running JUnit test, and many, many other things.
+ *
+ * You'll notice that this build definition is much more complicated than your typical sbt build.
+ * The main reason is that we are not benefiting from sbt's conventions when it comes project
+ * layout. For that reason we have to configure a lot more explicitly. I've tried explain in
+ * comments the less obvious settings.
+ *
+ * This nicely leads me to explaning goal and non-goals of this build definition. Goals are:
+ *
+ *   - to be easy to tweak it in case a bug or small inconsistency is found
+ *   - to mimic Ant's behavior as closely as possible
+ *   - to be super explicit about any departure from standard sbt settings
+ *   - to achieve functional parity with Ant build as quickly as possible
+ *   - to be readable and not necessarily succint
+ *   - to provide the nicest development experience for people hacking on Scala
+ *
+ * Non-goals are:
+ *
+ *   - to have the shortest sbt build definition possible; we'll beat Ant definition
+ *     easily and that will thrill us already
+ *   - to remove irregularities from our build process right away
+ *   - to modularize the Scala compiler or library further
+ *
+ * It boils down to simple rules:
+ *
+ *   - project laytout is set in stone for now
+ *   - if you need to work on convincing sbt to follow non-standard layout then
+ *     explain everything you did in comments
+ *   - constantly check where Ant build produces class files, artifacts, what kind of other
+ *     files generates and port all of that to here
+ */
+
 lazy val commonSettings = Seq[Setting[_]](
   organization := "org.scala-lang",
   version := "2.11.6-SNAPSHOT",
