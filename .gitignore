@@ -51,3 +51,4 @@
 
 # Sbt's target directory for the project defintion
 /project/target
+/target/
