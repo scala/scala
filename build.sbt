@@ -34,6 +34,20 @@
  *     explain everything you did in comments
  *   - constantly check where Ant build produces class files, artifacts, what kind of other
  *     files generates and port all of that to here
+ *
+ * Note on bootstrapping:
+ *
+ *   Let's start with reminder what bootstrapping means in our context. It's an answer
+ *   to this question: which version of Scala are using to compile Scala? The fact that
+ *   the question sounds circular suggests trickiness. Indeed, bootstrapping Scala
+ *   compiler is a tricky process.
+ *
+ *   Ant build used to have involved system of bootstrapping Scala. It would consist of
+ *   three layers: starr, locker and quick. The sbt build for Scala ditches layering
+ *   and strives to be as standard sbt project as possible. This means that we are simply
+ *   building Scala with latest stable release of Scala.
+ *   See this discussion for more details behind this decision:
+ *     https://groups.google.com/d/topic/scala-internals/gp5JsM1E0Fo/discussion
  */
 
 lazy val commonSettings = Seq[Setting[_]](
