@@ -89,7 +89,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     val templateName = if (tpl.isRootPackage) "root package" else tpl.name
     val displayName = tpl.companion match {
       case Some(companion) if (companion.visibility.isPublic && companion.inSource != None) =>
-        <a href={relativeLinkTo(companion)} title="Go to companion">{ templateName }</a>
+        <a href={relativeLinkTo(companion)} title={docEntityKindToCompanionTitle(tpl)}>{ templateName }</a>
       case _ =>
         templateName
     }
@@ -105,7 +105,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         {
           tpl.companion match {
             case Some(companion) if (companion.visibility.isPublic && companion.inSource != None) =>
-              <a href={relativeLinkTo(companion)} title="Go to companion"><img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/></a>
+              <a href={relativeLinkTo(companion)} title={docEntityKindToCompanionTitle(tpl)}><img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/></a>
             case _ =>
               <img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/>
         }}
