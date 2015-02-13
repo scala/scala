@@ -71,20 +71,21 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
    */
   def unapply(x: Any): Option[T] = x match {
     case null       => None
-    case b: Byte    => unapply(b)
-    case s: Short   => unapply(s)
-    case c: Char    => unapply(c)
-    case i: Int     => unapply(i)
-    case l: Long    => unapply(l)
-    case f: Float   => unapply(f)
-    case d: Double  => unapply(d)
-    case b: Boolean => unapply(b)
-    case u: Unit    => unapply(u)
-    case a: Any     => unapplyImpl(a)
+    case x: Byte    => unapplyImpl(x, classOf[Byte]) // erases to: if (x instanceof Byte) unapplyImpl(BoxesRunTime.boxToByte(BoxesRunTime.unboxToByte(x)), Byte.TYPE)
+    case x: Short   => unapplyImpl(x, classOf[Short])
+    case x: Char    => unapplyImpl(x, classOf[Char])
+    case x: Int     => unapplyImpl(x, classOf[Int])
+    case x: Long    => unapplyImpl(x, classOf[Long])
+    case x: Float   => unapplyImpl(x, classOf[Float])
+    case x: Double  => unapplyImpl(x, classOf[Double])
+    case x: Boolean => unapplyImpl(x, classOf[Boolean])
+    case x: Unit    => unapplyImpl(x, classOf[Unit])
+    // TODO: move this next case up and remove the redundant check in unapplyImpl?
+    case _ if runtimeClass isInstance x => Some(x.asInstanceOf[T])
+    case _ => None
   }
 
-  // TODO: Inline the bodies of these into the Any-accepting unapply overload above and delete them.
-  // This cannot be done until at least 2.12.0 for reasons of binary compatibility
+  // TODO: deprecate overloads in 2.12.0, remove in 2.13.0
   def unapply(x: Byte)    : Option[T] = unapplyImpl(x, classOf[Byte])
   def unapply(x: Short)   : Option[T] = unapplyImpl(x, classOf[Short])
   def unapply(x: Char)    : Option[T] = unapplyImpl(x, classOf[Char])
@@ -95,10 +96,9 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
   def unapply(x: Boolean) : Option[T] = unapplyImpl(x, classOf[Boolean])
   def unapply(x: Unit)    : Option[T] = unapplyImpl(x, classOf[Unit])
 
-  private[this] def unapplyImpl(x: Any, alternative: jClass[_] = null): Option[T] = {
-    val conforms = runtimeClass.isInstance(x) || (alternative != null && runtimeClass.isAssignableFrom(alternative))
-    if (conforms) Some(x.asInstanceOf[T]) else None
-  }
+  private[this] def unapplyImpl(x: Any, primitiveCls: java.lang.Class[_]): Option[T] =
+    if (runtimeClass.isInstance(x) || runtimeClass.isAssignableFrom(primitiveCls)) Some(x.asInstanceOf[T])
+    else None
 
   // case class accessories
   override def canEqual(x: Any) = x.isInstanceOf[ClassTag[_]]
