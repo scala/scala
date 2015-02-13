@@ -125,39 +125,71 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
      * nested classes, but NOT nested in C, that are used within C.
      */
     val nestedClassSymbols = {
+      val linkedClass = exitingPickler(classSym.linkedClassOfClass) // linkedCoC does not work properly in late phases
+
       // The lambdalift phase lifts all nested classes to the enclosing class, so if we collect
       // member classes right after lambdalift, we obtain all nested classes, including local and
       // anonymous ones.
       val nestedClasses = {
-        val nested = exitingPhase(currentRun.lambdaliftPhase)(memberClassesOf(classSym))
+        val allNested = exitingPhase(currentRun.lambdaliftPhase)(memberClassesForInnerClassTable(classSym))
+        val nested = {
+          // Classes nested in value classes are nested in the companion at this point. For InnerClass /
+          // EnclosingMethod, we use the value class as the outer class. So we remove nested classes
+          // from the companion that were originally nested in the value class.
+          if (exitingPickler(linkedClass.isDerivedValueClass)) allNested.filterNot(classOriginallyNestedInClass(_, linkedClass))
+          else allNested
+        }
+
         if (isTopLevelModuleClass(classSym)) {
           // For Java compatibility, member classes of top-level objects are treated as members of
           // the top-level companion class, see comment below.
-          val members = exitingPickler(memberClassesOf(classSym))
+          val members = exitingPickler(memberClassesForInnerClassTable(classSym))
           nested diff members
         } else {
           nested
         }
       }
 
-      // If this is a top-level class, the member classes of the companion object are added as
-      // members of the class. For example:
-      //   class C { }
-      //   object C {
-      //     class D
-      //     def f = { class E }
-      //   }
-      // The class D is added as a member of class C. The reason is: for Java compatibility, the
-      // InnerClass attribute for D has "C" (NOT the module class "C$") as the outer class of D
-      // (done by buildNestedInfo). See comment in BTypes.
-      // For consistency, the InnerClass entry for D needs to be present in C - to Java it looks
-      // like D is a member of C, not C$.
-      val linkedClass = exitingPickler(classSym.linkedClassOfClass) // linkedCoC does not work properly in late phases
-      val companionModuleMembers = {
-        // phase travel to exitingPickler: this makes sure that memberClassesOf only sees member classes,
-        // not local classes of the companion module (E in the exmaple) that were lifted by lambdalift.
-        if (isTopLevelModuleClass(linkedClass)) exitingPickler(memberClassesOf(linkedClass))
-        else Nil
+      val companionModuleMembers = if (considerAsTopLevelImplementationArtifact(classSym)) Nil else {
+        // If this is a top-level non-impl (*) class, the member classes of the companion object are
+        // added as members of the class. For example:
+        //   class C { }
+        //   object C {
+        //     class D
+        //     def f = { class E }
+        //   }
+        // The class D is added as a member of class C. The reason is: for Java compatibility, the
+        // InnerClass attribute for D has "C" (NOT the module class "C$") as the outer class of D
+        // (done by buildNestedInfo). See comment in BTypes.
+        // For consistency, the InnerClass entry for D needs to be present in C - to Java it looks
+        // like D is a member of C, not C$.
+        //
+        // (*) We exclude impl classes: if the classfile for the impl class exists on the classpath,
+        // a linkedClass symbol is found for which isTopLevelModule is true, so we end up searching
+        // members of that weird impl-class-module-class-symbol. that search probably cannot return
+        // any classes, but it's better to exclude it.
+        val javaCompatMembers = {
+          if (linkedClass != NoSymbol && isTopLevelModuleClass(linkedClass))
+          // phase travel to exitingPickler: this makes sure that memberClassesForInnerClassTable only sees member
+          // classes, not local classes of the companion module (E in the exmaple) that were lifted by lambdalift.
+            exitingPickler(memberClassesForInnerClassTable(linkedClass))
+          else
+            Nil
+        }
+
+        // Classes nested in value classes are nested in the companion at this point. For InnerClass /
+        // EnclosingMethod we use the value class as enclosing class. Here we search nested classes
+        // in the companion that were originally nested in the value class, and we add them as nested
+        // in the value class.
+        val valueClassCompanionMembers = {
+          if (linkedClass != NoSymbol && exitingPickler(classSym.isDerivedValueClass)) {
+            val moduleMemberClasses = exitingPhase(currentRun.lambdaliftPhase)(memberClassesForInnerClassTable(linkedClass))
+            moduleMemberClasses.filter(classOriginallyNestedInClass(_, classSym))
+          } else
+            Nil
+        }
+
+        javaCompatMembers ++ valueClassCompanionMembers
       }
 
       nestedClasses ++ companionModuleMembers
@@ -191,7 +223,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     assert(innerClassSym.isClass, s"Cannot build NestedInfo for non-class symbol $innerClassSym")
 
     val isTopLevel = innerClassSym.rawowner.isPackageClass
-    if (isTopLevel) None
+    // impl classes are considered top-level, see comment in BTypes
+    if (isTopLevel || considerAsTopLevelImplementationArtifact(innerClassSym)) None
     else {
       // See comment in BTypes, when is a class marked static in the InnerClass table.
       val isStaticNestedClass = isOriginallyStaticOwner(innerClassSym.originalOwner)
@@ -227,7 +260,9 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       }
 
       val innerName: Option[String] = {
-        if (innerClassSym.isAnonymousClass || innerClassSym.isAnonymousFunction) None
+        // phase travel necessary: after flatten, the name includes the name of outer classes.
+        // if some outer name contains $anon, a non-anon class is considered anon.
+        if (exitingPickler(innerClassSym.isAnonymousClass || innerClassSym.isAnonymousFunction)) None
         else Some(innerClassSym.rawname + innerClassSym.moduleSuffix) // moduleSuffix for module classes
       }
 
@@ -246,7 +281,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     classBTypeFromInternalName.getOrElse(internalName, {
       val c = ClassBType(internalName)
       // class info consistent with BCodeHelpers.genMirrorClass
-      val nested = exitingPickler(memberClassesOf(moduleClassSym)) map classBTypeFromSymbol
+      val nested = exitingPickler(memberClassesForInnerClassTable(moduleClassSym)) map classBTypeFromSymbol
       c.info = ClassInfo(
         superClass = Some(ObjectReference),
         interfaces = Nil,

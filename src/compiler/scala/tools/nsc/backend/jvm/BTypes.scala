@@ -527,7 +527,7 @@ abstract class BTypes {
    * local and anonymous classes, no matter if there is an enclosing method or not. Accordingly, the
    * "class" field (see below) must be always defined, while the "method" field may be null.
    *
-   * NOTE: When a EnclosingMethod attribute is requried (local and anonymous classes), the "outer"
+   * NOTE: When an EnclosingMethod attribute is requried (local and anonymous classes), the "outer"
    * field in the InnerClass table must be null.
    *
    * Fields:
@@ -633,6 +633,28 @@ abstract class BTypes {
    *       }
    *     }
    *   }
+   *
+   *
+   * Traits Members
+   * --------------
+   *
+   * Some trait methods don't exist in the generated interface, but only in the implementation class
+   * (private methods in traits for example). Since EnclosingMethod expresses a source-level property,
+   * but the source-level enclosing method doesn't exist in the classfile, we the enclosing method
+   * is null (the enclosing class is still emitted).
+   * See BCodeAsmCommon.considerAsTopLevelImplementationArtifact
+   *
+   *
+   * Implementation Classes, Specialized Classes, Delambdafy:method closure classes
+   * ------------------------------------------------------------------------------
+   *
+   * Trait implementation classes and specialized classes are always considered top-level. Again,
+   * the InnerClass / EnclosingMethod attributes describe a source-level properties. The impl
+   * classes are compilation artifacts.
+   *
+   * The same is true for delambdafy:method closure classes. These classes are generated at
+   * top-level in the delambdafy phase, no special support is required in the backend.
+   *
    *
    * Mirror Classes
    * --------------

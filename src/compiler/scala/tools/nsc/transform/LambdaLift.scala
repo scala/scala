@@ -250,21 +250,30 @@ abstract class LambdaLift extends InfoTransform {
         debuglog("renaming in %s: %s => %s".format(sym.owner.fullLocationString, originalName, sym.name))
       }
 
+      // make sure that the name doesn't make the symbol accidentally `isAnonymousClass` (et.al) by
+      // introducing `$anon` in its name. to be cautious, we don't make this change in the default
+      // backend under 2.11.x, so only in GenBCode.
+      def nonAnon(s: String) = if (settings.Ybackend.value == "GenBCode") nme.ensureNonAnon(s) else s
+
       def newName(sym: Symbol): Name = {
         val originalName = sym.name
         def freshen(prefix: String): Name =
           if (originalName.isTypeName) unit.freshTypeName(prefix)
           else unit.freshTermName(prefix)
 
+        val join = nme.NAME_JOIN_STRING
         if (sym.isAnonymousFunction && sym.owner.isMethod) {
-          freshen(sym.name + nme.NAME_JOIN_STRING + sym.owner.name + nme.NAME_JOIN_STRING)
+          freshen(sym.name + join + nonAnon(sym.owner.name.toString) + join)
         } else {
+          val name = freshen(sym.name + join)
           // SI-5652 If the lifted symbol is accessed from an inner class, it will be made public. (where?)
-          //         Generating a unique name, mangled with the enclosing class name, avoids a VerifyError
-          //         in the case that a sub-class happens to lifts out a method with the *same* name.
-          val name = freshen("" + sym.name + nme.NAME_JOIN_STRING)
-          if (originalName.isTermName && !sym.enclClass.isImplClass && calledFromInner(sym)) nme.expandedName(name.toTermName, sym.enclClass)
-          else name
+          //         Generating a unique name, mangled with the enclosing full class name (including
+          //         package - subclass might have the same name), avoids a VerifyError in the case
+          //         that a sub-class happens to lifts out a method with the *same* name.
+          if (originalName.isTermName && !sym.enclClass.isImplClass && calledFromInner(sym))
+            newTermNameCached(nonAnon(sym.enclClass.fullName('$')) + nme.EXPAND_SEPARATOR_STRING + name)
+          else
+            name
         }
       }
 
