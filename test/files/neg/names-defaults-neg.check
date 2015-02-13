@@ -151,15 +151,15 @@ names-defaults-neg.scala:144: error: variable definition needs type because 'x' 
 names-defaults-neg.scala:147: error: variable definition needs type because 'x' is used as a named argument in its body.
   object t6 { var x = t.f(x = 1) }
                   ^
-names-defaults-neg.scala:147: warning: type-checking the invocation of method f checks if the named argument expression 'x = ...' is a valid assignment
-in the current scope. The resulting type inference error (see above) can be fixed by providing an explicit type in the local definition for x.
+names-defaults-neg.scala:147: warning: failed to determine if 'x = ...' is a named argument or an assignment expression.
+an explicit type is required for the definition mentioned in the error message above.
   object t6 { var x = t.f(x = 1) }
                             ^
 names-defaults-neg.scala:150: error: variable definition needs type because 'x' is used as a named argument in its body.
   class t9 { var x = t.f(x = 1) }
                  ^
-names-defaults-neg.scala:150: warning: type-checking the invocation of method f checks if the named argument expression 'x = ...' is a valid assignment
-in the current scope. The resulting type inference error (see above) can be fixed by providing an explicit type in the local definition for x.
+names-defaults-neg.scala:150: warning: failed to determine if 'x = ...' is a named argument or an assignment expression.
+an explicit type is required for the definition mentioned in the error message above.
   class t9 { var x = t.f(x = 1) }
                            ^
 names-defaults-neg.scala:164: error: variable definition needs type because 'x' is used as a named argument in its body.
@@ -174,8 +174,8 @@ names-defaults-neg.scala:170: error: reference to x is ambiguous; it is both a m
 names-defaults-neg.scala:177: error: variable definition needs type because 'x' is used as a named argument in its body.
   class u15 { var x = u.f(x = 1) }
                   ^
-names-defaults-neg.scala:177: warning: type-checking the invocation of method f checks if the named argument expression 'x = ...' is a valid assignment
-in the current scope. The resulting type inference error (see above) can be fixed by providing an explicit type in the local definition for x.
+names-defaults-neg.scala:177: warning: failed to determine if 'x = ...' is a named argument or an assignment expression.
+an explicit type is required for the definition mentioned in the error message above.
   class u15 { var x = u.f(x = 1) }
                             ^
 names-defaults-neg.scala:180: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.

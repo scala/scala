@@ -521,8 +521,22 @@ trait NamesDefaults { self: Analyzer =>
             WarnAfterNonSilentRecursiveInference(param, arg)(context)
           res
         } match {
-          case SilentResultValue(t)  => !t.isErroneous // #4041
-          case _        => false
+          case SilentResultValue(t)  =>
+            !t.isErroneous // #4041
+          case SilentTypeError(e: NormalTypeErrorFromCyclicReference) =>
+            // If we end up here, the CyclicReference was reported in a silent context. This can
+            // happen for local definitions, when the completer for a definition is created during
+            // type checking in silent mode. ContextErrors.TypeSigError catches that cyclic reference
+            // and transforms it into a NormalTypeErrorFromCyclicReference.
+            // The cycle needs to be reported, because the program cannot be typed: we don't know
+            // if we have an assignment or a named arg.
+            context.issue(e)
+            // 'err = true' is required because we're in a silent context
+            WarnAfterNonSilentRecursiveInference(param, arg)(context)
+            false
+          case _        =>
+            // We got a type error, so it cannot be an assignment (it doesn't type check as one).
+            false
         }
         catch {
           // `silent` only catches and returns TypeErrors which are not

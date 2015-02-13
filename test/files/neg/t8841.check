@@ -1,0 +1,9 @@
+t8841.scala:13: error: recursive value c needs type
+    val ambiguousName = c.ambiguousName
+        ^
+t8841.scala:12: warning: failed to determine if 'ambiguousName = ...' is a named argument or an assignment expression.
+an explicit type is required for the definition mentioned in the error message above.
+    val c = new Cell(ambiguousName = Some("bla"))
+                                   ^
+one warning found
+one error found
