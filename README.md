@@ -79,7 +79,7 @@ This facilitates reviewing: a commit that reformats code can be judged quickly n
 Please do not @mention anyone in the commit message -- that's what the PR description and comments are for. Every time a commit is shuffled through github (in a merge in some fork, say), every @mention results in an email to that person (the core team treats them as personal email, straight to their inbox, so please don't flood us :-)).
 
 
-## Reviewing
+## Reviews
 
 Please consider nominating a reviewer for your PR in the PR's description or a comment. If unsure, not to worry -- the core team will assign one for you.
 
@@ -87,7 +87,22 @@ Your reviewer is also your mentor, who will help you rework your PR so that it m
 
 To help you plan your contributions, we communicate our plans on a regular basis on scala-internals, and deadlines are tracked as due dates for [GitHub milestones](https://github.com/scala/scala/milestones).
 
-Once you've established some history submitting PRs, we will invite you to become a reviewer for others's code. The main goal of this whole process, in the end, is to ensure the health of the Scala project by improving the quality of the code base, the documentation, as well as this process itself. Thank you for doing your part!
+## Reviewing
+
+Once you've gained some experience with the code base and the process, the logical next step is to offers reviews for others's contributions. The main goal of this whole process, in the end, is to ensure the health of the Scala project by improving the quality of the code base, the documentation, as well as this process itself. Thank you for doing your part!
+
+### Tips & Tricks
+Once the `publish-core` task has completed on a commit, you can try it out in sbt as follows:
+
+```
+$ sbt
+
+> set resolvers += "pr" at "http://private-repo.typesafe.com/typesafe/scala-pr-validation-snapshots/"
+> set scalaVersion := "<milestone>-<sha7>-SNAPSHOT"
+> console
+```
+
+Here, `<milestone>` is the milestone targeted by the PR (e.g., 2.11.6), and `<sha7>` is the 7-character sha (the format used by GitHub on the web).
 
 ## IDE Setup
 ### Eclipse
