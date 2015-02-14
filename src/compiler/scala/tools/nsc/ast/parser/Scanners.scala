@@ -718,6 +718,14 @@ trait Scanners extends ScannersCommon {
         next.lastOffset = charOffset - 1
         next.offset = charOffset - 1
       }
+      def isLastQuoteOnLine: Boolean = {
+        val lookahead = lookaheadReader
+        var c: Char = 0
+        do {
+          c = lookahead.getc()
+        } while (c != '"' && c != LF && c != SU)
+        (c != '"')
+      }
       @tailrec def loop(escaped: Boolean): Unit = ch match {
         case '\\' if !multiLine =>
           putChar(ch)
@@ -730,7 +738,18 @@ trait Scanners extends ScannersCommon {
             token = STRINGLIT
           } else
             loop(escaped = false)
-        case '"' | '$' if escaped =>
+        case '"' if escaped =>
+          // at \", unescape and finish if this is the last quote on the line
+          if (!multiLine && isLastQuoteOnLine) {
+            nextChar()
+            setStrVal()
+            token = STRINGLIT
+          } else {
+            putChar(ch)
+            nextRawChar()
+            loop(escaped = false)
+          }
+        case '$' if escaped =>
           putChar(ch)
           nextRawChar()
           loop(escaped = false)

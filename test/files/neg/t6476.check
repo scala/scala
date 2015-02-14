@@ -1,0 +1,4 @@
+t6476.scala:2: error: value y is not a member of String
+  val sa = s"x\"y
+                ^
+one error found

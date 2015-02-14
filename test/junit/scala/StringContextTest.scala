@@ -80,6 +80,9 @@ class StringContextTest {
     val i = 42
     assertEquals("""Forty-two is "42"""", s"Forty-two is \"42\"")
     assertEquals("""dir\""", s"dir\\")
+    assertEquals("""dir\""", raw"dir\")
+    assertEquals("""1 \ 42""", raw"1 \ $i")
+    assertEquals("""1 \ 42 \""", raw"1 \ $i \")
     assertEquals("""\\""", s"\\\\")
     // colon separator, in case we like to escape dollar someday
     assertEquals("""\\\:42""", raw"\\\:$i")
