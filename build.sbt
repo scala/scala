@@ -89,7 +89,10 @@ lazy val commonSettings = Seq[Setting[_]](
   },
   // given that classDirectory is overriden to be _outside_ of target directory, we have
   // to make sure its being cleaned properly
-  cleanFiles += (classDirectory in Compile).value
+  cleanFiles += (classDirectory in Compile).value,
+  copyrightString := "Copyright 2002-2013, LAMP/EPFL",
+  resourceGenerators in Compile += generateVersionPropertiesFile.map(file => Seq(file)).taskValue,
+  generateVersionPropertiesFile := generateVersionPropertiesFileImpl.value
 )
 
 lazy val library = project.
@@ -153,3 +156,54 @@ lazy val root = (project in file(".")).
   // so it doesn't produce any artifact including not building
   // an empty jar
   disablePlugins(plugins.IvyPlugin)
+
+lazy val copyrightString = SettingKey[String]("Copyright string.")
+
+lazy val generateVersionPropertiesFile = taskKey[File]("Generating version properties file.")
+
+lazy val generateVersionPropertiesFileImpl: Def.Initialize[Task[File]] = Def.task {
+  val propFile = (resourceManaged in Compile).value / s"${name.value}.properties"
+  val props = new java.util.Properties
+
+  /**
+   * Regexp that splits version number split into two parts: version and suffix.
+   * Examples of how the split is performed:
+   *
+   *  "2.11.5": ("2.11.5", null)
+   *  "2.11.5-acda7a": ("2.11.5", "-acda7a")
+   *  "2.11.5-SNAPSHOT": ("2.11.5", "-SNAPSHOT")
+   *
+   */
+  val versionSplitted = """([\w+\.]+)(-[\w+\.]+)??""".r
+
+  val versionSplitted(ver, suffixOrNull) = version.value
+  val osgiSuffix = suffixOrNull match {
+    case null => "-VFINAL"
+    case "-SNAPSHOT" => ""
+    case suffixStr => suffixStr
+  }
+
+  def executeTool(tool: String) = {
+      val cmd =
+        if (System.getProperty("os.name").toLowerCase.contains("windows"))
+          s"cmd.exe /c tools\\$tool.bat -p"
+        else s"tools/$tool"
+      Process(cmd).lines.head
+  }
+
+  val commitDate = executeTool("get-scala-commit-date")
+  val commitSha = executeTool("get-scala-commit-sha")
+
+  props.put("version.number", s"${version.value}-$commitDate-$commitSha")
+  props.put("maven.version.number", s"${version.value}")
+  props.put("osgi.version.number", s"$ver.v$commitDate$osgiSuffix-$commitSha")
+  props.put("copyright.string", copyrightString.value)
+
+  // unfortunately, this will write properties in arbitrary order
+  // this makes it harder to test for stability of generated artifacts
+  // consider using https://github.com/etiennestuder/java-ordered-properties
+  // instead of java.util.Properties
+  IO.write(props, null, propFile)
+
+  propFile
+}
