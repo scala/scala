@@ -1372,27 +1372,15 @@ self =>
         parseIf
       case TRY =>
         def parseTry = atPos(in.skipToken()) {
-          val body = in.token match {
-            case LBRACE => inBracesOrUnit(block())
-            case LPAREN => inParensOrUnit(expr())
-            case _ => expr()
-          }
-          def catchFromExpr() = List(makeCatchFromExpr(expr()))
-          val catches: List[CaseDef] =
-            if (in.token != CATCH) Nil
-            else {
-              in.nextToken()
-              if (in.token != LBRACE) catchFromExpr()
-              else inBracesOrNil {
-                if (in.token == CASE) caseClauses()
-                else catchFromExpr()
-              }
-            }
-          val finalizer = in.token match {
-            case FINALLY => in.nextToken(); expr()
-            case _ => EmptyTree
-          }
-          Try(body, catches, finalizer)
+          val body = expr()
+          val handler: List[CaseDef] =
+            if (in.token == CATCH) { in.nextToken(); makeCatchFromExpr(expr()) }
+            else Nil
+          val finalizer =
+            if (in.token == FINALLY) { in.nextToken(); expr() }
+            else EmptyTree
+
+          Try(body, handler, finalizer)
         }
         parseTry
       case WHILE =>
