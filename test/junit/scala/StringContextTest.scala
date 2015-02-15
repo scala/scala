@@ -64,18 +64,21 @@ class StringContextTest {
   }
 
   @Test def fIf() = {
+    import StringContextTest.formatUsingCurrentLocale
     val res = f"${if (true) 2.5 else 2.5}%.2f"
     val expected = formatUsingCurrentLocale(2.50)
     assertEquals(expected, res)
   }
 
   @Test def fIfNot() = {
+    import StringContextTest.formatUsingCurrentLocale
     val res = f"${if (false) 2.5 else 3.5}%.2f"
     val expected = formatUsingCurrentLocale(3.50)
     assertEquals(expected, res)
   }
 
   @Test def fHeteroArgs() = {
+    import StringContextTest.formatUsingCurrentLocale
     val res = f"${3.14}%.2f rounds to ${3}%d"
     val expected = formatUsingCurrentLocale(3.14) + " rounds to 3"
     assertEquals(expected, res)
@@ -105,6 +108,27 @@ class StringContextTest {
     assertEquals("Hello, $world$.", s"Hello, \$$name$$.")
   }
 
+  @Test def `SI-6476: normalize escapes`(): Unit = {
+    import StringContextTest._
+    assertEquals(""""Hello", world.""", n"\"Hello\", \world.")
+    assertThrows[StringContext.InvalidEscapeException] {
+      N"\"Hello\", \world."
+    }
+  }
+}
+object StringContextTest {
+  implicit class `sanguine normalizer`(private val sc: StringContext) extends AnyVal {
+    def n(args: Any*): String = {
+      sc.checkLengths(args)
+      sc.parts.map(StringContext.normalize(_, strict = false)).zipAll(args, "", "").map(p => List(p._1, p._2)).flatten.mkString
+    }
+  }
+  implicit class `strict normalizer`(private val sc: StringContext) extends AnyVal {
+    def N(args: Any*): String = {
+      sc.checkLengths(args)
+      sc.parts.map(StringContext.normalize(_, strict = true)).zipAll(args, "", "").map(p => List(p._1, p._2)).flatten.mkString
+    }
+  }
   // Use this method to avoid problems with a locale-dependent decimal mark.
   // The string interpolation is not used here intentionally as this method is used to test string interpolation.
   private def formatUsingCurrentLocale(number: Double, decimalPlaces: Int = 2) = ("%." + decimalPlaces + "f").format(number)

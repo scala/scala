@@ -170,20 +170,21 @@ case class StringContext(parts: String*) {
 
 object StringContext {
 
-  /** An exception that is thrown if a string contains a backslash (`\`) character
+  /** An exception that is thrown if an interpolated string contains a backslash (`\`) character
    *  that does not start a valid escape sequence.
-   *  @param  str   The offending string
-   *  @param  idx   The index of the offending backslash character in `str`.
+   *
+   *  @param  str     The offending string.
+   *  @param  index   The index of the offending backslash character in `str`.
+   *  @param  ok      A string representation of acceptable escape sequences for the exception message.
    */
-  class InvalidEscapeException(str: String, @deprecatedName('idx) val index: Int) extends IllegalArgumentException(
+  class InvalidEscapeException(str: String, val index: Int, ok: String) extends IllegalArgumentException(
     s"""invalid escape ${
       require(index >= 0 && index < str.length)
-      val ok = """[\b, \t, \n, \f, \r, \\, \", \']"""
-      if (index == str.length - 1) "at terminal" else s"'\\${str(index + 1)}' not one of $ok at"
+      if (index == str.length - 1) "at terminal" else s"'\\${str(index + 1)}' not one of [$ok] at"
     } index $index in "$str". Use \\\\ for literal \\."""
   )
 
-  /** Expands standard Scala escape sequences in a string.
+  /** Expands standard Scala escape sequences in a string, plus escaped `\$`.
    *  Escape sequences are:
    *   control: `\b`, `\t`, `\n`, `\f`, `\r`
    *   escape:  `\\`, `\"`, `\'`, `\$`
@@ -204,11 +205,12 @@ object StringContext {
       val b = new JLSBuilder
       // append replacement starting at index `i`, with `next` backslash
       @tailrec def loop(i: Int, next: Int): String = {
+        def badEscape = new InvalidEscapeException(str, next, ok = """\b, \t, \n, \f, \r, \\, \$, \", \'""")
         if (next >= 0) {
           //require(str(next) == '\\')
           if (next > i) b.append(str, i, next)
           var idx = next + 1
-          if (idx >= len) throw new InvalidEscapeException(str, next)
+          if (idx >= len) throw badEscape
           val c = str(idx) match {
             case 'b'  => '\b'
             case 't'  => '\t'
@@ -220,7 +222,7 @@ object StringContext {
             case '\\' => '\\'
             case '$'  => '$'
             case o if '0' <= o && o <= '7' =>
-              if (strict) throw new InvalidEscapeException(str, next)
+              if (strict) throw badEscape
               val leadch = str(idx)
               var oct = leadch - '0'
               idx += 1
@@ -234,13 +236,49 @@ object StringContext {
               }
               idx -= 1   // retreat
               oct.toChar
-            case _    => throw new InvalidEscapeException(str, next)
+            case _    => throw badEscape
           }
           idx += 1       // advance
           b append c
           loop(idx, str.indexOf('\\', idx))
         } else {
           if (i < len) b.append(str, i, len)
+          b.toString
+        }
+      }
+      loop(0, first)
+    }
+    str indexOf '\\' match {
+      case -1 => str
+      case  i => replace(i)
+    }
+  }
+
+  /** Remove backslash escape characters.
+   *  In strict mode, which is the default, permit only
+   *  escaped delimiters: \", \$ and \\.
+   *
+   *  @param strict if true, throw if other escapes are present.
+   */
+  def normalize(str: String, strict: Boolean = true): String = {
+    // replace escapes with given first escape
+    def replace(first: Int): String = {
+      val b = new JLSBuilder
+      @tailrec def loop(i: Int, next: Int): String = {
+        def badEscape = new InvalidEscapeException(str, next, ok = """\\, \$, \"""")
+        if (next >= 0) {
+          if (next > i) b.append(str, i, next)
+          val idx = next + 1
+          if (idx >= str.length) throw badEscape
+          val c = str(idx) match {
+            case x @ ('"' | '\\' | '$') => x
+            case x if !strict           => x
+            case _                      => throw badEscape
+          }
+          b append c
+          loop(idx + 1, str.indexOf('\\', idx + 1))
+        } else {
+          if (i < str.length) b.append(str, i, str.length)
           b.toString
         }
       }
