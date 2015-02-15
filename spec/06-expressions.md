@@ -11,7 +11,7 @@ Expr         ::=  (Bindings | id | `_') `=>' Expr
                |  Expr1
 Expr1        ::=  `if' `(' Expr `)' {nl} Expr [[semi] `else' Expr]
                |  `while' `(' Expr `)' {nl} Expr
-               |  `try' (`{' Block `}' | Expr) [`catch' `{' CaseClauses `}'] [`finally' Expr]
+               |  `try' Expr [`catch' Expr] [`finally' Expr]
                |  `do' Expr [semi] `while' `(' Expr ')'
                |  `for' (`(' Enumerators `)' | `{' Enumerators `}') {nl} [`yield'] Expr
                |  `throw' Expr
@@ -1122,7 +1122,7 @@ is `scala.Nothing`.
 ## Try Expressions
 
 ```ebnf
-Expr1 ::=  `try' `{' Block `}' [`catch' `{' CaseClauses `}']
+Expr1 ::=  `try'  Expr  [`catch' Expr]
            [`finally' Expr]
 ```
 
