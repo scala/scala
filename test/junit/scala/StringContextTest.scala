@@ -98,4 +98,25 @@ class StringContextTest {
     assertEquals("Hello, $world$.", s"Hello, \$$name\$.")
     assertEquals("Hello, $world$.", s"Hello, \$$name$$.")
   }
+  @Test def `SI-6476: normalize escapes`(): Unit = {
+    import StringContextTest._
+    assertEquals(""""Hello", world.""", n"\"Hello\", \world.")
+    assertThrows[StringContext.InvalidEscapeException] {
+      N"\"Hello\", \world."
+    }
+  }
+}
+object StringContextTest {
+  implicit class `sanguine normalizer`(private val sc: StringContext) extends AnyVal {
+    def n(args: Any*): String = {
+      sc.checkLengths(args)
+      sc.parts.map(StringContext.normalize(_, strict = false)).zipAll(args, "", "").map(p => List(p._1, p._2)).flatten.mkString
+    }
+  }
+  implicit class `strict normalizer`(private val sc: StringContext) extends AnyVal {
+    def N(args: Any*): String = {
+      sc.checkLengths(args)
+      sc.parts.map(StringContext.normalize(_, strict = true)).zipAll(args, "", "").map(p => List(p._1, p._2)).flatten.mkString
+    }
+  }
 }
