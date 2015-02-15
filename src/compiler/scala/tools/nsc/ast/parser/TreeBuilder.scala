@@ -102,6 +102,17 @@ abstract class TreeBuilder {
   def makeCaseDef(pat: Tree, guard: Tree, rhs: Tree): CaseDef =
     CaseDef(gen.patvarTransformer.transform(pat), guard, rhs)
 
+  /** At parser, rejigger non-case catch expression.
+   *
+   *  Match is eliminated by unwrapping. Other expression
+   *  becomes a single CaseDef with empty pattern and
+   *  expr tree as RHS.
+   */
+  def makeMatchFromExpr(catchExpr: Tree): List[CaseDef] = catchExpr match {
+    case Match(EmptyTree, cases) => cases
+    case _ => CaseDef(EmptyTree, EmptyTree, catchExpr) :: Nil
+  }
+
   /** Creates tree representing:
    *    { case x: Throwable =>
    *        val catchFn = catchExpr
@@ -120,6 +131,18 @@ abstract class TreeBuilder {
         Apply(Select(catchFn, nme.apply), List(Ident(binder))),
         Throw(Ident(binder))
       )
+    ))
+    makeCaseDef(pat, EmptyTree, body)
+  }
+
+  /** Creates tree representing:
+   *    { case x: Throwable => catchExpr(x) }
+   */
+  def makeCatchFromFunc(catchFn: Tree): CaseDef = {
+    val binder = freshTermName()
+    val pat    = Bind(binder, Typed(Ident(nme.WILDCARD), Ident(tpnme.Throwable)))
+    val body   = atPos(catchFn.pos.makeTransparent)(Block(
+      Apply(Select(catchFn, nme.apply), List(Ident(binder))),
     ))
     makeCaseDef(pat, EmptyTree, body)
   }

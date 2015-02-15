@@ -1106,7 +1106,7 @@ Expr1 ::=  ‘try’ Expr [‘catch’ Expr] [‘finally’ Expr]
 ```
 
 A _try expression_ is of the form `try { ´b´ } catch ´h´`
-where the handler ´h´ is a
+where the handler ´h´ is usually a
 [pattern matching anonymous function](08-pattern-matching.html#pattern-matching-anonymous-functions)
 
 ```scala
@@ -1120,11 +1120,12 @@ handler ´h´ is applied to the thrown exception.
 If the handler contains a case matching the thrown exception,
 the first such case is invoked. If the handler contains
 no case matching the thrown exception, the exception is
-re-thrown.
+re-thrown. More generally, if the handler is a `PartialFunction`,
+it is applied only if it is defined at the given exception.
 
 Let ´\mathit{pt}´ be the expected type of the try expression.  The block
 ´b´ is expected to conform to ´\mathit{pt}´.  The handler ´h´
-is expected conform to type `scala.PartialFunction[scala.Throwable, ´\mathit{pt}\,´]`.
+is expected conform to type `scala.Function[scala.Throwable, ´\mathit{pt}\,´]`.
 The type of the try expression is the [weak least upper bound](03-types.html#weak-conformance)
 of the type of ´b´ and the result type of ´h´.
 
