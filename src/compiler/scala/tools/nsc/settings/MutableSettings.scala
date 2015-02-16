@@ -70,9 +70,23 @@ class MutableSettings(val errorFn: String => Unit)
       case "" :: xs =>
         loop(xs, residualArgs)
       case x :: xs  =>
+        def error() = {
+          val err         = s"bad option: '$x'"
+          // see if there's an option that looks like it
+          val suffix      = x.stripPrefix("-X").stripPrefix("-Y").stripPrefix("-")
+          val leaders     = List("-", "-X", "-Y")
+          val allprefixes = leaders map (_ + suffix)
+          val indent      = "\u0020" * 2
+          val helping     = help || Xhelp || Yhelp
+
+          def similar(s: Setting) = !s.isDeprecated && (allprefixes exists (s.name contains _))
+          val alts = (allSettings filter similar map (_.name)).toList.sorted mkString f"%n$indent"
+          val msg  = if (helping && alts.nonEmpty) f"$err%n${indent}Similar options:%n$indent$alts" else err
+          errorFn(msg)
+        }
         if (x startsWith "-") {
           parseParams(args) match {
-            case newArgs if newArgs eq args => errorFn(s"bad option: '$x'") ; (false, args)
+            case newArgs if newArgs eq args => error() ; (false, args)
             case newArgs                    => loop(newArgs, residualArgs)
           }
         }
