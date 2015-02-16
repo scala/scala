@@ -109,9 +109,6 @@ if [[ -n "$cygwin" ]]; then
         JAVA_HOME="$(cygpath --$format "$JAVA_HOME")"
     fi
     TOOL_CLASSPATH="$(cygpath --path --$format "$TOOL_CLASSPATH")"
-elif [[ -n "$mingw" ]]; then
-    SCALA_HOME="$(cmd //c echo "$SCALA_HOME")"
-    TOOL_CLASSPATH="$(cmd //c echo "$TOOL_CLASSPATH")"
 fi
 
 if [[ -n "$cygwin$mingw" ]]; then
@@ -130,23 +127,6 @@ fi
 # -D options will be available as system properties.
 declare -a java_args
 declare -a scala_args
-
-# default to the boot classpath for speed, except on cygwin/mingw because
-# JLine on Windows requires a custom DLL to be loaded.
-unset usebootcp
-if [[ -z "$cygwin$mingw" ]]; then
-  usebootcp="true"
-fi
-
-# If using the boot classpath, also pass an empty classpath
-# to java to suppress "." from materializing.
-classpathArgs () {
-  if [[ -n $usebootcp ]]; then
-    echo "-Xbootclasspath/a:$TOOL_CLASSPATH -classpath \"\""
-  else
-    echo "-classpath $TOOL_CLASSPATH"
-  fi
-}
 
 # SI-8358, SI-8368 -- the default should really be false,
 # but I don't want to flip the default during 2.11's RC cycle
@@ -200,6 +180,23 @@ if [[ -z "$JAVACMD" && -n "$JAVA_HOME" && -x "$JAVA_HOME/bin/java" ]]; then
     JAVACMD="$JAVA_HOME/bin/java"
 fi
 
+declare -a classpath_args
+
+# default to the boot classpath for speed, except on cygwin/mingw because
+# JLine on Windows requires a custom DLL to be loaded.
+unset usebootcp
+if [[ -z "$cygwin$mingw" ]]; then
+  usebootcp="true"
+fi
+
+# If using the boot classpath, also pass an empty classpath
+# to java to suppress "." from materializing.
+if [[ -n $usebootcp ]]; then
+  classpath_args=("-Xbootclasspath/a:$TOOL_CLASSPATH" -classpath "\"\"")
+else
+  classpath_args=(-classpath "$TOOL_CLASSPATH")
+fi
+
 # note that variables which may intentionally be empty must not
 # be quoted: otherwise an empty string will appear as a command line
 # argument, and java will think that is the program to run.
@@ -207,7 +204,7 @@ execCommand \
   "${JAVACMD:=java}" \
   $JAVA_OPTS \
   "${java_args[@@]}" \
-  $(classpathArgs) \
+  "${classpath_args[@@]}" \
   -Dscala.home="$SCALA_HOME" \
   $OVERRIDE_USEJAVACP \
   "$EMACS_OPT" \
