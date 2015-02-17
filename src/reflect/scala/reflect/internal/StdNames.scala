@@ -1078,6 +1078,7 @@ trait StdNames {
     val reflPolyCacheName: NameType   = "reflPoly$Cache"
     val reflParamsCacheName: NameType = "reflParams$Cache"
     val reflMethodName: NameType      = "reflMethod$Method"
+    val argument: NameType            = "<argument>"
 
   }
 
