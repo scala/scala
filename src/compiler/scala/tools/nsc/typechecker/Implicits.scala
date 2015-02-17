@@ -918,7 +918,7 @@ trait Implicits {
 
       /** Returns all eligible ImplicitInfos and their SearchResults in a map.
        */
-      def findAll() = mapFrom(eligible)(typedImplicit(_, ptChecked = false, isLocalToCallsite))
+      def findAll() = linkedMapFrom(eligible)(typedImplicit(_, ptChecked = false, isLocalToCallsite))
 
       /** Returns the SearchResult of the best match.
        */
@@ -963,7 +963,7 @@ trait Implicits {
      *                           symbols of the same name in succeeding lists.
      *  @return                  map from infos to search results
      */
-    def applicableInfos(iss: Infoss, isLocalToCallsite: Boolean): Map[ImplicitInfo, SearchResult] = {
+    def applicableInfos(iss: Infoss, isLocalToCallsite: Boolean): mutable.LinkedHashMap[ImplicitInfo, SearchResult] = {
       val start       = if (Statistics.canEnable) Statistics.startCounter(subtypeAppInfos) else null
       val computation = new ImplicitComputation(iss, isLocalToCallsite) { }
       val applicable  = computation.findAll()
