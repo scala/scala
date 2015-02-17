@@ -22,6 +22,7 @@ import ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.util.Exceptional.unwrap
 import java.net.URL
 import scala.tools.util.PathResolver
+import scala.util.{Try => Trying}
 
 /** An interpreter for Scala code.
  *
@@ -968,7 +969,14 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       }
     }
 
-    lazy val resultSymbol = lineRep.resolvePathToSymbol(fullAccessPath)
+    //lazy val resultSymbol = lineRep.resolvePathToSymbol(fullAccessPath)
+    // the type symbol of the owner of the member that supplies the result value
+    lazy val resultSymbol = {
+      val sym =
+      lineRep.resolvePathToSymbol(fullAccessPath)
+      // plow through the INSTANCE member when -Yrepl-class-based
+      if (sym.isTerm && sym.nameString == "INSTANCE") sym.typeSignature.typeSymbol else sym
+    }
 
     def applyToResultMember[T](name: Name, f: Symbol => T) = exitingTyper(f(resultSymbol.info.nonPrivateDecl(name)))
 
@@ -1034,17 +1042,42 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def typeOfTerm(id: String): Type = symbolOfTerm(id).tpe
 
   def valueOfTerm(id: String): Option[Any] = exitingTyper {
-    def value() = {
-      val sym0    = symbolOfTerm(id)
-      val sym     = (importToRuntime importSymbol sym0).asTerm
-      val module  = runtimeMirror.reflectModule(sym.owner.companionSymbol.asModule).instance
-      val module1 = runtimeMirror.reflect(module)
-      val invoker = module1.reflectField(sym)
+    def value(fullName: String) = {
+      import runtimeMirror.universe.{ Symbol, InstanceMirror, TermName }
+      val pkg :: rest = (fullName split '.').toList
+      val top = runtimeMirror.staticPackage(pkg)
+      @annotation.tailrec
+      def loop(inst: InstanceMirror, cur: Symbol, path: List[String]): Option[Any] = {
+        def mirrored =
+          if (inst != null) inst
+          else runtimeMirror reflect (runtimeMirror reflectModule cur.asModule).instance
 
-      invoker.get
+        path match {
+          case last :: Nil  =>
+            cur.typeSignature.decls find (x => x.name.toString == last && x.isAccessor) map { m =>
+              (mirrored reflectMethod m.asMethod).apply()
+            }
+          case next :: rest =>
+            val s = cur.typeSignature.member(TermName(next))
+            val i =
+              if (s.isModule) {
+                if (inst == null) null
+                else runtimeMirror reflect (inst reflectModule s.asModule).instance
+              }
+              else if (s.isAccessor) {
+                runtimeMirror reflect (mirrored reflectMethod s.asMethod).apply()
+              }
+              else {
+                assert(false, s.fullName)
+                inst
+              }
+            loop(i, s, rest)
+          case Nil => None
+        }
+      }
+      loop(null, top, rest)
     }
-
-    try Some(value()) catch { case _: Exception => None }
+    Option(symbolOfTerm(id)) filter (_.exists) flatMap (s => Trying(value(s.fullName)).toOption.flatten)
   }
 
   /** It's a bit of a shotgun approach, but for now we will gain in
@@ -1089,6 +1122,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       )
     )
   }
+  // this is harder than getting the typed trees and fixing up the string to emit that reports types
   def cleanMemberDecl(owner: Symbol, member: Name): Type =
     cleanTypeAfterTyper(owner.info nonPrivateDecl member)
 
@@ -1173,6 +1207,12 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def withoutTruncating[A](body: => A): A = reporter withoutTruncating body
 
   def symbolDefString(sym: Symbol) = {
+    /*
+    val ds = exitingTyper(sym.defString)
+    val no = List(sym.owner.name + ".this.", sym.owner.fullName + ".")
+    val q  = TypeStrings.quieter(ds, no: _*)
+    Console println ss"defstr of $ds excluding $no is $q"
+    */
     TypeStrings.quieter(
       exitingTyper(sym.defString),
       sym.owner.name + ".this.",
