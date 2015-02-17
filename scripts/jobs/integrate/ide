@@ -3,23 +3,21 @@
 # requires env: scalaVersion (specifies binary already built from above checkout), WORKSPACE (provided by jenkins), repo_ref (HEAD of the scala checkout),
 # requires files: $baseDir/versions.properties (from checkout -- defines version numbers for modules used to build scala for dbuild...)
 
-echo "IDE integration currently broken on 2.10.x. See https://github.com/scala-ide/uber-build/issues/48. Punting."
-exit 0
-
 # TODO: remove when integration is up and running
 if [ "woele$_scabot_last" != "woele1" ]; then echo "Scabot didn't mark this as last commit -- skipping."; exit 0; fi
 
 baseDir=${WORKSPACE-`pwd`}
-uberBuildUrl=${uberBuildUrl-"https://github.com/scala-ide/uber-build.git"}
+uberBuildUrl="https://github.com/gkossakowski/uber-build.git"
 uberBuildConfig=${uberBuildConfig-"validator-2.10.conf"}
 
 uberBuildDir="$baseDir/uber-build/"
+uberBranch="scala-2.10-failures"
 
 cd $baseDir
 if [[ -d $uberBuildDir ]]; then
-  ( cd $uberBuildDir && git fetch $uberBuildUrl HEAD && git checkout -f FETCH_HEAD && git clean -fxd )
+  ( cd $uberBuildDir && git fetch $uberBuildUrl "$uberBranch" && git checkout -f FETCH_HEAD && git clean -fxd )
 else
-  git clone $uberBuildUrl
+  git clone -b "$uberBranch" $uberBuildUrl
 fi
 
 echo "maven.version.number=$scalaVersion" >> versions.properties
