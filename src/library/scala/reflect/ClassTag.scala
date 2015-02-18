@@ -69,21 +69,20 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
    * `SomeExtractor(...)` is turned into `ct(SomeExtractor(...))` if `T` in `SomeExtractor.unapply(x: T)`
    * is uncheckable, but we have an instance of `ClassTag[T]`.
    */
-  def unapply(x: Any): Option[T] = x match {
-    case null       => None
-    case x: Byte    => unapplyImpl(x, classOf[Byte]) // erases to: if (x instanceof Byte) unapplyImpl(BoxesRunTime.boxToByte(BoxesRunTime.unboxToByte(x)), Byte.TYPE)
-    case x: Short   => unapplyImpl(x, classOf[Short])
-    case x: Char    => unapplyImpl(x, classOf[Char])
-    case x: Int     => unapplyImpl(x, classOf[Int])
-    case x: Long    => unapplyImpl(x, classOf[Long])
-    case x: Float   => unapplyImpl(x, classOf[Float])
-    case x: Double  => unapplyImpl(x, classOf[Double])
-    case x: Boolean => unapplyImpl(x, classOf[Boolean])
-    case x: Unit    => unapplyImpl(x, classOf[Unit])
-    // TODO: move this next case up and remove the redundant check in unapplyImpl?
-    case _ if runtimeClass isInstance x => Some(x.asInstanceOf[T])
-    case _ => None
-  }
+  def unapply(x: Any): Option[T] =
+    if (null != x && (
+            (runtimeClass.isInstance(x))
+         || (x.isInstanceOf[Byte]    && runtimeClass.isAssignableFrom(classOf[Byte]))
+         || (x.isInstanceOf[Short]   && runtimeClass.isAssignableFrom(classOf[Short]))
+         || (x.isInstanceOf[Char]    && runtimeClass.isAssignableFrom(classOf[Char]))
+         || (x.isInstanceOf[Int]     && runtimeClass.isAssignableFrom(classOf[Int]))
+         || (x.isInstanceOf[Long]    && runtimeClass.isAssignableFrom(classOf[Long]))
+         || (x.isInstanceOf[Float]   && runtimeClass.isAssignableFrom(classOf[Float]))
+         || (x.isInstanceOf[Double]  && runtimeClass.isAssignableFrom(classOf[Double]))
+         || (x.isInstanceOf[Boolean] && runtimeClass.isAssignableFrom(classOf[Boolean]))
+         || (x.isInstanceOf[Unit]    && runtimeClass.isAssignableFrom(classOf[Unit])))
+       ) Some(x.asInstanceOf[T])
+    else None
 
   // TODO: deprecate overloads in 2.12.0, remove in 2.13.0
   def unapply(x: Byte)    : Option[T] = unapplyImpl(x, classOf[Byte])
