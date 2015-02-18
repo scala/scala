@@ -28,7 +28,7 @@ import scala.math.ScalaNumber;
   * @version 2.0 */
 public final class BoxesRunTime
 {
-    private static final int CHAR = 0, BYTE = 1, SHORT = 2, INT = 3, LONG = 4, FLOAT = 5, DOUBLE = 6, OTHER = 7;
+    private static final int CHAR = 0, /* BYTE = 1, SHORT = 2, */ INT = 3, LONG = 4, FLOAT = 5, DOUBLE = 6, OTHER = 7;
 
     /** We don't need to return BYTE and SHORT, as everything which might
      *  care widens to INT.
@@ -41,10 +41,6 @@ public final class BoxesRunTime
         if (a instanceof java.lang.Float) return FLOAT;
         if ((a instanceof java.lang.Byte) || (a instanceof java.lang.Short)) return INT;
         return OTHER;
-    }
-
-    private static String boxDescription(Object a) {
-      return "" + a.getClass().getSimpleName() + "(" + a + ")";
     }
 
 /* BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING */

@@ -613,9 +613,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
                  */
                 for (i <- args.length until dims) elemKind = ArrayBType(elemKind)
               }
-              (argsSize : @switch) match {
-                case 1 => bc newarray elemKind
-                case _ =>
+              if (argsSize == 1) bc newarray elemKind
+              else {
                   val descr = ('[' * argsSize) + elemKind.descriptor // denotes the same as: arrayN(elemKind, argsSize).descriptor
                   mnode.visitMultiANewArrayInsn(descr, argsSize)
               }

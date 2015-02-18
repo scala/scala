@@ -154,6 +154,9 @@ trait Definitions extends api.StandardDefinitions {
     private var isInitialized = false
     def isDefinitionsInitialized = isInitialized
 
+    private def getPackage(fullname: String): ModuleSymbol =
+      rootMirror.getPackage(TermName(fullname))
+    
     // It becomes tricky to create dedicated objects for other symbols because
     // of initialization order issues.
     lazy val JavaLangPackage      = getPackage("java.lang")
@@ -453,7 +456,7 @@ trait Definitions extends api.StandardDefinitions {
 
     // XML
     lazy val ScalaXmlTopScope = getModuleIfDefined("scala.xml.TopScope")
-    lazy val ScalaXmlPackage  = getPackageIfDefined("scala.xml")
+    lazy val ScalaXmlPackage  = getPackageIfDefined(TermName("scala.xml"))
 
     // scala.reflect
     lazy val ReflectPackage              = requiredModule[scala.reflect.`package`.type]
@@ -1462,7 +1465,7 @@ trait Definitions extends api.StandardDefinitions {
       )
       lazy val TagSymbols = TagMaterializers.keySet
       lazy val Predef_conforms     = (getMemberIfDefined(PredefModule, nme.conforms)
-                               orElse getMemberMethod(PredefModule, "conforms": TermName)) // TODO: predicate on -Xsource:2.10 (for now, needed for transition from M8 -> RC1)
+                               orElse getMemberMethod(PredefModule, TermName("conforms"))) // TODO: predicate on -Xsource:2.10 (for now, needed for transition from M8 -> RC1)
       lazy val Predef_classOf      = getMemberMethod(PredefModule, nme.classOf)
       lazy val Predef_implicitly   = getMemberMethod(PredefModule, nme.implicitly)
       lazy val Predef_wrapRefArray = getMemberMethod(PredefModule, nme.wrapRefArray)

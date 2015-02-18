@@ -15,7 +15,7 @@ import org.apache.tools.ant.types.Path
 import scala.tools.nsc.Settings
 import scala.tools.nsc.io.File
 import scala.tools.nsc.settings.FscSettings
-import scala.tools.nsc.util.ScalaClassLoader
+import scala.reflect.internal.util.ScalaClassLoader
 
 /** An Ant task to compile with the fast Scala compiler (`fsc`).
  *
