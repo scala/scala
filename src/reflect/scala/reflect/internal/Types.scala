@@ -1976,13 +1976,13 @@ trait Types
      * usage scenario.
      */
     private var relativeInfoCache: Type = _
-    private var memberInfoCache: Type = _
+    private var relativeInfoPeriod: Period = NoPeriod
 
-    private[Types] def relativeInfo = {
-      val memberInfo = pre.memberInfo(sym)
-      if (relativeInfoCache == null || (memberInfo ne memberInfoCache)) {
-        memberInfoCache = memberInfo
+    private[Types] def relativeInfo = /*trace(s"relativeInfo(${safeToString}})")*/{
+      if (relativeInfoPeriod != currentPeriod) {
+        val memberInfo = pre.memberInfo(sym)
         relativeInfoCache = transformInfo(memberInfo)
+        relativeInfoPeriod = currentPeriod
       }
       relativeInfoCache
     }

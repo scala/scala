@@ -266,7 +266,6 @@ abstract class TreeCheckers extends Analyzer {
 
       if (tree ne typed)
         treesDiffer(tree, typed)
-
       tree
     }
 
