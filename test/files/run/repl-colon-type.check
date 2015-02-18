@@ -36,12 +36,12 @@ scala> :type lazy val f = 5
 Int
 
 scala> :type protected lazy val f = 5
-<console>:5: error: lazy value f cannot be accessed in object $iw
+<console>:6: error: lazy value f cannot be accessed in object $iw
  Access to protected value f not permitted because
  enclosing object $eval in package $line13 is not a subclass of
- object $iw where target is defined
-  lazy val $result = f
-                                           ^
+ object $iw in object $read where target is defined
+  lazy val $result = { compute ; f }
+                                                   ^
 
 scala> :type def f = 5
 => Int
