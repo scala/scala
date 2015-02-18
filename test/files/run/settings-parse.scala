@@ -3,9 +3,8 @@ import scala.language.postfixOps
 import scala.tools.nsc._
 
 object Test {
-  val tokens        = List("", "-deprecation", "foo.scala")
-  val subsets       = tokens.toSet.subsets.toList
-  val permutations0 = subsets.flatMap(_.toList.permutations).distinct
+  val tokens        = "" :: "-deprecation" :: "foo.scala" :: Nil
+  val permutations0 = tokens.toSet.subsets.flatMap(_.toList.permutations).toList.distinct
 
   def runWithCp(cp: String) = {
     val permutations = permutations0 flatMap ("-cp CPTOKEN" :: _ permutations)

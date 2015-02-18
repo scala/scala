@@ -185,7 +185,7 @@ self =>
    *
    *  @return     the iterator.
    */
-  def subsets: Iterator[This] = new AbstractIterator[This] {
+  def subsets(): Iterator[This] = new AbstractIterator[This] {
     private val elms = self.toIndexedSeq
     private var len = 0
     private var itr: Iterator[This] = Iterator.empty
