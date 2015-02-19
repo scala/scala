@@ -64,7 +64,10 @@ lazy val commonSettings = Seq[Setting[_]](
   // we don't want any unmanaged jars; as a reminder: unmanaged jar is a jar stored
   // directly on the file system and it's not resolved through Ivy
   // Ant's build stored unmanaged jars in `lib/` directory
-  unmanagedJars in Compile := Seq.empty,
+  unmanagedJars in Compile := Seq.empty
+)
+
+lazy val subprojectSettings = commonSettings ++ Seq[Setting[_]](
   sourceDirectory in Compile := baseDirectory.value,
   sourceDirectories in Compile := Seq(sourceDirectory.value),
   scalaSource in Compile := (sourceDirectory in Compile).value,
@@ -155,7 +158,7 @@ lazy val root = (project in file(".")).
  */
 def configureAsSubproject(project: Project): Project = {
   val base = file(".") / "src" / project.id
-  (project in base).settings(commonSettings: _*)
+  (project in base).settings(subprojectSettings: _*)
 }
 
 lazy val buildDirectory = settingKey[File]("The directory where all build products go. By default ./build")
