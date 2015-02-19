@@ -54,9 +54,6 @@ lazy val commonSettings = Seq[Setting[_]](
   organization := "org.scala-lang",
   version := "2.11.6-SNAPSHOT",
   scalaVersion := "2.11.5",
-  // all project will have baseDirectory set to root folder; we shouldn't include
-  // any source from it in any project
-  sourcesInBase := false,
   // we don't cross build Scala itself
   crossPaths := false,
   // do not add Scala library jar as a dependency automatically
