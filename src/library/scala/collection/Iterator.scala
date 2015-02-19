@@ -392,8 +392,16 @@ trait Iterator[+A] extends TraversableOnce[A] {
    */
   def flatMap[B](f: A => GenTraversableOnce[B]): Iterator[B] = new AbstractIterator[B] {
     private var cur: Iterator[B] = empty
-    def hasNext: Boolean =
-      cur.hasNext || self.hasNext && { cur = f(self.next()).toIterator; hasNext }
+    private def nextCur() { cur = f(self.next()).toIterator }
+    def hasNext: Boolean = {
+      // Equivalent to cur.hasNext || self.hasNext && { nextCur(); hasNext }
+      // but slightly shorter bytecode (better JVM inlining!)
+      while (!cur.hasNext) {
+        if (!self.hasNext) return false
+        nextCur()
+      }
+      true
+    }
     def next(): B = (if (hasNext) cur else empty).next()
   }
 
@@ -405,6 +413,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @note    Reuse: $consumesAndProducesIterator
    */
   def filter(p: A => Boolean): Iterator[A] = new AbstractIterator[A] {
+    // TODO 2.12 - Make a full-fledged FilterImpl that will reverse sense of p
     private var hd: A = _
     private var hdDefined: Boolean = false
 
@@ -777,7 +786,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *               is equal (as determined by `==`) to `elem`, `false` otherwise.
    *  @note        Reuse: $consumesIterator
    */
-  def contains(elem: Any): Boolean = exists(_ == elem)
+  def contains(elem: Any): Boolean = exists(_ == elem)    // Note--this seems faster than manual inlining!
 
   /** Finds the first value produced by the iterator satisfying a
    *  predicate, if any.
@@ -789,12 +798,11 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @note    Reuse: $consumesIterator
    */
   def find(p: A => Boolean): Option[A] = {
-    var res: Option[A] = None
-    while (res.isEmpty && hasNext) {
-      val e = next()
-      if (p(e)) res = Some(e)
+    while (hasNext) {
+      val a = next()
+      if (p(a)) return Some(a)
     }
-    res
+    None
   }
 
   /** Returns the index of the first produced value satisfying a predicate, or -1.
@@ -807,15 +815,11 @@ trait Iterator[+A] extends TraversableOnce[A] {
    */
   def indexWhere(p: A => Boolean): Int = {
     var i = 0
-    var found = false
-    while (!found && hasNext) {
-      if (p(next())) {
-        found = true
-      } else {
-        i += 1
-      }
+    while (hasNext) {
+      if (p(next())) return i
+      i += 1
     }
-    if (found) i else -1
+    -1
   }
 
   /** Returns the index of the first occurrence of the specified
@@ -829,15 +833,11 @@ trait Iterator[+A] extends TraversableOnce[A] {
    */
   def indexOf[B >: A](elem: B): Int = {
     var i = 0
-    var found = false
-    while (!found && hasNext) {
-      if (next() == elem) {
-        found = true
-      } else {
-        i += 1
-      }
+    while (hasNext) {
+      if (next() == elem) return i
+      i += 1
     }
-    if (found) i else -1
+    -1
   }
 
   /** Creates a buffered iterator from this iterator.
