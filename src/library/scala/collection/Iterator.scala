@@ -479,13 +479,27 @@ trait Iterator[+A] extends TraversableOnce[A] {
   *  @note     Reuse: $consumesAndProducesIterator
   */
   @migration("`collect` has changed. The previous behavior can be reproduced with `toSeq`.", "2.8.0")
-  def collect[B](pf: PartialFunction[A, B]): Iterator[B] = {
-    val self = buffered
-    new AbstractIterator[B] {
-      private def skip() = while (self.hasNext && !pf.isDefinedAt(self.head)) self.next()
-      def hasNext = { skip(); self.hasNext }
-      def next() = { skip(); pf(self.next()) }
+  def collect[B](pf: PartialFunction[A, B]): Iterator[B] = new AbstractIterator[B] {
+    // Manually buffer to avoid extra layer of wrapping with buffered
+    private[this] var hd: A = _
+    
+    // Little state machine to keep track of where we are
+    // Seek = 0; Found = 1; Empty = -1
+    // Not in vals because scalac won't make them static (@inline def only works with -optimize)
+    // BE REALLY CAREFUL TO KEEP COMMENTS AND NUMBERS IN SYNC!
+    private[this] var status = 0/*Seek*/
+    
+    def hasNext = {
+      while (status == 0/*Seek*/) {
+        if (self.hasNext) {
+          hd = self.next()
+          if (pf.isDefinedAt(hd)) status = 1/*Found*/
+        }
+        else status = -1/*Empty*/
+      }
+      status == 1/*Found*/
     }
+    def next() = if (hasNext) { status = 0/*Seek*/; pf(hd) } else Iterator.empty.next()
   }
 
   /** Produces a collection containing cumulative results of applying the
@@ -587,33 +601,105 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @note    Reuse: $consumesOneAndProducesTwoIterators
    */
   def span(p: A => Boolean): (Iterator[A], Iterator[A]) = {
-    val self = buffered
-
-    // Must be a named class to avoid structural call to finish from trailing iterator
+    /*
+     * Giving a name to following iterator (as opposed to trailing) because
+     * anonymous class is represented as a structural type that trailing
+     * iterator is referring (the finish() method) and thus triggering
+     * handling of structural calls. It's not what's intended here.
+     */
     class Leading extends AbstractIterator[A] {
-      private val drained  = new mutable.Queue[A]
-      private var finished = false
-      def finish(): Unit = {
-        require(!finished)
-        finished = true
-        while (selfish) drained += self.next
+      var lookahead: mutable.Queue[A] = null
+      var hd: A = _
+      /* Status is kept with magic numbers
+       *   1 means next element is in hd and we're still reading into this iterator
+       *   0 means we're still reading but haven't found a next element
+       *   -1 means we are done reading into the iterator, so we must rely on lookahead
+       *   -2 means we are done but have saved hd for the other iterator to use as its first element
+       */
+      var status = 0
+      private def store(a: A) {
+        if (lookahead == null) lookahead = new mutable.Queue[A]
+        lookahead += a
       }
-      private def selfish = self.hasNext && p(self.head)
-      def hasNext = if (finished) drained.nonEmpty else selfish
+      def hasNext = {
+        if (status < 0) (lookahead ne null) && lookahead.nonEmpty
+        else if (status > 0) true
+        else {
+          if (self.hasNext) {
+            hd = self.next()
+            status = if (p(hd)) 1 else -2
+          }
+          else status = -1
+          status > 0
+        }
+      }
       def next() = {
-        if (finished) drained.dequeue()
-        else if (selfish) self.next()
+        if (hasNext) {
+          if (status == 1) { status = 0; hd }
+          else lookahead.dequeue()
+        }
         else empty.next()
       }
-    }
-    val leading = new Leading
-    val trailing = new AbstractIterator[A] {
-      private lazy val it = {
-        leading.finish()
-        self
+      def finish(): Boolean = {
+        if (status == -1) false
+        else if (status == -2) {
+          status = -1
+          true
+        }
+        else {
+          if (status == 1) store(hd)
+          while (self.hasNext) {
+            val a = self.next()
+            if (p(a)) store(a)
+            else {
+              hd = a
+              status = -1
+              return true
+            }
+          }
+          false
+        }
       }
-      def hasNext = it.hasNext
-      def next() = it.next()
+    }
+    
+    val leading = new Leading
+    
+    val trailing = new AbstractIterator[A] {
+      private[this] var myLeading = leading
+      /* Status flags meanings:
+       *   -1 not yet accesssed
+       *   0 single element waiting in leading
+       *   1 defer to self
+       */
+      private[this] var status = -1
+      def hasNext = {
+        if (status > 0) self.hasNext
+        else {
+          if (status == 0) true
+          else if (myLeading.finish()) {
+            status = 0
+            true
+          }
+          else {
+            status = 1
+            myLeading = null
+            self.hasNext
+          }
+        }
+      }
+      def next() = {
+        if (hasNext) {
+          if (status > 0) self.next()
+          else {
+            status = 1
+            val ans = myLeading.hd
+            myLeading = null
+            ans
+          }
+        }
+        else Iterator.empty.next()
+      }
+            
       override def toString = "unknown-if-empty iterator"
     }
 
@@ -627,18 +713,35 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @return  an iterator consisting of the remaining elements
    *  @note    Reuse: $consumesAndProducesIterator
    */
-  def dropWhile(p: A => Boolean): Iterator[A] = {
-    val self = buffered
-    new AbstractIterator[A] {
-      var dropped = false
-      private def skip() =
-        if (!dropped) {
-          while (self.hasNext && p(self.head)) self.next()
-          dropped = true
+  def dropWhile(p: A => Boolean): Iterator[A] = new AbstractIterator[A] {
+    // Magic value: -1 = hasn't dropped, 0 = found first, 1 = defer to parent iterator
+    private[this] var status = -1
+    // Local buffering to avoid double-wrap with .buffered
+    private[this] var fst: A = _
+    def hasNext: Boolean =
+      if (status == 1) self.hasNext
+      else if (status == 0) true
+      else {
+        while (self.hasNext) {
+          val a = self.next()
+          if (!p(a)) {
+            fst = a
+            status = 0
+            return true
+          }
         }
-      def hasNext = { skip(); self.hasNext }
-      def next() = { skip(); self.next() }
-    }
+        status = 1
+        false
+      }
+    def next() = 
+      if (hasNext) {
+        if (status == 1) self.next()
+        else {
+          status = 1
+          fst
+        }
+      }
+      else Iterator.empty.next()
   }
 
   /** Creates an iterator formed from this iterator and another iterator
