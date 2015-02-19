@@ -1,0 +1,8 @@
+#
+#Java HotSpot(TM) 64-Bit Server VM warning: Failed to reserve shared memory (errno = 28).
+Java HotSpot\(TM\) .* warning:
+# Hotspot receiving VM options through the $_JAVA_OPTIONS
+# env variable outputs them on stderr
+Picked up _JAVA_OPTIONS:
+# Filter out a message caused by this bug: http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=8021205
+objc\[\d+\]: Class JavaLaunchHelper is implemented in both .* and .*\. One of the two will be used\. Which one is undefined\.
