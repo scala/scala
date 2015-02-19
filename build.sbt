@@ -54,9 +54,6 @@ lazy val commonSettings = Seq[Setting[_]](
   organization := "org.scala-lang",
   version := "2.11.6-SNAPSHOT",
   scalaVersion := "2.11.5",
-  // all project will have baseDirectory set to root folder; we shouldn't include
-  // any source from it in any project
-  sourcesInBase := false,
   // we don't cross build Scala itself
   crossPaths := false,
   // do not add Scala library jar as a dependency automatically
@@ -68,14 +65,12 @@ lazy val commonSettings = Seq[Setting[_]](
   // directly on the file system and it's not resolved through Ivy
   // Ant's build stored unmanaged jars in `lib/` directory
   unmanagedJars in Compile := Seq.empty,
-  // set baseDirectory to the root folder in all projects
-  baseDirectory := (baseDirectory in ThisBuild).value,
-  sourceDirectory in Compile := baseDirectory.value / "src" / name.value,
+  sourceDirectory in Compile := baseDirectory.value,
   sourceDirectories in Compile := Seq(sourceDirectory.value),
   scalaSource in Compile := (sourceDirectory in Compile).value,
   javaSource in Compile := (sourceDirectory in Compile).value,
-  target := baseDirectory.value / "target" / name.value,
-  classDirectory in Compile := baseDirectory.value / "build/quick/classes" / name.value,
+  target := (baseDirectory in ThisBuild).value / "target" / name.value,
+  classDirectory in Compile := (baseDirectory in ThisBuild).value / "build/quick/classes" / name.value,
   artifactPath in packageBin in Compile := {
     // two lines below are copied over from sbt's sources:
     // https://github.com/sbt/sbt/blob/0.13/main/src/main/scala/sbt/Defaults.scala#L628
@@ -85,7 +80,7 @@ lazy val commonSettings = Seq[Setting[_]](
     // uncomment the other definition of the `resolvedArtifactName`
     val resolvedArtifact = artifact.value
     val resolvedArtifactName = s"${resolvedArtifact.name}.${resolvedArtifact.extension}"
-    baseDirectory.value / "build/pack/lib" / resolvedArtifactName
+    (baseDirectory in ThisBuild).value / "build/pack/lib" / resolvedArtifactName
   },
   // given that classDirectory is overriden to be _outside_ of target directory, we have
   // to make sure its being cleaned properly
@@ -95,34 +90,28 @@ lazy val commonSettings = Seq[Setting[_]](
   generateVersionPropertiesFile := generateVersionPropertiesFileImpl.value
 )
 
-lazy val library = project.
-  settings(commonSettings: _*).
+lazy val library = configureAsSubproject(project).
   settings(
     scalacOptions ++= Seq[String]("-sourcepath", (scalaSource in Compile).value.toString)
   ) dependsOn (forkjoin)
 
-lazy val reflect = project.
-  settings(commonSettings: _*).
+lazy val reflect = configureAsSubproject(project).
   dependsOn(library)
 
-lazy val compiler = project.
-  settings(commonSettings: _*).
+lazy val compiler = configureAsSubproject(project).
   settings(libraryDependencies += "org.apache.ant" % "ant" % "1.9.4").
   dependsOn(library, reflect, asm)
 
-lazy val interactive = project.
-  settings(commonSettings: _*).
+lazy val interactive = configureAsSubproject(project).
   dependsOn(compiler)
 
-lazy val repl = project.
-  settings(commonSettings: _*).
+lazy val repl = configureAsSubproject(project).
   // TODO: in Ant build def, this version is defined in versions.properties
   // figure out whether we also want to externalize jline's version
   settings(libraryDependencies += "jline" % "jline" % "2.12").
   dependsOn(compiler)
 
-lazy val scaladoc = project.
-  settings(commonSettings: _*).
+lazy val scaladoc = configureAsSubproject(project).
   settings(
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-xml" % "1.0.3",
@@ -132,21 +121,17 @@ lazy val scaladoc = project.
   ).
   dependsOn(compiler)
 
-lazy val scalap = project.
-  settings(commonSettings: _*).
+lazy val scalap = configureAsSubproject(project).
   dependsOn(compiler)
 
 // deprecated Scala Actors project
 // TODO: it packages into actors.jar but it should be scala-actors.jar
-lazy val actors = project.
-  settings(commonSettings: _*).
+lazy val actors = configureAsSubproject(project).
   dependsOn(library)
 
-lazy val forkjoin = project.
-  settings(commonSettings: _*)
+lazy val forkjoin = configureAsSubproject(project)
 
-lazy val asm = project.
-  settings(commonSettings: _*)
+lazy val asm = configureAsSubproject(project)
 
 lazy val root = (project in file(".")).
   aggregate(library, forkjoin, reflect, compiler, asm, interactive, repl,
@@ -156,6 +141,22 @@ lazy val root = (project in file(".")).
   // so it doesn't produce any artifact including not building
   // an empty jar
   disablePlugins(plugins.IvyPlugin)
+
+/**
+ * Configures passed project as a subproject (e.g. compiler or repl)
+ * with common settings attached to it.
+ *
+ * Typical usage is:
+ *
+ *   lazy val mySubproject = configureAsSubproject(project)
+ *
+ * We pass `project` as an argument which is in fact a macro call. This macro determines
+ * project.id based on the name of the lazy val on the left-hand side.
+ */
+def configureAsSubproject(project: Project): Project = {
+  val base = file(".") / "src" / project.id
+  (project in base).settings(commonSettings: _*)
+}
 
 lazy val copyrightString = SettingKey[String]("Copyright string.")
 
