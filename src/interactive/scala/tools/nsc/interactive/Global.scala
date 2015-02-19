@@ -1084,7 +1084,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       case t                                             => t
     }
     val context = doLocateContext(pos)
-
     val shouldTypeQualifier = tree0.tpe match {
       case null           => true
       case mt: MethodType => mt.isImplicit
@@ -1139,7 +1138,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       for (view <- applicableViews) {
         val vtree = viewApply(view)
         val vpre = stabilizedType(vtree)
-        for (sym <- vtree.tpe.members) {
+        for (sym <- vtree.tpe.members if sym.isTerm) {
           addTypeMember(sym, vpre, inherited = false, view.tree.symbol)
         }
       }
