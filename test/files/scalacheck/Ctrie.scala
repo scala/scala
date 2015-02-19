@@ -186,6 +186,25 @@ object Test extends Properties("concurrent.TrieMap") {
     })
   }
 
+  property("concurrent getOrElseUpdate") = forAll(threadCounts, sizes) {
+    (p, sz) =>
+    val totalInserts = new java.util.concurrent.atomic.AtomicInteger
+    val ct = new TrieMap[Wrap, String]
+
+    val results = inParallel(p) {
+      idx =>
+      (0 until sz) foreach {
+        i =>
+        val v = ct.getOrElseUpdate(Wrap(i), idx + ":" + i)
+        if (v == idx + ":" + i) totalInserts.incrementAndGet()
+      }
+    }
+
+    (totalInserts.get == sz) && ((0 until sz) forall {
+      case i => ct(Wrap(i)).split(":")(1).toInt == i
+    })
+  }
+
 }
 
 
