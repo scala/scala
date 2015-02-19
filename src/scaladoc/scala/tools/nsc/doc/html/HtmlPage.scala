@@ -227,6 +227,18 @@ abstract class HtmlPage extends Page { thisPage =>
         <img src={ relativeLinkTo(List("permalink.png", "lib")) } />
       </a>
     </span>
+	
+  def docEntityKindToCompanionTitle(ety: DocTemplateEntity, baseString: String = "See companion") = 
+    ety.companion match{
+	  case Some(companion) => 
+	    s"$baseString${
+		if(companion.isObject) " object"
+		else if(companion.isTrait) " trait"
+		else if(companion.isClass) " class"
+		else ""
+		}"
+	  case None => baseString
+	}
 
   def companionAndPackage(tpl: DocTemplateEntity): Elem =
     <span class="morelinks">{
@@ -238,7 +250,7 @@ abstract class HtmlPage extends Page { thisPage =>
             else s"class ${companionTpl.name}"
           <div>
             Related Docs:
-            <a href={relativeLinkTo(tpl.companion.get)} title="See companion">{objClassTrait}</a>
+            <a href={relativeLinkTo(tpl.companion.get)} title={docEntityKindToCompanionTitle(tpl)}>{objClassTrait}</a>
             | {templateToHtml(tpl.inTemplate, s"package ${tpl.inTemplate.name}")}
           </div>
         case None =>
