@@ -70,7 +70,7 @@ function setFrameSrcFromUrlFragment() {
     var loc = fragment.split("@")[0].replace(/\./g, "/");
     if(loc.indexOf(".html") < 0) loc += ".html";
     if(fragment.indexOf('@') > 0) loc += ("#" + fragment.split("@", 2)[1]);
-    frames["template"].location.replace(loc);
+    frames["template"].location.replace(location.protocol + loc);
   }
   else
     frames["template"].location.replace("package.html");
