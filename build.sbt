@@ -61,19 +61,23 @@ lazy val commonSettings = Seq[Setting[_]](
   // we always assume that Java classes are standalone and do not have any dependency
   // on Scala classes
   compileOrder := CompileOrder.JavaThenScala,
+  javacOptions in Compile ++= Seq("-g", "-source", "1.5", "-target", "1.6"),
   // we don't want any unmanaged jars; as a reminder: unmanaged jar is a jar stored
   // directly on the file system and it's not resolved through Ivy
   // Ant's build stored unmanaged jars in `lib/` directory
-  unmanagedJars in Compile := Seq.empty
-)
-
-lazy val subprojectSettings = commonSettings ++ Seq[Setting[_]](
+  unmanagedJars in Compile := Seq.empty,
   sourceDirectory in Compile := baseDirectory.value,
   sourceDirectories in Compile := Seq(sourceDirectory.value),
   scalaSource in Compile := (sourceDirectory in Compile).value,
   javaSource in Compile := (sourceDirectory in Compile).value,
   target := (baseDirectory in ThisBuild).value / "target" / name.value,
   classDirectory in Compile := buildDirectory.value / "quick/classes" / name.value,
+  // given that classDirectory is overriden to be _outside_ of target directory, we have
+  // to make sure its being cleaned properly
+  cleanFiles += (classDirectory in Compile).value
+)
+
+lazy val scalaSubprojectSettings = commonSettings ++ Seq[Setting[_]](
   artifactPath in packageBin in Compile := {
     // two lines below are copied over from sbt's sources:
     // https://github.com/sbt/sbt/blob/0.13/main/src/main/scala/sbt/Defaults.scala#L628
@@ -85,9 +89,6 @@ lazy val subprojectSettings = commonSettings ++ Seq[Setting[_]](
     val resolvedArtifactName = s"${resolvedArtifact.name}.${resolvedArtifact.extension}"
     buildDirectory.value / "pack/lib" / resolvedArtifactName
   },
-  // given that classDirectory is overriden to be _outside_ of target directory, we have
-  // to make sure its being cleaned properly
-  cleanFiles += (classDirectory in Compile).value,
   copyrightString := "Copyright 2002-2013, LAMP/EPFL",
   resourceGenerators in Compile += generateVersionPropertiesFile.map(file => Seq(file)).taskValue,
   generateVersionPropertiesFile := generateVersionPropertiesFileImpl.value
@@ -132,9 +133,9 @@ lazy val scalap = configureAsSubproject(project).
 lazy val actors = configureAsSubproject(project).
   dependsOn(library)
 
-lazy val forkjoin = configureAsSubproject(project)
+lazy val forkjoin = configureAsForkOfJavaProject(project)
 
-lazy val asm = configureAsSubproject(project)
+lazy val asm = configureAsForkOfJavaProject(project)
 
 lazy val root = (project in file(".")).
   aggregate(library, forkjoin, reflect, compiler, asm, interactive, repl,
@@ -158,7 +159,37 @@ lazy val root = (project in file(".")).
  */
 def configureAsSubproject(project: Project): Project = {
   val base = file(".") / "src" / project.id
-  (project in base).settings(subprojectSettings: _*)
+  (project in base).settings(scalaSubprojectSettings: _*)
+}
+
+/**
+ * Configuration for subprojects that are forks of some Java projects
+ * we depend on. At the moment there are just two: asm and forkjoin.
+ *
+ * We do not publish artifacts for those projects but we package their
+ * binaries in a jar of other project (compiler or library).
+ *
+ * For that reason we disable docs generation, packaging and publishing.
+ */
+def configureAsForkOfJavaProject(project: Project): Project = {
+  val base = file(".") / "src" / project.id
+  // disable various tasks that do not make sense for forks of Java projects
+  // we disable those task by overriding them and returning bogus files when
+  // needed. This is a bit sketchy but I haven't found any better way.
+  val disableTasks = Seq[Setting[_]](
+    (doc := file("!!! NO DOCS !!!")),
+    (publishLocal := {}),
+    (publish := {}),
+    (packageBin in Compile := file("!!! NO PACKAGING !!!"))
+  )
+  (project in base).
+    settings(commonSettings: _*).
+    settings(disableTasks: _*).
+    settings(
+      sourceDirectory in Compile := baseDirectory.value,
+      javaSource in Compile := (sourceDirectory in Compile).value,
+      sources in Compile in doc := Seq.empty
+    )
 }
 
 lazy val buildDirectory = settingKey[File]("The directory where all build products go. By default ./build")
