@@ -102,7 +102,11 @@ lazy val library = configureAsSubproject(project).
     // (library/compile:doc) scala.reflect.internal.FatalError: package class scala does not have a member Int
     // Ant build does the same thing always: it puts binaries for documented classes on the classpath
     // sbt never does this by default (which seems like a good default)
-    dependencyClasspath in Compile in doc += (classDirectory in Compile).value
+    dependencyClasspath in Compile in doc += (classDirectory in Compile).value,
+    scalacOptions in Compile in doc ++= {
+      val libraryAuxDir = (baseDirectory in ThisBuild).value / "src/library-aux"
+      Seq("-doc-no-compile", libraryAuxDir.toString)
+    }
   ) dependsOn (forkjoin)
 
 lazy val reflect = configureAsSubproject(project).
