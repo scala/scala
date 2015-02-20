@@ -95,7 +95,14 @@ lazy val scalaSubprojectSettings = commonSettings ++ Seq[Setting[_]](
 
 lazy val library = configureAsSubproject(project).
   settings(
-    scalacOptions ++= Seq[String]("-sourcepath", (scalaSource in Compile).value.toString)
+    scalacOptions in Compile ++= Seq[String]("-sourcepath", (scalaSource in Compile).value.toString),
+    // Workaround for a bug in `scaladoc` that it seems to not respect the `-sourcepath` option
+    // as a result of this bug, the compiler cannot even initialize Definitions without
+    // binaries of the library on the classpath. Specifically, we get this error:
+    // (library/compile:doc) scala.reflect.internal.FatalError: package class scala does not have a member Int
+    // Ant build does the same thing always: it puts binaries for documented classes on the classpath
+    // sbt never does this by default (which seems like a good default)
+    dependencyClasspath in Compile in doc += (classDirectory in Compile).value
   ) dependsOn (forkjoin)
 
 lazy val reflect = configureAsSubproject(project).
