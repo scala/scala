@@ -136,7 +136,7 @@ lazy val forkjoin = configureAsForkOfJavaProject(project)
 
 lazy val asm = configureAsForkOfJavaProject(project)
 
-lazy val scala = (project in file(".")).
+lazy val root = (project in file(".")).
   aggregate(library, forkjoin, reflect, compiler, asm, interactive, repl,
     scaladoc, scalap).
   // make the root project an aggragate-only
