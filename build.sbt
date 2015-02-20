@@ -70,6 +70,7 @@ lazy val commonSettings = Seq[Setting[_]](
   scalaSource in Compile := (sourceDirectory in Compile).value,
   javaSource in Compile := (sourceDirectory in Compile).value,
   target := (baseDirectory in ThisBuild).value / "target" / name.value,
+  target in Compile in doc := buildDirectory.value / "scaladoc" / name.value,
   classDirectory in Compile := buildDirectory.value / "quick/classes" / name.value,
   // given that classDirectory is overriden to be _outside_ of target directory, we have
   // to make sure its being cleaned properly
