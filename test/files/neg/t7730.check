@@ -1,0 +1,10 @@
+t7730.scala:2: error: not found: value a
+  def f(x: Any) = x match { case (a: AnyRef, b: (a.type forSome { type T })) => () }
+                                                 ^
+t7730.scala:3: error: not found: value a
+  def g(x: Any) = x match { case (a: AnyRef, b: Array[a.type]) => () }
+                                                      ^
+t7730.scala:6: error: not found: value a
+  def h(x: Any) = x match { case (a: AnyRef, b: ({type L = a.type})#L) => () }
+                                                           ^
+three errors found

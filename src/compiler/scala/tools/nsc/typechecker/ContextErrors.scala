@@ -244,7 +244,7 @@ trait ContextErrors {
       def AmbiguousIdentError(tree: Tree, name: Name, msg: String) =
         NormalTypeError(tree, "reference to " + name + " is ambiguous;\n" + msg)
 
-      def SymbolNotFoundError(tree: Tree, name: Name, owner: Symbol, startingIdentCx: Context) = {
+      def SymbolNotFoundError(tree: Tree, name: Name, owner: Symbol) = {
         NormalTypeError(tree, "not found: "+decodeWithKind(name, owner))
       }
 
