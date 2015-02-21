@@ -61,6 +61,7 @@ lazy val commonSettings = Seq[Setting[_]](
   // we always assume that Java classes are standalone and do not have any dependency
   // on Scala classes
   compileOrder := CompileOrder.JavaThenScala,
+  javacOptions in Compile ++= Seq("-g", "-source", "1.5", "-target", "1.6"),
   // we don't want any unmanaged jars; as a reminder: unmanaged jar is a jar stored
   // directly on the file system and it's not resolved through Ivy
   // Ant's build stored unmanaged jars in `lib/` directory
