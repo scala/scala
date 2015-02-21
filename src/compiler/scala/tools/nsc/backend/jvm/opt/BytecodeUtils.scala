@@ -293,7 +293,7 @@ object BytecodeUtils {
   }
 
   class BasicAnalyzer(methodNode: MethodNode, classInternalName: InternalName) {
-    val analyzer = new Analyzer[BasicValue](new BasicInterpreter)
+    val analyzer = new Analyzer(new BasicInterpreter)
     analyzer.analyze(classInternalName, methodNode)
     def frameAt(instruction: AbstractInsnNode): Frame[BasicValue] = analyzer.getFrames()(methodNode.instructions.indexOf(instruction))
   }

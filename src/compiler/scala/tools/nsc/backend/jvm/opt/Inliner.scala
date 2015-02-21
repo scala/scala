@@ -19,7 +19,7 @@ import scala.tools.asm.tree.analysis._
 
 class Inliner[BT <: BTypes](val btypes: BT) {
   import btypes._
-  import btypes.byteCodeRepository
+  import callGraph._
 
   /**
    * Copy and adapt the instructions of a method to a callsite.
@@ -151,6 +151,29 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
       callsiteMethod.localVariables.addAll(cloneLocalVariableNodes(callee, labelsMap, callee.name + "_").asJava)
       callsiteMethod.tryCatchBlocks.addAll(cloneTryCatchBlockNodes(callee, labelsMap).asJava)
+
+      // Add all invocation instructions that were inlined to the call graph
+      callee.instructions.iterator().asScala foreach {
+        case originalCallsiteIns: MethodInsnNode =>
+          callGraph.callsites.get(originalCallsiteIns) match {
+            case Some(originalCallsite) =>
+              val newCallsiteIns = instructionMap(originalCallsiteIns).asInstanceOf[MethodInsnNode]
+              callGraph.callsites(newCallsiteIns) = Callsite(
+                callsiteInstruction = newCallsiteIns,
+                callsiteMethod = callsiteMethod,
+                callsiteClass = callsiteClass,
+                callee = originalCallsite.callee,
+                argInfos = Nil, // TODO: re-compute argInfos for new destination (once we actually compute them)
+                callsiteStackHeight = callsiteStackHeight + originalCallsite.callsiteStackHeight
+              )
+
+            case None =>
+          }
+
+        case _ =>
+      }
+      // Remove the elided invocation from the call graph
+      callGraph.callsites.remove(callsiteInstruction)
 
       callsiteMethod.maxLocals += returnType.getSize + callee.maxLocals
       callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, callee.maxStack + callsiteStackHeight)
