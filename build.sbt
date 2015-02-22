@@ -78,9 +78,9 @@ lazy val commonSettings = Seq[Setting[_]](
   sourceDirectories in Compile := Seq(sourceDirectory.value),
   scalaSource in Compile := (sourceDirectory in Compile).value,
   javaSource in Compile := (sourceDirectory in Compile).value,
-  target := (baseDirectory in ThisBuild).value / "target" / name.value,
-  target in Compile in doc := buildDirectory.value / "scaladoc" / name.value,
-  classDirectory in Compile := buildDirectory.value / "quick/classes" / name.value,
+  target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id,
+  target in Compile in doc := buildDirectory.value / "scaladoc" / thisProject.value.id,
+  classDirectory in Compile := buildDirectory.value / "quick/classes" / thisProject.value.id,
   // given that classDirectory is overriden to be _outside_ of target directory, we have
   // to make sure its being cleaned properly
   cleanFiles += (classDirectory in Compile).value
@@ -116,6 +116,7 @@ lazy val scalaSubprojectSettings = commonSettings ++ Seq[Setting[_]](
 
 lazy val library = configureAsSubproject(project).
   settings(
+    name := "scala-library",
     scalacOptions in Compile ++= Seq[String]("-sourcepath", (scalaSource in Compile).value.toString),
     // Workaround for a bug in `scaladoc` that it seems to not respect the `-sourcepath` option
     // as a result of this bug, the compiler cannot even initialize Definitions without
@@ -131,10 +132,13 @@ lazy val library = configureAsSubproject(project).
   ) dependsOn (forkjoin)
 
 lazy val reflect = configureAsSubproject(project).
+  settings(name := "scala-reflect").
   dependsOn(library)
 
 lazy val compiler = configureAsSubproject(project).
-  settings(libraryDependencies += "org.apache.ant" % "ant" % "1.9.4",
+  settings(
+    name := "scala-compiler",
+    libraryDependencies += "org.apache.ant" % "ant" % "1.9.4",
     // this a way to make sure that classes from interactive and scaladoc projects
     // end up in compiler jar (that's what Ant build does)
     // we need to use LocalProject references (with strings) to deal with mutual recursion
@@ -174,6 +178,7 @@ lazy val scalap = configureAsSubproject(project).
 // deprecated Scala Actors project
 // TODO: it packages into actors.jar but it should be scala-actors.jar
 lazy val actors = configureAsSubproject(project).
+  settings(name := "scala-actors").
   dependsOn(library)
 
 lazy val forkjoin = configureAsForkOfJavaProject(project)
@@ -225,7 +230,8 @@ def configureAsForkOfJavaProject(project: Project): Project = {
     settings(
       sourceDirectory in Compile := baseDirectory.value,
       javaSource in Compile := (sourceDirectory in Compile).value,
-      sources in Compile in doc := Seq.empty
+      sources in Compile in doc := Seq.empty,
+      classDirectory in Compile := buildDirectory.value / "libs/classes" / thisProject.value.id
     )
 }
 
@@ -234,7 +240,7 @@ lazy val copyrightString = settingKey[String]("Copyright string.")
 lazy val generateVersionPropertiesFile = taskKey[File]("Generating version properties file.")
 
 lazy val generateVersionPropertiesFileImpl: Def.Initialize[Task[File]] = Def.task {
-  val propFile = (resourceManaged in Compile).value / s"${name.value}.properties"
+  val propFile = (resourceManaged in Compile).value / s"${thisProject.value.id}.properties"
   val props = new java.util.Properties
 
   /**
