@@ -83,7 +83,7 @@ trait SeqViewLike[+A,
     }
     def length = index(self.length)
     def apply(idx: Int) = {
-      if (idx < 0 || idx >= self.length) throw new IndexOutOfBoundsException(idx.toString)
+      if (idx < 0 || idx >= length) throw new IndexOutOfBoundsException(idx.toString)
       val row = findRow(idx, 0, self.length - 1)
       mapping(self(row)).seq.toSeq(idx - index(row))
     }
