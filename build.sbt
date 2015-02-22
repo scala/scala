@@ -76,9 +76,9 @@ lazy val commonSettings = Seq[Setting[_]](
   sourceDirectories in Compile := Seq(sourceDirectory.value),
   scalaSource in Compile := (sourceDirectory in Compile).value,
   javaSource in Compile := (sourceDirectory in Compile).value,
-  target := (baseDirectory in ThisBuild).value / "target" / name.value,
-  target in Compile in doc := buildDirectory.value / "scaladoc" / name.value,
-  classDirectory in Compile := buildDirectory.value / "quick/classes" / name.value,
+  target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id,
+  target in Compile in doc := buildDirectory.value / "scaladoc" / thisProject.value.id,
+  classDirectory in Compile := buildDirectory.value / "quick/classes" / thisProject.value.id,
   // given that classDirectory is overriden to be _outside_ of target directory, we have
   // to make sure its being cleaned properly
   cleanFiles += (classDirectory in Compile).value
@@ -177,7 +177,8 @@ lazy val root = (project in file(".")).
  */
 def configureAsSubproject(project: Project): Project = {
   val base = file(".") / "src" / project.id
-  (project in base).settings(scalaSubprojectSettings: _*)
+  (project in base).settings(scalaSubprojectSettings: _*).
+    settings(name := s"scala-${project.id}")
 }
 
 /**
@@ -206,7 +207,8 @@ def configureAsForkOfJavaProject(project: Project): Project = {
     settings(
       sourceDirectory in Compile := baseDirectory.value,
       javaSource in Compile := (sourceDirectory in Compile).value,
-      sources in Compile in doc := Seq.empty
+      sources in Compile in doc := Seq.empty,
+      classDirectory in Compile := buildDirectory.value / "libs/classes" / thisProject.value.id
     )
 }
 
@@ -215,7 +217,7 @@ lazy val copyrightString = settingKey[String]("Copyright string.")
 lazy val generateVersionPropertiesFile = taskKey[File]("Generating version properties file.")
 
 lazy val generateVersionPropertiesFileImpl: Def.Initialize[Task[File]] = Def.task {
-  val propFile = (resourceManaged in Compile).value / s"${name.value}.properties"
+  val propFile = (resourceManaged in Compile).value / s"${thisProject.value.id}.properties"
   val props = new java.util.Properties
 
   /**
