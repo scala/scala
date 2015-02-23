@@ -1,0 +1,3 @@
+Saw failure: scala.xml.parsing.FatalError: expected closing tag of foo
+EvElemStart(null,foo, bar="baz/&gt;",)
+Saw failure: scala.xml.parsing.FatalError: expected closing tag of foo
