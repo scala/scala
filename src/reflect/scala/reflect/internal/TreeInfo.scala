@@ -128,6 +128,7 @@ abstract class TreeInfo {
        symOk(tree.symbol)
     && tree.symbol.isStable
     && !definitions.isByNameParamType(tree.tpe)
+    && !definitions.isByName(tree.symbol)
     && (allowVolatile || !tree.symbol.hasVolatileType) // TODO SPEC: not required by spec
   )
 

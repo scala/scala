@@ -918,24 +918,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def insertApply(): Tree = {
         assert(!context.inTypeConstructorAllowed, mode) //@M
         val adapted = adaptToName(tree, nme.apply)
-        def stabilize0(pre: Type): Tree = stabilize(adapted, pre, MonoQualifierModes, WildcardType)
-
-        // TODO reconcile the overlap between Typers#stablize and TreeGen.stabilize
-        val qual = adapted match {
-          case This(_) =>
-            gen.stabilize(adapted)
-          case Ident(_) =>
-            val owner = adapted.symbol.owner
-            val pre =
-              if (owner.isPackageClass) owner.thisType
-              else if (owner.isClass) context.enclosingSubClassContext(owner).prefix
-              else NoPrefix
-            stabilize0(pre)
-          case Select(qualqual, _) =>
-            stabilize0(qualqual.tpe)
-          case other =>
-            other
-        }
+        val qual = gen.stabilize(adapted)
         typedPos(tree.pos, mode, pt) {
           Select(qual setPos tree.pos.makeTransparent, nme.apply)
         }
