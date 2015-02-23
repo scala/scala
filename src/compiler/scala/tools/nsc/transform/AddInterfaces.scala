@@ -55,7 +55,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
   )
 
   /** Does symbol need an implementation method? */
-  private def needsImplMethod(sym: Symbol) = (
+  def needsImplMethod(sym: Symbol) = (
        sym.isMethod
     && isInterfaceMember(sym)
     && (!sym.hasFlag(DEFERRED | SUPERACCESSOR) || (sym hasFlag lateDEFERRED))

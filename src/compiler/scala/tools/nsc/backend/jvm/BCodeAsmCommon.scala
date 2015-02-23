@@ -3,9 +3,11 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc.backend.jvm
+package scala.tools.nsc
+package backend.jvm
 
 import scala.tools.nsc.Global
+import scala.tools.nsc.backend.jvm.BTypes.{MethodInlineInfo, InlineInfo, InternalName}
 
 /**
  * This trait contains code shared between GenBCode and GenASM that depends on types defined in
@@ -299,5 +301,98 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
         ifs
     }
     interfaces.map(_.typeSymbol)
+  }
+
+  /**
+   * This is a hack to work around SI-9111. The completer of `methodSym` may report type errors. We
+   * cannot change the typer context of the completer at this point and make it silent: the context
+   * captured when creating the completer in the namer. However, we can temporarily replace
+   * global.reporter (it's a var) to store errors.
+   */
+  def completeSilentlyAndCheckErroneous(sym: Symbol): Boolean = {
+    if (sym.hasCompleteInfo) false
+    else {
+      val originalReporter = global.reporter
+      val storeReporter = new reporters.StoreReporter()
+      global.reporter = storeReporter
+      try {
+        sym.info
+      } finally {
+        global.reporter = originalReporter
+      }
+      sym.isErroneous
+    }
+  }
+
+  /**
+   * Build the [[InlineInfo]] for a class symbol.
+   */
+  def buildInlineInfoFromClassSymbol(classSym: Symbol, classSymToInternalName: Symbol => InternalName, methodSymToDescriptor: Symbol => String): InlineInfo = {
+    val selfType = {
+      // The mixin phase uses typeOfThis for the self parameter in implementation class methods.
+      val selfSym = classSym.typeOfThis.typeSymbol
+      if (selfSym != classSym) Some(classSymToInternalName(selfSym)) else None
+    }
+
+    val isEffectivelyFinal = classSym.isEffectivelyFinal
+
+    var warning = Option.empty[String]
+
+    // Primitive methods cannot be inlined, so there's no point in building a MethodInlineInfo. Also, some
+    // primitive methods (e.g., `isInstanceOf`) have non-erased types, which confuses [[typeToBType]].
+    val methodInlineInfos = classSym.info.decls.iterator.filter(m => m.isMethod && !scalaPrimitives.isPrimitive(m)).flatMap({
+      case methodSym =>
+        if (completeSilentlyAndCheckErroneous(methodSym)) {
+          // Happens due to SI-9111. Just don't provide any MethodInlineInfo for that method, we don't need fail the compiler.
+          if (!classSym.isJavaDefined) devWarning("SI-9111 should only be possible for Java classes")
+          warning = Some(s"Failed to get the type of a method of class symbol ${classSym.fullName} due to SI-9111")
+          None
+        } else {
+          val name      = methodSym.javaSimpleName.toString // same as in genDefDef
+          val signature = name + methodSymToDescriptor(methodSym)
+
+          // Some detours are required here because of changing flags (lateDEFERRED, lateMODULE):
+          // 1. Why the phase travel? Concrete trait methods obtain the lateDEFERRED flag in Mixin.
+          //    This makes isEffectivelyFinalOrNotOverridden false, which would prevent non-final
+          //    but non-overridden methods of sealed traits from being inlined.
+          // 2. Why the special case for `classSym.isImplClass`? Impl class symbols obtain the
+          //    lateMODULE flag during Mixin. During the phase travel to exitingPickler, the late
+          //    flag is ignored. The members are therefore not isEffectivelyFinal (their owner
+          //    is not a module). Since we know that all impl class members are static, we can
+          //    just take the shortcut.
+          val effectivelyFinal = classSym.isImplClass || exitingPickler(methodSym.isEffectivelyFinalOrNotOverridden)
+
+          // Identify trait interface methods that have a static implementation in the implementation
+          // class. Invocations of these methods can be re-wrired directly to the static implementation
+          // if they are final or the receiver is known.
+          //
+          // Using `erasure.needsImplMethod` is not enough: it keeps field accessors, module getters
+          // and super accessors. When AddInterfaces creates the impl class, these methods are
+          // initially added to it.
+          //
+          // The mixin phase later on filters out most of these members from the impl class (see
+          // Mixin.isImplementedStatically). However, accessors for concrete lazy vals remain in the
+          // impl class after mixin. So the filter in mixin is not exactly what we need here (we
+          // want to identify concrete trait methods, not any accessors). So we check some symbol
+          // properties manually.
+          val traitMethodWithStaticImplementation = {
+            import symtab.Flags._
+            classSym.isTrait && !classSym.isImplClass &&
+              erasure.needsImplMethod(methodSym) &&
+              !methodSym.isModule &&
+              !(methodSym hasFlag (ACCESSOR | SUPERACCESSOR))
+          }
+
+          val info = MethodInlineInfo(
+            effectivelyFinal                    = effectivelyFinal,
+            traitMethodWithStaticImplementation = traitMethodWithStaticImplementation,
+            annotatedInline                     = methodSym.hasAnnotation(ScalaInlineClass),
+            annotatedNoInline                   = methodSym.hasAnnotation(ScalaNoInlineClass)
+          )
+          Some((signature, info))
+        }
+    }).toMap
+
+    InlineInfo(selfType, isEffectivelyFinal, methodInlineInfos, warning)
   }
 }
