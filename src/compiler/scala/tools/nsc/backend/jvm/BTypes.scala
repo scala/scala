@@ -936,4 +936,49 @@ object BTypes {
    * But that would create overhead in a Collection[InternalName].
    */
   type InternalName = String
+
+  /**
+   * Metadata about a ClassBType, used by the inliner.
+   *
+   * More information may be added in the future to enable more elaborate inlinine heuristics.
+   *
+   * @param traitImplClassSelfType `Some(tp)` if this InlineInfo describes a trait, and the `self`
+   *                               parameter type of the methods in the implementation class is not
+   *                               the trait itself. Example:
+   *                                 trait T { self: U => def f = 1 }
+   *                               Generates something like:
+   *                                 class T$class { static def f(self: U) = 1 }
+   *
+   *                               In order to inline a trat method call, the INVOKEINTERFACE is
+   *                               rewritten to an INVOKESTATIC of the impl class, so we need the
+   *                               self type (U) to get the right signature.
+   *
+   *                               `None` if the self type is the interface type, or if this
+   *                               InlineInfo does not describe a trait.
+   *
+   * @param isEffectivelyFinal     True if the class cannot have subclasses: final classes, module
+   *                               classes, trait impl classes.
+   *
+   * @param methodInfos            The [[MethodInlineInfo]]s for the methods declared in this class.
+   *                               The map is indexed by the string s"$name$descriptor" (to
+   *                               disambiguate overloads).
+   */
+  final case class InlineInfo(traitImplClassSelfType: Option[InternalName],
+                              isEffectivelyFinal: Boolean,
+                              methodInfos: List[(String, MethodInlineInfo)])
+
+  val EmptyInlineInfo = InlineInfo(None, false, Nil)
+
+  /**
+   * Metadata about a method, used by the inliner.
+   *
+   * @param effectivelyFinal       True if the method cannot be overridden (in Scala)
+   * @param traitMethodNonAccessor True if the method is defined in a trait and not a field accessor.
+   * @param annotatedInline        True if the method is annotated `@inline`
+   * @param annotatedNoInline      True if the method is annotated `@noinline`
+   */
+  final case class MethodInlineInfo(effectivelyFinal: Boolean,
+                                    traitMethodNonAccessor: Boolean,
+                                    annotatedInline: Boolean,
+                                    annotatedNoInline: Boolean)
 }
