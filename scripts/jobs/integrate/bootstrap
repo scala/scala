@@ -1,4 +1,11 @@
 #!/bin/bash -e
+
+
+
+# NOTE: this is a quick backport of the 2.11.x script to 2.10.x -- some comments may be out dated
+
+
+
 # TODO: different scripts for the different phases -- usually we don't need to bootstrap the modules,
 # since we can use the previous version of scala for STARR as well as for compiling the modules (assuming it's binary compatible)
 # We should move away from the complicated bootstrap and set up our release schedule so we always have a previous build that satisfies these criteria.
@@ -68,31 +75,16 @@
 # (publishing only done when $WORKSPACE checkout's HEAD is tagged / SCALA_VER_BASE is set.)
 
 
-# set to something besides the default to build nightly snapshots of the modules instead of some tagged version
-moduleVersioning=${moduleVersioning-"versions.properties"}
-
-publishPrivateTask=${publishPrivateTask-"publish"}
-publishSonatypeTaskCore=${publishSonatypeTaskCore-"publish-signed"}
-publishSonatypeTaskModules=${publishSonatypeTaskModules-"publish-signed"}
-publishLockerPrivateTask=${publishLockerPrivateTask-$publishPrivateTask} # set to "init" to speed up testing of the script (if you already built locker before)
-
 sbtCmd=${sbtCmd-sbt} # TESTING (this is a marker for defaults to change when testing locally: should be sbtx on my mac)
 
 # 0.13.5 does not respect "set every scalaVersion", see
 # https://github.com/scala/scala-parser-combinators/pull/27
 sbtCmd="$sbtCmd -sbt-version 0.13.2"
 
-forceRebuild=${forceRebuild-no}
-
 # publishToSonatype
 # set to anything but "yes" to avoid publishing to sonatype
 # overridden to "no" when no SCALA_VER_BASE is passed and HEAD is not tagged with a valid version tag
 #
-
-antBuildTask="${antBuildTask-nightly}" # TESTING leave empty to avoid the sanity check (don't set it to "init" because ant will croak)
-clean="clean" # TESTING leave empty to speed up testing
-
-
 
 baseDir=${WORKSPACE-`pwd`}
 scriptsDir="$baseDir/scripts"
@@ -175,134 +167,11 @@ sbtResolve() {
       'show update' >> $baseDir/logs/resolution 2>&1
 }
 
-# Oh boy... can't use scaladoc to document scala-xml/scala-parser-combinators
-# if scaladoc depends on the same version of scala-xml/scala-parser-combinators.
-# Even if that version is available through the project's resolvers, sbt won't look past this project.
-# SOOOOO, we set the version to a dummy (-DOC), generate documentation,
-# then set the version to the right one and publish (which won't re-gen the docs).
-# Also tried publish-local without docs using 'set publishArtifact in (Compile, packageDoc) := false' and republishing, no dice.
-
-# Each buildModule() function is invoked twice: first to build against locker and publish to private-repo, then
-# to build against the release and publish to sonatype (or publish-local if publishToSonatype is not "yes").
-# In the second round, sbtResolve is always true: the module will be found in the private-repo!
-# Therefore, if MODULE_BUILT is "yes" (in the second round), we know that we need to build (and publish) the
-# module again.
-#
-# Note: we tried an alternative solution in which sbtResolve would not look at private-repo, but that fails. For example,
-# scala-xml depends on scala-library, so sbt tries to find the scala-library of the version that we are currently building,
-# which exists only in private-repo.
-
-buildXML() {
-  if [ "$XML_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-xml" $XML_VER )
-  then echo "Found scala-xml $XML_VER; not building."
-  else
-    update scala scala-xml "$XML_REF" && gfxd
-    sbtBuild 'set version := "'$XML_VER'-DOC"' $clean doc  'set version := "'$XML_VER'"' test "${buildTasks[@]}"
-    XML_BUILT="yes" # ensure the module is built and published when buildXML is invoked for the second time, see comment above
-  fi
-}
-
-buildParsers() {
-  if [ "$PARSERS_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-parser-combinators" $PARSERS_VER )
-  then echo "Found scala-parser-combinators $PARSERS_VER; not building."
-  else
-    update scala scala-parser-combinators "$PARSERS_REF" && gfxd
-    sbtBuild 'set version := "'$PARSERS_VER'-DOC"' $clean doc 'set version := "'$PARSERS_VER'"' test "${buildTasks[@]}"
-    PARSERS_BUILT="yes"
-  fi
-}
-
-buildPartest() {
-  if [ "$PARTEST_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-partest" $PARTEST_VER )
-  then echo "Found scala-partest $PARTEST_VER; not building."
-  else
-    update scala scala-partest "$PARTEST_REF" && gfxd
-    sbtBuild 'set version :="'$PARTEST_VER'"' 'set VersionKeys.scalaXmlVersion := "'$XML_VER'"' 'set VersionKeys.scalaCheckVersion := "'$SCALACHECK_VER'"' $clean test "${buildTasks[@]}"
-    PARTEST_BUILT="yes"
-  fi
-}
-
-# buildPartestIface() {
-#   if [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-partest-interface" $PARTEST_IFACE_VER )
-#   then echo "Found scala-partest-interface $PARTEST_IFACE_VER; not building."
-#   else
-#     update scala scala-partest-interface "$PARTEST_IFACE_REF" && gfxd
-#     sbtBuild 'set version :="'$PARTEST_IFACE_VER'"' $clean "${buildTasks[@]}"
-#   fi
-# }
-
-buildContinuations() {
-  if [ "$CONT_PLUG_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.plugins"  "scala-continuations-plugin" $CONTINUATIONS_VER full )
-  then echo "Found scala-continuations-plugin $CONTINUATIONS_VER; not building."
-  else
-    update scala scala-continuations $CONTINUATIONS_REF && gfxd
-
-    $sbtCmd $sbtArgs 'project plugin' "${scalaVersionTasks[@]}" "${publishTasks[@]}" \
-      'set version := "'$CONTINUATIONS_VER'"' $clean "compile:package" test "${buildTasks[@]}" # https://github.com/scala/scala-continuations/pull/4
-    CONT_PLUG_BUILT="yes"
-  fi
-
-  if [ "$CONT_LIB_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.plugins"  "scala-continuations-library" $CONTINUATIONS_VER )
-  then echo "Found scala-continuations-library $CONTINUATIONS_VER; not building."
-  else
-    update scala scala-continuations $CONTINUATIONS_REF && gfxd
-    $sbtCmd $sbtArgs 'project library' "${scalaVersionTasks[@]}" "${publishTasks[@]}" \
-      'set version := "'$CONTINUATIONS_VER'"' $clean test "${buildTasks[@]}"
-    CONT_LIB_BUILT="yes"
-  fi
-}
-
-buildSwing() {
-  if [ "$SWING_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-swing" $SWING_VER )
-  then echo "Found scala-swing $SWING_VER; not building."
-  else
-    update scala scala-swing "$SWING_REF" && gfxd
-    sbtBuild 'set version := "'$SWING_VER'"' $clean test "${buildTasks[@]}"
-    SWING_BUILT="yes"
-  fi
-}
-
-buildActorsMigration(){
-  if [ "$ACTORS_MIGRATION_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang"  "scala-actors-migration" $ACTORS_MIGRATION_VER )
-  then echo "Found scala-actors-migration $ACTORS_MIGRATION_VER; not building."
-  else
-    update scala actors-migration "$ACTORS_MIGRATION_REF" && gfxd
-    # not running tests because
-    # [error] Test scala.actors.migration.NestedReact.testNestedReactAkka failed: java.util.concurrent.TimeoutException: Futures timed out after [20 seconds]
-    sbtBuild 'set version := "'$ACTORS_MIGRATION_VER'"' 'set VersionKeys.continuationsVersion := "'$CONTINUATIONS_VER'"' $clean "${buildTasks[@]}"
-    ACTORS_MIGRATION_BUILT="yes"
-  fi
-}
-
-buildScalacheck(){
-  if [ "$SCALACHECK_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scalacheck"  "scalacheck" $SCALACHECK_VER )
-  then echo "Found scalacheck $SCALACHECK_VER; not building."
-  else
-    update rickynils scalacheck $SCALACHECK_REF && gfxd
-    sbtBuild 'set version := "'$SCALACHECK_VER'"' 'set VersionKeys.scalaParserCombinatorsVersion := "'$PARSERS_VER'"' $clean $publishPrivateTask # test times out NOTE: never published to sonatype
-    SCALACHECK_BUILT="yes"
-  fi
-}
-
-# build modules, using ${buildTasks[@]} (except for Scalacheck, which is hard-coded to publish to private-repo)
-buildModules() {
-  buildXML
-  buildParsers
-  buildContinuations
-  buildSwing
-  buildActorsMigration
-  buildScalacheck
-  buildPartest
-  # buildPartestIface
-}
-
 
 ## BUILD STEPS:
 
 determineScalaVersion() {
   cd $WORKSPACE
-  parseScalaProperties "versions.properties"
-
   if [ -z "$SCALA_VER_BASE" ]; then
     echo "No SCALA_VER_BASE specified."
 
@@ -345,12 +214,6 @@ determineScalaVersion() {
   echo "version=$SCALA_VER" >> $baseDir/jenkins.properties
   echo "sbtDistVersionOverride=-Dproject.version=$SCALA_VER" >> $baseDir/jenkins.properties
 
-  # We don't override the scala binary version: when running in -nightly + versions.properties versioning mode,
-  # we intend to be a drop-in replacement -- all you need to do is change the Scala version
-  # In order to override this, add 'set every scalaBinaryVersion := "'$SCALA_BINARY_VER'"',
-  # which, when used with pre-release Scala version numbers, will require tweaking at the sbt usage site as well.
-  scalaVersionTasks=('set every scalaVersion := "'$SCALA_VER'"')
-
   echo "Building Scala $SCALA_VER."
 }
 
@@ -364,152 +227,29 @@ deriveVersionAnyTag() {
   echo "$(git describe | cut -dv -f2)-nightly"
 }
 
-# determineScalaVersion must have been called
-deriveModuleVersions() {
-  if [ "$moduleVersioning" == "versions.properties" ]
-  then
-    # use versions.properties as defaults when no version specified on command line
-                  XML_VER=${XML_VER-$scala_xml_version_number}
-              PARSERS_VER=${PARSERS_VER-$scala_parser_combinators_version_number}
-        CONTINUATIONS_VER=${CONTINUATIONS_VER-$scala_continuations_plugin_version_number}
-                SWING_VER=${SWING_VER-$scala_swing_version_number}
-     ACTORS_MIGRATION_VER=${ACTORS_MIGRATION_VER-$actors_migration_version_number}
-              PARTEST_VER=${PARTEST_VER-$partest_version_number}
-           SCALACHECK_VER=${SCALACHECK_VER-$scalacheck_version_number}
-
-     # If a _VER was not specified, the corresponding _REF will be non-empty by now (as specified, or HEAD)
-                  XML_REF=${XML_REF-"v$XML_VER"}
-              PARSERS_REF=${PARSERS_REF-"v$PARSERS_VER"}
-        CONTINUATIONS_REF=${CONTINUATIONS_REF-"v$CONTINUATIONS_VER"}
-                SWING_REF=${SWING_REF-"v$SWING_VER"}
-     ACTORS_MIGRATION_REF=${ACTORS_MIGRATION_REF-"v$ACTORS_MIGRATION_VER"}
-              PARTEST_REF=${PARTEST_REF-"v$PARTEST_VER"}
-        # PARTEST_IFACE_REF=${PARTEST_IFACE_REF-"v$PARTEST_IFACE_VER"}
-           SCALACHECK_REF=${SCALACHECK_REF-"$SCALACHECK_VER"}
-   else
-                 XML_VER=${XML_VER-$(deriveVersion scala scala-xml "$XML_REF")}
-             PARSERS_VER=${PARSERS_VER-$(deriveVersion scala scala-parser-combinators "$PARSERS_REF")}
-       CONTINUATIONS_VER=${CONTINUATIONS_VER-$(deriveVersion scala scala-continuations "$CONTINUATIONS_REF")}
-               SWING_VER=${SWING_VER-$(deriveVersion scala scala-swing "$SWING_REF")}
-    ACTORS_MIGRATION_VER=${ACTORS_MIGRATION_VER-$(deriveVersion scala actors-migration "$ACTORS_MIGRATION_REF")}
-             PARTEST_VER=${PARTEST_VER-$(deriveVersion scala scala-partest "$PARTEST_REF")}
-          SCALACHECK_VER=${SCALACHECK_VER-$(deriveVersionAnyTag rickynils scalacheck "$SCALACHECK_REF")}
-
-                 XML_REF=${XML_REF-"HEAD"}
-             PARSERS_REF=${PARSERS_REF-"HEAD"}
-       CONTINUATIONS_REF=${CONTINUATIONS_REF-"HEAD"}
-               SWING_REF=${SWING_REF-"HEAD"}
-    ACTORS_MIGRATION_REF=${ACTORS_MIGRATION_REF-"HEAD"}
-             PARTEST_REF=${PARTEST_REF-"HEAD"}
-       # PARTEST_IFACE_REF=${PARTEST_IFACE_REF-"HEAD"}
-          SCALACHECK_REF=${SCALACHECK_REF-"HEAD"}
-  fi
-
-  echo "Module versions (versioning strategy: $moduleVersioning):"
-  echo "ACTORS_MIGRATION = $ACTORS_MIGRATION_VER at $ACTORS_MIGRATION_REF"
-  echo "CONTINUATIONS    = $CONTINUATIONS_VER at $CONTINUATIONS_REF"
-  echo "PARSERS          = $PARSERS_VER at $PARSERS_REF"
-  echo "PARTEST          = $PARTEST_VER at $PARTEST_REF"
-  echo "SCALACHECK       = $SCALACHECK_VER at $SCALACHECK_REF"
-  echo "SWING            = $SWING_VER at $SWING_REF"
-  echo "XML              = $XML_VER at $XML_REF"
-
-  # PARTEST_IFACE_VER=${PARTEST_IFACE_VER-$(deriveVersion scala scala-partest-interface "$PARTEST_IFACE_REF")}
-}
-
-constructUpdatedModuleVersions() {
-  updatedModuleVersions=()
-
-  # force the new module versions for building the core. these may be different from the values in versions.properties,
-  # either because the variables (XML_VER) were provided, or because we're building the modules from HEAD.
-  # in the common case, the values are the same as in versions.properties.
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dactors-migration.version.number=$ACTORS_MIGRATION_VER")
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-continuations-library.version.number=$CONTINUATIONS_VER")
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-continuations-plugin.version.number=$CONTINUATIONS_VER")
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-parser-combinators.version.number=$PARSERS_VER")
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-swing.version.number=$SWING_VER")
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-xml.version.number=$XML_VER")
-
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dpartest.version.number=$PARTEST_VER")
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscalacheck.version.number=$SCALACHECK_VER")
-
-  # allow overriding the akka-actors and jline version using a jenkins build parameter
-  if [ ! -z "$AKKA_ACTOR_VER" ]; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dakka-actor.version.number=$AKKA_ACTOR_VER"); fi
-  if [ ! -z "$JLINE_VER" ]     ; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Djline.version=$JLINE_VER"); fi
-
-  if [ ! -z "$SCALA_BINARY_VER" ]; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala.binary.version=$SCALA_BINARY_VER"); fi
-  if [ ! -z "$SCALA_FULL_VER" ]  ; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala.full.version=$SCALA_FULL_VER"); fi
-}
-
-# build locker (scala + modules) and quick, publishing everything to private-repo
-bootstrap() {
-  echo "### Bootstrapping"
-
+distro() {
   cd $WORKSPACE
 
-  #### LOCKER
+  echo "### Building the distribution"
 
-  echo "### Building locker"
-
-  # for bootstrapping, publish core (or at least smallest subset we can get away with)
-  # so that we can build modules with this version of Scala and publish them locally
-  # must publish under $SCALA_VER so that the modules will depend on this (binary) version of Scala
-  # publish more than just core: partest needs scalap
-  # in sabbus lingo, the resulting Scala build will be used as starr to build the released Scala compiler
-  ant -Dmaven.version.number=$SCALA_VER\
-      -Dremote.snapshot.repository=NOPE\
-      -Dremote.release.repository=$privateRepo\
-      -Drepository.credentials.id=$privateCred\
-      -Dscalac.args.optimise=-optimise\
-      -Ddocs.skip=1\
-      -Dlocker.skip=1\
-      $publishLockerPrivateTask >> $baseDir/logs/builds 2>&1
-
-
-  echo "### Building modules using locker"
-
-  # build, test and publish modules with this core
-  # publish to our internal repo (so we can resolve the modules in the scala build below)
-  # we only need to build the modules necessary to build Scala itself
-  # since the version of locker and quick are the same
-  publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-private-repo")' "set every publishTo := Some(\"private-repo\" at \"$privateRepo\")")
-  buildTasks=($publishPrivateTask)
-  buildModules
-
-  constructUpdatedModuleVersions
-
-  #### QUICK
-
-  echo "### Bootstrapping Scala using locker"
-
-  # # TODO: close all open staging repos so that we can be reaonably sure the only open one we see after publishing below is ours
-  # # the ant call will create a new one
-  #
-  # Rebuild Scala with these modules so that all binary versions are consistent.
-  # Update versions.properties to new modules.
-  # Sanity check: make sure the Scala test suite passes / docs can be generated with these modules.
-  # don't skip locker (-Dlocker.skip=1), or stability will fail
-  # overwrite "locker" version of scala at private-repo with bootstrapped version
-  cd $baseDir
-  rm -rf build/ # must leave everything else in $baseDir for downstream jobs
-
-  ant -Dstarr.version=$SCALA_VER\
-      -Dextra.repo.url=$privateRepo\
+  ant -Dextra.repo.url=$privateRepo\
       -Dmaven.version.suffix=$SCALA_VER_SUFFIX\
-      ${updatedModuleVersions[@]} \
-      -Dupdate.versions=1\
       -Dscaladoc.git.commit=$SCALADOC_SOURCE_LINKS_VER\
       -Dremote.snapshot.repository=NOPE\
       -Dremote.release.repository=$privateRepo\
       -Drepository.credentials.id=$privateCred\
-      -Dscalac.args.optimise=-optimise\
-      $antBuildTask $publishPrivateTask
+      distpack-opt
 
-  # clear ivy cache (and to be sure, local as well), so the next round of sbt builds sees the fresh scala
-  rm -rf $baseDir/ivy2
+  (cd $WORKSPACE/dists/ && tar cvzhf ../scala-dist-$SCALA_VER.tar.gz .)
+  s3Upload scala-dist-$SCALA_VER.tar.gz
+}
 
-  # TODO: create PR with following commit (note that release will have been tagged already)
-  # git commit versions.properties -m"Bump versions.properties for $SCALA_VER."
+s3Upload() {
+  file="$1"
+  contentType="application/x-compressed-tar"
+  host=$(grep host ~/.s3credentials | cut -d= -f2)
+
+  s3curl --id typesafe --contentType "${contentType}" --put "${file}" -- -k https://${host}/scala/tmp/${file}
 }
 
 # assumes we just bootstrapped, and current directory is $baseDir
@@ -519,17 +259,8 @@ bootstrap() {
 publishSonatype() {
   # stage to sonatype, along with all modules -Dmaven.version.suffix/-Dbuild.release not necessary,
   # since we're just publishing an existing build
-  echo "### Publishing core to sonatype"
-  ant -Dmaven.version.number=$SCALA_VER $publishSonatypeTaskCore
-
-  echo "### Publishing modules to sonatype"
-  # build/test/publish scala core modules to sonatype (this will start a new staging repo)
-  # (was hoping we could make everything go to the same staging repo, but it's not timing that causes two staging repos to be opened)
-  # NOTE: only publish those for which versions are set
-  # test and publish to sonatype, assuming you have ~/.sbt/0.13/sonatype.sbt and ~/.sbt/0.13/plugin/gpg.sbt
-  publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-sonatype")' "set pgpPassphrase := Some(Array.empty)")
-  buildTasks=($publishSonatypeTaskModules)
-  buildModules
+  echo "### Publishing to sonatype"
+  (cd $WORKSPACE/dists/maven/latest/ && ant deploy.signed)
 
   open=$(st_stagingReposOpen)
   allOpenUrls=$(echo $open | jq  '.repositoryURI' | tr -d \")
@@ -547,17 +278,8 @@ publishSonatype() {
 
 determineScalaVersion
 
-deriveModuleVersions
-
-bootstrap
+distro
 
 if [ "$publishToSonatype" == "yes" ]
   then publishSonatype
-  else # build modules one more time, just to mimic the regular build as much when running as nightly
-    echo "### Rebuilding modules with quick, publishing to $baseDir/ivy/local"
-    buildTasks=(publish-local)
-    # buildScalacheck always uses publishPrivateTask (not buildTasks). we override it to avoid publishing to private-repo.
-    publishPrivateTask="publish-local"
-    forceRebuild="yes"
-    buildModules
 fi
