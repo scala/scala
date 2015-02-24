@@ -29,7 +29,8 @@ import scala.collection.convert.decorateAsScala._
 import scala.tools.testing.ClearAfterClass
 
 object InlinerTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:classpath -Yopt-warnings")
+  val args = "-Ybackend:GenBCode -Yopt:l:classpath -Yopt-warnings"
+  var compiler = newCompiler(extraArgs = args)
 
   // allows inspecting the caches after a compilation run
   def notPerRun: List[Clearable] = List(compiler.genBCode.bTypes.classBTypeFromInternalName, compiler.genBCode.bTypes.byteCodeRepository.classes, compiler.genBCode.bTypes.callGraph.callsites)
@@ -860,5 +861,45 @@ class InlinerTest extends ClearAfterClass {
     assertInvoke(m6, "U$class", "g")
     assertInvoke(m6, "U", "h")
     assertInvoke(m6, "U", "i")
+  }
+
+  @Test
+  def mixedNoCrashSI9111(): Unit = {
+    val javaCode =
+      """public final class A {
+        |  public static final class T { }
+        |  public static final class Inner {
+        |    public static final class T { }
+        |    public T newT() { return null; }
+        |  }
+        |}
+      """.stripMargin
+
+    val scalaCode =
+      """class C {
+        |  val i = new A.Inner()
+        |}
+      """.stripMargin
+
+    // We don't get to see the warning about SI-9111, because it is associated with the MethodInlineInfo
+    // of method newT, which is not actually used.
+    // The problem is: if we reference `newT` in the scalaCode, the scala code does not compile,
+    // because then SI-9111 triggers during type-checking class C, in the compiler frontend, and
+    // we don't even get to the backend.
+    // Nevertheless, the workaround for SI-9111 in BcodeAsmCommon.buildInlineInfoFromClassSymbol
+    // is still necessary, otherwise this test crashes.
+    // The warning below is the typical warning we get in mixed compilation.
+    val warn =
+      """failed to determine if <init> should be inlined:
+        |The method <init>()V could not be found in the class A$Inner or any of its parents.
+        |Note that the following parent classes could not be found on the classpath: A$Inner""".stripMargin
+
+    var c = 0
+
+    compileClasses(newCompiler(extraArgs = InlinerTest.args + " -Yopt-warnings:_"))(
+      scalaCode,
+      List((javaCode, "A.java")),
+      allowMessage = i => {c += 1; i.msg contains warn})
+    assert(c == 1, c)
   }
 }
