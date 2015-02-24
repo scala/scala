@@ -9,6 +9,7 @@ package backend.jvm
 
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
+import scala.tools.nsc.backend.jvm.opt.InlineInfoAttribute
 import scala.tools.nsc.symtab._
 import scala.tools.asm
 import asm.Label
@@ -1291,6 +1292,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
       val ssa = getAnnotPickle(thisName, c.symbol)
       jclass.visitAttribute(if(ssa.isDefined) pickleMarkerLocal else pickleMarkerForeign)
       emitAnnotations(jclass, c.symbol.annotations ++ ssa)
+
+      if (!settings.YskipInlineInfoAttribute.value)
+        jclass.visitAttribute(InlineInfoAttribute(buildInlineInfoFromClassSymbol(c.symbol, javaName, javaType(_).getDescriptor)))
 
       // typestate: entering mode with valid call sequences:
       //   ( visitInnerClass | visitField | visitMethod )* visitEnd

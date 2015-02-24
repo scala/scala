@@ -1,19 +1,3 @@
-public class Symbols {
-
-
-
-
-  // access flags 0x12
-  private final Lscala/Symbol; someSymbol3
-
-  // access flags 0xA
-  private static Lscala/Symbol; symbol$1
-
-  // access flags 0xA
-  private static Lscala/Symbol; symbol$2
-
-  // access flags 0xA
-  private static Lscala/Symbol; symbol$3
 
   // access flags 0x9
   public static <clinit>()V
@@ -33,12 +17,14 @@ public class Symbols {
     MAXSTACK = 2
     MAXLOCALS = 0
 
+
   // access flags 0x1
   public someSymbol1()Lscala/Symbol;
     GETSTATIC Symbols.symbol$1 : Lscala/Symbol;
     ARETURN
     MAXSTACK = 1
     MAXLOCALS = 1
+
 
   // access flags 0x1
   public someSymbol2()Lscala/Symbol;
@@ -47,12 +33,14 @@ public class Symbols {
     MAXSTACK = 1
     MAXLOCALS = 1
 
+
   // access flags 0x1
   public sameSymbol1()Lscala/Symbol;
     GETSTATIC Symbols.symbol$1 : Lscala/Symbol;
     ARETURN
     MAXSTACK = 1
     MAXLOCALS = 1
+
 
   // access flags 0x1
   public someSymbol3()Lscala/Symbol;
@@ -61,6 +49,7 @@ public class Symbols {
     ARETURN
     MAXSTACK = 1
     MAXLOCALS = 1
+
 
   // access flags 0x1
   public <init>()V
@@ -72,4 +61,4 @@ public class Symbols {
     RETURN
     MAXSTACK = 2
     MAXLOCALS = 1
-}
+
