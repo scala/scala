@@ -3387,7 +3387,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // defaults are needed. they are added to the argument list in named style as
               // calls to the default getters. Example:
               //  foo[Int](a)()  ==>  foo[Int](a)(b = foo$qual.foo$default$2[Int](a))
-              checkNotMacro()
 
               // SI-8111 transformNamedApplication eagerly shuffles around the application to preserve
               //         evaluation order. During this process, it calls `changeOwner` on symbols that
@@ -3434,6 +3433,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   duplErrTree
                 } else if (lencmp2 == 0) {
                   // useful when a default doesn't match parameter type, e.g. def f[T](x:T="a"); f[Int]()
+                  checkNotMacro()
                   context.diagUsedDefaults = true
                   doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt)
                 } else {

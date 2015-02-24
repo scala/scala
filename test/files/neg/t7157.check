@@ -7,7 +7,8 @@ Test_2.scala:6: error: too many arguments for macro method m1_0_0: ()Unit
 Test_2.scala:7: error: too many arguments for macro method m1_0_0: ()Unit
   m1_0_0(1, 2, 3)
         ^
-Test_2.scala:9: error: macro applications do not support named and/or default arguments
+Test_2.scala:9: error: not enough arguments for macro method m1_1_1: (x: Int)Unit.
+Unspecified value parameter x.
   m1_1_1()
         ^
 Test_2.scala:11: error: too many arguments for macro method m1_1_1: (x: Int)Unit
@@ -16,22 +17,27 @@ Test_2.scala:11: error: too many arguments for macro method m1_1_1: (x: Int)Unit
 Test_2.scala:12: error: too many arguments for macro method m1_1_1: (x: Int)Unit
   m1_1_1(1, 2, 3)
         ^
-Test_2.scala:14: error: macro applications do not support named and/or default arguments
+Test_2.scala:14: error: not enough arguments for macro method m1_2_2: (x: Int, y: Int)Unit.
+Unspecified value parameters x, y.
   m1_2_2()
         ^
-Test_2.scala:15: error: macro applications do not support named and/or default arguments
+Test_2.scala:15: error: not enough arguments for macro method m1_2_2: (x: Int, y: Int)Unit.
+Unspecified value parameter y.
   m1_2_2(1)
         ^
 Test_2.scala:17: error: too many arguments for macro method m1_2_2: (x: Int, y: Int)Unit
   m1_2_2(1, 2, 3)
         ^
-Test_2.scala:24: error: macro applications do not support named and/or default arguments
+Test_2.scala:24: error: not enough arguments for macro method m1_1_inf: (x: Int, y: Int*)Unit.
+Unspecified value parameters x, y.
   m1_1_inf()
           ^
-Test_2.scala:29: error: macro applications do not support named and/or default arguments
+Test_2.scala:29: error: not enough arguments for macro method m1_2_inf: (x: Int, y: Int, z: Int*)Unit.
+Unspecified value parameters x, y, z.
   m1_2_inf()
           ^
-Test_2.scala:30: error: macro applications do not support named and/or default arguments
+Test_2.scala:30: error: not enough arguments for macro method m1_2_inf: (x: Int, y: Int, z: Int*)Unit.
+Unspecified value parameters y, z.
   m1_2_inf(1)
           ^
 Test_2.scala:35: error: too many arguments for macro method m2_0_0: ()Unit
@@ -43,7 +49,8 @@ Test_2.scala:36: error: too many arguments for macro method m2_0_0: ()Unit
 Test_2.scala:37: error: too many arguments for macro method m2_0_0: ()Unit
   m2_0_0()(1, 2, 3)
           ^
-Test_2.scala:39: error: macro applications do not support named and/or default arguments
+Test_2.scala:39: error: not enough arguments for macro method m2_1_1: (x: Int)Unit.
+Unspecified value parameter x.
   m2_1_1()()
           ^
 Test_2.scala:41: error: too many arguments for macro method m2_1_1: (x: Int)Unit
@@ -52,22 +59,27 @@ Test_2.scala:41: error: too many arguments for macro method m2_1_1: (x: Int)Unit
 Test_2.scala:42: error: too many arguments for macro method m2_1_1: (x: Int)Unit
   m2_1_1()(1, 2, 3)
           ^
-Test_2.scala:44: error: macro applications do not support named and/or default arguments
+Test_2.scala:44: error: not enough arguments for macro method m2_2_2: (x: Int, y: Int)Unit.
+Unspecified value parameters x, y.
   m2_2_2()()
           ^
-Test_2.scala:45: error: macro applications do not support named and/or default arguments
+Test_2.scala:45: error: not enough arguments for macro method m2_2_2: (x: Int, y: Int)Unit.
+Unspecified value parameter y.
   m2_2_2()(1)
           ^
 Test_2.scala:47: error: too many arguments for macro method m2_2_2: (x: Int, y: Int)Unit
   m2_2_2()(1, 2, 3)
           ^
-Test_2.scala:54: error: macro applications do not support named and/or default arguments
+Test_2.scala:54: error: not enough arguments for macro method m2_1_inf: (x: Int, y: Int*)Unit.
+Unspecified value parameters x, y.
   m2_1_inf()()
             ^
-Test_2.scala:59: error: macro applications do not support named and/or default arguments
+Test_2.scala:59: error: not enough arguments for macro method m2_2_inf: (x: Int, y: Int, z: Int*)Unit.
+Unspecified value parameters x, y, z.
   m2_2_inf()()
             ^
-Test_2.scala:60: error: macro applications do not support named and/or default arguments
+Test_2.scala:60: error: not enough arguments for macro method m2_2_inf: (x: Int, y: Int, z: Int*)Unit.
+Unspecified value parameters y, z.
   m2_2_inf()(1)
             ^
 24 errors found
