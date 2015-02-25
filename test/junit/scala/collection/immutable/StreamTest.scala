@@ -80,4 +80,29 @@ class StreamTest {
     assertTrue( wf.map(identity).length == 5 )       // success instead of NPE
   }
 
+  /** Test helper to verify that the given Stream operation is properly lazy in the tail */
+  def assertStreamOpLazyInTail(op: (=> Stream[Int]) => Stream[Int], expectedEvaluated: List[Int]): Unit = {
+    // mutable state to record every strict evaluation
+    var evaluated: List[Int] = Nil
+
+    def trackEffectsOnNaturals: Stream[Int] = {
+      def loop(i: Int): Stream[Int] = { evaluated ++= List(i); i #:: loop(i + 1) }
+      loop(1)
+    }
+
+    // call op on a stream which records every strict evaluation
+    val result = op(trackEffectsOnNaturals)
+
+    assertTrue( evaluated == expectedEvaluated )
+  }
+
+  @Test // SI-9134
+  def filter_map_properly_lazy_in_tail: Unit = {
+    assertStreamOpLazyInTail(_.filter(_ % 2 == 0).map(identity), List(1, 2))
+  }
+
+  @Test // SI-9134
+  def withFilter_map_properly_lazy_in_tail: Unit = {
+    assertStreamOpLazyInTail(_.withFilter(_ % 2 == 0).map(identity), List(1, 2))
+  }
 }
