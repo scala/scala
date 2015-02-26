@@ -14,7 +14,7 @@ import mutable.ArrayOps
 import generic.CanBuildFrom
 import scala.annotation.{ elidable, implicitNotFound }
 import scala.annotation.elidable.ASSERTION
-import scala.language.{implicitConversions, existentials}
+import scala.language.{implicitConversions, existentials, higherKinds}
 import scala.io.StdIn
 
 /** The `Predef` object provides definitions that are accessible in all Scala
@@ -380,7 +380,11 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    * In part contributed by Jason Zaugg.
    */
   @implicitNotFound(msg = "Cannot prove that ${From} <:< ${To}.")
-  sealed abstract class <:<[-From, +To] extends (From => To) with Serializable
+  sealed abstract class <:<[-From, +To] extends (From => To) with Serializable {
+    def compose[A](ev: A <:< From): A <:< To = singleton_<:<.asInstanceOf[A <:< To]
+    def andThen[A](ev: To <:< A): From <:< A = singleton_<:<.asInstanceOf[From <:< A]
+    def subst[P[-_]](from: P[To]): P[From] = from.asInstanceOf[P[From]]
+  }
   private[this] final val singleton_<:< = new <:<[Any,Any] { def apply(x: Any): Any = x }
   // The dollar prefix is to dodge accidental shadowing of this method
   // by a user-defined method of the same name (SI-7788).
@@ -395,7 +399,12 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    * @see `<:<` for expressing subtyping constraints
    */
   @implicitNotFound(msg = "Cannot prove that ${From} =:= ${To}.")
-  sealed abstract class =:=[From, To] extends (From => To) with Serializable
+  sealed abstract class =:=[From, To] extends (From => To) with Serializable {
+    val symm: To =:= From = singleton_=:=.asInstanceOf[To =:= From]
+    def compose[A](ev: A =:= From): A =:= To = singleton_=:=.asInstanceOf[A =:= To]
+    def andThen[A](ev: To =:= A): From =:= A = singleton_=:=.asInstanceOf[From =:= A]
+    def subst[P[_]](from: P[From]): P[To] = from.asInstanceOf[P[To]]
+  }
   private[this] final val singleton_=:= = new =:=[Any,Any] { def apply(x: Any): Any = x }
   object =:= {
      implicit def tpEquals[A]: A =:= A = singleton_=:=.asInstanceOf[A =:= A]
