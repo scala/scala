@@ -21,13 +21,12 @@ object Test extends TypeMember {
   // works if replaced by type X = E[A with B with C]
   type X = E[F with C]
 
-  val value = new E[F with C]
+  def value = new E[F with C]
 
   // This call passes, since it invokes consume(E): Unit
-  consume(value)
   def consume(x: X) {}
 
   def main(args: Array[String]) {
-    
+    consume(value)
   }
 }
