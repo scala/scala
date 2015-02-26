@@ -937,25 +937,30 @@ object ILoop {
   // Designed primarily for use by test code: take a String with a
   // bunch of code, and prints out a transcript of what it would look
   // like if you'd just typed it into the repl.
-  def runForTranscript(code: String, settings: Settings): String = {
+  def runForTranscript(code: String, settings: Settings, inSession: Boolean = false): String = {
     import java.io.{ BufferedReader, StringReader, OutputStreamWriter }
 
     stringFromStream { ostream =>
       Console.withOut(ostream) {
         val output = new JPrintWriter(new OutputStreamWriter(ostream), true) {
-          override def write(str: String) = {
-            // completely skip continuation lines
-            if (str forall (ch => ch.isWhitespace || ch == '|')) ()
+          // skip margin prefix for continuation lines, unless preserving session text for test
+          override def write(str: String) =
+            if (!inSession && (str forall (ch => ch.isWhitespace || ch == '|'))) ()  // repl.paste.ContinueString
             else super.write(str)
-          }
         }
         val input = new BufferedReader(new StringReader(code.trim + "\n")) {
           override def readLine(): String = {
-            val s = super.readLine()
-            // helping out by printing the line being interpreted.
-            if (s != null)
+            mark(1)    // default buffer is 8k
+            val c = read()
+            if (c == -1 || c == 4) {
+              null
+            } else {
+              reset()
+              val s = super.readLine()
+              // helping out by printing the line being interpreted.
               output.println(s)
-            s
+              s
+            }
           }
         }
         val repl = new ILoop(input, output)
