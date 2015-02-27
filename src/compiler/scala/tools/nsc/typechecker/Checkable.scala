@@ -108,7 +108,7 @@ trait Checkable {
   }
 
   private def isUnwarnableTypeArgSymbol(sym: Symbol) = (
-       sym.isTypeParameter                     // dummy
+       isDummyOf(sym.tpeHK)(sym)               // dummy
     || (sym.name.toTermName == nme.WILDCARD)   // _
     || nme.isVariableName(sym.name)            // type variable
   )
