@@ -207,7 +207,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
   }
 
   def transformMixinInfo(tp: Type): Type = tp match {
-    case ClassInfoType(parents, decls, clazz) =>
+    case ClassInfoType(parents, decls, clazz) if clazz.isPackageClass || !clazz.isJavaDefined =>
       if (clazz.needsImplClass)
         implClass(clazz setFlag lateINTERFACE) // generate an impl class
 
