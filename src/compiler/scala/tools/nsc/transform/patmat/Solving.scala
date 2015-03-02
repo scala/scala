@@ -65,7 +65,12 @@ trait Solving extends Logic {
       def size = symbols.size
     }
 
-    case class Solvable(cnf: Cnf, symbolMapping: SymbolMapping)
+    final case class Solvable(cnf: Cnf, symbolMapping: SymbolMapping) {
+      def ++(other: Solvable) = {
+        require(this.symbolMapping eq other.symbolMapping)
+        Solvable(cnf ++ other.cnf, symbolMapping)
+      }
+    }
 
     trait CnfBuilder {
       private[this] val buff = ArrayBuffer[Clause]()
@@ -96,7 +101,11 @@ trait Solving extends Logic {
         }
       }
 
-      def buildCnf: Array[Clause] = buff.toArray
+      def buildCnf: Array[Clause] = {
+        val cnf = buff.toArray
+        buff.clear()
+        cnf
+      }
 
     }
 
@@ -273,13 +282,26 @@ trait Solving extends Logic {
       // they could have been removed from the formula
       val symbolMapping = new SymbolMapping(gatherSymbols(p))
       val cnfExtractor = new AlreadyInCNF(symbolMapping)
+      val cnfTransformer = new TransformToCnf(symbolMapping)
+
+      def cnfFor(prop: Prop): Solvable = {
+        prop match {
+          case cnfExtractor.ToCnf(solvable) =>
+            // this is needed because t6942 would generate too many clauses with Tseitin
+            // already in CNF, just add clauses
+            solvable
+          case p                            =>
+            cnfTransformer.apply(p)
+        }
+      }
+
       simplified match {
-        case cnfExtractor.ToCnf(solvable) =>
-          // this is needed because t6942 would generate too many clauses with Tseitin
-          // already in CNF, just add clauses
-          solvable
-        case p                           =>
-          new TransformToCnf(symbolMapping).apply(p)
+        case And(props) =>
+          // SI-6942:
+          // CNF(P1 /\ ... /\ PN) == CNF(P1) ++ CNF(...) ++ CNF(PN)
+          props.map(cnfFor).reduce(_ ++ _)
+        case p          =>
+          cnfFor(p)
       }
     }
   }
