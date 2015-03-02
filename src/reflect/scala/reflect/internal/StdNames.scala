@@ -442,6 +442,26 @@ trait StdNames {
     @deprecated("Use Name#getterName", "2.11.0") def getterName(name: TermName): TermName     = name.getterName
     @deprecated("Use Name#getterName", "2.11.0") def setterToGetter(name: TermName): TermName = name.getterName
 
+    /** If `name` is an of the form r"origName\$\d+" name, the original (unfreshened) name.
+      *  Otherwise `name` itself.
+      */
+    final def unfreshenedName(name: Name): Name = name lastIndexOf "$" match {
+      case 0 | -1 => name
+      case x if x == name.length - 1 => name
+      case idx0   =>
+        var idx = idx0 + 1
+        var onlyDigitsFollow = true
+        val len = name.length
+        while (idx < len) {
+          onlyDigitsFollow &&= name.charAt(idx).isDigit
+          idx += 1
+        }
+        if (onlyDigitsFollow)
+          name drop idx + 1
+        else
+          name
+    }
+
     /**
      * Convert `Tuple2$mcII` to `Tuple2`, or `T1$sp` to `T1`.
      */

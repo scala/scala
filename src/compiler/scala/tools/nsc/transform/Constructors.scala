@@ -496,10 +496,9 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
     // The constructor parameter corresponding to an accessor
     def parameter(acc: Symbol): Symbol = parameterNamed(acc.unexpandedName.getterName)
 
-    // The constructor parameter with given name. This means the parameter
-    // has given name, or starts with given name, and continues with a `$` afterwards.
+    // The constructor parameter with given name.
     def parameterNamed(name: Name): Symbol = {
-      def matchesName(param: Symbol) = param.name == name || param.name.startsWith(name + nme.NAME_JOIN_STRING)
+      def matchesName(param: Symbol) = nme.unfreshenedName(param.name) == name
 
       (constrParams filter matchesName) match {
         case Nil    => abort(name + " not in " + constrParams)
