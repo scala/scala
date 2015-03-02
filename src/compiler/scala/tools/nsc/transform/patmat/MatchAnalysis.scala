@@ -399,6 +399,7 @@ trait MatchAnalysis extends MatchApproximation {
 
   trait MatchAnalyzer extends MatchApproximator  {
     def uncheckedWarning(pos: Position, msg: String) = currentRun.reporting.uncheckedWarning(pos, msg)
+    def warn(pos: Position, ex: AnalysisBudget.Exception, kind: String) = uncheckedWarning(pos, s"Cannot check match for $kind.\n${ex.advice}")
     def reportWarning(message: String) = global.reporter.warning(typer.context.tree.pos, message)
 
   // TODO: model dependencies between variables: if V1 corresponds to (x: List[_]) and V2 is (x.hd), V2 cannot be assigned when V1 = null or V1 = Nil
@@ -429,44 +430,50 @@ trait MatchAnalysis extends MatchApproximation {
       val propsCasesOk   = approximate(True)  map caseWithoutBodyToProp
       val propsCasesFail = approximate(False) map (t => Not(caseWithoutBodyToProp(t)))
 
-      val (eqAxiomsFail, symbolicCasesFail) = removeVarEq(propsCasesFail, modelNull = true)
-      val (eqAxiomsOk, symbolicCasesOk)     = removeVarEq(propsCasesOk, modelNull = true)
-      val eqAxioms = simplify(And(eqAxiomsOk, eqAxiomsFail)) // I'm pretty sure eqAxiomsOk == eqAxiomsFail, but not 100% sure.
+      try {
+        val (eqAxiomsFail, symbolicCasesFail) = removeVarEq(propsCasesFail, modelNull = true)
+        val (eqAxiomsOk, symbolicCasesOk) = removeVarEq(propsCasesOk, modelNull = true)
+        val eqAxioms = simplify(And(eqAxiomsOk, eqAxiomsFail)) // I'm pretty sure eqAxiomsOk == eqAxiomsFail, but not 100% sure.
 
-      val prefix = mutable.ArrayBuffer[Prop]()
-      prefix += eqAxioms
+        val prefix = mutable.ArrayBuffer[Prop]()
+        prefix += eqAxioms
 
-      var prefixRest = symbolicCasesFail
-      var current = symbolicCasesOk
-      var reachable = true
-      var caseIndex = 0
+        var prefixRest = symbolicCasesFail
+        var current = symbolicCasesOk
+        var reachable = true
+        var caseIndex = 0
 
-      debug.patmat("reachability, vars:\n" + ((propsCasesFail flatMap gatherVariables).distinct map (_.describe) mkString ("\n")))
-      debug.patmat(s"equality axioms:\n$eqAxiomsOk")
+        debug.patmat("reachability, vars:\n" + ((propsCasesFail flatMap gatherVariables).distinct map (_.describe) mkString ("\n")))
+        debug.patmat(s"equality axioms:\n$eqAxiomsOk")
 
-      // invariant (prefixRest.length == current.length) && (prefix.reverse ++ prefixRest == symbolicCasesFail)
-      // termination: prefixRest.length decreases by 1
-      while (prefixRest.nonEmpty && reachable) {
-        val prefHead = prefixRest.head
-        caseIndex += 1
-        prefixRest = prefixRest.tail
-        if (prefixRest.isEmpty) reachable = true
-        else {
-          prefix += prefHead
-          current = current.tail
+        // invariant (prefixRest.length == current.length) && (prefix.reverse ++ prefixRest == symbolicCasesFail)
+        // termination: prefixRest.length decreases by 1
+        while (prefixRest.nonEmpty && reachable) {
+          val prefHead = prefixRest.head
+          caseIndex += 1
+          prefixRest = prefixRest.tail
+          if (prefixRest.isEmpty) reachable = true
+          else {
+            prefix += prefHead
+            current = current.tail
           val and = And((current.head +: prefix): _*)
           val model = findModelFor(eqFreePropToSolvable(and))
 
-          // debug.patmat("trying to reach:\n"+ cnfString(current.head) +"\nunder prefix:\n"+ cnfString(prefix))
-          // if (NoModel ne model) debug.patmat("reached: "+ modelString(model))
+            // debug.patmat("trying to reach:\n"+ cnfString(current.head) +"\nunder prefix:\n"+ cnfString(prefix))
+            // if (NoModel ne model) debug.patmat("reached: "+ modelString(model))
 
-          reachable = NoModel ne model
+            reachable = NoModel ne model
+          }
         }
+
+        if (Statistics.canEnable) Statistics.stopTimer(patmatAnaReach, start)
+
+        if (reachable) None else Some(caseIndex)
+      } catch {
+        case ex: AnalysisBudget.Exception =>
+          warn(prevBinder.pos, ex, "unreachability")
+          None // CNF budget exceeded
       }
-
-      if (Statistics.canEnable) Statistics.stopTimer(patmatAnaReach, start)
-
-      if (reachable) None else Some(caseIndex)
     }
 
     // exhaustivity
@@ -507,32 +514,38 @@ trait MatchAnalysis extends MatchApproximation {
         // when does the match fail?
         val matchFails = Not(\/(symbolicCases))
 
-  // debug output:
+        // debug output:
         debug.patmat("analysing:")
         showTreeMakers(cases)
 
         // debug.patmat("\nvars:\n"+ (vars map (_.describe) mkString ("\n")))
         // debug.patmat("\nmatchFails as CNF:\n"+ cnfString(propToSolvable(matchFails)))
 
-        // find the models (under which the match fails)
-        val matchFailModels = findAllModelsFor(propToSolvable(matchFails))
+        try {
+          // find the models (under which the match fails)
+          val matchFailModels = findAllModelsFor(propToSolvable(matchFails), prevBinder.pos)
 
-        val scrutVar = Var(prevBinderTree)
-        val counterExamples = {
-          matchFailModels.flatMap {
-            model =>
-              val varAssignments = expandModel(model)
-              varAssignments.flatMap(modelToCounterExample(scrutVar) _)
+          val scrutVar = Var(prevBinderTree)
+          val counterExamples = {
+            matchFailModels.flatMap {
+              model =>
+                val varAssignments = expandModel(model)
+                varAssignments.flatMap(modelToCounterExample(scrutVar) _)
+            }
           }
+
+          // sorting before pruning is important here in order to
+          // keep neg/t7020.scala stable
+          // since e.g. List(_, _) would cover List(1, _)
+          val pruned = CounterExample.prune(counterExamples.sortBy(_.toString)).map(_.toString)
+
+          if (Statistics.canEnable) Statistics.stopTimer(patmatAnaExhaust, start)
+          pruned
+        } catch {
+          case ex: AnalysisBudget.Exception =>
+            warn(prevBinder.pos, ex, "exhaustivity")
+            Nil // CNF budget exceeded
         }
-
-        // sorting before pruning is important here in order to
-        // keep neg/t7020.scala stable
-        // since e.g. List(_, _) would cover List(1, _)
-        val pruned = CounterExample.prune(counterExamples.sortBy(_.toString)).map(_.toString)
-
-        if (Statistics.canEnable) Statistics.stopTimer(patmatAnaExhaust, start)
-        pruned
       }
     }
 

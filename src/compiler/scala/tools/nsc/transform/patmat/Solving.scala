@@ -11,6 +11,7 @@ import scala.reflect.internal.util.Statistics
 import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Collections._
+import scala.reflect.internal.util.Position
 
 // a literal is a (possibly negated) variable
 class Lit(val v: Int) extends AnyVal {
@@ -244,11 +245,33 @@ trait Solving extends Logic {
 
     def eqFreePropToSolvable(p: Prop): Solvable = {
 
+      def doesFormulaExceedSize(p: Prop): Boolean = {
+        p match {
+          case And(ops) =>
+            if (ops.size > AnalysisBudget.maxFormulaSize) {
+              true
+            } else {
+              ops.exists(doesFormulaExceedSize)
+            }
+          case Or(ops)  =>
+            if (ops.size > AnalysisBudget.maxFormulaSize) {
+              true
+            } else {
+              ops.exists(doesFormulaExceedSize)
+            }
+          case Not(a)   => doesFormulaExceedSize(a)
+          case _        => false
+        }
+      }
+
+      val simplified = simplify(p)
+      if (doesFormulaExceedSize(simplified)) {
+        throw AnalysisBudget.formulaSizeExceeded
+      }
+
       // collect all variables since after simplification / CNF conversion
       // they could have been removed from the formula
       val symbolMapping = new SymbolMapping(gatherSymbols(p))
-
-      val simplified = simplify(p)
       val cnfExtractor = new AlreadyInCNF(symbolMapping)
       simplified match {
         case cnfExtractor.ToCnf(solvable) =>
@@ -288,7 +311,7 @@ trait Solving extends Logic {
     val NoTseitinModel: TseitinModel = null
 
     // returns all solutions, if any (TODO: better infinite recursion backstop -- detect fixpoint??)
-    def findAllModelsFor(solvable: Solvable): List[Solution] = {
+    def findAllModelsFor(solvable: Solvable, pos: Position): List[Solution] = {
       debug.patmat("find all models for\n"+ cnfString(solvable.cnf))
 
       // we must take all vars from non simplified formula
@@ -308,13 +331,12 @@ trait Solving extends Logic {
       final case class TseitinSolution(model: TseitinModel, unassigned: List[Int]) {
         def projectToSolution(symForVar: Map[Int, Sym]) = Solution(projectToModel(model, symForVar), unassigned map symForVar)
       }
+
       def findAllModels(clauses: Array[Clause],
                         models: List[TseitinSolution],
-                        recursionDepthAllowed: Int = global.settings.YpatmatExhaustdepth.value): List[TseitinSolution]=
+                        recursionDepthAllowed: Int = AnalysisBudget.maxDPLLdepth): List[TseitinSolution]=
         if (recursionDepthAllowed == 0) {
-          val maxDPLLdepth = global.settings.YpatmatExhaustdepth.value
-          reportWarning("(Exhaustivity analysis reached max recursion depth, not all missing cases are reported. " +
-              s"Please try with scalac -Ypatmat-exhaust-depth ${maxDPLLdepth * 2} or -Ypatmat-exhaust-depth off.)")
+          uncheckedWarning(pos, AnalysisBudget.recursionDepthReached)
           models
         } else {
           debug.patmat("find all models for\n" + cnfString(clauses))

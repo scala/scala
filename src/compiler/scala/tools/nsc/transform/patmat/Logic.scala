@@ -9,8 +9,7 @@ package tools.nsc.transform.patmat
 
 import scala.language.postfixOps
 import scala.collection.mutable
-import scala.reflect.internal.util.Statistics
-import scala.reflect.internal.util.HashSet
+import scala.reflect.internal.util.{NoPosition, Position, Statistics, HashSet}
 
 trait Logic extends Debugging  {
   import PatternMatchingStats._
@@ -70,6 +69,8 @@ trait Logic extends Debugging  {
       def apply(x: Tree): Var
       def unapply(v: Var): Some[Tree]
     }
+
+    def uncheckedWarning(pos: Position, msg: String): Unit
 
     def reportWarning(message: String): Unit
 
@@ -283,6 +284,23 @@ trait Logic extends Debugging  {
       }
     }
 
+    // to govern how much time we spend analyzing matches for unreachability/exhaustivity
+    object AnalysisBudget {
+      val maxDPLLdepth = global.settings.YpatmatExhaustdepth.value
+      val maxFormulaSize = 100 * math.min(Int.MaxValue / 100, maxDPLLdepth)
+
+      private def advice =
+        s"Please try with scalac -Ypatmat-exhaust-depth ${maxDPLLdepth * 2} or -Ypatmat-exhaust-depth off."
+
+      def recursionDepthReached =
+        s"Exhaustivity analysis reached max recursion depth, not all missing cases are reported.\n($advice)"
+
+      abstract class Exception(val advice: String) extends RuntimeException("CNF budget exceeded")
+
+      object formulaSizeExceeded extends Exception(s"The analysis required more space than allowed.\n$advice")
+
+    }
+
     // TODO: remove since deprecated
     val budgetProp = scala.sys.Prop[String]("scalac.patmat.analysisBudget")
     if (budgetProp.isSet) {
@@ -385,7 +403,7 @@ trait Logic extends Debugging  {
 
     def findModelFor(solvable: Solvable): Model
 
-    def findAllModelsFor(solvable: Solvable): List[Solution]
+    def findAllModelsFor(solvable: Solvable, pos: Position = NoPosition): List[Solution]
   }
 }
 
