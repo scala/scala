@@ -36,7 +36,7 @@ trait MatchCodeGen extends Interface {
 
     // codegen relevant to the structure of the translation (how extractors are combined)
     trait AbsCodegen {
-      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree
+      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], defaultCase: Option[Tree]): Tree
 
       // local / context-free
       def _asInstanceOf(b: Symbol, tp: Type): Tree
@@ -109,7 +109,7 @@ trait MatchCodeGen extends Interface {
       //// methods in MatchingStrategy (the monad companion) -- used directly in translation
       // __match.runOrElse(`scrut`)(`scrutSym` => `matcher`)
       // TODO: consider catchAll, or virtualized matching will break in exception handlers
-      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree =
+      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], defaultCase: Option[Tree]): Tree =
         _match(vpmName.runOrElse) APPLY (scrut) APPLY (fun(scrutSym, cases map (f => f(this)) reduceLeft typedOrElse))
 
       // __match.one(`res`)
@@ -146,7 +146,7 @@ trait MatchCodeGen extends Interface {
        * the matcher's optional result is encoded as a flag, keepGoing, where keepGoing == true encodes result.isEmpty,
        * if keepGoing is false, the result Some(x) of the naive translation is encoded as matchRes == x
        */
-      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree = {
+      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], defaultCase: Option[Tree]): Tree = {
         val matchRes = NoSymbol.newValueParameter(newTermName("x"), NoPosition, newFlags = SYNTHETIC) setInfo restpe.withoutAnnotations
         val matchEnd = newSynthCaseLabel("matchEnd") setInfo MethodType(List(matchRes), restpe)
 
@@ -163,10 +163,10 @@ trait MatchCodeGen extends Interface {
         // must compute catchAll after caseLabels (side-effects nextCase)
         // catchAll.isEmpty iff no synthetic default case needed (the (last) user-defined case is a default)
         // if the last user-defined case is a default, it will never jump to the next case; it will go immediately to matchEnd
-        val catchAllDef = matchFailGen map { matchFailGen =>
+        val catchAllDef = defaultCase map { defaultCase =>
           val scrutRef = scrutSym.fold(EmptyTree: Tree)(REF) // for alternatives
 
-          LabelDef(_currCase, Nil, matchEnd APPLY (matchFailGen(scrutRef)))
+          LabelDef(_currCase, Nil, matchEnd APPLY (defaultCase))
         } toList // at most 1 element
 
         // scrutSym == NoSymbol when generating an alternatives matcher
@@ -183,8 +183,8 @@ trait MatchCodeGen extends Interface {
       }
 
       class OptimizedCasegen(matchEnd: Symbol, nextCase: Symbol) extends CommonCodegen with Casegen {
-        def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree =
-          optimizedCodegen.matcher(scrut, scrutSym, restpe)(cases, matchFailGen)
+        def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], defaultCase: Option[Tree]): Tree =
+          optimizedCodegen.matcher(scrut, scrutSym, restpe)(cases, defaultCase)
 
         // only used to wrap the RHS of a body
         // res: T

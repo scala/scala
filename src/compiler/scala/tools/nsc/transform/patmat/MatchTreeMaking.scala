@@ -34,7 +34,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
     def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): (List[List[TreeMaker]], List[Tree])
     def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit
 
-    def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree], unchecked: Boolean): Option[Tree] =
+    def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, defaultCaseOverride: Option[Tree], unchecked: Boolean): Option[Tree] =
       None
 
     // for catch (no need to customize match failure)
@@ -505,7 +505,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
             ((casegen: Casegen) => combineExtractors(altTreeMakers :+ TrivialTreeMaker(casegen.one(mkTRUE)))(casegen))
           )
 
-          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanTpe)(combinedAlts, Some(x => mkFALSE))
+          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanTpe)(combinedAlts, Some(mkFALSE))
           codegenAlt.ifThenElseZero(findAltMatcher, substitution(next))
         }
       }
@@ -538,17 +538,15 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
     }
 
     // calls propagateSubstitution on the treemakers
-    def combineCases(scrut: Tree, scrutSym: Symbol, casesRaw: List[List[TreeMaker]], pt: Type, owner: Symbol, matchFailGenOverride: Option[Tree => Tree]): Tree = {
+    def combineCases(scrut: Tree, scrutSym: Symbol, casesRaw: List[List[TreeMaker]], pt: Type, owner: Symbol, defaultCaseOverride: Option[Tree]): Tree = {
       // drops SubstOnlyTreeMakers, since their effect is now contained in the TreeMakers that follow them
       val casesNoSubstOnly = casesRaw map (propagateSubstitution(_, EmptySubstitution))
-      combineCasesNoSubstOnly(scrut, scrutSym, casesNoSubstOnly, pt, owner, matchFailGenOverride)
+      combineCasesNoSubstOnly(scrut, scrutSym, casesNoSubstOnly, pt, owner, defaultCaseOverride)
     }
 
     // pt is the fully defined type of the cases (either pt or the lub of the types of the cases)
-    def combineCasesNoSubstOnly(scrut: Tree, scrutSym: Symbol, casesNoSubstOnly: List[List[TreeMaker]], pt: Type, owner: Symbol, matchFailGenOverride: Option[Tree => Tree]): Tree =
+    def combineCasesNoSubstOnly(scrut: Tree, scrutSym: Symbol, casesNoSubstOnly: List[List[TreeMaker]], pt: Type, owner: Symbol, defaultCaseOverride: Option[Tree]): Tree =
       fixerUpper(owner, scrut.pos) {
-        def matchFailGen = matchFailGenOverride orElse Some(Throw(MatchErrorClass.tpe, _: Tree))
-
         debug.patmat("combining cases: "+ (casesNoSubstOnly.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
 
         val (suppression, requireSwitch): (Suppression, Boolean) =
@@ -582,8 +580,10 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
               (Suppression.NoSuppression, false)
           }
 
-        emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride, unchecked = suppression.suppressExhaustive).getOrElse{
+        emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, defaultCaseOverride, unchecked = suppression.suppressExhaustive).getOrElse{
           if (requireSwitch) reporter.warning(scrut.pos, "could not emit switch for @switch annotated match")
+
+          def defaultCase = defaultCaseOverride orElse Some(Throw(MatchErrorClass.tpe, CODE.REF(scrutSym)))
 
           if (casesNoSubstOnly nonEmpty) {
             // before optimizing, check casesNoSubstOnly for presence of a default case,
@@ -592,22 +592,20 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
             // TODO: improve notion of trivial/irrefutable -- a trivial type test before the body still makes for a default case
             //   ("trivial" depends on whether we're emitting a straight match or an exception, or more generally, any supertype of scrutSym.tpe is a no-op)
             //   irrefutability checking should use the approximation framework also used for CSE, unreachability and exhaustivity checking
-            val synthCatchAll =
-              if (casesNoSubstOnly.nonEmpty && {
-                    val nonTrivLast = casesNoSubstOnly.last
-                    nonTrivLast.nonEmpty && nonTrivLast.head.isInstanceOf[BodyTreeMaker]
-                  }) None
-              else matchFailGen
+            val nonTrivLast            = casesNoSubstOnly.last
+            val hasUserSuppliedDefault = nonTrivLast.nonEmpty && nonTrivLast.head.isInstanceOf[BodyTreeMaker]
 
             analyzeCases(scrutSym, casesNoSubstOnly, pt, suppression)
 
             val (cases, toHoist) = optimizeCases(scrutSym, casesNoSubstOnly, pt)
 
-            val matchRes = codegen.matcher(scrut, scrutSym, pt)(cases map combineExtractors, synthCatchAll)
+            val defaultCaseUnlessUserSupplied = if (hasUserSuppliedDefault) None else defaultCase
+
+            val matchRes = codegen.matcher(scrut, scrutSym, pt)(cases map combineExtractors, defaultCaseUnlessUserSupplied)
 
             if (toHoist isEmpty) matchRes else Block(toHoist, matchRes)
           } else {
-            codegen.matcher(scrut, scrutSym, pt)(Nil, matchFailGen)
+            codegen.matcher(scrut, scrutSym, pt)(Nil, defaultCase)
           }
         }
       }

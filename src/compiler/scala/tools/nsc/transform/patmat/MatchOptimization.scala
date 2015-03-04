@@ -491,7 +491,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         }
     }
 
-    class RegularSwitchMaker(scrutSym: Symbol, matchFailGenOverride: Option[Tree => Tree], val unchecked: Boolean) extends SwitchMaker {
+    class RegularSwitchMaker(scrutSym: Symbol, defaultCaseOverride: Option[Tree], val unchecked: Boolean) extends SwitchMaker {
       val switchableTpe = Set(ByteTpe, ShortTpe, IntTpe, CharTpe)
       val alternativesSupported = true
       val canJump = true
@@ -517,14 +517,14 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       }
 
       def defaultSym: Symbol = scrutSym
-      def defaultBody: Tree  = { import CODE._; matchFailGenOverride map (gen => gen(REF(scrutSym))) getOrElse Throw(MatchErrorClass.tpe, REF(scrutSym)) }
+      def defaultBody: Tree  = { import CODE._; defaultCaseOverride getOrElse Throw(MatchErrorClass.tpe, REF(scrutSym)) }
       def defaultCase(scrutSym: Symbol = defaultSym, guard: Tree = EmptyTree, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
         (DEFAULT IF guard) ==> body
       }}
     }
 
-    override def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree], unchecked: Boolean): Option[Tree] = { import CODE._
-      val regularSwitchMaker = new RegularSwitchMaker(scrutSym, matchFailGenOverride, unchecked)
+    override def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, defaultCaseOverride: Option[Tree], unchecked: Boolean): Option[Tree] = { import CODE._
+      val regularSwitchMaker = new RegularSwitchMaker(scrutSym, defaultCaseOverride, unchecked)
       // TODO: if patterns allow switch but the type of the scrutinee doesn't, cast (type-test) the scrutinee to the corresponding switchable type and switch on the result
       if (regularSwitchMaker.switchableTpe(dealiasWiden(scrutSym.tpe))) {
         val caseDefsWithDefault = regularSwitchMaker(cases map {c => (scrutSym, c)}, pt)
