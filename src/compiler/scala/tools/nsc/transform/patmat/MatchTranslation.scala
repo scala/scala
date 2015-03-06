@@ -55,53 +55,93 @@ trait MatchTranslation {
       }
     }
 
-    object SymbolBound {
+    object Bound {
       def unapply(tree: Tree): Option[(Symbol, Tree)] = tree match {
         case Bind(_, expr) if hasSym(tree) => Some(tree.symbol -> expr)
         case _                             => None
       }
     }
 
-    def newBoundTree(tree: Tree, pt: Type): BoundTree = tree match {
-      case SymbolBound(sym, expr) => BoundTree(SubScrutinee(setVarInfo(sym, pt)), expr)
-      case _                      => BoundTree(SubScrutinee(setVarInfo(freshSym(tree.pos, prefix = "p"), pt)), tree)
+    object TypedIdent {
+      def unapply(tree: Tree): Option[Type] = tree match {
+        case Typed(Ident(_), _) if tree.tpe != null => Some(tree.tpe)
+        case _                                      => None
+      }
     }
 
-    final case class BoundTree(scrutinee: Scrutinee, tree: Tree) {
+
+    /** Encapsulate the translation of a (potentially nested) pattern `tree`, which deconstructs the value referenced by `scrutinee`
+      *
+      * Notes from the spec:
+      *
+      * A constructor pattern is of the form c(p1, ..., pn) where n ≥ 0.
+      * It consists of a stable identifier c, followed by element patterns p1, ..., pn.
+      * The constructor c is a simple or qualified name which denotes a case class (§5.3.2).
+      *
+      * If the case class is monomorphic, then it must conform to the expected type of the pattern,
+      * and the formal parameter types of x’s primary constructor (§5.3) are taken as the expected
+      * types of the element patterns p1, ..., pn.
+      *
+      * If the case class is polymorphic, then its type parameters are instantiated so that the
+      * instantiation of c conforms to the expected type of the pattern.
+      * The instantiated formal parameter types of c’s primary constructor are then taken as the
+      * expected types of the component patterns p1, ..., pn.
+      *
+      * The pattern matches all objects created from constructor invocations c(v1, ..., vn)
+      * where each element pattern pi matches the corresponding value vi .
+      * A special case arises when c’s formal parameter types end in a repeated parameter.
+      * This is further discussed in (§8.1.9).
+      *
+      *
+      * A typed pattern x : T consists of a pattern variable x and a type pattern T.
+      * The type of x is the type pattern T, where each type variable and wildcard is replaced by a fresh, unknown type.
+      * This pattern matches any value matched by the type pattern T (§8.2); it binds the variable name to that value.
+      *
+      *
+      * A pattern binder x@p consists of a pattern variable x and a pattern p.
+      * The type of the variable x is the static type T of the pattern p.
+      * This pattern matches any value v matched by the pattern p,
+      * provided the run-time type of v is also an instance of T,  <-- TODO! https://issues.scala-lang.org/browse/SI-1503
+      * and it binds the variable name to that value.
+      *
+      *
+      * 8.1.4 Literal Patterns
+      * A literal pattern L matches any value that is equal (in terms of ==) to the literal L.
+      * The type of L must conform to the expected type of the pattern.
+      *
+      *
+      * 8.1.5 Stable Identifier Patterns  (a stable identifier r (see §3.1))
+      * The pattern matches any value v such that r == v (§12.1).
+      * The type of r must conform to the expected type of the pattern.
+      */
+    final case class PatternTranslation(scrutinee: Scrutinee, tree: Tree) {
       private lazy val extractor = ExtractorCall(tree)
 
       def pos     = tree.pos
       def tpe     = scrutinee.info.dealiasWiden  // the type of the variable bound to the pattern
       def pt      = unbound match {
         case Star(tpt)      => this glbWith seqType(tpt.tpe)
-        case TypeBound(tpe) => tpe
+        case TypedIdent(tpe) => tpe
         case tree           => tree.tpe
       }
       def glbWith(other: Type) = glb(tpe :: other :: Nil).normalize
 
-      object SymbolAndTypeBound {
+      object SymbolAndTypedIdent {
         def unapply(tree: Tree): Option[(Symbol, Type)] = tree match {
-          case SymbolBound(sym, TypeBound(tpe)) => Some(sym -> tpe)
-          case TypeBound(tpe)                   => Some(scrutinee.sym -> tpe)
+          case Bound(sym, TypedIdent(tpe)) => Some(sym -> tpe)
+          case TypedIdent(tpe)                   => Some(scrutinee.sym -> tpe)
           case _                                => None
         }
       }
 
-      object TypeBound {
-        def unapply(tree: Tree): Option[Type] = tree match {
-          case Typed(Ident(_), _) if tree.tpe != null => Some(tree.tpe)
-          case _                                      => None
-        }
-      }
-
-      private def rebindTo(pattern: Tree) = BoundTree(scrutinee, pattern)
-      private def step(treeMakers: TreeMaker*)(subpatterns: BoundTree*): TranslationStep = TranslationStep(treeMakers.toList, subpatterns.toList)
+      private def rebindTo(pattern: Tree) = PatternTranslation(scrutinee, pattern)
+      private def step(treeMakers: TreeMaker*)(subpatterns: PatternTranslation*): TranslationStep = TranslationStep(treeMakers.toList, subpatterns.toList)
 
       private def bindingStep(sub: Symbol, subpattern: Tree) = step(SubstOnlyTreeMaker(sub, scrutinee.sym))(rebindTo(subpattern))
       private def equalityTestStep()                         = step(EqualityTestTreeMaker(scrutinee.sym, tree, pos))()
       private def typeTestStep(sub: Symbol, subPt: Type)     = step(TypeTestTreeMaker(sub, scrutinee.sym, subPt, glbWith(subPt))(pos))()
       private def alternativesStep(alts: List[Tree])         = step(AlternativesTreeMaker(scrutinee.sym, translatedAlts(alts), alts.head.pos))()
-      private def translatedAlts(alts: List[Tree])           = alts map (alt => rebindTo(alt).translate())
+      private def translatedAlts(alts: List[Tree])           = alts map (alt => rebindTo(alt).translate)
       private def noStep()                                   = step()()
 
       private def unsupportedPatternMsg = sm"""
@@ -130,14 +170,14 @@ trait MatchTranslation {
       def nextStep(): TranslationStep = tree match {
         case WildcardPattern()                                        => noStep()
         case _: UnApply | _: Apply                                    => extractorStep()
-        case SymbolAndTypeBound(sym, tpe)                             => typeTestStep(sym, tpe)
-        case TypeBound(tpe)                                           => typeTestStep(scrutinee.sym, tpe)
-        case SymbolBound(sym, expr)                                   => bindingStep(sym, expr)
+        case SymbolAndTypedIdent(sym, tpe)                             => typeTestStep(sym, tpe)
+        case TypedIdent(tpe)                                           => typeTestStep(scrutinee.sym, tpe)
+        case Bound(sym, expr)                                   => bindingStep(sym, expr)
         case Literal(Constant(_)) | Ident(_) | Select(_, _) | This(_) => equalityTestStep()
         case Alternative(alts)                                        => alternativesStep(alts)
         case _                                                        => reporter.error(pos, unsupportedPatternMsg) ; noStep()
       }
-      def translate(): List[TreeMaker] = nextStep() merge (_.translate())
+      def translate: List[TreeMaker] = nextStep() merge (_.translate)
 
 
       private def concreteType = tpe.bounds.hi
@@ -151,8 +191,8 @@ trait MatchTranslation {
     }
 
     // a list of TreeMakers that encode `patTree`, and a list of arguments for recursive invocations of `translatePattern` to encode its subpatterns
-    final case class TranslationStep(makers: List[TreeMaker], subpatterns: List[BoundTree]) {
-      def merge(f: BoundTree => List[TreeMaker]): List[TreeMaker] = makers ::: (subpatterns flatMap f)
+    final case class TranslationStep(makers: List[TreeMaker], subpatterns: List[PatternTranslation]) {
+      def merge(f: PatternTranslation => List[TreeMaker]): List[TreeMaker] = makers ::: (subpatterns flatMap f)
       override def toString = if (subpatterns.isEmpty) "" else subpatterns.mkString("(", ", ", ")")
     }
 
@@ -278,10 +318,8 @@ trait MatchTranslation {
       */
     def translateCase(scrutinee: Scrutinee, pt: Type)(caseDef: CaseDef) = {
       val CaseDef(pattern, guard, body) = caseDef
-      translatePattern(BoundTree(scrutinee, pattern)) ++ translateGuard(guard) :+ translateBody(body, pt)
+      PatternTranslation(scrutinee, pattern).translate ++ translateGuard(guard) :+ translateBody(body, pt)
     }
-
-    def translatePattern(bound: BoundTree): List[TreeMaker] = bound.translate()
 
     def translateGuard(guard: Tree): List[TreeMaker] =
       if (guard == EmptyTree) Nil
@@ -295,48 +333,6 @@ trait MatchTranslation {
     // need the explicit cast in case our substitutions in the body change the type to something that doesn't take GADT typing into account
     def translateBody(body: Tree, matchPt: Type): TreeMaker =
       BodyTreeMaker(body, matchPt)
-
-    // Some notes from the specification
-
-    /*A constructor pattern is of the form c(p1, ..., pn) where n ≥ 0.
-      It consists of a stable identifier c, followed by element patterns p1, ..., pn.
-      The constructor c is a simple or qualified name which denotes a case class (§5.3.2).
-
-      If the case class is monomorphic, then it must conform to the expected type of the pattern,
-      and the formal parameter types of x’s primary constructor (§5.3) are taken as the expected
-      types of the element patterns p1, ..., pn.
-
-      If the case class is polymorphic, then its type parameters are instantiated so that the
-      instantiation of c conforms to the expected type of the pattern.
-      The instantiated formal parameter types of c’s primary constructor are then taken as the
-      expected types of the component patterns p1, ..., pn.
-
-      The pattern matches all objects created from constructor invocations c(v1, ..., vn)
-      where each element pattern pi matches the corresponding value vi .
-      A special case arises when c’s formal parameter types end in a repeated parameter.
-      This is further discussed in (§8.1.9).
-    **/
-
-    /* A typed pattern x : T consists of a pattern variable x and a type pattern T.
-       The type of x is the type pattern T, where each type variable and wildcard is replaced by a fresh, unknown type.
-       This pattern matches any value matched by the type pattern T (§8.2); it binds the variable name to that value.
-    */
-
-    /* A pattern binder x@p consists of a pattern variable x and a pattern p.
-       The type of the variable x is the static type T of the pattern p.
-       This pattern matches any value v matched by the pattern p,
-       provided the run-time type of v is also an instance of T,  <-- TODO! https://issues.scala-lang.org/browse/SI-1503
-       and it binds the variable name to that value.
-    */
-
-    /* 8.1.4 Literal Patterns
-         A literal pattern L matches any value that is equal (in terms of ==) to the literal L.
-         The type of L must conform to the expected type of the pattern.
-
-       8.1.5 Stable Identifier Patterns  (a stable identifier r (see §3.1))
-         The pattern matches any value v such that r == v (§12.1).
-         The type of r must conform to the expected type of the pattern.
-    */
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -376,7 +372,11 @@ trait MatchTranslation {
       // (it will later result in a type test when `tp` is not a subtype of `b.info`)
       // TODO: can we simplify this, together with the Bound case?
       def subPatBinders = subPatterns map (_.scrutinee.sym)
-      lazy val subPatterns = (args, subPatTypes).zipped map newBoundTree
+
+      lazy val subPatterns = (args, subPatTypes).zipped map {
+        case (Bound(sym, expr), pt) => PatternTranslation(SubScrutinee(setVarInfo(sym, pt)), expr)
+        case (tree            , pt) => PatternTranslation(SubScrutinee(setVarInfo(freshSym(tree.pos, prefix = "p"), pt)), tree)
+      }
 
       // never store these in local variables (for PreserveSubPatBinders)
       lazy val ignoredSubPatBinders: Set[Symbol] = subPatBinders zip args collect { case (b, PatternBoundToUnderscore()) => b } toSet
