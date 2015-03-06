@@ -110,26 +110,7 @@ trait MatchTranslation {
 
       // example check: List[Int] <:< ::[Int]
       private def extractorStep(): TranslationStep = {
-        def paramType = extractor.aligner.wholeType
-        import extractor.treeMaker
-        // chain a type-testing extractor before the actual extractor call
-        // it tests the type, checks the outer pointer and casts to the expected type
-        // TODO: the outer check is mandated by the spec for case classes, but we do it for user-defined unapplies as well [SPEC]
-        // (the prefix of the argument passed to the unapply must equal the prefix of the type of the binder)
-        lazy val typeTest = TypeTestTreeMaker(scrutinee.sym, scrutinee.sym, paramType, paramType)(pos, extractorArgTypeTest = true)
-        // check whether typetest implies binder is not null,
-        // even though the eventual null check will be on typeTest.nextBinder
-        // it'll be equal to binder casted to paramType anyway (and the type test is on binder)
-        def extraction: TreeMaker = treeMaker(typeTest.nextBinder, typeTest impliesBinderNonNull scrutinee.sym, pos)
-
-        // paramType = the type expected by the unapply
-        // TODO: paramType may contain unbound type params (run/t2800, run/t3530)
-        val makers = (
-          // Statically conforms to paramType
-          if (this ensureConformsTo paramType) treeMaker(scrutinee.sym, false, pos) :: Nil
-          else typeTest :: extraction :: Nil
-        )
-        step(makers: _*)(extractor.subBoundTrees: _*)
+        step(extractor.makers(scrutinee, pos): _*)(extractor.subPatterns: _*)
       }
 
       // Summary of translation cases. I moved the excerpts from the specification further below so all
@@ -158,21 +139,6 @@ trait MatchTranslation {
       }
       def translate(): List[TreeMaker] = nextStep() merge (_.translate())
 
-      private def setInfo(paramType: Type): Boolean = {
-        devWarning(s"resetting info of $this to $paramType")
-        setVarInfo(scrutinee.sym, paramType)
-        true
-      }
-      // If <:< but not =:=, no type test needed, but the tree maker relies on the binder having
-      // exactly paramType (and not just some type compatible with it.) SI-6624 shows this is necessary
-      // because apparently patBinder may have an unfortunate type (.decls don't have the case field
-      // accessors) TODO: get to the bottom of this -- I assume it happens when type checking
-      // infers a weird type for an unapply call. By going back to the parameterType for the
-      // extractor call we get a saner type, so let's just do that for now.
-      def ensureConformsTo(paramType: Type): Boolean = (
-           (tpe =:= paramType)
-        || (tpe <:< paramType) && setInfo(paramType)
-      )
 
       private def concreteType = tpe.bounds.hi
       private def unbound = unbind(tree)
@@ -203,7 +169,7 @@ trait MatchTranslation {
     def translateMatch(match_ : Match): Tree = {
       val Match(selector, cases) = match_
 
-      val (nonSyntheticCases, defaultOverride) = cases match {
+      val (nonSyntheticCases, defaultCaseOverride) = cases match {
         case init :+ last if treeInfo isSyntheticDefaultCase last => (init, Some(last.body))
         case _                                                    => (cases, None)
       }
@@ -226,14 +192,16 @@ trait MatchTranslation {
       // pt is the skolemized version
       val pt = repeatedToSeq(origPt)
 
-      val scrutinee = SimpleMatchScrutinee(selector)
+      val scrutinee = scrutineeFor(selector)
 
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
-      val combined = combineCases(scrutinee, nonSyntheticCases map translateCase(scrutinee, pt), pt, matchOwner, defaultOverride)
+      val combined = combineCases(scrutinee, nonSyntheticCases map translateCase(scrutinee, pt), pt, matchOwner, defaultCaseOverride)
 
       if (Statistics.canEnable) Statistics.stopTimer(patmatNanos, start)
       combined
     }
+
+    def scrutineeFor(selector: Tree): SimpleMatchScrutinee = SimpleMatchScrutinee(selector)
 
     // return list of typed CaseDefs that are supported by the backend (typed/bind/wildcard)
     // we don't have a global scrutinee -- the caught exception must be bound in each of the casedefs
@@ -407,8 +375,8 @@ trait MatchTranslation {
       // as b.info may be based on a Typed type ascription, which has not been taken into account yet by the translation
       // (it will later result in a type test when `tp` is not a subtype of `b.info`)
       // TODO: can we simplify this, together with the Bound case?
-      def subPatBinders = subBoundTrees map (_.scrutinee.sym)
-      lazy val subBoundTrees = (args, subPatTypes).zipped map newBoundTree
+      def subPatBinders = subPatterns map (_.scrutinee.sym)
+      lazy val subPatterns = (args, subPatTypes).zipped map newBoundTree
 
       // never store these in local variables (for PreserveSubPatBinders)
       lazy val ignoredSubPatBinders: Set[Symbol] = subPatBinders zip args collect { case (b, PatternBoundToUnderscore()) => b } toSet
@@ -430,6 +398,43 @@ trait MatchTranslation {
       // codegen.drop(seqTree(binder))(nbIndexingIndices)))).toList
       protected def seqTree(binder: Symbol)                = tupleSel(binder)(firstIndexingBinder + 1)
       protected def tupleSel(binder: Symbol)(i: Int): Tree = codegen.tupleSel(binder)(i)
+
+      def makers(scrutinee: Scrutinee, pos: Position): List[TreeMaker] = {
+        def paramType = aligner.wholeType
+
+        // chain a type-testing extractor before the actual extractor call
+        // it tests the type, checks the outer pointer and casts to the expected type
+        // TODO: the outer check is mandated by the spec for case classes, but we do it for user-defined unapplies as well [SPEC]
+        // (the prefix of the argument passed to the unapply must equal the prefix of the type of the binder)
+        lazy val typeTest = TypeTestTreeMaker(scrutinee.sym, scrutinee.sym, paramType, paramType)(pos, extractorArgTypeTest = true)
+        // check whether typetest implies binder is not null,
+        // even though the eventual null check will be on typeTest.nextBinder
+        // it'll be equal to binder casted to paramType anyway (and the type test is on binder)
+        def extraction: TreeMaker = treeMaker(typeTest.nextBinder, typeTest impliesBinderNonNull scrutinee.sym, pos)
+
+        def setInfo(paramType: Type): Boolean = {
+          devWarning(s"resetting info of $this to $paramType")
+          setVarInfo(scrutinee.sym, paramType)
+          true
+        }
+
+        // If <:< but not =:=, no type test needed, but the tree maker relies on the binder having
+        // exactly paramType (and not just some type compatible with it.) SI-6624 shows this is necessary
+        // because apparently patBinder may have an unfortunate type (.decls don't have the case field
+        // accessors) TODO: get to the bottom of this -- I assume it happens when type checking
+        // infers a weird type for an unapply call. By going back to the parameterType for the
+        // extractor call we get a saner type, so let's just do that for now.
+        def ensureConformsTo(paramType: Type): Boolean = (
+          (scrutinee.info =:= paramType)
+            || (scrutinee.info <:< paramType) && setInfo(paramType)
+          )
+
+        // paramType = the type expected by the unapply
+        // TODO: paramType may contain unbound type params (run/t2800, run/t3530)
+        // Statically conforms to paramType
+        if (ensureConformsTo(paramType)) treeMaker(scrutinee.sym, false, pos) :: Nil
+        else typeTest :: extraction :: Nil
+      }
 
       // the trees that select the subpatterns on the extractor's result,
       // referenced by `binder`
