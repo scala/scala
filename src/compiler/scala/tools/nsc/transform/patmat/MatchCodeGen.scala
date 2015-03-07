@@ -64,6 +64,19 @@ trait MatchCodeGen extends Interface {
       override def defs = List(ValDef(sym, selector))
     }
 
+    // for an optimized match that unrolls the tuple that is the selector
+    case class TupleMatchScrutinee(selector: Tree, elems: List[Tree])(matchOwner: Symbol) extends MatchScrutinee {
+      def sym = NoSymbol
+      override lazy val syms = mapWithIndex(elems)((el, idx) =>
+        matchOwner.newTermSymbol(currentUnit.freshTermName(s"detupled_${idx+1}$$"), el.pos, newFlags = treeInfo.SYNTH_CASE_FLAGS) setInfo el.tpe.deconst
+      )
+
+      // is only supposed to be used to generate `throw new MatchError((detupled_1$, ..., detupled_N$))`
+      def ref = gen.mkTuple(syms map gen.mkAttributedRef)
+
+      override def defs = map2(syms, elems)(ValDef(_, _))
+    }
+
     // codegen relevant to the structure of the translation (how extractors are combined)
     trait AbsCodegen {
       def matcher(scrutinee: Scrutinee, restpe: Type)(cases: List[Casegen => Tree], defaultCase: Option[Tree]): Tree

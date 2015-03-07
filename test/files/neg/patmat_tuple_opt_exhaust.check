@@ -1,0 +1,7 @@
+patmat_tuple_opt_exhaust.scala:7: warning: match may not be exhaustive.
+It would fail on the following inputs: (C(_, _), C(_, _)), (C(_, _), N()), (N(), C(_, _)), (N(), N())
+    (a1, a2) match {
+    ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

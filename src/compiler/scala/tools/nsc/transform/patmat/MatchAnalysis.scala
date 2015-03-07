@@ -230,7 +230,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
         uniqueTypeProps getOrElseUpdate((testedPath, pt), Eq(Var(testedPath), TypeConst(checkableType(pt))))
 
       // a variable in this set should never be replaced by a tree that "does not consist of a selection on a variable in this set" (intuitively)
-      private val pointsToBound = mutable.HashSet(scrutinee.sym)
+      private val pointsToBound = mutable.HashSet(scrutinee.syms : _*)
       private val trees         = mutable.HashSet.empty[Tree]
 
       // the substitution that renames variables to variables in pointsToBound
@@ -523,23 +523,29 @@ trait MatchAnalysis extends MatchApproximation {
           // find the models (under which the match fails)
           val matchFailModels = findAllModelsFor(propToSolvable(matchFails), scrutinee.pos)
 
-          val prevBinderTree = approx.binderToUniqueTree(scrutinee.sym)
-          val scrutVar = Var(prevBinderTree)
-          val counterExamples = {
-            matchFailModels.flatMap {
-              model =>
-                val varAssignments = expandModel(model)
-                varAssignments.flatMap(modelToCounterExample(scrutVar) _)
-            }
-          }
+          val counterExamples =
+            if (matchFailModels.isEmpty) Nil
+            else {
+              def toCounter(varAssignment: VarAssignment): Option[CounterExample] = {
+                import scala.reflect.internal.util.Collections.sequence
+                def exampleFor(sym: Symbol) =
+                  modelToCounterExample(Var(approx.binderToUniqueTree(sym)))(varAssignment)
 
-          // sorting before pruning is important here in order to
-          // keep neg/t7020.scala stable
-          // since e.g. List(_, _) would cover List(1, _)
-          val pruned = CounterExample.prune(counterExamples.sortBy(_.toString)).map(_.toString)
+                // is there a single scrutinee? or did we de-tuple (reconstitute it to a TupleExample)
+                if (scrutinee.sym.exists) exampleFor(scrutinee.sym)
+                else sequence(scrutinee.syms map exampleFor) map TupleExample
+              }
+
+              val counterExamples = matchFailModels.flatMap(model => expandModel(model) flatMap toCounter)
+
+              // sorting before pruning is important here in order to
+              // keep neg/t7020.scala stable
+              // since e.g. List(_, _) would cover List(1, _)
+              CounterExample.prune(counterExamples.sortBy(_.toString)).map(_.toString)
+            }
 
           if (Statistics.canEnable) Statistics.stopTimer(patmatAnaExhaust, start)
-          pruned
+          counterExamples
         } catch {
           case ex: AnalysisBudget.Exception =>
             warn(scrutinee.pos, ex, "exhaustivity")
@@ -609,16 +615,18 @@ trait MatchAnalysis extends MatchApproximation {
     case object WildcardExample extends CounterExample { override def toString = "_" }
     case object NoExample extends CounterExample { override def toString = "??" }
 
+    type VarAssignment = Map[Var, (Seq[Const], Seq[Const])]
+
     // returns a mapping from variable to
     // equal and notEqual symbols
-    def modelToVarAssignment(model: Model): Map[Var, (Seq[Const], Seq[Const])] =
+    def modelToVarAssignment(model: Model): VarAssignment =
       model.toSeq.groupBy{f => f match {case (sym, value) => sym.variable} }.mapValues{ xs =>
         val (trues, falses) = xs.partition(_._2)
         (trues map (_._1.const), falses map (_._1.const))
         // should never be more than one value in trues...
       }
 
-    def varAssignmentString(varAssignment: Map[Var, (Seq[Const], Seq[Const])]) =
+    def varAssignmentString(varAssignment: VarAssignment) =
       varAssignment.toSeq.sortBy(_._1.toString).map { case (v, (trues, falses)) =>
          val assignment = "== "+ (trues mkString("(", ", ", ")")) +"  != ("+ (falses mkString(", ")) +")"
          v +"(="+ v.path +": "+ v.staticTpCheckable +") "+ assignment
@@ -654,8 +662,7 @@ trait MatchAnalysis extends MatchApproximation {
      * Only one of these symbols can be set to true,
      * since `V2` can at most be equal to one of {2,6,5,4,7}.
      */
-    def expandModel(solution: Solution): List[Map[Var, (Seq[Const], Seq[Const])]] = {
-
+    def expandModel(solution: Solution): List[VarAssignment] = {
       val model = solution.model
 
       // x1 = ...
@@ -727,7 +734,7 @@ trait MatchAnalysis extends MatchApproximation {
     // (the variables don't take into account type information derived from other variables,
     //  so, naively, you might try to construct a counter example like _ :: Nil(_ :: _, _ :: _),
     //  since we didn't realize the tail of the outer cons was a Nil)
-    def modelToCounterExample(scrutVar: Var)(varAssignment: Map[Var, (Seq[Const], Seq[Const])]): Option[CounterExample] = {
+    def modelToCounterExample(scrutVar: Var)(varAssignment: VarAssignment): Option[CounterExample] = {
       // chop a path into a list of symbols
       def chop(path: Tree): List[Symbol] = path match {
         case Ident(_) => List(path.symbol)

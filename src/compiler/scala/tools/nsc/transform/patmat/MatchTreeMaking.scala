@@ -98,10 +98,13 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       override def toString = "B"+((body, matchPt))
     }
 
-    case class SubstOnlyTreeMaker(prevBinder: Symbol, nextBinder: Symbol) extends TreeMaker {
+    object SubstOnlyTreeMaker {
+      def apply(prevBinder: Symbol, nextBinder: Symbol) = new SubstOnlyTreeMaker(List(prevBinder), List(CODE.REF(nextBinder)))
+    }
+    case class SubstOnlyTreeMaker(binders: List[Symbol], refs: List[Tree]) extends TreeMaker {
       val pos = NoPosition
 
-      val localSubstitution = Substitution(prevBinder, CODE.REF(nextBinder))
+      val localSubstitution = Substitution(binders, refs)
       def chainBefore(next: Tree)(casegen: Casegen): Tree = substitution(next)
       override def toString = "S"+ localSubstitution
     }

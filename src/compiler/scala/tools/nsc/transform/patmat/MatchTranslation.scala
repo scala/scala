@@ -198,7 +198,7 @@ trait MatchTranslation {
       // pt is the skolemized version
       val pt = repeatedToSeq(origPt)
 
-      val scrutinee = scrutineeFor(selector)
+      val scrutinee = scrutineeFor(selector, nonSyntheticCases)
 
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
       val combined = combineCases(scrutinee, nonSyntheticCases map translateCase(scrutinee, pt), pt, matchOwner, defaultCaseOverride)
@@ -303,15 +303,36 @@ trait MatchTranslation {
 // helper methods: they analyze types and trees in isolation, but they are not (directly) concerned with the structure of the overall translation
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    def scrutineeFor(selector: Tree): SimpleMatchScrutinee = SimpleMatchScrutinee(selector)
+    /** Special-case `(e1,..., eN) match { case (p1, ..., pN) if G => B .... case _ if G => B }`
+      *
+      * Don't allocate a tuple, store its elements in locals instead of indirecting through the `_i` accessors.
+      */
+    def scrutineeFor(selector: Tree, nonSyntheticCases: List[CaseDef]): MatchScrutinee = {
+      import treeInfo._
+
+      selector match {
+        case TupledScrutinee(elems @ _*) if settings.Xexperimental && nonSyntheticCases.forall {
+            case CaseDef(UnboundTuplePattern(elems @ _*), _, _) => !isStar(elems.last) // `isRepeatedParamType(tuple.tpe.paramTypes.last))` should be impossible: can't instantiate TupleN's type param to the repeated param marker type constructor
+            case CaseDef(WildcardPattern(), _, _)             => true
+            case _                                            => false
+          }    => TupleMatchScrutinee(selector, elems.toList)(matchOwner)
+
+        case _ => SimpleMatchScrutinee(selector)
+      }
+    }
 
     object ExtractorCall {
       // TODO: check unargs == args
       def apply(scrutinee: Scrutinee, tree: Tree): ExtractorCall = tree match {
         case UnApply(unfun, args) => new ExtractorCallRegular(scrutinee, alignPatterns(context, tree), unfun, args, tree.pos) // extractor
+
+        case Apply(fun, args) if scrutinee.isInstanceOf[TupleMatchScrutinee] =>
+          new ExtractorCallDetupled(scrutinee.asInstanceOf[TupleMatchScrutinee], fun, args, tree.pos)      // tuple selector that can be detuplified
+
         case Apply(fun, args)     => new ExtractorCallProd(scrutinee, alignPatterns(context, tree), fun, args, tree.pos)      // case class
       }
     }
+
 
     sealed abstract class ExtractorCall {
       def scrutinee: Scrutinee
@@ -578,5 +599,23 @@ trait MatchTranslation {
 
       override def rawSubPatTypes = aligner.extractor.varargsTypes
     }
+
+    class ExtractorCallDetupled(val scrutinee: TupleMatchScrutinee, val fun: Tree, val args: List[Tree], val pos: Position) extends ExtractorCall {
+      debug.patmat(s"tuple extractor: $fun (${args.mkString(",")}) / $oldBinders --> $subPatRefs / $subPatterns")
+
+      lazy val subPatterns = (args, scrutinee.syms).zipped map {
+        case (Bound(_, p), sym) => PatternTranslation(SubScrutinee(sym), p)
+        case (p          , sym) => PatternTranslation(SubScrutinee(sym), p)
+      }
+
+      // only need to subst when they were actually bound, so match up old Bound with their new refs
+      private lazy val (oldBinders, subPatRefs) = ((args zip scrutinee.syms) collect {
+        case (Bound(b, _), sym) => (b, REF(sym))
+      } unzip)
+
+      /** TreeMakers that implement matching scrutinee with pattern embodied by this ExtractorCall */
+      override def makers: List[TreeMaker] = List(SubstOnlyTreeMaker(oldBinders, subPatRefs))
+    }
+
   }
 }

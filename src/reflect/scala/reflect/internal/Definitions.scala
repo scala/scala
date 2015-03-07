@@ -581,6 +581,11 @@ trait Definitions extends api.StandardDefinitions {
     def isFunctionSymbol(sym: Symbol) = FunctionClass.seq contains unspecializedSymbol(sym)
     def isProductNSymbol(sym: Symbol) = ProductClass.seq contains unspecializedSymbol(sym)
 
+    def isTupleFactory(sym: Symbol, arity: Int): Boolean =
+      arity > 0 && sym.exists && ( // using unspecializedSymbol for future-proofing -- currently the apply method/constructor aren't specialized
+           unspecializedSymbol(sym) == TupleClass(arity).companionModule.info.nonPrivateMember(nme.apply)
+        || unspecializedSymbol(sym) == TupleClass(arity).primaryConstructor)
+
     def unspecializedSymbol(sym: Symbol): Symbol = {
       if (sym hasFlag SPECIALIZED) {
         // add initialization from its generic class constructor
