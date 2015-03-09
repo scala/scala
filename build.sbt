@@ -58,6 +58,12 @@ lazy val commonSettings = Seq[Setting[_]](
   crossPaths := false,
   // do not add Scala library jar as a dependency automatically
   autoScalaLibrary := false,
+  // we also do not add scala instance automatically because it introduces
+  // a circular instance, see: https://github.com/sbt/sbt/issues/1872
+  managedScalaInstance := false,
+  // this is a way to workaround issue described in https://github.com/sbt/sbt/issues/1872
+  // check it out for more details
+  scalaInstance := ScalaInstance(scalaVersion.value, appConfiguration.value.provider.scalaProvider.launcher getScala scalaVersion.value),
   // we always assume that Java classes are standalone and do not have any dependency
   // on Scala classes
   compileOrder := CompileOrder.JavaThenScala,
