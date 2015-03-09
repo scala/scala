@@ -79,6 +79,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     sealed abstract class TransformedFunction
     // A class definition for the lambda, an expression insantiating the lambda class
     case class DelambdafyAnonClass(lambdaClassDef: ClassDef, newExpr: Tree) extends TransformedFunction
+    case class InvokeDynamicLambda(tree: Apply) extends TransformedFunction
 
     // here's the main entry point of the transform
     override def transform(tree: Tree): Tree = tree match {
@@ -93,6 +94,9 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
             lambdaClassDefs(pkg) = lambdaClassDef :: lambdaClassDefs(pkg)
 
             super.transform(newExpr)
+          case InvokeDynamicLambda(apply) =>
+            // ... or an invokedynamic call
+            super.transform(apply)
         }
       case _ => super.transform(tree)
     }
@@ -124,6 +128,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       if (!thisReferringMethods.contains(target))
         target setFlag STATIC
 
+      val isStatic = target.hasFlag(STATIC)
 
       /**
        * Creates the apply method for the anonymous subclass of FunctionN
@@ -199,7 +204,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       val abstractFunctionErasedType = AbstractFunctionClass(formals.length).tpe
 
       // anonymous subclass of FunctionN with an apply method
-      def makeAnonymousClass = {
+      def makeAnonymousClass: ClassDef = {
         val parents = addSerializable(abstractFunctionErasedType)
         val funOwner = originalFunction.symbol.owner
 
@@ -232,7 +237,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         // the Optional proxy that will hold a reference to the 'this'
         // object used by the lambda, if any. NoSymbol if there is no this proxy
         val thisProxy = {
-          if (target.hasFlag(STATIC))
+          if (isStatic)
             NoSymbol
           else {
             val sym = lambdaClass.newVariable(nme.FAKE_LOCAL_THIS, originalFunction.pos, SYNTHETIC)
@@ -271,22 +276,58 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         val body = members ++ List(constr, applyMethodDef) ++ bridgeMethod
 
         // TODO if member fields are private this complains that they're not accessible
-        (localTyper.typedPos(decapturedFunction.pos)(ClassDef(lambdaClass, body)).asInstanceOf[ClassDef], thisProxy)
+        localTyper.typedPos(decapturedFunction.pos)(ClassDef(lambdaClass, body)).asInstanceOf[ClassDef]
       }
 
-      val (anonymousClassDef, thisProxy) = makeAnonymousClass
+      val useLambdaMetafactory = {
+        val hasValueClass = exitingErasure {
+          val methodType: Type = targetMethod(originalFunction).info
+          methodType.exists(_.isInstanceOf[ErasedValueType])
+        }
+        val isTarget18 = settings.target.value.contains("jvm-1.8")
+        settings.isBCodeActive && isTarget18 && !hasValueClass
+      }
 
-      pkg.info.decls enter anonymousClassDef.symbol
+      val thisArg = if (isStatic) Nil else (gen.mkAttributedThis(oldClass) setPos originalFunction.pos) :: Nil
 
-      val thisArg = optionSymbol(thisProxy) map (_ => gen.mkAttributedThis(oldClass) setPos originalFunction.pos)
-      val captureArgs = captures map (capture => Ident(capture) setPos originalFunction.pos)
+      def anonClass: TransformedFunction = {
+        val anonymousClassDef = makeAnonymousClass
+        pkg.info.decls enter anonymousClassDef.symbol
+        val captureArgs = captures map (capture => Ident(capture) setPos originalFunction.pos)
 
-      val newStat =
-          Typed(New(anonymousClassDef.symbol, (thisArg.toList ++ captureArgs): _*), TypeTree(abstractFunctionErasedType))
+        val newStat =
+          Typed(New(anonymousClassDef.symbol, thisArg ++ captureArgs: _*), TypeTree(abstractFunctionErasedType))
 
-      val typedNewStat = localTyper.typedPos(originalFunction.pos)(newStat)
+        val typedNewStat = localTyper.typedPos(originalFunction.pos)(newStat)
 
-      DelambdafyAnonClass(anonymousClassDef, typedNewStat)
+        DelambdafyAnonClass(anonymousClassDef, typedNewStat)
+      }
+
+      if (useLambdaMetafactory) {
+        val arity = originalFunction.vparams.length
+        val functionalInterface: Symbol = {
+          val sym = originalFunction.tpe.typeSymbol
+          val pack = currentRun.runDefinitions.Scala_Java8_CompatPackage
+          val returnUnit = restpe.typeSymbol == UnitClass
+          val functionInterfaceArray =
+            if (returnUnit) currentRun.runDefinitions.Scala_Java8_CompatPackage_JProcedure
+            else currentRun.runDefinitions.Scala_Java8_CompatPackage_JFunction
+          functionInterfaceArray.apply(arity)
+        }
+        if (functionalInterface.exists) {
+          val captureArgs = captures.iterator.map(capture => gen.mkAttributedRef(capture) setPos originalFunction.pos).toList
+          val allCaptureArgs = thisArg ++: captureArgs
+
+          val msym   = currentOwner.newMethod(nme.ANON_FUN_NAME, originalFunction.pos, ARTIFACT)
+          val argTypes: List[Type] = allCaptureArgs.map(_.tpe)
+          val params = msym.newSyntheticValueParams(argTypes)
+          msym.setInfo(MethodType(params, originalFunction.tpe))
+          
+          val tree = localTyper.typedPos(originalFunction.pos)(Apply(Ident(msym), allCaptureArgs)).asInstanceOf[Apply]
+          tree.updateAttachment(LambdaMetaFactoryCapable(targetMethod(originalFunction), arity, functionalInterface))
+          InvokeDynamicLambda(tree)
+        } else anonClass
+      } else anonClass
     }
 
     /**
@@ -436,4 +477,6 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         super.traverse(tree)
     }
   }
+
+  final case class LambdaMetaFactoryCapable(target: Symbol, arity: Int, functionalInterface: Symbol)
 }
