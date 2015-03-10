@@ -194,6 +194,8 @@ lazy val scalap = configureAsSubproject(project).
 // deprecated Scala Actors project
 // TODO: it packages into actors.jar but it should be scala-actors.jar
 lazy val actors = configureAsSubproject(project).
+  settings(generatePropertiesFileSettings: _*).
+  settings(name := "scala-actors").
   dependsOn(library)
 
 lazy val forkjoin = configureAsForkOfJavaProject(project)
