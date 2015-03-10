@@ -11,13 +11,13 @@
  * layout. For that reason we have to configure a lot more explicitly. I've tried explain in
  * comments the less obvious settings.
  *
- * This nicely leads me to explaning goal and non-goals of this build definition. Goals are:
+ * This nicely leads me to explaining goal and non-goals of this build definition. Goals are:
  *
  *   - to be easy to tweak it in case a bug or small inconsistency is found
  *   - to mimic Ant's behavior as closely as possible
  *   - to be super explicit about any departure from standard sbt settings
  *   - to achieve functional parity with Ant build as quickly as possible
- *   - to be readable and not necessarily succint
+ *   - to be readable and not necessarily succinct
  *   - to provide the nicest development experience for people hacking on Scala
  *
  * Non-goals are:
@@ -29,7 +29,7 @@
  *
  * It boils down to simple rules:
  *
- *   - project laytout is set in stone for now
+ *   - project layout is set in stone for now
  *   - if you need to work on convincing sbt to follow non-standard layout then
  *     explain everything you did in comments
  *   - constantly check where Ant build produces class files, artifacts, what kind of other
@@ -50,10 +50,12 @@
  *     https://groups.google.com/d/topic/scala-internals/gp5JsM1E0Fo/discussion
  */
 
+val bootstrapScalaVersion = "2.11.5"
+
 lazy val commonSettings = Seq[Setting[_]](
   organization := "org.scala-lang",
   version := "2.11.6-SNAPSHOT",
-  scalaVersion := "2.11.5",
+  scalaVersion := bootstrapScalaVersion,
   // we don't cross build Scala itself
   crossPaths := false,
   // do not add Scala library jar as a dependency automatically
@@ -155,13 +157,13 @@ lazy val repl = configureAsSubproject(project).
   settings(disableDocsAndPublishingTasks: _*).
   dependsOn(compiler)
 
+def moduleDependency(name: String) =
+  // exclusion of the scala-library transitive dependency avoids eviction warnings during `update`.
+  "org.scala-lang.modules" %% name % "1.0.3" exclude("org.scala-lang", "scala-library")
+
 lazy val scaladoc = configureAsSubproject(project).
   settings(
-    libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-xml" % "1.0.3",
-      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.3",
-      "org.scala-lang.modules" %% "scala-partest" % "1.0.5"
-    )
+    libraryDependencies ++= Seq("scala-xml", "scala-parser-combinators", "scala-partest").map(moduleDependency)
   ).
   settings(disableDocsAndPublishingTasks: _*).
   dependsOn(compiler)
@@ -180,12 +182,10 @@ lazy val asm = configureAsForkOfJavaProject(project)
 
 lazy val root = (project in file(".")).
   aggregate(library, forkjoin, reflect, compiler, asm, interactive, repl,
-    scaladoc, scalap, actors).
-  // make the root project an aggragate-only
-  // we disable sbt's built-in Ivy plugin in the root project
-  // so it doesn't produce any artifact including not building
-  // an empty jar
-  disablePlugins(plugins.IvyPlugin)
+    scaladoc, scalap, actors).settings(
+    scalaVersion := bootstrapScalaVersion,
+    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
+  )
 
 /**
  * Configures passed project as a subproject (e.g. compiler or repl)
