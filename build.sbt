@@ -84,6 +84,17 @@ lazy val commonSettings = Seq[Setting[_]](
   cleanFiles += (classDirectory in Compile).value
 )
 
+// disable various tasks that are not needed for projects that are used
+// only for compiling code and not publishing it as a standalone artifact
+// we disable those tasks by overriding them and returning bogus files when
+// needed. This is a bit sketchy but I haven't found any better way.
+val disableDocsAndPublishingTasks = Seq[Setting[_]](
+  (doc := file("!!! NO DOCS !!!")),
+  (publishLocal := {}),
+  (publish := {}),
+  (packageBin in Compile := file("!!! NO PACKAGING !!!"))
+)
+
 lazy val scalaSubprojectSettings = commonSettings ++ Seq[Setting[_]](
   artifactPath in packageBin in Compile := {
     // two lines below are copied over from sbt's sources:
@@ -121,16 +132,26 @@ lazy val reflect = configureAsSubproject(project).
   dependsOn(library)
 
 lazy val compiler = configureAsSubproject(project).
-  settings(libraryDependencies += "org.apache.ant" % "ant" % "1.9.4").
+  settings(libraryDependencies += "org.apache.ant" % "ant" % "1.9.4",
+    // this a way to make sure that classes from interactive and scaladoc projects
+    // end up in compiler jar (that's what Ant build does)
+    // we need to use LocalProject references (with strings) to deal with mutual recursion
+    mappings in Compile in packageBin :=
+      (mappings in Compile in packageBin).value ++
+      (mappings in Compile in packageBin in LocalProject("interactive")).value ++
+      (mappings in Compile in packageBin in LocalProject("scaladoc")).value
+    ).
   dependsOn(library, reflect, asm)
 
 lazy val interactive = configureAsSubproject(project).
+  settings(disableDocsAndPublishingTasks: _*).
   dependsOn(compiler)
 
 lazy val repl = configureAsSubproject(project).
   // TODO: in Ant build def, this version is defined in versions.properties
   // figure out whether we also want to externalize jline's version
   settings(libraryDependencies += "jline" % "jline" % "2.12").
+  settings(disableDocsAndPublishingTasks: _*).
   dependsOn(compiler)
 
 lazy val scaladoc = configureAsSubproject(project).
@@ -141,6 +162,7 @@ lazy val scaladoc = configureAsSubproject(project).
       "org.scala-lang.modules" %% "scala-partest" % "1.0.5"
     )
   ).
+  settings(disableDocsAndPublishingTasks: _*).
   dependsOn(compiler)
 
 lazy val scalap = configureAsSubproject(project).
@@ -192,18 +214,9 @@ def configureAsSubproject(project: Project): Project = {
  */
 def configureAsForkOfJavaProject(project: Project): Project = {
   val base = file(".") / "src" / project.id
-  // disable various tasks that do not make sense for forks of Java projects
-  // we disable those task by overriding them and returning bogus files when
-  // needed. This is a bit sketchy but I haven't found any better way.
-  val disableTasks = Seq[Setting[_]](
-    (doc := file("!!! NO DOCS !!!")),
-    (publishLocal := {}),
-    (publish := {}),
-    (packageBin in Compile := file("!!! NO PACKAGING !!!"))
-  )
   (project in base).
     settings(commonSettings: _*).
-    settings(disableTasks: _*).
+    settings(disableDocsAndPublishingTasks: _*).
     settings(
       sourceDirectory in Compile := baseDirectory.value,
       javaSource in Compile := (sourceDirectory in Compile).value,
