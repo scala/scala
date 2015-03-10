@@ -125,6 +125,7 @@ val libIncludes: FileFilter = "*.tmpl" | "*.xml" | "*.js" | "*.css" | "rootdoc.t
 lazy val library = configureAsSubproject(project).
   settings(generatePropertiesFileSettings: _*).
   settings(
+    name := "scala-library",
     scalacOptions in Compile ++= Seq[String]("-sourcepath", (scalaSource in Compile).value.toString),
     // Workaround for a bug in `scaladoc` that it seems to not respect the `-sourcepath` option
     // as a result of this bug, the compiler cannot even initialize Definitions without
@@ -142,6 +143,7 @@ lazy val library = configureAsSubproject(project).
 
 lazy val reflect = configureAsSubproject(project).
   settings(generatePropertiesFileSettings: _*).
+  settings(name := "scala-reflect").
   dependsOn(library)
 
 val compilerIncludes: FileFilter =
@@ -149,7 +151,9 @@ val compilerIncludes: FileFilter =
   "*.png" | "*.gif" | "*.gif" | "*.txt"
 lazy val compiler = configureAsSubproject(project).
   settings(generatePropertiesFileSettings: _*).
-  settings(libraryDependencies += "org.apache.ant" % "ant" % "1.9.4",
+  settings(
+    name := "scala-compiler",
+    libraryDependencies += "org.apache.ant" % "ant" % "1.9.4",
     // this a way to make sure that classes from interactive and scaladoc projects
     // end up in compiler jar (that's what Ant build does)
     // we need to use LocalProject references (with strings) to deal with mutual recursion
@@ -216,8 +220,7 @@ lazy val root = (project in file(".")).
  */
 def configureAsSubproject(project: Project): Project = {
   val base = file(".") / "src" / project.id
-  (project in base).settings(scalaSubprojectSettings: _*).
-    settings(name := s"scala-${project.id}")
+  (project in base).settings(scalaSubprojectSettings: _*)
 }
 
 /**
