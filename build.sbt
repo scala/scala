@@ -50,10 +50,12 @@
  *     https://groups.google.com/d/topic/scala-internals/gp5JsM1E0Fo/discussion
  */
 
+val boostrapScalaVersion = "2.11.5"
+
 lazy val commonSettings = Seq[Setting[_]](
   organization := "org.scala-lang",
   version := "2.11.6-SNAPSHOT",
-  scalaVersion := "2.11.5",
+  scalaVersion := boostrapScalaVersion,
   // we don't cross build Scala itself
   crossPaths := false,
   // do not add Scala library jar as a dependency automatically
@@ -154,13 +156,13 @@ lazy val repl = configureAsSubproject(project).
   settings(disableDocsAndPublishingTasks: _*).
   dependsOn(compiler)
 
+def moduleDependency(name: String) =
+  // exclusion of the scala-library transitive dependency avoids eviction warnings during `update`.
+  "org.scala-lang.modules" %% name % "1.0.3" exclude("org.scala-lang", "scala-library")
+
 lazy val scaladoc = configureAsSubproject(project).
   settings(
-    libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %% "scala-xml" % "1.0.3",
-      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.3",
-      "org.scala-lang.modules" %% "scala-partest" % "1.0.5"
-    )
+    libraryDependencies ++= Seq("scala-xml", "scala-parser-combinators", "scala-partest").map(moduleDependency)
   ).
   settings(disableDocsAndPublishingTasks: _*).
   dependsOn(compiler)
@@ -179,12 +181,10 @@ lazy val asm = configureAsForkOfJavaProject(project)
 
 lazy val root = (project in file(".")).
   aggregate(library, forkjoin, reflect, compiler, asm, interactive, repl,
-    scaladoc, scalap, actors).
-  // make the root project an aggragate-only
-  // we disable sbt's built-in Ivy plugin in the root project
-  // so it doesn't produce any artifact including not building
-  // an empty jar
-  disablePlugins(plugins.IvyPlugin)
+    scaladoc, scalap, actors).settings(
+    scalaVersion := boostrapScalaVersion,
+    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
+  )
 
 /**
  * Configures passed project as a subproject (e.g. compiler or repl)
