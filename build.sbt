@@ -184,7 +184,8 @@ lazy val root = (project in file(".")).
   aggregate(library, forkjoin, reflect, compiler, asm, interactive, repl,
     scaladoc, scalap, actors).settings(
     scalaVersion := bootstrapScalaVersion,
-    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
+    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
+    sources in Compile := Seq.empty
   )
 
 /**
