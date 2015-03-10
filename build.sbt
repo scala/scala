@@ -87,7 +87,8 @@ lazy val commonSettings = Seq[Setting[_]](
   classDirectory in Compile := buildDirectory.value / "quick/classes" / thisProject.value.id,
   // given that classDirectory is overriden to be _outside_ of target directory, we have
   // to make sure its being cleaned properly
-  cleanFiles += (classDirectory in Compile).value
+  cleanFiles += (classDirectory in Compile).value,
+  fork in run := true
 )
 
 // disable various tasks that are not needed for projects that are used
