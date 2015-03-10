@@ -254,7 +254,7 @@ lazy val generateVersionPropertiesFileImpl: Def.Initialize[Task[File]] = Def.tas
   def executeTool(tool: String) = {
       val cmd =
         if (System.getProperty("os.name").toLowerCase.contains("windows"))
-          s"cmd.exe /c tools\$tool.bat -p"
+          s"cmd.exe /c tools\\$tool.bat -p"
         else s"tools/$tool"
       Process(cmd).lines.head
   }
