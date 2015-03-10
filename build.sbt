@@ -78,6 +78,10 @@ lazy val commonSettings = Seq[Setting[_]](
   sourceDirectories in Compile := Seq(sourceDirectory.value),
   scalaSource in Compile := (sourceDirectory in Compile).value,
   javaSource in Compile := (sourceDirectory in Compile).value,
+  // resources are stored along source files in our current layout
+  resourceDirectory in Compile := (sourceDirectory in Compile).value,
+  // each subproject has to ask specifically for files they want to include
+  includeFilter in unmanagedResources in Compile := NothingFilter,
   target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id,
   target in Compile in doc := buildDirectory.value / "scaladoc" / thisProject.value.id,
   classDirectory in Compile := buildDirectory.value / "quick/classes" / thisProject.value.id,
@@ -114,6 +118,7 @@ lazy val scalaSubprojectSettings = commonSettings ++ Seq[Setting[_]](
   generateVersionPropertiesFile := generateVersionPropertiesFileImpl.value
 )
 
+val libIncludes: FileFilter = "*.tmpl" | "*.xml" | "*.js" | "*.css" | "rootdoc.txt"
 lazy val library = configureAsSubproject(project).
   settings(
     scalacOptions in Compile ++= Seq[String]("-sourcepath", (scalaSource in Compile).value.toString),
@@ -127,12 +132,16 @@ lazy val library = configureAsSubproject(project).
     scalacOptions in Compile in doc ++= {
       val libraryAuxDir = (baseDirectory in ThisBuild).value / "src/library-aux"
       Seq("-doc-no-compile", libraryAuxDir.toString)
-    }
+    },
+    includeFilter in unmanagedResources in Compile := libIncludes
   ) dependsOn (forkjoin)
 
 lazy val reflect = configureAsSubproject(project).
   dependsOn(library)
 
+val compilerIncludes: FileFilter =
+  "*.tmpl" | "*.xml" | "*.js" | "*.css" | "*.html" | "*.properties" | "*.swf" |
+  "*.png" | "*.gif" | "*.gif" | "*.txt"
 lazy val compiler = configureAsSubproject(project).
   settings(libraryDependencies += "org.apache.ant" % "ant" % "1.9.4",
     // this a way to make sure that classes from interactive and scaladoc projects
@@ -141,7 +150,8 @@ lazy val compiler = configureAsSubproject(project).
     mappings in Compile in packageBin :=
       (mappings in Compile in packageBin).value ++
       (mappings in Compile in packageBin in LocalProject("interactive")).value ++
-      (mappings in Compile in packageBin in LocalProject("scaladoc")).value
+      (mappings in Compile in packageBin in LocalProject("scaladoc")).value,
+    includeFilter in unmanagedResources in Compile := compilerIncludes
     ).
   dependsOn(library, reflect, asm)
 
