@@ -112,7 +112,10 @@ lazy val scalaSubprojectSettings = commonSettings ++ Seq[Setting[_]](
     val resolvedArtifact = artifact.value
     val resolvedArtifactName = s"${resolvedArtifact.name}.${resolvedArtifact.extension}"
     buildDirectory.value / "pack/lib" / resolvedArtifactName
-  },
+  }
+)
+
+lazy val generatePropertiesFileSettings = Seq[Setting[_]](
   copyrightString := "Copyright 2002-2013, LAMP/EPFL",
   resourceGenerators in Compile += generateVersionPropertiesFile.map(file => Seq(file)).taskValue,
   generateVersionPropertiesFile := generateVersionPropertiesFileImpl.value
@@ -120,6 +123,7 @@ lazy val scalaSubprojectSettings = commonSettings ++ Seq[Setting[_]](
 
 val libIncludes: FileFilter = "*.tmpl" | "*.xml" | "*.js" | "*.css" | "rootdoc.txt"
 lazy val library = configureAsSubproject(project).
+  settings(generatePropertiesFileSettings: _*).
   settings(
     scalacOptions in Compile ++= Seq[String]("-sourcepath", (scalaSource in Compile).value.toString),
     // Workaround for a bug in `scaladoc` that it seems to not respect the `-sourcepath` option
@@ -137,12 +141,14 @@ lazy val library = configureAsSubproject(project).
   ) dependsOn (forkjoin)
 
 lazy val reflect = configureAsSubproject(project).
+  settings(generatePropertiesFileSettings: _*).
   dependsOn(library)
 
 val compilerIncludes: FileFilter =
   "*.tmpl" | "*.xml" | "*.js" | "*.css" | "*.html" | "*.properties" | "*.swf" |
   "*.png" | "*.gif" | "*.gif" | "*.txt"
 lazy val compiler = configureAsSubproject(project).
+  settings(generatePropertiesFileSettings: _*).
   settings(libraryDependencies += "org.apache.ant" % "ant" % "1.9.4",
     // this a way to make sure that classes from interactive and scaladoc projects
     // end up in compiler jar (that's what Ant build does)
