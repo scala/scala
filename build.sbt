@@ -156,7 +156,8 @@ lazy val compiler = configureAsSubproject(project).
     mappings in Compile in packageBin :=
       (mappings in Compile in packageBin).value ++
       (mappings in Compile in packageBin in LocalProject("interactive")).value ++
-      (mappings in Compile in packageBin in LocalProject("scaladoc")).value,
+      (mappings in Compile in packageBin in LocalProject("scaladoc")).value ++
+      (mappings in Compile in packageBin in LocalProject("repl")).value,
     includeFilter in unmanagedResources in Compile := compilerIncludes
     ).
   dependsOn(library, reflect, asm)
