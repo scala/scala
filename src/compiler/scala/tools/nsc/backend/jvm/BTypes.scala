@@ -10,8 +10,8 @@ import scala.annotation.switch
 import scala.tools.asm
 import asm.Opcodes
 import scala.tools.asm.tree.{InnerClassNode, ClassNode}
-import scala.tools.nsc.backend.jvm.BTypes.{MethodInlineInfo, InlineInfo}
-import scala.tools.nsc.backend.jvm.opt.{CallGraph, ByteCodeRepository, Inliner}
+import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
+import scala.tools.nsc.backend.jvm.opt._
 import opt.OptimizerReporting._
 import scala.collection.convert.decorateAsScala._
 
@@ -47,6 +47,9 @@ abstract class BTypes {
   // When building the call graph, we need to know if global inlining is allowed (the component doesn't have a global)
   def inlineGlobalEnabled: Boolean
 
+  // When the inliner is not enabled, there's no point in adding InlineInfos to all ClassBTypes
+  def inlinerEnabled: Boolean
+
   /**
    * A map from internal names to ClassBTypes. Every ClassBType is added to this map on its
    * construction.
@@ -59,23 +62,6 @@ abstract class BTypes {
    * on multiple classes concurrently.
    */
   val classBTypeFromInternalName: collection.concurrent.Map[InternalName, ClassBType] = recordPerRunCache(collection.concurrent.TrieMap.empty[InternalName, ClassBType])
-
-  /**
-   * Build the [[InlineInfo]] for the methods of a class, given its internal name.
-   *
-   * The InlineInfo is part of the ClassBType's [[ClassInfo]]. Note that there are two ways to build
-   * a ClassBType: from a class symbol (methods in [[BTypesFromSymbols]]) or from a [[ClassNode]].
-   * The InlineInfo however contains information that can only be retrieved from the symbol of
-   * the class (e.g., is a method annotated @inline).
-   *
-   * This method (implemented in [[BTypesFromSymbols]]) looks up the class symbol in the symbol
-   * table, using the classfile name of the class.
-   *
-   * The method tries to undo some of the name mangling, but the lookup does not succeed for all
-   * classes. In case it fails, the resulting ClassBType will simply not have an InlineInfo, and
-   * we won't be able to inline its methods.
-   */
-  def inlineInfosFromSymbolLookup(internalName: InternalName): Map[String, MethodInlineInfo]
 
   /**
    * Obtain the BType for a type descriptor or internal name. For class descriptors, the ClassBType
@@ -187,8 +173,50 @@ abstract class BTypes {
         NestedInfo(enclosingClass, Option(innerEntry.outerName), Option(innerEntry.innerName), staticFlag)
     }
 
-    classBType.info = ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo, inlineInfosFromSymbolLookup(classBType.internalName))
+    val inlineInfo = inlineInfoFromClassfile(classNode)
+
+    classBType.info = ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo, inlineInfo)
     classBType
+  }
+
+  /**
+   * Build the InlineInfo for a class. For Scala classes, the information is stored in the
+   * ScalaInlineInfo attribute. If the attribute is missing, the InlineInfo is built using the
+   * metadata available in the classfile (ACC_FINAL flags, etc).
+   */
+  def inlineInfoFromClassfile(classNode: ClassNode): InlineInfo = {
+    def fromClassfileAttribute: Option[InlineInfo] = {
+      // TODO: if this is a scala class and there's no attribute, emit an inliner warning if the InlineInfo is used
+      if (classNode.attrs == null) None
+      else classNode.attrs.asScala.collect({ case a: InlineInfoAttribute => a}).headOption.map(_.inlineInfo)
+    }
+
+    def fromClassfileWithoutAttribute = {
+      // when building MethodInlineInfos for the members of a ClassSymbol, we exclude those methods
+      // in scalaPrimitives. This is necessary because some of them have non-erased types, which would
+      // require special handling. Excluding is OK because they are never inlined.
+      // Here we are parsing from a classfile and we don't need to do anything special. Many of these
+      // primitives don't even exist, for example Any.isInstanceOf.
+      val methodInfos = classNode.methods.asScala.map(methodNode => {
+        val info = MethodInlineInfo(
+          effectivelyFinal                    = BytecodeUtils.isFinalMethod(methodNode),
+          traitMethodWithStaticImplementation = false,
+          annotatedInline                     = false,
+          annotatedNoInline                   = false)
+        (methodNode.name + methodNode.desc, info)
+      }).toMap
+      InlineInfo(
+        traitImplClassSelfType = None,
+        isEffectivelyFinal = BytecodeUtils.isFinalClass(classNode),
+        methodInfos = methodInfos,
+        warning = None)
+    }
+
+    // The InlineInfo is built from the classfile (not from the symbol) for all classes that are NOT
+    // being compiled. For those classes, the info is only needed if the inliner is enabled, othewise
+    // we can save the memory.
+    if (!inlinerEnabled) BTypes.EmptyInlineInfo
+    else fromClassfileAttribute getOrElse fromClassfileWithoutAttribute
   }
 
   /**
@@ -831,6 +859,8 @@ abstract class BTypes {
         )
     }
 
+    def inlineInfoAttribute: InlineInfoAttribute = InlineInfoAttribute(info.inlineInfo)
+
     def isSubtypeOf(other: ClassBType): Boolean = {
       if (this == other) return true
 
@@ -945,13 +975,11 @@ abstract class BTypes {
    * @param nestedClasses Classes nested in this class. Those need to be added to the
    *                      InnerClass table, see the InnerClass spec summary above.
    * @param nestedInfo    If this describes a nested class, information for the InnerClass table.
-   * @param inlineInfos   The [[InlineInfo]]s for the methods declared in this class. The map is
-   *                      indexed by the string s"$name$descriptor" (to disambiguate overloads).
-   *                      Entries may be missing, see comment on [[inlineInfosFromSymbolLookup]].
+   * @param inlineInfo    Information about this class for the inliner.
    */
   final case class ClassInfo(superClass: Option[ClassBType], interfaces: List[ClassBType], flags: Int,
                              nestedClasses: List[ClassBType], nestedInfo: Option[NestedInfo],
-                             inlineInfos: Map[String, MethodInlineInfo])
+                             inlineInfo: InlineInfo)
 
   /**
    * Information required to add a class to an InnerClass table.

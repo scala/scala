@@ -7,10 +7,8 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.tools.asm
-import scala.tools.asm.tree.ClassNode
-import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository.Source
 import scala.tools.nsc.backend.jvm.opt.{CallGraph, Inliner, ByteCodeRepository}
-import scala.tools.nsc.backend.jvm.BTypes.{MethodInlineInfo, InlineInfo, InternalName}
+import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo, InternalName}
 
 /**
  * This class mainly contains the method classBTypeFromSymbol, which extracts the necessary
@@ -42,48 +40,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
   val callGraph: CallGraph[this.type] = new CallGraph(this)
 
-  /**
-   * See doc in [[BTypes.inlineInfosFromSymbolLookup]].
-   * TODO: once the optimzier uses parallelism, lock before symbol table accesses
-   */
-  def inlineInfosFromSymbolLookup(internalName: InternalName): Map[String, MethodInlineInfo] = {
-    val name = internalName.replace('/', '.')
-
-    // TODO: de-mangle more class names
-
-    def inEmptyPackage = name.indexOf('.') == -1
-    def isModule       = name.endsWith("$")
-    def isTopLevel     = {
-      // TODO: this is conservative, there's also $'s introduced by name mangling, e.g., $colon$colon
-      // for this, use NameTransformer.decode
-      if (isModule) name.indexOf('$') == (name.length - 1)
-      else name.indexOf('$') == -1
-    }
-
-    val lookupName = {
-      if (isModule) newTermName(name.substring(0, name.length - 1))
-      else newTypeName(name)
-    }
-
-    // for now we only try classes that look like top-level
-    val classSym = if (!isTopLevel) NoSymbol else {
-      val member = {
-        if (inEmptyPackage) {
-          // rootMirror.getClassIfDefined fails for classes / modules in the empty package.
-          // maybe that should be fixed.
-          rootMirror.EmptyPackageClass.info.member(lookupName)
-        } else {
-          if (isModule) rootMirror.getModuleIfDefined(lookupName)
-          else rootMirror.getClassIfDefined(lookupName)
-        }
-      }
-      if (isModule) member.moduleClass else member
-    }
-
-    if (classSym == NoSymbol) Map.empty
-    else buildInlineInfos(classSym)
-  }
-
   final def initializeCoreBTypes(): Unit = {
     coreBTypes.setBTypes(new CoreBTypes[this.type](this))
   }
@@ -91,6 +47,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   def recordPerRunCache[T <: collection.generic.Clearable](cache: T): T = perRunCaches.recordCache(cache)
 
   def inlineGlobalEnabled: Boolean = settings.YoptInlineGlobal
+
+  def inlinerEnabled: Boolean      = settings.YoptInlinerEnabled
 
   // helpers that need access to global.
   // TODO @lry create a separate component, they don't belong to BTypesFromSymbols
@@ -165,27 +123,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     def msg = s"The class info for $internalName could not be completed due to SI-9111."
     override def info: ClassInfo = opt.OptimizerReporting.assertionError(msg)
     override def info_=(i: ClassInfo): Unit = opt.OptimizerReporting.assertionError(msg)
-  }
-
-  /**
-   * This is a hack to work around SI-9111. The completer of `methodSym` may report type errors. We
-   * cannot change the typer context of the completer at this point and make it silent: the context
-   * captured when creating the completer in the namer. However, we can temporarily replace
-   * global.reporter (it's a var) to store errors.
-   */
-  def completeSilentlyAndCheckErroneous(sym: Symbol): Boolean = {
-    if (sym.rawInfo.isComplete) false
-    else {
-      val originalReporter = global.reporter
-      val storeReporter = new reporters.StoreReporter()
-      try {
-        global.reporter = storeReporter
-        sym.info
-      } finally {
-        global.reporter = originalReporter
-      }
-      storeReporter.infos.exists(_.severity == storeReporter.ERROR)
-    }
   }
 
   /**
@@ -401,9 +338,9 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     val nestedInfo = buildNestedInfo(classSym)
 
-    val inlineInfos = buildInlineInfos(classSym)
+    val inlineInfo = buildInlineInfo(classSym, classBType.internalName)
 
-    classBType.info = ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo, inlineInfos)
+    classBType.info = ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo, inlineInfo)
     classBType
   }
 
@@ -458,30 +395,39 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     }
   }
 
-  private def buildInlineInfos(classSym: Symbol): Map[String, MethodInlineInfo] = {
-    if (!settings.YoptInlinerEnabled) Map.empty
+  /**
+   * Build the InlineInfo for a ClassBType from the class symbol.
+   *
+   * Note that the InlineInfo is only built from the symbolic information for classes that are being
+   * compiled. For all other classes we delegate to inlineInfoFromClassfile. The reason is that
+   * mixed-in methods are only added to class symbols being compiled, but not to other classes
+   * extending traits. Creating the InlineInfo from the symbol would prevent these mixins from being
+   * inlined.
+   *
+   * So for classes being compiled, the InlineInfo is created here and stored in the ScalaInlineInfo
+   * classfile attribute.
+   */
+  private def buildInlineInfo(classSym: Symbol, internalName: InternalName): InlineInfo = {
+    def buildFromSymbol = buildInlineInfoFromClassSymbol(classSym, classBTypeFromSymbol(_).internalName, methodBTypeFromSymbol(_).descriptor)
+
+    // phase travel required, see implementation of `compiles`. for nested classes, it checks if the
+    // enclosingTopLevelClass is being compiled. after flatten, all classes are considered top-level,
+    // so `compiles` would return `false`.
+    if (exitingPickler(currentRun.compiles(classSym))) buildFromSymbol
     else {
-      // Primitve methods cannot be inlined, so there's no point in building an InlineInfo. Also, some
-      // primitive methods (e.g., `isInstanceOf`) have non-erased types, which confuses [[typeToBType]].
-      classSym.info.decls.iterator.filter(m => m.isMethod && !scalaPrimitives.isPrimitive(m)).flatMap({
-        case methodSym =>
-          if (completeSilentlyAndCheckErroneous(methodSym)) {
-            // Happens due to SI-9111. Just don't provide any InlineInfo for that method, we don't
-            // need fail the compiler.
-            None
-          } else {
-            val methodBType = methodBTypeFromSymbol(methodSym)
-            val name        = methodSym.javaSimpleName.toString // same as in genDefDef
-            val signature   = name + methodBType.descriptor
-            val info        = MethodInlineInfo(
-              effectivelyFinal = methodSym.isEffectivelyFinalOrNotOverridden,
-              traitMethodWithStaticImplementation = false, // temporary, fixed in future commit
-              annotatedInline   = methodSym.hasAnnotation(ScalaInlineClass),
-              annotatedNoInline = methodSym.hasAnnotation(ScalaNoInlineClass)
-            )
-            Some((signature, info))
-          }
-      }).toMap
+      // For classes not being compiled, the InlineInfo is read from the classfile attribute. This
+      // fixes an issue with mixed-in methods: the mixin phase enters mixin methods only to class
+      // symbols being compiled. For non-compiled classes, we could not build MethodInlineInfos
+      // for those mixin members, which prevents inlining.
+      byteCodeRepository.classNode(internalName) match {
+        case Some(classNode) =>
+          inlineInfoFromClassfile(classNode)
+        case None =>
+          // TODO: inliner warning if the InlineInfo for that class is being used
+          // We can still use the inline information built from the symbol, even though mixin
+          // members will be missing.
+          buildFromSymbol
+      }
     }
   }
 
@@ -503,7 +449,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
         flags = asm.Opcodes.ACC_SUPER | asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_FINAL,
         nestedClasses = nested,
         nestedInfo = None,
-        Map.empty // no InlineInfo needed, scala never invokes methods on the mirror class
+        InlineInfo(None, true, Map.empty, None) // no InlineInfo needed, scala never invokes methods on the mirror class
       )
       c
     })
@@ -538,8 +484,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   }
 
   // legacy, to be removed when the @remote annotation gets removed
-  final def isRemote(s: Symbol) = (s hasAnnotation definitions.RemoteAttr)
-  final def hasPublicBitSet(flags: Int) = ((flags & asm.Opcodes.ACC_PUBLIC) != 0)
+  final def isRemote(s: Symbol) = s hasAnnotation definitions.RemoteAttr
+  final def hasPublicBitSet(flags: Int) = (flags & asm.Opcodes.ACC_PUBLIC) != 0
 
   /**
    * Return the Java modifiers for the given symbol.

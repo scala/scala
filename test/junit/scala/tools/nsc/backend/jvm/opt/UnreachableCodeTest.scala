@@ -22,8 +22,8 @@ object UnreachableCodeTest extends ClearAfterClass.Clearable {
   var dceCompiler       = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:unreachable-code")
   var noOptCompiler     = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:l:none")
 
-  // jvm-1.5 disables computing stack map frames, and it emits dead code as-is.
-  var noOptNoFramesCompiler = newCompiler(extraArgs = "-target:jvm-1.5 -Ybackend:GenBCode -Yopt:l:none")
+  // jvm-1.5 disables computing stack map frames, and it emits dead code as-is. note that this flag triggers a deprecation warning
+  var noOptNoFramesCompiler = newCompiler(extraArgs = "-target:jvm-1.5 -Ybackend:GenBCode -Yopt:l:none -deprecation")
 
   def clear(): Unit = {
     methodOptCompiler = null

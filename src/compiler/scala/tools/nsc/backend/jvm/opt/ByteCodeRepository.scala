@@ -10,6 +10,7 @@ package opt
 import scala.tools.asm
 import asm.tree._
 import scala.collection.convert.decorateAsScala._
+import scala.tools.asm.Attribute
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.ClassFileLookup
 import OptimizerReporting._
@@ -64,6 +65,7 @@ class ByteCodeRepository(val classPath: ClassFileLookup[AbstractFile], val class
    */
   def methodNode(ownerInternalNameOrArrayDescriptor: String, name: String, descriptor: String): Option[(MethodNode, InternalName)] = {
     // In a MethodInsnNode, the `owner` field may be an array descriptor, for exmple when invoking `clone`.
+    // We don't inline array methods (they are native anyway), so just return None.
     if (ownerInternalNameOrArrayDescriptor.charAt(0) == '[') None
     else {
       classNode(ownerInternalNameOrArrayDescriptor).flatMap(c =>
@@ -80,9 +82,13 @@ class ByteCodeRepository(val classPath: ClassFileLookup[AbstractFile], val class
     classPath.findClassFile(fullName) map { classFile =>
       val classNode = new asm.tree.ClassNode()
       val classReader = new asm.ClassReader(classFile.toByteArray)
+
+      // Passing the InlineInfoAttributePrototype makes the ClassReader invoke the specific `read`
+      // method of the InlineInfoAttribute class, instead of putting the byte array into a generic
+      // Attribute.
       // We don't need frames when inlining, but we want to keep the local variable table, so we
       // don't use SKIP_DEBUG.
-      classReader.accept(classNode, asm.ClassReader.SKIP_FRAMES)
+      classReader.accept(classNode, Array[Attribute](InlineInfoAttributePrototype), asm.ClassReader.SKIP_FRAMES)
       // SKIP_FRAMES leaves line number nodes. Remove them because they are not correct after
       // inlining.
       // TODO: we need to remove them also for classes that are not parsed from classfiles, why not simplify and do it once when inlining?

@@ -9,7 +9,9 @@ package opt
 
 import scala.tools.asm.tree._
 import scala.collection.convert.decorateAsScala._
+import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils.BasicAnalyzer
+import ByteCodeRepository.{Source, CompilationUnit}
 
 class CallGraph[BT <: BTypes](val btypes: BT) {
   import btypes._
@@ -22,6 +24,43 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
   }
 
   def analyzeCallsites(methodNode: MethodNode, definingClass: ClassBType): List[Callsite] = {
+
+    /**
+     * Analyze a callsite and gather meta-data that can be used for inlining decisions.
+     *
+     * @return Three booleans indicating whether
+     *           1. the callsite can be safely inlined
+     *           2. the callee is annotated `@inline`
+     *           3. the callee is annotated `@noinline`
+     */
+    def analyzeCallsite(calleeMethodNode: MethodNode, calleeDeclarationClassBType: ClassBType, receiverTypeInternalName: InternalName, calleeSource: Source): (Boolean, Boolean, Boolean) = {
+      val methodSignature = calleeMethodNode.name + calleeMethodNode.desc
+
+      // The inlineInfo.methodInfos of a ClassBType holds an InlineInfo for each method *declared*
+      // within a class (not for inherited methods). Since we already have the  classBType of the
+      // callee, we only check there for the methodInlineInfo, we should find it there.
+      calleeDeclarationClassBType.info.inlineInfo.methodInfos.find(_._1 == methodSignature) match {
+        case Some((_, methodInlineInfo)) =>
+          val canInlineFromSource = inlineGlobalEnabled || calleeSource == CompilationUnit
+          // A non-final method can be inline if the receiver type is a final subclass. Example:
+          //   class A { @inline def f = 1 }; object B extends A; B.f // can be inlined
+          def isStaticallyResolved: Boolean = {
+            // TODO: type analysis can render more calls statically resolved
+            // Example: `new A.f` can be inlined, the receiver type is known to be exactly A.
+            methodInlineInfo.effectivelyFinal || {
+              // TODO: inline warning when the receiver class cannot be found on the classpath
+              classBTypeFromParsedClassfile(receiverTypeInternalName).exists(_.info.inlineInfo.isEffectivelyFinal)
+            }
+          }
+
+          (canInlineFromSource && isStaticallyResolved, methodInlineInfo.annotatedInline, methodInlineInfo.annotatedNoInline)
+
+        case None =>
+          // TODO: issue inliner warning
+          (false, false, false)
+      }
+    }
+
     // TODO: run dataflow analyses to make the call graph more precise
     //  - producers to get forwarded parameters (ForwardedParam)
     //  - typeAnalysis for more precise argument types, more precise callee
@@ -40,16 +79,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
             byteCodeRepository.classNodeAndSource(declarationClass) map {
               case (declarationClassNode, source) =>
                 val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
-                val methodSignature = method.name + method.desc
-                val (safeToInline, annotatedInline, annotatedNoInline) = declarationClassBType.info.inlineInfos.get(methodSignature) match {
-                  case Some(inlineInfo) =>
-                    val canInlineFromSource = inlineGlobalEnabled || source == ByteCodeRepository.CompilationUnit
-                    // TODO: for now, we consider a callee safeToInline only if it's final
-                    // type analysis can render more calls safeToInline (e.g. when the precise receiver type is known)
-                    (canInlineFromSource && inlineInfo.effectivelyFinal, Some(inlineInfo.annotatedInline), Some(inlineInfo.annotatedNoInline))
-                  case None =>
-                    (false, None, None)
-                }
+                val (safeToInline, annotatedInline, annotatedNoInline) = analyzeCallsite(method, declarationClassBType, call.owner, source)
                 Callee(
                   callee = method,
                   calleeDeclarationClass = declarationClassBType,
@@ -81,17 +111,21 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
 
   /**
    * A callsite in the call graph.
+   *
    * @param callsiteInstruction The invocation instruction
    * @param callsiteMethod      The method containing the callsite
    * @param callsiteClass       The class containing the callsite
-   * @param callee              The callee. For virtual calls, an override of the callee might be invoked.
+   * @param callee              The callee, as it appears in the invocation instruction. For virtual
+   *                            calls, an override of the callee might be invoked. Also, the callee
+   *                            can be abstract. `None` if the callee MethodNode cannot be found in
+   *                            the bytecode repository.
    * @param argInfos            Information about the invocation receiver and arguments
    * @param callsiteStackHeight The stack height at the callsite, required by the inliner
    */
   final case class Callsite(callsiteInstruction: MethodInsnNode, callsiteMethod: MethodNode, callsiteClass: ClassBType,
                             callee: Option[Callee], argInfos: List[ArgInfo],
                             callsiteStackHeight: Int) {
-    override def toString = s"Invocation of ${callsiteInstruction.name + callsiteInstruction.desc}@${callsiteMethod.instructions.indexOf(callsiteInstruction)} in ${callsiteMethod.name}"
+    override def toString = s"Invocation of ${callee.map(_.calleeDeclarationClass.internalName).getOrElse("?")}.${callsiteInstruction.name + callsiteInstruction.desc}@${callsiteMethod.instructions.indexOf(callsiteInstruction)} in ${callsiteClass.internalName}.${callsiteMethod.name}"
   }
 
   /**
@@ -104,14 +138,17 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
 
   /**
    * A callee in the call graph.
-   * @param callee                 The called method. For virtual calls, an override may actually be invoked.
+   *
+   * @param callee                 The callee, as it appears in the invocation instruction. For
+   *                               virtual calls, an override of the callee might be invoked. Also,
+   *                               the callee can be abstract.
    * @param calleeDeclarationClass The class in which the callee is declared
    * @param safeToInline           True if the callee can be safely inlined: it cannot be overridden,
    *                               and the inliner settings (project / global) allow inlining it.
-   * @param annotatedInline        Defined if it is known whether the callee is annotated @inline
-   * @param annotatedNoInline      Defined if it is known whether the callee is annotated @noinline
+   * @param annotatedInline        True if the callee is annotated @inline
+   * @param annotatedNoInline      True if the callee is annotated @noinline
    */
   final case class Callee(callee: MethodNode, calleeDeclarationClass: ClassBType,
                           safeToInline: Boolean,
-                          annotatedInline: Option[Boolean], annotatedNoInline: Option[Boolean])
+                          annotatedInline: Boolean, annotatedNoInline: Boolean)
 }

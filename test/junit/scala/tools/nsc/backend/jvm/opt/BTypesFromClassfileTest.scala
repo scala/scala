@@ -59,17 +59,12 @@ class BTypesFromClassfileTest {
       else (fromSym.flags | ACC_PRIVATE | ACC_PUBLIC) == (fromClassfile.flags | ACC_PRIVATE | ACC_PUBLIC)
     }, s"class flags differ\n$fromSym\n$fromClassfile")
 
-    // when parsing from classfile, the inline infos are obtained through the classSymbol, which
-    // is searched based on the classfile name. this lookup can fail.
-    assert(fromSym.inlineInfos.size == fromClassfile.inlineInfos.size || fromClassfile.inlineInfos.isEmpty,
-      s"wrong # of inline infos:\n${fromSym.inlineInfos.keys.toList.sorted}\n${fromClassfile.inlineInfos.keys.toList.sorted}")
-    fromClassfile.inlineInfos foreach {
-      case (signature, inlineInfo) =>
-        assert(fromSym.inlineInfos(signature) == inlineInfo, s"inline infos differ for $signature:\n$inlineInfo\n${fromClassfile.inlineInfos(signature)}")
-    }
+    // we don't compare InlineInfos in this test: in both cases (from symbol and from classfile) they
+    // are actually created by looking at the classfile members, not the symbol's. InlineInfos are only
+    // built from symbols for classes that are being compiled, which is not the case here. Instead
+    // there's a separate InlineInfoTest.
 
     val chk1 = sameBTypes(fromSym.superClass, fromClassfile.superClass, checked)
-
     val chk2 = sameBTypes(fromSym.interfaces, fromClassfile.interfaces, chk1)
 
     // The fromSym info has only member classes, no local or anonymous. The symbol is read from the

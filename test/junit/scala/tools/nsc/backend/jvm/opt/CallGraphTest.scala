@@ -89,8 +89,8 @@ class CallGraphTest {
       assert(callee.callee == target)
       assert(callee.calleeDeclarationClass == calleeDeclClass)
       assert(callee.safeToInline == safeToInline)
-      assert(callee.annotatedInline.get == atInline)
-      assert(callee.annotatedNoInline.get == atNoInline)
+      assert(callee.annotatedInline == atInline)
+      assert(callee.annotatedNoInline == atNoInline)
 
       assert(callsite.argInfos == List()) // not defined yet
     } catch {

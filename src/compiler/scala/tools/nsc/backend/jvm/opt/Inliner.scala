@@ -16,7 +16,6 @@ import scala.collection.convert.decorateAsJava._
 import AsmUtils._
 import BytecodeUtils._
 import OptimizerReporting._
-import scala.tools.asm.tree.analysis._
 import collection.mutable
 
 class Inliner[BT <: BTypes](val btypes: BT) {
@@ -24,6 +23,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   import callGraph._
 
   def runInliner(): Unit = {
+    rewriteFinalTraitMethodInvocations()
+
     for (request <- collectAndOrderInlineRequests) {
       val Some(callee) = request.callee
       inline(request.callsiteInstruction, request.callsiteStackHeight, request.callsiteMethod, request.callsiteClass,
@@ -58,18 +59,74 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    * requests is allowed to have cycles, and the callsites can appear in any order.
    */
   def selectCallsitesForInlining: List[Callsite] = {
-    callsites.iterator.filter({
-      case (_, callsite) => callsite.callee match {
-        case Some(Callee(callee, _, safeToInline, Some(annotatedInline), _)) =>
-          // TODO: fix inlining from traits.
-          // For trait methods the callee is abstract: "trait T { @inline final def f = 1}".
-          // A callsite (t: T).f is `safeToInline` (effectivelyFinal is true), but the callee is the
-          // abstract method in the interface.
-          !isAbstractMethod(callee) && safeToInline && annotatedInline
-        case _ => false
-      }
+    callsites.valuesIterator.filter({
+      case Callsite(_, _, _, Some(Callee(callee, _, safeToInline, annotatedInline, _)), _, _) =>
+        // For trait methods the callee is abstract: "trait T { @inline final def f = 1}".
+        // A callsite (t: T).f is `safeToInline` (effectivelyFinal is true), but the callee is the
+        // abstract method in the interface.
+        // Even though we such invocations are re-written using `rewriteFinalTraitMethodInvocation`,
+        // the guard is kept here for the cases where the rewrite fails.
+        !isAbstractMethod(callee) && safeToInline && annotatedInline
+
       case _ => false
-    }).map(_._2).toList
+    }).toList
+  }
+
+  def rewriteFinalTraitMethodInvocations(): Unit = {
+    // Rewriting final trait method callsites to the implementation class enables inlining.
+    // We cannot just iterate over the values of the `callsites` map because the rewrite changes the
+    // map. Therefore we first copy the values to a list.
+    callsites.values.toList.foreach(rewriteFinalTraitMethodInvocation)
+  }
+
+  /**
+   * Rewrite the INVOKEINTERFACE callsite of a final trait method invocation to INVOKESTATIC of the
+   * corresponding method in the implementation class. This enables inlining final trait methods.
+   *
+   * In a final trait method callsite, the callee is safeToInline and the callee method is abstract
+   * (the receiver type is the interface, so the method is abstract).
+   */
+  def rewriteFinalTraitMethodInvocation(callsite: Callsite): Unit = callsite.callee match {
+    case Some(Callee(callee, calleeDeclarationClass, true, true, annotatedNoInline)) if isAbstractMethod(callee) =>
+      assert(calleeDeclarationClass.isInterface, s"expected interface call (final trait method) when inlining abstract method: $callsite")
+
+      val traitMethodArgumentTypes = asm.Type.getArgumentTypes(callee.desc)
+
+      val selfParamTypeName = calleeDeclarationClass.info.inlineInfo.traitImplClassSelfType.getOrElse(calleeDeclarationClass.internalName)
+      val selfParamType = asm.Type.getObjectType(selfParamTypeName)
+
+      val implClassMethodDescriptor = asm.Type.getMethodDescriptor(asm.Type.getReturnType(callee.desc), selfParamType +: traitMethodArgumentTypes: _*)
+      val implClassInternalName = calleeDeclarationClass.internalName + "$class"
+
+      // The rewrite reading the implementation class and the implementation method from the bytecode
+      // repository. If either of the two fails, the rewrite is not performed.
+      for {
+        // TODO: inline warnings if impl class or method cannot be found
+        (implClassMethod, _) <- byteCodeRepository.methodNode(implClassInternalName, callee.name, implClassMethodDescriptor)
+        implClassBType       <- classBTypeFromParsedClassfile(implClassInternalName)
+      } yield {
+        val newCallsiteInstruction = new MethodInsnNode(INVOKESTATIC, implClassInternalName, callee.name, implClassMethodDescriptor, false)
+        callsite.callsiteMethod.instructions.insert(callsite.callsiteInstruction, newCallsiteInstruction)
+        callsite.callsiteMethod.instructions.remove(callsite.callsiteInstruction)
+
+        callGraph.callsites.remove(callsite.callsiteInstruction)
+        val staticCallsite = Callsite(
+          callsiteInstruction = newCallsiteInstruction,
+          callsiteMethod      = callsite.callsiteMethod,
+          callsiteClass       = callsite.callsiteClass,
+          callee              = Some(Callee(
+            callee                 = implClassMethod,
+            calleeDeclarationClass = implClassBType,
+            safeToInline           = true,
+            annotatedInline        = true,
+            annotatedNoInline      = annotatedNoInline)),
+          argInfos            = Nil,
+          callsiteStackHeight = callsite.callsiteStackHeight
+        )
+        callGraph.callsites(newCallsiteInstruction) = staticCallsite
+      }
+
+    case _ =>
   }
 
   /**

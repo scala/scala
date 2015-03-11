@@ -14,6 +14,7 @@ import scala.tools.nsc.settings.{MutableSettings, ScalaSettings}
 import scala.tools.nsc.{Settings, Global}
 import scala.tools.partest.ASMConverters
 import scala.collection.JavaConverters._
+import scala.tools.testing.TempDir
 
 object CodeGenTools {
   import ASMConverters._
@@ -42,20 +43,27 @@ object CodeGenTools {
   }
 
   def newCompiler(defaultArgs: String = "-usejavacp", extraArgs: String = ""): Global = {
-    val settings = new Settings()
-    val args = (CommandLineParser tokenize defaultArgs) ++ (CommandLineParser tokenize extraArgs)
-    settings.processArguments(args, processAll = true)
-    val compiler = new Global(settings)
+    val compiler = newCompilerWithoutVirtualOutdir(defaultArgs, extraArgs)
     resetOutput(compiler)
     compiler
   }
+  
+  def newCompilerWithoutVirtualOutdir(defaultArgs: String = "-usejavacp", extraArgs: String = ""): Global = {
+    val settings = new Settings()
+    val args = (CommandLineParser tokenize defaultArgs) ++ (CommandLineParser tokenize extraArgs)
+    settings.processArguments(args, processAll = true)
+    new Global(settings)
+  }
 
-  def compile(compiler: Global)(code: String): List[(String, Array[Byte])] = {
+  def newRun(compiler: Global): compiler.Run = {
     compiler.reporter.reset()
     resetOutput(compiler)
-    val run = new compiler.Run()
-    run.compileSources(List(new BatchSourceFile("unitTestSource.scala", code)))
-    val outDir = compiler.settings.outputDirs.getSingleOutput.get
+    new compiler.Run()
+  }
+
+  def makeSourceFile(code: String, filename: String): BatchSourceFile = new BatchSourceFile(filename, code)
+
+  def getGeneratedClassfiles(outDir: AbstractFile): List[(String, Array[Byte])] = {
     def files(dir: AbstractFile): List[(String, Array[Byte])] = {
       val res = ListBuffer.empty[(String, Array[Byte])]
       for (f <- dir.iterator) {
@@ -67,8 +75,46 @@ object CodeGenTools {
     files(outDir)
   }
 
-  def compileClasses(compiler: Global)(code: String): List[ClassNode] = {
-    compile(compiler)(code).map(p => AsmUtils.readClass(p._2)).sortBy(_.name)
+  def compile(compiler: Global)(scalaCode: String, javaCode: List[(String, String)] = Nil): List[(String, Array[Byte])] = {
+    val run = newRun(compiler)
+    run.compileSources(makeSourceFile(scalaCode, "unitTestSource.scala") :: javaCode.map(p => makeSourceFile(p._1, p._2)))
+    getGeneratedClassfiles(compiler.settings.outputDirs.getSingleOutput.get)
+  }
+
+  /**
+   * Compile multiple Scala files separately into a single output directory.
+   *
+   * Note that a new compiler instance is created for compiling each file because symbols survive
+   * across runs. This makes separate compilation slower.
+   *
+   * The output directory is a physical directory, I have not figured out if / how it's possible to
+   * add a VirtualDirectory to the classpath of a compiler.
+   */
+  def compileSeparately(codes: List[String], extraArgs: String = ""): List[(String, Array[Byte])] = {
+    val outDir = AbstractFile.getDirectory(TempDir.createTempDir())
+    val outDirPath = outDir.canonicalPath
+    val argsWithOutDir = extraArgs + s" -d $outDirPath -cp $outDirPath"
+
+    for (code <- codes) {
+      val compiler = newCompilerWithoutVirtualOutdir(extraArgs = argsWithOutDir)
+      new compiler.Run().compileSources(List(makeSourceFile(code, "unitTestSource.scala")))
+    }
+
+    val classfiles = getGeneratedClassfiles(outDir)
+    outDir.delete()
+    classfiles
+  }
+
+  def compileClassesSeparately(codes: List[String], extraArgs: String = "") = {
+    readAsmClasses(compileSeparately(codes, extraArgs))
+  }
+
+  def readAsmClasses(classfiles: List[(String, Array[Byte])]) = {
+    classfiles.map(p => AsmUtils.readClass(p._2)).sortBy(_.name)
+  }
+
+  def compileClasses(compiler: Global)(code: String, javaCode: List[(String, String)] = Nil): List[ClassNode] = {
+    readAsmClasses(compile(compiler)(code, javaCode))
   }
 
   def compileMethods(compiler: Global)(code: String): List[MethodNode] = {

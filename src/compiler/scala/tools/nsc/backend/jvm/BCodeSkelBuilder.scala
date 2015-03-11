@@ -103,6 +103,8 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       isCZRemote        = isRemote(claszSymbol)
       thisName          = internalName(claszSymbol)
 
+      val classBType = classBTypeFromSymbol(claszSymbol)
+
       cnode = new asm.tree.ClassNode()
 
       initJClass(cnode)
@@ -120,9 +122,11 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       addClassFields()
 
-      innerClassBufferASM ++= classBTypeFromSymbol(claszSymbol).info.nestedClasses
+      innerClassBufferASM ++= classBType.info.nestedClasses
       gen(cd.impl)
       addInnerClassesASM(cnode, innerClassBufferASM.toList)
+
+      cnode.visitAttribute(classBType.inlineInfoAttribute)
 
       if (AsmUtils.traceClassEnabled && cnode.name.contains(AsmUtils.traceClassPattern))
         AsmUtils.traceClass(cnode)

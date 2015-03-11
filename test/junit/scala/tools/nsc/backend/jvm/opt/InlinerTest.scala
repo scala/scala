@@ -33,18 +33,37 @@ object InlinerTest extends ClearAfterClass.Clearable {
   notPerRun foreach compiler.perRunCaches.unrecordCache
 
   def clear(): Unit = { compiler = null }
+
+  implicit class listStringLines[T](val l: List[T]) extends AnyVal {
+    def stringLines = l.mkString("\n")
+  }
+
+  def assertNoInvoke(m: Method): Unit = assertNoInvoke(m.instructions)
+  def assertNoInvoke(ins: List[Instruction]): Unit = {
+    assert(!ins.exists(_.isInstanceOf[Invoke]), ins.stringLines)
+  }
+
+  def assertInvoke(m: Method, receiver: String, method: String): Unit = assertInvoke(m.instructions, receiver, method)
+  def assertInvoke(l: List[Instruction], receiver: String, method: String): Unit = {
+    assert(l.exists {
+      case Invoke(_, `receiver`, `method`, _, _) => true
+      case _ => false
+    }, l.stringLines)
+  }
 }
 
 @RunWith(classOf[JUnit4])
 class InlinerTest extends ClearAfterClass {
   ClearAfterClass.stateToClear = InlinerTest
 
+  import InlinerTest.{listStringLines, assertInvoke, assertNoInvoke}
+
   val compiler = InlinerTest.compiler
   import compiler.genBCode.bTypes._
 
-  def compile(code: String): List[ClassNode] = {
+  def compile(scalaCode: String, javaCode: List[(String, String)] = Nil): List[ClassNode] = {
     InlinerTest.notPerRun.foreach(_.clear())
-    compileClasses(compiler)(code)
+    compileClasses(compiler)(scalaCode, javaCode)
   }
 
   def checkCallsite(callsite: callGraph.Callsite, callee: MethodNode) = {
@@ -229,8 +248,8 @@ class InlinerTest extends ClearAfterClass {
         |}
       """.stripMargin
     val List(cCls) = compile(code)
-    val instructions = instructionsFromMethod(cCls.methods.asScala.find(_.name == "test").get)
-    assert(instructions.contains(Op(ICONST_0)), instructions mkString "\n")
+    val instructions = getSingleMethod(cCls, "test").instructions
+    assert(instructions.contains(Op(ICONST_0)), instructions.stringLines)
     assert(!instructions.contains(Op(ICONST_1)), instructions)
   }
 
@@ -282,16 +301,22 @@ class InlinerTest extends ClearAfterClass {
   def arraycopy(): Unit = {
     // also tests inlining of a void-returning method (no return value on the stack)
     val code =
-      """class C {
+      """// can't use the `compat.Platform.arraycopy` from the std lib for now, because the classfile doesn't have a ScalaInlineInfo attribute
+        |object Platform {
+        |  @inline def arraycopy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int) {
+        |    System.arraycopy(src, srcPos, dest, destPos, length)
+        |  }
+        |}
+        |class C {
         |  def f(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int): Unit = {
-        |    compat.Platform.arraycopy(src, srcPos, dest, destPos, length)
+        |    Platform.arraycopy(src, srcPos, dest, destPos, length)
         |  }
         |}
       """.stripMargin
-    val List(c) = compile(code)
-    val ins = instructionsFromMethod(c.methods.asScala.find(_.name == "f").get)
+    val List(c, _, _) = compile(code)
+    val ins = getSingleMethod(c, "f").instructions
     val invokeSysArraycopy = Invoke(INVOKESTATIC, "java/lang/System", "arraycopy", "(Ljava/lang/Object;ILjava/lang/Object;II)V", false)
-    assert(ins contains invokeSysArraycopy, ins mkString "\n")
+    assert(ins contains invokeSysArraycopy, ins.stringLines)
   }
 
   @Test
@@ -311,7 +336,7 @@ class InlinerTest extends ClearAfterClass {
   }
 
   @Test
-  def atInlineInTraitDoesNotCrash(): Unit = {
+  def atInlineInTrait(): Unit = {
     val code =
       """trait T {
         |  @inline final def f = 0
@@ -321,10 +346,7 @@ class InlinerTest extends ClearAfterClass {
         |}
       """.stripMargin
     val List(c, t, tClass) = compile(code)
-    val ins = instructionsFromMethod(c.methods.asScala.find(_.name == "g").get)
-    val invokeF = Invoke(INVOKEINTERFACE, "T", "f", "()I", true)
-    // no inlining yet
-    assert(ins contains invokeF, ins mkString "\n")
+    assertNoInvoke(getSingleMethod(c, "g"))
   }
 
   @Test
@@ -336,10 +358,8 @@ class InlinerTest extends ClearAfterClass {
         |}
       """.stripMargin
     val List(c) = compile(code)
-    val ins = instructionsFromMethod(c.methods.asScala.find(_.name == "g").get)
-    println(ins)
     // no more invoke, f is inlined
-    assert(ins.count(_.isInstanceOf[Invoke]) == 0, ins mkString "\n")
+    assertNoInvoke(getSingleMethod(c, "g"))
   }
 
   @Test
@@ -373,11 +393,11 @@ class InlinerTest extends ClearAfterClass {
     val ins = instructionsFromMethod(f)
 
     // no invocations, lowestOneBit is inlined
-    assert(ins.count(_.isInstanceOf[Invoke]) == 0, ins mkString "\n")
+    assertNoInvoke(ins)
 
     // no null check when inlining a static method
     ins foreach {
-      case Jump(IFNONNULL, _) => assert(false, ins mkString "\n")
+      case Jump(IFNONNULL, _) => assert(false, ins.stringLines)
       case _ =>
     }
   }
@@ -437,16 +457,267 @@ class InlinerTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    InlinerTest.notPerRun.foreach(_.clear())
-    compiler.reporter.reset()
-    compiler.settings.outputDirs.setSingleOutput(new VirtualDirectory("(memory)", None))
-    val run = new compiler.Run()
-    run.compileSources(List(new BatchSourceFile("A.java", javaCode), new BatchSourceFile("B.scala", scalaCode)))
-    val outDir = compiler.settings.outputDirs.getSingleOutput.get
 
-    val List(b) = outDir.iterator.map(f => AsmUtils.readClass(f.toByteArray)).toList.sortBy(_.name)
+    val List(b) = compile(scalaCode, List((javaCode, "A.java")))
     val ins = getSingleMethod(b, "g").instructions
     val invokeFlop = Invoke(INVOKEVIRTUAL, "B", "flop", "()I", false)
-    assert(ins contains invokeFlop, ins mkString "\n")
+    assert(ins contains invokeFlop, ins.stringLines)
+  }
+
+  @Test
+  def inlineFromTraits(): Unit = {
+    val code =
+      """trait T {
+        |  @inline final def f = g
+        |  @inline final def g = 1
+        |}
+        |
+        |class C extends T {
+        |  def t1(t: T) = t.f
+        |  def t2(c: C) = c.f
+        |}
+      """.stripMargin
+    val List(c, t, tClass) = compile(code)
+    // both are just `return 1`, no more calls
+    assertNoInvoke(getSingleMethod(c, "t1"))
+    assertNoInvoke(getSingleMethod(c, "t2"))
+  }
+
+  @Test
+  def inlineMixinMethods(): Unit = {
+    val code =
+      """trait T {
+        |  @inline final def f = 1
+        |}
+        |class C extends T
+      """.stripMargin
+    val List(c, t, tClass) = compile(code)
+    // the static implementaiton method is inlined into the mixin, so there's no invocation in the mixin
+    assertNoInvoke(getSingleMethod(c, "f"))
+  }
+
+  @Test
+  def inlineTraitInherited(): Unit = {
+    val code =
+      """trait T {
+        |  @inline final def f = 1
+        |}
+        |trait U extends T {
+        |  @inline final def g = f
+        |}
+        |class C extends U {
+        |  def t1 = f
+        |  def t2 = g
+        |}
+      """.stripMargin
+    val List(c, t, tClass, u, uClass) = compile(code)
+    assertNoInvoke(getSingleMethod(c, "t1"))
+    assertNoInvoke(getSingleMethod(c, "t2"))
+  }
+
+  @Test
+  def virtualTraitNoInline(): Unit = {
+    val code =
+      """trait T {
+        |  @inline def f = 1
+        |}
+        |class C extends T {
+        |  def t1(t: T) = t.f
+        |  def t2 = this.f
+        |}
+      """.stripMargin
+    val List(c, t, tClass) = compile(code)
+    assertInvoke(getSingleMethod(c, "t1"), "T", "f")
+    assertInvoke(getSingleMethod(c, "t2"), "C", "f")
+  }
+
+  @Test
+  def sealedTraitInline(): Unit = {
+    val code =
+      """sealed trait T {
+        |  @inline def f = 1
+        |}
+        |class C {
+        |  def t1(t: T) = t.f
+        |}
+      """.stripMargin
+    val List(c, t, tClass) = compile(code)
+    assertNoInvoke(getSingleMethod(c, "t1"))
+  }
+
+  @Test
+  def inlineFromObject(): Unit = {
+    val code =
+      """trait T {
+        |  @inline def f = 0
+        |}
+        |object O extends T {
+        |  @inline def g = 1
+        |  // mixin generates `def f = T$class.f(this)`, which is inlined here (we get ICONST_0)
+        |}
+        |class C {
+        |  def t1 = O.f       // the mixin method of O is inlined, so we directly get the ICONST_0
+        |  def t2 = O.g       // object members are inlined
+        |  def t3(t: T) = t.f // no inlining here
+        |}
+      """.stripMargin
+    val List(c, oMirror, oModule, t, tClass) = compile(code)
+
+    assertNoInvoke(getSingleMethod(oModule, "f"))
+
+    assertNoInvoke(getSingleMethod(c, "t1"))
+    assertNoInvoke(getSingleMethod(c, "t2"))
+    assertInvoke(getSingleMethod(c, "t3"), "T", "f")
+  }
+
+  @Test
+  def selfTypeInline(): Unit = {
+    val code =
+      """trait T { self: Assembly =>
+        |  @inline final def f = g
+        |  @inline final def m = 1
+        |}
+        |trait Assembly extends T {
+        |  @inline final def g = 1
+        |  @inline final def n = m // inlined. (*)
+        |  // (*) the declaration class of m is T. the signature of T$class.m is m(LAssembly;)I. so we need the self type to build the
+        |  //     signature. then we can look up the MethodNode of T$class.m and then rewrite the INVOKEINTERFACE to INVOKESTATIC.
+        |}
+        |class C {
+        |  def t1(a: Assembly) = a.f // like above, decl class is T, need self-type of T to rewrite the interface call to static.
+        |  def t2(a: Assembly) = a.n
+        |}
+      """.stripMargin
+
+    val List(assembly, assemblyClass, c, t, tClass) = compile(code)
+
+    assertNoInvoke(getSingleMethod(tClass, "f"))
+
+    assertNoInvoke(getSingleMethod(assemblyClass, "n"))
+
+    assertNoInvoke(getSingleMethod(c, "t1"))
+    assertNoInvoke(getSingleMethod(c, "t2"))
+  }
+
+  @Test
+  def selfTypeInline2(): Unit = {
+    // There are some interesting things going on here with the self types. Here's a short version:
+    //
+    //   trait T1 { def f = 1 }
+    //   trait T2a { self: T1 with T2a =>  // self type in the backend: T1
+    //     def f = 2
+    //     def g = f                       // resolved to T2a.f
+    //   }
+    //   trait T2b { self: T2b with T1 =>  // self type in the backend: T2b
+    //     def f = 2
+    //     def g = f                       // resolved to T1.f
+    //   }
+    //
+    // scala> val t = typeOf[T2a]; exitingMixin(t.typeOfThis.typeSymbol)  // self type of T2a is T1
+    // res28: $r.intp.global.Symbol = trait T1
+    //
+    // scala> typeOf[T2a].typeOfThis.member(newTermName("f")).owner       // f in T2a is resolved as T2a.f
+    // res29: $r.intp.global.Symbol = trait T2a
+    //
+    // scala> val t = typeOf[T2b]; exitingMixin(t.typeOfThis.typeSymbol)  // self type of T2b is T1
+    // res30: $r.intp.global.Symbol = trait T2b
+    //
+    // scala> typeOf[T2b].typeOfThis.member(newTermName("f")).owner       // f in T2b is resolved as T1.f
+    // res31: $r.intp.global.Symbol = trait T1
+
+    val code =
+      """trait T1 {
+        |  @inline def f: Int = 0
+        |  @inline def g1 = f     // not inlined: f not final, so T1$class.g1 has an interface call T1.f
+        |}
+        |
+        |// erased self-type (used in impl class for `self` parameter): T1
+        |trait T2a { self: T1 with T2a =>
+        |  @inline override final def f = 1
+        |  @inline def g2a = f    // inlined: resolved as T2a.f, which is re-written to T2a$class.f, so T2a$class.g2a has ICONST_1
+        |}
+        |
+        |final class Ca extends T1 with T2a {
+        |  // mixin generates accessors like `def g1 = T1$class.g1`, the impl class method call is inlined into the accessor.
+        |
+        |  def m1a = g1           // call to accessor, inlined, we get the interface call T1.f
+        |  def m2a = g2a          // call to accessor, inlined, we get ICONST_1
+        |  def m3a = f            // call to accessor, inlined, we get ICONST_1
+        |
+        |  def m4a(t: T1) = t.f   // T1.f is not final, so not inlined, interface call to T1.f
+        |  def m5a(t: T2a) = t.f  // re-written to T2a$class.f, inlined, ICONST_1
+        |}
+        |
+        |// erased self-type: T2b
+        |trait T2b { self: T2b with T1 =>
+        |  @inline override final def f = 1
+        |  @inline def g2b = f    // not inlined: resolved as T1.f, so T2b$class.g2b has an interface call T1.f
+        |}
+        |
+        |final class Cb extends T1 with T2b {
+        |  def m1b = g1           // inlined, we get the interface call to T1.f
+        |  def m2b = g2b          // inlined, we get the interface call to T1.f
+        |  def m3b = f            // inlined, we get ICONST_1
+        |
+        |  def m4b(t: T1) = t.f   // T1.f is not final, so not inlined, interface call to T1.f
+        |  def m5b(t: T2b) = t.f  // re-written to T2b$class.f, inlined, ICONST_1
+        |}
+      """.stripMargin
+    val List(ca, cb, t1, t1C, t2a, t2aC, t2b, t2bC) = compile(code)
+
+    val t2aCfDesc = t2aC.methods.asScala.find(_.name == "f").get.desc
+    assert(t2aCfDesc == "(LT1;)I", t2aCfDesc) // self-type of T2a is T1
+
+    val t2bCfDesc = t2bC.methods.asScala.find(_.name == "f").get.desc
+    assert(t2bCfDesc == "(LT2b;)I", t2bCfDesc) // self-type of T2b is T2b
+
+    assertNoInvoke(getSingleMethod(t2aC, "g2a"))
+    assertInvoke(getSingleMethod(t2bC, "g2b"), "T1", "f")
+
+    assertInvoke(getSingleMethod(ca, "m1a"), "T1", "f")
+    assertNoInvoke(getSingleMethod(ca, "m2a"))            // no invoke, see comment on def g2a
+    assertNoInvoke(getSingleMethod(ca, "m3a"))
+    assertInvoke(getSingleMethod(ca, "m4a"), "T1", "f")
+    assertNoInvoke(getSingleMethod(ca, "m5a"))
+
+    assertInvoke(getSingleMethod(cb, "m1b"), "T1", "f")
+    assertInvoke(getSingleMethod(cb, "m2b"), "T1", "f")  // invoke, see comment on def g2b
+    assertNoInvoke(getSingleMethod(cb, "m3b"))
+    assertInvoke(getSingleMethod(cb, "m4b"), "T1", "f")
+    assertNoInvoke(getSingleMethod(cb, "m5b"))
+  }
+
+  @Test
+  def finalSubclassInline(): Unit = {
+    val code =
+      """class C {
+        |  @inline def f = 0
+        |  @inline final def g = 1
+        |}
+        |final class D extends C
+        |object E extends C
+        |class T {
+        |  def t1(d: D) = d.f + d.g + E.f + E.g // d.f can be inlined because the reciever type is D, which is final.
+        |}                                      // so d.f can be resolved statically. same for E.f
+      """.stripMargin
+    val List(c, d, e, eModule, t) = compile(code)
+    assertNoInvoke(getSingleMethod(t, "t1"))
+  }
+
+  @Test
+  def inlineFromNestedClasses(): Unit = {
+    val code =
+      """class C {
+        |  trait T { @inline final def f = 1 }
+        |  class D extends T{
+        |    def m(t: T) = t.f
+        |  }
+        |
+        |  def m(d: D) = d.f
+        |}
+      """.stripMargin
+    val List(c, d, t, tC) = compile(code)
+    assertNoInvoke(getSingleMethod(d, "m"))
+    assertNoInvoke(getSingleMethod(c, "m"))
   }
 }

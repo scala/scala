@@ -83,6 +83,10 @@ object BytecodeUtils {
 
   def isSynchronizedMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_SYNCHRONIZED) != 0
 
+  def isFinalClass(classNode: ClassNode): Boolean = (classNode.access & Opcodes.ACC_FINAL) != 0
+
+  def isFinalMethod(methodNode: MethodNode): Boolean = (methodNode.access & (Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE)) != 0
+
   def nextExecutableInstruction(instruction: AbstractInsnNode, alsoKeep: AbstractInsnNode => Boolean = Set()): Option[AbstractInsnNode] = {
     var result = instruction
     do { result = result.getNext }
