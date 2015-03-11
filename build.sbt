@@ -104,10 +104,10 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ Seq[Setting[_]](
 // we disable those tasks by overriding them and returning bogus files when
 // needed. This is a bit sketchy but I haven't found any better way.
 val disableDocsAndPublishingTasks = Seq[Setting[_]](
-  (doc := file("!!! NO DOCS !!!")),
-  (publishLocal := {}),
-  (publish := {}),
-  (packageBin in Compile := file("!!! NO PACKAGING !!!"))
+  doc := file("!!! NO DOCS !!!"),
+  publishLocal := {},
+  publish := {},
+  packageBin in Compile := file("!!! NO PACKAGING !!!")
 )
 
 lazy val scalaSubprojectSettings = commonSettings ++ Seq[Setting[_]](
@@ -131,9 +131,10 @@ lazy val generatePropertiesFileSettings = Seq[Setting[_]](
 )
 
 val libIncludes: FileFilter = "*.tmpl" | "*.xml" | "*.js" | "*.css" | "rootdoc.txt"
-lazy val library = configureAsSubproject(project).
-  settings(generatePropertiesFileSettings: _*).
-  settings(
+
+lazy val library = configureAsSubproject(project)
+  .settings(generatePropertiesFileSettings: _*)
+  .settings(
     name := "scala-library",
     scalacOptions in Compile ++= Seq[String]("-sourcepath", (scalaSource in Compile).value.toString),
     // Workaround for a bug in `scaladoc` that it seems to not respect the `-sourcepath` option
@@ -147,20 +148,21 @@ lazy val library = configureAsSubproject(project).
       val libraryAuxDir = (baseDirectory in ThisBuild).value / "src/library-aux"
       Seq("-doc-no-compile", libraryAuxDir.toString)
     },
-    includeFilter in unmanagedResources in Compile := libIncludes
-  ) dependsOn (forkjoin)
+    includeFilter in unmanagedResources in Compile := libIncludes)
+  .dependsOn (forkjoin)
 
-lazy val reflect = configureAsSubproject(project).
-  settings(generatePropertiesFileSettings: _*).
-  settings(name := "scala-reflect").
-  dependsOn(library)
+lazy val reflect = configureAsSubproject(project)
+  .settings(generatePropertiesFileSettings: _*)
+  .settings(name := "scala-reflect")
+  .dependsOn(library)
 
 val compilerIncludes: FileFilter =
   "*.tmpl" | "*.xml" | "*.js" | "*.css" | "*.html" | "*.properties" | "*.swf" |
   "*.png" | "*.gif" | "*.gif" | "*.txt"
-lazy val compiler = configureAsSubproject(project).
-  settings(generatePropertiesFileSettings: _*).
-  settings(
+
+lazy val compiler = configureAsSubproject(project)
+  .settings(generatePropertiesFileSettings: _*)
+  .settings(
     name := "scala-compiler",
     libraryDependencies += antDep,
     // this a way to make sure that classes from interactive and scaladoc projects
@@ -171,50 +173,47 @@ lazy val compiler = configureAsSubproject(project).
       (mappings in Compile in packageBin in LocalProject("interactive")).value ++
       (mappings in Compile in packageBin in LocalProject("scaladoc")).value ++
       (mappings in Compile in packageBin in LocalProject("repl")).value,
-    includeFilter in unmanagedResources in Compile := compilerIncludes
-    ).
-  dependsOn(library, reflect, asm)
+    includeFilter in unmanagedResources in Compile := compilerIncludes)
+  .dependsOn(library, reflect, asm)
 
-lazy val interactive = configureAsSubproject(project).
-  settings(disableDocsAndPublishingTasks: _*).
-  dependsOn(compiler)
+lazy val interactive = configureAsSubproject(project)
+  .settings(disableDocsAndPublishingTasks: _*)
+  .dependsOn(compiler)
 
-lazy val repl = configureAsSubproject(project).
-  settings(libraryDependencies += jlineDep).
-  settings(disableDocsAndPublishingTasks: _*).
-  dependsOn(compiler)
+lazy val repl = configureAsSubproject(project)
+  .settings(libraryDependencies += jlineDep)
+  .settings(disableDocsAndPublishingTasks: _*)
+  .dependsOn(compiler)
 
-lazy val scaladoc = configureAsSubproject(project).
-  settings(
+lazy val scaladoc = configureAsSubproject(project)
+  .settings(
     libraryDependencies ++= Seq(scalaXmlDep, scalaParserCombinatorsDep, partestDep)
-  ).
-  settings(disableDocsAndPublishingTasks: _*).
-  dependsOn(compiler)
+  )
+  .settings(disableDocsAndPublishingTasks: _*)
+  .dependsOn(compiler)
 
 lazy val scalap = configureAsSubproject(project).
   dependsOn(compiler)
 
 // deprecated Scala Actors project
 // TODO: it packages into actors.jar but it should be scala-actors.jar
-lazy val actors = configureAsSubproject(project).
-  settings(generatePropertiesFileSettings: _*).
-  settings(name := "scala-actors").
-  dependsOn(library)
+lazy val actors = configureAsSubproject(project)
+  .settings(generatePropertiesFileSettings: _*)
+  .settings(name := "scala-actors")
+  .dependsOn(library)
 
 lazy val forkjoin = configureAsForkOfJavaProject(project)
 
 lazy val asm = configureAsForkOfJavaProject(project)
 
-lazy val partestExtras = (
-  configureAsSubproject(Project("partest-extras", file(".") / "src" / "partest-extras"))
-    .dependsOn(repl)
-    .settings(clearSourceAndResourceDirectories: _*)
-    .settings(
-      scalaVersion := bootstrapScalaVersion,
-      ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
-      libraryDependencies += partestDep,
-      unmanagedSourceDirectories in Compile := List(baseDirectory.value)
-    )
+lazy val partestExtras = configureAsSubproject(Project("partest-extras", file(".") / "src" / "partest-extras"))
+  .dependsOn(repl)
+  .settings(clearSourceAndResourceDirectories: _*)
+  .settings(
+    scalaVersion := bootstrapScalaVersion,
+    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
+    libraryDependencies += partestDep,
+    unmanagedSourceDirectories in Compile := List(baseDirectory.value)
   )
 
 lazy val junit = project.in(file("test") / "junit")
