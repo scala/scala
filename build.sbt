@@ -56,10 +56,11 @@ val bootstrapScalaVersion = "2.11.5"
 val scalaParserCombinatorsDep = "org.scala-lang.modules" %% "scala-parser-combinators" % versionNumber("scala-parser-combinators") exclude("org.scala-lang", "scala-library")
 val scalaXmlDep = "org.scala-lang.modules" %% "scala-xml" % versionNumber("scala-xml") exclude("org.scala-lang", "scala-library")
 val partestDep = "org.scala-lang.modules" %% "scala-partest" % versionNumber("partest") exclude("org.scala-lang", "scala-library")
+val junitDep = "junit" % "junit" % "4.11"
 val jlineDep = "jline" % "jline" % versionProps("jline.version")
 val antDep = "org.apache.ant" % "ant" % "1.9.4"
 
-lazy val commonSettings = Seq[Setting[_]](
+lazy val commonSettings = clearSourceAndResourceDirectories ++ Seq[Setting[_]](
   organization := "org.scala-lang",
   version := "2.11.6-SNAPSHOT",
   scalaVersion := bootstrapScalaVersion,
@@ -82,7 +83,7 @@ lazy val commonSettings = Seq[Setting[_]](
   // Ant's build stored unmanaged jars in `lib/` directory
   unmanagedJars in Compile := Seq.empty,
   sourceDirectory in Compile := baseDirectory.value,
-  sourceDirectories in Compile := Seq(sourceDirectory.value),
+  unmanagedSourceDirectories in Compile := List(baseDirectory.value),
   scalaSource in Compile := (sourceDirectory in Compile).value,
   javaSource in Compile := (sourceDirectory in Compile).value,
   // resources are stored along source files in our current layout
@@ -204,9 +205,32 @@ lazy val forkjoin = configureAsForkOfJavaProject(project)
 
 lazy val asm = configureAsForkOfJavaProject(project)
 
+lazy val partestExtras = (
+  configureAsSubproject(Project("partest-extras", file(".") / "src" / "partest-extras"))
+    .dependsOn(repl)
+    .settings(clearSourceAndResourceDirectories: _*)
+    .settings(
+      scalaVersion := bootstrapScalaVersion,
+      ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
+      libraryDependencies += partestDep,
+      unmanagedSourceDirectories in Compile := List(baseDirectory.value)
+    )
+  )
+
+lazy val junit = project.in(file("test") / "junit")
+  .dependsOn(library, reflect, compiler, partestExtras)
+  .settings(clearSourceAndResourceDirectories: _*)
+  .settings(commonSettings: _*)
+  .settings(
+    scalaVersion := bootstrapScalaVersion,
+    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
+    libraryDependencies += junitDep,
+    unmanagedSourceDirectories in Test := List(baseDirectory.value)
+  )
+
 lazy val root = (project in file(".")).
   aggregate(library, forkjoin, reflect, compiler, asm, interactive, repl,
-    scaladoc, scalap, actors).settings(
+    scaladoc, scalap, actors, partestExtras, junit).settings(
     scalaVersion := bootstrapScalaVersion,
     ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
     sources in Compile := Seq.empty
@@ -305,6 +329,15 @@ lazy val generateVersionPropertiesFileImpl: Def.Initialize[Task[File]] = Def.tas
 
   propFile
 }
+
+// Defining these settings is somewhat redundant as we also redefine settings that depend on them.
+// However, IntelliJ's project import works better when these are set correctly.
+def clearSourceAndResourceDirectories = Seq(Compile, Test).flatMap(config => inConfig(config)(Seq(
+  unmanagedSourceDirectories := Nil,
+  managedSourceDirectories := Nil,
+  unmanagedResourceDirectories := Nil,
+  managedResourceDirectories := Nil
+)))
 
 lazy val mkBinImpl: Def.Initialize[Task[Seq[File]]] = Def.task {
   def mkScalaTool(mainCls: String, classpath: Seq[Attributed[File]]): ScalaTool =
