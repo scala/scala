@@ -8,8 +8,9 @@ package scala.tools.nsc.backend.jvm
 import scala.tools.asm.tree.{InsnList, AbstractInsnNode, ClassNode, MethodNode}
 import java.io.{StringWriter, PrintWriter}
 import scala.tools.asm.util.{TraceClassVisitor, TraceMethodVisitor, Textifier}
-import scala.tools.asm.ClassReader
+import scala.tools.asm.{Attribute, ClassReader}
 import scala.collection.convert.decorateAsScala._
+import scala.tools.nsc.backend.jvm.opt.InlineInfoAttributePrototype
 
 object AsmUtils {
 
@@ -49,7 +50,7 @@ object AsmUtils {
 
   def readClass(bytes: Array[Byte]): ClassNode = {
     val node = new ClassNode()
-    new ClassReader(bytes).accept(node, 0)
+    new ClassReader(bytes).accept(node, Array[Attribute](InlineInfoAttributePrototype), 0)
     node
   }
 
