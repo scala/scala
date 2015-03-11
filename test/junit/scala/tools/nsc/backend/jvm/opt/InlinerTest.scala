@@ -791,4 +791,74 @@ class InlinerTest extends ClearAfterClass {
     compile(code, allowMessage = info => {i += 1; info.msg contains err})
     assert(i == 2, i)
   }
+
+  @Test
+  def noInlineTraitFieldAccessors(): Unit = {
+    val code =
+      """sealed trait T {
+        |  lazy val a = 0
+        |  val b = 1
+        |  final lazy val c = 2
+        |  final val d = 3
+        |  final val d1: Int = 3
+        |
+        |  @noinline def f = 5       // re-written to T$class
+        |  @noinline final def g = 6 // re-written
+        |
+        |  @noinline def h: Int
+        |  @inline def i: Int
+        |}
+        |
+        |trait U { // not sealed
+        |  lazy val a = 0
+        |  val b = 1
+        |  final lazy val c = 2
+        |  final val d = 3
+        |  final val d1: Int = 3
+        |
+        |  @noinline def f = 5       // not re-written (not final)
+        |  @noinline final def g = 6 // re-written
+        |
+        |  @noinline def h: Int
+        |  @inline def i: Int
+        |}
+        |
+        |class C {
+        |  def m1(t: T) = t.a + t.b + t.c + t.d1
+        |  def m2(t: T) = t.d // inlined by the type-checker's constant folding
+        |  def m3(t: T) = t.f + t.g + t.h + t.i
+        |
+        |  def m4(u: U) = u.a + u.b + u.c + u.d1
+        |  def m5(u: U) = u.d
+        |  def m6(u: U) = u.f + u.g + u.h + u.i
+        |}
+      """.stripMargin
+
+    val List(c, t, tClass, u, uClass) = compile(code, allowMessage = _.msg contains "i()I is annotated @inline but cannot be inlined")
+    val m1 = getSingleMethod(c, "m1")
+    assertInvoke(m1, "T", "a")
+    assertInvoke(m1, "T", "b")
+    assertInvoke(m1, "T", "c")
+
+    assertNoInvoke(getSingleMethod(c, "m2"))
+
+    val m3 = getSingleMethod(c, "m3")
+    assertInvoke(m3, "T$class", "f")
+    assertInvoke(m3, "T$class", "g")
+    assertInvoke(m3, "T", "h")
+    assertInvoke(m3, "T", "i")
+
+    val m4 = getSingleMethod(c, "m4")
+    assertInvoke(m4, "U", "a")
+    assertInvoke(m4, "U", "b")
+    assertInvoke(m4, "U", "c")
+
+    assertNoInvoke(getSingleMethod(c, "m5"))
+
+    val m6 = getSingleMethod(c, "m6")
+    assertInvoke(m6, "U", "f")
+    assertInvoke(m6, "U$class", "g")
+    assertInvoke(m6, "U", "h")
+    assertInvoke(m6, "U", "i")
+  }
 }

@@ -71,7 +71,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    */
   def selectCallsitesForInlining: List[Callsite] = {
     callsites.valuesIterator.filter({
-      case callsite @ Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, annotatedInline, _, warning)), _, _, pos) =>
+      case callsite @ Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, _, annotatedInline, _, warning)), _, _, pos) =>
         val res = doInlineCallsite(callsite)
 
         if (!res) {
@@ -80,10 +80,10 @@ class Inliner[BT <: BTypes](val btypes: BT) {
             // reason is, for example, mixed compilation (which has a separate -Yopt-warning flag).
             def initMsg = s"${BackendReporting.methodSignature(calleeDeclClass.internalName, callee)} is annotated @inline but cannot be inlined"
             def warnMsg = warning.map(" Possible reason:\n" + _).getOrElse("")
-            if (!safeToInline)
-              backendReporting.inlinerWarning(pos, s"$initMsg: the method is not final and may be overridden." + warnMsg)
-            else if (doRewriteTraitCallsite(callsite) && isAbstractMethod(callee))
+            if (doRewriteTraitCallsite(callsite))
               backendReporting.inlinerWarning(pos, s"$initMsg: the trait method call could not be rewritten to the static implementation method." + warnMsg)
+            else if (!safeToInline)
+              backendReporting.inlinerWarning(pos, s"$initMsg: the method is not final and may be overridden." + warnMsg)
             else
               backendReporting.inlinerWarning(pos, s"$initMsg." + warnMsg)
           } else if (warning.isDefined && warning.get.emitWarning(warnSettings)) {
@@ -105,13 +105,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    * The current inlining heuristics are simple: inline calls to methods annotated @inline.
    */
   def doInlineCallsite(callsite: Callsite): Boolean = callsite match {
-    case Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, annotatedInline, _, warning)), _, _, pos) =>
-      // Usually, safeToInline implies that the callee is not abstract.
-      // But for final trait methods, the callee is abstract: "trait T { @inline final def f = 1}".
-      // A callsite (t: T).f is `safeToInline`, but the callee is the abstract method in the interface.
-      // We try to rewrite these calls to the static impl method, but that may not always succeed,
-      // in which case we cannot inline the call.
-      annotatedInline && safeToInline && !isAbstractMethod(callee)
+    case Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, _, annotatedInline, _, warning)), _, _, pos) =>
+      annotatedInline && safeToInline
 
     case _ => false
   }
@@ -127,13 +122,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    * True for statically resolved trait callsites that should be rewritten to the static implementation method.
    */
   def doRewriteTraitCallsite(callsite: Callsite) = callsite.callee match {
-    case Right(Callee(callee, calleeDeclarationClass, true, annotatedInline, annotatedNoInline, infoWarning)) if isAbstractMethod(callee) =>
-      // The pattern matches abstract methods that are `safeToInline`. This can only match the interface method of a final, concrete
-      // trait method. An abstract method (in a trait or abstract class) is never `safeToInline` (abstract methods cannot be final).
-      // See also comment in `doInlineCallsite`
-      for (i <- calleeDeclarationClass.isInterface) assert(i, s"expected interface call (final trait method) when inlining abstract method: $callsite")
-      true
-
+    case Right(Callee(callee, calleeDeclarationClass, safeToInline, true, annotatedInline, annotatedNoInline, infoWarning)) => true
     case _ => false
   }
 
@@ -146,7 +135,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    */
   def rewriteFinalTraitMethodInvocation(callsite: Callsite): Unit = {
     if (doRewriteTraitCallsite(callsite)) {
-      val Right(Callee(callee, calleeDeclarationClass, safeToInline, annotatedInline, annotatedNoInline, infoWarning)) = callsite.callee
+      val Right(Callee(callee, calleeDeclarationClass, _, _, annotatedInline, annotatedNoInline, infoWarning)) = callsite.callee
 
       val traitMethodArgumentTypes = asm.Type.getArgumentTypes(callee.desc)
 
@@ -198,7 +187,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
           callee              = Right(Callee(
             callee                 = implClassMethod,
             calleeDeclarationClass = implClassBType,
-            safeToInline           = safeToInline,
+            safeToInline           = true,
+            safeToRewrite          = false,
             annotatedInline        = annotatedInline,
             annotatedNoInline      = annotatedNoInline,
             calleeInfoWarning      = infoWarning)),

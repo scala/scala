@@ -27,7 +27,9 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
 
   def analyzeCallsites(methodNode: MethodNode, definingClass: ClassBType): List[Callsite] = {
 
-    case class CallsiteInfo(safeToInline: Boolean, annotatedInline: Boolean, annotatedNoInline: Boolean, warning: Option[CalleeInfoWarning])
+    case class CallsiteInfo(safeToInline: Boolean, safeToRewrite: Boolean,
+                            annotatedInline: Boolean, annotatedNoInline: Boolean,
+                            warning: Option[CalleeInfoWarning])
 
     /**
      * Analyze a callsite and gather meta-data that can be used for inlining decisions.
@@ -42,25 +44,44 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
         calleeDeclarationClassBType.info.orThrow.inlineInfo.methodInfos.get(methodSignature) match {
           case Some(methodInlineInfo) =>
             val canInlineFromSource = inlineGlobalEnabled || calleeSource == CompilationUnit
-            // A non-final method can be inline if the receiver type is a final subclass. Example:
-            //   class A { @inline def f = 1 }; object B extends A; B.f // can be inlined
-            def isStaticallyResolved: Boolean = {
-              // TODO: type analysis can render more calls statically resolved
-              // Example: `new A.f` can be inlined, the receiver type is known to be exactly A.
-              methodInlineInfo.effectivelyFinal || classBTypeFromParsedClassfile(receiverTypeInternalName).info.orThrow.inlineInfo.isEffectivelyFinal
+
+            val isAbstract = BytecodeUtils.isAbstractMethod(calleeMethodNode)
+
+            // (1) A non-final method can be safe to inline if the receiver type is a final subclass. Example:
+            //   class A { @inline def f = 1 }; object B extends A; B.f  // can be inlined
+            //
+            // TODO: type analysis can render more calls statically resolved. Example˜∫
+            //   new A.f  // can be inlined, the receiver type is known to be exactly A.
+            val isStaticallyResolved: Boolean = {
+              methodInlineInfo.effectivelyFinal ||
+                classBTypeFromParsedClassfile(receiverTypeInternalName).info.orThrow.inlineInfo.isEffectivelyFinal // (1)
             }
+
+            val isRewritableTraitCall = isStaticallyResolved && methodInlineInfo.traitMethodWithStaticImplementation
+
             val warning = calleeDeclarationClassBType.info.orThrow.inlineInfo.warning.map(
               MethodInlineInfoIncomplete(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, _))
-            CallsiteInfo(canInlineFromSource && isStaticallyResolved, methodInlineInfo.annotatedInline, methodInlineInfo.annotatedNoInline, warning)
+
+            // (1) For invocations of final trait methods, the callee isStaticallyResolved but also
+            //     abstract. Such a callee is not safe to inline - it needs to be re-written to the
+            //     static impl method first (safeToRewrite).
+            // (2) Final trait methods can be rewritten from the interface to the static implementation
+            //     method to enable inlining.
+            CallsiteInfo(
+              safeToInline      = canInlineFromSource && isStaticallyResolved && !isAbstract, // (1)
+              safeToRewrite     = canInlineFromSource && isRewritableTraitCall,               // (2)
+              annotatedInline   = methodInlineInfo.annotatedInline,
+              annotatedNoInline = methodInlineInfo.annotatedNoInline,
+              warning           = warning)
 
           case None =>
             val warning = MethodInlineInfoMissing(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, calleeDeclarationClassBType.info.orThrow.inlineInfo.warning)
-            CallsiteInfo(false, false, false, Some(warning))
+            CallsiteInfo(false, false, false, false, Some(warning))
         }
       } catch {
         case Invalid(noInfo: NoClassBTypeInfo) =>
           val warning = MethodInlineInfoError(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, noInfo)
-          CallsiteInfo(false, false, false, Some(warning))
+          CallsiteInfo(false, false, false, false, Some(warning))
       }
     }
 
@@ -80,11 +101,12 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           (declarationClassNode, source) <- byteCodeRepository.classNodeAndSource(declarationClass): Either[OptimizerWarning, (ClassNode, Source)]
           declarationClassBType          =  classBTypeFromClassNode(declarationClassNode)
         } yield {
-          val CallsiteInfo(safeToInline, annotatedInline, annotatedNoInline, warning) = analyzeCallsite(method, declarationClassBType, call.owner, source)
+          val CallsiteInfo(safeToInline, safeToRewrite, annotatedInline, annotatedNoInline, warning) = analyzeCallsite(method, declarationClassBType, call.owner, source)
           Callee(
             callee = method,
             calleeDeclarationClass = declarationClassBType,
             safeToInline = safeToInline,
+            safeToRewrite = safeToRewrite,
             annotatedInline = annotatedInline,
             annotatedNoInline = annotatedNoInline,
             calleeInfoWarning = warning)
@@ -151,13 +173,17 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    * @param calleeDeclarationClass The class in which the callee is declared
    * @param safeToInline           True if the callee can be safely inlined: it cannot be overridden,
    *                               and the inliner settings (project / global) allow inlining it.
+   * @param safeToRewrite          True if the callee the interface method of a concrete trait method
+   *                               that can be safely re-written to the static implementation method.
    * @param annotatedInline        True if the callee is annotated @inline
    * @param annotatedNoInline      True if the callee is annotated @noinline
    * @param calleeInfoWarning      An inliner warning if some information was not available while
    *                               gathering the information about this callee.
    */
   final case class Callee(callee: MethodNode, calleeDeclarationClass: ClassBType,
-                          safeToInline: Boolean,
+                          safeToInline: Boolean, safeToRewrite: Boolean,
                           annotatedInline: Boolean, annotatedNoInline: Boolean,
-                          calleeInfoWarning: Option[CalleeInfoWarning])
+                          calleeInfoWarning: Option[CalleeInfoWarning]) {
+    assert(!(safeToInline && safeToRewrite), s"A callee of ${callee.name} can be either safeToInline or safeToRewrite, but not both.")
+  }
 }

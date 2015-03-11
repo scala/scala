@@ -14,7 +14,6 @@ import asm.Opcodes
 import scala.tools.asm.tree.{MethodInsnNode, InnerClassNode, ClassNode}
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
 import scala.tools.nsc.backend.jvm.BackendReporting._
-import BackendReporting.RightBiasedEither
 import scala.tools.nsc.backend.jvm.opt._
 import scala.collection.convert.decorateAsScala._
 
