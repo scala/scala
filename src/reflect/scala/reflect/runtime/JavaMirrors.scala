@@ -428,9 +428,12 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         var i = 0
         while (i < args1.length) {
           val arg = args(i)
-          if (i >= paramCount) args1(i) = arg // don't transform varargs
-          else if (isByName(i)) args1(i) = () => arg // don't transform by-name value class params
-          else if (isDerivedValueClass(i)) args1(i) = paramUnboxers(i).invoke(arg)
+          args1(i) = (
+            if (i >= paramCount)             arg // don't transform varargs
+            else if (isByName(i))      () => arg // don't transform by-name value class params
+            else if (isDerivedValueClass(i)) paramUnboxers(i).invoke(arg)
+            else                             arg
+          )
           i += 1
         }
         jinvoke(args1)
