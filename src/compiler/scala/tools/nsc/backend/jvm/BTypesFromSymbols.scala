@@ -9,6 +9,7 @@ package backend.jvm
 import scala.tools.asm
 import scala.tools.nsc.backend.jvm.opt.{CallGraph, Inliner, ByteCodeRepository}
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo, InternalName}
+import BackendReporting._
 
 /**
  * This class mainly contains the method classBTypeFromSymbol, which extracts the necessary
@@ -34,11 +35,13 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   val coreBTypes = new CoreBTypesProxy[this.type](this)
   import coreBTypes._
 
-  val byteCodeRepository = new ByteCodeRepository(global.classPath, recordPerRunCache(collection.concurrent.TrieMap.empty))
+  val byteCodeRepository = new ByteCodeRepository(global.classPath, javaDefinedClasses, recordPerRunCache(collection.concurrent.TrieMap.empty))
 
   val inliner: Inliner[this.type] = new Inliner(this)
 
   val callGraph: CallGraph[this.type] = new CallGraph(this)
+
+  val backendReporting: BackendReporting = new BackendReportingImpl(global)
 
   final def initializeCoreBTypes(): Unit = {
     coreBTypes.setBTypes(new CoreBTypes[this.type](this))
@@ -49,6 +52,16 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   def inlineGlobalEnabled: Boolean = settings.YoptInlineGlobal
 
   def inlinerEnabled: Boolean      = settings.YoptInlinerEnabled
+
+  def warnSettings: WarnSettings   = {
+    val c = settings.YoptWarningsChoices
+    // cannot extract settings.YoptWarnings into a local val due to some dependent typing issue.
+    WarnSettings(
+      !settings.YoptWarnings.isSetByUser || settings.YoptWarnings.contains(c.atInlineFailedSummary.name) || settings.YoptWarnings.contains(c.atInlineFailed.name),
+      settings.YoptWarnings.contains(c.noInlineMixed.name),
+      settings.YoptWarnings.contains(c.noInlineMissingBytecode.name),
+      settings.YoptWarnings.contains(c.noInlineMissingScalaInlineInfoAttr.name))
+  }
 
   // helpers that need access to global.
   // TODO @lry create a separate component, they don't belong to BTypesFromSymbols
@@ -104,25 +117,17 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     else {
       val internalName = classSym.javaBinaryName.toString
       classBTypeFromInternalName.getOrElse(internalName, {
+        // The new ClassBType is added to the map in its constructor, before we set its info. This
+        // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
+        val res = ClassBType(internalName)
         if (completeSilentlyAndCheckErroneous(classSym)) {
-          new ErroneousClassBType(internalName)
+          res.info = Left(NoClassBTypeInfoClassSymbolInfoFailedSI9111(classSym.fullName))
+          res
         } else {
-          // The new ClassBType is added to the map in its constructor, before we set its info. This
-          // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
-          setClassInfo(classSym, ClassBType(internalName))
+          setClassInfo(classSym, res)
         }
       })
     }
-  }
-
-  /**
-   * Part of the workaround for SI-9111. Makes sure that the compiler only fails if the ClassInfo
-   * of the symbol that could not be completed is actually required.
-   */
-  private class ErroneousClassBType(internalName: InternalName) extends ClassBType(internalName) {
-    def msg = s"The class info for $internalName could not be completed due to SI-9111."
-    override def info: ClassInfo = opt.OptimizerReporting.assertionError(msg)
-    override def info_=(i: ClassInfo): Unit = opt.OptimizerReporting.assertionError(msg)
   }
 
   /**
@@ -202,7 +207,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
           case ThisType(sym)                      => classBTypeFromSymbol(sym)
           case SingleType(_, sym)                 => primitiveOrClassToBType(sym)
           case ConstantType(_)                    => typeToBType(t.underlying)
-          case RefinedType(parents, _)            => parents.map(typeToBType(_).asClassBType).reduceLeft((a, b) => a.jvmWiseLUB(b))
+          case RefinedType(parents, _)            => parents.map(typeToBType(_).asClassBType).reduceLeft((a, b) => a.jvmWiseLUB(b).get)
         }
     }
   }
@@ -340,7 +345,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     val inlineInfo = buildInlineInfo(classSym, classBType.internalName)
 
-    classBType.info = ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo, inlineInfo)
+    classBType.info = Right(ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo, inlineInfo))
     classBType
   }
 
@@ -421,13 +426,10 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       // symbols being compiled. For non-compiled classes, we could not build MethodInlineInfos
       // for those mixin members, which prevents inlining.
       byteCodeRepository.classNode(internalName) match {
-        case Some(classNode) =>
+        case Right(classNode) =>
           inlineInfoFromClassfile(classNode)
-        case None =>
-          // TODO: inliner warning if the InlineInfo for that class is being used
-          // We can still use the inline information built from the symbol, even though mixin
-          // members will be missing.
-          buildFromSymbol
+        case Left(missingClass) =>
+          InlineInfo(None, false, Map.empty, Some(ClassNotFoundWhenBuildingInlineInfoFromSymbol(missingClass)))
       }
     }
   }
@@ -444,14 +446,13 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       val c = ClassBType(internalName)
       // class info consistent with BCodeHelpers.genMirrorClass
       val nested = exitingPickler(memberClassesForInnerClassTable(moduleClassSym)) map classBTypeFromSymbol
-      c.info = ClassInfo(
+      c.info = Right(ClassInfo(
         superClass = Some(ObjectReference),
         interfaces = Nil,
         flags = asm.Opcodes.ACC_SUPER | asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_FINAL,
         nestedClasses = nested,
         nestedInfo = None,
-        InlineInfo(None, true, Map.empty, None) // no InlineInfo needed, scala never invokes methods on the mirror class
-      )
+        InlineInfo(None, true, Map.empty, None))) // no InlineInfo needed, scala never invokes methods on the mirror class
       c
     })
   }

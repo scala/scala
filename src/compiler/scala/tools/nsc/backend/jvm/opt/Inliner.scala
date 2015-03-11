@@ -15,9 +15,10 @@ import scala.collection.convert.decorateAsScala._
 import scala.collection.convert.decorateAsJava._
 import AsmUtils._
 import BytecodeUtils._
-import OptimizerReporting._
 import collection.mutable
 import scala.tools.asm.tree.analysis.{SourceInterpreter, Analyzer}
+import BackendReporting._
+import scala.tools.nsc.backend.jvm.BTypes.InternalName
 
 class Inliner[BT <: BTypes](val btypes: BT) {
   import btypes._
@@ -27,10 +28,19 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     rewriteFinalTraitMethodInvocations()
 
     for (request <- collectAndOrderInlineRequests) {
-      val Some(callee) = request.callee
-      inline(request.callsiteInstruction, request.callsiteStackHeight, request.callsiteMethod, request.callsiteClass,
+      val Right(callee) = request.callee // collectAndOrderInlineRequests returns callsites with a known callee
+
+      val r = inline(request.callsiteInstruction, request.callsiteStackHeight, request.callsiteMethod, request.callsiteClass,
         callee.callee, callee.calleeDeclarationClass,
         receiverKnownNotNull = false, keepLineNumbers = false)
+
+      for (warning <- r) {
+        if ((callee.annotatedInline && btypes.warnSettings.atInlineFailed) || warning.emitWarning(warnSettings)) {
+          val annotWarn = if (callee.annotatedInline) " is annotated @inline but" else ""
+          val msg = s"${BackendReporting.methodSignature(callee.calleeDeclarationClass.internalName, callee.callee)}$annotWarn could not be inlined:\n$warning"
+          backendReporting.inlinerWarning(request.callsitePosition, msg)
+        }
+      }
     }
   }
 
@@ -61,16 +71,49 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    */
   def selectCallsitesForInlining: List[Callsite] = {
     callsites.valuesIterator.filter({
-      case Callsite(_, _, _, Some(Callee(callee, _, safeToInline, annotatedInline, _)), _, _) =>
-        // For trait methods the callee is abstract: "trait T { @inline final def f = 1}".
-        // A callsite (t: T).f is `safeToInline` (effectivelyFinal is true), but the callee is the
-        // abstract method in the interface.
-        // Even though we such invocations are re-written using `rewriteFinalTraitMethodInvocation`,
-        // the guard is kept here for the cases where the rewrite fails.
-        !isAbstractMethod(callee) && safeToInline && annotatedInline
+      case callsite @ Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, annotatedInline, _, warning)), _, _, pos) =>
+        val res = doInlineCallsite(callsite)
 
-      case _ => false
+        if (!res) {
+          if (annotatedInline && btypes.warnSettings.atInlineFailed) {
+            // if the callsite is annotated @inline, we report an inline warning even if the underlying
+            // reason is, for example, mixed compilation (which has a separate -Yopt-warning flag).
+            def initMsg = s"${BackendReporting.methodSignature(calleeDeclClass.internalName, callee)} is annotated @inline but cannot be inlined"
+            def warnMsg = warning.map(" Possible reason:\n" + _).getOrElse("")
+            if (!safeToInline)
+              backendReporting.inlinerWarning(pos, s"$initMsg: the method is not final and may be overridden." + warnMsg)
+            else if (doRewriteTraitCallsite(callsite) && isAbstractMethod(callee))
+              backendReporting.inlinerWarning(pos, s"$initMsg: the trait method call could not be rewritten to the static implementation method." + warnMsg)
+            else
+              backendReporting.inlinerWarning(pos, s"$initMsg." + warnMsg)
+          } else if (warning.isDefined && warning.get.emitWarning(warnSettings)) {
+            // when annotatedInline is false, and there is some warning, the callsite metadata is possibly incomplete.
+            backendReporting.inlinerWarning(pos, s"there was a problem determining if method ${callee.name} can be inlined: \n"+ warning.get)
+          }
+        }
+
+        res
+
+      case Callsite(ins, _, _, Left(warning), _, _, pos) =>
+        if (warning.emitWarning(warnSettings))
+          backendReporting.inlinerWarning(pos, s"failed to determine if ${ins.name} should be inlined:\n$warning")
+        false
     }).toList
+  }
+
+  /**
+   * The current inlining heuristics are simple: inline calls to methods annotated @inline.
+   */
+  def doInlineCallsite(callsite: Callsite): Boolean = callsite match {
+    case Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, annotatedInline, _, warning)), _, _, pos) =>
+      // Usually, safeToInline implies that the callee is not abstract.
+      // But for final trait methods, the callee is abstract: "trait T { @inline final def f = 1}".
+      // A callsite (t: T).f is `safeToInline`, but the callee is the abstract method in the interface.
+      // We try to rewrite these calls to the static impl method, but that may not always succeed,
+      // in which case we cannot inline the call.
+      annotatedInline && safeToInline && !isAbstractMethod(callee)
+
+    case _ => false
   }
 
   def rewriteFinalTraitMethodInvocations(): Unit = {
@@ -81,33 +124,51 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   }
 
   /**
+   * True for statically resolved trait callsites that should be rewritten to the static implementation method.
+   */
+  def doRewriteTraitCallsite(callsite: Callsite) = callsite.callee match {
+    case Right(Callee(callee, calleeDeclarationClass, true, annotatedInline, annotatedNoInline, infoWarning)) if isAbstractMethod(callee) =>
+      // The pattern matches abstract methods that are `safeToInline`. This can only match the interface method of a final, concrete
+      // trait method. An abstract method (in a trait or abstract class) is never `safeToInline` (abstract methods cannot be final).
+      // See also comment in `doInlineCallsite`
+      for (i <- calleeDeclarationClass.isInterface) assert(i, s"expected interface call (final trait method) when inlining abstract method: $callsite")
+      true
+
+    case _ => false
+  }
+
+  /**
    * Rewrite the INVOKEINTERFACE callsite of a final trait method invocation to INVOKESTATIC of the
    * corresponding method in the implementation class. This enables inlining final trait methods.
    *
    * In a final trait method callsite, the callee is safeToInline and the callee method is abstract
    * (the receiver type is the interface, so the method is abstract).
    */
-  def rewriteFinalTraitMethodInvocation(callsite: Callsite): Unit = callsite.callee match {
-    case Some(Callee(callee, calleeDeclarationClass, true, true, annotatedNoInline)) if isAbstractMethod(callee) =>
-      assert(calleeDeclarationClass.isInterface, s"expected interface call (final trait method) when inlining abstract method: $callsite")
+  def rewriteFinalTraitMethodInvocation(callsite: Callsite): Unit = {
+    if (doRewriteTraitCallsite(callsite)) {
+      val Right(Callee(callee, calleeDeclarationClass, safeToInline, annotatedInline, annotatedNoInline, infoWarning)) = callsite.callee
 
       val traitMethodArgumentTypes = asm.Type.getArgumentTypes(callee.desc)
 
-      val selfParamType = calleeDeclarationClass.info.inlineInfo.traitImplClassSelfType match {
-        case Some(internalName) => classBTypeFromParsedClassfile(internalName)
-        case None               => Some(calleeDeclarationClass)
-      }
-
       val implClassInternalName = calleeDeclarationClass.internalName + "$class"
+
+      val selfParamTypeV: Either[OptimizerWarning, ClassBType] = calleeDeclarationClass.info.map(_.inlineInfo.traitImplClassSelfType match {
+        case Some(internalName) => classBTypeFromParsedClassfile(internalName)
+        case None               => calleeDeclarationClass
+      })
+
+      def implClassMethodV(implMethodDescriptor: String): Either[OptimizerWarning, MethodNode] = {
+        byteCodeRepository.methodNode(implClassInternalName, callee.name, implMethodDescriptor).map(_._1)
+      }
 
       // The rewrite reading the implementation class and the implementation method from the bytecode
       // repository. If either of the two fails, the rewrite is not performed.
-      for {
-        // TODO: inline warnings if selfClassType, impl class or impl method cannot be found
-        selfType                  <- selfParamType
-        implClassMethodDescriptor =  asm.Type.getMethodDescriptor(asm.Type.getReturnType(callee.desc), selfType.toASMType +: traitMethodArgumentTypes: _*)
-        (implClassMethod, _)      <- byteCodeRepository.methodNode(implClassInternalName, callee.name, implClassMethodDescriptor)
-        implClassBType            <- classBTypeFromParsedClassfile(implClassInternalName)
+      val res = for {
+        selfParamType        <- selfParamTypeV
+        implMethodDescriptor =  asm.Type.getMethodDescriptor(asm.Type.getReturnType(callee.desc), selfParamType.toASMType +: traitMethodArgumentTypes: _*)
+        implClassMethod      <- implClassMethodV(implMethodDescriptor)
+        implClassBType       =  classBTypeFromParsedClassfile(implClassInternalName)
+        selfTypeOk           <- calleeDeclarationClass.isSubtypeOf(selfParamType)
       } yield {
 
         // The self parameter type may be incompatible with the trait type.
@@ -116,16 +177,16 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         // a call to T.foo to T$class.foo, we need to cast the receiver to S, otherwise we get a
         // VerifyError. We run a `SourceInterpreter` to find all producer instructions of the
         // receiver value and add a cast to the self type after each.
-        if (!calleeDeclarationClass.isSubtypeOf(selfType)) {
+        if (!selfTypeOk) {
           val analyzer = new AsmAnalyzer(callsite.callsiteMethod, callsite.callsiteClass.internalName, new SourceInterpreter)
           val receiverValue = analyzer.frameAt(callsite.callsiteInstruction).peekDown(traitMethodArgumentTypes.length)
           for (i <- receiverValue.insns.asScala) {
-            val cast = new TypeInsnNode(CHECKCAST, selfType.internalName)
+            val cast = new TypeInsnNode(CHECKCAST, selfParamType.internalName)
             callsite.callsiteMethod.instructions.insert(i, cast)
           }
         }
 
-        val newCallsiteInstruction = new MethodInsnNode(INVOKESTATIC, implClassInternalName, callee.name, implClassMethodDescriptor, false)
+        val newCallsiteInstruction = new MethodInsnNode(INVOKESTATIC, implClassInternalName, callee.name, implMethodDescriptor, false)
         callsite.callsiteMethod.instructions.insert(callsite.callsiteInstruction, newCallsiteInstruction)
         callsite.callsiteMethod.instructions.remove(callsite.callsiteInstruction)
 
@@ -134,19 +195,26 @@ class Inliner[BT <: BTypes](val btypes: BT) {
           callsiteInstruction = newCallsiteInstruction,
           callsiteMethod      = callsite.callsiteMethod,
           callsiteClass       = callsite.callsiteClass,
-          callee              = Some(Callee(
+          callee              = Right(Callee(
             callee                 = implClassMethod,
             calleeDeclarationClass = implClassBType,
-            safeToInline           = true,
-            annotatedInline        = true,
-            annotatedNoInline      = annotatedNoInline)),
+            safeToInline           = safeToInline,
+            annotatedInline        = annotatedInline,
+            annotatedNoInline      = annotatedNoInline,
+            calleeInfoWarning      = infoWarning)),
           argInfos            = Nil,
-          callsiteStackHeight = callsite.callsiteStackHeight
+          callsiteStackHeight = callsite.callsiteStackHeight,
+          callsitePosition = callsite.callsitePosition
         )
         callGraph.callsites(newCallsiteInstruction) = staticCallsite
       }
 
-    case _ =>
+      for (warning <- res.left) {
+        val Right(callee) = callsite.callee
+        val newCallee = callee.copy(calleeInfoWarning = Some(RewriteTraitCallToStaticImplMethodFailed(calleeDeclarationClass.internalName, callee.callee.name, callee.callee.desc, warning)))
+        callGraph.callsites(callsite.callsiteInstruction) = callsite.copy(callee = Right(newCallee))
+      }
+    }
   }
 
   /**
@@ -240,7 +308,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    */
   def inline(callsiteInstruction: MethodInsnNode, callsiteStackHeight: Int, callsiteMethod: MethodNode, callsiteClass: ClassBType,
              callee: MethodNode, calleeDeclarationClass: ClassBType,
-             receiverKnownNotNull: Boolean, keepLineNumbers: Boolean): Option[String] = {
+             receiverKnownNotNull: Boolean, keepLineNumbers: Boolean): Option[CannotInlineWarning] = {
     canInline(callsiteInstruction, callsiteStackHeight, callsiteMethod, callsiteClass, callee, calleeDeclarationClass) orElse {
       // New labels for the cloned instructions
       val labelsMap = cloneLabels(callee)
@@ -363,7 +431,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
                 callsiteClass = callsiteClass,
                 callee = originalCallsite.callee,
                 argInfos = Nil, // TODO: re-compute argInfos for new destination (once we actually compute them)
-                callsiteStackHeight = callsiteStackHeight + originalCallsite.callsiteStackHeight
+                callsiteStackHeight = callsiteStackHeight + originalCallsite.callsiteStackHeight,
+                callsitePosition = originalCallsite.callsitePosition
               )
 
             case None =>
@@ -386,7 +455,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    * @return `Some(message)` if inlining cannot be performed, `None` otherwise
    */
   def canInline(callsiteInstruction: MethodInsnNode, callsiteStackHeight: Int, callsiteMethod: MethodNode, callsiteClass: ClassBType,
-                callee: MethodNode, calleeDeclarationClass: ClassBType): Option[String] = {
+                callee: MethodNode, calleeDeclarationClass: ClassBType): Option[CannotInlineWarning] = {
 
     def calleeDesc = s"${callee.name} of type ${callee.desc} in ${calleeDeclarationClass.internalName}"
     def methodMismatch = s"Wrong method node for inlining ${textify(callsiteInstruction)}: $calleeDesc"
@@ -416,37 +485,43 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     if (isSynchronizedMethod(callee)) {
       // Could be done by locking on the receiver, wrapping the inlined code in a try and unlocking
       // in finally. But it's probably not worth the effort, scala never emits synchronized methods.
-      Some(s"Method ${methodSignature(calleeDeclarationClass.internalName, callee)} is not inlined because it is synchronized")
+      Some(SynchronizedMethod(calleeDeclarationClass.internalName, callee.name, callee.desc))
     } else if (!callee.tryCatchBlocks.isEmpty && stackHasNonParameters) {
-      Some(
-        s"""The operand stack at the callsite in ${methodSignature(callsiteClass.internalName, callsiteMethod)} contains more values than the
-           |arguments expected by the callee ${methodSignature(calleeDeclarationClass.internalName, callee)}. These values would be discarded
-           |when entering an exception handler declared in the inlined method.""".stripMargin
-      )
+      Some(MethodWithHandlerCalledOnNonEmptyStack(
+        calleeDeclarationClass.internalName, callee.name, callee.desc,
+        callsiteClass.internalName, callsiteMethod.name, callsiteMethod.desc))
     } else findIllegalAccess(callee.instructions, callsiteClass) map {
-      case illegalAccessIns =>
-        s"""The callee ${methodSignature(calleeDeclarationClass.internalName, callee)} contains the instruction ${AsmUtils.textify(illegalAccessIns)}
-           |that would cause an IllegalAccessError when inlined into class ${callsiteClass.internalName}""".stripMargin
+      case (illegalAccessIns, None) =>
+        IllegalAccessInstruction(
+          calleeDeclarationClass.internalName, callee.name, callee.desc,
+          callsiteClass.internalName, illegalAccessIns)
+
+      case (illegalAccessIns, Some(warning)) =>
+        IllegalAccessCheckFailed(
+          calleeDeclarationClass.internalName, callee.name, callee.desc,
+          callsiteClass.internalName, illegalAccessIns, warning)
     }
   }
 
   /**
    * Returns the first instruction in the `instructions` list that would cause a
-   * [[java.lang.IllegalAccessError]] when inlined into the `destinationClass`. Returns `None` if
-   * all instructions can be legally transplanted.
+   * [[java.lang.IllegalAccessError]] when inlined into the `destinationClass`.
+   *
+   * If validity of some instruction could not be checked because an error occurred, the instruction
+   * is returned together with a warning message that describes the problem.
    */
-  def findIllegalAccess(instructions: InsnList, destinationClass: ClassBType): Option[AbstractInsnNode] = {
+  def findIllegalAccess(instructions: InsnList, destinationClass: ClassBType): Option[(AbstractInsnNode, Option[OptimizerWarning])] = {
 
     /**
      * Check if a type is accessible to some class, as defined in JVMS 5.4.4.
      *  (A1) C is public
      *  (A2) C and D are members of the same run-time package
      */
-    def classIsAccessible(accessed: BType, from: ClassBType = destinationClass): Boolean = (accessed: @unchecked) match {
+    def classIsAccessible(accessed: BType, from: ClassBType = destinationClass): Either[OptimizerWarning, Boolean] = (accessed: @unchecked) match {
       // TODO: A2 requires "same run-time package", which seems to be package + classloader (JMVS 5.3.). is the below ok?
-      case c: ClassBType     => c.isPublic || c.packageInternalName == from.packageInternalName
+      case c: ClassBType     => c.isPublic.map(_ || c.packageInternalName == from.packageInternalName)
       case a: ArrayBType     => classIsAccessible(a.elementType, from)
-      case _: PrimitiveBType => true
+      case _: PrimitiveBType => Right(true)
     }
 
     /**
@@ -471,27 +546,29 @@ class Inliner[BT <: BTypes](val btypes: BT) {
      *       run-time package as D.
      *  (B4) R is private and is declared in D.
      */
-    def memberIsAccessible(memberFlags: Int, memberDeclClass: ClassBType, memberRefClass: ClassBType): Boolean = {
+    def memberIsAccessible(memberFlags: Int, memberDeclClass: ClassBType, memberRefClass: ClassBType): Either[OptimizerWarning, Boolean] = {
       // TODO: B3 requires "same run-time package", which seems to be package + classloader (JMVS 5.3.). is the below ok?
       def samePackageAsDestination = memberDeclClass.packageInternalName == destinationClass.packageInternalName
 
       val key = (ACC_PUBLIC | ACC_PROTECTED | ACC_PRIVATE) & memberFlags
       key match {
         case ACC_PUBLIC     =>       // B1
-          true
+          Right(true)
 
         case ACC_PROTECTED  =>       // B2
-          val condB2 = destinationClass.isSubtypeOf(memberDeclClass) && {
-            val isStatic = (ACC_STATIC & memberFlags) != 0
-            isStatic || memberRefClass.isSubtypeOf(destinationClass) || destinationClass.isSubtypeOf(memberRefClass)
+          tryEither {
+            val condB2 = destinationClass.isSubtypeOf(memberDeclClass).orThrow && {
+              val isStatic = (ACC_STATIC & memberFlags) != 0
+              isStatic || memberRefClass.isSubtypeOf(destinationClass).orThrow || destinationClass.isSubtypeOf(memberRefClass).orThrow
+            }
+            Right(condB2 || samePackageAsDestination) // B3 (protected)
           }
-          condB2 || samePackageAsDestination // B3 (protected)
 
-        case 0 =>                            // B3 (default access)
-          samePackageAsDestination
+        case 0 =>                    // B3 (default access)
+          Right(samePackageAsDestination)
 
         case ACC_PRIVATE    =>       // B4
-          memberDeclClass == destinationClass
+          Right(memberDeclClass == destinationClass)
       }
     }
 
@@ -502,49 +579,68 @@ class Inliner[BT <: BTypes](val btypes: BT) {
      * byteCodeRepository, it is considered as not legal. This is known to happen in mixed
      * compilation: for Java classes there is no classfile that could be parsed, nor does the
      * compiler generate any bytecode.
+     *
+     * Returns a warning message describing the problem if checking the legality for the instruction
+     * failed.
      */
-    def isLegal(instruction: AbstractInsnNode): Boolean = instruction match {
+    def isLegal(instruction: AbstractInsnNode): Either[OptimizerWarning, Boolean] = instruction match {
       case ti: TypeInsnNode  =>
         // NEW, ANEWARRAY, CHECKCAST or INSTANCEOF. For these instructions, the reference
         // "must be a symbolic reference to a class, array, or interface type" (JVMS 6), so
         // it can be an internal name, or a full array descriptor.
-        bTypeForDescriptorOrInternalNameFromClassfile(ti.desc).exists(classIsAccessible(_))
+        classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(ti.desc))
 
       case ma: MultiANewArrayInsnNode =>
         // "a symbolic reference to a class, array, or interface type"
-        bTypeForDescriptorOrInternalNameFromClassfile(ma.desc).exists(classIsAccessible(_))
+        classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(ma.desc))
 
       case fi: FieldInsnNode =>
-        (for {
-          fieldRefClass <- classBTypeFromParsedClassfile(fi.owner)
-          (fieldNode, fieldDeclClassNode) <- byteCodeRepository.fieldNode(fieldRefClass.internalName, fi.name, fi.desc)
-          fieldDeclClass <- classBTypeFromParsedClassfile(fieldDeclClassNode)
+        val fieldRefClass = classBTypeFromParsedClassfile(fi.owner)
+        for {
+          (fieldNode, fieldDeclClassNode) <- byteCodeRepository.fieldNode(fieldRefClass.internalName, fi.name, fi.desc): Either[OptimizerWarning, (FieldNode, InternalName)]
+          fieldDeclClass                  =  classBTypeFromParsedClassfile(fieldDeclClassNode)
+          res                             <- memberIsAccessible(fieldNode.access, fieldDeclClass, fieldRefClass)
         } yield {
-          memberIsAccessible(fieldNode.access, fieldDeclClass, fieldRefClass)
-        }) getOrElse false
+          res
+        }
 
       case mi: MethodInsnNode =>
-        if (mi.owner.charAt(0) == '[') true // array methods are accessible
-        else (for {
-          methodRefClass <- classBTypeFromParsedClassfile(mi.owner)
-          (methodNode, methodDeclClassNode) <- byteCodeRepository.methodNode(methodRefClass.internalName, mi.name, mi.desc)
-          methodDeclClass <- classBTypeFromParsedClassfile(methodDeclClassNode)
-        } yield {
-          memberIsAccessible(methodNode.access, methodDeclClass, methodRefClass)
-        }) getOrElse false
+        if (mi.owner.charAt(0) == '[') Right(true) // array methods are accessible
+        else {
+          val methodRefClass = classBTypeFromParsedClassfile(mi.owner)
+          for {
+            (methodNode, methodDeclClassNode) <- byteCodeRepository.methodNode(methodRefClass.internalName, mi.name, mi.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
+            methodDeclClass                   =  classBTypeFromParsedClassfile(methodDeclClassNode)
+            res                               <- memberIsAccessible(methodNode.access, methodDeclClass, methodRefClass)
+          } yield {
+            res
+          }
+        }
 
       case ivd: InvokeDynamicInsnNode =>
         // TODO @lry check necessary conditions to inline an indy, instead of giving up
-        false
+        Right(false)
 
       case ci: LdcInsnNode => ci.cst match {
-        case t: asm.Type => bTypeForDescriptorOrInternalNameFromClassfile(t.getInternalName).exists(classIsAccessible(_))
-        case _           => true
+        case t: asm.Type => classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(t.getInternalName))
+        case _           => Right(true)
       }
 
-      case _ => true
+      case _ => Right(true)
     }
 
-    instructions.iterator.asScala.find(!isLegal(_))
+    val it = instructions.iterator.asScala
+    @tailrec def find: Option[(AbstractInsnNode, Option[OptimizerWarning])] = {
+      if (!it.hasNext) None // all instructions are legal
+      else {
+        val i = it.next()
+        isLegal(i) match {
+          case Left(warning) => Some((i, Some(warning))) // checking isLegal for i failed
+          case Right(false)  => Some((i, None))          // an illegal instruction was found
+          case _             => find
+        }
+      }
+    }
+    find
   }
 }

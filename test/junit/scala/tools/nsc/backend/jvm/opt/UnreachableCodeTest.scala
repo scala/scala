@@ -154,7 +154,8 @@ class UnreachableCodeTest extends ClearAfterClass {
     assertSameCode(noDce.dropNonOp, List(Op(ICONST_1), Op(IRETURN), Op(ATHROW), Op(ATHROW)))
 
     // when NOT computing stack map frames, ASM's ClassWriter does not replace dead code by NOP/ATHROW
-    val noDceNoFrames = singleMethodInstructions(noOptNoFramesCompiler)(code)
+    val warn = "target:jvm-1.5 is deprecated"
+    val noDceNoFrames = singleMethodInstructions(noOptNoFramesCompiler)(code, allowMessage = _.msg contains warn)
     assertSameCode(noDceNoFrames.dropNonOp, List(Op(ICONST_1), Op(IRETURN), Op(ICONST_2), Op(IRETURN)))
   }
 

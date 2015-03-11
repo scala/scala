@@ -15,6 +15,8 @@ import CodeGenTools._
 import scala.tools.partest.ASMConverters
 import ASMConverters._
 
+import BackendReporting._
+
 import scala.collection.convert.decorateAsScala._
 
 @RunWith(classOf[JUnit4])
@@ -39,7 +41,7 @@ class BTypesFromClassfileTest {
     if (checked(fromSym.internalName)) checked
     else {
       assert(fromSym == fromClassfile, s"$fromSym != $fromClassfile")
-      sameInfo(fromSym.info, fromClassfile.info, checked + fromSym.internalName)
+      sameInfo(fromSym.info.get, fromClassfile.info.get, checked + fromSym.internalName)
     }
   }
 
@@ -73,7 +75,7 @@ class BTypesFromClassfileTest {
     //   and anonymous classes as members of the outer class. But not for unpickled symbols).
     // The fromClassfile info has all nested classes, including anonymous and local. So we filter
     // them out: member classes are identified by having the `outerName` defined.
-    val memberClassesFromClassfile = fromClassfile.nestedClasses.filter(_.info.nestedInfo.get.outerName.isDefined)
+    val memberClassesFromClassfile = fromClassfile.nestedClasses.filter(_.info.get.nestedInfo.get.outerName.isDefined)
     // Sorting is required: the backend sorts all InnerClass entries by internalName before writing
     // them to the classfile (to make it deterministic: the entries are collected in a Set during
     // code generation).
@@ -85,7 +87,7 @@ class BTypesFromClassfileTest {
     clearCache()
     val fromSymbol = classBTypeFromSymbol(classSym)
     clearCache()
-    val fromClassfile = bTypes.classBTypeFromParsedClassfile(fromSymbol.internalName).get
+    val fromClassfile = bTypes.classBTypeFromParsedClassfile(fromSymbol.internalName)
     sameBType(fromSymbol, fromClassfile)
   }
 

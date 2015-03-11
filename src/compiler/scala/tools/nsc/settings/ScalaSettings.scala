@@ -256,6 +256,25 @@ trait ScalaSettings extends AbsScalaSettings
   def YoptInlineGlobal            = Yopt.contains(YoptChoices.inlineGlobal)
   def YoptInlinerEnabled          = YoptInlineProject || YoptInlineGlobal
 
+  object YoptWarningsChoices extends MultiChoiceEnumeration {
+    val none                               = Choice("none"                       , "No optimizer warnings.")
+    val atInlineFailedSummary              = Choice("at-inline-failed-summary"   , "One-line summary if there were @inline method calls that could not be inlined.")
+    val atInlineFailed                     = Choice("at-inline-failed"           , "A detailed warning for each @inline method call that could not be inlined.")
+    val noInlineMixed                      = Choice("no-inline-mixed"            , "In mixed compilation, warn at callsites methods defined in java sources (the inlining decision cannot be made without bytecode).")
+    val noInlineMissingBytecode            = Choice("no-inline-missing-bytecode" , "Warn if an inlining decision cannot be made because a the bytecode of a class or member cannot be found on the compilation classpath.")
+    val noInlineMissingScalaInlineInfoAttr = Choice("no-inline-missing-attribute", "Warn if an inlining decision cannot be made because a Scala classfile does not have a ScalaInlineInfo attribute.")
+  }
+
+  val YoptWarnings = MultiChoiceSetting(
+    name = "-Yopt-warnings",
+    helpArg = "warnings",
+    descr = "Enable optimizer warnings",
+    domain = YoptWarningsChoices,
+    default = Some(List(YoptWarningsChoices.atInlineFailed.name))) withPostSetHook (self => {
+    if (self.value subsetOf Set(YoptWarningsChoices.none, YoptWarningsChoices.atInlineFailedSummary)) YinlinerWarnings.value = false
+    else YinlinerWarnings.value = true
+  })
+
   private def removalIn212 = "This flag is scheduled for removal in 2.12. If you have a case where you need this flag then please report a bug."
 
   object YstatisticsPhases extends MultiChoiceEnumeration { val parser, typer, patmat, erasure, cleanup, jvm = Value }

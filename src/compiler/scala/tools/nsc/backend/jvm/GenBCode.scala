@@ -307,6 +307,10 @@ abstract class GenBCode extends BCodeSyncAndTry {
       arrivalPos = 0 // just in case
       scalaPrimitives.init()
       bTypes.initializeCoreBTypes()
+      bTypes.javaDefinedClasses.clear()
+      bTypes.javaDefinedClasses ++= currentRun.symSource collect {
+        case (sym, _) if sym.isJavaDefined => sym.javaBinaryName.toString
+      }
       Statistics.stopTimer(BackendStats.bcodeInitTimer, initStart)
 
       // initBytecodeWriter invokes fullName, thus we have to run it before the typer-dependent thread is activated.

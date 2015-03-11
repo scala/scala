@@ -7,7 +7,8 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.tools.nsc.Global
-import scala.tools.nsc.backend.jvm.BTypes.{MethodInlineInfo, InlineInfo, InternalName}
+import scala.tools.nsc.backend.jvm.BTypes.{InternalName, MethodInlineInfo, InlineInfo}
+import BackendReporting.ClassSymbolInfoFailureSI9111
 
 /**
  * This trait contains code shared between GenBCode and GenASM that depends on types defined in
@@ -336,7 +337,7 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
 
     val isEffectivelyFinal = classSym.isEffectivelyFinal
 
-    var warning = Option.empty[String]
+    var warning = Option.empty[ClassSymbolInfoFailureSI9111]
 
     // Primitive methods cannot be inlined, so there's no point in building a MethodInlineInfo. Also, some
     // primitive methods (e.g., `isInstanceOf`) have non-erased types, which confuses [[typeToBType]].
@@ -345,7 +346,7 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
         if (completeSilentlyAndCheckErroneous(methodSym)) {
           // Happens due to SI-9111. Just don't provide any MethodInlineInfo for that method, we don't need fail the compiler.
           if (!classSym.isJavaDefined) devWarning("SI-9111 should only be possible for Java classes")
-          warning = Some(s"Failed to get the type of a method of class symbol ${classSym.fullName} due to SI-9111")
+          warning = Some(ClassSymbolInfoFailureSI9111(classSym.fullName))
           None
         } else {
           val name      = methodSym.javaSimpleName.toString // same as in genDefDef

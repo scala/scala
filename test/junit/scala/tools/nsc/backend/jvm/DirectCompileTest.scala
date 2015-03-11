@@ -89,6 +89,10 @@ class DirectCompileTest extends ClearAfterClass {
       case Invoke(_, "B", "f", _, _) => true
       case _ => false
     }, ins)
+  }
 
+  @Test
+  def compileErroneous(): Unit = {
+    compileClasses(compiler)("class C { def f: String = 1 }", allowMessage = _.msg contains "type mismatch")
   }
 }

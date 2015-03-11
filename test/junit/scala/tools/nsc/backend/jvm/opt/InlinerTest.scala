@@ -15,6 +15,7 @@ import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils.AsmAnalyzer
 import scala.tools.nsc.io._
+import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.testing.AssertUtil._
 
 import CodeGenTools._
@@ -22,11 +23,13 @@ import scala.tools.partest.ASMConverters
 import ASMConverters._
 import AsmUtils._
 
+import BackendReporting._
+
 import scala.collection.convert.decorateAsScala._
 import scala.tools.testing.ClearAfterClass
 
 object InlinerTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:classpath")
+  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:classpath -Yopt-warnings")
 
   // allows inspecting the caches after a compilation run
   def notPerRun: List[Clearable] = List(compiler.genBCode.bTypes.classBTypeFromInternalName, compiler.genBCode.bTypes.byteCodeRepository.classes, compiler.genBCode.bTypes.callGraph.callsites)
@@ -61,9 +64,9 @@ class InlinerTest extends ClearAfterClass {
   val compiler = InlinerTest.compiler
   import compiler.genBCode.bTypes._
 
-  def compile(scalaCode: String, javaCode: List[(String, String)] = Nil): List[ClassNode] = {
+  def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
     InlinerTest.notPerRun.foreach(_.clear())
-    compileClasses(compiler)(scalaCode, javaCode)
+    compileClasses(compiler)(scalaCode, javaCode, allowMessage)
   }
 
   def checkCallsite(callsite: callGraph.Callsite, callee: MethodNode) = {
@@ -76,10 +79,10 @@ class InlinerTest extends ClearAfterClass {
   }
 
   // inline first invocation of f into g in class C
-  def inlineTest(code: String, mod: ClassNode => Unit = _ => ()): (MethodNode, Option[String]) = {
+  def inlineTest(code: String, mod: ClassNode => Unit = _ => ()): (MethodNode, Option[CannotInlineWarning]) = {
     val List(cls) = compile(code)
     mod(cls)
-    val clsBType = classBTypeFromParsedClassfile(cls.name).get
+    val clsBType = classBTypeFromParsedClassfile(cls.name)
 
     val List(f, g) = cls.methods.asScala.filter(m => Set("f", "g")(m.name)).toList.sortBy(_.name)
     val fCall = g.instructions.iterator.asScala.collect({ case i: MethodInsnNode if i.name == "f" => i }).next()
@@ -166,7 +169,7 @@ class InlinerTest extends ClearAfterClass {
       val f = cls.methods.asScala.find(_.name == "f").get
       f.access |= ACC_SYNCHRONIZED
     })
-    assert(can.get contains "synchronized", can)
+    assert(can.get.isInstanceOf[SynchronizedMethod], can)
   }
 
   @Test
@@ -192,7 +195,7 @@ class InlinerTest extends ClearAfterClass {
         |}
       """.stripMargin
     val (_, r) = inlineTest(code)
-    assert(r.get contains "operand stack at the callsite", r)
+    assert(r.get.isInstanceOf[MethodWithHandlerCalledOnNonEmptyStack], r)
   }
 
   @Test
@@ -213,8 +216,8 @@ class InlinerTest extends ClearAfterClass {
 
     val List(c, d) = compile(code)
 
-    val cTp = classBTypeFromParsedClassfile(c.name).get
-    val dTp = classBTypeFromParsedClassfile(d.name).get
+    val cTp = classBTypeFromParsedClassfile(c.name)
+    val dTp = classBTypeFromParsedClassfile(d.name)
 
     val g = c.methods.asScala.find(_.name == "g").get
     val h = d.methods.asScala.find(_.name == "h").get
@@ -234,7 +237,7 @@ class InlinerTest extends ClearAfterClass {
       receiverKnownNotNull = true,
       keepLineNumbers = true)
 
-    assert(r.get contains "would cause an IllegalAccessError", r)
+    assert(r.get.isInstanceOf[IllegalAccessInstruction], r)
   }
 
   @Test
@@ -373,7 +376,7 @@ class InlinerTest extends ClearAfterClass {
     val List(c) = compile(code)
     val f = c.methods.asScala.find(_.name == "f").get
     val callsiteIns = f.instructions.iterator().asScala.collect({ case c: MethodInsnNode => c }).next()
-    val clsBType = classBTypeFromParsedClassfile(c.name).get
+    val clsBType = classBTypeFromParsedClassfile(c.name)
     val analyzer = new AsmAnalyzer(f, clsBType.internalName)
 
     val integerClassBType = classBTypeFromInternalName("java/lang/Integer")
@@ -457,8 +460,15 @@ class InlinerTest extends ClearAfterClass {
         |}
       """.stripMargin
 
+    val warn =
+      """B::flop()I is annotated @inline but could not be inlined:
+        |Failed to check if B::flop()I can be safely inlined to B without causing an IllegalAccessError. Checking instruction INVOKESTATIC A.bar ()I failed:
+        |The method bar()I could not be found in the class A or any of its parents.
+        |Note that the following parent classes are defined in Java sources (mixed compilation), no bytecode is available: A""".stripMargin
 
-    val List(b) = compile(scalaCode, List((javaCode, "A.java")))
+    var c = 0
+    val List(b) = compile(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; i.msg contains warn})
+    assert(c == 1, c)
     val ins = getSingleMethod(b, "g").instructions
     val invokeFlop = Invoke(INVOKEVIRTUAL, "B", "flop", "()I", false)
     assert(ins contains invokeFlop, ins.stringLines)
@@ -526,7 +536,12 @@ class InlinerTest extends ClearAfterClass {
         |  def t2 = this.f
         |}
       """.stripMargin
-    val List(c, t, tClass) = compile(code)
+    val warns = Set(
+      "C::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden",
+      "T::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden")
+    var count = 0
+    val List(c, t, tClass) = compile(code, allowMessage = i => {count += 1; warns.exists(i.msg contains _)})
+    assert(count == 2, count)
     assertInvoke(getSingleMethod(c, "t1"), "T", "f")
     assertInvoke(getSingleMethod(c, "t2"), "C", "f")
   }
@@ -561,7 +576,10 @@ class InlinerTest extends ClearAfterClass {
         |  def t3(t: T) = t.f // no inlining here
         |}
       """.stripMargin
-    val List(c, oMirror, oModule, t, tClass) = compile(code)
+    val warn = "T::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden"
+    var count = 0
+    val List(c, oMirror, oModule, t, tClass) = compile(code, allowMessage = i => {count += 1; i.msg contains warn})
+    assert(count == 1, count)
 
     assertNoInvoke(getSingleMethod(oModule, "f"))
 
@@ -663,7 +681,11 @@ class InlinerTest extends ClearAfterClass {
         |  def m5b(t: T2b) = t.f  // re-written to T2b$class.f, inlined, ICONST_1
         |}
       """.stripMargin
-    val List(ca, cb, t1, t1C, t2a, t2aC, t2b, t2bC) = compile(code)
+
+    val warning = "T1::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden"
+    var count = 0
+    val List(ca, cb, t1, t1C, t2a, t2aC, t2b, t2bC) = compile(code, allowMessage = i => {count += 1; i.msg contains warning})
+    assert(count == 4, count) // see comments, f is not inlined 4 times
 
     val t2aCfDesc = t2aC.methods.asScala.find(_.name == "f").get.desc
     assert(t2aCfDesc == "(LT1;)I", t2aCfDesc) // self-type of T2a is T1
@@ -736,5 +758,37 @@ class InlinerTest extends ClearAfterClass {
     val t2 = getSingleMethod(tc, "t2")
     val cast = TypeOp(CHECKCAST, "C")
     Set(t1, t2).foreach(m => assert(m.instructions.contains(cast), m.instructions))
+  }
+
+  @Test
+  def abstractMethodWarning(): Unit = {
+    val code =
+      """abstract class C {
+        |  @inline def foo: Int
+        |}
+        |class T {
+        |  def t1(c: C) = c.foo
+        |}
+      """.stripMargin
+    val warn = "C::foo()I is annotated @inline but cannot be inlined: the method is not final and may be overridden"
+    var c = 0
+    compile(code, allowMessage = i => {c += 1; i.msg contains warn})
+    assert(c == 1, c)
+  }
+
+  @Test
+  def abstractFinalMethodError(): Unit = {
+    val code =
+      """abstract class C {
+        |  @inline final def foo: Int
+        |}
+        |trait T {
+        |  @inline final def bar: Int
+        |}
+      """.stripMargin
+    val err = "abstract member may not have final modifier"
+    var i = 0
+    compile(code, allowMessage = info => {i += 1; info.msg contains err})
+    assert(i == 2, i)
   }
 }

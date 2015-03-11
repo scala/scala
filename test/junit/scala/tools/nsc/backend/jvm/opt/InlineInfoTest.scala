@@ -14,6 +14,8 @@ import ASMConverters._
 import AsmUtils._
 import scala.tools.testing.ClearAfterClass
 
+import BackendReporting._
+
 import scala.collection.convert.decorateAsScala._
 
 object InlineInfoTest extends ClearAfterClass.Clearable {
@@ -53,7 +55,7 @@ class InlineInfoTest {
         |class C extends T with U
       """.stripMargin
     val classes = compile(code)
-    val fromSyms = classes.map(c => compiler.genBCode.bTypes.classBTypeFromInternalName(c.name).info.inlineInfo)
+    val fromSyms = classes.map(c => compiler.genBCode.bTypes.classBTypeFromInternalName(c.name).info.get.inlineInfo)
 
     val fromAttrs = classes.map(c => {
       assert(c.attrs.asScala.exists(_.isInstanceOf[InlineInfoAttribute]), c.attrs)

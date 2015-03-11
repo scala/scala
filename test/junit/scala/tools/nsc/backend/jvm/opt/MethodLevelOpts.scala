@@ -31,7 +31,8 @@ class MethodLevelOpts extends ClearAfterClass {
   @Test
   def eliminateEmptyTry(): Unit = {
     val code = "def f = { try {} catch { case _: Throwable => 0; () }; 1 }"
-    assertSameCode(singleMethodInstructions(methodOptCompiler)(code), wrapInDefault(Op(ICONST_1), Op(IRETURN)))
+    val warn = "a pure expression does nothing in statement position"
+    assertSameCode(singleMethodInstructions(methodOptCompiler)(code, allowMessage = _.msg contains warn), wrapInDefault(Op(ICONST_1), Op(IRETURN)))
   }
 
   @Test

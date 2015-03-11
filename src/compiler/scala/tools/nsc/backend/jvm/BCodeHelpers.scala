@@ -11,6 +11,7 @@ import scala.tools.asm
 import scala.collection.mutable
 import scala.tools.nsc.io.AbstractFile
 import GenBCode._
+import BackendReporting._
 
 /*
  *  Traits encapsulating functionality to convert Scala AST Trees into ASM ClassNodes.
@@ -67,7 +68,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     override def getCommonSuperClass(inameA: String, inameB: String): String = {
       val a = classBTypeFromInternalName(inameA)
       val b = classBTypeFromInternalName(inameB)
-      val lub = a.jvmWiseLUB(b)
+      val lub = a.jvmWiseLUB(b).get
       val lubName = lub.internalName
       assert(lubName != "scala/Any")
       lubName // ASM caches the answer during the lifetime of a ClassWriter. We outlive that. Not sure whether caching on our side would improve things.
@@ -205,12 +206,12 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
    * can-multi-thread
    */
   final def addInnerClassesASM(jclass: asm.ClassVisitor, refedInnerClasses: List[ClassBType]) {
-    val allNestedClasses = refedInnerClasses.flatMap(_.enclosingNestedClassesChain).distinct
+    val allNestedClasses = refedInnerClasses.flatMap(_.enclosingNestedClassesChain.get).distinct
 
     // sorting ensures nested classes are listed after their enclosing class thus satisfying the Eclipse Java compiler
     for (nestedClass <- allNestedClasses.sortBy(_.internalName.toString)) {
       // Extract the innerClassEntry - we know it exists, enclosingNestedClassesChain only returns nested classes.
-      val Some(e) = nestedClass.innerClassAttributeEntry
+      val Some(e) = nestedClass.innerClassAttributeEntry.get
       jclass.visitInnerClass(e.name, e.outerName, e.innerName, e.flags)
     }
   }
@@ -341,7 +342,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
      */
     final def getClassBTypeAndRegisterInnerClass(sym: Symbol): ClassBType = {
       val r = classBTypeFromSymbol(sym)
-      if (r.isNestedClass) innerClassBufferASM += r
+      if (r.isNestedClass.get) innerClassBufferASM += r
       r
     }
 
@@ -351,7 +352,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
      * TODO: clean up the way we track referenced inner classes.
      */
     final def toTypeKind(t: Type): BType = typeToBType(t) match {
-      case c: ClassBType if c.isNestedClass =>
+      case c: ClassBType if c.isNestedClass.get =>
         innerClassBufferASM += c
         c
       case r => r
@@ -364,7 +365,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     final def asmMethodType(msym: Symbol): MethodBType = {
       val r = methodBTypeFromSymbol(msym)
       (r.returnType :: r.argumentTypes) foreach {
-        case c: ClassBType if c.isNestedClass => innerClassBufferASM += c
+        case c: ClassBType if c.isNestedClass.get => innerClassBufferASM += c
         case _ =>
       }
       r
@@ -714,7 +715,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       val mirrorClass = new asm.tree.ClassNode
       mirrorClass.visit(
         classfileVersion,
-        bType.info.flags,
+        bType.info.get.flags,
         bType.internalName,
         null /* no java-generic-signature */,
         ObjectReference.internalName,
@@ -730,7 +731,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
 
       addForwarders(isRemote(moduleClass), mirrorClass, bType.internalName, moduleClass)
 
-      innerClassBufferASM ++= bType.info.nestedClasses
+      innerClassBufferASM ++= bType.info.get.nestedClasses
       addInnerClassesASM(mirrorClass, innerClassBufferASM.toList)
 
       mirrorClass.visitEnd()
@@ -846,7 +847,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       constructor.visitMaxs(0, 0) // just to follow protocol, dummy arguments
       constructor.visitEnd()
 
-      innerClassBufferASM ++= classBTypeFromSymbol(cls).info.nestedClasses
+      innerClassBufferASM ++= classBTypeFromSymbol(cls).info.get.nestedClasses
       addInnerClassesASM(beanInfoClass, innerClassBufferASM.toList)
 
       beanInfoClass.visitEnd()

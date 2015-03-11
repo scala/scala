@@ -9,6 +9,7 @@ package opt
 
 import scala.tools.asm._
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
+import scala.tools.nsc.backend.jvm.BackendReporting.UnknownScalaInlineInfoVersion
 
 /**
  * This attribute stores the InlineInfo for a ClassBType as an independent classfile attribute.
@@ -119,7 +120,7 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
 
       InlineInfoAttribute(InlineInfo(self, isFinal, infos, None))
     } else {
-      val msg = s"Cannot read ScalaInlineInfo version $version in classfile ${cr.getClassName}. Use a more recent compiler."
+      val msg = UnknownScalaInlineInfoVersion(cr.getClassName, version)
       InlineInfoAttribute(BTypes.EmptyInlineInfo.copy(warning = Some(msg)))
     }
   }

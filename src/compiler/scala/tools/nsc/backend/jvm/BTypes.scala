@@ -7,12 +7,15 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.annotation.switch
+import scala.collection.concurrent.TrieMap
+import scala.reflect.internal.util.Position
 import scala.tools.asm
 import asm.Opcodes
-import scala.tools.asm.tree.{InnerClassNode, ClassNode}
+import scala.tools.asm.tree.{MethodInsnNode, InnerClassNode, ClassNode}
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
+import scala.tools.nsc.backend.jvm.BackendReporting._
+import BackendReporting.RightBiasedEither
 import scala.tools.nsc.backend.jvm.opt._
-import opt.OptimizerReporting._
 import scala.collection.convert.decorateAsScala._
 
 /**
@@ -41,6 +44,8 @@ abstract class BTypes {
 
   val callGraph: CallGraph[this.type]
 
+  val backendReporting: BackendReporting
+
   // Allows to define per-run caches here and in the CallGraph component, which don't have a global
   def recordPerRunCache[T <: collection.generic.Clearable](cache: T): T
 
@@ -49,6 +54,9 @@ abstract class BTypes {
 
   // When the inliner is not enabled, there's no point in adding InlineInfos to all ClassBTypes
   def inlinerEnabled: Boolean
+
+  // Settings that define what kind of optimizer warnings are emitted.
+  def warnSettings: WarnSettings
 
   /**
    * A map from internal names to ClassBTypes. Every ClassBType is added to this map on its
@@ -61,7 +69,19 @@ abstract class BTypes {
    * Concurrent because stack map frames are computed when in the class writer, which might run
    * on multiple classes concurrently.
    */
-  val classBTypeFromInternalName: collection.concurrent.Map[InternalName, ClassBType] = recordPerRunCache(collection.concurrent.TrieMap.empty[InternalName, ClassBType])
+  val classBTypeFromInternalName: collection.concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
+
+  /**
+   * Store the position of every MethodInsnNode during code generation. This allows each callsite
+   * in the call graph to remember its source position, which is required for inliner warnings.
+   */
+  val callsitePositions: collection.concurrent.Map[MethodInsnNode, Position] = recordPerRunCache(TrieMap.empty)
+
+  /**
+   * Contains the internal names of all classes that are defined in Java source files of the current
+   * compilation run (mixed compilation). Used for more detailed error reporting.
+   */
+  val javaDefinedClasses: collection.mutable.Set[InternalName] = recordPerRunCache(collection.mutable.Set.empty)
 
   /**
    * Obtain the BType for a type descriptor or internal name. For class descriptors, the ClassBType
@@ -73,29 +93,33 @@ abstract class BTypes {
    *
    * This method supports both descriptors and internal names.
    */
-  def bTypeForDescriptorOrInternalNameFromClassfile(desc: String): Option[BType] = (desc(0): @switch) match {
-    case 'V'                     => Some(UNIT)
-    case 'Z'                     => Some(BOOL)
-    case 'C'                     => Some(CHAR)
-    case 'B'                     => Some(BYTE)
-    case 'S'                     => Some(SHORT)
-    case 'I'                     => Some(INT)
-    case 'F'                     => Some(FLOAT)
-    case 'J'                     => Some(LONG)
-    case 'D'                     => Some(DOUBLE)
-    case '['                     => bTypeForDescriptorOrInternalNameFromClassfile(desc.substring(1)) map ArrayBType
+  def bTypeForDescriptorOrInternalNameFromClassfile(desc: String): BType = (desc(0): @switch) match {
+    case 'V'                     => UNIT
+    case 'Z'                     => BOOL
+    case 'C'                     => CHAR
+    case 'B'                     => BYTE
+    case 'S'                     => SHORT
+    case 'I'                     => INT
+    case 'F'                     => FLOAT
+    case 'J'                     => LONG
+    case 'D'                     => DOUBLE
+    case '['                     => ArrayBType(bTypeForDescriptorOrInternalNameFromClassfile(desc.substring(1)))
     case 'L' if desc.last == ';' => classBTypeFromParsedClassfile(desc.substring(1, desc.length - 1))
     case _                       => classBTypeFromParsedClassfile(desc)
   }
 
   /**
-   * Parse the classfile for `internalName` and construct the [[ClassBType]]. Returns `None` if the
-   * classfile cannot be found in the `byteCodeRepository`.
+   * Parse the classfile for `internalName` and construct the [[ClassBType]]. If the classfile cannot
+   * be found in the `byteCodeRepository`, the `info` of the resulting ClassBType is undefined.
    */
-  def classBTypeFromParsedClassfile(internalName: InternalName): Option[ClassBType] = {
-    classBTypeFromInternalName.get(internalName) orElse {
-      byteCodeRepository.classNode(internalName) map classBTypeFromClassNode
-    }
+  def classBTypeFromParsedClassfile(internalName: InternalName): ClassBType = {
+    classBTypeFromInternalName.getOrElse(internalName, {
+      val res = ClassBType(internalName)
+      byteCodeRepository.classNode(internalName) match {
+        case Left(msg) => res.info = Left(NoClassBTypeInfoMissingBytecode(msg)); res
+        case Right(c)  => setClassInfoFromParsedClassfile(c, res)
+      }
+    })
   }
 
   /**
@@ -108,26 +132,15 @@ abstract class BTypes {
   }
 
   private def setClassInfoFromParsedClassfile(classNode: ClassNode, classBType: ClassBType): ClassBType = {
-    def ensureClassBTypeFromParsedClassfile(internalName: InternalName): ClassBType = {
-      classBTypeFromParsedClassfile(internalName) getOrElse {
-        // When building a ClassBType from a parsed classfile, we need the ClassBTypes for all
-        // referenced types.
-        // TODO: make this more robust with respect to incomplete classpaths.
-        // Maybe not those parts of the ClassBType that require the missing class are not actually
-        // queried during the backend, so every part of a ClassBType that requires parsing a
-        // (potentially missing) classfile should be computed lazily.
-        assertionError(s"Could not find bytecode for class $internalName")
-      }
-    }
     val superClass = classNode.superName match {
       case null =>
         assert(classNode.name == ObjectReference.internalName, s"class with missing super type: ${classNode.name}")
         None
       case superName =>
-        Some(ensureClassBTypeFromParsedClassfile(superName))
+        Some(classBTypeFromParsedClassfile(superName))
     }
 
-    val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(ensureClassBTypeFromParsedClassfile)(collection.breakOut)
+    val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(classBTypeFromParsedClassfile)(collection.breakOut)
 
     val flags = classNode.access
 
@@ -145,15 +158,13 @@ abstract class BTypes {
     def nestedInCurrentClass(innerClassNode: InnerClassNode): Boolean = {
       (innerClassNode.outerName != null && innerClassNode.outerName == classNode.name) ||
       (innerClassNode.outerName == null && {
-        val classNodeForInnerClass = byteCodeRepository.classNode(innerClassNode.name) getOrElse {
-          assertionError(s"Could not find bytecode for class ${innerClassNode.name}")
-        }
+        val classNodeForInnerClass = byteCodeRepository.classNode(innerClassNode.name).get // TODO: don't get here, but set the info to Left at the end
         classNodeForInnerClass.outerClass == classNode.name
       })
     }
 
     val nestedClasses: List[ClassBType] = classNode.innerClasses.asScala.collect({
-      case i if nestedInCurrentClass(i) => ensureClassBTypeFromParsedClassfile(i.name)
+      case i if nestedInCurrentClass(i) => classBTypeFromParsedClassfile(i.name)
     })(collection.breakOut)
 
     // if classNode is a nested class, it has an innerClass attribute for itself. in this
@@ -163,11 +174,11 @@ abstract class BTypes {
         val enclosingClass =
           if (innerEntry.outerName != null) {
             // if classNode is a member class, the outerName is non-null
-            ensureClassBTypeFromParsedClassfile(innerEntry.outerName)
+            classBTypeFromParsedClassfile(innerEntry.outerName)
           } else {
             // for anonymous or local classes, the outerName is null, but the enclosing class is
             // stored in the EnclosingMethod attribute (which ASM encodes in classNode.outerClass).
-            ensureClassBTypeFromParsedClassfile(classNode.outerClass)
+            classBTypeFromParsedClassfile(classNode.outerClass)
           }
         val staticFlag = (innerEntry.access & Opcodes.ACC_STATIC) != 0
         NestedInfo(enclosingClass, Option(innerEntry.outerName), Option(innerEntry.innerName), staticFlag)
@@ -175,7 +186,7 @@ abstract class BTypes {
 
     val inlineInfo = inlineInfoFromClassfile(classNode)
 
-    classBType.info = ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo, inlineInfo)
+    classBType.info = Right(ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo, inlineInfo))
     classBType
   }
 
@@ -186,12 +197,16 @@ abstract class BTypes {
    */
   def inlineInfoFromClassfile(classNode: ClassNode): InlineInfo = {
     def fromClassfileAttribute: Option[InlineInfo] = {
-      // TODO: if this is a scala class and there's no attribute, emit an inliner warning if the InlineInfo is used
       if (classNode.attrs == null) None
       else classNode.attrs.asScala.collect({ case a: InlineInfoAttribute => a}).headOption.map(_.inlineInfo)
     }
 
     def fromClassfileWithoutAttribute = {
+      val warning = {
+        val isScala = classNode.attrs != null && classNode.attrs.asScala.exists(a => a.`type` == BTypes.ScalaAttributeName || a.`type` == BTypes.ScalaSigAttributeName)
+        if (isScala) Some(NoInlineInfoAttribute(classNode.name))
+        else None
+      }
       // when building MethodInlineInfos for the members of a ClassSymbol, we exclude those methods
       // in scalaPrimitives. This is necessary because some of them have non-erased types, which would
       // require special handling. Excluding is OK because they are never inlined.
@@ -209,7 +224,7 @@ abstract class BTypes {
         traitImplClassSelfType = None,
         isEffectivelyFinal = BytecodeUtils.isFinalClass(classNode),
         methodInfos = methodInfos,
-        warning = None)
+        warning)
     }
 
     // The InlineInfo is built from the classfile (not from the symbol) for all classes that are NOT
@@ -283,7 +298,7 @@ abstract class BTypes {
      * promotions (e.g. BYTE to INT). Its operation can be visualized more easily in terms of the
      * Java bytecode type hierarchy.
      */
-    final def conformsTo(other: BType): Boolean = {
+    final def conformsTo(other: BType): Either[NoClassBTypeInfo, Boolean] = tryEither(Right({
       assert(isRef || isPrimitive, s"conformsTo cannot handle $this")
       assert(other.isRef || other.isPrimitive, s"conformsTo cannot handle $other")
 
@@ -291,7 +306,7 @@ abstract class BTypes {
         case ArrayBType(component) =>
           if (other == ObjectReference || other == jlCloneableReference || other == jioSerializableReference) true
           else other match {
-            case ArrayBType(otherComponoent) => component.conformsTo(otherComponoent)
+            case ArrayBType(otherComponoent) => component.conformsTo(otherComponoent).orThrow
             case _ => false
           }
 
@@ -300,7 +315,7 @@ abstract class BTypes {
             if (other.isBoxed) this == other
             else if (other == ObjectReference) true
             else other match {
-              case otherClassType: ClassBType => classType.isSubtypeOf(otherClassType) // e.g., java/lang/Double conforms to java/lang/Number
+              case otherClassType: ClassBType => classType.isSubtypeOf(otherClassType).orThrow // e.g., java/lang/Double conforms to java/lang/Number
               case _ => false
             }
           } else if (isNullType) {
@@ -310,7 +325,7 @@ abstract class BTypes {
           } else if (isNothingType) {
             true
           } else other match {
-            case otherClassType: ClassBType => classType.isSubtypeOf(otherClassType)
+            case otherClassType: ClassBType => classType.isSubtypeOf(otherClassType).orThrow
             // case ArrayBType(_) => this.isNullType   // documentation only, because `if (isNullType)` above covers this case
             case _ =>
               // isNothingType ||                      // documentation only, because `if (isNothingType)` above covers this case
@@ -325,7 +340,7 @@ abstract class BTypes {
           assert(isPrimitive && other.isPrimitive, s"Expected primitive types $this - $other")
           this == other
       }
-    }
+    }))
 
     /**
      * Compute the upper bound of two types.
@@ -765,9 +780,22 @@ abstract class BTypes {
    * A ClassBType represents a class or interface type. The necessary information to build a
    * ClassBType is extracted from compiler symbols and types, see BTypesFromSymbols.
    *
-   * Currently non-final due to SI-9111
+   * The `info` field contains either the class information on an error message why the info could
+   * not be computed. There are two reasons for an erroneous info:
+   *   1. The ClassBType was built from a class symbol that stems from a java source file, and the
+   *      symbol's type could not be completed successfully (SI-9111)
+   *   2. The ClassBType should be built from a classfile, but the class could not be found on the
+   *      compilation classpath.
+   *
+   * Note that all ClassBTypes required in a non-optimzied run are built during code generation from
+   * the class symbols referenced by the ASTs, so they have a valid info. Therefore the backend
+   * often invokes `info.get` (which asserts the info to exist) when reading data from the ClassBType.
+   *
+   * The inliner on the other hand uses ClassBTypes that are built from classfiles, which may have
+   * a missing info. In order not to crash the compiler unnecessarily, the inliner does not force
+   * infos using `get`, but it reports inliner warnings for missing infos that prevent inlining.
    */
-  /*final*/ case class ClassBType(internalName: InternalName) extends RefBType {
+  final case class ClassBType(internalName: InternalName) extends RefBType {
     /**
      * Write-once variable allows initializing a cyclic graph of infos. This is required for
      * nested classes. Example: for the definition `class A { class B }` we have
@@ -775,14 +803,14 @@ abstract class BTypes {
      *   B.info.nestedInfo.outerClass == A
      *   A.info.nestedClasses contains B
      */
-    private var _info: ClassInfo = null
+    private var _info: Either[NoClassBTypeInfo, ClassInfo] = null
 
-    def info: ClassInfo = {
+    def info: Either[NoClassBTypeInfo, ClassInfo] = {
       assert(_info != null, s"ClassBType.info not yet assigned: $this")
       _info
     }
 
-    def info_=(i: ClassInfo): Unit = {
+    def info_=(i: Either[NoClassBTypeInfo, ClassInfo]): Unit = {
       assert(_info == null, s"Cannot set ClassBType.info multiple times: $this")
       _info = i
       checkInfoConsistency()
@@ -791,27 +819,29 @@ abstract class BTypes {
     classBTypeFromInternalName(internalName) = this
 
     private def checkInfoConsistency(): Unit = {
+      if (info.isLeft) return
+
       // we assert some properties. however, some of the linked ClassBType (members, superClass,
       // interfaces) may not yet have an `_info` (initialization of cyclic structures). so we do a
-      // best-effort verification.
-      def ifInit(c: ClassBType)(p: ClassBType => Boolean): Boolean = c._info == null || p(c)
+      // best-effort verification. also we don't report an error if the info is a Left.
+      def ifInit(c: ClassBType)(p: ClassBType => Boolean): Boolean = c._info == null || c.info.isLeft || p(c)
 
       def isJLO(t: ClassBType) = t.internalName == ObjectReference.internalName
 
       assert(!ClassBType.isInternalPhantomType(internalName), s"Cannot create ClassBType for phantom type $this")
 
       assert(
-        if (info.superClass.isEmpty) { isJLO(this) || (isCompilingPrimitive && ClassBType.hasNoSuper(internalName)) }
-        else if (isInterface) isJLO(info.superClass.get)
-        else !isJLO(this) && ifInit(info.superClass.get)(!_.isInterface),
-        s"Invalid superClass in $this: ${info.superClass}"
+        if (info.get.superClass.isEmpty) { isJLO(this) || (isCompilingPrimitive && ClassBType.hasNoSuper(internalName)) }
+        else if (isInterface.get) isJLO(info.get.superClass.get)
+        else !isJLO(this) && ifInit(info.get.superClass.get)(!_.isInterface.get),
+        s"Invalid superClass in $this: ${info.get.superClass}"
       )
       assert(
-        info.interfaces.forall(c => ifInit(c)(_.isInterface)),
-        s"Invalid interfaces in $this: ${info.interfaces}"
+        info.get.interfaces.forall(c => ifInit(c)(_.isInterface.get)),
+        s"Invalid interfaces in $this: ${info.get.interfaces}"
       )
 
-      assert(info.nestedClasses.forall(c => ifInit(c)(_.isNestedClass)), info.nestedClasses)
+      assert(info.get.nestedClasses.forall(c => ifInit(c)(_.isNestedClass.get)), info.get.nestedClasses)
     }
 
     /**
@@ -819,12 +849,12 @@ abstract class BTypes {
      */
     def simpleName: String = internalName.split("/").last
 
-    def isInterface = (info.flags & asm.Opcodes.ACC_INTERFACE) != 0
+    def isInterface: Either[NoClassBTypeInfo, Boolean] = info.map(i => (i.flags & asm.Opcodes.ACC_INTERFACE) != 0)
 
-    def superClassesTransitive: List[ClassBType] = info.superClass match {
-      case None => Nil
-      case Some(sc) => sc :: sc.superClassesTransitive
-    }
+    def superClassesTransitive: Either[NoClassBTypeInfo, List[ClassBType]] = info.flatMap(i => i.superClass match {
+      case None => Right(Nil)
+      case Some(sc) =>  sc.superClassesTransitive.map(sc :: _)
+    })
 
     /**
      * The prefix of the internal name until the last '/', or the empty string.
@@ -837,15 +867,19 @@ abstract class BTypes {
       }
     }
 
-    def isPublic = (info.flags & asm.Opcodes.ACC_PUBLIC) != 0
+    def isPublic: Either[NoClassBTypeInfo, Boolean] = info.map(i => (i.flags & asm.Opcodes.ACC_PUBLIC) != 0)
 
-    def isNestedClass = info.nestedInfo.isDefined
+    def isNestedClass: Either[NoClassBTypeInfo, Boolean] = info.map(_.nestedInfo.isDefined)
 
-    def enclosingNestedClassesChain: List[ClassBType] =
-      if (isNestedClass) this :: info.nestedInfo.get.enclosingClass.enclosingNestedClassesChain
-      else Nil
+    def enclosingNestedClassesChain: Either[NoClassBTypeInfo, List[ClassBType]] = {
+      isNestedClass.flatMap(isNested => {
+        // if isNested is true, we know that info.get is defined, and nestedInfo.get is also defined.
+        if (isNested) info.get.nestedInfo.get.enclosingClass.enclosingNestedClassesChain.map(this :: _)
+        else Right(Nil)
+      })
+    }
 
-    def innerClassAttributeEntry: Option[InnerClassEntry] = info.nestedInfo map {
+    def innerClassAttributeEntry: Either[NoClassBTypeInfo, Option[InnerClassEntry]] = info.map(i => i.nestedInfo map {
       case NestedInfo(_, outerName, innerName, isStaticNestedClass) =>
         InnerClassEntry(
           internalName,
@@ -853,30 +887,39 @@ abstract class BTypes {
           innerName.orNull,
           GenBCode.mkFlags(
             // the static flag in the InnerClass table has a special meaning, see InnerClass comment
-            info.flags & ~Opcodes.ACC_STATIC,
+            i.flags & ~Opcodes.ACC_STATIC,
             if (isStaticNestedClass) Opcodes.ACC_STATIC else 0
           ) & ClassBType.INNER_CLASSES_FLAGS
         )
-    }
+    })
 
-    def inlineInfoAttribute: InlineInfoAttribute = InlineInfoAttribute(info.inlineInfo)
+    def inlineInfoAttribute: Either[NoClassBTypeInfo, InlineInfoAttribute] = info.map(i => {
+      // InlineInfos are serialized for classes being compiled. For those the info was built by
+      // buildInlineInfoFromClassSymbol, which only adds a warning under SI-9111, which in turn
+      // only happens for class symbols of java source files.
+      // we could put this assertion into InlineInfoAttribute, but it is more safe to put it here
+      // where it affect only GenBCode, and not add any assertion to GenASM in 2.11.6.
+      assert(i.inlineInfo.warning.isEmpty, i.inlineInfo.warning)
+      InlineInfoAttribute(i.inlineInfo)
+    })
 
-    def isSubtypeOf(other: ClassBType): Boolean = {
-      if (this == other) return true
-
-      if (isInterface) {
-        if (other == ObjectReference) return true // interfaces conform to Object
-        if (!other.isInterface) return false // this is an interface, the other is some class other than object. interfaces cannot extend classes, so the result is false.
+    def isSubtypeOf(other: ClassBType): Either[NoClassBTypeInfo, Boolean] = try {
+      if (this == other) return Right(true)
+      if (isInterface.orThrow) {
+        if (other == ObjectReference) return Right(true) // interfaces conform to Object
+        if (!other.isInterface.orThrow) return Right(false)   // this is an interface, the other is some class other than object. interfaces cannot extend classes, so the result is false.
         // else: this and other are both interfaces. continue to (*)
       } else {
-        val sc = info.superClass
-        if (sc.isDefined && sc.get.isSubtypeOf(other)) return true // the superclass of this class conforms to other
-        if (!other.isInterface) return false // this and other are both classes, and the superclass of this does not conform
+        val sc = info.orThrow.superClass
+        if (sc.isDefined && sc.get.isSubtypeOf(other).orThrow) return Right(true) // the superclass of this class conforms to other
+        if (!other.isInterface.orThrow) return Right(false) // this and other are both classes, and the superclass of this does not conform
         // else: this is a class, the other is an interface. continue to (*)
       }
 
       // (*) check if some interface of this class conforms to other.
-      info.interfaces.exists(_.isSubtypeOf(other))
+      Right(info.orThrow.interfaces.exists(_.isSubtypeOf(other).orThrow))
+    } catch {
+      case Invalid(noInfo: NoClassBTypeInfo) => Left(noInfo)
     }
 
     /**
@@ -886,34 +929,36 @@ abstract class BTypes {
      *   http://comments.gmane.org/gmane.comp.java.vm.languages/2293
      *   https://issues.scala-lang.org/browse/SI-3872
      */
-    def jvmWiseLUB(other: ClassBType): ClassBType = {
+    def jvmWiseLUB(other: ClassBType): Either[NoClassBTypeInfo, ClassBType] = {
       def isNotNullOrNothing(c: ClassBType) = !c.isNullType && !c.isNothingType
       assert(isNotNullOrNothing(this) && isNotNullOrNothing(other), s"jvmWiseLub for null or nothing: $this - $other")
 
-      val res: ClassBType = (this.isInterface, other.isInterface) match {
-        case (true, true) =>
-          // exercised by test/files/run/t4761.scala
-          if      (other.isSubtypeOf(this)) this
-          else if (this.isSubtypeOf(other)) other
-          else ObjectReference
+      tryEither {
+        val res: ClassBType = (this.isInterface.orThrow, other.isInterface.orThrow) match {
+          case (true, true) =>
+            // exercised by test/files/run/t4761.scala
+            if (other.isSubtypeOf(this).orThrow) this
+            else if (this.isSubtypeOf(other).orThrow) other
+            else ObjectReference
 
-        case (true, false) =>
-          if (other.isSubtypeOf(this)) this else ObjectReference
+          case (true, false) =>
+            if (other.isSubtypeOf(this).orThrow) this else ObjectReference
 
-        case (false, true) =>
-          if (this.isSubtypeOf(other)) other else ObjectReference
+          case (false, true) =>
+            if (this.isSubtypeOf(other).orThrow) other else ObjectReference
 
-        case _ =>
-          // TODO @lry I don't really understand the reasoning here.
-          // Both this and other are classes. The code takes (transitively) all superclasses and
-          // finds the first common one.
-          // MOST LIKELY the answer can be found here, see the comments and links by Miguel:
-          //  - https://issues.scala-lang.org/browse/SI-3872
-          firstCommonSuffix(this :: this.superClassesTransitive, other :: other.superClassesTransitive)
+          case _ =>
+            // TODO @lry I don't really understand the reasoning here.
+            // Both this and other are classes. The code takes (transitively) all superclasses and
+            // finds the first common one.
+            // MOST LIKELY the answer can be found here, see the comments and links by Miguel:
+            //  - https://issues.scala-lang.org/browse/SI-3872
+            firstCommonSuffix(this :: this.superClassesTransitive.orThrow, other :: other.superClassesTransitive.orThrow)
+        }
+
+        assert(isNotNullOrNothing(res), s"jvmWiseLub computed: $res")
+        Right(res)
       }
-
-      assert(isNotNullOrNothing(res), s"jvmWiseLub computed: $res")
-      res
     }
 
     private def firstCommonSuffix(as: List[ClassBType], bs: List[ClassBType]): ClassBType = {
@@ -1080,11 +1125,15 @@ object BTypes {
    * @param methodInfos            The [[MethodInlineInfo]]s for the methods declared in this class.
    *                               The map is indexed by the string s"$name$descriptor" (to
    *                               disambiguate overloads).
+   *
+   * @param warning                Contains an warning message if an error occured when building this
+   *                               InlineInfo, for example if some classfile could not be found on
+   *                               the classpath. This warning can be reported later by the inliner.
    */
   final case class InlineInfo(traitImplClassSelfType: Option[InternalName],
                               isEffectivelyFinal: Boolean,
                               methodInfos: Map[String, MethodInlineInfo],
-                              warning: Option[String])
+                              warning: Option[ClassInlineInfoWarning])
 
   val EmptyInlineInfo = InlineInfo(None, false, Map.empty, None)
 
@@ -1102,4 +1151,8 @@ object BTypes {
                                     traitMethodWithStaticImplementation: Boolean,
                                     annotatedInline: Boolean,
                                     annotatedNoInline: Boolean)
+
+  // no static way (without symbol table instance) to get to nme.ScalaATTR / ScalaSignatureATTR
+  val ScalaAttributeName    = "Scala"
+  val ScalaSigAttributeName = "ScalaSig"
 }

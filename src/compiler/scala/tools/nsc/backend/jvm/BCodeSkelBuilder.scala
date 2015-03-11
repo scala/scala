@@ -4,20 +4,17 @@
  */
 
 
-package scala
-package tools.nsc
+package scala.tools.nsc
 package backend
 package jvm
 
 import scala.collection.{ mutable, immutable }
 import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository
 import scala.tools.nsc.symtab._
-import scala.annotation.switch
 
 import scala.tools.asm
-import scala.tools.asm.util.{TraceMethodVisitor, ASMifier}
-import java.io.PrintWriter
 import GenBCode._
+import BackendReporting._
 
 /*
  *
@@ -122,11 +119,11 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       addClassFields()
 
-      innerClassBufferASM ++= classBType.info.nestedClasses
+      innerClassBufferASM ++= classBType.info.get.nestedClasses
       gen(cd.impl)
       addInnerClassesASM(cnode, innerClassBufferASM.toList)
 
-      cnode.visitAttribute(classBType.inlineInfoAttribute)
+      cnode.visitAttribute(classBType.inlineInfoAttribute.get)
 
       if (AsmUtils.traceClassEnabled && cnode.name.contains(AsmUtils.traceClassPattern))
         AsmUtils.traceClass(cnode)
@@ -146,9 +143,9 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       val ps = claszSymbol.info.parents
       val superClass: String = if (ps.isEmpty) ObjectReference.internalName else internalName(ps.head.typeSymbol)
-      val interfaceNames = classBTypeFromSymbol(claszSymbol).info.interfaces map {
+      val interfaceNames = classBTypeFromSymbol(claszSymbol).info.get.interfaces map {
         case classBType =>
-          if (classBType.isNestedClass) { innerClassBufferASM += classBType }
+          if (classBType.isNestedClass.get) { innerClassBufferASM += classBType }
           classBType.internalName
       }
 

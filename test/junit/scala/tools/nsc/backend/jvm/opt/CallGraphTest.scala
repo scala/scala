@@ -11,27 +11,29 @@ import org.junit.Assert._
 
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
+import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.testing.AssertUtil._
 
 import CodeGenTools._
 import scala.tools.partest.ASMConverters
 import ASMConverters._
 import AsmUtils._
+import BackendReporting._
 
 import scala.collection.convert.decorateAsScala._
 
 @RunWith(classOf[JUnit4])
 class CallGraphTest {
-  val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:inline-global")
+  val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:inline-global -Yopt-warnings")
   import compiler.genBCode.bTypes._
 
   // allows inspecting the caches after a compilation run
   val notPerRun: List[Clearable] = List(classBTypeFromInternalName, byteCodeRepository.classes, callGraph.callsites)
   notPerRun foreach compiler.perRunCaches.unrecordCache
 
-  def compile(code: String): List[ClassNode] = {
+  def compile(code: String, allowMessage: StoreReporter#Info => Boolean): List[ClassNode] = {
     notPerRun.foreach(_.clear())
-    compileClasses(compiler)(code)
+    compileClasses(compiler)(code, allowMessage = allowMessage)
   }
 
   def callsInMethod(methodNode: MethodNode): List[MethodInsnNode] = methodNode.instructions.iterator.asScala.collect({
@@ -69,7 +71,20 @@ class CallGraphTest {
 
     // Get the ClassNodes from the code repo (don't use the unparsed ClassNodes returned by compile).
     // The callGraph.callsites map is indexed by instructions of those ClassNodes.
-    val List(cCls, cMod, dCls, testCls) = compile(code).map(c => byteCodeRepository.classNode(c.name).get)
+
+    val ok = Set(
+      "D::f1()I is annotated @inline but cannot be inlined: the method is not final and may be overridden", // only one warning for D.f1: C.f1 is not annotated @inline
+      "C::f3()I is annotated @inline but cannot be inlined: the method is not final and may be overridden", // only one warning for C.f3: D.f3 does not have @inline (and it would also be safe to inline)
+      "C::f7()I is annotated @inline but cannot be inlined: the method is not final and may be overridden", // two warnings (the error message mentions C.f7 even if the receiver type is D, because f7 is inherited from C)
+      "operand stack at the callsite in Test::t1(LC;)I contains more values",
+      "operand stack at the callsite in Test::t2(LD;)I contains more values")
+    var msgCount = 0
+    val checkMsg = (m: StoreReporter#Info) => {
+      msgCount += 1
+      ok exists (m.msg contains _)
+    }
+    val List(cCls, cMod, dCls, testCls) = compile(code, checkMsg).map(c => byteCodeRepository.classNode(c.name).get)
+    assert(msgCount == 6, msgCount)
 
     val List(cf1, cf2, cf3, cf4, cf5, cf6, cf7) = cCls.methods.iterator.asScala.filter(_.name.startsWith("f")).toList.sortBy(_.name)
     val List(df1, df3) = dCls.methods.iterator.asScala.filter(_.name.startsWith("f")).toList.sortBy(_.name)
