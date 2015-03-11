@@ -11,13 +11,13 @@
  * layout. For that reason we have to configure a lot more explicitly. I've tried explain in
  * comments the less obvious settings.
  *
- * This nicely leads me to explaning goal and non-goals of this build definition. Goals are:
+ * This nicely leads me to explaining goal and non-goals of this build definition. Goals are:
  *
  *   - to be easy to tweak it in case a bug or small inconsistency is found
  *   - to mimic Ant's behavior as closely as possible
  *   - to be super explicit about any departure from standard sbt settings
  *   - to achieve functional parity with Ant build as quickly as possible
- *   - to be readable and not necessarily succint
+ *   - to be readable and not necessarily succinct
  *   - to provide the nicest development experience for people hacking on Scala
  *
  * Non-goals are:
@@ -29,7 +29,7 @@
  *
  * It boils down to simple rules:
  *
- *   - project laytout is set in stone for now
+ *   - project layout is set in stone for now
  *   - if you need to work on convincing sbt to follow non-standard layout then
  *     explain everything you did in comments
  *   - constantly check where Ant build produces class files, artifacts, what kind of other
@@ -50,12 +50,12 @@
  *     https://groups.google.com/d/topic/scala-internals/gp5JsM1E0Fo/discussion
  */
 
-val boostrapScalaVersion = "2.11.5"
+val bootstrapScalaVersion = "2.11.5"
 
 lazy val commonSettings = Seq[Setting[_]](
   organization := "org.scala-lang",
   version := "2.11.6-SNAPSHOT",
-  scalaVersion := boostrapScalaVersion,
+  scalaVersion := bootstrapScalaVersion,
   // we don't cross build Scala itself
   crossPaths := false,
   // do not add Scala library jar as a dependency automatically
@@ -206,7 +206,7 @@ lazy val asm = configureAsForkOfJavaProject(project)
 lazy val root = (project in file(".")).
   aggregate(library, forkjoin, reflect, compiler, asm, interactive, repl,
     scaladoc, scalap, actors).settings(
-    scalaVersion := boostrapScalaVersion,
+    scalaVersion := bootstrapScalaVersion,
     ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
     sources in Compile := Seq.empty
   )
