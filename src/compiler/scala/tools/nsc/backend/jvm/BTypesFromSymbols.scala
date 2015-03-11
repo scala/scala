@@ -146,10 +146,45 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     else {
       val internalName = classSym.javaBinaryName.toString
       classBTypeFromInternalName.getOrElse(internalName, {
-        // The new ClassBType is added to the map in its constructor, before we set its info. This
-        // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
-        setClassInfo(classSym, ClassBType(internalName))
+        if (completeSilentlyAndCheckErroneous(classSym)) {
+          new ErroneousClassBType(internalName)
+        } else {
+          // The new ClassBType is added to the map in its constructor, before we set its info. This
+          // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
+          setClassInfo(classSym, ClassBType(internalName))
+        }
       })
+    }
+  }
+
+  /**
+   * Part of the workaround for SI-9111. Makes sure that the compiler only fails if the ClassInfo
+   * of the symbol that could not be completed is actually required.
+   */
+  private class ErroneousClassBType(internalName: InternalName) extends ClassBType(internalName) {
+    def msg = s"The class info for $internalName could not be completed due to SI-9111."
+    override def info: ClassInfo = opt.OptimizerReporting.assertionError(msg)
+    override def info_=(i: ClassInfo): Unit = opt.OptimizerReporting.assertionError(msg)
+  }
+
+  /**
+   * This is a hack to work around SI-9111. The completer of `methodSym` may report type errors. We
+   * cannot change the typer context of the completer at this point and make it silent: the context
+   * captured when creating the completer in the namer. However, we can temporarily replace
+   * global.reporter (it's a var) to store errors.
+   */
+  def completeSilentlyAndCheckErroneous(sym: Symbol): Boolean = {
+    if (sym.rawInfo.isComplete) false
+    else {
+      val originalReporter = global.reporter
+      val storeReporter = new reporters.StoreReporter()
+      try {
+        global.reporter = storeReporter
+        sym.info
+      } finally {
+        global.reporter = originalReporter
+      }
+      storeReporter.infos.exists(_.severity == storeReporter.ERROR)
     }
   }
 
@@ -428,18 +463,24 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     else {
       // Primitve methods cannot be inlined, so there's no point in building an InlineInfo. Also, some
       // primitive methods (e.g., `isInstanceOf`) have non-erased types, which confuses [[typeToBType]].
-      classSym.info.decls.iterator.filter(m => m.isMethod && !scalaPrimitives.isPrimitive(m)).map({
+      classSym.info.decls.iterator.filter(m => m.isMethod && !scalaPrimitives.isPrimitive(m)).flatMap({
         case methodSym =>
-          val methodBType = methodBTypeFromSymbol(methodSym)
-          val name        = methodSym.javaSimpleName.toString // same as in genDefDef
-          val signature   = name + methodBType.descriptor
-          val info        = MethodInlineInfo(
-            effectivelyFinal = methodSym.isEffectivelyFinalOrNotOverridden,
-            traitMethodWithStaticImplementation = false, // temporary, fixed in future commit
-            annotatedInline   = methodSym.hasAnnotation(ScalaInlineClass),
-            annotatedNoInline = methodSym.hasAnnotation(ScalaNoInlineClass)
-          )
-          (signature, info)
+          if (completeSilentlyAndCheckErroneous(methodSym)) {
+            // Happens due to SI-9111. Just don't provide any InlineInfo for that method, we don't
+            // need fail the compiler.
+            None
+          } else {
+            val methodBType = methodBTypeFromSymbol(methodSym)
+            val name        = methodSym.javaSimpleName.toString // same as in genDefDef
+            val signature   = name + methodBType.descriptor
+            val info        = MethodInlineInfo(
+              effectivelyFinal = methodSym.isEffectivelyFinalOrNotOverridden,
+              traitMethodWithStaticImplementation = false, // temporary, fixed in future commit
+              annotatedInline   = methodSym.hasAnnotation(ScalaInlineClass),
+              annotatedNoInline = methodSym.hasAnnotation(ScalaNoInlineClass)
+            )
+            Some((signature, info))
+          }
       }).toMap
     }
   }

@@ -5,6 +5,7 @@
 
 package scala.tools.nsc
 package backend.jvm
+package opt
 
 import scala.tools.asm
 import asm.tree._
