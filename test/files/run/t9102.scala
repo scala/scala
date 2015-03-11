@@ -7,6 +7,8 @@ object Test extends App {
   class V(val v: Int) extends AnyVal { def doubled = 2 * v }
   class D { def f(i: Int, j: V) = i + j.doubled }
 
+  class E(i: Int, j: V)
+
   locally {
     val ms = typeOf[C].member(TermName("f")).asMethod
     val im = currentMirror reflect (new C)
@@ -18,6 +20,12 @@ object Test extends App {
     val im = currentMirror reflect (new D)
     val mm = im reflectMethod ms
     assert(mm(2, new V(3)) == 8)
+  }
+  locally {
+    val ms = typeOf[E].typeSymbol.asClass.primaryConstructor
+    val cm = currentMirror reflectClass typeOf[E].typeSymbol.asClass
+    val mm = cm reflectConstructor ms.asMethod
+    assert(mm(42, new V(7)).isInstanceOf[E])
   }
 }
 
