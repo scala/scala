@@ -59,7 +59,7 @@ class InlinerIllegalAccessTest extends ClearAfterClass {
 
     def check(classNode: ClassNode, test: Option[AbstractInsnNode] => Unit) = {
       for (m <- methods)
-        test(inliner.findIllegalAccess(m.instructions, classBTypeFromParsedClassfile(classNode.name)).map(_._1))
+        test(inliner.findIllegalAccess(m.instructions, classBTypeFromParsedClassfile(cClass.name), classBTypeFromParsedClassfile(classNode.name)).map(_._1))
     }
 
     check(cClass, assertEmpty)
@@ -152,8 +152,8 @@ class InlinerIllegalAccessTest extends ClearAfterClass {
 
     val List(rbD, rcD, rfD, rgD) = dCl.methods.asScala.toList.filter(_.name(0) == 'r').sortBy(_.name)
 
-    def check(method: MethodNode, dest: ClassNode, test: Option[AbstractInsnNode] => Unit): Unit = {
-      test(inliner.findIllegalAccess(method.instructions, classBTypeFromParsedClassfile(dest.name)).map(_._1))
+    def check(method: MethodNode, decl: ClassNode, dest: ClassNode, test: Option[AbstractInsnNode] => Unit): Unit = {
+      test(inliner.findIllegalAccess(method.instructions, classBTypeFromParsedClassfile(decl.name), classBTypeFromParsedClassfile(dest.name)).map(_._1))
     }
 
     val cOrDOwner = (_: Option[AbstractInsnNode] @unchecked) match {
@@ -164,35 +164,35 @@ class InlinerIllegalAccessTest extends ClearAfterClass {
     // PUBLIC
 
     // public methods allowed everywhere
-    for (m <- Set(raC, reC); c <- allClasses) check(m, c, assertEmpty)
+    for (m <- Set(raC, reC); c <- allClasses) check(m, cCl, c, assertEmpty)
 
     // DEFAULT ACCESS
 
     // default access OK in same package
-    for (m <- Set(rbC, rfC, rbD, rfD); c <- allClasses) {
-      if (c.name startsWith "a/") check(m, c, assertEmpty)
-      else check(m, c, cOrDOwner)
+    for ((m, declCls) <- Set((rbC, cCl), (rfC, cCl), (rbD, dCl), (rfD, dCl)); c <- allClasses) {
+      if (c.name startsWith "a/") check(m, declCls, c, assertEmpty)
+      else check(m, declCls, c, cOrDOwner)
     }
 
     // PROTECTED
 
     // protected accessed in same class, or protected static accessed in subclass(rgD).
     // can be inlined to subclasses, and classes in the same package (gCl)
-    for (m <- Set(rcC, rgC, rgD); c <- Set(cCl, dCl, eCl, fCl, gCl, hCl)) check(m, c, assertEmpty)
+    for ((m, declCls) <- Set((rcC, cCl), (rgC, cCl), (rgD, dCl)); c <- Set(cCl, dCl, eCl, fCl, gCl, hCl)) check(m, declCls, c, assertEmpty)
 
     // protected in non-subclass and different package
-    for (m <- Set(rcC, rgC)) check(m, iCl, cOrDOwner)
+    for (m <- Set(rcC, rgC)) check(m, cCl, iCl, cOrDOwner)
 
     // non-static protected accessed in subclass (rcD). can be inlined to related class, or classes in the same package
-    for (c <- Set(cCl, dCl, eCl, fCl, gCl)) check(rcD, c, assertEmpty)
+    for (c <- Set(cCl, dCl, eCl, fCl, gCl)) check(rcD, dCl, c, assertEmpty)
 
     // rcD cannot be inlined into non-related classes, if the declaration and destination are not in the same package
-    for (c <- Set(hCl, iCl)) check(rcD, c, cOrDOwner)
+    for (c <- Set(hCl, iCl)) check(rcD, dCl, c, cOrDOwner)
 
     // PRIVATE
 
     // privated method accesses can only be inlined in the same class
-    for (m <- Set(rdC, rhC)) check(m, cCl, assertEmpty)
-    for (m <- Set(rdC, rhC); c <- allClasses.tail) check(m, c, cOrDOwner)
+    for (m <- Set(rdC, rhC)) check(m, cCl, cCl, assertEmpty)
+    for (m <- Set(rdC, rhC); c <- allClasses.tail) check(m, cCl, c, cOrDOwner)
   }
 }

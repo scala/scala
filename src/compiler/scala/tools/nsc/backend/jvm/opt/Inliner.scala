@@ -480,7 +480,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       Some(MethodWithHandlerCalledOnNonEmptyStack(
         calleeDeclarationClass.internalName, callee.name, callee.desc,
         callsiteClass.internalName, callsiteMethod.name, callsiteMethod.desc))
-    } else findIllegalAccess(callee.instructions, callsiteClass) map {
+    } else findIllegalAccess(callee.instructions, calleeDeclarationClass, callsiteClass) map {
       case (illegalAccessIns, None) =>
         IllegalAccessInstruction(
           calleeDeclarationClass.internalName, callee.name, callee.desc,
@@ -500,7 +500,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    * If validity of some instruction could not be checked because an error occurred, the instruction
    * is returned together with a warning message that describes the problem.
    */
-  def findIllegalAccess(instructions: InsnList, destinationClass: ClassBType): Option[(AbstractInsnNode, Option[OptimizerWarning])] = {
+  def findIllegalAccess(instructions: InsnList, calleeDeclarationClass: ClassBType, destinationClass: ClassBType): Option[(AbstractInsnNode, Option[OptimizerWarning])] = {
 
     /**
      * Check if a type is accessible to some class, as defined in JVMS 5.4.4.
@@ -597,11 +597,23 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       case mi: MethodInsnNode =>
         if (mi.owner.charAt(0) == '[') Right(true) // array methods are accessible
         else {
+          def canInlineCall(opcode: Int, methodFlags: Int, methodDeclClass: ClassBType, methodRefClass: ClassBType): Either[OptimizerWarning, Boolean] = {
+            opcode match {
+              case INVOKESPECIAL if mi.name != GenBCode.INSTANCE_CONSTRUCTOR_NAME =>
+                // invokespecial is used for private method calls, super calls and instance constructor calls.
+                // private method and super calls can only be inlined into the same class.
+                Right(destinationClass == calleeDeclarationClass)
+
+              case _ => // INVOKEVIRTUAL, INVOKESTATIC, INVOKEINTERFACE and INVOKESPECIAL of constructors
+                memberIsAccessible(methodFlags, methodDeclClass, methodRefClass)
+            }
+          }
+
           val methodRefClass = classBTypeFromParsedClassfile(mi.owner)
           for {
             (methodNode, methodDeclClassNode) <- byteCodeRepository.methodNode(methodRefClass.internalName, mi.name, mi.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
             methodDeclClass                   =  classBTypeFromParsedClassfile(methodDeclClassNode)
-            res                               <- memberIsAccessible(methodNode.access, methodDeclClass, methodRefClass)
+            res                               <- canInlineCall(mi.getOpcode, methodNode.access, methodDeclClass, methodRefClass)
           } yield {
             res
           }

@@ -902,4 +902,52 @@ class InlinerTest extends ClearAfterClass {
       allowMessage = i => {c += 1; i.msg contains warn})
     assert(c == 1, c)
   }
+
+  @Test
+  def inlineInvokeSpecial(): Unit = {
+    val code =
+      """class Aa {
+        |  def f1 = 0
+        |}
+        |class B extends Aa {
+        |  @inline final override def f1 = 1 + super.f1 // invokespecial Aa.f1
+        |
+        |  private def f2m = 0                          // public B$$f2m in bytecode
+        |  @inline final def f2 = f2m                   // invokevirtual B.B$$f2m
+        |
+        |  private def this(x: Int) = this()            // public in bytecode
+        |  @inline final def f3 = new B()               // invokespecial B.<init>()
+        |  @inline final def f4 = new B(1)              // invokespecial B.<init>(I)
+        |
+        |  def t1 = f1                                  // inlined
+        |  def t2 = f2                                  // inlined
+        |  def t3 = f3                                  // inlined
+        |  def t4 = f4                                  // inlined
+        |}
+        |class T {
+        |  def t1(b: B) = b.f1                          // cannot inline: contains a super call
+        |  def t2(b: B) = b.f2                          // inlined
+        |  def t3(b: B) = b.f3                          // inlined
+        |  def t4(b: B) = b.f4                          // inlined
+        |}
+      """.stripMargin
+
+    val warn =
+      """B::f1()I is annotated @inline but could not be inlined:
+        |The callee B::f1()I contains the instruction INVOKESPECIAL Aa.f1 ()I
+        |that would cause an IllegalAccessError when inlined into class T.""".stripMargin
+    var c = 0
+    val List(a, b, t) = compile(code, allowMessage = i => {c += 1; i.msg contains warn})
+    assert(c == 1, c)
+
+    assertInvoke(getSingleMethod(b, "t1"), "Aa", "f1")
+    assertInvoke(getSingleMethod(b, "t2"), "B", "B$$f2m")
+    assertInvoke(getSingleMethod(b, "t3"), "B", "<init>")
+    assertInvoke(getSingleMethod(b, "t4"), "B", "<init>")
+
+    assertInvoke(getSingleMethod(t, "t1"), "B", "f1")
+    assertInvoke(getSingleMethod(t, "t2"), "B", "B$$f2m")
+    assertInvoke(getSingleMethod(t, "t3"), "B", "<init>")
+    assertInvoke(getSingleMethod(t, "t4"), "B", "<init>")
+  }
 }
