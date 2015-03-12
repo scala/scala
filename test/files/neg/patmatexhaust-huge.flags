@@ -1,0 +1,1 @@
+-Xfatal-warnings -unchecked -Ypatmat-exhaust-depth off
