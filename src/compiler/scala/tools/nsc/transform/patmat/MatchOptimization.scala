@@ -585,12 +585,17 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
                           with SwitchEmission
                           with CommonSubconditionElimination {
     override def optimizeCases(scrutinee: Scrutinee, cases: List[List[TreeMaker]], pt: Type): (List[List[TreeMaker]], List[Tree]) = {
-      // TODO: do CSE on result of doDCE(prevBinder, cases, pt)
-      val optCases = doCSE(scrutinee, cases, pt)
+      // TODO: fix CSE for detuplified matches (currently only emitted under -Xexperimental)
+      // scala-refactoring is a great test case for this
+      val optCases = scrutinee match {
+          case _: TupleMatchScrutinee => devWarning(scrutinee.pos, "Not doing CSE for tupled match"); cases
+          case _ => doCSE(scrutinee, cases, pt)
+        }
+
       val toHoist = (
         for (treeMakers <- optCases)
           yield treeMakers.collect{case tm: ReusedCondTreeMaker => tm.treesToHoist}
-        ).flatten.flatten.toList
+        ).flatten.flatten.distinct.toList
       (optCases, toHoist)
     }
   }
