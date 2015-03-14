@@ -27,13 +27,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
-import scala.tools.asm.MethodVisitor;
+import org.objectweb.asm.MethodVisitor;
 
 /**
  * A node that represents a local variable declaration.
- *
+ * 
  * @author Eric Bruneton
  */
 public class LocalVariableNode {
@@ -72,7 +72,7 @@ public class LocalVariableNode {
 
     /**
      * Constructs a new {@link LocalVariableNode}.
-     *
+     * 
      * @param name
      *            the name of a local variable.
      * @param desc
@@ -101,7 +101,7 @@ public class LocalVariableNode {
 
     /**
      * Makes the given visitor visit this local variable declaration.
-     *
+     * 
      * @param mv
      *            a method visitor.
      */

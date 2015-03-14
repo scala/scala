@@ -27,16 +27,16 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
 import java.util.Map;
 
-import scala.tools.asm.MethodVisitor;
-import scala.tools.asm.Opcodes;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 /**
  * A node that represents an IINC instruction.
- *
+ * 
  * @author Eric Bruneton
  */
 public class IincInsnNode extends AbstractInsnNode {
@@ -53,7 +53,7 @@ public class IincInsnNode extends AbstractInsnNode {
 
     /**
      * Constructs a new {@link IincInsnNode}.
-     *
+     * 
      * @param var
      *            index of the local variable to be incremented.
      * @param incr

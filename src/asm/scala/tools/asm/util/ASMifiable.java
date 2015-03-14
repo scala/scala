@@ -27,23 +27,23 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.util;
+package org.objectweb.asm.util;
 
 import java.util.Map;
 
-import scala.tools.asm.Label;
+import org.objectweb.asm.Label;
 
 /**
- * An {@link scala.tools.asm.Attribute Attribute} that can print the ASM code
+ * An {@link org.objectweb.asm.Attribute Attribute} that can print the ASM code
  * to create an equivalent attribute.
- *
+ * 
  * @author Eugene Kuleshov
  */
 public interface ASMifiable {
 
     /**
      * Prints the ASM code to create an attribute equal to this attribute.
-     *
+     * 
      * @param buf
      *            a buffer used for printing Java code.
      * @param varName

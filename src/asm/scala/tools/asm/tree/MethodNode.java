@@ -27,25 +27,25 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import scala.tools.asm.AnnotationVisitor;
-import scala.tools.asm.Attribute;
-import scala.tools.asm.ClassVisitor;
-import scala.tools.asm.Handle;
-import scala.tools.asm.Label;
-import scala.tools.asm.MethodVisitor;
-import scala.tools.asm.Opcodes;
-import scala.tools.asm.Type;
-import scala.tools.asm.TypePath;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.Attribute;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.TypePath;
 
 /**
  * A node that represents a method.
- *
+ * 
  * @author Eric Bruneton
  */
 public class MethodNode extends MethodVisitor {
@@ -86,8 +86,8 @@ public class MethodNode extends MethodVisitor {
     /**
      * The runtime visible annotations of this method. This list is a list of
      * {@link AnnotationNode} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.tree.AnnotationNode
+     * 
+     * @associates org.objectweb.asm.tree.AnnotationNode
      * @label visible
      */
     public List<AnnotationNode> visibleAnnotations;
@@ -95,8 +95,8 @@ public class MethodNode extends MethodVisitor {
     /**
      * The runtime invisible annotations of this method. This list is a list of
      * {@link AnnotationNode} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.tree.AnnotationNode
+     * 
+     * @associates org.objectweb.asm.tree.AnnotationNode
      * @label invisible
      */
     public List<AnnotationNode> invisibleAnnotations;
@@ -104,8 +104,8 @@ public class MethodNode extends MethodVisitor {
     /**
      * The runtime visible type annotations of this method. This list is a list
      * of {@link TypeAnnotationNode} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.tree.TypeAnnotationNode
+     * 
+     * @associates org.objectweb.asm.tree.TypeAnnotationNode
      * @label visible
      */
     public List<TypeAnnotationNode> visibleTypeAnnotations;
@@ -113,8 +113,8 @@ public class MethodNode extends MethodVisitor {
     /**
      * The runtime invisible type annotations of this method. This list is a
      * list of {@link TypeAnnotationNode} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.tree.TypeAnnotationNode
+     * 
+     * @associates org.objectweb.asm.tree.TypeAnnotationNode
      * @label invisible
      */
     public List<TypeAnnotationNode> invisibleTypeAnnotations;
@@ -122,8 +122,8 @@ public class MethodNode extends MethodVisitor {
     /**
      * The non standard attributes of this method. This list is a list of
      * {@link Attribute} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.Attribute
+     * 
+     * @associates org.objectweb.asm.Attribute
      */
     public List<Attribute> attrs;
 
@@ -140,8 +140,8 @@ public class MethodNode extends MethodVisitor {
     /**
      * The runtime visible parameter annotations of this method. These lists are
      * lists of {@link AnnotationNode} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.tree.AnnotationNode
+     * 
+     * @associates org.objectweb.asm.tree.AnnotationNode
      * @label invisible parameters
      */
     public List<AnnotationNode>[] visibleParameterAnnotations;
@@ -149,8 +149,8 @@ public class MethodNode extends MethodVisitor {
     /**
      * The runtime invisible parameter annotations of this method. These lists
      * are lists of {@link AnnotationNode} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.tree.AnnotationNode
+     * 
+     * @associates org.objectweb.asm.tree.AnnotationNode
      * @label visible parameters
      */
     public List<AnnotationNode>[] invisibleParameterAnnotations;
@@ -158,8 +158,8 @@ public class MethodNode extends MethodVisitor {
     /**
      * The instructions of this method. This list is a list of
      * {@link AbstractInsnNode} objects.
-     *
-     * @associates scala.tools.asm.tree.AbstractInsnNode
+     * 
+     * @associates org.objectweb.asm.tree.AbstractInsnNode
      * @label instructions
      */
     public InsnList instructions;
@@ -167,8 +167,8 @@ public class MethodNode extends MethodVisitor {
     /**
      * The try catch blocks of this method. This list is a list of
      * {@link TryCatchBlockNode} objects.
-     *
-     * @associates scala.tools.asm.tree.TryCatchBlockNode
+     * 
+     * @associates org.objectweb.asm.tree.TryCatchBlockNode
      */
     public List<TryCatchBlockNode> tryCatchBlocks;
 
@@ -185,24 +185,24 @@ public class MethodNode extends MethodVisitor {
     /**
      * The local variables of this method. This list is a list of
      * {@link LocalVariableNode} objects. May be <tt>null</tt>
-     *
-     * @associates scala.tools.asm.tree.LocalVariableNode
+     * 
+     * @associates org.objectweb.asm.tree.LocalVariableNode
      */
     public List<LocalVariableNode> localVariables;
 
     /**
      * The visible local variable annotations of this method. This list is a
      * list of {@link LocalVariableAnnotationNode} objects. May be <tt>null</tt>
-     *
-     * @associates scala.tools.asm.tree.LocalVariableAnnotationNode
+     * 
+     * @associates org.objectweb.asm.tree.LocalVariableAnnotationNode
      */
     public List<LocalVariableAnnotationNode> visibleLocalVariableAnnotations;
 
     /**
      * The invisible local variable annotations of this method. This list is a
      * list of {@link LocalVariableAnnotationNode} objects. May be <tt>null</tt>
-     *
-     * @associates scala.tools.asm.tree.LocalVariableAnnotationNode
+     * 
+     * @associates org.objectweb.asm.tree.LocalVariableAnnotationNode
      */
     public List<LocalVariableAnnotationNode> invisibleLocalVariableAnnotations;
 
@@ -215,7 +215,7 @@ public class MethodNode extends MethodVisitor {
      * Constructs an uninitialized {@link MethodNode}. <i>Subclasses must not
      * use this constructor</i>. Instead, they must use the
      * {@link #MethodNode(int)} version.
-     *
+     * 
      * @throws IllegalStateException
      *             If a subclass calls this constructor.
      */
@@ -228,7 +228,7 @@ public class MethodNode extends MethodVisitor {
 
     /**
      * Constructs an uninitialized {@link MethodNode}.
-     *
+     * 
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
      *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
@@ -242,7 +242,7 @@ public class MethodNode extends MethodVisitor {
      * Constructs a new {@link MethodNode}. <i>Subclasses must not use this
      * constructor</i>. Instead, they must use the
      * {@link #MethodNode(int, int, String, String, String, String[])} version.
-     *
+     * 
      * @param access
      *            the method's access flags (see {@link Opcodes}). This
      *            parameter also indicates if the method is synthetic and/or
@@ -270,7 +270,7 @@ public class MethodNode extends MethodVisitor {
 
     /**
      * Constructs a new {@link MethodNode}.
-     *
+     * 
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
      *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
@@ -615,14 +615,14 @@ public class MethodNode extends MethodVisitor {
      * LabelNode if necessary. The default implementation of this method uses
      * the {@link Label#info} field to store associations between labels and
      * label nodes.
-     *
+     * 
      * @param l
      *            a Label.
      * @return the LabelNode corresponding to l.
      */
     protected LabelNode getLabelNode(final Label l) {
         if (!(l.info instanceof LabelNode)) {
-            l.info = new LabelNode(l);
+            l.info = new LabelNode();
         }
         return (LabelNode) l.info;
     }
@@ -656,7 +656,7 @@ public class MethodNode extends MethodVisitor {
      * version. This methods checks that this node, and all its nodes
      * recursively, do not contain elements that were introduced in more recent
      * versions of the ASM API than the given version.
-     *
+     * 
      * @param api
      *            an ASM API version. Must be one of {@link Opcodes#ASM4} or
      *            {@link Opcodes#ASM5}.
@@ -713,7 +713,7 @@ public class MethodNode extends MethodVisitor {
 
     /**
      * Makes the given class visitor visit this method.
-     *
+     * 
      * @param cv
      *            a class visitor.
      */
@@ -729,7 +729,7 @@ public class MethodNode extends MethodVisitor {
 
     /**
      * Makes the given method visitor visit this method.
-     *
+     * 
      * @param mv
      *            a method visitor.
      */

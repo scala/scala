@@ -27,15 +27,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree.analysis;
+package org.objectweb.asm.tree.analysis;
 
-import scala.tools.asm.Type;
+import org.objectweb.asm.Type;
 
 /**
  * A {@link Value} that is represented by its type in a seven types type system.
  * This type system distinguishes the UNINITIALZED, INT, FLOAT, LONG, DOUBLE,
  * REFERENCE and RETURNADDRESS types.
- *
+ * 
  * @author Eric Bruneton
  */
 public class BasicValue implements Value {

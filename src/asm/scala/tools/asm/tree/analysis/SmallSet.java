@@ -27,7 +27,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree.analysis;
+package org.objectweb.asm.tree.analysis;
 
 import java.util.AbstractSet;
 import java.util.HashSet;
@@ -37,7 +37,7 @@ import java.util.Set;
 
 /**
  * A set of at most two elements.
- *
+ * 
  * @author Eric Bruneton
  */
 class SmallSet<E> extends AbstractSet<E> implements Iterator<E> {

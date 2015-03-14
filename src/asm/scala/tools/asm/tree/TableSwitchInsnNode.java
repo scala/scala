@@ -27,20 +27,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import scala.tools.asm.Label;
-import scala.tools.asm.MethodVisitor;
-import scala.tools.asm.Opcodes;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 /**
  * A node that represents a TABLESWITCH instruction.
- *
+ * 
  * @author Eric Bruneton
  */
 public class TableSwitchInsnNode extends AbstractInsnNode {
@@ -68,7 +68,7 @@ public class TableSwitchInsnNode extends AbstractInsnNode {
 
     /**
      * Constructs a new {@link TableSwitchInsnNode}.
-     *
+     * 
      * @param min
      *            the minimum key value.
      * @param max

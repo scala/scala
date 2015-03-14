@@ -27,24 +27,24 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
 import java.util.Map;
 
-import scala.tools.asm.MethodVisitor;
-import scala.tools.asm.Opcodes;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 /**
  * A node that represents a method instruction. A method instruction is an
  * instruction that invokes a method.
- *
+ * 
  * @author Eric Bruneton
  */
 public class MethodInsnNode extends AbstractInsnNode {
 
     /**
      * The internal name of the method's owner class (see
-     * {@link scala.tools.asm.Type#getInternalName() getInternalName}).
+     * {@link org.objectweb.asm.Type#getInternalName() getInternalName}).
      */
     public String owner;
 
@@ -54,7 +54,7 @@ public class MethodInsnNode extends AbstractInsnNode {
     public String name;
 
     /**
-     * The method's descriptor (see {@link scala.tools.asm.Type}).
+     * The method's descriptor (see {@link org.objectweb.asm.Type}).
      */
     public String desc;
 
@@ -65,19 +65,19 @@ public class MethodInsnNode extends AbstractInsnNode {
 
     /**
      * Constructs a new {@link MethodInsnNode}.
-     *
+     * 
      * @param opcode
      *            the opcode of the type instruction to be constructed. This
      *            opcode must be INVOKEVIRTUAL, INVOKESPECIAL, INVOKESTATIC or
      *            INVOKEINTERFACE.
      * @param owner
      *            the internal name of the method's owner class (see
-     *            {@link scala.tools.asm.Type#getInternalName()
+     *            {@link org.objectweb.asm.Type#getInternalName()
      *            getInternalName}).
      * @param name
      *            the method's name.
      * @param desc
-     *            the method's descriptor (see {@link scala.tools.asm.Type}).
+     *            the method's descriptor (see {@link org.objectweb.asm.Type}).
      */
     @Deprecated
     public MethodInsnNode(final int opcode, final String owner,
@@ -87,19 +87,19 @@ public class MethodInsnNode extends AbstractInsnNode {
 
     /**
      * Constructs a new {@link MethodInsnNode}.
-     *
+     * 
      * @param opcode
      *            the opcode of the type instruction to be constructed. This
      *            opcode must be INVOKEVIRTUAL, INVOKESPECIAL, INVOKESTATIC or
      *            INVOKEINTERFACE.
      * @param owner
      *            the internal name of the method's owner class (see
-     *            {@link scala.tools.asm.Type#getInternalName()
+     *            {@link org.objectweb.asm.Type#getInternalName()
      *            getInternalName}).
      * @param name
      *            the method's name.
      * @param desc
-     *            the method's descriptor (see {@link scala.tools.asm.Type}).
+     *            the method's descriptor (see {@link org.objectweb.asm.Type}).
      * @param itf
      *            if the method's owner class is an interface.
      */
@@ -114,7 +114,7 @@ public class MethodInsnNode extends AbstractInsnNode {
 
     /**
      * Sets the opcode of this instruction.
-     *
+     * 
      * @param opcode
      *            the new instruction opcode. This opcode must be INVOKEVIRTUAL,
      *            INVOKESPECIAL, INVOKESTATIC or INVOKEINTERFACE.

@@ -27,22 +27,22 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
 import java.util.Map;
 
-import scala.tools.asm.MethodVisitor;
+import org.objectweb.asm.MethodVisitor;
 
 /**
  * A node that represents a zero operand instruction.
- *
+ * 
  * @author Eric Bruneton
  */
 public class InsnNode extends AbstractInsnNode {
 
     /**
      * Constructs a new {@link InsnNode}.
-     *
+     * 
      * @param opcode
      *            the opcode of the instruction to be constructed. This opcode
      *            must be NOP, ACONST_NULL, ICONST_M1, ICONST_0, ICONST_1,
@@ -71,7 +71,7 @@ public class InsnNode extends AbstractInsnNode {
 
     /**
      * Makes the given visitor visit this instruction.
-     *
+     * 
      * @param mv
      *            a method visitor.
      */

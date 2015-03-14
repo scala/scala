@@ -27,13 +27,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm;
+package org.objectweb.asm;
 
 /**
  * A visitor to visit a Java field. The methods of this class must be called in
  * the following order: ( <tt>visitAnnotation</tt> |
  * <tt>visitTypeAnnotation</tt> | <tt>visitAttribute</tt> )* <tt>visitEnd</tt>.
- *
+ * 
  * @author Eric Bruneton
  */
 public abstract class FieldVisitor {
@@ -52,7 +52,7 @@ public abstract class FieldVisitor {
 
     /**
      * Constructs a new {@link FieldVisitor}.
-     *
+     * 
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
      *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
@@ -63,7 +63,7 @@ public abstract class FieldVisitor {
 
     /**
      * Constructs a new {@link FieldVisitor}.
-     *
+     * 
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
      *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
@@ -81,7 +81,7 @@ public abstract class FieldVisitor {
 
     /**
      * Visits an annotation of the field.
-     *
+     * 
      * @param desc
      *            the class descriptor of the annotation class.
      * @param visible
@@ -98,7 +98,7 @@ public abstract class FieldVisitor {
 
     /**
      * Visits an annotation on the type of the field.
-     *
+     * 
      * @param typeRef
      *            a reference to the annotated type. The sort of this type
      *            reference must be {@link TypeReference#FIELD FIELD}. See
@@ -127,7 +127,7 @@ public abstract class FieldVisitor {
 
     /**
      * Visits a non standard attribute of the field.
-     *
+     * 
      * @param attr
      *            an attribute.
      */

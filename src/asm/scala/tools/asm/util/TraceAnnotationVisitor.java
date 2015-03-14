@@ -27,15 +27,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.util;
+package org.objectweb.asm.util;
 
-import scala.tools.asm.AnnotationVisitor;
-import scala.tools.asm.Opcodes;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.Opcodes;
 
 /**
  * An {@link AnnotationVisitor} that prints the annotations it visits with a
  * {@link Printer}.
- *
+ * 
  * @author Eric Bruneton
  */
 public final class TraceAnnotationVisitor extends AnnotationVisitor {

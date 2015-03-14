@@ -27,27 +27,27 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import scala.tools.asm.AnnotationVisitor;
-import scala.tools.asm.Attribute;
-import scala.tools.asm.ClassVisitor;
-import scala.tools.asm.FieldVisitor;
-import scala.tools.asm.Opcodes;
-import scala.tools.asm.TypePath;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.Attribute;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.TypePath;
 
 /**
  * A node that represents a field.
- *
+ * 
  * @author Eric Bruneton
  */
 public class FieldNode extends FieldVisitor {
 
     /**
-     * The field's access flags (see {@link scala.tools.asm.Opcodes}). This
+     * The field's access flags (see {@link org.objectweb.asm.Opcodes}). This
      * field also indicates if the field is synthetic and/or deprecated.
      */
     public int access;
@@ -58,7 +58,7 @@ public class FieldNode extends FieldVisitor {
     public String name;
 
     /**
-     * The field's descriptor (see {@link scala.tools.asm.Type}).
+     * The field's descriptor (see {@link org.objectweb.asm.Type}).
      */
     public String desc;
 
@@ -77,8 +77,8 @@ public class FieldNode extends FieldVisitor {
     /**
      * The runtime visible annotations of this field. This list is a list of
      * {@link AnnotationNode} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.tree.AnnotationNode
+     * 
+     * @associates org.objectweb.asm.tree.AnnotationNode
      * @label visible
      */
     public List<AnnotationNode> visibleAnnotations;
@@ -86,8 +86,8 @@ public class FieldNode extends FieldVisitor {
     /**
      * The runtime invisible annotations of this field. This list is a list of
      * {@link AnnotationNode} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.tree.AnnotationNode
+     * 
+     * @associates org.objectweb.asm.tree.AnnotationNode
      * @label invisible
      */
     public List<AnnotationNode> invisibleAnnotations;
@@ -95,8 +95,8 @@ public class FieldNode extends FieldVisitor {
     /**
      * The runtime visible type annotations of this field. This list is a list
      * of {@link TypeAnnotationNode} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.tree.TypeAnnotationNode
+     * 
+     * @associates org.objectweb.asm.tree.TypeAnnotationNode
      * @label visible
      */
     public List<TypeAnnotationNode> visibleTypeAnnotations;
@@ -104,8 +104,8 @@ public class FieldNode extends FieldVisitor {
     /**
      * The runtime invisible type annotations of this field. This list is a list
      * of {@link TypeAnnotationNode} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.tree.TypeAnnotationNode
+     * 
+     * @associates org.objectweb.asm.tree.TypeAnnotationNode
      * @label invisible
      */
     public List<TypeAnnotationNode> invisibleTypeAnnotations;
@@ -113,8 +113,8 @@ public class FieldNode extends FieldVisitor {
     /**
      * The non standard attributes of this field. This list is a list of
      * {@link Attribute} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.Attribute
+     * 
+     * @associates org.objectweb.asm.Attribute
      */
     public List<Attribute> attrs;
 
@@ -122,15 +122,15 @@ public class FieldNode extends FieldVisitor {
      * Constructs a new {@link FieldNode}. <i>Subclasses must not use this
      * constructor</i>. Instead, they must use the
      * {@link #FieldNode(int, int, String, String, String, Object)} version.
-     *
+     * 
      * @param access
      *            the field's access flags (see
-     *            {@link scala.tools.asm.Opcodes}). This parameter also
+     *            {@link org.objectweb.asm.Opcodes}). This parameter also
      *            indicates if the field is synthetic and/or deprecated.
      * @param name
      *            the field's name.
      * @param desc
-     *            the field's descriptor (see {@link scala.tools.asm.Type
+     *            the field's descriptor (see {@link org.objectweb.asm.Type
      *            Type}).
      * @param signature
      *            the field's signature.
@@ -153,18 +153,18 @@ public class FieldNode extends FieldVisitor {
     /**
      * Constructs a new {@link FieldNode}. <i>Subclasses must not use this
      * constructor</i>.
-     *
+     * 
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
      *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
      * @param access
      *            the field's access flags (see
-     *            {@link scala.tools.asm.Opcodes}). This parameter also
+     *            {@link org.objectweb.asm.Opcodes}). This parameter also
      *            indicates if the field is synthetic and/or deprecated.
      * @param name
      *            the field's name.
      * @param desc
-     *            the field's descriptor (see {@link scala.tools.asm.Type
+     *            the field's descriptor (see {@link org.objectweb.asm.Type
      *            Type}).
      * @param signature
      *            the field's signature.
@@ -245,7 +245,7 @@ public class FieldNode extends FieldVisitor {
      * This methods checks that this node, and all its nodes recursively, do not
      * contain elements that were introduced in more recent versions of the ASM
      * API than the given version.
-     *
+     * 
      * @param api
      *            an ASM API version. Must be one of {@link Opcodes#ASM4} or
      *            {@link Opcodes#ASM5}.
@@ -265,7 +265,7 @@ public class FieldNode extends FieldVisitor {
 
     /**
      * Makes the given class visitor visit this field.
-     *
+     * 
      * @param cv
      *            a class visitor.
      */

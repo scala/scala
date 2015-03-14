@@ -27,23 +27,23 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import scala.tools.asm.AnnotationVisitor;
-import scala.tools.asm.Attribute;
-import scala.tools.asm.ClassVisitor;
-import scala.tools.asm.FieldVisitor;
-import scala.tools.asm.MethodVisitor;
-import scala.tools.asm.Opcodes;
-import scala.tools.asm.TypePath;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.Attribute;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.TypePath;
 
 /**
  * A node that represents a class.
- *
+ * 
  * @author Eric Bruneton
  */
 public class ClassNode extends ClassVisitor {
@@ -54,14 +54,14 @@ public class ClassNode extends ClassVisitor {
     public int version;
 
     /**
-     * The class's access flags (see {@link scala.tools.asm.Opcodes}). This
+     * The class's access flags (see {@link org.objectweb.asm.Opcodes}). This
      * field also indicates if the class is deprecated.
      */
     public int access;
 
     /**
      * The internal name of the class (see
-     * {@link scala.tools.asm.Type#getInternalName() getInternalName}).
+     * {@link org.objectweb.asm.Type#getInternalName() getInternalName}).
      */
     public String name;
 
@@ -72,7 +72,7 @@ public class ClassNode extends ClassVisitor {
 
     /**
      * The internal of name of the super class (see
-     * {@link scala.tools.asm.Type#getInternalName() getInternalName}). For
+     * {@link org.objectweb.asm.Type#getInternalName() getInternalName}). For
      * interfaces, the super class is {@link Object}. May be <tt>null</tt>, but
      * only for the {@link Object} class.
      */
@@ -80,7 +80,7 @@ public class ClassNode extends ClassVisitor {
 
     /**
      * The internal names of the class's interfaces (see
-     * {@link scala.tools.asm.Type#getInternalName() getInternalName}). This
+     * {@link org.objectweb.asm.Type#getInternalName() getInternalName}). This
      * list is a list of {@link String} objects.
      */
     public List<String> interfaces;
@@ -118,8 +118,8 @@ public class ClassNode extends ClassVisitor {
     /**
      * The runtime visible annotations of this class. This list is a list of
      * {@link AnnotationNode} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.tree.AnnotationNode
+     * 
+     * @associates org.objectweb.asm.tree.AnnotationNode
      * @label visible
      */
     public List<AnnotationNode> visibleAnnotations;
@@ -127,8 +127,8 @@ public class ClassNode extends ClassVisitor {
     /**
      * The runtime invisible annotations of this class. This list is a list of
      * {@link AnnotationNode} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.tree.AnnotationNode
+     * 
+     * @associates org.objectweb.asm.tree.AnnotationNode
      * @label invisible
      */
     public List<AnnotationNode> invisibleAnnotations;
@@ -136,8 +136,8 @@ public class ClassNode extends ClassVisitor {
     /**
      * The runtime visible type annotations of this class. This list is a list
      * of {@link TypeAnnotationNode} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.tree.TypeAnnotationNode
+     * 
+     * @associates org.objectweb.asm.tree.TypeAnnotationNode
      * @label visible
      */
     public List<TypeAnnotationNode> visibleTypeAnnotations;
@@ -145,8 +145,8 @@ public class ClassNode extends ClassVisitor {
     /**
      * The runtime invisible type annotations of this class. This list is a list
      * of {@link TypeAnnotationNode} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.tree.TypeAnnotationNode
+     * 
+     * @associates org.objectweb.asm.tree.TypeAnnotationNode
      * @label invisible
      */
     public List<TypeAnnotationNode> invisibleTypeAnnotations;
@@ -154,32 +154,32 @@ public class ClassNode extends ClassVisitor {
     /**
      * The non standard attributes of this class. This list is a list of
      * {@link Attribute} objects. May be <tt>null</tt>.
-     *
-     * @associates scala.tools.asm.Attribute
+     * 
+     * @associates org.objectweb.asm.Attribute
      */
     public List<Attribute> attrs;
 
     /**
      * Informations about the inner classes of this class. This list is a list
      * of {@link InnerClassNode} objects.
-     *
-     * @associates scala.tools.asm.tree.InnerClassNode
+     * 
+     * @associates org.objectweb.asm.tree.InnerClassNode
      */
     public List<InnerClassNode> innerClasses;
 
     /**
      * The fields of this class. This list is a list of {@link FieldNode}
      * objects.
-     *
-     * @associates scala.tools.asm.tree.FieldNode
+     * 
+     * @associates org.objectweb.asm.tree.FieldNode
      */
     public List<FieldNode> fields;
 
     /**
      * The methods of this class. This list is a list of {@link MethodNode}
      * objects.
-     *
-     * @associates scala.tools.asm.tree.MethodNode
+     * 
+     * @associates org.objectweb.asm.tree.MethodNode
      */
     public List<MethodNode> methods;
 
@@ -187,7 +187,7 @@ public class ClassNode extends ClassVisitor {
      * Constructs a new {@link ClassNode}. <i>Subclasses must not use this
      * constructor</i>. Instead, they must use the {@link #ClassNode(int)}
      * version.
-     *
+     * 
      * @throws IllegalStateException
      *             If a subclass calls this constructor.
      */
@@ -200,7 +200,7 @@ public class ClassNode extends ClassVisitor {
 
     /**
      * Constructs a new {@link ClassNode}.
-     *
+     * 
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
      *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
@@ -327,7 +327,7 @@ public class ClassNode extends ClassVisitor {
      * This methods checks that this node, and all its nodes recursively, do not
      * contain elements that were introduced in more recent versions of the ASM
      * API than the given version.
-     *
+     * 
      * @param api
      *            an ASM API version. Must be one of {@link Opcodes#ASM4} or
      *            {@link Opcodes#ASM5}.
@@ -353,7 +353,7 @@ public class ClassNode extends ClassVisitor {
 
     /**
      * Makes the given class visitor visit this class.
-     *
+     * 
      * @param cv
      *            a class visitor.
      */

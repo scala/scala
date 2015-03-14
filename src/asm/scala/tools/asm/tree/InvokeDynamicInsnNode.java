@@ -27,17 +27,17 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
 import java.util.Map;
 
-import scala.tools.asm.Handle;
-import scala.tools.asm.MethodVisitor;
-import scala.tools.asm.Opcodes;
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 /**
  * A node that represents an invokedynamic instruction.
- *
+ * 
  * @author Remi Forax
  */
 public class InvokeDynamicInsnNode extends AbstractInsnNode {
@@ -64,11 +64,11 @@ public class InvokeDynamicInsnNode extends AbstractInsnNode {
 
     /**
      * Constructs a new {@link InvokeDynamicInsnNode}.
-     *
+     * 
      * @param name
      *            invokedynamic name.
      * @param desc
-     *            invokedynamic descriptor (see {@link scala.tools.asm.Type}).
+     *            invokedynamic descriptor (see {@link org.objectweb.asm.Type}).
      * @param bsm
      *            the bootstrap method.
      * @param bsmArgs

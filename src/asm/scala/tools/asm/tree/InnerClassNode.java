@@ -27,26 +27,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
-import scala.tools.asm.ClassVisitor;
+import org.objectweb.asm.ClassVisitor;
 
 /**
  * A node that represents an inner class.
- *
+ * 
  * @author Eric Bruneton
  */
 public class InnerClassNode {
 
     /**
      * The internal name of an inner class (see
-     * {@link scala.tools.asm.Type#getInternalName() getInternalName}).
+     * {@link org.objectweb.asm.Type#getInternalName() getInternalName}).
      */
     public String name;
 
     /**
      * The internal name of the class to which the inner class belongs (see
-     * {@link scala.tools.asm.Type#getInternalName() getInternalName}). May be
+     * {@link org.objectweb.asm.Type#getInternalName() getInternalName}). May be
      * <tt>null</tt>.
      */
     public String outerName;
@@ -65,14 +65,14 @@ public class InnerClassNode {
 
     /**
      * Constructs a new {@link InnerClassNode}.
-     *
+     * 
      * @param name
      *            the internal name of an inner class (see
-     *            {@link scala.tools.asm.Type#getInternalName()
+     *            {@link org.objectweb.asm.Type#getInternalName()
      *            getInternalName}).
      * @param outerName
      *            the internal name of the class to which the inner class
-     *            belongs (see {@link scala.tools.asm.Type#getInternalName()
+     *            belongs (see {@link org.objectweb.asm.Type#getInternalName()
      *            getInternalName}). May be <tt>null</tt>.
      * @param innerName
      *            the (simple) name of the inner class inside its enclosing
@@ -91,7 +91,7 @@ public class InnerClassNode {
 
     /**
      * Makes the given class visitor visit this inner class.
-     *
+     * 
      * @param cv
      *            a class visitor.
      */

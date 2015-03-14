@@ -28,21 +28,21 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import scala.tools.asm.Label;
-import scala.tools.asm.MethodVisitor;
-import scala.tools.asm.Opcodes;
-import scala.tools.asm.TypePath;
-import scala.tools.asm.TypeReference;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.TypePath;
+import org.objectweb.asm.TypeReference;
 
 /**
  * A node that represents a type annotation on a local or resource variable.
- *
+ * 
  * @author Eric Bruneton
  */
 public class LocalVariableAnnotationNode extends TypeAnnotationNode {
@@ -71,7 +71,7 @@ public class LocalVariableAnnotationNode extends TypeAnnotationNode {
      * not use this constructor</i>. Instead, they must use the
      * {@link #LocalVariableAnnotationNode(int, TypePath, LabelNode[], LabelNode[], int[], String)}
      * version.
-     *
+     * 
      * @param typeRef
      *            a reference to the annotated type. See {@link TypeReference}.
      * @param typePath
@@ -98,7 +98,7 @@ public class LocalVariableAnnotationNode extends TypeAnnotationNode {
 
     /**
      * Constructs a new {@link LocalVariableAnnotationNode}.
-     *
+     * 
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
      *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
@@ -136,7 +136,7 @@ public class LocalVariableAnnotationNode extends TypeAnnotationNode {
 
     /**
      * Makes the given visitor visit this type annotation.
-     *
+     * 
      * @param mv
      *            the visitor that must visit this annotation.
      * @param visible
