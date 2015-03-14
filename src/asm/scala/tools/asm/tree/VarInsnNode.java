@@ -31,7 +31,7 @@ package scala.tools.asm.tree;
 
 import java.util.Map;
 
-import org.objectweb.asm.MethodVisitor;
+import scala.tools.asm.MethodVisitor;
 
 /**
  * A node that represents a local variable instruction. A local variable

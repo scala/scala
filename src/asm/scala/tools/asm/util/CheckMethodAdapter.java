@@ -39,19 +39,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.Attribute;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.TypePath;
-import org.objectweb.asm.TypeReference;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.analysis.Analyzer;
-import org.objectweb.asm.tree.analysis.BasicValue;
-import org.objectweb.asm.tree.analysis.BasicVerifier;
+import scala.tools.asm.AnnotationVisitor;
+import scala.tools.asm.Attribute;
+import scala.tools.asm.Handle;
+import scala.tools.asm.Label;
+import scala.tools.asm.MethodVisitor;
+import scala.tools.asm.Opcodes;
+import scala.tools.asm.Type;
+import scala.tools.asm.TypePath;
+import scala.tools.asm.TypeReference;
+import scala.tools.asm.tree.MethodNode;
+import scala.tools.asm.tree.analysis.Analyzer;
+import scala.tools.asm.tree.analysis.BasicValue;
+import scala.tools.asm.tree.analysis.BasicVerifier;
 
 /**
  * A {@link MethodVisitor} that checks that its methods are properly used. More

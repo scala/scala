@@ -32,7 +32,7 @@ package scala.tools.asm.tree;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
-import org.objectweb.asm.MethodVisitor;
+import scala.tools.asm.MethodVisitor;
 
 /**
  * A doubly linked list of {@link AbstractInsnNode} objects. <i>This

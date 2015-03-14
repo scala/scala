@@ -29,7 +29,7 @@
  */
 package scala.tools.asm.tree.analysis;
 
-import org.objectweb.asm.tree.AbstractInsnNode;
+import scala.tools.asm.tree.AbstractInsnNode;
 
 /**
  * Thrown if a problem occurs during the analysis of a method.

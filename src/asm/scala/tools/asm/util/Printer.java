@@ -33,11 +33,11 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.objectweb.asm.Attribute;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.TypePath;
+import scala.tools.asm.Attribute;
+import scala.tools.asm.Handle;
+import scala.tools.asm.Label;
+import scala.tools.asm.Opcodes;
+import scala.tools.asm.TypePath;
 
 /**
  * An abstract converter from visit events to text.

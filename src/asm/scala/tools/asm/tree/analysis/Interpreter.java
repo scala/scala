@@ -31,8 +31,8 @@ package scala.tools.asm.tree.analysis;
 
 import java.util.List;
 
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
+import scala.tools.asm.Type;
+import scala.tools.asm.tree.AbstractInsnNode;
 
 /**
  * A semantic bytecode interpreter. More precisely, this interpreter only

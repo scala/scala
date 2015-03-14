@@ -34,18 +34,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.IincInsnNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.JumpInsnNode;
-import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.LookupSwitchInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.TableSwitchInsnNode;
-import org.objectweb.asm.tree.TryCatchBlockNode;
-import org.objectweb.asm.tree.VarInsnNode;
+import scala.tools.asm.Opcodes;
+import scala.tools.asm.Type;
+import scala.tools.asm.tree.AbstractInsnNode;
+import scala.tools.asm.tree.IincInsnNode;
+import scala.tools.asm.tree.InsnList;
+import scala.tools.asm.tree.JumpInsnNode;
+import scala.tools.asm.tree.LabelNode;
+import scala.tools.asm.tree.LookupSwitchInsnNode;
+import scala.tools.asm.tree.MethodNode;
+import scala.tools.asm.tree.TableSwitchInsnNode;
+import scala.tools.asm.tree.TryCatchBlockNode;
+import scala.tools.asm.tree.VarInsnNode;
 
 /**
  * A semantic bytecode analyzer. <i>This class does not fully check that JSR and

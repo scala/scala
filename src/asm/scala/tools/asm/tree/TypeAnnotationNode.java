@@ -29,9 +29,9 @@
  */
 package scala.tools.asm.tree;
 
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.TypePath;
-import org.objectweb.asm.TypeReference;
+import scala.tools.asm.Opcodes;
+import scala.tools.asm.TypePath;
+import scala.tools.asm.TypeReference;
 
 /**
  * A node that represents a type annotationn.

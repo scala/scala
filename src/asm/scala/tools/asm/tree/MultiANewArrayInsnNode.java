@@ -31,8 +31,8 @@ package scala.tools.asm.tree;
 
 import java.util.Map;
 
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import scala.tools.asm.MethodVisitor;
+import scala.tools.asm.Opcodes;
 
 /**
  * A node that represents a MULTIANEWARRAY instruction.

@@ -29,7 +29,7 @@
  */
 package scala.tools.asm.tree.analysis;
 
-import org.objectweb.asm.Type;
+import scala.tools.asm.Type;
 
 /**
  * A {@link Value} that is represented by its type in a seven types type system.
