@@ -6,11 +6,16 @@ Git SVN repo: https://github.com/lrytz/asm
 Upgrading ASM
 -------------
 
+Check the commit history of src/asm: https://github.com/scala/scala/commits/2.11.x/src/asm.
+Find the previous commit that upgraded ASM and take a look at its commit message. It should
+be a squashed version of a pull request that shows the precise procedure how the last upgrade
+was made.
+
 Start by deleting all source files in src/asm/ and copy the ones from the latest ASM release.
 
 Excluded Files (don't copy):
   - package.html files
-  - org/objectweb/asm/commons
+  - org/objectweb/asm/commons, but keep CodeSizeEvaluator.java
   - org/objectweb/asm/optimizer
   - org/objectweb/asm/xml
 
@@ -27,4 +32,6 @@ Re-packaging and cosmetic changes:
   - remove trailing whitespace
     find src/asm/scala/tools/asm -name '*.java' | xargs sed -i '' -e 's/[ ]*$//'
 
-Actual changes: check the git log for [asm-cherry-pick] after the previous upgrade.
+Include the actual changes that we have in our repostiory
+  - Include the commits labelled [asm-cherry-pick] in the non-squashed PR of the previous upgrade
+  - Include the changes that were added to src/asm since the last upgrade and label them [asm-cherry-pick]
