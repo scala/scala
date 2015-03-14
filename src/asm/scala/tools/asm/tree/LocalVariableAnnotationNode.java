@@ -28,7 +28,7 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.objectweb.asm.tree;
+package scala.tools.asm.tree;
 
 import java.util.ArrayList;
 import java.util.Arrays;
