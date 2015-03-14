@@ -52,6 +52,13 @@
 
 val bootstrapScalaVersion = "2.11.5"
 
+// exclusion of the scala-library transitive dependency avoids eviction warnings during `update`.
+val scalaParserCombinatorsDep = "org.scala-lang.modules" %% "scala-parser-combinators" % versionNumber("scala-parser-combinators") exclude("org.scala-lang", "scala-library")
+val scalaXmlDep = "org.scala-lang.modules" %% "scala-xml" % versionNumber("scala-xml") exclude("org.scala-lang", "scala-library")
+val partestDep = "org.scala-lang.modules" %% "scala-partest" % versionNumber("partest") exclude("org.scala-lang", "scala-library")
+val jlineDep = "jline" % "jline" % versionProps("jline.version")
+val antDep = "org.apache.ant" % "ant" % "1.9.4"
+
 lazy val commonSettings = Seq[Setting[_]](
   organization := "org.scala-lang",
   version := "2.11.6-SNAPSHOT",
@@ -154,7 +161,7 @@ lazy val compiler = configureAsSubproject(project).
   settings(generatePropertiesFileSettings: _*).
   settings(
     name := "scala-compiler",
-    libraryDependencies += "org.apache.ant" % "ant" % "1.9.4",
+    libraryDependencies += antDep,
     // this a way to make sure that classes from interactive and scaladoc projects
     // end up in compiler jar (that's what Ant build does)
     // we need to use LocalProject references (with strings) to deal with mutual recursion
@@ -172,19 +179,13 @@ lazy val interactive = configureAsSubproject(project).
   dependsOn(compiler)
 
 lazy val repl = configureAsSubproject(project).
-  // TODO: in Ant build def, this version is defined in versions.properties
-  // figure out whether we also want to externalize jline's version
-  settings(libraryDependencies += "jline" % "jline" % "2.12").
+  settings(libraryDependencies += jlineDep).
   settings(disableDocsAndPublishingTasks: _*).
   dependsOn(compiler)
 
-def moduleDependency(name: String) =
-  // exclusion of the scala-library transitive dependency avoids eviction warnings during `update`.
-  "org.scala-lang.modules" %% name % "1.0.3" exclude("org.scala-lang", "scala-library")
-
 lazy val scaladoc = configureAsSubproject(project).
   settings(
-    libraryDependencies ++= Seq("scala-xml", "scala-parser-combinators", "scala-partest").map(moduleDependency)
+    libraryDependencies ++= Seq(scalaXmlDep, scalaParserCombinatorsDep, partestDep)
   ).
   settings(disableDocsAndPublishingTasks: _*).
   dependsOn(compiler)
@@ -341,3 +342,17 @@ lazy val mkBinImpl: Def.Initialize[Task[Seq[File]]] = Def.task {
 }
 
 buildDirectory in ThisBuild := (baseDirectory in ThisBuild).value / "build-sbt"
+
+lazy val versionProps: Map[String, String] = {
+  import java.io.FileInputStream
+  import java.util.Properties
+  val props = new Properties()
+  val in = new FileInputStream(file("versions.properties"))
+  try props.load(in)
+  finally in.close()
+  import scala.collection.JavaConverters._
+  props.asScala.toMap
+}
+
+def versionNumber(name: String): String =
+  versionProps(s"$name.version.number")
