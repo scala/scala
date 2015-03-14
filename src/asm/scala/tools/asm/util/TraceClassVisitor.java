@@ -48,36 +48,36 @@ import scala.tools.asm.TypePath;
  * The trace printed when visiting the <tt>Hello</tt> class is the following:
  * <p>
  * <blockquote>
- * 
+ *
  * <pre>
  * // class version 49.0 (49) // access flags 0x21 public class Hello {
- * 
+ *
  * // compiled from: Hello.java
- * 
+ *
  * // access flags 0x1 public &lt;init&gt; ()V ALOAD 0 INVOKESPECIAL
  * java/lang/Object &lt;init&gt; ()V RETURN MAXSTACK = 1 MAXLOCALS = 1
- * 
+ *
  * // access flags 0x9 public static main ([Ljava/lang/String;)V GETSTATIC
  * java/lang/System out Ljava/io/PrintStream; LDC &quot;hello&quot;
  * INVOKEVIRTUAL java/io/PrintStream println (Ljava/lang/String;)V RETURN
  * MAXSTACK = 2 MAXLOCALS = 1 }
  * </pre>
- * 
+ *
  * </blockquote> where <tt>Hello</tt> is defined by:
  * <p>
  * <blockquote>
- * 
+ *
  * <pre>
  * public class Hello {
- * 
+ *
  *     public static void main(String[] args) {
  *         System.out.println(&quot;hello&quot;);
  *     }
  * }
  * </pre>
- * 
+ *
  * </blockquote>
- * 
+ *
  * @author Eric Bruneton
  * @author Eugene Kuleshov
  */
@@ -95,7 +95,7 @@ public final class TraceClassVisitor extends ClassVisitor {
 
     /**
      * Constructs a new {@link TraceClassVisitor}.
-     * 
+     *
      * @param pw
      *            the print writer to be used to print the class.
      */
@@ -105,7 +105,7 @@ public final class TraceClassVisitor extends ClassVisitor {
 
     /**
      * Constructs a new {@link TraceClassVisitor}.
-     * 
+     *
      * @param cv
      *            the {@link ClassVisitor} to which this visitor delegates
      *            calls. May be <tt>null</tt>.
@@ -118,7 +118,7 @@ public final class TraceClassVisitor extends ClassVisitor {
 
     /**
      * Constructs a new {@link TraceClassVisitor}.
-     * 
+     *
      * @param cv
      *            the {@link ClassVisitor} to which this visitor delegates
      *            calls. May be <tt>null</tt>.

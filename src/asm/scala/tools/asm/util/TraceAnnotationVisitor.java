@@ -35,7 +35,7 @@ import scala.tools.asm.Opcodes;
 /**
  * An {@link AnnotationVisitor} that prints the annotations it visits with a
  * {@link Printer}.
- * 
+ *
  * @author Eric Bruneton
  */
 public final class TraceAnnotationVisitor extends AnnotationVisitor {

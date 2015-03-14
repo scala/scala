@@ -50,10 +50,10 @@ import scala.tools.asm.tree.VarInsnNode;
 /**
  * A semantic bytecode analyzer. <i>This class does not fully check that JSR and
  * RET instructions are valid.</i>
- * 
+ *
  * @param <V>
  *            type of the Value used for the analysis.
- * 
+ *
  * @author Eric Bruneton
  */
 public class Analyzer<V extends Value> implements Opcodes {
@@ -78,7 +78,7 @@ public class Analyzer<V extends Value> implements Opcodes {
 
     /**
      * Constructs a new {@link Analyzer}.
-     * 
+     *
      * @param interpreter
      *            the interpreter to be used to symbolically interpret the
      *            bytecode instructions.
@@ -89,7 +89,7 @@ public class Analyzer<V extends Value> implements Opcodes {
 
     /**
      * Analyzes the given method.
-     * 
+     *
      * @param owner
      *            the internal name of the class to which the method belongs.
      * @param m
@@ -370,7 +370,7 @@ public class Analyzer<V extends Value> implements Opcodes {
     /**
      * Returns the symbolic stack frame for each instruction of the last
      * recently analyzed method.
-     * 
+     *
      * @return the symbolic state of the execution stack frame at each bytecode
      *         instruction of the method. The size of the returned array is
      *         equal to the number of instructions (and labels) of the method. A
@@ -384,7 +384,7 @@ public class Analyzer<V extends Value> implements Opcodes {
 
     /**
      * Returns the exception handlers for the given instruction.
-     * 
+     *
      * @param insn
      *            the index of an instruction of the last recently analyzed
      *            method.
@@ -398,7 +398,7 @@ public class Analyzer<V extends Value> implements Opcodes {
      * Initializes this analyzer. This method is called just before the
      * execution of control flow analysis loop in #analyze. The default
      * implementation of this method does nothing.
-     * 
+     *
      * @param owner
      *            the internal name of the class to which the method belongs.
      * @param m
@@ -411,7 +411,7 @@ public class Analyzer<V extends Value> implements Opcodes {
 
     /**
      * Constructs a new frame with the given size.
-     * 
+     *
      * @param nLocals
      *            the maximum number of local variables of the frame.
      * @param nStack
@@ -424,7 +424,7 @@ public class Analyzer<V extends Value> implements Opcodes {
 
     /**
      * Constructs a new frame that is identical to the given frame.
-     * 
+     *
      * @param src
      *            a frame.
      * @return the created frame.
@@ -438,7 +438,7 @@ public class Analyzer<V extends Value> implements Opcodes {
      * method does nothing. It can be overriden in order to construct the
      * control flow graph of a method (this method is called by the
      * {@link #analyze analyze} method during its visit of the method's code).
-     * 
+     *
      * @param insn
      *            an instruction index.
      * @param successor
@@ -453,7 +453,7 @@ public class Analyzer<V extends Value> implements Opcodes {
      * overridden in order to construct the control flow graph of a method (this
      * method is called by the {@link #analyze analyze} method during its visit
      * of the method's code).
-     * 
+     *
      * @param insn
      *            an instruction index.
      * @param successor
@@ -475,7 +475,7 @@ public class Analyzer<V extends Value> implements Opcodes {
      * construct the control flow graph of a method (this method is called by
      * the {@link #analyze analyze} method during its visit of the method's
      * code).
-     * 
+     *
      * @param insn
      *            an instruction index.
      * @param tcb

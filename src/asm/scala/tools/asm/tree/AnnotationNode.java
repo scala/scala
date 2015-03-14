@@ -37,7 +37,7 @@ import scala.tools.asm.Opcodes;
 
 /**
  * A node that represents an annotationn.
- * 
+ *
  * @author Eric Bruneton
  */
 public class AnnotationNode extends AnnotationVisitor {
@@ -64,7 +64,7 @@ public class AnnotationNode extends AnnotationVisitor {
      * Constructs a new {@link AnnotationNode}. <i>Subclasses must not use this
      * constructor</i>. Instead, they must use the
      * {@link #AnnotationNode(int, String)} version.
-     * 
+     *
      * @param desc
      *            the class descriptor of the annotation class.
      * @throws IllegalStateException
@@ -79,7 +79,7 @@ public class AnnotationNode extends AnnotationVisitor {
 
     /**
      * Constructs a new {@link AnnotationNode}.
-     * 
+     *
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
      *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
@@ -93,7 +93,7 @@ public class AnnotationNode extends AnnotationVisitor {
 
     /**
      * Constructs a new {@link AnnotationNode} to visit an array value.
-     * 
+     *
      * @param values
      *            where the visited values must be stored.
      */
@@ -169,7 +169,7 @@ public class AnnotationNode extends AnnotationVisitor {
      * version. This methods checks that this node, and all its nodes
      * recursively, do not contain elements that were introduced in more recent
      * versions of the ASM API than the given version.
-     * 
+     *
      * @param api
      *            an ASM API version. Must be one of {@link Opcodes#ASM4} or
      *            {@link Opcodes#ASM5}.
@@ -180,7 +180,7 @@ public class AnnotationNode extends AnnotationVisitor {
 
     /**
      * Makes the given visitor visit this annotation.
-     * 
+     *
      * @param av
      *            an annotation visitor. Maybe <tt>null</tt>.
      */
@@ -199,7 +199,7 @@ public class AnnotationNode extends AnnotationVisitor {
 
     /**
      * Makes the given visitor visit a given annotation value.
-     * 
+     *
      * @param av
      *            an annotation visitor. Maybe <tt>null</tt>.
      * @param name

@@ -43,7 +43,7 @@ import scala.tools.asm.tree.MethodInsnNode;
 
 /**
  * An {@link Interpreter} for {@link SourceValue} values.
- * 
+ *
  * @author Eric Bruneton
  */
 public class SourceInterpreter extends Interpreter<SourceValue> implements

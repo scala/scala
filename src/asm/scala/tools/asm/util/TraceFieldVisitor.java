@@ -38,7 +38,7 @@ import scala.tools.asm.TypePath;
 /**
  * A {@link FieldVisitor} that prints the fields it visits with a
  * {@link Printer}.
- * 
+ *
  * @author Eric Bruneton
  */
 public final class TraceFieldVisitor extends FieldVisitor {

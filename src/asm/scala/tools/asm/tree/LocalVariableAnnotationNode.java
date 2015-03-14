@@ -42,7 +42,7 @@ import scala.tools.asm.TypeReference;
 
 /**
  * A node that represents a type annotation on a local or resource variable.
- * 
+ *
  * @author Eric Bruneton
  */
 public class LocalVariableAnnotationNode extends TypeAnnotationNode {
@@ -71,7 +71,7 @@ public class LocalVariableAnnotationNode extends TypeAnnotationNode {
      * not use this constructor</i>. Instead, they must use the
      * {@link #LocalVariableAnnotationNode(int, TypePath, LabelNode[], LabelNode[], int[], String)}
      * version.
-     * 
+     *
      * @param typeRef
      *            a reference to the annotated type. See {@link TypeReference}.
      * @param typePath
@@ -98,7 +98,7 @@ public class LocalVariableAnnotationNode extends TypeAnnotationNode {
 
     /**
      * Constructs a new {@link LocalVariableAnnotationNode}.
-     * 
+     *
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
      *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
@@ -136,7 +136,7 @@ public class LocalVariableAnnotationNode extends TypeAnnotationNode {
 
     /**
      * Makes the given visitor visit this type annotation.
-     * 
+     *
      * @param mv
      *            the visitor that must visit this annotation.
      * @param visible

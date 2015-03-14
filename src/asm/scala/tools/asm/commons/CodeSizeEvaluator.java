@@ -36,7 +36,7 @@ import scala.tools.asm.Opcodes;
 
 /**
  * A {@link MethodVisitor} that can be used to approximate method size.
- * 
+ *
  * @author Eugene Kuleshov
  */
 public class CodeSizeEvaluator extends MethodVisitor implements Opcodes {

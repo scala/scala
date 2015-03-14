@@ -31,7 +31,7 @@ package scala.tools.asm;
 
 /**
  * An {@link FieldVisitor} that generates Java fields in bytecode form.
- * 
+ *
  * @author Eric Bruneton
  */
 final class FieldWriter extends FieldVisitor {
@@ -102,7 +102,7 @@ final class FieldWriter extends FieldVisitor {
 
     /**
      * Constructs a new {@link FieldWriter}.
-     * 
+     *
      * @param cw
      *            the class writer to which this field must be added.
      * @param access
@@ -200,7 +200,7 @@ final class FieldWriter extends FieldVisitor {
 
     /**
      * Returns the size of this field.
-     * 
+     *
      * @return the size of this field.
      */
     int getSize() {
@@ -248,7 +248,7 @@ final class FieldWriter extends FieldVisitor {
 
     /**
      * Puts the content of this field into the given byte vector.
-     * 
+     *
      * @param out
      *            where the content of this field must be put.
      */

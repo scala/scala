@@ -35,7 +35,7 @@ import scala.tools.asm.Type;
 
 /**
  * An {@link AnnotationVisitor} that checks that its methods are properly used.
- * 
+ *
  * @author Eric Bruneton
  */
 public class CheckAnnotationAdapter extends AnnotationVisitor {

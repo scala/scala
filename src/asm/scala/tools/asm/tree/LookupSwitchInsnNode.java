@@ -40,7 +40,7 @@ import scala.tools.asm.Opcodes;
 
 /**
  * A node that represents a LOOKUPSWITCH instruction.
- * 
+ *
  * @author Eric Bruneton
  */
 public class LookupSwitchInsnNode extends AbstractInsnNode {
@@ -63,7 +63,7 @@ public class LookupSwitchInsnNode extends AbstractInsnNode {
 
     /**
      * Constructs a new {@link LookupSwitchInsnNode}.
-     * 
+     *
      * @param dflt
      *            beginning of the default handler block.
      * @param keys

@@ -33,7 +33,7 @@ package scala.tools.asm;
  * A visitor to visit a Java annotation. The methods of this class must be
  * called in the following order: ( <tt>visit</tt> | <tt>visitEnum</tt> |
  * <tt>visitAnnotation</tt> | <tt>visitArray</tt> )* <tt>visitEnd</tt>.
- * 
+ *
  * @author Eric Bruneton
  * @author Eugene Kuleshov
  */
@@ -53,7 +53,7 @@ public abstract class AnnotationVisitor {
 
     /**
      * Constructs a new {@link AnnotationVisitor}.
-     * 
+     *
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
      *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
@@ -64,7 +64,7 @@ public abstract class AnnotationVisitor {
 
     /**
      * Constructs a new {@link AnnotationVisitor}.
-     * 
+     *
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
      *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
@@ -82,7 +82,7 @@ public abstract class AnnotationVisitor {
 
     /**
      * Visits a primitive value of the annotation.
-     * 
+     *
      * @param name
      *            the value name.
      * @param value
@@ -103,7 +103,7 @@ public abstract class AnnotationVisitor {
 
     /**
      * Visits an enumeration value of the annotation.
-     * 
+     *
      * @param name
      *            the value name.
      * @param desc
@@ -119,7 +119,7 @@ public abstract class AnnotationVisitor {
 
     /**
      * Visits a nested annotation value of the annotation.
-     * 
+     *
      * @param name
      *            the value name.
      * @param desc
@@ -142,7 +142,7 @@ public abstract class AnnotationVisitor {
      * types (such as byte, boolean, short, char, int, long, float or double)
      * can be passed as value to {@link #visit visit}. This is what
      * {@link ClassReader} does.
-     * 
+     *
      * @param name
      *            the value name.
      * @return a visitor to visit the actual array value elements, or
