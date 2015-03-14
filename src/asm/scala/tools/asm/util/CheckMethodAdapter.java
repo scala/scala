@@ -60,7 +60,7 @@ import scala.tools.asm.tree.analysis.BasicVerifier;
  * arguments - such as the fact that the given opcode is correct for a given
  * visit method. This adapter can also perform some basic data flow checks (more
  * precisely those that can be performed without the full class hierarchy - see
- * {@link org.objectweb.asm.tree.analysis.BasicVerifier}). For instance in a
+ * {@link scala.tools.asm.tree.analysis.BasicVerifier}). For instance in a
  * method whose signature is <tt>void m ()</tt>, the invalid instruction
  * IRETURN, or the invalid sequence IADD L2I will be detected if the data flow
  * checks are enabled. These checks are enabled by using the

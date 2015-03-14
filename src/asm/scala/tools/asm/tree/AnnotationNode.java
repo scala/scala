@@ -52,7 +52,7 @@ public class AnnotationNode extends AnnotationVisitor {
      * as two consecutive elements in the list. The name is a {@link String},
      * and the value may be a {@link Byte}, {@link Boolean}, {@link Character},
      * {@link Short}, {@link Integer}, {@link Long}, {@link Float},
-     * {@link Double}, {@link String} or {@link org.objectweb.asm.Type}, or an
+     * {@link Double}, {@link String} or {@link scala.tools.asm.Type}, or an
      * two elements String array (for enumeration values), a
      * {@link AnnotationNode}, or a {@link List} of values of one of the
      * preceding types. The list may be <tt>null</tt> if there is no name value

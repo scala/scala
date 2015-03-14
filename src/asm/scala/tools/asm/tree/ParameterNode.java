@@ -43,7 +43,7 @@ public class ParameterNode {
     public String name;
 
     /**
-     * The parameter's access flags (see {@link org.objectweb.asm.Opcodes}).
+     * The parameter's access flags (see {@link scala.tools.asm.Opcodes}).
      * Valid values are <tt>ACC_FINAL</tt>, <tt>ACC_SYNTHETIC</tt> and
      * <tt>ACC_MANDATED</tt>.
      */
@@ -55,7 +55,7 @@ public class ParameterNode {
      * @param access
      *            The parameter's access flags. Valid values are
      *            <tt>ACC_FINAL</tt>, <tt>ACC_SYNTHETIC</tt> or/and
-     *            <tt>ACC_MANDATED</tt> (see {@link org.objectweb.asm.Opcodes}).
+     *            <tt>ACC_MANDATED</tt> (see {@link scala.tools.asm.Opcodes}).
      * @param name
      *            the parameter's name.
      */

@@ -44,7 +44,7 @@ public class MethodInsnNode extends AbstractInsnNode {
 
     /**
      * The internal name of the method's owner class (see
-     * {@link org.objectweb.asm.Type#getInternalName() getInternalName}).
+     * {@link scala.tools.asm.Type#getInternalName() getInternalName}).
      */
     public String owner;
 
@@ -54,7 +54,7 @@ public class MethodInsnNode extends AbstractInsnNode {
     public String name;
 
     /**
-     * The method's descriptor (see {@link org.objectweb.asm.Type}).
+     * The method's descriptor (see {@link scala.tools.asm.Type}).
      */
     public String desc;
 
@@ -72,12 +72,12 @@ public class MethodInsnNode extends AbstractInsnNode {
      *            INVOKEINTERFACE.
      * @param owner
      *            the internal name of the method's owner class (see
-     *            {@link org.objectweb.asm.Type#getInternalName()
+     *            {@link scala.tools.asm.Type#getInternalName()
      *            getInternalName}).
      * @param name
      *            the method's name.
      * @param desc
-     *            the method's descriptor (see {@link org.objectweb.asm.Type}).
+     *            the method's descriptor (see {@link scala.tools.asm.Type}).
      */
     @Deprecated
     public MethodInsnNode(final int opcode, final String owner,
@@ -94,12 +94,12 @@ public class MethodInsnNode extends AbstractInsnNode {
      *            INVOKEINTERFACE.
      * @param owner
      *            the internal name of the method's owner class (see
-     *            {@link org.objectweb.asm.Type#getInternalName()
+     *            {@link scala.tools.asm.Type#getInternalName()
      *            getInternalName}).
      * @param name
      *            the method's name.
      * @param desc
-     *            the method's descriptor (see {@link org.objectweb.asm.Type}).
+     *            the method's descriptor (see {@link scala.tools.asm.Type}).
      * @param itf
      *            if the method's owner class is an interface.
      */
