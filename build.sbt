@@ -57,6 +57,7 @@ val scalaParserCombinatorsDep = "org.scala-lang.modules" %% "scala-parser-combin
 val scalaXmlDep = "org.scala-lang.modules" %% "scala-xml" % versionNumber("scala-xml") exclude("org.scala-lang", "scala-library")
 val partestDep = "org.scala-lang.modules" %% "scala-partest" % versionNumber("partest") exclude("org.scala-lang", "scala-library")
 val junitDep = "junit" % "junit" % "4.11"
+val junitIntefaceDep = "com.novocode" % "junit-interface" % "0.11" % "test"
 val jlineDep = "jline" % "jline" % versionProps("jline.version")
 val antDep = "org.apache.ant" % "ant" % "1.9.4"
 
@@ -223,7 +224,8 @@ lazy val junit = project.in(file("test") / "junit")
   .settings(
     scalaVersion := bootstrapScalaVersion,
     ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
-    libraryDependencies += junitDep,
+    fork in Test := true,
+    libraryDependencies ++= Seq(junitDep, junitIntefaceDep),
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
   )
 
