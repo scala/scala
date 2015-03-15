@@ -226,6 +226,7 @@ lazy val junit = project.in(file("test") / "junit")
     ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
     fork in Test := true,
     libraryDependencies ++= Seq(junitDep, junitIntefaceDep),
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
   )
 
