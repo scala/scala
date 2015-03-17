@@ -274,16 +274,23 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                 }
               }
 
-
               def isAccessibleFromSuper(sym: Symbol) = {
                 val pre = SuperType(sym.owner.tpe, qual.tpe)
                 localTyper.context.isAccessible(sym, pre, superAccess = true)
               }
+              def byNameAlignsWithAlias(sym: Symbol) = (
+                (sym hasFlag BYNAMEPARAM) == (sym.alias hasFlag BYNAMEPARAM)
+              )
+              def isRedirectableParamAccessor(sym: Symbol) = (
+                   sym.isParamAccessor
+                && sym.alias != NoSymbol
+                && isAccessibleFromSuper(sym.alias)
+                && byNameAlignsWithAlias(sym)
+              )
 
-              // Direct calls to aliases of param accessors to the superclass in order to avoid
-              // duplicating fields.
-              // ... but, only if accessible (SI-6793)
-              if (sym.isParamAccessor && sym.alias != NoSymbol && isAccessibleFromSuper(sym.alias)) {
+              // Direct calls to aliases of param accessors to the superclass in order to avoid duplicating fields.
+              // ... but, only if accessible (SI-6793) ... and, only if by-name aligns (SI-9223)
+              if (isRedirectableParamAccessor(sym)) {
                 val result = (localTyper.typedPos(tree.pos) {
                   Select(Super(qual, tpnme.EMPTY) setPos qual.pos, sym.alias)
                 }).asInstanceOf[Select]
