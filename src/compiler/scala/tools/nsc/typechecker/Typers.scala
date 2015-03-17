@@ -2053,7 +2053,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 case acc                                           => acc
               }
               ownAcc match {
-                case acc: TermSymbol if !acc.isVariable =>
+                case acc: TermSymbol if !acc.isVariable && !isByNameParamType(acc.info) =>
                   debuglog(s"$acc has alias ${alias.fullLocationString}")
                   acc setAlias alias
                 case _ =>
