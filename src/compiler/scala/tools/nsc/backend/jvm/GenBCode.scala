@@ -217,11 +217,26 @@ abstract class GenBCode extends BCodeSyncAndTry {
     class Worker2 {
       lazy val localOpt = new LocalOpt(settings)
 
+      def runGlobalOptimizations(): Unit = {
+        import scala.collection.convert.decorateAsScala._
+        q2.asScala foreach {
+          case Item2(_, _, plain, _, _) =>
+            // skip mirror / bean: wd don't inline into tem, and they are not used in the plain class
+            if (plain != null) {
+              localOpt.minimalRemoveUnreachableCode(plain)
+              callGraph.addClass(plain)
+            }
+        }
+        bTypes.inliner.runInliner()
+      }
+
       def localOptimizations(classNode: ClassNode): Unit = {
         BackendStats.timed(BackendStats.methodOptTimer)(localOpt.methodOptimizations(classNode))
       }
 
       def run() {
+        if (settings.YoptInlinerEnabled) runGlobalOptimizations()
+
         while (true) {
           val item = q2.poll
           if (item.isPoison) {
@@ -269,7 +284,12 @@ abstract class GenBCode extends BCodeSyncAndTry {
 
     var arrivalPos = 0
 
-    /*
+    /**
+     * The `run` method is overridden because the backend has a different data flow than the default
+     * phase: the backend does not transform compilation units one by one, but on all units in the
+     * same run. This allows cross-unit optimizations and running some stages of the backend
+     * concurrently on multiple units.
+     *
      *  A run of the BCodePhase phase comprises:
      *
      *    (a) set-up steps (most notably supporting maps in `BCodeTypes`,
@@ -287,6 +307,10 @@ abstract class GenBCode extends BCodeSyncAndTry {
       arrivalPos = 0 // just in case
       scalaPrimitives.init()
       bTypes.initializeCoreBTypes()
+      bTypes.javaDefinedClasses.clear()
+      bTypes.javaDefinedClasses ++= currentRun.symSource collect {
+        case (sym, _) if sym.isJavaDefined => sym.javaBinaryName.toString
+      }
       Statistics.stopTimer(BackendStats.bcodeInitTimer, initStart)
 
       // initBytecodeWriter invokes fullName, thus we have to run it before the typer-dependent thread is activated.
@@ -410,4 +434,7 @@ object GenBCode {
 
   final val PublicStatic      = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC
   final val PublicStaticFinal = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC | asm.Opcodes.ACC_FINAL
+
+  val CLASS_CONSTRUCTOR_NAME    = "<clinit>"
+  val INSTANCE_CONSTRUCTOR_NAME = "<init>"
 }

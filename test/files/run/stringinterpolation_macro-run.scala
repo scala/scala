@@ -1,5 +1,5 @@
 /*
- * filter: inliner warnings; re-run with -Yinline-warnings for details
+ * filter: inliner warnings; re-run with
  */
 object Test extends App {
 
