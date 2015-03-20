@@ -138,7 +138,7 @@ lazy val asm = configureAsForkOfJavaProject(project)
 
 lazy val root = (project in file(".")).
   aggregate(library, forkjoin, reflect, compiler, asm, interactive, repl,
-    scaladoc, scalap).
+    scaladoc, scalap, actors).
   // make the root project an aggragate-only
   // we disable sbt's built-in Ivy plugin in the root project
   // so it doesn't produce any artifact including not building
