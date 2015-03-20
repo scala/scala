@@ -178,7 +178,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     }
   }
 
-  // Finally, noone resetAllAttrs it anymore, so I'm removing it from the compiler.
+  // Finally, no one uses resetAllAttrs anymore, so I'm removing it from the compiler.
   // Even though it's with great pleasure I'm doing that, I'll leave its body here to warn future generations about what happened in the past.
   //
   // So what actually happened in the past is that we used to have two flavors of resetAttrs: resetAllAttrs and resetLocalAttrs.
