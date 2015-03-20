@@ -33,7 +33,7 @@ trait Translations {
   def picklerTag(ref: AnyRef): Int = ref match {
     case tp: Type                       => picklerTag(tp)
     case sym: Symbol                    => picklerTag(sym)
-    case const: Constant                => LITERAL + const.tag
+    case const: Constant                => if (sip23) assert (const.tag != NoTag) ; LITERAL + const.tag
     case _: Tree                        => TREE           // its sub tag more precisely identifies it
     case _: TermName                    => TERMname
     case _: TypeName                    => TYPEname
