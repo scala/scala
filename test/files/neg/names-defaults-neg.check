@@ -118,68 +118,74 @@ names-defaults-neg.scala:93: warning: the parameter name y has been deprecated. 
 names-defaults-neg.scala:93: error: parameter 'b' is already specified at parameter position 1
   deprNam3(y = 10, b = 2)
                      ^
-names-defaults-neg.scala:98: error: unknown parameter name: m
+names-defaults-neg.scala:96: warning: naming parameter deprNam4Arg has been deprecated.
+  deprNam4(deprNam4Arg = null)
+                       ^
+names-defaults-neg.scala:98: warning: naming parameter deprNam5Arg has been deprecated.
+  deprNam5(deprNam5Arg = null)
+                       ^
+names-defaults-neg.scala:102: error: unknown parameter name: m
   f3818(y = 1, m = 1)
                  ^
-names-defaults-neg.scala:131: error: reference to var2 is ambiguous; it is both a method parameter and a variable in scope.
+names-defaults-neg.scala:135: error: reference to var2 is ambiguous; it is both a method parameter and a variable in scope.
   delay(var2 = 40)
              ^
-names-defaults-neg.scala:134: error: missing parameter type for expanded function ((x$1) => a = x$1)
+names-defaults-neg.scala:138: error: missing parameter type for expanded function ((x$1) => a = x$1)
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                          ^
-names-defaults-neg.scala:134: error: not found: value a
+names-defaults-neg.scala:138: error: not found: value a
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                      ^
-names-defaults-neg.scala:134: error: not found: value get
+names-defaults-neg.scala:138: error: not found: value get
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                                 ^
-names-defaults-neg.scala:135: error: parameter 'a' is already specified at parameter position 1
+names-defaults-neg.scala:139: error: parameter 'a' is already specified at parameter position 1
   val taf3 = testAnnFun(b = _: String, a = get(8))
                                          ^
-names-defaults-neg.scala:136: error: missing parameter type for expanded function ((x$3) => testAnnFun(x$3, ((x$4) => b = x$4)))
+names-defaults-neg.scala:140: error: missing parameter type for expanded function ((x$3) => testAnnFun(x$3, ((x$4) => b = x$4)))
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                ^
-names-defaults-neg.scala:136: error: missing parameter type for expanded function ((x$4) => b = x$4)
+names-defaults-neg.scala:140: error: missing parameter type for expanded function ((x$4) => b = x$4)
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                       ^
-names-defaults-neg.scala:136: error: not found: value b
+names-defaults-neg.scala:140: error: not found: value b
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                   ^
-names-defaults-neg.scala:144: error: variable definition needs type because 'x' is used as a named argument in its body.
+names-defaults-neg.scala:148: error: variable definition needs type because 'x' is used as a named argument in its body.
   def t3 { var x = t.f(x = 1) }
                ^
-names-defaults-neg.scala:147: error: variable definition needs type because 'x' is used as a named argument in its body.
+names-defaults-neg.scala:151: error: variable definition needs type because 'x' is used as a named argument in its body.
   object t6 { var x = t.f(x = 1) }
                   ^
-names-defaults-neg.scala:147: warning: type-checking the invocation of method f checks if the named argument expression 'x = ...' is a valid assignment
+names-defaults-neg.scala:151: warning: type-checking the invocation of method f checks if the named argument expression 'x = ...' is a valid assignment
 in the current scope. The resulting type inference error (see above) can be fixed by providing an explicit type in the local definition for x.
   object t6 { var x = t.f(x = 1) }
                             ^
-names-defaults-neg.scala:150: error: variable definition needs type because 'x' is used as a named argument in its body.
+names-defaults-neg.scala:154: error: variable definition needs type because 'x' is used as a named argument in its body.
   class t9 { var x = t.f(x = 1) }
                  ^
-names-defaults-neg.scala:150: warning: type-checking the invocation of method f checks if the named argument expression 'x = ...' is a valid assignment
+names-defaults-neg.scala:154: warning: type-checking the invocation of method f checks if the named argument expression 'x = ...' is a valid assignment
 in the current scope. The resulting type inference error (see above) can be fixed by providing an explicit type in the local definition for x.
   class t9 { var x = t.f(x = 1) }
                            ^
-names-defaults-neg.scala:164: error: variable definition needs type because 'x' is used as a named argument in its body.
+names-defaults-neg.scala:168: error: variable definition needs type because 'x' is used as a named argument in its body.
   def u3 { var x = u.f(x = 1) }
                ^
-names-defaults-neg.scala:167: error: variable definition needs type because 'x' is used as a named argument in its body.
+names-defaults-neg.scala:171: error: variable definition needs type because 'x' is used as a named argument in its body.
   def u6 { var x = u.f(x = "32") }
                ^
-names-defaults-neg.scala:170: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.
+names-defaults-neg.scala:174: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.
   def u9 { var x: Int = u.f(x = 1) }
                               ^
-names-defaults-neg.scala:177: error: variable definition needs type because 'x' is used as a named argument in its body.
+names-defaults-neg.scala:181: error: variable definition needs type because 'x' is used as a named argument in its body.
   class u15 { var x = u.f(x = 1) }
                   ^
-names-defaults-neg.scala:177: warning: type-checking the invocation of method f checks if the named argument expression 'x = ...' is a valid assignment
+names-defaults-neg.scala:181: warning: type-checking the invocation of method f checks if the named argument expression 'x = ...' is a valid assignment
 in the current scope. The resulting type inference error (see above) can be fixed by providing an explicit type in the local definition for x.
   class u15 { var x = u.f(x = 1) }
                             ^
-names-defaults-neg.scala:180: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.
+names-defaults-neg.scala:184: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.
   class u18 { var x: Int = u.f(x = 1) }
                                  ^
-four warnings found
+6 warnings found
 46 errors found
