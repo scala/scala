@@ -665,6 +665,15 @@ self =>
     }
     def isLiteral = isLiteralToken(in.token)
 
+    def isSimpleExprIntroToken(token: Token): Boolean = isLiteralToken(token) || (token match {
+      case IDENTIFIER | BACKQUOTED_IDENT |
+           THIS | SUPER | NEW | USCORE |
+           LPAREN | LBRACE | XMLSTART => true
+      case _ => false
+    })
+
+    def isSimpleExprIntro: Boolean = isExprIntroToken(in.token)
+
     def isExprIntroToken(token: Token): Boolean = isLiteralToken(token) || (token match {
       case IDENTIFIER | BACKQUOTED_IDENT |
            THIS | SUPER | IF | FOR | NEW | USCORE | TRY | WHILE |
@@ -1565,11 +1574,14 @@ self =>
     def prefixExpr(): Tree = {
       if (isUnaryOp) {
         atPos(in.offset) {
-          val name = nme.toUnaryName(rawIdent().toTermName)
-          if (name == nme.UNARY_- && isNumericLit)
-            simpleExprRest(literal(isNegated = true), canApply = true)
-          else
-            Select(stripParens(simpleExpr()), name)
+          if (lookingAhead(isSimpleExprIntro)) {
+            val uname = nme.toUnaryName(rawIdent().toTermName)
+            if (uname == nme.UNARY_- && isNumericLit)
+              simpleExprRest(literal(isNegated = true), canApply = true)
+            else
+              Select(stripParens(simpleExpr()), uname)
+          }
+          else simpleExpr()
         }
       }
       else simpleExpr()
