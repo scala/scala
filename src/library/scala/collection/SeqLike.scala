@@ -447,9 +447,11 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
   def diff[B >: A](that: GenSeq[B]): Repr = {
     val occ = occCounts(that.seq)
     val b = newBuilder
-    for (x <- this)
-      if (occ(x) == 0) b += x
-      else occ(x) -= 1
+    for (x <- this) {
+      val ox = occ(x)  // Avoid multiple map lookups
+      if (ox == 0) b += x
+      else occ(x) = ox - 1
+    }
     b.result()
   }
 
@@ -476,11 +478,13 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
   def intersect[B >: A](that: GenSeq[B]): Repr = {
     val occ = occCounts(that.seq)
     val b = newBuilder
-    for (x <- this)
-      if (occ(x) > 0) {
+    for (x <- this) {
+      val ox = occ(x)  // Avoid multiple map lookups
+      if (ox > 0) {
         b += x
-        occ(x) -= 1
+        occ(x) = ox - 1
       }
+    }
     b.result()
   }
 
@@ -509,22 +513,35 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
 
   def patch[B >: A, That](from: Int, patch: GenSeq[B], replaced: Int)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
-    val (prefix, rest) = this.splitAt(from)
-    b ++= toCollection(prefix)
+    var i = 0
+    val it = this.iterator
+    while (i < from && it.hasNext) {
+      b += it.next()
+      i += 1
+    }
     b ++= patch.seq
-    b ++= toCollection(rest).view drop replaced
+    i = replaced
+    while (i > 0 && it.hasNext) {
+      it.next()
+      i -= 1
+    }
+    while (it.hasNext) b += it.next()
     b.result()
   }
 
   def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     if (index < 0) throw new IndexOutOfBoundsException(index.toString)
     val b = bf(repr)
-    val (prefix, rest) = this.splitAt(index)
-    val restColl = toCollection(rest)
-    if (restColl.isEmpty) throw new IndexOutOfBoundsException(index.toString)
-    b ++= toCollection(prefix)
+    var i = 0
+    val it = this.iterator
+    while (i < index && it.hasNext) {
+      b += it.next()
+      i += 1
+    }
+    if (!it.hasNext) throw new IndexOutOfBoundsException(index.toString)
     b += elem
-    b ++= restColl.view.tail
+    it.next()
+    while (it.hasNext) b += it.next()
     b.result()
   }
 
@@ -544,8 +561,9 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
 
   def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
-    b.sizeHint(length max len)
-    var diff = len - length
+    val L = length
+    b.sizeHint(math.max(L, len))
+    var diff = len - L
     b ++= thisCollection
     while (diff > 0) {
       b += elem
@@ -617,16 +635,23 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
    */
   def sorted[B >: A](implicit ord: Ordering[B]): Repr = {
     val len = this.length
-    val arr = new ArraySeq[A](len)
-    var i = 0
-    for (x <- this) {
-      arr(i) = x
-      i += 1
-    }
-    java.util.Arrays.sort(arr.array, ord.asInstanceOf[Ordering[Object]])
     val b = newBuilder
-    b.sizeHint(len)
-    for (x <- arr) b += x
+    if (len == 1) b ++= this
+    else if (len > 1) {
+      b.sizeHint(len)
+      val arr = new Array[AnyRef](len)  // Previously used ArraySeq for more compact but slower code
+      var i = 0
+      for (x <- this) {
+        arr(i) = x.asInstanceOf[AnyRef]
+        i += 1
+      }
+      java.util.Arrays.sort(arr, ord.asInstanceOf[Ordering[Object]])
+      i = 0
+      while (i < arr.length) {
+        b += arr(i).asInstanceOf[A]
+        i += 1
+      }
+    }
     b.result()
   }
 
