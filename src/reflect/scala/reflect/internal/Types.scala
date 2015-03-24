@@ -666,7 +666,7 @@ trait Types
         )
         if (trivial) this
         else {
-          val m     = newAsSeenFromMap(pre.normalize, clazz)
+          val m     = new AsSeenFromMap(pre.normalize, clazz)
           val tp    = m(this)
           val tp1   = existentialAbstraction(m.capturedParams, tp)
 
