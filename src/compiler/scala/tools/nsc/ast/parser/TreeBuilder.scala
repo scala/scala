@@ -128,26 +128,57 @@ abstract class TreeBuilder {
   def makeCaseDef(pat: Tree, guard: Tree, rhs: Tree): CaseDef =
     CaseDef(gen.patvarTransformer.transform(pat), guard, rhs)
 
-  /** Creates tree representing:
+  /** Create tree representing:
    *    { case x: Throwable =>
-   *        val catchFn = catchExpr
-   *        if (catchFn isDefinedAt x) catchFn(x) else throw x
+   *        @inline def f[A](pf: PartialFunction[Throwable, A]) = pf
+   *        f(catchExpr).applyOrElse(x, t => throw t)
    *    }
+   *  The names `x` and `f` are fresh names.
+   *
+   *  The `catchExpr` can be either a cases block, for which the cases
+   *  are used directly, or an arbitrary expr to be wrapped as shown.
+   *  The expr must conform to `PartialFunction[Throwable, ?]`.
    */
-  def makeCatchFromExpr(catchExpr: Tree): CaseDef = {
-    val binder   = freshTermName()
-    val pat      = Bind(binder, Typed(Ident(nme.WILDCARD), Ident(tpnme.Throwable)))
-    val catchDef = ValDef(Modifiers(ARTIFACT), freshTermName("catchExpr"), TypeTree(), catchExpr)
-    val catchFn  = Ident(catchDef.name)
-    val body     = atPos(catchExpr.pos.makeTransparent)(Block(
-      List(catchDef),
-      If(
-        Apply(Select(catchFn, nme.isDefinedAt), List(Ident(binder))),
-        Apply(Select(catchFn, nme.apply), List(Ident(binder))),
-        Throw(Ident(binder))
+  def makeCatchFromExpr(catchExpr: Tree): List[CaseDef] = catchExpr match {
+    case Match(EmptyTree, cases) => cases
+    case _ =>
+      val binder      = freshTermName()
+      val pat         = Bind(binder, Typed(Ident(nme.WILDCARD), Ident(tpnme.Throwable)))
+
+      // since we're parser sugar, make a helper to infer A
+      //q"@_root_.scala.inline def f[A](pf: PartialFunction[Throwable, A]) = pf"
+      val pfIdentity  = freshTermName()
+      val inferHelper = DefDef(
+        Modifiers(ARTIFACT, privateWithin = typeNames.EMPTY,
+          List(
+            Apply(Select(New(Select(Select(Ident(termNames.ROOTPKG), TermName("scala")), TypeName("inline"))), termNames.CONSTRUCTOR), List())
+        )),
+        pfIdentity,
+        List(TypeDef(Modifiers(PARAM), TypeName("A"), List(), TypeBoundsTree(EmptyTree, EmptyTree))),
+        List(List(
+          ValDef(Modifiers(PARAM), TermName("pf"),
+            AppliedTypeTree(Ident(TypeName("PartialFunction")), List(Ident(TypeName("Throwable")), Ident(TypeName("A")))),
+            EmptyTree))),
+        TypeTree(),
+        Ident(TermName("pf"))
       )
-    ))
-    makeCaseDef(pat, EmptyTree, body)
+
+      //q"f(h).applyOrElse(t, (x: Throwable) => throw x)"
+      val doit = Apply(
+        Select(
+          Apply(Ident(pfIdentity), List(catchExpr)),
+          TermName("applyOrElse")),
+        List(Ident(binder),
+          Function(List(ValDef(Modifiers(PARAM), TermName("x"), Ident(TypeName("Throwable")), EmptyTree)),
+            Throw(Ident(TermName("x"))))
+        )
+      )
+
+      val body = atPos(catchExpr.pos.makeTransparent)(Block(
+        List(inferHelper),
+        doit
+      ))
+      List(makeCaseDef(pat, EmptyTree, body))
   }
 
   /** Create a tree representing the function type (argtpes) => restpe */
