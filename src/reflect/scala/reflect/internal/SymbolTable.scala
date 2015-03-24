@@ -9,6 +9,7 @@ package internal
 
 import scala.annotation.elidable
 import scala.collection.{ mutable, immutable }
+import scala.compat.Platform.EOL
 import util._
 import java.util.concurrent.TimeUnit
 import scala.reflect.internal.{TreeGen => InternalTreeGen}
@@ -70,10 +71,20 @@ abstract class SymbolTable extends macros.Universe
   def debuglog(msg:  => String): Unit = if (settings.debug) log(msg)
   def devWarning(msg: => String): Unit = if (isDeveloper) Console.err.println(msg)
   def throwableAsString(t: Throwable): String = "" + t
-  def throwableAsString(t: Throwable, maxFrames: Int): String = t.getStackTrace take maxFrames mkString "\n  at "
+
+  def throwableAsString(t: Throwable, maxFrames: Int): String =
+    if (t.getStackTrace exists (_.getMethodName == "macroExpandWithRuntime"))
+      StackTracing.stackTracePrefixString(t)(_.getMethodName != "macroExpandWithRuntime")
+    else {
+      var count = 0
+      StackTracing.stackTracePrefixString(t) { _ =>
+        count += 1
+        count < maxFrames
+      }
+    }
 
   @inline final def devWarningDumpStack(msg: => String, maxFrames: Int): Unit =
-    devWarning(msg + "\n" + throwableAsString(new Throwable, maxFrames))
+    devWarning(s"${ msg }${ EOL }${ throwableAsString(new Throwable, maxFrames) }")
 
   /** Prints a stack trace if -Ydebug or equivalent was given, otherwise does nothing. */
   def debugStack(t: Throwable): Unit  = devWarning(throwableAsString(t))
