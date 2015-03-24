@@ -140,7 +140,20 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         if (!thisProxy.exists) {
           target setFlag STATIC
         }
-        val params = ((optionSymbol(thisProxy) map {proxy:Symbol => ValDef(proxy)}) ++ (target.paramss.flatten map ValDef.apply)).toList
+        val targetParams = target.paramss.flatten map (param => ValDef(param))
+        val arity = fun.vparams.length
+        val numParamsBeforeMixin = enteringMixin(target.info.params.length)
+        val numParams = target.info.params.length
+        val numCapturedParams = numParamsBeforeMixin - arity
+        val hasSelfParam = {
+          val numSelfParams = numParams - arity - numCapturedParams
+          assert((0 to 1) contains numSelfParams, target.info)
+          numSelfParams > 0
+        }
+        val (selfParam, nonSelfParams) = targetParams.splitAt(if (hasSelfParam) 1 else 0)
+        val (lambdaParams, captureParams) = nonSelfParams.splitAt(arity)
+        val thisProxyParam: Option[ValDef] = optionSymbol(thisProxy) map {proxy:Symbol => ValDef(proxy)}
+        val params = thisProxyParam.toList ++ selfParam ++ captureParams ++ lambdaParams
 
         val methSym = oldClass.newMethod(unit.freshTermName(nme.accessor.toString() + "$"), target.pos, FINAL | BRIDGE | SYNTHETIC | PROTECTED | STATIC)
 
@@ -155,9 +168,13 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         oldClass.info.decls enter methSym
 
         val body = localTyper.typed {
-          val newTarget = Select(if (thisProxy.exists) gen.mkAttributedRef(paramSyms(0)) else gen.mkAttributedThis(oldClass), target)
-          val newParams = paramSyms drop (if (thisProxy.exists) 1 else 0) map Ident
-          Apply(newTarget, newParams)
+          val qual = thisProxyParam match {
+            case Some(t) => gen.mkAttributedRef(t.symbol)
+            case _       => gen.mkAttributedThis(oldClass)
+          }
+          val newTarget = Select(qual, target)
+          val args = (selfParam ++ lambdaParams ++ captureParams).map(t => Ident(t.symbol))
+          Apply(newTarget, args)
         } setPos fun.pos
         val methDef = DefDef(methSym, List(params), body)
 
@@ -186,7 +203,9 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
         newClass.info.decls enter methSym
 
-        val Apply(_, oldParams) = fun.body
+        val (selfParam, nonSelfParams) = fun.body.asInstanceOf[Apply].args.splitAt(if (accessor.symbol.owner.isTrait) 1 else 0)
+        val (lambdaParams, capturedParams) = nonSelfParams.splitAt(fun.vparams.length)
+        val oldParams = selfParam ++ capturedParams ++ lambdaParams
 
         val body = localTyper typed Apply(Select(gen.mkAttributedThis(oldClass), accessor.symbol), (optionSymbol(thisProxy) map {tp => Select(gen.mkAttributedThis(newClass), tp)}).toList ++ oldParams)
         body.substituteSymbols(fun.vparams map (_.symbol), params map (_.symbol))
