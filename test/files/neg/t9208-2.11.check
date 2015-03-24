@@ -1,0 +1,4 @@
+t9208-2.11.scala:25: error: could not find implicit value for parameter e: M
+    implicitly[M]
+              ^
+one error found

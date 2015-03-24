@@ -780,6 +780,8 @@ trait Implicits {
      *                             enclosing scope, and so on.
      */
     class ImplicitComputation(iss: Infoss, isLocalToCallsite: Boolean) {
+      // SI-9208 This shadowing detection is removed under -Xsource:2.12 as it is incorrect (see pos/t9208.scala)
+      //         and the correct shadowing detection is still provided later in `typedImplicit`.
       abstract class Shadower {
         def addInfos(infos: Infos)
         def isShadowed(name: Name): Boolean
@@ -812,9 +814,9 @@ trait Implicits {
       /** True if a given ImplicitInfo (already known isValid) is eligible.
        */
       def survives(info: ImplicitInfo) = (
-           !isIneligible(info)                      // cyclic, erroneous, shadowed, or specially excluded
+           !isIneligible(info)                      // cyclic, erroneous, or specially excluded
         && isPlausiblyCompatible(info.tpe, wildPt)  // optimization to avoid matchesPt
-        && !shadower.isShadowed(info.name)          // OPT rare, only check for plausible candidates
+        && (settings.isScala212 || !shadower.isShadowed(info.name))
         && matchesPt(info)                          // stable and matches expected type
       )
       /** The implicits that are not valid because they come later in the source and

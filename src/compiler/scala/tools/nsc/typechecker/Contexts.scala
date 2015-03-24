@@ -872,12 +872,9 @@ trait Contexts { self: Analyzer =>
       if (owner != nextOuter.owner && owner.isClass && !owner.isPackageClass && !inSelfSuperCall) {
         if (!owner.isInitialized) None
         else savingEnclClass(this) {
-          // !!! In the body of `class C(implicit a: A) { }`, `implicitss` returns `List(List(a), List(a), List(<predef..)))`
-          //     it handled correctly by implicit search, which considers the second `a` to be shadowed, but should be
-          //     remedied nonetheless.
           Some(collectImplicits(owner.thisType.implicitMembers, owner.thisType))
         }
-      } else if (scope != nextOuter.scope && !owner.isPackageClass) {
+      } else if (scope != nextOuter.scope && !owner.isClass) {
         debuglog("collect local implicits " + scope.toList)//DEBUG
         Some(collectImplicits(scope, NoPrefix))
       } else if (firstImport != nextOuter.firstImport) {
