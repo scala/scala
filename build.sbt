@@ -56,10 +56,12 @@ val bootstrapScalaVersion = "2.11.5"
 val scalaParserCombinatorsDep = "org.scala-lang.modules" %% "scala-parser-combinators" % versionNumber("scala-parser-combinators") exclude("org.scala-lang", "scala-library")
 val scalaXmlDep = "org.scala-lang.modules" %% "scala-xml" % versionNumber("scala-xml") exclude("org.scala-lang", "scala-library")
 val partestDep = "org.scala-lang.modules" %% "scala-partest" % versionNumber("partest") exclude("org.scala-lang", "scala-library")
+val partestInterfaceDep = "org.scala-lang.modules" %% "scala-partest-interface" % "0.5.0" exclude("org.scala-lang", "scala-library")
 val junitDep = "junit" % "junit" % "4.11"
 val junitIntefaceDep = "com.novocode" % "junit-interface" % "0.11" % "test"
 val jlineDep = "jline" % "jline" % versionProps("jline.version")
 val antDep = "org.apache.ant" % "ant" % "1.9.4"
+val scalacheckDep = "org.scalacheck" %% "scalacheck" % "1.11.4" exclude("org.scala-lang", "scala-library")
 
 lazy val commonSettings = clearSourceAndResourceDirectories ++ Seq[Setting[_]](
   organization := "org.scala-lang",
@@ -179,6 +181,10 @@ lazy val compiler = configureAsSubproject(project)
 
 lazy val interactive = configureAsSubproject(project)
   .settings(disableDocsAndPublishingTasks: _*)
+  .settings(
+    scalaVersion := bootstrapScalaVersion,
+    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
+  )
   .dependsOn(compiler)
 
 lazy val repl = configureAsSubproject(project)
@@ -228,6 +234,61 @@ lazy val junit = project.in(file("test") / "junit")
     libraryDependencies ++= Seq(junitDep, junitIntefaceDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
+  )
+
+lazy val partestJavaAgent = (project in file(".") / "src" / "partest-javaagent").
+  dependsOn(asm).
+  settings(commonSettings: _*).
+  settings(
+    doc := file("!!! NO DOCS !!!"),
+    publishLocal := {},
+    publish := {},
+    scalaVersion := bootstrapScalaVersion,
+    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
+    // Setting name to "scala-partest-javaagent" so that the jar file gets that name, which the Runner relies on
+    name := "scala-partest-javaagent",
+    // writing jar file to /build/pack/lib because that's where it's expected to be found
+    artifactPath in packageBin in Compile := {
+      val resolvedArtifact = artifact.value
+      root.base / s"build/pack/lib/${resolvedArtifact.name}.${resolvedArtifact.extension}"
+    },
+    // add required manifest entry - previously included from file
+    packageOptions in (Compile, packageBin) +=
+      Package.ManifestAttributes( "Premain-Class" -> "scala.tools.partest.javaagent.ProfilingAgent" ),
+    // we need to build this to a JAR
+    exportJars := true
+  )
+
+lazy val test = project.
+  dependsOn(compiler, interactive, actors, repl, scalap, partestExtras, partestJavaAgent, asm, scaladoc).
+  configs(IntegrationTest).
+  settings(disableDocsAndPublishingTasks: _*).
+  settings(commonSettings: _*).
+  settings(Defaults.itSettings: _*).
+  settings(
+    scalaVersion := bootstrapScalaVersion,
+    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
+    libraryDependencies ++= Seq(partestDep, scalaXmlDep, partestInterfaceDep, scalacheckDep),
+    unmanagedBase in Test := baseDirectory.value / "files" / "lib",
+    unmanagedJars in Test <+= (unmanagedBase) (j => Attributed.blank(j)) map(identity),
+    // no main sources
+    sources in Compile := Seq.empty,
+    // test sources are compiled in partest run, not here
+    sources in IntegrationTest := Seq.empty,
+    fork in IntegrationTest := true,
+    javaOptions in IntegrationTest += "-Xmx1G",
+    testFrameworks += new TestFramework("scala.tools.partest.Framework"),
+    testOptions in IntegrationTest += Tests.Setup( () => root.base.getAbsolutePath + "/pull-binary-libs.sh" ! ),
+    definedTests in IntegrationTest += (
+      new sbt.TestDefinition(
+        "partest",
+        // marker fingerprint since there are no test classes
+        // to be discovered by sbt:
+        new sbt.testing.AnnotatedFingerprint {
+          def isModule = true
+          def annotationName = "partest"
+        }, true, Array())
+     )
   )
 
 lazy val root = (project in file(".")).
