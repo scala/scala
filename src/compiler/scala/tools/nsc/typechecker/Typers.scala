@@ -1039,11 +1039,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // to non-continuation types.
           if (tree.tpe <:< AnyTpe) pt.dealias match {
             case TypeRef(_, UnitClass, _) => // (12)
-              if (settings.warnValueDiscard)
+              if (!isPastTyper && settings.warnValueDiscard)
                 context.warning(tree.pos, "discarded non-Unit value")
               return typedPos(tree.pos, mode, pt)(Block(List(tree), Literal(Constant(()))))
             case TypeRef(_, sym, _) if isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt) =>
-              if (settings.warnNumericWiden)
+              if (!isPastTyper && settings.warnNumericWiden)
                 context.warning(tree.pos, "implicit numeric widening")
               return typedPos(tree.pos, mode, pt)(Select(tree, "to" + sym.name))
             case _ =>
