@@ -1,0 +1,12 @@
+t9127.scala:4: warning: possible missing interpolator: detected interpolated identifier `$s`
+  val t = "$s"
+          ^
+t9127.scala:5: warning: possible missing interpolator: detected an interpolated expression
+  val u = "a${s}b"
+          ^
+t9127.scala:6: warning: possible missing interpolator: detected interpolated identifier `$s`
+  val v = "a$s b"
+          ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found

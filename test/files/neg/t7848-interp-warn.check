@@ -4,9 +4,12 @@ t7848-interp-warn.scala:8: warning: possible missing interpolator: detected inte
 t7848-interp-warn.scala:12: warning: possible missing interpolator: detected an interpolated expression
     "A doubly important ${foo * 2} message!"
     ^
+t7848-interp-warn.scala:15: warning: possible missing interpolator: detected interpolated identifier `$bar`
+  def i = s"Try using '${ "$bar" }' instead."  // was: no warn on space test
+                          ^
 t7848-interp-warn.scala:16: warning: possible missing interpolator: detected interpolated identifier `$bar`
   def j = s"Try using '${ "something like $bar" }' instead."  // warn
                           ^
 error: No warnings can be incurred under -Xfatal-warnings.
-three warnings found
+four warnings found
 one error found
