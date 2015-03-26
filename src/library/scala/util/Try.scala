@@ -60,7 +60,7 @@ import scala.language.implicitConversions
  * @author based on Twitter's original implementation in com.twitter.util.
  * @since 2.10
  */
-sealed abstract class Try[+T] {
+sealed abstract class Try[+T] extends Product with Serializable {
 
   /** Returns `true` if the `Try` is a `Failure`, `false` otherwise.
    */
