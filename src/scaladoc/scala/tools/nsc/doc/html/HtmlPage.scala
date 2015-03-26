@@ -206,25 +206,42 @@ abstract class HtmlPage extends Page { thisPage =>
     case tpl :: tpls => templateToHtml(tpl) ++ sep ++ templatesToHtml(tpls, sep)
   }
 
-  /** Returns the _big image name corresponding to the DocTemplate Entity (upper left icon) */
-  def docEntityKindToBigImage(ety: DocTemplateEntity) =
-    if (ety.isTrait && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None) "trait_to_object_big.png"
-    else if (ety.isTrait) "trait_big.png"
-    else if (ety.isClass && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None) "class_to_object_big.png"
-    else if (ety.isClass) "class_big.png"
-    else if ((ety.isAbstractType || ety.isAliasType) && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None) "type_to_object_big.png"
-    else if ((ety.isAbstractType || ety.isAliasType)) "type_big.png"
-    else if (ety.isObject && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None && ety.companion.get.isClass) "object_to_class_big.png"
-    else if (ety.isObject && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None && ety.companion.get.isTrait) "object_to_trait_big.png"
-    else if (ety.isObject && !ety.companion.isEmpty && ety.companion.get.visibility.isPublic && ety.companion.get.inSource != None && (ety.companion.get.isAbstractType || ety.companion.get.isAliasType)) "object_to_trait_big.png"
-    else if (ety.isObject) "object_big.png"
-    else if (ety.isPackage) "package_big.png"
-    else "class_big.png"  // FIXME: an entity *should* fall into one of the above categories, but AnyRef is somehow not
+  object Image extends Enumeration {
+    val Trait, Class, Type, Object, Package = Value
+  }
+
+  /** Returns the _big image name and the alt attribute
+   *  corresponding to the DocTemplate Entity (upper left icon) */
+  def docEntityKindToBigImage(ety: DocTemplateEntity) = {
+    def entityToImage(e: DocTemplateEntity) =
+      if (e.isTrait)                              Image.Trait
+      else if (e.isClass)                         Image.Class
+      else if (e.isAbstractType || e.isAliasType) Image.Type
+      else if (e.isObject)                        Image.Object
+      else if (e.isPackage)                       Image.Package
+      else {
+        // FIXME: an entity *should* fall into one of the above categories,
+        // but AnyRef is somehow not
+        Image.Class
+      }
+
+    val image = entityToImage(ety)
+    val companionImage = ety.companion filter {
+      e => e.visibility.isPublic && ! e.inSource.isEmpty
+    } map { entityToImage }
+
+    (image, companionImage) match {
+      case (from, Some(to)) =>
+        ((from + "_to_" + to + "_big.png").toLowerCase, from + "/" + to)
+      case (from, None) =>
+        ((from + "_big.png").toLowerCase, from.toString)
+    }
+  }
 
   def permalink(template: Entity, isSelf: Boolean = true): Elem =
     <span class="permalink">
       <a href={ memberToUrl(template, isSelf) } title="Permalink" target="_top">
-        <img src={ relativeLinkTo(List("permalink.png", "lib")) } />
+        <img src={ relativeLinkTo(List("permalink.png", "lib")) } alt="Permalink" />
       </a>
     </span>
 	

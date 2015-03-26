@@ -103,11 +103,13 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     <body class={ if (tpl.isType) "type" else "value" }>
       <div id="definition">
         {
+          val (src, alt) = docEntityKindToBigImage(tpl)
+
           tpl.companion match {
             case Some(companion) if (companion.visibility.isPublic && companion.inSource != None) =>
-              <a href={relativeLinkTo(companion)} title={docEntityKindToCompanionTitle(tpl)}><img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/></a>
+              <a href={relativeLinkTo(companion)} title={docEntityKindToCompanionTitle(tpl)}><img alt={alt} src={ relativeLinkTo(List(src, "lib")) }/></a>
             case _ =>
-              <img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/>
+              <img alt={alt} src={ relativeLinkTo(List(src, "lib")) }/>
         }}
         { owner }
         <h1>{ displayName }</h1>{
