@@ -2661,7 +2661,7 @@ trait Trees { self: Universe =>
    *  @group Traversal
    */
   abstract class ModifiersExtractor {
-    def apply(): Modifiers = Modifiers(NoFlags, tpnme.EMPTY, List())
+    def apply(): Modifiers = Modifiers(NoFlags, typeNames.EMPTY, List())
     def apply(flags: FlagSet, privateWithin: Name, annotations: List[Tree]): Modifiers
     def unapply(mods: Modifiers): Option[(FlagSet, Name, List[Tree])]
   }
@@ -2674,7 +2674,7 @@ trait Trees { self: Universe =>
   /** The factory for `Modifiers` instances.
    *  @group Traversal
    */
-  def Modifiers(flags: FlagSet): Modifiers = Modifiers(flags, tpnme.EMPTY)
+  def Modifiers(flags: FlagSet): Modifiers = Modifiers(flags, typeNames.EMPTY)
 
   /** An empty `Modifiers` object: no flags, empty visibility annotation and no Scala annotations.
    *  @group Traversal

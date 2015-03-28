@@ -10,6 +10,7 @@ package transform
 import symtab.Flags._
 import scala.collection.{ mutable, immutable }
 import scala.language.postfixOps
+import scala.reflect.internal.util.ListOfNil
 
 /*<export> */
 /** - uncurry all symbol and tree types (@see UnCurryPhase) -- this includes normalizing all proper types.
@@ -206,7 +207,7 @@ abstract class UnCurry extends InfoTransform
         // (() => Int) { def apply(): Int @typeConstraint }
         case RefinedType(List(funTp), decls) =>
           debuglog(s"eliminate refinement from function type ${fun.tpe}")
-          fun.tpe = funTp
+          fun.setType(funTp)
         case _ =>
           ()
       }

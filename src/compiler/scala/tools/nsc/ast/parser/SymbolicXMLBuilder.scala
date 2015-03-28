@@ -8,6 +8,7 @@ package ast.parser
 
 import scala.collection.{ mutable, immutable }
 import symtab.Flags.MUTABLE
+import scala.reflect.internal.util.ListOfNil
 import scala.reflect.internal.util.StringOps.splitWhere
 
 /** This class builds instance of `Tree` that represent XML.

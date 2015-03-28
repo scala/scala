@@ -230,6 +230,6 @@ trait StandardLiftables { self: Universe =>
     val Symbol     = TermName("Symbol")
     val util       = TermName("util")
     val Vector     = TermName("Vector")
-    val WILDCARD   = self.nme.WILDCARD
+    val WILDCARD   = self.termNames.WILDCARD
   }
 }

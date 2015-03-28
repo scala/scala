@@ -14,7 +14,7 @@ package tools.nsc
 package typechecker
 
 import scala.collection.{mutable, immutable}
-import scala.reflect.internal.util.{ BatchSourceFile, Statistics, shortClassOfInstance }
+import scala.reflect.internal.util.{ BatchSourceFile, Statistics, shortClassOfInstance, ListOfNil }
 import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
@@ -245,7 +245,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       case TypeRef(_, sym, _) if sym.isAliasType =>
         val tp0 = tp.dealias
         if (tp eq tp0) {
-          debugwarn(s"dropExistential did not progress dealiasing $tp, see SI-7126")
+          devWarning(s"dropExistential did not progress dealiasing $tp, see SI-7126")
           tp
         } else {
           val tp1 = dropExistential(tp0)
@@ -2044,7 +2044,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (mexists(vparamss)(_.symbol == superArg.symbol)) {
             val alias = (
               superAcc.initialize.alias
-                orElse (superAcc getter superAcc.owner)
+                orElse (superAcc getterIn superAcc.owner)
                 filter (alias => superClazz.info.nonPrivateMember(alias.name) == alias)
             )
             if (alias.exists && !alias.accessed.isVariable && !isRepeatedParamType(alias.accessed.info)) {
@@ -2565,7 +2565,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val default = methodSym newValueParameter (newTermName("default"), tree.pos.focus, SYNTHETIC) setInfo functionType(List(A1.tpe), B1.tpe)
 
         val paramSyms = List(x, default)
-        methodSym setInfo polyType(List(A1, B1), MethodType(paramSyms, B1.tpe))
+        methodSym setInfo genPolyType(List(A1, B1), MethodType(paramSyms, B1.tpe))
 
         val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym))
         if (!paramSynthetic) methodBodyTyper.context.scope enter x
@@ -2865,7 +2865,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         ClassDef(Modifiers(FINAL), tpnme.ANON_FUN_NAME, tparams = Nil,
           gen.mkTemplate(
             parents    = TypeTree(samClassTpFullyDefined) :: serializableParentAddendum,
-            self       = emptyValDef,
+            self       = noSelfType,
             constrMods = NoMods,
             vparamss   = ListOfNil,
             body       = List(samDef),
@@ -2934,7 +2934,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         var issuedMissingParameterTypeError = false
         foreach2(fun.vparams, argpts) { (vparam, argpt) =>
           if (vparam.tpt.isEmpty) {
-            vparam.tpt.tpe =
+            val vparamType =
               if (isFullyDefined(argpt)) argpt
               else {
                 fun match {
@@ -2953,6 +2953,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 issuedMissingParameterTypeError = true
                 ErrorType
               }
+            vparam.tpt.setType(vparamType)
             if (!vparam.tpt.pos.isDefined) vparam.tpt setPos vparam.pos.focus
           }
         }
@@ -4365,7 +4366,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         def narrowRhs(tp: Type) = { val sym = context.tree.symbol
           context.tree match {
             case ValDef(mods, _, _, Apply(Select(`tree`, _), _)) if !mods.isMutable && sym != null && sym != NoSymbol =>
-              val sym1 = if (sym.owner.isClass && sym.getter(sym.owner) != NoSymbol) sym.getter(sym.owner)
+              val sym1 = if (sym.owner.isClass && sym.getterIn(sym.owner) != NoSymbol) sym.getterIn(sym.owner)
                 else sym.lazyAccessorOrSelf
               val pre = if (sym1.owner.isClass) sym1.owner.thisType else NoPrefix
               intersectionType(List(tp, singleType(pre, sym1)))
@@ -5198,7 +5199,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           def warn(message: String)         = context.warning(lit.pos, s"possible missing interpolator: $message")
           def suspiciousSym(name: TermName) = context.lookupSymbol(name, _ => true).symbol
           def suspiciousExpr                = InterpolatorCodeRegex findFirstIn s
-          def suspiciousIdents              = InterpolatorIdentRegex findAllIn s map (s => suspiciousSym(s drop 1))
+          def suspiciousIdents              = InterpolatorIdentRegex findAllIn s map (s => suspiciousSym(TermName(s drop 1)))
 
           if (suspiciousExpr.nonEmpty)
             warn("detected an interpolated expression") // "${...}"
@@ -5381,8 +5382,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       )
       def runTyper(): Tree = {
         if (retypingOk) {
-          tree.tpe = null
-          if (tree.hasSymbol) tree.symbol = NoSymbol
+          tree.setType(null)
+          if (tree.hasSymbolField) tree.symbol = NoSymbol
         }
         val alreadyTyped = tree.tpe ne null
         val shouldPrint = !alreadyTyped && !phase.erasedTypes
