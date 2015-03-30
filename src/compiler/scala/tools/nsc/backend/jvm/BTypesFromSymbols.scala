@@ -7,7 +7,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.tools.asm
-import scala.tools.nsc.backend.jvm.opt.{CallGraph, Inliner, ByteCodeRepository}
+import scala.tools.nsc.backend.jvm.opt.{LocalOpt, CallGraph, Inliner, ByteCodeRepository}
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo, InternalName}
 import BackendReporting._
 
@@ -36,6 +36,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   import coreBTypes._
 
   val byteCodeRepository = new ByteCodeRepository(global.classPath, javaDefinedClasses, recordPerRunCache(collection.concurrent.TrieMap.empty))
+
+  val localOpt = new LocalOpt(settings, unreachableCodeEliminated)
 
   val inliner: Inliner[this.type] = new Inliner(this)
 

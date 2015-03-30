@@ -47,44 +47,37 @@ import scala.tools.nsc.settings.ScalaSettings
  * stale labels
  *   - eliminate labels that are not referenced, merge sequences of label definitions.
  */
-class LocalOpt(settings: ScalaSettings) {
-  /**
-   * Remove unreachable code from all methods of `classNode`. See of its overload.
-   *
-   * @param classNode The class to optimize
-   * @return          `true` if unreachable code was removed from any method
-   */
-  def minimalRemoveUnreachableCode(classNode: ClassNode): Boolean = {
-    classNode.methods.asScala.foldLeft(false) {
-      case (changed, method) => minimalRemoveUnreachableCode(method, classNode.name) || changed
-    }
-  }
-
+class LocalOpt(settings: ScalaSettings, unreachableCodeEliminated: collection.mutable.Set[MethodNode]) {
   /**
    * Remove unreachable code from a method.
    *
    * This implementation only removes instructions that are unreachable for an ASM analyzer /
    * interpreter. This ensures that future analyses will not produce `null` frames. The inliner
    * and call graph builder depend on this property.
+   *
+   * @return A set containing the eliminated instructions
    */
-  def minimalRemoveUnreachableCode(method: MethodNode, ownerClassName: InternalName): Boolean = {
-    if (method.instructions.size == 0) return false // fast path for abstract methods
+  def minimalRemoveUnreachableCode(method: MethodNode, ownerClassName: InternalName): Set[AbstractInsnNode] = {
+    if (method.instructions.size == 0) return Set.empty     // fast path for abstract methods
+    if (unreachableCodeEliminated(method)) return Set.empty // we know there is no unreachable code
 
     // For correctness, after removing unreachable code, we have to eliminate empty exception
     // handlers, see scaladoc of def methodOptimizations. Removing an live handler may render more
     // code unreachable and therefore requires running another round.
-    def removalRound(): Boolean = {
-      val (codeRemoved, liveLabels) = removeUnreachableCodeImpl(method, ownerClassName)
-      if (codeRemoved) {
+    def removalRound(): Set[AbstractInsnNode] = {
+      val (removedInstructions, liveLabels) = removeUnreachableCodeImpl(method, ownerClassName)
+      val removedRecursively = if (removedInstructions.nonEmpty) {
         val liveHandlerRemoved = removeEmptyExceptionHandlers(method).exists(h => liveLabels(h.start))
         if (liveHandlerRemoved) removalRound()
-      }
-      codeRemoved
+        else Set.empty
+      } else Set.empty
+      removedInstructions ++ removedRecursively
     }
 
-    val codeRemoved = removalRound()
-    if (codeRemoved) removeUnusedLocalVariableNodes(method)()
-    codeRemoved
+    val removedInstructions = removalRound()
+    if (removedInstructions.nonEmpty) removeUnusedLocalVariableNodes(method)()
+    unreachableCodeEliminated += method
+    removedInstructions
   }
 
   /**
@@ -145,9 +138,9 @@ class LocalOpt(settings: ScalaSettings) {
     def removalRound(): Boolean = {
       // unreachable-code, empty-handlers and simplify-jumps run until reaching a fixpoint (see doc on class LocalOpt)
       val (codeRemoved, handlersRemoved, liveHandlerRemoved) = if (settings.YoptUnreachableCode) {
-        val (codeRemoved, liveLabels) = removeUnreachableCodeImpl(method, ownerClassName)
+        val (removedInstructions, liveLabels) = removeUnreachableCodeImpl(method, ownerClassName)
         val removedHandlers = removeEmptyExceptionHandlers(method)
-        (codeRemoved, removedHandlers.nonEmpty, removedHandlers.exists(h => liveLabels(h.start)))
+        (removedInstructions.nonEmpty, removedHandlers.nonEmpty, removedHandlers.exists(h => liveLabels(h.start)))
       } else {
         (false, false, false)
       }
@@ -179,6 +172,8 @@ class LocalOpt(settings: ScalaSettings) {
     assert(nullOrEmpty(method.visibleLocalVariableAnnotations), method.visibleLocalVariableAnnotations)
     assert(nullOrEmpty(method.invisibleLocalVariableAnnotations), method.invisibleLocalVariableAnnotations)
 
+    unreachableCodeEliminated += method
+
     codeHandlersOrJumpsChanged || localsRemoved || lineNumbersRemoved || labelsRemoved
   }
 
@@ -186,8 +181,10 @@ class LocalOpt(settings: ScalaSettings) {
    * Removes unreachable basic blocks.
    *
    * TODO: rewrite, don't use computeMaxLocalsMaxStack (runs a ClassWriter) / Analyzer. Too slow.
+   *
+   * @return A set containing eliminated instructions, and a set containing all live label nodes.
    */
-  def removeUnreachableCodeImpl(method: MethodNode, ownerClassName: InternalName): (Boolean, Set[LabelNode]) = {
+  def removeUnreachableCodeImpl(method: MethodNode, ownerClassName: InternalName): (Set[AbstractInsnNode], Set[LabelNode]) = {
     // The data flow analysis requires the maxLocals / maxStack fields of the method to be computed.
     computeMaxLocalsMaxStack(method)
     val a = new Analyzer(new BasicInterpreter)
@@ -197,6 +194,7 @@ class LocalOpt(settings: ScalaSettings) {
     val initialSize = method.instructions.size
     var i = 0
     var liveLabels = Set.empty[LabelNode]
+    var removedInstructions = Set.empty[AbstractInsnNode]
     val itr = method.instructions.iterator()
     while (itr.hasNext) {
       itr.next() match {
@@ -209,11 +207,12 @@ class LocalOpt(settings: ScalaSettings) {
             // Instruction iterators allow removing during iteration.
             // Removing is O(1): instructions are doubly linked list elements.
             itr.remove()
+            removedInstructions += ins
           }
       }
       i += 1
     }
-    (method.instructions.size != initialSize, liveLabels)
+    (removedInstructions, liveLabels)
   }
 
   /**

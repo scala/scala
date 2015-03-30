@@ -11,7 +11,7 @@ import scala.collection.concurrent.TrieMap
 import scala.reflect.internal.util.Position
 import scala.tools.asm
 import asm.Opcodes
-import scala.tools.asm.tree.{MethodInsnNode, InnerClassNode, ClassNode}
+import scala.tools.asm.tree.{MethodNode, MethodInsnNode, InnerClassNode, ClassNode}
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.opt._
@@ -38,6 +38,8 @@ abstract class BTypes {
    * Tools for parsing classfiles, used by the inliner.
    */
   val byteCodeRepository: ByteCodeRepository
+
+  val localOpt: LocalOpt
 
   val inliner: Inliner[this.type]
 
@@ -83,6 +85,18 @@ abstract class BTypes {
    * compilation run (mixed compilation). Used for more detailed error reporting.
    */
   val javaDefinedClasses: collection.mutable.Set[InternalName] = recordPerRunCache(collection.mutable.Set.empty)
+
+  /**
+   * Cache, contains methods whose unreachable instructions are eliminated.
+   *
+   * The ASM Analyzer class does not compute any frame information for unreachable instructions.
+   * Transformations that use an analyzer (including inlining) therefore require unreachable code
+   * to be eliminated.
+   *
+   * This cache allows running dead code elimination whenever an analyzer is used. If the method
+   * is already optimized, DCE can return early.
+   */
+  val unreachableCodeEliminated: collection.mutable.Set[MethodNode] = recordPerRunCache(collection.mutable.Set.empty)
 
   /**
    * Obtain the BType for a type descriptor or internal name. For class descriptors, the ClassBType

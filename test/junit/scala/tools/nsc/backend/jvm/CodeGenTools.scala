@@ -160,7 +160,7 @@ object CodeGenTools {
   val localOpt = {
     val settings = new MutableSettings(msg => throw new IllegalArgumentException(msg))
     settings.processArguments(List("-Yopt:l:method"), processAll = true)
-    new LocalOpt(settings)
+    new LocalOpt(settings, collection.mutable.Set())
   }
 
   import scala.language.implicitConversions

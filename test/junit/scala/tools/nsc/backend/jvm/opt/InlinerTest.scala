@@ -950,4 +950,18 @@ class InlinerTest extends ClearAfterClass {
     assertInvoke(getSingleMethod(t, "t3"), "B", "<init>")
     assertInvoke(getSingleMethod(t, "t4"), "B", "<init>")
   }
+
+  @Test
+  def inlineMayRenderCodeDead(): Unit = {
+    val code =
+      """class C {
+        |  @inline final def f: String = throw new Error("")
+        |  @inline final def g: String = "a" + f + "b"       // after inlining f, need to run DCE, because the rest of g becomes dead.
+        |  def t = g                                         // the inliner requires no dead code when inlining g (uses an Analyzer).
+        |}
+      """.stripMargin
+
+    val List(c) = compile(code)
+    assertInvoke(getSingleMethod(c, "t"), "java/lang/Error", "<init>")
+  }
 }

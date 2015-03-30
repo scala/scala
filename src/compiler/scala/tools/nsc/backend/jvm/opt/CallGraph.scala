@@ -50,7 +50,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
             // (1) A non-final method can be safe to inline if the receiver type is a final subclass. Example:
             //   class A { @inline def f = 1 }; object B extends A; B.f  // can be inlined
             //
-            // TODO: type analysis can render more calls statically resolved. Example˜∫
+            // TODO: type analysis can render more calls statically resolved. Example:
             //   new A.f  // can be inlined, the receiver type is known to be exactly A.
             val isStaticallyResolved: Boolean = {
               methodInlineInfo.effectivelyFinal ||
@@ -92,6 +92,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
 
     // TODO: for now we run a basic analyzer to get the stack height at the call site.
     // once we run a more elaborate analyzer (types, nullness), we can get the stack height out of there.
+    localOpt.minimalRemoveUnreachableCode(methodNode, definingClass.internalName)
     val analyzer = new AsmAnalyzer(methodNode, definingClass.internalName)
 
     methodNode.instructions.iterator.asScala.collect({

@@ -24,21 +24,39 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   import btypes._
   import callGraph._
 
+  def eliminateUnreachableCodeAndUpdateCallGraph(methodNode: MethodNode, definingClass: InternalName): Unit = {
+    localOpt.minimalRemoveUnreachableCode(methodNode, definingClass) foreach {
+      case invocation: MethodInsnNode => callGraph.callsites.remove(invocation)
+      case _ =>
+    }
+  }
+
   def runInliner(): Unit = {
     rewriteFinalTraitMethodInvocations()
 
     for (request <- collectAndOrderInlineRequests) {
       val Right(callee) = request.callee // collectAndOrderInlineRequests returns callsites with a known callee
 
-      val r = inline(request.callsiteInstruction, request.callsiteStackHeight, request.callsiteMethod, request.callsiteClass,
-        callee.callee, callee.calleeDeclarationClass,
-        receiverKnownNotNull = false, keepLineNumbers = false)
+      // Inlining a method can create unreachable code. Example:
+      //   def f = throw e
+      //   def g = f; println() // println is unreachable after inlining f
+      // If we have an inline request for a call to g, and f has been already inlined into g, we
+      // need to run DCE before inlining g.
+      eliminateUnreachableCodeAndUpdateCallGraph(callee.callee, callee.calleeDeclarationClass.internalName)
 
-      for (warning <- r) {
-        if ((callee.annotatedInline && btypes.warnSettings.atInlineFailed) || warning.emitWarning(warnSettings)) {
-          val annotWarn = if (callee.annotatedInline) " is annotated @inline but" else ""
-          val msg = s"${BackendReporting.methodSignature(callee.calleeDeclarationClass.internalName, callee.callee)}$annotWarn could not be inlined:\n$warning"
-          backendReporting.inlinerWarning(request.callsitePosition, msg)
+      // DCE above removes unreachable callsites from the call graph. If the inlining request denotes
+      // such an eliminated callsite, do nothing.
+      if (callGraph.callsites contains request.callsiteInstruction) {
+        val r = inline(request.callsiteInstruction, request.callsiteStackHeight, request.callsiteMethod, request.callsiteClass,
+          callee.callee, callee.calleeDeclarationClass,
+          receiverKnownNotNull = false, keepLineNumbers = false)
+
+        for (warning <- r) {
+          if ((callee.annotatedInline && btypes.warnSettings.atInlineFailed) || warning.emitWarning(warnSettings)) {
+            val annotWarn = if (callee.annotatedInline) " is annotated @inline but" else ""
+            val msg = s"${BackendReporting.methodSignature(callee.calleeDeclarationClass.internalName, callee.callee)}$annotWarn could not be inlined:\n$warning"
+            backendReporting.inlinerWarning(request.callsitePosition, msg)
+          }
         }
       }
     }
@@ -168,6 +186,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         // VerifyError. We run a `SourceInterpreter` to find all producer instructions of the
         // receiver value and add a cast to the self type after each.
         if (!selfTypeOk) {
+          // there's no need to run eliminateUnreachableCode here. building the call graph does that
+          // already, no code can become unreachable in the meantime.
           val analyzer = new AsmAnalyzer(callsite.callsiteMethod, callsite.callsiteClass.internalName, new SourceInterpreter)
           val receiverValue = analyzer.frameAt(callsite.callsiteInstruction).peekDown(traitMethodArgumentTypes.length)
           for (i <- receiverValue.insns.asScala) {
@@ -433,6 +453,9 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       }
       // Remove the elided invocation from the call graph
       callGraph.callsites.remove(callsiteInstruction)
+
+      // Inlining a method body can render some code unreachable, see example above (in runInliner).
+      unreachableCodeEliminated -= callsiteMethod
 
       callsiteMethod.maxLocals += returnType.getSize + callee.maxLocals
       callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, callee.maxStack + callsiteStackHeight)
