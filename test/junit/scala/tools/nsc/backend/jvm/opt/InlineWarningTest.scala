@@ -143,4 +143,31 @@ class InlineWarningTest extends ClearAfterClass {
     compileClasses(newCompiler(extraArgs = InlineWarningTest.argsNoWarn + " -Yopt-warnings:no-inline-mixed"))(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; warns.exists(i.msg contains _)})
     assert(c == 2, c)
   }
+
+  @Test
+  def cannotInlinePrivateCallIntoDifferentClass(): Unit = {
+    val code =
+      """class M {
+        |  @inline final def f = {
+        |    @noinline def nested = 0
+        |    nested
+        |  }
+        |
+        |  def t = f // ok
+        |}
+        |
+        |class N {
+        |  def t(a: M) = a.f // not possible
+        |}
+      """.stripMargin
+
+    val warn =
+      """M::f()I is annotated @inline but could not be inlined:
+        |The callee M::f()I contains the instruction INVOKESPECIAL M.nested$1 ()I
+        |that would cause an IllegalAccessError when inlined into class N""".stripMargin
+
+    var c = 0
+    compile(code, allowMessage = i => { c += 1; i.msg contains warn })
+    assert(c == 1, c)
+  }
 }
