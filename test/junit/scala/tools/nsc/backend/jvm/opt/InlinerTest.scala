@@ -952,6 +952,17 @@ class InlinerTest extends ClearAfterClass {
   }
 
   @Test
+  def dontInlineNative(): Unit = {
+    val code =
+      """class C {
+        |  def t = System.arraycopy(null, 0, null, 0, 0)
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(newCompiler(extraArgs = InlinerTest.args + " -Yopt-inline-heuristics:everything"))(code)
+    assertInvoke(getSingleMethod(c, "t"), "java/lang/System", "arraycopy")
+  }
+
+  @Test
   def inlineMayRenderCodeDead(): Unit = {
     val code =
       """class C {

@@ -68,8 +68,13 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
             // (2) Final trait methods can be rewritten from the interface to the static implementation
             //     method to enable inlining.
             CallsiteInfo(
-              safeToInline      = canInlineFromSource && isStaticallyResolved && !isAbstract, // (1)
-              safeToRewrite     = canInlineFromSource && isRewritableTraitCall,               // (2)
+              safeToInline      =
+                canInlineFromSource &&
+                isStaticallyResolved &&  // (1)
+                !isAbstract &&
+                !BytecodeUtils.isConstructor(calleeMethodNode) &&
+                !BytecodeUtils.isNativeMethod(calleeMethodNode),
+              safeToRewrite     = canInlineFromSource && isRewritableTraitCall, // (2)
               annotatedInline   = methodInlineInfo.annotatedInline,
               annotatedNoInline = methodInlineInfo.annotatedNoInline,
               warning           = warning)

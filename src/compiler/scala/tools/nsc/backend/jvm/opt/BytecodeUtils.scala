@@ -83,6 +83,8 @@ object BytecodeUtils {
 
   def isSynchronizedMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_SYNCHRONIZED) != 0
 
+  def isNativeMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_NATIVE) != 0
+
   def isFinalClass(classNode: ClassNode): Boolean = (classNode.access & Opcodes.ACC_FINAL) != 0
 
   def isFinalMethod(methodNode: MethodNode): Boolean = (methodNode.access & (Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC)) != 0
