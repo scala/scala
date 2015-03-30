@@ -4,6 +4,7 @@ package backend.jvm
 import scala.tools.asm.tree.{AbstractInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.reflect.internal.util.Position
+import scala.util.control.ControlThrowable
 
 /**
  * Interface for emitting inline warnings. The interface is required because the implementation
@@ -73,7 +74,7 @@ object BackendReporting {
     }
   }
 
-  case class Invalid[A](e: A) extends Exception
+  case class Invalid[A](e: A) extends ControlThrowable
 
   /**
    * See documentation of orThrow above.
