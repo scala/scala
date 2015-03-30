@@ -63,6 +63,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       settings.YoptWarnings.contains(c.noInlineMissingScalaInlineInfoAttr.name))
   }
 
+  def inliningHeuristics: String = settings.YoptInlineHeuristics.value
+
   // helpers that need access to global.
   // TODO @lry create a separate component, they don't belong to BTypesFromSymbols
 

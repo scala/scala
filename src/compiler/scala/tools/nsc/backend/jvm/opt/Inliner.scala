@@ -106,7 +106,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    */
   def doInlineCallsite(callsite: Callsite): Boolean = callsite match {
     case Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, _, annotatedInline, _, warning)), _, _, pos) =>
-      annotatedInline && safeToInline
+      if (inliningHeuristics == "everything") safeToInline
+      else annotatedInline && safeToInline
 
     case _ => false
   }

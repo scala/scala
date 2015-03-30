@@ -57,6 +57,8 @@ abstract class BTypes {
   // Settings that define what kind of optimizer warnings are emitted.
   def warnSettings: WarnSettings
 
+  def inliningHeuristics: String
+
   /**
    * A map from internal names to ClassBTypes. Every ClassBType is added to this map on its
    * construction.
