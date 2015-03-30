@@ -7,7 +7,7 @@ package nest
 
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.{ Path, File, Directory }
-import scala.tools.nsc.Properties.{ propOrElse, propOrNone }
+import scala.tools.nsc.Properties.{ propOrNone }
 import Path._
 
 /** Get current value for path settings -- these depend on the mutable `testSourcePath`.
