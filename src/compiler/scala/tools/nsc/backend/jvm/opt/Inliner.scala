@@ -16,7 +16,7 @@ import scala.collection.convert.decorateAsJava._
 import AsmUtils._
 import BytecodeUtils._
 import collection.mutable
-import scala.tools.asm.tree.analysis.{SourceInterpreter, Analyzer}
+import scala.tools.asm.tree.analysis.SourceInterpreter
 import BackendReporting._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 
@@ -52,7 +52,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
           receiverKnownNotNull = false, keepLineNumbers = false)
 
         for (warning <- r) {
-          if ((callee.annotatedInline && btypes.warnSettings.atInlineFailed) || warning.emitWarning(warnSettings)) {
+          if ((callee.annotatedInline && btypes.compilerSettings.YoptWarningEmitAtInlineFailed) || warning.emitWarning(compilerSettings)) {
             val annotWarn = if (callee.annotatedInline) " is annotated @inline but" else ""
             val msg = s"${BackendReporting.methodSignature(callee.calleeDeclarationClass.internalName, callee.callee)}$annotWarn could not be inlined:\n$warning"
             backendReporting.inlinerWarning(request.callsitePosition, msg)
@@ -93,7 +93,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         val res = doInlineCallsite(callsite)
 
         if (!res) {
-          if (annotatedInline && btypes.warnSettings.atInlineFailed) {
+          if (annotatedInline && btypes.compilerSettings.YoptWarningEmitAtInlineFailed) {
             // if the callsite is annotated @inline, we report an inline warning even if the underlying
             // reason is, for example, mixed compilation (which has a separate -Yopt-warning flag).
             def initMsg = s"${BackendReporting.methodSignature(calleeDeclClass.internalName, callee)} is annotated @inline but cannot be inlined"
@@ -104,7 +104,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
               backendReporting.inlinerWarning(pos, s"$initMsg: the method is not final and may be overridden." + warnMsg)
             else
               backendReporting.inlinerWarning(pos, s"$initMsg." + warnMsg)
-          } else if (warning.isDefined && warning.get.emitWarning(warnSettings)) {
+          } else if (warning.isDefined && warning.get.emitWarning(compilerSettings)) {
             // when annotatedInline is false, and there is some warning, the callsite metadata is possibly incomplete.
             backendReporting.inlinerWarning(pos, s"there was a problem determining if method ${callee.name} can be inlined: \n"+ warning.get)
           }
@@ -113,7 +113,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         res
 
       case Callsite(ins, _, _, Left(warning), _, _, pos) =>
-        if (warning.emitWarning(warnSettings))
+        if (warning.emitWarning(compilerSettings))
           backendReporting.inlinerWarning(pos, s"failed to determine if ${ins.name} should be inlined:\n$warning")
         false
     }).toList
@@ -124,7 +124,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    */
   def doInlineCallsite(callsite: Callsite): Boolean = callsite match {
     case Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, _, annotatedInline, _, warning)), _, _, pos) =>
-      if (inliningHeuristics == "everything") safeToInline
+      if (compilerSettings.YoptInlineHeuristics.value == "everything") safeToInline
       else annotatedInline && safeToInline
 
     case _ => false

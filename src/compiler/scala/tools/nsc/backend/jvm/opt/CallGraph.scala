@@ -43,7 +43,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
         // callee, we only check there for the methodInlineInfo, we should find it there.
         calleeDeclarationClassBType.info.orThrow.inlineInfo.methodInfos.get(methodSignature) match {
           case Some(methodInlineInfo) =>
-            val canInlineFromSource = inlineGlobalEnabled || calleeSource == CompilationUnit
+            val canInlineFromSource = compilerSettings.YoptInlineGlobal || calleeSource == CompilationUnit
 
             val isAbstract = BytecodeUtils.isAbstractMethod(calleeMethodNode)
 

@@ -14,7 +14,6 @@ import scala.tools.asm.tree._
 import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
-import scala.tools.nsc.settings.ScalaSettings
 
 /**
  * Optimizations within a single method.
@@ -47,7 +46,10 @@ import scala.tools.nsc.settings.ScalaSettings
  * stale labels
  *   - eliminate labels that are not referenced, merge sequences of label definitions.
  */
-class LocalOpt(settings: ScalaSettings, unreachableCodeEliminated: collection.mutable.Set[MethodNode]) {
+class LocalOpt[BT <: BTypes](val btypes: BT) {
+  import LocalOptImpls._
+  import btypes._
+
   /**
    * Remove unreachable code from a method.
    *
@@ -88,7 +90,7 @@ class LocalOpt(settings: ScalaSettings, unreachableCodeEliminated: collection.mu
    * @return      `true` if unreachable code was eliminated in some method, `false` otherwise.
    */
   def methodOptimizations(clazz: ClassNode): Boolean = {
-    !settings.YoptNone && clazz.methods.asScala.foldLeft(false) {
+    !compilerSettings.YoptNone && clazz.methods.asScala.foldLeft(false) {
       case (changed, method) => methodOptimizations(method, clazz.name) || changed
     }
   }
@@ -137,7 +139,7 @@ class LocalOpt(settings: ScalaSettings, unreachableCodeEliminated: collection.mu
 
     def removalRound(): Boolean = {
       // unreachable-code, empty-handlers and simplify-jumps run until reaching a fixpoint (see doc on class LocalOpt)
-      val (codeRemoved, handlersRemoved, liveHandlerRemoved) = if (settings.YoptUnreachableCode) {
+      val (codeRemoved, handlersRemoved, liveHandlerRemoved) = if (compilerSettings.YoptUnreachableCode) {
         val (removedInstructions, liveLabels) = removeUnreachableCodeImpl(method, ownerClassName)
         val removedHandlers = removeEmptyExceptionHandlers(method)
         (removedInstructions.nonEmpty, removedHandlers.nonEmpty, removedHandlers.exists(h => liveLabels(h.start)))
@@ -145,7 +147,7 @@ class LocalOpt(settings: ScalaSettings, unreachableCodeEliminated: collection.mu
         (false, false, false)
       }
 
-      val jumpsChanged = if (settings.YoptSimplifyJumps) simplifyJumps(method) else false
+      val jumpsChanged = if (compilerSettings.YoptSimplifyJumps) simplifyJumps(method) else false
 
       // Eliminating live handlers and simplifying jump instructions may render more code
       // unreachable, so we need to run another round.
@@ -158,13 +160,13 @@ class LocalOpt(settings: ScalaSettings, unreachableCodeEliminated: collection.mu
 
     // (*) Removing stale local variable descriptors is required for correctness of unreachable-code
     val localsRemoved =
-      if (settings.YoptCompactLocals) compactLocalVariables(method) // also removes unused
-      else if (settings.YoptUnreachableCode) removeUnusedLocalVariableNodes(method)() // (*)
+      if (compilerSettings.YoptCompactLocals) compactLocalVariables(method) // also removes unused
+      else if (compilerSettings.YoptUnreachableCode) removeUnusedLocalVariableNodes(method)() // (*)
       else false
 
-    val lineNumbersRemoved = if (settings.YoptEmptyLineNumbers) removeEmptyLineNumbers(method) else false
+    val lineNumbersRemoved = if (compilerSettings.YoptEmptyLineNumbers) removeEmptyLineNumbers(method) else false
 
-    val labelsRemoved = if (settings.YoptEmptyLabels) removeEmptyLabelNodes(method) else false
+    val labelsRemoved = if (compilerSettings.YoptEmptyLabels) removeEmptyLabelNodes(method) else false
 
     // assert that local variable annotations are empty (we don't emit them) - otherwise we'd have
     // to eliminate those covering an empty range, similar to removeUnusedLocalVariableNodes.
@@ -177,6 +179,9 @@ class LocalOpt(settings: ScalaSettings, unreachableCodeEliminated: collection.mu
     codeHandlersOrJumpsChanged || localsRemoved || lineNumbersRemoved || labelsRemoved
   }
 
+}
+
+object LocalOptImpls {
   /**
    * Removes unreachable basic blocks.
    *

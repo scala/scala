@@ -4,6 +4,7 @@ package backend.jvm
 import scala.tools.asm.tree.{AbstractInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.reflect.internal.util.Position
+import scala.tools.nsc.settings.ScalaSettings
 import scala.util.control.ControlThrowable
 
 /**
@@ -81,17 +82,15 @@ object BackendReporting {
    */
   def tryEither[A, B](op: => Either[A, B]): Either[A, B] = try { op } catch { case Invalid(e) => Left(e.asInstanceOf[A]) }
 
-  final case class WarnSettings(atInlineFailed: Boolean, noInlineMixed: Boolean, noInlineMissingBytecode: Boolean, noInlineMissingScalaInlineInfoAttr: Boolean)
-
   sealed trait OptimizerWarning {
-    def emitWarning(settings: WarnSettings): Boolean
+    def emitWarning(settings: ScalaSettings): Boolean
   }
 
   // Method filter in RightBiasedEither requires an implicit empty value. Taking the value here
   // in scope allows for-comprehensions that desugar into filter calls (for example when using a
   // tuple de-constructor).
   implicit object emptyOptimizerWarning extends OptimizerWarning {
-    def emitWarning(settings: WarnSettings): Boolean = false
+    def emitWarning(settings: ScalaSettings): Boolean = false
   }
 
   sealed trait MissingBytecodeWarning extends OptimizerWarning {
@@ -113,17 +112,17 @@ object BackendReporting {
           missingClass.map(c => s" Reason:\n$c").getOrElse("")
     }
 
-    def emitWarning(settings: WarnSettings): Boolean = this match {
+    def emitWarning(settings: ScalaSettings): Boolean = this match {
       case ClassNotFound(_, javaDefined) =>
-        if (javaDefined) settings.noInlineMixed
-        else settings.noInlineMissingBytecode
+        if (javaDefined) settings.YoptWarningNoInlineMixed
+        else settings.YoptWarningNoInlineMissingBytecode
 
       case m @ MethodNotFound(_, _, _, missing) =>
         if (m.isArrayMethod) false
-        else settings.noInlineMissingBytecode || missing.exists(_.emitWarning(settings))
+        else settings.YoptWarningNoInlineMissingBytecode || missing.exists(_.emitWarning(settings))
 
       case FieldNotFound(_, _, _, missing) =>
-        settings.noInlineMissingBytecode || missing.exists(_.emitWarning(settings))
+        settings.YoptWarningNoInlineMissingBytecode || missing.exists(_.emitWarning(settings))
     }
   }
 
@@ -142,9 +141,9 @@ object BackendReporting {
         s"Failed to get the type of class symbol $classFullName due to SI-9111."
     }
 
-    def emitWarning(settings: WarnSettings): Boolean = this match {
+    def emitWarning(settings: ScalaSettings): Boolean = this match {
       case NoClassBTypeInfoMissingBytecode(cause)         => cause.emitWarning(settings)
-      case NoClassBTypeInfoClassSymbolInfoFailedSI9111(_) => settings.noInlineMissingBytecode
+      case NoClassBTypeInfoClassSymbolInfoFailedSI9111(_) => settings.YoptWarningNoInlineMissingBytecode
     }
   }
 
@@ -176,11 +175,11 @@ object BackendReporting {
         cause.toString
     }
 
-    def emitWarning(settings: WarnSettings): Boolean = this match {
+    def emitWarning(settings: ScalaSettings): Boolean = this match {
       case MethodInlineInfoIncomplete(_, _, _, cause)               => cause.emitWarning(settings)
 
       case MethodInlineInfoMissing(_, _, _, Some(cause))            => cause.emitWarning(settings)
-      case MethodInlineInfoMissing(_, _, _, None)                   => settings.noInlineMissingBytecode
+      case MethodInlineInfoMissing(_, _, _, None)                   => settings.YoptWarningNoInlineMissingBytecode
 
       case MethodInlineInfoError(_, _, _, cause)                    => cause.emitWarning(settings)
 
@@ -217,9 +216,9 @@ object BackendReporting {
         s"Method $calleeMethodSig cannot be inlined because it is synchronized."
     }
 
-    def emitWarning(settings: WarnSettings): Boolean = this match {
+    def emitWarning(settings: ScalaSettings): Boolean = this match {
       case _: IllegalAccessInstruction | _: MethodWithHandlerCalledOnNonEmptyStack | _: SynchronizedMethod =>
-        settings.atInlineFailed
+        settings.YoptWarningEmitAtInlineFailed
 
       case IllegalAccessCheckFailed(_, _, _, _, _, cause) =>
         cause.emitWarning(settings)
@@ -251,11 +250,11 @@ object BackendReporting {
         s"Cannot read ScalaInlineInfo version $version in classfile $internalName. Use a more recent compiler."
     }
 
-    def emitWarning(settings: WarnSettings): Boolean = this match {
-      case NoInlineInfoAttribute(_)                             => settings.noInlineMissingScalaInlineInfoAttr
+    def emitWarning(settings: ScalaSettings): Boolean = this match {
+      case NoInlineInfoAttribute(_)                             => settings.YoptWarningNoInlineMissingScalaInlineInfoAttr
       case ClassNotFoundWhenBuildingInlineInfoFromSymbol(cause) => cause.emitWarning(settings)
-      case ClassSymbolInfoFailureSI9111(_)                      => settings.noInlineMissingBytecode
-      case UnknownScalaInlineInfoVersion(_, _)                  => settings.noInlineMissingScalaInlineInfoAttr
+      case ClassSymbolInfoFailureSI9111(_)                      => settings.YoptWarningNoInlineMissingBytecode
+      case UnknownScalaInlineInfoVersion(_, _)                  => settings.YoptWarningNoInlineMissingScalaInlineInfoAttr
     }
   }
 

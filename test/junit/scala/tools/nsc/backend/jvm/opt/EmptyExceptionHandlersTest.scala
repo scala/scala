@@ -40,7 +40,7 @@ class EmptyExceptionHandlersTest extends ClearAfterClass {
       Op(RETURN)
     )
     assertTrue(convertMethod(asmMethod).handlers.length == 1)
-    localOpt.removeEmptyExceptionHandlers(asmMethod)
+    LocalOptImpls.removeEmptyExceptionHandlers(asmMethod)
     assertTrue(convertMethod(asmMethod).handlers.isEmpty)
   }
 
@@ -61,7 +61,7 @@ class EmptyExceptionHandlersTest extends ClearAfterClass {
       Op(RETURN)
     )
     assertTrue(convertMethod(asmMethod).handlers.length == 1)
-    localOpt.removeEmptyExceptionHandlers(asmMethod)
+    LocalOptImpls.removeEmptyExceptionHandlers(asmMethod)
     assertTrue(convertMethod(asmMethod).handlers.isEmpty)
   }
 

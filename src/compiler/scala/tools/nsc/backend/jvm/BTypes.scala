@@ -16,6 +16,7 @@ import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.opt._
 import scala.collection.convert.decorateAsScala._
+import scala.tools.nsc.settings.ScalaSettings
 
 /**
  * The BTypes component defines The BType class hierarchy. A BType stores all type information
@@ -39,7 +40,7 @@ abstract class BTypes {
    */
   val byteCodeRepository: ByteCodeRepository
 
-  val localOpt: LocalOpt
+  val localOpt: LocalOpt[this.type]
 
   val inliner: Inliner[this.type]
 
@@ -50,16 +51,9 @@ abstract class BTypes {
   // Allows to define per-run caches here and in the CallGraph component, which don't have a global
   def recordPerRunCache[T <: collection.generic.Clearable](cache: T): T
 
-  // When building the call graph, we need to know if global inlining is allowed (the component doesn't have a global)
-  def inlineGlobalEnabled: Boolean
+  // Allows access to the compiler settings for backend components that don't have a global in scope
+  def compilerSettings: ScalaSettings
 
-  // When the inliner is not enabled, there's no point in adding InlineInfos to all ClassBTypes
-  def inlinerEnabled: Boolean
-
-  // Settings that define what kind of optimizer warnings are emitted.
-  def warnSettings: WarnSettings
-
-  def inliningHeuristics: String
 
   /**
    * A map from internal names to ClassBTypes. Every ClassBType is added to this map on its
@@ -245,7 +239,7 @@ abstract class BTypes {
     // The InlineInfo is built from the classfile (not from the symbol) for all classes that are NOT
     // being compiled. For those classes, the info is only needed if the inliner is enabled, othewise
     // we can save the memory.
-    if (!inlinerEnabled) BTypes.EmptyInlineInfo
+    if (!compilerSettings.YoptInlinerEnabled) BTypes.EmptyInlineInfo
     else fromClassfileAttribute getOrElse fromClassfileWithoutAttribute
   }
 

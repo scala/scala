@@ -152,7 +152,7 @@ class InlinerTest extends ClearAfterClass {
 
     assertSameCode(convertMethod(g).instructions.dropNonOp.take(4), expectedInlined)
 
-    localOpt.methodOptimizations(g, "C")
+    compiler.genBCode.bTypes.localOpt.methodOptimizations(g, "C")
     assertSameCode(convertMethod(g).instructions.dropNonOp,
       expectedInlined ++ List(VarOp(ASTORE, 2), VarOp(ALOAD, 2), Op(ATHROW)))
   }
