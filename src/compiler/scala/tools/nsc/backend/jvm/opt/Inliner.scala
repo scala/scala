@@ -332,6 +332,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       val localVarShift = callsiteMethod.maxLocals
       clonedInstructions.iterator.asScala foreach {
         case varInstruction: VarInsnNode => varInstruction.`var` += localVarShift
+        case iinc: IincInsnNode          => iinc.`var` += localVarShift
         case _ => ()
       }
 
