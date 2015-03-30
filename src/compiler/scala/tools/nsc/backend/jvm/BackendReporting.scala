@@ -214,10 +214,15 @@ object BackendReporting {
 
       case SynchronizedMethod(_, _, _) =>
         s"Method $calleeMethodSig cannot be inlined because it is synchronized."
+
+      case ResultingMethodTooLarge(_, _, _, callsiteClass, callsiteName, callsiteDesc) =>
+        s"""The size of the callsite method ${BackendReporting.methodSignature(callsiteClass, callsiteName, callsiteDesc)}
+           |would exceed the JVM method size limit after inlining $calleeMethodSig.
+         """.stripMargin
     }
 
     def emitWarning(settings: ScalaSettings): Boolean = this match {
-      case _: IllegalAccessInstruction | _: MethodWithHandlerCalledOnNonEmptyStack | _: SynchronizedMethod =>
+      case _: IllegalAccessInstruction | _: MethodWithHandlerCalledOnNonEmptyStack | _: SynchronizedMethod | _: ResultingMethodTooLarge =>
         settings.YoptWarningEmitAtInlineFailed
 
       case IllegalAccessCheckFailed(_, _, _, _, _, cause) =>
@@ -231,6 +236,8 @@ object BackendReporting {
   case class MethodWithHandlerCalledOnNonEmptyStack(calleeDeclarationClass: InternalName, name: String, descriptor: String,
                                                     callsiteClass: InternalName, callsiteName: String, callsiteDesc: String) extends CannotInlineWarning
   case class SynchronizedMethod(calleeDeclarationClass: InternalName, name: String, descriptor: String) extends CannotInlineWarning
+  case class ResultingMethodTooLarge(calleeDeclarationClass: InternalName, name: String, descriptor: String,
+                                     callsiteClass: InternalName, callsiteName: String, callsiteDesc: String) extends CannotInlineWarning
 
   /**
    * Used in the InlineInfo of a ClassBType, when some issue occurred obtaining the inline information.

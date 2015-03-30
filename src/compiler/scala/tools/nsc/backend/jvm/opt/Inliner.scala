@@ -497,7 +497,11 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       callsiteStackHeight > expectedArgs
     }
 
-    if (isSynchronizedMethod(callee)) {
+    if (codeSizeOKForInlining(callsiteMethod, callee)) {
+      Some(ResultingMethodTooLarge(
+        calleeDeclarationClass.internalName, callee.name, callee.desc,
+        callsiteClass.internalName, callsiteMethod.name, callsiteMethod.desc))
+    } else if (isSynchronizedMethod(callee)) {
       // Could be done by locking on the receiver, wrapping the inlined code in a try and unlocking
       // in finally. But it's probably not worth the effort, scala never emits synchronized methods.
       Some(SynchronizedMethod(calleeDeclarationClass.internalName, callee.name, callee.desc))
