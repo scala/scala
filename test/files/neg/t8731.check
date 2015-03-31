@@ -1,9 +1,6 @@
-t8731.scala:5: warning: matches with two cases or fewer are emitted using if-then-else instead of switch
-  def f(x: Int) = (x: @annotation.switch) match {
-                       ^
 t8731.scala:10: warning: could not emit switch for @switch annotated match
   def g(x: Int) = (x: @annotation.switch) match {
                        ^
 error: No warnings can be incurred under -Xfatal-warnings.
-two warnings found
+one warning found
 one error found

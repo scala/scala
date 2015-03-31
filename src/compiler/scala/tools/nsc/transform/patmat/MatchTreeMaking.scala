@@ -577,8 +577,6 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
                 lengthMax3(casesNoSubstOnly) > 2
               }
               val requireSwitch = hasSwitchAnnotation && exceedsTwoCasesOrAlts
-              if (hasSwitchAnnotation && !requireSwitch)
-                reporter.warning(scrut.pos, "matches with two cases or fewer are emitted using if-then-else instead of switch")
               (suppression, requireSwitch)
             case _ =>
               (Suppression.NoSuppression, false)
