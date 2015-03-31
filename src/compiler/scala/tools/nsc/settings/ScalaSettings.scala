@@ -361,12 +361,7 @@ trait ScalaSettings extends AbsScalaSettings
   /** Test whether this is scaladoc we're looking at */
   def isScaladoc = false
 
-  /**
-   * Helper utilities for use by checkConflictingSettings()
-   */
-  def isBCodeActive   = !isICodeAskedFor
-  def isBCodeAskedFor = (Ybackend.value != "GenASM")
-  def isICodeAskedFor = ((Ybackend.value == "GenASM") || optimiseSettings.exists(_.value) || writeICode.isSetByUser)
+  def isBCodeActive = Ybackend.value == "GenBCode"
 
   object MacroExpand {
     val None = "none"
