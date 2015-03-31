@@ -170,4 +170,25 @@ class InlineWarningTest extends ClearAfterClass {
     compile(code, allowMessage = i => { c += 1; i.msg contains warn })
     assert(c == 1, c)
   }
+
+  @Test
+  def cannotMixStrictfp(): Unit = {
+    val code =
+      """import annotation.strictfp
+        |class C {
+        |  @strictfp @inline final def f = 0
+        |  @strictfp def t1 = f
+        |  def t2 = f
+        |}
+      """.stripMargin
+
+    val warn =
+      """C::f()I is annotated @inline but could not be inlined:
+        |The callsite method C::t2()I
+        |does not have the same strictfp mode as the callee C::f()I.""".stripMargin
+
+    var c = 0
+    compile(code, allowMessage = i => { c += 1; i.msg contains warn })
+    assert(c == 1, c)
+  }
 }

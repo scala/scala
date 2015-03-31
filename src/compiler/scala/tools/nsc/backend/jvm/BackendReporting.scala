@@ -215,6 +215,11 @@ object BackendReporting {
       case SynchronizedMethod(_, _, _) =>
         s"Method $calleeMethodSig cannot be inlined because it is synchronized."
 
+      case StrictfpMismatch(_, _, _, callsiteClass, callsiteName, callsiteDesc) =>
+        s"""The callsite method ${BackendReporting.methodSignature(callsiteClass, callsiteName, callsiteDesc)}
+           |does not have the same strictfp mode as the callee $calleeMethodSig.
+         """.stripMargin
+
       case ResultingMethodTooLarge(_, _, _, callsiteClass, callsiteName, callsiteDesc) =>
         s"""The size of the callsite method ${BackendReporting.methodSignature(callsiteClass, callsiteName, callsiteDesc)}
            |would exceed the JVM method size limit after inlining $calleeMethodSig.
@@ -222,7 +227,7 @@ object BackendReporting {
     }
 
     def emitWarning(settings: ScalaSettings): Boolean = this match {
-      case _: IllegalAccessInstruction | _: MethodWithHandlerCalledOnNonEmptyStack | _: SynchronizedMethod | _: ResultingMethodTooLarge =>
+      case _: IllegalAccessInstruction | _: MethodWithHandlerCalledOnNonEmptyStack | _: SynchronizedMethod | _: StrictfpMismatch | _: ResultingMethodTooLarge =>
         settings.YoptWarningEmitAtInlineFailed
 
       case IllegalAccessCheckFailed(_, _, _, _, _, cause) =>
@@ -236,6 +241,8 @@ object BackendReporting {
   case class MethodWithHandlerCalledOnNonEmptyStack(calleeDeclarationClass: InternalName, name: String, descriptor: String,
                                                     callsiteClass: InternalName, callsiteName: String, callsiteDesc: String) extends CannotInlineWarning
   case class SynchronizedMethod(calleeDeclarationClass: InternalName, name: String, descriptor: String) extends CannotInlineWarning
+  case class StrictfpMismatch(calleeDeclarationClass: InternalName, name: String, descriptor: String,
+                              callsiteClass: InternalName, callsiteName: String, callsiteDesc: String) extends CannotInlineWarning
   case class ResultingMethodTooLarge(calleeDeclarationClass: InternalName, name: String, descriptor: String,
                                      callsiteClass: InternalName, callsiteName: String, callsiteDesc: String) extends CannotInlineWarning
 

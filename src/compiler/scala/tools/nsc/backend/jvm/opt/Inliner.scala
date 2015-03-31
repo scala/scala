@@ -505,6 +505,10 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       // Could be done by locking on the receiver, wrapping the inlined code in a try and unlocking
       // in finally. But it's probably not worth the effort, scala never emits synchronized methods.
       Some(SynchronizedMethod(calleeDeclarationClass.internalName, callee.name, callee.desc))
+    } else if (isStrictfpMethod(callsiteMethod) != isStrictfpMethod(callee)) {
+      Some(StrictfpMismatch(
+        calleeDeclarationClass.internalName, callee.name, callee.desc,
+        callsiteClass.internalName, callsiteMethod.name, callsiteMethod.desc))
     } else if (!callee.tryCatchBlocks.isEmpty && stackHasNonParameters) {
       Some(MethodWithHandlerCalledOnNonEmptyStack(
         calleeDeclarationClass.internalName, callee.name, callee.desc,
