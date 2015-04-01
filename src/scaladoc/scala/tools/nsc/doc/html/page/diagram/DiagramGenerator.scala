@@ -25,29 +25,3 @@ trait DiagramGenerator {
    */
   def generate(d: Diagram, t: DocTemplateEntity, p: HtmlPage):NodeSeq
 }
-
-object DiagramGenerator {
-
-  // TODO: This is tailored towards the dot generator, since it's the only generator. In the future it should be more
-  // general.
-
-  private[this] var dotRunner: DotRunner = null
-  private[this] var settings: doc.Settings = null
-
-  def initialize(s: doc.Settings) =
-    settings = s
-
-  def getDotRunner() = {
-    if (dotRunner == null)
-      dotRunner = new DotRunner(settings)
-    dotRunner
-  }
-
-  def cleanup() = {
-    DiagramStats.printStats(settings)
-    if (dotRunner != null) {
-      dotRunner.cleanup()
-      dotRunner = null
-    }
-  }
-}

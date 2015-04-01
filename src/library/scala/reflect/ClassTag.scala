@@ -69,22 +69,22 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
    * `SomeExtractor(...)` is turned into `ct(SomeExtractor(...))` if `T` in `SomeExtractor.unapply(x: T)`
    * is uncheckable, but we have an instance of `ClassTag[T]`.
    */
-  def unapply(x: Any): Option[T] = x match {
-    case null       => None
-    case b: Byte    => unapply(b)
-    case s: Short   => unapply(s)
-    case c: Char    => unapply(c)
-    case i: Int     => unapply(i)
-    case l: Long    => unapply(l)
-    case f: Float   => unapply(f)
-    case d: Double  => unapply(d)
-    case b: Boolean => unapply(b)
-    case u: Unit    => unapply(u)
-    case a: Any     => unapplyImpl(a)
-  }
+  def unapply(x: Any): Option[T] =
+    if (null != x && (
+            (runtimeClass.isInstance(x))
+         || (x.isInstanceOf[Byte]    && runtimeClass.isAssignableFrom(classOf[Byte]))
+         || (x.isInstanceOf[Short]   && runtimeClass.isAssignableFrom(classOf[Short]))
+         || (x.isInstanceOf[Char]    && runtimeClass.isAssignableFrom(classOf[Char]))
+         || (x.isInstanceOf[Int]     && runtimeClass.isAssignableFrom(classOf[Int]))
+         || (x.isInstanceOf[Long]    && runtimeClass.isAssignableFrom(classOf[Long]))
+         || (x.isInstanceOf[Float]   && runtimeClass.isAssignableFrom(classOf[Float]))
+         || (x.isInstanceOf[Double]  && runtimeClass.isAssignableFrom(classOf[Double]))
+         || (x.isInstanceOf[Boolean] && runtimeClass.isAssignableFrom(classOf[Boolean]))
+         || (x.isInstanceOf[Unit]    && runtimeClass.isAssignableFrom(classOf[Unit])))
+       ) Some(x.asInstanceOf[T])
+    else None
 
-  // TODO: Inline the bodies of these into the Any-accepting unapply overload above and delete them.
-  // This cannot be done until at least 2.12.0 for reasons of binary compatibility
+  // TODO: deprecate overloads in 2.12.0, remove in 2.13.0
   def unapply(x: Byte)    : Option[T] = unapplyImpl(x, classOf[Byte])
   def unapply(x: Short)   : Option[T] = unapplyImpl(x, classOf[Short])
   def unapply(x: Char)    : Option[T] = unapplyImpl(x, classOf[Char])
@@ -94,11 +94,10 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
   def unapply(x: Double)  : Option[T] = unapplyImpl(x, classOf[Double])
   def unapply(x: Boolean) : Option[T] = unapplyImpl(x, classOf[Boolean])
   def unapply(x: Unit)    : Option[T] = unapplyImpl(x, classOf[Unit])
-  
-  private[this] def unapplyImpl(x: Any, alternative: jClass[_] = null): Option[T] = {
-    val conforms = runtimeClass.isAssignableFrom(x.getClass) || (alternative != null && runtimeClass.isAssignableFrom(alternative))
-    if (conforms) Some(x.asInstanceOf[T]) else None
-  }
+
+  private[this] def unapplyImpl(x: Any, primitiveCls: java.lang.Class[_]): Option[T] =
+    if (runtimeClass.isInstance(x) || runtimeClass.isAssignableFrom(primitiveCls)) Some(x.asInstanceOf[T])
+    else None
 
   // case class accessories
   override def canEqual(x: Any) = x.isInstanceOf[ClassTag[_]]

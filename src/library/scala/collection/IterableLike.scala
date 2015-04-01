@@ -179,6 +179,7 @@ self =>
 
   /** Groups elements in fixed size blocks by passing a "sliding window"
    *  over them (as opposed to partitioning them, as is done in grouped.)
+   *  "Sliding window" step is 1 by default.
    *  @see [[scala.collection.Iterator]], method `sliding`
    *
    *  @param size the number of elements per group
@@ -194,7 +195,7 @@ self =>
    *
    *  @param size the number of elements per group
    *  @param step the distance between the first elements of successive
-   *         groups (defaults to 1)
+   *         groups
    *  @return An iterator producing ${coll}s of size `size`, except the
    *          last and the only element will be truncated if there are
    *          fewer elements than size.
@@ -217,12 +218,12 @@ self =>
     val b = newBuilder
     b.sizeHintBounded(n, this)
     val lead = this.iterator drop n
-    var go = false
-    for (x <- this) {
-      if (lead.hasNext) lead.next()
-      else go = true
-      if (go) b += x
+    val it = this.iterator
+    while (lead.hasNext) {
+      lead.next()
+      it.next()
     }
+    while (it.hasNext) b += it.next()
     b.result()
   }
 
@@ -282,7 +283,7 @@ self =>
     var i = 0
     for (x <- this) {
       b += ((x, i))
-      i +=1
+      i += 1
     }
     b.result()
   }

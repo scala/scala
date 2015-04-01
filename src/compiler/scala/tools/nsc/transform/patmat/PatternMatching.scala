@@ -239,6 +239,11 @@ trait Interface extends ast.TreeDSL {
               case Ident(_) => subst(from, to)
               case _        => super.transform(tree)
             }
+            tree1 match {
+              case _: DefTree =>
+                tree1.symbol.modifyInfo(_.substituteTypes(from, toTypes))
+              case _ =>
+            }
             tree1.modifyType(_.substituteTypes(from, toTypes))
           }
         }

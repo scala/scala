@@ -697,16 +697,18 @@ self =>
           b append end
           return b
         }
-        if ((cursor ne scout) && scout.tailDefined) {
+        if (cursor ne scout) {
           cursor = scout
-          scout = scout.tail        
-          // Use 2x 1x iterator trick for cycle detection; slow iterator can add strings
-          while ((cursor ne scout) && scout.tailDefined) {
-            b append sep append cursor.head
-            n += 1
-            cursor = cursor.tail
+          if (scout.tailDefined) {
             scout = scout.tail
-            if (scout.tailDefined) scout = scout.tail
+            // Use 2x 1x iterator trick for cycle detection; slow iterator can add strings
+            while ((cursor ne scout) && scout.tailDefined) {
+              b append sep append cursor.head
+              n += 1
+              cursor = cursor.tail
+              scout = scout.tail
+              if (scout.tailDefined) scout = scout.tail
+            }
           }
         }
         if (!scout.tailDefined) {  // Not a cycle, scout hit an end
@@ -714,6 +716,9 @@ self =>
             b append sep append cursor.head
             n += 1
             cursor = cursor.tail
+          }
+          if (cursor.nonEmpty) {
+            b append sep append cursor.head
           }
         }
         else {

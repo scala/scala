@@ -121,8 +121,10 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
    *  @return  the bitset itself.
    */
   def &= (other: BitSet): this.type = {
-    ensureCapacity(other.nwords - 1)
-    for (i <- 0 until other.nwords)
+    // Different from other operations: no need to ensure capacity because
+    // anything beyond the capacity is 0.  Since we use other.word which is 0
+    // off the end, we also don't need to make sure we stay in bounds there.
+    for (i <- 0 until nwords)
       elems(i) = elems(i) & other.word(i)
     this
   }
@@ -160,6 +162,9 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
    *
    *  @return an immutable set containing all the elements of this set.
    */
+  @deprecated("If this BitSet contains a value that is 128 or greater, the result of this method is an 'immutable' " +
+    "BitSet that shares state with this mutable BitSet. Thus, if the mutable BitSet is modified, it will violate the " +
+    "immutability of the result.", "2.11.6")
   def toImmutable = immutable.BitSet.fromBitMaskNoCopy(elems)
 
   override def clone(): BitSet = {

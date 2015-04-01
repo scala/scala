@@ -1,5 +1,5 @@
 /*
- * filter: inliner warnings; re-run with -Yinline-warnings for details
+ * filter: inliner warnings; re-run with
  */
 import scala.tools.nsc._
 import scala.tools.partest.CompilerTest

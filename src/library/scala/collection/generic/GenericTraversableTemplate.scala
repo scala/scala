@@ -216,7 +216,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
     val bs: IndexedSeq[Builder[B, CC[B]]] = IndexedSeq.fill(headSize)(genericBuilder[B])
     for (xs <- sequential) {
       var i = 0
-      for (x <- asTraversable(xs)) {
+      for (x <- asTraversable(xs).seq) {
         if (i >= headSize) fail
         bs(i) += x
         i += 1

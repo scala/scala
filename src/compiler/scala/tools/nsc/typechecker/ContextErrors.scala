@@ -45,6 +45,14 @@ trait ContextErrors {
   case class NormalTypeError(underlyingTree: Tree, errMsg: String)
     extends TreeTypeError
 
+  /**
+   * Marks a TypeError that was constructed from a CyclicReference (under silent).
+   * This is used for named arguments, where we need to know if an assignment expression
+   * failed with a cyclic reference or some other type error.
+   */
+  class NormalTypeErrorFromCyclicReference(underlyingTree: Tree, errMsg: String)
+    extends NormalTypeError(underlyingTree, errMsg)
+
   case class AccessTypeError(underlyingTree: Tree, errMsg: String)
     extends TreeTypeError
 
@@ -1087,8 +1095,9 @@ trait ContextErrors {
             // hence we (together with reportTypeError in TypeDiagnostics) make sure that this CyclicReference
             // evades all the handlers on its way and successfully reaches `isCyclicOrErroneous` in Implicits
             throw ex
-          case CyclicReference(sym, info: TypeCompleter) =>
-            issueNormalTypeError(tree, typer.cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage())
+          case c @ CyclicReference(sym, info: TypeCompleter) =>
+            val error = new NormalTypeErrorFromCyclicReference(tree, typer.cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage)
+            issueTypeError(error)
           case _ =>
             contextNamerErrorGen.issue(TypeErrorWithUnderlyingTree(tree, ex))
         }
@@ -1275,8 +1284,8 @@ trait ContextErrors {
     }
 
     def WarnAfterNonSilentRecursiveInference(param: Symbol, arg: Tree)(implicit context: Context) = {
-      val note = "type-checking the invocation of "+ param.owner +" checks if the named argument expression '"+ param.name + " = ...' is a valid assignment\n"+
-                 "in the current scope. The resulting type inference error (see above) can be fixed by providing an explicit type in the local definition for "+ param.name +"."
+      val note = "failed to determine if '"+ param.name + " = ...' is a named argument or an assignment expression.\n"+
+                 "an explicit type is required for the definition mentioned in the error message above."
       context.warning(arg.pos, note)
     }
 

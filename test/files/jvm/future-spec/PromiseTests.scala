@@ -44,20 +44,79 @@ class PromiseTests extends MinimalScalaTest {
       }.getMessage mustBe ("br0ken")
     }
 
+    "be completable with a completed Promise" in {
+      {
+        val p = Promise[String]()
+        p.tryCompleteWith(Promise[String]().success("foo").future)
+        Await.result(p.future, defaultTimeout) mustBe ("foo")
+      }
+      {
+        val p = Promise[String]()
+        p.completeWith(Promise[String]().success("foo").future)
+        Await.result(p.future, defaultTimeout) mustBe ("foo")
+      }
+      {
+        val p = Promise[String]()
+        p.tryCompleteWith(Promise[String]().failure(new RuntimeException("br0ken")).future)
+        intercept[RuntimeException] {
+          Await.result(p.future, defaultTimeout)
+        }.getMessage mustBe ("br0ken")
+      }
+      {
+        val p = Promise[String]()
+        p.tryCompleteWith(Promise[String]().failure(new RuntimeException("br0ken")).future)
+        intercept[RuntimeException] {
+          Await.result(p.future, defaultTimeout)
+        }.getMessage mustBe ("br0ken")
+      }
+    }
   }
 
   "A successful Promise" should {
-    val result = "test value"
-    val promise = Promise[String]().complete(Success(result))
-    promise.isCompleted mustBe (true)
-    futureWithResult(_(promise.future, result))
+    "be completed" in {
+      val result = "test value"
+      val promise = Promise[String]().complete(Success(result))
+      promise.isCompleted mustBe (true)
+      futureWithResult(_(promise.future, result))
+    }
+
+    "not be completable with a completed Promise" in {
+      {
+        val p = Promise.successful("bar")
+        p.tryCompleteWith(Promise[String]().success("foo").future)
+        Await.result(p.future, defaultTimeout) mustBe ("bar")
+      }
+      {
+        val p = Promise.successful("bar")
+        p.completeWith(Promise[String]().success("foo").future)
+        Await.result(p.future, defaultTimeout) mustBe ("bar")
+      }
+    }
   }
 
   "A failed Promise" should {
-    val message = "Expected Exception"
-    val promise = Promise[String]().complete(Failure(new RuntimeException(message)))
-    promise.isCompleted mustBe (true)
-    futureWithException[RuntimeException](_(promise.future, message))
+    "be completed" in {
+      val message = "Expected Exception"
+      val promise = Promise[String]().complete(Failure(new RuntimeException(message)))
+      promise.isCompleted mustBe (true)
+      futureWithException[RuntimeException](_(promise.future, message))
+    }
+    "not be completable with a completed Promise" in {
+      {
+        val p = Promise[String]().failure(new RuntimeException("unbr0ken"))
+        p.tryCompleteWith(Promise[String].failure(new Exception("br0ken")).future)
+        intercept[RuntimeException] {
+          Await.result(p.future, defaultTimeout)
+        }.getMessage mustBe ("unbr0ken")
+      }
+      {
+        val p = Promise[String]().failure(new RuntimeException("unbr0ken"))
+        p.completeWith(Promise[String]().failure(new Exception("br0ken")).future)
+        intercept[RuntimeException] {
+          Await.result(p.future, defaultTimeout)
+        }.getMessage mustBe ("unbr0ken")
+      }
+    }
   }
 
   "An interrupted Promise" should {

@@ -1,0 +1,21 @@
+t7623.scala:19: warning: A repeated case parameter or extracted sequence should be matched only by a sequence wildcard (_*).
+  def f = "" match { case X(s) => }
+                          ^
+t7623.scala:21: warning: A repeated case parameter or extracted sequence should be matched only by a sequence wildcard (_*).
+  def g = "" match { case X(s, t) => }
+                          ^
+t7623.scala:23: warning: A repeated case parameter or extracted sequence should be matched only by a sequence wildcard (_*).
+  def h = "" match { case X(s, t, u @ _*) => }
+                          ^
+t7623.scala:9: warning: A repeated case parameter or extracted sequence should be matched only by a sequence wildcard (_*).
+  def f = C("") match { case C(s) => }
+                             ^
+t7623.scala:11: warning: A repeated case parameter or extracted sequence should be matched only by a sequence wildcard (_*).
+  def g = C("") match { case C(s, t) => }
+                             ^
+t7623.scala:13: warning: A repeated case parameter or extracted sequence should be matched only by a sequence wildcard (_*).
+  def h = C("") match { case C(s, t, u @ _*) => }
+                             ^
+error: No warnings can be incurred under -Xfatal-warnings.
+6 warnings found
+one error found

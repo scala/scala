@@ -110,8 +110,10 @@ trait ScalacPatternExpanders {
         err("Star pattern must correspond with varargs or unapplySeq")
       else if (elementArity < 0)
         arityError("not enough")
-      else if (elementArity > 0 && !extractor.hasSeq)
+      else if (elementArity > 0 && !isSeq)
         arityError("too many")
+      else if (settings.warnStarsAlign && isSeq && productArity > 0 && (elementArity > 0 || !isStar))
+        warn("A repeated case parameter or extracted sequence should be matched only by a sequence wildcard (_*).")
 
       aligned
     }

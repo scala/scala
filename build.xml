@@ -1445,17 +1445,18 @@ TODO:
     <stopwatch name="quick.sbt-interface.timer" action="total"/>
   </target>
 
-  <target name="test.junit.init" depends="quick.done">
-    <uptodate property="test.junit.available" targetfile="${build-junit.dir}/test-compile.complete">
-      <srcfiles dir="${test.junit.src}">
-        <include name="**/*.scala"/>
-      </srcfiles>
-    </uptodate>
-  </target>
-
-  <target name="test.junit.comp" depends="test.junit.init, quick.done" unless="test.junit.available">
+  <target name="test.junit.comp" depends="pack.done">
     <stopwatch name="test.junit.compiler.timer"/>
     <mkdir dir="${test.junit.classes}"/>
+    <javac
+      debug="true"
+      srcdir="${test.junit.src}"
+      destdir="${test.junit.classes}"
+      classpathref="test.junit.compiler.build.path"
+      target="1.6"
+      source="1.5"
+      compiler="javac1.6"
+      includes="**/*.java"/>
     <scalacfork
       destdir="${test.junit.classes}"
       compilerpathref="quick.compiler.path"
@@ -1469,7 +1470,7 @@ TODO:
     <stopwatch name="test.junit.compiler.timer" action="total"/>
   </target>
 
-  <target name="test.junit" depends="test.junit.comp, test.junit.init">
+  <target name="test.junit" depends="test.junit.comp">
     <stopwatch name="test.junit.timer"/>
     <mkdir dir="${test.junit.classes}"/>
     <echo message="Note: details of failed tests will be output to ${build-junit.dir}"/>

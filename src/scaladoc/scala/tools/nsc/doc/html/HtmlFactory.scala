@@ -13,8 +13,6 @@ import io.{ Streamable, Directory }
 import scala.collection._
 import page.diagram._
 
-import html.page.diagram.DiagramGenerator
-
 /** A class that can generate Scaladoc sites to some fixed root folder.
   * @author David Bernard
   * @author Gilles Dubochet */
@@ -121,28 +119,27 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
       finally out.close()
     }
 
-    DiagramGenerator.initialize(universe.settings)
-
     libResources foreach (s => copyResource("lib/" + s))
 
     new page.Index(universe, index) writeFor this
     new page.IndexScript(universe, index) writeFor this
-
-    writeTemplates(_ writeFor this)
-
-    for (letter <- index.firstLetterIndex) {
-      new html.page.ReferenceIndex(letter._1, index, universe) writeFor this
+    try {
+      writeTemplates(_ writeFor this)
+      for (letter <- index.firstLetterIndex) {
+        new html.page.ReferenceIndex(letter._1, index, universe) writeFor this
+      }
+    } finally {
+      DiagramStats.printStats(universe.settings)
+      universe.dotRunner.cleanup()
     }
-
-    DiagramGenerator.cleanup()
   }
 
   def writeTemplates(writeForThis: HtmlPage => Unit) {
     val written = mutable.HashSet.empty[DocTemplateEntity]
-    val diagramGenerator: DiagramGenerator = new DotDiagramGenerator(universe.settings)
 
     def writeTemplate(tpl: DocTemplateEntity) {
       if (!(written contains tpl)) {
+        val diagramGenerator: DiagramGenerator = new DotDiagramGenerator(universe.settings, universe.dotRunner)
         writeForThis(new page.Template(universe, diagramGenerator, tpl))
         written += tpl
         tpl.templates collect { case d: DocTemplateEntity => d } map writeTemplate

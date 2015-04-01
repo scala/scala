@@ -99,10 +99,9 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
    *
    * Therefore, when RT_NOTHING or RT_NULL are to be emitted, a mapping is needed: the internal
    * names of NothingClass and NullClass can't be emitted as-is.
-   * TODO @lry Once there's a 2.11.3 starr, use the commented argument list. The current starr crashes on the type literal `scala.runtime.Nothing$`
    */
-  lazy val RT_NOTHING : ClassBType = classBTypeFromSymbol(rootMirror.getRequiredClass("scala.runtime.Nothing$")) // (requiredClass[scala.runtime.Nothing$])
-  lazy val RT_NULL    : ClassBType = classBTypeFromSymbol(rootMirror.getRequiredClass("scala.runtime.Null$"))    // (requiredClass[scala.runtime.Null$])
+  lazy val RT_NOTHING : ClassBType = classBTypeFromSymbol(requiredClass[scala.runtime.Nothing$])
+  lazy val RT_NULL    : ClassBType = classBTypeFromSymbol(requiredClass[scala.runtime.Null$])
 
   lazy val ObjectReference   : ClassBType = classBTypeFromSymbol(ObjectClass)
   lazy val objArrayReference : ArrayBType = ArrayBType(ObjectReference)

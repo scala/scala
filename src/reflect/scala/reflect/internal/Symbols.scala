@@ -66,12 +66,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   // when under some flag. Define per-phase invariants for owner/owned relationships,
   // e.g. after flatten all classes are owned by package classes, there are lots and
   // lots of these to be declared (or more realistically, discovered.)
+  // could be private since 2.11.6, but left protected to avoid potential breakages (eg ensime)
   protected def saveOriginalOwner(sym: Symbol): Unit = {
     // some synthetic symbols have NoSymbol as owner initially
     if (sym.owner != NoSymbol) {
       if (originalOwnerMap contains sym) ()
-      else originalOwnerMap(sym) = sym.rawowner
+      else defineOriginalOwner(sym, sym.rawowner)
     }
+  }
+
+  def defineOriginalOwner(sym: Symbol, owner: Symbol): Unit = {
+    originalOwnerMap(sym) = owner
   }
 
   def symbolOf[T: WeakTypeTag]: TypeSymbol = weakTypeOf[T].typeSymbolDirect.asType
@@ -2060,7 +2065,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  where it is the outer class of the enclosing class.
      */
     final def outerClass: Symbol =
-      if (owner.isClass) owner
+      if (this == NoSymbol) {
+        // ideally we shouldn't get here, but its better to harden against this than suffer the infinite loop in SI-9133
+        devWarningDumpStack("NoSymbol.outerClass", 15)
+        NoSymbol
+      } else if (owner.isClass) owner
       else if (isClassLocalToConstructor) owner.enclClass.outerClass
       else owner.outerClass
 

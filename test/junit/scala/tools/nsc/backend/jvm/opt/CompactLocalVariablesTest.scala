@@ -17,8 +17,8 @@ class CompactLocalVariablesTest {
 
   // recurse-unreachable-jumps is required for eliminating catch blocks, in the first dce round they
   // are still live.only after eliminating the empty handler the catch blocks become unreachable.
-  val methodOptCompiler     = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:unreachable-code,recurse-unreachable-jumps,compact-locals")
-  val noCompactVarsCompiler = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:unreachable-code,recurse-unreachable-jumps")
+  val methodOptCompiler     = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:unreachable-code,compact-locals")
+  val noCompactVarsCompiler = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:unreachable-code")
 
   @Test
   def compactUnused(): Unit = {

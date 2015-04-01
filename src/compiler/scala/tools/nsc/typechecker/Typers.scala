@@ -76,7 +76,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       case s : SilentTypeError      => f(s.reportableErrors)
     }
   }
-  class SilentTypeError private(val errors: List[AbsTypeError]) extends SilentResult[Nothing] {
+  class SilentTypeError private(val errors: List[AbsTypeError], val warnings: List[(Position, String)]) extends SilentResult[Nothing] {
     override def isEmpty = true
     def err: AbsTypeError = errors.head
     def reportableErrors = errors match {
@@ -87,10 +87,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
   }
   object SilentTypeError {
-    def apply(errors: AbsTypeError*): SilentTypeError = new SilentTypeError(errors.toList)
+    def apply(errors: AbsTypeError*): SilentTypeError = apply(errors.toList, Nil)
+    def apply(errors: List[AbsTypeError], warnings: List[(Position, String)]): SilentTypeError = new SilentTypeError(errors, warnings)
+    // todo: this extracts only one error, should be a separate extractor.
     def unapply(error: SilentTypeError): Option[AbsTypeError] = error.errors.headOption
   }
 
+  // todo: should include reporter warnings in SilentResultValue.
+  // e.g. tryTypedApply could print warnings on arguments when the typing succeeds.
   case class SilentResultValue[+T](value: T) extends SilentResult[T] { override def isEmpty = false }
 
   def newTyper(context: Context): Typer = new NormalTyper(context)
@@ -665,7 +669,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       @inline def wrapResult(reporter: ContextReporter, result: T) =
         if (reporter.hasErrors) {
           stopStats()
-          SilentTypeError(reporter.errors: _*)
+          SilentTypeError(reporter.errors.toList, reporter.warnings.toList)
         } else SilentResultValue(result)
 
       try {
@@ -829,6 +833,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               }
               orElse { _ =>
                 val resetTree = resetAttrs(original)
+                resetTree match {
+                  case treeInfo.Applied(fun, targs, args) =>
+                    if (fun.symbol != null && fun.symbol.isError)
+                      // SI-9041 Without this, we leak error symbols past the typer!
+                      // because the fallback typechecking notices the error-symbol,
+                      // refuses to re-attempt typechecking, and presumes that someone
+                      // else was responsible for issuing the related type error!
+                      fun.setSymbol(NoSymbol)
+                  case _ =>
+                }
                 debuglog(s"fallback on implicits: ${tree}/$resetTree")
                 val tree1 = typed(resetTree, mode)
                 // Q: `typed` already calls `pluginsTyped` and `adapt`. the only difference here is that
@@ -1164,7 +1178,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     def instantiatePossiblyExpectingUnit(tree: Tree, mode: Mode, pt: Type): Tree = {
-      if (mode.typingExprNotFun && pt.typeSymbol == UnitClass)
+      if (mode.typingExprNotFun && pt.typeSymbol == UnitClass && !tree.tpe.isInstanceOf[MethodType])
         instantiateExpectingUnit(tree, mode)
       else
         instantiate(tree, mode, pt)
@@ -1523,7 +1537,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val cbody1 = treeCopy.Block(cbody, preSuperStats, superCall1)
           val clazz = context.owner
             assert(clazz != NoSymbol, templ)
-          val dummy = context.outer.owner.newLocalDummy(templ.pos)
+          // SI-9086 The position of this symbol is material: implicit search will avoid triggering
+          //         cyclic errors in an implicit search in argument to the super constructor call on
+          //         account of the "ignore symbols without complete info that succeed the implicit search"
+          //         in this source file. See `ImplicitSearch#isValid` and `ImplicitInfo#isCyclicOrErroneous`.
+          val dummy = context.outer.owner.newLocalDummy(context.owner.pos)
           val cscope = context.outer.makeNewScope(ctor, dummy)
           if (dummy.isTopLevel) currentRun.symSource(dummy) = currentUnit.source.file
           val cbody2 = { // called both during completion AND typing.
@@ -2022,7 +2040,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 case acc                                           => acc
               }
               ownAcc match {
-                case acc: TermSymbol if !acc.isVariable =>
+                case acc: TermSymbol if !acc.isVariable && !isByNameParamType(acc.info) =>
                   debuglog(s"$acc has alias ${alias.fullLocationString}")
                   acc setAlias alias
                 case _ =>
@@ -4408,7 +4426,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
         val start = if (Statistics.canEnable) Statistics.startTimer(failedApplyNanos) else null
 
-        def onError(typeErrors: Seq[AbsTypeError]): Tree = {
+        def onError(typeErrors: Seq[AbsTypeError], warnings: Seq[(Position, String)]): Tree = {
           if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, start)
 
           // If the problem is with raw types, copnvert to existentials and try again.
@@ -4456,10 +4474,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
           }
           typeErrors foreach context.issue
+          warnings foreach { case (p, m) => context.warning(p, m) }
           setError(treeCopy.Apply(tree, fun, args))
         }
 
-        silent(_.doTypedApply(tree, fun, args, mode, pt)) orElse onError
+        silent(_.doTypedApply(tree, fun, args, mode, pt)) match {
+          case SilentResultValue(value) => value
+          case e: SilentTypeError => onError(e.errors, e.warnings)
+        }
       }
 
       def normalTypedApply(tree: Tree, fun: Tree, args: List[Tree]) = {
@@ -4510,6 +4532,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case err: SilentTypeError =>
             onError({
               err.reportableErrors foreach context.issue
+              err.warnings foreach { case (p, m) => context.warning(p, m) }
               args foreach (arg => typed(arg, mode, ErrorType))
               setError(tree)
             })

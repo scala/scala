@@ -355,6 +355,14 @@ abstract class SymbolTable extends macros.Universe
       cache
     }
 
+    /**
+     * Removes a cache from the per-run caches. This is useful for testing: it allows running the
+     * compiler and then inspect the state of a cache.
+     */
+    def unrecordCache[T <: Clearable](cache: T): Unit = {
+      caches = caches.filterNot(_.get eq cache)
+    }
+
     def clearAll() = {
       debuglog("Clearing " + caches.size + " caches.")
       caches foreach (ref => Option(ref.get).foreach(_.clear))
