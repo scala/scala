@@ -1,0 +1,57 @@
+#!/bin/bash -e
+
+baseDir=`pwd`
+cd $baseDir
+
+scriptsDir="$baseDir/scripts"
+. $scriptsDir/common
+
+./pull-binary-libs.sh
+
+privateRepo="http://private-repo.typesafe.com/typesafe/scala-release-temp/"
+privateCred="private-repo"
+
+publishLockerPrivateTask="publish"
+publishPrivateTask="publish"
+publishSonatypeTaskCore="publish-signed"
+
+antBuildTask="nightly"
+
+SCALA_VER_BASE="2.12.0"
+SCALA_VER_SUFFIX="-M0"
+SCALA_VER="$SCALA_VER_BASE$SCALA_VER_SUFFIX"
+
+SCALA_BINARY_VER="2.11" # defines the binary version of the used modules. using 2.11 modules for this first 2.12 release.
+CONTINUATIONS_PLUGIN_VER_SUFFIX="_2.11.5"
+
+SCALADOC_SOURCE_LINKS_VER="v$SCALA_VER"
+
+rm -rf build/
+
+ant -Dmaven.version.number=$SCALA_VER\
+    -Dremote.snapshot.repository=NOPE\
+    -Dremote.release.repository=$privateRepo\
+    -Drepository.credentials.id=$privateCred\
+    -Dscalac.args.optimise=-optimise\
+    -Ddocs.skip=1\
+    -Dlocker.skip=1\
+    $publishLockerPrivateTask
+
+rm -rf build/
+
+ant -Dstarr.version=$SCALA_VER\
+    -Dscala.full.version=$SCALA_VER\
+    -Dextra.repo.url=$privateRepo\
+    -Dmaven.version.suffix=$SCALA_VER_SUFFIX\
+    -Dscala.binary.version=$SCALA_BINARY_VER\
+    -Dscala-continuations-plugin.cross.suffix=$CONTINUATIONS_PLUGIN_VER_SUFFIX\
+    -Dscaladoc.git.commit=$SCALADOC_SOURCE_LINKS_VER\
+    -Dremote.snapshot.repository=NOPE\
+    -Dremote.release.repository=$privateRepo\
+    -Drepository.credentials.id=$privateCred\
+    -Dscalac.args.optimise=-optimise\
+    $antBuildTask $publishPrivateTask
+
+if [ "$publishToSonatype" == "yes" ]; then
+  ant -Dmaven.version.number=$SCALA_VER $publishSonatypeTaskCore
+fi
