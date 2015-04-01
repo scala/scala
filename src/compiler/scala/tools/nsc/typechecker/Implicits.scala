@@ -276,7 +276,7 @@ trait Implicits {
   /** An extractor for types of the form ? { name: (? >: argtpe <: Any*)restp }
    */
   object HasMethodMatching {
-    val dummyMethod = NoSymbol.newTermSymbol("typer$dummy") setInfo NullaryMethodType(AnyTpe)
+    val dummyMethod = NoSymbol.newTermSymbol(TermName("typer$dummy")) setInfo NullaryMethodType(AnyTpe)
 
     def templateArgType(argtpe: Type) = new BoundedWildcardType(TypeBounds.lower(argtpe))
 
@@ -893,7 +893,7 @@ trait Implicits {
               try improves(firstPending, alt)
               catch {
                 case e: CyclicReference =>
-                  debugwarn(s"Discarding $firstPending during implicit search due to cyclic reference.")
+                  devWarning(s"Discarding $firstPending during implicit search due to cyclic reference.")
                   true
               }
             )

@@ -1006,7 +1006,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           printSuper(st, printedName(qual), checkSymbol = false)
 
         case th @ This(qual) =>
-          if (tree.hasExistingSymbol && tree.symbol.isPackage) print(tree.symbol.fullName)
+          if (tree.hasExistingSymbol && tree.symbol.hasPackageFlag) print(tree.symbol.fullName)
           else printThis(th, printedName(qual))
 
         // remove this prefix from constructor invocation in typechecked trees: this.this -> this
@@ -1023,7 +1023,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
             }) && (tr match { // check that Select contains package
               case Select(q, _) => checkRootPackage(q)
               case _: Ident | _: This => val sym = tr.symbol
-                tr.hasExistingSymbol && sym.isPackage && sym.name != nme.ROOTPKG
+                tr.hasExistingSymbol && sym.hasPackageFlag && sym.name != nme.ROOTPKG
               case _ => false
             })
 

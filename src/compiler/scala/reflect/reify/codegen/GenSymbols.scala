@@ -39,7 +39,7 @@ trait GenSymbols {
     else if (sym.isModuleClass)
       if (sym.sourceModule.isLocatable) Select(Select(reify(sym.sourceModule), nme.asModule), nme.moduleClass)
       else reifySymDef(sym)
-    else if (sym.isPackage)
+    else if (sym.hasPackageFlag)
       mirrorMirrorCall(nme.staticPackage, reify(sym.fullName))
     else if (sym.isLocatable) {
       /*  This is a fancy conundrum that stems from the fact that Scala allows

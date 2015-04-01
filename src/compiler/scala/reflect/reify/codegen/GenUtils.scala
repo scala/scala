@@ -15,7 +15,7 @@ trait GenUtils {
   def reifyProduct(prefix: String, elements: List[Any]): Tree = {
     // reflection would be more robust, but, hey, this is a hot path
     if (prefix.startsWith("Tuple")) scalaFactoryCall(prefix, (elements map reify).toList: _*)
-    else mirrorCall(prefix, (elements map reify): _*)
+    else mirrorCall(TermName(prefix), (elements map reify): _*)
   }
 
   // helper functions
@@ -49,16 +49,16 @@ trait GenUtils {
     call("" + nme.MIRROR_PREFIX + name, args: _*)
 
   def mirrorFactoryCall(value: Product, args: Tree*): Tree =
-    mirrorFactoryCall(value.productPrefix, args: _*)
+    mirrorFactoryCall(TermName(value.productPrefix), args: _*)
 
   def mirrorFactoryCall(prefix: TermName, args: Tree*): Tree =
-    mirrorCall("" + prefix, args: _*)
+    mirrorCall(TermName("" + prefix), args: _*)
 
   def scalaFactoryCall(name: TermName, args: Tree*): Tree =
     call(s"scala.$name.apply", args: _*)
 
   def scalaFactoryCall(name: String, args: Tree*): Tree =
-    scalaFactoryCall(name: TermName, args: _*)
+    scalaFactoryCall(TermName(name), args: _*)
 
   def mkList(args: List[Tree]): Tree =
     scalaFactoryCall("collection.immutable.List", args: _*)

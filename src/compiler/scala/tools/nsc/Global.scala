@@ -1551,7 +1551,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
       if (reporter.hasErrors) {
         for ((sym, file) <- symSource.iterator) {
-          sym.reset(new loaders.SourcefileLoader(file))
+          if (file != null)
+            sym.reset(new loaders.SourcefileLoader(file))
           if (sym.isTerm)
             sym.moduleClass reset loaders.moduleClassLoader
         }

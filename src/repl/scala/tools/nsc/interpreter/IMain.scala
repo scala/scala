@@ -309,7 +309,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     def shift[T](op: => T): T = exitingFlatten(op)
   }
 
-  def originalPath(name: String): String = originalPath(name: TermName)
+  def originalPath(name: String): String = originalPath(TermName(name))
   def originalPath(name: Name): String   = typerOp path name
   def originalPath(sym: Symbol): String  = typerOp path sym
   def flatPath(sym: Symbol): String      = flatOp shift sym.javaClassName
@@ -1106,8 +1106,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   def tryTwice(op: => Symbol): Symbol = exitingTyper(op) orElse exitingFlatten(op)
 
   def symbolOfIdent(id: String): Symbol  = symbolOfType(id) orElse symbolOfTerm(id)
-  def symbolOfType(id: String): Symbol   = tryTwice(replScope lookup (id: TypeName))
-  def symbolOfTerm(id: String): Symbol   = tryTwice(replScope lookup (id: TermName))
+  def symbolOfType(id: String): Symbol   = tryTwice(replScope lookup TypeName(id))
+  def symbolOfTerm(id: String): Symbol   = tryTwice(replScope lookup TermName(id))
   def symbolOfName(id: Name): Symbol     = replScope lookup id
 
   def runtimeClassAndTypeOfTerm(id: String): Option[(JClass, Type)] = {

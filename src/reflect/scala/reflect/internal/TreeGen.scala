@@ -362,7 +362,7 @@ abstract class TreeGen {
         if (body forall treeInfo.isInterfaceMember) None
         else Some(
           atPos(wrappingPos(superPos, lvdefs)) (
-            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(lvdefs, Literal(Constant())))))
+            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(lvdefs, Literal(Constant(()))))))
       }
       else {
         // convert (implicit ... ) to ()(implicit ... ) if its the only parameter section
@@ -376,7 +376,7 @@ abstract class TreeGen {
                                          // therefore here we emit a dummy which gets populated when the template is named and typechecked
         Some(
           atPos(wrappingPos(superPos, lvdefs ::: vparamss1.flatten).makeTransparent) (
-            DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant())))))
+            DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant(()))))))
       }
     }
     constr foreach (ensureNonOverlapping(_, parents ::: gvdefs, focus = false))

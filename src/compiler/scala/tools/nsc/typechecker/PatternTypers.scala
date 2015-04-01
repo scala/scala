@@ -268,7 +268,7 @@ trait PatternTypers {
 
       def freshArgType(tp: Type): Type = tp match {
         case MethodType(param :: _, _) => param.tpe
-        case PolyType(tparams, restpe) => createFromClonedSymbols(tparams, freshArgType(restpe))(polyType)
+        case PolyType(tparams, restpe) => createFromClonedSymbols(tparams, freshArgType(restpe))(genPolyType)
         case OverloadedType(_, _)      => OverloadedUnapplyError(fun) ; ErrorType
         case _                         => UnapplyWithSingleArgError(fun) ; ErrorType
       }

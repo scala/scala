@@ -13,6 +13,7 @@ import symtab.Flags
 import JavaTokens._
 import scala.language.implicitConversions
 import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.ListOfNil
 
 trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
   val global : Global
@@ -125,7 +126,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def makeSyntheticParam(count: Int, tpt: Tree): ValDef =
       makeParam(nme.syntheticParamName(count), tpt)
     def makeParam(name: String, tpt: Tree): ValDef =
-      makeParam(name: TermName, tpt)
+      makeParam(TermName(name), tpt)
     def makeParam(name: TermName, tpt: Tree): ValDef =
       ValDef(Modifiers(Flags.JAVA | Flags.PARAM), name, tpt, EmptyTree)
 

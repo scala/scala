@@ -207,7 +207,7 @@ abstract class ExplicitOuter extends InfoTransform
       // class needs to have a common naming scheme, independently of whether
       // the field was accessed from an inner class or not. See #2946
       if (sym.owner.isTrait && sym.isLocalToThis &&
-              (sym.getter(sym.owner.toInterface) == NoSymbol))
+              (sym.getterIn(sym.owner.toInterface) == NoSymbol))
         sym.makeNotPrivate(sym.owner)
       tp
   }

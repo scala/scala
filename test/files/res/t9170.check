@@ -1,0 +1,7 @@
+
+nsc> t9170/A.scala:3: error: double definition:
+def f[A](a: => A): Int at line 2 and
+def f[A](a: => Either[Exception,A]): Int at line 3
+have same type after erasure: (a: Function0)Int
+  def f[A](a: => Either[Exception, A]) = 2
+      ^

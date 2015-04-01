@@ -107,7 +107,8 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
       if (isCompilerUniverse) super.enter(sym)
       else {
         val existing = super.lookupEntry(sym.name)
-        assert(existing == null || existing.sym.isMethod, s"pkgClass = $pkgClass, sym = $sym, existing = $existing")
+        def eitherIsMethod(sym1: Symbol, sym2: Symbol) = sym1.isMethod || sym2.isMethod
+        assert(existing == null || eitherIsMethod(existing.sym, sym), s"pkgClass = $pkgClass, sym = $sym, existing = $existing")
         super.enter(sym)
       }
     }

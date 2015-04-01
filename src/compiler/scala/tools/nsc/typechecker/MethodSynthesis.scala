@@ -8,6 +8,7 @@ package typechecker
 import symtab.Flags._
 import scala.reflect.internal.util.StringOps.{ ojoin }
 import scala.reflect.ClassTag
+import scala.reflect.internal.util.ListOfNil
 import scala.reflect.runtime.{ universe => ru }
 import scala.language.higherKinds
 
@@ -384,7 +385,7 @@ trait MethodSynthesis {
       }
     }
     case class Getter(tree: ValDef) extends BaseGetter(tree) {
-      override def derivedSym = if (mods.isDeferred) basisSym else basisSym.getter(enclClass)
+      override def derivedSym = if (mods.isDeferred) basisSym else basisSym.getterIn(enclClass)
       private def derivedRhs  = if (mods.isDeferred) EmptyTree else fieldSelection
       private def derivedTpt = {
         // For existentials, don't specify a type for the getter, even one derived
@@ -451,7 +452,7 @@ trait MethodSynthesis {
       def flagsMask  = SetterFlags
       def flagsExtra = ACCESSOR
 
-      override def derivedSym = basisSym.setter(enclClass)
+      override def derivedSym = basisSym.setterIn(enclClass)
     }
     case class Field(tree: ValDef) extends DerivedFromValDef {
       def name       = tree.localName

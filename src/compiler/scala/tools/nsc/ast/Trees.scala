@@ -308,7 +308,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
                 // Erasing locally-defined symbols is useful to prevent tree corruption, but erasing external bindings is not,
                 // therefore we want to retain those bindings, especially given that restoring them can be impossible
                 // if we move these trees into lexical contexts different from their original locations.
-                if (dupl.hasSymbol) {
+                if (dupl.hasSymbolField) {
                   val sym = dupl.symbol
                   val vetoScope = !brutally && !(locals contains sym) && !(locals contains sym.deSkolemize)
                   val vetoThis = dupl.isInstanceOf[This] && sym.isPackageClass

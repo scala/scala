@@ -9,7 +9,8 @@ Macros_Test_2.scala:6: error: too few argument lists for macro invocation
 Macros_Test_2.scala:7: error: Int does not take parameters
   foo(4)(2)
         ^
-Macros_Test_2.scala:8: error: macro applications do not support named and/or default arguments
+Macros_Test_2.scala:8: error: not enough arguments for macro method foo: (x: Int)Int.
+Unspecified value parameter x.
   foo()
      ^
 Macros_Test_2.scala:9: error: too many arguments for macro method foo: (x: Int)Int
