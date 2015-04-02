@@ -64,7 +64,18 @@ trait Solving extends Logic {
       def size = symbols.size
     }
 
-    case class Solvable(cnf: Cnf, symbolMapping: SymbolMapping)
+    def cnfString(f: Array[Clause]): String
+
+    case class Solvable(cnf: Cnf, symbolMapping: SymbolMapping) {
+      override def toString: String = {
+        "Solvable\nLiterals:\n" +
+          (for {
+            (lit, sym) <- symbolMapping.symForVar.toSeq.sortBy(_._1)
+          } yield {
+            s"$lit -> $sym"
+          }).mkString("\n") + "Cnf:\n" + cnfString(cnf)
+      }
+    }
 
     trait CnfBuilder {
       private[this] val buff = ArrayBuffer[Clause]()
@@ -130,20 +141,23 @@ trait Solving extends Logic {
 
       def apply(p: Prop): Solvable = {
 
-        def convert(p: Prop): Lit = {
+        def convert(p: Prop): Option[Lit] = {
           p match {
             case And(fv)  =>
-              and(fv.map(convert))
+              Some(and(fv.flatMap(convert)))
             case Or(fv)   =>
-              or(fv.map(convert))
+              Some(or(fv.flatMap(convert)))
             case Not(a)   =>
-              not(convert(a))
+              convert(a).map(not)
             case sym: Sym =>
-              convertSym(sym)
+              Some(convertSym(sym))
             case True     =>
-              constTrue
+              Some(constTrue)
             case False    =>
-              constFalse
+              Some(constFalse)
+            case AtMostOne(ops) =>
+              atMostOne(ops)
+              None
             case _: Eq    =>
               throw new MatchError(p)
           }
@@ -189,8 +203,57 @@ trait Solving extends Logic {
         // no need for auxiliary variable
         def not(a: Lit): Lit = -a
 
+        /**
+         * This encoding adds 3n-4 variables auxiliary variables
+         * to encode that at most 1 symbol can be set.
+         * See also "Towards an Optimal CNF Encoding of Boolean Cardinality Constraints"
+         * http://www.carstensinz.de/papers/CP-2005.pdf
+         */
+        def atMostOne(ops: List[Sym]) {
+          (ops: @unchecked) match {
+            case hd :: Nil  => convertSym(hd)
+            case x1 :: tail =>
+              // sequential counter: 3n-4 clauses
+              // pairwise encoding: n*(n-1)/2 clauses
+              // thus pays off only if n > 5
+              if (ops.lengthCompare(5) > 0) {
+
+                @inline
+                def /\(a: Lit, b: Lit) = addClauseProcessed(clause(a, b))
+
+                val (mid, xn :: Nil) = tail.splitAt(tail.size - 1)
+
+                // 1 <= x1,...,xn <==>
+                //
+                // (!x1 \/ s1) /\ (!xn \/ !sn-1) /\
+                //
+                //     /\
+                //    /  \ (!xi \/ si) /\ (!si-1 \/ si) /\ (!xi \/ !si-1)
+                //  1 < i < n
+                val s1 = newLiteral()
+                /\(-convertSym(x1), s1)
+                val snMinus = mid.foldLeft(s1) {
+                  case (siMinus, sym) =>
+                    val xi = convertSym(sym)
+                    val si = newLiteral()
+                    /\(-xi, si)
+                    /\(-siMinus, si)
+                    /\(-xi, -siMinus)
+                    si
+                }
+                /\(-convertSym(xn), -snMinus)
+              } else {
+                ops.map(convertSym).combinations(2).foreach {
+                  case a :: b :: Nil =>
+                    addClauseProcessed(clause(-a, -b))
+                  case _             =>
+                }
+              }
+          }
+        }
+
         // add intermediate variable since we want the formula to be SAT!
-        addClauseProcessed(clause(convert(p)))
+        addClauseProcessed(convert(p).toSet)
 
         Solvable(buildCnf, symbolMapping)
       }
