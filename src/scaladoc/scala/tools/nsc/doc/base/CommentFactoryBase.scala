@@ -281,13 +281,16 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
 
       case line :: ls if (lastTagKey.isDefined) =>
-        val key = lastTagKey.get
-        val value =
-          ((tags get key): @unchecked) match {
-            case Some(b :: bs) => (b + endOfLine + line) :: bs
-            case None => oops("lastTagKey set when no tag exists for key")
-          }
-        parse0(docBody, tags + (key -> value), lastTagKey, ls, inCodeBlock)
+        val newtags = if (!line.isEmpty) {
+          val key = lastTagKey.get
+          val value =
+            ((tags get key): @unchecked) match {
+              case Some(b :: bs) => (b + endOfLine + line) :: bs
+              case None => oops("lastTagKey set when no tag exists for key")
+            }
+          tags + (key -> value)
+        } else tags
+        parse0(docBody, newtags, lastTagKey, ls, inCodeBlock)
 
       case line :: ls =>
         if (docBody.length > 0) docBody append endOfLine

@@ -24,8 +24,11 @@ class Factory(val g: Global, val s: doc.Settings)
     }
   }
 
+  def getComment(s: String): Comment =
+    parse(s, "", scala.tools.nsc.util.NoPosition, null)
+
   def parseComment(s: String): Option[Inline] =
-    strip(parse(s, "", scala.tools.nsc.util.NoPosition, null))
+    strip(getComment(s))
 
   def createBody(s: String) =
     parse(s, "", scala.tools.nsc.util.NoPosition, null).body
@@ -166,4 +169,19 @@ object Test extends Properties("CommentFactory") {
     }
   }
 
+  property("Empty parameter text should be empty") = {
+    // used to fail with
+    // body == Body(List(Paragraph(Chain(List(Summary(Text('\n')))))))
+    factory.getComment(
+      """
+/**
+  * @deprecated
+  */
+      """).deprecated match {
+      case Some(Body(l)) if l.isEmpty => true
+      case other =>
+        println(other)
+        false
+    }
+  }
 }
