@@ -135,6 +135,20 @@ class IteratorTest {
     assertEquals(3, List(1, 2, 3, 4, 5).iterator.indexWhere { x: Int => x >= 4 })
     assertEquals(-1, List(1, 2, 3, 4, 5).iterator.indexWhere { x: Int => x >= 16 })
   }
+  @Test def indexOfFrom(): Unit = {
+    assertEquals(1, List(1, 2, 3, 4, 5).iterator.indexOf(2, 0))
+    assertEquals(1, List(1, 2, 3, 4, 5).iterator.indexOf(2, 1))
+    assertEquals(-1, List(1, 2, 3, 4, 5).iterator.indexOf(2, 2))
+    assertEquals(4, List(1, 2, 3, 2, 1).iterator.indexOf(1, 1))
+    assertEquals(1, List(1, 2, 3, 2, 1).iterator.indexOf(2, 1))
+  }
+  @Test def indexWhereFrom(): Unit = {
+    assertEquals(1, List(1, 2, 3, 4, 5).iterator.indexWhere(_ == 2, 0))
+    assertEquals(1, List(1, 2, 3, 4, 5).iterator.indexWhere(_ == 2, 1))
+    assertEquals(-1, List(1, 2, 3, 4, 5).iterator.indexWhere(_ == 2, 2))
+    assertEquals(4, List(1, 2, 3, 2, 1).iterator.indexWhere(_ < 2, 1))
+    assertEquals(1, List(1, 2, 3, 2, 1).iterator.indexWhere(_ <= 2, 1))
+  }
   // iterator-iterate-lazy.scala
   // was java.lang.UnsupportedOperationException: tail of empty list
   @Test def iterateIsSufficientlyLazy(): Unit = {
@@ -153,5 +167,13 @@ class IteratorTest {
     // back and forth without slipping into nontermination.
     results += (Stream from 1).toIterator.drop(10).toStream.drop(10).toIterator.next()
     assertSameElements(List(1,1,21), results)
+  }
+  // SI-8552
+  @Test def indexOfShouldWorkForTwoParams(): Unit = {
+    assertEquals(1, List(1, 2, 3).iterator.indexOf(2, 0))
+    assertEquals(-1, List(5 -> 0).iterator.indexOf(5, 0))
+    assertEquals(0, List(5 -> 0).iterator.indexOf((5, 0)))
+    assertEquals(-1, List(5 -> 0, 9 -> 2, 0 -> 3).iterator.indexOf(9, 2))
+    assertEquals(1, List(5 -> 0, 9 -> 2, 0 -> 3).iterator.indexOf(9 -> 2))
   }
 }
