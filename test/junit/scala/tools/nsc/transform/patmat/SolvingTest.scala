@@ -6,6 +6,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.mutable
+import scala.reflect.internal.util.Position
 import scala.tools.nsc.{Global, Settings}
 
 object TestSolver extends Logic with Solving {
@@ -71,6 +72,8 @@ object TestSolver extends Logic with Solving {
     }
 
     def prepareNewAnalysis() = {}
+
+    def uncheckedWarning(pos: Position, msg: String) = sys.error(msg)
 
     def reportWarning(msg: String) = sys.error(msg)
 
