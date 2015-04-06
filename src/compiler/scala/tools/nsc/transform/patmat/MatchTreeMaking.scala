@@ -549,57 +549,58 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       fixerUpper(owner, scrutinee.pos) {
         debug.patmat("combining cases: "+ (casesNoSubstOnly.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
 
-        val (suppression, requireSwitch): (Suppression, Boolean) =
-          if (settings.XnoPatmatAnalysis) (Suppression.FullSuppression, false)
-          else if (scrutinee.typeAscribed.nonEmpty) {
-            val suppression = Suppression(scrutinee.suppressExhaustive, scrutinee.supressUnreachable)
+        val analysisAllowed = !settings.XnoPatmatAnalysis
+        val scrutineeDeterminesSuppression = analysisAllowed && scrutinee.typeAscribed.nonEmpty
+        val suppression =
+          if (scrutineeDeterminesSuppression) Suppression(scrutinee.suppressExhaustive, scrutinee.supressUnreachable)
+          else if (analysisAllowed) Suppression.NoSuppression
+          else Suppression.FullSuppression
+
+        def requireSwitch = scrutineeDeterminesSuppression && scrutinee.hasSwitchAnnotation && {
             // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
             // `case 1 | 2` is considered as two cases.
-            def exceedsTwoCasesOrAlts = {
-              // avoids traversing the entire list if there are more than 3 elements
-              def lengthMax3[T](l: List[T]): Int = l match {
-                case a :: b :: c :: _ => 3
-                case cases            =>
-                  cases.map({
-                    case AlternativesTreeMaker(_, alts, _) :: _ => lengthMax3(alts)
-                    case c                                      => 1
-                  }).sum
-              }
-
-              lengthMax3(casesNoSubstOnly) > 2
+            // avoids traversing the entire list if there are more than 3 elements
+            def lengthMax3[T](l: List[T]): Int = l match {
+              case a :: b :: c :: _ => 3
+              case cases            =>
+                cases.map({
+                  case AlternativesTreeMaker(_, alts, _) :: _ => lengthMax3(alts)
+                  case c                                      => 1
+                }).sum
             }
-            val requireSwitch = scrutinee.hasSwitchAnnotation && exceedsTwoCasesOrAlts
 
-            (suppression, requireSwitch)
-          } else (Suppression.NoSuppression, false)
-
-        emitSwitch(scrutinee, casesNoSubstOnly, pt, defaultCaseOverride, unchecked = suppression.suppressExhaustive).getOrElse{
-          if (requireSwitch) reporter.warning(scrutinee.pos, "could not emit switch for @switch annotated match")
-
-          def defaultCase = defaultCaseOverride orElse Some(Throw(MatchErrorClass.tpe, scrutinee.ref))
-
-          if (casesNoSubstOnly nonEmpty) {
-            // before optimizing, check casesNoSubstOnly for presence of a default case,
-            // since DCE will eliminate trivial cases like `case _ =>`, even if they're the last one
-            // exhaustivity and reachability must be checked before optimization as well
-            // TODO: improve notion of trivial/irrefutable -- a trivial type test before the body still makes for a default case
-            //   ("trivial" depends on whether we're emitting a straight match or an exception, or more generally, any supertype of scrutinee.info is a no-op)
-            //   irrefutability checking should use the approximation framework also used for CSE, unreachability and exhaustivity checking
-            val nonTrivLast            = casesNoSubstOnly.last
-            val hasUserSuppliedDefault = nonTrivLast.nonEmpty && nonTrivLast.head.isInstanceOf[BodyTreeMaker]
-
-            analyzeCases(scrutinee, casesNoSubstOnly, pt, suppression)
-
-            val (cases, toHoist) = optimizeCases(scrutinee, casesNoSubstOnly, pt)
-
-            val defaultCaseUnlessUserSupplied = if (hasUserSuppliedDefault) None else defaultCase
-
-            val matchRes = codegen.matcher(scrutinee, pt)(cases map combineExtractors, defaultCaseUnlessUserSupplied)
-
-            if (toHoist isEmpty) matchRes else Block(toHoist, matchRes)
-          } else {
-            codegen.matcher(scrutinee, pt)(Nil, defaultCase)
+            lengthMax3(casesNoSubstOnly) > 2
           }
+
+        emitSwitch(scrutinee, casesNoSubstOnly, pt, defaultCaseOverride, unchecked = suppression.suppressExhaustive) match {
+          case Some(tree) => tree
+          case None =>
+            if (requireSwitch) reporter.warning(scrutinee.pos, "could not emit switch for @switch annotated match")
+
+            def defaultCase = defaultCaseOverride orElse Some(Throw(MatchErrorClass.tpe, scrutinee.ref))
+
+            if (casesNoSubstOnly nonEmpty) {
+              // before optimizing, check casesNoSubstOnly for presence of a default case,
+              // since DCE will eliminate trivial cases like `case _ =>`, even if they're the last one
+              // exhaustivity and reachability must be checked before optimization as well
+              // TODO: improve notion of trivial/irrefutable -- a trivial type test before the body still makes for a default case
+              //   ("trivial" depends on whether we're emitting a straight match or an exception, or more generally, any supertype of scrutinee.info is a no-op)
+              //   irrefutability checking should use the approximation framework also used for CSE, unreachability and exhaustivity checking
+              val nonTrivLast            = casesNoSubstOnly.last
+              val hasUserSuppliedDefault = nonTrivLast.nonEmpty && nonTrivLast.head.isInstanceOf[BodyTreeMaker]
+
+              analyzeCases(scrutinee, casesNoSubstOnly, pt, suppression)
+
+              val (cases, toHoist) = optimizeCases(scrutinee, casesNoSubstOnly, pt)
+
+              val defaultCaseUnlessUserSupplied = if (hasUserSuppliedDefault) None else defaultCase
+
+              val matchRes = codegen.matcher(scrutinee, pt)(cases map combineExtractors, defaultCaseUnlessUserSupplied)
+
+              if (toHoist isEmpty) matchRes else Block(toHoist, matchRes)
+            } else {
+              codegen.matcher(scrutinee, pt)(Nil, defaultCase)
+            }
         }
       }
 
