@@ -773,7 +773,13 @@ TODO:
 
     <path id="quick.partest-extras.build.path">
       <path refid="asm.classpath"/>
-      <path refid="partest.classpath"/>
+      <restrict>
+        <path refid="partest.classpath"/>
+        <rsel:not><rsel:or>
+          <rsel:name name="scala-library*.jar"/>
+        </rsel:or></rsel:not>
+      </restrict>
+
       <path refid="quick.compiler.build.path"/>
       <pathelement location="${build-quick.dir}/classes/repl"/>
       <!-- for the java dependency: Profiler.java -->
@@ -1453,6 +1459,10 @@ TODO:
     <stopwatch name="test.junit.timer"/>
     <mkdir dir="${test.junit.classes}"/>
     <echo message="Note: details of failed tests will be output to ${build-junit.dir}"/>
+
+    <propertyfile file = "${test.junit.classes}/classpath.properties">
+      <entry key       = "test.junit.compiler.build.path" value="${toString:test.junit.compiler.build.path}"/>
+    </propertyfile>
 
     <if><isset property="test.method" /><then><property name="test.methods" value="${test.method}" /></then></if>
     <junit fork="yes" haltonfailure="yes" printsummary="on">
