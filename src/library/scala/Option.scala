@@ -8,6 +8,8 @@
 
 package scala
 
+import scala.collection.GenIterable
+
 object Option {
 
   import scala.language.implicitConversions
@@ -321,6 +323,15 @@ sealed abstract class Option[+A] extends Product with Serializable {
    */
   @inline final def toLeft[X](right: => X) =
     if (isEmpty) Right(right) else Left(this.get)
+
+  /** Returns an `Option[Tuple(A,B)]`,
+    * or None if this $option's value is None.
+    *
+    * @param that the value which is going to be zipped
+    * @see zip
+    */
+  @inline final def zip[A1 >: A, B, That](that: GenIterable[B]) =
+    if (isEmpty || that.isEmpty) None else Some(this.get, that.head)
 }
 
 /** Class `Some[A]` represents existing values of type
