@@ -46,7 +46,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
     private val _deprecationWarnings    = new ConditionalWarning("deprecation", settings.deprecation)()
     private val _uncheckedWarnings      = new ConditionalWarning("unchecked", settings.unchecked)()
     private val _featureWarnings        = new ConditionalWarning("feature", settings.feature)()
-    private val _inlinerWarnings        = new ConditionalWarning("inliner", settings.YinlinerWarnings)(if (settings.isBCodeAskedFor) settings.YoptWarnings.name else settings.YinlinerWarnings.name)
+    private val _inlinerWarnings        = new ConditionalWarning("inliner", settings.YinlinerWarnings)(if (settings.isBCodeActive) settings.YoptWarnings.name else settings.YinlinerWarnings.name)
     private val _allConditionalWarnings = List(_deprecationWarnings, _uncheckedWarnings, _featureWarnings, _inlinerWarnings)
 
     // TODO: remove in favor of the overload that takes a Symbol, give that argument a default (NoSymbol)

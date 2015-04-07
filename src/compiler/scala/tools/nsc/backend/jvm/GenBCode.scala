@@ -14,7 +14,6 @@ import scala.reflect.internal.util.Statistics
 
 import scala.tools.asm
 import scala.tools.asm.tree.ClassNode
-import scala.tools.nsc.backend.jvm.opt.LocalOpt
 
 /*
  *  Prepare in-memory representations of classfiles using the ASM Tree API, and serialize them to disk.
@@ -215,17 +214,12 @@ abstract class GenBCode extends BCodeSyncAndTry {
      *          - converting the plain ClassNode to byte array and placing it on queue-3
      */
     class Worker2 {
-      lazy val localOpt = new LocalOpt(settings)
-
       def runGlobalOptimizations(): Unit = {
         import scala.collection.convert.decorateAsScala._
         q2.asScala foreach {
           case Item2(_, _, plain, _, _) =>
             // skip mirror / bean: wd don't inline into tem, and they are not used in the plain class
-            if (plain != null) {
-              localOpt.minimalRemoveUnreachableCode(plain)
-              callGraph.addClass(plain)
-            }
+            if (plain != null) callGraph.addClass(plain)
         }
         bTypes.inliner.runInliner()
       }
