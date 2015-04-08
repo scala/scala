@@ -473,7 +473,6 @@ abstract class FormatInterpolator {
     def goodFlags = {
       for (ff <- flags; dupe <- (ff diff ff.distinct).distinct; i = ff lastIndexOf dupe)
         errorAtOffset(Flags, i, s"Duplicate flag '$dupe'")
-      flags map (ff => (ff diff ff.distinct).distinct)
       val badFlags = flags map (_ filterNot (okFlags contains _))
       for (bf <- badFlags; f <- bf) badFlag(f, s"Illegal flag '$f'")
       badFlags.getOrElse("").isEmpty 
