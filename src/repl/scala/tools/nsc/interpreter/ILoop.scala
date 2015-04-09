@@ -12,6 +12,7 @@ import scala.annotation.tailrec
 import Predef.{ println => _, _ }
 import interpreter.session._
 import StdReplTags._
+import scala.tools.asm.ClassReader
 import scala.util.Properties.{ jdkHome, javaVersion, versionString, javaVmName }
 import scala.tools.nsc.util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
 import scala.reflect.classTag
@@ -633,28 +634,29 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
    *  the interpreter and replays all interpreter expressions.
    */
   def require(arg: String): Unit = {
-    class InfoClassLoader extends java.lang.ClassLoader {
-      def classOf(arr: Array[Byte]): Class[_] =
-        super.defineClass(null, arr, 0, arr.length)
-    }
-
     val f = File(arg).normalize
 
-    if (f.isDirectory) {
-      echo("Adding directories to the classpath is not supported. Add a jar instead.")
+    val jarFile = AbstractFile.getDirectory(new java.io.File(arg))
+    if (jarFile == null) {
+      echo(s"Cannot load '$arg'")
       return
     }
-
-    val jarFile = AbstractFile.getDirectory(new java.io.File(arg))
 
     def flatten(f: AbstractFile): Iterator[AbstractFile] =
       if (f.isClassContainer) f.iterator.flatMap(flatten)
       else Iterator(f)
 
     val entries = flatten(jarFile)
-    val cloader = new InfoClassLoader
 
-    def classNameOf(classFile: AbstractFile): String = cloader.classOf(classFile.toByteArray).getName
+    def classNameOf(classFile: AbstractFile): String = {
+      val input = classFile.input
+      try {
+        val reader = new ClassReader(input)
+        reader.getClassName.replace('/', '.')
+      } finally {
+        input.close()
+      }
+    }
     def alreadyDefined(clsName: String) = intp.classLoader.tryToLoadClass(clsName).isDefined
     val exists = entries.filter(_.hasExtension("class")).map(classNameOf).exists(alreadyDefined)
 
@@ -935,25 +937,30 @@ object ILoop {
   // Designed primarily for use by test code: take a String with a
   // bunch of code, and prints out a transcript of what it would look
   // like if you'd just typed it into the repl.
-  def runForTranscript(code: String, settings: Settings): String = {
+  def runForTranscript(code: String, settings: Settings, inSession: Boolean = false): String = {
     import java.io.{ BufferedReader, StringReader, OutputStreamWriter }
 
     stringFromStream { ostream =>
       Console.withOut(ostream) {
         val output = new JPrintWriter(new OutputStreamWriter(ostream), true) {
-          override def write(str: String) = {
-            // completely skip continuation lines
-            if (str forall (ch => ch.isWhitespace || ch == '|')) ()
+          // skip margin prefix for continuation lines, unless preserving session text for test
+          override def write(str: String) =
+            if (!inSession && (str forall (ch => ch.isWhitespace || ch == '|'))) ()  // repl.paste.ContinueString
             else super.write(str)
-          }
         }
         val input = new BufferedReader(new StringReader(code.trim + "\n")) {
           override def readLine(): String = {
-            val s = super.readLine()
-            // helping out by printing the line being interpreted.
-            if (s != null)
+            mark(1)    // default buffer is 8k
+            val c = read()
+            if (c == -1 || c == 4) {
+              null
+            } else {
+              reset()
+              val s = super.readLine()
+              // helping out by printing the line being interpreted.
               output.println(s)
-            s
+              s
+            }
           }
         }
         val repl = new ILoop(input, output)

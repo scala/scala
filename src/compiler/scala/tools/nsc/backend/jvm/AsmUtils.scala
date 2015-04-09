@@ -7,9 +7,10 @@ package scala.tools.nsc.backend.jvm
 
 import scala.tools.asm.tree.{InsnList, AbstractInsnNode, ClassNode, MethodNode}
 import java.io.{StringWriter, PrintWriter}
-import scala.tools.asm.util.{TraceClassVisitor, TraceMethodVisitor, Textifier}
-import scala.tools.asm.ClassReader
+import scala.tools.asm.util.{CheckClassAdapter, TraceClassVisitor, TraceMethodVisitor, Textifier}
+import scala.tools.asm.{ClassWriter, Attribute, ClassReader}
 import scala.collection.convert.decorateAsScala._
+import scala.tools.nsc.backend.jvm.opt.InlineInfoAttributePrototype
 
 object AsmUtils {
 
@@ -49,7 +50,7 @@ object AsmUtils {
 
   def readClass(bytes: Array[Byte]): ClassNode = {
     val node = new ClassNode()
-    new ClassReader(bytes).accept(node, 0)
+    new ClassReader(bytes).accept(node, Array[Attribute](InlineInfoAttributePrototype), 0)
     node
   }
 
@@ -105,4 +106,18 @@ object AsmUtils {
    * Returns a human-readable representation of the given instruction sequence.
    */
   def textify(insns: InsnList): String = textify(insns.iterator().asScala)
+
+  /**
+   * Run ASM's CheckClassAdapter over a class. Returns None if no problem is found, otherwise
+   * Some(msg) with the verifier's error message.
+   */
+  def checkClass(classNode: ClassNode): Option[String] = {
+    val cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
+    classNode.accept(cw)
+    val sw = new StringWriter()
+    val pw = new PrintWriter(sw)
+    CheckClassAdapter.verify(new ClassReader(cw.toByteArray), false, pw)
+    val res = sw.toString
+    if (res.isEmpty) None else Some(res)
+  }
 }

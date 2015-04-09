@@ -87,7 +87,7 @@ trait Trees extends api.Trees {
 
     private[scala] def copyAttrs(tree: Tree): this.type = {
       rawatt = tree.rawatt
-      tpe = tree.tpe
+      setType(tree.tpe)
       if (hasSymbolField) symbol = tree.symbol
       this
     }
@@ -1576,6 +1576,7 @@ trait Trees extends api.Trees {
    */
   class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends Transformer {
     val symSubst = new SubstSymMap(from, to)
+    private var mutatedSymbols: List[Symbol] = Nil
     override def transform(tree: Tree): Tree = {
       def subst(from: List[Symbol], to: List[Symbol]) {
         if (!from.isEmpty)
@@ -1594,6 +1595,7 @@ trait Trees extends api.Trees {
                 |TreeSymSubstituter: updated info of symbol ${tree.symbol}
                 |  Old: ${showRaw(tree.symbol.info, printTypes = true, printIds = true)}
                 |  New: ${showRaw(newInfo, printTypes = true, printIds = true)}""")
+              mutatedSymbols ::= tree.symbol
               tree.symbol updateInfo newInfo
             }
           case _          =>
@@ -1613,7 +1615,23 @@ trait Trees extends api.Trees {
       } else
         super.transform(tree)
     }
-    def apply[T <: Tree](tree: T): T = transform(tree).asInstanceOf[T]
+    def apply[T <: Tree](tree: T): T = {
+      val tree1 = transform(tree)
+      invalidateSingleTypeCaches(tree1)
+      tree1.asInstanceOf[T]
+    }
+    private def invalidateSingleTypeCaches(tree: Tree): Unit = {
+      if (mutatedSymbols.nonEmpty)
+        for (t <- tree if t.tpe != null)
+          for (tp <- t.tpe) {
+            tp match {
+              case s: SingleType if mutatedSymbols contains s.sym =>
+                s.underlyingPeriod = NoPeriod
+                s.underlyingCache = NoType
+              case _ =>
+            }
+          }
+    }
     override def toString() = "TreeSymSubstituter/" + substituterString("Symbol", "Symbol", from, to)
   }
 

@@ -8,6 +8,7 @@ package scala.tools.partest
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.ILoop
 import java.lang.reflect.{ Method => JMethod, Field => JField }
+import scala.util.matching.Regex.Match
 
 /** A class for testing repl code.
  *  It filters the line of output that mentions a version number.
@@ -22,6 +23,9 @@ abstract class ReplTest extends DirectTest {
     s.Xnojline.value = true
     transformSettings(s)
   }
+  /** True for SessionTest to preserve session text. */
+  def inSession: Boolean = false
+  /** True to preserve welcome text. */
   def welcoming: Boolean = false
   lazy val welcome = "(Welcome to Scala) version .*".r
   def normalize(s: String) = s match {
@@ -36,7 +40,7 @@ abstract class ReplTest extends DirectTest {
     val s = settings
     log("eval(): settings = " + s)
     //ILoop.runForTranscript(code, s).lines drop 1  // not always first line
-    val lines = ILoop.runForTranscript(code, s).lines
+    val lines = ILoop.runForTranscript(code, s, inSession = inSession).lines
     if (welcoming) lines map normalize
     else lines filter unwelcoming
   }
@@ -57,13 +61,30 @@ abstract class SessionTest extends ReplTest  {
   /** Session transcript, as a triple-quoted, multiline, marginalized string. */
   def session: String
 
-  /** Expected output, as an iterator. */
-  def expected = session.stripMargin.lines
+  /** Expected output, as an iterator, optionally marginally stripped. */
+  def expected = if (stripMargins) session.stripMargin.lines else session.lines
+
+  /** Override with false if we should not strip margins because of leading continuation lines. */
+  def stripMargins: Boolean = true
+
+  /** Analogous to stripMargins, don't mangle continuation lines on echo. */
+  override def inSession: Boolean = true
 
   /** Code is the command list culled from the session (or the expected session output).
-   *  Would be nicer if code were lazy lines.
+   *  Would be nicer if code were lazy lines so you could generate arbitrarily long text.
+   *  Retain user input: prompt lines and continuations, without the prefix; or pasted text plus ctl-D.
    */
-  override final def code = expected filter (_ startsWith prompt) map (_ drop prompt.length) mkString "\n"
+  import SessionTest._
+  override final def code = input findAllMatchIn (expected mkString ("", "\n", "\n")) map {
+    case input(null, null, prompted) =>
+      def continued(m: Match): Option[String] = m match {
+        case margin(text) => Some(text)
+        case _            => None
+      }
+      margin.replaceSomeIn(prompted, continued)
+    case input(cmd, pasted, null) =>
+      cmd + pasted + "\u0004"
+  } mkString
 
   final def prompt = "scala> "
 
@@ -74,4 +95,10 @@ abstract class SessionTest extends ReplTest  {
     if (evaled.size != wanted.size) Console println s"Expected ${wanted.size} lines, got ${evaled.size}"
     if (evaled != wanted) Console print nest.FileManager.compareContents(wanted, evaled, "expected", "actual")
   }
+}
+object SessionTest {
+  // \R for line break is Java 8, \v for vertical space might suffice
+  val input = """(?m)^scala> (:pa.*\u000A)// Entering paste mode.*\u000A\u000A((?:.*\u000A)*)\u000A// Exiting paste mode.*\u000A|^scala> (.*\u000A(?:\s*\| .*\u000A)*)""".r
+
+  val margin = """(?m)^\s*\| (.*)$""".r
 }

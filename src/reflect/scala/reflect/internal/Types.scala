@@ -209,7 +209,7 @@ trait Types
 
   case object UnmappableTree extends TermTree {
     override def toString = "<unmappable>"
-    super.tpe_=(NoType)
+    super.setType(NoType)
     override def tpe_=(t: Type) = if (t != NoType) {
       throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
     }
@@ -247,7 +247,7 @@ trait Types
 
     def companion = {
       val sym = typeSymbolDirect
-      if (sym.isModule && !sym.isPackage) sym.companionSymbol.tpe
+      if (sym.isModule && !sym.hasPackageFlag) sym.companionSymbol.tpe
       else if (sym.isModuleClass && !sym.isPackageClass) sym.sourceModule.companionSymbol.tpe
       else if (sym.isClass && !sym.isModuleClass && !sym.isPackageClass) sym.companionSymbol.info
       else NoType
@@ -1990,13 +1990,13 @@ trait Types
      * usage scenario.
      */
     private var relativeInfoCache: Type = _
-    private var memberInfoCache: Type = _
+    private var relativeInfoPeriod: Period = NoPeriod
 
-    private[Types] def relativeInfo = {
-      val memberInfo = pre.memberInfo(sym)
-      if (relativeInfoCache == null || (memberInfo ne memberInfoCache)) {
-        memberInfoCache = memberInfo
+    private[Types] def relativeInfo = /*trace(s"relativeInfo(${safeToString}})")*/{
+      if (relativeInfoPeriod != currentPeriod) {
+        val memberInfo = pre.memberInfo(sym)
         relativeInfoCache = transformInfo(memberInfo)
+        relativeInfoPeriod = currentPeriod
       }
       relativeInfoCache
     }

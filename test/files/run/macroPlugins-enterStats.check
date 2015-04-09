@@ -1,0 +1,30 @@
+[[syntax trees at end of                     typer]] // newSource1.scala
+package <empty> {
+  class C extends scala.AnyRef {
+    def <init>(): C = {
+      C.super.<init>();
+      ()
+    };
+    def x: Int = 2;
+    def xmacroPlugin1: Nothing = scala.this.Predef.???;
+    def xmacroPlugin2: Nothing = scala.this.Predef.???;
+    def xmacroPlugin2macroPlugin1: Nothing = scala.this.Predef.???;
+    def y: Int = 3;
+    def ymacroPlugin1: Nothing = scala.this.Predef.???;
+    def ymacroPlugin2: Nothing = scala.this.Predef.???;
+    def ymacroPlugin2macroPlugin1: Nothing = scala.this.Predef.???
+  }
+}
+
+macroPlugin2:enterStat(class C extends scala.AnyRef {   def <init>() = {     super.<init>();     ()   };   def x = 2;   def y = 3 })
+macroPlugin1:enterStat(class C extends scala.AnyRef {   def <init>() = {     super.<init>();     ()   };   def x = 2;   def y = 3 })
+macroPlugin2:enterStat(def <init>() = {   super.<init>();   () })
+macroPlugin2:enterStat(def x = 2)
+macroPlugin2:enterStat(def y = 3)
+macroPlugin1:enterStat(def <init>() = {   super.<init>();   () })
+macroPlugin1:enterStat(def x = 2)
+macroPlugin1:enterStat(def xmacroPlugin2 = $qmark$qmark$qmark)
+macroPlugin1:enterStat(def y = 3)
+macroPlugin1:enterStat(def ymacroPlugin2 = $qmark$qmark$qmark)
+macroPlugin2:enterStat(super.<init>())
+macroPlugin1:enterStat(super.<init>())

@@ -2,16 +2,20 @@ package scala.tools.nsc.backend.jvm
 
 import org.junit.Assert._
 
+import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.BatchSourceFile
 import scala.reflect.io.VirtualDirectory
 import scala.tools.asm.Opcodes
-import scala.tools.asm.tree.{AbstractInsnNode, LabelNode, ClassNode, MethodNode}
+import scala.tools.asm.tree.{ClassNode, MethodNode}
 import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.backend.jvm.opt.LocalOpt
-import scala.tools.nsc.settings.{MutableSettings, ScalaSettings}
+import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.reporters.StoreReporter
+import scala.tools.nsc.settings.MutableSettings
 import scala.tools.nsc.{Settings, Global}
 import scala.tools.partest.ASMConverters
 import scala.collection.JavaConverters._
+import scala.tools.testing.TempDir
 
 object CodeGenTools {
   import ASMConverters._
@@ -40,38 +44,104 @@ object CodeGenTools {
   }
 
   def newCompiler(defaultArgs: String = "-usejavacp", extraArgs: String = ""): Global = {
-    val settings = new Settings()
-    val args = (CommandLineParser tokenize defaultArgs) ++ (CommandLineParser tokenize extraArgs)
-    settings.processArguments(args, processAll = true)
-    val compiler = new Global(settings)
+    val compiler = newCompilerWithoutVirtualOutdir(defaultArgs, extraArgs)
     resetOutput(compiler)
     compiler
   }
+  
+  def newCompilerWithoutVirtualOutdir(defaultArgs: String = "-usejavacp", extraArgs: String = ""): Global = {
+    val settings = new Settings()
+    val args = (CommandLineParser tokenize defaultArgs) ++ (CommandLineParser tokenize extraArgs)
+    settings.processArguments(args, processAll = true)
+    new Global(settings, new StoreReporter)
+  }
 
-  def compile(compiler: Global)(code: String): List[(String, Array[Byte])] = {
+  def newRun(compiler: Global): compiler.Run = {
     compiler.reporter.reset()
     resetOutput(compiler)
-    val run = new compiler.Run()
-    run.compileSources(List(new BatchSourceFile("unitTestSource.scala", code)))
-    val outDir = compiler.settings.outputDirs.getSingleOutput.get
-    (for (f <- outDir.iterator if !f.isDirectory) yield (f.name, f.toByteArray)).toList
+    new compiler.Run()
   }
 
-  def compileClasses(compiler: Global)(code: String): List[ClassNode] = {
-    compile(compiler)(code).map(p => AsmUtils.readClass(p._2)).sortBy(_.name)
+  def reporter(compiler: Global) = compiler.reporter.asInstanceOf[StoreReporter]
+
+  def makeSourceFile(code: String, filename: String): BatchSourceFile = new BatchSourceFile(filename, code)
+
+  def getGeneratedClassfiles(outDir: AbstractFile): List[(String, Array[Byte])] = {
+    def files(dir: AbstractFile): List[(String, Array[Byte])] = {
+      val res = ListBuffer.empty[(String, Array[Byte])]
+      for (f <- dir.iterator) {
+        if (!f.isDirectory) res += ((f.name, f.toByteArray))
+        else if (f.name != "." && f.name != "..") res ++= files(f)
+      }
+      res.toList
+    }
+    files(outDir)
   }
 
-  def compileMethods(compiler: Global)(code: String): List[MethodNode] = {
-    compileClasses(compiler)(s"class C { $code }").head.methods.asScala.toList.filterNot(_.name == "<init>")
+  def checkReport(compiler: Global, allowMessage: StoreReporter#Info => Boolean = _ => false): Unit = {
+    val disallowed = reporter(compiler).infos.toList.filter(!allowMessage(_)) // toList prevents an infer-non-wildcard-existential warning.
+    if (disallowed.nonEmpty) {
+      val msg = disallowed.mkString("\n")
+      assert(false, "The compiler issued non-allowed warnings or errors:\n" + msg)
+    }
   }
 
-  def singleMethodInstructions(compiler: Global)(code: String): List[Instruction] = {
-    val List(m) = compileMethods(compiler)(code)
+  def compile(compiler: Global)(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[(String, Array[Byte])] = {
+    val run = newRun(compiler)
+    run.compileSources(makeSourceFile(scalaCode, "unitTestSource.scala") :: javaCode.map(p => makeSourceFile(p._1, p._2)))
+    checkReport(compiler, allowMessage)
+    getGeneratedClassfiles(compiler.settings.outputDirs.getSingleOutput.get)
+  }
+
+  /**
+   * Compile multiple Scala files separately into a single output directory.
+   *
+   * Note that a new compiler instance is created for compiling each file because symbols survive
+   * across runs. This makes separate compilation slower.
+   *
+   * The output directory is a physical directory, I have not figured out if / how it's possible to
+   * add a VirtualDirectory to the classpath of a compiler.
+   */
+  def compileSeparately(codes: List[String], extraArgs: String = "", allowMessage: StoreReporter#Info => Boolean = _ => false, afterEach: AbstractFile => Unit = _ => ()): List[(String, Array[Byte])] = {
+    val outDir = AbstractFile.getDirectory(TempDir.createTempDir())
+    val outDirPath = outDir.canonicalPath
+    val argsWithOutDir = extraArgs + s" -d $outDirPath -cp $outDirPath"
+
+    for (code <- codes) {
+      val compiler = newCompilerWithoutVirtualOutdir(extraArgs = argsWithOutDir)
+      new compiler.Run().compileSources(List(makeSourceFile(code, "unitTestSource.scala")))
+      checkReport(compiler, allowMessage)
+      afterEach(outDir)
+    }
+
+    val classfiles = getGeneratedClassfiles(outDir)
+    outDir.delete()
+    classfiles
+  }
+
+  def compileClassesSeparately(codes: List[String], extraArgs: String = "", allowMessage: StoreReporter#Info => Boolean = _ => false, afterEach: AbstractFile => Unit = _ => ()) = {
+    readAsmClasses(compileSeparately(codes, extraArgs, allowMessage, afterEach))
+  }
+
+  def readAsmClasses(classfiles: List[(String, Array[Byte])]) = {
+    classfiles.map(p => AsmUtils.readClass(p._2)).sortBy(_.name)
+  }
+
+  def compileClasses(compiler: Global)(code: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
+    readAsmClasses(compile(compiler)(code, javaCode, allowMessage))
+  }
+
+  def compileMethods(compiler: Global)(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[MethodNode] = {
+    compileClasses(compiler)(s"class C { $code }", allowMessage = allowMessage).head.methods.asScala.toList.filterNot(_.name == "<init>")
+  }
+
+  def singleMethodInstructions(compiler: Global)(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[Instruction] = {
+    val List(m) = compileMethods(compiler)(code, allowMessage = allowMessage)
     instructionsFromMethod(m)
   }
 
-  def singleMethod(compiler: Global)(code: String): Method = {
-    val List(m) = compileMethods(compiler)(code)
+  def singleMethod(compiler: Global)(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): Method = {
+    val List(m) = compileMethods(compiler)(code, allowMessage = allowMessage)
     convertMethod(m)
   }
 

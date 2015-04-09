@@ -112,6 +112,7 @@ class LinkedHashSet[A] extends AbstractSet[A]
   override def clear() {
     clearTable()
     firstEntry = null
+    lastEntry = null
   }
 
   private def writeObject(out: java.io.ObjectOutputStream) {

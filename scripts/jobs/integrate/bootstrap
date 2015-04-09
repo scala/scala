@@ -438,7 +438,6 @@ constructUpdatedModuleVersions() {
   if [ ! -z "$JLINE_VER" ]     ; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Djline.version=$JLINE_VER"); fi
 
   if [ ! -z "$SCALA_BINARY_VER" ]; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala.binary.version=$SCALA_BINARY_VER"); fi
-  if [ ! -z "$SCALA_FULL_VER" ]  ; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala.full.version=$SCALA_FULL_VER"); fi
 }
 
 # build locker (scala + modules) and quick, publishing everything to private-repo
@@ -493,7 +492,10 @@ bootstrap() {
   cd $baseDir
   rm -rf build/ # must leave everything else in $baseDir for downstream jobs
 
+  # scala.full.version determines the dependency of scala-dist on the continuations plugin,
+  # which is fully cross-versioned (for $SCALA_VER, the version we're releasing)
   ant -Dstarr.version=$SCALA_VER\
+      -Dscala.full.version=$SCALA_VER\
       -Dextra.repo.url=$privateRepo\
       -Dmaven.version.suffix=$SCALA_VER_SUFFIX\
       ${updatedModuleVersions[@]} \

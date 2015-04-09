@@ -447,6 +447,6 @@ trait AnalyzerPlugins { self: Analyzer =>
     // performance opt
     if (macroPlugins.isEmpty) stats
     else macroPlugins.foldLeft(stats)((current, plugin) =>
-      if (!plugin.isActive()) current else plugin.pluginsEnterStats(typer, stats))
+      if (!plugin.isActive()) current else plugin.pluginsEnterStats(typer, current))
   }
 }

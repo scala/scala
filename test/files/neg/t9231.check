@@ -1,0 +1,4 @@
+t9231.scala:8: error: not found: type DoesNotExist
+  foo[DoesNotExist]
+      ^
+one error found

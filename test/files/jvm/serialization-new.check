@@ -1,4 +1,4 @@
-warning: there were two deprecation warnings; re-run with -deprecation for details
+warning: there were three deprecation warnings; re-run with -deprecation for details
 a1 = Array[1,2,3]
 _a1 = Array[1,2,3]
 arrayEquals(a1, _a1): true

@@ -59,7 +59,7 @@ idrest   ::=  {letter | digit} [‘_’ op]
 
 There are three ways to form an identifier. First, an identifier can
 start with a letter which can be followed by an arbitrary sequence of
-letters and digits. This may be followed by underscore ‘_’
+letters and digits. This may be followed by underscore `‘_‘`
 characters and another string composed of either letters and digits or
 of operator characters.  Second, an identifier can start with an operator
 character followed by an arbitrary sequence of operator characters.

@@ -876,13 +876,15 @@ abstract class GenICode extends SubComponent {
                 genLoadModule(ctx, tree)
                 generatedType = toTypeKind(sym.info)
               } else {
-                try {
-                  val Some(l) = ctx.method.lookupLocal(sym)
-                  ctx.bb.emit(LOAD_LOCAL(l), tree.pos)
-                  generatedType = l.kind
-                } catch {
-                  case ex: MatchError =>
-                    abort("symbol " + sym + " does not exist in " + ctx.method)
+                ctx.method.lookupLocal(sym) match {
+                  case Some(l) =>
+                    ctx.bb.emit(LOAD_LOCAL(l), tree.pos)
+                    generatedType = l.kind
+                  case None =>
+                    val saved = settings.uniqid
+                    settings.uniqid.value = true
+                    try abort(s"symbol $sym does not exist in ${ctx.method}, which contains locals ${ctx.method.locals.mkString(",")}")
+                    finally settings.uniqid.value = saved
                 }
               }
             }

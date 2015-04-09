@@ -751,6 +751,7 @@
     <attribute name="srcdir" default="files"/> <!-- TODO: make targets for `pending` and other subdirs -->
     <attribute name="colors" default="${partest.colors}"/>
     <attribute name="scalacOpts" default="${partest.scalac_opts} ${scalac.args.optimise}"/>
+    <attribute name="javaOpts" default="${env.ANT_OPTS}"/>
     <attribute name="pcp" default="${toString:partest.compilation.path}"/>
     <attribute name="kinds"/>
     <sequential>
@@ -759,6 +760,7 @@
                    kinds="@{kinds}"
                   colors="@{colors}"
               scalacOpts="@{scalacOpts}"
+                javaOpts="@{javaOpts}"
          compilationpath="@{pcp}"/>
     </sequential>
   </macrodef>

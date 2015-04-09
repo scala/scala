@@ -1,28 +1,9 @@
 Eclipse project files
 =====================
 
-The following points describe how to get Scala to run in Eclipse:
+The following points describe how to get Scala to run in Eclipse. Please also take a look at the [excellent tutorial on scala-ide.org](http://scala-ide.org/docs/tutorials/scalac-trunk/index.html).
 
-0. To get Scala to work inside of Eclipse Kepler it is necessary to build the Scala IDE by your own
-because for the moment there is no update site provided for the newest development version
-of Scala. To do so enter the following commands one after the other:
-
-        git clone https://github.com/scala-ide/scala-ide.git
-        cd scala-ide
-        ./build-all.sh clean install -Pscala-2.11.x -Peclipse-kepler -DskipTests
-
-  After that you have an update site in `scala-ide/org.scala-ide.sdt.update-site/target/site`, which needs to be
-installed in Eclipse.
-
-0. The second thing that needs to be done is building Scala in order to get all necessary
-dependencies. To do that simply enter
-
-        ant
-
-  and wait until it is completed. To verify that everything has been built successfully, execute the REPL that can be found
-at `scala/build/pack/bin/scala`.
-
-0. Import all projects inside of Eclipse by choosing `File/Import Existing Projects`
+0. Import all projects into a [very recent version of Scala IDE for Eclipse](http://scala-ide.org/download/nightly.html) by choosing `File/Import Existing Projects`
 and navigate to `scala/src/eclipse`. Check all projects and click ok.
 
 0. You need to define a `path variable` inside Eclipse. Define `SCALA_BASEDIR` in 

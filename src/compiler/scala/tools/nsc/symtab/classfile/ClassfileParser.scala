@@ -807,10 +807,10 @@ abstract class ClassfileParser {
           val c = pool.getConstant(u2)
           val c1 = convertTo(c, symtype)
           if (c1 ne null) sym.setInfo(ConstantType(c1))
-          else debugwarn(s"failure to convert $c to $symtype")
+          else devWarning(s"failure to convert $c to $symtype")
         case tpnme.ScalaSignatureATTR =>
           if (!isScalaAnnot) {
-            debugwarn(s"symbol ${sym.fullName} has pickled signature in attribute")
+            devWarning(s"symbol ${sym.fullName} has pickled signature in attribute")
             unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.name)
           }
           in.skip(attrLen)
@@ -1103,7 +1103,7 @@ abstract class ClassfileParser {
     def enclosing    = if (jflags.isStatic) enclModule else enclClass
 
     // The name of the outer class, without its trailing $ if it has one.
-    private def strippedOuter = nme stripModuleSuffix outerName
+    private def strippedOuter = outerName.dropModule
     private def isInner       = innerClasses contains strippedOuter
     private def enclClass     = if (isInner) innerClasses innerSymbol strippedOuter else classNameToSymbol(strippedOuter)
     private def enclModule    = enclClass.companionModule
@@ -1123,7 +1123,7 @@ abstract class ClassfileParser {
 
     def add(entry: InnerClassEntry): Unit = {
       inners get entry.externalName foreach (existing =>
-        debugwarn(s"Overwriting inner class entry! Was $existing, now $entry")
+        devWarning(s"Overwriting inner class entry! Was $existing, now $entry")
       )
       inners(entry.externalName) = entry
     }

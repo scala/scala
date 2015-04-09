@@ -10,6 +10,7 @@ package transform
 import symtab.Flags._
 import scala.collection.{ mutable, immutable }
 import scala.language.postfixOps
+import scala.reflect.internal.util.ListOfNil
 
 /*<export> */
 /** - uncurry all symbol and tree types (@see UnCurryPhase) -- this includes normalizing all proper types.
@@ -206,7 +207,7 @@ abstract class UnCurry extends InfoTransform
         // (() => Int) { def apply(): Int @typeConstraint }
         case RefinedType(List(funTp), decls) =>
           debuglog(s"eliminate refinement from function type ${fun.tpe}")
-          fun.tpe = funTp
+          fun.setType(funTp)
         case _ =>
           ()
       }
@@ -225,6 +226,10 @@ abstract class UnCurry extends InfoTransform
           if (inlineFunctionExpansion || !canUseDelamdafyMethod) {
             val parents = addSerializable(abstractFunctionForFunctionType(fun.tpe))
             val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation SerialVersionUIDAnnotation
+            // The original owner is used in the backend for the EnclosingMethod attribute. If fun is
+            // nested in a value-class method, its owner was already changed to the extension method.
+            // Saving the original owner allows getting the source structure from the class symbol.
+            defineOriginalOwner(anonClass, fun.symbol.originalOwner)
             anonClass setInfo ClassInfoType(parents, newScope, anonClass)
 
             val applyMethodDef = mkMethod(anonClass, nme.apply)

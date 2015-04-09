@@ -15,11 +15,14 @@ import CodeGenTools._
 import scala.tools.partest.ASMConverters
 import ASMConverters._
 
+import BackendReporting._
+
 import scala.collection.convert.decorateAsScala._
 
 @RunWith(classOf[JUnit4])
 class BTypesFromClassfileTest {
-  val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode")
+  // inliner enabled -> inlineInfos are collected (and compared) in ClassBTypes
+  val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:inline-global")
 
   import compiler._
   import definitions._
@@ -29,6 +32,7 @@ class BTypesFromClassfileTest {
   def duringBackend[T](f: => T) = compiler.exitingDelambdafy(f)
 
   val run = new compiler.Run() // initializes some of the compiler
+  duringBackend(compiler.scalaPrimitives.init()) // needed: it's only done when running the backend, and we don't actually run the compiler
   duringBackend(bTypes.initializeCoreBTypes())
 
   def clearCache() = bTypes.classBTypeFromInternalName.clear()
@@ -37,7 +41,7 @@ class BTypesFromClassfileTest {
     if (checked(fromSym.internalName)) checked
     else {
       assert(fromSym == fromClassfile, s"$fromSym != $fromClassfile")
-      sameInfo(fromSym.info, fromClassfile.info, checked + fromSym.internalName)
+      sameInfo(fromSym.info.get, fromClassfile.info.get, checked + fromSym.internalName)
     }
   }
 
@@ -57,8 +61,12 @@ class BTypesFromClassfileTest {
       else (fromSym.flags | ACC_PRIVATE | ACC_PUBLIC) == (fromClassfile.flags | ACC_PRIVATE | ACC_PUBLIC)
     }, s"class flags differ\n$fromSym\n$fromClassfile")
 
-    val chk1 = sameBTypes(fromSym.superClass, fromClassfile.superClass, checked)
+    // we don't compare InlineInfos in this test: in both cases (from symbol and from classfile) they
+    // are actually created by looking at the classfile members, not the symbol's. InlineInfos are only
+    // built from symbols for classes that are being compiled, which is not the case here. Instead
+    // there's a separate InlineInfoTest.
 
+    val chk1 = sameBTypes(fromSym.superClass, fromClassfile.superClass, checked)
     val chk2 = sameBTypes(fromSym.interfaces, fromClassfile.interfaces, chk1)
 
     // The fromSym info has only member classes, no local or anonymous. The symbol is read from the
@@ -67,7 +75,7 @@ class BTypesFromClassfileTest {
     //   and anonymous classes as members of the outer class. But not for unpickled symbols).
     // The fromClassfile info has all nested classes, including anonymous and local. So we filter
     // them out: member classes are identified by having the `outerName` defined.
-    val memberClassesFromClassfile = fromClassfile.nestedClasses.filter(_.info.nestedInfo.get.outerName.isDefined)
+    val memberClassesFromClassfile = fromClassfile.nestedClasses.filter(_.info.get.nestedInfo.get.outerName.isDefined)
     // Sorting is required: the backend sorts all InnerClass entries by internalName before writing
     // them to the classfile (to make it deterministic: the entries are collected in a Set during
     // code generation).

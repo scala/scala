@@ -1122,7 +1122,7 @@ is `scala.Nothing`.
 ## Try Expressions
 
 ```ebnf
-Expr1 ::=  `try' `{' Block `}' [`catch' `{' CaseClauses `}']
+Expr1 ::=  `try' (`{' Block `}' | Expr) [`catch' `{' CaseClauses `}']
            [`finally' Expr]
 ```
 

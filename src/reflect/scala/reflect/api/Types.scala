@@ -469,7 +469,7 @@ trait Types {
     def unapply(tpe: SingleType): Option[(Type, Symbol)]
 
     /** @see [[InternalApi.singleType]] */
-    @deprecated("Use `ClassSymbol.thisPrefix` or `internal.singleType` instead")
+    @deprecated("Use `ClassSymbol.thisPrefix` or `internal.singleType` instead", "2.11.0")
     def apply(pre: Type, sym: Symbol)(implicit token: CompatToken): Type = internal.singleType(pre, sym)
   }
 

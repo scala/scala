@@ -22,6 +22,9 @@ package scala.annotation
   }
 }}}
  *
+ *  Note: for pattern matches with one or two cases, the compiler generates jump instructions.
+ *  Annotating such a match with `@switch` does not issue any warning.
+ *
  *  @author   Paul Phillips
  *  @since    2.8
  */

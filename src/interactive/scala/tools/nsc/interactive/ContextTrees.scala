@@ -55,7 +55,11 @@ trait ContextTrees { self: Global =>
         context
       }
     }
-    locateContextTree(contexts, pos) map locateFinestContextTree map (_.context)
+    def sanitizeContext(c: Context): Context = {
+      c.retyping = false
+      c
+    }
+    locateContextTree(contexts, pos) map locateFinestContextTree map (ct => sanitizeContext(ct.context))
   }
 
   /** Returns the ContextTree containing `pos`, or the ContextTree positioned just before `pos`,

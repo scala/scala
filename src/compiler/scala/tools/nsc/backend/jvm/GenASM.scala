@@ -9,6 +9,7 @@ package backend.jvm
 
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
+import scala.tools.nsc.backend.jvm.opt.InlineInfoAttribute
 import scala.tools.nsc.symtab._
 import scala.tools.asm
 import asm.Label
@@ -532,7 +533,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
         }
         bytecodeWriter.writeClass(label, jclassName, arr, outF)
       } catch {
-        case e: java.lang.RuntimeException if e != null && (e.getMessage contains "too large!") =>
+        case e: java.lang.RuntimeException if e.getMessage != null && (e.getMessage contains "too large!") =>
           reporter.error(sym.pos,
             s"Could not write class $jclassName because it exceeds JVM code size limits. ${e.getMessage}")
       }
@@ -595,7 +596,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
           val x = innerClassSymbolFor(s)
           if(x ne NoSymbol) {
             assert(x.isClass, "not an inner-class symbol")
-            val isInner = !x.rawowner.isPackageClass
+            // impl classes are considered top-level, see comment in BTypes
+            val isInner = !considerAsTopLevelImplementationArtifact(s) && !x.rawowner.isPackageClass
             if (isInner) {
               innerClassBuffer += x
               collectInnerClass(x.rawowner)
@@ -687,35 +689,60 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
           null
         else {
           val outerName = javaName(innerSym.rawowner)
-          if (isTopLevelModule(innerSym.rawowner)) "" + nme.stripModuleSuffix(newTermName(outerName))
+          if (isTopLevelModule(innerSym.rawowner)) "" + TermName(outerName).dropModule
           else outerName
         }
       }
 
-      def innerName(innerSym: Symbol): String =
-        if (innerSym.isAnonymousClass || innerSym.isAnonymousFunction)
-          null
-        else
-          innerSym.rawname + innerSym.moduleSuffix
-
-      innerClassBuffer ++= {
-        val members = exitingPickler(memberClassesOf(csym))
-        // lambdalift makes all classes (also local, anonymous) members of their enclosing class
-        val allNested = exitingPhase(currentRun.lambdaliftPhase)(memberClassesOf(csym))
-
-        // for the mirror class, we take the members of the companion module class (Java compat,
-        // see doc in BTypes.scala). for module classes, we filter out those members.
-        if (isMirror)  members
-        else if (isTopLevelModule(csym)) allNested diff members
-        else allNested
+      def innerName(innerSym: Symbol): String = {
+        // phase travel necessary: after flatten, the name includes the name of outer classes.
+        // if some outer name contains $anon, a non-anon class is considered anon.
+        if (exitingPickler(innerSym.isAnonymousClass || innerSym.isAnonymousFunction)) null
+        else innerSym.rawname + innerSym.moduleSuffix
       }
 
-      // If this is a top-level class, add members of the companion object.
       val linkedClass = exitingPickler(csym.linkedClassOfClass) // linkedCoC does not work properly in late phases
-      if (isTopLevelModule(linkedClass)) {
-        // phase travel to exitingPickler: this makes sure that memberClassesOf only sees member classes,
-        // not local classes that were lifted by lambdalift.
-        innerClassBuffer ++= exitingPickler(memberClassesOf(linkedClass))
+
+      innerClassBuffer ++= {
+        val members = exitingPickler(memberClassesForInnerClassTable(csym))
+        // lambdalift makes all classes (also local, anonymous) members of their enclosing class
+        val allNested = exitingPhase(currentRun.lambdaliftPhase)(memberClassesForInnerClassTable(csym))
+        val nested = {
+          // Classes nested in value classes are nested in the companion at this point. For InnerClass /
+          // EnclosingMethod, we use the value class as the outer class. So we remove nested classes
+          // from the companion that were originally nested in the value class.
+          if (exitingPickler(linkedClass.isDerivedValueClass)) allNested.filterNot(classOriginallyNestedInClass(_, linkedClass))
+          else allNested
+        }
+
+        // for the mirror class, we take the members of the companion module class (Java compat, see doc in BTypes.scala).
+        // for module classes, we filter out those members.
+        if (isMirror) members
+        else if (isTopLevelModule(csym)) nested diff members
+        else nested
+      }
+
+      if (!considerAsTopLevelImplementationArtifact(csym)) {
+        // If this is a top-level non-impl class, add members of the companion object. These are the
+        // classes for which we change the InnerClass entry to allow using them from Java.
+        // We exclude impl classes: if the classfile for the impl class exists on the classpath, a
+        // linkedClass symbol is found for which isTopLevelModule is true, so we end up searching
+        // members of that weird impl-class-module-class-symbol. that search probably cannot return
+        // any classes, but it's better to exclude it.
+        if (linkedClass != NoSymbol && isTopLevelModule(linkedClass)) {
+          // phase travel to exitingPickler: this makes sure that memberClassesForInnerClassTable only
+          // sees member classes, not local classes that were lifted by lambdalift.
+          innerClassBuffer ++= exitingPickler(memberClassesForInnerClassTable(linkedClass))
+        }
+
+        // Classes nested in value classes are nested in the companion at this point. For InnerClass /
+        // EnclosingMethod we use the value class as enclosing class. Here we search nested classes
+        // in the companion that were originally nested in the value class, and we add them as nested
+        // in the value class.
+        if (linkedClass != NoSymbol && exitingPickler(csym.isDerivedValueClass)) {
+          val moduleMemberClasses = exitingPhase(currentRun.lambdaliftPhase)(memberClassesForInnerClassTable(linkedClass))
+          innerClassBuffer ++= moduleMemberClasses.filter(classOriginallyNestedInClass(_, csym))
+        }
       }
 
       val allInners: List[Symbol] = innerClassBuffer.toList filterNot deadCode.elidedClosures
@@ -1265,6 +1292,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
       val ssa = getAnnotPickle(thisName, c.symbol)
       jclass.visitAttribute(if(ssa.isDefined) pickleMarkerLocal else pickleMarkerForeign)
       emitAnnotations(jclass, c.symbol.annotations ++ ssa)
+
+      if (!settings.YskipInlineInfoAttribute.value)
+        jclass.visitAttribute(InlineInfoAttribute(buildInlineInfoFromClassSymbol(c.symbol, javaName, javaType(_).getDescriptor)))
 
       // typestate: entering mode with valid call sequences:
       //   ( visitInnerClass | visitField | visitMethod )* visitEnd
@@ -2024,7 +2054,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
                 seen ::= LocVarEntry(lv, start, end)
               case _ =>
                 // TODO SI-6049 track down the cause for these.
-                debugwarn(s"$iPos: Visited SCOPE_EXIT before visiting corresponding SCOPE_ENTER. SI-6191")
+                devWarning(s"$iPos: Visited SCOPE_EXIT before visiting corresponding SCOPE_ENTER. SI-6191")
             }
           }
 
@@ -2394,7 +2424,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
                 // SI-6102: Determine whether eliding this JUMP results in an empty range being covered by some EH.
                 // If so, emit a NOP in place of the elided JUMP, to avoid "java.lang.ClassFormatError: Illegal exception table range"
               else if (newNormal.isJumpOnly(b) && m.exh.exists(eh => eh.covers(b))) {
-                debugwarn("Had a jump only block that wasn't collapsed")
+                devWarning("Had a jump only block that wasn't collapsed")
                 emit(asm.Opcodes.NOP)
               }
 
@@ -2853,8 +2883,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
       var fieldList = List[String]()
 
       for (f <- clasz.fields if f.symbol.hasGetter;
-	         g = f.symbol.getter(clasz.symbol);
-	         s = f.symbol.setter(clasz.symbol)
+                 g = f.symbol.getterIn(clasz.symbol);
+                 s = f.symbol.setterIn(clasz.symbol)
            if g.isPublic && !(f.symbol.name startsWith "$")
           ) {
              // inserting $outer breaks the bean
@@ -3106,13 +3136,13 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
         val (remappings, cycles) = detour partition {case (source, target) => source != target}
         for ((source, target) <- remappings) {
 		   debuglog(s"Will elide jump only block $source because it can be jumped around to get to $target.")
-		   if (m.startBlock == source) debugwarn("startBlock should have been re-wired by now")
+                   if (m.startBlock == source) devWarning("startBlock should have been re-wired by now")
         }
         val sources = remappings.keySet
         val targets = remappings.values.toSet
         val intersection = sources intersect targets
 
-        if (intersection.nonEmpty) debugwarn(s"contradiction: we seem to have some source and target overlap in blocks ${intersection.mkString}. Map was ${detour.mkString}")
+        if (intersection.nonEmpty) devWarning(s"contradiction: we seem to have some source and target overlap in blocks ${intersection.mkString}. Map was ${detour.mkString}")
 
         for ((source, _) <- cycles) {
           debuglog(s"Block $source is in a do-nothing infinite loop. Did the user write 'while(true){}'?")

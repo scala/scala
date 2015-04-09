@@ -526,7 +526,7 @@ case the member is called _qualified private_.
 Class-private or object-private members may not be abstract, and may
 not have `protected` or `override` modifiers.
 
-#### `protected`
+### `protected`
 The `protected` modifier applies to class member definitions.
 Protected members of a class can be accessed from within
   - the template of the defining class,
@@ -557,14 +557,14 @@ legal if the prefix is `this` or `$O$.this`, for some
 class $O$ enclosing the reference. In addition, the restrictions for
 unqualified `protected` apply.
 
-#### `override`
+### `override`
 The `override` modifier applies to class member definitions or declarations.
 It is mandatory for member definitions or declarations that override some
 other concrete member definition in a parent class. If an `override`
 modifier is given, there must be at least one overridden member
 definition or declaration (either concrete or abstract).
 
-#### `abstract override`
+### `abstract override`
 The `override` modifier has an additional significance when
 combined with the `abstract` modifier.  That modifier combination
 is only allowed for value members of traits.
@@ -579,7 +579,7 @@ influence the concept whether a member is concrete or abstract. A
 member is _abstract_ if only a declaration is given for it;
 it is _concrete_ if a full definition is given.
 
-#### `abstract`
+### `abstract`
 The `abstract` modifier is used in class definitions. It is
 redundant for traits, and mandatory for all other classes which have
 incomplete members.  Abstract classes cannot be
@@ -592,7 +592,7 @@ The `abstract` modifier can also be used in conjunction with
 `override` for class member definitions. In that case the
 previous discussion applies.
 
-#### `final`
+### `final`
 The `final` modifier applies to class member definitions and to
 class definitions. A `final` class member definition may not be
 overridden in subclasses. A `final` class may not be inherited by
@@ -604,13 +604,13 @@ an explicit `final` modifier, even if they are defined in a final class or
 object. `final` may not be applied to incomplete members, and it may not be
 combined in one modifier list with `sealed`.
 
-#### `sealed`
+### `sealed`
 The `sealed` modifier applies to class definitions. A
 `sealed` class may not be directly inherited, except if the inheriting
 template is defined in the same source file as the inherited class.
 However, subclasses of a sealed class can be inherited anywhere.
 
-#### `lazy`
+### `lazy`
 The `lazy` modifier applies to value definitions. A `lazy`
 value is initialized the first time it is accessed (which might never
 happen at all). Attempting to access a lazy value during its

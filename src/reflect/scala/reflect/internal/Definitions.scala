@@ -156,11 +156,11 @@ trait Definitions extends api.StandardDefinitions {
 
     // It becomes tricky to create dedicated objects for other symbols because
     // of initialization order issues.
-    lazy val JavaLangPackage      = getPackage("java.lang")
+    lazy val JavaLangPackage      = getPackage(TermName("java.lang"))
     lazy val JavaLangPackageClass = JavaLangPackage.moduleClass.asClass
-    lazy val ScalaPackage         = getPackage("scala")
+    lazy val ScalaPackage         = getPackage(TermName("scala"))
     lazy val ScalaPackageClass    = ScalaPackage.moduleClass.asClass
-    lazy val RuntimePackage       = getPackage("scala.runtime")
+    lazy val RuntimePackage       = getPackage(TermName("scala.runtime"))
     lazy val RuntimePackageClass  = RuntimePackage.moduleClass.asClass
 
     def javaTypeToValueClass(jtype: Class[_]): Symbol = jtype match {
@@ -453,7 +453,7 @@ trait Definitions extends api.StandardDefinitions {
 
     // XML
     lazy val ScalaXmlTopScope = getModuleIfDefined("scala.xml.TopScope")
-    lazy val ScalaXmlPackage  = getPackageIfDefined("scala.xml")
+    lazy val ScalaXmlPackage  = getPackageIfDefined(TermName("scala.xml"))
 
     // scala.reflect
     lazy val ReflectPackage              = requiredModule[scala.reflect.`package`.type]
@@ -1148,7 +1148,7 @@ trait Definitions extends api.StandardDefinitions {
       // Trying to allow for deprecated locations
       sym.isAliasType && isMetaAnnotation(sym.info.typeSymbol)
     )
-    lazy val metaAnnotations: Set[Symbol] = getPackage("scala.annotation.meta").info.members filter (_ isSubClass StaticAnnotationClass) toSet
+    lazy val metaAnnotations: Set[Symbol] = getPackage(TermName("scala.annotation.meta")).info.members filter (_ isSubClass StaticAnnotationClass) toSet
 
     // According to the scala.annotation.meta package object:
     // * By default, annotations on (`val`-, `var`- or plain) constructor parameters
@@ -1462,7 +1462,7 @@ trait Definitions extends api.StandardDefinitions {
       )
       lazy val TagSymbols = TagMaterializers.keySet
       lazy val Predef_conforms     = (getMemberIfDefined(PredefModule, nme.conforms)
-                               orElse getMemberMethod(PredefModule, "conforms": TermName)) // TODO: predicate on -Xsource:2.10 (for now, needed for transition from M8 -> RC1)
+                               orElse getMemberMethod(PredefModule, TermName("conforms"))) // TODO: predicate on -Xsource:2.10 (for now, needed for transition from M8 -> RC1)
       lazy val Predef_classOf      = getMemberMethod(PredefModule, nme.classOf)
       lazy val Predef_implicitly   = getMemberMethod(PredefModule, nme.implicitly)
       lazy val Predef_wrapRefArray = getMemberMethod(PredefModule, nme.wrapRefArray)

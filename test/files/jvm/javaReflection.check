@@ -5,7 +5,7 @@ A$$anonfun$$lessinit$greater$1 / null (canon) / $anonfun$$lessinit$greater$1 (si
 - properties  : true (local) / false (member)
 A$$anonfun$$lessinit$greater$1$$anonfun$apply$1 / null (canon) / $anonfun$apply$1 (simple)
 - declared cls: List()
-- enclosing   : null (declaring cls) / class A$$anonfun$$lessinit$greater$1 (cls) / null (constr) / public final scala.Function0 A$$anonfun$$lessinit$greater$1.apply() (meth)
+- enclosing   : null (declaring cls) / class A$$anonfun$$lessinit$greater$1 (cls) / null (constr) / null (meth)
 - properties  : true (local) / false (member)
 A$$anonfun$2 / null (canon) / $anonfun$2 (simple)
 - declared cls: List()

@@ -94,7 +94,7 @@ function setFrameSrcFromUrlFragment() {
         if (memberSig) {
             locWithMemeberSig += "#" + memberSig;
         }
-        frames["template"].location.replace(locWithMemeberSig);
+        frames["template"].location.replace(location.protocol + locWithMemeberSig);
     } else {
         console.log("empty fragment detected");
         frames["template"].location.replace("package.html");

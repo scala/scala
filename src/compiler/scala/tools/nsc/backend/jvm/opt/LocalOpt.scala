@@ -8,10 +8,11 @@ package backend.jvm
 package opt
 
 import scala.annotation.switch
-import scala.tools.asm.{Opcodes, MethodWriter, ClassWriter}
-import scala.tools.asm.tree.analysis.{Analyzer, BasicValue, BasicInterpreter}
+import scala.tools.asm.Opcodes
+import scala.tools.asm.tree.analysis.{Analyzer, BasicInterpreter}
 import scala.tools.asm.tree._
 import scala.collection.convert.decorateAsScala._
+import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 import scala.tools.nsc.settings.ScalaSettings
 
@@ -48,6 +49,45 @@ import scala.tools.nsc.settings.ScalaSettings
  */
 class LocalOpt(settings: ScalaSettings) {
   /**
+   * Remove unreachable code from all methods of `classNode`. See of its overload.
+   *
+   * @param classNode The class to optimize
+   * @return          `true` if unreachable code was removed from any method
+   */
+  def minimalRemoveUnreachableCode(classNode: ClassNode): Boolean = {
+    classNode.methods.asScala.foldLeft(false) {
+      case (changed, method) => minimalRemoveUnreachableCode(method, classNode.name) || changed
+    }
+  }
+
+  /**
+   * Remove unreachable code from a method.
+   *
+   * This implementation only removes instructions that are unreachable for an ASM analyzer /
+   * interpreter. This ensures that future analyses will not produce `null` frames. The inliner
+   * and call graph builder depend on this property.
+   */
+  def minimalRemoveUnreachableCode(method: MethodNode, ownerClassName: InternalName): Boolean = {
+    if (method.instructions.size == 0) return false // fast path for abstract methods
+
+    // For correctness, after removing unreachable code, we have to eliminate empty exception
+    // handlers, see scaladoc of def methodOptimizations. Removing an live handler may render more
+    // code unreachable and therefore requires running another round.
+    def removalRound(): Boolean = {
+      val (codeRemoved, liveLabels) = removeUnreachableCodeImpl(method, ownerClassName)
+      if (codeRemoved) {
+        val liveHandlerRemoved = removeEmptyExceptionHandlers(method).exists(h => liveLabels(h.start))
+        if (liveHandlerRemoved) removalRound()
+      }
+      codeRemoved
+    }
+
+    val codeRemoved = removalRound()
+    if (codeRemoved) removeUnusedLocalVariableNodes(method)()
+    codeRemoved
+  }
+
+  /**
    * Remove unreachable instructions from all (non-abstract) methods and apply various other
    * cleanups to the bytecode.
    *
@@ -73,7 +113,7 @@ class LocalOpt(settings: ScalaSettings) {
    *
    * Returns `true` if the bytecode of `method` was changed.
    */
-  private def methodOptimizations(method: MethodNode, ownerClassName: String): Boolean = {
+  def methodOptimizations(method: MethodNode, ownerClassName: InternalName): Boolean = {
     if (method.instructions.size == 0) return false // fast path for abstract methods
 
     // unreachable-code also removes unused local variable nodes and empty exception handlers.
@@ -102,9 +142,7 @@ class LocalOpt(settings: ScalaSettings) {
     // This triggers "ClassFormatError: Illegal exception table range in class file C". Similar
     // for local variables in dead blocks. Maybe that's a bug in the ASM framework.
 
-    var recurse = true
-    var codeHandlersOrJumpsChanged = false
-    while (recurse) {
+    def removalRound(): Boolean = {
       // unreachable-code, empty-handlers and simplify-jumps run until reaching a fixpoint (see doc on class LocalOpt)
       val (codeRemoved, handlersRemoved, liveHandlerRemoved) = if (settings.YoptUnreachableCode) {
         val (codeRemoved, liveLabels) = removeUnreachableCodeImpl(method, ownerClassName)
@@ -116,15 +154,18 @@ class LocalOpt(settings: ScalaSettings) {
 
       val jumpsChanged = if (settings.YoptSimplifyJumps) simplifyJumps(method) else false
 
-      codeHandlersOrJumpsChanged ||= (codeRemoved || handlersRemoved || jumpsChanged)
+      // Eliminating live handlers and simplifying jump instructions may render more code
+      // unreachable, so we need to run another round.
+      if (liveHandlerRemoved || jumpsChanged) removalRound()
 
-      // The doc comment of class LocalOpt explains why we recurse if jumpsChanged || liveHandlerRemoved
-      recurse = settings.YoptRecurseUnreachableJumps && (jumpsChanged || liveHandlerRemoved)
+      codeRemoved || handlersRemoved || jumpsChanged
     }
+
+    val codeHandlersOrJumpsChanged = removalRound()
 
     // (*) Removing stale local variable descriptors is required for correctness of unreachable-code
     val localsRemoved =
-      if (settings.YoptCompactLocals) compactLocalVariables(method)
+      if (settings.YoptCompactLocals) compactLocalVariables(method) // also removes unused
       else if (settings.YoptUnreachableCode) removeUnusedLocalVariableNodes(method)() // (*)
       else false
 
@@ -146,10 +187,10 @@ class LocalOpt(settings: ScalaSettings) {
    *
    * TODO: rewrite, don't use computeMaxLocalsMaxStack (runs a ClassWriter) / Analyzer. Too slow.
    */
-  def removeUnreachableCodeImpl(method: MethodNode, ownerClassName: String): (Boolean, Set[LabelNode]) = {
+  def removeUnreachableCodeImpl(method: MethodNode, ownerClassName: InternalName): (Boolean, Set[LabelNode]) = {
     // The data flow analysis requires the maxLocals / maxStack fields of the method to be computed.
     computeMaxLocalsMaxStack(method)
-    val a = new Analyzer[BasicValue](new BasicInterpreter)
+    val a = new Analyzer(new BasicInterpreter)
     a.analyze(ownerClassName, method)
     val frames = a.getFrames
 
@@ -316,29 +357,6 @@ class LocalOpt(settings: ScalaSettings) {
       }
       true
     }
-  }
-
-  /**
-   * In order to run an Analyzer, the maxLocals / maxStack fields need to be available. The ASM
-   * framework only computes these values during bytecode generation.
-   *
-   * Since there's currently no better way, we run a bytecode generator on the method and extract
-   * the computed values. This required changes to the ASM codebase:
-   *   - the [[MethodWriter]] class was made public
-   *   - accessors for maxLocals / maxStack were added to the MethodWriter class
-   *
-   * We could probably make this faster (and allocate less memory) by hacking the ASM framework
-   * more: create a subclass of MethodWriter with a /dev/null byteVector. Another option would be
-   * to create a separate visitor for computing those values, duplicating the functionality from the
-   * MethodWriter.
-   */
-  private def computeMaxLocalsMaxStack(method: MethodNode) {
-    val cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
-    val excs = method.exceptions.asScala.toArray
-    val mw = cw.visitMethod(method.access, method.name, method.desc, method.signature, excs).asInstanceOf[MethodWriter]
-    method.accept(mw)
-    method.maxLocals = mw.getMaxLocals
-    method.maxStack = mw.getMaxStack
   }
 
   /**
