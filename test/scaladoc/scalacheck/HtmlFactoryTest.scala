@@ -685,7 +685,7 @@ object Test extends Properties("HtmlFactory") {
       case node: scala.xml.Node => {
         val s = node.toString
         s.contains("<h6>Author:</h6>") &&
-        s.contains("<p>The Only Author\n</p>")
+        s.contains("<p>The Only Author</p>")
       }
       case _ => false
     }
@@ -699,7 +699,7 @@ object Test extends Properties("HtmlFactory") {
         val s = node.toString
         s.contains("<h6>Authors:</h6>") &&
         s.contains("<p>The First Author</p>") &&
-        s.contains("<p>The Second Author\n</p>")
+        s.contains("<p>The Second Author</p>")
       }
       case _ => false
     }

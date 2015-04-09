@@ -210,6 +210,7 @@ dl.attributes > dd {
   display: block;
   padding-left: 10em;
   margin-bottom: 5px;
+  min-height: 15px;
 }
 
 #template .values > h3 {
@@ -669,6 +670,7 @@ div.fullcomment dl.paramcmts > dd {
   padding-left: 10px;
   margin-bottom: 5px;
   margin-left: 70px;
+  min-height: 15px;
 }
 
 /* Members filter tool */

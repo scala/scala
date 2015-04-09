@@ -281,13 +281,16 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
 
       case line :: ls if (lastTagKey.isDefined) =>
-        val key = lastTagKey.get
-        val value =
-          ((tags get key): @unchecked) match {
-            case Some(b :: bs) => (b + endOfLine + line) :: bs
-            case None => oops("lastTagKey set when no tag exists for key")
-          }
-        parse0(docBody, tags + (key -> value), lastTagKey, ls, inCodeBlock)
+        val newtags = if (!line.isEmpty) {
+          val key = lastTagKey.get
+          val value =
+            ((tags get key): @unchecked) match {
+              case Some(b :: bs) => (b + endOfLine + line) :: bs
+              case None => oops("lastTagKey set when no tag exists for key")
+            }
+          tags + (key -> value)
+        } else tags
+        parse0(docBody, newtags, lastTagKey, ls, inCodeBlock)
 
       case line :: ls =>
         if (docBody.length > 0) docBody append endOfLine
@@ -315,18 +318,18 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         val bodyTags: mutable.Map[TagKey, List[Body]] =
           mutable.Map(tagsWithoutDiagram mapValues {tag => tag map (parseWikiAtSymbol(_, pos, site))} toSeq: _*)
 
-        def oneTag(key: SimpleTagKey): Option[Body] =
+        def oneTag(key: SimpleTagKey, filterEmpty: Boolean = true): Option[Body] =
           ((bodyTags remove key): @unchecked) match {
-            case Some(r :: rs) =>
+            case Some(r :: rs) if !(filterEmpty && r.blocks.isEmpty) =>
               if (!rs.isEmpty) reporter.warning(pos, "Only one '@" + key.name + "' tag is allowed")
               Some(r)
-            case None => None
+            case _ => None
           }
 
         def allTags(key: SimpleTagKey): List[Body] =
-          (bodyTags remove key) getOrElse Nil
+          (bodyTags remove key).getOrElse(Nil).filterNot(_.blocks.isEmpty)
 
-        def allSymsOneTag(key: TagKey): Map[String, Body] = {
+        def allSymsOneTag(key: TagKey, filterEmpty: Boolean = true): Map[String, Body] = {
           val keys: Seq[SymbolTagKey] =
             bodyTags.keys.toSeq flatMap {
               case stk: SymbolTagKey if (stk.name == key.name) => Some(stk)
@@ -342,11 +345,11 @@ trait CommentFactoryBase { this: MemberLookupBase =>
                 reporter.warning(pos, "Only one '@" + key.name + "' tag for symbol " + key.symbol + " is allowed")
               (key.symbol, bs.head)
             }
-          Map.empty[String, Body] ++ pairs
+          Map.empty[String, Body] ++ (if (filterEmpty) pairs.filterNot(_._2.blocks.isEmpty) else pairs)
         }
 
         def linkedExceptions: Map[String, Body] = {
-          val m = allSymsOneTag(SimpleTagKey("throws"))
+          val m = allSymsOneTag(SimpleTagKey("throws"), filterEmpty = false)
 
           m.map { case (name,body) =>
             val link = memberLookup(pos, name, site)
@@ -372,7 +375,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           version0        = oneTag(SimpleTagKey("version")),
           since0          = oneTag(SimpleTagKey("since")),
           todo0           = allTags(SimpleTagKey("todo")),
-          deprecated0     = oneTag(SimpleTagKey("deprecated")),
+          deprecated0     = oneTag(SimpleTagKey("deprecated"), filterEmpty = false),
           note0           = allTags(SimpleTagKey("note")),
           example0        = allTags(SimpleTagKey("example")),
           constructor0    = oneTag(SimpleTagKey("constructor")),
