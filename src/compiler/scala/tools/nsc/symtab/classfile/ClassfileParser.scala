@@ -15,6 +15,7 @@ import scala.collection.mutable.{ ListBuffer, ArrayBuffer }
 import scala.annotation.switch
 import scala.reflect.internal.{ JavaAccFlags }
 import scala.reflect.internal.pickling.{PickleBuffer, ByteCodecs}
+import scala.reflect.io.NoAbstractFile
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.ClassFileLookup
 
@@ -1022,11 +1023,18 @@ abstract class ClassfileParser {
       val sflags      = jflags.toScalaFlags
       val owner       = ownerForFlags(jflags)
       val scope       = getScope(jflags)
-      val innerClass  = owner.newClass(name.toTypeName, NoPosition, sflags) setInfo completer
-      val innerModule = owner.newModule(name.toTermName, NoPosition, sflags) setInfo completer
+      def newStub(name: Name) =
+        owner.newStubSymbol(name, s"Class file for ${entry.externalName} not found").setFlag(JAVA)
 
-      innerModule.moduleClass setInfo loaders.moduleClassLoader
-      List(innerClass, innerModule.moduleClass) foreach (_.associatedFile = file)
+      val (innerClass, innerModule) = if (file == NoAbstractFile) {
+        (newStub(name.toTypeName), newStub(name.toTermName))
+      } else {
+        val cls = owner.newClass(name.toTypeName, NoPosition, sflags) setInfo completer
+        val mod = owner.newModule(name.toTermName, NoPosition, sflags) setInfo completer
+        mod.moduleClass setInfo loaders.moduleClassLoader
+        List(cls, mod.moduleClass) foreach (_.associatedFile = file)
+        (cls, mod)
+      }
 
       scope enter innerClass
       scope enter innerModule
@@ -1046,10 +1054,8 @@ abstract class ClassfileParser {
     for (entry <- innerClasses.entries) {
       // create a new class member for immediate inner classes
       if (entry.outerName == currentClass) {
-        val file = classFileLookup.findClassFile(entry.externalName.toString) getOrElse {
-          throw new AssertionError(s"Class file for ${entry.externalName} not found")
-        }
-        enterClassAndModule(entry, file)
+        val file = classFileLookup.findClassFile(entry.externalName.toString)
+        enterClassAndModule(entry, file.getOrElse(NoAbstractFile))
       }
     }
   }
