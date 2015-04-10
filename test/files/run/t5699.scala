@@ -1,21 +1,13 @@
-import scala.tools.partest.DirectTest
+import scala.tools.partest.ParserTest
 import scala.reflect.internal.util.BatchSourceFile
 
-object Test extends DirectTest {
+object Test extends ParserTest {
   // Java code
   override def code = """
     |public @interface MyAnnotation { String value(); }
   """.stripMargin
 
-  override def extraSettings: String = "-usejavacp -Ystop-after:typer -Xprint:parser"
-
-  override def show(): Unit = {
-    // redirect err to out, for logging
-    val prevErr = System.err
-    System.setErr(System.out)
-    compile()
-    System.setErr(prevErr)
-  }
+  override def extraSettings: String = "-usejavacp -Ystop-after:namer -Xprint:parser"
 
   override def newSources(sourceCodes: String*) = {
     assert(sourceCodes.size == 1)
