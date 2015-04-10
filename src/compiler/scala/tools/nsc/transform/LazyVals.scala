@@ -219,7 +219,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
      *    l$
      *  } or
      *  <rhs> when the lazy value has type Unit (for which there is no field
-     *  to cache it's value.
+     *  to cache its value.
      *
      *  Similarly as for normal lazy val members (see Mixin), the result will be a tree of the form
      *  { if ((bitmap&n & MASK) == 0) this.l$compute()

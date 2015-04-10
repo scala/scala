@@ -936,7 +936,7 @@ trait Definitions extends api.StandardDefinitions {
     // TODO these aren't final! They are now overridden in AnyRef/Object. Prior to the fix
     //      for SI-8129, they were actually *overloaded* by the members in AnyRef/Object.
     //      We should unfinalize these, override in AnyValClass, and make the overrides final.
-    //      Refchecks never actually looks at these, so its just for consistency.
+    //      Refchecks never actually looks at these, so it's just for consistency.
     lazy val Any_==       = enterNewMethod(AnyClass, nme.EQ, AnyTpe :: Nil, BooleanTpe, FINAL)
     lazy val Any_!=       = enterNewMethod(AnyClass, nme.NE, AnyTpe :: Nil, BooleanTpe, FINAL)
 

@@ -292,7 +292,7 @@ trait ReificationSupport { self: SymbolTable =>
           if (ctorMods.isTrait)
             result(ctorMods, Nil, edefs, body)
           else {
-            // undo conversion from (implicit ... ) to ()(implicit ... ) when its the only parameter section
+            // undo conversion from (implicit ... ) to ()(implicit ... ) when it's the only parameter section
             val vparamssRestoredImplicits = ctorVparamss match {
               case Nil :: (tail @ ((head :: _) :: _)) if head.mods.isImplicit => tail
               case other => other
