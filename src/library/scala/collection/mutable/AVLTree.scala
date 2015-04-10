@@ -27,7 +27,7 @@ private[mutable] sealed trait AVLTree[+A] extends Serializable {
 
   /**
    * Returns a new tree containing the given element.
-   * Thows an IllegalArgumentException if element is already present.
+   * Throws an IllegalArgumentException if element is already present.
    *
    */
   def insert[B >: A](value: B, ordering: Ordering[B]): AVLTree[B] = Node(value, Leaf, Leaf)
@@ -95,7 +95,7 @@ private case class Node[A](data: A, left: AVLTree[A], right: AVLTree[A]) extends
 
   /**
    * Returns a new tree containing the given element.
-   * Thows an IllegalArgumentException if element is already present.
+   * Throws an IllegalArgumentException if element is already present.
    *
    */
   override def insert[B >: A](value: B, ordering: Ordering[B]) = {

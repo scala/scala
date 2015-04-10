@@ -79,7 +79,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     val accessorMethods = mutable.ArrayBuffer[Tree]()
 
     // the result of the transformFunction method. A class definition for the lambda, an expression
-    // insantiating the lambda class, and an accessor method for the lambda class to be able to
+    // instantiating the lambda class, and an accessor method for the lambda class to be able to
     // call the implementation
     case class TransformedFunction(lambdaClassDef: ClassDef, newExpr: Tree, accessorMethod: Tree)
 
@@ -87,7 +87,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     override def transform(tree: Tree): Tree = tree match {
       // the main thing we care about is lambdas
       case fun @ Function(_, _) =>
-        // a lambda beccomes a new class, an instantiation expression, and an
+        // a lambda becomes a new class, an instantiation expression, and an
         // accessor method
         val TransformedFunction(lambdaClassDef, newExpr, accessorMethod) = transformFunction(fun)
         // we'll add accessor methods to the current template later

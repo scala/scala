@@ -610,7 +610,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       exitingSpecialize(sClass setInfo specializedInfoType)
       val fullEnv = outerEnv ++ env
 
-      /* Enter 'sym' in the scope of the current specialized class. It's type is
+      /* Enter 'sym' in the scope of the current specialized class. Its type is
        * mapped through the active environment, binding type variables to concrete
        * types. The existing typeEnv for `sym` is composed with the current active
        * environment
@@ -1368,7 +1368,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   )
 
   def specializeCalls(unit: CompilationUnit) = new TypingTransformer(unit) {
-    /** Map a specializable method to it's rhs, when not deferred. */
+    /** Map a specializable method to its rhs, when not deferred. */
     val body = perRunCaches.newMap[Symbol, Tree]()
 
     /** Map a specializable method to its value parameter symbols. */

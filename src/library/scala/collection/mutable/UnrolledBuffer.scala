@@ -85,7 +85,7 @@ extends scala.collection.mutable.AbstractBuffer[T]
 
   def classTagCompanion = UnrolledBuffer
 
-  /** Concatenates the targer unrolled buffer to this unrolled buffer.
+  /** Concatenates the target unrolled buffer to this unrolled buffer.
    *
    *  The specified buffer `that` is cleared after this operation. This is
    *  an O(1) operation.
