@@ -680,9 +680,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   def verbosity() = {
-    val old = intp.printResults
-    intp.printResults = !old
-    echo("Switched " + (if (old) "off" else "on") + " result printing.")
+    intp.printResults = !intp.printResults
+    replinfo(s"Result printing is ${ if (intp.printResults) "on" else "off" }.")
   }
 
   /** Run one command submitted by the user.  Two values are returned:
