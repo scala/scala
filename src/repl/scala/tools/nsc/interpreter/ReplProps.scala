@@ -32,6 +32,12 @@ class ReplProps {
   val powerInitCode   = Prop[JFile]("scala.repl.power.initcode")
   val powerBanner     = Prop[JFile]("scala.repl.power.banner")
 
+  val prompt = Prop[String]("scala.shell.prompt")
+  val prompt2 = Prop[String]("scala.shell.prompt2")
+  val histfile = Prop[String]("scala.shell.histfile")
+  val disableWelcomeMessage = bool("scala.shell.disableWelcomeMessage")
+  val silentVerbositySwitch = bool("scala.shell.silentVerbositySwitch")
+
   val vids = bool("scala.repl.vids")
   val maxPrintString = int("scala.repl.maxprintstring")
 }

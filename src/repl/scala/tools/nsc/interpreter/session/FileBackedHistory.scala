@@ -80,5 +80,9 @@ object FileBackedHistory {
   import Properties.userHome
 
   def defaultFileName = ".scala_history"
-  def defaultFile: File = File(Path(userHome) / defaultFileName)
+  def histfile = replProps.histfile.option match {
+    case Some(f1) => f1
+    case None => userHome + "/" + defaultFileName
+  }
+  def defaultFile: File = File(Path(histfile))
 }

@@ -695,7 +695,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   def verbosity() = {
     val old = intp.printResults
     intp.printResults = !old
-    echo("Switched " + (if (old) "off" else "on") + " result printing.")
+    if (!replProps.silentVerbositySwitch)
+      echo("Switched " + (if (old) "off" else "on") + " result printing.")
   }
 
   /** Run one command submitted by the user.  Two values are returned:
@@ -774,8 +775,21 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   private object paste extends Pasted {
-    val ContinueString = "     | "
-    val PromptString   = "scala> "
+    val ContinueString = { 
+      import scala.io.AnsiColor.{ MAGENTA, RESET }
+      val s2 = replProps.prompt2.option match {
+        case Some(s) => s
+        case None => "     | "
+      }
+      if (replProps.colorOk)
+        MAGENTA+s2+RESET 
+      else 
+        s2 
+    }
+    val PromptString = replProps.prompt.option match { 
+      case Some(s) => s 
+      case None => "scala> " 
+    }
 
     def interpret(line: String): Unit = {
       echo(line.trim)
@@ -915,7 +929,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       !intp.reporter.hasErrors
     }
     loadFiles(settings)
-    printWelcome()
+    if (!replProps.disableWelcomeMessage) 
+      printWelcome()
 
     try loop() match {
       case LineResults.EOF => out print Properties.shellInterruptedString
