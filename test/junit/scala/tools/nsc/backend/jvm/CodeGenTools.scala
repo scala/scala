@@ -1,4 +1,4 @@
-spackage scala.tools.nsc.backend.jvm
+package scala.tools.nsc.backend.jvm
 
 import org.junit.Assert._
 
