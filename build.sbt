@@ -224,7 +224,7 @@ lazy val partestExtras = configureAsSubproject(Project("partest-extras", file(".
   )
 
 lazy val junit = project.in(file("test") / "junit")
-  .dependsOn(library, reflect, compiler, partestExtras)
+  .dependsOn(library, reflect, compiler, partestExtras, scaladoc)
   .settings(clearSourceAndResourceDirectories: _*)
   .settings(commonSettings: _*)
   .settings(
