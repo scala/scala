@@ -113,7 +113,7 @@ val disableDocsAndPublishingTasks = Seq[Setting[_]](
   packageBin in Compile := file("!!! NO PACKAGING !!!")
 )
 
-lazy val scalaSubprojectSettings = commonSettings ++ Seq[Setting[_]](
+lazy val setJarLocation: Setting[_] = 
   artifactPath in packageBin in Compile := {
     // two lines below are copied over from sbt's sources:
     // https://github.com/sbt/sbt/blob/0.13/main/src/main/scala/sbt/Defaults.scala#L628
@@ -125,7 +125,7 @@ lazy val scalaSubprojectSettings = commonSettings ++ Seq[Setting[_]](
     val resolvedArtifactName = s"${resolvedArtifact.name}.${resolvedArtifact.extension}"
     buildDirectory.value / "pack/lib" / resolvedArtifactName
   }
-)
+lazy val scalaSubprojectSettings: Seq[Setting[_]] = commonSettings :+ setJarLocation
 
 lazy val generatePropertiesFileSettings = Seq[Setting[_]](
   copyrightString := "Copyright 2002-2013, LAMP/EPFL",
@@ -247,11 +247,8 @@ lazy val partestJavaAgent = (project in file(".") / "src" / "partest-javaagent")
     ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
     // Setting name to "scala-partest-javaagent" so that the jar file gets that name, which the Runner relies on
     name := "scala-partest-javaagent",
-    // writing jar file to /build/pack/lib because that's where it's expected to be found
-    artifactPath in packageBin in Compile := {
-      val resolvedArtifact = artifact.value
-      root.base / s"build/pack/lib/${resolvedArtifact.name}.${resolvedArtifact.extension}"
-    },
+    // writing jar file to $buildDirectory/pack/lib because that's where it's expected to be found
+    setJarLocation,
     // add required manifest entry - previously included from file
     packageOptions in (Compile, packageBin) +=
       Package.ManifestAttributes( "Premain-Class" -> "scala.tools.partest.javaagent.ProfilingAgent" ),
