@@ -142,7 +142,7 @@ trait ScalaSettings extends AbsScalaSettings
   // XML parsing options
   object XxmlSettings extends MultiChoiceEnumeration {
     val coalescing   = Choice("coalescing", "Convert PCData to Text and coalesce sibling nodes")
-    def isCoalescing = Xxml contains coalescing
+    def isCoalescing = (Xxml contains coalescing) || (!isScala212 && !Xxml.isSetByUser)
   }
   val Xxml = MultiChoiceSetting(
     name    = "-Xxml",
