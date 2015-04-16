@@ -185,7 +185,11 @@ lazy val root = (project in file(".")).
     scaladoc, scalap, actors).settings(
     scalaVersion := bootstrapScalaVersion,
     ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
-    sources in Compile := Seq.empty
+    sources in Compile := Seq.empty,
+    onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
+      |This build definition has an EXPERIMENTAL status. If you are not
+      |interested in testing or working on the build itself, please use
+      |the Ant build definition for now. Check README.md for more information.""".stripMargin
   )
 
 /**

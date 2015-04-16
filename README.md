@@ -138,6 +138,15 @@ The Scala build system is based on Apache Ant. Most required pre-compiled
 libraries are part of the repository (in 'lib/'). The following however is
 assumed to be installed on the build machine:
 
+## Building with Sbt (EXPERIMENTAL)
+
+The experimental sbt-based build definition has arrived! Run `sbt package`
+to build the compiler. You can run `sbt test` to run unit (JUnit) tests.
+Use `sbt test/it:test` to run integration (partest) tests.
+
+We would like to migrate to sbt build as quickly as possible. If you would
+like to help please contact scala-internals@ mailing list to discuss your
+ideas and coordinate your effort with others.
 
 ### Tips and tricks
 
