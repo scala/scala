@@ -165,7 +165,7 @@ TODO:
   <property name="build.dir"               value="${basedir}/build"/>
   <property name="build-deps.dir"          value="${build.dir}/deps"/>
   <property name="build-libs.dir"          value="${build.dir}/libs"/>
-  <property name="build-asm.dir"           value="${build.dir}/asm"/>
+  <property name="build-asm.dir"           value="${build-libs.dir}"/>
   <property name="build-forkjoin.dir"      value="${build-libs.dir}"/>
   <property name="build-locker.dir"        value="${build.dir}/locker"/>
   <property name="build-quick.dir"         value="${build.dir}/quick"/>
@@ -588,8 +588,8 @@ TODO:
       </propertyfile>
     </then></if>
 
-    <path id="forkjoin.classpath" path="${build-libs.dir}/classes/forkjoin"/>
-    <path id="asm.classpath"      path="${build-asm.dir}/classes"/>
+    <path id="forkjoin.classpath" path="${build-forkjoin.dir}/classes/forkjoin"/>
+    <path id="asm.classpath"      path="${build-asm.dir}/classes/asm"/>
     <property name="forkjoin-classes" refid="forkjoin.classpath"/>
     <property name="asm-classes" refid="asm.classpath"/>
 
@@ -1061,7 +1061,7 @@ TODO:
 ============================================================================ -->
 
   <target name="asm.done"      depends="init"> <simple-javac project="asm" jar="no"/> </target>
-  <target name="forkjoin.done" depends="init"> <simple-javac project="forkjoin" args="-XDignore.symbol.file"/></target>
+  <target name="forkjoin.done" depends="init"> <simple-javac project="forkjoin" args="-XDignore.symbol.file" jar="no"/></target>
 
   <!-- For local development only. We only allow released versions of Scala for STARR.
     This builds quick (core only) and publishes it with a generated version number,

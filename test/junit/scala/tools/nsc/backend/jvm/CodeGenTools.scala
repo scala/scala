@@ -52,7 +52,9 @@ object CodeGenTools {
     val settings = new Settings()
     val args = (CommandLineParser tokenize defaultArgs) ++ (CommandLineParser tokenize extraArgs)
     settings.processArguments(args, processAll = true)
-    new Global(settings, new StoreReporter)
+    val compiler = new Global(settings, new StoreReporter)
+    resetOutput(compiler)
+    compiler
   }
 
   def newRun(compiler: Global): compiler.Run = {
