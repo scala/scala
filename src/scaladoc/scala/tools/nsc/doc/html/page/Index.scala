@@ -61,12 +61,17 @@ class Index(universe: doc.Universe, val index: doc.Index) extends HtmlPage {
       }
     }
 
+  def deprecated: NodeSeq = if (index.hasDeprecatedMembers)
+      <a target="template" href="deprecated-list.html">deprecated</a>
+    else
+      <span>deprecated</span>
+
   def browser =
     <div id="browser" class="ui-layout-west">
       <div class="ui-west-center">
       <div id="filter">
           <div id="textfilter"></div>
-          <div id="letters">{ letters }</div>
+          <div id="letters">{ letters } &#8211; { deprecated }</div>
       </div>
       <div class="pack" id="tpl">{
         def packageElem(pack: model.Package): NodeSeq = {

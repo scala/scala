@@ -71,7 +71,7 @@ object Test extends Properties("Index") {
       case None => false
     }
   }
-  property("browser contants a script element") = {
+  property("browser contains a script element") = {
     createIndex("src/scaladoc/scala/tools/nsc/doc/html/page/Index.scala") match {
       case Some(index) =>
         (index.browser \ "script").size == 1
@@ -83,6 +83,12 @@ object Test extends Properties("Index") {
     createIndex("test/scaladoc/resources/SI-5558.scala") match {
       case Some(index) =>
         index.index.firstLetterIndex('f') isDefinedAt "foo"
+      case None => false
+    }
+  }
+  property("index should report if there are deprecated members") = {
+    createIndex("test/scaladoc/resources/SI-4476.scala") match {
+      case Some(indexPage) => indexPage.index.hasDeprecatedMembers
       case None => false
     }
   }
