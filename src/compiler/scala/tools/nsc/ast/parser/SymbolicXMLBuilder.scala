@@ -126,10 +126,9 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
   def makeTextPat(txt: Tree)                = Apply(_scala_xml__Text, List(txt))
   def makeText1(txt: Tree)                  = New(_scala_xml_Text, LL(txt))
   def comment(pos: Position, text: String)  = atPos(pos)( Comment(const(text)) )
-  def charData(pos: Position, txt: String)  = atPos(pos) {
-    val t = if (isPattern) Apply(_scala_xml(xmlterms._PCData), List(const(txt)))
-            else New(_scala_xml(_PCData), LL(const(txt)))
-    if (coalescing) t updateAttachment TextAttache(pos, txt) else t
+  def charData(pos: Position, txt: String)  = if (coalescing) text(pos, txt) else atPos(pos) {
+    if (isPattern) Apply(_scala_xml(xmlterms._PCData), List(const(txt)))
+    else New(_scala_xml(_PCData), LL(const(txt)))
   }
 
   def procInstr(pos: Position, target: String, txt: String) =

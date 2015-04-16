@@ -6,8 +6,8 @@ package <empty> {
     };
     def x = {
       val $buf = new _root_.scala.xml.NodeBuffer();
-      $buf.$amp$plus(new _root_.scala.xml.Text("hi & bye"));
-      $buf.$amp$plus(new _root_.scala.xml.Text("red & black"));
+      $buf.$amp$plus(new _root_.scala.xml.PCData("hi & bye"));
+      $buf.$amp$plus(new _root_.scala.xml.PCData("red & black"));
       $buf
     }
   };
@@ -24,7 +24,8 @@ package <empty> {
               new _root_.scala.xml.Elem(null, "b", _root_.scala.xml.Null, $scope, true)
             }
           });
-          $buf.$amp$plus(new _root_.scala.xml.Text("starthi & bye"));
+          $buf.$amp$plus(new _root_.scala.xml.Text("start"));
+          $buf.$amp$plus(new _root_.scala.xml.PCData("hi & bye"));
           $buf.$amp$plus({
             {
               new _root_.scala.xml.Elem(null, "c", _root_.scala.xml.Null, $scope, true)
@@ -36,7 +37,8 @@ package <empty> {
               new _root_.scala.xml.Elem(null, "d", _root_.scala.xml.Null, $scope, true)
             }
           });
-          $buf.$amp$plus(new _root_.scala.xml.Text("stuffred & black"));
+          $buf.$amp$plus(new _root_.scala.xml.Text("stuff"));
+          $buf.$amp$plus(new _root_.scala.xml.PCData("red & black"));
           $buf
         }: _*))
       }
@@ -46,18 +48,19 @@ package <empty> {
     def $init$() = {
       ()
     };
-    def d = new _root_.scala.xml.Text("hello, world");
+    def d = new _root_.scala.xml.PCData("hello, world");
     def e = {
       val $buf = new _root_.scala.xml.NodeBuffer();
-      $buf.$amp$plus(new _root_.scala.xml.Text("hello, world"));
-      $buf.$amp$plus(new _root_.scala.xml.Text("hello, world"));
+      $buf.$amp$plus(new _root_.scala.xml.PCData("hello, world"));
+      $buf.$amp$plus(new _root_.scala.xml.PCData("hello, world"));
       $buf
     };
     def f = {
       {
         new _root_.scala.xml.Elem(null, "foo", _root_.scala.xml.Null, $scope, false, ({
           val $buf = new _root_.scala.xml.NodeBuffer();
-          $buf.$amp$plus(new _root_.scala.xml.Text("xhello, world"));
+          $buf.$amp$plus(new _root_.scala.xml.Text("x"));
+          $buf.$amp$plus(new _root_.scala.xml.PCData("hello, world"));
           $buf
         }: _*))
       }
@@ -66,7 +69,7 @@ package <empty> {
       {
         new _root_.scala.xml.Elem(null, "foo", _root_.scala.xml.Null, $scope, false, ({
           val $buf = new _root_.scala.xml.NodeBuffer();
-          $buf.$amp$plus(new _root_.scala.xml.Text("hello, world"));
+          $buf.$amp$plus(new _root_.scala.xml.PCData("hello, world"));
           $buf
         }: _*))
       }
@@ -75,7 +78,8 @@ package <empty> {
       {
         new _root_.scala.xml.Elem(null, "foo", _root_.scala.xml.Null, $scope, false, ({
           val $buf = new _root_.scala.xml.NodeBuffer();
-          $buf.$amp$plus(new _root_.scala.xml.Text("hello, worldhello, world"));
+          $buf.$amp$plus(new _root_.scala.xml.PCData("hello, world"));
+          $buf.$amp$plus(new _root_.scala.xml.PCData("hello, world"));
           $buf
         }: _*))
       }

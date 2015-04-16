@@ -21,6 +21,6 @@ object Test extends ParserTest {
   }
   """
 
-  // coalescing
-  override def extraSettings = s"${super.extraSettings} -Xxml:coalescing"
+  // default coalescing behavior, whatever that is today.
+  //override def extraSettings = s"${super.extraSettings} -Xxml:coalescing"
 }
