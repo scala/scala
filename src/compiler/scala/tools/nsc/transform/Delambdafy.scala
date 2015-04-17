@@ -15,13 +15,12 @@ import scala.collection.mutable.LinkedHashMap
  * Currently Uncurry is responsible for that transformation.
  *
  * From a lambda, Delambdafy will create
- * 1) a static forwarder at the top level of the class that contained the lambda
- * 2) a new top level class that
+ * 1) a new top level class that
       a) has fields and a constructor taking the captured environment (including possibly the "this"
  *       reference)
- *    b) an apply method that calls the static forwarder
+ *    b) an apply method that calls the target method
  *    c) if needed a bridge method for the apply method
- *  3) an instantiation of the newly created class which replaces the lambda
+ * 2) an instantiation of the newly created class which replaces the lambda
  *
  *  TODO the main work left to be done is to plug into specialization. Primarily that means choosing a
  * specialized FunctionN trait instead of the generic FunctionN trait as a parent and creating the
@@ -76,36 +75,25 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       referrers
     }
 
-    val accessorMethods = mutable.ArrayBuffer[Tree]()
-
-    // the result of the transformFunction method. A class definition for the lambda, an expression
-    // insantiating the lambda class, and an accessor method for the lambda class to be able to
-    // call the implementation
-    case class TransformedFunction(lambdaClassDef: ClassDef, newExpr: Tree, accessorMethod: Tree)
+    // the result of the transformFunction method.
+    sealed abstract class TransformedFunction
+    // A class definition for the lambda, an expression insantiating the lambda class
+    case class DelambdafyAnonClass(lambdaClassDef: ClassDef, newExpr: Tree) extends TransformedFunction
 
     // here's the main entry point of the transform
     override def transform(tree: Tree): Tree = tree match {
       // the main thing we care about is lambdas
       case fun @ Function(_, _) =>
-        // a lambda beccomes a new class, an instantiation expression, and an
-        // accessor method
-        val TransformedFunction(lambdaClassDef, newExpr, accessorMethod) = transformFunction(fun)
-        // we'll add accessor methods to the current template later
-        accessorMethods += accessorMethod
-        val pkg = lambdaClassDef.symbol.owner
+        transformFunction(fun) match {
+          case DelambdafyAnonClass(lambdaClassDef, newExpr) =>
+            // a lambda beccomes a new class, an instantiation expression
+            val pkg = lambdaClassDef.symbol.owner
 
-        // we'll add the lambda class to the package later
-        lambdaClassDefs(pkg) = lambdaClassDef :: lambdaClassDefs(pkg)
+            // we'll add the lambda class to the package later
+            lambdaClassDefs(pkg) = lambdaClassDef :: lambdaClassDefs(pkg)
 
-        super.transform(newExpr)
-      // when we encounter a template (basically the thing that holds body of a class/trait)
-      // we need to updated it to include newly created accessor methods after transforming it
-      case Template(_, _, _) =>
-        try {
-          // during this call accessorMethods will be populated from the Function case
-          val Template(parents, self, body) = super.transform(tree)
-          Template(parents, self, body ++ accessorMethods)
-        } finally accessorMethods.clear()
+            super.transform(newExpr)
+        }
       case _ => super.transform(tree)
     }
 
@@ -120,8 +108,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
     private def optionSymbol(sym: Symbol): Option[Symbol] = if (sym.exists) Some(sym) else None
 
-    // turns a lambda into a new class def, a New expression instantiating that class, and an
-    // accessor method fo the body of the lambda
+    // turns a lambda into a new class def, a New expression instantiating that class
     private def transformFunction(originalFunction: Function): TransformedFunction = {
       val functionTpe = originalFunction.tpe
       val targs = functionTpe.typeArgs
@@ -132,46 +119,16 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       // passed into the constructor of the anonymous function class
       val captures = FreeVarTraverser.freeVarsOf(originalFunction)
 
-      /**
-       * Creates the apply method for the anonymous subclass of FunctionN
-       */
-      def createAccessorMethod(thisProxy: Symbol, fun: Function): DefDef = {
-        val target = targetMethod(fun)
-        if (!thisProxy.exists) {
-          target setFlag STATIC
-        }
-        val params = ((optionSymbol(thisProxy) map {proxy:Symbol => ValDef(proxy)}) ++ (target.paramss.flatten map ValDef.apply)).toList
+      val target = targetMethod(originalFunction)
+      target.makeNotPrivate(target.owner)
+      if (!thisReferringMethods.contains(target))
+        target setFlag STATIC
 
-        val methSym = oldClass.newMethod(unit.freshTermName(nme.accessor.toString() + "$"), target.pos, FINAL | BRIDGE | SYNTHETIC | PROTECTED | STATIC)
-
-        val paramSyms = params map {param => methSym.newSyntheticValueParam(param.symbol.tpe, param.name) }
-
-        params zip paramSyms foreach { case (valdef, sym) => valdef.symbol = sym }
-        params foreach (_.symbol.owner = methSym)
-
-        val methodType = MethodType(paramSyms, restpe)
-        methSym setInfo methodType
-
-        oldClass.info.decls enter methSym
-
-        val body = localTyper.typed {
-          val newTarget = Select(if (thisProxy.exists) gen.mkAttributedRef(paramSyms(0)) else gen.mkAttributedThis(oldClass), target)
-          val newParams = paramSyms drop (if (thisProxy.exists) 1 else 0) map Ident
-          Apply(newTarget, newParams)
-        } setPos fun.pos
-        val methDef = DefDef(methSym, List(params), body)
-
-        // Have to repack the type to avoid mismatches when existentials
-        // appear in the result - see SI-4869.
-        // TODO probably don't need packedType
-        methDef.tpt setType localTyper.packedType(body, methSym)
-        methDef
-      }
 
       /**
        * Creates the apply method for the anonymous subclass of FunctionN
        */
-      def createApplyMethod(newClass: Symbol, fun: Function, accessor: DefDef, thisProxy: Symbol): DefDef = {
+      def createApplyMethod(newClass: Symbol, fun: Function, thisProxy: Symbol): DefDef = {
         val methSym = newClass.newMethod(nme.apply, fun.pos, FINAL | SYNTHETIC)
         val params = fun.vparams map (_.duplicate)
 
@@ -187,8 +144,12 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         newClass.info.decls enter methSym
 
         val Apply(_, oldParams) = fun.body
+        val qual = if (thisProxy.exists)
+          Select(gen.mkAttributedThis(newClass), thisProxy)
+        else
+          gen.mkAttributedThis(oldClass) // sort of a lie, EmptyTree.<static method> would be more honest, but the backend chokes on that.
 
-        val body = localTyper typed Apply(Select(gen.mkAttributedThis(oldClass), accessor.symbol), (optionSymbol(thisProxy) map {tp => Select(gen.mkAttributedThis(newClass), tp)}).toList ++ oldParams)
+        val body = localTyper typed Apply(Select(qual, target), oldParams)
         body.substituteSymbols(fun.vparams map (_.symbol), params map (_.symbol))
         body changeOwner (fun.symbol -> methSym)
 
@@ -271,17 +232,15 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         // the Optional proxy that will hold a reference to the 'this'
         // object used by the lambda, if any. NoSymbol if there is no this proxy
         val thisProxy = {
-          val target = targetMethod(originalFunction)
-          if (thisReferringMethods contains target) {
+          if (target.hasFlag(STATIC))
+            NoSymbol
+          else {
             val sym = lambdaClass.newVariable(nme.FAKE_LOCAL_THIS, originalFunction.pos, SYNTHETIC)
-            sym.info = oldClass.tpe
-            sym
-          } else NoSymbol
+            sym.setInfo(oldClass.tpe)
+          }
         }
 
         val decapturify = new DeCapturifyTransformer(captureProxies2, unit, oldClass, lambdaClass, originalFunction.symbol.pos, thisProxy)
-
-        val accessorMethod = createAccessorMethod(thisProxy, originalFunction)
 
         val decapturedFunction = decapturify.transform(originalFunction).asInstanceOf[Function]
 
@@ -294,7 +253,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         val constr = createConstructor(lambdaClass, members)
 
         // apply method with same arguments and return type as original lambda.
-        val applyMethodDef = createApplyMethod(lambdaClass, decapturedFunction, accessorMethod, thisProxy)
+        val applyMethodDef = createApplyMethod(lambdaClass, decapturedFunction, thisProxy)
 
         val bridgeMethod = createBridgeMethod(lambdaClass, originalFunction, applyMethodDef)
 
@@ -312,10 +271,10 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         val body = members ++ List(constr, applyMethodDef) ++ bridgeMethod
 
         // TODO if member fields are private this complains that they're not accessible
-        (localTyper.typedPos(decapturedFunction.pos)(ClassDef(lambdaClass, body)).asInstanceOf[ClassDef], thisProxy, accessorMethod)
+        (localTyper.typedPos(decapturedFunction.pos)(ClassDef(lambdaClass, body)).asInstanceOf[ClassDef], thisProxy)
       }
 
-      val (anonymousClassDef, thisProxy, accessorMethod) = makeAnonymousClass
+      val (anonymousClassDef, thisProxy) = makeAnonymousClass
 
       pkg.info.decls enter anonymousClassDef.symbol
 
@@ -327,7 +286,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
       val typedNewStat = localTyper.typedPos(originalFunction.pos)(newStat)
 
-      TransformedFunction(anonymousClassDef, typedNewStat, accessorMethod)
+      DelambdafyAnonClass(anonymousClassDef, typedNewStat)
     }
 
     /**

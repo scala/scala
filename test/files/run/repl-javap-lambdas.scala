@@ -16,7 +16,7 @@ object Test extends JavapTest {
   // three anonfuns of Betty#g
   override def yah(res: Seq[String]) = {
     import PartialFunction.{ cond => when }
-    val r = """\s*private static final .* \$anonfun\$\d+\(.*""".r
+    val r = """.*final .* .*\$anonfun\$\d+\(.*""".r
     def filtered = res filter (when(_) { case r(_*) => true })
     3 == filtered.size
   }
