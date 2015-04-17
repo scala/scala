@@ -27,7 +27,7 @@ abstract class SampleTransform extends Transform {
       tree1 match {
         case Block(List(), expr) =>           // a simple optimization
           expr
-        case Block(defs, sup @ Super(qual, mix)) => // A hypthothetic transformation, which replaces
+        case Block(defs, sup @ Super(qual, mix)) => // A hypothetical transformation, which replaces
                                                     // {super} by {super.sample}
           treeCopy.Block(                           // `copy` is the usual lazy tree copier
             tree1, defs,

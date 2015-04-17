@@ -88,7 +88,7 @@ object ProcessLogger {
   /** Creates a [[scala.sys.process.ProcessLogger]] that sends all output to the corresponding
    *  function.
    *
-   *  @param fout  This function will receive standard outpout.
+   *  @param fout  This function will receive standard output.
    *
    *  @param ferr  This function will receive standard error.
    */

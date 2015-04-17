@@ -58,7 +58,7 @@ import scala.io.StdIn
  *  condition fails, then the caller of the function is to blame rather than a
  *  logical error having been made within `addNaturals` itself. `ensures` is a
  *  form of `assert` that declares the guarantee the function is providing with
- *  regards to it's return value.
+ *  regards to its return value.
  *
  *  === Implicit Conversions ===
  *  A number of commonly applied implicit conversions are also defined here, and
@@ -85,7 +85,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   type String        = java.lang.String
   type Class[T]      = java.lang.Class[T]
 
-  // miscelleaneous -----------------------------------------------------
+  // miscellaneous -----------------------------------------------------
   scala.`package`                         // to force scala package object to be seen.
   scala.collection.immutable.List         // to force Nil, :: to be seen.
 

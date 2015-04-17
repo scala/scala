@@ -431,7 +431,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
    *  with unequal `hashCode`s.  These hash codes agree with `BigInt`
    *  for whole numbers up ~4934 digits (the range of IEEE 128 bit floating
    *  point).  Beyond this, hash codes will disagree; this prevents the
-   *  explicit represention of the `BigInt` form for `BigDecimal` values
+   *  explicit representation of the `BigInt` form for `BigDecimal` values
    *  with large exponents.
    */
   override def hashCode(): Int = {

@@ -315,7 +315,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
     }
 
     def rewriteDelayedInit() {
-      /* XXX This is not corect: remainingConstrStats.nonEmpty excludes too much,
+      /* XXX This is not correct: remainingConstrStats.nonEmpty excludes too much,
        * but excluding it includes too much.  The constructor sequence being mimicked
        * needs to be reproduced with total fidelity.
        *

@@ -11,7 +11,7 @@ import Opcodes._
 // HasDefaultMethod. Then it runs a normal compile on Scala source that extends that
 // interface. Any failure will be dumped to std out.
 //
-// By it's nature the test can only work on JDK 8+ because under JDK 7- the
+// By its nature the test can only work on JDK 8+ because under JDK 7- the
 // interface won't verify.
 object Test extends DirectTest {
   override def extraSettings: String = "-optimise -usejavacp -d " + testOutput.path + " -cp " + testOutput.path

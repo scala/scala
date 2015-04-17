@@ -1125,7 +1125,7 @@ trait Namers extends MethodSynthesis {
             for (vparam <- vparams) {
               if (vparam.tpt.isEmpty) {
                 val overriddenParamTp = overriddenParams.head.tpe
-                // references to type parameteres in overriddenParamTp link to the type skolems, so the
+                // references to type parameters in overriddenParamTp link to the type skolems, so the
                 // assigned type is consistent with the other / existing parameter types in vparamSymss.
                 vparam.symbol setInfo overriddenParamTp
                 vparam.tpt defineType overriddenParamTp setPos vparam.pos.focus

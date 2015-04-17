@@ -57,7 +57,7 @@ trait AnalyzerPlugins { self: Analyzer =>
      * `analyzer.transformed` hash map, indexed by the definition's rhs tree.
      *
      * NOTE: Invoking the type checker can lead to cyclic reference errors. For instance, if this
-     * method is called from the type completer of a recursive method, type checking the mehtod
+     * method is called from the type completer of a recursive method, type checking the method
      * rhs will invoke the same completer again. It might be possible to avoid this situation by
      * assigning `tpe` to `defTree.symbol` (untested) - the final type computed by this method
      * will then be assigned to the definition's symbol by monoTypeCompleter (in Namers).

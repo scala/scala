@@ -3658,7 +3658,7 @@ trait Types
       // JZ: We used to register this as a perRunCache so it would be cleared eagerly at
       // the end of the compilation run. But, that facility didn't actually clear this map (SI-8129)!
       // When i fixed that bug, run/tpeCache-tyconCache.scala started failing. Why was that?
-      // I've removed the registration for now. I don't think its particularly harmful anymore
+      // I've removed the registration for now. I don't think it's particularly harmful anymore
       // as a) this is now a weak set, and b) it is discarded completely before the next run.
       uniqueRunId = currentRunId
     }
@@ -4535,7 +4535,7 @@ trait Types
 
   /** Adds the @uncheckedBound annotation if the given `tp` has type arguments */
   final def uncheckedBounds(tp: Type): Type = {
-    if (tp.typeArgs.isEmpty || UncheckedBoundsClass == NoSymbol) tp // second condition for backwards compatibilty with older scala-reflect.jar
+    if (tp.typeArgs.isEmpty || UncheckedBoundsClass == NoSymbol) tp // second condition for backwards compatibility with older scala-reflect.jar
     else tp.withAnnotation(AnnotationInfo marker UncheckedBoundsClass.tpe)
   }
 

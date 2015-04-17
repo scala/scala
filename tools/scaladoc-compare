@@ -7,7 +7,7 @@ if [ $# -ne 2 ]
 then
   echo
   echo "scaladoc-compare will compare the scaladoc-generated pages in two different locations and output the diff"
-  echo "it's main purpose is to track changes to scaladoc and prevent updates that break things."
+  echo "its main purpose is to track changes to scaladoc and prevent updates that break things."
   echo
   echo "This script is meant to be used with the scaladoc -raw-output option, as it compares .html.raw files "
   echo "instead of markup-heavy .html files."

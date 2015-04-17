@@ -191,7 +191,7 @@ private[hashing] class MurmurHash3 {
  * This is based on the earlier MurmurHash3 code by Rex Kerr, but the
  * MurmurHash3 algorithm was since changed by its creator Austin Appleby
  * to remedy some weaknesses and improve performance. This represents the
- * latest and supposedly final version of the algortihm (revision 136).
+ * latest and supposedly final version of the algorithm (revision 136).
  *
  * @see [[http://code.google.com/p/smhasher]]
  */
