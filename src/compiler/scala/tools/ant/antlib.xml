@@ -11,6 +11,8 @@
              classname="scala.tools.ant.Scaladoc"/>
     <taskdef name="scalatool"
              classname="scala.tools.ant.ScalaTool"/>
+    <taskdef name="jarlister"
+             classname="scala.tools.ant.JarLister"/>
     <taskdef name="pack200"
              classname="scala.tools.ant.Pack200Task"/>
 </antlib>

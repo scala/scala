@@ -1754,7 +1754,7 @@ TODO:
         <taskdef name="genman"
                  classname="scala.tools.docutil.ManMaker"
                  classpathref="manual.build.path"/>
-        <genman command="fsc, scala, scalac, scaladoc, scalap"
+        <genman command="fsc, scala, scalac, scaladoc, scalap, jarlister"
                 htmlout="${build-pack.dir}/doc/tools"
                 manout="${build-manual.dir}/genman"/>
       </do>

@@ -330,6 +330,7 @@
               <mk-bin file="${build-@{stage}.dir}/bin/scalac" class="scala.tools.nsc.Main" javaFlags="${java.flags}"/>
               <mk-bin file="${build-@{stage}.dir}/bin/scaladoc" class="scala.tools.nsc.ScalaDoc" javaFlags="${java.flags}"/>
               <mk-bin file="${build-@{stage}.dir}/bin/fsc" class="scala.tools.nsc.CompileClient" javaFlags="${java.flags}"/>
+              <mk-bin file="${build-@{stage}.dir}/bin/jarlister" class="scala.tools.nsc.JarLister" javaFlags="${java.flags}"/>
               <mk-bin file="${build-@{stage}.dir}/bin/scalap" class="scala.tools.scalap.Main" javaFlags="${java.flags}"/>
             </then>
             <else>
@@ -344,6 +345,7 @@
           <chmod perm="ugo+rx" file="${build-@{stage}.dir}/bin/scalac"/>
           <chmod perm="ugo+rx" file="${build-@{stage}.dir}/bin/scaladoc"/>
           <chmod perm="ugo+rx" file="${build-@{stage}.dir}/bin/fsc"/>
+          <chmod perm="ugo+rx" file="${build-@{stage}.dir}/bin/jarlister"/>
           <chmod perm="ugo+rx" file="${build-@{stage}.dir}/bin/scalap"/>
         </do>
       </staged-uptodate>
