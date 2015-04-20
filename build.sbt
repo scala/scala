@@ -52,16 +52,18 @@
 
 val bootstrapScalaVersion = "2.11.5"
 
+def withoutScalaLang(moduleId: ModuleID): ModuleID = moduleId exclude("org.scala-lang", "*")
+
 // exclusion of the scala-library transitive dependency avoids eviction warnings during `update`.
-val scalaParserCombinatorsDep = "org.scala-lang.modules" %% "scala-parser-combinators" % versionNumber("scala-parser-combinators") exclude("org.scala-lang", "scala-library")
-val scalaXmlDep = "org.scala-lang.modules" %% "scala-xml" % versionNumber("scala-xml") exclude("org.scala-lang", "scala-library")
-val partestDep = "org.scala-lang.modules" %% "scala-partest" % versionNumber("partest") exclude("org.scala-lang", "scala-library")
-val partestInterfaceDep = "org.scala-lang.modules" %% "scala-partest-interface" % "0.5.0" exclude("org.scala-lang", "scala-library")
+val scalaParserCombinatorsDep = withoutScalaLang("org.scala-lang.modules" %% "scala-parser-combinators" % versionNumber("scala-parser-combinators"))
+val scalaXmlDep = withoutScalaLang("org.scala-lang.modules" %% "scala-xml" % versionNumber("scala-xml"))
+val partestDep = withoutScalaLang("org.scala-lang.modules" %% "scala-partest" % versionNumber("partest"))
+val partestInterfaceDep = withoutScalaLang("org.scala-lang.modules" %% "scala-partest-interface" % "0.5.0")
 val junitDep = "junit" % "junit" % "4.11"
 val junitIntefaceDep = "com.novocode" % "junit-interface" % "0.11" % "test"
 val jlineDep = "jline" % "jline" % versionProps("jline.version")
 val antDep = "org.apache.ant" % "ant" % "1.9.4"
-val scalacheckDep = "org.scalacheck" %% "scalacheck" % "1.11.4" exclude("org.scala-lang", "scala-library")
+val scalacheckDep = withoutScalaLang("org.scalacheck" %% "scalacheck" % "1.11.4")
 
 lazy val commonSettings = clearSourceAndResourceDirectories ++ Seq[Setting[_]](
   organization := "org.scala-lang",
@@ -181,10 +183,6 @@ lazy val compiler = configureAsSubproject(project)
 
 lazy val interactive = configureAsSubproject(project)
   .settings(disableDocsAndPublishingTasks: _*)
-  .settings(
-    scalaVersion := bootstrapScalaVersion,
-    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
-  )
   .dependsOn(compiler)
 
 lazy val repl = configureAsSubproject(project)
@@ -217,8 +215,6 @@ lazy val partestExtras = configureAsSubproject(Project("partest-extras", file(".
   .dependsOn(repl)
   .settings(clearSourceAndResourceDirectories: _*)
   .settings(
-    scalaVersion := bootstrapScalaVersion,
-    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
     libraryDependencies += partestDep,
     unmanagedSourceDirectories in Compile := List(baseDirectory.value)
   )
@@ -228,8 +224,6 @@ lazy val junit = project.in(file("test") / "junit")
   .settings(clearSourceAndResourceDirectories: _*)
   .settings(commonSettings: _*)
   .settings(
-    scalaVersion := bootstrapScalaVersion,
-    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
     fork in Test := true,
     libraryDependencies ++= Seq(junitDep, junitIntefaceDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
@@ -243,8 +237,6 @@ lazy val partestJavaAgent = (project in file(".") / "src" / "partest-javaagent")
     doc := file("!!! NO DOCS !!!"),
     publishLocal := {},
     publish := {},
-    scalaVersion := bootstrapScalaVersion,
-    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
     // Setting name to "scala-partest-javaagent" so that the jar file gets that name, which the Runner relies on
     name := "scala-partest-javaagent",
     // writing jar file to $buildDirectory/pack/lib because that's where it's expected to be found
@@ -263,8 +255,6 @@ lazy val test = project.
   settings(commonSettings: _*).
   settings(Defaults.itSettings: _*).
   settings(
-    scalaVersion := bootstrapScalaVersion,
-    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
     libraryDependencies ++= Seq(partestDep, scalaXmlDep, partestInterfaceDep, scalacheckDep),
     unmanagedBase in Test := baseDirectory.value / "files" / "lib",
     unmanagedJars in Test <+= (unmanagedBase) (j => Attributed.blank(j)) map(identity),
@@ -291,8 +281,6 @@ lazy val test = project.
 lazy val root = (project in file(".")).
   aggregate(library, forkjoin, reflect, compiler, asm, interactive, repl,
     scaladoc, scalap, actors, partestExtras, junit).settings(
-    scalaVersion := bootstrapScalaVersion,
-    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
     sources in Compile := Seq.empty,
     onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
       |This build definition has an EXPERIMENTAL status. If you are not
