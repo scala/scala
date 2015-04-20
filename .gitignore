@@ -50,5 +50,7 @@
 /qbin
 
 # Sbt's target directories
-**/target/
+/target/
+/project/target/
+/project/project/target
 /build-sbt/
