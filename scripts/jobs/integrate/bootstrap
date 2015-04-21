@@ -108,8 +108,22 @@ rm -rf $baseDir/resolutionScratch_
 mkdir -p $baseDir/resolutionScratch_
 
 # repo used to publish "locker" scala to (to start the bootstrap)
-privateCred="private-repo"
-privateRepo="http://private-repo.typesafe.com/typesafe/scala-release-temp/"
+releaseTempRepoCred="private-repo"
+releaseTempRepoUrl=${releaseTempRepoUrl-"http://private-repo.typesafe.com/typesafe/scala-release-temp/"}
+
+# Used below in sbtArgs since we use a dedicated repository to share artifcacts between jobs,
+# so we need to configure SBT to use these rather than its default, Maven Central.
+# See http://www.scala-sbt.org/0.13/docs/Proxy-Repositories.html
+sbtRepositoryConfig="$scriptsDir/repositories-scala-release"
+cat > "$sbtRepositoryConfig" << EOF
+[repositories]
+  plugins: http://dl.bintray.com/sbt/sbt-plugin-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
+  private-repo: $releaseTempRepoUrl
+  typesafe-ivy-releases: http://repo.typesafe.com/typesafe/ivy-releases/, [organization]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext], bootOnly
+  sbt-plugin-releases: http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases, [organization]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
+  maven-central
+  local
+EOF
 
 ##### git
 gfxd() {
@@ -158,7 +172,7 @@ function st_stagingRepoClose() {
 # the old version (on jenkins, and I don't want to upgrade for risk of breaking other builds) honors -sbt-dir
 # the new version of sbt-extras ignores sbt-dir, so we pass it in as -Dsbt.global.base
 # need to set sbt-dir to one that has the gpg.sbt plugin config
-sbtArgs="-no-colors -ivy $baseDir/ivy2 -Dsbt.override.build.repos=true -Dsbt.repository.config=$scriptsDir/repositories-scala-release -Dsbt.global.base=$HOME/.sbt/0.13 -sbt-dir $HOME/.sbt/0.13"
+sbtArgs="-no-colors -ivy $baseDir/ivy2 -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig -Dsbt.global.base=$HOME/.sbt/0.13 -sbt-dir $HOME/.sbt/0.13"
 
 sbtBuild() {
   echo "### sbtBuild: "$sbtCmd $sbtArgs "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
@@ -457,8 +471,8 @@ bootstrap() {
   # in sabbus lingo, the resulting Scala build will be used as starr to build the released Scala compiler
   ant -Dmaven.version.number=$SCALA_VER\
       -Dremote.snapshot.repository=NOPE\
-      -Dremote.release.repository=$privateRepo\
-      -Drepository.credentials.id=$privateCred\
+      -Dremote.release.repository=$releaseTempRepoUrl\
+      -Drepository.credentials.id=$releaseTempRepoCred\
       -Dscalac.args.optimise=-optimise\
       -Ddocs.skip=1\
       -Dlocker.skip=1\
@@ -471,7 +485,7 @@ bootstrap() {
   # publish to our internal repo (so we can resolve the modules in the scala build below)
   # we only need to build the modules necessary to build Scala itself
   # since the version of locker and quick are the same
-  publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-private-repo")' "set every publishTo := Some(\"private-repo\" at \"$privateRepo\")")
+  publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-private-repo")' "set every publishTo := Some(\"private-repo\" at \"$releaseTempRepoUrl\")")
   buildTasks=($publishPrivateTask)
   buildModules
 
@@ -496,14 +510,14 @@ bootstrap() {
   # which is fully cross-versioned (for $SCALA_VER, the version we're releasing)
   ant -Dstarr.version=$SCALA_VER\
       -Dscala.full.version=$SCALA_VER\
-      -Dextra.repo.url=$privateRepo\
+      -Dextra.repo.url=$releaseTempRepoUrl\
       -Dmaven.version.suffix=$SCALA_VER_SUFFIX\
       ${updatedModuleVersions[@]} \
       -Dupdate.versions=1\
       -Dscaladoc.git.commit=$SCALADOC_SOURCE_LINKS_VER\
       -Dremote.snapshot.repository=NOPE\
-      -Dremote.release.repository=$privateRepo\
-      -Drepository.credentials.id=$privateCred\
+      -Dremote.release.repository=$releaseTempRepoUrl\
+      -Drepository.credentials.id=$releaseTempRepoCred\
       -Dscalac.args.optimise=-optimise\
       $antBuildTask $publishPrivateTask
 

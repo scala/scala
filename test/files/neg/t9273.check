@@ -1,0 +1,10 @@
+t9273.scala:2: error: class type required but ? found
+  val foo: Class[_] = classOf            // error without position, line or file
+                      ^
+t9273.scala:3: error: not found: type X
+  val foo1: Class[_] = classOf[X]        // good error, all info contained
+                               ^
+t9273.scala:7: error: not found: type X
+  val foo4: Class[_] = Predef.classOf[X] // good error, all info contained
+                                      ^
+three errors found
