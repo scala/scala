@@ -11,7 +11,7 @@ case $prDryRun in
     # (in that sense it's locker, since it was built with starr by that upstream job)
     ant -Dstarr.version=$scalaVersion \
        -Dscalac.args.optimise=-optimise \
-       -Dlocker.skip=1 -Dstarr.use.released=1 -Dextra.repo.url=$prRepoUrl \
+       -Dlocker.skip=1 -Dextra.repo.url=$prRepoUrl \
        $testExtraArgs ${testTarget-test.core docs.done}
     ;;
 esac
