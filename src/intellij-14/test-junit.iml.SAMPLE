@@ -9,7 +9,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="junit" level="project" />
     <orderEntry type="library" name="scaladoc-deps" level="project" />
-    <orderEntry type="module" module-name="actors" />
     <orderEntry type="module" module-name="asm" />
     <orderEntry type="module" module-name="compiler" />
     <orderEntry type="module" module-name="forkjoin" />

@@ -126,7 +126,7 @@
     <attribute name="stage"/>
     <!-- current stage (locker, quick, strap) -->
     <attribute name="project"/>
-    <!-- project: library/reflect/compiler/actors -->
+    <!-- project: library/reflect/compiler -->
     <attribute name="destproject" default="@{project}"/>
     <!-- overrides the output directory; used when building multiple projects into the same directory-->
     <attribute name="args" default=""/>
@@ -193,7 +193,7 @@
     <attribute name="stage"/>
     <!-- current stage (locker, quick, strap) -->
     <attribute name="project"/>
-    <!-- project: library/reflect/compiler/actors -->
+    <!-- project: library/reflect/compiler -->
     <attribute name="srcpath" default="NOT SET"/>
     <!-- needed to compile the library -->
     <attribute name="args" default=""/>
@@ -262,7 +262,7 @@
     <attribute name="stage"/>
     <!-- current stage (locker, quick, strap) -->
     <attribute name="project"/>
-    <!-- project: library/reflect/compiler/actors -->
+    <!-- project: library/reflect/compiler -->
     <attribute name="srcpath" default="NOT SET"/>
     <!-- needed to compile the library -->
     <attribute name="args" default=""/>
@@ -598,7 +598,6 @@
           <filter token="SNAPSHOT_REPOSITORY"        value="${remote.snapshot.repository}" />
           <filter token="JLINE_VERSION"              value="${jline.version}" />
           <filter token="AKKA_ACTOR_VERSION"         value="${akka-actor.version.number}" />
-          <filter token="ACTORS_MIGRATION_VERSION"   value="${actors-migration.version.number}" />
 
           <!-- TODO modularize compiler.
           <filter token="SCALA_COMPILER_DOC_VERSION" value="${scala-compiler-doc.version.number}" />
@@ -737,7 +736,6 @@
       <deploy-one name="scala-compiler-interactive" local="@{local}" signed="@{signed}"/>
       -->
 
-      <deploy-one name="scala-actors"      local="@{local}" signed="@{signed}"/>
       <deploy-one name="scalap"            local="@{local}" signed="@{signed}"/>
     </sequential>
   </macrodef>

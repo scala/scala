@@ -256,18 +256,6 @@ buildSwing() {
   fi
 }
 
-buildActorsMigration(){
-  if [ "$ACTORS_MIGRATION_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang"  "scala-actors-migration" $ACTORS_MIGRATION_VER )
-  then echo "Found scala-actors-migration $ACTORS_MIGRATION_VER; not building."
-  else
-    update scala actors-migration "$ACTORS_MIGRATION_REF" && gfxd
-    # not running tests because
-    # [error] Test scala.actors.migration.NestedReact.testNestedReactAkka failed: java.util.concurrent.TimeoutException: Futures timed out after [20 seconds]
-    sbtBuild 'set version := "'$ACTORS_MIGRATION_VER'"' $clean "${buildTasks[@]}"
-    ACTORS_MIGRATION_BUILT="yes"
-  fi
-}
-
 buildScalacheck(){
   if [ "$SCALACHECK_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scalacheck"  "scalacheck" $SCALACHECK_VER )
   then echo "Found scalacheck $SCALACHECK_VER; not building."
@@ -283,7 +271,6 @@ buildModules() {
   buildXML
   buildParsers
   buildSwing
-  buildActorsMigration
   buildScalacheck
   buildPartest
   # buildPartestIface
@@ -365,7 +352,6 @@ deriveModuleVersions() {
                   XML_VER=${XML_VER-$scala_xml_version_number}
               PARSERS_VER=${PARSERS_VER-$scala_parser_combinators_version_number}
                 SWING_VER=${SWING_VER-$scala_swing_version_number}
-     ACTORS_MIGRATION_VER=${ACTORS_MIGRATION_VER-$actors_migration_version_number}
               PARTEST_VER=${PARTEST_VER-$partest_version_number}
            SCALACHECK_VER=${SCALACHECK_VER-$scalacheck_version_number}
 
@@ -373,7 +359,6 @@ deriveModuleVersions() {
                   XML_REF=${XML_REF-"v$XML_VER"}
               PARSERS_REF=${PARSERS_REF-"v$PARSERS_VER"}
                 SWING_REF=${SWING_REF-"v$SWING_VER"}
-     ACTORS_MIGRATION_REF=${ACTORS_MIGRATION_REF-"v$ACTORS_MIGRATION_VER"}
               PARTEST_REF=${PARTEST_REF-"v$PARTEST_VER"}
         # PARTEST_IFACE_REF=${PARTEST_IFACE_REF-"v$PARTEST_IFACE_VER"}
            SCALACHECK_REF=${SCALACHECK_REF-"$SCALACHECK_VER"}
@@ -381,21 +366,18 @@ deriveModuleVersions() {
                  XML_VER=${XML_VER-$(deriveVersion scala scala-xml "$XML_REF")}
              PARSERS_VER=${PARSERS_VER-$(deriveVersion scala scala-parser-combinators "$PARSERS_REF")}
                SWING_VER=${SWING_VER-$(deriveVersion scala scala-swing "$SWING_REF")}
-    ACTORS_MIGRATION_VER=${ACTORS_MIGRATION_VER-$(deriveVersion scala actors-migration "$ACTORS_MIGRATION_REF")}
              PARTEST_VER=${PARTEST_VER-$(deriveVersion scala scala-partest "$PARTEST_REF")}
           SCALACHECK_VER=${SCALACHECK_VER-$(deriveVersionAnyTag rickynils scalacheck "$SCALACHECK_REF")}
 
                  XML_REF=${XML_REF-"HEAD"}
              PARSERS_REF=${PARSERS_REF-"HEAD"}
                SWING_REF=${SWING_REF-"HEAD"}
-    ACTORS_MIGRATION_REF=${ACTORS_MIGRATION_REF-"HEAD"}
              PARTEST_REF=${PARTEST_REF-"HEAD"}
        # PARTEST_IFACE_REF=${PARTEST_IFACE_REF-"HEAD"}
           SCALACHECK_REF=${SCALACHECK_REF-"HEAD"}
   fi
 
   echo "Module versions (versioning strategy: $moduleVersioning):"
-  echo "ACTORS_MIGRATION = $ACTORS_MIGRATION_VER at $ACTORS_MIGRATION_REF"
   echo "PARSERS          = $PARSERS_VER at $PARSERS_REF"
   echo "PARTEST          = $PARTEST_VER at $PARTEST_REF"
   echo "SCALACHECK       = $SCALACHECK_VER at $SCALACHECK_REF"
@@ -411,7 +393,6 @@ constructUpdatedModuleVersions() {
   # force the new module versions for building the core. these may be different from the values in versions.properties,
   # either because the variables (XML_VER) were provided, or because we're building the modules from HEAD.
   # in the common case, the values are the same as in versions.properties.
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dactors-migration.version.number=$ACTORS_MIGRATION_VER")
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-parser-combinators.version.number=$PARSERS_VER")
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-swing.version.number=$SWING_VER")
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-xml.version.number=$XML_VER")

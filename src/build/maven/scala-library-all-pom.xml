@@ -59,11 +59,6 @@
       <artifactId>akka-actor_@SCALA_BINARY_VERSION@</artifactId>
       <version>@AKKA_ACTOR_VERSION@</version>
     </dependency>
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-actors-migration_@SCALA_BINARY_VERSION@</artifactId>
-      <version>@ACTORS_MIGRATION_VERSION@</version>
-    </dependency>
   </dependencies>
   <developers>
     <developer>
