@@ -1141,16 +1141,12 @@ abstract class ClassfileParser {
     private def innerSymbol(entry: InnerClassEntry): Symbol = {
       val name      = entry.originalName.toTypeName
       val enclosing = entry.enclosing
-      def getMember = (
+      val member = (
         if (enclosing == clazz) entry.scope lookup name
         else lookupMemberAtTyperPhaseIfPossible(enclosing, name)
       )
-      getMember
-      /*  There used to be an assertion that this result is not NoSymbol; changing it to an error
-       *  revealed it had been going off all the time, but has been swallowed by a catch t: Throwable
-       *  in Repository.scala. Since it has been accomplishing nothing except misleading anyone who
-       *  thought it wasn't triggering, I removed it entirely.
-       */
+      def newStub = enclosing.newStubSymbol(name, s"Unable to locate class corresponding to inner class entry for $name in owner ${entry.outerName}")
+      member.orElse(newStub)
     }
   }
 
