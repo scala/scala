@@ -3,7 +3,7 @@ package api
 
 trait Quasiquotes { self: Universe =>
 
-  /** Implicit class that introduces `q`, `tq`, `cq,` `p` and `fq` string interpolators
+  /** Implicit class that introduces `q`, `tq`, `cq,` `pq` and `fq` string interpolators
    *  that are also known as quasiquotes. With their help you can easily manipulate
    *  Scala reflection ASTs.
    *
