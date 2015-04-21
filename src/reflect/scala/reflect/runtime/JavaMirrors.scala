@@ -1285,16 +1285,12 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       jclazz getDeclaredConstructor (effectiveParamClasses: _*)
     }
 
-    private def jArrayClass(elemClazz: jClass[_]): jClass[_] = {
-      jArray.newInstance(elemClazz, 0).getClass
-    }
-
     /** The Java class that corresponds to given Scala type.
      *  Pre: Scala type is already transformed to Java level.
      */
     def typeToJavaClass(tpe: Type): jClass[_] = tpe match {
       case ExistentialType(_, rtpe)                  => typeToJavaClass(rtpe)
-      case TypeRef(_, ArrayClass, List(elemtpe))     => jArrayClass(typeToJavaClass(elemtpe))
+      case TypeRef(_, ArrayClass, List(elemtpe))     => ScalaRunTime.arrayClass(typeToJavaClass(elemtpe))
       case TypeRef(_, sym: ClassSymbol, _)           => classToJava(sym.asClass)
       case tpe @ TypeRef(_, sym: AliasTypeSymbol, _) => typeToJavaClass(tpe.dealias)
       case SingleType(_, sym: ModuleSymbol)          => classToJava(sym.moduleClass.asClass)

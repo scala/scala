@@ -60,13 +60,15 @@ abstract class Plugin {
    *  @return true to continue, or false to opt out
    */
   def init(options: List[String], error: String => Unit): Boolean = {
-    if (!options.isEmpty) error(s"Error: $name takes no options")
+    // call to deprecated method required here, we must continue to support
+    // code that subclasses that override `processOptions`.
+    processOptions(options, error)
     true
   }
 
   @deprecated("use Plugin#init instead", since="2.11")
   def processOptions(options: List[String], error: String => Unit): Unit = {
-    init(options, error)
+    if (!options.isEmpty) error(s"Error: $name takes no options")
   }
 
   /** A description of this plugin's options, suitable as a response

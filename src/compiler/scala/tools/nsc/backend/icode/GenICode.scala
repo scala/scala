@@ -883,7 +883,12 @@ abstract class GenICode extends SubComponent {
                   case None =>
                     val saved = settings.uniqid
                     settings.uniqid.value = true
-                    try abort(s"symbol $sym does not exist in ${ctx.method}, which contains locals ${ctx.method.locals.mkString(",")}")
+                    try {
+                      val methodCode = unit.body.collect { case dd: DefDef
+                        if dd.symbol == ctx.method.symbol => showCode(dd);
+                      }.headOption.getOrElse("<unknown>")
+                      abort(s"symbol $sym does not exist in ${ctx.method}, which contains locals ${ctx.method.locals.mkString(",")}. \nMethod code: $methodCode")
+                    }
                     finally settings.uniqid.value = saved
                 }
               }

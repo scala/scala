@@ -42,14 +42,14 @@ class EmptyLabelsAndLineNumbersTest {
     )
 
     val method = genMethod()(ops.map(_._1): _*)
-    assertTrue(localOpt.removeEmptyLineNumbers(method))
+    assertTrue(LocalOptImpls.removeEmptyLineNumbers(method))
     assertSameCode(instructionsFromMethod(method), ops.filter(_._2).map(_._1))
   }
 
   @Test
   def badlyLocatedLineNumbers(): Unit = {
     def t(ops: Instruction*) =
-      assertThrows[AssertionError](localOpt.removeEmptyLineNumbers(genMethod()(ops: _*)))
+      assertThrows[AssertionError](LocalOptImpls.removeEmptyLineNumbers(genMethod()(ops: _*)))
 
     // line numbers have to be right after their referenced label node
     t(LineNumber(0, Label(1)), Label(1))
@@ -88,7 +88,7 @@ class EmptyLabelsAndLineNumbersTest {
     )
 
     val method = genMethod(handlers = handler)(ops(2, 3, 8, 8, 9, 11).map(_._1): _*)
-    assertTrue(localOpt.removeEmptyLabelNodes(method))
+    assertTrue(LocalOptImpls.removeEmptyLabelNodes(method))
     val m = convertMethod(method)
     assertSameCode(m.instructions, ops(1, 1, 7, 7, 7, 10).filter(_._2).map(_._1))
     assertTrue(m.handlers match {

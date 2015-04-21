@@ -16,7 +16,7 @@ import scala.collection.convert.decorateAsJava._
 import AsmUtils._
 import BytecodeUtils._
 import collection.mutable
-import scala.tools.asm.tree.analysis.{SourceInterpreter, Analyzer}
+import scala.tools.asm.tree.analysis.SourceInterpreter
 import BackendReporting._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 
@@ -24,21 +24,39 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   import btypes._
   import callGraph._
 
+  def eliminateUnreachableCodeAndUpdateCallGraph(methodNode: MethodNode, definingClass: InternalName): Unit = {
+    localOpt.minimalRemoveUnreachableCode(methodNode, definingClass) foreach {
+      case invocation: MethodInsnNode => callGraph.callsites.remove(invocation)
+      case _ =>
+    }
+  }
+
   def runInliner(): Unit = {
     rewriteFinalTraitMethodInvocations()
 
     for (request <- collectAndOrderInlineRequests) {
       val Right(callee) = request.callee // collectAndOrderInlineRequests returns callsites with a known callee
 
-      val r = inline(request.callsiteInstruction, request.callsiteStackHeight, request.callsiteMethod, request.callsiteClass,
-        callee.callee, callee.calleeDeclarationClass,
-        receiverKnownNotNull = false, keepLineNumbers = false)
+      // Inlining a method can create unreachable code. Example:
+      //   def f = throw e
+      //   def g = f; println() // println is unreachable after inlining f
+      // If we have an inline request for a call to g, and f has been already inlined into g, we
+      // need to run DCE before inlining g.
+      eliminateUnreachableCodeAndUpdateCallGraph(callee.callee, callee.calleeDeclarationClass.internalName)
 
-      for (warning <- r) {
-        if ((callee.annotatedInline && btypes.warnSettings.atInlineFailed) || warning.emitWarning(warnSettings)) {
-          val annotWarn = if (callee.annotatedInline) " is annotated @inline but" else ""
-          val msg = s"${BackendReporting.methodSignature(callee.calleeDeclarationClass.internalName, callee.callee)}$annotWarn could not be inlined:\n$warning"
-          backendReporting.inlinerWarning(request.callsitePosition, msg)
+      // DCE above removes unreachable callsites from the call graph. If the inlining request denotes
+      // such an eliminated callsite, do nothing.
+      if (callGraph.callsites contains request.callsiteInstruction) {
+        val r = inline(request.callsiteInstruction, request.callsiteStackHeight, request.callsiteMethod, request.callsiteClass,
+          callee.callee, callee.calleeDeclarationClass,
+          receiverKnownNotNull = false, keepLineNumbers = false)
+
+        for (warning <- r) {
+          if ((callee.annotatedInline && btypes.compilerSettings.YoptWarningEmitAtInlineFailed) || warning.emitWarning(compilerSettings)) {
+            val annotWarn = if (callee.annotatedInline) " is annotated @inline but" else ""
+            val msg = s"${BackendReporting.methodSignature(callee.calleeDeclarationClass.internalName, callee.callee)}$annotWarn could not be inlined:\n$warning"
+            backendReporting.inlinerWarning(request.callsitePosition, msg)
+          }
         }
       }
     }
@@ -75,7 +93,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         val res = doInlineCallsite(callsite)
 
         if (!res) {
-          if (annotatedInline && btypes.warnSettings.atInlineFailed) {
+          if (annotatedInline && btypes.compilerSettings.YoptWarningEmitAtInlineFailed) {
             // if the callsite is annotated @inline, we report an inline warning even if the underlying
             // reason is, for example, mixed compilation (which has a separate -Yopt-warning flag).
             def initMsg = s"${BackendReporting.methodSignature(calleeDeclClass.internalName, callee)} is annotated @inline but cannot be inlined"
@@ -86,7 +104,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
               backendReporting.inlinerWarning(pos, s"$initMsg: the method is not final and may be overridden." + warnMsg)
             else
               backendReporting.inlinerWarning(pos, s"$initMsg." + warnMsg)
-          } else if (warning.isDefined && warning.get.emitWarning(warnSettings)) {
+          } else if (warning.isDefined && warning.get.emitWarning(compilerSettings)) {
             // when annotatedInline is false, and there is some warning, the callsite metadata is possibly incomplete.
             backendReporting.inlinerWarning(pos, s"there was a problem determining if method ${callee.name} can be inlined: \n"+ warning.get)
           }
@@ -95,7 +113,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         res
 
       case Callsite(ins, _, _, Left(warning), _, _, pos) =>
-        if (warning.emitWarning(warnSettings))
+        if (warning.emitWarning(compilerSettings))
           backendReporting.inlinerWarning(pos, s"failed to determine if ${ins.name} should be inlined:\n$warning")
         false
     }).toList
@@ -106,7 +124,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    */
   def doInlineCallsite(callsite: Callsite): Boolean = callsite match {
     case Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, _, annotatedInline, _, warning)), _, _, pos) =>
-      annotatedInline && safeToInline
+      if (compilerSettings.YoptInlineHeuristics.value == "everything") safeToInline
+      else annotatedInline && safeToInline
 
     case _ => false
   }
@@ -167,6 +186,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         // VerifyError. We run a `SourceInterpreter` to find all producer instructions of the
         // receiver value and add a cast to the self type after each.
         if (!selfTypeOk) {
+          // there's no need to run eliminateUnreachableCode here. building the call graph does that
+          // already, no code can become unreachable in the meantime.
           val analyzer = new AsmAnalyzer(callsite.callsiteMethod, callsite.callsiteClass.internalName, new SourceInterpreter)
           val receiverValue = analyzer.frameAt(callsite.callsiteInstruction).peekDown(traitMethodArgumentTypes.length)
           for (i <- receiverValue.insns.asScala) {
@@ -311,6 +332,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       val localVarShift = callsiteMethod.maxLocals
       clonedInstructions.iterator.asScala foreach {
         case varInstruction: VarInsnNode => varInstruction.`var` += localVarShift
+        case iinc: IincInsnNode          => iinc.`var` += localVarShift
         case _ => ()
       }
 
@@ -433,6 +455,9 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       // Remove the elided invocation from the call graph
       callGraph.callsites.remove(callsiteInstruction)
 
+      // Inlining a method body can render some code unreachable, see example above (in runInliner).
+      unreachableCodeEliminated -= callsiteMethod
+
       callsiteMethod.maxLocals += returnType.getSize + callee.maxLocals
       callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, callee.maxStack + callsiteStackHeight)
 
@@ -472,10 +497,18 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       callsiteStackHeight > expectedArgs
     }
 
-    if (isSynchronizedMethod(callee)) {
+    if (codeSizeOKForInlining(callsiteMethod, callee)) {
+      Some(ResultingMethodTooLarge(
+        calleeDeclarationClass.internalName, callee.name, callee.desc,
+        callsiteClass.internalName, callsiteMethod.name, callsiteMethod.desc))
+    } else if (isSynchronizedMethod(callee)) {
       // Could be done by locking on the receiver, wrapping the inlined code in a try and unlocking
       // in finally. But it's probably not worth the effort, scala never emits synchronized methods.
       Some(SynchronizedMethod(calleeDeclarationClass.internalName, callee.name, callee.desc))
+    } else if (isStrictfpMethod(callsiteMethod) != isStrictfpMethod(callee)) {
+      Some(StrictfpMismatch(
+        calleeDeclarationClass.internalName, callee.name, callee.desc,
+        callsiteClass.internalName, callsiteMethod.name, callsiteMethod.desc))
     } else if (!callee.tryCatchBlocks.isEmpty && stackHasNonParameters) {
       Some(MethodWithHandlerCalledOnNonEmptyStack(
         calleeDeclarationClass.internalName, callee.name, callee.desc,

@@ -10,6 +10,7 @@ package opt
 import scala.annotation.{tailrec, switch}
 import scala.collection.mutable
 import scala.reflect.internal.util.Collections._
+import scala.tools.asm.commons.CodeSizeEvaluator
 import scala.tools.asm.tree.analysis._
 import scala.tools.asm.{MethodWriter, ClassWriter, Label, Opcodes}
 import scala.tools.asm.tree._
@@ -20,6 +21,12 @@ import scala.collection.convert.decorateAsJava._
 import scala.tools.nsc.backend.jvm.BTypes._
 
 object BytecodeUtils {
+
+  // http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.9.1
+  final val maxJVMMethodSize         = 65535
+
+  // 5% margin, more than enough for the instructions added by the inliner (store / load args, null check for instance methods)
+  final val maxMethodSizeAfterInline = maxJVMMethodSize - (maxJVMMethodSize / 20)
 
   object Goto {
     def unapply(instruction: AbstractInsnNode): Option[JumpInsnNode] = {
@@ -83,9 +90,13 @@ object BytecodeUtils {
 
   def isSynchronizedMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_SYNCHRONIZED) != 0
 
+  def isNativeMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_NATIVE) != 0
+
   def isFinalClass(classNode: ClassNode): Boolean = (classNode.access & Opcodes.ACC_FINAL) != 0
 
   def isFinalMethod(methodNode: MethodNode): Boolean = (methodNode.access & (Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC)) != 0
+
+  def isStrictfpMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_STRICT) != 0
 
   def nextExecutableInstruction(instruction: AbstractInsnNode, alsoKeep: AbstractInsnNode => Boolean = Set()): Option[AbstractInsnNode] = {
     var result = instruction
@@ -215,13 +226,28 @@ object BytecodeUtils {
    * to create a separate visitor for computing those values, duplicating the functionality from the
    * MethodWriter.
    */
-  def computeMaxLocalsMaxStack(method: MethodNode) {
+  def computeMaxLocalsMaxStack(method: MethodNode): Unit = {
     val cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
     val excs = method.exceptions.asScala.toArray
     val mw = cw.visitMethod(method.access, method.name, method.desc, method.signature, excs).asInstanceOf[MethodWriter]
     method.accept(mw)
     method.maxLocals = mw.getMaxLocals
     method.maxStack = mw.getMaxStack
+  }
+
+  def codeSizeOKForInlining(caller: MethodNode, callee: MethodNode): Boolean = {
+    // Looking at the implementation of CodeSizeEvaluator, all instructions except tableswitch and
+    // lookupswitch are <= 8 bytes. These should be rare enough for 8 to be an OK rough upper bound.
+    def roughUpperBound(methodNode: MethodNode): Int = methodNode.instructions.size * 8
+
+    def maxSize(methodNode: MethodNode): Int = {
+      val eval = new CodeSizeEvaluator(null)
+      methodNode.accept(eval)
+      eval.getMaxSize
+    }
+
+    (roughUpperBound(caller) + roughUpperBound(callee) > maxMethodSizeAfterInline) &&
+      (maxSize(caller) + maxSize(callee) > maxMethodSizeAfterInline)
   }
 
   def removeLineNumberNodes(classNode: ClassNode): Unit = {

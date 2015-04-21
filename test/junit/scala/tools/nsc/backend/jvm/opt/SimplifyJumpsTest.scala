@@ -26,7 +26,7 @@ class SimplifyJumpsTest {
       Op(RETURN)
     )
     val method = genMethod()(ops: _*)
-    assertTrue(localOpt.simplifyJumps(method))
+    assertTrue(LocalOptImpls.simplifyJumps(method))
     assertSameCode(instructionsFromMethod(method), Op(RETURN) :: ops.tail)
   }
 
@@ -45,7 +45,7 @@ class SimplifyJumpsTest {
       Jump(GOTO, Label(2)) :: // replaced by ATHROW
       rest: _*
     )
-    assertTrue(localOpt.simplifyJumps(method))
+    assertTrue(LocalOptImpls.simplifyJumps(method))
     assertSameCode(instructionsFromMethod(method), Op(ACONST_NULL) :: Op(ATHROW) :: rest)
   }
 
@@ -66,11 +66,11 @@ class SimplifyJumpsTest {
       Op(RETURN)
     )
     val method = genMethod(handlers = handler)(initialInstrs: _*)
-    assertFalse(localOpt.simplifyJumps(method))
+    assertFalse(LocalOptImpls.simplifyJumps(method))
     assertSameCode(instructionsFromMethod(method), initialInstrs)
 
     val optMethod = genMethod()(initialInstrs: _*) // no handler
-    assertTrue(localOpt.simplifyJumps(optMethod))
+    assertTrue(LocalOptImpls.simplifyJumps(optMethod))
     assertSameCode(instructionsFromMethod(optMethod).take(3), List(Label(1), Op(ACONST_NULL), Op(ATHROW)))
   }
 
@@ -91,7 +91,7 @@ class SimplifyJumpsTest {
       Op(IRETURN)
     )
     val method = genMethod()(begin ::: rest: _*)
-    assertTrue(localOpt.simplifyJumps(method))
+    assertTrue(LocalOptImpls.simplifyJumps(method))
     assertSameCode(
       instructionsFromMethod(method),
       List(VarOp(ILOAD, 1), Jump(IFLT, Label(3))) ::: rest.tail )
@@ -99,7 +99,7 @@ class SimplifyJumpsTest {
     // no label allowed between begin and rest. if there's another label, then there could be a
     // branch that label. eliminating the  GOTO would change the behavior.
     val nonOptMethod = genMethod()(begin ::: Label(22) :: rest: _*)
-    assertFalse(localOpt.simplifyJumps(nonOptMethod))
+    assertFalse(LocalOptImpls.simplifyJumps(nonOptMethod))
   }
 
   @Test
@@ -116,7 +116,7 @@ class SimplifyJumpsTest {
     // ensures that the goto is safely removed. ASM supports removing while iterating, but not the
     // next element of the current. Here, the current is the IFGE, the next is the GOTO.
     val method = genMethod()(code(Jump(IFGE, Label(2)), Jump(GOTO, Label(3))): _*)
-    assertTrue(localOpt.simplifyJumps(method))
+    assertTrue(LocalOptImpls.simplifyJumps(method))
     assertSameCode(instructionsFromMethod(method), code(Jump(IFLT, Label(3))))
   }
 
@@ -131,7 +131,7 @@ class SimplifyJumpsTest {
       Op(IRETURN)
     )
     val method = genMethod()(ops: _*)
-    assertTrue(localOpt.simplifyJumps(method))
+    assertTrue(LocalOptImpls.simplifyJumps(method))
     assertSameCode(instructionsFromMethod(method), ops.tail)
   }
 
@@ -157,7 +157,7 @@ class SimplifyJumpsTest {
       Op(IRETURN)
     )
     val method = genMethod()(ops(1, 2, 3): _*)
-    assertTrue(localOpt.simplifyJumps(method))
+    assertTrue(LocalOptImpls.simplifyJumps(method))
     assertSameCode(instructionsFromMethod(method), ops(3, 3, 3))
   }
 
@@ -181,7 +181,7 @@ class SimplifyJumpsTest {
     )
 
     val method = genMethod()(ops(2): _*)
-    assertTrue(localOpt.simplifyJumps(method))
+    assertTrue(LocalOptImpls.simplifyJumps(method))
     assertSameCode(instructionsFromMethod(method), ops(3))
   }
 
@@ -202,7 +202,7 @@ class SimplifyJumpsTest {
     )
 
     val method = genMethod()(ops(Jump(IFGE, Label(1))): _*)
-    assertTrue(localOpt.simplifyJumps(method))
+    assertTrue(LocalOptImpls.simplifyJumps(method))
     assertSameCode(instructionsFromMethod(method), ops(Op(POP)))
   }
 
@@ -215,7 +215,7 @@ class SimplifyJumpsTest {
       Jump(GOTO, Label(1))
     )
     val method = genMethod()(ops(List(Jump(IF_ICMPGE, Label(1)))): _*)
-    assertTrue(localOpt.simplifyJumps(method))
+    assertTrue(LocalOptImpls.simplifyJumps(method))
     assertSameCode(instructionsFromMethod(method), ops(List(Op(POP), Op(POP))))
   }
 }
