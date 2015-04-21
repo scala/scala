@@ -182,6 +182,7 @@ sbtBuild() {
 sbtResolve() {
   cd $baseDir/resolutionScratch_
   touch build.sbt
+  # TODO lry: not needed after removing continuations
   cross=${4-binary} # Disabled / binary / full
   echo "### sbtResolve: $sbtCmd $sbtArgs " "${scalaVersionTasks[@]}" "\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
   $sbtCmd $sbtArgs "${scalaVersionTasks[@]}" \
@@ -245,27 +246,6 @@ buildPartest() {
 #   fi
 # }
 
-buildContinuations() {
-  if [ "$CONT_PLUG_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.plugins"  "scala-continuations-plugin" $CONTINUATIONS_VER full )
-  then echo "Found scala-continuations-plugin $CONTINUATIONS_VER; not building."
-  else
-    update scala scala-continuations $CONTINUATIONS_REF && gfxd
-
-    $sbtCmd $sbtArgs 'project plugin' "${scalaVersionTasks[@]}" "${publishTasks[@]}" \
-      'set version := "'$CONTINUATIONS_VER'"' $clean "compile:package" test "${buildTasks[@]}" # https://github.com/scala/scala-continuations/pull/4
-    CONT_PLUG_BUILT="yes"
-  fi
-
-  if [ "$CONT_LIB_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.plugins"  "scala-continuations-library" $CONTINUATIONS_VER )
-  then echo "Found scala-continuations-library $CONTINUATIONS_VER; not building."
-  else
-    update scala scala-continuations $CONTINUATIONS_REF && gfxd
-    $sbtCmd $sbtArgs 'project library' "${scalaVersionTasks[@]}" "${publishTasks[@]}" \
-      'set version := "'$CONTINUATIONS_VER'"' $clean test "${buildTasks[@]}"
-    CONT_LIB_BUILT="yes"
-  fi
-}
-
 buildSwing() {
   if [ "$SWING_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-swing" $SWING_VER )
   then echo "Found scala-swing $SWING_VER; not building."
@@ -283,7 +263,7 @@ buildActorsMigration(){
     update scala actors-migration "$ACTORS_MIGRATION_REF" && gfxd
     # not running tests because
     # [error] Test scala.actors.migration.NestedReact.testNestedReactAkka failed: java.util.concurrent.TimeoutException: Futures timed out after [20 seconds]
-    sbtBuild 'set version := "'$ACTORS_MIGRATION_VER'"' 'set VersionKeys.continuationsVersion := "'$CONTINUATIONS_VER'"' $clean "${buildTasks[@]}"
+    sbtBuild 'set version := "'$ACTORS_MIGRATION_VER'"' $clean "${buildTasks[@]}"
     ACTORS_MIGRATION_BUILT="yes"
   fi
 }
@@ -302,7 +282,6 @@ buildScalacheck(){
 buildModules() {
   buildXML
   buildParsers
-  buildContinuations
   buildSwing
   buildActorsMigration
   buildScalacheck
@@ -385,7 +364,6 @@ deriveModuleVersions() {
     # use versions.properties as defaults when no version specified on command line
                   XML_VER=${XML_VER-$scala_xml_version_number}
               PARSERS_VER=${PARSERS_VER-$scala_parser_combinators_version_number}
-        CONTINUATIONS_VER=${CONTINUATIONS_VER-$scala_continuations_plugin_version_number}
                 SWING_VER=${SWING_VER-$scala_swing_version_number}
      ACTORS_MIGRATION_VER=${ACTORS_MIGRATION_VER-$actors_migration_version_number}
               PARTEST_VER=${PARTEST_VER-$partest_version_number}
@@ -394,7 +372,6 @@ deriveModuleVersions() {
      # If a _VER was not specified, the corresponding _REF will be non-empty by now (as specified, or HEAD)
                   XML_REF=${XML_REF-"v$XML_VER"}
               PARSERS_REF=${PARSERS_REF-"v$PARSERS_VER"}
-        CONTINUATIONS_REF=${CONTINUATIONS_REF-"v$CONTINUATIONS_VER"}
                 SWING_REF=${SWING_REF-"v$SWING_VER"}
      ACTORS_MIGRATION_REF=${ACTORS_MIGRATION_REF-"v$ACTORS_MIGRATION_VER"}
               PARTEST_REF=${PARTEST_REF-"v$PARTEST_VER"}
@@ -403,7 +380,6 @@ deriveModuleVersions() {
    else
                  XML_VER=${XML_VER-$(deriveVersion scala scala-xml "$XML_REF")}
              PARSERS_VER=${PARSERS_VER-$(deriveVersion scala scala-parser-combinators "$PARSERS_REF")}
-       CONTINUATIONS_VER=${CONTINUATIONS_VER-$(deriveVersion scala scala-continuations "$CONTINUATIONS_REF")}
                SWING_VER=${SWING_VER-$(deriveVersion scala scala-swing "$SWING_REF")}
     ACTORS_MIGRATION_VER=${ACTORS_MIGRATION_VER-$(deriveVersion scala actors-migration "$ACTORS_MIGRATION_REF")}
              PARTEST_VER=${PARTEST_VER-$(deriveVersion scala scala-partest "$PARTEST_REF")}
@@ -411,7 +387,6 @@ deriveModuleVersions() {
 
                  XML_REF=${XML_REF-"HEAD"}
              PARSERS_REF=${PARSERS_REF-"HEAD"}
-       CONTINUATIONS_REF=${CONTINUATIONS_REF-"HEAD"}
                SWING_REF=${SWING_REF-"HEAD"}
     ACTORS_MIGRATION_REF=${ACTORS_MIGRATION_REF-"HEAD"}
              PARTEST_REF=${PARTEST_REF-"HEAD"}
@@ -421,7 +396,6 @@ deriveModuleVersions() {
 
   echo "Module versions (versioning strategy: $moduleVersioning):"
   echo "ACTORS_MIGRATION = $ACTORS_MIGRATION_VER at $ACTORS_MIGRATION_REF"
-  echo "CONTINUATIONS    = $CONTINUATIONS_VER at $CONTINUATIONS_REF"
   echo "PARSERS          = $PARSERS_VER at $PARSERS_REF"
   echo "PARTEST          = $PARTEST_VER at $PARTEST_REF"
   echo "SCALACHECK       = $SCALACHECK_VER at $SCALACHECK_REF"
@@ -438,8 +412,6 @@ constructUpdatedModuleVersions() {
   # either because the variables (XML_VER) were provided, or because we're building the modules from HEAD.
   # in the common case, the values are the same as in versions.properties.
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dactors-migration.version.number=$ACTORS_MIGRATION_VER")
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-continuations-library.version.number=$CONTINUATIONS_VER")
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-continuations-plugin.version.number=$CONTINUATIONS_VER")
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-parser-combinators.version.number=$PARSERS_VER")
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-swing.version.number=$SWING_VER")
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-xml.version.number=$XML_VER")
@@ -506,10 +478,7 @@ bootstrap() {
   cd $baseDir
   rm -rf build/ # must leave everything else in $baseDir for downstream jobs
 
-  # scala.full.version determines the dependency of scala-dist on the continuations plugin,
-  # which is fully cross-versioned (for $SCALA_VER, the version we're releasing)
   ant -Dstarr.version=$SCALA_VER\
-      -Dscala.full.version=$SCALA_VER\
       -Dextra.repo.url=$releaseTempRepoUrl\
       -Dmaven.version.suffix=$SCALA_VER_SUFFIX\
       ${updatedModuleVersions[@]} \

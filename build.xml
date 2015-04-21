@@ -75,8 +75,8 @@ TODO:
   <target name="nightly"><optimized name="all.done"/></target>
   <target name="nightly.checkall"> <antcall target="all.done"> <param name="partest.scalac_opts" value="-Ycheck:all"/></antcall></target>
 
-  <!-- The IDE build requires actors/swing/continuations, so need to publish them during PR validation until they are modules -->
-  <target name="publish-opt-nodocs" description="Publishes Scala (optimized) without generating docs/testing (library/reflect/compiler/actors/swing/continuations).">
+  <!-- The IDE build requires actors/swing, so need to publish them during PR validation until they are modules -->
+  <target name="publish-opt-nodocs" description="Publishes Scala (optimized) without generating docs/testing (library/reflect/compiler/actors/swing).">
     <antcall target="publish">
       <param name="docs.skip" value="1"/>
       <param name="scalac.args.optimise" value="-optimise"/>
@@ -311,9 +311,6 @@ TODO:
            necessary cross suffix (usually something like "_2.11.0-M6". -->
       <prepareCross name="scala-xml" />
       <prepareCross name="scala-parser-combinators" />
-      <property name="scala-continuations-plugin.cross.suffix" value="_${scala.full.version}"/>
-      <prepareCross name="scala-continuations-plugin" />
-      <prepareCross name="scala-continuations-library"/>
       <prepareCross name="scala-swing"/>
       <prepareCross name="partest"/>
       <prepareCross name="scalacheck"/>
@@ -347,8 +344,6 @@ TODO:
         <artifact:remoteRepository refid="extra-repo"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-xml${scala-xml.cross}" version="${scala-xml.version.number}"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-parser-combinators${scala-parser-combinators.cross}" version="${scala-parser-combinators.version.number}"/>
-        <dependency groupId="org.scala-lang.plugins" artifactId="scala-continuations-plugin${scala-continuations-plugin.cross}"  version="${scala-continuations-plugin.version.number}"/>
-        <dependency groupId="org.scala-lang.plugins" artifactId="scala-continuations-library${scala-continuations-library.cross}" version="${scala-continuations-library.version.number}"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-swing${scala-swing.cross}" version="${scala-swing.version.number}"/>
       </artifact:dependencies>
 
@@ -367,8 +362,6 @@ TODO:
 
       <propertyForCrossedArtifact name="scala-parser-combinators" jar="org.scala-lang.modules:scala-parser-combinators"/>
       <propertyForCrossedArtifact name="scala-xml"                jar="org.scala-lang.modules:scala-xml"/>
-      <propertyForCrossedArtifact name="scala-continuations-plugin"  jar="org.scala-lang.plugins:scala-continuations-plugin"/>
-      <propertyForCrossedArtifact name="scala-continuations-library" jar="org.scala-lang.plugins:scala-continuations-library"/>
       <propertyForCrossedArtifact name="scala-swing"                 jar="org.scala-lang.modules:scala-swing"/>
 
       <!-- BND support -->
@@ -559,11 +552,8 @@ TODO:
       <echo message="Updating `versions.properties`:"/>
       <echo message="starr.version                              = ${starr.version}"/>
       <echo message="scala.binary.version                       = ${scala.binary.version}"/>
-      <echo message="scala.full.version                         = ${scala.full.version}"/>
       <echo message="scala-xml.version.number                   = ${scala-xml.version.number}"/>
       <echo message="scala-parser-combinators.version.number    = ${scala-parser-combinators.version.number}"/>
-      <echo message="scala-continuations-plugin.version.number  = ${scala-continuations-plugin.version.number}"/>
-      <echo message="scala-continuations-library.version.number = ${scala-continuations-library.version.number}"/>
       <echo message="scala-swing.version.number                 = ${scala-swing.version.number}"/>
       <echo message="akka-actor.version.number                  = ${akka-actor.version.number}"/>
       <echo message="actors-migration.version.number            = ${actors-migration.version.number}"/>
@@ -574,11 +564,8 @@ TODO:
       <propertyfile file="versions.properties">
         <entry key="starr.version"                              value="${starr.version}"/>
         <entry key="scala.binary.version"                       value="${scala.binary.version}"/>
-        <entry key="scala.full.version"                         value="${scala.full.version}"/>
         <entry key="scala-xml.version.number"                   value="${scala-xml.version.number}"/>
         <entry key="scala-parser-combinators.version.number"    value="${scala-parser-combinators.version.number}"/>
-        <entry key="scala-continuations-plugin.version.number"  value="${scala-continuations-plugin.version.number}"/>
-        <entry key="scala-continuations-library.version.number" value="${scala-continuations-library.version.number}"/>
         <entry key="scala-swing.version.number"                 value="${scala-swing.version.number}"/>
         <entry key="akka-actor.version.number"                  value="${akka-actor.version.number}"/>
         <entry key="actors-migration.version.number"            value="${actors-migration.version.number}"/>
@@ -627,18 +614,6 @@ TODO:
     <property name="swing.src"                     value="false"/>
     <property name="swing.srcjar"                  value="${scala-swing-sources}"/>
 
-    <property name="continuations-plugin.description" value="Scala Delimited Continuations Compiler Plugin"/>
-    <property name="continuations-plugin.package"     value="plugins." />
-    <property name="continuations-plugin.jar"         value="${scala-continuations-plugin}"/>
-    <property name="continuations-plugin.src"         value="false"/>
-    <property name="continuations-plugin.srcjar"      value="${scala-continuations-plugin-sources}"/>
-
-    <property name="continuations-library.description" value="Scala Delimited Continuations Library"/>
-    <property name="continuations-library.package"     value="plugins." />
-    <property name="continuations-library.jar"         value="${scala-continuations-library}"/>
-    <property name="continuations-library.src"         value="false"/>
-    <property name="continuations-library.srcjar"      value="${scala-continuations-library-sources}"/>
-
     <property name="parser-combinators.description" value="Scala Parser Combinators Library"/>
     <property name="parser-combinators.package"    value="modules."/>
     <property name="parser-combinators.jar"        value="${scala-parser-combinators}"/>
@@ -659,7 +634,7 @@ TODO:
     <property name="partest-javaagent.description" value="Scala Compiler Testing Tool (compiler-specific java agent)"/>
 
     <!-- projects without project-specific options: asm, forkjoin, manual, bin, repl -->
-    <for list="actors,compiler,interactive,scaladoc,library,parser-combinators,partest,partest-extras,partest-javaagent,reflect,scalap,swing,xml,continuations-plugin,continuations-library" param="project">
+    <for list="actors,compiler,interactive,scaladoc,library,parser-combinators,partest,partest-extras,partest-javaagent,reflect,scalap,swing,xml" param="project">
       <sequential>
         <!-- description is mandatory -->
         <init-project-prop project="@{project}" name="package"     default=""/> <!-- used by mvn-package, copy-bundle, make-bundle -->
@@ -1297,8 +1272,6 @@ TODO:
 
           <file name="${actors.jar}"/>
 
-          <file name="${continuations-plugin.jar}"/>
-          <file name="${continuations-library.jar}"/>
           <file name="${parser-combinators.jar}"/>
           <file name="${xml.jar}"/>
           <file name="${swing.jar}"/>
@@ -1328,8 +1301,6 @@ TODO:
       </make-bundle>
 
 
-      <make-bundle project="continuations-plugin"/>
-      <make-bundle project="continuations-library"/>
       <make-bundle project="parser-combinators"/>
       <make-bundle project="xml"/>
       <make-bundle project="swing"/>
