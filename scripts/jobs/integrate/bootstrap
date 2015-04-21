@@ -33,7 +33,7 @@
 # $SCALA_VER_BASE$SCALA_VER_SUFFIX (if former variable is set)
 # By parsing the tag (if HEAD is tagged as v$base$suffix)
 # By parsing build.number for the base version, suffixing with -$sha-nightly
-# Serialize these versions to jenkins.properties, which are passed downstream to scala-release-2.11.x-dist.
+# Serialize these versions to jenkins.properties, which are passed downstream to scala-release-2.12.x-dist.
 # This also removes the need to tag scala/scala-dist (not possible for nightlies, still encouraged for releases, but not a hard requirement).
 #
 # Determine Module Versions
@@ -334,7 +334,7 @@ determineScalaVersion() {
 
       # TODO: publish nightly snapshot using this script
       publishToSonatype="no"
-      echo "repo_ref=2.11.x" >> $baseDir/jenkins.properties # for the -dist downstream jobs that build the actual archives
+      echo "repo_ref=2.12.x" >> $baseDir/jenkins.properties # for the -dist downstream jobs that build the actual archives
     else
       echo "HEAD is tagged as $scalaTag."
       # borrowed from https://github.com/cloudflare/semver_bash/blob/master/semver.sh

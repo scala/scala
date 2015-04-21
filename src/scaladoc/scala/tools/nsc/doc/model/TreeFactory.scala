@@ -49,7 +49,7 @@ trait TreeFactory { thisTreeFactory: ModelFactory with TreeFactory =>
                 case _ =>
               }
               else if (asym.isTerm && asym.owner.isClass){
-                if (asym.isSetter) asym = asym.getter(asym.owner)
+                if (asym.isSetter) asym = asym.getterIn(asym.owner)
                 makeTemplate(asym.owner) match {
                   case docTmpl: DocTemplateImpl =>
                     val mbrs: Option[MemberImpl] = findMember(asym, docTmpl)

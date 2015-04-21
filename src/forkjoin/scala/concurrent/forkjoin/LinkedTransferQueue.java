@@ -53,6 +53,7 @@ import java.util.concurrent.locks.LockSupport;
  * @author Doug Lea
  * @param <E> the type of elements held in this collection
  */
+@Deprecated
 public class LinkedTransferQueue<E> extends AbstractQueue<E>
     implements TransferQueue<E>, java.io.Serializable {
     private static final long serialVersionUID = -3223113410248163686L;
@@ -416,6 +417,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * unnecessary ordering constraints: Writes that are intrinsically
      * ordered wrt other accesses or CASes use simple relaxed forms.
      */
+    @Deprecated
     static final class Node {
         final boolean isData;   // false if this is a request node
         volatile Object item;   // initially non-null if isData; CASed to match
@@ -789,6 +791,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         return count;
     }
 
+    @Deprecated
     final class Itr implements Iterator<E> {
         private Node nextNode;   // next node to return item for
         private E nextItem;      // the corresponding item

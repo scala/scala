@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
  * @since 1.8
  * @author Doug Lea
  */
+@Deprecated
 /*public*/ abstract class CountedCompleter<T> extends ForkJoinTask<T> {
     private static final long serialVersionUID = 5232453752276485070L;
 
@@ -471,6 +472,7 @@ import java.util.concurrent.TimeUnit;
  * @since 1.7
  * @author Doug Lea
  */
+@Deprecated
 public class ForkJoinPool extends AbstractExecutorService {
 
     /*
@@ -3578,6 +3580,7 @@ public class ForkJoinPool extends AbstractExecutorService {
      *   }
      * }}</pre>
      */
+    @Deprecated
     public static interface ManagedBlocker {
         /**
          * Possibly blocks the current thread, for example waiting for

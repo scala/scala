@@ -705,7 +705,7 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
 
   final def isFinite() = true
 
-  final def toCoarsest: Duration = {
+  final override def toCoarsest: FiniteDuration = {
     def loop(length: Long, unit: TimeUnit): FiniteDuration = {
       def coarserOrThis(coarser: TimeUnit, divider: Int) =
         if (length % divider == 0) loop(length / divider, coarser)

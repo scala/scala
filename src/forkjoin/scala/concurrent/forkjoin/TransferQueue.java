@@ -37,6 +37,7 @@ import java.util.concurrent.*;
  * @author Doug Lea
  * @param <E> the type of elements held in this collection
  */
+@Deprecated
 public interface TransferQueue<E> extends BlockingQueue<E> {
     /**
      * Transfers the element to a waiting consumer immediately, if possible.

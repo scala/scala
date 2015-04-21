@@ -335,6 +335,24 @@ extends AbstractMap[K, V]
     arm
   }
   
+  override def +[V1 >: V](kv: (K, V1)): AnyRefMap[K, V1] = {
+    val arm = clone().asInstanceOf[AnyRefMap[K, V1]]
+    arm += kv
+    arm
+  }
+  
+  override def ++[V1 >: V](xs: GenTraversableOnce[(K, V1)]): AnyRefMap[K, V1] = {
+    val arm = clone().asInstanceOf[AnyRefMap[K, V1]]
+    xs.foreach(kv => arm += kv)
+    arm
+  }
+  
+  override def updated[V1 >: V](key: K, value: V1): AnyRefMap[K, V1] = {
+    val arm = clone().asInstanceOf[AnyRefMap[K, V1]]
+    arm += (key, value)
+    arm
+  }
+  
   private[this] def foreachElement[A,B](elems: Array[AnyRef], f: A => B) {
     var i,j = 0
     while (i < _hashes.length & j < _size) {

@@ -133,6 +133,7 @@ package scala.concurrent.forkjoin;
  * @since 1.7
  * @author Doug Lea
  */
+@Deprecated
 public abstract class RecursiveAction extends ForkJoinTask<Void> {
     private static final long serialVersionUID = 5232453952276485070L;
 
