@@ -1,0 +1,5 @@
+Compiling Client1
+pos: NoPosition Class Waiter not found - continuing with a stub. WARNING
+Compiling Client2
+pos: NoPosition Class Waiter not found - continuing with a stub. WARNING
+pos: NoPosition Unable to locate class corresponding to inner class entry for Predicate in owner Waiter ERROR
