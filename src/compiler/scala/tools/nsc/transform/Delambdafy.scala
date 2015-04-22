@@ -9,12 +9,17 @@ import scala.reflect.internal.Symbols
 import scala.collection.mutable.LinkedHashMap
 
 /**
- * This transformer is responsible for turning lambdas into anonymous classes.
+ * This transformer is responsible for preparing lambdas for runtime, by either translating to anonymous classes
+ * or to a tree that will be convereted to invokedynamic by the JVM 1.8+ backend.
+ *
  * The main assumption it makes is that a lambda {args => body} has been turned into
  * {args => liftedBody()} where lifted body is a top level method that implements the body of the lambda.
  * Currently Uncurry is responsible for that transformation.
  *
- * From a lambda, Delambdafy will create
+ * From a lambda, Delambdafy will create:
+ *
+ * Under -target:jvm-1.7 and below:
+ *
  * 1) a new top level class that
       a) has fields and a constructor taking the captured environment (including possibly the "this"
  *       reference)
@@ -22,9 +27,11 @@ import scala.collection.mutable.LinkedHashMap
  *    c) if needed a bridge method for the apply method
  * 2) an instantiation of the newly created class which replaces the lambda
  *
- *  TODO the main work left to be done is to plug into specialization. Primarily that means choosing a
- * specialized FunctionN trait instead of the generic FunctionN trait as a parent and creating the
- * appropriately named applysp method
+ * Under -target:jvm-1.8 with GenBCode:
+ *
+ * 1) An application of the captured arguments to a fictional symbol representing the lambda factory.
+ *    This will be translated by the backed into an invokedynamic using a bootstrap method in JDK8's `LambdaMetaFactory`.
+ *    The captured arguments include `this` if `liftedBody` is unable to be made STATIC.
  */
 abstract class Delambdafy extends Transform with TypingTransformers with ast.TreeDSL with TypeAdaptingTransformer {
   import global._
