@@ -123,6 +123,8 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
 
     new page.Index(universe, index) writeFor this
     new page.IndexScript(universe, index) writeFor this
+    if (index.hasDeprecatedMembers)
+      new page.DeprecatedIndex(universe, index) writeFor this
     try {
       writeTemplates(_ writeFor this)
       for (letter <- index.firstLetterIndex) {
