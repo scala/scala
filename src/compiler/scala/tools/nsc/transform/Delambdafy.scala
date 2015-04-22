@@ -286,60 +286,36 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         localTyper.typedPos(decapturedFunction.pos)(ClassDef(lambdaClass, body)).asInstanceOf[ClassDef]
       }
 
-      val useLambdaMetafactory = {
-        val hasValueClass = exitingErasure {
-          val methodType: Type = targetMethod(originalFunction).info
-          methodType.exists(_.isInstanceOf[ErasedValueType])
-        }
-        val isTarget18 = settings.target.value.contains("jvm-1.8")
-        settings.isBCodeActive && isTarget18 && !hasValueClass
+      val allCaptureArgs: List[Tree] = {
+        val thisArg = if (isStatic) Nil else (gen.mkAttributedThis(oldClass) setPos originalFunction.pos) :: Nil
+        val captureArgs = captures.iterator.map(capture => gen.mkAttributedRef(capture) setPos originalFunction.pos).toList
+        thisArg ::: captureArgs
       }
 
-      val thisArg = if (isStatic) Nil else (gen.mkAttributedThis(oldClass) setPos originalFunction.pos) :: Nil
+      val functionalInterface = java8CompatFunctionalInterface(target, originalFunction.tpe)
+      if (functionalInterface.exists) {
+        // Create a symbol representing a fictional lambda factory method that accepts the captured
+        // arguments and returns a Function.
+        val msym   = currentOwner.newMethod(nme.ANON_FUN_NAME, originalFunction.pos, ARTIFACT)
+        val argTypes: List[Type] = allCaptureArgs.map(_.tpe)
+        val params = msym.newSyntheticValueParams(argTypes)
+        msym.setInfo(MethodType(params, originalFunction.tpe))
+        val arity = originalFunction.vparams.length
 
-      def anonClass: TransformedFunction = {
+        // We then apply this symbol to the captures.
+        val apply = localTyper.typedPos(originalFunction.pos)(Apply(Ident(msym), allCaptureArgs)).asInstanceOf[Apply]
+
+        // The backend needs to know the target of the lambda and the functional interface in order
+        // to emit the invokedynamic instruction. We pass this information as tree attachment.
+        apply.updateAttachment(LambdaMetaFactoryCapable(target, arity, functionalInterface))
+        InvokeDynamicLambda(apply)
+      } else {
         val anonymousClassDef = makeAnonymousClass
         pkg.info.decls enter anonymousClassDef.symbol
-        val captureArgs = captures map (capture => Ident(capture) setPos originalFunction.pos)
-
-        val newStat =
-          Typed(New(anonymousClassDef.symbol, thisArg ++ captureArgs: _*), TypeTree(abstractFunctionErasedType))
-
+        val newStat = Typed(New(anonymousClassDef.symbol, allCaptureArgs: _*), TypeTree(abstractFunctionErasedType))
         val typedNewStat = localTyper.typedPos(originalFunction.pos)(newStat)
-
         DelambdafyAnonClass(anonymousClassDef, typedNewStat)
       }
-
-      if (useLambdaMetafactory) {
-        val arity = originalFunction.vparams.length
-        val functionalInterface: Symbol = {
-          val sym = originalFunction.tpe.typeSymbol
-          val pack = currentRun.runDefinitions.Scala_Java8_CompatPackage
-          val name1 = specializeTypes.specializedFunctionName(sym, originalFunction.tpe.typeArgs)
-          if (name1.toTypeName == sym.name) {
-            val returnUnit = restpe.typeSymbol == UnitClass
-            val functionInterfaceArray =
-              if (returnUnit) currentRun.runDefinitions.Scala_Java8_CompatPackage_JProcedure
-              else currentRun.runDefinitions.Scala_Java8_CompatPackage_JFunction
-            functionInterfaceArray.apply(arity)
-          } else {
-            pack.info.decl(name1.toTypeName.prepend("J"))
-          }
-        }
-        if (functionalInterface.exists) {
-          val captureArgs = captures.iterator.map(capture => gen.mkAttributedRef(capture) setPos originalFunction.pos).toList
-          val allCaptureArgs = thisArg ++: captureArgs
-
-          val msym   = currentOwner.newMethod(nme.ANON_FUN_NAME, originalFunction.pos, ARTIFACT)
-          val argTypes: List[Type] = allCaptureArgs.map(_.tpe)
-          val params = msym.newSyntheticValueParams(argTypes)
-          msym.setInfo(MethodType(params, originalFunction.tpe))
-          
-          val tree = localTyper.typedPos(originalFunction.pos)(Apply(Ident(msym), allCaptureArgs)).asInstanceOf[Apply]
-          tree.updateAttachment(LambdaMetaFactoryCapable(targetMethod(originalFunction), arity, functionalInterface))
-          InvokeDynamicLambda(tree)
-        } else anonClass
-      } else anonClass
     }
 
     /**
@@ -491,4 +467,36 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   }
 
   final case class LambdaMetaFactoryCapable(target: Symbol, arity: Int, functionalInterface: Symbol)
+
+  // The functional interface that can be used to adapt the lambda target method `target` to the
+  // given function type. Returns `NoSymbol` if the compiler settings are unsuitable, or `LambdaMetaFactory`
+  // would be unable to generate the correct implementation (e.g. functions referring to derived value classes)
+  private def java8CompatFunctionalInterface(target: Symbol, functionType: Type): Symbol = {
+    val canUseLambdaMetafactory: Boolean = {
+      val hasValueClass = exitingErasure {
+        val methodType: Type = target.info
+        methodType.exists(_.isInstanceOf[ErasedValueType])
+      }
+      val isTarget18 = settings.target.value.contains("jvm-1.8")
+      settings.isBCodeActive && isTarget18 && !hasValueClass
+    }
+
+    def functionalInterface: Symbol = {
+      val sym = functionType.typeSymbol
+      val pack = currentRun.runDefinitions.Scala_Java8_CompatPackage
+      val name1 = specializeTypes.specializedFunctionName(sym, functionType.typeArgs)
+      val paramTps :+ restpe = functionType.typeArgs
+      val arity = paramTps.length
+      if (name1.toTypeName == sym.name) {
+        val returnUnit = restpe.typeSymbol == UnitClass
+        val functionInterfaceArray =
+          if (returnUnit) currentRun.runDefinitions.Scala_Java8_CompatPackage_JProcedure
+          else currentRun.runDefinitions.Scala_Java8_CompatPackage_JFunction
+        functionInterfaceArray.apply(arity)
+      } else {
+        pack.info.decl(name1.toTypeName.prepend("J"))
+      }
+    }
+    if (canUseLambdaMetafactory) functionalInterface else NoSymbol
+  }
 }
