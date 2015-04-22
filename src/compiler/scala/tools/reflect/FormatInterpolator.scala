@@ -451,6 +451,7 @@ abstract class FormatInterpolator {
 
     val allFlags = "-#+ 0,(<"
     def hasFlag(f: Char) = (flags getOrElse "") contains f
+    def hasFlags(f1: Char, f2: Char) = hasFlag(f1) && hasFlag(f2)
     def hasAnyFlag(fs: String) = fs exists (hasFlag)
 
     def badFlag(f: Char, msg: String) = {
@@ -532,6 +533,12 @@ abstract class FormatInterpolator {
     import SpecifierGroups.CC
     val oktypes = Nil
     def isFormattable(tpe: Type) = !tpe.typeSymbol.isBottomClass && tpe <:< tagOfFormattable.tpe
+    override def verify = {
+      def missingWidth = hasFlag('-') && width.isEmpty && truly {
+        badFlag('-', "Field width is required with '-' left adjustment")
+      }
+      super.verify && !missingWidth
+    }
     override def accepts(arg: Tree) = cc match {
       case 's' | 'S' if hasFlag('#') =>
         // "%#s".format(null) is ConversionMismatch
@@ -579,7 +586,13 @@ abstract class FormatInterpolator {
       def x_comma = cc != 'd' && hasFlag(',') && truly {
         badFlag(',', "',' only allowed for d conversion of integral types")
       }
-      super.verify && noPrecision && !d_# && !x_comma
+      def leftAdjustWithPad = hasFlags('-', '0') &&
+        truly(badFlag('0', "Can't combine '0' padding with '-' left adjustment"))
+      def missingWidth = hasAnyFlag("-0") && width.isEmpty && truly {
+        val f = if (hasFlag('-')) '-' else '0'
+        badFlag(f, "Field width is required with '0' padding or '-' left adjustment")
+      }
+      super.verify && noPrecision && !d_# && !x_comma && !leftAdjustWithPad && !missingWidth
     }
     val oktypes = List(IntTpe, LongTpe, ByteTpe, ShortTpe, tagOfJBigInt.tpe, tagOfBigInt.tpe)
     override def accepts(arg: Tree) = {
@@ -594,14 +607,22 @@ abstract class FormatInterpolator {
     }
   }
   class FloatingPointXn(val m: Match, val pos: Position, val argc: Int) extends Conversion {
-    override def verify = super.verify && (cc match {
-      case 'a' | 'A' =>
-        val badFlags = ",(" filter hasFlag
-        noPrecision && badFlags.isEmpty || falsely {
-          badFlags foreach (badf => badFlag(badf, s"'$badf' not allowed for a, A"))
-        }
-      case _ => true
-    })
+    override def verify = {
+      def restrictedForA = when(cc) {
+        case 'a' | 'A' =>
+          val badFlags = ",(" filter hasFlag
+          !noPrecision || (!badFlags.isEmpty && truly {
+            badFlags foreach (badf => badFlag(badf, s"'$badf' not allowed for a, A"))
+          })
+      }
+      def leftAdjustWithPad = hasFlags('-', '0') &&
+        truly(badFlag('0', "Can't combine '0' padding with '-' left adjustment"))
+      def missingWidth = hasAnyFlag("-0") && width.isEmpty && truly {
+        val f = if (hasFlag('-')) '-' else '0'
+        badFlag(f, "Field width is required with '0' padding or '-' left adjustment")
+      }
+      super.verify && !leftAdjustWithPad && !restrictedForA && !missingWidth
+    }
     val oktypes = List(DoubleTpe, FloatTpe, tagOfJBigDecimal.tpe, tagOfBigDecimal.tpe)
   }
   class DateTimeXn(val m: Match, val pos: Position, val argc: Int) extends Conversion {

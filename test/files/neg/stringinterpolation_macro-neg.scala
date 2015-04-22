@@ -43,6 +43,8 @@ object Test extends App {
   f"$f%,(a"
   f"$t%#+ 0,(tT"
   f"$d%,,d"
+  f"$d%-0d"
+  f"$f%-0f"
 
   // 4) bad precisions
   f"$c%.2c"
@@ -51,6 +53,11 @@ object Test extends App {
   f"%.2n"
   f"$f%.2a"
   f"$t%.2tT"
+
+  // 4b) bad field width because missing
+  f"$s%-s"
+  f"$d%-d"
+  f"$f%-f"
 
   // 5) bad indexes
   f"%<s"
