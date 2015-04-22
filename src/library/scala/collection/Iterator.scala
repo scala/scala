@@ -852,8 +852,25 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *           or -1 if such an element does not exist until the end of the iterator is reached.
    *  @note    Reuse: $consumesIterator
    */
-  def indexWhere(p: A => Boolean): Int = {
+  def indexWhere(p: A => Boolean): Int = indexWhere(p, 0)
+
+  /** Returns the index of the first produced value satisfying a predicate, or -1, after or at
+   *  some start index.
+   *  $mayNotTerminateInf
+   *
+   *  @param p the predicate to test values
+   *  @param from the start index
+   *  @return the index `>= from` of the first produced value satisfying `p`,
+   *          or -1 if such an element does not exist until the end of the iterator is reached.
+   *  @note   Reuse: $consumesIterator
+   */
+  def indexWhere(p: A => Boolean, from: Int): Int = {
     var i = 0
+    while (i < from && hasNext) {
+      next()
+      i += 1
+    }
+
     var found = false
     while (!found && hasNext) {
       if (p(next())) {
@@ -874,8 +891,26 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *          or -1 if such an element does not exist until the end of the iterator is reached.
    *  @note   Reuse: $consumesIterator
    */
-  def indexOf[B >: A](elem: B): Int = {
+  def indexOf[B >: A](elem: B): Int = indexOf(elem, 0)
+
+  /** Returns the index of the first occurrence of the specified object in this iterable object
+   *  after or at some start index.
+   *  $mayNotTerminateInf
+   *
+   *  @param elem element to search for.
+   *  @param from the start index
+   *  @return the index `>= from` of the first occurrence of `elem` in the values produced by this
+   *          iterator, or -1 if such an element does not exist until the end of the iterator is
+   *          reached.
+   *  @note   Reuse: $consumesIterator
+   */
+  def indexOf[B >: A](elem: B, from: Int): Int = {
     var i = 0
+    while (i < from && hasNext) {
+      next()
+      i += 1
+    }
+
     var found = false
     while (!found && hasNext) {
       if (next() == elem) {
