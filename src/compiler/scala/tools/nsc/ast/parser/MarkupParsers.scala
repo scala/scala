@@ -6,6 +6,7 @@
 package scala.tools.nsc
 package ast.parser
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 import mutable.{ Buffer, ArrayBuffer, ListBuffer }
 import scala.util.control.ControlThrowable
@@ -172,20 +173,19 @@ trait MarkupParsers {
     }
 
     def appendText(pos: Position, ts: Buffer[Tree], txt: String): Unit = {
-      def append(t: String) = ts append handle.text(pos, t)
-
-      if (preserveWS) append(txt)
-      else {
+      def append(text: String): Unit = {
+        val tree = handle.text(pos, text)
+        ts append tree
+      }
+      val clean = if (preserveWS) txt else {
         val sb = new StringBuilder()
-
         txt foreach { c =>
           if (!isSpace(c)) sb append c
           else if (sb.isEmpty || !isSpace(sb.last)) sb append ' '
         }
-
-        val trimmed = sb.toString.trim
-        if (!trimmed.isEmpty) append(trimmed)
+        sb.toString.trim
       }
+      if (!clean.isEmpty) append(clean)
     }
 
     /** adds entity/character to ts as side-effect
@@ -216,44 +216,75 @@ trait MarkupParsers {
       if (xCheckEmbeddedBlock) ts append xEmbeddedExpr
       else appendText(p, ts, xText)
 
-    /** Returns true if it encounters an end tag (without consuming it),
-     *  appends trees to ts as side-effect.
+    /** At an open angle-bracket, detects an end tag
+     *  or consumes CDATA, comment, PI or element.
+     *  Trees are appended to `ts` as a side-effect.
+     *  @return true if an end tag (without consuming it)
      */
-    private def content_LT(ts: ArrayBuffer[Tree]): Boolean = {
-      if (ch == '/')
-        return true   // end tag
-
-      val toAppend = ch match {
-        case '!'    => nextch() ; if (ch =='[') xCharData else xComment // CDATA or Comment
-        case '?'    => nextch() ; xProcInstr                            // PI
-        case _      => element                                        // child node
+    private def content_LT(ts: ArrayBuffer[Tree]): Boolean =
+      (ch == '/') || {
+        val toAppend = ch match {
+          case '!' => nextch() ; if (ch =='[') xCharData else xComment // CDATA or Comment
+          case '?' => nextch() ; xProcInstr                            // PI
+          case _   => element                                          // child node
+        }
+        ts append toAppend
+        false
       }
-
-      ts append toAppend
-      false
-    }
 
     def content: Buffer[Tree] = {
       val ts = new ArrayBuffer[Tree]
-      while (true) {
-        if (xEmbeddedBlock)
+      val coalescing = settings.XxmlSettings.isCoalescing
+      @tailrec def loopContent(): Unit =
+        if (xEmbeddedBlock) {
           ts append xEmbeddedExpr
-        else {
+          loopContent()
+        } else {
           tmppos = o2p(curOffset)
           ch match {
-            // end tag, cdata, comment, pi or child node
-            case '<'  => nextch() ; if (content_LT(ts)) return ts
-            // either the character '{' or an embedded scala block }
-            case '{'  => content_BRACE(tmppos, ts)  // }
-            // EntityRef or CharRef
-            case '&'  => content_AMP(ts)
-            case SU   => return ts
-            // text content - here xEmbeddedBlock might be true
-            case _    => appendText(tmppos, ts, xText)
+            case '<' =>           // end tag, cdata, comment, pi or child node
+              nextch()
+              if (!content_LT(ts)) loopContent()
+            case '{'  =>          // } literal brace or embedded Scala block
+              content_BRACE(tmppos, ts)
+              loopContent()
+            case '&' =>           // EntityRef or CharRef
+              content_AMP(ts)
+              loopContent()
+            case SU  => ()
+            case _   =>           // text content - here xEmbeddedBlock might be true
+              appendText(tmppos, ts, xText)
+              loopContent()
           }
         }
+      // merge text sections and strip attachments
+      def coalesce(): ArrayBuffer[Tree] = {
+        def copy() = {
+          val buf = new ArrayBuffer[Tree]
+          var acc = new StringBuilder
+          var pos: Position = NoPosition
+          def emit() = if (acc.nonEmpty) {
+            appendText(pos, buf, acc.toString)
+            acc.clear()
+          }
+          for (t <- ts)
+            t.attachments.get[handle.TextAttache] match {
+              case Some(ta) =>
+                if (acc.isEmpty) pos = ta.pos
+                acc append ta.text
+              case _        =>
+                emit()
+                buf += t
+            }
+          emit()
+          buf
+        }
+        val res = if (ts.count(_.hasAttachment[handle.TextAttache]) > 1) copy() else ts
+        for (t <- res) t.removeAttachment[handle.TextAttache]
+        res
       }
-      unreachable
+      loopContent()
+      if (coalescing) coalesce() else ts
     }
 
     /** '<' element ::= xmlTag1 '>'  { xmlExpr | '{' simpleExpr '}' } ETag
@@ -289,20 +320,16 @@ trait MarkupParsers {
     private def xText: String = {
       assert(!xEmbeddedBlock, "internal error: encountered embedded block")
       val buf = new StringBuilder
-      def done = buf.toString
-
-      while (ch != SU) {
-        if (ch == '}') {
-          if (charComingAfter(nextch()) == '}') nextch()
-          else errorBraces()
-        }
-
-        buf append ch
-        nextch()
-        if (xCheckEmbeddedBlock || ch == '<' ||  ch == '&')
-          return done
-      }
-      done
+      if (ch != SU)
+        do {
+          if (ch == '}') {
+            if (charComingAfter(nextch()) == '}') nextch()
+            else errorBraces()
+          }
+          buf append ch
+          nextch()
+        } while (!(ch == SU || xCheckEmbeddedBlock || ch == '<' ||  ch == '&'))
+      buf.toString
     }
 
     /** Some try/catch/finally logic used by xLiteral and xLiteralPattern.  */
@@ -344,12 +371,12 @@ trait MarkupParsers {
         tmppos = o2p(curOffset)    // Iuli: added this line, as it seems content_LT uses tmppos when creating trees
         content_LT(ts)
 
-        // parse more XML ?
+        // parse more XML?
         if (charComingAfter(xSpaceOpt()) == '<') {
           do {
             xSpaceOpt()
             nextch()
-            ts append element
+            content_LT(ts)
           } while (charComingAfter(xSpaceOpt()) == '<')
           handle.makeXMLseq(r2p(start, start, curOffset), ts)
         }

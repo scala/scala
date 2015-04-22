@@ -7,9 +7,10 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.tools.asm
-import scala.tools.nsc.backend.jvm.opt.{CallGraph, Inliner, ByteCodeRepository}
+import scala.tools.nsc.backend.jvm.opt.{LocalOpt, CallGraph, Inliner, ByteCodeRepository}
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo, InternalName}
 import BackendReporting._
+import scala.tools.nsc.settings.ScalaSettings
 
 /**
  * This class mainly contains the method classBTypeFromSymbol, which extracts the necessary
@@ -37,6 +38,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
   val byteCodeRepository = new ByteCodeRepository(global.classPath, javaDefinedClasses, recordPerRunCache(collection.concurrent.TrieMap.empty))
 
+  val localOpt: LocalOpt[this.type] = new LocalOpt(this)
+
   val inliner: Inliner[this.type] = new Inliner(this)
 
   val callGraph: CallGraph[this.type] = new CallGraph(this)
@@ -49,19 +52,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
   def recordPerRunCache[T <: collection.generic.Clearable](cache: T): T = perRunCaches.recordCache(cache)
 
-  def inlineGlobalEnabled: Boolean = settings.YoptInlineGlobal
-
-  def inlinerEnabled: Boolean      = settings.YoptInlinerEnabled
-
-  def warnSettings: WarnSettings   = {
-    val c = settings.YoptWarningsChoices
-    // cannot extract settings.YoptWarnings into a local val due to some dependent typing issue.
-    WarnSettings(
-      !settings.YoptWarnings.isSetByUser || settings.YoptWarnings.contains(c.atInlineFailedSummary.name) || settings.YoptWarnings.contains(c.atInlineFailed.name),
-      settings.YoptWarnings.contains(c.noInlineMixed.name),
-      settings.YoptWarnings.contains(c.noInlineMissingBytecode.name),
-      settings.YoptWarnings.contains(c.noInlineMissingScalaInlineInfoAttr.name))
-  }
+  def compilerSettings: ScalaSettings = settings
 
   // helpers that need access to global.
   // TODO @lry create a separate component, they don't belong to BTypesFromSymbols
@@ -418,8 +409,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     // phase travel required, see implementation of `compiles`. for nested classes, it checks if the
     // enclosingTopLevelClass is being compiled. after flatten, all classes are considered top-level,
     // so `compiles` would return `false`.
-    if (exitingPickler(currentRun.compiles(classSym))) buildFromSymbol // InlineInfo required for classes being compiled, we have to create the classfile attribute
-    else if (!inlinerEnabled) BTypes.EmptyInlineInfo                   // For other classes, we need the InlineInfo only inf the inliner is enabled.
+    if (exitingPickler(currentRun.compiles(classSym))) buildFromSymbol    // InlineInfo required for classes being compiled, we have to create the classfile attribute
+    else if (!compilerSettings.YoptInlinerEnabled) BTypes.EmptyInlineInfo // For other classes, we need the InlineInfo only inf the inliner is enabled.
     else {
       // For classes not being compiled, the InlineInfo is read from the classfile attribute. This
       // fixes an issue with mixed-in methods: the mixin phase enters mixin methods only to class

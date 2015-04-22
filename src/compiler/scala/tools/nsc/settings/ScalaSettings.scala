@@ -139,6 +139,18 @@ trait ScalaSettings extends AbsScalaSettings
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
   val XfullLubs         = BooleanSetting ("-Xfull-lubs", "Retains pre 2.10 behavior of less aggressive truncation of least upper bounds.")
 
+  // XML parsing options
+  object XxmlSettings extends MultiChoiceEnumeration {
+    val coalescing   = Choice("coalescing", "Convert PCData to Text and coalesce sibling nodes")
+    def isCoalescing = (Xxml contains coalescing) || (!isScala212 && !Xxml.isSetByUser)
+  }
+  val Xxml = MultiChoiceSetting(
+    name    = "-Xxml",
+    helpArg = "property",
+    descr   = "Configure XML parsing",
+    domain  = XxmlSettings
+  )
+
   /** Compatibility stubs for options whose value name did
    *  not previously match the option name.
    */
@@ -256,6 +268,13 @@ trait ScalaSettings extends AbsScalaSettings
   def YoptInlineGlobal            = Yopt.contains(YoptChoices.inlineGlobal)
   def YoptInlinerEnabled          = YoptInlineProject || YoptInlineGlobal
 
+  val YoptInlineHeuristics = ChoiceSetting(
+    name = "-Yopt-inline-heuristics",
+    helpArg = "strategy",
+    descr = "Set the heuristics for inlining decisions.",
+    choices = List("at-inline-annotated", "everything"),
+    default = "at-inline-annotated")
+
   object YoptWarningsChoices extends MultiChoiceEnumeration {
     val none                               = Choice("none"                       , "No optimizer warnings.")
     val atInlineFailedSummary              = Choice("at-inline-failed-summary"   , "One-line summary if there were @inline method calls that could not be inlined.")
@@ -267,13 +286,22 @@ trait ScalaSettings extends AbsScalaSettings
 
   val YoptWarnings = MultiChoiceSetting(
     name = "-Yopt-warnings",
-    helpArg = "warnings",
+    helpArg = "warning",
     descr = "Enable optimizer warnings",
     domain = YoptWarningsChoices,
     default = Some(List(YoptWarningsChoices.atInlineFailed.name))) withPostSetHook (self => {
     if (self.value subsetOf Set(YoptWarningsChoices.none, YoptWarningsChoices.atInlineFailedSummary)) YinlinerWarnings.value = false
     else YinlinerWarnings.value = true
   })
+
+  def YoptWarningEmitAtInlineFailed =
+    !YoptWarnings.isSetByUser ||
+      YoptWarnings.contains(YoptWarningsChoices.atInlineFailedSummary) ||
+      YoptWarnings.contains(YoptWarningsChoices.atInlineFailed)
+
+  def YoptWarningNoInlineMixed                      = YoptWarnings.contains(YoptWarningsChoices.noInlineMixed)
+  def YoptWarningNoInlineMissingBytecode            = YoptWarnings.contains(YoptWarningsChoices.noInlineMissingBytecode)
+  def YoptWarningNoInlineMissingScalaInlineInfoAttr = YoptWarnings.contains(YoptWarningsChoices.noInlineMissingScalaInlineInfoAttr)
 
   private def removalIn212 = "This flag is scheduled for removal in 2.12. If you have a case where you need this flag then please report a bug."
 
@@ -345,12 +373,7 @@ trait ScalaSettings extends AbsScalaSettings
   /** Test whether this is scaladoc we're looking at */
   def isScaladoc = false
 
-  /**
-   * Helper utilities for use by checkConflictingSettings()
-   */
-  def isBCodeActive   = !isICodeAskedFor
-  def isBCodeAskedFor = (Ybackend.value != "GenASM")
-  def isICodeAskedFor = ((Ybackend.value == "GenASM") || optimiseSettings.exists(_.value) || writeICode.isSetByUser)
+  def isBCodeActive = Ybackend.value == "GenBCode"
 
   object MacroExpand {
     val None = "none"

@@ -11,6 +11,7 @@ import scala.reflect.internal.util.Statistics
 import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Collections._
+import scala.reflect.internal.util.Position
 
 // a literal is a (possibly negated) variable
 class Lit(val v: Int) extends AnyVal {
@@ -64,7 +65,23 @@ trait Solving extends Logic {
       def size = symbols.size
     }
 
-    case class Solvable(cnf: Cnf, symbolMapping: SymbolMapping)
+    def cnfString(f: Array[Clause]): String
+
+    final case class Solvable(cnf: Cnf, symbolMapping: SymbolMapping) {
+      def ++(other: Solvable) = {
+        require(this.symbolMapping eq other.symbolMapping)
+        Solvable(cnf ++ other.cnf, symbolMapping)
+      }
+
+      override def toString: String = {
+        "Solvable\nLiterals:\n" +
+          (for {
+            (lit, sym) <- symbolMapping.symForVar.toSeq.sortBy(_._1)
+          } yield {
+            s"$lit -> $sym"
+          }).mkString("\n") + "Cnf:\n" + cnfString(cnf)
+      }
+    }
 
     trait CnfBuilder {
       private[this] val buff = ArrayBuffer[Clause]()
@@ -95,7 +112,11 @@ trait Solving extends Logic {
         }
       }
 
-      def buildCnf: Array[Clause] = buff.toArray
+      def buildCnf: Array[Clause] = {
+        val cnf = buff.toArray
+        buff.clear()
+        cnf
+      }
 
     }
 
@@ -130,20 +151,23 @@ trait Solving extends Logic {
 
       def apply(p: Prop): Solvable = {
 
-        def convert(p: Prop): Lit = {
+        def convert(p: Prop): Option[Lit] = {
           p match {
             case And(fv)  =>
-              and(fv.map(convert))
+              Some(and(fv.flatMap(convert)))
             case Or(fv)   =>
-              or(fv.map(convert))
+              Some(or(fv.flatMap(convert)))
             case Not(a)   =>
-              not(convert(a))
+              convert(a).map(not)
             case sym: Sym =>
-              convertSym(sym)
+              Some(convertSym(sym))
             case True     =>
-              constTrue
+              Some(constTrue)
             case False    =>
-              constFalse
+              Some(constFalse)
+            case AtMostOne(ops) =>
+              atMostOne(ops)
+              None
             case _: Eq    =>
               throw new MatchError(p)
           }
@@ -189,8 +213,57 @@ trait Solving extends Logic {
         // no need for auxiliary variable
         def not(a: Lit): Lit = -a
 
+        /**
+         * This encoding adds 3n-4 variables auxiliary variables
+         * to encode that at most 1 symbol can be set.
+         * See also "Towards an Optimal CNF Encoding of Boolean Cardinality Constraints"
+         * http://www.carstensinz.de/papers/CP-2005.pdf
+         */
+        def atMostOne(ops: List[Sym]) {
+          (ops: @unchecked) match {
+            case hd :: Nil  => convertSym(hd)
+            case x1 :: tail =>
+              // sequential counter: 3n-4 clauses
+              // pairwise encoding: n*(n-1)/2 clauses
+              // thus pays off only if n > 5
+              if (ops.lengthCompare(5) > 0) {
+
+                @inline
+                def /\(a: Lit, b: Lit) = addClauseProcessed(clause(a, b))
+
+                val (mid, xn :: Nil) = tail.splitAt(tail.size - 1)
+
+                // 1 <= x1,...,xn <==>
+                //
+                // (!x1 \/ s1) /\ (!xn \/ !sn-1) /\
+                //
+                //     /\
+                //    /  \ (!xi \/ si) /\ (!si-1 \/ si) /\ (!xi \/ !si-1)
+                //  1 < i < n
+                val s1 = newLiteral()
+                /\(-convertSym(x1), s1)
+                val snMinus = mid.foldLeft(s1) {
+                  case (siMinus, sym) =>
+                    val xi = convertSym(sym)
+                    val si = newLiteral()
+                    /\(-xi, si)
+                    /\(-siMinus, si)
+                    /\(-xi, -siMinus)
+                    si
+                }
+                /\(-convertSym(xn), -snMinus)
+              } else {
+                ops.map(convertSym).combinations(2).foreach {
+                  case a :: b :: Nil =>
+                    addClauseProcessed(clause(-a, -b))
+                  case _             =>
+                }
+              }
+          }
+        }
+
         // add intermediate variable since we want the formula to be SAT!
-        addClauseProcessed(clause(convert(p)))
+        addClauseProcessed(convert(p).toSet)
 
         Solvable(buildCnf, symbolMapping)
       }
@@ -244,19 +317,54 @@ trait Solving extends Logic {
 
     def eqFreePropToSolvable(p: Prop): Solvable = {
 
+      def doesFormulaExceedSize(p: Prop): Boolean = {
+        p match {
+          case And(ops) =>
+            if (ops.size > AnalysisBudget.maxFormulaSize) {
+              true
+            } else {
+              ops.exists(doesFormulaExceedSize)
+            }
+          case Or(ops)  =>
+            if (ops.size > AnalysisBudget.maxFormulaSize) {
+              true
+            } else {
+              ops.exists(doesFormulaExceedSize)
+            }
+          case Not(a)   => doesFormulaExceedSize(a)
+          case _        => false
+        }
+      }
+
+      val simplified = simplify(p)
+      if (doesFormulaExceedSize(simplified)) {
+        throw AnalysisBudget.formulaSizeExceeded
+      }
+
       // collect all variables since after simplification / CNF conversion
       // they could have been removed from the formula
       val symbolMapping = new SymbolMapping(gatherSymbols(p))
-
-      val simplified = simplify(p)
       val cnfExtractor = new AlreadyInCNF(symbolMapping)
+      val cnfTransformer = new TransformToCnf(symbolMapping)
+
+      def cnfFor(prop: Prop): Solvable = {
+        prop match {
+          case cnfExtractor.ToCnf(solvable) =>
+            // this is needed because t6942 would generate too many clauses with Tseitin
+            // already in CNF, just add clauses
+            solvable
+          case p                            =>
+            cnfTransformer.apply(p)
+        }
+      }
+
       simplified match {
-        case cnfExtractor.ToCnf(solvable) =>
-          // this is needed because t6942 would generate too many clauses with Tseitin
-          // already in CNF, just add clauses
-          solvable
-        case p                           =>
-          new TransformToCnf(symbolMapping).apply(p)
+        case And(props) =>
+          // SI-6942:
+          // CNF(P1 /\ ... /\ PN) == CNF(P1) ++ CNF(...) ++ CNF(PN)
+          props.map(cnfFor).reduce(_ ++ _)
+        case p          =>
+          cnfFor(p)
       }
     }
   }
@@ -288,7 +396,7 @@ trait Solving extends Logic {
     val NoTseitinModel: TseitinModel = null
 
     // returns all solutions, if any (TODO: better infinite recursion backstop -- detect fixpoint??)
-    def findAllModelsFor(solvable: Solvable): List[Solution] = {
+    def findAllModelsFor(solvable: Solvable, pos: Position): List[Solution] = {
       debug.patmat("find all models for\n"+ cnfString(solvable.cnf))
 
       // we must take all vars from non simplified formula
@@ -308,13 +416,12 @@ trait Solving extends Logic {
       final case class TseitinSolution(model: TseitinModel, unassigned: List[Int]) {
         def projectToSolution(symForVar: Map[Int, Sym]) = Solution(projectToModel(model, symForVar), unassigned map symForVar)
       }
+
       def findAllModels(clauses: Array[Clause],
                         models: List[TseitinSolution],
-                        recursionDepthAllowed: Int = global.settings.YpatmatExhaustdepth.value): List[TseitinSolution]=
+                        recursionDepthAllowed: Int = AnalysisBudget.maxDPLLdepth): List[TseitinSolution]=
         if (recursionDepthAllowed == 0) {
-          val maxDPLLdepth = global.settings.YpatmatExhaustdepth.value
-          reportWarning("(Exhaustivity analysis reached max recursion depth, not all missing cases are reported. " +
-              s"Please try with scalac -Ypatmat-exhaust-depth ${maxDPLLdepth * 2} or -Ypatmat-exhaust-depth off.)")
+          uncheckedWarning(pos, AnalysisBudget.recursionDepthReached)
           models
         } else {
           debug.patmat("find all models for\n" + cnfString(clauses))

@@ -376,7 +376,7 @@ abstract class LambdaLift extends InfoTransform {
 
     private def addFreeArgs(pos: Position, sym: Symbol, args: List[Tree]) = {
       free get sym match {
-        case Some(fvs) => args ++ (fvs.toList map (fv => atPos(pos)(proxyRef(fv))))
+        case Some(fvs) => addFree(sym, free = fvs.toList map (fv => atPos(pos)(proxyRef(fv))), original = args)
         case _         => args
       }
     }
@@ -388,9 +388,9 @@ abstract class LambdaLift extends InfoTransform {
           case DefDef(_, _, _, vparams :: _, _, _) =>
             val addParams = cloneSymbols(ps).map(_.setFlag(PARAM))
             sym.updateInfo(
-              lifted(MethodType(sym.info.params ::: addParams, sym.info.resultType)))
+              lifted(MethodType(addFree(sym, free = addParams, original = sym.info.params), sym.info.resultType)))
 
-            copyDefDef(tree)(vparamss = List(vparams ++ freeParams))
+            copyDefDef(tree)(vparamss = List(addFree(sym, free = freeParams, original = vparams)))
           case ClassDef(_, _, _, _) =>
             // SI-6231
             // Disabled attempt to to add getters to freeParams
@@ -571,4 +571,12 @@ abstract class LambdaLift extends InfoTransform {
     }
   } // class LambdaLifter
 
+  private def addFree[A](sym: Symbol, free: List[A], original: List[A]): List[A] = {
+    val prependFree = (
+         !sym.isConstructor // this condition is redundant for now. It will be needed if we remove the second condition in 2.12.x
+      && (settings.Ydelambdafy.value == "method" && sym.isDelambdafyTarget) // SI-8359 Makes the lambda body a viable as the target MethodHandle for a call to LambdaMetafactory
+    )
+    if (prependFree) free ::: original
+    else             original ::: free
+  }
 }

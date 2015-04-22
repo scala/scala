@@ -6,6 +6,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.mutable
+import scala.reflect.internal.util.Position
 import scala.tools.nsc.{Global, Settings}
 
 object TestSolver extends Logic with Solving {
@@ -51,6 +52,8 @@ object TestSolver extends Logic with Solving {
 
       def domainSyms = None
 
+      def groupedDomains: List[Set[TestSolver.Sym]] = Nil
+
       def implications = Nil
 
       def mayBeNull = false
@@ -71,6 +74,8 @@ object TestSolver extends Logic with Solving {
     }
 
     def prepareNewAnalysis() = {}
+
+    def uncheckedWarning(pos: Position, msg: String) = sys.error(msg)
 
     def reportWarning(msg: String) = sys.error(msg)
 
@@ -204,11 +209,44 @@ class SolvingTest {
 
   import scala.tools.nsc.transform.patmat.TestSolver.TestSolver._
 
-  implicit val Ord: Ordering[TestSolver.TestSolver.Model] = Ordering.by {
-    _.toSeq.sortBy(_.toString()).toIterable
+  object SymName {
+    def unapply(s: Sym): Option[String] = {
+      val Var(Tree(name)) = s.variable
+      Some(name)
+    }
   }
 
-  private def sym(name: String) = Sym(Var(Tree(name)), NullConst)
+  implicit val ModelOrd: Ordering[TestSolver.TestSolver.Model] = Ordering.by {
+    _.toSeq.sortWith {
+      case ((sym1, v1), (sym2, v2)) =>
+        val SymName(name1) = sym1
+        val SymName(name2) = sym2
+        if (name1 < name2)
+          true
+        else if (name1 > name2)
+          false
+        else
+          v1 < v2
+    }.toIterable
+  }
+
+  implicit val SolutionOrd: Ordering[TestSolver.TestSolver.Solution] =
+    Ordering.by(_.model)
+
+  def formatSolution(solution: Solution): String = {
+    formatModel(solution.model)
+  }
+
+  def formatModel(model: Model): String = {
+    (for {
+      (SymName(name), value) <- model
+    } yield {
+      val v = if (value) "T" else "F"
+      s"$name -> $v"
+    }).mkString(", ")
+  }
+
+  def sym(name: String) = Sym(Var(Tree(name)), NullConst)
 
   @Test
   def testSymCreation() {
@@ -549,6 +587,23 @@ class SolvingTest {
         val expansionNoUnassigned = expansionSolutins.flatMap(expandUnassigned).sorted
         assertEquals(tseitinNoUnassigned, expansionNoUnassigned)
     }
+  }
+
+  def pairWiseEncoding(ops: List[Sym]) = {
+    And(ops.combinations(2).collect {
+      case a :: b :: Nil => Or(Not(a), Not(b))
+    }.toSet[TestSolver.TestSolver.Prop])
+  }
+
+  @Test
+  def testAtMostOne() {
+    val dummySym = sym("dummy")
+    val syms = "pqrstu".map(c => sym(c.toString)).toList
+    // expand unassigned variables
+    // (otherwise solutions can not be compared)
+    val expected = TestSolver.TestSolver.findAllModelsFor(propToSolvable(And(dummySym, pairWiseEncoding(syms)))).flatMap(expandUnassigned)
+    val actual = TestSolver.TestSolver.findAllModelsFor(propToSolvable(And(dummySym, AtMostOne(syms)))).flatMap(expandUnassigned)
+    assertEquals(expected.toSet, actual.toSet)
   }
 }
 

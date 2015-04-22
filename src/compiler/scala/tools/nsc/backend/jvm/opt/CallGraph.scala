@@ -43,14 +43,14 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
         // callee, we only check there for the methodInlineInfo, we should find it there.
         calleeDeclarationClassBType.info.orThrow.inlineInfo.methodInfos.get(methodSignature) match {
           case Some(methodInlineInfo) =>
-            val canInlineFromSource = inlineGlobalEnabled || calleeSource == CompilationUnit
+            val canInlineFromSource = compilerSettings.YoptInlineGlobal || calleeSource == CompilationUnit
 
             val isAbstract = BytecodeUtils.isAbstractMethod(calleeMethodNode)
 
             // (1) A non-final method can be safe to inline if the receiver type is a final subclass. Example:
             //   class A { @inline def f = 1 }; object B extends A; B.f  // can be inlined
             //
-            // TODO: type analysis can render more calls statically resolved. Example˜∫
+            // TODO: type analysis can render more calls statically resolved. Example:
             //   new A.f  // can be inlined, the receiver type is known to be exactly A.
             val isStaticallyResolved: Boolean = {
               methodInlineInfo.effectivelyFinal ||
@@ -68,8 +68,13 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
             // (2) Final trait methods can be rewritten from the interface to the static implementation
             //     method to enable inlining.
             CallsiteInfo(
-              safeToInline      = canInlineFromSource && isStaticallyResolved && !isAbstract, // (1)
-              safeToRewrite     = canInlineFromSource && isRewritableTraitCall,               // (2)
+              safeToInline      =
+                canInlineFromSource &&
+                isStaticallyResolved &&  // (1)
+                !isAbstract &&
+                !BytecodeUtils.isConstructor(calleeMethodNode) &&
+                !BytecodeUtils.isNativeMethod(calleeMethodNode),
+              safeToRewrite     = canInlineFromSource && isRewritableTraitCall, // (2)
               annotatedInline   = methodInlineInfo.annotatedInline,
               annotatedNoInline = methodInlineInfo.annotatedNoInline,
               warning           = warning)
@@ -92,6 +97,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
 
     // TODO: for now we run a basic analyzer to get the stack height at the call site.
     // once we run a more elaborate analyzer (types, nullness), we can get the stack height out of there.
+    localOpt.minimalRemoveUnreachableCode(methodNode, definingClass.internalName)
     val analyzer = new AsmAnalyzer(methodNode, definingClass.internalName)
 
     methodNode.instructions.iterator.asScala.collect({

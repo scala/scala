@@ -143,4 +143,52 @@ class InlineWarningTest extends ClearAfterClass {
     compileClasses(newCompiler(extraArgs = InlineWarningTest.argsNoWarn + " -Yopt-warnings:no-inline-mixed"))(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; warns.exists(i.msg contains _)})
     assert(c == 2, c)
   }
+
+  @Test
+  def cannotInlinePrivateCallIntoDifferentClass(): Unit = {
+    val code =
+      """class M {
+        |  @inline final def f = {
+        |    @noinline def nested = 0
+        |    nested
+        |  }
+        |
+        |  def t = f // ok
+        |}
+        |
+        |class N {
+        |  def t(a: M) = a.f // not possible
+        |}
+      """.stripMargin
+
+    val warn =
+      """M::f()I is annotated @inline but could not be inlined:
+        |The callee M::f()I contains the instruction INVOKESPECIAL M.nested$1 ()I
+        |that would cause an IllegalAccessError when inlined into class N""".stripMargin
+
+    var c = 0
+    compile(code, allowMessage = i => { c += 1; i.msg contains warn })
+    assert(c == 1, c)
+  }
+
+  @Test
+  def cannotMixStrictfp(): Unit = {
+    val code =
+      """import annotation.strictfp
+        |class C {
+        |  @strictfp @inline final def f = 0
+        |  @strictfp def t1 = f
+        |  def t2 = f
+        |}
+      """.stripMargin
+
+    val warn =
+      """C::f()I is annotated @inline but could not be inlined:
+        |The callsite method C::t2()I
+        |does not have the same strictfp mode as the callee C::f()I.""".stripMargin
+
+    var c = 0
+    compile(code, allowMessage = i => { c += 1; i.msg contains warn })
+    assert(c == 1, c)
+  }
 }

@@ -152,7 +152,7 @@ class InlinerTest extends ClearAfterClass {
 
     assertSameCode(convertMethod(g).instructions.dropNonOp.take(4), expectedInlined)
 
-    localOpt.methodOptimizations(g, "C")
+    compiler.genBCode.bTypes.localOpt.methodOptimizations(g, "C")
     assertSameCode(convertMethod(g).instructions.dropNonOp,
       expectedInlined ++ List(VarOp(ASTORE, 2), VarOp(ALOAD, 2), Op(ATHROW)))
   }
@@ -949,5 +949,30 @@ class InlinerTest extends ClearAfterClass {
     assertInvoke(getSingleMethod(t, "t2"), "B", "B$$f2m")
     assertInvoke(getSingleMethod(t, "t3"), "B", "<init>")
     assertInvoke(getSingleMethod(t, "t4"), "B", "<init>")
+  }
+
+  @Test
+  def dontInlineNative(): Unit = {
+    val code =
+      """class C {
+        |  def t = System.arraycopy(null, 0, null, 0, 0)
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(newCompiler(extraArgs = InlinerTest.args + " -Yopt-inline-heuristics:everything"))(code)
+    assertInvoke(getSingleMethod(c, "t"), "java/lang/System", "arraycopy")
+  }
+
+  @Test
+  def inlineMayRenderCodeDead(): Unit = {
+    val code =
+      """class C {
+        |  @inline final def f: String = throw new Error("")
+        |  @inline final def g: String = "a" + f + "b"       // after inlining f, need to run DCE, because the rest of g becomes dead.
+        |  def t = g                                         // the inliner requires no dead code when inlining g (uses an Analyzer).
+        |}
+      """.stripMargin
+
+    val List(c) = compile(code)
+    assertInvoke(getSingleMethod(c, "t"), "java/lang/Error", "<init>")
   }
 }

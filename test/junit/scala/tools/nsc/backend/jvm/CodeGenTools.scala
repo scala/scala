@@ -8,7 +8,6 @@ import scala.reflect.io.VirtualDirectory
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.{ClassNode, MethodNode}
 import scala.tools.cmd.CommandLineParser
-import scala.tools.nsc.backend.jvm.opt.LocalOpt
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.settings.MutableSettings
@@ -155,12 +154,6 @@ object CodeGenTools {
   def assertHandlerLabelPostions(h: ExceptionHandler, instructions: List[Instruction], startIndex: Int, endIndex: Int, handlerIndex: Int): Unit = {
     val insVec = instructions.toVector
     assertTrue(h.start == insVec(startIndex) && h.end == insVec(endIndex) && h.handler == insVec(handlerIndex))
-  }
-
-  val localOpt = {
-    val settings = new MutableSettings(msg => throw new IllegalArgumentException(msg))
-    settings.processArguments(List("-Yopt:l:method"), processAll = true)
-    new LocalOpt(settings)
   }
 
   import scala.language.implicitConversions

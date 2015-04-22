@@ -54,7 +54,7 @@ import scala.language.higherKinds
  *  `HashMap` of objects. The traversal order for hash maps will
  *  depend on the hash codes of its elements, and these hash codes might
  *  differ from one run to the next. By contrast, a `LinkedHashMap`
- *  is ordered because it's `foreach` method visits elements in the
+ *  is ordered because its `foreach` method visits elements in the
  *  order they were inserted into the `HashMap`.
  *
  *  @author Martin Odersky
