@@ -329,10 +329,12 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
    * Build the [[InlineInfo]] for a class symbol.
    */
   def buildInlineInfoFromClassSymbol(classSym: Symbol, classSymToInternalName: Symbol => InternalName, methodSymToDescriptor: Symbol => String): InlineInfo = {
-    val selfType = {
+    val traitSelfType = if (classSym.isTrait && !classSym.isImplClass) {
       // The mixin phase uses typeOfThis for the self parameter in implementation class methods.
       val selfSym = classSym.typeOfThis.typeSymbol
       if (selfSym != classSym) Some(classSymToInternalName(selfSym)) else None
+    } else {
+      None
     }
 
     val isEffectivelyFinal = classSym.isEffectivelyFinal
@@ -394,6 +396,6 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
         }
     }).toMap
 
-    InlineInfo(selfType, isEffectivelyFinal, methodInlineInfos, warning)
+    InlineInfo(traitSelfType, isEffectivelyFinal, methodInlineInfos, warning)
   }
 }
