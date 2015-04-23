@@ -82,4 +82,24 @@ class TabulatorTest {
     assert(rows(0).size == 1)
     assert(rows(0)(0).size == "efg".length + sut.marginSize)  // 6
   }
+  @Test def badFit() = {
+    val sut = VTabby(isAcross = true)
+    val items = ('a' until 'z').map(_.toString).toList
+    val rows = sut tabulate items
+    assert(rows.size == 2)
+    assert(rows(0).size == 20)   // 20 * 4 = 80
+    assert(rows(1)(0).dropRight(sut.marginSize) == "u")
+  }
+  @Test def badFitter() = {
+    val sut = VTabby(isAcross = true)
+    val items = List (
+      "%", "&", "*", "+", "-", "/", ">", ">=", ">>", ">>>", "^",
+      "asInstanceOf", "isInstanceOf", "toByte", "toChar", "toDouble", "toFloat",
+      "toInt", "toLong", "toShort", "toString", "unary_+", "unary_-", "unary_~", "|"
+    )
+    val rows = sut tabulate items
+    assert(rows.size == 4)
+    assert(rows(3).size == 4)   // 7 cols
+    assert(rows(3)(0).dropRight(sut.marginSize) == "unary_+")
+  }
 }

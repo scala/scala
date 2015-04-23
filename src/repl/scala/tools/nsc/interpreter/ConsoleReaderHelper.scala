@@ -112,8 +112,12 @@ trait VariColumnTabulator extends Tabulator {
     def layout(ncols: Int): Option[(Int, Seq[Int], Seq[Seq[String]])] = {
       val nrows = items.size /% ncols
       val xwise = isAcross || ncols >= items.length
-      def maxima(sss: Seq[Seq[String]]) =
-        (0 until (ncols min items.size)) map (i => (sss map (ss => ss(i).length)).max)
+      // max width item in each column
+      def maxima(rows: Seq[Seq[String]]) =
+        (0 until (ncols min items.size)) map { col =>
+          val widths = for (r <- rows if r.size > col) yield r(col).length
+          widths.max
+        }
       def resulting(rows: Seq[Seq[String]]) = {
         val columnWidths = maxima(rows) map (_ + marginSize)
         val linelen      = columnWidths.sum
@@ -124,9 +128,10 @@ trait VariColumnTabulator extends Tabulator {
       else if (xwise) resulting((items grouped ncols).toSeq)
       else {
         val cols = (items grouped nrows).toList
-        val rows = for (i <- 0 until nrows) yield
-          for (j <- 0 until ncols) yield
-            if (j < cols.size && i < cols(j).size) cols(j)(i) else ""
+        val rows =
+          for (i <- 0 until nrows) yield
+            for (j <- 0 until ncols) yield
+              if (j < cols.size && i < cols(j).size) cols(j)(i) else ""
         resulting(rows)
       }
     }
