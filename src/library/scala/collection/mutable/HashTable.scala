@@ -449,7 +449,7 @@ private[collection] object HashTable {
       // h
 
       /* OLD VERSION
-       * quick, but bad for sequence 0-10000 - little enthropy in higher bits
+       * quick, but bad for sequence 0-10000 - little entropy in higher bits
        * since 2003 */
       // var h: Int = hcode + ~(hcode << 9)
       // h = h ^ (h >>> 14)

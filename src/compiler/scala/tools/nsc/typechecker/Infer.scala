@@ -376,7 +376,7 @@ trait Infer extends Checkable {
     }
     /** Overload which allocates fresh type vars.
      *  The other one exists because apparently inferExprInstance needs access to the typevars
-     *  after the call, and its wasteful to return a tuple and throw it away almost every time.
+     *  after the call, and it's wasteful to return a tuple and throw it away almost every time.
      */
     private def exprTypeArgs(tparams: List[Symbol], restpe: Type, pt: Type, useWeaklyCompatible: Boolean): List[Type] =
       exprTypeArgs(tparams map freshVar, tparams, restpe, pt, useWeaklyCompatible)

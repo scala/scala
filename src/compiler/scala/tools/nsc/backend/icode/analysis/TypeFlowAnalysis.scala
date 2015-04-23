@@ -572,7 +572,7 @@ abstract class TypeFlowAnalysis {
 
         - `inlined` : These blocks were spliced into the method's CFG as part of inlining. Being new blocks, they haven't been visited yet by the typeflow analysis.
 
-        - `staleIn` : These blocks are what `doInline()` calls `afterBlock`s, ie the new home for instructions that previously appearead
+        - `staleIn` : These blocks are what `doInline()` calls `afterBlock`s, ie the new home for instructions that previously appeared
                       after a callsite in a `staleOut` block.
 
       Based on the above information, we have to bring up-to-date the caches that `forwardAnalysis` and `blockTransfer` use to skip blocks and instructions.

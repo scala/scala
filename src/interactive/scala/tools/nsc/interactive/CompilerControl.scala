@@ -302,7 +302,7 @@ trait CompilerControl { self: Global =>
   abstract class WorkItem extends (() => Unit) {
     val onCompilerThread = self.onCompilerThread
 
-    /** Raise a MissingReponse, if the work item carries a response. */
+    /** Raise a MissingResponse, if the work item carries a response. */
     def raiseMissing(): Unit
   }
 

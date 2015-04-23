@@ -26,7 +26,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    */
   private val treatedClassInfos = perRunCaches.newMap[Symbol, Type]() withDefaultValue NoType
 
-  /** Map a lazy, mixedin field accessor to it's trait member accessor */
+  /** Map a lazy, mixedin field accessor to its trait member accessor */
   private val initializer = perRunCaches.newMap[Symbol, Symbol]()
 
 // --------- helper functions -----------------------------------------------
@@ -886,7 +886,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       }
 
       /* Complete lazy field accessors. Applies only to classes,
-       * for it's own (non inherited) lazy fields. If 'checkinit'
+       * for its own (non inherited) lazy fields. If 'checkinit'
        * is enabled, getters that check for the initialized bit are
        * generated, and the class constructor is changed to set the
        * initialized bits.

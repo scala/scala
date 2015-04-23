@@ -167,7 +167,7 @@ trait Contexts { self: Analyzer =>
    *     afterwards errors are thrown. This is configured in `rootContext`. Additionally, more
    *     fine grained control is needed based on the kind of error; ambiguity errors are often
    *     suppressed during exploratory typing, such as determining whether `a == b` in an argument
-   *     position is an assignment or a named argument, when `Infererencer#isApplicableSafe` type checks
+   *     position is an assignment or a named argument, when `Inferencer#isApplicableSafe` type checks
    *     applications with and without an expected type, or whtn `Typer#tryTypedApply` tries to fit arguments to
    *     a function type with/without implicit views.
    *
@@ -1108,10 +1108,10 @@ trait Contexts { self: Analyzer =>
       //
       // A type-import-on-demand declaration never causes any other declaration to be shadowed.
       //
-      // Scala: Bindings of different kinds have a precedence deﬁned on them:
+      // Scala: Bindings of different kinds have a precedence defined on them:
       //
-      //  1) Deﬁnitions and declarations that are local, inherited, or made available by a
-      //     package clause in the same compilation unit where the deﬁnition occurs have
+      //  1) Definitions and declarations that are local, inherited, or made available by a
+      //     package clause in the same compilation unit where the definition occurs have
       //     highest precedence.
       //  2) Explicit imports have next highest precedence.
       def depthOk(imp: ImportInfo) = (

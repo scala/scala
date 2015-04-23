@@ -203,7 +203,7 @@ object BasicIO {
   /** Returns a `ProcessIO` connected to stdout and stderr, and, optionally, stdin. */
   def standard(connectInput: Boolean): ProcessIO = standard(input(connectInput))
 
-  /** Retruns a `ProcessIO` connected to stdout, stderr and the provided `in` */
+  /** Returns a `ProcessIO` connected to stdout, stderr and the provided `in` */
   def standard(in: OutputStream => Unit): ProcessIO = new ProcessIO(in, toStdOut, toStdErr)
 
   /** Send all the input from the stream to stderr, and closes the input stream

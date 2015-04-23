@@ -315,7 +315,7 @@ abstract class BTypes {
         case ArrayBType(component) =>
           if (other == ObjectReference || other == jlCloneableReference || other == jioSerializableReference) true
           else other match {
-            case ArrayBType(otherComponoent) => component.conformsTo(otherComponoent).orThrow
+            case ArrayBType(otherComponent) => component.conformsTo(otherComponent).orThrow
             case _ => false
           }
 
