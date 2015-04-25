@@ -57,10 +57,26 @@ class StringContextTest {
 
   // verifying that the standard interpolators can be supplanted
   @Test def antiHijack_?() = {
-    object AllYourStringsAreBelongToMe { case class StringContext(args: Any*) { def s(args: Any) = "!!!!" } }
+    object AllYourStringsAreBelongToMe {
+      case class StringContext(parts: String*) {
+        def apply() = parts.mkString
+        def s(args: Any) = "!!!!"
+      }
+    }
     import AllYourStringsAreBelongToMe._
     //assertEquals("????", s"????")
     assertEquals("!!!!", s"????") // OK to hijack core interpolator ids
+  }
+  // verifying that the default interpolator can be customized
+  @Test def customStrings() = {
+    object AllYourStringsAreBelongToMe {
+      case class StringContext(parts: String*) {
+        def apply() = '!'.toString * 4
+        def s(args: Any*) = scala.StringContext(parts: _*).s(args: _*)
+      }
+    }
+    import AllYourStringsAreBelongToMe._
+    assertEquals('!'.toString * 4, "????")
   }
 
   @Test def fIf() = {

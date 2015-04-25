@@ -55,6 +55,9 @@ case class StringContext(parts: String*) {
 
   import StringContext._
 
+  // todo macro
+  def apply(): String = processEscapes(parts.mkString)
+
   /** Checks that the length of the given argument `args` is one less than the number
    *  of `parts` supplied to the enclosing `StringContext`.
    *  @param `args` The arguments to be checked.
@@ -178,9 +181,9 @@ object StringContext {
    *  @param  ok      A string representation of acceptable escape sequences for the exception message.
    */
   class InvalidEscapeException(str: String, val index: Int, ok: String) extends IllegalArgumentException(
-    s"""invalid escape ${
+    raw"""invalid escape ${
       require(index >= 0 && index < str.length)
-      if (index == str.length - 1) "at terminal" else s"'\\${str(index + 1)}' not one of [$ok] at"
+      if (index == str.length - 1) "at terminal" else raw"'\\${str(index + 1)}' not one of [$ok] at"
     } index $index in "$str". Use \\\\ for literal \\."""
   )
 

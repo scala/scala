@@ -660,7 +660,7 @@ self =>
 
     def isLiteralToken(token: Token) = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
-           STRINGLIT | INTERPOLATIONID | SYMBOLLIT | TRUE | FALSE | NULL => true
+           RAWSTRINGLIT | STRINGLIT | INTERPOLATIONID | SYMBOLLIT | TRUE | FALSE | NULL => true
       case _                                                        => false
     }
     def isLiteral = isLiteralToken(in.token)
@@ -1168,25 +1168,37 @@ self =>
       pkg
     }
 
+    private def defaultInterpolation(s: Tree, start: Offset = in.offset): Tree = {
+      val t1 = atPos(o2p(start)) { Ident(nme.StringContext) }
+      val t2 = atPos(start) { Apply(t1, List(s)) }
+      t2 setPos t2.pos.makeTransparent
+      val t3 = Select(t2, nme.apply) setPos t2.pos
+      atPos(start) { Apply(t3, Nil) }
+    }
+
     /** {{{
      *  SimpleExpr    ::= literal
      *                  | symbol
      *                  | null
      *  }}}
      */
-    def literal(isNegated: Boolean = false, inPattern: Boolean = false, start: Offset = in.offset): Tree = atPos(start) {
+    def literal(isNegated: Boolean = false, inPattern: Boolean = false, inInterpolation: Boolean = false, start: Offset = in.offset): Tree = atPos(start) {
       def finish(value: Any): Tree = try newLiteral(value) finally in.nextToken()
       if (in.token == SYMBOLLIT)
         Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
       else if (in.token == INTERPOLATIONID)
         interpolatedString(inPattern = inPattern)
+      else if (in.token == STRINGLIT && !inInterpolation && !inPattern) {
+        val s = in.strVal.intern()
+        defaultInterpolation(finish(s))
+      }
       else finish(in.token match {
         case CHARLIT                => in.charVal
         case INTLIT                 => in.intVal(isNegated).toInt
         case LONGLIT                => in.intVal(isNegated)
         case FLOATLIT               => in.floatVal(isNegated).toFloat
         case DOUBLELIT              => in.floatVal(isNegated)
-        case STRINGLIT | STRINGPART => in.strVal.intern()
+        case STRINGLIT | RAWSTRINGLIT | STRINGPART => in.strVal.intern()
         case TRUE                   => true
         case FALSE                  => false
         case NULL                   => null
@@ -1238,6 +1250,7 @@ self =>
         while (in.token == STRINGPART) {
           partsBuf += literal()
           exprsBuf += (
+            // consume the $token
             if (inPattern) dropAnyBraces(pattern())
             else in.token match {
               case IDENTIFIER => atPos(in.offset)(Ident(ident()))
@@ -1248,7 +1261,8 @@ self =>
             }
           )
         }
-        if (in.token == STRINGLIT) partsBuf += literal()
+        // last part of successful parse is always STRINGLIT, relied on for popping sepRegion stack, hence the extra parameter
+        if (in.token == STRINGLIT) partsBuf += literal(inInterpolation = true)
 
       // Documenting that it is intentional that the ident is not rooted for purposes of virtualization
       //val t1 = atPos(o2p(start)) { Select(Select (Ident(nme.ROOTPKG), nme.scala_), nme.StringContext) }
@@ -1978,7 +1992,7 @@ self =>
             in.nextToken()
             atPos(start, start) { Ident(nme.WILDCARD) }
           case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
-               STRINGLIT | INTERPOLATIONID | SYMBOLLIT | TRUE | FALSE | NULL =>
+               RAWSTRINGLIT | STRINGLIT | INTERPOLATIONID | SYMBOLLIT | TRUE | FALSE | NULL =>
             literal(inPattern = true)
           case LPAREN =>
             atPos(start)(makeParens(noSeq.patterns()))

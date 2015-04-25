@@ -18,6 +18,8 @@ object Tokens extends CommonTokens {
   final val BACKQUOTED_IDENT = 11
   def isIdentifier(code: Int) = code == IDENTIFIER || code == BACKQUOTED_IDENT // used by ide
 
+  final val RAWSTRINGLIT = 12 // distinguish """stringlit""" to know whether to process escapes
+
   /** modifiers */
   final val IMPLICIT = 40
   final val OVERRIDE = 41

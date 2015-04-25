@@ -297,7 +297,7 @@ trait Scanners extends ScannersCommon {
         case ARROW =>
           if (!sepRegions.isEmpty && sepRegions.head == lastToken)
             sepRegions = sepRegions.tail
-        case STRINGLIT =>
+        case RAWSTRINGLIT | STRINGLIT =>
           if (inMultiLineInterpolation)
             sepRegions = sepRegions.tail.tail
           else if (inStringInterpolation)
@@ -312,7 +312,7 @@ trait Scanners extends ScannersCommon {
           lastOffset -= 1
         }
         if (inStringInterpolation) fetchStringPart() else fetchToken()
-        if(token == ERROR) {
+        if (token == ERROR) {
           if (inMultiLineInterpolation)
             sepRegions = sepRegions.tail.tail
           else if (inStringInterpolation)
@@ -470,6 +470,7 @@ trait Scanners extends ScannersCommon {
         case '\"' =>
           def fetchDoubleQuote() = {
             if (token == INTERPOLATIONID) {
+              // assert(ch == '\"')
               nextRawChar()
               if (ch == '\"') {
                 val lookahead = lookaheadReader
@@ -591,7 +592,7 @@ trait Scanners extends ScannersCommon {
 
     /** Can token end a statement? */
     def inLastOfStat(token: Token) = token match {
-      case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT | SYMBOLLIT |
+      case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT | RAWSTRINGLIT | SYMBOLLIT |
            IDENTIFIER | BACKQUOTED_IDENT | THIS | NULL | TRUE | FALSE | RETURN | USCORE |
            TYPE | XMLSTART | RPAREN | RBRACKET | RBRACE =>
         true
@@ -680,7 +681,7 @@ trait Scanners extends ScannersCommon {
 // Literals -----------------------------------------------------------------
 
     private def getStringLit() = {
-      getLitChars('"')
+      getRawLitChars('"')
       if (ch == '"') {
         setStrVal()
         nextChar()
@@ -699,7 +700,7 @@ trait Scanners extends ScannersCommon {
         nextRawChar()
         if (isTripleQuote()) {
           setStrVal()
-          token = STRINGLIT
+          token = RAWSTRINGLIT
         } else
           getRawStringLit()
       } else if (ch == SU) {
@@ -711,6 +712,7 @@ trait Scanners extends ScannersCommon {
       }
     }
 
+    // last STRINGPART is returned as STRINGLIT
     private def getStringPart(multiLine: Boolean): Unit = {
       def finishStringPart(): Unit = {
         setStrVal()
@@ -825,8 +827,22 @@ trait Scanners extends ScannersCommon {
         false
       }
 
+    /** Copy current character into cbuf, without interpreting any escape sequences,
+     *  and advance to next character. Used for string literals, which are processed
+     *  by the default interpolator.
+     */
+    protected def getRawLitChar(): Unit = {
+      val escaped = ch == '\\'
+      putChar(ch)
+      nextChar()
+      if (escaped) {
+        putChar(ch)
+        nextChar()
+      }
+    }
+
     /** copy current character into cbuf, interpreting any escape sequences,
-     *  and advance to next character.
+     *  and advance to next character. Used for char lits and backquoted idents.
      */
     protected def getLitChar(): Unit =
       if (ch == '\\') {
@@ -873,6 +889,11 @@ trait Scanners extends ScannersCommon {
     protected def invalidEscape(): Unit = {
       syntaxError(charOffset - 1, "invalid escape character")
       putChar(ch)
+    }
+
+    private def getRawLitChars(delimiter: Char) = {
+      while (ch != delimiter && !isAtEnd && (ch != SU && ch != CR && ch != LF || isUnicodeEscape))
+        getRawLitChar()
     }
 
     private def getLitChars(delimiter: Char) = {
@@ -1080,7 +1101,7 @@ trait Scanners extends ScannersCommon {
         "float(" + floatVal + ")"
       case DOUBLELIT =>
         "double(" + floatVal + ")"
-      case STRINGLIT =>
+      case RAWSTRINGLIT | STRINGLIT =>
         "string(" + strVal + ")"
       case STRINGPART =>
         "stringpart(" + strVal + ")"
@@ -1195,7 +1216,7 @@ trait Scanners extends ScannersCommon {
     case LONGLIT => "long literal"
     case FLOATLIT => "float literal"
     case DOUBLELIT => "double literal"
-    case STRINGLIT | STRINGPART | INTERPOLATIONID => "string literal"
+    case RAWSTRINGLIT | STRINGLIT | STRINGPART | INTERPOLATIONID => "string literal"
     case SYMBOLLIT => "symbol literal"
     case LPAREN => "'('"
     case RPAREN => "')'"
