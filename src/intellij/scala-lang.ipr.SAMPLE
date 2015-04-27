@@ -202,7 +202,6 @@
   </component>
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/actors.iml" filepath="$PROJECT_DIR$/actors.iml" />
       <module fileurl="file://$PROJECT_DIR$/asm.iml" filepath="$PROJECT_DIR$/asm.iml" />
       <module fileurl="file://$PROJECT_DIR$/compiler.iml" filepath="$PROJECT_DIR$/compiler.iml" />
       <module fileurl="file://$PROJECT_DIR$/forkjoin.iml" filepath="$PROJECT_DIR$/forkjoin.iml" />

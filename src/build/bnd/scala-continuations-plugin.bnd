@@ -1,7 +1,0 @@
-Bundle-Name: Scala Delimited Continuations Compiler Plugin
-Bundle-SymbolicName: org.scala-lang.plugins.scala-continuations-plugin
-ver: @CONTINUATIONS_PLUGIN_VERSION@
-Bundle-Version: ${ver}
-Export-Package: *;version=${ver}
-Import-Package: scala.*;version="${range;[==,=+);@VERSION@}",*
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6, JavaSE-1.7
