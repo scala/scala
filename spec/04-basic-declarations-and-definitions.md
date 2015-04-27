@@ -1,5 +1,5 @@
 ---
-title: Basic Declarations and Definitions
+title: Basic Declarations & Definitions
 layout: default
 chapter: 4
 ---
@@ -563,7 +563,7 @@ abstract class Sequence[+A] {
 }
 ```
 
-### Example
+###### Example
 
 ```scala
 abstract class OutputChannel[-A] {

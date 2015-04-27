@@ -205,7 +205,7 @@ to the type or method of $x$ in the parent trait of $C$ whose simple
 name is $T$. That member must be uniquely defined. If it is a method,
 it must be concrete.
 
-### Example
+###### Example
 Consider the following class definitions
 
 ```scala
@@ -778,7 +778,7 @@ Expr1              ::=  PostfixExpr `:' Annotation {Annotation}
 ```
 
 An annotated expression `$e$: @$a_1$ $\ldots$ @$a_n$`
-attaches [annotations](11-user-defined-annotations.html#user-defined-annotations) $a_1 , \ldots , a_n$ to the
+attaches [annotations](11-annotations.html#user-defined-annotations) $a_1 , \ldots , a_n$ to the
 expression $e$.
 
 ## Assignments
@@ -815,7 +815,7 @@ Here are some assignment expressions and their equivalent expansions.
 |`x.f(i) = e`              | `x.f.update(i, e)`   |
 |`x.f(i, j) = e`           | `x.f.update(i, j, e)`|
 
-### Example Imperative Matrix Multiplication
+###### Example Imperative Matrix Multiplication
 
 Here is the usual imperative code for matrix multiplication.
 
@@ -1221,9 +1221,9 @@ In that case, a fresh name for the parameter is chosen arbitrarily.
 
 A named parameter of an anonymous function may be optionally preceded
 by an `implicit` modifier. In that case the parameter is
-labeled [`implicit`](07-implicit-parameters-and-views.html#implicit-parameters-and-views); however the
+labeled [`implicit`](07-implicits.html#implicit-parameters-and-views); however the
 parameter section itself does not count as an implicit parameter
-section in the sense defined [here](07-implicit-parameters-and-views.html#implicit-parameters). Hence, arguments to
+section in the sense defined [here](07-implicits.html#implicit-parameters). Hence, arguments to
 anonymous functions always have to be given explicitly.
 
 ###### Example
@@ -1341,7 +1341,7 @@ available implicit conversions are given in the next two sub-sections.
 
 We say, a type $T$ is _compatible_ to a type $U$ if $T$ weakly conforms
 to $U$ after applying [eta-expansion](#eta-expansion) and
-[view applications](07-implicit-parameters-and-views.html#views).
+[view applications](07-implicits.html#views).
 
 ### Value Conversions
 
@@ -1389,7 +1389,7 @@ term `{ $e$; () }`.
 ###### View Application
 If none of the previous conversions applies, and $e$'s type
 does not conform to the expected type $\mathit{pt}$, it is attempted to convert
-$e$ to the expected type with a [view](07-implicit-parameters-and-views.html#views).
+$e$ to the expected type with a [view](07-implicits.html#views).
 
 ###### Dynamic Member Selection
 If none of the previous conversions applies, and $e$ is a prefix
@@ -1408,7 +1408,7 @@ type $T$ by evaluating the expression to which $m$ is bound.
 
 ###### Implicit Application
 If the method takes only implicit parameters, implicit
-arguments are passed following the rules [here](07-implicit-parameters-and-views.html#implicit-parameters).
+arguments are passed following the rules [here](07-implicits.html#implicit-parameters).
 
 ###### Eta Expansion
 Otherwise, if the method is not a constructor,

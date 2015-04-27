@@ -1,5 +1,5 @@
 ---
-title: The Scala Standard Library
+title: Standard Library
 layout: default
 chapter: 12
 ---
@@ -233,7 +233,7 @@ for type `Int` and for all subrange types.
 The `toString` method displays its receiver as an integer or
 floating point number.
 
-### Example
+###### Example
 
 This is the signature of the numeric value type `Int`:
 
@@ -332,7 +332,7 @@ The `toString` method returns `"()"`.
 ## Standard Reference Classes
 
 This section presents some standard Scala reference classes which are
-treated in a special way by the Scala compiler -- either Scala provides
+treated in a special way by the Scala compiler – either Scala provides
 syntactic sugar for them, or the Scala compiler generates special code
 for their operations. Other classes in the standard Scala library are
 documented in the Scala library documentation by HTML pages.

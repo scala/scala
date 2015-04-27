@@ -1,0 +1,57 @@
+body {
+  padding: 0px;
+  margin: 0px;
+}
+aside.left {
+  position: relative;
+  margin: 0px auto;
+  overflow: visible;
+  height: inherit;
+  margin-bottom: 40px;
+  background-color: #073642;
+}
+header {
+  position: relative;
+  height: inherit;
+  min-height: 32px;
+}
+main {
+    max-width: 1000px;
+    min-width: 600px;
+    margin: 0 auto;
+}
+
+#chapters a {
+  font-size: 14px;
+  max-height: 32px;
+  padding: 4px 8px;
+  white-space: nowrap;
+  display: inline-block;
+}
+#chapters > #github {
+  padding: 14px;
+}
+
+#toc {
+  overflow: visible;
+}
+#toc .toc-active {
+  background: inherit;
+}
+#toc .toc-h1 {
+  display: inherit;
+}
+#toc .toc-h1 a {
+  padding-left: 10px;
+  color: #FFFFFF;
+  background: #72D0EB;
+}
+#toc .toc-h2 a {
+  padding-left: 30px;
+}
+#toc .toc-h3 a {
+  padding-left: 50px;
+}
+#toc a {
+  font-size: 14px;
+}

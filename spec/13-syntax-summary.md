@@ -15,6 +15,8 @@ UnicodeEscape ::= ‘\‘ ‘u‘ {‘u‘} hexDigit hexDigit hexDigit hexDigit
 hexDigit      ::= ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
 ```
 
+## Lexical Syntax
+
 The lexical syntax of Scala is given by the following grammar in EBNF form:
 
 ```ebnf
@@ -72,8 +74,10 @@ nl               ::=  $\mathit{“new line character”}$
 semi             ::=  ‘;’ |  nl {nl}
 ```
 
+## Context-free Syntax
+
 The context-free syntax of Scala is given by the following EBNF
-grammar.
+grammar:
 
 ```ebnf
   Literal           ::=  [‘-’] integerLiteral

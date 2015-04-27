@@ -101,19 +101,18 @@ _    :    =    =>    <-    <:    <%     >:    #    @
 The Unicode operators `\u21D2` ‘$\Rightarrow$’ and `\u2190` ‘$\leftarrow$’, which have the ASCII
 equivalents `=>` and `<-`, are also reserved.
 
-### Example
-Here are examples of identifiers:
-```scala
-    x         Object        maxIndex   p2p      empty_?
-    +         `yield`       αρετη     _y       dot_product_*
-    __system  _MAX_LEN_
-```
+> Here are examples of identifiers:
+> ```scala
+>     x         Object        maxIndex   p2p      empty_?
+>     +         `yield`       αρετη     _y       dot_product_*
+>     __system  _MAX_LEN_
+> ```
 
-### Example
-When one needs to access Java identifiers that are reserved words in Scala, use backquote-enclosed strings.
-For instance, the statement `Thread.yield()` is illegal, since
-`yield` is a reserved word in Scala. However, here's a
-work-around: `` Thread.`yield`() ``
+<!-- -->
+
+> When one needs to access Java identifiers that are reserved words in Scala, use backquote-enclosed strings.
+> For instance, the statement `Thread.yield()` is illegal, since `yield` is a reserved word in Scala.
+> However, here's a work-around: `` Thread.`yield`() ``
 
 ## Newline Characters
 
@@ -205,99 +204,96 @@ A single new line token is accepted
 - after an [infix operator](06-expressions.html#prefix,-infix,-and-postfix-operations),
   if the first token on the next line can start an expression,
 - in front of a [parameter clause](04-basic-declarations-and-definitions.html#function-declarations-and-definitions), and
-- after an [annotation](11-user-defined-annotations.html#user-defined-annotations).
+- after an [annotation](11-annotations.html#user-defined-annotations).
 
-### Example
+> The newline tokens between the two lines are not
+> treated as statement separators.
+>
+> ```scala
+> if (x > 0)
+>   x = x - 1
+>
+> while (x > 0)
+>   x = x / 2
+>
+> for (x <- 1 to 10)
+>   println(x)
+>
+> type
+>   IntList = List[Int]
+> ```
 
-The newline tokens between the two lines are not
-treated as statement separators.
+<!-- -->
 
-```scala
-if (x > 0)
-  x = x - 1
+> ```scala
+> new Iterator[Int]
+> {
+>   private var x = 0
+>   def hasNext = true
+>   def next = { x += 1; x }
+> }
+> ```
+>
+> With an additional newline character, the same code is interpreted as
+> an object creation followed by a local block:
+>
+> ```scala
+> new Iterator[Int]
+>
+> {
+>   private var x = 0
+>   def hasNext = true
+>   def next = { x += 1; x }
+> }
+> ```
 
-while (x > 0)
-  x = x / 2
+<!-- -->
 
-for (x <- 1 to 10)
-  println(x)
+> ```scala
+>   x < 0 ||
+>   x > 10
+> ```
+>
+> With an additional newline character, the same code is interpreted as
+> two expressions:
+>
+> ```scala
+>   x < 0 ||
+>
+>   x > 10
+> ```
 
-type
-  IntList = List[Int]
-```
+<!-- -->
 
-### Example
+> ```scala
+> def func(x: Int)
+>         (y: Int) = x + y
+> ```
+>
+> With an additional newline character, the same code is interpreted as
+> an abstract function definition and a syntactically illegal statement:
+>
+> ```scala
+> def func(x: Int)
+>
+>         (y: Int) = x + y
+> ```
 
-```scala
-new Iterator[Int]
-{
-  private var x = 0
-  def hasNext = true
-  def next = { x += 1; x }
-}
-```
+<!-- -->
 
-With an additional newline character, the same code is interpreted as
-an object creation followed by a local block:
-
-```scala
-new Iterator[Int]
-
-{
-  private var x = 0
-  def hasNext = true
-  def next = { x += 1; x }
-}
-```
-
-### Example
-
-```scala
-  x < 0 ||
-  x > 10
-```
-
-With an additional newline character, the same code is interpreted as
-two expressions:
-
-```scala
-  x < 0 ||
-
-  x > 10
-```
-
-### Example
-
-```scala
-def func(x: Int)
-        (y: Int) = x + y
-```
-
-With an additional newline character, the same code is interpreted as
-an abstract function definition and a syntactically illegal statement:
-
-```scala
-def func(x: Int)
-
-        (y: Int) = x + y
-```
-
-### Example
-
-```scala
-@serializable
-protected class Data { ... }
-```
-
-With an additional newline character, the same code is interpreted as
-an attribute and a separate statement (which is syntactically
-illegal).
-
-```scala
-@serializable
-
-protected class Data { ... }
-```
+> ```scala
+> @serializable
+> protected class Data { ... }
+> ```
+>
+> With an additional newline character, the same code is interpreted as
+> an attribute and a separate statement (which is syntactically illegal).
+>
+> ```scala
+> @serializable
+>
+> protected class Data { ... }
+> ```
 
 ## Literals
 
@@ -351,11 +347,9 @@ is _pt_. The numeric ranges given by these types are:
 |`Short`         | $-2\^{15}$ to $2\^{15}-1$|
 |`Char`          | $0$ to $2\^{16}-1$       |
 
-### Example
-
-```scala
-0          21          0xFFFFFFFF       -42L
-```
+> ```scala
+> 0          21          0xFFFFFFFF       -42L
+> ```
 
 ### Floating Point Literals
 
@@ -379,20 +373,18 @@ If a floating point literal in a program is followed by a token
 starting with a letter, there must be at least one intervening
 whitespace character between the two tokens.
 
-### Example
+> ```scala
+> 0.0        1e30f      3.14159f      1.0e-100      .1
+> ```
 
-```scala
-0.0        1e30f      3.14159f      1.0e-100      .1
-```
+<!-- -->
 
-### Example
+> The phrase `1.toString` parses as three different tokens:
+> the integer literal `1`, a `.`, and the identifier `toString`.
 
-The phrase `1.toString` parses as three different tokens:
-the integer literal `1`, a `.`, and the identifier `toString`.
+<!-- -->
 
-### Example
-
-`1.` is not a valid floating point literal because the mandatory digit after the `.` is missing.
+> `1.` is not a valid floating point literal because the mandatory digit after the `.` is missing.
 
 ### Boolean Literals
 
@@ -413,11 +405,9 @@ A character literal is a single character enclosed in quotes.
 The character is either a printable unicode character or is described
 by an [escape sequence](#escape-sequences).
 
-### Example
-
-```scala
-'a'    '\u0041'    '\n'    '\t'
-```
+> ```scala
+> 'a'    '\u0041'    '\n'    '\t'
+> ```
 
 Note that `'\u000A'` is _not_ a valid character literal because
 Unicode conversion is done before literal parsing and the Unicode
@@ -439,12 +429,10 @@ contains a double quote character, it must be escaped,
 i.e. `"\""`. The value of a string literal is an instance of
 class `String`.
 
-### Example
-
-```scala
-"Hello,\nWorld!"
-"This string contains a \" character."
-```
+> ```scala
+> "Hello,\nWorld!"
+> "This string contains a \" character."
+> ```
 
 #### Multi-Line String Literals
 
@@ -461,45 +449,43 @@ must not necessarily be printable; newlines or other
 control characters are also permitted.  Unicode escapes work as everywhere else, but none
 of the escape sequences [here](#escape-sequences) are interpreted.
 
-### Example
-
-```scala
-  """the present string
-     spans three
-     lines."""
-```
-
-This would produce the string:
-
-```scala
-the present string
-     spans three
-     lines.
-```
-
-The Scala library contains a utility method `stripMargin`
-which can be used to strip leading whitespace from multi-line strings.
-The expression
-
-```scala
- """the present string
-   |spans three
-   |lines.""".stripMargin
-```
-
-evaluates to
-
-```scala
-the present string
-spans three
-lines.
-```
-
-Method `stripMargin` is defined in class
-[scala.collection.immutable.StringLike](http://www.scala-lang.org/api/current/#scala.collection.immutable.StringLike).
-Because there is a predefined
-[implicit conversion](06-expressions.html#implicit-conversions) from `String` to
-`StringLike`, the method is applicable to all strings.
+> ```scala
+>   """the present string
+>      spans three
+>      lines."""
+> ```
+>
+> This would produce the string:
+>
+> ```scala
+> the present string
+>      spans three
+>      lines.
+> ```
+>
+> The Scala library contains a utility method `stripMargin`
+> which can be used to strip leading whitespace from multi-line strings.
+> The expression
+>
+> ```scala
+>  """the present string
+>    |spans three
+>    |lines.""".stripMargin
+> ```
+>
+> evaluates to
+>
+> ```scala
+> the present string
+> spans three
+> lines.
+> ```
+>
+> Method `stripMargin` is defined in class
+> [scala.collection.immutable.StringLike](http://www.scala-lang.org/api/current/#scala.collection.immutable.StringLike).
+> Because there is a predefined
+> [implicit conversion](06-expressions.html#implicit-conversions) from `String` to
+> `StringLike`, the method is applicable to all strings.
 
 ### Escape Sequences
 
@@ -587,15 +573,13 @@ The scanner switches from XML mode to Scala mode if either
 Note that no Scala tokens are constructed in XML mode, and that comments are interpreted
 as text.
 
-### Example
-
-The following value definition uses an XML literal with two embedded
-Scala expressions:
-
-```scala
-val b = <book>
-          <title>The Scala Language Specification</title>
-          <version>{scalaBook.version}</version>
-          <authors>{scalaBook.authors.mkList("", ", ", "")}</authors>
-        </book>
-```
+> The following value definition uses an XML literal with two embedded
+> Scala expressions:
+>
+> ```scala
+> val b = <book>
+>           <title>The Scala Language Specification</title>
+>           <version>{scalaBook.version}</version>
+>           <authors>{scalaBook.authors.mkList("", ", ", "")}</authors>
+>         </book>
+> ```
