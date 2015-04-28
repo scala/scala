@@ -835,8 +835,7 @@ transitive relation that satisfies the following conditions.
 - For every type constructor $T$ (with any number of type parameters),
   `scala.Nothing <: $T$ <: scala.Any`.
 
-- For every class type $T$ such that `$T$ <: scala.AnyRef` and not
-  `$T$ <: scala.NotNull` one has `scala.Null <: $T$`.
+- For every class type $T$ such that `$T$ <: scala.AnyRef` one has `scala.Null <: $T$`.
 - A type variable or abstract type $t$ conforms to its upper bound and
   its lower bound conforms to $t$.
 - A class type or parameterized type conforms to any of its base-types.
