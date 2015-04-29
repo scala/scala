@@ -148,10 +148,6 @@ The selection $e.x$ is evaluated by first evaluating the qualifier
 expression $e$, which yields an object $r$, say. The selection's
 result is then the member of $r$ that is either defined by $m$ or defined
 by a definition overriding $m$.
-If that member has a type which
-conforms to `scala.NotNull`, the member's value must be initialized
-to a value different from `null`, otherwise a `scala.UnitializedError`
-is thrown.
 
 ## This and Super
 
