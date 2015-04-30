@@ -189,7 +189,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
           // there's no need to run eliminateUnreachableCode here. building the call graph does that
           // already, no code can become unreachable in the meantime.
           val analyzer = new AsmAnalyzer(callsite.callsiteMethod, callsite.callsiteClass.internalName, new SourceInterpreter)
-          val receiverValue = analyzer.frameAt(callsite.callsiteInstruction).peekDown(traitMethodArgumentTypes.length)
+          val receiverValue = analyzer.frameAt(callsite.callsiteInstruction).peekStack(traitMethodArgumentTypes.length)
           for (i <- receiverValue.insns.asScala) {
             val cast = new TypeInsnNode(CHECKCAST, selfParamType.internalName)
             callsite.callsiteMethod.instructions.insert(i, cast)
@@ -400,7 +400,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         val inlinedReturn = instructionMap(originalReturn)
         val returnReplacement = new InsnList
 
-        def drop(slot: Int) = returnReplacement add getPop(frame.peekDown(slot).getSize)
+        def drop(slot: Int) = returnReplacement add getPop(frame.peekStack(slot).getSize)
 
         // for non-void methods, store the stack top into the return local variable
         if (hasReturnValue) {
