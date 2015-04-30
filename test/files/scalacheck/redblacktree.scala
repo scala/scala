@@ -33,7 +33,7 @@ package scala.collection.immutable.redblacktree {
 
     def mkTree(level: Int, parentIsBlack: Boolean = false, label: String = ""): Gen[Tree[String, Int]] =
       if (level == 0) {
-        value(null)
+        const(null)
       } else {
         for {
           oddOrEven <- choose(0, 2)
