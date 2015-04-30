@@ -54,11 +54,6 @@
       <artifactId>scala-swing_@SCALA_BINARY_VERSION@</artifactId>
       <version>@SCALA_SWING_VERSION@</version>
     </dependency>
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-actor_@SCALA_BINARY_VERSION@</artifactId>
-      <version>@AKKA_ACTOR_VERSION@</version>
-    </dependency>
   </dependencies>
   <developers>
     <developer>

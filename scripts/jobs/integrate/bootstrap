@@ -429,8 +429,7 @@ constructUpdatedModuleVersions() {
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dpartest.version.number=$PARTEST_VER")
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscalacheck.version.number=$SCALACHECK_VER")
 
-  # allow overriding the akka-actors and jline version using a jenkins build parameter
-  if [ ! -z "$AKKA_ACTOR_VER" ]; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dakka-actor.version.number=$AKKA_ACTOR_VER"); fi
+  # allow overriding the jline version using a jenkins build parameter
   if [ ! -z "$JLINE_VER" ]     ; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Djline.version=$JLINE_VER"); fi
 
   if [ ! -z "$SCALA_BINARY_VER" ]; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala.binary.version=$SCALA_BINARY_VER"); fi
