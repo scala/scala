@@ -3,7 +3,7 @@
 # Library to push and pull binary artifacts from a remote repository using CURL.
 
 remote_urlget="http://repo.typesafe.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap"
-remote_urlpush="http://private-repo.typesafe.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap"
+remote_urlpush="http://dl.bintray.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap"
 libraryJar="$(pwd)/lib/scala-library.jar"
 desired_ext=".desired.sha1"
 push_jar="$(pwd)/tools/push.jar"
