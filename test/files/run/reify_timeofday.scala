@@ -6,7 +6,7 @@ object Test extends App {
     class DateError extends Exception
 
     /** Simulating properties in Scala
-     *  (example 4.2.1 in ScalaReference.pdf)
+     *  (example 4.2.1 in the Scala Language Specification)
      */
     class TimeOfDayVar {
       private var h, m, s: Int = 0
