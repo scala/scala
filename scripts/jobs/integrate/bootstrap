@@ -141,7 +141,7 @@ update() {
   cd $2
 
   git fetch --tags "https://github.com/$1/$2.git"
-  (git fetch "https://github.com/$1/$2.git" $3 && git checkout -q FETCH_HEAD) #|| git checkout -q $3 # || fallback is for local testing on tag
+  (git fetch "https://github.com/$1/$2.git" $3 && git checkout -fq FETCH_HEAD) #|| git checkout -fq $3 # || fallback is for local testing on tag
   git reset --hard
 }
 
@@ -258,22 +258,35 @@ buildSwing() {
   fi
 }
 
+# should only be called with publishTasks publishing to private-repo
 buildScalacheck(){
   if [ "$SCALACHECK_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scalacheck"  "scalacheck" $SCALACHECK_VER )
   then echo "Found scalacheck $SCALACHECK_VER; not building."
   else
     update rickynils scalacheck $SCALACHECK_REF && gfxd
-    sbtBuild 'set version := "'$SCALACHECK_VER'"' 'set VersionKeys.scalaParserCombinatorsVersion := "'$PARSERS_VER'"' $clean $publishPrivateTask # test times out NOTE: never published to sonatype
+    sbtBuild 'set version := "'$SCALACHECK_VER'"' 'set VersionKeys.scalaParserCombinatorsVersion := "'$PARSERS_VER'"' $clean publish # test times out NOTE: never published to sonatype
     SCALACHECK_BUILT="yes"
   fi
 }
 
 # build modules, using ${buildTasks[@]} (except for Scalacheck, which is hard-coded to publish to private-repo)
 buildModules() {
+  publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-private-repo")' "set every publishTo := Some(\"private-repo\" at \"$releaseTempRepoUrl\")")
+  buildTasks=($publishPrivateTask)
   buildXML
   buildParsers
   buildSwing
   buildScalacheck
+  buildPartest
+  # buildPartestIface
+}
+
+buildPublishedModules() {
+  publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-sonatype")' "set pgpPassphrase := Some(Array.empty)")
+  buildTasks=($publishSonatypeTaskModules)
+  buildXML
+  buildParsers
+  buildSwing
   buildPartest
   # buildPartestIface
 }
@@ -416,6 +429,29 @@ deriveModuleVersions() {
   # PARTEST_IFACE_VER=${PARTEST_IFACE_VER-$(deriveVersion scala scala-partest-interface "$PARTEST_IFACE_REF")}
 }
 
+createNetrcFile() {
+  local netrcFile=$HOME/`basename $1`-netrc
+  grep 'host=' $1 | sed 's/host=\(.*\)/machine \1/'          >  $netrcFile
+  grep 'user=' $1 | sed 's/user=\(.*\)/login \1/'            >> $netrcFile
+  grep 'password=' $1 | sed 's/password=\(.*\)/password \1/' >> $netrcFile
+}
+
+removeExistingBuilds() {
+  createNetrcFile "$HOME/.credentials-private-repo"
+  local netrcFile="$HOME/.credentials-private-repo-netrc"
+
+  local storageApiUrl=`echo $releaseTempRepoUrl | sed 's/\(scala-release-temp\)/api\/storage\/\1/'`
+  local scalaLangModules=`curl -s $storageApiUrl/org/scala-lang | jq -r '.children | .[] | "org/scala-lang" + .uri'`
+
+  for module in "org/scalacheck" $scalaLangModules; do
+    local artifacts=`curl -s $storageApiUrl/$module | jq -r ".children | .[] | select(.uri | contains(\"$SCALA_VER\")) | .uri"`
+    for artifact in $artifacts; do
+      echo "Deleting $releaseTempRepoUrl$module$artifact"
+      curl -s --netrc-file $netrcFile -X DELETE $releaseTempRepoUrl$module$artifact
+    done
+  done
+}
+
 constructUpdatedModuleVersions() {
   updatedModuleVersions=()
 
@@ -466,8 +502,6 @@ bootstrap() {
   # publish to our internal repo (so we can resolve the modules in the scala build below)
   # we only need to build the modules necessary to build Scala itself
   # since the version of locker and quick are the same
-  publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-private-repo")' "set every publishTo := Some(\"private-repo\" at \"$releaseTempRepoUrl\")")
-  buildTasks=($publishPrivateTask)
   buildModules
 
   constructUpdatedModuleVersions
@@ -521,9 +555,7 @@ publishSonatype() {
   # (was hoping we could make everything go to the same staging repo, but it's not timing that causes two staging repos to be opened)
   # NOTE: only publish those for which versions are set
   # test and publish to sonatype, assuming you have ~/.sbt/0.13/sonatype.sbt and ~/.sbt/0.13/plugin/gpg.sbt
-  publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-sonatype")' "set pgpPassphrase := Some(Array.empty)")
-  buildTasks=($publishSonatypeTaskModules)
-  buildModules
+  buildPublishedModules
 
   open=$(st_stagingReposOpen)
   allOpenUrls=$(echo $open | jq  '.repositoryURI' | tr -d \")
@@ -543,15 +575,10 @@ determineScalaVersion
 
 deriveModuleVersions
 
+removeExistingBuilds
+
 bootstrap
 
 if [ "$publishToSonatype" == "yes" ]
   then publishSonatype
-  else # build modules one more time, just to mimic the regular build as much when running as nightly
-    echo "### Rebuilding modules with quick, publishing to $baseDir/ivy/local"
-    buildTasks=(publish-local)
-    # buildScalacheck always uses publishPrivateTask (not buildTasks). we override it to avoid publishing to private-repo.
-    publishPrivateTask="publish-local"
-    forceRebuild="yes"
-    buildModules
 fi
