@@ -1,0 +1,37 @@
+body {
+  padding: 0px;
+  margin: 0px;
+}
+header {
+  height: 96px;
+  padding: 0px;
+  width: 100%;
+  position: relative;
+  color: #FFFFFF;
+}
+#header-main {
+  height: 68px;
+  line-height: 1.2;
+  font-size: 32px;
+}
+#header-sub {
+  padding-left: 64px;
+  height: 28px;
+  background-color:#72D0EB;
+  vertical-align: middle;
+}
+#scala-logo {
+  padding: 10px;
+}
+#title {
+  vertical-align: middle;
+}
+#github {
+  height: 40px;
+  padding: 14px;
+  float: right;
+  font-size: 0px;
+}
+li {
+  margin: 5px;
+}

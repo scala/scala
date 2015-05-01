@@ -32,7 +32,7 @@ object Scalatest {
   }
     
 
-  /** Execute cmd, wait for the process to end and pipe it's output to stdout */
+  /** Execute cmd, wait for the process to end and pipe its output to stdout */
   def exec(cmd: String) {
     val proc = Runtime.getRuntime().exec(cmd)
     val inp = new BufferedReader(new InputStreamReader(proc.getInputStream))

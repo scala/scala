@@ -93,7 +93,7 @@ object WrappedArray {
   def empty[T <: AnyRef]: WrappedArray[T] = EmptyWrappedArray.asInstanceOf[WrappedArray[T]]
 
   // If make is called explicitly we use whatever we're given, even if it's
-  // empty.  This may be unnecesssary (if WrappedArray is to honor the collections
+  // empty.  This may be unnecessary (if WrappedArray is to honor the collections
   // contract all empty ones must be equal, so discriminating based on the reference
   // equality of an empty array should not come up) but we may as well be
   // conservative since wrapRefArray contributes most of the unnecessary allocations.

@@ -6,23 +6,25 @@
   <link rel="icon" type="image/png" href="public/favicon.ico">
   <link rel="shortcut icon" type="image/png" href="public/favicon.ico">
 
-  <link rel="stylesheet" type="text/css" href="public/stylesheets/screen.css">
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
   <title>{{ page.title }}</title>
 
-  <script type="text/javascript">
-    $(document).ready(function() {
-      $('#the-scala-language-specification').css('display','none');
-    })
-  </script>
+  <link rel="stylesheet" type="text/css" href="public/stylesheets/screen.css">
+  <link rel="stylesheet" type="text/css" href="public/stylesheets/screen-toc.css">
+  <link rel="stylesheet" type="text/css" href="public/stylesheets/fonts.css">
 </head>
 
 <body>
-<div id="header">
-<a alt="The Scala Language Specification" href="{{site.baseurl}}/"><img id="scala-logo" src="public/images/scala-logo-red-spiral-dark.png" />
-<h1 class="no-numbering">Language Specification</h1></a>
-</div>
+<header>
+  <div id="header-main">
+  <img id="scala-logo" src="public/images/scala-spiral-white.png" />
+  <span id="title">Scala Language Specification</span>
+  <a id="github" href="https://github.com/scala/scala/tree/2.11.x/spec"><img src="public/images/github-logo@2x.png" alt="Edit at Github"></a>
+  </div>
+  <div id="header-sub">Version 2.11</div>
+</header>
+<main>
 {{ content }}
-
+</main>
 </body>
 </html>

@@ -1,5 +1,5 @@
 ---
-title: Classes and Objects
+title: Classes & Objects
 layout: default
 chapter: 5
 ---
@@ -368,7 +368,7 @@ it is possible to add new defaults (if the corresponding parameter in the
 superclass does not have a default) or to override the defaults of the
 superclass (otherwise).
 
-### Example
+###### Example
 
 Consider the definitions:
 
@@ -699,7 +699,7 @@ Here,
     parameter section is called _polymorphic_, otherwise it is called
     _monomorphic_.
   - $as$ is a possibly empty sequence of
-    [annotations](11-user-defined-annotations.html#user-defined-annotations).
+    [annotations](11-annotations.html#user-defined-annotations).
     If any annotations are given, they apply to the primary constructor of the
     class.
   - $m$ is an [access modifier](#modifiers) such as
@@ -744,7 +744,7 @@ which when applied to parameters conforming to types $\mathit{ps}$
 initializes instances of type `$c$[$\mathit{tps}\,$]` by evaluating the template
 $t$.
 
-### Example
+###### Example
 The following example illustrates `val` and `var` parameters of a class `C`:
 
 ```scala
@@ -990,7 +990,7 @@ it is not statically known at the time the trait is defined.
 If $D$ is not a trait, then its actual supertype is simply its
 least proper supertype (which is statically known).
 
-### Example
+###### Example
 The following trait defines the property
 of being comparable to objects of some type. It contains an abstract
 method `<` and default implementations of the other

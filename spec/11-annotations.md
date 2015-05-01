@@ -1,17 +1,19 @@
 ---
-title: User-Defined Annotations
+title: Annotations
 layout: default
 chapter: 11
 ---
 
-# User-Defined Annotations
+# Annotations
 
 ```ebnf
   Annotation       ::=  ‘@’ SimpleType {ArgumentExprs}
   ConstrAnnotation ::=  ‘@’ SimpleType ArgumentExprs
 ```
 
-User-defined annotations associate meta-information with definitions.
+## Definition
+
+Annotations associate meta-information with definitions.
 A simple annotation has the form `@$c$` or `@$c(a_1 , \ldots , a_n)$`.
 Here, $c$ is a constructor of a class $C$, which must conform
 to the class `scala.Annotation`.
@@ -32,6 +34,10 @@ Examples:
 String @local                               // Type annotation
 (e: @unchecked) match { ... }               // Expression annotation
 ```
+
+## Predefined Annotations
+
+### Java Platform Annotations
 
 The meaning of annotation clauses is implementation-dependent. On the
 Java platform, the following annotations have a standard meaning.
@@ -61,7 +67,7 @@ Java platform, the following annotations have a standard meaning.
     clause for the method or constructor must mention the class of that exception
     or one of the superclasses of the class of that exception.
 
-## Java Beans Annotations
+### Java Beans Annotations
 
   * `@scala.beans.BeanProperty` When prefixed to a definition of some variable `X`, this
     annotation causes getter and setter methods `getX`, `setX`
@@ -76,18 +82,21 @@ Java platform, the following annotations have a standard meaning.
   * `@scala.beans.BooleanBeanProperty` This annotation is equivalent to `scala.reflect.BeanProperty`, but
     the generated getter method is named `isX` instead of `getX`.
 
-## Deprecation Annotations
+### Deprecation Annotations
 
-  * `@deprecated(<stringlit>)` Marks a definition as deprecated. Accesses to the
+  * `@deprecated(message: <stringlit>, since: <stringlit>)`<br/>
+    Marks a definition as deprecated. Accesses to the
     defined entity will then cause a deprecated warning mentioning the
-    message `<stringlit>` to be issued from the compiler.  Deprecated
-    warnings are suppressed in code that belongs itself to a definition
+    _message_ `<stringlit>` to be issued from the compiler.
+    The argument _since_ documents since when the definition should be considered deprecated.<br/>
+    Deprecated warnings are suppressed in code that belongs itself to a definition
     that is labeled deprecated.
 
-  * `@deprecatedName(name: <symbollit>)` Marks a formal parameter name as deprecated. Invocations of this entity
+  * `@deprecatedName(name: <symbollit>)`<br/>
+    Marks a formal parameter name as deprecated. Invocations of this entity
     using named parameter syntax refering to the deprecated parameter name cause a deprecation warning.
 
-## Scala Compiler Annotations
+### Scala Compiler Annotations
 
   * `@unchecked` When applied to the selector of a `match` expression,
     this attribute suppresses any warnings about non-exhaustive pattern
@@ -140,6 +149,8 @@ Java platform, the following annotations have a standard meaning.
     Whenever the static type of an expression matches a specialized variant of
     a definition, the compiler will instead use the specialized version.
     See the [specialization sid](http://docs.scala-lang.org/sips/completed/scala-specialization.html) for more details of the implementation.
+
+## User-defined Annotations
 
 Other annotations may be interpreted by platform- or
 application-dependent tools. Class `scala.Annotation` has two

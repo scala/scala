@@ -155,7 +155,7 @@ object Exception {
   /** A `Catch` object which catches everything. */
   final def allCatch[T]: Catch[T] = new Catch(allCatcher[T]) withDesc "<everything>"
 
-  /** A `Catch` object witch catches non-fatal exceptions. */
+  /** A `Catch` object which catches non-fatal exceptions. */
   final def nonFatalCatch[T]: Catch[T] = new Catch(nonFatalCatcher[T]) withDesc "<non-fatal>"
 
   /** Creates a `Catch` object which will catch any of the supplied exceptions.

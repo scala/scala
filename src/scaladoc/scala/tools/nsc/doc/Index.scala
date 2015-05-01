@@ -11,4 +11,6 @@ trait Index {
   type SymbolMap = SortedMap[String, SortedSet[model.MemberEntity]]
 
   def firstLetterIndex: Map[Char, SymbolMap]
+
+  def hasDeprecatedMembers: Boolean
 }

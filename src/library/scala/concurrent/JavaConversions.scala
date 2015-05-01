@@ -11,7 +11,7 @@ package scala.concurrent
 import java.util.concurrent.{ExecutorService, Executor}
 import scala.language.implicitConversions
 
-/** The `JavaConversions` object provides implicit converstions supporting
+/** The `JavaConversions` object provides implicit conversions supporting
  *  interoperability between Scala and Java concurrency classes.
  *
  *  @author Philipp Haller

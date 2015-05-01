@@ -365,7 +365,7 @@ abstract class TreeGen {
             DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(lvdefs, Literal(Constant(()))))))
       }
       else {
-        // convert (implicit ... ) to ()(implicit ... ) if its the only parameter section
+        // convert (implicit ... ) to ()(implicit ... ) if it's the only parameter section
         if (vparamss1.isEmpty || !vparamss1.head.isEmpty && vparamss1.head.head.mods.isImplicit)
           vparamss1 = List() :: vparamss1
         val superCall = pendingSuperCall // we can't know in advance which of the parents will end up as a superclass

@@ -413,7 +413,7 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
    *    @inheritdoc
    *
    *    Another way to express this
-   *    is that `xs union ys` computes the order-presevring multi-set union of `xs` and `ys`.
+   *    is that `xs union ys` computes the order-preserving multi-set union of `xs` and `ys`.
    *    `union` is hence a counter-part of `diff` and `intersect` which also work on multi-sets.
    *
    *    $willNotTerminateInf
