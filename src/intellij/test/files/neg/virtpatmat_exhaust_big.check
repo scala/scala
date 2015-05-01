@@ -1,7 +1,0 @@
-virtpatmat_exhaust_big.scala:27: warning: match may not be exhaustive.
-It would fail on the following input: Z11()
-  def foo(z: Z) = z match {
-                  ^
-error: No warnings can be incurred under -Xfatal-warnings.
-one warning found
-one error found
