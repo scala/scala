@@ -1,3 +1,6 @@
+t8582.scala:17: warning: class BeanInfo in package beans is deprecated: the generation of BeanInfo classes is no longer supported
+    class C1
+          ^
 getClass on module gives module class
  class p1.p2.Singleton$Singleton$
 

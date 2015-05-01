@@ -20,6 +20,7 @@ package scala.concurrent.forkjoin;
  * @since 1.7
  * @author Doug Lea
  */
+@Deprecated
 public class ForkJoinWorkerThread extends Thread {
     /*
      * ForkJoinWorkerThreads are managed by ForkJoinPools and perform

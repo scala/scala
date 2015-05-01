@@ -529,4 +529,15 @@ class SetMapConsistencyTest {
     assert(nit == 4)
     assert(nfe == 4)
   }
+
+  @Test
+  def test_SI8727() {
+    import scala.tools.testing.AssertUtil._
+    type NSEE = NoSuchElementException
+    val map = Map(0 -> "zero", 1 -> "one")
+    val m = map.filterKeys(i => if (map contains i) true else throw new NSEE)
+    assert{ (m contains 0) && (m get 0).nonEmpty }
+    assertThrows[NSEE]{ m contains 2 }
+    assertThrows[NSEE]{ m get 2 }
+  }
 }

@@ -917,7 +917,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     def genLoadModule(tree: Tree): BType = {
       val module = (
         if (!tree.symbol.isPackageClass) tree.symbol
-        else tree.symbol.info.member(nme.PACKAGE) match {
+        else tree.symbol.info.packageObject match {
           case NoSymbol => abort(s"SI-5604: Cannot use package as value: $tree")
           case s        => abort(s"SI-5604: found package class where package object expected: $tree")
         }
@@ -1227,7 +1227,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         val equalsMethod: Symbol = {
           if (l.tpe <:< BoxedNumberClass.tpe) {
             if (r.tpe <:< BoxedNumberClass.tpe) platform.externalEqualsNumNum
-            else if (r.tpe <:< BoxedCharacterClass.tpe) platform.externalEqualsNumObject // will be externalEqualsNumChar in 2.12, SI-9030
+            else if (r.tpe <:< BoxedCharacterClass.tpe) platform.externalEqualsNumChar
             else platform.externalEqualsNumObject
           } else platform.externalEquals
         }

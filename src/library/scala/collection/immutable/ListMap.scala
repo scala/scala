@@ -29,7 +29,11 @@ object ListMap extends ImmutableMapFactory[ListMap] {
     new MapCanBuildFrom[A, B]
   def empty[A, B]: ListMap[A, B] = EmptyListMap.asInstanceOf[ListMap[A, B]]
 
-  private object EmptyListMap extends ListMap[Any, Nothing] { }
+  @SerialVersionUID(-8256686706655863282L)
+  private object EmptyListMap extends ListMap[Any, Nothing] { 
+    override def apply(key: Any) = throw new NoSuchElementException("key not found: " + key)
+    override def contains(key: Any) = false
+  }
 }
 
 /** This class implements immutable maps using a list-based data structure.
@@ -159,7 +163,6 @@ extends AbstractMap[A, B]
      */
     override def apply(k: A): B1 = apply0(this, k)
 
-
     @tailrec private def apply0(cur: ListMap[A, B1], k: A): B1 =
       if (cur.isEmpty) throw new NoSuchElementException("key not found: "+k)
       else if (k == cur.key) cur.value
@@ -176,7 +179,16 @@ extends AbstractMap[A, B]
     @tailrec private def get0(cur: ListMap[A, B1], k: A): Option[B1] =
       if (k == cur.key) Some(cur.value)
       else if (cur.next.nonEmpty) get0(cur.next, k) else None
+      
+      
+    override def contains(key: A): Boolean = contains0(this, key)
+    
+    @tailrec private def contains0(cur: ListMap[A, B1], k: A): Boolean =
+      if (k == cur.key) true
+      else if (cur.next.nonEmpty) contains0(cur.next, k)
+      else false
 
+      
     /** This method allows one to create a new map with an additional mapping
      *  from `key` to `value`. If the map contains already a mapping for `key`,
      *  it will be overridden by this function.
@@ -186,6 +198,7 @@ extends AbstractMap[A, B]
       new m.Node[B2](k, v)
     }
 
+    
     /** Creates a new mapping without the given `key`.
      *  If the map does not contain a mapping for the given key, the
      *  method returns the same map.

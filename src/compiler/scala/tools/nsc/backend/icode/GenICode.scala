@@ -1145,7 +1145,7 @@ abstract class GenICode extends SubComponent {
       // a package here, check if there's a package object.
       val sym = (
         if (!tree.symbol.isPackageClass) tree.symbol
-        else tree.symbol.info.member(nme.PACKAGE) match {
+        else tree.symbol.info.packageObject match {
           case NoSymbol => abort("Cannot use package as value: " + tree)
           case s        =>
             devWarning(s"Found ${tree.symbol} where a package object is required. Converting to ${s.moduleClass}")
@@ -1502,7 +1502,7 @@ abstract class GenICode extends SubComponent {
           if (!settings.optimise) {
             if (l.tpe <:< BoxedNumberClass.tpe) {
               if (r.tpe <:< BoxedNumberClass.tpe) platform.externalEqualsNumNum
-              else if (r.tpe <:< BoxedCharacterClass.tpe) platform.externalEqualsNumObject // will be externalEqualsNumChar in 2.12, SI-9030
+              else if (r.tpe <:< BoxedCharacterClass.tpe) platform.externalEqualsNumChar
               else platform.externalEqualsNumObject
             } else platform.externalEquals
           } else {

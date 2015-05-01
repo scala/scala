@@ -35,8 +35,15 @@ extends mutable.AbstractMap[String, String]
   override def empty = new SystemProperties
   override def default(key: String): String = null
 
-  def iterator: Iterator[(String, String)] =
-    wrapAccess(System.getProperties().asScala.iterator) getOrElse Iterator.empty
+  def iterator: Iterator[(String, String)] = wrapAccess {
+    val ps = System.getProperties()
+    names map (k => (k, ps getProperty k)) filter (_._2 ne null)
+  } getOrElse Iterator.empty
+
+  def names: Iterator[String] = wrapAccess (
+    System.getProperties().stringPropertyNames().asScala.iterator
+  ) getOrElse Iterator.empty
+
   def get(key: String) =
     wrapAccess(Option(System.getProperty(key))) flatMap (x => x)
   override def contains(key: String) =

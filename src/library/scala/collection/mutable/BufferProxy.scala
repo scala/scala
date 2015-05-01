@@ -43,8 +43,6 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    */
   def +=(elem: A): this.type = { self.+=(elem); this }
 
-  override def readOnly = self.readOnly
-
   /** Appends a number of elements provided by a traversable object.
    *
    *  @param xs   the traversable object.
