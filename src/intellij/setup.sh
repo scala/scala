@@ -12,3 +12,6 @@ for f in "$SCRIPT_DIR"/*.SAMPLE; do
   g=${f%.SAMPLE}
   cp $f $g
 done
+
+STARR_VERSION="`cat $SCRIPT_DIR/../../versions.properties | grep 'starr.version' | awk  '{split($0,a,"="); print a[2]}'`"
+sed "s/#starr-version#/$STARR_VERSION/g" $SCRIPT_DIR/scala.ipr.SAMPLE > $SCRIPT_DIR/scala.ipr
