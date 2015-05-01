@@ -147,7 +147,7 @@ A qualified type designator has the form `p.t` where `p` is
 a [path](#paths) and _t_ is a type name. Such a type designator is
 equivalent to the type projection `p.type#t`.
 
-### Example
+###### Example
 
 Some type designators and their expansions are listed below. We assume
 a local type parameter $t$, a value `maintable`
@@ -178,7 +178,8 @@ well-formed if each actual type parameter
 _conforms to its bounds_, i.e. $\sigma L_i <: T_i <: \sigma U_i$ where $\sigma$ is the
 substitution $[ a_1 := T_1 , \ldots , a_n := T_n ]$.
 
-### Example Parameterized Types
+###### Example Parameterized Types
+
 Given the partial type definitions:
 
 ```scala
@@ -202,7 +203,7 @@ F[List, Int]
 G[S, String]
 ```
 
-### Example
+###### Example
 
 Given the [above type definitions](#example-parameterized-types),
 the following types are ill-formed:
@@ -255,10 +256,10 @@ AnnotType  ::=  SimpleType {Annotation}
 ```
 
 An annotated type $T$ $a_1, \ldots, a_n$
-attaches [annotations](11-user-defined-annotations.html#user-defined-annotations)
+attaches [annotations](11-annotations.html#user-defined-annotations)
 $a_1 , \ldots , a_n$ to the type $T$.
 
-### Example
+###### Example
 
 The following type adds the `@suspendable` annotation to the type `String`:
 
@@ -304,7 +305,7 @@ A compound type may also consist of just a refinement
 $\\{ R \\}$ with no preceding component types. Such a type is
 equivalent to `AnyRef` $\\{ R \\}$.
 
-### Example
+###### Example
 
 The following example shows how to declare and use a method which
 a parameter type that contains a refinement with structural declarations.
@@ -500,7 +501,7 @@ or [tuple types](#tuple-types).
 Their expansion is then the expansion in the equivalent parameterized
 type.
 
-### Example
+###### Example
 
 Assume the class definitions
 
@@ -524,7 +525,7 @@ An alternative formulation of the first type above using wildcard syntax is:
 Ref[_ <: java.lang.Number]
 ```
 
-### Example
+###### Example
 
 The type `List[List[_]]` is equivalent to the existential type
 
@@ -532,7 +533,7 @@ The type `List[List[_]]` is equivalent to the existential type
 List[List[t] forSome { type t }] .
 ```
 
-### Example
+###### Example
 
 Assume a covariant type
 
@@ -658,7 +659,7 @@ same name, we model
 
 An overloaded type consisting of type alternatives $T_1 \commadots T_n (n \geq 2)$ is denoted internally $T_1 \overload \ldots \overload T_n$.
 
-### Example
+###### Example
 ```
 def println: Unit
 def println(s: String): Unit = $\ldots$
@@ -676,7 +677,7 @@ println:  => Unit $\overload$
           [A] (A) (A => String) Unit
 ```
 
-### Example
+###### Example
 ```
 def f(x: T): T = $\ldots$
 val f = 0
@@ -834,8 +835,7 @@ transitive relation that satisfies the following conditions.
 - For every type constructor $T$ (with any number of type parameters),
   `scala.Nothing <: $T$ <: scala.Any`.
 
-- For every class type $T$ such that `$T$ <: scala.AnyRef` and not
-  `$T$ <: scala.NotNull` one has `scala.Null <: $T$`.
+- For every class type $T$ such that `$T$ <: scala.AnyRef` one has `scala.Null <: $T$`.
 - A type variable or abstract type $t$ conforms to its upper bound and
   its lower bound conforms to $t$.
 - A class type or parameterized type conforms to any of its base-types.

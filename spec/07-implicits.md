@@ -1,10 +1,10 @@
 ---
-title: Implicit Parameters and Views
+title: Implicits
 layout: default
 chapter: 7
 ---
 
-# Implicit Parameters and Views
+# Implicits
 
 ## The Implicit Modifier
 
@@ -19,7 +19,8 @@ and can be used as implicit conversions called [views](#views).
 The `implicit` modifier is illegal for all
 type members, as well as for [top-level objects](09-top-level-definitions.html#packagings).
 
-### Example Monoid
+###### Example Monoid
+
 The following code defines an abstract class of monoids and
 two concrete implementations, `StringMonoid` and
 `IntMonoid`. The two implementations are marked implicit.
@@ -180,7 +181,7 @@ To prevent such infinite expansions, the compiler keeps track of
 a stack of “open implicit types” for which implicit arguments are currently being
 searched. Whenever an implicit argument for type $T$ is searched, the
 “core type” of $T$ is added to the stack. Here, the _core type_
-of $T$ is $T$ with aliases expanded, top-level type [annotations](11-user-defined-annotations.html#user-defined-annotations) and
+of $T$ is $T$ with aliases expanded, top-level type [annotations](11-annotations.html#user-defined-annotations) and
 [refinements](03-types.html#compound-types) removed, and occurrences
 of top-level existentially bound variables replaced by their upper
 bounds. The core type is removed from the stack once the search for
@@ -284,7 +285,8 @@ As for implicit parameters, overloading resolution is applied
 if there are several possible candidates (of either the call-by-value
 or the call-by-name category).
 
-### Example Ordered
+###### Example Ordered
+
 Class `scala.Ordered[A]` contains a method
 
 ```scala

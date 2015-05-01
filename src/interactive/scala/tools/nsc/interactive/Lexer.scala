@@ -195,7 +195,7 @@ class Lexer(rd: Reader) {
       case 'n' => putAcceptString("null"); token = NullLit
       case '"' => getString()
       case '-' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => getNumber()
-      case _ => error("unrecoginezed start of token: '"+ch+"'")
+      case _ => error("unrecognized start of token: '"+ch+"'")
     }
     //println("["+token+"]")
   }

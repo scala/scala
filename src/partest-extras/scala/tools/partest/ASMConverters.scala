@@ -89,7 +89,7 @@ object ASMConverters {
 
     private def lst[T](xs: java.util.List[T]): List[T] = if (xs == null) Nil else xs.asScala.toList
 
-    // Heterogenous List[Any] is used in FrameNode: type information about locals / stack values
+    // Heterogeneous List[Any] is used in FrameNode: type information about locals / stack values
     // are stored in a List[Any] (Integer, String or LabelNode), see Javadoc of MethodNode#visitFrame.
     // Opcodes (eg Opcodes.INTEGER) and Reference types (eg "java/lang/Object") are returned unchanged,
     // LabelNodes are mapped to their LabelEntry.

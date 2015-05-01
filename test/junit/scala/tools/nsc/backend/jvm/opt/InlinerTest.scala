@@ -720,7 +720,7 @@ class InlinerTest extends ClearAfterClass {
         |final class D extends C
         |object E extends C
         |class T {
-        |  def t1(d: D) = d.f + d.g + E.f + E.g // d.f can be inlined because the reciever type is D, which is final.
+        |  def t1(d: D) = d.f + d.g + E.f + E.g // d.f can be inlined because the receiver type is D, which is final.
         |}                                      // so d.f can be resolved statically. same for E.f
       """.stripMargin
     val List(c, d, e, eModule, t) = compile(code)

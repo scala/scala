@@ -127,7 +127,7 @@ trait PhaseAssembly {
     }
 
     /* Find all edges in the given graph that are hard links. For each hard link we
-     * need to check that its the only dependency. If not, then we will promote the
+     * need to check that it's the only dependency. If not, then we will promote the
      * other dependencies down
      */
     def validateAndEnforceHardlinks() {

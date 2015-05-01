@@ -85,7 +85,7 @@ extends scala.collection.mutable.AbstractBuffer[T]
 
   def classTagCompanion = UnrolledBuffer
 
-  /** Concatenates the targer unrolled buffer to this unrolled buffer.
+  /** Concatenates the target unrolled buffer to this unrolled buffer.
    *
    *  The specified buffer `that` is cleared after this operation. This is
    *  an O(1) operation.
@@ -208,7 +208,7 @@ object UnrolledBuffer extends ClassTagTraversableFactory[UnrolledBuffer] {
   def newBuilder[T](implicit t: ClassTag[T]): Builder[T, UnrolledBuffer[T]] = new UnrolledBuffer[T]
 
   val waterline = 50
-  val waterlineDelim = 100
+  val waterlineDelim = 100    // TODO -- fix this name!  It's a denominator, not a delimiter.  (But it's part of the API so we can't just change it.)
   private[collection] val unrolledlength = 32
 
   /** Unrolled buffer node.
@@ -319,13 +319,15 @@ object UnrolledBuffer extends ClassTagTraversableFactory[UnrolledBuffer] {
 	for (elem <- t) curr = curr append elem
 	curr.next = newnextnode
 
-	// try to merge the last node of this with the newnextnode
+	// try to merge the last node of this with the newnextnode and fix tail pointer if needed
 	if (curr.tryMergeWithNext()) buffer.lastPtr = curr
+	else if (newnextnode.next eq null) buffer.lastPtr = newnextnode
       }
-      else if (idx == size) {
+      else if (idx == size || (next eq null)) {
 	var curr = this
 	for (elem <- t) curr = curr append elem
-      } else insertAll(idx - size, t, buffer)
+      }
+      else next.insertAll(idx - size, t, buffer)
     }
     private def nullout(from: Int, until: Int) {
       var idx = from
@@ -344,7 +346,7 @@ object UnrolledBuffer extends ClassTagTraversableFactory[UnrolledBuffer] {
       tryMergeWithNext()
     }
 
-    override def toString = array.take(size).mkString("Unrolled[" + array.length + "](", ", ", ")") + " -> " + (if (next ne null) next.toString else "")
+    override def toString = array.take(size).mkString("Unrolled@%08x".format(System.identityHashCode(this)) + "[" + size + "/" + array.length + "](", ", ", ")") + " -> " + (if (next ne null) next.toString else "")
   }
 
 }

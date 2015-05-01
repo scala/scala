@@ -2067,7 +2067,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     final def outerClass: Symbol =
       if (this == NoSymbol) {
-        // ideally we shouldn't get here, but its better to harden against this than suffer the infinite loop in SI-9133
+        // ideally we shouldn't get here, but it's better to harden against this than suffer the infinite loop in SI-9133
         devWarningDumpStack("NoSymbol.outerClass", 15)
         NoSymbol
       } else if (owner.isClass) owner

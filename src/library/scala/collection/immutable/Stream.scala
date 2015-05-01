@@ -360,7 +360,7 @@ self =>
    * `List(BigInt(12)) ++ fibs`.
    *
    * @tparam B The element type of the returned collection.'''That'''
-   * @param that The [[scala.collection.GenTraversableOnce]] the be contatenated
+   * @param that The [[scala.collection.GenTraversableOnce]] the be concatenated
    * to this `Stream`.
    * @return A new collection containing the result of concatenating `this` with
    * `that`.

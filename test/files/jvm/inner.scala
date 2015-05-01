@@ -77,7 +77,7 @@ object Scalatest {
   def java(cname: String) =
     exec(javacmd, "-cp", classpath, cname)
 
-  /** Execute cmd, wait for the process to end and pipe it's output to stdout */
+  /** Execute cmd, wait for the process to end and pipe its output to stdout */
   private def exec(args: String*) {
     val proc = Runtime.getRuntime().exec(args.toArray)
     val inp = new BufferedReader(new InputStreamReader(proc.getInputStream))

@@ -1,5 +1,5 @@
 ---
-title: XML Expressions and Patterns
+title: XML
 layout: default
 chapter: 10
 ---

@@ -1,0 +1,73 @@
+@font-face {
+    font-family: 'Luxi Sans';
+    src: local('Luxi Sans Regular'),
+         url('../fonts/LuxiSans-Regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Luxi Sans';
+    src: local('Luxi Sans Bold'),
+         url('../fonts/LuxiSans-Bold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Luxi Mono';
+    src: local('Luxi Mono Regular'),
+         url('../fonts/LuxiMono-Regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Luxi Mono';
+    src: local('Luxi Mono Oblique'),
+         url('../fonts/LuxiMono-BoldOblique.woff') format('woff');
+    font-weight: normal;
+    font-style: oblique;
+}
+@font-face {
+    font-family: 'Luxi Mono';
+    src: local('Luxi Mono Bold'),
+         url('../fonts/LuxiMono-Bold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Luxi Mono';
+    src: local('Luxi Mono Bold Oblique'),
+         url('../fonts/LuxiMono-BoldOblique.woff') format('woff');
+    font-weight: bold;
+    font-style: oblique;
+}
+
+@font-face {
+    font-family: 'Heuristica';
+    src: local('Heuristica Regular'),
+         url('../fonts/Heuristica-Regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Heuristica';
+    src: local('Heuristica Italic'),
+         url('../fonts/Heuristica-RegularItalic.woff') format('woff');
+    font-weight: normal;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'Heuristica';
+    src: local('Heuristica Bold'),
+         url('../fonts/Heuristica-Bold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Heuristica';
+    src: local('Heuristica Bold Italic'),
+         url('../fonts/Heuristica-BoldItalic.woff') format('woff');
+    font-weight: bold;
+    font-style: italic;
+}

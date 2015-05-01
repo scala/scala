@@ -477,7 +477,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
   /**
    * Replaces some of the matches using a replacer function that returns an [[scala.Option]].
    * The replacer function takes a [[scala.util.matching.Regex.Match]] so that extra
-   * information can be btained from the match. For example:
+   * information can be obtained from the match. For example:
    *
    * {{{
    * import scala.util.matching.Regex._

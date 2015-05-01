@@ -14,9 +14,11 @@ object IndexModelFactory {
 
   def makeIndex(universe: Universe): Index = new Index {
 
-    lazy val firstLetterIndex: Map[Char, SymbolMap] = {
+    lazy val (firstLetterIndex, hasDeprecatedMembers): (Map[Char, SymbolMap], Boolean) = {
 
       object result extends mutable.HashMap[Char,SymbolMap] {
+
+        var deprecated = false
 
         /* symbol name ordering */
         implicit def orderingMap = math.Ordering.String
@@ -32,6 +34,8 @@ object IndexModelFactory {
           val members = letter.get(d.name).getOrElse {
             SortedSet.empty[MemberEntity](Ordering.by { _.toString })
           } + d
+          if (!deprecated && members.find(_.deprecation.isDefined).isDefined)
+            deprecated = true
           this(firstLetter) = letter + (d.name -> members)
         }
       }
@@ -50,7 +54,7 @@ object IndexModelFactory {
 
       gather(universe.rootPackage)
 
-      result.toMap
+      (result.toMap, result.deprecated)
     }
   }
 }
