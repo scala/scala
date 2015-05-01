@@ -72,25 +72,12 @@
 
 # Requirements
 #  - sbtCmd must point to sbt from sbt-extras
-#  - ~/.sonatype-curl that consists of user = USER:PASS
-#  - ~/.m2/settings.xml with credentials for sonatype
-#     <server>
-#       <id>private-repo</id>
-#       <username>jenkinside</username>
-#       <password></password>
-#     </server>
-# - ~/.credentials (for sonatype)
-#     realm=Sonatype Nexus Repository Manager
-#     host=oss.sonatype.org
-#     user=lamp
-#     password=
-# - ~/.credentials-private-repo for private-repo.typesafe.com, as follows:
-#     realm=Artifactory Realm
-#     host=private-repo.typesafe.com
-#     user=jenkinside
-#     password=
-# - ~/.sbt/0.13/plugins/gpg.sbt with:
+#  - ~/.sonatype-curl, ~/.m2/settings.xml, ~/.credentials, ~/.credentials-sonatype, ~/.credentials-private-repo
+#    as defined by https://github.com/scala/scala-jenkins-infra/tree/master/templates/default
+#  - ~/.sbt/0.13/plugins/gpg.sbt with:
 #     addSbtPlugin("com.typesafe.sbt" % "sbt-pgp" % "0.8.1")
+
+# Note: private-repo used to be private-repo.typesafe.com. now we're running artifactory on scala-ci.typesafe.com/artifactory
 
 
 moduleVersioning=${moduleVersioning-"versions.properties"}
@@ -124,7 +111,7 @@ mkdir -p $baseDir/resolutionScratch_
 
 # repo used to publish "locker" scala to (to start the bootstrap)
 releaseTempRepoCred="private-repo"
-releaseTempRepoUrl=${releaseTempRepoUrl-"http://private-repo.typesafe.com/typesafe/scala-release-temp/"}
+releaseTempRepoUrl=${releaseTempRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-release-temp/"}
 
 # Used below in sbtArgs since we use a dedicated repository to share artifcacts between jobs,
 # so we need to configure SBT to use these rather than its default, Maven Central.
@@ -442,8 +429,7 @@ constructUpdatedModuleVersions() {
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dpartest.version.number=$PARTEST_VER")
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscalacheck.version.number=$SCALACHECK_VER")
 
-  # allow overriding the akka-actors and jline version using a jenkins build parameter
-  if [ ! -z "$AKKA_ACTOR_VER" ]; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dakka-actor.version.number=$AKKA_ACTOR_VER"); fi
+  # allow overriding the jline version using a jenkins build parameter
   if [ ! -z "$JLINE_VER" ]     ; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Djline.version=$JLINE_VER"); fi
 
   if [ ! -z "$SCALA_BINARY_VER" ]; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala.binary.version=$SCALA_BINARY_VER"); fi

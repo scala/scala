@@ -464,9 +464,9 @@ TODO:
     <property name="sbt.lib.dir"           value="${build-sbt.dir}/${sbt.latest.version}/lib"/>
 
     <property name="sbt.interface.jar"     value="${sbt.lib.dir}/interface.jar"/>
-    <property name="sbt.interface.url"     value="http://private-repo.typesafe.com/typesafe/ivy-releases/org.scala-sbt/interface/${sbt.latest.version}/jars/interface.jar"/>
+    <property name="sbt.interface.url"     value="http://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/interface/${sbt.latest.version}/jars/interface.jar"/>
     <property name="sbt.interface.src.jar" value="${sbt.src.dir}/compiler-interface-src.jar"/>
-    <property name="sbt.interface.src.url" value="http://private-repo.typesafe.com/typesafe/ivy-releases/org.scala-sbt/compiler-interface/${sbt.latest.version}/jars/compiler-interface-src.jar"/>
+    <property name="sbt.interface.src.url" value="http://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/compiler-interface/${sbt.latest.version}/jars/compiler-interface-src.jar"/>
 
 
     <!-- Additional command line arguments for scalac. They are added to all build targets -->
@@ -555,7 +555,6 @@ TODO:
       <echo message="scala-xml.version.number                   = ${scala-xml.version.number}"/>
       <echo message="scala-parser-combinators.version.number    = ${scala-parser-combinators.version.number}"/>
       <echo message="scala-swing.version.number                 = ${scala-swing.version.number}"/>
-      <echo message="akka-actor.version.number                  = ${akka-actor.version.number}"/>
       <echo message="jline.version                              = ${jline.version}"/>
       <echo message="partest.version.number                     = ${partest.version.number}"/>
       <echo message="scalacheck.version.number                  = ${scalacheck.version.number}"/>
@@ -566,7 +565,6 @@ TODO:
         <entry key="scala-xml.version.number"                   value="${scala-xml.version.number}"/>
         <entry key="scala-parser-combinators.version.number"    value="${scala-parser-combinators.version.number}"/>
         <entry key="scala-swing.version.number"                 value="${scala-swing.version.number}"/>
-        <entry key="akka-actor.version.number"                  value="${akka-actor.version.number}"/>
         <entry key="jline.version"                              value="${jline.version}"/>
         <entry key="partest.version.number"                     value="${partest.version.number}"/>
         <entry key="scalacheck.version.number"                  value="${scalacheck.version.number}"/>

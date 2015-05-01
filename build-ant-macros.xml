@@ -597,7 +597,6 @@
           <filter token="RELEASE_REPOSITORY"         value="${remote.release.repository}" />
           <filter token="SNAPSHOT_REPOSITORY"        value="${remote.snapshot.repository}" />
           <filter token="JLINE_VERSION"              value="${jline.version}" />
-          <filter token="AKKA_ACTOR_VERSION"         value="${akka-actor.version.number}" />
 
           <!-- TODO modularize compiler.
           <filter token="SCALA_COMPILER_DOC_VERSION" value="${scala-compiler-doc.version.number}" />
