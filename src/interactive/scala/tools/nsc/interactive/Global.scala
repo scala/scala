@@ -304,7 +304,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   private val NoResponse: Response[_] = new Response[Any]
 
   /** The response that is currently pending, i.e. the compiler
-   *  is working on providing an asnwer for it.
+   *  is working on providing an answer for it.
    */
   private var pendingResponse: Response[_] = NoResponse
 

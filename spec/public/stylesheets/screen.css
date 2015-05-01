@@ -1,8 +1,8 @@
 /* from https://gist.github.com/andyferra/2554919 */
 
 body {
-  font-family: Helvetica, arial, sans-serif;
-  font-size: 14px;
+  font-family:Heuristica,Georgia,serif;
+  color: #222222;
   line-height: 1.6;
 
   padding-bottom: 10px;
@@ -18,7 +18,11 @@ body {
 }
 
 a {
-  color: #4183C4;
+  color: #08C;
+  text-decoration: none;
+}
+a:hover, a:focus {
+
 }
 a.absent {
   color: #cc0000;
@@ -41,11 +45,19 @@ a.anchor span {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  margin: 20px 0 10px;
+  margin: 30px 0 0px;
+  padding: 0;
+  /* Fix anchor position due to header */
+  padding-top: 32px;
+  margin-top: -32px;
   font-weight: bold;
   -webkit-font-smoothing: antialiased;
   cursor: text;
   position: relative;
+}
+
+h1, h2 {
+  font-weight: normal;
 }
 
 h1:hover a.anchor, h2:hover a.anchor, h3:hover a.anchor, h4:hover a.anchor, h5:hover a.anchor, h6:hover a.anchor {
@@ -95,7 +107,6 @@ h1 {
 
 h2 {
   font-size: 24px;
-  border-bottom: 1px solid #cccccc;
   color: black;
 }
 
@@ -117,7 +128,7 @@ h6 {
 }
 
 p, blockquote, ul, ol, dl, li, table, pre {
-  margin: 15px 0;
+  margin: 5px 0 15px;
   -moz-font-feature-settings: "onum";
   -ms-font-feature-settings: "onum";
   -webkit-font-feature-settings: "onum";
@@ -125,7 +136,7 @@ p, blockquote, ul, ol, dl, li, table, pre {
 }
 
 hr {
-  background: transparent url("../../images/modules/pulls/dirty-shade.png") repeat-x 0 0;
+  background: transparent repeat-x 0 0;
   border: 0 none;
   color: #cccccc;
   height: 4px;
@@ -207,7 +218,7 @@ dl dd > :last-child {
 blockquote {
   border-left: 4px solid #dddddd;
   padding: 0 15px;
-  color: #777777;
+  color: #222222;
 }
 blockquote > :first-child {
   margin-top: 0;
@@ -215,31 +226,34 @@ blockquote > :first-child {
 blockquote > :last-child {
   margin-bottom: 0;
 }
+blockquote:before {
+    content: "Example";
+    color: #777777;
+    font-size: 14px;
+    font-weight: bold;
+}
 
 table {
   padding: 0;
+  margin: 0;
+  border: none;
+  border-collapse: collapse;
 }
 table tr {
-  border-top: 1px solid #cccccc;
   background-color: white;
-  margin: 0;
-  padding: 0;
 }
 table tr:nth-child(2n) {
   background-color: #f8f8f8;
 }
 table tr th {
+  background-color: #EAEAEA;
   font-weight: bold;
-  border: 1px solid #cccccc;
   text-align: left;
-  margin: 0;
-  padding: 6px 13px;
+  padding: 5px 13px;
 }
 table tr td {
-  border: 1px solid #cccccc;
   text-align: left;
-  margin: 0;
-  padding: 6px 13px;
+  padding: 5px 13px;
 }
 table tr th :first-child, table tr td :first-child {
   margin-top: 0;
@@ -327,11 +341,14 @@ span.float-right > span {
   text-align: right;
 }
 
+pre, code, tt {
+  font:14px "Luxi Mono", 'andale mono', 'lucida console', monospace;
+  line-height:1.5;
+}
+
 .highlight pre {
-  border: 1px solid #eaeaea;
-  background-color: #f8f8f8;
+  background-color: #F8F8F8;
   border-radius: 3px;
-  line-height: 19px;
   overflow: auto;
   padding: 6px 10px;
   white-space: nowrap;
@@ -343,86 +360,144 @@ code {
   margin: 0;
   padding: 0;
   white-space: pre;
-  font-size: 16px;
 }
 
-#navigation {
-  margin-right: 10px;
+aside.left {
+    height: 100%;
+    position: fixed;
+    direction: rtl;
+    overflow: auto;
+    left: 0px;
+    width: 320px;
+    bottom: -32px;
+    font-family: "Luxi Sans", serif;
+    background-color: #073642;
+}
+
+aside.left > nav {
+    direction: ltr;
+    top: 32px;
+    padding-bottom: 32px;
+}
+
+article, aside, details, figcaption, figure, footer, header, hgroup, main, nav, section, summary {
+    display: block;
+}
+
+audio, canvas, img, svg, video {
+    vertical-align: middle;
+}
+
+audio, canvas, progress, video {
+    display: inline-block;
+    vertical-align: baseline;
+}
+
+main {
+    position: relative;
+    top: 32px;
+    margin: 0 0 0 320px;
+    padding: 0px 32px;
+    max-width: 800px;
+    min-width: 800px;
+    min-height: 580px;
+    background-color: #FFF;
+}
+
+header {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    height: 32px;
+    width: 100%;
+    background-color: #002B36;
+    margin: 0px 0px;
+    padding: 0px 0px;
+    font-family: "Luxi Sans", serif;
+    font-weight: bold;
+    z-index: 10;
+    overflow: hidden;
+    text-shadow: 1px 1px 0px rgba(0, 43, 54, 0.15);
+}
+
+#chapters a {
+    color: #FFFFFF;
+    text-decoration: none;
+    font-size: 0.63vw;
+    padding: 100% 8px;
+}
+
+#chapters a:hover, #chapters a:focus, #github:hover, #github:focus {
+  background: #DC322F;
+  -webkit-transition: background .2s ease-in;
+  -moz-transition: background .2s ease-in;
+  -ms-transition: background .2s ease-in;
+  -o-transition: background .2s ease-in;
+  transition: background .2s ease-in;
+}
+
+#chapters a.chapter-active {
+    background: #72D0EB;
+}
+
+
+#toc ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+#toc li {
+    margin: 0;
+    padding: 0;
+}
+
+#toc a {
+    color: #FFFFFF; /*#073642;*/
+    font-weight: bold;
+    font-size: 12px;
+    display: block;
+    text-shadow: 1px 1px 0px rgba(0, 43, 54, 0.15);
+}
+
+#toc a:hover, #toc a:focus {
+  background: #DC322F;
+  text-decoration: none;
+  -webkit-transition: background .2s ease-in;
+  -moz-transition: background .2s ease-in;
+  -ms-transition: background .2s ease-in;
+  -o-transition: background .2s ease-in;
+  transition: background .2s ease-in;
+}
+
+#toc .toc-h1 {
+    display: none;
+}
+
+#toc .toc-h2 a {
+    padding-left: 10px;
+}
+
+#toc .toc-h3 a {
+    padding-left: 30px;
+}
+
+#toc .toc-active {
+    background: #72D0EB;
+}
+
+#toc .toc-active a {
+    color: #FFFFFF;
+}
+
+#chapters > #github {
+  padding: 0px;
   float: right;
-  width: 26%;
-  display: inline;
-  color: #8B8B8B;
-  font-size: 15px;
-  font-weight: bold;
-  background-color: #F3F4F4;
 }
 
-#content-container {
-  float: left;
-  width: 70%;
-  display: inline;
+.hljs{
+        background: #f8f8f8;
 }
-
-#container {
-  padding-top: 10px;
-  width: 100%;
-}
-
-#navigation a {
-  text-decoration: none;
-  color: #8B8B8B;
-}
-
-#navigation a:hover {
-  text-decoration: underline;
-}
-
-.active-page {
-  color: #171717;
-}
-
-.active-page a {
-  color: #171717 !important;
-}
-
-.to_top {
-  position: absolute;
-  margin-top: -35px;
-  right: 27%;
-  color: gray;
-  cursor: pointer;
-  width: 16px; height: 16px;
-  display: block;
-}
-
-.to_top:hover {
-  color: black;
-}
-
-#scala-logo {
-  float: left;
-  width: 168px;
-  height: 48px;
-  margin-right: 25px;
-}
-
-#header {
-  padding-top: 16px;
-  padding-bottom: 10px;
-  margin-bottom: 10px;
-  height: 64px;
-  border-bottom: 1px solid #cccccc;
-}
-
-#header a {
-  height: 100%;
-  display: block;
-  text-decoration: none;
-}
-
-#header h1 {
-  cursor: pointer;
-  padding-top: 6px;
-  margin-bottom: 0px;
-  font-size: 30px;
-}
+/* proper rendering of MathJax into highlighted code blocks */
+.fixws { white-space: pre; }
+.fixws .math { white-space: nowrap; }

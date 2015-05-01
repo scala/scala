@@ -38,7 +38,6 @@ class VectorTest {
   def iteratorCat() {
     def its = vecs.map(_.toList.toIterator)
     val cats = vecs.map(a => its.map(a ++ _))
-    println(cats)
     assert( cats == ans )
   }
 

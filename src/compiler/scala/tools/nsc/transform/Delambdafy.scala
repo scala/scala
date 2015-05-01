@@ -77,7 +77,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
     // the result of the transformFunction method.
     sealed abstract class TransformedFunction
-    // A class definition for the lambda, an expression insantiating the lambda class
+    // A class definition for the lambda, an expression instantiating the lambda class
     case class DelambdafyAnonClass(lambdaClassDef: ClassDef, newExpr: Tree) extends TransformedFunction
 
     // here's the main entry point of the transform
@@ -86,7 +86,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       case fun @ Function(_, _) =>
         transformFunction(fun) match {
           case DelambdafyAnonClass(lambdaClassDef, newExpr) =>
-            // a lambda beccomes a new class, an instantiation expression
+            // a lambda becomes a new class, an instantiation expression
             val pkg = lambdaClassDef.symbol.owner
 
             // we'll add the lambda class to the package later

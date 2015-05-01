@@ -109,7 +109,7 @@ abstract class ICodeCheckers {
 
     /** Only called when m1 < m2, so already known that (m1 ne m2).
      */
-    private def isConfict(m1: IMember, m2: IMember, canOverload: Boolean) = (
+    private def isConflict(m1: IMember, m2: IMember, canOverload: Boolean) = (
       (m1.symbol.name == m2.symbol.name) &&
       (!canOverload || (m1.symbol.tpe =:= m2.symbol.tpe))
     )
@@ -119,11 +119,11 @@ abstract class ICodeCheckers {
       clasz = cls
 
       for (f1 <- cls.fields ; f2 <- cls.fields ; if f1 < f2)
-        if (isConfict(f1, f2, canOverload = false))
+        if (isConflict(f1, f2, canOverload = false))
           icodeError("Repetitive field name: " + f1.symbol.fullName)
 
       for (m1 <- cls.methods ; m2 <- cls.methods ; if m1 < m2)
-        if (isConfict(m1, m2, canOverload = true))
+        if (isConflict(m1, m2, canOverload = true))
           icodeError("Repetitive method: " + m1.symbol.fullName)
 
       clasz.methods foreach check
@@ -471,7 +471,7 @@ abstract class ICodeCheckers {
            pushStack(local.kind)
 
          case LOAD_FIELD(field, isStatic) =>
-           // the symbol's owner should contain it's field, but
+           // the symbol's owner should contain its field, but
            // this is already checked by the type checker, no need
            // to redo that here
            if (isStatic) ()

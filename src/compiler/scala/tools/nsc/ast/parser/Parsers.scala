@@ -1268,7 +1268,7 @@ self =>
         atPos(start) { Apply(t3, exprsBuf.toList) }
       }
       if (inPattern) stringCheese
-      else withPlaceholders(stringCheese, isAny = true) // strinterpolator params are Any* by definition
+      else withPlaceholders(stringCheese, isAny = true) // string interpolator params are Any* by definition
     }
 
 /* ------------- NEW LINES ------------------------------------------------- */

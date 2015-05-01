@@ -21,7 +21,7 @@ object Foo {
 object Main extends App {
   def mapWithFoo[A <: AnyRef, B](as: List[A])(implicit foo: Foo.Aux[A, B]) = {
     // Should be Eta expandable because the result type of `f` is not
-    // dependant on the value, it is just `B`.
+    // dependent on the value, it is just `B`.
     as map foo.f
     as map foo.g
     as map foo.m
