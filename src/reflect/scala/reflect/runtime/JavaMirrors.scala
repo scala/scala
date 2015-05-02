@@ -591,6 +591,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       // don't use classOf[scala.reflect.ScalaSignature] here, because it will use getClass.getClassLoader, not mirror's classLoader
       // don't use asInstanceOf either because of the same reason (lol, I cannot believe I fell for it)
       // don't use structural types to simplify reflective invocations because of the same reason
+      // TODO SI-9296 duplicated code, refactor
       def loadAnnotation(name: String): Option[java.lang.annotation.Annotation] =
         tryJavaClass(name) flatMap { annotClass =>
           val anns = jclazz.getAnnotations

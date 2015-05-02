@@ -923,6 +923,7 @@ abstract class ClassfileParser {
       Some(ScalaSigBytes(pool.getBytes(entries.toList)))
     }
 
+    // TODO SI-9296 duplicated code, refactor
     /* Parse and return a single annotation.  If it is malformed,
      * return None.
      */
