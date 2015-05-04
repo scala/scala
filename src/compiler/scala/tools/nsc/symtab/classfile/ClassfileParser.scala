@@ -53,6 +53,7 @@ abstract class ClassfileParser {
   protected type ThisConstantPool <: ConstantPool
   protected def newConstantPool: ThisConstantPool
 
+  protected var file: AbstractFile     = _  // the class file
   protected var in: AbstractFileReader = _  // the class file reader
   protected var clazz: Symbol = _           // the class symbol containing dynamic members
   protected var staticModule: Symbol = _    // the module symbol containing static members
@@ -97,14 +98,14 @@ abstract class ClassfileParser {
 
   private def handleMissing(e: MissingRequirementError) = {
     if (settings.debug) e.printStackTrace
-    throw new IOException(s"Missing dependency '${e.req}', required by ${in.file}")
+    throw new IOException(s"Missing dependency '${e.req}', required by $file")
   }
   private def handleError(e: Exception) = {
     if (settings.debug) e.printStackTrace()
-    throw new IOException(s"class file '${in.file}' is broken\n(${e.getClass}/${e.getMessage})")
+    throw new IOException(s"class file '$file' is broken\n(${e.getClass}/${e.getMessage})")
   }
   private def mismatchError(c: Symbol) = {
-    throw new IOException(s"class file '${in.file}' has location not matching its contents: contains $c")
+    throw new IOException(s"class file '$file' has location not matching its contents: contains $c")
   }
 
   private def parseErrorHandler[T]: PartialFunction[Throwable, T] = {
@@ -131,6 +132,7 @@ abstract class ClassfileParser {
   def parse(file: AbstractFile, root: Symbol): Unit = {
     debuglog("[class] >> " + root.fullName)
 
+    this.file = file
     pushBusy(root) {
       this.in           = new AbstractFileReader(file)
       this.clazz        = if (root.isModule) root.companionClass else root
