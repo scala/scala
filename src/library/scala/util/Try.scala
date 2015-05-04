@@ -164,8 +164,8 @@ sealed abstract class Try[+T] {
   def flatten[U](implicit ev: T <:< Try[U]): Try[U]
 
   /**
-   * Completes this `Try` with an exception wrapped in a `Success`. The exception is either the exception that the
-   * `Try` failed with (if a `Failure`) or an `UnsupportedOperationException`.
+   * Inverts this `Try`. If this is a `Failure`, returns its exception wrapped in a `Success`.
+   * If this is a `Success`, returns a `Failure` containing an `UnsupportedOperationException`.
    */
   def failed: Try[Throwable]
 
