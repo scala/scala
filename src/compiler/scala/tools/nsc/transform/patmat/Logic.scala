@@ -384,9 +384,8 @@ trait Logic extends Debugging  {
           // ... and what must not?
           excluded foreach {
             excludedSym =>
-              val related = Set(sym, excludedSym)
               val exclusive = v.groupedDomains.exists {
-                domain => related subsetOf domain.toSet
+                domain => domain.contains(sym) && domain.contains(excludedSym)
               }
 
               // TODO: populate `v.exclusiveDomains` with `Set`s from the start, and optimize to:
