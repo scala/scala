@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <option name="DEFAULT_COMPILER" value="Javac" />
+    <resourceExtensions />
+    <wildcardResourcePatterns>
+      <entry name="!?*.java" />
+      <entry name="!?*.form" />
+      <entry name="!?*.class" />
+      <entry name="!?*.groovy" />
+      <entry name="!?*.scala" />
+      <entry name="!?*.flex" />
+      <entry name="!?*.kt" />
+      <entry name="!?*.clj" />
+    </wildcardResourcePatterns>
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="false">
+        <processorPath useClasspath="true" />
+      </profile>
+    </annotationProcessing>
+  </component>
+  <component name="CopyrightManager" default="" />
+  <component name="EntryPointsManager">
+    <entry_points version="2.0" />
+  </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="false">
+    <OptionsSetting value="true" id="Add" />
+    <OptionsSetting value="true" id="Remove" />
+    <OptionsSetting value="true" id="Checkout" />
+    <OptionsSetting value="true" id="Update" />
+    <OptionsSetting value="true" id="Status" />
+    <OptionsSetting value="true" id="Edit" />
+    <ConfirmationsSetting value="0" id="Add" />
+    <ConfirmationsSetting value="0" id="Remove" />
+  </component>
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/actors.iml" filepath="$PROJECT_DIR$/actors.iml" />
+      <module fileurl="file://$PROJECT_DIR$/asm.iml" filepath="$PROJECT_DIR$/asm.iml" />
+      <module fileurl="file://$PROJECT_DIR$/compiler.iml" filepath="$PROJECT_DIR$/compiler.iml" />
+      <module fileurl="file://$PROJECT_DIR$/forkjoin.iml" filepath="$PROJECT_DIR$/forkjoin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/interactive.iml" filepath="$PROJECT_DIR$/interactive.iml" />
+      <module fileurl="file://$PROJECT_DIR$/library.iml" filepath="$PROJECT_DIR$/library.iml" />
+      <module fileurl="file://$PROJECT_DIR$/manual.iml" filepath="$PROJECT_DIR$/manual.iml" />
+      <module fileurl="file://$PROJECT_DIR$/partest-extras.iml" filepath="$PROJECT_DIR$/partest-extras.iml" />
+      <module fileurl="file://$PROJECT_DIR$/partest-javaagent.iml" filepath="$PROJECT_DIR$/partest-javaagent.iml" />
+      <module fileurl="file://$PROJECT_DIR$/reflect.iml" filepath="$PROJECT_DIR$/reflect.iml" />
+      <module fileurl="file://$PROJECT_DIR$/repl.iml" filepath="$PROJECT_DIR$/repl.iml" />
+      <module fileurl="file://$PROJECT_DIR$/scala.iml" filepath="$PROJECT_DIR$/scala.iml" />
+      <module fileurl="file://$PROJECT_DIR$/scaladoc.iml" filepath="$PROJECT_DIR$/scaladoc.iml" />
+      <module fileurl="file://$PROJECT_DIR$/scalap.iml" filepath="$PROJECT_DIR$/scalap.iml" />
+      <module fileurl="file://$PROJECT_DIR$/test.iml" filepath="$PROJECT_DIR$/test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/test-junit.iml" filepath="$PROJECT_DIR$/test-junit.iml" />
+    </modules>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_6" default="true" assert-keyword="true" jdk-15="true" project-jdk-name="1.6" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/../../out" />
+  </component>
+  <component name="ScalaCompilerConfiguration">
+    <parameters>
+      <parameter value="-sourcepath" />
+      <parameter value="$PROJECT_DIR$/../library" />
+    </parameters>
+  </component>
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/../.." vcs="Git" />
+  </component>
+  <component name="libraryTable">
+    <library name="ant">
+      <CLASSES>
+        <root url="jar://$PROJECT_DIR$/../../lib/ant/ant.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="junit">
+      <CLASSES>
+        <root url="file://$PROJECT_DIR$/../../build/deps/junit" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+      <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/junit" recursive="false" />
+    </library>
+    <library name="partest">
+      <CLASSES>
+        <root url="file://$PROJECT_DIR$/../../build/deps/partest" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+      <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/partest" recursive="false" />
+    </library>
+    <library name="repl-deps">
+      <CLASSES>
+        <root url="file://$PROJECT_DIR$/../../build/deps/repl" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+      <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/repl" recursive="false" />
+    </library>
+    <library name="scaladoc-deps">
+      <CLASSES>
+        <root url="file://$PROJECT_DIR$/../../build/deps/scaladoc" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+      <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/scaladoc" recursive="false" />
+    </library>
+    <library name="starr" type="Scala">
+      <properties>
+        <compiler-classpath>
+          <root url="file://$PROJECT_DIR$/../../build/deps/starr/scala-compiler-#starr-version#.jar" />
+          <root url="file://$PROJECT_DIR$/../../build/deps/starr/scala-library-#starr-version#.jar" />
+          <root url="file://$PROJECT_DIR$/../../build/deps/starr/scala-reflect-#starr-version#.jar" />
+        </compiler-classpath>
+      </properties>
+      <CLASSES />
+      <JAVADOC />
+      <SOURCES />
+    </library>
+  </component>
+</project>

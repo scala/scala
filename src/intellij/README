@@ -7,6 +7,6 @@ The following steps are required to use IntelliJ IDEA on Scala trunk
  - Run "ant init". This will download some JARs from to ./build/deps, which are
    included in IntelliJ's classpath.
  - Run src/intellij/setup.sh
- - Open ./src/intellij/scala-lang.ipr in IntelliJ
+ - Open ./src/intellij/scala.ipr in IntelliJ
  - File, Project Settings, Project, SDK. Create an SDK entry named "1.6" containing the
-   java 1.6 SDK
+   Java 1.6 SDK
