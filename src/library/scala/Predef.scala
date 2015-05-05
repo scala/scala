@@ -35,9 +35,9 @@ import scala.io.StdIn
  *  === Assertions ===
  *
  *  A set of `assert` functions are provided for use as a way to document
- *  and dynamically check invariants in code. `assert` statements can be elided
- *  at compile time by providing the command line argument `-Xdisable-assertions` to
- *  the `scalac` command.
+ *  and dynamically check invariants in code. Invocations of `assert` can be elided
+ *  at compile time by providing the command line option `-Xdisable-assertions`,
+ *  which raises `-Xelide-below` above `elidable.ASSERTION`, to the `scalac` command.
  *
  *  Variants of `assert` intended for use with static analysis tools are also
  *  provided: `assume`, `require` and `ensuring`. `require` and `ensuring` are

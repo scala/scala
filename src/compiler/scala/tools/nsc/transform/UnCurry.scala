@@ -437,9 +437,7 @@ abstract class UnCurry extends InfoTransform
       def isLiftedLambdaBody(target: Tree) = target.symbol.isLocalToBlock && target.symbol.isArtifact && target.symbol.name.containsName(nme.ANON_FUN_NAME)
 
       val result = (
-        // TODO - settings.noassertions.value temporarily retained to avoid
-        // breakage until a reasonable interface is settled upon.
-        if ((sym ne null) && (sym.elisionLevel.exists (_ < settings.elidebelow.value || settings.noassertions)))
+        if ((sym ne null) && sym.elisionLevel.exists(_ < settings.elidebelow.value))
           replaceElidableTree(tree)
         else translateSynchronized(tree) match {
           case dd @ DefDef(mods, name, tparams, _, tpt, rhs) =>
