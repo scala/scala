@@ -59,15 +59,17 @@
 # (*) https://github.com/sbt/sbt/blob/0.13.8/util/cross/src/main/input_sources/CrossVersionUtil.scala#L39
 
 
-# Binary incompatible changes in Modules: example with Scala 2.11 / 2.12 and scala-xml
-#  - Simple case: Scala 2.11 and 2.12 use the same scala-xml version, for example v1.0.3
-#    - Only one branch in the module repostiory. This branch is cross-built against 2.11 and 2.12.
-#    - This set-up does not allow incompatible changes in scala-xml for Scala 2.12.
-# - General case: The scala-xml authors want to introduce incompatible changes for 2.12
-#   - The scala-xml minor version needs to be increased, so 2.12 would depend on scala-xml v1.1.x (or maybe v2.0.x)
-#   - The repostiory for scala-xml would have separate branches for each minor version (1.0.x, 1.1.x)
-#     - This allows building new (binary compatible) versions that target Scala 2.11
-#   - The Scala release script would require some work, it is currently not prepared to handle branches in module repositories
+# Binary incompatible changes in Modules: example with Scala 2.11 / 2.12 and scala-parser-combinators
+#  - The 1.0.x branch on scala-parser-combinators remains binary compatible with 1.0.0
+#  - Scala 2.11 will always use 1.0.x releases: we ship scala-parser-combinators with the distribution,
+#    so we cannot introduce incompatible changes in a minor release.
+#  - The master branch of scala-parser-combinators contains binary incompatible changes, versioned 1.1.x
+#  - Scala 2.12 will use 1.1.x releases
+#  - No changes to the build script required: just put the 1.1.x version number into versions.properties
+#
+# Note: It's still OK for a module to release a binary incompatible version to maven, for example
+# scala-parser-combinators_2.11 % 1.1.0. Users can depend on this in their sbt build. But for the
+# distribution (tar/zip archives, scala-library-all) we have to stay on the binary compatible version.
 
 
 # Requirements
