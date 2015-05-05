@@ -254,6 +254,8 @@ trait Erasure {
     def mergeParents(parents: List[Type]): Type =
       if (parents.isEmpty) ObjectTpe
       else parents.head
+
+    override protected def eraseDerivedValueClassRef(tref: TypeRef): Type = eraseNormalClassRef(tref)
   }
 
   object scalaErasure extends ScalaErasureMap
