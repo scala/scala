@@ -275,6 +275,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *  @tparam That     $thatinfo
    *  @param bf        $bfinfo
    *  @return a new $coll` which is a copy of this $coll with the element at position `index` replaced by `elem`.
+   *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
    *
    *  @usecase def updated(index: Int, elem: A): $Coll[A]
    *    @inheritdoc
