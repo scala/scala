@@ -97,7 +97,7 @@ Once the `publish-core` task has completed on a commit, you can try it out in sb
 ```
 $ sbt
 
-> set resolvers += "pr" at "http://private-repo.typesafe.com/typesafe/scala-pr-validation-snapshots/"
+> set resolvers += "pr" at "https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots/"
 > set scalaVersion := "<milestone>-<sha7>-SNAPSHOT"
 > console
 ```
