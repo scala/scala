@@ -8,10 +8,10 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="asm" />
     <orderEntry type="module" module-name="library" />
     <orderEntry type="module" module-name="reflect" />
     <orderEntry type="library" name="starr" level="project" />
     <orderEntry type="library" name="ant" level="project" />
+    <orderEntry type="library" name="asm" level="project" />
   </component>
 </module>
