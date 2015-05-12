@@ -26,7 +26,7 @@ echo "maven.version.number=$scalaVersion" >> versions.properties
 
 # pass prRepoUrl in, which uber-build passes along to dbuild (in sbt-builds-for-ide)
 # the "-P pr-scala" maven arg accomplishes the same thing for maven (directly used in uber-build)
-BASEDIR="$baseDir" prRepoUrl="$prRepoUrl" MAVEN_ARGS="-P pr-scala"\
+BASEDIR="$baseDir" prRepoUrl="$prRepoUrl" IDE_M2_REPO="$prRepoUrl" MAVEN_ARGS="-P pr-scala"\
   $uberBuildDir/uber-build.sh $uberBuildDir/config/$uberBuildConfig $repo_ref $scalaVersion
 
 # uber-build puts its local repo under target/m2repo

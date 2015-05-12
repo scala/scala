@@ -28,6 +28,7 @@ import scalax.rules.scalasig._
 class Main {
   val SCALA_SIG            = "ScalaSig"
   val SCALA_SIG_ANNOTATION = "Lscala/reflect/ScalaSignature;"
+  val SCALA_LONG_SIG_ANNOTATION = "Lscala/reflect/ScalaLongSignature;"
   val BYTES_VALUE          = "bytes"
 
   val versionMsg = "Scala classfile decoder %s -- %s\n".format(Properties.versionString, Properties.copyrightString)

@@ -237,7 +237,7 @@ abstract class UnCurry extends InfoTransform
 
           def canUseDelamdafyMethod = (
                (inConstructorFlag == 0) // Avoiding synthesizing code prone to SI-6666, SI-8363 by using old-style lambda translation
-            && !isSpecialized           // DelambdafyTransformer currently only emits generic FunctionN-s, use the old style in the meantime
+            && (!isSpecialized || (settings.target.value == "jvm-1.8")) // DelambdafyTransformer currently only emits generic FunctionN-s, use the old style in the meantime
           )
           if (inlineFunctionExpansion || !canUseDelamdafyMethod) {
             val parents = addSerializable(abstractFunctionForFunctionType(fun.tpe))
@@ -437,9 +437,7 @@ abstract class UnCurry extends InfoTransform
       def isLiftedLambdaBody(target: Tree) = target.symbol.isLocalToBlock && target.symbol.isArtifact && target.symbol.name.containsName(nme.ANON_FUN_NAME)
 
       val result = (
-        // TODO - settings.noassertions.value temporarily retained to avoid
-        // breakage until a reasonable interface is settled upon.
-        if ((sym ne null) && (sym.elisionLevel.exists (_ < settings.elidebelow.value || settings.noassertions)))
+        if ((sym ne null) && sym.elisionLevel.exists(_ < settings.elidebelow.value))
           replaceElidableTree(tree)
         else translateSynchronized(tree) match {
           case dd @ DefDef(mods, name, tparams, _, tpt, rhs) =>

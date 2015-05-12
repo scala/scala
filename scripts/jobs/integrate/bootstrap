@@ -114,6 +114,7 @@ mkdir -p $baseDir/resolutionScratch_
 # repo used to publish "locker" scala to (to start the bootstrap)
 releaseTempRepoCred="private-repo"
 releaseTempRepoUrl=${releaseTempRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-release-temp/"}
+jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
 
 # Used below in sbtArgs since we use a dedicated repository to share artifcacts between jobs,
 # so we need to configure SBT to use these rather than its default, Maven Central.
@@ -121,10 +122,10 @@ releaseTempRepoUrl=${releaseTempRepoUrl-"https://scala-ci.typesafe.com/artifacto
 sbtRepositoryConfig="$scriptsDir/repositories-scala-release"
 cat > "$sbtRepositoryConfig" << EOF
 [repositories]
-  plugins: http://dl.bintray.com/sbt/sbt-plugin-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
   private-repo: $releaseTempRepoUrl
-  typesafe-ivy-releases: http://repo.typesafe.com/typesafe/ivy-releases/, [organization]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext], bootOnly
-  sbt-plugin-releases: http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases, [organization]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
+  jcenter-cache: $jcenterCacheUrl
+  typesafe-ivy-releases: https://dl.bintray.com/typesafe/ivy-releases/, [organisation]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext], bootOnly
+  sbt-plugin-releases: https://dl.bintray.com/sbt/sbt-plugin-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
   maven-central
   local
 EOF

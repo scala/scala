@@ -2,8 +2,8 @@
 #
 # Library to push and pull binary artifacts from a remote repository using CURL.
 
-remote_urlget="http://repo.typesafe.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap"
-remote_urlpush="http://dl.bintray.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap"
+remote_urlget="https://dl.bintray.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap"
+remote_urlpush="https://dl.bintray.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap"
 libraryJar="$(pwd)/lib/scala-library.jar"
 desired_ext=".desired.sha1"
 push_jar="$(pwd)/tools/push.jar"
@@ -56,7 +56,7 @@ curlDownload() {
   if [[ "$OSTYPE" == *Cygwin* || "$OSTYPE" == *cygwin* ]]; then
     jar=$(cygpath -m $1)
   fi
-  http_code=$(curl --write-out '%{http_code}' --silent --fail --output "$jar" "$url")
+  http_code=$(curl --write-out '%{http_code}' --silent --fail -L --output "$jar" "$url")
   if (( $? != 0 )); then
     echo "Error downloading $jar: response code: $http_code"
     echo "$url"

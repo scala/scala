@@ -303,6 +303,17 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
+  def specializedFunctionName(sym: Symbol, args: List[Type]) = exitingSpecialize {
+    require(isFunctionSymbol(sym), sym)
+    val env: TypeEnv = TypeEnv.fromSpecialization(sym, args)
+    specializedClass.get((sym, env)) match {
+      case Some(x) =>
+        x.name
+      case None =>
+        sym.name
+    }
+  }
+
   /** Return the specialized name of 'sym' in the given environment. It
    *  guarantees the same result regardless of the map order by sorting
    *  type variables alphabetically.
@@ -315,10 +326,14 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       if (sym.isClass) env.keySet
       else specializedTypeVars(sym).intersect(env.keySet)
     )
+    specializedName(sym.name, tvars, env)
+  }
+
+  private def specializedName(name: Name, tvars: immutable.Set[Symbol], env: TypeEnv): TermName = {
     val (methparams, others) = tvars.toList sortBy ("" + _.name) partition (_.owner.isMethod)
     // debuglog("specName(" + sym + ") env: " + env + " tvars: " + tvars)
 
-    specializedName(sym.name, methparams map env, others map env)
+    specializedName(name, methparams map env, others map env)
   }
 
   /** Specialize name for the two list of types. The first one denotes
