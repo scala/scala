@@ -165,7 +165,6 @@ TODO:
   <property name="build.dir"               value="${basedir}/build"/>
   <property name="build-deps.dir"          value="${build.dir}/deps"/>
   <property name="build-libs.dir"          value="${build.dir}/libs"/>
-  <property name="build-asm.dir"           value="${build-libs.dir}"/>
   <property name="build-forkjoin.dir"      value="${build-libs.dir}"/>
   <property name="build-locker.dir"        value="${build.dir}/locker"/>
   <property name="build-quick.dir"         value="${build.dir}/quick"/>
@@ -349,6 +348,11 @@ TODO:
       <prepareCross name="scala-swing"/>
       <prepareCross name="partest"/>
       <prepareCross name="scalacheck"/>
+
+      <artifact:dependencies pathId="asm.classpath" filesetId="asm.fileset">
+        <dependency groupId="org.scala-lang.modules" artifactId="scala-asm" version="${scala-asm.version}"/>
+      </artifact:dependencies>
+      <copy-deps project="asm"/>
 
       <!-- TODO: delay until absolutely necessary to allow minimal build, also move out partest dependency from scaladoc -->
       <artifact:dependencies pathId="partest.classpath" filesetId="partest.fileset" versionsId="partest.versions">
@@ -607,9 +611,7 @@ TODO:
     </then></if>
 
     <path id="forkjoin.classpath" path="${build-forkjoin.dir}/classes/forkjoin"/>
-    <path id="asm.classpath"      path="${build-asm.dir}/classes/asm"/>
     <property name="forkjoin-classes" refid="forkjoin.classpath"/>
-    <property name="asm-classes" refid="asm.classpath"/>
 
     <!-- the following properties fully define staged-docs, staged-pack, make-bundle, copy-bundle and mvn-package for each of the projects -->
     <property name="library.description"           value="Scala Standard Library"/>
@@ -662,7 +664,7 @@ TODO:
     <property name="partest-extras.description"    value="Scala Compiler Testing Tool (compiler-specific extras)"/>
     <property name="partest-javaagent.description" value="Scala Compiler Testing Tool (compiler-specific java agent)"/>
 
-    <!-- projects without project-specific options: asm, forkjoin, manual, bin, repl -->
+    <!-- projects without project-specific options: forkjoin, manual, bin, repl -->
     <for list="compiler,interactive,scaladoc,library,parser-combinators,partest,partest-extras,partest-javaagent,reflect,scalap,swing,xml" param="project">
       <sequential>
         <!-- description is mandatory -->
@@ -836,8 +838,9 @@ TODO:
       <fileset dir="${build-quick.dir}/classes/scaladoc"/>
       <fileset dir="${build-quick.dir}/classes/interactive"/>
       <fileset dir="${build-quick.dir}/classes/repl"/>
-      <fileset dir="${asm-classes}"/>
     </path>
+    <fileset id="pack.compiler.include-jars" refid="asm.fileset"/>
+    <property name="pack.compiler.include-jars.defined" value="yeah"/>
 
     <!-- TODO modularize compiler.
     <path id="pack.scaladoc.files">   <fileset dir="${build-quick.dir}/classes/scaladoc"/> </path>
@@ -1032,9 +1035,9 @@ TODO:
 <!-- ===========================================================================
                                   CLEANLINESS
 =============================================================================-->
-  <target name="libs.clean">                        <clean build="libs"/> <clean build="asm"/>                            </target>
-  <target name="quick.clean"  depends="libs.clean">   <clean build="quick"/> <clean build="pack"/> <clean build="strap"/> </target>
-  <target name="locker.clean" depends="quick.clean">    <clean build="locker"/>                                           </target>
+  <target name="libs.clean">                         <clean build="libs"/>                                               </target>
+  <target name="quick.clean"  depends="libs.clean">  <clean build="quick"/> <clean build="pack"/> <clean build="strap"/> </target>
+  <target name="locker.clean" depends="quick.clean"> <clean build="locker"/>                                             </target>
 
   <target name="docs.clean"> <clean build="docs"/> <delete dir="${build.dir}/manmaker" includeemptydirs="yes" quiet="yes" failonerror="no"/> </target>
   <target name="dist.clean"> <delete dir="${dists.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/> </target>
@@ -1052,7 +1055,6 @@ TODO:
                                   LOCAL DEPENDENCIES
 ============================================================================ -->
 
-  <target name="asm.done"      depends="init"> <simple-javac project="asm" jar="no"/> </target>
   <target name="forkjoin.done" depends="init"> <simple-javac project="forkjoin" args="-XDignore.symbol.file" jar="no"/></target>
 
   <!-- For local development only. We only allow released versions of Scala for STARR.
@@ -1075,7 +1077,7 @@ TODO:
 <!-- ===========================================================================
                                   LOCAL REFERENCE BUILD (LOCKER)
 ============================================================================ -->
-  <target name="locker.start"  depends="asm.done, forkjoin.done">
+  <target name="locker.start"  depends="forkjoin.done">
     <condition property="locker.locked"><available file="${build-locker.dir}/locker.locked"/></condition></target>
 
   <target name="locker.lib"    depends="locker.start"     unless="locker.locked">
@@ -1140,7 +1142,7 @@ TODO:
   <target name="pack.reflect" depends="quick.reflect"> <staged-pack project="reflect"/> </target>
 
   <!-- TODO modularize compiler. Remove other quick targets when they become modules. -->
-  <target name="pack.comp"    depends="quick.comp, quick.scaladoc, quick.interactive, quick.repl, asm.done">
+  <target name="pack.comp"    depends="quick.comp, quick.scaladoc, quick.interactive, quick.repl">
     <staged-pack project="compiler" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
       <pre> <!-- TODO the files copied here do not influence actuality of this target (nor does the manifest) -->
         <copy todir="${build-pack.dir}/lib">
