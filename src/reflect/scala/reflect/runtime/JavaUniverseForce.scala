@@ -310,6 +310,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.QuasiquoteClass_api_unapply
     definitions.ScalaSignatureAnnotation
     definitions.ScalaLongSignatureAnnotation
+    definitions.LambdaMetaFactory
     definitions.MethodHandle
     definitions.OptionClass
     definitions.OptionModule

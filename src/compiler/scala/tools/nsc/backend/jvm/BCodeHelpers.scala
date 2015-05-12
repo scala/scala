@@ -682,6 +682,33 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         new java.lang.Long(id)
       ).visitEnd()
     }
+
+    /**
+     * Add:
+     *
+     * private static Object $deserializeLambda$(SerializedLambda l) {
+     *   return scala.compat.java8.runtime.LambdaDeserializer.deserializeLambda(MethodHandles.lookup(), null, l);
+     * }
+     * @param jclass
+     */
+    // TODO add a static cache field to the class, and pass that as the second argument to `deserializeLambda`.
+    // This will make the test at run/lambda-serialization.scala:15 work
+    def addLambdaDeserialize(jclass: asm.ClassVisitor): Unit = {
+      val cw = jclass
+      import scala.tools.asm.Opcodes._
+      cw.visitInnerClass("java/lang/invoke/MethodHandles$Lookup", "java/lang/invoke/MethodHandles", "Lookup", ACC_PUBLIC + ACC_FINAL + ACC_STATIC)
+
+      {
+        val mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambda$", "(Ljava/lang/invoke/SerializedLambda;)Ljava/lang/Object;", null, null)
+        mv.visitCode()
+        mv.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodHandles", "lookup", "()Ljava/lang/invoke/MethodHandles$Lookup;", false)
+        mv.visitInsn(asm.Opcodes.ACONST_NULL)
+        mv.visitVarInsn(ALOAD, 0)
+        mv.visitMethodInsn(INVOKESTATIC, "scala/compat/java8/runtime/LambdaDeserializer", "deserializeLambda", "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/util/Map;Ljava/lang/invoke/SerializedLambda;)Ljava/lang/Object;", false)
+        mv.visitInsn(ARETURN)
+        mv.visitEnd()
+      }
+    }
   } // end of trait BCClassGen
 
   /* functionality for building plain and mirror classes */
