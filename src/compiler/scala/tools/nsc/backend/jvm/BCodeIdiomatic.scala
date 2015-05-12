@@ -412,6 +412,9 @@ abstract class BCodeIdiomatic extends SubComponent {
       jmethod.instructions.add(node)
       if (settings.YoptInlinerEnabled) callsitePositions(node) = pos
     }
+    final def invokedynamic(owner: String, name: String, desc: String) {
+      jmethod.visitMethodInsn(Opcodes.INVOKEDYNAMIC, owner, name, desc)
+    }
 
     // can-multi-thread
     final def goTo(label: asm.Label) { jmethod.visitJumpInsn(Opcodes.GOTO, label) }

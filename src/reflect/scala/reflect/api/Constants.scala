@@ -95,7 +95,7 @@ trait Constants {
    *  broken down or evaluated, such as "true", "0", "classOf[List]". Such values become parts of the Scala abstract
    *  syntax tree representing the program. The constants
    *  correspond to section 6.24 "Constant Expressions" of the
-   *  [[http://www.scala-lang.org/docu/files/ScalaReference.pdf Scala language specification]].
+   *  [[http://www.scala-lang.org/files/archive/spec/2.11/ Scala Language Specification]].
    *
    *  Such constants are used to represent literals in abstract syntax trees (the [[scala.reflect.api.Trees#Literal]] node)
    *  and literal arguments for Java class file annotations (the [[scala.reflect.api.Annotations#LiteralArgument]] class).

@@ -51,7 +51,7 @@ scala/
    +---/reflect              Scala Reflection.
    +---/compiler             Scala Compiler.
    +---/eclipse              Eclipse project files.
-   +---/intellij-14          IntelliJ project templates.
+   +---/intellij             IntelliJ project templates.
 +--scripts/                  Scripts for the CI jobs (including building releases)
 +--test/                     The Scala test suite.
 +--build/                    [Generated] Build products output directory for ant.
@@ -118,8 +118,8 @@ Use the latest IntelliJ IDEA release and install the Scala plugin from within th
 
 The following steps are required to use IntelliJ IDEA on Scala trunk
  - Run `ant init`. This will download some JARs to `./build/deps`, which are included in IntelliJ's classpath.
- - Run src/intellij-14/setup.sh
- - Open ./src/intellij-14/scala.ipr in IntelliJ
+ - Run src/intellij/setup.sh
+ - Open ./src/intellij/scala.ipr in IntelliJ
  - File, Project Settings, Project, SDK. Create an SDK entry named "1.6" containing the Java 1.6 SDK.
    (You may use a later SDK for local development, but the CI will verify against Java 6.)
 
