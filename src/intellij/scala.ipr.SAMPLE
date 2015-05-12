@@ -36,7 +36,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/actors.iml" filepath="$PROJECT_DIR$/actors.iml" />
-      <module fileurl="file://$PROJECT_DIR$/asm.iml" filepath="$PROJECT_DIR$/asm.iml" />
       <module fileurl="file://$PROJECT_DIR$/compiler.iml" filepath="$PROJECT_DIR$/compiler.iml" />
       <module fileurl="file://$PROJECT_DIR$/forkjoin.iml" filepath="$PROJECT_DIR$/forkjoin.iml" />
       <module fileurl="file://$PROJECT_DIR$/interactive.iml" filepath="$PROJECT_DIR$/interactive.iml" />
@@ -72,6 +71,14 @@
       </CLASSES>
       <JAVADOC />
       <SOURCES />
+    </library>
+    <library name="asm">
+      <CLASSES>
+        <root url="file://$PROJECT_DIR$/../../build/deps/asm" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+      <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/asm" recursive="false" />
     </library>
     <library name="junit">
       <CLASSES>

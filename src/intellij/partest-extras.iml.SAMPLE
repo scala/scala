@@ -7,12 +7,12 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="asm" />
     <orderEntry type="module" module-name="compiler" />
     <orderEntry type="module" module-name="library" />
     <orderEntry type="module" module-name="reflect" />
     <orderEntry type="module" module-name="repl" />
     <orderEntry type="library" name="partest" level="project" />
     <orderEntry type="library" name="starr" level="project" />
+    <orderEntry type="library" name="asm" level="project" />
   </component>
 </module>

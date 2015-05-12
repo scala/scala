@@ -61,6 +61,7 @@ val partestDep = withoutScalaLang("org.scala-lang.modules" %% "scala-partest" % 
 val partestInterfaceDep = withoutScalaLang("org.scala-lang.modules" %% "scala-partest-interface" % "0.5.0")
 val junitDep = "junit" % "junit" % "4.11"
 val junitIntefaceDep = "com.novocode" % "junit-interface" % "0.11" % "test"
+val asmDep = "org.scala-lang.modules" % "scala-asm" % versionProps("scala-asm.version")
 val jlineDep = "jline" % "jline" % versionProps("jline.version")
 val antDep = "org.apache.ant" % "ant" % "1.9.4"
 val scalacheckDep = withoutScalaLang("org.scalacheck" %% "scalacheck" % "1.11.4")
@@ -169,17 +170,22 @@ lazy val compiler = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings: _*)
   .settings(
     name := "scala-compiler",
-    libraryDependencies += antDep,
+    libraryDependencies ++= Seq(antDep, asmDep),
     // this a way to make sure that classes from interactive and scaladoc projects
     // end up in compiler jar (that's what Ant build does)
     // we need to use LocalProject references (with strings) to deal with mutual recursion
     mappings in Compile in packageBin :=
       (mappings in Compile in packageBin).value ++
+      dependencyClasses(
+        (externalDependencyClasspath in Compile).value,
+        modules = Set(asmDep),
+        keep = "*.class" || "scala-asm.properties",
+        streams.value.cacheDirectory) ++
       (mappings in Compile in packageBin in LocalProject("interactive")).value ++
       (mappings in Compile in packageBin in LocalProject("scaladoc")).value ++
       (mappings in Compile in packageBin in LocalProject("repl")).value,
     includeFilter in unmanagedResources in Compile := compilerIncludes)
-  .dependsOn(library, reflect, asm)
+  .dependsOn(library, reflect)
 
 lazy val interactive = configureAsSubproject(project)
   .settings(disableDocsAndPublishingTasks: _*)
@@ -209,8 +215,6 @@ lazy val actors = configureAsSubproject(project)
 
 lazy val forkjoin = configureAsForkOfJavaProject(project)
 
-lazy val asm = configureAsForkOfJavaProject(project)
-
 lazy val partestExtras = configureAsSubproject(Project("partest-extras", file(".") / "src" / "partest-extras"))
   .dependsOn(repl)
   .settings(clearSourceAndResourceDirectories: _*)
@@ -231,9 +235,9 @@ lazy val junit = project.in(file("test") / "junit")
   )
 
 lazy val partestJavaAgent = (project in file(".") / "src" / "partest-javaagent").
-  dependsOn(asm).
   settings(commonSettings: _*).
   settings(
+    libraryDependencies += asmDep,
     doc := file("!!! NO DOCS !!!"),
     publishLocal := {},
     publish := {},
@@ -249,13 +253,13 @@ lazy val partestJavaAgent = (project in file(".") / "src" / "partest-javaagent")
   )
 
 lazy val test = project.
-  dependsOn(compiler, interactive, actors, repl, scalap, partestExtras, partestJavaAgent, asm, scaladoc).
+  dependsOn(compiler, interactive, actors, repl, scalap, partestExtras, partestJavaAgent, scaladoc).
   configs(IntegrationTest).
   settings(disableDocsAndPublishingTasks: _*).
   settings(commonSettings: _*).
   settings(Defaults.itSettings: _*).
   settings(
-    libraryDependencies ++= Seq(partestDep, scalaXmlDep, partestInterfaceDep, scalacheckDep),
+    libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep, partestInterfaceDep, scalacheckDep),
     unmanagedBase in Test := baseDirectory.value / "files" / "lib",
     unmanagedJars in Test <+= (unmanagedBase) (j => Attributed.blank(j)) map(identity),
     // no main sources
@@ -279,7 +283,7 @@ lazy val test = project.
   )
 
 lazy val root = (project in file(".")).
-  aggregate(library, forkjoin, reflect, compiler, asm, interactive, repl,
+  aggregate(library, forkjoin, reflect, compiler, interactive, repl,
     scaladoc, scalap, actors, partestExtras, junit).settings(
     sources in Compile := Seq.empty,
     onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
@@ -310,7 +314,7 @@ def configureAsSubproject(project: Project): Project = {
 
 /**
  * Configuration for subprojects that are forks of some Java projects
- * we depend on. At the moment there are just two: asm and forkjoin.
+ * we depend on. At the moment there's just forkjoin.
  *
  * We do not publish artifacts for those projects but we package their
  * binaries in a jar of other project (compiler or library).
@@ -380,6 +384,50 @@ lazy val generateVersionPropertiesFileImpl: Def.Initialize[Task[File]] = Def.tas
   IO.write(props, null, propFile)
 
   propFile
+}
+
+/**
+ * Extract selected dependencies to the `cacheDirectory` and return a mapping for the content.
+ * Heavily inspired by sbt-assembly (https://github.com/sbt/sbt-assembly/blob/0.13.0/src/main/scala/sbtassembly/Assembly.scala#L157)
+ */
+def dependencyClasses(dependencies: Classpath, modules: Set[ModuleID], keep: FileFilter, cacheDirectory: File): Seq[(File, String)] = {
+  val dependencyFiles: Seq[File] = dependencies.map(_.data).toSeq
+  val toInclude = dependencyFiles.filter(f => {
+    val p = f.getCanonicalPath
+    modules.exists(m => {
+      // works for both .m2 (org/scala-lang/modules/scala-asm/5.0.3-scala-3/scala-asm-5.0.3-scala-3.jar)
+      // and .ivy2 (org.scala-lang.modules/scala-asm/5.0.3-scala-3/bundles/scala-asm.jar)
+      val nameParts = m.organization.split('.').toSet + m.name + m.revision
+      nameParts.forall(p.contains)
+    })
+  })
+  assert(toInclude.forall(sbt.classpath.ClasspathUtilities.isArchive), s"Expected JAR files as dependencies: $toInclude")
+
+  val tempDir = cacheDirectory / "unpackedDependencies"
+
+  def sha1name(f: File): String     = bytesToSha1String(f.getCanonicalPath.getBytes("UTF-8"))
+  def sha1content(f: File): String  = bytesToSha1String(IO.readBytes(f))
+  def bytesToSha1String(bytes: Array[Byte]): String = {
+    val sha1 = java.security.MessageDigest.getInstance("SHA-1")
+    val hash = sha1.digest(bytes)
+    hash map {"%02x".format(_)} mkString
+  }
+
+  val jarDirs: Seq[File] = for (jar <- toInclude) yield {
+    val jarName = jar.getName
+    val hash = sha1name(jar) + "_" + sha1content(jar)
+    val jarNamePath = tempDir / (hash + ".jarName")
+    val dest = tempDir / hash
+    if (!jarNamePath.exists || IO.read(jarNamePath) != jar.getCanonicalPath) {
+      IO.delete(dest)
+      dest.mkdir()
+      IO.unzip(jar, dest)
+      IO.write(jarNamePath, jar.getCanonicalPath, IO.utf8, append = false)
+    }
+    dest
+  }
+
+  jarDirs.flatMap(dir => dir ** keep --- dir pair relativeTo(dir))
 }
 
 // Defining these settings is somewhat redundant as we also redefine settings that depend on them.

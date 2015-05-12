@@ -91,7 +91,7 @@
 
   <macrodef name="simple-javac">
     <attribute name="project"/>
-    <!-- project: asm/forkjoin -->
+    <!-- project: forkjoin -->
     <attribute name="args" default=""/>
     <attribute name="jar" default="yes"/>
     <sequential>
@@ -371,6 +371,10 @@
         <then>
           <mkdir dir="${build-pack.dir}/${@{project}.targetdir}"/>
           <pre/>
+          <!-- can't check if a fileset is defined, so we have an additional property -->
+          <if><not><isset property="pack.@{project}.include-jars.defined"/></not><then>
+            <fileset id="pack.@{project}.include-jars" dir="." excludes="**" />
+          </then></if>
           <if>
             <not>
               <equals arg1="@{manifest}" arg2=""/>
@@ -380,6 +384,7 @@
                 <!-- update="true" makes no difference on my machine, so starting from scratch-->
                 <jar-opts/>
                 <path refid="pack.@{project}.files"/>
+                <zipgroupfileset refid="pack.@{project}.include-jars"/>
               </jar>
             </then>
             <else>
