@@ -131,7 +131,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
           && indyLambdaHosts.contains(claszSymbol))
 
       if (shouldAddLambdaDeserialize)
-        addLambdaDeserialize(cnode)
+        addLambdaDeserialize(claszSymbol, cnode)
 
       addInnerClassesASM(cnode, innerClassBufferASM.toList)
 
