@@ -206,13 +206,6 @@ lazy val scaladoc = configureAsSubproject(project)
 lazy val scalap = configureAsSubproject(project).
   dependsOn(compiler)
 
-// deprecated Scala Actors project
-// TODO: it packages into actors.jar but it should be scala-actors.jar
-lazy val actors = configureAsSubproject(project)
-  .settings(generatePropertiesFileSettings: _*)
-  .settings(name := "scala-actors")
-  .dependsOn(library)
-
 lazy val forkjoin = configureAsForkOfJavaProject(project)
 
 lazy val partestExtras = configureAsSubproject(Project("partest-extras", file(".") / "src" / "partest-extras"))
@@ -253,7 +246,7 @@ lazy val partestJavaAgent = (project in file(".") / "src" / "partest-javaagent")
   )
 
 lazy val test = project.
-  dependsOn(compiler, interactive, actors, repl, scalap, partestExtras, partestJavaAgent, scaladoc).
+  dependsOn(compiler, interactive, repl, scalap, partestExtras, partestJavaAgent, scaladoc).
   configs(IntegrationTest).
   settings(disableDocsAndPublishingTasks: _*).
   settings(commonSettings: _*).
@@ -284,7 +277,7 @@ lazy val test = project.
 
 lazy val root = (project in file(".")).
   aggregate(library, forkjoin, reflect, compiler, interactive, repl,
-    scaladoc, scalap, actors, partestExtras, junit).settings(
+    scaladoc, scalap, partestExtras, junit).settings(
     sources in Compile := Seq.empty,
     onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
       |This build definition has an EXPERIMENTAL status. If you are not
