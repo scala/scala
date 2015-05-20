@@ -12,8 +12,8 @@ object A3 {
 }
 
 class A4 {
-  def f(l: List[Int]): List[Int] = {
-    l map (_ + 1)
+  def f(l: List[String]): List[String] = {
+    l map (_ + "1")
   }
 }
 
@@ -114,21 +114,21 @@ class A18 {
 }
 
 class A19 {
-  ((x: Int) => x + 3)
+  ((x: String) => x + "3")
 
   val x = {
-    ((x: Int) => x + 1)
+    ((x: String) => x + "1")
   }
 
   {
-    ((x: Int) => x + 2)
+    ((x: String) => x + "2")
   }
 }
 
 class A20 {
-  () => {
-    {() => ()}
-    {() => () => 1}
+  (s: String) => {
+    {(s: String) => ()}
+    {(s: String) => (s: String) => 1}
   }
 }
 
@@ -189,13 +189,13 @@ trait A24 extends A24Base {
 class SI_9105 {    
   // the EnclosingMethod attributes depend on the delambdafy strategy (inline vs method)
 
-                                       //  outerClass-inline   enclMeth-inline   outerClass-method   enclMeth-method                    
-  val fun = () => {
+                                       //  outerClass-inline   enclMeth-inline   outerClass-method   enclMeth-method
+  val fun = (s: String) => {
     class A                            //     closure             null (*)            SI_9105           null
     def m: Object = { class B; new B } //     closure              m$1                SI_9105            m$1
     val f: Object = { class C; new C } //     closure             null (*)            SI_9105           null
   }
-  def met = () => {
+  def met = (s: String) => {
     class D                            //     closure             null (*)            SI_9105            met
     def m: Object = { class E; new E } //     closure              m$1                SI_9105            m$1
     val f: Object = { class F; new F } //     closure             null (*)            SI_9105            met
@@ -210,17 +210,19 @@ class SI_9105 {
   //     So using `null` looks more like the situation in the source code: C / F are nested classes of the anon-fun, and
   //     there's no method in between.
 
-  def byName[T](op: => T) = 0
+  def byName(op: => Any) = 0
 
   val bnV = byName {
     class G                            //     closure             null (*)            SI_9105           null
     def m: Object = { class H; new H } //     closure              m$1                SI_9105            m$1
     val f: Object = { class I; new I } //     closure             null (*)            SI_9105           null
+    ""
   }
   def bnM = byName {
     class J                            //     closure             null (*)            SI_9105            bnM
     def m: Object = { class K; new K } //     closure              m$1                SI_9105            m$1
     val f: Object = { class L; new L } //     closure             null (*)            SI_9105            bnM
+    ""
   }
 }
 
@@ -283,8 +285,8 @@ object NestedInValueClass {
   class A(val arg: String) extends AnyVal {
     // A has InnerClass entries for the two closures (and for A and A$). not for B / C
     def f = {
-      def g = List().map(x => (() => x)) // outer class A, no outer method (g is moved to the companion, doesn't exist in A)
-      g.map(x => (() => x))              // outer class A, outer method f
+      def g = List().map(x => ((s: String) => x)) // outer class A, no outer method (g is moved to the companion, doesn't exist in A)
+      g.map(x => ((s: String) => x))              // outer class A, outer method f
     }
     // statements and field declarations are not allowed in value classes
   }

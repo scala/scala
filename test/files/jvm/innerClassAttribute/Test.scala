@@ -5,6 +5,9 @@ import asm.{Opcodes => Flags}
 import scala.collection.JavaConverters._
 
 object Test extends BytecodeTest {
+  // Helpful for debugging the test:
+  // println(new java.io.File(classpath.asURLs.head.toURI).list().sorted.mkString("\n"))
+
   def assertSame(a: Any, b: Any) = {
     assert(a == b, s"\na: $a\nb: $b")
   }
@@ -266,10 +269,10 @@ object Test extends BytecodeTest {
 
     printInnerClassNodes("A20")
 
-    val fun1 = lambdaClass("A20$$anonfun$6", "A20$lambda$1")
-    val fun2 = lambdaClass("A20$$anonfun$6$$anonfun$apply$1", "A20$lambda$$$nestedInAnonfun$5$1")
-    val fun3 = lambdaClass("A20$$anonfun$6$$anonfun$apply$3", "A20$lambda$$$nestedInAnonfun$5$2")
-    val fun4 = lambdaClass("A20$$anonfun$6$$anonfun$apply$3$$anonfun$apply$2", "A20$lambda$$$nestedInAnonfun$7$1")
+    val fun1 = lambdaClass("A20$$anonfun$4", "A20$lambda$1")
+    val fun2 = lambdaClass("A20$$anonfun$4$$anonfun$apply$1", "A20$lambda$$$nestedInAnonfun$5$1")
+    val fun3 = lambdaClass("A20$$anonfun$4$$anonfun$apply$2", "A20$lambda$$$nestedInAnonfun$5$2")
+    val fun4 = lambdaClass("A20$$anonfun$4$$anonfun$apply$2$$anonfun$apply$3", "A20$lambda$$$nestedInAnonfun$7$1")
 
     println("fun1: attribute for itself and the two child closures `() => ()` and `() => () => 1`")
     printInnerClassNodes(fun1)
@@ -339,9 +342,9 @@ object Test extends BytecodeTest {
       assertEnclosingMethod  ("SI_9105$A$3"          , "SI_9105", null , null)
       assertEnclosingMethod  ("SI_9105$B$5"          , "SI_9105", "m$1", "()Ljava/lang/Object;")
       assertEnclosingMethod  ("SI_9105$C$1"          , "SI_9105", null , null)
-      assertEnclosingMethod  ("SI_9105$D$1"          , "SI_9105", "met", "()Lscala/Function0;")
+      assertEnclosingMethod  ("SI_9105$D$1"          , "SI_9105", "met", "()Lscala/Function1;")
       assertEnclosingMethod  ("SI_9105$E$1"          , "SI_9105", "m$3", "()Ljava/lang/Object;")
-      assertEnclosingMethod  ("SI_9105$F$1"          , "SI_9105", "met", "()Lscala/Function0;")
+      assertEnclosingMethod  ("SI_9105$F$1"          , "SI_9105", "met", "()Lscala/Function1;")
       assertNoEnclosingMethod("SI_9105$lambda$$met$1")
       assertNoEnclosingMethod("SI_9105$lambda$1")
       assertNoEnclosingMethod("SI_9105")
@@ -366,35 +369,35 @@ object Test extends BytecodeTest {
       assert(innerClassNodes("SI_9105").length == 12) // the 12 local classes
     } else {
       // comment in innerClassAttribute/Classes_1.scala explains the difference between A / C and D / F.
-      assertEnclosingMethod  ("SI_9105$$anonfun$4$A$3"    , "SI_9105$$anonfun$4"    , null          , null)
-      assertEnclosingMethod  ("SI_9105$$anonfun$4$B$5"    , "SI_9105$$anonfun$4"    , "m$1"         , "()Ljava/lang/Object;")
-      assertEnclosingMethod  ("SI_9105$$anonfun$4$C$1"    , "SI_9105$$anonfun$4"    , null          , null)
+      assertEnclosingMethod  ("SI_9105$$anonfun$5$A$3"    , "SI_9105$$anonfun$5"    , null          , null)
+      assertEnclosingMethod  ("SI_9105$$anonfun$5$B$5"    , "SI_9105$$anonfun$5"    , "m$1"         , "()Ljava/lang/Object;")
+      assertEnclosingMethod  ("SI_9105$$anonfun$5$C$1"    , "SI_9105$$anonfun$5"    , null          , null)
       assertEnclosingMethod  ("SI_9105$$anonfun$met$1$D$1", "SI_9105$$anonfun$met$1", null          , null)
       assertEnclosingMethod  ("SI_9105$$anonfun$met$1$E$1", "SI_9105$$anonfun$met$1", "m$3"         , "()Ljava/lang/Object;")
       assertEnclosingMethod  ("SI_9105$$anonfun$met$1$F$1", "SI_9105$$anonfun$met$1", null          , null)
-      assertEnclosingMethod  ("SI_9105$$anonfun$4"        , "SI_9105"               , null          , null)
-      assertEnclosingMethod  ("SI_9105$$anonfun$met$1"    , "SI_9105"               , "met"         , "()Lscala/Function0;")
+      assertEnclosingMethod  ("SI_9105$$anonfun$5"        , "SI_9105"               , null          , null)
+      assertEnclosingMethod  ("SI_9105$$anonfun$met$1"    , "SI_9105"               , "met"         , "()Lscala/Function1;")
       assertNoEnclosingMethod("SI_9105")
 
-      assertLocal(ownInnerClassNode("SI_9105$$anonfun$4$A$3"),     "SI_9105$$anonfun$4$A$3"    , "A$3")
-      assertLocal(ownInnerClassNode("SI_9105$$anonfun$4$B$5"),     "SI_9105$$anonfun$4$B$5"    , "B$5")
-      assertLocal(ownInnerClassNode("SI_9105$$anonfun$4$C$1"),     "SI_9105$$anonfun$4$C$1"    , "C$1")
+      assertLocal(ownInnerClassNode("SI_9105$$anonfun$5$A$3"),     "SI_9105$$anonfun$5$A$3"    , "A$3")
+      assertLocal(ownInnerClassNode("SI_9105$$anonfun$5$B$5"),     "SI_9105$$anonfun$5$B$5"    , "B$5")
+      assertLocal(ownInnerClassNode("SI_9105$$anonfun$5$C$1"),     "SI_9105$$anonfun$5$C$1"    , "C$1")
       assertLocal(ownInnerClassNode("SI_9105$$anonfun$met$1$D$1"), "SI_9105$$anonfun$met$1$D$1", "D$1")
       assertLocal(ownInnerClassNode("SI_9105$$anonfun$met$1$E$1"), "SI_9105$$anonfun$met$1$E$1", "E$1")
       assertLocal(ownInnerClassNode("SI_9105$$anonfun$met$1$F$1"), "SI_9105$$anonfun$met$1$F$1", "F$1")
 
       // by-name
-      assertEnclosingMethod("SI_9105$$anonfun$5$G$1", "SI_9105$$anonfun$5", null, null)
-      assertEnclosingMethod("SI_9105$$anonfun$5$H$1", "SI_9105$$anonfun$5", "m$2", "()Ljava/lang/Object;")
-      assertEnclosingMethod("SI_9105$$anonfun$5$I$1", "SI_9105$$anonfun$5", null, null)
+      assertEnclosingMethod("SI_9105$$anonfun$6$G$1", "SI_9105$$anonfun$6", null, null)
+      assertEnclosingMethod("SI_9105$$anonfun$6$H$1", "SI_9105$$anonfun$6", "m$2", "()Ljava/lang/Object;")
+      assertEnclosingMethod("SI_9105$$anonfun$6$I$1", "SI_9105$$anonfun$6", null, null)
       assertEnclosingMethod("SI_9105$$anonfun$bnM$1$J$1", "SI_9105$$anonfun$bnM$1", null, null)
       assertEnclosingMethod("SI_9105$$anonfun$bnM$1$K$2", "SI_9105$$anonfun$bnM$1", "m$4", "()Ljava/lang/Object;")
       assertEnclosingMethod("SI_9105$$anonfun$bnM$1$L$1", "SI_9105$$anonfun$bnM$1", null, null)
 
-      assertAnonymous(ownInnerClassNode("SI_9105$$anonfun$4"), "SI_9105$$anonfun$4")
+      assertAnonymous(ownInnerClassNode("SI_9105$$anonfun$5"), "SI_9105$$anonfun$5")
       assertAnonymous(ownInnerClassNode("SI_9105$$anonfun$met$1"), "SI_9105$$anonfun$met$1")
 
-      assert(innerClassNodes("SI_9105$$anonfun$4").length == 4)     // itself and three of the local classes
+      assert(innerClassNodes("SI_9105$$anonfun$5").length == 4)     // itself and three of the local classes
       assert(innerClassNodes("SI_9105$$anonfun$met$1").length == 4) // itself and three of the local classes
       assert(innerClassNodes("SI_9105").length == 4)                // the four anon funs
     }
