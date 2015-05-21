@@ -146,6 +146,9 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       val isStatic = target.hasFlag(STATIC)
 
       def createBoxingBridgeMethod(functionParamTypes: List[Type], functionResultType: Type): Tree = {
+        // Note: we bail out of this method and return EmptyTree if we find there is no adaptation required.
+        // If we need to improve performance, we could check the types first before creating the
+        // method and parameter symbols.
         val methSym = oldClass.newMethod(target.name.append("$adapted").toTermName, target.pos, target.flags | FINAL | ARTIFACT)
         var neededAdaptation = false
         def boxedType(tpe: Type): Type = {
