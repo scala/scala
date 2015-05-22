@@ -92,7 +92,7 @@ trait Imports {
    * last one imported is actually usable.
    */
   case class ComputedImports(prepend: String, append: String, access: String)
-  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper): ComputedImports = {
+  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper, definesClass: Boolean): ComputedImports = {
     /** Narrow down the list of requests from which imports
      *  should be taken.  Removes requests which cannot contribute
      *  useful imports for the specified set of wanted names.
@@ -107,6 +107,8 @@ trait Imports {
         // Single symbol imports might be implicits! See bug #1752.  Rather than
         // try to finesse this, we will mimic all imports for now.
         def keepHandler(handler: MemberHandler) = handler match {
+        /* While defining classes in class based mode - implicits are not needed. */
+          case h: ImportHandler if isClassBased && definesClass => h.importedNames.exists(x => wanted.contains(x))
           case _: ImportHandler => true
           case x                => x.definesImplicit || (x.definedNames exists wanted)
         }
@@ -147,6 +149,7 @@ trait Imports {
     // loop through previous requests, adding imports for each one
     wrapBeforeAndAfter {
       for (ReqAndHandler(req, handler) <- reqsToUse) {
+        val objName = req.lineRep.readPathInstance
         handler match {
           // If the user entered an import, then just use it; add an import wrapping
           // level if the import might conflict with some other import
@@ -157,6 +160,26 @@ trait Imports {
             code append (x.member + "\n")
             currentImps ++= x.importedNames
 
+           /* Following two cases are special and only applicable for class based wrappers,
+            * where importing is a bit of a trick. This trick involves creating a val and
+            * importing it - only in case it does not define a class. In a distributed environment
+            * this prevents remote shells from loading the entire class hierarchy and calling their
+            * <inits> on the remote executors. Which is meaningless, and barfs weird errors.
+            */
+          case x: ClassHandler if isClassBased =>
+            for (imv <- x.definedNames) {
+              code.append("import " + objName + req.accessPath + ".`" + imv + "`\n")
+            }
+
+          case x if isClassBased =>
+            for (imv <- x.definedNames) {
+              if (!currentImps.contains(imv)) {
+                val valName = "$VAL" + newValId()
+                code.append(s"val $valName = $objName\n")
+                code.append(s"import $valName ${req.accessPath}.`$imv`;\n")
+                currentImps += imv
+              }
+            }
           // For other requests, import each defined name.
           // import them explicitly instead of with _, so that
           // ambiguity errors will not be generated. Also, quote
@@ -173,6 +196,13 @@ trait Imports {
     }
 
     ComputedImports(code.toString, trailingBraces.toString, accessPath.toString)
+  }
+
+  private var curValId = 0
+
+  private def newValId(): Int = {
+    curValId += 1
+    curValId
   }
 
   private def allReqAndHandlers =

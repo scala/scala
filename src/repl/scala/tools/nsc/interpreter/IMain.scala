@@ -69,6 +69,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   // Used in a test case.
   def showDirectory() = replOutput.show(out)
 
+  lazy val isClassBased: Boolean = settings.Yreplclassbased.value
+
   private[nsc] var printResults               = true      // whether to print result lines
   private[nsc] var totalSilence               = false     // whether to print anything
   private var _initializeComplete             = false     // compiler is initialized
@@ -310,8 +312,14 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   }
 
   def originalPath(name: String): String = originalPath(TermName(name))
-  def originalPath(name: Name): String   = typerOp path name
-  def originalPath(sym: Symbol): String  = typerOp path sym
+  def originalPath(name: Name): String   = translateOriginalPath(typerOp path name)
+  def originalPath(sym: Symbol): String  = translateOriginalPath(typerOp path sym)
+  /** For class based repl mode we use an .INSTANCE accessor. */
+  val readInstanceName = if(isClassBased) ".INSTANCE" else ""
+  def translateOriginalPath(p: String): String = {
+    val readName = java.util.regex.Matcher.quoteReplacement(sessionNames.read)
+    p.replaceFirst(readName, readName + readInstanceName)
+  }
   def flatPath(sym: Symbol): String      = flatOp shift sym.javaClassName
 
   def translatePath(path: String) = {
@@ -758,11 +766,13 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     // object and we can do that much less wrapping.
     def packageDecl = "package " + packageName
 
+    def pathToInstance(name: String)   = packageName + "." + name + readInstanceName
     def pathTo(name: String)   = packageName + "." + name
     def packaged(code: String) = packageDecl + "\n\n" + code
 
-    def readPath  = pathTo(readName)
-    def evalPath  = pathTo(evalName)
+    def readPathInstance  = pathToInstance(readName)
+    def readPath = pathTo(readName)
+    def evalPath = pathTo(evalName)
 
     def call(name: String, args: Any*): AnyRef = {
       val m = evalMethod(name)
@@ -802,7 +812,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     /** The innermost object inside the wrapper, found by
       * following accessPath into the outer one.
       */
-    def resolvePathToSymbol(accessPath: String): Symbol = {
+    def resolvePathToSymbol(fullAccessPath: String): Symbol = {
+      val accessPath = fullAccessPath.stripPrefix(readPath)
       val readRoot = readRootPath(readPath) // the outermost wrapper
       (accessPath split '.').foldLeft(readRoot: Symbol) {
         case (sym, "")    => sym
@@ -849,7 +860,6 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     def defines    = defHandlers flatMap (_.definedSymbols)
     def imports    = importedSymbols
     def value      = Some(handlers.last) filter (h => h.definesValue) map (h => definedSymbols(h.definesTerm.get)) getOrElse NoSymbol
-
     val lineRep = new ReadEvalPrint()
 
     private var _originalLine: String = null
@@ -858,6 +868,11 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
     /** handlers for each tree in this request */
     val handlers: List[MemberHandler] = trees map (memberHandlers chooseHandler _)
+    val definesClass = handlers.exists {
+      case _: ClassHandler => true
+      case _ => false
+    }
+
     def defHandlers = handlers collect { case x: MemberDefHandler => x }
 
     /** list of names used by this expression */
@@ -875,13 +890,13 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       * append to objectName to access anything bound by request.
       */
     lazy val ComputedImports(importsPreamble, importsTrailer, accessPath) =
-      exitingTyper(importsCode(referencedNames.toSet, ObjectSourceCode))
+      exitingTyper(importsCode(referencedNames.toSet, ObjectSourceCode, definesClass))
 
     /** the line of code to compute */
     def toCompute = line
 
     /** The path of the value that contains the user code. */
-    def fullAccessPath = s"${lineRep.readPath}$accessPath"
+    def fullAccessPath = s"${lineRep.readPathInstance}$accessPath"
 
     /** The path of the given member of the wrapping instance. */
     def fullPath(vname: String) = s"$fullAccessPath.`$vname`"
@@ -911,7 +926,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       def postwrap: String
     }
 
-    private class ObjectBasedWrapper extends Wrapper {
+    class ObjectBasedWrapper extends Wrapper {
       def preambleHeader = "object %s {"
 
       def postamble = importsTrailer + "\n}"
@@ -919,13 +934,16 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       def postwrap = "}\n"
     }
 
-    private class ClassBasedWrapper extends Wrapper {
+    class ClassBasedWrapper extends Wrapper {
       def preambleHeader = "class %s extends Serializable {"
 
       /** Adds an object that instantiates the outer wrapping class. */
-      def postamble  = s"""$importsTrailer
+      def postamble  = s"""
+                          |$importsTrailer
                           |}
-                          |object ${lineRep.readName} extends ${lineRep.readName}
+                          |object ${lineRep.readName} {
+                          |   val INSTANCE = new ${lineRep.readName}();
+                          |}
                           |""".stripMargin
 
       import nme.{ INTERPRETER_IMPORT_WRAPPER => iw }
@@ -935,7 +953,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     }
 
     private lazy val ObjectSourceCode: Wrapper =
-      if (settings.Yreplclassbased) new ClassBasedWrapper else new ObjectBasedWrapper
+      if (isClassBased) new ClassBasedWrapper else new ObjectBasedWrapper
 
     private object ResultObjectSourceCode extends IMain.CodeAssembler[MemberHandler] {
       /** We only want to generate this code when the result
@@ -994,7 +1012,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       }
     }
 
-    lazy val resultSymbol = lineRep.resolvePathToSymbol(accessPath)
+    lazy val resultSymbol = lineRep.resolvePathToSymbol(fullAccessPath)
     def applyToResultMember[T](name: Name, f: Symbol => T) = exitingTyper(f(resultSymbol.info.nonPrivateDecl(name)))
 
     /* typeOf lookup with encoding */

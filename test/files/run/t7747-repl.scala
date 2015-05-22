@@ -65,5 +65,7 @@ object Test extends ReplTest {
     |case class PuppyPups()
     |case class Bingo()
     |List(BippyBups(), PuppyPups(), Bingo()) // show
+    |:power
+    |intp.lastRequest
     |""".stripMargin
 }
