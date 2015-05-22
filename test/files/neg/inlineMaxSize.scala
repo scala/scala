@@ -4,5 +4,5 @@ class C {
   @inline final def g = f + f + f + f + f + f + f + f + f + f
   @inline final def h = g + g + g + g + g + g + g + g + g + g
   @inline final def i = h + h + h + h + h + h + h + h + h + h
-  @inline final def j = i + i
+  @inline final def j = i + i + i
 }
