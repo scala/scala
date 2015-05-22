@@ -10,7 +10,7 @@ package settings
 
 /** A mutable Settings object.
  */
-abstract class MutableSettings extends AbsSettings {
+abstract class MutableSettings {
 
   type Setting <: SettingValue
   type BooleanSetting <: Setting { type T = Boolean }
@@ -18,7 +18,8 @@ abstract class MutableSettings extends AbsSettings {
   type MultiStringSetting <: Setting { type T = List[String] }
 
   // basically this is a value which remembers if it's been modified
-  trait SettingValue extends AbsSettingValue {
+  trait SettingValue {
+    type T <: Any
     protected var v: T
     protected var setByUser: Boolean = false
 

@@ -18,10 +18,43 @@ import scala.reflect.{ ClassTag, classTag }
  */
 class MutableSettings(val errorFn: String => Unit)
               extends scala.reflect.internal.settings.MutableSettings
-                 with AbsSettings
                  with ScalaSettings
                  with Mutable {
   type ResultOfTryToSet = List[String]
+
+  def visibleSettings = allSettings filterNot (_.isInternalOnly)
+
+  // only settings which differ from default
+  def userSetSettings = visibleSettings filterNot (_.isDefault)
+
+  // an argument list which (should) be usable to recreate the Settings
+  def recreateArgs = userSetSettings.toList flatMap (_.unparse)
+
+  // checks both name and any available abbreviations
+  def lookupSetting(cmd: String): Option[Setting] = allSettings find (_ respondsTo cmd)
+
+  // two AbsSettings objects are equal if their visible settings are equal.
+  override def hashCode() = visibleSettings.size  // going for cheap
+  override def equals(that: Any) = that match {
+    case s: MutableSettings => this.userSetSettings == s.userSetSettings
+    case _                  => false
+  }
+  override def toString() = {
+    val uss    = userSetSettings
+    val indent = if (uss.nonEmpty) " " * 2 else ""
+    uss.mkString(f"Settings {%n$indent", f"%n$indent", f"%n}%n")
+  }
+  def toConciseString = userSetSettings.mkString("(", " ", ")")
+
+  def checkDependencies =
+    visibleSettings filterNot (_.isDefault) forall (setting => setting.dependencies forall {
+      case (dep, value) =>
+        (Option(dep.value) exists (_.toString == value)) || {
+          errorFn("incomplete option %s (requires %s)".format(setting.name, dep.name))
+          false
+        }
+    })
+
 
   def withErrorFn(errorFn: String => Unit): MutableSettings = {
     val settings = new MutableSettings(errorFn)
@@ -353,7 +386,68 @@ class MutableSettings(val errorFn: String => Unit)
   /** A base class for settings of all types.
    *  Subclasses each define a `value` field of the appropriate type.
    */
-  abstract class Setting(val name: String, val helpDescription: String) extends AbsSetting with SettingValue with Mutable {
+  abstract class Setting(val name: String, val helpDescription: String) extends SettingValue with Ordered[Setting] with Mutable {
+    def unparse: List[String]
+
+    /* For tools which need to populate lists of available choices */
+    def choices : List[String] = Nil
+
+    def respondsTo(label: String) = (name == label) || (abbreviations contains label)
+
+    /** If the setting should not appear in help output, etc. */
+    private var internalSetting = false
+    def isInternalOnly = internalSetting
+    def internalOnly(): this.type = {
+      internalSetting = true
+      this
+    }
+
+    /** Issue error and return */
+    def errorAndValue[T](msg: String, x: T): T = { errorFn(msg) ; x }
+
+    /** After correct Setting has been selected, tryToSet is called with the
+      *  remainder of the command line.  It consumes any applicable arguments and
+      *  returns the unconsumed ones.
+      */
+    protected[nsc] def tryToSet(args: List[String]): Option[ResultOfTryToSet]
+
+    /** Commands which can take lists of arguments in form -Xfoo:bar,baz override
+      *  this method and accept them as a list.  It returns List[String] for
+      *  consistency with tryToSet, and should return its incoming arguments
+      *  unmodified on failure, and Nil on success.
+      */
+    protected[nsc] def tryToSetColon(args: List[String]): Option[ResultOfTryToSet] =
+      errorAndValue("'%s' does not accept multiple arguments" format name, None)
+
+    /** Attempt to set from a properties file style property value.
+      *  Currently used by Eclipse SDT only.
+      *  !!! Needs test.
+      */
+    def tryToSetFromPropertyValue(s: String): Unit = tryToSet(s :: Nil)
+
+    /** These categorizations are so the help output shows -X and -P among
+      *  the standard options and -Y among the advanced options.
+      */
+    def isAdvanced   = name match { case "-Y" => true ; case "-X" => false ; case _  => name startsWith "-X" }
+    def isPrivate    = name match { case "-Y" => false ; case _  => name startsWith "-Y" }
+    def isStandard   = !isAdvanced && !isPrivate
+    def isForDebug   = name endsWith "-debug" // by convention, i.e. -Ytyper-debug
+    def isDeprecated = deprecationMessage.isDefined
+
+    def compare(that: Setting): Int = name compare that.name
+
+    /** Equality tries to sidestep all the drama and define it simply and
+      *  in one place: two AbsSetting objects are equal if their names and
+      *  values compare equal.
+      */
+    override def equals(that: Any) = that match {
+      case x: Setting  => (name == x.name) && (value == x.value)
+      case _                          => false
+    }
+    override def hashCode() = name.hashCode + value.hashCode
+    override def toString() = name + " = " + (if (value == "") "\"\"" else value)
+
+
     /** Will be called after this Setting is set for any extra work. */
     private var _postSetHook: this.type => Unit = (x: this.type) => ()
     override def postSetHook(): Unit = _postSetHook(this)
@@ -361,22 +455,26 @@ class MutableSettings(val errorFn: String => Unit)
 
     /** The syntax defining this setting in a help string */
     private var _helpSyntax = name
-    override def helpSyntax: String = _helpSyntax
+    def helpSyntax: String = _helpSyntax
     def withHelpSyntax(s: String): this.type    = { _helpSyntax = s ; this }
 
     /** Abbreviations for this setting */
     private var _abbreviations: List[String] = Nil
-    override def abbreviations = _abbreviations
+    def abbreviations = _abbreviations
     def withAbbreviation(s: String): this.type  = { _abbreviations ++= List(s) ; this }
 
     /** Optional dependency on another setting */
     private var dependency: Option[(Setting, String)] = None
-    override def dependencies = dependency.toList
+    def dependencies = dependency.toList
     def dependsOn(s: Setting, value: String): this.type = { dependency = Some((s, value)); this }
 
     private var _deprecationMessage: Option[String] = None
-    override def deprecationMessage = _deprecationMessage
+    def deprecationMessage = _deprecationMessage
     def withDeprecationMessage(msg: String): this.type = { _deprecationMessage = Some(msg) ; this }
+  }
+
+  trait InternalSetting extends Setting {
+    override def isInternalOnly = true
   }
 
   /** A setting represented by an integer. */
