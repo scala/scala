@@ -975,4 +975,20 @@ class InlinerTest extends ClearAfterClass {
     val List(c) = compile(code)
     assertInvoke(getSingleMethod(c, "t"), "java/lang/Error", "<init>")
   }
+
+  @Test
+  def noRedunantNullChecks(): Unit = {
+    val code =
+      """class C {
+        |  @inline final def f: String = "hai!"
+        |  def t(c: C) = {c.f; c.f} // null check on the first, but not the second
+        |}
+      """.stripMargin
+
+    val List(c) = compile(code)
+    val t = getSingleMethod(c, "t").instructions
+    assertNoInvoke(t)
+    assert(2 == t.collect({case Ldc(_, "hai!") => }).size)     // twice the body of f
+    assert(1 == t.collect({case Jump(IFNONNULL, _) => }).size) // one single null check
+  }
 }

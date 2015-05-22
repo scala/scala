@@ -8,12 +8,14 @@ package backend.jvm
 package opt
 
 import scala.reflect.internal.util.{NoPosition, Position}
+import scala.tools.asm.{Opcodes, Type}
 import scala.tools.asm.tree._
 import scala.collection.convert.decorateAsScala._
-import scala.tools.nsc.backend.jvm.BTypes.{MethodInlineInfo, InternalName}
+import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
-import scala.tools.nsc.backend.jvm.opt.BytecodeUtils.AsmAnalyzer
+import scala.tools.nsc.backend.jvm.analysis.{NotNull, NullnessAnalyzer}
 import ByteCodeRepository.{Source, CompilationUnit}
+import BytecodeUtils._
 
 class CallGraph[BT <: BTypes](val btypes: BT) {
   import btypes._
@@ -93,12 +95,13 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
     // TODO: run dataflow analyses to make the call graph more precise
     //  - producers to get forwarded parameters (ForwardedParam)
     //  - typeAnalysis for more precise argument types, more precise callee
-    //  - nullAnalysis to skip emitting the receiver-null-check when inlining
 
-    // TODO: for now we run a basic analyzer to get the stack height at the call site.
-    // once we run a more elaborate analyzer (types, nullness), we can get the stack height out of there.
+    // For now we run a NullnessAnalyzer. It is used to determine if the receiver of an instance
+    // call is known to be not-null, in which case we don't have to emit a null check when inlining.
+    // It is also used to get the stack height at the call site.
     localOpt.minimalRemoveUnreachableCode(methodNode, definingClass.internalName)
-    val analyzer = new AsmAnalyzer(methodNode, definingClass.internalName)
+    val analyzer = new NullnessAnalyzer
+    analyzer.analyze(definingClass.internalName, methodNode)
 
     methodNode.instructions.iterator.asScala.collect({
       case call: MethodInsnNode =>
@@ -126,13 +129,20 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           Nil
         }
 
+        val receiverNotNull = call.getOpcode == Opcodes.INVOKESTATIC || {
+          val numArgs = Type.getArgumentTypes(call.desc).length
+          val frame = analyzer.frameAt(call, methodNode)
+          frame.getStack(frame.getStackSize - 1 - numArgs).nullness == NotNull
+        }
+
         Callsite(
           callsiteInstruction = call,
           callsiteMethod = methodNode,
           callsiteClass = definingClass,
           callee = callee,
           argInfos = argInfos,
-          callsiteStackHeight = analyzer.frameAt(call).getStackSize,
+          callsiteStackHeight = analyzer.frameAt(call, methodNode).getStackSize,
+          receiverKnownNotNull = receiverNotNull,
           callsitePosition = callsitePositions.getOrElse(call, NoPosition)
         )
     }).toList
@@ -154,7 +164,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    */
   final case class Callsite(callsiteInstruction: MethodInsnNode, callsiteMethod: MethodNode, callsiteClass: ClassBType,
                             callee: Either[OptimizerWarning, Callee], argInfos: List[ArgInfo],
-                            callsiteStackHeight: Int, callsitePosition: Position) {
+                            callsiteStackHeight: Int, receiverKnownNotNull: Boolean, callsitePosition: Position) {
     override def toString =
       "Invocation of" +
         s" ${callee.map(_.calleeDeclarationClass.internalName).getOrElse("?")}.${callsiteInstruction.name + callsiteInstruction.desc}" +
