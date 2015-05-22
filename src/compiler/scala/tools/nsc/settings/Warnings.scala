@@ -23,7 +23,7 @@ trait Warnings {
   val warnValueDiscard     = BooleanSetting("-Ywarn-value-discard", "Warn when non-Unit expression results are unused.")
   val warnNumericWiden     = BooleanSetting("-Ywarn-numeric-widen", "Warn when numerics are widened.")
   // SI-7712, SI-7707 warnUnused not quite ready for prime-time
-  val warnUnused           = BooleanSetting("-Ywarn-unused", "Warn when local and private vals, vars, defs, and types are are unused.")
+  val warnUnused           = BooleanSetting("-Ywarn-unused", "Warn when local and private vals, vars, defs, and types are unused.")
   // currently considered too noisy for general use
   val warnUnusedImport     = BooleanSetting("-Ywarn-unused-import", "Warn when imports are unused.")
 
