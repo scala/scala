@@ -14,7 +14,7 @@ import scala.tools.util.PathResolver.Defaults
  *  implemented in MutableSettings rather than mutation-generically.
  */
 trait StandardScalaSettings {
-  self: AbsScalaSettings =>
+  self: ScalaSettings with MutableSettings =>
 
   /** Path related settings.
    */
