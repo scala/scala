@@ -341,7 +341,7 @@ object BytecodeUtils {
     /**
      * The value `n` positions down the stack.
      */
-    def peekStack(n: Int): V = frame.getStack(frame.getMaxStackSize - 1 - n)
+    def peekStack(n: Int): V = frame.getStack(frame.getStackSize - 1 - n)
 
     /**
      * The index of the current stack top.
