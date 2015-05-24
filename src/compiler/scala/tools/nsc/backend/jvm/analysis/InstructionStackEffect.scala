@@ -196,9 +196,9 @@ object InstructionStackEffect {
            LRETURN |
            FRETURN |
            DRETURN |
-           ARETURN => (frame.getStackSize, 0)
+           ARETURN => (1, 0) // Frame.execute consumes one stack value
 
-      case RETURN => (frame.getStackSize, 0)
+      case RETURN => (0, 0) // Frame.execute does not change the stack
 
       case GETSTATIC => (0, 1)
 
@@ -229,7 +229,7 @@ object InstructionStackEffect {
            ANEWARRAY |
            ARRAYLENGTH => (1, 1)
 
-      case ATHROW => (frame.getStackSize, 0)
+      case ATHROW => (1, 0) // Frame.execute consumes one stack value
 
       case CHECKCAST => (0, 0)
 
