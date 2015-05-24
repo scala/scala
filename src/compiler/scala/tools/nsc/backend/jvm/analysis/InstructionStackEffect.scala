@@ -8,8 +8,26 @@ import scala.tools.asm.Type
 import scala.tools.asm.tree.{MultiANewArrayInsnNode, InvokeDynamicInsnNode, MethodInsnNode, AbstractInsnNode}
 import scala.tools.asm.tree.analysis.{Frame, Value}
 import opt.BytecodeUtils._
+import collection.immutable
 
 object InstructionStackEffect {
+  private var cache: immutable.IntMap[(Int, Int)] = immutable.IntMap.empty
+  private def t(x: Int, y: Int): (Int, Int) = {
+    // x can go up to 255 (number of parameters of a method, dimensions in multianewarray) we cache
+    // x up to 10, which covers most cases and limits the cache. y doesn't go above 6 (see cases).
+    if (x > 10 || y > 6) (x, y)
+    else {
+      val key = (x << 8) + y // this would work for any x < 256
+      if (cache contains key) {
+        cache(key)
+      } else {
+        val r = (x, y)
+        cache += key -> r
+        r
+      }
+    }
+  }
+
   /**
    * Returns a pair with the number of stack values consumed and produced by `insn`.
    * This method requires the `frame` to be in the state **before** executing / interpreting
@@ -20,7 +38,7 @@ object InstructionStackEffect {
 
     (insn.getOpcode: @switch) match {
       // The order of opcodes is the same as in Frame.execute.
-      case NOP => (0, 0)
+      case NOP => t(0, 0)
 
       case ACONST_NULL |
            ICONST_M1 |
@@ -44,7 +62,7 @@ object InstructionStackEffect {
            LLOAD |
            FLOAD |
            DLOAD |
-           ALOAD => (0, 1)
+           ALOAD => t(0, 1)
 
       case IALOAD |
            LALOAD |
@@ -53,13 +71,13 @@ object InstructionStackEffect {
            AALOAD |
            BALOAD |
            CALOAD |
-           SALOAD => (2, 1)
+           SALOAD => t(2, 1)
 
       case ISTORE |
            LSTORE |
            FSTORE |
            DSTORE |
-           ASTORE => (1, 0)
+           ASTORE => t(1, 0)
 
       case IASTORE |
            LASTORE |
@@ -68,41 +86,41 @@ object InstructionStackEffect {
            AASTORE |
            BASTORE |
            CASTORE |
-           SASTORE => (3, 0)
+           SASTORE => t(3, 0)
 
-      case POP => (1, 0)
+      case POP => t(1, 0)
 
       case POP2 =>
         val isSize2 = peekStack(0).getSize == 2
-        if (isSize2) (1, 0) else (2, 0)
+        if (isSize2) t(1, 0) else t(2, 0)
 
-      case DUP => (0, 1)
+      case DUP => t(0, 1)
 
-      case DUP_X1 => (2, 3)
+      case DUP_X1 => t(2, 3)
 
       case DUP_X2 =>
         val isSize2 = peekStack(1).getSize == 2
-        if (isSize2) (2, 3) else (3, 4)
+        if (isSize2) t(2, 3) else t(3, 4)
 
       case DUP2 =>
         val isSize2 = peekStack(0).getSize == 2
-        if (isSize2) (0, 1) else (0, 2)
+        if (isSize2) t(0, 1) else t(0, 2)
 
       case DUP2_X1 =>
         val isSize2 = peekStack(0).getSize == 2
-        if (isSize2) (2, 3) else (3, 4)
+        if (isSize2) t(2, 3) else t(3, 4)
 
       case DUP2_X2 =>
         val v1isSize2 = peekStack(0).getSize == 2
         if (v1isSize2) {
           val v2isSize2 = peekStack(1).getSize == 2
-          if (v2isSize2) (2, 3) else (3, 4)
+          if (v2isSize2) t(2, 3) else t(3, 4)
         } else {
           val v3isSize2 = peekStack(2).getSize == 2
-          if (v3isSize2) (3, 5) else (4, 6)
+          if (v3isSize2) t(3, 5) else t(4, 6)
         }
 
-      case SWAP => (2, 2)
+      case SWAP => t(2, 2)
 
       case IADD |
            LADD |
@@ -123,12 +141,12 @@ object InstructionStackEffect {
            IREM |
            LREM |
            FREM |
-           DREM => (2, 1)
+           DREM => t(2, 1)
 
       case INEG |
            LNEG |
            FNEG |
-           DNEG => (1, 1)
+           DNEG => t(1, 1)
 
       case ISHL |
            LSHL |
@@ -141,9 +159,9 @@ object InstructionStackEffect {
            IOR |
            LOR |
            IXOR |
-           LXOR => (2, 1)
+           LXOR => t(2, 1)
 
-      case IINC => (0, 0)
+      case IINC => t(0, 0)
 
       case I2L |
            I2F |
@@ -159,20 +177,20 @@ object InstructionStackEffect {
            D2F |
            I2B |
            I2C |
-           I2S => (1, 1)
+           I2S => t(1, 1)
 
       case LCMP |
            FCMPL |
            FCMPG |
            DCMPL |
-           DCMPG => (2, 1)
+           DCMPG => t(2, 1)
 
       case IFEQ |
            IFNE |
            IFLT |
            IFGE |
            IFGT |
-           IFLE => (1, 0)
+           IFLE => t(1, 0)
 
       case IF_ICMPEQ |
            IF_ICMPNE |
@@ -181,32 +199,32 @@ object InstructionStackEffect {
            IF_ICMPGT |
            IF_ICMPLE |
            IF_ACMPEQ |
-           IF_ACMPNE => (2, 0)
+           IF_ACMPNE => t(2, 0)
 
-      case GOTO => (0, 0)
+      case GOTO => t(0, 0)
 
-      case JSR => (0, 1)
+      case JSR => t(0, 1)
 
-      case RET => (0, 0)
+      case RET => t(0, 0)
 
       case TABLESWITCH |
-           LOOKUPSWITCH => (1, 0)
+           LOOKUPSWITCH => t(1, 0)
 
       case IRETURN |
            LRETURN |
            FRETURN |
            DRETURN |
-           ARETURN => (1, 0) // Frame.execute consumes one stack value
+           ARETURN => t(1, 0) // Frame.execute consumes one stack value
 
-      case RETURN => (0, 0) // Frame.execute does not change the stack
+      case RETURN => t(0, 0) // Frame.execute does not change the stack
 
-      case GETSTATIC => (0, 1)
+      case GETSTATIC => t(0, 1)
 
-      case PUTSTATIC => (1, 0)
+      case PUTSTATIC => t(1, 0)
 
-      case GETFIELD => (1, 1)
+      case GETFIELD => t(1, 1)
 
-      case PUTFIELD => (2, 0)
+      case PUTFIELD => t(2, 0)
 
       case INVOKEVIRTUAL |
            INVOKESPECIAL |
@@ -215,33 +233,33 @@ object InstructionStackEffect {
         val desc = insn.asInstanceOf[MethodInsnNode].desc
         val cons = Type.getArgumentTypes(desc).length + (if (insn.getOpcode == INVOKESTATIC) 0 else 1)
         val prod = if (Type.getReturnType(desc) == Type.VOID_TYPE) 0 else 1
-        (cons, prod)
+        t(cons, prod)
 
       case INVOKEDYNAMIC =>
         val desc = insn.asInstanceOf[InvokeDynamicInsnNode].desc
         val cons = Type.getArgumentTypes(desc).length
         val prod = if (Type.getReturnType(desc) == Type.VOID_TYPE) 0 else 1
-        (cons, prod)
+        t(cons, prod)
 
-      case NEW => (0, 1)
+      case NEW => t(0, 1)
 
       case NEWARRAY |
            ANEWARRAY |
-           ARRAYLENGTH => (1, 1)
+           ARRAYLENGTH => t(1, 1)
 
-      case ATHROW => (1, 0) // Frame.execute consumes one stack value
+      case ATHROW => t(1, 0) // Frame.execute consumes one stack value
 
-      case CHECKCAST => (0, 0)
+      case CHECKCAST => t(0, 0)
 
-      case INSTANCEOF => (1, 1)
+      case INSTANCEOF => t(1, 1)
 
       case MONITORENTER |
-           MONITOREXIT => (1, 0)
+           MONITOREXIT => t(1, 0)
 
-      case MULTIANEWARRAY => (insn.asInstanceOf[MultiANewArrayInsnNode].dims, 1)
+      case MULTIANEWARRAY => t(insn.asInstanceOf[MultiANewArrayInsnNode].dims, 1)
 
       case IFNULL |
-           IFNONNULL => (1, 0)
+           IFNONNULL => t(1, 0)
     }
   }
 

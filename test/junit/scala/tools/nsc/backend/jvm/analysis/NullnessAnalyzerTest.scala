@@ -63,9 +63,9 @@ class NullnessAnalyzerTest extends ClearAfterClass {
       val f = analyzer.frameAt(i, method)
       val frameString = {
         if (f == null) "null"
-        else f.toString.split("NullnessValue").iterator
-          .map(_.trim).filter(_.nonEmpty)
-          .map(s => "%7s".format(s.replaceAll("""\((.*),false\)""", "$1")))
+        else (0 until (f.getLocals + f.getStackSize)).iterator
+          .map(f.getValue(_).toString)
+          .map(s => "%8s".format(s))
           .zipWithIndex.map({case (s, i) => s"$i: $s"})
           .mkString(", ")
       }
@@ -82,13 +82,13 @@ class NullnessAnalyzerTest extends ClearAfterClass {
     // So in the frame for `ALOAD 0`, the stack is still empty.
 
     val res =
-      """                                                          L0: 0: NotNull
-        |                                             LINENUMBER 1 L0: 0: NotNull
-        |                                                     ALOAD 0: 0: NotNull
-        |INVOKEVIRTUAL java/lang/Object.toString ()Ljava/lang/String;: 0: NotNull, 1: NotNull
-        |                                                     ARETURN: 0: NotNull, 1: Unknown
+      """                                                          L0: 0:  NotNull
+        |                                             LINENUMBER 1 L0: 0:  NotNull
+        |                                                     ALOAD 0: 0:  NotNull
+        |INVOKEVIRTUAL java/lang/Object.toString ()Ljava/lang/String;: 0:  NotNull, 1:  NotNull
+        |                                                     ARETURN: 0:  NotNull, 1: Unknown1
         |                                                          L0: null""".stripMargin
-    assertTrue(showAllNullnessFrames(newNullnessAnalyzer(m), m) == res)
+    assertEquals(showAllNullnessFrames(newNullnessAnalyzer(m), m), res)
   }
 
   @Test

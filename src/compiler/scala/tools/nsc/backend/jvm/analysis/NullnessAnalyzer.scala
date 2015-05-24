@@ -100,25 +100,43 @@ case object Null    extends Nullness
  * Represents the nullness state for a local variable or stack value.
  *
  * Note that nullness of primitive values is not tracked, it will be always [[Unknown]].
- *
- * @param nullness     The nullness of this value.
- * @param longOrDouble True if this value is a long or double. The Analyzer framework needs to know
- *                     the size of each value when interpreting instructions, see `Frame.execute`.
  */
-final case class NullnessValue(nullness: Nullness, longOrDouble: Boolean) extends Value {
-  def this(nullness: Nullness, insn: AbstractInsnNode) = this(nullness, longOrDouble = BytecodeUtils.instructionResultSize(insn) == 2)
+sealed trait NullnessValue extends Value {
+  /**
+   * The nullness of this value.
+   */
+  def nullness: Nullness
 
+  /**
+   * True if this value is a long or double. The Analyzer framework needs to know
+   * the size of each value when interpreting instructions, see `Frame.execute`.
+   */
+  def isSize2: Boolean
   /**
    * The size of the slot described by this value. Cannot be 0 because no values are allocated
    * for void-typed slots, see NullnessInterpreter.newValue.
    **/
-  def getSize: Int = if (longOrDouble) 2 else 1
+  def getSize: Int = if (isSize2) 2 else 1
 
-  def merge(other: NullnessValue) = NullnessValue(nullness merge other.nullness, longOrDouble)
+  def merge(other: NullnessValue) = NullnessValue(nullness merge other.nullness, isSize2)
 }
 
+object NullValue     extends NullnessValue { def nullness = Null;    def isSize2 = false; override def toString = "Null"    }
+object UnknownValue1 extends NullnessValue { def nullness = Unknown; def isSize2 = false; override def toString = "Unknown1" }
+object UnknownValue2 extends NullnessValue { def nullness = Unknown; def isSize2 = true;  override def toString = "Unknown2" }
+object NotNullValue  extends NullnessValue { def nullness = NotNull; def isSize2 = false; override def toString = "NotNull" }
+
 object NullnessValue {
-  def apply(nullness: Nullness, insn: AbstractInsnNode) = new NullnessValue(nullness, insn)
+  def apply(nullness: Nullness, isSize2: Boolean): NullnessValue = {
+    if      (nullness == Null)    NullValue
+    else if (nullness == NotNull) NotNullValue
+    else if (isSize2)             UnknownValue2
+    else                          UnknownValue1
+  }
+
+  def apply(nullness: Nullness, insn: AbstractInsnNode): NullnessValue = {
+    apply(nullness, isSize2 = BytecodeUtils.instructionResultSize(insn) == 2)
+  }
 }
 
 final class NullnessInterpreter extends Interpreter[NullnessValue](Opcodes.ASM5) {
@@ -133,12 +151,12 @@ final class NullnessInterpreter extends Interpreter[NullnessValue](Opcodes.ASM5)
     // (2) `tp` may also be `null`. When creating the initial frame, the analyzer invokes
     //     `newValue(null)` for each local variable. We have to return a value of size 1.
     if (tp == Type.VOID_TYPE) null // (1)
-    else NullnessValue(Unknown, longOrDouble = tp != null /*(2)*/ && tp.getSize == 2 )
+    else NullnessValue(Unknown, isSize2 = tp != null /*(2)*/ && tp.getSize == 2 )
   }
 
   override def newParameterValue(isInstanceMethod: Boolean, local: Int, tp: Type): NullnessValue = {
     // For instance methods, the `this` parameter is known to be not null.
-    if (isInstanceMethod && local == 0) NullnessValue(NotNull, longOrDouble = false)
+    if (isInstanceMethod && local == 0) NullnessValue(NotNull, isSize2 = false)
     else super.newParameterValue(isInstanceMethod, local, tp)
   }
 
@@ -162,7 +180,7 @@ final class NullnessInterpreter extends Interpreter[NullnessValue](Opcodes.ASM5)
 
   def unaryOperation(insn: AbstractInsnNode, value: NullnessValue): NullnessValue = (insn.getOpcode: @switch) match {
     case Opcodes.NEWARRAY |
-         Opcodes.ANEWARRAY => NullnessValue(NotNull, longOrDouble = false)
+         Opcodes.ANEWARRAY => NullnessValue(NotNull, isSize2 = false)
 
     case _ => NullnessValue(Unknown, insn)
   }
@@ -172,12 +190,12 @@ final class NullnessInterpreter extends Interpreter[NullnessValue](Opcodes.ASM5)
   }
 
   def ternaryOperation(insn: AbstractInsnNode, value1: NullnessValue, value2: NullnessValue, value3: NullnessValue): NullnessValue = {
-    NullnessValue(Unknown, longOrDouble = false)
+    NullnessValue(Unknown, isSize2 = false)
   }
 
   def naryOperation(insn: AbstractInsnNode, values: util.List[_ <: NullnessValue]): NullnessValue = (insn.getOpcode: @switch) match {
     case Opcodes.MULTIANEWARRAY =>
-      NullnessValue(NotNull, longOrDouble = false)
+      NullnessValue(NotNull, isSize2 = false)
 
     case _ =>
       // TODO: use a list of methods that are known to return non-null values
@@ -247,7 +265,7 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
 
     if (nullCheckedAliasId != -1) {
       for (i <- valuesWithAliasId(nullCheckedAliasId))
-        this.setValue(i, this.getValue(i).copy(nullness = NotNull))
+        this.setValue(i, NotNullValue)
     }
   }
 }

@@ -38,7 +38,7 @@ class AliasingFrame[V <: Value](nLocals: Int, nStack: Int) extends Frame[V](nLoc
   /**
    * Returns the indices of the values array which are aliases of the object `id`.
    */
-  def valuesWithAliasId(id: Long): Set[Int] = immutable.BitSet.empty ++ aliasIds.indices.filter(i => aliasId(i) == id)
+  def valuesWithAliasId(id: Long): Set[Int] = immutable.BitSet.empty ++ aliasIds.indices.iterator.filter(i => aliasId(i) == id)
 
   /**
    * The set of aliased values for a given entry in the `values` array.
@@ -71,7 +71,11 @@ class AliasingFrame[V <: Value](nLocals: Int, nStack: Int) extends Frame[V](nLoc
     def stackTop: Int = this.stackTop
     def peekStack(n: Int): V = this.peekStack(n)
 
-    val (consumed, produced) = InstructionStackEffect(insn, this) // needs to be called before super.execute, see its doc
+    // the val pattern `val (p, c) = f` still allocates a tuple (https://github.com/scala-opt/scala/issues/28)
+    val prodCons = InstructionStackEffect(insn, this) // needs to be called before super.execute, see its doc
+    val consumed = prodCons._1
+    val produced = prodCons._2
+
     super.execute(insn, interpreter)
 
     (insn.getOpcode: @switch) match {
