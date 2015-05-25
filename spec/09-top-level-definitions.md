@@ -151,7 +151,7 @@ contain a class `B`, a compiler-time error would result.
 
 A _program_ is a top-level object that has a member method
 _main_ of type `(Array[String])Unit`. Programs can be
-executed from a command shell. The program's command arguments are are
+executed from a command shell. The program's command arguments are
 passed to the `main` method as a parameter of type
 `Array[String]`.
 
