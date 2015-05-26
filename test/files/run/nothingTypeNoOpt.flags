@@ -1,1 +1,1 @@
--target:jvm-1.6 -Ybackend:GenBCode -Yopt:l:none
+-Ybackend:GenBCode -Yopt:l:none
