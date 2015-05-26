@@ -1,0 +1,7 @@
+t9286b.scala:2: error: name clash between defined and inherited member:
+def foo: Int in class C and
+private def foo[A]: Int at line 2
+have same type after erasure: ()Int
+class D extends C { private def foo[A] = 0 }
+                                ^
+one error found

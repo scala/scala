@@ -814,11 +814,10 @@ abstract class Erasure extends AddInterfaces
         // specialized members have no type history before 'specialize', causing double def errors for curried defs
         override def exclude(sym: Symbol): Boolean = (
              sym.isType
-          || sym.isPrivate
           || super.exclude(sym)
           || !sym.hasTypeAt(currentRun.refchecksPhase.id)
         )
-        override def matches(lo: Symbol, high: Symbol) = true
+        override def matches(lo: Symbol, high: Symbol) = !high.isPrivate
       }
       def isErasureDoubleDef(pair: SymbolPair) = {
         import pair._

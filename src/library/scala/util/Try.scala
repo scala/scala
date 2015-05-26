@@ -24,11 +24,12 @@ import scala.language.implicitConversions
  *
  * Example:
  * {{{
+ *   import scala.io.StdIn
  *   import scala.util.{Try, Success, Failure}
  *
  *   def divide: Try[Int] = {
- *     val dividend = Try(Console.readLine("Enter an Int that you'd like to divide:\n").toInt)
- *     val divisor = Try(Console.readLine("Enter an Int that you'd like to divide by:\n").toInt)
+ *     val dividend = Try(StdIn.readLine("Enter an Int that you'd like to divide:\n").toInt)
+ *     val divisor = Try(StdIn.readLine("Enter an Int that you'd like to divide by:\n").toInt)
  *     val problem = dividend.flatMap(x => divisor.map(y => x/y))
  *     problem match {
  *       case Success(v) =>
