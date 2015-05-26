@@ -1,1 +1,1 @@
--Yinline -Yinline-warnings -Xfatal-warnings
+-Yinline -Yinline-warnings -Xfatal-warnings -Ybackend:GenASM

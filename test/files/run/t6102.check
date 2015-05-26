@@ -28,5 +28,10 @@
 [running phase constopt on t6102.scala]
 #partest
 [running phase dce on t6102.scala]
+#partest !-Ybackend:GenBCode
 [running phase jvm on icode]
+#partest -Ybackend:GenBCode
+[running phase jvm on t6102.scala]
+[running phase jvm on t6102.scala]
+#partest
 hello
