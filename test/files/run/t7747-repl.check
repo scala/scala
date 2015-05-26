@@ -258,15 +258,12 @@ class $read extends Serializable {
       super.<init>;
       ()
     };
-    val $line44$read = $line44.$read.INSTANCE;
-    import $line44$read.$iw.$iw.BippyBups;
-    import $line44$read.$iw.$iw.BippyBups;
-    val $line45$read = $line45.$read.INSTANCE;
-    import $line45$read.$iw.$iw.PuppyPups;
-    import $line45$read.$iw.$iw.PuppyPups;
-    val $line46$read = $line46.$read.INSTANCE;
-    import $line46$read.$iw.$iw.Bingo;
-    import $line46$read.$iw.$iw.Bingo;
+    import $line44.$read.INSTANCE.$iw.$iw.BippyBups;
+    import $line44.$read.INSTANCE.$iw.$iw.BippyBups;
+    import $line45.$read.INSTANCE.$iw.$iw.PuppyPups;
+    import $line45.$read.INSTANCE.$iw.$iw.PuppyPups;
+    import $line46.$read.INSTANCE.$iw.$iw.Bingo;
+    import $line46.$read.INSTANCE.$iw.$iw.Bingo;
     class $iw extends Serializable {
       def <init>() = {
         super.<init>;
