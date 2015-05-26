@@ -498,9 +498,7 @@ the validity and meaning of a modifier are as follows.
 The `private` modifier can be used with any definition or
 declaration in a template.  Such members can be accessed only from
 within the directly enclosing template and its companion module or
-[companion class](#object-definitions). They
-are not inherited by subclasses and they may not override definitions
-in parent classes.
+[companion class](#object-definitions).
 
 The modifier can be _qualified_ with an identifier $C$ (e.g.
 `private[$C$]`) that must denote a class or package
@@ -524,7 +522,8 @@ either class-private or object-private, but not if it is marked
 case the member is called _qualified private_.
 
 Class-private or object-private members may not be abstract, and may
-not have `protected` or `override` modifiers.
+not have `protected` or `override` modifiers. They are not inherited
+by subclasses and they may not override definitions in parent classes.
 
 ### `protected`
 The `protected` modifier applies to class member definitions.

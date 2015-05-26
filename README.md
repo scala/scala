@@ -13,15 +13,15 @@ If you need some help with your PR at any time, please feel free to @-mention an
 
                                                                                                   | username                                                       | talk to me about...                               |
 --------------------------------------------------------------------------------------------------|----------------------------------------------------------------|---------------------------------------------------|
- <img src="https://avatars.githubusercontent.com/adriaanm"     height="50px" title="Adriaan Moors"/>        | [`@adriaanm`](https://github.com/adriaanm)           | anything (type checker, pattern matcher, CI,...)  |
- <img src="https://avatars.githubusercontent.com/gkossakowski" height="50px" title="Grzegorz Kossakowski"/> | [`@gkossakowski`](https://github.com/gkossakowski)   | infrastructure, incremental compilation, back-end |
+ <img src="https://avatars.githubusercontent.com/adriaanm"     height="50px" title="Adriaan Moors"/>        | [`@adriaanm`](https://github.com/adriaanm)           | how we can help // type checker, pattern matcher, infrastructure |
+ <img src="https://avatars.githubusercontent.com/SethTisue"    height="50px" title="Seth Tisue"/>           | [`@SethTisue`](https://github.com/SethTisue)         | back-end, library, improving the *welcome to Scala* experience |
  <img src="https://avatars.githubusercontent.com/retronym"     height="50px" title="Jason Zaugg"/>          | [`@retronym`](https://github.com/retronym)           | Java 8 lambdas, tricky bug detective work         |
  <img src="https://avatars.githubusercontent.com/Ichoran"      height="50px" title="Rex Kerr"/>             | [`@Ichoran`](https://github.com/Ichoran)             | the collections library, performance              |
  <img src="https://avatars.githubusercontent.com/lrytz"        height="50px" title="Lukas Rytz"/>           | [`@lrytz`](https://github.com/lrytz)                 | optimizer, named & default arguments              |
- <img src="https://avatars.githubusercontent.com/dickwall"     height="50px" title="Dick Wall"/>            | [`@dickwall`](https://github.com/dickwall)           | process & documentation                           |
  <img src="https://avatars.githubusercontent.com/VladUreche"   height="50px" title="Vlad Ureche"/>          | [`@VladUreche`](https://github.com/VladUreche)       | specialization & the scaladoc tool                |
  <img src="https://avatars.githubusercontent.com/densh"        height="50px" title="Denys Shabalin"/>       | [`@densh`](https://github.com/densh)                 | quasiquotes, parser, string interpolators, macros in standard library |
  <img src="https://avatars.githubusercontent.com/xeno-by"      height="50px" title="Eugene Burmako"/>       | [`@xeno-by`](https://github.com/xeno-by)             | macros and reflection |
+ <img src="https://avatars.githubusercontent.com/dickwall"     height="50px" title="Dick Wall"/>            | [`@dickwall`](https://github.com/dickwall)           | process & community |
 
 
 PS: If you have some spare time to help out around here, we would be delighted to add your name to this list! 
@@ -29,8 +29,6 @@ PS: If you have some spare time to help out around here, we would be delighted t
 # Handy Links
   - [A wealth of documentation](http://docs.scala-lang.org)
   - [Scala CI](https://scala-ci.typesafe.com/)
-  - [Scala CI at EPFL](https://scala-webapps.epfl.ch/jenkins/)
-  - [Download the latest nightly](http://www.scala-lang.org/files/archive/nightly/2.11.x/);
   - Scala mailing lists:
     - [Compiler and standard library development](https://groups.google.com/group/scala-internals)
     - [Users of Scala](https://groups.google.com/group/scala-user)
@@ -66,7 +64,7 @@ You'll need a Java SDK (6 or newer), Apache Ant (version 1.8.0 or above), and cu
 
 ## Git Hygiene
 
-As git history is forever, we take great pride in the quality of the commits we merge into the repository. The title of your commit will be read hundreds (of thousands? :-)) of times, so it pays off to spend just a little bit more time to polish it, making it descriptive and concise. Please take a minute to read the advice [most projects agree on](https://github.com/erlang/otp/wiki/Writing-good-commit-messages), and stick to 50-60 characters for the first line, wrapping subsequent ones at 80 (at most).
+As git history is forever, we take great pride in the quality of the commits we merge into the repository. The title of your commit will be read hundreds (of thousands? :-)) of times, so it pays off to spend just a little bit more time to polish it, making it descriptive and concise. Please take a minute to read the advice [most projects agree on](https://github.com/erlang/otp/wiki/Writing-good-commit-messages), and stick to 72 or fewer characters for the first line, wrapping subsequent ones at 80 (at most).
 
 When not sure how to formulate your commit message, imagine you're writing a bullet item for the next release notes, or describing what the commit does to the code base (use active verbs in the present tense). When your commit title is featured in the next release notes, it will be read by a lot of curious Scala users, looking for the latest improvements. Satisfy their thirst for information with as few words as possible! Also, a commit should convey clearly to your (future) fellow contributors what it does to the code base.
 
@@ -90,6 +88,12 @@ To help you plan your contributions, we communicate our plans on a regular basis
 ## Reviewing
 
 Once you've gained some experience with the code base and the process, the logical next step is to offers reviews for others's contributions. The main goal of this whole process, in the end, is to ensure the health of the Scala project by improving the quality of the code base, the documentation, as well as this process itself. Thank you for doing your part!
+
+## [Labels](https://github.com/scala/scala/labels)
+  - `reviewed` automatically added by scabot when a comment prefixed with LGTM is posted
+  - `welcome` reviewer / queue curator adds to welcome someone's first PR (for highlighting in the release notes)
+  - `release-notes` reviewer / queue curator adds to make sure this PR is highlighted in the release notes
+  - `on-hold` added when this PR should not yet be merged, even though CI is green
 
 ### Tips & Tricks
 Once the `publish-core` task has completed on a commit, you can try it out in sbt as follows:
