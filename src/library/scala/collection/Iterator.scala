@@ -10,7 +10,7 @@ package scala
 package collection
 
 import mutable.ArrayBuffer
-import scala.annotation.migration
+import scala.annotation.{ migration, tailrec }
 import immutable.Stream
 import scala.collection.generic.CanBuildFrom
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
@@ -580,29 +580,24 @@ trait Iterator[+A] extends TraversableOnce[A] {
   def span(p: A => Boolean): (Iterator[A], Iterator[A]) = {
     val self = buffered
 
-    /*
-     * Giving a name to following iterator (as opposed to trailing) because
-     * anonymous class is represented as a structural type that trailing
-     * iterator is referring (the finish() method) and thus triggering
-     * handling of structural calls. It's not what's intended here.
-     */
+    // Must be a named class to avoid structural call to finish from trailing iterator
     class Leading extends AbstractIterator[A] {
-      val lookahead = new mutable.Queue[A]
-      def advance() = {
-        self.hasNext && p(self.head) && {
+      private val lookahead = new mutable.Queue[A]
+      private var finished  = false
+      private def advance() = !finished && {
+        if (self.hasNext && p(self.head)) {
           lookahead += self.next
           true
+        } else {
+          finished = true
+          false
         }
       }
-      def finish() = {
-        while (advance()) ()
-      }
+      @tailrec final def finish(): Unit = if (advance()) finish()
       def hasNext = lookahead.nonEmpty || advance()
       def next() = {
-        if (lookahead.isEmpty)
-          advance()
-
-        lookahead.dequeue()
+        if (!hasNext) empty.next()
+        else lookahead.dequeue()
       }
     }
     val leading = new Leading
