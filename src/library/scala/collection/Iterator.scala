@@ -10,7 +10,7 @@ package scala
 package collection
 
 import mutable.ArrayBuffer
-import scala.annotation.{ migration, tailrec }
+import scala.annotation.migration
 import immutable.Stream
 import scala.collection.generic.CanBuildFrom
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
@@ -582,22 +582,19 @@ trait Iterator[+A] extends TraversableOnce[A] {
 
     // Must be a named class to avoid structural call to finish from trailing iterator
     class Leading extends AbstractIterator[A] {
-      private val lookahead = new mutable.Queue[A]
-      private var finished  = false
-      private def advance() = !finished && {
-        if (self.hasNext && p(self.head)) {
-          lookahead += self.next
-          true
-        } else {
-          finished = true
-          false
-        }
+      private val drained  = new mutable.Queue[A]
+      private var finished = false
+      def finish(): Unit = {
+        require(!finished)
+        finished = true
+        while (selfish) drained += self.next
       }
-      @tailrec final def finish(): Unit = if (advance()) finish()
-      def hasNext = lookahead.nonEmpty || advance()
+      private def selfish = self.hasNext && p(self.head)
+      def hasNext = if (finished) drained.nonEmpty else selfish
       def next() = {
-        if (!hasNext) empty.next()
-        else lookahead.dequeue()
+        if (finished) drained.dequeue()
+        else if (selfish) self.next()
+        else empty.next()
       }
     }
     val leading = new Leading
