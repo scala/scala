@@ -205,30 +205,32 @@ self =>
 
   def split(separator: Char): Array[String] = {
     val thisString = toString
-    var pos = thisString.indexOf(separator)
+    if(Character.isSurrogate(separator)) Array[String](thisString)
+    else {
+      var pos = thisString.indexOf(separator)
+      if (pos != -1) {
+        val res = new ArrayBuilder.ofRef[String]
+  
+        var prev = 0
+        do {
+          res += thisString.substring(prev, pos)
+          prev = pos + 1
+          pos = thisString.indexOf(separator, prev)
+        } while (pos != -1)
 
-    if (pos != -1) {
-      val res = new ArrayBuilder.ofRef[String]
+        if (prev != thisString.size)
+          res += thisString.substring(prev, thisString.size)
 
-      var prev = 0
-      do {
-        res += thisString.substring(prev, pos)
-        prev = pos + 1
-        pos = thisString.indexOf(separator, prev)
-      } while (pos != -1)
-
-      if (prev != thisString.size)
-        res += thisString.substring(prev, thisString.size)
-
-      val initialResult = res.result()
-      pos = initialResult.length
-      while (pos > 0 && initialResult(pos - 1).isEmpty) pos = pos - 1
-      if (pos != initialResult.length) {
-        val trimmed = new Array[String](pos)
-        Array.copy(initialResult, 0, trimmed, 0, pos)
-        trimmed
-      } else initialResult
-    } else Array[String](thisString)
+        val initialResult = res.result()
+        pos = initialResult.length
+        while (pos > 0 && initialResult(pos - 1).isEmpty) pos = pos - 1
+        if (pos != initialResult.length) {
+          val trimmed = new Array[String](pos)
+          Array.copy(initialResult, 0, trimmed, 0, pos)
+          trimmed
+        } else initialResult
+      } else Array[String](thisString)
+    }
   }
 
   @throws(classOf[java.util.regex.PatternSyntaxException])
