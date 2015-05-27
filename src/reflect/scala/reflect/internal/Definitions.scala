@@ -646,8 +646,8 @@ trait Definitions extends api.StandardDefinitions {
       isBundle && isBlackbox
     }
 
-    def isListType(tp: Type)     = tp <:< classExistentialType(ListClass)
-    def isIterableType(tp: Type) = tp <:< classExistentialType(IterableClass)
+    def isListType(tp: Type)     = tp.typeSymbol.isNonBottomSubClass(ListClass)
+    def isIterableType(tp: Type) = tp.typeSymbol.isNonBottomSubClass(IterableClass)
 
     // These "direct" calls perform no dealiasing. They are most needed when
     // printing types when one wants to preserve the true nature of the type.
@@ -925,14 +925,10 @@ trait Definitions extends api.StandardDefinitions {
      *
      *    C[E1, ..., En] forSome { E1 >: LB1 <: UB1 ... en >: LBn <: UBn }.
      */
-    // TODO Review the way this is used. I see two potential problems:
-    //  1. `existentialAbstraction` here doesn't create fresh existential type symbols, it just
-    //     uses the class type parameter symbols directly as the list of quantified symbols.
-    //     See SI-8244 for the trouble that this can cause.
-    //     Compare with callers of `typeParamsToExistentials` (used in Java raw type handling)
-    //  2. Why don't we require a prefix? Could its omission lead to wrong results in CheckabilityChecker?
-    def classExistentialType(clazz: Symbol): Type =
-      existentialAbstraction(clazz.typeParams, clazz.tpe_*)
+    def classExistentialType(prefix: Type, clazz: Symbol): Type = {
+      val eparams = typeParamsToExistentials(clazz, clazz.unsafeTypeParams)
+      newExistentialType(eparams, typeRef(prefix, clazz, eparams.map(_.tpeHK)))
+    }
 
     // members of class scala.Any
 
