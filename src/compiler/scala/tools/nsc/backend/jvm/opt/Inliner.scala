@@ -560,38 +560,62 @@ class Inliner[BT <: BTypes](val btypes: BT) {
      * @param memberDeclClass The class in which the member is declared (A)
      * @param memberRefClass  The class used in the member reference (B)
      *
+     * (B0) JVMS 5.4.3.2 / 5.4.3.3: when resolving a member of class C in D, the class C is resolved
+     * first. According to 5.4.3.1, this requires C to be accessible in D.
+     *
      * JVMS 5.4.4 summary: A field or method R is accessible to a class D (destinationClass) iff
      *  (B1) R is public
      *  (B2) R is protected, declared in C (memberDeclClass) and D is a subclass of C.
      *       If R is not static, R must contain a symbolic reference to a class T (memberRefClass),
      *       such that T is either a subclass of D, a superclass of D, or D itself.
+     *       Also (P) needs to be satisfied.
      *  (B3) R is either protected or has default access and declared by a class in the same
      *       run-time package as D.
+     *       If R is protected, also (P) needs to be satisfied.
      *  (B4) R is private and is declared in D.
+     *
+     *  (P) When accessing a protected instance member, the target object on the stack (the receiver)
+     *      has to be a subtype of D (destinationClass). This is enforced by classfile verification
+     *      (https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.10.1.8).
+     *
+     * TODO: we cannot currently implement (P) because we don't have the necessary information
+     * available. Once we have a type propagation analysis implemented, we can extract the receiver
+     * type from there (https://github.com/scala-opt/scala/issues/13).
      */
     def memberIsAccessible(memberFlags: Int, memberDeclClass: ClassBType, memberRefClass: ClassBType): Either[OptimizerWarning, Boolean] = {
       // TODO: B3 requires "same run-time package", which seems to be package + classloader (JMVS 5.3.). is the below ok?
       def samePackageAsDestination = memberDeclClass.packageInternalName == destinationClass.packageInternalName
+      def targetObjectConformsToDestinationClass = false // needs type propagation analysis, see above
 
-      val key = (ACC_PUBLIC | ACC_PROTECTED | ACC_PRIVATE) & memberFlags
-      key match {
-        case ACC_PUBLIC     =>       // B1
-          Right(true)
+      def memberIsAccessibleImpl = {
+        val key = (ACC_PUBLIC | ACC_PROTECTED | ACC_PRIVATE) & memberFlags
+        key match {
+          case ACC_PUBLIC => // B1
+            Right(true)
 
-        case ACC_PROTECTED  =>       // B2
-          tryEither {
-            val condB2 = destinationClass.isSubtypeOf(memberDeclClass).orThrow && {
-              val isStatic = (ACC_STATIC & memberFlags) != 0
-              isStatic || memberRefClass.isSubtypeOf(destinationClass).orThrow || destinationClass.isSubtypeOf(memberRefClass).orThrow
+          case ACC_PROTECTED => // B2
+            val isStatic = (ACC_STATIC & memberFlags) != 0
+            tryEither {
+              val condB2 = destinationClass.isSubtypeOf(memberDeclClass).orThrow && {
+                isStatic || memberRefClass.isSubtypeOf(destinationClass).orThrow || destinationClass.isSubtypeOf(memberRefClass).orThrow
+              }
+              Right(
+                (condB2 || samePackageAsDestination /* B3 (protected) */) &&
+                (isStatic || targetObjectConformsToDestinationClass) // (P)
+              )
             }
-            Right(condB2 || samePackageAsDestination) // B3 (protected)
-          }
 
-        case 0 =>                    // B3 (default access)
-          Right(samePackageAsDestination)
+          case 0 => // B3 (default access)
+            Right(samePackageAsDestination)
 
-        case ACC_PRIVATE    =>       // B4
-          Right(memberDeclClass == destinationClass)
+          case ACC_PRIVATE => // B4
+            Right(memberDeclClass == destinationClass)
+        }
+      }
+
+      classIsAccessible(memberDeclClass) match { // B0
+        case Right(true) => memberIsAccessibleImpl
+        case r => r
       }
     }
 
