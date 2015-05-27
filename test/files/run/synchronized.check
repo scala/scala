@@ -1,8 +1,3 @@
-#partest !-Ybackend:GenBCode
-warning: there were 14 inliner warnings; re-run with -Yinline-warnings for details
-#partest -Ybackend:GenBCode
-warning: there were 14 inliner warnings; re-run with -Yopt-warnings for details
-#partest
     .|.               c1.f1:     OK
     .|.               c1.fi:     OK
     .|...             c1.fv:     OK

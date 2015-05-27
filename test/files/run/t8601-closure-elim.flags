@@ -1,1 +1,1 @@
--optimize -Ydelambdafy:inline
+-optimize -Ydelambdafy:inline -Ybackend:GenASM

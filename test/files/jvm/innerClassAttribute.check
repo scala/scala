@@ -14,27 +14,27 @@ A19 / null / null
 A19 / null / null
 A19 / null / null
 -- A20 --
-A20$$anonfun$6 / null / null / 17
+A20$$anonfun$4 / null / null / 17
 fun1: attribute for itself and the two child closures `() => ()` and `() => () => 1`
-A20$$anonfun$6 / null / null / 17
-A20$$anonfun$6$$anonfun$apply$1 / null / null / 17
-A20$$anonfun$6$$anonfun$apply$3 / null / null / 17
+A20$$anonfun$4 / null / null / 17
+A20$$anonfun$4$$anonfun$apply$1 / null / null / 17
+A20$$anonfun$4$$anonfun$apply$2 / null / null / 17
 fun2 () => (): itself and the outer closure
-A20$$anonfun$6 / null / null / 17
-A20$$anonfun$6$$anonfun$apply$1 / null / null / 17
+A20$$anonfun$4 / null / null / 17
+A20$$anonfun$4$$anonfun$apply$1 / null / null / 17
 fun3 () => () => (): itself, the outer closure and its child closure
-A20$$anonfun$6 / null / null / 17
-A20$$anonfun$6$$anonfun$apply$3 / null / null / 17
-A20$$anonfun$6$$anonfun$apply$3$$anonfun$apply$2 / null / null / 17
+A20$$anonfun$4 / null / null / 17
+A20$$anonfun$4$$anonfun$apply$2 / null / null / 17
+A20$$anonfun$4$$anonfun$apply$2$$anonfun$apply$3 / null / null / 17
 fun4: () => 1: itself and the two outer closures
-A20$$anonfun$6 / null / null / 17
-A20$$anonfun$6$$anonfun$apply$3 / null / null / 17
-A20$$anonfun$6$$anonfun$apply$3$$anonfun$apply$2 / null / null / 17
+A20$$anonfun$4 / null / null / 17
+A20$$anonfun$4$$anonfun$apply$2 / null / null / 17
+A20$$anonfun$4$$anonfun$apply$2$$anonfun$apply$3 / null / null / 17
 enclosing: nested closures have outer class defined, but no outer method
 A20 / null / null
-A20$$anonfun$6 / null / null
-A20$$anonfun$6 / null / null
-A20$$anonfun$6$$anonfun$apply$3 / null / null
+A20$$anonfun$4 / null / null
+A20$$anonfun$4 / null / null
+A20$$anonfun$4$$anonfun$apply$2 / null / null
 #partest -Ydelambdafy:method
 -- A4 --
 null / null / null

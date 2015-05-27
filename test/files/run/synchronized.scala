@@ -1,3 +1,6 @@
+/*
+ * filter: inliner warnings; re-run with
+ */
 import java.lang.Thread.holdsLock
 import scala.collection.mutable.StringBuilder
 
