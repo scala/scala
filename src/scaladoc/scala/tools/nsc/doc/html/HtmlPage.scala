@@ -59,6 +59,7 @@ abstract class HtmlPage extends Page { thisPage =>
     writeFile(site) { (w: Writer) =>
       w.write(doctype.toString + "\n")
       w.write(xml.Xhtml.toXhtml(html))
+      w.write('\n')
     }
 
     if (site.universe.settings.docRawOutput)
