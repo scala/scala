@@ -228,4 +228,11 @@ class BigDecimalTest {
   def test_SI8970() {
     assert((0.1).## == BigDecimal(0.1).##)
   }
+
+  // Motivated by the problem of MathContext lost
+  @Test
+  def testMathContext() {
+    assert(BigDecimal(1.1d, MC.UNLIMITED).pow(1000) == BigDecimal("1.1", MC.UNLIMITED).pow(1000))
+    assert((BigDecimal(1.23d, new MC(3)) + BigDecimal("0.005")).rounded == BigDecimal("1.24"))
+  }
 }
