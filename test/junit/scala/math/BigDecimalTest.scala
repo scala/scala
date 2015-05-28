@@ -232,7 +232,31 @@ class BigDecimalTest {
   // Motivated by the problem of MathContext lost
   @Test
   def testMathContext() {
-    assert(BigDecimal(1.1d, MC.UNLIMITED).pow(1000) == BigDecimal("1.1", MC.UNLIMITED).pow(1000))
-    assert((BigDecimal(1.23d, new MC(3)) + BigDecimal("0.005")).rounded == BigDecimal("1.24"))
+    def testPrecision() {
+      val e = 1000
+
+      val n = BigDecimal("1.1", MC.UNLIMITED).pow(e)
+      assert(BigDecimal(1.1d, MC.UNLIMITED).pow(e) == n)
+      assert(BigDecimal.decimal(1.1d, MC.UNLIMITED).pow(e) == n)
+      assert(BigDecimal.decimal(1.1f, MC.UNLIMITED).pow(e) == n)
+      assert(BigDecimal.decimal(new BD("1.1"), MC.UNLIMITED).pow(e) == n)
+
+      val m = BigDecimal(java.lang.Double.toString(1.1f.toDouble), MC.UNLIMITED).pow(e)
+      assert(BigDecimal(1.1f, MC.UNLIMITED).pow(e) == m) // deprecated
+
+      val l = BigDecimal("11", MC.UNLIMITED).pow(e)
+      assert(BigDecimal(11, MC.UNLIMITED).pow(e) == l)
+      assert(BigDecimal.decimal(11, MC.UNLIMITED).pow(e) == l)
+    }
+
+    def testRounded() {
+      assert((BigDecimal(1.23d, new MC(3)) + BigDecimal("0.005")).rounded == BigDecimal("1.24"))
+      assert((BigDecimal(1.23f, new MC(3)) + BigDecimal("0.005")).rounded == BigDecimal("1.24")) // deprecated
+      assert((BigDecimal.decimal(1.23d, new MC(3)) + BigDecimal("0.005")).rounded == BigDecimal("1.24"))
+      assert((BigDecimal.decimal(1.23f, new MC(3)) + BigDecimal("0.005")).rounded == BigDecimal("1.24"))
+    }
+
+    testPrecision()
+    testRounded()
   }
 }
