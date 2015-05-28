@@ -76,9 +76,9 @@ trait DocComments { self: Global =>
 
     superComment(sym) match {
       case None =>
-        if (ownComment.indexOf("@inheritdoc") != -1)
-          reporter.warning(sym.pos, "The comment for " + sym +
-              " contains @inheritdoc, but no parent comment is available to inherit from.")
+        // SI-8210 - The warning would be false negative when this symbol is a setter
+        if (ownComment.indexOf("@inheritdoc") != -1 && ! sym.isSetter)
+          reporter.warning(sym.pos, s"The comment for ${sym} contains @inheritdoc, but no parent comment is available to inherit from.")
         ownComment.replaceAllLiterally("@inheritdoc", "<invalid inheritdoc annotation>")
       case Some(sc) =>
         if (ownComment == "") sc
