@@ -60,7 +60,8 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
     if (n < len) out.apply(n)
     else {
       val m = n - len
-      if (m < in.length) in.reverse.apply(m)
+      val l = in.length
+      if (m < l) in.apply(l - m - 1)
       else throw new NoSuchElementException("index out of range")
     }
   }
