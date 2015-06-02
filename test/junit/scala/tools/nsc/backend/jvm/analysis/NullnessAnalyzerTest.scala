@@ -38,17 +38,6 @@ class NullnessAnalyzerTest extends ClearAfterClass {
     nullnessAnalyzer
   }
 
-  /**
-   * Instructions that match `query` when textified.
-   * If `query` starts with a `+`, the next instruction is returned.
-   */
-  def findInstr(method: MethodNode, query: String): List[AbstractInsnNode] = {
-    val useNext = query(0) == '+'
-    val instrPart = if (useNext) query.drop(1) else query
-    val insns = method.instructions.iterator.asScala.find(i => textify(i) contains instrPart).toList
-    if (useNext) insns.map(_.getNext) else insns
-  }
-
   def testNullness(analyzer: NullnessAnalyzer, method: MethodNode, query: String, index: Int, nullness: Nullness): Unit = {
     for (i <- findInstr(method, query)) {
       val r = analyzer.frameAt(i, method).getValue(index).nullness

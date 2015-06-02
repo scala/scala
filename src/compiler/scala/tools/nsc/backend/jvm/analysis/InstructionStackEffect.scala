@@ -94,7 +94,7 @@ object InstructionStackEffect {
         val isSize2 = peekStack(0).getSize == 2
         if (isSize2) t(1, 0) else t(2, 0)
 
-      case DUP => t(0, 1)
+      case DUP => t(1, 2)
 
       case DUP_X1 => t(2, 3)
 
@@ -104,7 +104,7 @@ object InstructionStackEffect {
 
       case DUP2 =>
         val isSize2 = peekStack(0).getSize == 2
-        if (isSize2) t(0, 1) else t(0, 2)
+        if (isSize2) t(1, 2) else t(2, 4)
 
       case DUP2_X1 =>
         val isSize2 = peekStack(0).getSize == 2

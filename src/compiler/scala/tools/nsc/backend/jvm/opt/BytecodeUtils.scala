@@ -14,7 +14,6 @@ import scala.tools.asm.commons.CodeSizeEvaluator
 import scala.tools.asm.tree.analysis._
 import scala.tools.asm.{MethodWriter, ClassWriter, Label, Opcodes}
 import scala.tools.asm.tree._
-import scala.collection.convert.decorateAsScala._
 import GenBCode._
 import scala.collection.convert.decorateAsScala._
 import scala.collection.convert.decorateAsJava._
@@ -73,10 +72,17 @@ object BytecodeUtils {
     op >= Opcodes.IRETURN && op <= Opcodes.RETURN
   }
 
-  def isVarInstruction(instruction: AbstractInsnNode): Boolean = {
+  def isLoad(instruction: AbstractInsnNode): Boolean = {
     val op = instruction.getOpcode
-    (op >= Opcodes.ILOAD  && op <= Opcodes.ALOAD) || (op >= Opcodes.ISTORE && op <= Opcodes.ASTORE)
+    op >= Opcodes.ILOAD  && op <= Opcodes.ALOAD
   }
+
+  def isStore(instruction: AbstractInsnNode): Boolean = {
+    val op = instruction.getOpcode
+    op >= Opcodes.ISTORE && op <= Opcodes.ASTORE
+  }
+
+  def isVarInstruction(instruction: AbstractInsnNode): Boolean = isLoad(instruction) || isStore(instruction)
 
   def isExecutable(instruction: AbstractInsnNode): Boolean = instruction.getOpcode >= 0
 
