@@ -202,4 +202,30 @@ class NullnessAnalyzerTest extends ClearAfterClass {
       (end, 5, Null)      // d, no change
     )) testNullness(a, m, insn, index, nullness)
   }
+
+  @Test
+  def testInstanceOf(): Unit = {
+    val code =
+      """def f(a: Object) = {
+        |  val x = a
+        |  x.isInstanceOf[Throwable]    // x and a remain unknown - INSTANCEOF doesn't throw a NPE on null
+        |  x.toString                   // x and a are not null
+        |  a.asInstanceOf[String].trim  // the stack value (LOAD of local a) is still not-null after the CHECKCAST
+        |}
+      """.stripMargin
+    val List(m) = compileMethods(noOptCompiler)(code)
+    val a = newNullnessAnalyzer(m)
+
+    val instof = "+INSTANCEOF"
+    val tost   = "+INVOKEVIRTUAL java/lang/Object.toString"
+    val trim   = "INVOKEVIRTUAL java/lang/String.trim"
+
+    for ((insn, index, nullness) <- List(
+      (instof, 1, Unknown), // a after INSTANCEOF
+      (instof, 2, Unknown), // x after INSTANCEOF
+      (tost, 1, NotNull),
+      (tost, 2, NotNull),
+      (trim, 3, NotNull)  // receiver at `trim`
+    )) testNullness(a, m, insn, index, nullness)
+  }
 }

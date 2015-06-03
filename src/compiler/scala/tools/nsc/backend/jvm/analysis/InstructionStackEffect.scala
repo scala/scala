@@ -249,9 +249,8 @@ object InstructionStackEffect {
 
       case ATHROW => t(1, 0) // Frame.execute consumes one stack value
 
-      case CHECKCAST => t(0, 0)
-
-      case INSTANCEOF => t(1, 1)
+      case CHECKCAST |
+           INSTANCEOF => t(1, 1) // Frame.execute does push(pop()) for both of them
 
       case MONITORENTER |
            MONITOREXIT => t(1, 0)

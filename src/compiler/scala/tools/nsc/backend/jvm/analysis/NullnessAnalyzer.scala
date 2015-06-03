@@ -179,6 +179,8 @@ final class NullnessInterpreter extends Interpreter[NullnessValue](Opcodes.ASM5)
   def copyOperation(insn: AbstractInsnNode, value: NullnessValue): NullnessValue = value
 
   def unaryOperation(insn: AbstractInsnNode, value: NullnessValue): NullnessValue = (insn.getOpcode: @switch) match {
+    case Opcodes.CHECKCAST => value
+
     case Opcodes.NEWARRAY |
          Opcodes.ANEWARRAY => NullnessValue(NotNull, isSize2 = false)
 
