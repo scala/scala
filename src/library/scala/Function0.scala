@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 // GENERATED CODE: DO NOT EDIT.
-// genprod generated these sources at: Sun Sep 15 20:42:00 CEST 2013
+// genprod generated these sources at: Mon Jun 08 18:05:40 CEST 2015
 
 package scala
 
@@ -26,12 +26,6 @@ package scala
  *    assert(javaVersion() == anonfun0())
  * }
  *  }}}
- *
- *  Note that `Function1` does not define a total function, as might
- *  be suggested by the existence of [[scala.PartialFunction]]. The only
- *  distinction between `Function1` and `PartialFunction` is that the
- *  latter can specify inputs which it will not handle.
-
  */
 trait Function0[@specialized(Specializable.Primitives) +R] extends AnyRef { self =>
   /** Apply the body of this function to the arguments.
