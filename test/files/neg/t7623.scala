@@ -8,9 +8,9 @@ object X { def unapplySeq(a: Any): Option[(String, Seq[Int])] = Some("", List(1,
 trait Ctest {
   def f = C("") match { case C(s) => }
 
-  def g = C("") match { case C(s, t) => }
+  def g = C("") match { case C(s, t) => }            // warn
 
-  def h = C("") match { case C(s, t, u @ _*) => }
+  def h = C("") match { case C(s, t, u @ _*) => }    // warn
 
   def ok = C("") match { case C(s, u @ _*) => }
 }
@@ -18,9 +18,9 @@ trait Ctest {
 trait Xtest {
   def f = "" match { case X(s) => }
 
-  def g = "" match { case X(s, t) => }
+  def g = "" match { case X(s, t) => }               // warn
 
-  def h = "" match { case X(s, t, u @ _*) => }
+  def h = "" match { case X(s, t, u @ _*) => }       // warn
 
   def ok = "" match { case X(s, u @ _*) => }
 }
