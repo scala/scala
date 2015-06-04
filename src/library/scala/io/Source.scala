@@ -167,6 +167,16 @@ object Source {
 
   def fromInputStream(is: InputStream)(implicit codec: Codec): BufferedSource =
     createBufferedSource(is, reset = () => fromInputStream(is)(codec), close = () => is.close())(codec)
+
+  /** Reads data from a classpath resource, using either a context classloader (default) or a passed one.
+   *
+   *  @param  resource     name of the resource to load from the classpath
+   *  @param  classLoader  classloader to be used, or context classloader if not specified
+   *  @return              the buffered source
+   */
+  def fromResource(resource: String, classLoader: ClassLoader = Thread.currentThread().getContextClassLoader())(implicit codec: Codec): BufferedSource =
+    fromInputStream(classLoader.getResourceAsStream(resource))
+
 }
 
 /** An iterable representation of source data.
