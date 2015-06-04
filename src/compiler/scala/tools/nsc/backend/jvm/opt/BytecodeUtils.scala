@@ -333,7 +333,7 @@ object BytecodeUtils {
     def frameAt(instruction: AbstractInsnNode): Frame[V] = analyzer.frameAt(instruction, methodNode)
   }
 
-  implicit class AnalyzerExtendsions[V <: Value](val analyzer: Analyzer[V]) extends AnyVal {
+  implicit class AnalyzerExtensions[V <: Value](val analyzer: Analyzer[V]) extends AnyVal {
     def frameAt(instruction: AbstractInsnNode, methodNode: MethodNode): Frame[V] = analyzer.getFrames()(methodNode.instructions.indexOf(instruction))
   }
 

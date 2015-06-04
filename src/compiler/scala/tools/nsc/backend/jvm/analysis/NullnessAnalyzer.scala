@@ -121,10 +121,10 @@ sealed trait NullnessValue extends Value {
   def merge(other: NullnessValue) = NullnessValue(nullness merge other.nullness, isSize2)
 }
 
-object NullValue     extends NullnessValue { def nullness = Null;    def isSize2 = false; override def toString = "Null"    }
+object NullValue     extends NullnessValue { def nullness = Null;    def isSize2 = false; override def toString = "Null"     }
 object UnknownValue1 extends NullnessValue { def nullness = Unknown; def isSize2 = false; override def toString = "Unknown1" }
 object UnknownValue2 extends NullnessValue { def nullness = Unknown; def isSize2 = true;  override def toString = "Unknown2" }
-object NotNullValue  extends NullnessValue { def nullness = NotNull; def isSize2 = false; override def toString = "NotNull" }
+object NotNullValue  extends NullnessValue { def nullness = NotNull; def isSize2 = false; override def toString = "NotNull"  }
 
 object NullnessValue {
   def apply(nullness: Nullness, isSize2: Boolean): NullnessValue = {

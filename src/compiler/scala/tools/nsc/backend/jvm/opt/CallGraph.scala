@@ -8,6 +8,7 @@ package backend.jvm
 package opt
 
 import scala.reflect.internal.util.{NoPosition, Position}
+import scala.tools.asm.tree.analysis.{Value, Analyzer, BasicInterpreter}
 import scala.tools.asm.{Opcodes, Type}
 import scala.tools.asm.tree._
 import scala.collection.convert.decorateAsScala._
@@ -100,8 +101,20 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
     // call is known to be not-null, in which case we don't have to emit a null check when inlining.
     // It is also used to get the stack height at the call site.
     localOpt.minimalRemoveUnreachableCode(methodNode, definingClass.internalName)
-    val analyzer = new NullnessAnalyzer
+
+    val analyzer: Analyzer[_ <: Value] = {
+      if (compilerSettings.YoptNullnessTracking) new NullnessAnalyzer
+      else new Analyzer(new BasicInterpreter)
+    }
     analyzer.analyze(definingClass.internalName, methodNode)
+
+    def receiverNotNullByAnalysis(call: MethodInsnNode, numArgs: Int) = analyzer match {
+      case nullnessAnalyzer: NullnessAnalyzer =>
+        val frame = nullnessAnalyzer.frameAt(call, methodNode)
+        frame.getStack(frame.getStackSize - 1 - numArgs).nullness == NotNull
+
+      case _ => false
+    }
 
     methodNode.instructions.iterator.asScala.collect({
       case call: MethodInsnNode =>
@@ -131,8 +144,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
 
         val receiverNotNull = call.getOpcode == Opcodes.INVOKESTATIC || {
           val numArgs = Type.getArgumentTypes(call.desc).length
-          val frame = analyzer.frameAt(call, methodNode)
-          frame.getStack(frame.getStackSize - 1 - numArgs).nullness == NotNull
+          receiverNotNullByAnalysis(call, numArgs)
         }
 
         Callsite(
