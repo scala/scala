@@ -36,16 +36,19 @@ object Test {
 
     def gr1 = NumericRange(x, x, x)
     def gr2 = NumericRange.inclusive(x, x, x)
-    def gr3 = NumericRange(x, x * fromInt(10), x)
-    def gr4 = NumericRange.inclusive(x, x * fromInt(10), x)
-    def gr5 = gr3.toList ::: negated.gr3.toList
+    def gr3 = NumericRange(x, x * fromInt(4), x * fromInt(2))  // SI-9348
+    def gr4 = NumericRange(x, x * fromInt(-2), x * fromInt(-2))
+    def gr5 = NumericRange(x, x * fromInt(10), x)
+    def gr6 = NumericRange.inclusive(x, x * fromInt(10), x)
+    def gr7 = gr3.toList ::: negated.gr3.toList
 
     def check = {
       assert(gr1.isEmpty && !gr2.isEmpty)
-      assert(gr3.size == 9 && gr4.size == 10)
-      assert(gr5.sum == num.zero, gr5.toString)
-      assert(!(gr3 contains (x * fromInt(10))))
-      assert((gr4 contains (x * fromInt(10))))
+      assert(gr3.size == 2 && gr4.size == 2)
+      assert(gr5.size == 9 && gr6.size == 10)
+      assert(gr7.sum == num.zero, gr7.toString)
+      assert(!(gr5 contains (x * fromInt(10))))
+      assert(gr6 contains (x * fromInt(10)))
     }
   }
 
@@ -55,6 +58,7 @@ object Test {
 
     val _grs = List[GR[_]](
       GR(BigDecimal(5.0)),
+      GR(BigDecimal(0.25)),  // SI-9348
       GR(BigInt(5)),
       GR(5L),
       GR(5.0d),
