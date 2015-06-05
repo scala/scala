@@ -245,7 +245,15 @@ trait ContextErrors {
         NormalTypeError(tree, "reference to " + name + " is ambiguous;\n" + msg)
 
       def SymbolNotFoundError(tree: Tree, name: Name, owner: Symbol, startingIdentCx: Context) = {
-        NormalTypeError(tree, "not found: "+decodeWithKind(name, owner))
+        platform.updateIndex()
+        lazy val candidatesString = name match {
+          case tn: TypeName =>
+            val cs = platform.classPathIndexByClassName.getOrElse(tn.toString, Set.empty)
+            if (cs.nonEmpty) cs.mkString(". You may want to import one of the following classes from your classpath:\n  ", "\n  ", "")
+            else ""
+          case _ => ""
+        }
+        NormalTypeError(tree, "not found: "+decodeWithKind(name, owner) + candidatesString)
       }
 
       // typedAppliedTypeTree

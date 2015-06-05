@@ -200,7 +200,7 @@ lazy val repl = configureAsSubproject(project)
     run <<= (run in Compile).partialInput(" -usejavacp") // Automatically add this so that `repl/run` works without additional arguments.
   )
   .settings(disableDocsAndPublishingTasks: _*)
-  .dependsOn(compiler)
+  .dependsOn(compiler, interactive)
 
 lazy val scaladoc = configureAsSubproject(project)
   .settings(
