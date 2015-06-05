@@ -395,6 +395,7 @@ class C extends A with B { type T <: C }
 Let $C$ be a class type. The _inheritance closure_ of $C$ is the
 smallest set $\mathscr{S}$ of types such that
 
+- $C$ is in $\mathscr{S}$.
 - If $T$ is in $\mathscr{S}$, then every type $T'$ which forms syntactically
   a part of $T$ is also in $\mathscr{S}$.
 - If $T$ is a class type in $\mathscr{S}$, then all [parents](#templates)
