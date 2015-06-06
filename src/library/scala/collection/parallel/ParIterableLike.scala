@@ -1499,5 +1499,4 @@ self: ParIterableLike[T, Repr, Sequential] =>
       append(s)
     }
   })
-
 }
