@@ -86,9 +86,23 @@ object NestUI {
     }
     else {
       echo(statusLine(state))
-      if (!state.isOk && isDiffy) {
-        val differ = bold(red("% ")) + "diff "
-        state.transcript find (_ startsWith differ) foreach (echo(_))
+      if (!state.isOk) {
+        if (isDiffy) {
+          val differ = bold(red("% ")) + "diff "
+          state.transcript find (_ startsWith differ) foreach (echo(_))
+        }
+        if (isLogging) {
+          import scala.util.matching.Regex
+          def log(f: File) = {
+            echo(bold(cyan(s"##### Log file '$f' from failed test #####\n")))
+            echo(f.fileContents)
+          }
+          val prompt = bold(red("% "))
+          val differ = raw"(?s)${Regex.quote(prompt)}diff (\S*).*".r
+          state.transcript.collect {
+            case differ(f) => f
+          } foreach (log(_))
+        }
       }
     }
   }
@@ -153,11 +167,13 @@ object NestUI {
   var _debug = false
   var _terse = false
   var _diff  = false
+  var _logging = false
 
   def isVerbose = _verbose
   def isDebug = _debug
   def isTerse = _terse
   def isDiffy = _diff
+  def isLogging = _logging
 
   def setVerbose() {
     _verbose = true
@@ -170,6 +186,9 @@ object NestUI {
   }
   def setDiffOnFail() {
     _diff = true
+  }
+  def setLogOnFail() {
+    _logging = true
   }
   def verbose(msg: String) {
     if (isVerbose)

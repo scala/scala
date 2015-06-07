@@ -94,6 +94,7 @@ abstract class AbstractRunner(argstr: String) extends {
     if (optVerbose)  NestUI.setVerbose()
     if (optTerse)    NestUI.setTerse()
     if (optShowDiff) NestUI.setDiffOnFail()
+    if (optShowLog)  NestUI.setLogOnFail()
 
     // Early return on no args, version, or invalid args
     if (optVersion) return echo(versionMsg)

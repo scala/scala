@@ -36,6 +36,7 @@ trait RunnerSpec extends Spec with Meta.StdOpts with Interpolation {
 
   heading("Test output options:")
   val optShowDiff     = "show-diff"    / "show diffs for failed tests"       --?
+  val optShowLog      = "show-log"     / "show log files for failed tests"   --?
   val optVerbose      = "verbose"      / "show verbose progress information" --?
   val optTerse        = "terse"        / "show terse progress information"   --?
   val optDebug        = "debug"        / "enable debugging output"           --?
