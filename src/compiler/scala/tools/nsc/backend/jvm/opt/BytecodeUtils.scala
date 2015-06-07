@@ -170,6 +170,8 @@ object BytecodeUtils {
     new InsnNode(op)
   }
 
+  def instructionResultSize(instruction: AbstractInsnNode) = InstructionResultSize(instruction)
+
   def labelReferences(method: MethodNode): Map[LabelNode, Set[AnyRef]] = {
     val res = mutable.Map.empty[LabelNode, Set[AnyRef]]
     def add(l: LabelNode, ref: AnyRef) = if (res contains l) res(l) = res(l) + ref else res(l) = Set(ref)
@@ -328,13 +330,38 @@ object BytecodeUtils {
   class AsmAnalyzer[V <: Value](methodNode: MethodNode, classInternalName: InternalName, interpreter: Interpreter[V] = new BasicInterpreter) {
     val analyzer = new Analyzer(interpreter)
     analyzer.analyze(classInternalName, methodNode)
-    def frameAt(instruction: AbstractInsnNode): Frame[V] = analyzer.getFrames()(methodNode.instructions.indexOf(instruction))
+    def frameAt(instruction: AbstractInsnNode): Frame[V] = analyzer.frameAt(instruction, methodNode)
   }
 
-  implicit class `frame extensions`[V <: Value](val frame: Frame[V]) extends AnyVal {
-    def peekDown(n: Int): V = {
-      val topIndex = frame.getStackSize - 1
-      frame.getStack(topIndex - n)
+  implicit class AnalyzerExtensions[V <: Value](val analyzer: Analyzer[V]) extends AnyVal {
+    def frameAt(instruction: AbstractInsnNode, methodNode: MethodNode): Frame[V] = analyzer.getFrames()(methodNode.instructions.indexOf(instruction))
+  }
+
+  implicit class FrameExtensions[V <: Value](val frame: Frame[V]) extends AnyVal {
+    /**
+     * The value `n` positions down the stack.
+     */
+    def peekStack(n: Int): V = frame.getStack(frame.getStackSize - 1 - n)
+
+    /**
+     * The index of the current stack top.
+     */
+    def stackTop = frame.getLocals + frame.getStackSize - 1
+
+    /**
+     * Gets the value at slot i, where i may be a local or a stack index.
+     */
+    def getValue(i: Int): V = {
+      if (i < frame.getLocals) frame.getLocal(i)
+      else frame.getStack(i - frame.getLocals)
+    }
+
+    /**
+     * Sets the value at slot i, where i may be a local or a stack index.
+     */
+    def setValue(i: Int, value: V): Unit = {
+      if (i < frame.getLocals) frame.setLocal(i, value)
+      else frame.setStack(i - frame.getLocals, value)
     }
   }
 }

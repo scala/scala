@@ -49,7 +49,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       if (callGraph.callsites contains request.callsiteInstruction) {
         val r = inline(request.callsiteInstruction, request.callsiteStackHeight, request.callsiteMethod, request.callsiteClass,
           callee.callee, callee.calleeDeclarationClass,
-          receiverKnownNotNull = false, keepLineNumbers = false)
+          request.receiverKnownNotNull, keepLineNumbers = false)
 
         for (warning <- r) {
           if ((callee.annotatedInline && btypes.compilerSettings.YoptWarningEmitAtInlineFailed) || warning.emitWarning(compilerSettings)) {
@@ -89,7 +89,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    */
   def selectCallsitesForInlining: List[Callsite] = {
     callsites.valuesIterator.filter({
-      case callsite @ Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, _, annotatedInline, _, warning)), _, _, pos) =>
+      case callsite @ Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, _, annotatedInline, _, warning)), _, _, _, pos) =>
         val res = doInlineCallsite(callsite)
 
         if (!res) {
@@ -112,7 +112,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
         res
 
-      case Callsite(ins, _, _, Left(warning), _, _, pos) =>
+      case Callsite(ins, _, _, Left(warning), _, _, _, pos) =>
         if (warning.emitWarning(compilerSettings))
           backendReporting.inlinerWarning(pos, s"failed to determine if ${ins.name} should be inlined:\n$warning")
         false
@@ -123,7 +123,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    * The current inlining heuristics are simple: inline calls to methods annotated @inline.
    */
   def doInlineCallsite(callsite: Callsite): Boolean = callsite match {
-    case Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, _, annotatedInline, _, warning)), _, _, pos) =>
+    case Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, _, annotatedInline, _, warning)), _, _, _, pos) =>
       if (compilerSettings.YoptInlineHeuristics.value == "everything") safeToInline
       else annotatedInline && safeToInline
 
@@ -189,7 +189,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
           // there's no need to run eliminateUnreachableCode here. building the call graph does that
           // already, no code can become unreachable in the meantime.
           val analyzer = new AsmAnalyzer(callsite.callsiteMethod, callsite.callsiteClass.internalName, new SourceInterpreter)
-          val receiverValue = analyzer.frameAt(callsite.callsiteInstruction).peekDown(traitMethodArgumentTypes.length)
+          val receiverValue = analyzer.frameAt(callsite.callsiteInstruction).peekStack(traitMethodArgumentTypes.length)
           for (i <- receiverValue.insns.asScala) {
             val cast = new TypeInsnNode(CHECKCAST, selfParamType.internalName)
             callsite.callsiteMethod.instructions.insert(i, cast)
@@ -215,6 +215,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
             calleeInfoWarning      = infoWarning)),
           argInfos            = Nil,
           callsiteStackHeight = callsite.callsiteStackHeight,
+          receiverKnownNotNull = callsite.receiverKnownNotNull,
           callsitePosition = callsite.callsitePosition
         )
         callGraph.callsites(newCallsiteInstruction) = staticCallsite
@@ -400,7 +401,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         val inlinedReturn = instructionMap(originalReturn)
         val returnReplacement = new InsnList
 
-        def drop(slot: Int) = returnReplacement add getPop(frame.peekDown(slot).getSize)
+        def drop(slot: Int) = returnReplacement add getPop(frame.peekStack(slot).getSize)
 
         // for non-void methods, store the stack top into the return local variable
         if (hasReturnValue) {
@@ -444,6 +445,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
                 callee = originalCallsite.callee,
                 argInfos = Nil, // TODO: re-compute argInfos for new destination (once we actually compute them)
                 callsiteStackHeight = callsiteStackHeight + originalCallsite.callsiteStackHeight,
+                receiverKnownNotNull = originalCallsite.receiverKnownNotNull,
                 callsitePosition = originalCallsite.callsitePosition
               )
 
