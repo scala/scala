@@ -95,7 +95,8 @@ trait Imports {
    * last one imported is actually usable.
    */
   case class ComputedImports(header: String, prepend: String, append: String, access: String)
-  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper, definesClass: Boolean): ComputedImports = {
+
+  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper, definesClass: Boolean, generousImports: Boolean): ComputedImports = {
     val header, code, trailingBraces, accessPath = new StringBuilder
     val currentImps = mutable.HashSet[Name]()
     var predefEscapes = false      // only emit predef import header if name not resolved in history, loosely
@@ -116,8 +117,9 @@ trait Imports {
         def keepHandler(handler: MemberHandler) = handler match {
           // While defining classes in class based mode - implicits are not needed.
           case h: ImportHandler if isClassBased && definesClass => h.importedNames.exists(x => wanted.contains(x))
-          case _: ImportHandler => true
-          case x                => x.definesImplicit || (x.definedNames exists wanted)
+          case _: ImportHandler     => true
+          case x if generousImports => x.definesImplicit || (x.definedNames exists (d => wanted.exists(w => d.startsWith(w))))
+          case x                    => x.definesImplicit || (x.definedNames exists wanted)
         }
 
         reqs match {

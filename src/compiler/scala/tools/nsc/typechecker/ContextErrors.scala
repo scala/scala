@@ -242,11 +242,10 @@ trait ContextErrors {
 
       // typedIdent
       def AmbiguousIdentError(tree: Tree, name: Name, msg: String) =
-        NormalTypeError(tree, "reference to " + name + " is ambiguous;\n" + msg)
+        NormalTypeError(tree, s"reference to $name is ambiguous;\n$msg")
 
-      def SymbolNotFoundError(tree: Tree, name: Name, owner: Symbol, startingIdentCx: Context) = {
-        NormalTypeError(tree, "not found: "+decodeWithKind(name, owner))
-      }
+      def SymbolNotFoundError(tree: Tree, name: Name, owner: Symbol, startingIdentCx: Context) =
+        NormalTypeError(tree, s"not found: ${ decodeWithKind(name, owner) }")
 
       // typedAppliedTypeTree
       def AppliedTypeNoParametersError(tree: Tree, errTpe: Type) = {

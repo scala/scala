@@ -9,6 +9,7 @@ package interpreter
 import Completion._
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.StringOps.longestCommonPrefix
+import scala.tools.nsc.interactive.Global
 
 // REPL completor - queries supplied interpreter for valid
 // completions based on current contents of buffer.
@@ -296,7 +297,6 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     override def complete(buf: String, cursor: Int): Candidates = {
       verbosity = if (isConsecutiveTabs(buf, cursor)) verbosity + 1 else 0
       repldbg(f"%ncomplete($buf, $cursor%d) last = ($lastBuf, $lastCursor%d), verbosity: $verbosity")
-
       // we don't try lower priority completions unless higher ones return no results.
       def tryCompletion(p: Parsed, completionFunction: Parsed => List[String]): Option[Candidates] = {
         val winners = completionFunction(p)
