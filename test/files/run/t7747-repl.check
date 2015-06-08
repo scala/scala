@@ -112,7 +112,7 @@ scala> 55 ; ((2 + 2)) ; (1, 2, 3)
 res15: (Int, Int, Int) = (1,2,3)
 
 scala> 55 ; (x: Int) => x + 1 ; () => ((5))
-<console>:8: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:9: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
               55 ; (x: Int) => x + 1 ;;
               ^
 res16: () => Int = <function0>
@@ -258,12 +258,12 @@ class $read extends Serializable {
       super.<init>;
       ()
     };
-    import $line44.$read.$iw.$iw.BippyBups;
-    import $line44.$read.$iw.$iw.BippyBups;
-    import $line45.$read.$iw.$iw.PuppyPups;
-    import $line45.$read.$iw.$iw.PuppyPups;
-    import $line46.$read.$iw.$iw.Bingo;
-    import $line46.$read.$iw.$iw.Bingo;
+    import $line44.$read.INSTANCE.$iw.$iw.BippyBups;
+    import $line44.$read.INSTANCE.$iw.$iw.BippyBups;
+    import $line45.$read.INSTANCE.$iw.$iw.PuppyPups;
+    import $line45.$read.INSTANCE.$iw.$iw.PuppyPups;
+    import $line46.$read.INSTANCE.$iw.$iw.Bingo;
+    import $line46.$read.INSTANCE.$iw.$iw.Bingo;
     class $iw extends Serializable {
       def <init>() = {
         super.<init>;
@@ -275,12 +275,23 @@ class $read extends Serializable {
   };
   val $iw = new $iw.<init>
 }
-object $read extends $read {
+object $read extends scala.AnyRef {
   def <init>() = {
     super.<init>;
     ()
-  }
+  };
+  val INSTANCE = new $read.<init>
 }
 res3: List[Product with Serializable] = List(BippyBups(), PuppyPups(), Bingo())
+
+scala> :power
+** Power User mode enabled - BEEP WHIR GYVE **
+** :phase has been set to 'typer'.          **
+** scala.tools.nsc._ has been imported      **
+** global._, definitions._ also imported    **
+** Try  :help, :vals, power.<tab>           **
+
+scala> intp.lastRequest
+res4: $r.intp.Request = Request(line=def $ires3 = intp.global, 1 trees)
 
 scala> :quit

@@ -92,7 +92,7 @@ trait Imports {
    * last one imported is actually usable.
    */
   case class ComputedImports(prepend: String, append: String, access: String)
-  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper): ComputedImports = {
+  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper, definesClass: Boolean): ComputedImports = {
     /** Narrow down the list of requests from which imports
      *  should be taken.  Removes requests which cannot contribute
      *  useful imports for the specified set of wanted names.
@@ -107,6 +107,8 @@ trait Imports {
         // Single symbol imports might be implicits! See bug #1752.  Rather than
         // try to finesse this, we will mimic all imports for now.
         def keepHandler(handler: MemberHandler) = handler match {
+        /* While defining classes in class based mode - implicits are not needed. */
+          case h: ImportHandler if isClassBased && definesClass => h.importedNames.exists(x => wanted.contains(x))
           case _: ImportHandler => true
           case x                => x.definesImplicit || (x.definedNames exists wanted)
         }
@@ -146,7 +148,10 @@ trait Imports {
 
     // loop through previous requests, adding imports for each one
     wrapBeforeAndAfter {
+      // Reusing a single temporary value when import from a line with multiple definitions.
+      val tempValLines = mutable.Set[Int]()
       for (ReqAndHandler(req, handler) <- reqsToUse) {
+        val objName = req.lineRep.readPathInstance
         handler match {
           // If the user entered an import, then just use it; add an import wrapping
           // level if the import might conflict with some other import
@@ -157,6 +162,23 @@ trait Imports {
             code append (x.member + "\n")
             currentImps ++= x.importedNames
 
+          case x if isClassBased =>
+            for (imv <- x.definedNames) {
+              if (!currentImps.contains(imv)) {
+                x match {
+                  case _: ValHandler | _: ModuleHandler =>
+                    val valName = req.lineRep.packageName + req.lineRep.readName
+                    if (!tempValLines.contains(req.lineRep.lineId)) {
+                      code.append(s"val $valName = $objName\n")
+                      tempValLines += req.lineRep.lineId
+                    }
+                    code.append(s"import $valName ${req.accessPath}.`$imv`;\n")
+                  case _ =>
+                    code.append("import " + objName + req.accessPath + ".`" + imv + "`\n")
+                }
+                currentImps += imv
+              }
+            }
           // For other requests, import each defined name.
           // import them explicitly instead of with _, so that
           // ambiguity errors will not be generated. Also, quote
