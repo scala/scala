@@ -594,23 +594,6 @@ trait TraversableLike[+A, +Repr] extends Any
    */
   def inits: Iterator[Repr] = iterateUntilEmpty(_.init)
 
-  /** Copies elements of this $coll to an array.
-   *  Fills the given array `xs` with at most `len` elements of
-   *  this $coll, starting at position `start`.
-   *  Copying will stop once either the end of the current $coll is reached,
-   *  or the end of the array is reached, or `len` elements have been copied.
-   *
-   *  @param  xs     the array to fill.
-   *  @param  start  the starting index.
-   *  @param  len    the maximal number of elements to copy.
-   *  @tparam B      the type of the elements of the array.
-   *
-   *
-   *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Unit
-   *    @inheritdoc
-   *
-   *    $willNotTerminateInf
-   */
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) {
     var i = start
     val end = (start + len) min xs.length
@@ -625,7 +608,7 @@ trait TraversableLike[+A, +Repr] extends Any
 
   @deprecatedOverriding("Enforce contract of toTraversable that if it is Traversable it returns itself.", "2.11.0")
   def toTraversable: Traversable[A] = thisCollection
-  
+
   def toIterator: Iterator[A] = toStream.iterator
   def toStream: Stream[A] = toBuffer.toStream
   // Override to provide size hint.

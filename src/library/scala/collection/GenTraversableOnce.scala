@@ -409,13 +409,13 @@ trait GenTraversableOnce[+A] extends Any {
    */
   def find(pred: A => Boolean): Option[A]
 
-  /** Copies values of this $coll to an array.
+  /** Copies the elements of this $coll to an array.
    *  Fills the given array `xs` with values of this $coll.
    *  Copying will stop once either the end of the current $coll is reached,
-   *  or the end of the array is reached.
+   *  or the end of the target array is reached.
    *
    *  @param  xs     the array to fill.
-   *  @tparam B      the type of the elements of the array.
+   *  @tparam B      the type of the elements of the target array.
    *
    *  @usecase def copyToArray(xs: Array[A]): Unit
    *    @inheritdoc
@@ -424,14 +424,14 @@ trait GenTraversableOnce[+A] extends Any {
    */
   def copyToArray[B >: A](xs: Array[B]): Unit
 
-  /** Copies values of this $coll to an array.
+  /** Copies the elements of this $coll to an array.
    *  Fills the given array `xs` with values of this $coll, beginning at index `start`.
    *  Copying will stop once either the end of the current $coll is reached,
-   *  or the end of the array is reached.
+   *  or the end of the target array is reached.
    *
    *  @param  xs     the array to fill.
    *  @param  start  the starting index.
-   *  @tparam B      the type of the elements of the array.
+   *  @tparam B      the type of the elements of the target array.
    *
    *  @usecase def copyToArray(xs: Array[A], start: Int): Unit
    *    @inheritdoc
@@ -440,6 +440,22 @@ trait GenTraversableOnce[+A] extends Any {
    */
   def copyToArray[B >: A](xs: Array[B], start: Int): Unit
 
+  /** Copies the elements of this $coll to an array.
+   *  Fills the given array `xs` with at most `len` elements of
+   *  this $coll, starting at position `start`.
+   *  Copying will stop once either the end of the current $coll is reached,
+   *  or the end of the target array is reached, or `len` elements have been copied.
+   *
+   *  @param  xs     the array to fill.
+   *  @param  start  the starting index.
+   *  @param  len    the maximal number of elements to copy.
+   *  @tparam B      the type of the elements of the target array.
+   *
+   *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Unit
+   *    @inheritdoc
+   *
+   *    $willNotTerminateInf
+   */
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Unit
 
   /** Displays all elements of this $coll in a string using start, end, and
