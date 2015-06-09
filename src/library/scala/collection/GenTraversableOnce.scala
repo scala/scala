@@ -227,24 +227,25 @@ trait GenTraversableOnce[+A] extends Any {
 
   /** Aggregates the results of applying an operator to subsequent elements.
    *
-   *  This is a more general form of `fold` and `reduce`. It has similar
-   *  semantics, but does not require the result to be a supertype of the
-   *  element type. It traverses the elements in different partitions
-   *  sequentially, using `seqop` to update the result, and then applies
-   *  `combop` to results from different partitions. The implementation of
-   *  this operation may operate on an arbitrary number of collection
-   *  partitions, so `combop` may be invoked an arbitrary number of times.
+   *  This is a more general form of `fold` and `reduce`. It is similar to
+   *  `foldLeft` in that it doesn't require the result to be a supertype of the
+   *  element type. In addition, it allows parallel collections to be processed
+   *  in chunks, and then combines the intermediate results.
    *
-   *  For example, one might want to process some elements and then produce
-   *  a `Set`. In this case, `seqop` would process an element and append it
-   *  to the list, while `combop` would concatenate two lists from different
-   *  partitions together. The initial value `z` would be an empty set.
+   *  So `aggregate` splits the $coll into partitions and processes each
+   *  partition by sequentially applying `seqop`, starting with `z` (like
+   *  `foldLeft`). Those intermediate results are then combined by using
+   *  `combop` (like `fold`). The implementation of this operation may operate
+   *  on an arbitrary number of collection partitions (even 1), so `combop` may
+   *  be invoked an arbitrary number of times (even 0).
+   *
+   *  As an example, consider summing up the integer values of a list of chars.
+   *  The initial value for the sum is 0. First, `seqop` transforms each input
+   *  character to an Int and adds it to the sum (of the partition). Then,
+   *  `combop` just needs to sum up the intermediate results of the partitions:
    *  {{{
-   *    pc.aggregate(Set[Int]())(_ += process(_), _ ++ _)
+   *    List('a', 'b', 'c').aggregate(0)({ (sum, ch) => sum + ch.toInt }, { (p1, p2) => p1 + p2 })
    *  }}}
-   *
-   *  Another example is calculating geometric mean from a collection of doubles
-   *  (one would typically require big doubles for this).
    *
    *  @tparam B        the type of accumulated results
    *  @param z         the initial value for the accumulated result of the partition - this
