@@ -596,7 +596,7 @@ object Either {
   }
   final object RightBiased {
 
-    private[Either] final val DefaultThrowingOps = WithEmptyToken.Throwing( throw new MatchError( matchErrorMessage( true ) ) );
+    private[Either] final val DefaultThrowingOps = WithEmptyToken.Throwing( throw new NoSuchElementException( noSuchElementMessage( true ) ) );
 
     implicit class Ops[A,B]( val src : Either[A,B] ) extends AnyVal { // alas, we don't define a trait, but write all these ops twice, so we can avoid boxing here
 
@@ -734,7 +734,7 @@ object Either {
   }
   final object LeftBiased {
 
-    private[Either] final val DefaultThrowingOps = WithEmptyToken.Throwing( throw new MatchError( matchErrorMessage( false ) ) );
+    private[Either] final val DefaultThrowingOps = WithEmptyToken.Throwing( throw new NoSuchElementException( noSuchElementMessage( false ) ) );
 
     implicit class Ops[A,B]( val src : Either[A,B] ) extends AnyVal { // alas, we don't define a trait, but write all these ops twice, so we can avoid boxing here
 
@@ -871,7 +871,7 @@ object Either {
     implicit def toLeftBiasedEtherOps[A]( src : Either[A,B] ) : LeftBiased.WithEmptyToken.AbstractOps[A,B] = new LeftBiased.WithEmptyToken.Ops[A,B]( src )( EmptyTokenDefinition );
   }
 
-  private def matchErrorMessage[A,B]( rightBiased : Boolean, mbEither : Option[Either[A,B]] = None ) = {
+  private def noSuchElementMessage[A,B]( rightBiased : Boolean, mbEither : Option[Either[A,B]] = None ) = {
     val bias = if ( rightBiased ) "Right-biased" else "Left-biased";
     val withToken = if ( rightBiased ) "RightBiased.WithEmptyToken" else "LeftBiased.WithEmptyToken";
     val eitherRep = mbEither.fold(" ")( either => s" '${either}' " );
