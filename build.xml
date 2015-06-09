@@ -376,7 +376,7 @@ TODO:
       </artifact:dependencies>
 
       <artifact:dependencies pathId="repl.deps.classpath" filesetId="repl.fileset" versionsId="repl.deps.versions">
-        <dependency groupId="jline" artifactId="jline" version="${jline.version}"/>
+        <dependency groupId="org.scala-lang.modules" artifactId="scala-jline" version="${jline.version}"/>
       </artifact:dependencies>
       <copy-deps project="repl"/>
 

@@ -9,7 +9,7 @@ object Test extends App {
     // not on the classpath. We just skip over those classes.
     // PENDING: for now we also allow missing $anonfun classes: the optimizer may eliminate some closures
     // that are refferred to in EnclosingClass attributes. SI-9136
-    val allowedMissingPackages = Set("jline", "org.apache.tools.ant", "$anonfun")
+    val allowedMissingPackages = Set("scala.tools.jline", "org.apache.tools.ant", "$anonfun")
 
     def ok(t: Throwable) = {
       allowedMissingPackages.exists(p => t.getMessage.replace('/', '.').contains(p))
