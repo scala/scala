@@ -2,6 +2,8 @@
 extract: AnyRef => Unit = <function1>
   evaluating x
 x: Int = 0
+getX: ()Int
+defined class U
 y: Int = <lazy>
   evaluating z
   evaluating zz
@@ -11,6 +13,8 @@ zz: Int = 0
 defined object O
 defined class A
 defined type alias AA
+constructing U
+u: U = U
 == evaluating lambda
   evaluating y
   evaluating O

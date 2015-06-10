@@ -166,15 +166,15 @@ trait Imports {
             for (imv <- x.definedNames) {
               if (!currentImps.contains(imv)) {
                 x match {
-                  case _: ValHandler | _: ModuleHandler =>
+                  case _: ClassHandler =>
+                    code.append("import " + objName + req.accessPath + ".`" + imv + "`\n")
+                  case _ =>
                     val valName = req.lineRep.packageName + req.lineRep.readName
                     if (!tempValLines.contains(req.lineRep.lineId)) {
                       code.append(s"val $valName = $objName\n")
                       tempValLines += req.lineRep.lineId
                     }
-                    code.append(s"import $valName ${req.accessPath}.`$imv`;\n")
-                  case _ =>
-                    code.append("import " + objName + req.accessPath + ".`" + imv + "`\n")
+                    code.append(s"import $valName${req.accessPath}.`$imv`;\n")
                 }
                 currentImps += imv
               }

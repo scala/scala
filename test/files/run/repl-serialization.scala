@@ -25,12 +25,15 @@ object Test {
 
     val code =
       """val x = {println("  evaluating x"); 0 }
+        |def getX() = x
+        |class U extends Serializable { println("constructing U"); val x = 0 ; override def toString = "U" }
         |lazy val y = {println("  evaluating y"); 0 }
         |class D; val z = {println("  evaluating z"); 0}; val zz = {println("  evaluating zz"); 0}
         |object O extends Serializable { val apply = {println("  evaluating O"); 0} }
         |class A(i: Int) { println("  constructing A") }
         |type AA = A
-        |extract(() => new AA(x + y + z + zz + O.apply))
+        |val u = new U()
+        |extract(() => new AA(x + getX() + y + z + zz + O.apply + u.x))
       """.stripMargin
 
     imain = new IMain(settings)

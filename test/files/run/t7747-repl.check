@@ -284,6 +284,18 @@ object $read extends scala.AnyRef {
 }
 res3: List[Product with Serializable] = List(BippyBups(), PuppyPups(), Bingo())
 
+scala> case class Sum(exp: String, exp2: String)
+defined class Sum
+
+scala> val a = Sum("A", "B")
+a: Sum = Sum(A,B)
+
+scala> def b(a: Sum): String = a match { case Sum(_, _) => "Found Sum" }
+b: (a: Sum)String
+
+scala> b(a)
+res4: String = Found Sum
+
 scala> :power
 ** Power User mode enabled - BEEP WHIR GYVE **
 ** :phase has been set to 'typer'.          **
@@ -292,6 +304,6 @@ scala> :power
 ** Try  :help, :vals, power.<tab>           **
 
 scala> intp.lastRequest
-res4: $r.intp.Request = Request(line=def $ires3 = intp.global, 1 trees)
+res5: $r.intp.Request = Request(line=def $ires3 = intp.global, 1 trees)
 
 scala> :quit
