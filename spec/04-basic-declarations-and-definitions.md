@@ -298,7 +298,7 @@ the sequence of variable definitions
 ```ebnf
 Dcl        ::=  ‘type’ {nl} TypeDcl
 TypeDcl    ::=  id [TypeParamClause] [‘>:’ Type] [‘<:’ Type]
-Def        ::=  type {nl} TypeDef
+Def        ::=  ‘type’ {nl} TypeDef
 TypeDef    ::=  id [TypeParamClause] ‘=’ Type
 ```
 
