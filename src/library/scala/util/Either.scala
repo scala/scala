@@ -722,10 +722,172 @@ object Either {
 
     implicit def toRightBiasEtherOps[B]( src : Either[A,B] ) : RightBias.withEmptyToken.AbstractOps[A,B] = new RightBias.withEmptyToken.Ops[A,B]( src )( EmptyTokenDefinition );
   }
+  /**
+    *  This object contains utilities for defining an environment in which `Either` instances are "left-biased".
+    * 
+    *  Left-biased means instances of `Either[A,B]` can be operated upon via methods that render thme 
+    *  quite analogous to an `Option[A]`, except that failures are represented by a `Right` containing information about
+    *  the problem rathar than by uninformative `None`. In particular,
+    *  a left-biased `Either` can be used directly in a for comprehension. Unlike a [[scala.util.Either.LeftProjection]],
+    *  a left-biased `Either` supports all features of a for comprehension, including pattern matching, filtering,
+    *  and variable assignment.
+    * 
+    *  To enable left-biasing, you first define a bias, typically via the [[Either.LeftBias.withEmptyToken$ Either.LeftBias.withEmptyToken]]
+    *  factory.
+    * {{{
+    *     // will impart a left-bias suitable to Either[A,String]
+    *     val LeftBias = Either.LeftBias.withEmptyToken("EMPTY")
+    *     import LeftBias._
+    * }}}
+    *  The specified "empty token" will define the value in the `Right` object that will be used to
+    *  when a filter or pattern-match of a left-side object fails.
+    * 
+    *  If you don't wish to specify an empty token, you may use the more convenient
+    * {{{
+    *     import Either.LeftBias._
+    * }}}
+    *  However, filter operations or pattern match failures that would leave the left-side
+    *  empty will result in the raising of a `java.util.NoSuchElementException`.
+    * 
+    *  For the full list of operations defined on a left-biased Either, see [[LeftBias.Ops]].
+    * 
+    *  '''A Detailed example:'''
+    * 
+    *  Consider a hypothetical process that must read some binary data from a URL, parse the data into
+    *  a `Record`, ensure that record's year is no older than 2011, and then operate upon
+    *  the data via one of several external services, depending on the `opCode`, ultimately producing a `Result`. 
+    *  Things that can go wrong include network errors on loading, 
+    *  parsing problems, failure of the timestamp condition, and failures with the external service.
+    * 
+    *  With `Option`, one might define a process like:
+    * {{{
+    *     case class Record( opCode : Int, data : Seq[Byte], year : Int )
+    *     trait Result
+    * 
+    *     def loadURL( url : String ) : Option[Seq[Byte]] = ???
+    *     def parseRecord( bytes : Seq[Byte] ) : Option[Record] = ???
+    *     def process( opCode : Int, data : Seq[Byte] ) : Option[Result] = ???
+    * 
+    *     def processURL( url : String ) : Option[Result] = {
+    *       for {
+    *         rawBytes                     <- loadURL( url )
+    *         Record( opCode, data, year ) <- parseRecord( rawBytes )
+    *         result                       <- process( opCode, data ) if year >= 2011
+    *       } yield result
+    *     }
+    * }}}
+    *  That's fine, but if anything goes wrong, clients will receive a value `None`, and have no specific information
+    *  about what the problem was. Instead of option, we might try to use Either, defining error codes
+    *  for things that can go wrong. (We'll let our error codes be `Int` for this example, but should probably 
+    *  more descriptive kinds of object in real life.) Unconventionally (since we are considering left-biased
+    *  `Either` here), we'll let good values arrive as `Left` values and embed our error codes in `Right` objects.
+    * {{{
+    *     val ErrIO              = 1
+    *     val ErrNoParse         = 2
+    *     val ErrBadYear         = 3
+    *     val ErrProcessorFailed = 4
+    * 
+    *     case class Record( opCode : Int, data : Seq[Byte], year : Int )
+    *     trait Result
+    * 
+    *     def loadURL( url : String ) : Either[Seq[Byte],Int] = ???
+    *     def parseRecord( bytes : Seq[Byte] ) : Either[Record,Int] = ???
+    *     def process( opCode : Int, data : Seq[Byte] ) : Either[Result,Int] = ???
+    * 
+    *     // we try to use the left projection but the
+    *     // for comprehension fails to compile
+    *     def processURL( url : String ) : Either[Result,Int] = {
+    *       for {
+    *         rawBytes                     <- loadURL( url ).left
+    *         Record( opCode, data, year ) <- parseRecord( rawBytes ).left
+    *         result                       <- process( opCode, data ).left if year >= 2011
+    *       } yield result
+    *     }
+    * }}}
+    *   Unfortunately, this fails to compile, because [[scala.util.Either.LeftProjection]] does not support
+    *   pattern-matching (required to extract `opCode`, `data`, and `year`) or filtering (which we perform based on `year`).
+    * 
+    *   Instead, we can left-bias the `Either`:
+    * {{{
+    *     val ErrIO              = 1
+    *     val ErrNoParse         = 2
+    *     val ErrBadYear         = 3
+    *     val ErrProcessorFailed = 4
+    * 
+    *     // left-bias Either 
+    *     val LeftBias = Either.LeftBias.withEmptyToken( ErrBadYear ) 
+    *     import LeftBias._
+    * 
+    *     case class Record( opCode : Int, data : Seq[Byte], year : Int )
+    *     trait Result
+    * 
+    *     def loadURL( url : String ) : Either[Seq[Byte],Int] = ???
+    *     def parseRecord( bytes : Seq[Byte] ) : Either[Record,Int] = ???
+    *     def process( opCode : Int, data : Seq[Byte] ) : Either[Result,Int] = ???
+    * 
+    *     // use Either directly, rather than a projection, in the for comprehension
+    *     def processURL( url : String ) : Either[Result,Int] = {
+    *       for {
+    *         rawBytes                     <- loadURL( url )
+    *         Record( opCode, data, year ) <- parseRecord( rawBytes )
+    *         result                       <- process( opCode, data ) if year >= 2011
+    *       } yield result
+    *     }
+    * }}}
+    *   An "empty" `Either` here could only result from the failure of the year filter,
+    *   so we set `ErrBadYear` to be the token supplied when the filtering fail. Note that
+    *   once the left-biased operations have been imported, a sequence `Either` yielding
+    *   values can be used directly in the for comprehension, without extractions of a projection
+    *   with `.left`.
+    * 
+    *   The scope of the left-biasing is the scope of the import. In our example above, our choice
+    *   of error token was very specific to this definition. In fact, it might have been better
+    *   to narrow the scope of the bias to within the `processURL(...)` function.
+    * {{{
+    *     // same definitions as above
+    *     // except the import statement sits within the method
+    *     def processURL( url : String ) : Either[Result,Int] = {
+    *       import LeftBias._
+    *       for {
+    *         rawBytes                     <- loadURL( url )
+    *         Record( opCode, data, year ) <- parseRecord( rawBytes )
+    *         result                       <- process( opCode, data ) if year >= 2011
+    *       } yield result
+    *     }
+    * }}}
+    *   Other times, we might define a convention suitable for use within an entire
+    *   package, in which case we can extend the trait [[Either.LeftBias! Either.LeftBias]]:
+    * {{{
+    *     package util {
+    *       object Err {
+    *         case object Empty extends Err( -1, "A series of operations yielded no suitable value." );
+    *         case object Explosion extends Err( Int.MaxValue, "Boom!");
+    *       }
+    *       class Err( val code : Int, val description : String )
+    *     }
+    * 
+    *     // `Either` will be left-biased in all traits, classes, and objects 
+    *     // belonging package `mypkg`
+    *     package object mypkg extends Either.LeftBias[util.Err] {
+    *       override val EmptyTokenDefinition = Either.LeftBias.withEmptyToken(util.Err.Empty);
+    *     }
+    * }}}
+    */ 
   final object LeftBias {
 
     private[Either] final val DefaultThrowingOps = withEmptyToken.Throwing( throw new NoSuchElementException( noSuchElementMessage( false ) ) );
 
+    /**
+      * A value class implementing the operations of a left-biased `Either`,
+      * which throws a `java.util.NoSuchElementException` if a filter operation
+      * or pattern match results in empty.
+      * 
+      * Typical use
+      * {{{
+      *   import Either.LeftBias._
+      * }}}
+      * For more, please see [[LeftBias$ LeftBias]].
+      */
     implicit class Ops[A,B]( val src : Either[A,B] ) extends AnyVal { // alas, we don't define a trait, but write all these ops twice, so we can avoid boxing here
 
       // monad ops
@@ -743,7 +905,44 @@ object Either {
       def toSeq                            : collection.Seq[A] = DefaultThrowingOps.toSeq( src );
     }
 
+    /**
+      * A factory for a typeclass instance which implements the operations of a left-biased `Either`. 
+      * An unsuccessful filter or pattern match will result in a Right containing a specified empty token of type `E`.
+      * 
+      * Typical use
+      * {{{
+      *   val LeftBias = Either.LeftBias.withEmptyToken(-1); //suitable for Either[A,Int]
+      *   import LeftBias._
+      * }}}
+      * For more, please see [[LeftBias$ LeftBias]].
+      */
     object withEmptyToken {
+      /**
+        * Implements the operations of a left-biased `Either`, whose specific behavior -- especially with respect
+        * to handling of an empty value resulting from a filter or failed pattern match -- is defined by
+        * constructor argument `opsTypeClass`.
+        * 
+        * Clients can extend this is they wish to defined specialized left-biased `Either` instances
+        * that define extra operations.
+        * {{{
+        *   val EmptyThrowable = {
+        *     // the stack-trace on construction has no relevance to operations that return this token
+        *     // so we clear that stack trace
+        *     val tmp = new NoSuchElementException("EMPTY -- A value was left empty after a failed filter or pattern match operation.");
+        *     tmp.setStackTrace( Array.empty[StackTraceElement] ); 
+        *     tmp
+        *   }
+        *   val LeftBias = Either.LeftBias.withEmptyToken[Throwable]( EmptyThrowable );
+        *   implicit class LeftBiasOps( src : Either[A,Throwable] ) extends Either.LeftBias.withEmptyToken.AbstractOps( src )( LeftBias ) {
+        *      def raise : Unit = {
+        *        src match {
+        *          case Left(_) => ();
+        *          case Right( t ) => throw t;
+        *        }
+        *      }
+        *   }
+        * }}}
+        */ 
       abstract class AbstractOps[A,B]( src : Either[A,B] )( opsTypeClass : Either.LeftBias.withEmptyToken.Generic[B] ) {
 
         // monad ops
@@ -761,6 +960,11 @@ object Either {
         def toSeq                            : collection.Seq[A] = opsTypeClass.toSeq( src );
       }
 
+      /**
+        * Implements the operations of a left-biased `Either`, whose specific behavior -- especially with respect
+        * to handling of an empty value resulting from a filter or failed pattern match -- is defined by
+        * constructor argument `opsTypeClass`.
+        */ 
       implicit final class Ops[A,B]( src : Either[A,B] )( implicit opsTypeClass : Either.LeftBias.withEmptyToken.Generic[B] ) extends AbstractOps( src )( opsTypeClass );
 
       trait Generic[+E] extends Either.WithEmpty[E]{
@@ -834,21 +1038,111 @@ object Either {
       }
       def apply[E]( token : E ) : withEmptyToken[E] = new withEmptyToken( token );
 
+      /**
+        * A factory for a typeclass instance which implements the operations of a left-biased `Either` 
+        * that signals empty by throwing some Throwable as specified in a by-name parameter.
+        * 
+        * Typical use
+        * {{{
+        *   val LeftBias = Either.LeftBias.withEmptyToken.Throwing( new NoValueAvailableException ); 
+        *   import LeftBias._
+        * }}}
+        * For more, please see [[LeftBias$ LeftBias]].
+        */
       object Throwing {
         def apply( throwableBuilder : =>java.lang.Throwable ) : Throwing = new Throwing( throwableBuilder );
       }
+      /**
+        * A typeclass instance which implements the operations of a left-biased `Either` 
+        * that signals empty by throwing some Throwable as specified in a by-name parameter.
+        * 
+        * Typical use
+        * {{{
+        *   val LeftBias = Either.LeftBias.withEmptyToken.Throwing( new NoValueAvailableException ); 
+        *   import LeftBias._
+        * }}}
+        * For more, please see [[LeftBias$ LeftBias]].
+        */
       final class Throwing private( throwableBuilder : =>java.lang.Throwable ) extends withEmptyToken.Generic[Nothing] {
         override def empty : Nothing = throw throwableBuilder;
       }
     }
+    /**
+      * A typeclass instance which implements the operations of a left-biased `Either`. 
+      * An unsuccessful filter or pattern match will result in a Right containing a specified empty token of type `E`.
+      * 
+      * Typical use
+      * {{{
+      *   val LeftBias = Either.LeftBias.withEmptyToken(-1); //suitable for Either[A,Int]
+      *   import LeftBias._
+      * }}}
+      * For more, please see [[LeftBias$ LeftBias]].
+      */
     final class withEmptyToken[+E] private( override val empty : E ) extends withEmptyToken.Generic[E] {
       override protected val rightEmpty : Right[Nothing,E] = Right(empty);
     }
-  } 
-  trait LeftBias[B] {
-    val EmptyTokenDefinition : Either.LeftBias.withEmptyToken.Generic[B] = LeftBias.DefaultThrowingOps;
+  }
+  /**
+    * May be extends by classes, objects, traits, and packages (via package objects).
+    * 
+    * Within entities that extend this trait
+    * objects of type `Either` will be left-biased, and have
+    * the full-suite of left-biased operations (including operations suitable to for
+    * comprehensions) automatically made available.
+    * 
+    * By default, transformation of a left-biased `Either` to empty by a failed pattern
+    * match or filter operation will provoke a `java.util.NoSuchElementException`. 
+    * Override [[EmptyTokenDefinition]] to prevent this and have emptiness
+    * represented by an error token of type `R`.
+    * 
+    * {{{
+    * class Clown extends Either.LeftBias[Clown.Error] {
+    *   import Clown.{Cash,Laugh,Error};
+    * 
+    *   // override to specify an empty token
+    *   override val EmptyTokenDefinition = Either.LeftBias.withEmptyToken(Error.Empty);
+    * 
+    *   // use Either values directly in for comprehensions
+    *   def perform : Either[Cash,Error] = {
+    *      for {
+    *        laugh <- makeFunny
+    *        money <- begForCash( laugh ) if laugh.loudness > 2
+    *      } yield money
+    *   }
+    * 
+    *   def makeFunny : Either[Laugh,Error] = ???
+    *   def begForCash( laugh : Laugh )  : Either[Cash,Error] = ???
+    * }
+    * object Clown {
+    *   final object Error {
+    *     case object Empty extends Error;
+    *     case object JokeBombed extends Error;
+    *     case object NoAudience extends Error;
+    *     case object Cheapskates extends Error;
+    *   }
+    *   sealed trait Error;
+    * 
+    *   case class Laugh( loudness : Int );
+    *   case class Cash( quantity : Int, currencyCode : String );
+    * }
+    * }}}
+    * 
+    */ 
+  trait LeftBias[R] { // we use R rather than B here to emphasize to users that it is the right-side type that must be specified here
+    /**
+      * Override this value to specify an empty token of type `R`. A Right object with this
+      * value will be returned by a failed filter or pattern match operation. If this
+      * value is not overridden, the default behavior will be to throw a `java.util.NoSuchElementException`
+      * on an unmatched pattern or filter. 
+      * {{{
+      *   // suppose errors on left-biased Either values are represented with Int codes
+      *   // with -1 representing "empty"
+      *   override val EmptyTokenDefinition = Either.LeftBias.withEmptyToken(-1);
+      * }}}
+      */ 
+    val EmptyTokenDefinition : Either.LeftBias.withEmptyToken.Generic[R] = LeftBias.DefaultThrowingOps;
 
-    implicit def toLeftBiasEtherOps[A]( src : Either[A,B] ) : LeftBias.withEmptyToken.AbstractOps[A,B] = new LeftBias.withEmptyToken.Ops[A,B]( src )( EmptyTokenDefinition );
+    implicit def toLeftBiasEtherOps[A]( src : Either[A,R] ) : LeftBias.withEmptyToken.AbstractOps[A,R] = new LeftBias.withEmptyToken.Ops[A,R]( src )( EmptyTokenDefinition );
   }
 
   private def noSuchElementMessage[A,B]( rightBias : Boolean, mbEither : Option[Either[A,B]] = None ) = {
