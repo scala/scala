@@ -636,7 +636,14 @@ object Either {
       implicit final class Ops[A,B]( src : Either[A,B] )( implicit opsTypeClass : Either.RightBias.withEmptyToken.Generic[A] ) extends AbstractOps( src )( opsTypeClass );
 
       trait Generic[+E] extends Either.WithEmpty[E]{
-        protected def leftEmpty : Left[E,Nothing] = Left(empty);
+        /*
+         * In order to meet the contract of withFilter(...) [from which this method is called],
+         * no object allocation should occur on each non-Exception-raising call of this method.
+         * Raising an exception is "fine" (in that it represents a hackish violation of the contract
+         * anyway), as is overriding this with a val. But no new Left should be created on each
+         * invocation.
+         */ 
+        protected def leftEmpty : Left[E,Nothing];
 
         // monad ops
         def flatMap[A>:E,AA>:A,B,Z]( src : Either[A,B] )( f : B => Either[AA,Z] ) : Either[AA,Z] = {
@@ -710,6 +717,8 @@ object Either {
         def apply( throwableBuilder : =>java.lang.Throwable ) : Throwing = new Throwing( throwableBuilder );
       }
       final class Throwing private( throwableBuilder : =>java.lang.Throwable ) extends withEmptyToken.Generic[Nothing] {
+        override protected def leftEmpty : Nothing = empty;
+
         override def empty : Nothing = throw throwableBuilder;
       }
     }
@@ -968,7 +977,14 @@ object Either {
       implicit final class Ops[A,B]( src : Either[A,B] )( implicit opsTypeClass : Either.LeftBias.withEmptyToken.Generic[B] ) extends AbstractOps( src )( opsTypeClass );
 
       trait Generic[+E] extends Either.WithEmpty[E]{
-        protected def rightEmpty : Right[Nothing,E] = Right(empty);
+        /*
+         * In order to meet the contract of withFilter(...) [from which this method is called],
+         * no object allocation should occur on each non-Exception-raising call of this method.
+         * Raising an exception is "fine" (in that it represents a hackish violation of the contract
+         * anyway), as is overriding this with a val. But no new Right should be created on each
+         * invocation.
+         */ 
+        protected def rightEmpty : Right[Nothing,E]; 
 
         // monad ops
         def flatMap[A, B>:E, BB>:B ,Z]( src : Either[A,B] )( f : A => Either[Z,BB] ) : Either[Z,BB] = {
@@ -1064,6 +1080,8 @@ object Either {
         * For more, please see [[LeftBias$ LeftBias]].
         */
       final class Throwing private( throwableBuilder : =>java.lang.Throwable ) extends withEmptyToken.Generic[Nothing] {
+        override protected def rightEmpty : Nothing = empty;
+
         override def empty : Nothing = throw throwableBuilder;
       }
     }
