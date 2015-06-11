@@ -594,9 +594,9 @@ object Either {
   trait WithEmpty[+E] {
     def empty : E;
   }
-  final object RightBiased {
+  final object RightBias {
 
-    private[Either] final val DefaultThrowingOps = WithEmptyToken.Throwing( throw new NoSuchElementException( noSuchElementMessage( true ) ) );
+    private[Either] final val DefaultThrowingOps = withEmptyToken.Throwing( throw new NoSuchElementException( noSuchElementMessage( true ) ) );
 
     implicit class Ops[A,B]( val src : Either[A,B] ) extends AnyVal { // alas, we don't define a trait, but write all these ops twice, so we can avoid boxing here
 
@@ -617,8 +617,8 @@ object Either {
       def fold[Z]( ifLeft : A => Z )( ifRight : B => Z ) : Z = DefaultThrowingOps.fold( src )( ifLeft )( ifRight )
     }
 
-    object WithEmptyToken {
-      abstract class AbstractOps[A,B]( src : Either[A,B] )( opsTypeClass : Either.RightBiased.WithEmptyToken.Generic[A] ) {
+    object withEmptyToken {
+      abstract class AbstractOps[A,B]( src : Either[A,B] )( opsTypeClass : Either.RightBias.withEmptyToken.Generic[A] ) {
 
         // monad ops
         def flatMap[AA >: A, Z]( f : B => Either[AA,Z] ) : Either[AA,Z] = opsTypeClass.flatMap[A,AA,B,Z]( src )( f );
@@ -637,7 +637,7 @@ object Either {
         def fold[Z]( ifLeft : A => Z )( ifRight : B => Z ) : Z = opsTypeClass.fold( src )( ifLeft )( ifRight )
       }
 
-      implicit final class Ops[A,B]( src : Either[A,B] )( implicit opsTypeClass : Either.RightBiased.WithEmptyToken.Generic[A] ) extends AbstractOps( src )( opsTypeClass );
+      implicit final class Ops[A,B]( src : Either[A,B] )( implicit opsTypeClass : Either.RightBias.withEmptyToken.Generic[A] ) extends AbstractOps( src )( opsTypeClass );
 
       trait Generic[+E] extends Either.WithEmpty[E]{
         protected def leftEmpty : Left[E,Nothing] = Left(empty);
@@ -712,29 +712,29 @@ object Either {
           }
         }
 
-        implicit def toOps[A>:E,B]( src : Either[A,B] ) : RightBiased.WithEmptyToken.Ops[A,B] = new RightBiased.WithEmptyToken.Ops[A,B]( src )( this )
+        implicit def toOps[A>:E,B]( src : Either[A,B] ) : RightBias.withEmptyToken.Ops[A,B] = new RightBias.withEmptyToken.Ops[A,B]( src )( this )
       }
-      def apply[E]( token : E ) : WithEmptyToken[E] = new WithEmptyToken( token );
+      def apply[E]( token : E ) : withEmptyToken[E] = new withEmptyToken( token );
 
       object Throwing {
         def apply( throwableBuilder : =>java.lang.Throwable ) : Throwing = new Throwing( throwableBuilder );
       }
-      final class Throwing private( throwableBuilder : =>java.lang.Throwable ) extends WithEmptyToken.Generic[Nothing] {
+      final class Throwing private( throwableBuilder : =>java.lang.Throwable ) extends withEmptyToken.Generic[Nothing] {
         override def empty : Nothing = throw throwableBuilder;
       }
     }
-    final class WithEmptyToken[+E] private( override val empty : E ) extends WithEmptyToken.Generic[E] {
+    final class withEmptyToken[+E] private( override val empty : E ) extends withEmptyToken.Generic[E] {
       override protected val leftEmpty : Left[E,Nothing] = Left(empty);
     }
   }
-  trait RightBiased[A] {
-    val EmptyTokenDefinition : Either.RightBiased.WithEmptyToken.Generic[A] = RightBiased.DefaultThrowingOps;
+  trait RightBias[A] {
+    val EmptyTokenDefinition : Either.RightBias.withEmptyToken.Generic[A] = RightBias.DefaultThrowingOps;
 
-    implicit def toRightBiasedEtherOps[B]( src : Either[A,B] ) : RightBiased.WithEmptyToken.AbstractOps[A,B] = new RightBiased.WithEmptyToken.Ops[A,B]( src )( EmptyTokenDefinition );
+    implicit def toRightBiasEtherOps[B]( src : Either[A,B] ) : RightBias.withEmptyToken.AbstractOps[A,B] = new RightBias.withEmptyToken.Ops[A,B]( src )( EmptyTokenDefinition );
   }
-  final object LeftBiased {
+  final object LeftBias {
 
-    private[Either] final val DefaultThrowingOps = WithEmptyToken.Throwing( throw new NoSuchElementException( noSuchElementMessage( false ) ) );
+    private[Either] final val DefaultThrowingOps = withEmptyToken.Throwing( throw new NoSuchElementException( noSuchElementMessage( false ) ) );
 
     implicit class Ops[A,B]( val src : Either[A,B] ) extends AnyVal { // alas, we don't define a trait, but write all these ops twice, so we can avoid boxing here
 
@@ -755,8 +755,8 @@ object Either {
       def fold[Z]( ifLeft : A => Z )( ifRight : B => Z ) : Z = DefaultThrowingOps.fold( src )( ifLeft )( ifRight )
     }
 
-    object WithEmptyToken {
-      abstract class AbstractOps[A,B]( src : Either[A,B] )( opsTypeClass : Either.LeftBiased.WithEmptyToken.Generic[B] ) {
+    object withEmptyToken {
+      abstract class AbstractOps[A,B]( src : Either[A,B] )( opsTypeClass : Either.LeftBias.withEmptyToken.Generic[B] ) {
 
         // monad ops
         def flatMap[BB >: B, Z]( f : A => Either[Z,BB] ) : Either[Z,BB] = opsTypeClass.flatMap[A,B,BB,Z]( src )( f );
@@ -775,7 +775,7 @@ object Either {
         def fold[Z]( ifLeft : A => Z )( ifRight : B => Z ) : Z = opsTypeClass.fold( src )( ifLeft )( ifRight )
       }
 
-      implicit final class Ops[A,B]( src : Either[A,B] )( implicit opsTypeClass : Either.LeftBiased.WithEmptyToken.Generic[B] ) extends AbstractOps( src )( opsTypeClass );
+      implicit final class Ops[A,B]( src : Either[A,B] )( implicit opsTypeClass : Either.LeftBias.withEmptyToken.Generic[B] ) extends AbstractOps( src )( opsTypeClass );
 
       trait Generic[+E] extends Either.WithEmpty[E]{
         protected def rightEmpty : Right[Nothing,E] = Right(empty);
@@ -850,34 +850,34 @@ object Either {
           }
         }
 
-        implicit def toOps[A,B>:E]( src : Either[A,B] ) : LeftBiased.WithEmptyToken.Ops[A,B] = new LeftBiased.WithEmptyToken.Ops[A,B]( src )( this )
+        implicit def toOps[A,B>:E]( src : Either[A,B] ) : LeftBias.withEmptyToken.Ops[A,B] = new LeftBias.withEmptyToken.Ops[A,B]( src )( this )
       }
-      def apply[E]( token : E ) : WithEmptyToken[E] = new WithEmptyToken( token );
+      def apply[E]( token : E ) : withEmptyToken[E] = new withEmptyToken( token );
 
       object Throwing {
         def apply( throwableBuilder : =>java.lang.Throwable ) : Throwing = new Throwing( throwableBuilder );
       }
-      final class Throwing private( throwableBuilder : =>java.lang.Throwable ) extends WithEmptyToken.Generic[Nothing] {
+      final class Throwing private( throwableBuilder : =>java.lang.Throwable ) extends withEmptyToken.Generic[Nothing] {
         override def empty : Nothing = throw throwableBuilder;
       }
     }
-    final class WithEmptyToken[+E] private( override val empty : E ) extends WithEmptyToken.Generic[E] {
+    final class withEmptyToken[+E] private( override val empty : E ) extends withEmptyToken.Generic[E] {
       override protected val rightEmpty : Right[Nothing,E] = Right(empty);
     }
   } 
-  trait LeftBiased[B] {
-    val EmptyTokenDefinition : Either.LeftBiased.WithEmptyToken.Generic[B] = LeftBiased.DefaultThrowingOps;
+  trait LeftBias[B] {
+    val EmptyTokenDefinition : Either.LeftBias.withEmptyToken.Generic[B] = LeftBias.DefaultThrowingOps;
 
-    implicit def toLeftBiasedEtherOps[A]( src : Either[A,B] ) : LeftBiased.WithEmptyToken.AbstractOps[A,B] = new LeftBiased.WithEmptyToken.Ops[A,B]( src )( EmptyTokenDefinition );
+    implicit def toLeftBiasEtherOps[A]( src : Either[A,B] ) : LeftBias.withEmptyToken.AbstractOps[A,B] = new LeftBias.withEmptyToken.Ops[A,B]( src )( EmptyTokenDefinition );
   }
 
-  private def noSuchElementMessage[A,B]( rightBiased : Boolean, mbEither : Option[Either[A,B]] = None ) = {
-    val bias = if ( rightBiased ) "Right-biased" else "Left-biased";
-    val withToken = if ( rightBiased ) "RightBiased.WithEmptyToken" else "LeftBiased.WithEmptyToken";
+  private def noSuchElementMessage[A,B]( rightBias : Boolean, mbEither : Option[Either[A,B]] = None ) = {
+    val bias = if ( rightBias ) "Right-biased" else "Left-biased";
+    val withToken = if ( rightBias ) "RightBias.withEmptyToken" else "LeftBias.withEmptyToken";
     val eitherRep = mbEither.fold(" ")( either => s" '${either}' " );
-    s"${bias} Either${eitherRep}filtered to empty or failed to match a pattern. Consider implementing ${withToken}"
+    s"${bias} Either${eitherRep}filtered to empty or failed to match a pattern. Consider using ${withToken}"
   }
 
-  private val NoSuchLeftMessage = "Can't get a value from a LeftBiased Either which is in fact a Right.";
-  private val NoSuchRightMessage = "Can't get a value from a RightBiased Either which is in fact a Left.";
+  private val NoSuchLeftMessage = "Can't get a value from a left-biased Either which is in fact a Right.";
+  private val NoSuchRightMessage = "Can't get a value from a right-biased Either which is in fact a Left.";
 }

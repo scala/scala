@@ -113,8 +113,8 @@ object Test extends Properties("Either") {
   }
 
 
-  object CheckLeftBiased {
-    import Either.LeftBiased._
+  object CheckLeftBias {
+    import Either.LeftBias._
 
     val prop_value = forAll((n: Int) => Left(n).get == n)
 
@@ -197,8 +197,8 @@ object Test extends Properties("Either") {
     })
   }
 
-  object CheckLeftBiasedWithEmptyToken {
-    val Bias = Either.LeftBiased.WithEmptyToken(-1);
+  object CheckLeftBiasWithEmptyToken {
+    val Bias = Either.LeftBias.withEmptyToken(-1);
     import Bias._;
 
     val prop_withFilter = forAll((e: Either[Int, Int] ) => {
@@ -221,8 +221,8 @@ object Test extends Properties("Either") {
     })
   }
 
-  object CheckRightBiased {
-    import Either.RightBiased._
+  object CheckRightBias {
+    import Either.RightBias._
 
     val prop_value = forAll((n: Int) => Right(n).get == n)
 
@@ -305,8 +305,8 @@ object Test extends Properties("Either") {
     })
   }
 
-  object CheckRightBiasedWithEmptyToken {
-    val Bias = Either.RightBiased.WithEmptyToken(-1);
+  object CheckRightBiasWithEmptyToken {
+    val Bias = Either.RightBias.withEmptyToken(-1);
     import Bias._;
 
     val prop_withFilter = forAll((e: Either[Int, Int] ) => {
@@ -383,43 +383,43 @@ object Test extends Properties("Either") {
       ("Right.prop_seq", CheckRightProjection.prop_seq),
       ("Right.prop_option", CheckRightProjection.prop_option),
 
-      ("LeftBiased.prop_value", CheckLeftBiased.prop_value),
-      ("LeftBiased.prop_getOrElse", CheckLeftBiased.prop_getOrElse),
-      ("LeftBiased.prop_forall", CheckLeftBiased.prop_forall),
-      ("LeftBiased.prop_exists", CheckLeftBiased.prop_exists),
-      ("LeftBiased.prop_flatMapLeftIdentity", CheckLeftBiased.prop_flatMapLeftIdentity),
-      ("LeftBiased.prop_flatMapRightIdentity", CheckLeftBiased.prop_flatMapRightIdentity),
-      ("LeftBiased.prop_flatMapComposition", CheckLeftBiased.prop_flatMapComposition),
-      ("LeftBiased.prop_mapIdentity", CheckLeftBiased.prop_mapIdentity),
-      ("LeftBiased.prop_mapComposition", CheckLeftBiased.prop_mapComposition),
-      ("LeftBiased.prop_seq", CheckLeftBiased.prop_seq),
-      ("LeftBiased.prop_option", CheckLeftBiased.prop_option),
-      ("LeftBiased.prop_withFilter", CheckLeftBiased.prop_withFilter),
-      ("LeftBiased.prop_extractTuple", CheckLeftBiased.prop_extractTuple),
-      ("LeftBiased.prop_assignVariable", CheckLeftBiased.prop_assignVariable),
-      ("LeftBiased.prop_filterInFor", CheckLeftBiased.prop_filterInFor),
+      ("LeftBias.prop_value", CheckLeftBias.prop_value),
+      ("LeftBias.prop_getOrElse", CheckLeftBias.prop_getOrElse),
+      ("LeftBias.prop_forall", CheckLeftBias.prop_forall),
+      ("LeftBias.prop_exists", CheckLeftBias.prop_exists),
+      ("LeftBias.prop_flatMapLeftIdentity", CheckLeftBias.prop_flatMapLeftIdentity),
+      ("LeftBias.prop_flatMapRightIdentity", CheckLeftBias.prop_flatMapRightIdentity),
+      ("LeftBias.prop_flatMapComposition", CheckLeftBias.prop_flatMapComposition),
+      ("LeftBias.prop_mapIdentity", CheckLeftBias.prop_mapIdentity),
+      ("LeftBias.prop_mapComposition", CheckLeftBias.prop_mapComposition),
+      ("LeftBias.prop_seq", CheckLeftBias.prop_seq),
+      ("LeftBias.prop_option", CheckLeftBias.prop_option),
+      ("LeftBias.prop_withFilter", CheckLeftBias.prop_withFilter),
+      ("LeftBias.prop_extractTuple", CheckLeftBias.prop_extractTuple),
+      ("LeftBias.prop_assignVariable", CheckLeftBias.prop_assignVariable),
+      ("LeftBias.prop_filterInFor", CheckLeftBias.prop_filterInFor),
 
-      ("LeftBiasedWithEmptyToken.prop_withFilter", CheckLeftBiasedWithEmptyToken.prop_withFilter),
-      ("LeftBiasedWithEmptyToken.prop_filterInFor", CheckLeftBiasedWithEmptyToken.prop_filterInFor),
+      ("LeftBiasWithEmptyToken.prop_withFilter", CheckLeftBiasWithEmptyToken.prop_withFilter),
+      ("LeftBiasWithEmptyToken.prop_filterInFor", CheckLeftBiasWithEmptyToken.prop_filterInFor),
 
-      ("RightBiased.prop_value", CheckRightBiased.prop_value),
-      ("RightBiased.prop_getOrElse", CheckRightBiased.prop_getOrElse),
-      ("RightBiased.prop_forall", CheckRightBiased.prop_forall),
-      ("RightBiased.prop_exists", CheckRightBiased.prop_exists),
-      ("RightBiased.prop_flatMapLeftIdentity", CheckRightBiased.prop_flatMapLeftIdentity),
-      ("RightBiased.prop_flatMapRightIdentity", CheckRightBiased.prop_flatMapRightIdentity),
-      ("RightBiased.prop_flatMapComposition", CheckRightBiased.prop_flatMapComposition),
-      ("RightBiased.prop_mapIdentity", CheckRightBiased.prop_mapIdentity),
-      ("RightBiased.prop_mapComposition", CheckRightBiased.prop_mapComposition),
-      ("RightBiased.prop_seq", CheckRightBiased.prop_seq),
-      ("RightBiased.prop_option", CheckRightBiased.prop_option),
-      ("RightBiased.prop_withFilter", CheckRightBiased.prop_withFilter),
-      ("RightBiased.prop_extractTuple", CheckRightBiased.prop_extractTuple),
-      ("RightBiased.prop_assignVariable", CheckRightBiased.prop_assignVariable),
-      ("RightBiased.prop_filterInFor", CheckRightBiased.prop_filterInFor),
+      ("RightBias.prop_value", CheckRightBias.prop_value),
+      ("RightBias.prop_getOrElse", CheckRightBias.prop_getOrElse),
+      ("RightBias.prop_forall", CheckRightBias.prop_forall),
+      ("RightBias.prop_exists", CheckRightBias.prop_exists),
+      ("RightBias.prop_flatMapLeftIdentity", CheckRightBias.prop_flatMapLeftIdentity),
+      ("RightBias.prop_flatMapRightIdentity", CheckRightBias.prop_flatMapRightIdentity),
+      ("RightBias.prop_flatMapComposition", CheckRightBias.prop_flatMapComposition),
+      ("RightBias.prop_mapIdentity", CheckRightBias.prop_mapIdentity),
+      ("RightBias.prop_mapComposition", CheckRightBias.prop_mapComposition),
+      ("RightBias.prop_seq", CheckRightBias.prop_seq),
+      ("RightBias.prop_option", CheckRightBias.prop_option),
+      ("RightBias.prop_withFilter", CheckRightBias.prop_withFilter),
+      ("RightBias.prop_extractTuple", CheckRightBias.prop_extractTuple),
+      ("RightBias.prop_assignVariable", CheckRightBias.prop_assignVariable),
+      ("RightBias.prop_filterInFor", CheckRightBias.prop_filterInFor),
 
-      ("RightBiasedWithEmptyToken.prop_withFilter", CheckRightBiasedWithEmptyToken.prop_withFilter),
-      ("RightBiasedWithEmptyToken.prop_filterInFor", CheckRightBiasedWithEmptyToken.prop_filterInFor),
+      ("RightBiasWithEmptyToken.prop_withFilter", CheckRightBiasWithEmptyToken.prop_withFilter),
+      ("RightBiasWithEmptyToken.prop_filterInFor", CheckRightBiasWithEmptyToken.prop_filterInFor),
 
       ("prop_Either_left", prop_Either_left),
       ("prop_Either_right", prop_Either_right),
