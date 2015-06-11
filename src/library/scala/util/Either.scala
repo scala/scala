@@ -613,8 +613,6 @@ object Either {
       def getOrElse[ BB >: B ]( or : =>BB ) : BB                = DefaultThrowingOps.getOrElse[A,B,BB]( src )( or );
       def toOption                          : Option[B]         = DefaultThrowingOps.toOption( src );
       def toSeq                             : collection.Seq[B] = DefaultThrowingOps.toSeq( src );
-
-      def fold[Z]( ifLeft : A => Z )( ifRight : B => Z ) : Z = DefaultThrowingOps.fold( src )( ifLeft )( ifRight )
     }
 
     object withEmptyToken {
@@ -633,8 +631,6 @@ object Either {
         def getOrElse[ BB >: B ]( or : =>BB ) : BB                = opsTypeClass.getOrElse[A,B,BB]( src )( or );
         def toOption                          : Option[B]         = opsTypeClass.toOption( src );
         def toSeq                             : collection.Seq[B] = opsTypeClass.toSeq( src );
-
-        def fold[Z]( ifLeft : A => Z )( ifRight : B => Z ) : Z = opsTypeClass.fold( src )( ifLeft )( ifRight )
       }
 
       implicit final class Ops[A,B]( src : Either[A,B] )( implicit opsTypeClass : Either.RightBias.withEmptyToken.Generic[A] ) extends AbstractOps( src )( opsTypeClass );
@@ -705,12 +701,6 @@ object Either {
             case Right( b ) => collection.Seq( b );
           }
         }
-        def fold[A>:E,B,Z]( src : Either[A,B] )( ifLeft : A => Z )( ifRight : B => Z ) : Z = {
-          src match {
-            case Left( a ) => ifLeft( a );
-            case Right( b ) => ifRight( b );
-          }
-        }
 
         implicit def toOps[A>:E,B]( src : Either[A,B] ) : RightBias.withEmptyToken.Ops[A,B] = new RightBias.withEmptyToken.Ops[A,B]( src )( this )
       }
@@ -751,8 +741,6 @@ object Either {
       def getOrElse[AA >: A ]( or : =>AA ) : AA                = DefaultThrowingOps.getOrElse[A,AA,B]( src )( or );
       def toOption                         : Option[A]         = DefaultThrowingOps.toOption( src );
       def toSeq                            : collection.Seq[A] = DefaultThrowingOps.toSeq( src );
-   
-      def fold[Z]( ifLeft : A => Z )( ifRight : B => Z ) : Z = DefaultThrowingOps.fold( src )( ifLeft )( ifRight )
     }
 
     object withEmptyToken {
@@ -771,8 +759,6 @@ object Either {
         def getOrElse[AA >: A ]( or : =>AA ) : AA                = opsTypeClass.getOrElse[A,AA,B]( src )( or );
         def toOption                         : Option[A]         = opsTypeClass.toOption( src );
         def toSeq                            : collection.Seq[A] = opsTypeClass.toSeq( src );
-
-        def fold[Z]( ifLeft : A => Z )( ifRight : B => Z ) : Z = opsTypeClass.fold( src )( ifLeft )( ifRight )
       }
 
       implicit final class Ops[A,B]( src : Either[A,B] )( implicit opsTypeClass : Either.LeftBias.withEmptyToken.Generic[B] ) extends AbstractOps( src )( opsTypeClass );
@@ -841,12 +827,6 @@ object Either {
           src match {
             case Left( a )  => collection.Seq( a );
             case Right( _ ) => collection.Seq.empty[A];
-          }
-        }
-        def fold[A,B>:E,Z]( src : Either[A,B] )( ifLeft : A => Z )( ifRight : B => Z ) : Z = {
-          src match {
-            case Left( a ) => ifLeft( a );
-            case Right( b ) => ifRight( b );
           }
         }
 
