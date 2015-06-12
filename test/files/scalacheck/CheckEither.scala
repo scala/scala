@@ -195,6 +195,32 @@ object Test extends Properties("Either") {
         e == (for ( x <- e ) yield x) // right should be unchanged
       }
     })
+
+    val prop_xget = forAll((n: Int) => Right(n).xget == n)
+
+    val prop_xgetOrElse = forAll((e: Either[Int, Int], or: Int) => e.xgetOrElse(or) == (e match {
+      case Left(_)  => or
+      case Right(b) => b
+    }))
+
+    val prop_xmapIdentity = forAll((e: Either[Int, Int]) => e.xmap(x => x) == e)
+
+    val prop_xmapComposition = forAll((e: Either[Int, String]) => {
+      def f(s: String) = s.toLowerCase
+      def g(s: String) = s.reverse
+      e.xmap(x => f(g(x))) == e.xmap(x => g(x)).xmap(f(_))
+    })
+
+    val prop_isLeftBiased = forAll((e: Either[Int, String]) => e.isLeftBiased)
+
+    val prop_isRightBiased = forAll((e: Either[Int, String]) => !e.isRightBiased)
+
+    val prop_conformsToBias = forAll((e: Either[Int, String]) => {
+      e match {
+        case Left(_)  => e.conformsToBias == true
+        case Right(_) => e.conformsToBias == false
+      }
+    })
   }
 
   object CheckLeftBiasWithEmptyToken {
@@ -217,6 +243,16 @@ object Test extends Properties("Either") {
         (for ( x <- e if passThru ) yield x) == Right[Int,Int](-1)
       } else {
         e == (for ( x <- e ) yield x) // right should be unchanged
+      }
+    })
+
+    val prop_replaceIfEmpty = forAll((e: Either[String, Int], condition : Boolean) => {
+      if ( e.isLeft ) {
+        val filtered = for( v <- e if condition ) yield v
+        val check = filtered.replaceIfEmpty(99);
+        check == (if ( condition ) e else Right(99))
+      } else {
+        true
       }
     })
   }
@@ -303,6 +339,32 @@ object Test extends Properties("Either") {
         e == (for ( x <- e ) yield x) // left should be unchanged
       }
     })
+
+    val prop_xget = forAll((n: Int) => Left(n).xget == n)
+
+    val prop_xgetOrElse = forAll((e: Either[Int, Int], or: Int) => e.xgetOrElse(or) == (e match {
+      case Left(a)  => a
+      case Right(_) => or
+    }))
+
+    val prop_xmapIdentity = forAll((e: Either[Int, Int]) => e.xmap(x => x) == e)
+
+    val prop_xmapComposition = forAll((e: Either[String, Int]) => {
+      def f(s: String) = s.toLowerCase
+      def g(s: String) = s.reverse
+      e.xmap(x => f(g(x))) == e.xmap(x => g(x)).xmap(f(_))
+    })
+
+    val prop_isLeftBiased = forAll((e: Either[Int, String]) => !e.isLeftBiased)
+
+    val prop_isRightBiased = forAll((e: Either[Int, String]) => e.isRightBiased)
+
+    val prop_conformsToBias = forAll((e: Either[Int, String]) => {
+      e match {
+        case Left(_)  => e.conformsToBias == false
+        case Right(_) => e.conformsToBias == true
+      }
+    })
   }
 
   object CheckRightBiasWithEmptyToken {
@@ -325,6 +387,16 @@ object Test extends Properties("Either") {
         (for ( x <- e if passThru ) yield x) == Left[Int,Int](-1)
       } else {
         e == (for ( x <- e ) yield x) // left should be unchanged
+      }
+    })
+
+    val prop_replaceIfEmpty = forAll((e: Either[Int, String], condition : Boolean) => {
+      if (e.isRight) {
+        val filtered = for( v <- e if condition ) yield v
+        val check = filtered.replaceIfEmpty(99);
+        check == (if ( condition ) e else Left(99))
+      } else {
+        true
       }
     })
   }
@@ -398,9 +470,17 @@ object Test extends Properties("Either") {
       ("LeftBias.prop_extractTuple", CheckLeftBias.prop_extractTuple),
       ("LeftBias.prop_assignVariable", CheckLeftBias.prop_assignVariable),
       ("LeftBias.prop_filterInFor", CheckLeftBias.prop_filterInFor),
+      ("LeftBias.prop_xget", CheckLeftBias.prop_xget),
+      ("LeftBias.prop_xgetOrElse", CheckLeftBias.prop_xgetOrElse),
+      ("LeftBias.prop_xmapIdentity", CheckLeftBias.prop_xmapIdentity),
+      ("LeftBias.prop_xmapComposition", CheckLeftBias.prop_xmapComposition),
+      ("LeftBias.prop_isLeftBiased", CheckLeftBias.prop_isLeftBiased),
+      ("LeftBias.prop_isRightBiased", CheckLeftBias.prop_isRightBiased),
+      ("LeftBias.prop_conformsToBias", CheckLeftBias.prop_conformsToBias),
 
       ("LeftBiasWithEmptyToken.prop_withFilter", CheckLeftBiasWithEmptyToken.prop_withFilter),
       ("LeftBiasWithEmptyToken.prop_filterInFor", CheckLeftBiasWithEmptyToken.prop_filterInFor),
+      ("LeftBiasWithEmptyToken.prop_replaceIfEmpty", CheckLeftBiasWithEmptyToken.prop_replaceIfEmpty),
 
       ("RightBias.prop_value", CheckRightBias.prop_value),
       ("RightBias.prop_getOrElse", CheckRightBias.prop_getOrElse),
@@ -417,9 +497,17 @@ object Test extends Properties("Either") {
       ("RightBias.prop_extractTuple", CheckRightBias.prop_extractTuple),
       ("RightBias.prop_assignVariable", CheckRightBias.prop_assignVariable),
       ("RightBias.prop_filterInFor", CheckRightBias.prop_filterInFor),
+      ("RightBias.prop_xget", CheckRightBias.prop_xget),
+      ("RightBias.prop_xgetOrElse", CheckRightBias.prop_xgetOrElse),
+      ("RightBias.prop_xmapIdentity", CheckRightBias.prop_xmapIdentity),
+      ("RightBias.prop_xmapComposition", CheckRightBias.prop_xmapComposition),
+      ("RightBias.prop_isLeftBiased", CheckRightBias.prop_isLeftBiased),
+      ("RightBias.prop_isRightBiased", CheckRightBias.prop_isRightBiased),
+      ("RightBias.prop_conformsToBias", CheckRightBias.prop_conformsToBias),
 
       ("RightBiasWithEmptyToken.prop_withFilter", CheckRightBiasWithEmptyToken.prop_withFilter),
       ("RightBiasWithEmptyToken.prop_filterInFor", CheckRightBiasWithEmptyToken.prop_filterInFor),
+      ("RightBiasWithEmptyToken.prop_replaceIfEmpty", CheckRightBiasWithEmptyToken.prop_replaceIfEmpty),
 
       ("prop_Either_left", prop_Either_left),
       ("prop_Either_right", prop_Either_right),
