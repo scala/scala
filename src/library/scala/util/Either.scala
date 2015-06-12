@@ -597,8 +597,8 @@ object Either {
 
     def isLeftBias  : Boolean;
     def isRightBias : Boolean = !isLeftBias;
-    def conformsToBias[A,B]( src : Either[A,B] ) : Boolean = {
-      src match {
+    def conformsToBias[A,B]( target : Either[A,B] ) : Boolean = {
+      target match {
         case Left( _ )  => isLeftBias;
         case Right( _ ) => isRightBias;
       }
@@ -608,57 +608,57 @@ object Either {
 
     private[Either] final val DefaultThrowingOps = withEmptyToken.Throwing( throw new NoSuchElementException( noSuchElementMessage( true ) ) );
 
-    implicit class Ops[A,B]( val src : Either[A,B] ) extends AnyVal { // alas, we don't define a trait, but write all these ops twice, so we can avoid boxing here
+    implicit class Ops[A,B]( val target : Either[A,B] ) extends AnyVal { // alas, we don't define a trait, but write all these ops twice, so we can avoid boxing here
 
       // monad ops
-      def flatMap[AA >: A, Z]( f : B => Either[AA,Z] ) : Either[AA,Z] = DefaultThrowingOps.flatMap[A,AA,B,Z]( src )( f );
-      def map[Z]( f : B => Z )                         : Either[A,Z]  = DefaultThrowingOps.map( src )( f );
-      def withFilter( p : B => Boolean )               : Either[A,B]  = DefaultThrowingOps.withFilter( src )( p );
+      def flatMap[AA >: A, Z]( f : B => Either[AA,Z] ) : Either[AA,Z] = DefaultThrowingOps.flatMap[A,AA,B,Z]( target )( f );
+      def map[Z]( f : B => Z )                         : Either[A,Z]  = DefaultThrowingOps.map( target )( f );
+      def withFilter( p : B => Boolean )               : Either[A,B]  = DefaultThrowingOps.withFilter( target )( p );
 
       // extra ops
-      def exists( f : B => Boolean )                  : Boolean           = DefaultThrowingOps.exists( src )( f );
-      def forall( f : B => Boolean )                  : Boolean           = DefaultThrowingOps.forall( src )( f );
-      def foreach[U]( f : B => U )                    : Any               = DefaultThrowingOps.foreach( src )( f );
-      def get                                         : B                 = DefaultThrowingOps.get( src );
-      def getOrElse[ BB >: B ]( or : =>BB )           : BB                = DefaultThrowingOps.getOrElse[A,B,BB]( src )( or );
-      def toOption                                    : Option[B]         = DefaultThrowingOps.toOption( src );
-      def toSeq                                       : collection.Seq[B] = DefaultThrowingOps.toSeq( src );
-      def xget                                        : A                 = DefaultThrowingOps.xget( src );
-      def xgetOrElse[AA>:A]( or : =>AA )              : AA                = DefaultThrowingOps.xgetOrElse[A,AA,B]( src )( or );
-      def xmap[Z]( f : A => Z )                       : Either[Z,B]       = DefaultThrowingOps.xmap( src )( f );
-      def replaceIfEmpty[AA>:A]( replacement : =>AA ) : Either[AA,B]      = DefaultThrowingOps.replaceIfEmpty[A,AA,B]( src )( replacement );
+      def exists( f : B => Boolean )                  : Boolean           = DefaultThrowingOps.exists( target )( f );
+      def forall( f : B => Boolean )                  : Boolean           = DefaultThrowingOps.forall( target )( f );
+      def foreach[U]( f : B => U )                    : Any               = DefaultThrowingOps.foreach( target )( f );
+      def get                                         : B                 = DefaultThrowingOps.get( target );
+      def getOrElse[ BB >: B ]( or : =>BB )           : BB                = DefaultThrowingOps.getOrElse[A,B,BB]( target )( or );
+      def toOption                                    : Option[B]         = DefaultThrowingOps.toOption( target );
+      def toSeq                                       : collection.Seq[B] = DefaultThrowingOps.toSeq( target );
+      def xget                                        : A                 = DefaultThrowingOps.xget( target );
+      def xgetOrElse[AA>:A]( or : =>AA )              : AA                = DefaultThrowingOps.xgetOrElse[A,AA,B]( target )( or );
+      def xmap[Z]( f : A => Z )                       : Either[Z,B]       = DefaultThrowingOps.xmap( target )( f );
+      def replaceIfEmpty[AA>:A]( replacement : =>AA ) : Either[AA,B]      = DefaultThrowingOps.replaceIfEmpty[A,AA,B]( target )( replacement );
       def isLeftBiased                                : Boolean           = DefaultThrowingOps.isLeftBias;
       def isRightBiased                               : Boolean           = DefaultThrowingOps.isRightBias;
-      def conformsToBias                              : Boolean           = DefaultThrowingOps.conformsToBias( src );
+      def conformsToBias                              : Boolean           = DefaultThrowingOps.conformsToBias( target );
     }
 
     object withEmptyToken {
-      abstract class AbstractOps[A,B]( src : Either[A,B] )( opsTypeClass : Either.RightBias.withEmptyToken.Generic[A] ) {
+      abstract class AbstractOps[A,B]( target : Either[A,B] )( opsTypeClass : Either.RightBias.withEmptyToken.Generic[A] ) {
 
         // monad ops
-        def flatMap[AA >: A, Z]( f : B => Either[AA,Z] ) : Either[AA,Z] = opsTypeClass.flatMap[A,AA,B,Z]( src )( f );
-        def map[Z]( f : B => Z )                         : Either[A,Z]  = opsTypeClass.map( src )( f );
-        def withFilter( p : B => Boolean )               : Either[A,B]  = opsTypeClass.withFilter( src )( p );
+        def flatMap[AA >: A, Z]( f : B => Either[AA,Z] ) : Either[AA,Z] = opsTypeClass.flatMap[A,AA,B,Z]( target )( f );
+        def map[Z]( f : B => Z )                         : Either[A,Z]  = opsTypeClass.map( target )( f );
+        def withFilter( p : B => Boolean )               : Either[A,B]  = opsTypeClass.withFilter( target )( p );
 
         // extra ops
-        def exists( f : B => Boolean )                  : Boolean           = opsTypeClass.exists( src )( f );
-        def forall( f : B => Boolean )                  : Boolean           = opsTypeClass.forall( src )( f );
-        def foreach[U]( f : B => U )                    : Any               = opsTypeClass.foreach( src )( f );
-        def get                                         : B                 = opsTypeClass.get( src );
-        def getOrElse[BB>:B]( or : =>BB )               : BB                = opsTypeClass.getOrElse[A,B,BB]( src )( or );
-        def toOption                                    : Option[B]         = opsTypeClass.toOption( src );
-        def toSeq                                       : collection.Seq[B] = opsTypeClass.toSeq( src );
-        def isEmpty                                     : Boolean           = opsTypeClass.isEmpty( src );
-        def xget                                        : A                 = opsTypeClass.xget( src );
-        def xgetOrElse[AA>:A]( or : =>AA )              : AA                = opsTypeClass.xgetOrElse[A,AA,B]( src )( or );
-        def xmap[Z]( f : A => Z )                       : Either[Z,B]       = opsTypeClass.xmap( src )( f );
-        def replaceIfEmpty[AA>:A]( replacement : =>AA ) : Either[AA,B]      = opsTypeClass.replaceIfEmpty[A,AA,B]( src )( replacement );
+        def exists( f : B => Boolean )                  : Boolean           = opsTypeClass.exists( target )( f );
+        def forall( f : B => Boolean )                  : Boolean           = opsTypeClass.forall( target )( f );
+        def foreach[U]( f : B => U )                    : Any               = opsTypeClass.foreach( target )( f );
+        def get                                         : B                 = opsTypeClass.get( target );
+        def getOrElse[BB>:B]( or : =>BB )               : BB                = opsTypeClass.getOrElse[A,B,BB]( target )( or );
+        def toOption                                    : Option[B]         = opsTypeClass.toOption( target );
+        def toSeq                                       : collection.Seq[B] = opsTypeClass.toSeq( target );
+        def isEmpty                                     : Boolean           = opsTypeClass.isEmpty( target );
+        def xget                                        : A                 = opsTypeClass.xget( target );
+        def xgetOrElse[AA>:A]( or : =>AA )              : AA                = opsTypeClass.xgetOrElse[A,AA,B]( target )( or );
+        def xmap[Z]( f : A => Z )                       : Either[Z,B]       = opsTypeClass.xmap( target )( f );
+        def replaceIfEmpty[AA>:A]( replacement : =>AA ) : Either[AA,B]      = opsTypeClass.replaceIfEmpty[A,AA,B]( target )( replacement );
         def isLeftBiased                                : Boolean           = opsTypeClass.isLeftBias;
         def isRightBiased                               : Boolean           = opsTypeClass.isRightBias;
-        def conformsToBias                              : Boolean           = opsTypeClass.conformsToBias( src );
+        def conformsToBias                              : Boolean           = opsTypeClass.conformsToBias( target );
       }
 
-      implicit final class Ops[A,B]( src : Either[A,B] )( implicit opsTypeClass : Either.RightBias.withEmptyToken.Generic[A] ) extends AbstractOps( src )( opsTypeClass );
+      implicit final class Ops[A,B]( target : Either[A,B] )( implicit opsTypeClass : Either.RightBias.withEmptyToken.Generic[A] ) extends AbstractOps( target )( opsTypeClass );
 
       trait Generic[+E] extends Either.Bias[E] {
         /*
@@ -670,95 +670,95 @@ object Either {
          */ 
         protected def leftEmpty : Left[E,Nothing];
 
-        def isEmpty[A>:E,B]( src : Either[A,B] ) : Boolean;
+        def isEmpty[A>:E,B]( target : Either[A,B] ) : Boolean;
 
         // monad ops
-        def flatMap[A>:E,AA>:A,B,Z]( src : Either[A,B] )( f : B => Either[AA,Z] ) : Either[AA,Z] = {
-          src match {
-            case Left( _ )  => src.asInstanceOf[Left[A,Z]]
+        def flatMap[A>:E,AA>:A,B,Z]( target : Either[A,B] )( f : B => Either[AA,Z] ) : Either[AA,Z] = {
+          target match {
+            case Left( _ )  => target.asInstanceOf[Left[A,Z]]
             case Right( b ) => f( b )
           }
         }
-        def map[A>:E,B,Z]( src : Either[A,B] )( f : B => Z ) : Either[A,Z] = {
-          src match {
-            case Left( _ )  => src.asInstanceOf[Left[A,Z]]
+        def map[A>:E,B,Z]( target : Either[A,B] )( f : B => Z ) : Either[A,Z] = {
+          target match {
+            case Left( _ )  => target.asInstanceOf[Left[A,Z]]
             case Right( b ) => Right( f( b ) )
           }
         }
-        def withFilter[A>:E,B]( src : Either[A,B] )( p : B => Boolean ) : Either[A,B] = {
-          src match {
-            case      Left( _ ) => src;
+        def withFilter[A>:E,B]( target : Either[A,B] )( p : B => Boolean ) : Either[A,B] = {
+          target match {
+            case      Left( _ ) => target;
             case r @ Right( b ) => if ( p(b) ) r else leftEmpty;
           }
         }
 
         // extra ops
-        def exists[A>:E,B]( src : Either[A,B] )( f : B => Boolean ) : Boolean = {
-          src match {
+        def exists[A>:E,B]( target : Either[A,B] )( f : B => Boolean ) : Boolean = {
+          target match {
             case Left( _ )  => false;
             case Right( b ) => f( b );
           }
         }
-        def forall[A>:E,B]( src : Either[A,B] )( f : B => Boolean ) : Boolean = {
-          src match {
+        def forall[A>:E,B]( target : Either[A,B] )( f : B => Boolean ) : Boolean = {
+          target match {
             case Left( _ )  => true;
             case Right( b ) => f( b );
           }
         }
-        def foreach[A>:E,B,U]( src : Either[A,B] )( f : B => U ) : Any = {
-          src match {
+        def foreach[A>:E,B,U]( target : Either[A,B] )( f : B => U ) : Any = {
+          target match {
             case Left( _ )  => ();
             case Right( b ) => f( b );
           }
         }
-        def get[A>:E,B]( src : Either[A,B] ) : B = {
-          src match {
+        def get[A>:E,B]( target : Either[A,B] ) : B = {
+          target match {
             case Left( _ )  => throw new NoSuchElementException( NoSuchRightMessage );
             case Right( b ) => b;
           }
         }
-        def getOrElse[A>:E,B,BB>:B]( src : Either[A,B] )( or : =>BB ) : BB = {
-          src match {
+        def getOrElse[A>:E,B,BB>:B]( target : Either[A,B] )( or : =>BB ) : BB = {
+          target match {
             case Left( _ )  => or;
             case Right( b ) => b;
           }
         }
-        def toOption[A>:E,B]( src : Either[A,B] ) : Option[B] = {
-          src match {
+        def toOption[A>:E,B]( target : Either[A,B] ) : Option[B] = {
+          target match {
             case Left( _ )  => None;
             case Right( b ) => Some( b );
           }
         }
-        def toSeq[A>:E,B]( src : Either[A,B] ) : collection.Seq[B] = {
-          src match {
+        def toSeq[A>:E,B]( target : Either[A,B] ) : collection.Seq[B] = {
+          target match {
             case Left( _ )  => collection.Seq.empty[B];
             case Right( b ) => collection.Seq( b );
           }
         }
-        def xget[A>:E,B]( src : Either[A,B] ) : A = {
-          src match {
+        def xget[A>:E,B]( target : Either[A,B] ) : A = {
+          target match {
             case Left( a )  => a;
             case Right( _ ) => throw new NoSuchElementException( NoSuchXLeftMessage );
           }
         }
-        def xgetOrElse[A>:E,AA>:A,B]( src : Either[A,B] )( or : =>AA ) : AA = {
-          src match {
+        def xgetOrElse[A>:E,AA>:A,B]( target : Either[A,B] )( or : =>AA ) : AA = {
+          target match {
             case Left( a )  => a;
             case Right( _ ) => or;
           }
         }
-        def xmap[A>:E,B,Z]( src : Either[A,B] )( f : A => Z ) : Either[Z,B] = {
-          src match {
+        def xmap[A>:E,B,Z]( target : Either[A,B] )( f : A => Z ) : Either[Z,B] = {
+          target match {
             case Left( a )  => Left( f( a ) )
-            case Right( _ ) => src.asInstanceOf[Right[Z,B]]
+            case Right( _ ) => target.asInstanceOf[Right[Z,B]]
           }
         }
-        def replaceIfEmpty[A>:E,AA>:A,B]( src : Either[A,B] )( replacement : =>AA ) : Either[AA,B] = {
-          if (isEmpty( src )) Left( replacement ) else src;
+        def replaceIfEmpty[A>:E,AA>:A,B]( target : Either[A,B] )( replacement : =>AA ) : Either[AA,B] = {
+          if (isEmpty( target )) Left( replacement ) else target;
         }
         def isLeftBias  : Boolean = false;
 
-        implicit def toOps[A>:E,B]( src : Either[A,B] ) : RightBias.withEmptyToken.Ops[A,B] = new RightBias.withEmptyToken.Ops[A,B]( src )( this )
+        implicit def toOps[A>:E,B]( target : Either[A,B] ) : RightBias.withEmptyToken.Ops[A,B] = new RightBias.withEmptyToken.Ops[A,B]( target )( this )
       }
       def apply[E]( token : E ) : withEmptyToken[E] = new withEmptyToken( token );
 
@@ -770,19 +770,22 @@ object Either {
 
         override def empty : Nothing = throw throwableBuilder;
 
-        override def isEmpty[A,B]( src : Either[A,B] ) : Boolean = false; // no state represents empty, empties cannot be formed as an Exception is thrown when it is tried
+        override def isEmpty[A,B]( target : Either[A,B] ) : Boolean = false; // no state represents empty, empties cannot be formed as an Exception is thrown when it is tried
       }
     }
     final class withEmptyToken[+E] private( override val empty : E ) extends withEmptyToken.Generic[E] {
       override protected val leftEmpty : Left[E,Nothing] = Left(empty);
 
-      override def isEmpty[A>:E,B]( src : Either[A,B] ) : Boolean = (src == leftEmpty);
+      override def isEmpty[A>:E,B]( target : Either[A,B] ) : Boolean = (target == leftEmpty);
+    }
+    abstract class Base[L]( emptyToken : L ) extends RightBias[L] {
+      override val EmptyTokenDefinition = RightBias.withEmptyToken[L]( emptyToken )
     }
   }
-  trait RightBias[A] {
-    val EmptyTokenDefinition : Either.RightBias.withEmptyToken.Generic[A] = RightBias.DefaultThrowingOps;
+  trait RightBias[L] {
+    val EmptyTokenDefinition : Either.RightBias.withEmptyToken.Generic[L] = RightBias.DefaultThrowingOps;
 
-    implicit def toRightBiasEtherOps[B]( src : Either[A,B] ) : RightBias.withEmptyToken.AbstractOps[A,B] = new RightBias.withEmptyToken.Ops[A,B]( src )( EmptyTokenDefinition );
+    implicit def toRightBiasEtherOps[R]( target : Either[L,R] ) : RightBias.withEmptyToken.AbstractOps[L,R] = new RightBias.withEmptyToken.Ops[L,R]( target )( EmptyTokenDefinition );
   }
   /**
     *  This object contains utilities for defining an environment in which `Either` instances are "left-biased".
@@ -840,21 +843,21 @@ object Either {
     * }}}
     *  That's fine, but if anything goes wrong, clients will receive a value `None`, and have no specific information
     *  about what the problem was. Instead of option, we might try to use Either, defining error codes
-    *  for things that can go wrong. (We'll let our error codes be `Int` for this example, but should probably 
-    *  more descriptive kinds of object in real life.) Unconventionally (since we are considering left-biased
+    *  for things that can go wrong. (We'll let our error codes be `Int` for this example, but ''errors should 
+    *  be represented by descriptive kinds of object in real applications.'') Unconventionally (since we are considering left-biased
     *  `Either` here), we'll let good values arrive as `Left` values and embed our error codes in `Right` objects.
     * {{{
-    *     val ErrIO              = 1
-    *     val ErrNoParse         = 2
-    *     val ErrBadYear         = 3
-    *     val ErrProcessorFailed = 4
+    *     val ErrIO               = 1
+    *     val ErrNoParse          = 2
+    *     val ErrBadYear          = 3
+    *     val ErrProcessorFailure = 4
     * 
     *     case class Record( opCode : Int, data : Seq[Byte], year : Int )
     *     trait Result
     * 
-    *     def loadURL( url : String ) : Either[Seq[Byte],Int] = ???
-    *     def parseRecord( bytes : Seq[Byte] ) : Either[Record,Int] = ???
-    *     def process( opCode : Int, data : Seq[Byte] ) : Either[Result,Int] = ???
+    *     def loadURL( url : String ) : Either[Seq[Byte],Int] = ???                // fails w/ErrIO
+    *     def parseRecord( bytes : Seq[Byte] ) : Either[Record,Int] = ???          // fails w/ErrNoParse
+    *     def process( opCode : Int, data : Seq[Byte] ) : Either[Result,Int] = ??? // fails w/ErrProcessorFailure
     * 
     *     // we try to use the left projection but the
     *     // for comprehension fails to compile
@@ -867,25 +870,26 @@ object Either {
     *     }
     * }}}
     *   Unfortunately, this fails to compile, because [[scala.util.Either.LeftProjection]] does not support
-    *   pattern-matching (required to extract `opCode`, `data`, and `year`) or filtering (which we perform based on `year`).
+    *   pattern-matching (used to extract `opCode`, `data`, and `year`) or filtering (which we perform based on `year`).
     * 
     *   Instead, we can left-bias the `Either`:
     * {{{
-    *     val ErrIO              = 1
-    *     val ErrNoParse         = 2
-    *     val ErrBadYear         = 3
-    *     val ErrProcessorFailed = 4
+    *     val ErrEmpty            = -1
+    *     val ErrIO               =  1
+    *     val ErrNoParse          =  2
+    *     val ErrBadYear          =  3
+    *     val ErrProcessorFailure =  4
     * 
     *     // left-bias Either 
-    *     val LeftBias = Either.LeftBias.withEmptyToken( ErrBadYear ) 
+    *     val LeftBias = Either.LeftBias.withEmptyToken( ErrEmpty ) 
     *     import LeftBias._
     * 
     *     case class Record( opCode : Int, data : Seq[Byte], year : Int )
     *     trait Result
     * 
-    *     def loadURL( url : String ) : Either[Seq[Byte],Int] = ???
-    *     def parseRecord( bytes : Seq[Byte] ) : Either[Record,Int] = ???
-    *     def process( opCode : Int, data : Seq[Byte] ) : Either[Result,Int] = ???
+    *     def loadURL( url : String ) : Either[Seq[Byte],Int] = ???                // fails w/ErrIO
+    *     def parseRecord( bytes : Seq[Byte] ) : Either[Record,Int] = ???          // fails w/ErrNoParse
+    *     def process( opCode : Int, data : Seq[Byte] ) : Either[Result,Int] = ??? // fails w/ErrProcessorFailure
     * 
     *     // use Either directly, rather than a projection, in the for comprehension
     *     def processURL( url : String ) : Either[Result,Int] = {
@@ -896,42 +900,44 @@ object Either {
     *       } yield result
     *     }
     * }}}
-    *   An "empty" `Either` here could only result from the failure of the year filter,
-    *   so we set `ErrBadYear` to be the token supplied when the filtering fail. Note that
-    *   once the left-biased operations have been imported, a sequence `Either` yielding
-    *   values can be used directly in the for comprehension, without extractions of a projection
-    *   with `.left`.
     * 
-    *   The scope of the left-biasing is the scope of the import. In our example above, our choice
-    *   of error token was very specific to this definition. In fact, it might have been better
-    *   to narrow the scope of the bias to within the `processURL(...)` function.
+    *   There is a problem: `ErrEmpty`, would be the result of the year filter failing, 
+    *   when it should be `ErrBadYear`. 
+    * 
+    *   The most general and straightforward wat to fix this is to replace empty
+    *   tokens as they arrive with more informative errors. For this purpose,
+    *   biased `Either` offers a method called [[LeftBias.Ops.replaceIfEmpty]]: 
+    * 
     * {{{
-    *     // same definitions as above
-    *     // except the import statement sits within the method
+    *     // use Either directly, rather than a projection, in the for comprehension
     *     def processURL( url : String ) : Either[Result,Int] = {
-    *       import LeftBias._
+    *       val processed = {
+    *         for {
+    *           rawBytes                     <- loadURL( url )
+    *           Record( opCode, data, year ) <- parseRecord( rawBytes )
+    *           result                       <- process( opCode, data ) if year >= 2011
+    *         } yield result
+    *       }
+    *       processed.replaceIfEmpty( ErrBadYear )
+    *     }
+    * }}}
+    * 
+    *   The scope of the left-bias is the scope of the import. An alternative way to
+    *   ensure empty tokens yield meaningful information is to define separate biases
+    *   for separate contexts.
+    * 
+    * {{{
+    *     val ProcessURLBias       = Either.LeftBias.withEmptyToken( ErrBadYear ) 
+    *     val EnableHyperdriveBias = Either.LeftBias.withEmptyToken( ErrSpaceTimeRupture )
+    *     ...
+    * 
+    *     def processURL( url : String ) : Either[Result,Int] = {
+    *       import ProcessURLBias._
     *       for {
     *         rawBytes                     <- loadURL( url )
     *         Record( opCode, data, year ) <- parseRecord( rawBytes )
     *         result                       <- process( opCode, data ) if year >= 2011
     *       } yield result
-    *     }
-    * }}}
-    *   Other times, we might define a convention suitable for use within an entire
-    *   package, in which case we can extend the trait [[Either.LeftBias! Either.LeftBias]]:
-    * {{{
-    *     package util {
-    *       object Err {
-    *         case object Empty extends Err( -1, "A series of operations yielded no suitable value." );
-    *         case object Explosion extends Err( Int.MaxValue, "Boom!");
-    *       }
-    *       class Err( val code : Int, val description : String )
-    *     }
-    * 
-    *     // `Either` will be left-biased in all traits, classes, and objects 
-    *     // belonging package `mypkg`
-    *     package object mypkg extends Either.LeftBias[util.Err] {
-    *       override val EmptyTokenDefinition = Either.LeftBias.withEmptyToken(util.Err.Empty);
     *     }
     * }}}
     */ 
@@ -950,28 +956,188 @@ object Either {
       * }}}
       * For more, please see [[LeftBias$ LeftBias]].
       */
-    implicit class Ops[A,B]( val src : Either[A,B] ) extends AnyVal { // alas, we don't define a trait, but write all these ops twice, so we can avoid boxing here
+    implicit class Ops[A,B]( val target : Either[A,B] ) extends AnyVal { // alas, we don't define a trait, but write all these ops twice, so we can avoid boxing here
 
       // monad ops
-      def flatMap[BB >: B, Z]( f : A => Either[Z,BB] ) : Either[Z,BB] = DefaultThrowingOps.flatMap[A,B,BB,Z]( src )( f );
-      def map[Z]( f : A => Z )                         : Either[Z,B]  = DefaultThrowingOps.map( src )( f );
-      def withFilter( p : A => Boolean )               : Either[A,B]  = DefaultThrowingOps.withFilter( src )( p );
+      /**
+        * Binds the given function across `Left` of a left-biased `Either`.
+        *
+        * {{{
+        * Left(12).flatMap(x => Left("scala")) // Left("scala")
+        * Right(12).flatMap(x => Left("scala") // Right(12)
+        * }}}
+        * @param f The function to bind across `Left`.
+        */
+      def flatMap[BB >: B, Z]( f : A => Either[Z,BB] ) : Either[Z,BB] = DefaultThrowingOps.flatMap[A,B,BB,Z]( target )( f );
+      /**
+        * Maps the function argument through `Left` of a left-biased `Either`.
+        *
+        * {{{
+        * Left(12).map(_ + 2) // Left(14)
+        * Right[Int, Int](12).map(_ + 2) // Right(12)
+        * }}}
+        */
+      def map[Z]( f : A => Z ) : Either[Z,B] = DefaultThrowingOps.map( target )( f );
+      /**
+        * Returns the target left-biased `Either` unchanged if it is a `Left` and the predicate `p`
+        * holds for its value, or if it is any `Right`.
+        * 
+        * Returns a `Right` containing the empty token if the target is a `Left` but predicate `p`
+        * fails to hold. If no empty token has been set, a `java.util.NoSuchElementException` will
+        * be thrown.
+        *
+        * {{{
+        * val LeftBias = LeftBias.withEmptyToken[Int](-1);
+        * import LeftBias._
+        * 
+        * Left(12).withFilter(_ > 10)  // Left(12)
+        * Left(7).withFilter(_ > 10)   // Right(-1)
+        * Right(12).withFilter(_ > 10) // Right(12)
+        * }}}
+        */
+      def withFilter( p : A => Boolean ) : Either[A,B] = DefaultThrowingOps.withFilter( target )( p );
 
       // extra ops
-      def exists( f : A => Boolean )          : Boolean              = DefaultThrowingOps.exists( src )( f );
-      def forall( f : A => Boolean )          : Boolean              = DefaultThrowingOps.forall( src )( f );
-      def foreach[U]( f : A => U )            : Any                  = DefaultThrowingOps.foreach( src )( f );
-      def get                                 : A                    = DefaultThrowingOps.get( src );
-      def getOrElse[AA >: A ]( or : =>AA )    : AA                   = DefaultThrowingOps.getOrElse[A,AA,B]( src )( or );
-      def toOption                            : Option[A]            = DefaultThrowingOps.toOption( src );
-      def toSeq                               : collection.Seq[A]    = DefaultThrowingOps.toSeq( src );
-      def xget                                : B                    = DefaultThrowingOps.xget( src );
-      def xgetOrElse[BB>:B]( or : =>BB )      : BB                   = DefaultThrowingOps.xgetOrElse[A,B,BB]( src )( or );
-      def xmap[Z]( f : B => Z )               : Either[A,Z]          = DefaultThrowingOps.xmap( src )( f );
-      def replaceIfEmpty[BB>:B]( replacement : =>BB ) : Either[A,BB] = DefaultThrowingOps.replaceIfEmpty[A,B,BB]( src )( replacement )
-      def isLeftBiased                        : Boolean              = DefaultThrowingOps.isLeftBias;
-      def isRightBiased                       : Boolean              = DefaultThrowingOps.isRightBias;
-      def conformsToBias                      : Boolean              = DefaultThrowingOps.conformsToBias( src );
+      /**
+        * Returns `false` if the target left-biased `Either` is a `Right` or returns the result of the application of
+        * the given function to the `Left` value.
+        *
+        * {{{
+        * Left(12).exists(_ > 10)  // true
+        * Left(7).exists(_ > 10)   // false
+        * Right(12).left.exists(_ > 10) // false
+        * }}}
+        *
+        */
+      def exists( f : A => Boolean ) : Boolean = DefaultThrowingOps.exists( target )( f );
+      /**
+        * Returns `true` if the target left-biased `Either` is `Right` or returns 
+        * the result of the application of the given function to the `Left` value.
+        *
+        * {{{
+        * Left(12).forall(_ > 10)  // true
+        * Left(7).forall(_ > 10)   // false
+        * Right(12).forall(_ > 10) // true
+        * }}}
+        *
+        */
+      def forall( f : A => Boolean ) : Boolean = DefaultThrowingOps.forall( target )( f );
+      /**
+        * Executes the given side-effecting function if the target left-biased `Either` is a `Left`.
+        *
+        * {{{
+        * Left(12).foreach(x => println(x))  // prints "12"
+        * Right(12).foreach(x => println(x)) // doesn't print
+        * }}}
+        * 
+        * @param f The side-effecting function to execute.
+        */
+      def foreach[U]( f : A => U ) : Any = DefaultThrowingOps.foreach( target )( f );
+      /**
+        * Returns the value if the target left-biased `Either` is a `Left` or 
+        * throws `java.util.NoSuchElementException` if the target is a `Right`.
+        *
+        * {{{
+        * Left(12).get // 12
+        * Right(12).get // NoSuchElementException
+        * }}}
+        *
+        * @throws java.util.NoSuchElementException if the target is [[scala.util.Right]]
+        */
+      def get : A = DefaultThrowingOps.get( target );
+      /**
+        * Returns the value from the target left-biased `Either` if `Left`,
+        * or the given argument if it is a `Right`.
+        *
+        * {{{
+        * Left(12).getOrElse(17)  // 12
+        * Right(12).getOrElse(17) // 17
+        * }}}
+        *
+        */
+      def getOrElse[AA >: A ]( or : =>AA ) : AA = DefaultThrowingOps.getOrElse[A,AA,B]( target )( or );
+      /**
+        * Returns a `Some` containing the `Left` value of the target left-biased `Either` if it exists or a
+        * `None` if the target is a `Right`.
+        *
+        * {{{
+        * Left(12).toOption  // Some(12)
+        * Right(12).toOption // None
+        * }}}
+        */
+      def toOption : Option[A] = DefaultThrowingOps.toOption( target );
+      /**
+        * Returns a `Seq` containing the `Left` value if it exists or an empty
+        * `Seq` if the target left-biased `Either` is a `Right`.
+        *
+        * {{{
+        * Left(12).toSeq // Seq(12)
+        * Right(12).toSeq // Seq()
+        * }}}
+        */
+      def toSeq : collection.Seq[A] = DefaultThrowingOps.toSeq( target );
+      /**
+        * "cross-get" -- Returns the value if the target left-biased `Either` 
+        * does ''not'' conform to its bias, if it is a `Right`.
+        * Throws `java.util.NoSuchElementException` if the target is a `Left`.
+        *
+        * {{{
+        * Left(12).xget // NoSuchElementException
+        * Right(12).xget // 12
+        * }}}
+        *
+        * @throws java.util.NoSuchElementException if the target is [[scala.util.Left]]
+        */
+      def xget : B = DefaultThrowingOps.xget( target );
+      /**
+        * "cross-getOrElse" -- Returns the value from the target left-biased `Either` 
+        * if it does ''not'' conform to its bias and is a `Right`.
+        * Returns the given argument if it is a `Left`.
+        *
+        * {{{
+        * Right(12).xgetOrElse(17) // 12
+        * Right(12).xgetOrElse(17) // 17
+        * }}}
+        *
+        */
+      def xgetOrElse[BB>:B]( or : =>BB ) : BB = DefaultThrowingOps.xgetOrElse[A,B,BB]( target )( or );
+      /**
+        * "cross-map" -- Maps the function argument through `Right` ''against'' the bias the target left-biased `Either`.
+        *
+        * {{{
+        * Left(12).map(_ + 2) // Left(12)
+        * Right(12).map(_ + 2) // Right(14)
+        * }}}
+        */
+      def xmap[Z]( f : B => Z ) : Either[A,Z] = DefaultThrowingOps.xmap( target )( f );
+      /**
+        * If the target left-biased `Either` is a `Right` containing the empty token,
+        * returns a right containing `repleacement`. Otherwise returns the target `Either` unchanged.
+        *
+        * {{{
+        * // with empty token Int -1
+        * 
+        * Left(12).replaceIfEmpty(99) // Left(12)
+        * Left(-1).replaceIfEmpty(99) // Left(-1)
+        * Right(12).replaceIfEmpty(99) // Right(12)
+        * Right(-1).replaceIfEmpty(99) // Right(99)
+        * }}}
+        */
+      def replaceIfEmpty[BB>:B]( replacement : =>BB ) : Either[A,BB] = DefaultThrowingOps.replaceIfEmpty[A,B,BB]( target )( replacement )
+      /**
+        * Returns `true` when called on a wrapper representing a left-biased `Either`, `false` otherwise.
+        */
+      def isLeftBiased : Boolean = DefaultThrowingOps.isLeftBias;
+      /**
+        * Returns `true` when called on a wrapper representing a right-biased `Either`, `false` otherwise.
+        */
+      def isRightBiased : Boolean = DefaultThrowingOps.isRightBias;
+      /**
+        * Returns `true` if this wrapper represents a left-biased `Either` wrapping a `Left` or a 
+        * right-biased `Either` wrapping a `Right`. Returns `false` if this represents a left-biased
+        * `Either` wrapping a `Right` or a right-biased `Either` wrapping a left.
+        */
+      def conformsToBias : Boolean = DefaultThrowingOps.conformsToBias( target );
     }
 
     /**
@@ -1002,9 +1168,9 @@ object Either {
         *     tmp
         *   }
         *   val LeftBias = Either.LeftBias.withEmptyToken[Throwable]( EmptyThrowable );
-        *   implicit class LeftBiasOps( src : Either[A,Throwable] ) extends Either.LeftBias.withEmptyToken.AbstractOps( src )( LeftBias ) {
+        *   implicit class LeftBiasOps( target : Either[A,Throwable] ) extends Either.LeftBias.withEmptyToken.AbstractOps( target )( LeftBias ) {
         *      def raise : Unit = {
-        *        src match {
+        *        target match {
         *          case Left(_) => ();
         *          case Right( t ) => throw t;
         *        }
@@ -1012,28 +1178,188 @@ object Either {
         *   }
         * }}}
         */ 
-      abstract class AbstractOps[A,B]( src : Either[A,B] )( opsTypeClass : Either.LeftBias.withEmptyToken.Generic[B] ) {
+      abstract class AbstractOps[A,B]( target : Either[A,B] )( opsTypeClass : Either.LeftBias.withEmptyToken.Generic[B] ) {
 
         // monad ops
-        def flatMap[BB >: B, Z]( f : A => Either[Z,BB] ) : Either[Z,BB] = opsTypeClass.flatMap[A,B,BB,Z]( src )( f );
-        def map[Z]( f : A => Z )                         : Either[Z,B]  = opsTypeClass.map( src )( f );
-        def withFilter( p : A => Boolean )               : Either[A,B]  = opsTypeClass.withFilter( src )( p );
+        /**
+          * Binds the given function across `Left` of a left-biased `Either`.
+          *
+          * {{{
+          * Left(12).flatMap(x => Left("scala")) // Left("scala")
+          * Right(12).flatMap(x => Left("scala") // Right(12)
+          * }}}
+          * @param f The function to bind across `Left`.
+          */
+        def flatMap[BB >: B, Z]( f : A => Either[Z,BB] ) : Either[Z,BB] = opsTypeClass.flatMap[A,B,BB,Z]( target )( f );
+        /**
+          * Maps the function argument through `Left` of a left-biased `Either`.
+          *
+          * {{{
+          * Left(12).map(_ + 2) // Left(14)
+          * Right[Int, Int](12).map(_ + 2) // Right(12)
+          * }}}
+          */
+        def map[Z]( f : A => Z ) : Either[Z,B] = opsTypeClass.map( target )( f );
+        /**
+          * Returns the target left-biased `Either` unchanged if it is a `Left` and the predicate `p`
+          * holds for its value, or if it is any `Right`.
+          * 
+          * Returns a `Right` containing the empty token if the target is a `Left` but predicate `p`
+          * fails to hold. If no empty token has been set, a `java.util.NoSuchElementException` will
+          * be thrown.
+          *
+          * {{{
+          * val LeftBias = LeftBias.withEmptyToken[Int](-1);
+          * import LeftBias._
+          * 
+          * Left(12).withFilter(_ > 10)  // Left(12)
+          * Left(7).withFilter(_ > 10)   // Right(-1)
+          * Right(12).withFilter(_ > 10) // Right(12)
+          * }}}
+          */
+        def withFilter( p : A => Boolean ) : Either[A,B] = opsTypeClass.withFilter( target )( p );
 
         // extra ops
-        def exists( f : A => Boolean )                  : Boolean           = opsTypeClass.exists( src )( f );
-        def forall( f : A => Boolean )                  : Boolean           = opsTypeClass.forall( src )( f );
-        def foreach[U]( f : A => U )                    : Any               = opsTypeClass.foreach( src )( f );
-        def get                                         : A                 = opsTypeClass.get( src );
-        def getOrElse[AA >: A ]( or : =>AA )            : AA                = opsTypeClass.getOrElse[A,AA,B]( src )( or );
-        def toOption                                    : Option[A]         = opsTypeClass.toOption( src );
-        def toSeq                                       : collection.Seq[A] = opsTypeClass.toSeq( src );
-        def xget                                        : B                 = opsTypeClass.xget( src );
-        def xgetOrElse[BB>:B]( or : =>BB )              : BB                = opsTypeClass.xgetOrElse[A,B,BB]( src )( or );
-        def xmap[Z]( f : B => Z )                       : Either[A,Z]       = opsTypeClass.xmap( src )( f );
-        def replaceIfEmpty[BB>:B]( replacement : =>BB ) : Either[A,BB]      = opsTypeClass.replaceIfEmpty[A,B,BB]( src )( replacement )
-        def isLeftBiased                                : Boolean           = opsTypeClass.isLeftBias;
-        def isRightBiased                               : Boolean           = opsTypeClass.isRightBias;
-        def conformsToBias                              : Boolean           = opsTypeClass.conformsToBias( src );
+        /**
+          * Returns `false` if the target left-biased `Either` is a `Right` or returns the result of the application of
+          * the given function to the `Left` value.
+          *
+          * {{{
+          * Left(12).exists(_ > 10)  // true
+          * Left(7).exists(_ > 10)   // false
+          * Right(12).left.exists(_ > 10) // false
+          * }}}
+          *
+          */
+        def exists( f : A => Boolean ) : Boolean = opsTypeClass.exists( target )( f );
+        /**
+          * Returns `true` if the target left-biased `Either` is `Right` or returns 
+          * the result of the application of the given function to the `Left` value.
+          *
+          * {{{
+          * Left(12).forall(_ > 10)  // true
+          * Left(7).forall(_ > 10)   // false
+          * Right(12).forall(_ > 10) // true
+          * }}}
+          *
+          */
+        def forall( f : A => Boolean ) : Boolean = opsTypeClass.forall( target )( f );
+        /**
+          * Executes the given side-effecting function if the target left-biased `Either` is a `Left`.
+          *
+          * {{{
+          * Left(12).foreach(x => println(x))  // prints "12"
+          * Right(12).foreach(x => println(x)) // doesn't print
+          * }}}
+          * 
+          * @param f The side-effecting function to execute.
+          */
+        def foreach[U]( f : A => U ) : Any = opsTypeClass.foreach( target )( f );
+        /**
+          * Returns the value if the target left-biased `Either` is a `Left` or 
+          * throws `java.util.NoSuchElementException` if the target is a `Right`.
+          *
+          * {{{
+          * Left(12).get // 12
+          * Right(12).get // NoSuchElementException
+          * }}}
+          *
+          * @throws java.util.NoSuchElementException if the target is [[scala.util.Right]]
+          */
+        def get : A = opsTypeClass.get( target );
+        /**
+          * Returns the value from the target left-biased `Either` if `Left`,
+          * or the given argument if it is a `Right`.
+          *
+          * {{{
+          * Left(12).getOrElse(17)  // 12
+          * Right(12).getOrElse(17) // 17
+          * }}}
+          *
+          */
+        def getOrElse[AA >: A ]( or : =>AA ) : AA = opsTypeClass.getOrElse[A,AA,B]( target )( or );
+        /**
+          * Returns a `Some` containing the `Left` value of the target left-biased `Either` if it exists or a
+          * `None` if the target is a `Right`.
+          *
+          * {{{
+          * Left(12).toOption  // Some(12)
+          * Right(12).toOption // None
+          * }}}
+          */
+        def toOption : Option[A] = opsTypeClass.toOption( target );
+        /**
+          * Returns a `Seq` containing the `Left` value if it exists or an empty
+          * `Seq` if the target left-biased `Either` is a `Right`.
+          *
+          * {{{
+          * Left(12).toSeq // Seq(12)
+          * Right(12).toSeq // Seq()
+          * }}}
+          */
+        def toSeq : collection.Seq[A] = opsTypeClass.toSeq( target );
+        /**
+          * "cross-get" -- Returns the value if the target left-biased `Either` 
+          * does ''not'' conform to its bias, if it is a `Right`.
+          * Throws `java.util.NoSuchElementException` if the target is a `Left`.
+          *
+          * {{{
+          * Left(12).xget // NoSuchElementException
+          * Right(12).xget // 12
+          * }}}
+          *
+          * @throws java.util.NoSuchElementException if the target is [[scala.util.Left]]
+          */
+        def xget : B = opsTypeClass.xget( target );
+        /**
+          * "cross-getOrElse" -- Returns the value from the target left-biased `Either` 
+          * if it does ''not'' conform to its bias and is a `Right`.
+          * Returns the given argument if it is a `Left`.
+          *
+          * {{{
+          * Right(12).xgetOrElse(17) // 12
+          * Right(12).xgetOrElse(17) // 17
+          * }}}
+          *
+          */
+        def xgetOrElse[BB>:B]( or : =>BB ) : BB = opsTypeClass.xgetOrElse[A,B,BB]( target )( or );
+        /**
+          * "cross-map" -- Maps the function argument through `Right` ''against'' the bias the target left-biased `Either`.
+          *
+          * {{{
+          * Left(12).map(_ + 2) // Left(12)
+          * Right(12).map(_ + 2) // Right(14)
+          * }}}
+          */
+        def xmap[Z]( f : B => Z ) : Either[A,Z] = opsTypeClass.xmap( target )( f );
+        /**
+          * If the target left-biased `Either` is a `Right` containing the empty token,
+          * returns a right containing `repleacement`. Otherwise returns the target `Either` unchanged.
+          *
+          * {{{
+          * // with empty token Int -1
+          * 
+          * Left(12).replaceIfEmpty(99) // Left(12)
+          * Left(-1).replaceIfEmpty(99) // Left(-1)
+          * Right(12).replaceIfEmpty(99) // Right(12)
+          * Right(-1).replaceIfEmpty(99) // Right(99)
+          * }}}
+          */
+        def replaceIfEmpty[BB>:B]( replacement : =>BB ) : Either[A,BB] = opsTypeClass.replaceIfEmpty[A,B,BB]( target )( replacement )
+        /**
+          * Returns `true` when called on a wrapper representing a left-biased `Either`, `false` otherwise.
+          */
+        def isLeftBiased : Boolean = opsTypeClass.isLeftBias;
+        /**
+          * Returns `true` when called on a wrapper representing a right-biased `Either`, `false` otherwise.
+          */
+        def isRightBiased : Boolean = opsTypeClass.isRightBias;
+        /**
+          * Returns `true` if this wrapper represents a left-biased `Either` wrapping a `Left` or a 
+          * right-biased `Either` wrapping a `Right`. Returns `false` if this represents a left-biased
+          * `Either` wrapping a `Right` or a right-biased `Either` wrapping a left.
+          */
+        def conformsToBias : Boolean = opsTypeClass.conformsToBias( target );
       }
 
       /**
@@ -1041,7 +1367,7 @@ object Either {
         * to handling of an empty value resulting from a filter or failed pattern match -- is defined by
         * constructor argument `opsTypeClass`.
         */ 
-      implicit final class Ops[A,B]( src : Either[A,B] )( implicit opsTypeClass : Either.LeftBias.withEmptyToken.Generic[B] ) extends AbstractOps( src )( opsTypeClass );
+      implicit final class Ops[A,B]( target : Either[A,B] )( implicit opsTypeClass : Either.LeftBias.withEmptyToken.Generic[B] ) extends AbstractOps( target )( opsTypeClass );
 
       trait Generic[+E] extends Either.Bias[E] {
         /*
@@ -1053,95 +1379,95 @@ object Either {
          */ 
         protected def rightEmpty : Right[Nothing,E]; 
 
-        def isEmpty[A>:E,B]( src : Either[A,B] ) : Boolean;
+        def isEmpty[A>:E,B]( target : Either[A,B] ) : Boolean;
 
         // monad ops
-        def flatMap[A, B>:E, BB>:B ,Z]( src : Either[A,B] )( f : A => Either[Z,BB] ) : Either[Z,BB] = {
-          src match {
+        def flatMap[A, B>:E, BB>:B ,Z]( target : Either[A,B] )( f : A => Either[Z,BB] ) : Either[Z,BB] = {
+          target match {
             case Left( a )  => f( a )
-            case Right( _ ) => src.asInstanceOf[Right[Z,B]]
+            case Right( _ ) => target.asInstanceOf[Right[Z,B]]
           }
         }
-        def map[A, B>:E, Z]( src : Either[A,B] )( f : A => Z ) : Either[Z,B] = {
-          src match {
+        def map[A, B>:E, Z]( target : Either[A,B] )( f : A => Z ) : Either[Z,B] = {
+          target match {
             case Left( a )  => Left( f( a ) )
-            case Right( _ ) => src.asInstanceOf[Right[Z,B]]
+            case Right( _ ) => target.asInstanceOf[Right[Z,B]]
           }
         }
-        def withFilter[A,B>:E]( src : Either[A,B] )( p : A => Boolean ) : Either[A,B] = {
-          src match {
+        def withFilter[A,B>:E]( target : Either[A,B] )( p : A => Boolean ) : Either[A,B] = {
+          target match {
             case l @  Left( a ) => if ( p(a) ) l else rightEmpty;
-            case     Right( _ ) => src;
+            case     Right( _ ) => target;
           }
         }
 
         // extra ops
-        def exists[A,B>:E]( src : Either[A,B] )( f : A => Boolean ) : Boolean = {
-          src match {
+        def exists[A,B>:E]( target : Either[A,B] )( f : A => Boolean ) : Boolean = {
+          target match {
             case Left( a )  => f(a);
             case Right( _ ) => false;
           }
         }
-        def forall[A,B>:E]( src : Either[A,B] )( f : A => Boolean ) : Boolean = {
-          src match {
+        def forall[A,B>:E]( target : Either[A,B] )( f : A => Boolean ) : Boolean = {
+          target match {
             case Left( a )  => f(a)
             case Right( _ ) => true;
           }
         }
-        def foreach[A,B>:E,U]( src : Either[A,B] )( f : A => U ) : Any = {
-          src match {
+        def foreach[A,B>:E,U]( target : Either[A,B] )( f : A => U ) : Any = {
+          target match {
             case Left( a )  => f(a);
             case Right( _ ) => ();
           }
         }
-        def get[A,B>:E]( src : Either[A,B] ) : A = {
-          src match {
+        def get[A,B>:E]( target : Either[A,B] ) : A = {
+          target match {
             case Left( a )  => a;
             case Right( _ ) => throw new NoSuchElementException( NoSuchLeftMessage );
           }
         }
-        def getOrElse[A, AA>:A, B>:E]( src : Either[A,B] )( or : =>AA ) : AA = {
-          src match {
+        def getOrElse[A, AA>:A, B>:E]( target : Either[A,B] )( or : =>AA ) : AA = {
+          target match {
             case Left( a )  => a;
             case Right( _ ) => or;
           }
         }
-        def toOption[A,B>:E]( src : Either[A,B] ) : Option[A] = {
-          src match {
+        def toOption[A,B>:E]( target : Either[A,B] ) : Option[A] = {
+          target match {
             case Left( a )  => Some( a );
             case Right( _ ) => None; 
           }
         }
-        def toSeq[A,B>:E]( src : Either[A,B] ) : collection.Seq[A] = {
-          src match {
+        def toSeq[A,B>:E]( target : Either[A,B] ) : collection.Seq[A] = {
+          target match {
             case Left( a )  => collection.Seq( a );
             case Right( _ ) => collection.Seq.empty[A];
           }
         }
-        def xget[A,B>:E]( src : Either[A,B] ) : B = {
-          src match {
+        def xget[A,B>:E]( target : Either[A,B] ) : B = {
+          target match {
             case Left( _ )  => throw new NoSuchElementException( NoSuchXRightMessage );
             case Right( b ) => b;
           }
         }
-        def xgetOrElse[A,B>:E,BB>:B]( src : Either[A,B] )( or : =>BB ) : BB = {
-          src match {
+        def xgetOrElse[A,B>:E,BB>:B]( target : Either[A,B] )( or : =>BB ) : BB = {
+          target match {
             case Left( _ )  => or;
             case Right( b ) => b;
           }
         }
-        def xmap[A,B>:E,Z]( src : Either[A,B] )( f : B => Z ) : Either[A,Z] = {
-          src match {
-            case Left( _ )  => src.asInstanceOf[Left[A,Z]]
+        def xmap[A,B>:E,Z]( target : Either[A,B] )( f : B => Z ) : Either[A,Z] = {
+          target match {
+            case Left( _ )  => target.asInstanceOf[Left[A,Z]]
             case Right( b ) => Right( f(b) )
           }
         }
-        def replaceIfEmpty[A,B>:E,BB>:B]( src : Either[A,B] )( replacement : =>BB ) : Either[A,BB] = {
-          if (isEmpty( src )) Right( replacement ) else src;
+        def replaceIfEmpty[A,B>:E,BB>:B]( target : Either[A,B] )( replacement : =>BB ) : Either[A,BB] = {
+          if (isEmpty( target )) Right( replacement ) else target;
         }
         def isLeftBias  : Boolean = true;
 
-        implicit def toOps[A,B>:E]( src : Either[A,B] ) : LeftBias.withEmptyToken.Ops[A,B] = new LeftBias.withEmptyToken.Ops[A,B]( src )( this )
+        implicit def toOps[A,B>:E]( target : Either[A,B] ) : LeftBias.withEmptyToken.Ops[A,B] = new LeftBias.withEmptyToken.Ops[A,B]( target )( this )
       }
       def apply[E]( token : E ) : withEmptyToken[E] = new withEmptyToken( token );
 
@@ -1175,7 +1501,7 @@ object Either {
 
         override def empty : Nothing = throw throwableBuilder;
 
-        override def isEmpty[A,B]( src : Either[A,B] ) : Boolean = false; // no state represents empty, empties cannot be formed as an Exception is thrown when it is tried
+        override def isEmpty[A,B]( target : Either[A,B] ) : Boolean = false; // no state represents empty, empties cannot be formed as an Exception is thrown when it is tried
       }
     }
     /**
@@ -1192,11 +1518,63 @@ object Either {
     final class withEmptyToken[+E] private( override val empty : E ) extends withEmptyToken.Generic[E] {
       override protected val rightEmpty : Right[Nothing,E] = Right(empty);
 
-      override def isEmpty[A>:E,B]( src : Either[A,B] ) : Boolean = (src == rightEmpty);
+      override def isEmpty[A>:E,B]( target : Either[A,B] ) : Boolean = (target == rightEmpty);
+    }
+    /**
+      * May be extended by classes, objects, traits, and packages (via package objects).
+      * 
+      * Within entities that extend this class
+      * objects of type `Either` will be left-biased, and have
+      * the full-suite of left-biased operations (including operations suitable to for
+      * comprehensions) automatically made available.
+      * 
+      * Empty `Either` values will be represented by Right values including the token 
+      * of type `R` passed to the superclass constructor.
+      * 
+      * '''If you are using polymorphic error types, be sure to specify the type
+      *  argument to Base, as too narrow a type may be inferred from a token
+      *  of a derived type.'''
+      * 
+      * ''Note: Entities that do not need to extend another class can extend the abstract
+      * class [[Either.LeftBias.Base]], which allows defining the Empty token in the
+      * superclass constructor rather than overriding [[EmptyTokenDefinition]].''
+      * 
+      * {{{
+      * class Clown extends Either.LeftBias.Base[Clown.Error]( Clown.Error.Empty ) {
+      *   import Clown.{Cash,Laugh,Error};
+      * 
+      *   // use Either values directly in for comprehensions
+      *   def perform : Either[Cash,Error] = {
+      *      for {
+      *        laugh <- makeFunny
+      *        money <- begForCash( laugh ) if laugh.loudness > 2
+      *      } yield money
+      *   }
+      * 
+      *   def makeFunny : Either[Laugh,Error] = ???
+      *   def begForCash( laugh : Laugh )  : Either[Cash,Error] = ???
+      * }
+      * object Clown {
+      *   final object Error {
+      *     case object Empty extends Error;
+      *     case object JokeBombed extends Error;
+      *     case object NoAudience extends Error;
+      *     case object Cheapskates extends Error;
+      *   }
+      *   sealed trait Error;
+      * 
+      *   case class Laugh( loudness : Int );
+      *   case class Cash( quantity : Int, currencyCode : String );
+      * }
+      * }}}
+      * 
+      */ 
+    abstract class Base[R]( emptyToken : R ) extends LeftBias[R] {
+      override val EmptyTokenDefinition = LeftBias.withEmptyToken[R]( emptyToken )
     }
   }
   /**
-    * May be extends by classes, objects, traits, and packages (via package objects).
+    * May be extended by classes, objects, traits, and packages (via package objects).
     * 
     * Within entities that extend this trait
     * objects of type `Either` will be left-biased, and have
@@ -1207,6 +1585,10 @@ object Either {
     * match or filter operation will provoke a `java.util.NoSuchElementException`. 
     * Override [[EmptyTokenDefinition]] to prevent this and have emptiness
     * represented by an error token of type `R`.
+    * 
+    * ''Note: Entities that do not need to extend another class can extend the abstract
+    * class [[Either.LeftBias.Base]], which allows defining the Empty token in the
+    * superclass constructor rather than overriding [[EmptyTokenDefinition]].''
     * 
     * {{{
     * class Clown extends Either.LeftBias[Clown.Error] {
@@ -1255,7 +1637,7 @@ object Either {
       */ 
     val EmptyTokenDefinition : Either.LeftBias.withEmptyToken.Generic[R] = LeftBias.DefaultThrowingOps;
 
-    implicit def toLeftBiasEtherOps[A]( src : Either[A,R] ) : LeftBias.withEmptyToken.AbstractOps[A,R] = new LeftBias.withEmptyToken.Ops[A,R]( src )( EmptyTokenDefinition );
+    implicit def toLeftBiasEtherOps[L]( target : Either[L,R] ) : LeftBias.withEmptyToken.AbstractOps[L,R] = new LeftBias.withEmptyToken.Ops[L,R]( target )( EmptyTokenDefinition );
   }
 
   private def noSuchElementMessage[A,B]( rightBias : Boolean, mbEither : Option[Either[A,B]] = None ) = {
