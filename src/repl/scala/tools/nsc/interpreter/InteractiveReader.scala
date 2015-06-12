@@ -13,6 +13,8 @@ import Properties.isMac
 
 /** Reads lines from an input stream */
 trait InteractiveReader {
+  def postInit(): Unit = {}
+
   val interactive: Boolean
 
   def reset(): Unit

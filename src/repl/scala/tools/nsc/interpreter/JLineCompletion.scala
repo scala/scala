@@ -12,6 +12,7 @@ import scala.reflect.internal.util.StringOps.longestCommonPrefix
 
 // REPL completor - queries supplied interpreter for valid
 // completions based on current contents of buffer.
+// TODO: change class name to reflect it's not specific to jline (nor does it depend on it)
 class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput {
   val global: intp.global.type = intp.global
   import global._

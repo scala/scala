@@ -503,10 +503,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       val errless = intp compileSources new BatchSourceFile("<pastie>", s"object pastel {\n$code\n}")
       if (errless) echo("The compiler reports no errors.")
     }
-    def historicize(text: String) = history match {
-      case jlh: JLineHistory => text.lines foreach jlh.add ; jlh.moveToEnd() ; true
-      case _ => false
-    }
+
     def edit(text: String): Result = editor match {
       case Some(ed) =>
         val tmp = File.makeTemp()
@@ -522,7 +519,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
                   val res = intp interpret edited
                   if (res == IR.Incomplete) diagnose(edited)
                   else {
-                    historicize(edited)
+                    history.historicize(edited)
                     Result(lineToRecord = Some(edited), keepRunning = true)
                   }
                 case None => echo("Can't read edited text. Did you delete it?")
@@ -533,7 +530,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
           tmp.delete()
         }
       case None =>
-        if (historicize(text)) echo("Placing text in recent history.")
+        if (history.historicize(text)) echo("Placing text in recent history.")
         else echo(f"No EDITOR defined and you can't change history, echoing your text:%n$text")
     }
 
@@ -565,10 +562,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         }
       import scala.collection.JavaConverters._
       val index = (start - 1) max 0
-      val text = history match {
-        case jlh: JLineHistory => jlh.entries(index).asScala.take(len) map (_.value) mkString "\n"
-        case _ => history.asStrings.slice(index, index + len) mkString "\n"
-      }
+      val text = history.asStrings(index, index + len) mkString "\n"
       edit(text)
     } catch {
       case _: NumberFormatException => echo(s"Bad range '$what'")
@@ -866,16 +860,18 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
    *  with SimpleReader.
    */
   def chooseReader(settings: Settings): InteractiveReader = {
-    if (settings.Xnojline || Properties.isEmacsShell)
-      SimpleReader()
-    else try new JLineReader(
-      if (settings.noCompletion) NoCompletion
-      else new JLineCompletion(intp)
-    )
-    catch {
-      case ex @ (_: Exception | _: NoClassDefFoundError) =>
-        echo(f"Failed to created JLineReader: ${ex}%nFalling back to SimpleReader.")
-        SimpleReader()
+    def mkJLineReader(completer: () => Completion): InteractiveReader =
+      try new jline.JLineReader(completer)
+      catch {
+        case ex@(_: Exception | _: NoClassDefFoundError) =>
+          Console.println(f"Failed to created JLineReader: ${ex}%nFalling back to SimpleReader.")
+          SimpleReader()
+      }
+
+    if (settings.Xnojline || Properties.isEmacsShell) SimpleReader()
+    else {
+      if (settings.noCompletion) mkJLineReader(() => NoCompletion)
+      else mkJLineReader(() => new JLineCompletion(intp))
     }
   }
 
@@ -896,10 +892,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       asyncMessage(power.banner)
     }
     // SI-7418 Now, and only now, can we enable TAB completion.
-    in match {
-      case x: JLineReader => x.consoleReader.postInit
-      case _              =>
-    }
+    in.postInit()
   }
 
   // start an interpreter with the given settings
