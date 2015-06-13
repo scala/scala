@@ -39,7 +39,9 @@ import scala.language.implicitConversions
  *    case Left(x) => "You passed me the String: " + x
  *  })
  *  }}}
- *
+ * 
+ * === Projections ===
+ * 
  *  A ''projection'' can be used to selectively operate on a value of type Either,
  *  depending on whether it is of type Left or Right. For example, to transform an
  *  Either using a function, in the case where it's a Left, one can first apply
@@ -61,9 +63,48 @@ import scala.language.implicitConversions
  *  for (s <- l.left) yield s.size // Left(6)
  *  }}}
  *
- *  To support multiple projections as generators in for-comprehensions, the Either
- *  type also defines a `flatMap` method.
+ * === Biasing Either values ===
+ * 
+ *  You may also ''bias'' `Either` values,
+ *  decorating them so they can be operated upon and used in for comprehensions without
+ *  extracting projections. If we treat `Either` as analogous to `Option`, a [[Either.RightBias$ right-biased]] `Either` treats `Right` instances as
+ *  good values while `Left` instances represent failures, more descriptive variations on `None`. 
+ *  (`Either` can also be [[Either.LeftBias$ left-biased]], but right-biasing is conventional and should
+ *  be preferred.)
  *
+ *  Biased `Either` values support pattern matches, variable assignments, and
+ *  conditionals in for comprehensions, which left- and right-projections do not. 
+ *  
+ *  You can right-bias `Either` very simply via the following import statement:
+ *  {{{ 
+ *    import Either.RightBias._
+ *
+ *    val a : Either[String,Int] = Right(1)
+ *    val b : Either[String,Int] = Right(99)
+ * 
+ *    for( v <- a; w <- b ) yield v+w          // Right(100)
+ *    for( v <- a; w <- b if v > 10) yield v+w // throws NoSuchElementException
+ *  }}}
+ * 
+ *  In order to support filter operations without throwing an Exception upon failure,
+ *  a right bias may define a left-side token to indicate emptiness.
+ *
+ *  {{{
+ *    val RightBias = Either.RightBias.withEmptyToken[String]("EMPTY")
+ *    import RightBias._
+ * 
+ *    val a : Either[String,Int] = Right(1)
+ *    val b : Either[String,Int] = Right(99)
+ * 
+ *    for( v <- a; w <- b ) yield v+w          // Right(100)
+ *    for( v <- a; w <- b if v > 10) yield v+w // Left(EMPTY)
+ *  }}}
+ *
+ *  For very extensive documentation of biased `Either`, please see [[Either.RightBias$ RightBias]]
+ *  (or, if you wish to defy convention, [[Either.LeftBias$ LeftBias]]).
+ * 
+ *  For documentation of operations supported by biased `Either` values, see [[Either.RightBias.withEmptyToken.Ops right-biased]] / [[Either.RightBias.withEmptyToken.Ops left-biased]].
+ * 
  *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  *  @version 1.0, 11/10/2008
  *  @since 2.7
@@ -610,7 +651,7 @@ object Either {
     *  Right-biased means instances of `Either[A,B]` can be operated upon via methods that render thme 
     *  quite analogous to an `Option[A]`, except that failures are represented by a `Left` containing information about
     *  the problem rathar than by uninformative `None`. In particular,
-    *  a right-biased `Either` can be used directly in a for comprehension. Unlike a [[scala.util.Either.RightProjection]],
+    *  a right-biased `Either` can be used directly in a for comprehension. Unlike a [[scala.util.Either.RightProjection RightProjection]],
     *  a right-biased `Either` supports all features of a for comprehension, including pattern matching, filtering,
     *  and variable assignment.
     * 
@@ -672,9 +713,9 @@ object Either {
     *     case class Record( opCode : Int, data : Seq[Byte], year : Int )
     *     trait Result
     * 
-    *     def loadURL( url : String ) : Option[Seq[Byte]] = ???
-    *     def parseRecord( bytes : Seq[Byte] ) : Option[Record] = ???
-    *     def process( opCode : Int, data : Seq[Byte] ) : Option[Result] = ???
+    *     def loadURL( url : String )                   : Option[Seq[Byte]] = ???
+    *     def parseRecord( bytes : Seq[Byte] )          : Option[Record]    = ???
+    *     def process( opCode : Int, data : Seq[Byte] ) : Option[Result]    = ???
     * 
     *     def processURL( url : String ) : Option[Result] = {
     *       for {
@@ -698,9 +739,9 @@ object Either {
     *     case class Record( opCode : Int, data : Seq[Byte], year : Int )
     *     trait Result
     * 
-    *     def loadURL( url : String ) : Either[Int,Seq[Byte]] = ???                // fails w/ErrIO
-    *     def parseRecord( bytes : Seq[Byte] ) : Either[Int,Record] = ???          // fails w/ErrNoParse
-    *     def process( opCode : Int, data : Seq[Byte] ) : Either[Int,Result] = ??? // fails w/ErrProcessorFailure
+    *     def loadURL( url : String )                   : Either[Int,Seq[Byte]] = ??? // fails w/ErrIO
+    *     def parseRecord( bytes : Seq[Byte] )          : Either[Int,Record]    = ??? // fails w/ErrNoParse
+    *     def process( opCode : Int, data : Seq[Byte] ) : Either[Int,Result]    = ??? // fails w/ErrProcessorFailure
     * 
     *     // we try to use the right projection but the
     *     // for comprehension fails to compile
@@ -730,9 +771,9 @@ object Either {
     *     case class Record( opCode : Int, data : Seq[Byte], year : Int )
     *     trait Result
     * 
-    *     def loadURL( url : String ) : Either[Int,Seq[Byte]] = ???                // fails w/ErrIO
-    *     def parseRecord( bytes : Seq[Byte] ) : Either[Int,Record] = ???          // fails w/ErrNoParse
-    *     def process( opCode : Int, data : Seq[Byte] ) : Either[Int,Result] = ??? // fails w/ErrProcessorFailure
+    *     def loadURL( url : String )                   : Either[Int,Seq[Byte]] = ??? // fails w/ErrIO
+    *     def parseRecord( bytes : Seq[Byte] )          : Either[Int,Record]    = ??? // fails w/ErrNoParse
+    *     def process( opCode : Int, data : Seq[Byte] ) : Either[Int,Result]    = ??? // fails w/ErrProcessorFailure
     * 
     *     // use Either directly, rather than a projection, in the for comprehension
     *     def processURL( url : String ) : Either[Int,Result] = {
@@ -829,7 +870,7 @@ object Either {
 
     /**
       * A factory for a typeclass instance which implements the operations of a right-biased `Either`. 
-      * An unsuccessful filter or pattern match will result in a Right containing a specified empty token of type `E`.
+      * An unsuccessful filter or pattern match will result in a Left containing a specified empty token of type `E`.
       * 
       * Typical use
       * {{{
@@ -1189,7 +1230,7 @@ object Either {
     }
     /**
       * A typeclass instance which implements the operations of a right-biased `Either`. 
-      * An unsuccessful filter or pattern match will result in a Right containing a specified empty token of type `E`.
+      * An unsuccessful filter or pattern match will result in a Left containing a specified empty token of type `E`.
       * 
       * Typical use
       * {{{
@@ -1217,8 +1258,7 @@ object Either {
       * '''If you are using polymorphic error types, be sure to specify the type
       *  argument to Base, as too narrow a type may be inferred from a token
       *  of a derived type.'''
-      * (More simply, use `extends Either.RightBias.Base[Err]( ErrEmptyToken )` rather than
-      * `extends Either.RightBias.Base( ErrEmptyToken )` without the `[Err]`.)
+      *  In English, this means you should extend `Either.RightBias.Base[Err]( ErrEmpty )`, not just `Either.RightBias.Base( ErrEmpty )`.
       * 
       * ''Note: Entities that do not need to extend another class can extend the abstract
       * class [[Either.RightBias.Base]], which allows definition of the Empty token in the
@@ -1334,7 +1374,7 @@ object Either {
     *  Left-biased means instances of `Either[A,B]` can be operated upon via methods that render thme 
     *  quite analogous to an `Option[A]`, except that failures are represented by a `Right` containing information about
     *  the problem rathar than by uninformative `None`. In particular,
-    *  a left-biased `Either` can be used directly in a for comprehension. Unlike a [[scala.util.Either.LeftProjection]],
+    *  a left-biased `Either` can be used directly in a for comprehension. Unlike a [[scala.util.Either.LeftProjection LeftProjection]],
     *  a left-biased `Either` supports all features of a for comprehension, including pattern matching, filtering,
     *  and variable assignment.
     * 
@@ -1396,8 +1436,8 @@ object Either {
     *     case class Record( opCode : Int, data : Seq[Byte], year : Int )
     *     trait Result
     * 
-    *     def loadURL( url : String ) : Option[Seq[Byte]] = ???
-    *     def parseRecord( bytes : Seq[Byte] ) : Option[Record] = ???
+    *     def loadURL( url : String )                   : Option[Seq[Byte]] = ???
+    *     def parseRecord( bytes : Seq[Byte] )          : Option[Record] = ???
     *     def process( opCode : Int, data : Seq[Byte] ) : Option[Result] = ???
     * 
     *     def processURL( url : String ) : Option[Result] = {
@@ -1422,9 +1462,9 @@ object Either {
     *     case class Record( opCode : Int, data : Seq[Byte], year : Int )
     *     trait Result
     * 
-    *     def loadURL( url : String ) : Either[Seq[Byte],Int] = ???                // fails w/ErrIO
-    *     def parseRecord( bytes : Seq[Byte] ) : Either[Record,Int] = ???          // fails w/ErrNoParse
-    *     def process( opCode : Int, data : Seq[Byte] ) : Either[Result,Int] = ??? // fails w/ErrProcessorFailure
+    *     def loadURL( url : String )                   : Either[Seq[Byte],Int] = ??? // fails w/ErrIO
+    *     def parseRecord( bytes : Seq[Byte] )          : Either[Record,Int]    = ??? // fails w/ErrNoParse
+    *     def process( opCode : Int, data : Seq[Byte] ) : Either[Result,Int]    = ??? // fails w/ErrProcessorFailure
     * 
     *     // we try to use the left projection but the
     *     // for comprehension fails to compile
@@ -1454,9 +1494,9 @@ object Either {
     *     case class Record( opCode : Int, data : Seq[Byte], year : Int )
     *     trait Result
     * 
-    *     def loadURL( url : String ) : Either[Seq[Byte],Int] = ???                // fails w/ErrIO
-    *     def parseRecord( bytes : Seq[Byte] ) : Either[Record,Int] = ???          // fails w/ErrNoParse
-    *     def process( opCode : Int, data : Seq[Byte] ) : Either[Result,Int] = ??? // fails w/ErrProcessorFailure
+    *     def loadURL( url : String )                   : Either[Seq[Byte],Int] = ??? // fails w/ErrIO
+    *     def parseRecord( bytes : Seq[Byte] )          : Either[Record,Int]    = ??? // fails w/ErrNoParse
+    *     def process( opCode : Int, data : Seq[Byte] ) : Either[Result,Int]    = ??? // fails w/ErrProcessorFailure
     * 
     *     // use Either directly, rather than a projection, in the for comprehension
     *     def processURL( url : String ) : Either[Result,Int] = {
@@ -1964,14 +2004,13 @@ object Either {
       * '''If you are using polymorphic error types, be sure to specify the type
       *  argument to Base, as too narrow a type may be inferred from a token
       *  of a derived type.''' 
-      * (More simply, use `extends Either.LeftBias.Base[Err]( ErrEmptyToken )` rather than
-      * `extends Either.LeftBias.Base( ErrEmptyToken )` without the `[Err]`.)
+      *  In English, this means you should extend `Either.LeftBias.Base[Err]( ErrEmpty )`, not just `Either.LeftBias.Base( ErrEmpty )`.
       * 
       * ''Note: Entities that do not need to extend another class can extend the abstract
       * class [[Either.LeftBias.Base]], which allows defining the Empty token in the
       * superclass constructor rather than overriding [[EmptyTokenDefinition]].''
       * 
-      * For more information, please see [[RightBias$ RightBias]]
+      * For more information, please see [[LeftBias$ LeftBias]]
       * 
       * {{{
       * class Clown extends Either.LeftBias.Base[Clown.Error]( Clown.Error.Empty ) {
