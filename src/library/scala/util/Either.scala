@@ -103,7 +103,7 @@ import scala.language.implicitConversions
  *  For very extensive documentation of biased `Either`, please see [[Either.RightBias$ RightBias]]
  *  (or, if you wish to defy convention, [[Either.LeftBias$ LeftBias]]).
  * 
- *  For documentation of operations supported by biased `Either` values, see [[Either.RightBias.withEmptyToken.Ops right-biased]] / [[Either.RightBias.withEmptyToken.Ops left-biased]].
+ *  For documentation of operations supported by biased `Either` values, see [[Either.RightBias.withEmptyToken.Ops right-biased ops]] / [[Either.RightBias.withEmptyToken.Ops left-biased ops]].
  * 
  *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  *  @version 1.0, 11/10/2008
