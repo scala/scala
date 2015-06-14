@@ -1180,7 +1180,13 @@ object Stream extends SeqFactory[Stream] {
    *  to streams.
    */
   class ConsWrapper[A](tl: => Stream[A]) {
+    /** Construct a stream consisting of a given first element followed by elements
+     *  from a lazily evaluated Stream.
+     */
     def #::(hd: A): Stream[A] = cons(hd, tl)
+    /** Construct a stream consisting of the concatenation of the given stream and
+     *  a lazily evaluated Stream.
+     */
     def #:::(prefix: Stream[A]): Stream[A] = prefix append tl
   }
 
