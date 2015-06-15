@@ -410,11 +410,11 @@ trait GenTraversableOnce[+A] extends Any {
    *  $mayNotTerminateInf
    *  $orderDependent
    *
-   *  @param pred    the predicate used to test elements.
+   *  @param p       the predicate used to test elements.
    *  @return        an option value containing the first element in the $coll
-   *                 that satisfies `p`, or `None` if none exists.
+   *                 for which `p` returns `true`, or `None` if none exists.
    */
-  def find(pred: A => Boolean): Option[A]
+  def find(p: A => Boolean): Option[A]
 
   /** Copies the elements of this $coll to an array.
    *  Fills the given array `xs` with values of this $coll.

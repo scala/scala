@@ -546,11 +546,11 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *
    *  $abortsignalling
    *
-   *  @param pred     predicate used to test the elements
+   *  @param p        predicate used to test the elements
    *  @return         an option value with the element if such an element exists, or `None` otherwise
    */
-  def find(pred: T => Boolean): Option[T] = {
-    tasksupport.executeAndWaitResult(new Find(pred, splitter assign new DefaultSignalling with VolatileAbort))
+  def find(p: T => Boolean): Option[T] = {
+    tasksupport.executeAndWaitResult(new Find(p, splitter assign new DefaultSignalling with VolatileAbort))
   }
 
   /** Creates a combiner factory. Each combiner factory instance is used

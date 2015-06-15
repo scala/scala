@@ -366,15 +366,6 @@ trait TraversableLike[+A, +Repr] extends Any
     result
   }
 
-  /** Finds the first element of the $coll satisfying a predicate, if any.
-   *
-   *  $mayNotTerminateInf
-   *  $orderDependent
-   *
-   *  @param p    the predicate used to test elements.
-   *  @return     an option value containing the first element in the $coll
-   *              that satisfies `p`, or `None` if none exists.
-   */
   def find(p: A => Boolean): Option[A] = {
     var result: Option[A] = None
     breakable {

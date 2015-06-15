@@ -84,8 +84,8 @@ object Set extends ImmutableSetFactory[Set] {
     override def forall(f: A => Boolean): Boolean = {
       f(elem1)
     }
-    override def find(f: A => Boolean): Option[A] = {
-      if (f(elem1)) Some(elem1)
+    override def find(p: A => Boolean): Option[A] = {
+      if (p(elem1)) Some(elem1)
       else None
     }
     @deprecatedOverriding("Immutable sets should do nothing on toSet but return themselves cast as a Set.", "2.11.0")
@@ -116,9 +116,9 @@ object Set extends ImmutableSetFactory[Set] {
     override def forall(f: A => Boolean): Boolean = {
       f(elem1) && f(elem2)
     }
-    override def find(f: A => Boolean): Option[A] = {
-      if (f(elem1)) Some(elem1)
-      else if (f(elem2)) Some(elem2)
+    override def find(p: A => Boolean): Option[A] = {
+      if (p(elem1)) Some(elem1)
+      else if (p(elem2)) Some(elem2)
       else None
     }
     @deprecatedOverriding("Immutable sets should do nothing on toSet but return themselves cast as a Set.", "2.11.0")
@@ -150,10 +150,10 @@ object Set extends ImmutableSetFactory[Set] {
     override def forall(f: A => Boolean): Boolean = {
       f(elem1) && f(elem2) && f(elem3)
     }
-    override def find(f: A => Boolean): Option[A] = {
-      if (f(elem1)) Some(elem1)
-      else if (f(elem2)) Some(elem2)
-      else if (f(elem3)) Some(elem3)
+    override def find(p: A => Boolean): Option[A] = {
+      if (p(elem1)) Some(elem1)
+      else if (p(elem2)) Some(elem2)
+      else if (p(elem3)) Some(elem3)
       else None
     }
     @deprecatedOverriding("Immutable sets should do nothing on toSet but return themselves cast as a Set.", "2.11.0")
@@ -186,11 +186,11 @@ object Set extends ImmutableSetFactory[Set] {
     override def forall(f: A => Boolean): Boolean = {
       f(elem1) && f(elem2) && f(elem3) && f(elem4)
     }
-    override def find(f: A => Boolean): Option[A] = {
-      if (f(elem1)) Some(elem1)
-      else if (f(elem2)) Some(elem2)
-      else if (f(elem3)) Some(elem3)
-      else if (f(elem4)) Some(elem4)
+    override def find(p: A => Boolean): Option[A] = {
+      if (p(elem1)) Some(elem1)
+      else if (p(elem2)) Some(elem2)
+      else if (p(elem3)) Some(elem3)
+      else if (p(elem4)) Some(elem4)
       else None
     }
     @deprecatedOverriding("Immutable sets should do nothing on toSet but return themselves cast as a Set.", "2.11.0")
