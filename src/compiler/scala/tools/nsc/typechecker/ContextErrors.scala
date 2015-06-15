@@ -636,7 +636,7 @@ trait ContextErrors {
           if (meth.isMacro) MacroTooFewArgumentListsMessage
           else "missing arguments for " + meth.fullLocationString + (
             if (meth.isConstructor) ""
-            else ";\nfollow this method with `_' if you want to treat it as a partially applied function"
+            else s";\nIf you want to treat it as a partially applied function write `${meth.name} _' instead, i.e. follow the method by an underscore."
           )
         issueNormalTypeError(tree, message)
         setError(tree)

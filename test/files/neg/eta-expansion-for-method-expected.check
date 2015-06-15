@@ -1,0 +1,5 @@
+eta-expansion-for-method-expected.scala:4: error: missing arguments for method meth in object Test;
+If you want to treat it as a partially applied function write `meth _' instead, i.e. follow the method by an underscore.
+  val func = meth
+             ^
+one error found
