@@ -81,8 +81,8 @@ object Set extends ImmutableSetFactory[Set] {
     override def exists(p: A => Boolean): Boolean = {
       p(elem1)
     }
-    override def forall(f: A => Boolean): Boolean = {
-      f(elem1)
+    override def forall(p: A => Boolean): Boolean = {
+      p(elem1)
     }
     override def find(p: A => Boolean): Option[A] = {
       if (p(elem1)) Some(elem1)
@@ -113,8 +113,8 @@ object Set extends ImmutableSetFactory[Set] {
     override def exists(p: A => Boolean): Boolean = {
       p(elem1) || p(elem2)
     }
-    override def forall(f: A => Boolean): Boolean = {
-      f(elem1) && f(elem2)
+    override def forall(p: A => Boolean): Boolean = {
+      p(elem1) && p(elem2)
     }
     override def find(p: A => Boolean): Option[A] = {
       if (p(elem1)) Some(elem1)
@@ -147,8 +147,8 @@ object Set extends ImmutableSetFactory[Set] {
     override def exists(p: A => Boolean): Boolean = {
       p(elem1) || p(elem2) || p(elem3)
     }
-    override def forall(f: A => Boolean): Boolean = {
-      f(elem1) && f(elem2) && f(elem3)
+    override def forall(p: A => Boolean): Boolean = {
+      p(elem1) && p(elem2) && p(elem3)
     }
     override def find(p: A => Boolean): Option[A] = {
       if (p(elem1)) Some(elem1)
@@ -183,8 +183,8 @@ object Set extends ImmutableSetFactory[Set] {
     override def exists(p: A => Boolean): Boolean = {
       p(elem1) || p(elem2) || p(elem3) || p(elem4)
     }
-    override def forall(f: A => Boolean): Boolean = {
-      f(elem1) && f(elem2) && f(elem3) && f(elem4)
+    override def forall(p: A => Boolean): Boolean = {
+      p(elem1) && p(elem2) && p(elem3) && p(elem4)
     }
     override def find(p: A => Boolean): Option[A] = {
       if (p(elem1)) Some(elem1)

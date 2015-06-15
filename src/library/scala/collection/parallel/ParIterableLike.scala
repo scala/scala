@@ -520,11 +520,11 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *
    *  $abortsignalling
    *
-   *  @param pred    a predicate used to test elements
+   *  @param p       a predicate used to test elements
    *  @return        true if `p` holds for all elements, false otherwise
    */
-  def forall(pred: T => Boolean): Boolean = {
-    tasksupport.executeAndWaitResult(new Forall(pred, splitter assign new DefaultSignalling with VolatileAbort))
+  def forall(p: T => Boolean): Boolean = {
+    tasksupport.executeAndWaitResult(new Forall(p, splitter assign new DefaultSignalling with VolatileAbort))
   }
 
   /** Tests whether a predicate holds for some element of this $coll.

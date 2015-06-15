@@ -397,7 +397,15 @@ trait GenTraversableOnce[+A] extends Any {
    */
   def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A
 
-  def forall(pred: A => Boolean): Boolean
+  /** Tests whether a predicate holds for all elements of this $coll.
+   *
+   *  $mayNotTerminateInf
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @return        `true` if this $coll is empty or the given predicate `p`
+   *                 holds for all elements of this $coll, otherwise `false`.
+   */
+  def forall(p: A => Boolean): Boolean
 
   /** Tests whether a predicate holds for some of the elements of this $coll.
    *

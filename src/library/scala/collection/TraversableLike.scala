@@ -340,14 +340,6 @@ trait TraversableLike[+A, +Repr] extends Any
     b.result
   }
 
-  /** Tests whether a predicate holds for all elements of this $coll.
-   *
-   *  $mayNotTerminateInf
-   *
-   *  @param   p     the predicate used to test elements.
-   *  @return        `true`  if this $coll is empty, otherwise `true` if the given predicate `p`
-    *                holds for all elements of this $coll, otherwise `false`.
-   */
   def forall(p: A => Boolean): Boolean = {
     var result = true
     breakable {
