@@ -33,10 +33,10 @@ trait Set[A] extends Iterable[A]
                 with Parallelizable[A, ParSet[A]]
 {
   override def companion: GenericCompanion[Set] = Set
-  
-  
+
+
   override def toSet[B >: A]: Set[B] = to[({type l[a] = immutable.Set[B]})#l] // for bincompat; remove in dev
-  
+
   override def seq: Set[A] = this
   protected override def parCombiner = ParSet.newCombiner[A] // if `immutable.SetLike` gets introduced, please move this there!
 }
@@ -48,7 +48,7 @@ trait Set[A] extends Iterable[A]
 object Set extends ImmutableSetFactory[Set] {
   /** $setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] = setCanBuildFrom[A]
-  
+
   /** An optimized representation for immutable empty sets */
   private object EmptySet extends AbstractSet[Any] with Set[Any] with Serializable {
     override def size: Int = 0
@@ -78,8 +78,8 @@ object Set extends ImmutableSetFactory[Set] {
     override def foreach[U](f: A =>  U): Unit = {
       f(elem1)
     }
-    override def exists(f: A => Boolean): Boolean = {
-      f(elem1)
+    override def exists(p: A => Boolean): Boolean = {
+      p(elem1)
     }
     override def forall(f: A => Boolean): Boolean = {
       f(elem1)
@@ -110,8 +110,8 @@ object Set extends ImmutableSetFactory[Set] {
     override def foreach[U](f: A =>  U): Unit = {
       f(elem1); f(elem2)
     }
-    override def exists(f: A => Boolean): Boolean = {
-      f(elem1) || f(elem2)
+    override def exists(p: A => Boolean): Boolean = {
+      p(elem1) || p(elem2)
     }
     override def forall(f: A => Boolean): Boolean = {
       f(elem1) && f(elem2)
@@ -144,8 +144,8 @@ object Set extends ImmutableSetFactory[Set] {
     override def foreach[U](f: A =>  U): Unit = {
       f(elem1); f(elem2); f(elem3)
     }
-    override def exists(f: A => Boolean): Boolean = {
-      f(elem1) || f(elem2) || f(elem3)
+    override def exists(p: A => Boolean): Boolean = {
+      p(elem1) || p(elem2) || p(elem3)
     }
     override def forall(f: A => Boolean): Boolean = {
       f(elem1) && f(elem2) && f(elem3)
@@ -180,8 +180,8 @@ object Set extends ImmutableSetFactory[Set] {
     override def foreach[U](f: A =>  U): Unit = {
       f(elem1); f(elem2); f(elem3); f(elem4)
     }
-    override def exists(f: A => Boolean): Boolean = {
-      f(elem1) || f(elem2) || f(elem3) || f(elem4)
+    override def exists(p: A => Boolean): Boolean = {
+      p(elem1) || p(elem2) || p(elem3) || p(elem4)
     }
     override def forall(f: A => Boolean): Boolean = {
       f(elem1) && f(elem2) && f(elem3) && f(elem4)

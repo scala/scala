@@ -396,7 +396,14 @@ trait GenTraversableOnce[+A] extends Any {
 
   def forall(pred: A => Boolean): Boolean
 
-  def exists(pred: A => Boolean): Boolean
+  /** Tests whether a predicate holds for some of the elements of this $coll.
+   *
+   *  $mayNotTerminateInf
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @return        `true` if the given predicate `p` returns `true` for at least one element of this $coll, otherwise `false`
+   */
+  def exists(p: A => Boolean): Boolean
 
   /** Finds the first element of the $coll satisfying a predicate, if any.
    *

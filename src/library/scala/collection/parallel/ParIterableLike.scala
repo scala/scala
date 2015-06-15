@@ -531,11 +531,11 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *
    *  $abortsignalling
    *
-   *  @param pred    a predicate used to test elements
+   *  @param p       a predicate used to test elements
    *  @return        true if `p` holds for some element, false otherwise
    */
-  def exists(pred: T => Boolean): Boolean = {
-    tasksupport.executeAndWaitResult(new Exists(pred, splitter assign new DefaultSignalling with VolatileAbort))
+  def exists(p: T => Boolean): Boolean = {
+    tasksupport.executeAndWaitResult(new Exists(p, splitter assign new DefaultSignalling with VolatileAbort))
   }
 
   /** Finds some element in the collection for which the predicate holds, if such
