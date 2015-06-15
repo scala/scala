@@ -110,13 +110,14 @@ trait GenTraversableOnce[+A] extends Any {
    *  binary operator.
    *
    *  $undefinedorder
+   *  $willNotTerminateInf
    *
    *  @tparam A1     a type parameter for the binary operator, a supertype of `A`.
    *  @param z       a neutral element for the fold operation; may be added to the result
    *                 an arbitrary number of times, and must not change the result (e.g., `Nil` for list concatenation,
-   *                 0 for addition, or 1 for multiplication.)
-   *  @param op      a binary operator that must be associative
-   *  @return        the result of applying fold operator `op` between all the elements and `z`
+   *                 0 for addition, or 1 for multiplication).
+   *  @param op      a binary operator that must be associative.
+   *  @return        the result of applying the fold operator `op` between all the elements and `z`, or `z` if this $coll is empty.
    */
   def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1
 
@@ -205,6 +206,7 @@ trait GenTraversableOnce[+A] extends Any {
    *             op(...op(z, x_1), x_2, ..., x_n)
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
+   *           Returns `z` if this $coll is empty.
    */
   def foldLeft[B](z: B)(op: (B, A) => B): B
 
@@ -222,6 +224,7 @@ trait GenTraversableOnce[+A] extends Any {
    *             op(x_1, op(x_2, ... op(x_n, z)...))
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
+   *           Returns `z` if this $coll is empty.
    */
   def foldRight[B](z: B)(op: (A, B) => B): B
 
