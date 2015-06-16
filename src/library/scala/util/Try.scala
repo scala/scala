@@ -48,7 +48,7 @@ import scala.language.implicitConversions
  * catching exceptions along the way. The `flatMap` and `map` combinators in the above example each essentially
  * pass off either their successfully completed value, wrapped in the `Success` type for it to be further operated
  * upon by the next combinator in the chain, or the exception wrapped in the `Failure` type usually to be simply
- * passed on down the chain. Combinators such as `rescue` and `recover` are designed to provide some type of
+ * passed on down the chain. Combinators such as `recover` and `recoverWith` are designed to provide some type of
  * default behavior in the case of failure.
  *
  * ''Note'': only non-fatal exceptions are caught by the combinators on `Try` (see [[scala.util.control.NonFatal]]).

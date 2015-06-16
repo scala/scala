@@ -15,7 +15,7 @@ import immutable.{List, Nil, ::}
 import java.io._
 import scala.annotation.migration
 
-/** A `Buffer` implementation back up by a list. It provides constant time
+/** A `Buffer` implementation backed by a list. It provides constant time
  *  prepend and append. Most other operations are linear.
  *
  *  @author  Matthias Zenger
