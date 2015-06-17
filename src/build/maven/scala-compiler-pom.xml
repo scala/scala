@@ -51,8 +51,8 @@
       <version>@PARSER_COMBINATORS_VERSION@</version>
     </dependency>
     <dependency> <!-- for scala-compiler-repl; once it moves there, make it required -->
-      <groupId>jline</groupId>
-      <artifactId>jline</artifactId>
+      <groupId>org.scala-lang.modules</groupId>
+      <artifactId>scala-jline</artifactId>
       <version>@JLINE_VERSION@</version>
       <optional>true</optional>
     </dependency>

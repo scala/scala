@@ -6,8 +6,8 @@
 package scala.tools.nsc
 package interpreter
 
-import jline.console.ConsoleReader
-import jline.console.completer._
+import scala.tools.jline.console.ConsoleReader
+import scala.tools.jline.console.completer._
 import session._
 import Completion._
 

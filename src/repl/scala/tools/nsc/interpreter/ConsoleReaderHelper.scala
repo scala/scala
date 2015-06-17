@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package interpreter
 
-import jline.console.{ ConsoleReader, CursorBuffer }
+import scala.tools.jline.console.{ ConsoleReader, CursorBuffer }
 
 trait ConsoleReaderHelper { _: ConsoleReader with Tabulator =>
   def isAcross: Boolean
