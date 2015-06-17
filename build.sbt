@@ -192,7 +192,12 @@ lazy val interactive = configureAsSubproject(project)
   .dependsOn(compiler)
 
 lazy val repl = configureAsSubproject(project)
-  .settings(libraryDependencies += jlineDep)
+  .settings(
+    libraryDependencies += jlineDep,
+    connectInput in run := true,
+    outputStrategy in run := Some(StdoutOutput),
+    run <<= (run in Compile).partialInput(" -usejavacp") // Automatically add this so that `repl/run` works without additional arguments.
+  )
   .settings(disableDocsAndPublishingTasks: _*)
   .dependsOn(compiler)
 
