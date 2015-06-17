@@ -109,11 +109,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   class ILoopInterpreter extends IMain(settings, out) {
-    outer =>
-
-    override lazy val formatting = new Formatting {
-      def prompt = ILoop.this.prompt
-    }
+    // the expanded prompt but without color escapes and without leading newline, for purposes of indenting
+    override lazy val formatting: Formatting = new Formatting(
+      (replProps.promptString format Properties.versionNumberString).lines.toList.last.length
+    )
     override protected def parentClassLoader =
       settings.explicitParentLoader.getOrElse( classOf[ILoop].getClassLoader )
   }

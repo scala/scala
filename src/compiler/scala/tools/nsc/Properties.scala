@@ -13,7 +13,7 @@ object Properties extends scala.util.PropertiesTrait {
 
   // settings based on jar properties, falling back to System prefixed by "scala."
   def residentPromptString = scalaPropOrElse("resident.prompt", "\nnsc> ")
-  def shellPromptString    = scalaPropOrElse("shell.prompt", "\nscala> ")
+  def shellPromptString    = scalaPropOrElse("shell.prompt", "%nscala> ")
   // message to display at EOF (which by default ends with
   // a newline so as not to break the user's terminal)
   def shellInterruptedString = scalaPropOrElse("shell.interrupted", f":quit$lineSeparator")

@@ -17,11 +17,11 @@ class ReplProps {
   val colorOk = bool("scala.color")
 
   // Handy system prop for shell prompt, or else pick it up from compiler.properties
+  val promptString = Prop[String]("scala.repl.prompt").option getOrElse Properties.shellPromptString
   val prompt = {
     import scala.io.AnsiColor.{ MAGENTA, RESET }
-    val p = Prop[String]("scala.repl.prompt").option getOrElse Properties.shellPromptString
-    val q = String.format(p, Properties.versionNumberString)
-    if (colorOk) s"$MAGENTA$q$RESET" else q
+    val p = promptString format Properties.versionNumberString
+    if (colorOk) s"$MAGENTA$p$RESET" else p
   }
 
   val info  = bool("scala.repl.info")

@@ -16,7 +16,7 @@ scala> def foo[T]{
   }
   println(code.eval)
 }
-<console>:13: free type: Ident(TypeName("T")) defined by foo in <console>:12:16
+<console>:16: free type: Ident(TypeName("T")) defined by foo in <console>:15:16
          val code = reify {
                           ^
 foo: [T]=> Unit

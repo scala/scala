@@ -112,12 +112,13 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   def this(factory: ScriptEngineFactory) = this(factory, new Settings())
   def this() = this(new Settings())
 
-  lazy val formatting: Formatting = new Formatting {
-    val prompt = Properties.shellPromptString
-  }
+  // the expanded prompt but without color escapes and without leading newline, for purposes of indenting
+  lazy val formatting: Formatting = new Formatting(
+    (replProps.promptString format Properties.versionNumberString).lines.toList.last.length
+  )
   lazy val reporter: ReplReporter = new ReplReporter(this)
 
-  import formatting._
+  import formatting.indentCode
   import reporter.{ printMessage, printUntruncatedMessage }
 
   // This exists mostly because using the reporter too early leads to deadlock.
@@ -468,7 +469,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   }
 
   private def requestFromLine(line: String, synthetic: Boolean): Either[IR.Result, Request] = {
-    val content = indentCode(line)
+    val content = line  //indentCode(line)
     val trees = parse(content) match {
       case parse.Incomplete     => return Left(IR.Incomplete)
       case parse.Error          => return Left(IR.Error)
@@ -909,10 +910,10 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
         else List("def %s = %s".format("$line", tquoted(originalLine)), "def %s = Nil".format("$trees"))
       }
       def preamble = s"""
-        |$preambleHeader
-        |%s%s%s
-      """.stripMargin.format(lineRep.readName, envLines.map("  " + _ + ";\n").mkString,
-        importsPreamble, indentCode(toCompute))
+        |${preambleHeader format lineRep.readName}
+        |${envLines mkString ("  ", ";\n  ", ";\n")}
+        |$importsPreamble
+        |${indentCode(toCompute)}""".stripMargin
 
       val generate = (m: MemberHandler) => m extraCodeToEvaluate Request.this
 
