@@ -617,18 +617,16 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
         val internalName = cachedJN.toString()
         val trackedSym = jsymbol(sym)
         reverseJavaName.get(internalName) match {
-          case Some(oldsym) if oldsym.exists && trackedSym.exists =>
-            assert(
-              // In contrast, neither NothingClass nor NullClass show up bytecode-level.
-              (oldsym == trackedSym) || (oldsym == RuntimeNothingClass) || (oldsym == RuntimeNullClass) || (oldsym.isModuleClass && (oldsym.sourceModule == trackedSym.sourceModule)),
-              s"""|Different class symbols have the same bytecode-level internal name:
-                  |     name: $internalName
-                  |   oldsym: ${oldsym.fullNameString}
-                  |  tracked: ${trackedSym.fullNameString}
-              """.stripMargin
-            )
-          case _ =>
+          case None =>
             reverseJavaName.put(internalName, trackedSym)
+          case Some(oldsym) =>
+            // TODO: `duplicateOk` seems pretty ad-hoc (a more aggressive version caused SI-9356 because it called oldSym.exists, which failed in the unpickler; see also SI-5031)
+            def duplicateOk = oldsym == NoSymbol || trackedSym == NoSymbol || (syntheticCoreClasses contains oldsym) || (oldsym.isModuleClass && (oldsym.sourceModule == trackedSym.sourceModule))
+            if (oldsym != trackedSym && !duplicateOk)
+              devWarning(s"""|Different class symbols have the same bytecode-level internal name:
+                             |     name: $internalName
+                             |   oldsym: ${oldsym.fullNameString}
+                             |  tracked: ${trackedSym.fullNameString}""".stripMargin)
         }
       }
 
