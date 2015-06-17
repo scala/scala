@@ -11,10 +11,18 @@ import Prop._
 
 class ReplProps {
   private def bool(name: String) = BooleanProp.keyExists(name)
-  private def int(name: String) = IntProp(name)
+  private def int(name: String)  = Prop[Int](name)
 
   // This property is used in TypeDebugging. Let's recycle it.
   val colorOk = bool("scala.color")
+
+  // Handy system prop for shell prompt, or else pick it up from compiler.properties
+  val prompt = {
+    import scala.io.AnsiColor.{ MAGENTA, RESET }
+    val p = Prop[String]("scala.repl.prompt").option getOrElse Properties.shellPromptString
+    val q = String.format(p, Properties.versionNumberString)
+    if (colorOk) s"$MAGENTA$q$RESET" else q
+  }
 
   val info  = bool("scala.repl.info")
   val debug = bool("scala.repl.debug")

@@ -197,10 +197,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       echo("%d %s".format(index + offset, line))
   }
 
-  private val currentPrompt = Properties.shellPromptString
-
   /** Prompt to print when awaiting input */
-  def prompt = currentPrompt
+  def prompt = replProps.prompt
 
   import LoopCommand.{ cmd, nullary }
 
@@ -410,14 +408,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   private def readOneLine() = {
-    import scala.io.AnsiColor.{ MAGENTA, RESET }
     out.flush()
-    in readLine (
-      if (replProps.colorOk)
-        MAGENTA + prompt + RESET
-      else
-        prompt
-    )
+    in readLine prompt
   }
 
   /** The main read-eval-print loop for the repl.  It calls
@@ -776,6 +768,14 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   private object paste extends Pasted {
     val ContinueString = "     | "
     val PromptString   = "scala> "
+    val testPrompt     = PromptString.trim
+    val testOurPrompt  = prompt.trim
+    val testBoth       = testPrompt != testOurPrompt
+
+    def isPrompt(line: String) = {
+      val text = line.trim
+      text == testOurPrompt || (testBoth && text == testPrompt)
+    }
 
     def interpret(line: String): Unit = {
       echo(line.trim)
@@ -785,7 +785,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
     def transcript(start: String) = {
       echo("\n// Detected repl transcript paste: ctrl-D to finish.\n")
-      apply(Iterator(start) ++ readWhile(_.trim != PromptString.trim))
+      apply(Iterator(start) ++ readWhile(!isPrompt(_)))
     }
   }
   import paste.{ ContinueString, PromptString }
