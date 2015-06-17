@@ -26,6 +26,8 @@ import scala.concurrent.{ ExecutionContext, Await, Future, future }
 import ExecutionContext.Implicits._
 import java.io.{ BufferedReader, FileReader }
 
+import scala.util.{Try, Success, Failure}
+
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.
  *  After instantiation, clients should call the main() method.
@@ -860,18 +862,36 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
    *  with SimpleReader.
    */
   def chooseReader(settings: Settings): InteractiveReader = {
-    def mkJLineReader(completer: () => Completion): InteractiveReader =
-      try new jline.JLineReader(completer)
-      catch {
-        case ex@(_: Exception | _: NoClassDefFoundError) =>
-          Console.println(f"Failed to created JLineReader: ${ex}%nFalling back to SimpleReader.")
-          SimpleReader()
-      }
-
     if (settings.Xnojline || Properties.isEmacsShell) SimpleReader()
     else {
-      if (settings.noCompletion) mkJLineReader(() => NoCompletion)
-      else mkJLineReader(() => new JLineCompletion(intp))
+      type Completer = () => Completion
+      type ReaderMaker = Completer => InteractiveReader
+
+      def instantiate(className: String): ReaderMaker = completer => {
+        if (settings.debug) Console.println(s"Trying to instantiate a InteractiveReader from $className")
+        Class.forName(className).getConstructor(classOf[Completer]).
+          newInstance(completer).
+          asInstanceOf[InteractiveReader]
+      }
+
+      def mkReader(maker: ReaderMaker) =
+        if (settings.noCompletion) maker(() => NoCompletion)
+        else maker(() => new JLineCompletion(intp)) // JLineCompletion is a misnomer -- it's not tied to jline
+
+      def internalClass(kind: String) = s"scala.tools.nsc.interpreter.$kind.InteractiveReader"
+      val readerClasses = sys.props.get("scala.repl.reader").toStream ++ Stream(internalClass("jline"), internalClass("jline_embedded"))
+      val readers = readerClasses map (cls => Try { mkReader(instantiate(cls)) })
+
+      val reader = (readers collect { case Success(reader) => reader } headOption) getOrElse SimpleReader()
+
+      if (settings.debug) {
+        val readerDiags = (readerClasses, readers).zipped map {
+          case (cls, Failure(e)) => s"  - $cls --> " + e.getStackTrace.mkString(e.toString+"\n\t", "\n\t","\n")
+          case (cls, Success(_)) => s"  - $cls OK"
+        }
+        Console.println(s"All InteractiveReaders tried: ${readerDiags.mkString("\n","\n","\n")}")
+      }
+      reader
     }
   }
 
