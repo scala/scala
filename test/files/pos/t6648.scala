@@ -10,7 +10,7 @@ class Transformer {
 }
 
 object transformer1 extends Transformer {
-  // Adding explicit type arguments, or making the impilcit view
+  // Adding explicit type arguments, or making the implicit view
   // seqToNodeSeq explicit avoids the crash
   NodeSeq.foo {
     // These both avoid the crash:

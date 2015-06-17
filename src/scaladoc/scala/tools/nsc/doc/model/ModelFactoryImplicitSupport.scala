@@ -396,7 +396,7 @@ trait ModelFactoryImplicitSupport {
 
     def isHiddenConversion = settings.hiddenImplicits(conversionQualifiedName)
 
-    override def toString = "Implcit conversion from " + sym.tpe + " to " + toType + " done by " + convSym
+    override def toString = "Implicit conversion from " + sym.tpe + " to " + toType + " done by " + convSym
   }
 
   /* ========================= HELPER METHODS ========================== */
@@ -557,7 +557,7 @@ trait ModelFactoryImplicitSupport {
    *
    * The trick here is that the resultType does not matter - the condition for removal it that paramss have the same
    * structure (A => B => C may not override (A, B) => C) and that all the types involved are
-   * of the implcit conversion's member are subtypes of the parent members' parameters */
+   * of the implicit conversion's member are subtypes of the parent members' parameters */
   def isDistinguishableFrom(t1: Type, t2: Type): Boolean = {
     // Vlad: I tried using matches but it's not exactly what we need:
     // (p: AnyRef)AnyRef matches ((t: String)AnyRef returns false -- but we want that to be true

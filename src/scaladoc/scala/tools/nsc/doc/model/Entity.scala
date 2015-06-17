@@ -298,7 +298,7 @@ trait DocTemplateEntity extends MemberTemplateEntity {
   /** The shadowing information for the implicitly added members */
   def implicitsShadowing: Map[MemberEntity, ImplicitMemberShadowing]
 
-  /** Classes that can be implcitly converted to this class */
+  /** Classes that can be implicitly converted to this class */
   def incomingImplicitlyConvertedClasses: List[(DocTemplateEntity, ImplicitConversion)]
 
   /** Classes to which this class can be implicitly converted to

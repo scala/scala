@@ -94,7 +94,7 @@ object Test extends ScaladocModelTest {
     assert(isShadowed(conv._member("convToEnrichedA")))
     assert(conv._member("convToEnrichedA").resultType.name == "Double")
 
-    // def convToNumericA: Double          // enrichA1: no constraintsd
+    // def convToNumericA: Double          // enrichA1: no constraints
     conv = B._conversion(A.qualifiedName + ".enrichA1")
     assert(conv.members.length == 1)
     assert(conv.constraints.length == 0)
