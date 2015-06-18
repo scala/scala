@@ -773,7 +773,7 @@ abstract class Inliners extends SubComponent {
 
         staleOut += block
 
-        tfa.remainingCALLs.remove(instr) // this bookkpeeping is done here and not in MTFAGrowable.reinit due to (1st) convenience and (2nd) necessity.
+        tfa.remainingCALLs.remove(instr) // this bookkeeping is done here and not in MTFAGrowable.reinit due to (1st) convenience and (2nd) necessity.
         tfa.isOnWatchlist.remove(instr)  // ditto
         tfa.warnIfInlineFails.remove(instr)
 

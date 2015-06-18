@@ -373,7 +373,7 @@ abstract class SymbolLoaders {
     protected def doComplete(root: Symbol) { root.sourceModule.initialize }
   }
 
-  /** used from classfile parser to avoid cyclies */
+  /** used from classfile parser to avoid cycles */
   var parentsLevel = 0
   var pendingLoadActions: List[() => Unit] = Nil
 }

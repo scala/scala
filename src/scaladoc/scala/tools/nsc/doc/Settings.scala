@@ -143,7 +143,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     "dot" // by default, just pick up the system-wide dot
   )
 
-  /** The maxium nuber of normal classes to show in the diagram */
+  /** The maximum number of normal classes to show in the diagram */
   val docDiagramsMaxNormalClasses = IntSetting(
     "-diagrams-max-classes",
     "The maximum number of superclasses or subclasses to show in a diagram",
@@ -152,7 +152,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     _ => None
   )
 
-  /** The maxium nuber of implcit classes to show in the diagram */
+  /** The maximum number of implicit classes to show in the diagram */
   val docDiagramsMaxImplicitClasses = IntSetting(
     "-diagrams-max-implicits",
     "The maximum number of implicitly converted classes to show in a diagram",
