@@ -60,7 +60,7 @@ trait AnnotationCheckers {
      * mode (see method adapt in trait Typers).
      *
      * An implementation cannot rely on canAdaptAnnotations being called before. If the implementing
-     * class cannot do the adaptiong, it should return the tree unchanged.
+     * class cannot do the adapting, it should return the tree unchanged.
      */
     @deprecated("Create an AnalyzerPlugin and use adaptAnnotations", "2.10.1")
     def adaptAnnotations(tree: Tree, mode: Mode, pt: Type): Tree = tree

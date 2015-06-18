@@ -475,7 +475,7 @@ trait ModelFactoryImplicitSupport {
     }
 
   /**
-   *  Make implicits explicit - Not used curently
+   *  Make implicits explicit - Not used currently
    */
   // object implicitToExplicit extends TypeMap {
   //   def apply(tp: Type): Type = mapOver(tp) match {

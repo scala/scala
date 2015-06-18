@@ -4443,7 +4443,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         def onError(typeErrors: Seq[AbsTypeError], warnings: Seq[(Position, String)]): Tree = {
           if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, start)
 
-          // If the problem is with raw types, copnvert to existentials and try again.
+          // If the problem is with raw types, convert to existentials and try again.
           // See #4712 for a case where this situation arises,
           if ((fun.symbol ne null) && fun.symbol.isJavaDefined) {
             val newtpe = rawToExistential(fun.tpe)

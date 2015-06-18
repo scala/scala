@@ -17,7 +17,7 @@ object Test extends BytecodeTest {
   def countNullChecks(insnList: InsnList): Int = {
     /** Is given instruction a null check?
      *  NOTE
-     *   This will detect direct null compparsion as in
+     *   This will detect direct null comparison as in
      *    if (x == null) ...
      *   and not indirect as in
      *     val foo = null

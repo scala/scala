@@ -5,6 +5,6 @@ class Foo_1 {
     } finally {
       print("hello")
     }
-    while(true){} // ensure infinite loop doesn't break the algoirthm
+    while(true){} // ensure infinite loop doesn't break the algorithm
   }
 }

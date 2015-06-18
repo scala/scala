@@ -248,7 +248,7 @@ trait MatchTranslation {
       if (caseDefs forall treeInfo.isCatchCase) caseDefs
       else {
         val swatches = { // switch-catches
-          // SI-7459 must duplicate here as we haven't commited to switch emission, and just figuring out
+          // SI-7459 must duplicate here as we haven't committed to switch emission, and just figuring out
           //         if we can ends up mutating `caseDefs` down in the use of `substituteSymbols` in
           //         `TypedSubstitution#Substitution`. That is called indirectly by `emitTypeSwitch`.
           val bindersAndCases = caseDefs.map(_.duplicate) map { caseDef =>
