@@ -1,1 +1,1 @@
--optimise -Yinline-warnings
+-optimise -Yinline-warnings -Yopt:l:classpath

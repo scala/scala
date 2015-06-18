@@ -213,6 +213,35 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     assert(!primitiveTypeMap.contains(sym) || isCompilingPrimitive, sym)
   }
 
+  /**
+   * Reconstruct the classfile flags from a Java defined class symbol.
+   *
+   * The implementation of this method is slightly different that [[javaFlags]]. The javaFlags
+   * method is primarily used to map Scala symbol flags to sensible classfile flags that are used
+   * in the generated classfiles. For example, all classes emitted by the Scala compiler have
+   * ACC_PUBLIC.
+   *
+   * When building a [[ClassBType]] from a Java class symbol, the flags in the type's `info` have
+   * to correspond exactly to the flags in the classfile. For example, if the class is package
+   * protected (i.e., it doesn't have the ACC_PUBLIC flag), this needs to be reflected in the
+   * ClassBType. For example, the inliner needs the correct flags for access checks.
+   *
+   * Class flags are listed here:
+   *   https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.1-200-E.1
+   */
+  private def javaClassfileFlags(classSym: Symbol): Int = {
+    assert(classSym.isJava, s"Expected Java class symbol, got ${classSym.fullName}")
+    import asm.Opcodes._
+    GenBCode.mkFlags(
+      if (classSym.isPublic)        ACC_PUBLIC    else 0,
+      if (classSym.isFinal)         ACC_FINAL     else 0,
+      if (classSym.isInterface)     ACC_INTERFACE else ACC_SUPER, // see the link above. javac does the same: ACC_SUPER for all classes, but not interfaces.
+      if (classSym.hasAbstractFlag) ACC_ABSTRACT  else 0,
+      if (classSym.isArtifact)      ACC_SYNTHETIC else 0,
+      if (classSym.hasEnumFlag)     ACC_ENUM      else 0
+    )
+  }
+
   private def setClassInfo(classSym: Symbol, classBType: ClassBType): ClassBType = {
     val superClassSym = if (classSym.isImplClass) ObjectClass else classSym.superClass
     assert(
@@ -230,7 +259,10 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     val interfaces = implementedInterfaces(classSym).map(classBTypeFromSymbol)
 
-    val flags = javaFlags(classSym)
+    val flags = {
+      if (classSym.isJava) javaClassfileFlags(classSym) // see comment on javaClassfileFlags
+      else javaFlags(classSym)
+    }
 
     /* The InnerClass table of a class C must contain all nested classes of C, even if they are only
      * declared but not otherwise referenced in C (from the bytecode or a method / field signature).
