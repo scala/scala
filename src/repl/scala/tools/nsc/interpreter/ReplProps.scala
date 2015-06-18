@@ -6,6 +6,7 @@
 package scala.tools.nsc
 package interpreter
 
+import Properties.shellPromptString
 import scala.sys._
 import Prop._
 
@@ -16,18 +17,18 @@ class ReplProps {
   // This property is used in TypeDebugging. Let's recycle it.
   val colorOk = bool("scala.color")
 
+  val info  = bool("scala.repl.info")
+  val debug = bool("scala.repl.debug")
+  val trace = bool("scala.repl.trace")
+  val power = bool("scala.repl.power")
+
   // Handy system prop for shell prompt, or else pick it up from compiler.properties
-  val promptString = Prop[String]("scala.repl.prompt").option getOrElse Properties.shellPromptString
+  val promptString = Prop[String]("scala.repl.prompt").option getOrElse (if (info) "%nscala %s> " else shellPromptString)
   val prompt = {
     import scala.io.AnsiColor.{ MAGENTA, RESET }
     val p = promptString format Properties.versionNumberString
     if (colorOk) s"$MAGENTA$p$RESET" else p
   }
-
-  val info  = bool("scala.repl.info")
-  val debug = bool("scala.repl.debug")
-  val trace = bool("scala.repl.trace")
-  val power = bool("scala.repl.power")
 
   /** CSV of paged,across to enable pagination or `-x` style
    *  columns, "across" instead of down the column.  Since
