@@ -90,8 +90,12 @@ trait ModelFactoryImplicitSupport {
     else {
       val context: global.analyzer.Context = global.analyzer.rootContext(NoCompilationUnit)
 
-      val results = global.analyzer.allViewsFrom(sym.tpe_*, context, sym.typeParams)
+      val results = global.analyzer.allViewsFrom(sym.tpe_*, context, sym.typeParams) ++
+        global.analyzer.allViewsFrom(byNameType(sym.tpe_*), context, sym.typeParams)
       var conversions = results.flatMap(result => makeImplicitConversion(sym, result._1, result._2, context, inTpl))
+      //debug(results.mkString("All views\n  ", "\n  ", "\n"))
+      //debug(conversions.mkString("Conversions\n  ", "\n  ", "\n"))
+
       // also keep empty conversions, so they appear in diagrams
       // conversions = conversions.filter(!_.members.isEmpty)
 
@@ -193,7 +197,7 @@ trait ModelFactoryImplicitSupport {
         List(new ImplicitConversionImpl(sym, result.tree.symbol, toType, constraints, inTpl))
       } catch {
         case i: ImplicitNotFound =>
-          //println("  Eliminating: " + toType)
+          //debug(s"  Eliminating: $toType")
           Nil
       }
     }
