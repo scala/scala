@@ -25,12 +25,6 @@ package scala
  *    assert(max(0, 1) == anonfun2(0, 1))
  * }
  *  }}}
- *
- *  Note that `Function1` does not define a total function, as might
- *  be suggested by the existence of [[scala.PartialFunction]]. The only
- *  distinction between `Function1` and `PartialFunction` is that the
- *  latter can specify inputs which it will not handle.
-
  */
 trait Function2[@specialized(scala.Int, scala.Long, scala.Double) -T1, @specialized(scala.Int, scala.Long, scala.Double) -T2, @specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double) +R] extends AnyRef { self =>
   /** Apply the body of this function to the arguments.
