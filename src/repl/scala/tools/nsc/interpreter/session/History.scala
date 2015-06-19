@@ -11,7 +11,10 @@ package session
  *  reference to the jline classes.  Very sparse right now.
  */
 trait History {
+  def historicize(text: String): Boolean = false
+
   def asStrings: List[String]
+  def asStrings(from: Int, to: Int): List[String] = asStrings.slice(from, to)
   def index: Int
   def size: Int
 }

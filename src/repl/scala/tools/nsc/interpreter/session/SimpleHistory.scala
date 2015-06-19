@@ -10,10 +10,9 @@ package session
 import scala.collection.mutable.{ Buffer, ListBuffer }
 import scala.collection.JavaConverters._
 
-class SimpleHistory extends JLineHistory {
+class SimpleHistory extends History {
   private var _index: Int = 0
-  private val buf: Buffer[String] = new ListBuffer[String]
-  private def toEntries(): Seq[JEntry] = buf.zipWithIndex map { case (x, i) => Entry(i, x) }
+  protected val buf: Buffer[String] = new ListBuffer[String]
   private def setTo(num: Int)          = { _index = num ; true }
   private def minusOne                 = { _index -= 1 ; true }
   private def plusOne                  = { _index += 1 ; true }
@@ -23,10 +22,6 @@ class SimpleHistory extends JLineHistory {
       size, index, msg)
     )
     ""
-  }
-
-  case class Entry(index: Int, value: CharSequence) extends JEntry {
-    override def toString = value
   }
 
   def maxSize: Int = 2500
@@ -42,9 +37,6 @@ class SimpleHistory extends JLineHistory {
     buf trimEnd 1
     add(item)
   }
-  def entries(idx: Int): JListIterator[JEntry] = toEntries().asJava.listIterator(idx)
-  def entries(): JListIterator[JEntry]         = toEntries().asJava.listIterator()
-  def iterator: JIterator[JEntry]              = toEntries().iterator.asJava
 
   def remove(idx: Int): CharSequence        = buf remove idx
   def removeFirst(): CharSequence           = buf remove 0

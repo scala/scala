@@ -191,6 +191,7 @@ lazy val interactive = configureAsSubproject(project)
   .settings(disableDocsAndPublishingTasks: _*)
   .dependsOn(compiler)
 
+// TODO: SI-9339 embed shaded copy of jline & its interface (see #4563)
 lazy val repl = configureAsSubproject(project)
   .settings(
     libraryDependencies += jlineDep,
