@@ -318,7 +318,7 @@ trait TypeDiagnostics {
      */
     def qualifyDefaultNamespaces() = {
       val intersect = Set(trueOwner, aliasOwner) intersect UnqualifiedOwners
-      if (intersect.nonEmpty) preQualify()
+      if (intersect.nonEmpty && tp.typeSymbolDirect.name == tp.typeSymbol.name) preQualify()
     }
 
     // functions to manipulate the name
