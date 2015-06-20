@@ -2,6 +2,7 @@
 import scala.tools.partest.SessionTest
 
 object Test extends SessionTest {
+  //override def prompt = "XXX> "
 //Welcome to Scala version 2.11.6 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_40).
   def session =
     s"""|Type in expressions to have them evaluated.
@@ -22,5 +23,17 @@ object Test extends SessionTest {
         |                                         ^
         |
         |scala> :quit"""
+        /*
+        |XXX> XXX> def f = 42
+        |
+        |// Detected repl transcript paste: ctrl-D to finish.
+        |
+        |// Replaying 1 commands from transcript.
+        |
+        |XXX> def f = 42
+        |f: Int
+        |
+        |XXX> :quit"""
+        */
 
 }

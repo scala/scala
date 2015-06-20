@@ -765,16 +765,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   private object paste extends Pasted {
+    import scala.util.matching.Regex.quote
     val ContinueString = "     | "
-    val PromptString   = "scala> "
-    val testPrompt     = PromptString.trim
-    val testOurPrompt  = prompt.trim
-    val testBoth       = testPrompt != testOurPrompt
+    val PromptString   = prompt.lines.toList.last
+    val anyPrompt = s"""\\s*(?:${quote(PromptString.trim)}|${quote(AltPromptString.trim)})\\s*""".r
 
-    def isPrompt(line: String) = {
-      val text = line.trim
-      text == testOurPrompt || (testBoth && text == testPrompt)
-    }
+    def isPrompted(line: String)   = matchesPrompt(line)
+    def isPromptOnly(line: String) = line match { case anyPrompt() => true ; case _ => false }
 
     def interpret(line: String): Unit = {
       echo(line.trim)
@@ -784,10 +781,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
     def transcript(start: String) = {
       echo("\n// Detected repl transcript paste: ctrl-D to finish.\n")
-      apply(Iterator(start) ++ readWhile(!isPrompt(_)))
+      apply(Iterator(start) ++ readWhile(!isPromptOnly(_)))
     }
   }
-  import paste.{ ContinueString, PromptString }
 
   /** Interpret expressions starting with the first line.
     * Read lines until a complete compilation unit is available
@@ -809,7 +805,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
             echo("You typed two blank lines.  Starting a new command.")
             None
           }
-          else in.readLine(ContinueString) match {
+          else in.readLine(paste.ContinueString) match {
             case null =>
               // we know compilation is going to fail since we're at EOF and the
               // parser thinks the input is still incomplete, but since this is
@@ -833,7 +829,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
      *     and avoid the interpreter, as it's likely not valid scala code.
      */
     if (code == "") None
-    else if (!paste.running && code.trim.startsWith(PromptString)) {
+    else if (!paste.running && paste.isPrompted(code)) {
       paste.transcript(code)
       None
     }
