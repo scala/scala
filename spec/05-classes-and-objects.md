@@ -966,7 +966,7 @@ This form of extensibility can be excluded by declaring the base class
 directly extend `Expr` must be in the same source file as
 `Expr`.
 
-### Traits
+## Traits
 
 ```ebnf
 TmplDef          ::=  `trait' TraitDef
