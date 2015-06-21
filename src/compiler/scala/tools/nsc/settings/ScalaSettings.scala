@@ -76,7 +76,7 @@ trait ScalaSettings extends AbsScalaSettings
     val implicitConversions = Choice("implicitConversions", "Allow definition of implicit functions called views")
     val higherKinds         = Choice("higherKinds",         "Allow higher-kinded types")
     val existentials        = Choice("existentials",        "Existential types (besides wildcard types) can be written and inferred")
-    val macros              = Choice("experimental.macros", "Allow macro defintion (besides implementation and application)")
+    val macros              = Choice("experimental.macros", "Allow macro definition (besides implementation and application)")
   }
   val language      = {
     val description = "Enable or disable language features"

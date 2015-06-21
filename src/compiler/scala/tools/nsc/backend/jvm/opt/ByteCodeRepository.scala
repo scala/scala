@@ -127,7 +127,7 @@ class ByteCodeRepository(val classPath: ClassFileLookup[AbstractFile], val isJav
       case Nil     => Left(failedClasses)
     }
 
-    // In a MethodInsnNode, the `owner` field may be an array descriptor, for exmple when invoking `clone`. We don't have a method node to return in this case.
+    // In a MethodInsnNode, the `owner` field may be an array descriptor, for example when invoking `clone`. We don't have a method node to return in this case.
     if (ownerInternalNameOrArrayDescriptor.charAt(0) == '[')
       Left(MethodNotFound(name, descriptor, ownerInternalNameOrArrayDescriptor, Nil))
     else

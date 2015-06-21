@@ -86,7 +86,7 @@ object Test extends App {
     def f(a: Object) = "first"
     val f: String => String = a => "second"
   }
-  println(t5.f(new Sub1())) // firsst
+  println(t5.f(new Sub1())) // first
   println(t5.f("dfklj"))    // second
 
   object t6 {

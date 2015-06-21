@@ -444,7 +444,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       def adaptAndPostErase(tree: Tree, pt: Type): (Boolean, Tree) = {
         val (needsAdapt, adaptedTree) = adapt(tree, pt)
         val trans = postErasure.newTransformer(unit)
-        val postErasedTree = trans.atOwner(currentOwner)(trans.transform(adaptedTree)) // SI-8017 elimnates ErasedValueTypes
+        val postErasedTree = trans.atOwner(currentOwner)(trans.transform(adaptedTree)) // SI-8017 eliminates ErasedValueTypes
         (needsAdapt, postErasedTree)
       }
 

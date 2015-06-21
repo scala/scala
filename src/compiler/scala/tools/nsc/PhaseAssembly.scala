@@ -226,7 +226,7 @@ trait PhaseAssembly {
   }
 
   /** Given the phases set, will build a dependency graph from the phases set
-   *  Using the aux. method of the DependencyGraph to create nodes and egdes.
+   *  Using the aux. method of the DependencyGraph to create nodes and edges.
    */
   private def phasesSetToDepGraph(phsSet: mutable.HashSet[SubComponent]): DependencyGraph = {
     val graph = new DependencyGraph()

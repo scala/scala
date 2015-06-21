@@ -7,7 +7,7 @@ object Test {
 
 /* If SI-8230 is fixed, and `viewExists` is changed to no longer leak
    ambiguity errors, you might expect the check file for this test to
-   change as folloes:
+   change as follows:
 
 @@ -1,18 +1,10 @@
 -t8463.scala:5: error: no type parameters for method apply: (activity:

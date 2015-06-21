@@ -322,7 +322,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
         val javaCompatMembers = {
           if (linkedClass != NoSymbol && isTopLevelModuleClass(linkedClass))
           // phase travel to exitingPickler: this makes sure that memberClassesForInnerClassTable only sees member
-          // classes, not local classes of the companion module (E in the exmaple) that were lifted by lambdalift.
+          // classes, not local classes of the companion module (E in the example) that were lifted by lambdalift.
             exitingPickler(memberClassesForInnerClassTable(linkedClass))
           else
             Nil

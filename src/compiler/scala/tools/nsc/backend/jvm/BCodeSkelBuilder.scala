@@ -90,7 +90,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
     override def getCurrentCUnit(): CompilationUnit = { cunit }
 
-    /* ---------------- helper utils for generating classes and fiels ---------------- */
+    /* ---------------- helper utils for generating classes and fields ---------------- */
 
     def genPlainClass(cd: ClassDef) {
       assert(cnode == null, "GenBCode detected nested methods.")
