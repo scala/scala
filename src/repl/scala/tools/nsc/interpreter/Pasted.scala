@@ -85,7 +85,7 @@ abstract class Pasted {
       case _ => code
     }
 
-    def run() {
+    def run(): Unit = {
       println("// Replaying %d commands from transcript.\n" format cmds.size)
       cmds foreach { cmd =>
         print(ActualPromptString)
