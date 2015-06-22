@@ -539,6 +539,8 @@ abstract class ClassfileParser {
             devWarning(s"no linked class for java enum $sym in ${sym.owner}. A referencing class file might be missing an InnerClasses entry.")
           case linked =>
             if (!linked.isSealed)
+              // Marking the enum class SEALED | ABSTRACT enables exhaustiveness checking.
+              // This is a bit of a hack and requires excluding the ABSTRACT flag in the backend, see method javaClassfileFlags.
               linked setFlag (SEALED | ABSTRACT)
             linked addChild sym
         }

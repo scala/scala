@@ -1,6 +1,1 @@
-#partest !-Ybackend:GenBCode
-warning: there was one inliner warning; re-run with -Yinline-warnings for details
-#partest -Ybackend:GenBCode
-warning: there was one inliner warning; re-run with -Yopt-warnings for details
-#partest
 2

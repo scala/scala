@@ -761,9 +761,13 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val interfaces = interfacesOpt()
       accept(LBRACE)
       val buf = new ListBuffer[Tree]
+      var enumIsFinal = true
       def parseEnumConsts() {
         if (in.token != RBRACE && in.token != SEMI && in.token != EOF) {
-          buf += enumConst(enumType)
+          val (const, hasClassBody) = enumConst(enumType)
+          buf += const
+          // if any of the enum constants has a class body, the enum class is not final (JLS 8.9.)
+          enumIsFinal &&= !hasClassBody
           if (in.token == COMMA) {
             in.nextToken()
             parseEnumConsts()
@@ -793,15 +797,25 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       accept(RBRACE)
       val superclazz =
         AppliedTypeTree(javaLangDot(tpnme.Enum), List(enumType))
+      val finalFlag = if (enumIsFinal) Flags.FINAL else 0l
+      val abstractFlag = {
+        // javac adds `ACC_ABSTRACT` to enum classes with deferred members
+        val hasAbstractMember = body exists {
+          case d: DefDef => d.mods.isDeferred
+          case _         => false
+        }
+        if (hasAbstractMember) Flags.ABSTRACT else 0l
+      }
       addCompanionObject(consts ::: statics ::: predefs, atPos(pos) {
-        ClassDef(mods | Flags.ENUM, name, List(),
+        ClassDef(mods | Flags.ENUM | finalFlag | abstractFlag, name, List(),
                  makeTemplate(superclazz :: interfaces, body))
       })
     }
 
-    def enumConst(enumType: Tree) = {
+    def enumConst(enumType: Tree): (ValDef, Boolean) = {
       annotations()
-      atPos(in.currentPos) {
+      var hasClassBody = false
+      val res = atPos(in.currentPos) {
         val name = ident()
         if (in.token == LPAREN) {
           // skip arguments
@@ -809,12 +823,14 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           accept(RPAREN)
         }
         if (in.token == LBRACE) {
+          hasClassBody = true
           // skip classbody
           skipAhead()
           accept(RBRACE)
         }
         ValDef(Modifiers(Flags.ENUM | Flags.STABLE | Flags.JAVA | Flags.STATIC), name.toTermName, enumType, blankExpr)
       }
+      (res, hasClassBody)
     }
 
     def typeDecl(mods: Modifiers): List[Tree] = in.token match {

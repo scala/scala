@@ -1,0 +1,18 @@
+  // access flags 0x4009
+  public static enum INNERCLASS A_1$A1N A_1 A1N
+
+  // access flags 0x4409
+  public static abstract enum INNERCLASS A_1$A1N_ABSTRACT A_1 A1N_ABSTRACT
+
+  // access flags 0x4019
+  public final static enum INNERCLASS A_1$A1N_FINAL A_1 A1N_FINAL
+
+  // access flags 0x4009
+  public static enum INNERCLASS B_2$A1N B_2 A1N
+
+  // access flags 0x4409
+  public static abstract enum INNERCLASS B_2$A1N_ABSTRACT B_2 A1N_ABSTRACT
+
+  // access flags 0x4019
+  public final static enum INNERCLASS B_2$A1N_FINAL B_2 A1N_FINAL
+
