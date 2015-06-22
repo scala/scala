@@ -561,7 +561,7 @@ private[internal] trait TypeMaps {
                |  tparams  ${rhsSym.typeParams map own_s mkString ", "}
                |"""
 
-        if (argIndex < 0)
+        if (!rhsArgs.isDefinedAt(argIndex))
           abort(s"Something is wrong: cannot find $lhs in applied type $rhs\n" + explain)
         else {
           val targ   = rhsArgs(argIndex)
