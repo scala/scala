@@ -140,7 +140,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       if (AsmUtils.traceClassEnabled && cnode.name.contains(AsmUtils.traceClassPattern))
         AsmUtils.traceClass(cnode)
 
-      if (settings.YoptInlinerEnabled) {
+      if (settings.YoptAddToBytecodeRepository) {
         // The inliner needs to find all classes in the code repo, also those being compiled
         byteCodeRepository.add(cnode, ByteCodeRepository.CompilationUnit)
       }

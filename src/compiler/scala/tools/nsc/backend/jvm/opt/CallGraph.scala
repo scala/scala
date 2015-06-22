@@ -11,6 +11,7 @@ import scala.reflect.internal.util.{NoPosition, Position}
 import scala.tools.asm.tree.analysis.{Value, Analyzer, BasicInterpreter}
 import scala.tools.asm.{Opcodes, Type}
 import scala.tools.asm.tree._
+import scala.collection.concurrent
 import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
@@ -21,14 +22,25 @@ import BytecodeUtils._
 class CallGraph[BT <: BTypes](val btypes: BT) {
   import btypes._
 
-  val callsites: collection.concurrent.Map[MethodInsnNode, Callsite] = recordPerRunCache(collection.concurrent.TrieMap.empty[MethodInsnNode, Callsite])
+  val callsites: concurrent.Map[MethodInsnNode, Callsite] = recordPerRunCache(concurrent.TrieMap.empty)
+
+  val closureInstantiations: concurrent.Map[InvokeDynamicInsnNode, (MethodNode, ClassBType)] = recordPerRunCache(concurrent.TrieMap.empty)
 
   def addClass(classNode: ClassNode): Unit = {
-    for (m <- classNode.methods.asScala; callsite <- analyzeCallsites(m, classBTypeFromClassNode(classNode)))
-      callsites(callsite.callsiteInstruction) = callsite
+    val classType = classBTypeFromClassNode(classNode)
+    for {
+      m <- classNode.methods.asScala
+      (calls, closureInits) = analyzeCallsites(m, classType)
+    } {
+      calls foreach (callsite => callsites(callsite.callsiteInstruction) = callsite)
+      closureInits foreach (indy => closureInstantiations(indy) = (m, classType))
+    }
   }
 
-  def analyzeCallsites(methodNode: MethodNode, definingClass: ClassBType): List[Callsite] = {
+  /**
+   * Returns a list of callsites in the method, plus a list of closure instantiation indy instructions.
+   */
+  def analyzeCallsites(methodNode: MethodNode, definingClass: ClassBType): (List[Callsite], List[InvokeDynamicInsnNode]) = {
 
     case class CallsiteInfo(safeToInline: Boolean, safeToRewrite: Boolean,
                             annotatedInline: Boolean, annotatedNoInline: Boolean,
@@ -116,7 +128,10 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
       case _ => false
     }
 
-    methodNode.instructions.iterator.asScala.collect({
+    val callsites = new collection.mutable.ListBuffer[Callsite]
+    val closureInstantiations = new collection.mutable.ListBuffer[InvokeDynamicInsnNode]
+
+    methodNode.instructions.iterator.asScala foreach {
       case call: MethodInsnNode =>
         val callee: Either[OptimizerWarning, Callee] = for {
           (method, declarationClass)     <- byteCodeRepository.methodNode(call.owner, call.name, call.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
@@ -147,7 +162,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           receiverNotNullByAnalysis(call, numArgs)
         }
 
-        Callsite(
+        callsites += Callsite(
           callsiteInstruction = call,
           callsiteMethod = methodNode,
           callsiteClass = definingClass,
@@ -157,7 +172,14 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           receiverKnownNotNull = receiverNotNull,
           callsitePosition = callsitePositions.getOrElse(call, NoPosition)
         )
-    }).toList
+
+      case indy: InvokeDynamicInsnNode =>
+        if (closureOptimizer.isClosureInstantiation(indy)) closureInstantiations += indy
+
+      case _ =>
+    }
+
+    (callsites.toList, closureInstantiations.toList)
   }
 
   /**
@@ -201,7 +223,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    * @param calleeDeclarationClass The class in which the callee is declared
    * @param safeToInline           True if the callee can be safely inlined: it cannot be overridden,
    *                               and the inliner settings (project / global) allow inlining it.
-   * @param safeToRewrite          True if the callee the interface method of a concrete trait method
+   * @param safeToRewrite          True if the callee is the interface method of a concrete trait method
    *                               that can be safely re-written to the static implementation method.
    * @param annotatedInline        True if the callee is annotated @inline
    * @param annotatedNoInline      True if the callee is annotated @noinline

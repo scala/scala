@@ -247,6 +247,28 @@ object BackendReporting {
                                      callsiteClass: InternalName, callsiteName: String, callsiteDesc: String) extends CannotInlineWarning
 
   /**
+   * Used in `rewriteClosureApplyInvocations` when a closure apply callsite cannot be rewritten
+   * to the closure body method.
+   */
+  trait RewriteClosureApplyToClosureBodyFailed extends OptimizerWarning {
+    def pos: Position
+
+    override def emitWarning(settings: ScalaSettings): Boolean = this match {
+      case RewriteClosureAccessCheckFailed(_, cause) => cause.emitWarning(settings)
+      case RewriteClosureIllegalAccess(_, _)         => settings.YoptWarningEmitAtInlineFailed
+    }
+
+    override def toString: String = this match {
+      case RewriteClosureAccessCheckFailed(_, cause) =>
+        s"Failed to rewrite the closure invocation to its implementation method:\n" + cause
+      case RewriteClosureIllegalAccess(_, callsiteClass) =>
+        s"The closure body invocation cannot be rewritten because the target method is not accessible in class $callsiteClass."
+    }
+  }
+  case class RewriteClosureAccessCheckFailed(pos: Position, cause: OptimizerWarning) extends RewriteClosureApplyToClosureBodyFailed
+  case class RewriteClosureIllegalAccess(pos: Position, callsiteClass: InternalName) extends RewriteClosureApplyToClosureBodyFailed
+
+  /**
    * Used in the InlineInfo of a ClassBType, when some issue occurred obtaining the inline information.
    */
   sealed trait ClassInlineInfoWarning extends OptimizerWarning {

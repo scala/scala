@@ -44,6 +44,8 @@ abstract class BTypes {
 
   val inliner: Inliner[this.type]
 
+  val closureOptimizer: ClosureOptimizer[this.type]
+
   val callGraph: CallGraph[this.type]
 
   val backendReporting: BackendReporting
