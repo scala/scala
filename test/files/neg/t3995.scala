@@ -27,6 +27,6 @@ object Test {
   // can be accessed with unambiguous stable prefixes, the implicits infos
   // which are members of these companion objects."
   //
-  // The skolem is stable, but it doen't seem much good to us
+  // The skolem is stable, but it does not seem much good to us
   (new Lift).apply("")
 }

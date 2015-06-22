@@ -510,7 +510,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       def propForEqualsTo(c: Const): Prop = {observed(); symForEqualsTo.getOrElse(c, False)}
 
       // [implementation NOTE: don't access until all potential equalities have been registered using registerEquality]p
-      /** the information needed to construct the boolean proposition that encods the equality proposition (V = C)
+      /** the information needed to construct the boolean proposition that encodes the equality proposition (V = C)
        *
        * that models a type test pattern `_: C` or constant pattern `C`, where the type test gives rise to a TypeConst C,
        * and the constant pattern yields a ValueConst C

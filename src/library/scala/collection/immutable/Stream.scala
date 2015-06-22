@@ -153,7 +153,7 @@ import scala.language.implicitConversions
  *
  *  - The fact that `tail` works at all is of interest.  In the definition of
  *  `fibs` we have an initial `(0, 1, Stream(...))` so `tail` is deterministic.
- *  If we deinfed `fibs` such that only `0` were concretely known then the act
+ *  If we defined `fibs` such that only `0` were concretely known then the act
  *  of determining `tail` would require the evaluation of `tail` which would
  *  cause an infinite recursion and stack overflow.  If we define a definition
  *  where the tail is not initially computable then we're going to have an
