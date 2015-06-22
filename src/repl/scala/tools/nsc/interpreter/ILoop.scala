@@ -111,11 +111,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   class ILoopInterpreter extends IMain(settings, out) {
-    outer =>
-
-    override lazy val formatting = new Formatting {
-      def prompt = ILoop.this.prompt
-    }
+    // the expanded prompt but without color escapes and without leading newline, for purposes of indenting
+    override lazy val formatting: Formatting = new Formatting(
+      (replProps.promptString format Properties.versionNumberString).lines.toList.last.length
+    )
     override protected def parentClassLoader =
       settings.explicitParentLoader.getOrElse( classOf[ILoop].getClassLoader )
   }
@@ -199,10 +198,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       echo("%d %s".format(index + offset, line))
   }
 
-  private val currentPrompt = Properties.shellPromptString
-
   /** Prompt to print when awaiting input */
-  def prompt = currentPrompt
+  def prompt = replProps.prompt
 
   import LoopCommand.{ cmd, nullary }
 
@@ -412,14 +409,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   private def readOneLine() = {
-    import scala.io.AnsiColor.{ MAGENTA, RESET }
     out.flush()
-    in readLine (
-      if (replProps.colorOk)
-        MAGENTA + prompt + RESET
-      else
-        prompt
-    )
+    in readLine prompt
   }
 
   /** The main read-eval-print loop for the repl.  It calls
@@ -770,8 +761,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   private object paste extends Pasted {
+    import scala.util.matching.Regex.quote
     val ContinueString = "     | "
-    val PromptString   = "scala> "
+    val PromptString   = prompt.lines.toList.last
+    val anyPrompt = s"""\\s*(?:${quote(PromptString.trim)}|${quote(AltPromptString.trim)})\\s*""".r
+
+    def isPrompted(line: String)   = matchesPrompt(line)
+    def isPromptOnly(line: String) = line match { case anyPrompt() => true ; case _ => false }
 
     def interpret(line: String): Unit = {
       echo(line.trim)
@@ -781,10 +777,17 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
     def transcript(start: String) = {
       echo("\n// Detected repl transcript paste: ctrl-D to finish.\n")
-      apply(Iterator(start) ++ readWhile(_.trim != PromptString.trim))
+      apply(Iterator(start) ++ readWhile(!isPromptOnly(_)))
     }
+
+    def unapply(line: String): Boolean = isPrompted(line)
   }
-  import paste.{ ContinueString, PromptString }
+
+  private object invocation {
+    def unapply(line: String): Boolean = Completion.looksLikeInvocation(line)
+  }
+
+  private val lineComment = """\s*//.*""".r   // all comment
 
   /** Interpret expressions starting with the first line.
     * Read lines until a complete compilation unit is available
@@ -796,53 +799,42 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     // signal completion non-completion input has been received
     in.completion.resetVerbosity()
 
-    def reallyInterpret = {
-      val reallyResult = intp.interpret(code)
-      (reallyResult, reallyResult match {
-        case IR.Error       => None
-        case IR.Success     => Some(code)
-        case IR.Incomplete  =>
-          if (in.interactive && code.endsWith("\n\n")) {
-            echo("You typed two blank lines.  Starting a new command.")
+    def reallyInterpret = intp.interpret(code) match {
+      case IR.Error      => None
+      case IR.Success    => Some(code)
+      case IR.Incomplete if in.interactive && code.endsWith("\n\n") =>
+        echo("You typed two blank lines.  Starting a new command.")
+        None
+      case IR.Incomplete =>
+        in.readLine(paste.ContinueString) match {
+          case null =>
+            // we know compilation is going to fail since we're at EOF and the
+            // parser thinks the input is still incomplete, but since this is
+            // a file being read non-interactively we want to fail.  So we send
+            // it straight to the compiler for the nice error message.
+            intp.compileString(code)
             None
-          }
-          else in.readLine(ContinueString) match {
-            case null =>
-              // we know compilation is going to fail since we're at EOF and the
-              // parser thinks the input is still incomplete, but since this is
-              // a file being read non-interactively we want to fail.  So we send
-              // it straight to the compiler for the nice error message.
-              intp.compileString(code)
-              None
 
-            case line => interpretStartingWith(code + "\n" + line)
-          }
-      })
+          case line => interpretStartingWith(code + "\n" + line)
+        }
     }
 
-    /** Here we place ourselves between the user and the interpreter and examine
-     *  the input they are ostensibly submitting.  We intervene in several cases:
+    /* Here we place ourselves between the user and the interpreter and examine
+     * the input they are ostensibly submitting.  We intervene in several cases:
      *
-     *  1) If the line starts with "scala> " it is assumed to be an interpreter paste.
-     *  2) If the line starts with "." (but not ".." or "./") it is treated as an invocation
-     *     on the previous result.
-     *  3) If the Completion object's execute returns Some(_), we inject that value
-     *     and avoid the interpreter, as it's likely not valid scala code.
+     * 1) If the line starts with "scala> " it is assumed to be an interpreter paste.
+     * 2) If the line starts with "." (but not ".." or "./") it is treated as an invocation
+     *    on the previous result.
+     * 3) If the Completion object's execute returns Some(_), we inject that value
+     *    and avoid the interpreter, as it's likely not valid scala code.
      */
-    if (code == "") None
-    else if (!paste.running && code.trim.startsWith(PromptString)) {
-      paste.transcript(code)
-      None
+    code match {
+      case ""                                       => None
+      case lineComment()                            => None                 // line comment, do nothing
+      case paste() if !paste.running                => paste.transcript(code) ; None
+      case invocation() if intp.mostRecentVar != "" => interpretStartingWith(intp.mostRecentVar + code)
+      case _                                        => reallyInterpret
     }
-    else if (Completion.looksLikeInvocation(code) && intp.mostRecentVar != "") {
-      interpretStartingWith(intp.mostRecentVar + code)
-    }
-    else if (code.trim startsWith "//") {
-      // line comment, do nothing
-      None
-    }
-    else
-      reallyInterpret._2
   }
 
   // runs :load `file` on any files passed via -i

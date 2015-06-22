@@ -75,18 +75,20 @@ abstract class SessionTest extends ReplTest  {
    *  Retain user input: prompt lines and continuations, without the prefix; or pasted text plus ctl-D.
    */
   import SessionTest._
-  override final def code = input findAllMatchIn (expected mkString ("", "\n", "\n")) map {
-    case input(null, null, prompted) =>
+  lazy val pasted = input(prompt)
+  override final def code = pasted findAllMatchIn (expected mkString ("", "\n", "\n")) map {
+    case pasted(null, null, prompted) =>
       def continued(m: Match): Option[String] = m match {
         case margin(text) => Some(text)
         case _            => None
       }
       margin.replaceSomeIn(prompted, continued)
-    case input(cmd, pasted, null) =>
+    case pasted(cmd, pasted, null) =>
       cmd + pasted + "\u0004"
   } mkString
 
-  final def prompt = "scala> "
+  // Just the last line of the interactive prompt
+  def prompt = "scala> "
 
   /** Default test is to compare expected and actual output and emit the diff on a failed comparison. */
   override def show() = {
@@ -98,7 +100,7 @@ abstract class SessionTest extends ReplTest  {
 }
 object SessionTest {
   // \R for line break is Java 8, \v for vertical space might suffice
-  val input = """(?m)^scala> (:pa.*\u000A)// Entering paste mode.*\u000A\u000A((?:.*\u000A)*)\u000A// Exiting paste mode.*\u000A|^scala> (.*\u000A(?:\s*\| .*\u000A)*)""".r
+  def input(prompt: String) = s"""(?m)^$prompt(:pa.*\u000A)// Entering paste mode.*\u000A\u000A((?:.*\u000A)*)\u000A// Exiting paste mode.*\u000A|^scala> (.*\u000A(?:\\s*\\| .*\u000A)*)""".r
 
   val margin = """(?m)^\s*\| (.*)$""".r
 }
