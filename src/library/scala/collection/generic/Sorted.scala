@@ -36,7 +36,7 @@ trait Sorted[K, +This <: Sorted[K, This]] {
   /** Creates a ranged projection of this collection. Any mutations in the
    *  ranged projection will update this collection and vice versa.
    *
-   *  Note: keys are not garuanteed to be consistent between this collection
+   *  Note: keys are not guaranteed to be consistent between this collection
    *  and the projection. This is the case for buffers where indexing is
    *  relative to the projection.
    *
