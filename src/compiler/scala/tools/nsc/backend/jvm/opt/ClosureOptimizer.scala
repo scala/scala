@@ -52,18 +52,53 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
         case Array(samMethodType: Type, implMethod: Handle, instantiatedMethodType: Type, xs @ _*) =>
           // LambdaMetaFactory performs a number of automatic adaptations when invoking the lambda
           // implementation method (casting, boxing, unboxing, and primitive widening, see Javadoc).
-          // The closure optimizer (rewriteClosureApplyInvocations) does not currently support these
-          // adaptations, so we don't consider indy calls that need adaptations for rewriting.
-          // Indy calls emitted by scalac never rely on adaptation, they are implemented explicitly
-          // in the implMethod.
           //
-          // Note that we don't check all the invariants requried for a metafactory indy call, only
-          // those required not to crash the compiler.
+          // The closure optimizer supports only one of those adaptations: it will cast arguments
+          // to the correct type when re-writing a closure call to the body method. Example:
+          //
+          //   val fun: String => String = l => l
+          //   val l = List("")
+          //   fun(l.head)
+          //
+          // The samMethodType of Function1 is `(Object)Object`, while the instantiatedMethodType
+          // is `(String)String`. The return type of `List.head` is `Object`.
+          //
+          // The implMethod has the signature `C$anonfun(String)String`.
+          //
+          // At the closure callsite, we have an `INVOKEINTERFACE Function1.apply (Object)Object`,
+          // so the object returned by `List.head` can be directly passed into the call (no cast).
+          //
+          // The closure object will cast the object to String before passing it to the implMethod.
+          //
+          // When re-writing the closure callsite to the implMethod, we have to insert a cast.
+          //
+          // The check below ensures that
+          //   (1) the implMethod type has the expected singature (captured types plus argument types
+          //       from instantiatedMethodType)
+          //   (2) the receiver of the implMethod matches the first captured type
+          //   (3) all parameters that are not the same in samMethodType and instantiatedMethodType
+          //       are reference types, so that we can insert casts to perform the same adaptation
+          //       that the closure object would.
 
-          val implMethodType = Type.getType(implMethod.getDesc)
-          val numCaptures = implMethodType.getArgumentTypes.length - instantiatedMethodType.getArgumentTypes.length
-          val implMethodTypeWithoutCaputres = Type.getMethodType(implMethodType.getReturnType, implMethodType.getArgumentTypes.drop(numCaptures): _*)
-          implMethodTypeWithoutCaputres == instantiatedMethodType
+          val isStatic = implMethod.getTag == H_INVOKESTATIC
+          val indyParamTypes = Type.getArgumentTypes(indy.desc)
+          val instantiatedMethodArgTypes = instantiatedMethodType.getArgumentTypes
+          val expectedImplMethodType = {
+            val paramTypes = (if (isStatic) indyParamTypes else indyParamTypes.tail) ++ instantiatedMethodArgTypes
+            Type.getMethodType(instantiatedMethodType.getReturnType, paramTypes: _*)
+          }
+
+          {
+            Type.getType(implMethod.getDesc) == expectedImplMethodType // (1)
+          } && {
+            isStatic || implMethod.getOwner == indyParamTypes(0).getInternalName // (2)
+          } && {
+            def isReference(t: Type) = t.getSort == Type.OBJECT || t.getSort == Type.ARRAY
+            (samMethodType.getArgumentTypes, instantiatedMethodArgTypes).zipped forall {
+              case (samArgType, instArgType) =>
+                samArgType == instArgType || isReference(samArgType) && isReference(instArgType) // (3)
+            }
+          }
 
         case _ =>
           false
@@ -104,7 +139,11 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     // If the variable is not modified within the method, we could avoid introducing yet another
     // local. On the other hand, further optimizations (copy propagation, remove unused locals) will
     // clean it up.
-    val localsForCaptures = LocalsList.fromTypes(firstCaptureLocal, capturedTypes)
+
+    // Captured variables don't need to be cast when loaded at the callsite (castLoadTypes are None).
+    // This is checked in `isClosureInstantiation`: the types of the captured variables in the indy
+    // instruction match exactly the corresponding parameter types in the body method.
+    val localsForCaptures = LocalsList.fromTypes(firstCaptureLocal, capturedTypes, castLoadTypes = _ => None)
     methodNode.maxLocals = firstCaptureLocal + localsForCaptures.size
 
     insertStoreOps(indy, methodNode, localsForCaptures)
@@ -140,6 +179,8 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
       val varOp = new VarInsnNode(if (store) l.storeOpcode else l.loadOpcode, l.local)
       if (store) methodNode.instructions.insert(previous, varOp)
       else methodNode.instructions.insertBefore(before, varOp)
+      if (!store) for (castType <- l.castLoadedValue)
+        methodNode.instructions.insert(varOp, new TypeInsnNode(CHECKCAST, castType.getInternalName))
     }
   }
 
@@ -187,7 +228,21 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
         // if there are multiple callsites, the same locals are re-used.
         val argTypes = indy.bsmArgs(0).asInstanceOf[Type].getArgumentTypes // safe, checked in isClosureInstantiation
         val firstArgLocal = methodNode.maxLocals
-        val argLocals = LocalsList.fromTypes(firstArgLocal, argTypes)
+
+        // The comment in `isClosureInstantiation` explains why we have to introduce casts for
+        // arguments that have different types in samMethodType and instantiatedMethodType.
+        val castLoadTypes = {
+          val instantiatedMethodType = indy.bsmArgs(2).asInstanceOf[Type]
+          (argTypes, instantiatedMethodType.getArgumentTypes).zipped map {
+            case (samArgType, instantiatedArgType) if samArgType != instantiatedArgType =>
+              // isClosureInstantiation ensures that the two types are reference types, so we don't
+              // end up casting primitive values.
+              Some(instantiatedArgType)
+            case _ =>
+              None
+          }
+        }
+        val argLocals = LocalsList.fromTypes(firstArgLocal, argTypes, castLoadTypes)
         methodNode.maxLocals = firstArgLocal + argLocals.size
 
         (captureLocals, argLocals)
@@ -286,12 +341,12 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
      *   Local(6, refOpOffset)  ::
      *   Nil
      */
-    def fromTypes(firstLocal: Int, types: Array[Type]): LocalsList = {
+    def fromTypes(firstLocal: Int, types: Array[Type], castLoadTypes: Int => Option[Type]): LocalsList = {
       var sizeTwoOffset = 0
       val locals: List[Local] = types.indices.map(i => {
         // The ASM method `type.getOpcode` returns the opcode for operating on a value of `type`.
         val offset = types(i).getOpcode(ILOAD) - ILOAD
-        val local = Local(firstLocal + i + sizeTwoOffset, offset)
+        val local = Local(firstLocal + i + sizeTwoOffset, offset, castLoadTypes(i))
         if (local.size == 2) sizeTwoOffset += 1
         local
       })(collection.breakOut)
@@ -305,7 +360,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
    * The xLOAD / xSTORE opcodes are in the following sequence: I, L, F, D, A, so the offset for
    * a local variable holding a reference (`A`) is 4. See also method `getOpcode` in [[scala.tools.asm.Type]].
    */
-  case class Local(local: Int, opcodeOffset: Int) {
+  case class Local(local: Int, opcodeOffset: Int, castLoadedValue: Option[Type]) {
     def size = if (loadOpcode == LLOAD || loadOpcode == DLOAD) 2  else 1
 
     def loadOpcode = ILOAD + opcodeOffset
