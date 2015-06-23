@@ -753,7 +753,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   private object paste extends Pasted {
     import scala.util.matching.Regex.quote
-    val ContinueString = "     | "
+    val ContinuePrompt = replProps.continuePrompt
+    val ContinueString = replProps.continueText     // "     | "
     val PromptString   = prompt.lines.toList.last
     val anyPrompt = s"""\\s*(?:${quote(PromptString.trim)}|${quote(AltPromptString.trim)})\\s*""".r
 
@@ -797,7 +798,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         echo("You typed two blank lines.  Starting a new command.")
         None
       case IR.Incomplete =>
-        in.readLine(paste.ContinueString) match {
+        in.readLine(paste.ContinuePrompt) match {
           case null =>
             // we know compilation is going to fail since we're at EOF and the
             // parser thinks the input is still incomplete, but since this is
@@ -940,8 +941,9 @@ object ILoop {
       Console.withOut(ostream) {
         val output = new JPrintWriter(new OutputStreamWriter(ostream), true) {
           // skip margin prefix for continuation lines, unless preserving session text for test
+          // should test for repl.paste.ContinueString or replProps.continueText.contains(ch)
           override def write(str: String) =
-            if (!inSession && (str forall (ch => ch.isWhitespace || ch == '|'))) ()  // repl.paste.ContinueString
+            if (!inSession && (str forall (ch => ch.isWhitespace || ch == '|'))) ()
             else super.write(str)
         }
         val input = new BufferedReader(new StringReader(code.trim + "\n")) {
