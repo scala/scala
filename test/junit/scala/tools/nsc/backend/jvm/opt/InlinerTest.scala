@@ -503,7 +503,7 @@ class InlinerTest extends ClearAfterClass {
         |class C extends T
       """.stripMargin
     val List(c, t, tClass) = compile(code)
-    // the static implementaiton method is inlined into the mixin, so there's no invocation in the mixin
+    // the static implementation method is inlined into the mixin, so there's no invocation in the mixin
     assertNoInvoke(getSingleMethod(c, "f"))
   }
 

@@ -1,6 +1,6 @@
 import scala.tools.partest._
 
-// Testing that `mkAttributedRef` doesn't incude the package object test.`package`,
+// Testing that `mkAttributedRef` doesn't include the package object test.`package`,
 // under joint and separate compilation.
 
 package testSep { class C { object O } }

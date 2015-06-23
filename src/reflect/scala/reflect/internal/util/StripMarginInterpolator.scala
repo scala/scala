@@ -13,7 +13,7 @@ trait StripMarginInterpolator {
    * The margin of each line is defined by whitespace leading up to a '|' character.
    * This margin is stripped '''before''' the arguments are interpolated into to string.
    *
-   * String escape sequences are '''not''' processed; this interpolater is designed to
+   * String escape sequences are '''not''' processed; this interpolator is designed to
    * be used with triple quoted Strings.
    *
    * {{{

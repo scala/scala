@@ -184,7 +184,7 @@ object DocStrings {
         extractSectionTag(str, section) -> section
     }
 
-  /** Extract the section tag, treating the section tag as an indentifier */
+  /** Extract the section tag, treating the section tag as an identifier */
   def extractSectionTag(str: String, section: (Int, Int)): String =
     str.substring(section._1, skipTag(str, section._1))
 
