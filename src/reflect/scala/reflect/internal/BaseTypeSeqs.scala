@@ -58,7 +58,7 @@ trait BaseTypeSeqs {
         pending.clear()
         throw CyclicInheritance
       } else
-        elems(i) match {
+        elems(i).underlying match {
           case rtp @ RefinedType(variants, decls) =>
             // can't assert decls.isEmpty; see t0764
             //if (!decls.isEmpty) abort("computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
@@ -88,7 +88,7 @@ trait BaseTypeSeqs {
      *  no evaluation needed.
      */
     def typeSymbol(i: Int): Symbol = {
-      elems(i) match {
+      elems(i).underlying match {
         case RefinedType(v :: vs, _) => v.typeSymbol
         case tp => tp.typeSymbol
       }
