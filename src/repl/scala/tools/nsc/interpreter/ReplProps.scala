@@ -6,9 +6,11 @@
 package scala.tools.nsc
 package interpreter
 
-import Properties.shellPromptString
+import Properties.{ javaVersion, javaVmName, shellPromptString, shellWelcomeString,
+                    versionString, versionNumberString }
 import scala.sys._
 import Prop._
+import java.util.{ Formattable, FormattableFlags, Formatter }
 
 class ReplProps {
   private def bool(name: String) = BooleanProp.keyExists(name)
@@ -22,12 +24,37 @@ class ReplProps {
   val trace = bool("scala.repl.trace")
   val power = bool("scala.repl.power")
 
+  def enversion(s: String) = {
+    import FormattableFlags._
+    val v = new Formattable {
+      override def formatTo(formatter: Formatter, flags: Int, width: Int, precision: Int) = {
+        val version = if ((flags & ALTERNATE) != 0) versionNumberString else versionString
+        val left    = if ((flags & LEFT_JUSTIFY) != 0) "-" else ""
+        val w       = if (width >= 0) s"$width" else ""
+        val p       = if (precision >= 0) s".$precision" else ""
+        val fmt     = s"%${left}${w}${p}s"
+        formatter.format(fmt, version)
+      }
+    }
+    s.format(v, javaVersion, javaVmName)
+  }
+  def encolor(s: String)   = {
+    import scala.io.AnsiColor.{ MAGENTA, RESET }
+    if (colorOk) s"$MAGENTA$s$RESET" else s
+  }
+
   // Handy system prop for shell prompt, or else pick it up from compiler.properties
   val promptString = Prop[String]("scala.repl.prompt").option getOrElse (if (info) "%nscala %s> " else shellPromptString)
+  def promptText   = enversion(promptString)
   val prompt = {
     import scala.io.AnsiColor.{ MAGENTA, RESET }
-    val p = promptString format Properties.versionNumberString
-    if (colorOk) s"$MAGENTA$p$RESET" else p
+    if (colorOk) s"$MAGENTA$promptText$RESET" else promptText
+  }
+
+  //def welcome = enversion(Prop[String]("scala.repl.welcome") or shellWelcomeString)
+  def welcome = enversion {
+    val p = Prop[String]("scala.repl.welcome")
+    if (p.isSet) p.value else shellWelcomeString
   }
 
   /** CSV of paged,across to enable pagination or `-x` style

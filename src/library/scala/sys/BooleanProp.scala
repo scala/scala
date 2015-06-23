@@ -50,6 +50,7 @@ object BooleanProp {
     def get: String = "" + value
     val clear, enable, disable, toggle = ()
     def option = if (isSet) Some(value) else None
+    //def or[T1 >: Boolean](alt: => T1): T1 = if (value) true else alt
 
     protected def zero = false
   }

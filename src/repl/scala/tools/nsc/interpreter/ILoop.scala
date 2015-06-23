@@ -56,13 +56,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   private var globalFuture: Future[Boolean] = _
 
-  /** Print a welcome message */
-  def printWelcome() {
-    echo(s"""
-      |Welcome to Scala $versionString ($javaVmName, Java $javaVersion).
-      |Type in expressions to have them evaluated.
-      |Type :help for more information.""".trim.stripMargin
-    )
+  /** Print a welcome message! */
+  def printWelcome(): Unit = {
+    Option(replProps.welcome) filter (!_.isEmpty) foreach echo
     replinfo("[info] started at " + new java.util.Date)
   }
 
@@ -111,10 +107,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   class ILoopInterpreter extends IMain(settings, out) {
-    // the expanded prompt but without color escapes and without leading newline, for purposes of indenting
-    override lazy val formatting: Formatting = new Formatting(
-      (replProps.promptString format Properties.versionNumberString).lines.toList.last.length
-    )
     override protected def parentClassLoader =
       settings.explicitParentLoader.getOrElse( classOf[ILoop].getClassLoader )
   }
