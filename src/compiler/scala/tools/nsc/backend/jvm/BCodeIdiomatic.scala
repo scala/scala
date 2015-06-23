@@ -439,7 +439,7 @@ abstract class BCodeIdiomatic extends SubComponent {
       else            { emitTypeBased(JCodeMethodN.returnOpcodes, tk)      }
     }
 
-    /* Emits one of tableswitch or lookoupswitch.
+    /* Emits one of tableswitch or lookupswitch.
      *
      * can-multi-thread
      */

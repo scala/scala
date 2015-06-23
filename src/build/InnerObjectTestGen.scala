@@ -22,7 +22,7 @@ object Contexts extends Enumeration {
  *  object, or equivalent).
  *
  *  Usage: TestGen <nr of levels>
- *     - by default it's 2 leves. Currently, 3-level deep uncovers bugs in the type checker.
+ *     - by default it's 2 levels. Currently, 3-level deep uncovers bugs in the type checker.
  *
  * @author Iulian Dragos
  */
