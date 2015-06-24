@@ -383,7 +383,7 @@ class DotDiagramGenerator(settings: doc.Settings, dotRunner: DotRunner) extends 
       if (dotId.count(_ == '|') == 1) {
         val Array(klass, id) = dotId.toString.split("\\|")
         /* Sometimes dot "forgets" to add the image -- that's very annoying, but it seems pretty random, and simple
-         * tests like excute 20K times and diff the output don't trigger the bug -- so it's up to us to place the image
+         * tests like execute 20K times and diff the output don't trigger the bug -- so it's up to us to place the image
          * back in the node */
         val kind = getKind(klass)
         if (kind != "")

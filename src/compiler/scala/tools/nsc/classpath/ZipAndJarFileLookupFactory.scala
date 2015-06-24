@@ -61,7 +61,7 @@ object ZipAndJarFlatClassPathFactory extends ZipAndJarFileLookupFactory {
   }
 
   /**
-   * This type of classpath is closly related to the support for JSR-223.
+   * This type of classpath is closely related to the support for JSR-223.
    * Its usage can be observed e.g. when running:
    * jrunscript -classpath scala-compiler.jar;scala-reflect.jar;scala-library.jar -l scala
    * with a particularly prepared scala-library.jar. It should have all classes listed in the manifest like e.g. this entry:

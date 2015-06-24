@@ -298,7 +298,7 @@ trait DocTemplateEntity extends MemberTemplateEntity {
   /** The shadowing information for the implicitly added members */
   def implicitsShadowing: Map[MemberEntity, ImplicitMemberShadowing]
 
-  /** Classes that can be implcitly converted to this class */
+  /** Classes that can be implicitly converted to this class */
   def incomingImplicitlyConvertedClasses: List[(DocTemplateEntity, ImplicitConversion)]
 
   /** Classes to which this class can be implicitly converted to
@@ -484,10 +484,10 @@ trait ImplicitConversion {
   /** The entity for the method that performed the conversion, if it's documented (or just its name, otherwise) */
   def convertorMethod: Either[MemberEntity, String]
 
-  /** A short name of the convertion */
+  /** A short name of the conversion */
   def conversionShortName: String
 
-  /** A qualified name uniquely identifying the convertion (currently: the conversion method's qualified name) */
+  /** A qualified name uniquely identifying the conversion (currently: the conversion method's qualified name) */
   def conversionQualifiedName: String
 
   /** The entity that performed the conversion */

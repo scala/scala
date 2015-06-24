@@ -56,6 +56,6 @@ object Test extends App {
     else z = NaN
     i += 1
   }
-  if (z.isNaN && i == 10) println("loop with NaN was goood")
+  if (z.isNaN && i == 10) println("loop with NaN was good")
   else println("loop with NaN was broken")
 }

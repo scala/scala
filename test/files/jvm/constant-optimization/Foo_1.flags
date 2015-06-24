@@ -1,1 +1,1 @@
--Ynooptimise -Yconst-opt
+-Ynooptimise -Yconst-opt -Ybackend:GenASM

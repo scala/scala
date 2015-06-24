@@ -3,60 +3,7 @@
  * @author Paul Phillips
  */
 
-package scala.tools.nsc
-package interpreter
-
-import jline.console.{ ConsoleReader, CursorBuffer }
-
-trait ConsoleReaderHelper { _: ConsoleReader with Tabulator =>
-  def isAcross: Boolean
-
-  def terminal    = getTerminal()
-  def width       = terminal.getWidth()
-  def height      = terminal.getHeight()
-
-  def readOneKey(prompt: String): Int
-  def eraseLine(): Unit
-
-  val marginSize = 3
-
-  private def morePrompt = "--More--"
-  private def emulateMore(): Int = {
-    val key = readOneKey(morePrompt)
-    try key match {
-      case '\r' | '\n'  => 1
-      case 'q'          => -1
-      case _            => height - 1
-    }
-    finally {
-      eraseLine()
-      // TODO: still not quite managing to erase --More-- and get
-      // back to a scala prompt without another keypress.
-      if (key == 'q') {
-        putString(getPrompt())
-        redrawLine()
-        flush()
-      }
-    }
-  }
-
-  override def printColumns(items: JCollection[_ <: CharSequence]): Unit =
-    printColumns_(items: List[String])
-
-  private def printColumns_(items: List[String]): Unit = if (items exists (_ != "")) {
-    val grouped = tabulate(items)
-    var linesLeft  = if (isPaginationEnabled()) height - 1 else Int.MaxValue
-    grouped foreach { xs =>
-      println(xs.mkString)
-      linesLeft -= 1
-      if (linesLeft <= 0) {
-        linesLeft = emulateMore()
-        if (linesLeft < 0)
-          return
-      }
-    }
-  }
-}
+package scala.tools.nsc.interpreter
 
 trait Tabulator {
   def isAcross: Boolean
@@ -72,7 +19,7 @@ trait Tabulator {
   )
   protected def columnize(ss: Seq[String]): Seq[Seq[String]] = ss map (s => Seq(s))
   protected def printMultiLineColumns(items: Seq[String]): Seq[Seq[String]] = {
-    import SimpleMath._
+    import scala.tools.nsc.interpreter.SimpleMath._
     val longest     = (items map (_.length)).max
     val columnWidth = longest + marginSize
     val maxcols = (
@@ -101,7 +48,7 @@ trait Tabulator {
 /** Adjust the column width and number of columns to minimize the row count. */
 trait VariColumnTabulator extends Tabulator {
   override protected def printMultiLineColumns(items: Seq[String]): Seq[Seq[String]] = {
-    import SimpleMath._
+    import scala.tools.nsc.interpreter.SimpleMath._
     val longest  = (items map (_.length)).max
     val shortest = (items map (_.length)).min
     val fattest  = longest + marginSize

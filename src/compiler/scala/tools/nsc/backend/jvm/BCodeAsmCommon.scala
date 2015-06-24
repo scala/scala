@@ -9,6 +9,7 @@ package backend.jvm
 import scala.tools.nsc.Global
 import scala.tools.nsc.backend.jvm.BTypes.{InternalName, MethodInlineInfo, InlineInfo}
 import BackendReporting.ClassSymbolInfoFailureSI9111
+import scala.tools.asm
 
 /**
  * This trait contains code shared between GenBCode and GenASM that depends on types defined in
@@ -229,6 +230,44 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
   }
 
   /**
+   * Reconstruct the classfile flags from a Java defined class symbol.
+   *
+   * The implementation of this method is slightly different that `javaFlags` in BTypesFromSymbols.
+   * The javaFlags method is primarily used to map Scala symbol flags to sensible classfile flags
+   * that are used in the generated classfiles. For example, all classes emitted by the Scala
+   * compiler have ACC_PUBLIC.
+   *
+   * When building a [[ClassBType]] from a Java class symbol, the flags in the type's `info` have
+   * to correspond exactly to the flags in the classfile. For example, if the class is package
+   * protected (i.e., it doesn't have the ACC_PUBLIC flag), this needs to be reflected in the
+   * ClassBType. For example, the inliner needs the correct flags for access checks.
+   *
+   * Class flags are listed here:
+   *   https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.1-200-E.1
+   */
+  def javaClassfileFlags(classSym: Symbol): Int = {
+    assert(classSym.isJava, s"Expected Java class symbol, got ${classSym.fullName}")
+    import asm.Opcodes._
+    def enumFlags = ACC_ENUM | {
+      // Java enums have the `ACC_ABSTRACT` flag if they have a deferred method.
+      // We cannot trust `hasAbstractFlag`: the ClassfileParser adds `ABSTRACT` and `SEALED` to all
+      // Java enums for exhaustiveness checking.
+      val hasAbstractMethod = classSym.info.decls.exists(s => s.isMethod && s.isDeferred)
+      if (hasAbstractMethod) ACC_ABSTRACT else 0
+    }
+    GenBCode.mkFlags(
+      if (classSym.isPublic)                                 ACC_PUBLIC    else 0,
+      if (classSym.isFinal)                                  ACC_FINAL     else 0,
+      // see the link above. javac does the same: ACC_SUPER for all classes, but not interfaces.
+      if (classSym.isInterface)                              ACC_INTERFACE else ACC_SUPER,
+      // for Java enums, we cannot trust `hasAbstractFlag` (see comment in enumFlags)
+      if (!classSym.hasEnumFlag && classSym.hasAbstractFlag) ACC_ABSTRACT  else 0,
+      if (classSym.isArtifact)                               ACC_SYNTHETIC else 0,
+      if (classSym.hasEnumFlag)                              enumFlags     else 0
+    )
+  }
+
+  /**
    * The member classes of a class symbol. Note that the result of this method depends on the
    * current phase, for example, after lambdalift, all local classes become member of the enclosing
    * class.
@@ -397,5 +436,18 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
     }).toMap
 
     InlineInfo(traitSelfType, isEffectivelyFinal, methodInlineInfos, warning)
+  }
+}
+
+object BCodeAsmCommon {
+  /**
+   * Valid flags for InnerClass attribute entry.
+   * See http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7.6
+   */
+  val INNER_CLASSES_FLAGS = {
+    asm.Opcodes.ACC_PUBLIC   | asm.Opcodes.ACC_PRIVATE   | asm.Opcodes.ACC_PROTECTED  |
+      asm.Opcodes.ACC_STATIC   | asm.Opcodes.ACC_FINAL     | asm.Opcodes.ACC_INTERFACE  |
+      asm.Opcodes.ACC_ABSTRACT | asm.Opcodes.ACC_SYNTHETIC | asm.Opcodes.ACC_ANNOTATION |
+      asm.Opcodes.ACC_ENUM
   }
 }

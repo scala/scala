@@ -275,6 +275,10 @@ TODO:
         <dependency groupId="biz.aQute" artifactId="bnd" version="1.50.0"/>
       </artifact:dependencies>
 
+      <artifact:dependencies pathId="jarjar.classpath">
+        <dependency groupId="com.googlecode.jarjar" artifactId="jarjar" version="1.3"/>
+      </artifact:dependencies>
+
       <!-- JUnit -->
       <property name="junit.version" value="4.11"/>
       <artifact:dependencies pathId="junit.classpath" filesetId="junit.fileset">
@@ -313,7 +317,7 @@ TODO:
 
       <!-- scala-java8-compat, used by the experimental -target jvm-1.8 support. -->
       <if><isset property="scala-java8-compat.package"/><then>
-        <property name="scala-java8-compat.version" value="0.2.0"/>
+        <property name="scala-java8-compat.version" value="0.5.0"/>
         <property name="scala-java8-compat.binary.version" value="2.11"/>
         <artifact:dependencies pathId="scala-java8-compat.classpath" filesetId="scala-java8-compat.fileset">
           <dependency groupId="org.scala-lang.modules" artifactId="scala-java8-compat_${scala-java8-compat.binary.version}" version="${scala-java8-compat.version}">
@@ -657,7 +661,7 @@ TODO:
     <property name="partest-javaagent.description" value="Scala Compiler Testing Tool (compiler-specific java agent)"/>
 
     <!-- projects without project-specific options: forkjoin, manual, bin, repl -->
-    <for list="compiler,interactive,scaladoc,library,parser-combinators,partest,partest-extras,partest-javaagent,reflect,scalap,swing,xml" param="project">
+    <for list="compiler,interactive,scaladoc,library,parser-combinators,partest,partest-extras,partest-javaagent,reflect,scalap,swing,xml,repl-jline" param="project">
       <sequential>
         <!-- description is mandatory -->
         <init-project-prop project="@{project}" name="package"     default=""/> <!-- used by mvn-package, copy-bundle, make-bundle -->
@@ -755,6 +759,11 @@ TODO:
     <path id="quick.repl.build.path">
       <path refid="quick.compiler.build.path"/>
       <pathelement location="${build-quick.dir}/classes/repl"/>
+    </path>
+
+    <path id="quick.repl-jline.build.path">
+      <path refid="quick.repl.build.path"/>
+      <pathelement location="${build-quick.dir}/classes/repl-jline"/>
       <path refid="repl.deps.classpath"/>
     </path>
 
@@ -828,6 +837,8 @@ TODO:
       <fileset dir="${forkjoin-classes}"/>
       <fileset refid="scala-java8-compat.fileset"/>
     </path>
+
+    <path id="pack.repl-jline.files">    <fileset dir="${build-quick.dir}/classes/repl-jline"/> </path>
 
     <path id="pack.compiler.files">
       <fileset dir="${build-quick.dir}/classes/compiler"/>
@@ -1028,6 +1039,7 @@ TODO:
     </patternset>
 
     <taskdef resource="scala/tools/ant/sabbus/antlib.xml" classpathref="starr.compiler.path"/>
+    <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpathref="jarjar.classpath" />
   </target>
 
 <!-- ===========================================================================
@@ -1109,7 +1121,31 @@ TODO:
     <staged-build with="locker"   stage="quick" project="compiler"/> </target>
 
   <target name="quick.repl"       depends="quick.comp">
-    <staged-build with="locker"   stage="quick" project="repl"/> </target>
+    <staged-build with="locker"   stage="quick" project="repl"/>
+    <staged-build with="locker"   stage="quick" project="repl-jline"/>
+
+    <staged-pack project="repl-jline"/>
+
+    <!-- make jline_embedded jar with classes of repl-jline and jline, then shade-->
+    <jarjar jarfile="${build-pack.dir}/${repl-jline.targetdir}/scala-repl-jline-embedded.jar" whenmanifestonly="fail">
+      <zipfileset src="${jline:jline:jar}"/>
+      <zipfileset src="${build-pack.dir}/${repl-jline.targetdir}/${repl-jline.targetjar}"/>
+
+      <rule pattern="org.fusesource.**" result="scala.tools.fusesource_embedded.@1"/>
+      <rule pattern="jline.**" result="scala.tools.jline_embedded.@1"/>
+      <rule pattern="scala.tools.nsc.interpreter.jline.**" result="scala.tools.nsc.interpreter.jline_embedded.@1"/>
+      <keep pattern="scala.tools.**"/>
+    </jarjar>
+
+    <!-- unzip jar to repl's class dir to obtain
+           - standard repl-jline
+           - a shaded repl-jline (scala/tools/nsc/interpreter/jline_embedded) & jline (scala.tools.jline_embedded)
+    -->
+    <copy todir="${build-quick.dir}/classes/repl">
+      <zipfileset src="${build-pack.dir}/${repl-jline.targetdir}/${repl-jline.targetjar}"/>
+      <zipfileset src="${build-pack.dir}/${repl-jline.targetdir}/scala-repl-jline-embedded.jar"/>
+    </copy>
+  </target>
 
   <target name="quick.scaladoc"   depends="quick.comp">
     <staged-build with="locker"   stage="quick" project="scaladoc" version="scaladoc"/> </target>

@@ -48,7 +48,7 @@ class TestExplicit {
   {val c1 = convert2(s); c1.combined}
 }
 
-// These ones work before and after; infering G=Null doesn't need to contribute an undetermined type param.
+// These ones work before and after; inferring G=Null doesn't need to contribute an undetermined type param.
 class Test3 {
    import C.{cbf, convert1, convert2}
    val s: Invariant[Null] = ???

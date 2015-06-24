@@ -14,10 +14,5 @@ package object session {
   type JIterator[T]       = java.util.Iterator[T]
   type JListIterator[T]   = java.util.ListIterator[T]
 
-  type JEntry             = jline.console.history.History.Entry
-  type JHistory           = jline.console.history.History
-  type JMemoryHistory     = jline.console.history.MemoryHistory
-  type JPersistentHistory = jline.console.history.PersistentHistory
-
   private[interpreter] implicit def charSequenceFix(x: CharSequence): String = x.toString
 }

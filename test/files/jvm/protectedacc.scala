@@ -74,7 +74,7 @@ package p {
   package b {
     import a._;
 
-    /** Test interraction with Scala inherited methods and currying. */
+    /** Test interaction with Scala inherited methods and currying. */
     class B extends A {
       class C {
         def m = {

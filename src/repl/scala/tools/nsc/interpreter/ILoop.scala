@@ -26,6 +26,8 @@ import scala.concurrent.{ ExecutionContext, Await, Future, future }
 import ExecutionContext.Implicits._
 import java.io.{ BufferedReader, FileReader }
 
+import scala.util.{Try, Success, Failure}
+
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.
  *  After instantiation, clients should call the main() method.
@@ -109,11 +111,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   class ILoopInterpreter extends IMain(settings, out) {
-    outer =>
-
-    override lazy val formatting = new Formatting {
-      def prompt = ILoop.this.prompt
-    }
+    // the expanded prompt but without color escapes and without leading newline, for purposes of indenting
+    override lazy val formatting: Formatting = new Formatting(
+      (replProps.promptString format Properties.versionNumberString).lines.toList.last.length
+    )
     override protected def parentClassLoader =
       settings.explicitParentLoader.getOrElse( classOf[ILoop].getClassLoader )
   }
@@ -197,10 +198,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       echo("%d %s".format(index + offset, line))
   }
 
-  private val currentPrompt = Properties.shellPromptString
-
   /** Prompt to print when awaiting input */
-  def prompt = currentPrompt
+  def prompt = replProps.prompt
 
   import LoopCommand.{ cmd, nullary }
 
@@ -410,14 +409,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   private def readOneLine() = {
-    import scala.io.AnsiColor.{ MAGENTA, RESET }
     out.flush()
-    in readLine (
-      if (replProps.colorOk)
-        MAGENTA + prompt + RESET
-      else
-        prompt
-    )
+    in readLine prompt
   }
 
   /** The main read-eval-print loop for the repl.  It calls
@@ -503,10 +496,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       val errless = intp compileSources new BatchSourceFile("<pastie>", s"object pastel {\n$code\n}")
       if (errless) echo("The compiler reports no errors.")
     }
-    def historicize(text: String) = history match {
-      case jlh: JLineHistory => text.lines foreach jlh.add ; jlh.moveToEnd() ; true
-      case _ => false
-    }
+
     def edit(text: String): Result = editor match {
       case Some(ed) =>
         val tmp = File.makeTemp()
@@ -522,7 +512,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
                   val res = intp interpret edited
                   if (res == IR.Incomplete) diagnose(edited)
                   else {
-                    historicize(edited)
+                    history.historicize(edited)
                     Result(lineToRecord = Some(edited), keepRunning = true)
                   }
                 case None => echo("Can't read edited text. Did you delete it?")
@@ -533,7 +523,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
           tmp.delete()
         }
       case None =>
-        if (historicize(text)) echo("Placing text in recent history.")
+        if (history.historicize(text)) echo("Placing text in recent history.")
         else echo(f"No EDITOR defined and you can't change history, echoing your text:%n$text")
     }
 
@@ -565,10 +555,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         }
       import scala.collection.JavaConverters._
       val index = (start - 1) max 0
-      val text = history match {
-        case jlh: JLineHistory => jlh.entries(index).asScala.take(len) map (_.value) mkString "\n"
-        case _ => history.asStrings.slice(index, index + len) mkString "\n"
-      }
+      val text = history.asStrings(index, index + len) mkString "\n"
       edit(text)
     } catch {
       case _: NumberFormatException => echo(s"Bad range '$what'")
@@ -774,8 +761,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   private object paste extends Pasted {
+    import scala.util.matching.Regex.quote
     val ContinueString = "     | "
-    val PromptString   = "scala> "
+    val PromptString   = prompt.lines.toList.last
+    val anyPrompt = s"""\\s*(?:${quote(PromptString.trim)}|${quote(AltPromptString.trim)})\\s*""".r
+
+    def isPrompted(line: String)   = matchesPrompt(line)
+    def isPromptOnly(line: String) = line match { case anyPrompt() => true ; case _ => false }
 
     def interpret(line: String): Unit = {
       echo(line.trim)
@@ -785,10 +777,17 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
     def transcript(start: String) = {
       echo("\n// Detected repl transcript paste: ctrl-D to finish.\n")
-      apply(Iterator(start) ++ readWhile(_.trim != PromptString.trim))
+      apply(Iterator(start) ++ readWhile(!isPromptOnly(_)))
     }
+
+    def unapply(line: String): Boolean = isPrompted(line)
   }
-  import paste.{ ContinueString, PromptString }
+
+  private object invocation {
+    def unapply(line: String): Boolean = Completion.looksLikeInvocation(line)
+  }
+
+  private val lineComment = """\s*//.*""".r   // all comment
 
   /** Interpret expressions starting with the first line.
     * Read lines until a complete compilation unit is available
@@ -800,53 +799,42 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     // signal completion non-completion input has been received
     in.completion.resetVerbosity()
 
-    def reallyInterpret = {
-      val reallyResult = intp.interpret(code)
-      (reallyResult, reallyResult match {
-        case IR.Error       => None
-        case IR.Success     => Some(code)
-        case IR.Incomplete  =>
-          if (in.interactive && code.endsWith("\n\n")) {
-            echo("You typed two blank lines.  Starting a new command.")
+    def reallyInterpret = intp.interpret(code) match {
+      case IR.Error      => None
+      case IR.Success    => Some(code)
+      case IR.Incomplete if in.interactive && code.endsWith("\n\n") =>
+        echo("You typed two blank lines.  Starting a new command.")
+        None
+      case IR.Incomplete =>
+        in.readLine(paste.ContinueString) match {
+          case null =>
+            // we know compilation is going to fail since we're at EOF and the
+            // parser thinks the input is still incomplete, but since this is
+            // a file being read non-interactively we want to fail.  So we send
+            // it straight to the compiler for the nice error message.
+            intp.compileString(code)
             None
-          }
-          else in.readLine(ContinueString) match {
-            case null =>
-              // we know compilation is going to fail since we're at EOF and the
-              // parser thinks the input is still incomplete, but since this is
-              // a file being read non-interactively we want to fail.  So we send
-              // it straight to the compiler for the nice error message.
-              intp.compileString(code)
-              None
 
-            case line => interpretStartingWith(code + "\n" + line)
-          }
-      })
+          case line => interpretStartingWith(code + "\n" + line)
+        }
     }
 
-    /** Here we place ourselves between the user and the interpreter and examine
-     *  the input they are ostensibly submitting.  We intervene in several cases:
+    /* Here we place ourselves between the user and the interpreter and examine
+     * the input they are ostensibly submitting.  We intervene in several cases:
      *
-     *  1) If the line starts with "scala> " it is assumed to be an interpreter paste.
-     *  2) If the line starts with "." (but not ".." or "./") it is treated as an invocation
-     *     on the previous result.
-     *  3) If the Completion object's execute returns Some(_), we inject that value
-     *     and avoid the interpreter, as it's likely not valid scala code.
+     * 1) If the line starts with "scala> " it is assumed to be an interpreter paste.
+     * 2) If the line starts with "." (but not ".." or "./") it is treated as an invocation
+     *    on the previous result.
+     * 3) If the Completion object's execute returns Some(_), we inject that value
+     *    and avoid the interpreter, as it's likely not valid scala code.
      */
-    if (code == "") None
-    else if (!paste.running && code.trim.startsWith(PromptString)) {
-      paste.transcript(code)
-      None
+    code match {
+      case ""                                       => None
+      case lineComment()                            => None                 // line comment, do nothing
+      case paste() if !paste.running                => paste.transcript(code) ; None
+      case invocation() if intp.mostRecentVar != "" => interpretStartingWith(intp.mostRecentVar + code)
+      case _                                        => reallyInterpret
     }
-    else if (Completion.looksLikeInvocation(code) && intp.mostRecentVar != "") {
-      interpretStartingWith(intp.mostRecentVar + code)
-    }
-    else if (code.trim startsWith "//") {
-      // line comment, do nothing
-      None
-    }
-    else
-      reallyInterpret._2
   }
 
   // runs :load `file` on any files passed via -i
@@ -866,16 +854,36 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
    *  with SimpleReader.
    */
   def chooseReader(settings: Settings): InteractiveReader = {
-    if (settings.Xnojline || Properties.isEmacsShell)
-      SimpleReader()
-    else try new JLineReader(
-      if (settings.noCompletion) NoCompletion
-      else new JLineCompletion(intp)
-    )
-    catch {
-      case ex @ (_: Exception | _: NoClassDefFoundError) =>
-        echo(f"Failed to created JLineReader: ${ex}%nFalling back to SimpleReader.")
-        SimpleReader()
+    if (settings.Xnojline || Properties.isEmacsShell) SimpleReader()
+    else {
+      type Completer = () => Completion
+      type ReaderMaker = Completer => InteractiveReader
+
+      def instantiate(className: String): ReaderMaker = completer => {
+        if (settings.debug) Console.println(s"Trying to instantiate a InteractiveReader from $className")
+        Class.forName(className).getConstructor(classOf[Completer]).
+          newInstance(completer).
+          asInstanceOf[InteractiveReader]
+      }
+
+      def mkReader(maker: ReaderMaker) =
+        if (settings.noCompletion) maker(() => NoCompletion)
+        else maker(() => new JLineCompletion(intp)) // JLineCompletion is a misnomer -- it's not tied to jline
+
+      def internalClass(kind: String) = s"scala.tools.nsc.interpreter.$kind.InteractiveReader"
+      val readerClasses = sys.props.get("scala.repl.reader").toStream ++ Stream(internalClass("jline"), internalClass("jline_embedded"))
+      val readers = readerClasses map (cls => Try { mkReader(instantiate(cls)) })
+
+      val reader = (readers collect { case Success(reader) => reader } headOption) getOrElse SimpleReader()
+
+      if (settings.debug) {
+        val readerDiags = (readerClasses, readers).zipped map {
+          case (cls, Failure(e)) => s"  - $cls --> " + e.getStackTrace.mkString(e.toString+"\n\t", "\n\t","\n")
+          case (cls, Success(_)) => s"  - $cls OK"
+        }
+        Console.println(s"All InteractiveReaders tried: ${readerDiags.mkString("\n","\n","\n")}")
+      }
+      reader
     }
   }
 
@@ -896,10 +904,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       asyncMessage(power.banner)
     }
     // SI-7418 Now, and only now, can we enable TAB completion.
-    in match {
-      case x: JLineReader => x.consoleReader.postInit
-      case _              =>
-    }
+    in.postInit()
   }
 
   // start an interpreter with the given settings

@@ -13,8 +13,8 @@ object Test extends App {
           (sym.isMethod && sym.asMethod.isLazy)
        || sym.isModule
     )
-    val forcables = tp.members.sorted.filter(isLazyAccessorOrObject)
-    forcables.map {
+    val forceables = tp.members.sorted.filter(isLazyAccessorOrObject)
+    forceables.map {
       sym =>
         val path = s"$prefix.${sym.name}"
         "    " + (

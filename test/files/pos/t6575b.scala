@@ -1,5 +1,5 @@
 // inferred types were okay here as Function nodes aren't
-// translated into anoymous subclasses of AbstractFunctionN
+// translated into anonymous subclasses of AbstractFunctionN
 // until after the typer.
 //
 // So this test is just confirmation.

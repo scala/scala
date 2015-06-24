@@ -130,7 +130,7 @@ import java.io.{ PrintWriter, StringWriter }
  *      TermName("y")#2541#GET))
  * }}}
  *
- * For more details about `Printer`s and other aspects of Scala reflection, see the
+ * For more details about `Printer`s and other aspects of Scala reflection, see the
  * [[http://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
  *
  *  @group ReflectionAPI

@@ -1184,6 +1184,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       constr setInfo GenPolyType(tparams, MethodType(clazz.newSyntheticValueParams(paramtpes), clazz.tpe))
       propagatePackageBoundary(jconstr.javaFlags, constr)
       copyAnnotations(constr, jconstr)
+      if (jconstr.javaFlags.isVarargs) constr modifyInfo arrayToRepeated
       markAllCompleted(constr)
       constr
     }

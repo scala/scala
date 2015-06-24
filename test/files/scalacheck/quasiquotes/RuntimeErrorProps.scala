@@ -68,7 +68,7 @@ object RuntimeErrorProps extends QuasiquoteProperties("errors") {
     q"for(..$enums) 0"
   }
 
-  property("for inlalid enum") = testFails {
+  property("for invalid enum") = testFails {
     val enums = q"foo" :: Nil
     q"for(..$enums) 0"
   }

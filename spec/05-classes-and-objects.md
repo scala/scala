@@ -395,6 +395,7 @@ class C extends A with B { type T <: C }
 Let $C$ be a class type. The _inheritance closure_ of $C$ is the
 smallest set $\mathscr{S}$ of types such that
 
+- $C$ is in $\mathscr{S}$.
 - If $T$ is in $\mathscr{S}$, then every type $T'$ which forms syntactically
   a part of $T$ is also in $\mathscr{S}$.
 - If $T$ is a class type in $\mathscr{S}$, then all [parents](#templates)
@@ -498,18 +499,15 @@ the validity and meaning of a modifier are as follows.
 The `private` modifier can be used with any definition or
 declaration in a template.  Such members can be accessed only from
 within the directly enclosing template and its companion module or
-[companion class](#object-definitions). They
-are not inherited by subclasses and they may not override definitions
-in parent classes.
+[companion class](#object-definitions).
 
-The modifier can be _qualified_ with an identifier $C$ (e.g.
-`private[$C$]`) that must denote a class or package
-enclosing the definition.  Members labeled with such a modifier are
-accessible respectively only from code inside the package $C$ or only
-from code inside the class $C$ and its
+A `private` modifier can be _qualified_ with an identifier $C$ (e.g.
+`private[$C$]`) that must denote a class or package enclosing the definition.
+Members labeled with such a modifier are accessible respectively only from code
+inside the package $C$ or only from code inside the class $C$ and its
 [companion module](#object-definitions).
 
-An different form of qualification is `private[this]`. A member
+A different form of qualification is `private[this]`. A member
 $M$ marked with this modifier is called _object-protected_; it can be accessed only from within
 the object in which it is defined. That is, a selection $p.M$ is only
 legal if the prefix is `this` or `$O$.this`, for some
@@ -524,7 +522,8 @@ either class-private or object-private, but not if it is marked
 case the member is called _qualified private_.
 
 Class-private or object-private members may not be abstract, and may
-not have `protected` or `override` modifiers.
+not have `protected` or `override` modifiers. They are not inherited
+by subclasses and they may not override definitions in parent classes.
 
 ### `protected`
 The `protected` modifier applies to class member definitions.
@@ -533,11 +532,10 @@ Protected members of a class can be accessed from within
   - all templates that have the defining class as a base class,
   - the companion module of any of those classes.
 
-A `protected` modifier can be qualified with an
-identifier $C$ (e.g.  `protected[$C$]`) that must denote a
-class or package enclosing the definition.  Members labeled with such
-a modifier are also accessible respectively from all code inside the
-package $C$ or from all code inside the class $C$ and its
+A `protected` modifier can be qualified with an identifier $C$ (e.g.
+`protected[$C$]`) that must denote a class or package enclosing the definition.
+Members labeled with such a modifier are also accessible respectively from all
+code inside the package $C$ or from all code inside the class $C$ and its
 [companion module](#object-definitions).
 
 A protected identifier $x$ may be used as a member name in a selection
@@ -744,7 +742,7 @@ which when applied to parameters conforming to types $\mathit{ps}$
 initializes instances of type `$c$[$\mathit{tps}\,$]` by evaluating the template
 $t$.
 
-###### Example
+###### Example – `val` and `var` parameters
 The following example illustrates `val` and `var` parameters of a class `C`:
 
 ```scala
@@ -753,7 +751,7 @@ val c = new C(1, "abc", List())
 c.z = c.y :: c.z
 ```
 
-### Example Private Constructor
+###### Example – Private Constructor
 The following class can be created only from its companion module.
 
 ```scala
@@ -835,7 +833,7 @@ This defines a class `LinkedList` with three constructors.  The
 second constructor constructs an singleton list, while the
 third one constructs a list with a given head and tail.
 
-## Case Classes
+### Case Classes
 
 ```ebnf
 TmplDef  ::=  `case' `class' ClassDef

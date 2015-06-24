@@ -6,7 +6,7 @@ import scala.collection.JavaConverters._
 object Test extends BytecodeTest {
   def show: Unit = {
     val classNode = loadClassNode("Foo_1")
-    // Foo_1 is full of unreachable code which if not elimintated
+    // Foo_1 is full of unreachable code which if not eliminated
     // will result in NOPs as can be confirmed by adding -Ydisable-unreachable-prevention
     // to Foo_1.flags
     for (methodNode <- classNode.methods.asScala) {

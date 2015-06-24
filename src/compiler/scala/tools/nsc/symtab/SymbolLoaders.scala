@@ -8,7 +8,6 @@ package symtab
 
 import classfile.ClassfileParser
 import java.io.IOException
-import scala.compat.Platform.currentTime
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.internal.util.Statistics
 import scala.reflect.io.{ AbstractFile, NoAbstractFile }
@@ -207,7 +206,7 @@ abstract class SymbolLoaders {
 
     override def complete(root: Symbol) {
       try {
-        val start = currentTime
+        val start = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime())
         val currentphase = phase
         doComplete(root)
         phase = currentphase
@@ -374,7 +373,7 @@ abstract class SymbolLoaders {
     protected def doComplete(root: Symbol) { root.sourceModule.initialize }
   }
 
-  /** used from classfile parser to avoid cyclies */
+  /** used from classfile parser to avoid cycles */
   var parentsLevel = 0
   var pendingLoadActions: List[() => Unit] = Nil
 }

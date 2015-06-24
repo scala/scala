@@ -88,6 +88,8 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     case class DelambdafyAnonClass(lambdaClassDef: ClassDef, newExpr: Tree) extends TransformedFunction
     case class InvokeDynamicLambda(tree: Apply) extends TransformedFunction
 
+    private val boxingBridgeMethods = mutable.ArrayBuffer[Tree]()
+
     // here's the main entry point of the transform
     override def transform(tree: Tree): Tree = tree match {
       // the main thing we care about is lambdas
@@ -105,6 +107,12 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
             // ... or an invokedynamic call
             super.transform(apply)
         }
+      case Template(_, _, _) =>
+        try {
+          // during this call boxingBridgeMethods will be populated from the Function case
+          val Template(parents, self, body) = super.transform(tree)
+          Template(parents, self, body ++ boxingBridgeMethods)
+        } finally boxingBridgeMethods.clear()
       case _ => super.transform(tree)
     }
 
@@ -137,6 +145,64 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
       val isStatic = target.hasFlag(STATIC)
 
+      def createBoxingBridgeMethod(functionParamTypes: List[Type], functionResultType: Type): Tree = {
+        // Note: we bail out of this method and return EmptyTree if we find there is no adaptation required.
+        // If we need to improve performance, we could check the types first before creating the
+        // method and parameter symbols.
+        val methSym = oldClass.newMethod(target.name.append("$adapted").toTermName, target.pos, target.flags | FINAL | ARTIFACT)
+        var neededAdaptation = false
+        def boxedType(tpe: Type): Type = {
+          if (isPrimitiveValueClass(tpe.typeSymbol)) {neededAdaptation = true; ObjectTpe}
+          else if (enteringErasure(tpe.typeSymbol.isDerivedValueClass)) {neededAdaptation = true; ObjectTpe}
+          else tpe
+        }
+        val targetParams: List[Symbol] = target.paramss.head
+        val numCaptures = targetParams.length - functionParamTypes.length
+        val (targetCaptureParams, targetFunctionParams) = targetParams.splitAt(numCaptures)
+        val bridgeParams: List[Symbol] =
+          targetCaptureParams.map(param => methSym.newSyntheticValueParam(param.tpe, param.name.toTermName)) :::
+          map2(targetFunctionParams, functionParamTypes)((param, tp) => methSym.newSyntheticValueParam(boxedType(tp), param.name.toTermName))
+
+        val bridgeResultType: Type = {
+          if (target.info.resultType == UnitTpe && functionResultType != UnitTpe) {
+            neededAdaptation = true
+            ObjectTpe
+          } else
+            boxedType(functionResultType)
+        }
+        val methodType = MethodType(bridgeParams, bridgeResultType)
+        methSym setInfo methodType
+        if (!neededAdaptation)
+          EmptyTree
+        else {
+          val bridgeParamTrees = bridgeParams.map(ValDef(_))
+
+          oldClass.info.decls enter methSym
+
+          val body = localTyper.typedPos(originalFunction.pos) {
+            val newTarget = Select(gen.mkAttributedThis(oldClass), target)
+            val args: List[Tree] = mapWithIndex(bridgeParams) { (param, i) =>
+              if (i < numCaptures) {
+                gen.mkAttributedRef(param)
+              } else {
+                val functionParam = functionParamTypes(i - numCaptures)
+                val targetParam = targetParams(i)
+                if (enteringErasure(functionParam.typeSymbol.isDerivedValueClass)) {
+                  val casted = cast(gen.mkAttributedRef(param), functionParam)
+                  val unboxed = unbox(casted, ErasedValueType(functionParam.typeSymbol, targetParam.tpe)).modifyType(postErasure.elimErasedValueType)
+                  unboxed
+                } else adaptToType(gen.mkAttributedRef(param), targetParam.tpe)
+              }
+            }
+            gen.mkMethodCall(newTarget, args)
+          }
+          val body1 = if (enteringErasure(functionResultType.typeSymbol.isDerivedValueClass))
+            adaptToType(box(body.setType(ErasedValueType(functionResultType.typeSymbol, body.tpe)), "boxing lambda target"), bridgeResultType)
+          else adaptToType(body, bridgeResultType)
+          val methDef0 = DefDef(methSym, List(bridgeParamTrees), body1)
+          postErasure.newTransformer(unit).transform(methDef0).asInstanceOf[DefDef]
+        }
+      }
       /**
        * Creates the apply method for the anonymous subclass of FunctionN
        */
@@ -292,22 +358,56 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         thisArg ::: captureArgs
       }
 
-      val functionalInterface = java8CompatFunctionalInterface(target, originalFunction.tpe)
+      val arity = originalFunction.vparams.length
+
+      // Reconstruct the type of the function entering erasure.
+      // We do this by taking the type after erasure, and re-boxing `ErasedValueType`.
+      //
+      // Unfortunately, the more obvious `enteringErasure(target.info)` doesn't work
+      // as we would like, value classes in parameter position show up as the unboxed types.
+      val (functionParamTypes, functionResultType) = exitingErasure {
+        def boxed(tp: Type) = tp match {
+          case ErasedValueType(valueClazz, _) => TypeRef(NoPrefix, valueClazz, Nil)
+          case _ => tp
+        }
+        // We don't need to deeply map `boxedValueClassType` over the infos as `ErasedValueType`
+        // will only appear directly as a parameter type in a method signature, as shown
+        // https://gist.github.com/retronym/ba81dbd462282c504ff8
+        val info = target.info
+        val boxedParamTypes = info.paramTypes.takeRight(arity).map(boxed)
+        (boxedParamTypes, boxed(info.resultType))
+      }
+      val functionType = definitions.functionType(functionParamTypes, functionResultType)
+
+      val (functionalInterface, isSpecialized) = java8CompatFunctionalInterface(target, functionType)
       if (functionalInterface.exists) {
         // Create a symbol representing a fictional lambda factory method that accepts the captured
         // arguments and returns a Function.
-        val msym   = currentOwner.newMethod(nme.ANON_FUN_NAME, originalFunction.pos, ARTIFACT)
+        val msym = currentOwner.newMethod(nme.ANON_FUN_NAME, originalFunction.pos, ARTIFACT)
         val argTypes: List[Type] = allCaptureArgs.map(_.tpe)
         val params = msym.newSyntheticValueParams(argTypes)
-        msym.setInfo(MethodType(params, originalFunction.tpe))
+        msym.setInfo(MethodType(params, functionType))
         val arity = originalFunction.vparams.length
+
+        val lambdaTarget =
+          if (isSpecialized)
+            target
+          else {
+            createBoxingBridgeMethod(functionParamTypes, functionResultType) match {
+              case EmptyTree =>
+                target
+              case bridge =>
+                boxingBridgeMethods += bridge
+                bridge.symbol
+            }
+          }
 
         // We then apply this symbol to the captures.
         val apply = localTyper.typedPos(originalFunction.pos)(Apply(Ident(msym), allCaptureArgs)).asInstanceOf[Apply]
 
         // The backend needs to know the target of the lambda and the functional interface in order
         // to emit the invokedynamic instruction. We pass this information as tree attachment.
-        apply.updateAttachment(LambdaMetaFactoryCapable(target, arity, functionalInterface))
+        apply.updateAttachment(LambdaMetaFactoryCapable(lambdaTarget, arity, functionalInterface))
         InvokeDynamicLambda(apply)
       } else {
         val anonymousClassDef = makeAnonymousClass
@@ -344,7 +444,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       def adaptAndPostErase(tree: Tree, pt: Type): (Boolean, Tree) = {
         val (needsAdapt, adaptedTree) = adapt(tree, pt)
         val trans = postErasure.newTransformer(unit)
-        val postErasedTree = trans.atOwner(currentOwner)(trans.transform(adaptedTree)) // SI-8017 elimnates ErasedValueTypes
+        val postErasedTree = trans.atOwner(currentOwner)(trans.transform(adaptedTree)) // SI-8017 eliminates ErasedValueTypes
         (needsAdapt, postErasedTree)
       }
 
@@ -469,33 +569,21 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   final case class LambdaMetaFactoryCapable(target: Symbol, arity: Int, functionalInterface: Symbol)
 
   // The functional interface that can be used to adapt the lambda target method `target` to the
-  // given function type. Returns `NoSymbol` if the compiler settings are unsuitable, or `LambdaMetaFactory`
-  // would be unable to generate the correct implementation (e.g. functions referring to derived value classes)
-  private def java8CompatFunctionalInterface(target: Symbol, functionType: Type): Symbol = {
-    val canUseLambdaMetafactory: Boolean = {
-      val hasValueClass = exitingErasure {
-        val methodType: Type = target.info
-        methodType.exists(_.isInstanceOf[ErasedValueType])
-      }
-      settings.isBCodeActive && !hasValueClass
-    }
+  // given function type. Returns `NoSymbol` if the compiler settings are unsuitable.
+  private def java8CompatFunctionalInterface(target: Symbol, functionType: Type): (Symbol, Boolean) = {
+    val canUseLambdaMetafactory = settings.isBCodeActive
 
-    def functionalInterface: Symbol = {
-      val sym = functionType.typeSymbol
-      val pack = currentRun.runDefinitions.Scala_Java8_CompatPackage
-      val name1 = specializeTypes.specializedFunctionName(sym, functionType.typeArgs)
-      val paramTps :+ restpe = functionType.typeArgs
-      val arity = paramTps.length
-      if (name1.toTypeName == sym.name) {
-        val returnUnit = restpe.typeSymbol == UnitClass
-        val functionInterfaceArray =
-          if (returnUnit) currentRun.runDefinitions.Scala_Java8_CompatPackage_JProcedure
-          else currentRun.runDefinitions.Scala_Java8_CompatPackage_JFunction
-        functionInterfaceArray.apply(arity)
-      } else {
-        pack.info.decl(name1.toTypeName.prepend("J"))
-      }
+    val sym = functionType.typeSymbol
+    val pack = currentRun.runDefinitions.Scala_Java8_CompatPackage
+    val name1 = specializeTypes.specializedFunctionName(sym, functionType.typeArgs)
+    val paramTps :+ restpe = functionType.typeArgs
+    val arity = paramTps.length
+    val isSpecialized = name1.toTypeName != sym.name
+    val functionalInterface = if (!isSpecialized) {
+      currentRun.runDefinitions.Scala_Java8_CompatPackage_JFunction(arity)
+    } else {
+      pack.info.decl(name1.toTypeName.prepend("J"))
     }
-    if (canUseLambdaMetafactory) functionalInterface else NoSymbol
+    (if (canUseLambdaMetafactory) functionalInterface else NoSymbol, isSpecialized)
   }
 }

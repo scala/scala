@@ -112,8 +112,10 @@ trait ScalacPatternExpanders {
         arityError("not enough")
       else if (elementArity > 0 && !isSeq)
         arityError("too many")
-      else if (settings.warnStarsAlign && isSeq && productArity > 0 && (elementArity > 0 || !isStar))
-        warn("A repeated case parameter or extracted sequence should be matched only by a sequence wildcard (_*).")
+      else if (settings.warnStarsAlign && isSeq && productArity > 0 && elementArity > 0) warn {
+        if (isStar) "Sequence wildcard (_*) does not align with repeated case parameter or extracted sequence; the result may be unexpected."
+        else "A repeated case parameter or extracted sequence is not matched by a sequence wildcard (_*), and may fail at runtime."
+      }
 
       aligned
     }

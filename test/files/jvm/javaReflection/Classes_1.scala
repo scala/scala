@@ -13,7 +13,7 @@ class A {
     trait C
     object D
     new T { }
-    (() => -1)
+    (() => "-1")
     def f = { class KB }
   }
 
@@ -21,21 +21,21 @@ class A {
   new T { }
 
   // anonymous function, not a member
-  (() => 1)
+  (() => "1")
 
   def f = {
     class E
     trait F
     object G
     new T { }
-    (() => 2)
+    (() => "2")
 
     if (new Object().hashCode == 1) {
       class H
       trait I
       object J
       new T { }
-      (() => 3)
+      (() => "3")
     } else {
       ()
     }
@@ -46,7 +46,7 @@ class A {
     trait L
     object M
     new T { }
-    (() => 4)
+    (() => "4")
   }
 
   val x = {
@@ -54,7 +54,7 @@ class A {
     trait O
     object P
     new T { }
-    (() => 5)
+    (() => "5")
   }
 
   def this(x: Int) {
@@ -63,7 +63,7 @@ class A {
     trait R
     object S
     new T { }
-    (() => () => 5)
+    (() => () => "5")
   }
 }
 
@@ -72,7 +72,7 @@ object AO {
   trait C
   object D
   new T { }
-  (() => 1)
+  (() => "1")
 }
 
 trait AT {
@@ -80,5 +80,5 @@ trait AT {
   trait C
   object D
   new T { }
-  (() => 1)
+  (() => "1")
 }

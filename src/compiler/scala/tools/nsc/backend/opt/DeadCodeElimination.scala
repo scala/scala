@@ -378,7 +378,7 @@ abstract class DeadCodeElimination extends SubComponent {
           } else {
             i match {
               case NEW(REFERENCE(sym)) =>
-                log(s"Eliminated instantation of $sym inside $m")
+                log(s"Eliminated instantiation of $sym inside $m")
               case STORE_LOCAL(l) if clobbers contains ((bb, idx)) =>
                 // if an unused instruction was a clobber of a used store to a reference or array type
                 // then we'll replace it with the store of a null to make sure the reference is

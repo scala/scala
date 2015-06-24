@@ -711,7 +711,7 @@ object Test extends Properties("HtmlFactory") {
 
     property("class") = files.get("com/example/p1/Clazz.html") match {
       case Some(node: scala.xml.Node) => {
-        property("implicit convertion") =
+        property("implicit conversion") =
           node.toString contains "<span class=\"modifier\">implicit </span>"
 
         property("gt4s") =

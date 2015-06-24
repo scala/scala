@@ -802,7 +802,7 @@ trait ReificationSupport { self: SymbolTable =>
       require(enums.nonEmpty, "enumerators can't be empty")
       enums.head match {
         case SyntacticValFrom(_, _) =>
-        case t => throw new IllegalArgumentException(s"$t is not a valid fist enumerator of for loop")
+        case t => throw new IllegalArgumentException(s"$t is not a valid first enumerator of for loop")
       }
       enums.tail.foreach {
         case SyntacticValEq(_, _) | SyntacticValFrom(_, _) | SyntacticFilter(_) =>

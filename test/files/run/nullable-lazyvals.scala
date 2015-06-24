@@ -24,7 +24,7 @@ object Test extends App {
 
 	// test that try-finally does not generated a liftedTry
 	// helper. This would already fail the first part of the test,
-	// but this check will help diganose it (if the single access to a
+	// but this check will help diagnose it (if the single access to a
 	// private field does not happen directly in the lazy val, it won't
 	// be nulled).
 	for (f <- foo.getClass.getDeclaredMethods) {

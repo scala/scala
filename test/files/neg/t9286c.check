@@ -1,0 +1,7 @@
+t9286c.scala:8: error: name clash between defined and inherited member:
+def foo(m: M[_ >: String]): Int in trait T and
+private def foo(m: M[_ >: Any]): Int at line 8
+have same type after erasure: (m: M)Int
+    def foo(m: M[_ >: Any]) = 0 // Expected: "same type after erasure"
+        ^
+one error found

@@ -1,4 +1,4 @@
-// during development of late delmabdafying there was a problem where
+// during development of late delambdafying there was a problem where
 // specialization would undo some of the work done in uncurry if the body of the
 // lambda had a constant type. That would result in a compiler crash as
 // when the delambdafy phase got a tree shape it didn't understand

@@ -322,7 +322,7 @@ trait Reifiers { self: Quasiquotes =>
      *     in the domain of the fill function;
      *
      *  2. fold the groups into a sequence of lists added together with ++ using
-     *     fill reification for holeMap and fallback reification for non-holeMap.
+     *     fill reification for holeMap and fallback reification for non-holeMap.
      *
      *  Example:
      *

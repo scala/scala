@@ -12,6 +12,9 @@ package immutable
 
 import mutable.{ Builder, ListBuffer }
 
+// TODO: Now the specialization exists there is no clear reason to have
+// separate classes for Range/NumericRange.  Investigate and consolidate.
+
 /** `NumericRange` is a more generic version of the
  *  `Range` class which works with arbitrary types.
  *  It must be supplied with an `Integral` implementation of the
@@ -27,9 +30,6 @@ import mutable.{ Builder, ListBuffer }
  *     val r2 = Range.Long(veryBig, veryBig + 100, 1)
  *     assert(r1 sameElements r2.map(_ - veryBig))
  *  }}}
- *
- *  TODO: Now the specialization exists there is no clear reason to have
- *  separate classes for Range/NumericRange.  Investigate and consolidate.
  *
  *  @author  Paul Phillips
  *  @version 2.8
@@ -266,7 +266,7 @@ object NumericRange {
       // Numbers may be big.
       val one = num.one
       val limit = num.fromInt(Int.MaxValue)
-      def check(t: T): T = 
+      def check(t: T): T =
         if (num.gt(t, limit)) throw new IllegalArgumentException("More than Int.MaxValue elements.")
         else t
       // If the range crosses zero, it might overflow when subtracted

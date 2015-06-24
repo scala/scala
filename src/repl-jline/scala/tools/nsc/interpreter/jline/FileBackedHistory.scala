@@ -1,20 +1,22 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
+ * Copyright 2005-2015 LAMP/EPFL
  * @author Paul Phillips
  */
 
-package scala.tools.nsc
-package interpreter
-package session
+package scala.tools.nsc.interpreter.jline
 
-import scala.tools.nsc.io._
-import FileBackedHistory._
+import _root_.jline.console.history.PersistentHistory
+
+
+import scala.tools.nsc.interpreter
+import scala.tools.nsc.io.{File, Path}
 
 /** TODO: file locking.
- */
-trait FileBackedHistory extends JLineHistory with JPersistentHistory {
+  */
+trait FileBackedHistory extends JLineHistory with PersistentHistory {
   def maxSize: Int
-  protected lazy val historyFile: File = defaultFile
+
+  protected lazy val historyFile: File = FileBackedHistory.defaultFile
   private var isPersistent = true
 
   locally {
@@ -27,6 +29,7 @@ trait FileBackedHistory extends JLineHistory with JPersistentHistory {
     try op
     finally isPersistent = saved
   }
+
   def addLineToFile(item: CharSequence): Unit = {
     if (isPersistent)
       append(item + "\n")
@@ -37,6 +40,7 @@ trait FileBackedHistory extends JLineHistory with JPersistentHistory {
     val lines = asStrings map (_ + "\n")
     historyFile.writeAll(lines: _*)
   }
+
   /** Append one or more lines to the history file. */
   protected def append(lines: String*): Unit = {
     historyFile.appendAll(lines: _*)
@@ -54,31 +58,36 @@ trait FileBackedHistory extends JLineHistory with JPersistentHistory {
         // than abandon hope we'll try to read it as ISO-8859-1
         case _: Exception =>
           try historyFile.lines("ISO-8859-1").toIndexedSeq
-          catch { case _: Exception => Vector() }
+          catch {
+            case _: Exception => Vector()
+          }
       }
     }
 
-    repldbg("Loading " + lines.size + " into history.")
+    interpreter.repldbg("Loading " + lines.size + " into history.")
 
     // avoid writing to the history file
     withoutSaving(lines takeRight maxSize foreach add)
     // truncate the history file if it's too big.
     if (lines.size > maxSize) {
-      repldbg("File exceeds maximum size: truncating to " + maxSize + " entries.")
+      interpreter.repldbg("File exceeds maximum size: truncating to " + maxSize + " entries.")
       sync()
     }
     moveToEnd()
   }
 
   def flush(): Unit = ()
+
   def purge(): Unit = historyFile.truncate()
 }
 
 object FileBackedHistory {
   //   val ContinuationChar = '\003'
   //   val ContinuationNL: String = Array('\003', '\n').mkString
-  import Properties.userHome
+
+  import scala.tools.nsc.Properties.userHome
 
   def defaultFileName = ".scala_history"
+
   def defaultFile: File = File(Path(userHome) / defaultFileName)
 }
