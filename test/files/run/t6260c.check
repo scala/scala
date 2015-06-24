@@ -1,8 +1,8 @@
 f(C@2e)
 
-#partest !-Ydelambdafy:method
+#partest -Ydelambdafy:inline
 Test$$anonfun$$apply
-#partest -Ydelambdafy:method
+#partest !-Ydelambdafy:inline
 Test$lambda$1$$apply
 #partest
 apply
