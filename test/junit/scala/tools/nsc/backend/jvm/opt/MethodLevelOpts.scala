@@ -56,7 +56,7 @@ class MethodLevelOpts extends ClearAfterClass {
   }
 
   @Test
-  def inlineReturnInCachtNotTry(): Unit = {
+  def inlineReturnInCatchNotTry(): Unit = {
     val code = "def f: Int = return { try 1 catch { case _: Throwable => 2 } }"
     // cannot inline the IRETURN into the try block (because RETURN may throw IllegalMonitorState)
     val m = singleMethod(methodOptCompiler)(code)

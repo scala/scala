@@ -1022,7 +1022,7 @@ abstract class GenICode extends SubComponent {
         tree match {
           case Literal(Constant(null)) if generatedType == NullReference && expectedType != UNIT =>
             // literal null on the stack (as opposed to a boxed null, see SI-8233),
-            // we can bypass `adapt` which would otherwise emitt a redundant [DROP, CONSTANT(null)]
+            // we can bypass `adapt` which would otherwise emit a redundant [DROP, CONSTANT(null)]
             // except one case: when expected type is UNIT (unboxed) where we need to emit just a DROP
           case _ =>
             adapt(generatedType, expectedType, resCtx, tree.pos)
@@ -2108,7 +2108,7 @@ abstract class GenICode extends SubComponent {
     /**
      * Represent a label in the current method code. In order
      * to support forward jumps, labels can be created without
-     * having a deisgnated target block. They can later be attached
+     * having a designated target block. They can later be attached
      * by calling `anchor`.
      */
     class Label(val symbol: Symbol) {

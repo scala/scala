@@ -93,7 +93,7 @@ object Test extends App {
     }
   }
 
-  // nested finallies with return value
+  // nested finally blocks with return value
   def nestedFinalies: Int =
     try {
       try {

@@ -86,7 +86,7 @@ object Test extends App {
     def f(a: Object) = "first"
     val f: String => String = a => "second"
   }
-  println(t5.f(new Sub1())) // firsst
+  println(t5.f(new Sub1())) // first
   println(t5.f("dfklj"))    // second
 
   object t6 {
@@ -239,7 +239,7 @@ object Test extends App {
   // result type of default getters: parameter type, except if this one mentions any type
   // parameter, in which case the result type is inferred. examples:
 
-  // result type of default getter is "String => String". if it were infered, the compiler
+  // result type of default getter is "String => String". if it were inferred, the compiler
   // would put "Nothing => Nothing", which is useless
   def transform(s: String, f: String => String = identity _) = f(s)
   println(transform("my text"))

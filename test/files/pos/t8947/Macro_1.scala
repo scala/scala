@@ -35,7 +35,7 @@ object X {
   //        symtab.EmptyTree.setAttachments(symtab.NoPosition)
   //      }
   //
-  //   To make this visible to the macro implementaiton, it will need to be compiled in an earlier stage,
+  //   To make this visible to the macro implementation, it will need to be compiled in an earlier stage,
   //   e.g a separate SBT sub-project.
 
 }

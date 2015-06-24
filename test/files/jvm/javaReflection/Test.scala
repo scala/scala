@@ -31,7 +31,7 @@ getSimpleName / getCanonicalName / isAnonymousClass / isLocalClass / isSynthetic
     These should be avoided, they yield unexpected results:
 
     - isAnonymousClass is always false. Scala-defined classes are never anonymous for Java
-      reflection. Java reflection insepects the class name to decide whether a class is
+      reflection. Java reflection inspects the class name to decide whether a class is
       anonymous, based on the name spec referenced above.
       Also, the implementation of "isAnonymousClass" calls "getSimpleName", which may throw.
 

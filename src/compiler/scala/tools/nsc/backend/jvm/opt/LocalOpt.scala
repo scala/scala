@@ -262,7 +262,7 @@ object LocalOptImpls {
    * the same index, but distinct start / end ranges are different variables, they may have not the
    * same type or name.
    */
-  def removeUnusedLocalVariableNodes(method: MethodNode)(fistLocalIndex: Int = parametersSize(method), renumber: Int => Int = identity): Boolean = {
+  def removeUnusedLocalVariableNodes(method: MethodNode)(firstLocalIndex: Int = parametersSize(method), renumber: Int => Int = identity): Boolean = {
     def variableIsUsed(start: AbstractInsnNode, end: LabelNode, varIndex: Int): Boolean = {
       start != end && (start match {
         case v: VarInsnNode if v.`var` == varIndex => true
@@ -276,7 +276,7 @@ object LocalOptImpls {
       val local = localsIter.next()
       val index = local.index
       // parameters and `this` (the lowest indices, starting at 0) are never removed or renumbered
-      if (index >= fistLocalIndex) {
+      if (index >= firstLocalIndex) {
         if (!variableIsUsed(local.start, local.end, index)) localsIter.remove()
         else if (renumber(index) != index) local.index = renumber(index)
       }

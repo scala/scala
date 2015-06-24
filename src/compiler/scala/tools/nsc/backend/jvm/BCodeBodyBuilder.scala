@@ -33,7 +33,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
    * Functionality to build the body of ASM MethodNode, except for `synchronized` and `try` expressions.
    */
   abstract class PlainBodyBuilder(cunit: CompilationUnit) extends PlainSkelBuilder(cunit) {
-
     import icodes.TestOp
     import icodes.opcodes.InvokeStyle
 
@@ -1287,38 +1286,42 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
     def genInvokeDynamicLambda(lambdaTarget: Symbol, arity: Int, functionalInterface: Symbol) {
       val isStaticMethod = lambdaTarget.hasFlag(Flags.STATIC)
+      def asmType(sym: Symbol) = classBTypeFromSymbol(sym).toASMType
 
-      val targetHandle =
+      val implMethodHandle =
         new asm.Handle(if (lambdaTarget.hasFlag(Flags.STATIC)) asm.Opcodes.H_INVOKESTATIC else asm.Opcodes.H_INVOKEVIRTUAL,
           classBTypeFromSymbol(lambdaTarget.owner).internalName,
           lambdaTarget.name.toString,
           asmMethodType(lambdaTarget).descriptor)
-      val receiver = if (isStaticMethod) None else Some(lambdaTarget.owner)
+      val receiver = if (isStaticMethod) Nil else lambdaTarget.owner :: Nil
       val (capturedParams, lambdaParams) = lambdaTarget.paramss.head.splitAt(lambdaTarget.paramss.head.length - arity)
       // Requires https://github.com/scala/scala-java8-compat on the runtime classpath
-      val returnUnit = lambdaTarget.info.resultType.typeSymbol == UnitClass
-      val functionalInterfaceDesc: String = classBTypeFromSymbol(functionalInterface).descriptor
-      val desc = (receiver.toList ::: capturedParams).map(sym => toTypeKind(sym.info)).mkString(("("), "", ")") + functionalInterfaceDesc
+      val invokedType = asm.Type.getMethodDescriptor(asmType(functionalInterface), (receiver ::: capturedParams).map(sym => toTypeKind(sym.info).toASMType): _*)
 
-      // TODO specialization
       val constrainedType = new MethodBType(lambdaParams.map(p => toTypeKind(p.tpe)), toTypeKind(lambdaTarget.tpe.resultType)).toASMType
-      val abstractMethod = functionalInterface.info.decls.find(_.isDeferred).getOrElse(functionalInterface.info.member(nme.apply))
-      val methodName = abstractMethod.name.toString
-      val applyN = {
-        val mt = asmMethodType(abstractMethod)
-        mt.toASMType
-      }
+      val sam = functionalInterface.info.decls.find(_.isDeferred).getOrElse(functionalInterface.info.member(nme.apply))
+      val samName = sam.name.toString
+      val samMethodType = asmMethodType(sam).toASMType
 
-      bc.jmethod.visitInvokeDynamicInsn(methodName, desc, lambdaMetaFactoryBootstrapHandle,
-          // boostrap args
-        applyN, targetHandle, constrainedType
+      val flags = 3 // TODO 2.12.x Replace with LambdaMetafactory.FLAG_SERIALIZABLE | LambdaMetafactory.FLAG_MARKERS
+
+      val ScalaSerializable = classBTypeFromSymbol(definitions.SerializableClass).toASMType
+      bc.jmethod.visitInvokeDynamicInsn(samName, invokedType, lambdaMetaFactoryBootstrapHandle,
+        /* samMethodType          = */ samMethodType,
+        /* implMethod             = */ implMethodHandle,
+        /* instantiatedMethodType = */ constrainedType,
+        /* flags                  = */ flags.asInstanceOf[AnyRef],
+        /* markerInterfaceCount   = */ 1.asInstanceOf[AnyRef],
+        /* markerInterfaces[0]    = */ ScalaSerializable,
+        /* bridgeCount            = */ 0.asInstanceOf[AnyRef]
       )
+      indyLambdaHosts += this.claszSymbol
     }
   }
 
-  val lambdaMetaFactoryBootstrapHandle =
+  lazy val lambdaMetaFactoryBootstrapHandle =
     new asm.Handle(asm.Opcodes.H_INVOKESTATIC,
-      "java/lang/invoke/LambdaMetafactory", "metafactory",
-      "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;")
+      definitions.LambdaMetaFactory.fullName('/'), sn.AltMetafactory.toString,
+      "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
 
 }

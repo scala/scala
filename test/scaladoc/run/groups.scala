@@ -38,7 +38,7 @@ object Test extends ScaladocModelTest {
            *  @groupdesc C Group C is introduced by B
            */
           trait B {
-            /** baz descriptopn
+            /** baz description
              *  @group C */
             def baz = 3
           }

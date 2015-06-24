@@ -6,4 +6,4 @@ if (x != x) is good
 if (NaN != x) is good
 x matching was good
 NaN matching was good
-loop with NaN was goood
+loop with NaN was good

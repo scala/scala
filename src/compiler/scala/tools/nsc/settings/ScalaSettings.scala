@@ -76,7 +76,7 @@ trait ScalaSettings extends AbsScalaSettings
     val implicitConversions = Choice("implicitConversions", "Allow definition of implicit functions called views")
     val higherKinds         = Choice("higherKinds",         "Allow higher-kinded types")
     val existentials        = Choice("existentials",        "Existential types (besides wildcard types) can be written and inferred")
-    val macros              = Choice("experimental.macros", "Allow macro defintion (besides implementation and application)")
+    val macros              = Choice("experimental.macros", "Allow macro definition (besides implementation and application)")
   }
   val language      = {
     val description = "Enable or disable language features"
@@ -234,15 +234,16 @@ trait ScalaSettings extends AbsScalaSettings
     val emptyLineNumbers        = Choice("empty-line-numbers",        "Eliminate unnecessary line number information.")
     val emptyLabels             = Choice("empty-labels",              "Eliminate and collapse redundant labels in the bytecode.")
     val compactLocals           = Choice("compact-locals",            "Eliminate empty slots in the sequence of local variables.")
-    val inlineProject           = Choice("inline-project",            "Inline only methods defined in the files being compiled")
-    val inlineGlobal            = Choice("inline-global",             "Inline methods from any source, including classfiles on the compile classpath")
+    val nullnessTracking        = Choice("nullness-tracking",         "Track nullness / non-nullness of local variables and apply optimizations.")
+    val inlineProject           = Choice("inline-project",            "Inline only methods defined in the files being compiled.")
+    val inlineGlobal            = Choice("inline-global",             "Inline methods from any source, including classfiles on the compile classpath.")
 
     val lNone           = Choice("l:none",      "Don't enable any optimizations.")
 
     private val defaultChoices = List(unreachableCode)
     val lDefault        = Choice("l:default",   "Enable default optimizations: "+ defaultChoices.mkString(","),                                    expandsTo = defaultChoices)
 
-    private val methodChoices = List(unreachableCode, simplifyJumps, emptyLineNumbers, emptyLabels, compactLocals)
+    private val methodChoices = List(unreachableCode, simplifyJumps, emptyLineNumbers, emptyLabels, compactLocals, nullnessTracking)
     val lMethod         = Choice("l:method",    "Enable intra-method optimizations: "+ methodChoices.mkString(","),                                expandsTo = methodChoices)
 
     private val projectChoices = List(lMethod, inlineProject)
@@ -264,6 +265,7 @@ trait ScalaSettings extends AbsScalaSettings
   def YoptEmptyLineNumbers        = Yopt.contains(YoptChoices.emptyLineNumbers)
   def YoptEmptyLabels             = Yopt.contains(YoptChoices.emptyLabels)
   def YoptCompactLocals           = Yopt.contains(YoptChoices.compactLocals)
+  def YoptNullnessTracking        = Yopt.contains(YoptChoices.nullnessTracking)
 
   def YoptInlineProject           = Yopt.contains(YoptChoices.inlineProject)
   def YoptInlineGlobal            = Yopt.contains(YoptChoices.inlineGlobal)

@@ -6,7 +6,7 @@ import scala.tools.reflect.Eval
 // Related to SI-6187
 //
 // Moved to pending as we are currently blocked by the inability
-// to reify the parent types of the anoymous function class,
+// to reify the parent types of the anonymous function class,
 // which are not part of the tree, but rather only part of the
 // ClassInfoType.
 object Test extends App {

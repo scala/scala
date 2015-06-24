@@ -230,7 +230,10 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     val interfaces = implementedInterfaces(classSym).map(classBTypeFromSymbol)
 
-    val flags = javaFlags(classSym)
+    val flags = {
+      if (classSym.isJava) javaClassfileFlags(classSym) // see comment on javaClassfileFlags
+      else javaFlags(classSym)
+    }
 
     /* The InnerClass table of a class C must contain all nested classes of C, even if they are only
      * declared but not otherwise referenced in C (from the bytecode or a method / field signature).
@@ -290,7 +293,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
         val javaCompatMembers = {
           if (linkedClass != NoSymbol && isTopLevelModuleClass(linkedClass))
           // phase travel to exitingPickler: this makes sure that memberClassesForInnerClassTable only sees member
-          // classes, not local classes of the companion module (E in the exmaple) that were lifted by lambdalift.
+          // classes, not local classes of the companion module (E in the example) that were lifted by lambdalift.
             exitingPickler(memberClassesForInnerClassTable(linkedClass))
           else
             Nil

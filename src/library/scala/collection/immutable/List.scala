@@ -462,6 +462,7 @@ object List extends SeqFactory[List] {
   private class SerializationProxy[A](@transient private var orig: List[A]) extends Serializable {
 
     private def writeObject(out: ObjectOutputStream) {
+      out.defaultWriteObject()
       var xs: List[A] = orig
       while (!xs.isEmpty) {
         out.writeObject(xs.head)
@@ -473,6 +474,7 @@ object List extends SeqFactory[List] {
     // Java serialization calls this before readResolve during de-serialization.
     // Read the whole list and store it in `orig`.
     private def readObject(in: ObjectInputStream) {
+      in.defaultReadObject()
       val builder = List.newBuilder[A]
       while (true) in.readObject match {
         case ListSerializeEnd =>

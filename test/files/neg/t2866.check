@@ -5,7 +5,7 @@ t2866.scala:42: error: ambiguous implicit values:
  both value two of type Int
  and value one in object A of type => Int
  match expected type Int
-    assert(implicitly[Int] == 2) // !!! Not ambiguous in 2.8.0. Ambigous in 2.7.6
+    assert(implicitly[Int] == 2) // !!! Not ambiguous in 2.8.0. Ambiguous in 2.7.6
                      ^
 t2866.scala:50: error: ambiguous implicit values:
  both value two of type Int

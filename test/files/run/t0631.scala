@@ -11,6 +11,6 @@ object Test extends App {
   case class Bar(x: Foo)
   val b = new Bar(new Foo)
 
-  // this should not call Foo.equals, but simply compare object identiy of b
+  // this should not call Foo.equals, but simply compare object identity of b
   println(b == b)
 }

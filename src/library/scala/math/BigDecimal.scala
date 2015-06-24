@@ -49,7 +49,7 @@ object BigDecimal {
   
   /** Constructs a `BigDecimal` using the decimal text representation of `Double` value `d`, rounding if necessary. */
   def decimal(d: Double, mc: MathContext): BigDecimal =
-    new BigDecimal(new BigDec(java.lang.Double.toString(d), mc))
+    new BigDecimal(new BigDec(java.lang.Double.toString(d), mc), mc)
 
   /** Constructs a `BigDecimal` using the decimal text representation of `Double` value `d`. */
   def decimal(d: Double): BigDecimal = decimal(d, defaultMathContext)
@@ -59,7 +59,7 @@ object BigDecimal {
    *  `0.1 != 0.1f`.
    */
   def decimal(f: Float, mc: MathContext): BigDecimal =
-    new BigDecimal(new BigDec(java.lang.Float.toString(f), mc))
+    new BigDecimal(new BigDec(java.lang.Float.toString(f), mc), mc)
 
   /** Constructs a `BigDecimal` using the decimal text representation of `Float` value `f`.
    *  Note that `BigDecimal.decimal(0.1f) != 0.1f` since equality agrees with the `Double` representation, and

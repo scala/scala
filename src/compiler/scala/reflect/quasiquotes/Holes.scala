@@ -151,7 +151,7 @@ trait Holes { self: Quasiquotes =>
         else None
     }
 
-    /** Map high-rank unquotee onto an expression that eveluates as a list of given rank.
+    /** Map high-rank unquotee onto an expression that evaluates as a list of given rank.
      *
      *  All possible combinations of representations are given in the table below:
      *

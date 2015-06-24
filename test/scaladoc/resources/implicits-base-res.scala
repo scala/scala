@@ -52,7 +52,7 @@ object A {
  * def convToGtColonDoubleA(x: Double)      // enrichA3: no constraints
  * def convToManifestA(x: Double)           // enrichA7: no constraints
  * def convToMyNumericA(x: Double)          // enrichA6: (if showAll is set) with a constraint that there is x: MyNumeric[Double] implicit in scope
- * def convToNumericA(x: Double)            // enrichA1: no constraintsd
+ * def convToNumericA(x: Double)            // enrichA1: no constraints
  * def convToEnrichedA(x: Bar[Foo[Double]]) // enrichA5: no constraints, SHADOWED
  * def convToEnrichedA(x: Double)           // enrichA0: no constraints, SHADOWED
  * def convToTraversableOps(x: Double)      // enrichA7: no constraints

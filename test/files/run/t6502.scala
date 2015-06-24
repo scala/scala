@@ -123,7 +123,7 @@ object Test extends StoreReporterDirectTest {
   }
 
   def test6(): Unit = {
-    // Avoid java.lang.NoClassDefFoundError triggered by the old appoach of using a Java
+    // Avoid java.lang.NoClassDefFoundError triggered by the old approach of using a Java
     // classloader to parse .class files in order to read their names.
     val jar = "test6.jar"
     compileCode(app6, jar)

@@ -63,12 +63,13 @@ object BooleanProp {
   def valueIsTrue[T](key: String): BooleanProp = new BooleanPropImpl(key, _.toLowerCase == "true")
 
   /** As an alternative, this method creates a BooleanProp which is true
-   *  if the key exists in the map.  This way -Dfoo.bar is enough to be
-   *  considered true.
+   *  if the key exists in the map and is not assigned a value other than "true",
+   *  compared case-insensitively, or the empty string.  This way -Dmy.property
+   *  results in a true-valued property, but -Dmy.property=false does not.
    *
    *  @return   A BooleanProp with a liberal truth policy
    */
-  def keyExists[T](key: String): BooleanProp = new BooleanPropImpl(key, _ => true)
+  def keyExists[T](key: String): BooleanProp = new BooleanPropImpl(key, s => s == "" || s.equalsIgnoreCase("true"))
 
   /** A constant true or false property which ignores all method calls.
    */

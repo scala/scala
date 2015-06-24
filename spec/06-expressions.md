@@ -512,7 +512,7 @@ In the latter case, the concrete self type of the expression is the
 compound type `$T$ with $x$.type`.
 
 The expression is evaluated by creating a fresh
-object of type $T$ which is is initialized by evaluating $c$. The
+object of type $T$ which is initialized by evaluating $c$. The
 type of the expression is $T$.
 
 A general instance creation expression is of the form

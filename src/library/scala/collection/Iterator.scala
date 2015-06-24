@@ -619,29 +619,21 @@ trait Iterator[+A] extends TraversableOnce[A] {
   def span(p: A => Boolean): (Iterator[A], Iterator[A]) = {
     val self = buffered
 
-    /*
-     * Giving a name to following iterator (as opposed to trailing) because
-     * anonymous class is represented as a structural type that trailing
-     * iterator is referring (the finish() method) and thus triggering
-     * handling of structural calls. It's not what's intended here.
-     */
+    // Must be a named class to avoid structural call to finish from trailing iterator
     class Leading extends AbstractIterator[A] {
-      val lookahead = new mutable.Queue[A]
-      def advance() = {
-        self.hasNext && p(self.head) && {
-          lookahead += self.next
-          true
-        }
+      private val drained  = new mutable.Queue[A]
+      private var finished = false
+      def finish(): Unit = {
+        require(!finished)
+        finished = true
+        while (selfish) drained += self.next
       }
-      def finish() = {
-        while (advance()) ()
-      }
-      def hasNext = lookahead.nonEmpty || advance()
+      private def selfish = self.hasNext && p(self.head)
+      def hasNext = if (finished) drained.nonEmpty else selfish
       def next() = {
-        if (lookahead.isEmpty)
-          advance()
-
-        lookahead.dequeue()
+        if (finished) drained.dequeue()
+        else if (selfish) self.next()
+        else empty.next()
       }
     }
     val leading = new Leading

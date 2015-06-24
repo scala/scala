@@ -46,7 +46,7 @@ object Test extends App {
     def g(a: C, b: Int*) = "third"
     def g(a: B) = "fourth"
   }
-  t7.g(new C()) // ambigous reference
+  t7.g(new C()) // ambiguous reference
 
   // vararg
   def test5(a: Int, b: String*) = a
@@ -58,7 +58,7 @@ object Test extends App {
     def f(a: Int, b: Object) = "first"
     def f(b: String, a: Int) = "second"
   }
-  println(t8.f(a = 0, b = "1")) // ambigous reference
+  println(t8.f(a = 0, b = "1")) // ambiguous reference
 
 
   // case class copy does not exist if there's a vararg

@@ -56,11 +56,12 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
    *  @throws java.util.NoSuchElementException if the queue is too short.
    */
   override def apply(n: Int): A = {
-    val len = out.length
-    if (n < len) out.apply(n)
+    val olen = out.length
+    if (n < olen) out.apply(n)
     else {
-      val m = n - len
-      if (m < in.length) in.reverse.apply(m)
+      val m = n - olen
+      val ilen = in.length
+      if (m < ilen) in.apply(ilen - m - 1)
       else throw new NoSuchElementException("index out of range")
     }
   }

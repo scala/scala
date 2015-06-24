@@ -68,6 +68,8 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     var isCZStaticModule           = false
     var isCZRemote                 = false
 
+    protected val indyLambdaHosts = collection.mutable.Set[Symbol]()
+
     /* ---------------- idiomatic way to ask questions to typer ---------------- */
 
     def paramTKs(app: Apply): List[BType] = {
@@ -88,7 +90,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
     override def getCurrentCUnit(): CompilationUnit = { cunit }
 
-    /* ---------------- helper utils for generating classes and fiels ---------------- */
+    /* ---------------- helper utils for generating classes and fields ---------------- */
 
     def genPlainClass(cd: ClassDef) {
       assert(cnode == null, "GenBCode detected nested methods.")
@@ -121,6 +123,16 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       innerClassBufferASM ++= classBType.info.get.nestedClasses
       gen(cd.impl)
+
+
+      val shouldAddLambdaDeserialize = (
+        settings.target.value == "jvm-1.8"
+          && settings.Ydelambdafy.value == "method"
+          && indyLambdaHosts.contains(claszSymbol))
+
+      if (shouldAddLambdaDeserialize)
+        addLambdaDeserialize(claszSymbol, cnode)
+
       addInnerClassesASM(cnode, innerClassBufferASM.toList)
 
       cnode.visitAttribute(classBType.inlineInfoAttribute.get)

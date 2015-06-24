@@ -16,17 +16,21 @@ package interpreter
  *  the same result.
  */
 abstract class Pasted {
+  def interpret(line: String): Unit
   def ContinueString: String
   def PromptString: String
-  def interpret(line: String): Unit
+  def AltPromptString: String = "scala> "
 
-  def matchesPrompt(line: String) = matchesString(line, PromptString)
+  private val testBoth = PromptString != AltPromptString
+  private val spacey   = " \t".toSet
+
+  def matchesPrompt(line: String) = matchesString(line, PromptString) || testBoth && matchesString(line, AltPromptString)
   def matchesContinue(line: String) = matchesString(line, ContinueString)
   def running = isRunning
 
   private def matchesString(line: String, target: String): Boolean = (
     (line startsWith target) ||
-    (line.nonEmpty && " \t".toSet(line.head) && matchesString(line.tail, target))
+    (line.nonEmpty && spacey(line.head) && matchesString(line.tail, target))
   )
   private def stripString(line: String, target: String) = line indexOf target match {
     case -1   => line
@@ -39,7 +43,9 @@ abstract class Pasted {
 
   private class PasteAnalyzer(val lines: List[String]) {
     val referenced = lines flatMap (resReference findAllIn _.trim.stripPrefix("res")) toSet
-    val cmds       = lines reduceLeft append split PromptString filterNot (_.trim == "") toList
+    val ActualPromptString = lines find matchesPrompt map (s =>
+      if (matchesString(s, PromptString)) PromptString else AltPromptString) getOrElse PromptString
+    val cmds       = lines reduceLeft append split ActualPromptString filterNot (_.trim == "") toList
 
     /** If it's a prompt or continuation line, strip the formatting bits and
      *  assemble the code.  Otherwise ship it off to be analyzed for res references
@@ -67,10 +73,10 @@ abstract class Pasted {
      */
     def fixResRefs(code: String, line: String) = line match {
       case resCreation(resName) if referenced(resName) =>
-        code.lastIndexOf(PromptString) match {
+        code.lastIndexOf(ActualPromptString) match {
           case -1   => code
           case idx  =>
-            val (str1, str2) = code splitAt (idx + PromptString.length)
+            val (str1, str2) = code splitAt (idx + ActualPromptString.length)
             str2 match {
               case resAssign(`resName`) => code
               case _                    => "%sval %s = { %s }".format(str1, resName, str2)
@@ -79,10 +85,10 @@ abstract class Pasted {
       case _ => code
     }
 
-    def run() {
+    def run(): Unit = {
       println("// Replaying %d commands from transcript.\n" format cmds.size)
       cmds foreach { cmd =>
-        print(PromptString)
+        print(ActualPromptString)
         interpret(cmd)
       }
     }

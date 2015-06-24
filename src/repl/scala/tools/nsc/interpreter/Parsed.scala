@@ -8,6 +8,25 @@ package interpreter
 
 import util.returning
 
+trait Delimited {
+  self: Parsed =>
+
+  def delimited: Char => Boolean
+  def escapeChars: List[Char] = List('\\')
+
+  /** Break String into args based on delimiting function.
+   */
+  protected def toArgs(s: String): List[String] =
+    if (s == "") Nil
+    else (s indexWhere isDelimiterChar) match {
+      case -1   => List(s)
+      case idx  => (s take idx) :: toArgs(s drop (idx + 1))
+    }
+
+  def isDelimiterChar(ch: Char) = delimited(ch)
+  def isEscapeChar(ch: Char): Boolean = escapeChars contains ch
+}
+
 /** One instance of a command buffer.
  */
 class Parsed private (

@@ -1168,6 +1168,8 @@ trait StdNames {
     final val Invoke: TermName           = newTermName("invoke")
     final val InvokeExact: TermName      = newTermName("invokeExact")
 
+    final val AltMetafactory: TermName      = newTermName("altMetafactory")
+
     val Boxed = immutable.Map[TypeName, TypeName](
       tpnme.Boolean -> BoxedBoolean,
       tpnme.Byte    -> BoxedByte,

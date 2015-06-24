@@ -298,7 +298,7 @@ the sequence of variable definitions
 ```ebnf
 Dcl        ::=  ‘type’ {nl} TypeDcl
 TypeDcl    ::=  id [TypeParamClause] [‘>:’ Type] [‘<:’ Type]
-Def        ::=  type {nl} TypeDef
+Def        ::=  ‘type’ {nl} TypeDef
 TypeDef    ::=  id [TypeParamClause] ‘=’ Type
 ```
 
@@ -620,7 +620,11 @@ well as the function body, if it is present.
 
 A value parameter clause $\mathit{ps}$ consists of zero or more formal
 parameter bindings such as `$x$: $T$` or `$x: T = e$`, which bind value
-parameters and associate them with their types. Each value parameter
+parameters and associate them with their types.
+
+### Default Arguments
+
+Each value parameter
 declaration may optionally define a default argument. The default argument
 expression $e$ is type-checked with an expected type $T'$ obtained
 by replacing all occurences of the function's type parameters in $T$ by
@@ -632,13 +636,7 @@ expression. Here, $n$ denotes the parameter's position in the method
 declaration. These methods are parametrized by the type parameter clause
 `[$\mathit{tps}\,$]` and all value parameter clauses
 `($\mathit{ps}_1$)$\ldots$($\mathit{ps}_{i-1}$)` preceding $p_{i,j}$.
-The `$f\$$default$\$$n` methods are inaccessible for
-user programs.
-
-The scope of a formal value parameter name $x$ comprises all subsequent
-parameter clauses, as well as the method return type and the function body, if
-they are given. Both type parameter names and value parameter names must
-be pairwise distinct.
+The `$f\$$default$\$$n` methods are inaccessible for user programs.
 
 ###### Example
 In the method
@@ -655,6 +653,20 @@ arguments have the form:
 ```scala
 def compare$\$$default$\$$1[T]: Int = 0
 def compare$\$$default$\$$2[T](a: T): T = a
+```
+
+The scope of a formal value parameter name $x$ comprises all subsequent
+parameter clauses, as well as the method return type and the function body, if
+they are given. Both type parameter names and value parameter names must
+be pairwise distinct.
+
+A default value which depends on earlier parameters uses the actual arguments
+if they are provided, not the default arguments.
+
+```scala
+def f(a: Int = 0)(b: Int = a + 1) = b // OK
+// def f(a: Int = 0, b: Int = a + 1)  // "error: not found: value a"
+f(10)()                               // returns 11 (not 1)
 ```
 
 ### By-Name Parameters

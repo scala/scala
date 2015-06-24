@@ -122,8 +122,8 @@ when compiling with `-target:jvm-1.4`, a Scala type such as
 
 #### Changes to Case Classes
 
-The Scala compiler generates now for every case class a companion
-extractor object (). For instance, given the case class:
+The Scala compiler generates a [companion extractor object for every case class]
+(05-classes-and-objects.html#case-classes) now. For instance, given the case class:
 
       case class X(elem: String)
 
@@ -152,8 +152,9 @@ _(30-Nov-2007)_
 
 #### Mutable variables introduced by pattern binding
 
-Mutable variables can now be introduced by a pattern matching definition
-(), just like values can. Examples:
+[Mutable variables can now be introduced by a pattern matching definition]
+(04-basic-declarations-and-definitions.html#variable-declarations-and-definitions),
+just like values can. Examples:
 
       var (x, y) = if (positive) (1, 2) else (-1, -3)
       var hd :: tl = mylist
@@ -161,7 +162,7 @@ Mutable variables can now be introduced by a pattern matching definition
 #### Self-types
 
 Self types can now be introduced without defining an alias name for
-`this` (). Example:
+[`this`](05-classes-and-objects.html#templates). Example:
 
       class C {
         type T <: Trait
@@ -175,8 +176,8 @@ _(27-July-2007)_
 
 #### Existential types
 
-It is now possible to define existential types (). An existential type
-has the form `T forSome {Q}` where `Q` is a sequence of value and/or
+It is now possible to define [existential types](03-types.html#existential-types).
+An existential type has the form `T forSome {Q}` where `Q` is a sequence of value and/or
 type declarations. Given the class definitions
 
     class Ref[T]
@@ -189,8 +190,9 @@ one may for example write the following existential types
 
 #### Lazy values
 
-It is now possible to define lazy value declarations using the new
-modifier `lazy` (). A `lazy` value definition evaluates its right hand
+It is now possible to define lazy value declarations using the new modifier
+[`lazy`](04-basic-declarations-and-definitions.html#value-declarations-and-definitions).
+A `lazy` value definition evaluates its right hand
 side \\(e\\) the first time the value is accessed. Example:
 
     import compat.Platform._
@@ -203,8 +205,8 @@ side \\(e\\) the first time the value is accessed. Example:
 
 #### Structural types
 
-It is now possible to declare structural types using type refinements
-(). For example:
+It is now possible to declare structural types using [type refinements]
+(03-types.html#compound-types). For example:
 
     class File(name: String) {
       def getName(): String = name
@@ -230,10 +232,13 @@ Changes in Version 2.5
 
 _(02-May-2007)_
 
-#### Type constructor polymorphism[^1]
+#### Type constructor polymorphism
 
-Type parameters () and abstract type members () can now also abstract
-over type constructors ().
+_Implemented by Adriaan Moors_
+
+[Type parameters](04-basic-declarations-and-definitions.html#type-parameters)
+and abstract
+[type members](04-basic-declarations-and-definitions.html#type-declarations-and-type-aliases) can now also abstract over [type constructors](03-types.html#type-constructors).
 
 This allows a more precise `Iterable` interface:
 
@@ -254,8 +259,9 @@ over a certain structure (e.g., a `List`) will yield the same structure
 
 #### Early object initialization
 
-It is now possible to initialize some fields of an object before any
-parent constructors are called (). This is particularly useful for
+[Early object initialization](05-classes-and-objects.html#early-definitions)
+makes it possible to initialize some fields of an object before any
+parent constructors are called. This is particularly useful for
 traits, which do not have normal constructor parameters. Example:
 
     trait Greeting {
@@ -273,10 +279,11 @@ called. Therefore, field `msg` in class is properly initialized to .
 
 #### For-comprehensions, revised
 
-The syntax of for-comprehensions has changed (). In the new syntax,
-generators do not start with a anymore, but filters start with an (and
-are called guards). A semicolon in front of a guard is optional. For
-example:
+The syntax of [for-comprehensions](06-expressions.html#for-comprehensions-and-for-loops)
+has changed.
+In the new syntax, generators do not start with a `val` anymore, but filters
+start with an `if` (and are called guards).
+A semicolon in front of a guard is optional. For example:
 
     for (val x <- List(1, 2, 3); x % 2 == 0) println(x)
 
@@ -288,8 +295,9 @@ The old syntax is still available but will be deprecated in the future.
 
 #### Implicit anonymous functions
 
-It is now possible to define anonymous functions using underscores in
-parameter position (). For instance, the expressions in the left column
+It is now possible to define [anonymous functions using underscores]
+(06-expressions.html#placeholder-syntax-for-anonymous-functions) in
+parameter position. For instance, the expressions in the left column
 are each function values which expand to the anonymous functions on
 their right.
 
@@ -300,8 +308,8 @@ their right.
     _.map(f)               x => x.map(f)
     _.map(_ + 1)           x => x.map(y => y + 1)
 
-As a special case (), a partially unapplied method is now designated
- `m _`   instead of the previous notation  `&m`.
+As a special case, a [partially unapplied method](06-expressions.html#method-values)
+is now designated `m _`   instead of the previous notation  `&m`.
 
 The new notation will displace the special syntax forms `.m()` for
 abstracting over method receivers and `&m` for treating an unapplied
@@ -310,8 +318,9 @@ still available, but they will be deprecated in the future.
 
 #### Pattern matching anonymous functions, refined
 
-It is now possible to use case clauses to define a function value
-directly for functions of arities greater than one (). Previously, only
+It is now possible to use [case clauses to define a function value]
+(08-pattern-matching.html#pattern-matching-anonymous-functions)
+directly for functions of arities greater than one. Previously, only
 unary functions could be defined that way. Example:
 
     def scalarProduct(xs: Array[Double], ys: Array[Double]) =
@@ -326,8 +335,9 @@ _(09-Mar-2007)_
 
 #### Object-local private and protected
 
-The `private` and `protected` modifiers now accept a `[this]` qualifier
-(). A definition \\(M\\) which is labelled `private[this]` is private,
+The `private` and `protected` modifiers now accept a
+[`[this]` qualifier](05-classes-and-objects.html#modifiers).
+A definition \\(M\\) which is labelled `private[this]` is private,
 and in addition can be accessed only from within the current object.
 That is, the only legal prefixes for \\(M\\) are `this` or `$C$.this`.
 Analogously, a definition \\(M\\) which is labelled `protected[this]` is
@@ -348,16 +358,17 @@ Analogously, for any sequence of expressions or patterns \\(x_1
 
 #### Access modifiers for primary constructors
 
-The primary constructor of a class can now be marked or (). If such an
-access modifier is given, it comes between the name of the class and its
+The primary constructor of a class can now be marked [`private` or `protected`]
+(05-classes-and-objects.html#class-definitions).
+If such an access modifier is given, it comes between the name of the class and its
 value parameters. Example:
 
     class C[T] private (x: T) { ... }
 
 #### Annotations
 
-The support for attributes has been extended and its syntax changed ().
-Attributes are now called <span>*annotations*</span>. The syntax has
+The support for attributes has been extended and its syntax changed.
+Attributes are now called [*annotations*](11-annotations.html). The syntax has
 been changed to follow Java’s conventions, e.g. `@attribute` instead of
 `[attribute]`. The old syntax is still available but will be deprecated
 in the future.
@@ -373,12 +384,13 @@ symbol is accessed.
 #### Decidable subtyping
 
 The implementation of subtyping has been changed to prevent infinite
-recursions. Termination of subtyping is now ensured by a new restriction
-of class graphs to be finitary ().
+recursions.
+[Termination of subtyping](05-classes-and-objects.html#inheritance-closure)
+is now ensured by a new restriction of class graphs to be finitary.
 
 #### Case classes cannot be abstract
 
-It is now explicitly ruled out that case classes can be abstract (). The
+It is now explicitly ruled out that case classes can be abstract. The
 specification was silent on this point before, but did not explain how
 abstract case classes were treated. The Scala compiler allowed the
 idiom.
@@ -386,19 +398,21 @@ idiom.
 #### New syntax for self aliases and self types
 
 It is now possible to give an explicit alias name and/or type for the
-self reference (). For instance, in
+[self reference](05-classes-and-objects.html#templates) `this`. For instance, in
 
     class C { self: D =>
       ...
     }
 
-the name is introduced as an alias for within and the self type () of is
-assumed to be . This construct is introduced now in order to replace
+the name `self` is introduced as an alias for `this` within `C` and the
+[self type](05-classes-and-objects.html#class-definitions) of `C` is
+assumed to be `D`. This construct is introduced now in order to replace
 eventually both the qualified this construct and the clause in Scala.
 
 #### Assignment Operators
 
-It is now possible to combine operators with assignments (). Example:
+It is now possible to [combine operators with assignments]
+(06-expressions.html#assignment-operators). Example:
 
     var x: int = 0
     x += 1
@@ -410,8 +424,9 @@ _(23-Jan-2007)_
 
 #### Extractors
 
-It is now possible to define patterns independently of case classes,
-using methods in extractor objects (). Here is an example:
+It is now possible to define patterns independently of case classes, using
+`unapply` methods in [extractor objects](08-pattern-matching.html#extractor-patterns).
+Here is an example:
 
     object Twice {
       def apply(x:Int): int = x*2
@@ -422,25 +437,26 @@ using methods in extractor objects (). Here is an example:
 
 In the example, `Twice` is an extractor object with two methods:
 
--   The method is used to build even numbers.
+-   The `apply` method is used to build even numbers.
 
--   The method is used to decompose an even number; it is in a sense the
-    reverse of . `unapply` methods return option types: for a match that
-    suceeds, for a match that fails. Pattern variables are returned as
-    the elements of . If there are several variables, they are grouped
-    in a tuple.
+-   The `unapply` method is used to decompose an even number; it is in a sense
+    the reverse of `apply`. `unapply` methods return option types:
+    `Some(...)` for a match that suceeds, `None` for a match that fails.
+    Pattern variables are returned as the elements of `Some`.
+    If there are several variables, they are grouped in a tuple.
 
-In the second-to-last line, ’s method is used to construct a number . In
-the last line, is tested against the pattern . This pattern succeeds for
-even numbers and assigns to the variable one half of the number that was
-tested. The pattern match makes use of the method of object . More
-details on extractors can be found in the paper “Matching Objects with
+In the second-to-last line, `Twice`’s method is used to construct a number `x`.
+In the last line, `x` is tested against the pattern `Twice(n)`.
+This pattern succeeds for even numbers and assigns to the variable `n` one half
+of the number that was tested.
+The pattern match makes use of the `unapply` method of object `Twice`.
+More details on extractors can be found in the paper “Matching Objects with
 Patterns” by Emir, Odersky and Williams.
 
 #### Tuples
 
-A new lightweight syntax for tuples has been introduced (). For any
-sequence of types \\(T_1 , … , T_n\\),
+A new [lightweight syntax for tuples](06-expressions.html#tuples) has been introduced.
+For any sequence of types \\(T_1 , … , T_n\\),
 
 \\(\{T_1 , … , T_n \}\\) is a shorthand for `Tuple$n$[$T_1 , … , T_n$]`.
 
@@ -451,8 +467,8 @@ Analogously, for any sequence of expressions or patterns \\(x_1, … , x_n\\),
 #### Infix operators of greater arities
 
 It is now possible to use methods which have more than one parameter as
-infix operators (). In this case, all method arguments are written as a
-normal parameter list in parentheses. Example:
+[infix operators](06-expressions.html#infix-operations). In this case, all
+method arguments are written as a normal parameter list in parentheses. Example:
 
     class C {
       def +(x: int, y: String) = ...
@@ -462,9 +478,9 @@ normal parameter list in parentheses. Example:
 
 #### Deprecated attribute
 
-A new standard attribute `deprecated` is available (11-annotations.html#deprecation-annotations). If a member
-definition is marked with this attribute, any reference to the member
-will cause a “deprecated” warning message to be emitted.
+A new standard attribute [`deprecated`](11-annotations.html#deprecation-annotations)
+is available. If a member definition is marked with this attribute, any
+reference to the member will cause a “deprecated” warning message to be emitted.
 
 Changes in Version 2.3
 ----------------------
@@ -473,20 +489,23 @@ _(23-Nov-2006)_
 
 #### Procedures
 
-A simplified syntax for functions returning `unit` has been introduced
-(). Scala now allows the following shorthands:
+A simplified syntax for [methods returning `unit`]
+(04-basic-declarations-and-definitions.html#procedures) has been introduced.
+Scala now allows the following shorthands:
 
 `def f(params)` \\(\mbox{for}\\) `def f(params): unit`
 `def f(params) { ... }` \\(\mbox{for}\\) `def f(params): unit = { ... }`
 
 #### Type Patterns
 
-The syntax of types in patterns has been refined (). Scala now
-distinguishes between type variables (starting with a lower case letter)
-and types as type arguments in patterns. Type variables are bound in the
-pattern. Other type arguments are, as in previous versions, erased. The
-Scala compiler will now issue an “unchecked” warning at places where
-type erasure might compromise type-safety.
+The [syntax of types in patterns](08-pattern-matching.html#type-patterns) has
+been refined.
+Scala now distinguishes between type variables (starting with a lower case
+letter) and types as type arguments in patterns.
+Type variables are bound in the pattern.
+Other type arguments are, as in previous versions, erased.
+The Scala compiler will now issue an “unchecked” warning at places where type
+erasure might compromise type-safety.
 
 #### Standard Types
 
@@ -505,43 +524,43 @@ _(23-Aug-2006)_
 
 #### Visibility Qualifier for protected
 
-Protected members can now have a visibility qualifier (), e.g.
-`protected[<qualifier>]`. In particular, one can now simulate package
-protected access as in Java writing
+Protected members can now have a visibility qualifier, e.g.
+[`protected[<qualifier>]`](05-classes-and-objects.html#protected).
+In particular, one can now simulate package protected access as in Java writing
 
       protected[P] def X ...
 
-where would name the package containing .
+where would name the package containing `X`.
 
 #### Relaxation of Private Acess
 
-Private members of a class can now be referenced from the companion
-module of the class and vice versa ()
+[Private members of a class](05-classes-and-objects.html#private) can now be
+referenced from the companion module of the class and vice versa.
 
 #### Implicit Lookup
 
-The lookup method for implicit definitions has been generalized (). When
-searching for an implicit definition matching a type \\(T\\), now are
-considered
+The lookup method for [implicit definitions](07-implicits.html#implicit-parameters)
+has been generalized.
+When searching for an implicit definition matching a type \\(T\\), now are considered
 
 1.  all identifiers accessible without prefix, and
 
 2.  all members of companion modules of classes associated with \\(T\\).
 
-(The second clause is more general than before). Here, a class is
-<span>*associated*</span> with a type \\(T\\) if it is referenced by
-some part of \\(T\\), or if it is a base class of some part of \\(T\\).
+(The second clause is more general than before). Here, a class is _associated_
+with a type \\(T\\) if it is referenced by some part of \\(T\\), or if it is a
+base class of some part of \\(T\\).
 For instance, to find implicit members corresponding to the type
 
       HashSet[List[Int], String]
 
-one would now look in the companion modules (aka static parts) of , , ,
-and . Before, it was just the static part of .
+one would now look in the companion modules (aka static parts) of `HashSet`,
+`List`, `Int`, and `String`. Before, it was just the static part of .
 
 #### Tightened Pattern Match
 
-A typed pattern match with a singleton type now tests whether the
-selector value is reference-equal to p (). Example:
+A typed [pattern match with a singleton type `p.type`](08-pattern-matching.html#type-patterns)
+now tests whether the selector value is reference-equal to `p`. Example:
 
       val p = List(1, 2, 3)
       val q = List(1, 2)
@@ -551,8 +570,8 @@ selector value is reference-equal to p (). Example:
         case _: q.type => Console.println("q")
       }
 
-This will match the second case and hence will print “”. Before, the
-singleton types were erased to , and therefore the first case would have
+This will match the second case and hence will print “q”. Before, the
+singleton types were erased to `List`, and therefore the first case would have
 matched, which is non-sensical.
 
 Changes in Version 2.1.7
@@ -562,8 +581,8 @@ _(19-Jul-2006)_
 
 #### Multi-Line string literals
 
-It is now possible to write multi-line string-literals enclosed in
-triple quotes (). Example:
+It is now possible to write [multi-line string-literals]
+(01-lexical-syntax.html#string-literals) enclosed in triple quotes. Example:
 
     """this is a
        multi-line
@@ -574,13 +593,14 @@ string literals.
 
 #### Closure Syntax
 
-The syntax of closures has been slightly restricted (). The form
+The syntax of [closures](06-expressions.html#anonymous-functions)
+has been slightly restricted. The form
 
       x: T => E
 
 is valid only when enclosed in braces, i.e.  `{ x: T => E }`. The
 following is illegal, because it might be read as the value x typed with
-the type T =\> E:
+the type `T => E`:
 
       val f = x: T => E
 
@@ -596,8 +616,9 @@ _(24-May-2006)_
 
 #### Class Literals
 
-There is a new syntax for class literals (): For any class type \\(C\\),
-`classOf[$C$]` designates the run-time representation of \\(C\\).
+There is a new syntax for [class literals](06-expressions.html#literals):
+For any class type \\(C\\), `classOf[$C$]` designates the run-time
+representation of \\(C\\).
 
 Changes in Version 2.0
 ----------------------
@@ -612,14 +633,14 @@ changes.
 #### New Keywords
 
 The following three words are now reserved; they cannot be used as
-identifiers ()
+[identifiers](01-lexical-syntax.html#identifiers):
 
     implicit    match     requires
 
 #### Newlines as Statement Separators
 
-Newlines can now be used as statement separators in place of semicolons
-()
+[Newlines](http://www.scala-lang.org/files/archive/spec/2.11/)
+can now be used as statement separators in place of semicolons.
 
 #### Syntax Restrictions
 
@@ -649,8 +670,8 @@ is no longer supported. A `with` connective is only allowed following an
 
     class C extends AnyRef with M { ... } .
 
-However, assuming `M` is a trait (see [sec:traits]), it is also legal to
-write
+However, assuming `M` is a [trait](05-classes-and-objects.html#traits),
+it is also legal to write
 
     class C extends M { ... }
 
@@ -665,7 +686,7 @@ where `S` is the superclass of `M`.
 The only form of regular expression pattern that is currently supported
 is a sequence pattern, which might end in a sequence wildcard . Example:
 
-    case List(1, 2, _*) => ... // will match all lists starting with \code{1,2}.
+    case List(1, 2, _*) => ... // will match all lists starting with 1, 2, ...
 
 It is at current not clear whether this is a permanent restriction. We
 are evaluating the possibility of re-introducing full regular expression
@@ -686,7 +707,8 @@ old syntax is still available but is considered deprecated.
 
 #### For-comprehensions
 
-For-comprehensions () now admit value and pattern definitions. Example:
+[For-comprehensions](06-expressions.html#for-comprehensions-and-for-loops)
+now admit value and pattern definitions. Example:
 
     for {
       val x <- List.range(1, 100)
@@ -700,8 +722,9 @@ for-comprehension.
 
 #### Conversions
 
-The rules for implicit conversions of methods to functions () have been
-tightened. Previously, a parameterized method used as a value was always
+The rules for [implicit conversions of methods to functions]
+(06-expressions.html#method-conversions) have been tightened.
+Previously, a parameterized method used as a value was always
 implicitly converted to a function. This could lead to unexpected
 results when method arguments where forgotten. Consider for instance the
 statement below:
@@ -750,10 +773,11 @@ instance, the `show` expression above will now be expanded to
     show(x.toString()) .
 
 Scala version 2.0 also relaxes the rules of overriding with respect to
-empty parameter lists. The revised definition of <span>*matching
-members*</span> () makes it now possible to override a method with an
+empty parameter lists. The revised definition of
+[_matching members_](05-classes-and-objects.html#class-members)
+makes it now possible to override a method with an
 explicit, but empty parameter list `()` with a parameterless method, and
-<span>*vice versa*</span>. For instance, the following class definition
+_vice versa_. For instance, the following class definition
 is now legal:
 
     class C {
@@ -766,26 +790,29 @@ parameter list.
 
 #### Class Parameters
 
-A class parameter may now be prefixed by `val` or `var` ().
+A [class parameter](05-classes-and-objects.html#class-definitions)
+may now be prefixed by `val` or `var`.
 
 #### Private Qualifiers
 
 Previously, Scala had three levels of visibility:
 <span>*private*</span>, <span>*protected*</span> and
 <span>*public*</span>. There was no way to restrict accesses to members
-of the current package, as in Java. Scala 2 now defines access
-qualifiers that let one express this level of visibility, among others.
-In the definition
+of the current package, as in Java.
+
+Scala 2 now defines [access qualifiers](05-classes-and-objects.html#modifiers)
+that let one express this level of visibility, among others. In the definition
 
     private[C] def f(...)
 
 access to `f` is restricted to all code within the class or package `C`
-(which must contain the definition of `f`) ()
+(which must contain the definition of `f`).
 
 #### Changes in the Mixin Model
 
-The model which details mixin composition of classes has changed
-significantly. The main differences are:
+The model which details [mixin composition of classes]
+(05-classes-and-objects.html#templates) has changed significantly.
+The main differences are:
 
 1.  We now distinguish between <span>*traits*</span> that are used as
     mixin classes and normal classes. The syntax of traits has been
@@ -802,22 +829,19 @@ significantly. The main differences are:
     different mixins. This makes method overloading in Scala
     conceptually the same as in Java.
 
-The new mixin model is explained in more detail in .
-
 #### Implicit Parameters
 
 Views in Scala 1.0 have been replaced by the more general concept of
-implicit parameters ()
+[implicit parameters](07-implicits.html#implicit-parameters).
 
 #### Flexible Typing of Pattern Matching
 
 The new version of Scala implements more flexible typing rules when it
-comes to pattern matching over heterogeneous class hierarchies (). A
-<span>*heterogeneous class hierarchy*</span> is one where subclasses
+comes to [pattern matching over heterogeneous class hierarchies]
+(08-pattern-matching.html#pattern-matching-expressions).
+A <span>*heterogeneous class hierarchy*</span> is one where subclasses
 inherit a common superclass with different parameter types. With the new
 rules in Scala version 2.0 one can perform pattern matches over such
 hierarchies with more precise typings that keep track of the information
-gained by comparing the types of a selector and a matching pattern ().
+gained by comparing the types of a selector and a matching pattern.
 This gives Scala capabilities analogous to guarded algebraic data types.
-
-[^1]: Implemented by Adriaan Moors

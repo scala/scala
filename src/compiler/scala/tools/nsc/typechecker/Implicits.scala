@@ -985,7 +985,7 @@ trait Implicits {
       if (implicitInfoss.forall(_.isEmpty)) SearchFailure
       else new ImplicitComputation(implicitInfoss, isLocalToCallsite) findBest()
 
-    /** Produce an implicict info map, i.e. a map from the class symbols C of all parts of this type to
+    /** Produce an implicit info map, i.e. a map from the class symbols C of all parts of this type to
      *  the implicit infos in the companion objects of these class symbols C.
      * The parts of a type is the smallest set of types that contains
      *    - the type itself

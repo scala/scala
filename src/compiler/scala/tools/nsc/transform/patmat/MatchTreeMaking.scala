@@ -642,7 +642,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       }
 
       // override def apply
-      // debug.patmat("before fixerupper: "+ xTree)
+      // debug.patmat("before fixerUpper: "+ xTree)
       // currentRun.trackerFactory.snapshot()
       // debug.patmat("after fixerupper")
       // currentRun.trackerFactory.snapshot()

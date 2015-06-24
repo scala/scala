@@ -2,7 +2,7 @@ class DelambdafyPatterns {
   def bar: Unit = ()
   def wildcardPatternInTryCatch: Unit => Unit = (x: Unit) =>
     // patterns in try..catch are preserved so we need to be
-    // careful when it comes to free variable detction
+    // careful when it comes to free variable detection
     // in particular a is _not_ free variable, also the
     // `_` identifier has no symbol attached to it
     try bar catch {

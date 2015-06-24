@@ -1,4 +1,4 @@
-// This test case was extracte from `names-defaults-neg.scala`
+// This test case was extracted from `names-defaults-neg.scala`
 // It pinpoints an improvement an error message that results from
 // a type inference failure
 object Test extends App {

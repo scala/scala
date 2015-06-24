@@ -65,5 +65,11 @@ object Test extends ReplTest {
     |case class PuppyPups()
     |case class Bingo()
     |List(BippyBups(), PuppyPups(), Bingo()) // show
+    |case class Sum(exp: String, exp2: String)
+    |val a = Sum("A", "B")
+    |def b(a: Sum): String = a match { case Sum(_, _) => "Found Sum" }
+    |b(a)
+    |:power
+    |intp.lastRequest
     |""".stripMargin
 }

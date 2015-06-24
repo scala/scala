@@ -10,7 +10,7 @@ trait Foo {
 object O extends Foo {
   def coflatMap[A <: T](f: A) = {
     val f2 = coflatMap(f) // inferred in 2.9.2 / 2.10.0 as [Nothing]
-    f2.t                  // so this does't type check.
+    f2.t                  // so this fails to type check.
     f2
   }
 }

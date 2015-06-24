@@ -898,7 +898,7 @@ abstract class BTypes {
             // the static flag in the InnerClass table has a special meaning, see InnerClass comment
             i.flags & ~Opcodes.ACC_STATIC,
             if (isStaticNestedClass) Opcodes.ACC_STATIC else 0
-          ) & ClassBType.INNER_CLASSES_FLAGS
+          ) & BCodeAsmCommon.INNER_CLASSES_FLAGS
         )
     })
 
@@ -987,17 +987,6 @@ abstract class BTypes {
   }
 
   object ClassBType {
-    /**
-     * Valid flags for InnerClass attribute entry.
-     * See http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7.6
-     */
-    private val INNER_CLASSES_FLAGS = {
-      asm.Opcodes.ACC_PUBLIC   | asm.Opcodes.ACC_PRIVATE   | asm.Opcodes.ACC_PROTECTED  |
-      asm.Opcodes.ACC_STATIC   | asm.Opcodes.ACC_FINAL     | asm.Opcodes.ACC_INTERFACE  |
-      asm.Opcodes.ACC_ABSTRACT | asm.Opcodes.ACC_SYNTHETIC | asm.Opcodes.ACC_ANNOTATION |
-      asm.Opcodes.ACC_ENUM
-    }
-
     // Primitive classes have no super class. A ClassBType for those is only created when
     // they are actually being compiled (e.g., when compiling scala/Boolean.scala).
     private val hasNoSuper = Set(

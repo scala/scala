@@ -64,7 +64,7 @@ names-defaults-neg.scala:49: error: ambiguous reference to overloaded definition
 both method g in object t7 of type (a: B)String
 and  method g in object t7 of type (a: C, b: Int*)String
 match argument types (C)
-  t7.g(new C()) // ambigous reference
+  t7.g(new C()) // ambiguous reference
      ^
 names-defaults-neg.scala:53: error: parameter 'b' is already specified at parameter position 2
   test5(a = 1, b = "dkjl", b = "dkj")
@@ -79,7 +79,7 @@ names-defaults-neg.scala:61: error: ambiguous reference to overloaded definition
 both method f in object t8 of type (b: String, a: Int)String
 and  method f in object t8 of type (a: Int, b: Object)String
 match argument types (a: Int,b: String) and expected result type Any
-  println(t8.f(a = 0, b = "1")) // ambigous reference
+  println(t8.f(a = 0, b = "1")) // ambiguous reference
              ^
 names-defaults-neg.scala:69: error: wrong number of arguments for pattern A1(x: Int,y: String)
   A1() match { case A1(_) => () }

@@ -1,1 +1,1 @@
--optimise -Ydebug -Xfatal-warnings
+-optimise -Ydebug -Xfatal-warnings -Ybackend:GenASM
