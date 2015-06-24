@@ -235,6 +235,7 @@ trait ScalaSettings extends AbsScalaSettings
     val emptyLabels             = Choice("empty-labels",              "Eliminate and collapse redundant labels in the bytecode.")
     val compactLocals           = Choice("compact-locals",            "Eliminate empty slots in the sequence of local variables.")
     val nullnessTracking        = Choice("nullness-tracking",         "Track nullness / non-nullness of local variables and apply optimizations.")
+    val closureElimination      = Choice("closure-elimination" ,      "Rewrite closure invocations to the implementation method and eliminate closures.")
     val inlineProject           = Choice("inline-project",            "Inline only methods defined in the files being compiled.")
     val inlineGlobal            = Choice("inline-global",             "Inline methods from any source, including classfiles on the compile classpath.")
 
@@ -243,7 +244,7 @@ trait ScalaSettings extends AbsScalaSettings
     private val defaultChoices = List(unreachableCode)
     val lDefault        = Choice("l:default",   "Enable default optimizations: "+ defaultChoices.mkString(","),                                    expandsTo = defaultChoices)
 
-    private val methodChoices = List(unreachableCode, simplifyJumps, emptyLineNumbers, emptyLabels, compactLocals, nullnessTracking)
+    private val methodChoices = List(unreachableCode, simplifyJumps, emptyLineNumbers, emptyLabels, compactLocals, nullnessTracking, closureElimination)
     val lMethod         = Choice("l:method",    "Enable intra-method optimizations: "+ methodChoices.mkString(","),                                expandsTo = methodChoices)
 
     private val projectChoices = List(lMethod, inlineProject)
@@ -266,10 +267,14 @@ trait ScalaSettings extends AbsScalaSettings
   def YoptEmptyLabels             = Yopt.contains(YoptChoices.emptyLabels)
   def YoptCompactLocals           = Yopt.contains(YoptChoices.compactLocals)
   def YoptNullnessTracking        = Yopt.contains(YoptChoices.nullnessTracking)
+  def YoptClosureElimination      = Yopt.contains(YoptChoices.closureElimination)
 
   def YoptInlineProject           = Yopt.contains(YoptChoices.inlineProject)
   def YoptInlineGlobal            = Yopt.contains(YoptChoices.inlineGlobal)
   def YoptInlinerEnabled          = YoptInlineProject || YoptInlineGlobal
+
+  def YoptBuildCallGraph          = YoptInlinerEnabled || YoptClosureElimination
+  def YoptAddToBytecodeRepository = YoptInlinerEnabled || YoptClosureElimination
 
   val YoptInlineHeuristics = ChoiceSetting(
     name = "-Yopt-inline-heuristics",

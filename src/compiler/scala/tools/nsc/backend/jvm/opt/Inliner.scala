@@ -26,7 +26,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
   def eliminateUnreachableCodeAndUpdateCallGraph(methodNode: MethodNode, definingClass: InternalName): Unit = {
     localOpt.minimalRemoveUnreachableCode(methodNode, definingClass) foreach {
-      case invocation: MethodInsnNode => callGraph.callsites.remove(invocation)
+      case invocation: MethodInsnNode  => callGraph.callsites.remove(invocation)
+      case indy: InvokeDynamicInsnNode => callGraph.closureInstantiations.remove(indy)
       case _ =>
     }
   }
@@ -432,7 +433,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       callsiteMethod.localVariables.addAll(cloneLocalVariableNodes(callee, labelsMap, callee.name + "_").asJava)
       callsiteMethod.tryCatchBlocks.addAll(cloneTryCatchBlockNodes(callee, labelsMap).asJava)
 
-      // Add all invocation instructions that were inlined to the call graph
+      // Add all invocation instructions and closure instantiations that were inlined to the call graph
       callee.instructions.iterator().asScala foreach {
         case originalCallsiteIns: MethodInsnNode =>
           callGraph.callsites.get(originalCallsiteIns) match {
@@ -448,6 +449,15 @@ class Inliner[BT <: BTypes](val btypes: BT) {
                 receiverKnownNotNull = originalCallsite.receiverKnownNotNull,
                 callsitePosition = originalCallsite.callsitePosition
               )
+
+            case None =>
+          }
+
+        case indy: InvokeDynamicInsnNode =>
+          callGraph.closureInstantiations.get(indy) match {
+            case Some((methodNode, ownerClass)) =>
+              val newIndy = instructionMap(indy).asInstanceOf[InvokeDynamicInsnNode]
+              callGraph.closureInstantiations(newIndy) = (callsiteMethod, callsiteClass)
 
             case None =>
           }
@@ -529,6 +539,90 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   }
 
   /**
+   * Check if a type is accessible to some class, as defined in JVMS 5.4.4.
+   *  (A1) C is public
+   *  (A2) C and D are members of the same run-time package
+   */
+  def classIsAccessible(accessed: BType, from: ClassBType): Either[OptimizerWarning, Boolean] = (accessed: @unchecked) match {
+    // TODO: A2 requires "same run-time package", which seems to be package + classloader (JMVS 5.3.). is the below ok?
+    case c: ClassBType     => c.isPublic.map(_ || c.packageInternalName == from.packageInternalName)
+    case a: ArrayBType     => classIsAccessible(a.elementType, from)
+    case _: PrimitiveBType => Right(true)
+  }
+
+  /**
+   * Check if a member reference is accessible from the [[destinationClass]], as defined in the
+   * JVMS 5.4.4. Note that the class name in a field / method reference is not necessarily the
+   * class in which the member is declared:
+   *
+   *   class A { def f = 0 }; class B extends A { f }
+   *
+   * The INVOKEVIRTUAL instruction uses a method reference "B.f ()I". Therefore this method has
+   * two parameters:
+   *
+   * @param memberDeclClass The class in which the member is declared (A)
+   * @param memberRefClass  The class used in the member reference (B)
+   *
+   * (B0) JVMS 5.4.3.2 / 5.4.3.3: when resolving a member of class C in D, the class C is resolved
+   * first. According to 5.4.3.1, this requires C to be accessible in D.
+   *
+   * JVMS 5.4.4 summary: A field or method R is accessible to a class D (destinationClass) iff
+   *  (B1) R is public
+   *  (B2) R is protected, declared in C (memberDeclClass) and D is a subclass of C.
+   *       If R is not static, R must contain a symbolic reference to a class T (memberRefClass),
+   *       such that T is either a subclass of D, a superclass of D, or D itself.
+   *       Also (P) needs to be satisfied.
+   *  (B3) R is either protected or has default access and declared by a class in the same
+   *       run-time package as D.
+   *       If R is protected, also (P) needs to be satisfied.
+   *  (B4) R is private and is declared in D.
+   *
+   *  (P) When accessing a protected instance member, the target object on the stack (the receiver)
+   *      has to be a subtype of D (destinationClass). This is enforced by classfile verification
+   *      (https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.10.1.8).
+   *
+   * TODO: we cannot currently implement (P) because we don't have the necessary information
+   * available. Once we have a type propagation analysis implemented, we can extract the receiver
+   * type from there (https://github.com/scala-opt/scala/issues/13).
+   */
+  def memberIsAccessible(memberFlags: Int, memberDeclClass: ClassBType, memberRefClass: ClassBType, from: ClassBType): Either[OptimizerWarning, Boolean] = {
+    // TODO: B3 requires "same run-time package", which seems to be package + classloader (JMVS 5.3.). is the below ok?
+    def samePackageAsDestination = memberDeclClass.packageInternalName == from.packageInternalName
+    def targetObjectConformsToDestinationClass = false // needs type propagation analysis, see above
+
+    def memberIsAccessibleImpl = {
+      val key = (ACC_PUBLIC | ACC_PROTECTED | ACC_PRIVATE) & memberFlags
+      key match {
+        case ACC_PUBLIC => // B1
+          Right(true)
+
+        case ACC_PROTECTED => // B2
+          val isStatic = (ACC_STATIC & memberFlags) != 0
+          tryEither {
+            val condB2 = from.isSubtypeOf(memberDeclClass).orThrow && {
+              isStatic || memberRefClass.isSubtypeOf(from).orThrow || from.isSubtypeOf(memberRefClass).orThrow
+            }
+            Right(
+              (condB2 || samePackageAsDestination /* B3 (protected) */) &&
+              (isStatic || targetObjectConformsToDestinationClass) // (P)
+            )
+          }
+
+        case 0 => // B3 (default access)
+          Right(samePackageAsDestination)
+
+        case ACC_PRIVATE => // B4
+          Right(memberDeclClass == from)
+      }
+    }
+
+    classIsAccessible(memberDeclClass, from) match { // B0
+      case Right(true) => memberIsAccessibleImpl
+      case r => r
+    }
+  }
+
+  /**
    * Returns the first instruction in the `instructions` list that would cause a
    * [[java.lang.IllegalAccessError]] when inlined into the `destinationClass`.
    *
@@ -536,91 +630,6 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    * is returned together with a warning message that describes the problem.
    */
   def findIllegalAccess(instructions: InsnList, calleeDeclarationClass: ClassBType, destinationClass: ClassBType): Option[(AbstractInsnNode, Option[OptimizerWarning])] = {
-
-    /**
-     * Check if a type is accessible to some class, as defined in JVMS 5.4.4.
-     *  (A1) C is public
-     *  (A2) C and D are members of the same run-time package
-     */
-    def classIsAccessible(accessed: BType, from: ClassBType = destinationClass): Either[OptimizerWarning, Boolean] = (accessed: @unchecked) match {
-      // TODO: A2 requires "same run-time package", which seems to be package + classloader (JMVS 5.3.). is the below ok?
-      case c: ClassBType     => c.isPublic.map(_ || c.packageInternalName == from.packageInternalName)
-      case a: ArrayBType     => classIsAccessible(a.elementType, from)
-      case _: PrimitiveBType => Right(true)
-    }
-
-    /**
-     * Check if a member reference is accessible from the [[destinationClass]], as defined in the
-     * JVMS 5.4.4. Note that the class name in a field / method reference is not necessarily the
-     * class in which the member is declared:
-     *
-     *   class A { def f = 0 }; class B extends A { f }
-     *
-     * The INVOKEVIRTUAL instruction uses a method reference "B.f ()I". Therefore this method has
-     * two parameters:
-     *
-     * @param memberDeclClass The class in which the member is declared (A)
-     * @param memberRefClass  The class used in the member reference (B)
-     *
-     * (B0) JVMS 5.4.3.2 / 5.4.3.3: when resolving a member of class C in D, the class C is resolved
-     * first. According to 5.4.3.1, this requires C to be accessible in D.
-     *
-     * JVMS 5.4.4 summary: A field or method R is accessible to a class D (destinationClass) iff
-     *  (B1) R is public
-     *  (B2) R is protected, declared in C (memberDeclClass) and D is a subclass of C.
-     *       If R is not static, R must contain a symbolic reference to a class T (memberRefClass),
-     *       such that T is either a subclass of D, a superclass of D, or D itself.
-     *       Also (P) needs to be satisfied.
-     *  (B3) R is either protected or has default access and declared by a class in the same
-     *       run-time package as D.
-     *       If R is protected, also (P) needs to be satisfied.
-     *  (B4) R is private and is declared in D.
-     *
-     *  (P) When accessing a protected instance member, the target object on the stack (the receiver)
-     *      has to be a subtype of D (destinationClass). This is enforced by classfile verification
-     *      (https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.10.1.8).
-     *
-     * TODO: we cannot currently implement (P) because we don't have the necessary information
-     * available. Once we have a type propagation analysis implemented, we can extract the receiver
-     * type from there (https://github.com/scala-opt/scala/issues/13).
-     */
-    def memberIsAccessible(memberFlags: Int, memberDeclClass: ClassBType, memberRefClass: ClassBType): Either[OptimizerWarning, Boolean] = {
-      // TODO: B3 requires "same run-time package", which seems to be package + classloader (JMVS 5.3.). is the below ok?
-      def samePackageAsDestination = memberDeclClass.packageInternalName == destinationClass.packageInternalName
-      def targetObjectConformsToDestinationClass = false // needs type propagation analysis, see above
-
-      def memberIsAccessibleImpl = {
-        val key = (ACC_PUBLIC | ACC_PROTECTED | ACC_PRIVATE) & memberFlags
-        key match {
-          case ACC_PUBLIC => // B1
-            Right(true)
-
-          case ACC_PROTECTED => // B2
-            val isStatic = (ACC_STATIC & memberFlags) != 0
-            tryEither {
-              val condB2 = destinationClass.isSubtypeOf(memberDeclClass).orThrow && {
-                isStatic || memberRefClass.isSubtypeOf(destinationClass).orThrow || destinationClass.isSubtypeOf(memberRefClass).orThrow
-              }
-              Right(
-                (condB2 || samePackageAsDestination /* B3 (protected) */) &&
-                (isStatic || targetObjectConformsToDestinationClass) // (P)
-              )
-            }
-
-          case 0 => // B3 (default access)
-            Right(samePackageAsDestination)
-
-          case ACC_PRIVATE => // B4
-            Right(memberDeclClass == destinationClass)
-        }
-      }
-
-      classIsAccessible(memberDeclClass) match { // B0
-        case Right(true) => memberIsAccessibleImpl
-        case r => r
-      }
-    }
-
     /**
      * Check if `instruction` can be transplanted to `destinationClass`.
      *
@@ -637,18 +646,18 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         // NEW, ANEWARRAY, CHECKCAST or INSTANCEOF. For these instructions, the reference
         // "must be a symbolic reference to a class, array, or interface type" (JVMS 6), so
         // it can be an internal name, or a full array descriptor.
-        classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(ti.desc))
+        classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(ti.desc), destinationClass)
 
       case ma: MultiANewArrayInsnNode =>
         // "a symbolic reference to a class, array, or interface type"
-        classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(ma.desc))
+        classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(ma.desc), destinationClass)
 
       case fi: FieldInsnNode =>
         val fieldRefClass = classBTypeFromParsedClassfile(fi.owner)
         for {
           (fieldNode, fieldDeclClassNode) <- byteCodeRepository.fieldNode(fieldRefClass.internalName, fi.name, fi.desc): Either[OptimizerWarning, (FieldNode, InternalName)]
           fieldDeclClass                  =  classBTypeFromParsedClassfile(fieldDeclClassNode)
-          res                             <- memberIsAccessible(fieldNode.access, fieldDeclClass, fieldRefClass)
+          res                             <- memberIsAccessible(fieldNode.access, fieldDeclClass, fieldRefClass, destinationClass)
         } yield {
           res
         }
@@ -664,7 +673,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
                 Right(destinationClass == calleeDeclarationClass)
 
               case _ => // INVOKEVIRTUAL, INVOKESTATIC, INVOKEINTERFACE and INVOKESPECIAL of constructors
-                memberIsAccessible(methodFlags, methodDeclClass, methodRefClass)
+                memberIsAccessible(methodFlags, methodDeclClass, methodRefClass, destinationClass)
             }
           }
 
@@ -683,7 +692,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         Right(false)
 
       case ci: LdcInsnNode => ci.cst match {
-        case t: asm.Type => classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(t.getInternalName))
+        case t: asm.Type => classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(t.getInternalName), destinationClass)
         case _           => Right(true)
       }
 

@@ -216,12 +216,17 @@ abstract class GenBCode extends BCodeSyncAndTry {
     class Worker2 {
       def runGlobalOptimizations(): Unit = {
         import scala.collection.convert.decorateAsScala._
-        q2.asScala foreach {
-          case Item2(_, _, plain, _, _) =>
-            // skip mirror / bean: wd don't inline into tem, and they are not used in the plain class
-            if (plain != null) callGraph.addClass(plain)
+        if (settings.YoptBuildCallGraph) {
+          q2.asScala foreach {
+            case Item2(_, _, plain, _, _) =>
+              // skip mirror / bean: wd don't inline into tem, and they are not used in the plain class
+              if (plain != null) callGraph.addClass(plain)
+          }
         }
-        bTypes.inliner.runInliner()
+        if (settings.YoptInlinerEnabled)
+          bTypes.inliner.runInliner()
+        if (settings.YoptClosureElimination)
+          closureOptimizer.rewriteClosureApplyInvocations()
       }
 
       def localOptimizations(classNode: ClassNode): Unit = {
@@ -229,7 +234,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
       }
 
       def run() {
-        if (settings.YoptInlinerEnabled) runGlobalOptimizations()
+        runGlobalOptimizations()
 
         while (true) {
           val item = q2.poll
