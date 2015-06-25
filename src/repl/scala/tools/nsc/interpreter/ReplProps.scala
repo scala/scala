@@ -44,7 +44,7 @@ class ReplProps {
   }
 
   // Handy system prop for shell prompt, or else pick it up from compiler.properties
-  val promptString = Prop[String]("scala.repl.prompt").option getOrElse (if (info) "%nscala %s> " else shellPromptString)
+  val promptString = Prop[String]("scala.repl.prompt").option getOrElse (if (info) "%nscala %#s> " else shellPromptString)
   val promptText   = enversion(promptString)
   val prompt       = encolor(promptText)
 
@@ -57,10 +57,11 @@ class ReplProps {
   }
   val continuePrompt = encolor(continueText)
 
+  // Next time.
   //def welcome = enversion(Prop[String]("scala.repl.welcome") or shellWelcomeString)
   def welcome = enversion {
     val p = Prop[String]("scala.repl.welcome")
-    if (p.isSet) p.value else shellWelcomeString
+    if (p.isSet) p.get else shellWelcomeString
   }
 
   /** CSV of paged,across to enable pagination or `-x` style

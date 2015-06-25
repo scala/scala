@@ -18,9 +18,9 @@ object Properties extends scala.util.PropertiesTrait {
   def residentPromptString = scalaPropOrElse("resident.prompt", "\nnsc> ")
   def shellPromptString    = scalaPropOrElse("shell.prompt", "%nscala> ")
   def shellWelcomeString   = scalaPropOrElse("shell.welcome",
-    """Welcome to Scala %1$s (%3$s, Java %2$s).
-      |Type in expressions to have them evaluated.
-      |Type :help for more information.""".stripMargin
+    """Welcome to Scala!
+      |%1$s (%3$s, Java %2$s).
+      |Type in expressions for evaluation. Or try :help.""".stripMargin
   )
 
   // message to display at EOF (which by default ends with

@@ -4,9 +4,9 @@ import scala.tools.partest.{ SessionTest, Welcoming }
 // SI-7740
 object Test extends SessionTest with Welcoming {
   def session =
-"""Welcome to Scala
-Type in expressions to have them evaluated.
-Type :help for more information.
+"""Welcome to Scala!
+version
+Type in expressions for evaluation. Or try :help.
 
 scala> def f = throw new Exception("Uh-oh")
 f: Nothing
@@ -37,7 +37,6 @@ scala> :quit"""
   // normalize the "elided" lines because the frame count depends on test context
   lazy val elided = """(\s+\.{3} )\d+( elided)""".r
   override def normalize(line: String) = line match {
-    case welcome(w)               => w
     case elided(ellipsis, suffix) => s"$ellipsis???$suffix"
     case s                        => s
   }
