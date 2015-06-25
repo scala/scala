@@ -34,13 +34,15 @@ abstract class ReplTest extends DirectTest {
     log("eval(): settings = " + s)
     val lines = ILoop.runForTranscript(code, s, inSession = inSession).lines
     (if (welcoming) {
-      val welcome = Regex.quote(header.lines.next).r
-      val version = "(.*version).*".r
-      var inHead  = false
+      val welcome = "(Welcome to Scala).*".r
+      //val welcome = Regex.quote(header.lines.next).r
+      //val version = "(.*version).*".r   // version on separate line?
+      //var inHead  = false
       lines map {
-        case s @ welcome()        => inHead = true  ; s
-        case version(s) if inHead => inHead = false ; s
-        case s                    => s
+        //case s @ welcome()        => inHead = true  ; s
+        //case version(s) if inHead => inHead = false ; s
+        case welcome(s) => s
+        case s          => s
       }
     } else {
       lines drop header.lines.size

@@ -1,6 +1,5 @@
 #partest java6
-Welcome to Scala!
-version
+Welcome to Scala
 Type in expressions for evaluation. Or try :help.
 
 scala> :javap -app MyApp$
@@ -17,8 +16,7 @@ public final void delayedEndpoint$MyApp$1();
 
 scala> :quit
 #partest java7
-Welcome to Scala!
-version
+Welcome to Scala
 Type in expressions for evaluation. Or try :help.
 
 scala> :javap -app MyApp$
@@ -39,8 +37,7 @@ scala> :javap -app MyApp$
 
 scala> :quit
 #partest java8
-Welcome to Scala!
-version
+Welcome to Scala
 Type in expressions for evaluation. Or try :help.
 
 scala> :javap -app MyApp$

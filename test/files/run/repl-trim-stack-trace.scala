@@ -4,8 +4,7 @@ import scala.tools.partest.{ SessionTest, Welcoming }
 // SI-7740
 object Test extends SessionTest with Welcoming {
   def session =
-"""Welcome to Scala!
-version
+"""Welcome to Scala
 Type in expressions for evaluation. Or try :help.
 
 scala> def f = throw new Exception("Uh-oh")
