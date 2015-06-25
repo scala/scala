@@ -82,6 +82,11 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    */
   def classOf[T]: Class[T] = null // This is a stub method. The actual implementation is filled in by the compiler.
 
+  /** The `String` type in Scala has methods that come either from the underlying
+   *  Java String (see the documentation corresponding to your Java version, for
+   *  example [[http://docs.oracle.com/javase/8/docs/api/java/lang/String.html]]) or
+   *  are added implicitly through [[scala.collection.immutable.StringOps]].
+   */
   type String        = java.lang.String
   type Class[T]      = java.lang.Class[T]
 
