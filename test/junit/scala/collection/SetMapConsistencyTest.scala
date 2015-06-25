@@ -66,6 +66,8 @@ class SetMapConsistencyTest {
   def boxMhm[A] = new BoxMutableMap[A, cm.HashMap[A, Int]](new cm.HashMap[A, Int], "mutable.HashMap")
   
   def boxMohm[A] = new BoxMutableMap[A, cm.OpenHashMap[A, Int]](new cm.OpenHashMap[A, Int], "mutable.OpenHashMap")
+
+  def boxMtm[A: Ordering] = new BoxMutableMap[A, cm.TreeMap[A, Int]](new cm.TreeMap[A, Int], "mutable.TreeMap")
   
   def boxMarm[A <: AnyRef] = new BoxMutableMap[A, cm.AnyRefMap[A, Int]](new cm.AnyRefMap[A, Int](_ => -1), "mutable.AnyRefMap") {
     private def arm: cm.AnyRefMap[A, Int] = m.asInstanceOf[cm.AnyRefMap[A, Int]]
@@ -315,7 +317,7 @@ class SetMapConsistencyTest {
   @Test
   def churnIntMaps() {
     val maps = Array[() => MapBox[Int]](
-      () => boxMlm[Int], () => boxMhm[Int], () => boxMohm[Int], () => boxJavaM[Int],
+      () => boxMlm[Int], () => boxMhm[Int], () => boxMohm[Int], () => boxMtm[Int], () => boxJavaM[Int],
       () => boxIim, () => boxIhm[Int], () => boxIlm[Int], () => boxItm[Int]
     )
     assert( maps.sliding(2).forall{ ms => churn(ms(0)(), ms(1)(), intKeys, 2000) } )
@@ -325,7 +327,7 @@ class SetMapConsistencyTest {
   def churnLongMaps() {
     val maps = Array[() => MapBox[Long]](
       () => boxMjm, () => boxIjm, () => boxJavaM[Long],
-      () => boxMlm[Long], () => boxMhm[Long], () => boxMohm[Long], () => boxIhm[Long], () => boxIlm[Long]
+      () => boxMlm[Long], () => boxMhm[Long], () => boxMtm[Long], () => boxMohm[Long], () => boxIhm[Long], () => boxIlm[Long]
     )
     assert( maps.sliding(2).forall{ ms => churn(ms(0)(), ms(1)(), longKeys, 10000) } )
   }
