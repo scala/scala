@@ -16,6 +16,8 @@ By the way, the team at Typesafe is: @adriaanm, @lrytz, @retronym, and @SethTisu
 
 Regardless of the nature of your Pull Request, we have to ask you to digitally sign the [Scala CLA](http://typesafe.com/contribute/cla/scala), to protect the OSS nature of the code base.
 
+You don't need to submit separate PRs for 2.11.x, 2.12.x, and 2.13.x. Any changes accepted on one of these branches will, in time, be merged into the later branches.
+
 ### Documentation
 Whether you finally decided you couldn't stand that annoying typo anymore, you fixed the outdated code sample in some comment, or you wrote a nice, comprehensive, overview for an under-documented package, some docs for a class or the specifics about a method, your documentation improvement is very much appreciated, and we will do our best to fasttrack it.
 
