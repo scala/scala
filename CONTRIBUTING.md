@@ -4,15 +4,19 @@ We follow the standard GitHub [fork & pull](https://help.github.com/articles/usi
 You're always welcome to submit your PR straight away and start the discussion (without reading the rest of this wonderful doc, or the `READMEnot^H^H^H.md`). The goal of these notes is to make your experience contributing to Scala as smooth and pleasant as possible. We're happy to guide you through the process once you've submitted your PR.
 
 ## The Scala Community
-Last year, you -- the Scala community -- matched the core team at EPFL in number of commits contributed to Scala 2.11, doubling the percentage of commits from outside EPFL/Typesafe since 2.10. Excellent work! (The split is roughly 25/25/50 for you/epfl/typesafe. By the way, the team at Typesafe is: @adriaanm, @gkossakowski, @lrytz and @retronym.)
+In 2014, you -- the Scala community -- matched the core team at EPFL in number of commits contributed to Scala 2.11, doubling the percentage of commits from outside EPFL/Typesafe since 2.10. Excellent work! (The split was roughly 25/25/50 for you/EPFL/Typesafe.)
 
 We are super happy about this, and are eager to make your experience contributing to Scala productive and satisfying, so that we can keep up this growth. We can't do this alone (nor do we want to)!
 
 This is why we're collecting these notes on how to contribute, and we hope you'll share your experience to improve the process for the next contributor! (Feel free to send a PR for this note, send your thoughts to scala-internals, or tweet about it to @adriaanm.)
 
+By the way, the team at Typesafe is: @adriaanm, @lrytz, @retronym, and @SethTisue.
+
 ## What kind of PR are you submitting?
 
-Regardless of the nature of your Pull Request, we have to ask you to sign the [Scala CLA](http://typesafe.com/contribute/cla/scala), to protect the OSS nature of the code base.
+Regardless of the nature of your Pull Request, we have to ask you to digitally sign the [Scala CLA](http://typesafe.com/contribute/cla/scala), to protect the OSS nature of the code base.
+
+You don't need to submit separate PRs for 2.11.x, 2.12.x, and 2.13.x. Any changes accepted on one of these branches will, in time, be merged into the later branches.
 
 ### Documentation
 Whether you finally decided you couldn't stand that annoying typo anymore, you fixed the outdated code sample in some comment, or you wrote a nice, comprehensive, overview for an under-documented package, some docs for a class or the specifics about a method, your documentation improvement is very much appreciated, and we will do our best to fasttrack it.
@@ -28,9 +32,9 @@ The kind of code we can accept depends on the life cycle for the release you're 
 
 #### Bug Fix
 
-Prefix your commit title with "SI-NNNN", where https://issues.scala-lang.org/browse/SI-NNNN tracks the bug you're fixing. We also recommend naming your branch after the Jira ticket number.
+Prefix your commit title with "SI-NNNN", where https://issues.scala-lang.org/browse/SI-NNNN tracks the bug you're fixing. We also recommend naming your branch after the JIRA ticket number.
 
-Please make sure the Jira ticket's fix version corresponds to the upcoming milestone for the branch your PR targets (the CI automation will automatically assign the milestone after you open the PR).
+Please make sure the JIRA ticket's fix version corresponds to the upcoming milestone for the branch your PR targets. The CI automation will automatically assign the milestone after you open the PR.
 
 #### Enhancement or New Feature
 
@@ -49,4 +53,3 @@ A new language feature requires a SIP (Scala Improvement Process) proposal. For 
    - [Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule) should be applied.
 
 Please also have a look at our [Pull Request Policy](https://github.com/scala/scala/wiki/Pull-Request-Policy), as well as the [Scala Hacker Guide](http://www.scala-lang.org/contribute/hacker-guide.html) by @xeno-by.
-
