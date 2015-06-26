@@ -163,7 +163,7 @@ package scala.collection.mutable {
 
     property("clear") = forAll { (map: mutable.TreeMap[K, V]) =>
       map.clear()
-      map.isEmpty
+      map.isEmpty && map.size == 0
     }
 
     property("serializable") = forAll { (map: mutable.TreeMap[K, V]) =>
@@ -303,7 +303,7 @@ package scala.collection.mutable {
     property("clear") = forAll { (map: mutable.TreeMap[K, V], from: Option[K], until: Option[K]) =>
       val mapView = map.rangeImpl(from, until)
       mapView.clear()
-      map.isEmpty && mapView.isEmpty
+      map.isEmpty && mapView.isEmpty && map.size == 0 && mapView.size == 0
     }
 
     property("serializable") = forAll { (map: mutable.TreeMap[K, V], from: Option[K], until: Option[K]) =>

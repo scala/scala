@@ -64,7 +64,7 @@ sealed class TreeMap[A, B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   def keysIteratorFrom(start: A) = RB.keysIterator(tree, Some(start))
   def valuesIteratorFrom(start: A) = RB.valuesIterator(tree, Some(start))
 
-  override def size = tree.size
+  override def size = RB.size(tree)
   override def isEmpty = RB.isEmpty(tree)
   override def contains(key: A) = RB.contains(tree, key)
 
@@ -78,7 +78,7 @@ sealed class TreeMap[A, B] private (tree: RB.Tree[A, B])(implicit val ordering: 
 
   override def foreach[U](f: ((A, B)) => U): Unit = RB.foreach(tree, f)
   override def transform(f: (A, B) => B) = { RB.transform(tree, f); this }
-  override def clear(): Unit = tree.root = null
+  override def clear(): Unit = RB.clear(tree)
 
   override def stringPrefix = "TreeMap"
 
