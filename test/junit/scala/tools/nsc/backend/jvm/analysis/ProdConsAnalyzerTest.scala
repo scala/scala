@@ -1,0 +1,249 @@
+package scala.tools.nsc
+package backend.jvm
+package analysis
+
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
+import org.junit.Assert._
+
+import scala.tools.asm.Opcodes
+import scala.tools.asm.tree.AbstractInsnNode
+import scala.tools.partest.ASMConverters._
+import scala.tools.testing.ClearAfterClass
+import CodeGenTools._
+import AsmUtils._
+
+object ProdConsAnalyzerTest extends ClearAfterClass.Clearable {
+  var noOptCompiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:none")
+
+  def clear(): Unit = {
+    noOptCompiler = null
+  }
+}
+
+@RunWith(classOf[JUnit4])
+class ProdConsAnalyzerTest extends ClearAfterClass {
+  ClearAfterClass.stateToClear = ProdConsAnalyzerTest
+  val noOptCompiler = ProdConsAnalyzerTest.noOptCompiler
+
+  def prodToString(producer: AbstractInsnNode) = producer match {
+    case p: InitialProducer => p.toString
+    case p => textify(p)
+  }
+
+  def testSingleInsn(singletonInsns: Traversable[AbstractInsnNode], expected: String): Unit = {
+    testInsn(single(singletonInsns), expected)
+  }
+
+  def testMultiInsns(insns: Traversable[AbstractInsnNode], expected: Traversable[String]): Unit = {
+    assertTrue(s"Sizes don't match: ${insns.size} vs ${expected.size}", insns.size == expected.size)
+    for (insn <- insns) {
+      val txt = prodToString(insn)
+      assertTrue(s"Instruction $txt not found in ${expected mkString ", "}", expected.exists(txt.contains))
+    }
+  }
+
+  def testInsn(insn: AbstractInsnNode, expected: String): Unit = {
+    val txt = prodToString(insn)
+    assertTrue(s"Expected $expected, found $txt", txt contains expected)
+  }
+
+  def single[T](c: Traversable[T]): T = {
+    assertTrue(s"Expected singleton collection, got $c", c.size == 1)
+    c.head
+  }
+
+  @Test
+  def parameters(): Unit = {
+    val List(m) = compileMethods(noOptCompiler)("def f = this.toString")
+    val a = new ProdConsAnalyzer(m, "C")
+    val call = findInstr(m, "INVOKEVIRTUAL").head
+
+    testSingleInsn(a.producersForValueAt(call, 1), "ALOAD 0") // producer of stack value
+    testSingleInsn(a.producersForInputsOf(call), "ALOAD 0")
+
+    testSingleInsn(a.consumersOfValueAt(call.getNext, 1), "ARETURN")  // consumer of `toString` result
+    testSingleInsn(a.consumersOfOutputsFrom(call), "ARETURN")
+
+    testSingleInsn(a.ultimateConsumersOfValueAt(call.getNext, 1), "ARETURN")
+
+    testSingleInsn(a.initialProducersForValueAt(call, 1), "ParameterProducer")
+    testSingleInsn(a.producersForValueAt(call, 0), "ParameterProducer")
+  }
+
+  @Test
+  def parametersInitialProducer(): Unit = {
+    // mutates a parameter local (not possible in scala, but in bytecode)
+    import Opcodes._
+    val m = genMethod(descriptor = "(I)I")(
+      Label(0),
+      VarOp(ILOAD, 1),
+      Jump(IFNE, Label(1)),
+      Op(ICONST_1),
+      VarOp(ISTORE, 1),
+      Label(1),
+      VarOp(ILOAD, 1),
+      Op(IRETURN),
+      Label(2)
+    )
+    m.maxLocals = 2
+    m.maxStack = 1
+    val a = new ProdConsAnalyzer(m, "C")
+
+    val ifne = findInstr(m, "IFNE").head
+    testSingleInsn(a.producersForValueAt(ifne, 1), "ParameterProducer")
+
+    val ret = findInstr(m, "IRETURN").head
+    testMultiInsns(a.producersForValueAt(ret, 1), List("ParameterProducer", "ISTORE 1"))
+  }
+
+  @Test
+  def branching(): Unit = {
+    val List(m) = compileMethods(noOptCompiler)("def f(x: Int) = { var a = x; if (a == 0) a = 12; a }")
+    val a = new ProdConsAnalyzer(m, "C")
+
+    val List(ret) = findInstr(m, "IRETURN")
+    testMultiInsns(a.producersForValueAt(ret, 2), List("ISTORE 2", "ISTORE 2"))
+    testMultiInsns(a.initialProducersForValueAt(ret, 2), List("BIPUSH 12", "ParameterProducer"))
+
+    val List(bipush) = findInstr(m, "BIPUSH 12")
+    testSingleInsn(a.consumersOfOutputsFrom(bipush), "ISTORE 2")
+    testSingleInsn(a.ultimateConsumersOfValueAt(bipush.getNext, 3), "IRETURN")
+  }
+
+  @Test
+  def checkCast(): Unit = {
+    val List(m) = compileMethods(noOptCompiler)("def f(o: Object) = o.asInstanceOf[String]")
+    val a = new ProdConsAnalyzer(m, "C")
+    assert(findInstr(m, "CHECKCAST java/lang/String").length == 1)
+
+    val List(ret) = findInstr(m, "ARETURN")
+    testSingleInsn(a.initialProducersForInputsOf(ret), "ParameterProducer(1)")
+  }
+
+  @Test
+  def instanceOf(): Unit = {
+    val List(m) = compileMethods(noOptCompiler)("def f(o: Object) = o.isInstanceOf[String]")
+    val a = new ProdConsAnalyzer(m, "C")
+    assert(findInstr(m, "INSTANCEOF java/lang/String").length == 1)
+
+    val List(ret) = findInstr(m, "IRETURN")
+    testSingleInsn(a.initialProducersForInputsOf(ret), "INSTANCEOF")
+  }
+
+  @Test
+  def unInitLocal(): Unit = {
+    val List(m) = compileMethods(noOptCompiler)("def f(b: Boolean) = { if (b) { var a = 0; println(a) }; 1 }")
+    val a = new ProdConsAnalyzer(m, "C")
+
+    val List(store) = findInstr(m, "ISTORE")
+    val List(call)  = findInstr(m, "INVOKEVIRTUAL")
+    val List(ret)   = findInstr(m, "IRETURN")
+
+    testSingleInsn(a.producersForValueAt(store, 2), "UninitializedLocalProducer(2)")
+    testSingleInsn(a.producersForValueAt(call, 2), "ISTORE")
+    testMultiInsns(a.producersForValueAt(ret, 2), List("UninitializedLocalProducer", "ISTORE"))
+  }
+
+  @Test
+  def dupCopying(): Unit = {
+    val List(m) = compileMethods(noOptCompiler)("def f = new Object")
+    val a = new ProdConsAnalyzer(m, "C")
+
+    val List(newO)   = findInstr(m, "NEW")
+    val List(constr) = findInstr(m, "INVOKESPECIAL")
+
+    testSingleInsn(a.producersForInputsOf(constr), "DUP")
+    testSingleInsn(a.initialProducersForInputsOf(constr), "NEW")
+
+    testSingleInsn(a.consumersOfOutputsFrom(newO), "DUP")
+    testMultiInsns(a.ultimateConsumersOfOutputsFrom(newO), List("INVOKESPECIAL", "ARETURN"))
+  }
+
+  @Test
+  def multiProducer(): Unit = {
+    import Opcodes._
+    val m = genMethod(descriptor = "(I)I")(
+      VarOp(ILOAD, 1),
+      VarOp(ILOAD, 1),
+      Op(DUP2),
+      Op(IADD),
+      Op(SWAP),
+      VarOp(ISTORE, 1),
+      Op(IRETURN)
+    )
+    m.maxLocals = 2
+    m.maxStack = 4
+    val a = new ProdConsAnalyzer(m, "C")
+
+    val List(dup2)  = findInstr(m, "DUP2")
+    val List(add)   = findInstr(m, "IADD")
+    val List(swap)  = findInstr(m, "SWAP")
+    val List(store) = findInstr(m, "ISTORE")
+    val List(ret)   = findInstr(m, "IRETURN")
+
+    testMultiInsns(a.producersForInputsOf(dup2), List("ILOAD", "ILOAD"))
+    testSingleInsn(a.consumersOfValueAt(dup2.getNext, 4), "IADD")
+    testSingleInsn(a.consumersOfValueAt(dup2.getNext, 5), "IADD")
+    testMultiInsns(a.consumersOfOutputsFrom(dup2), List("IADD", "SWAP"))
+
+    testSingleInsn(a.ultimateConsumersOfOutputsFrom(dup2), "IADD") // the 'store' is not here: it's a copying instr, so not an ultimate consumer.
+    testMultiInsns(a.consumersOfOutputsFrom(swap), List("IRETURN", "ISTORE"))
+    testSingleInsn(a.ultimateConsumersOfOutputsFrom(swap), "IRETURN") // again, no store
+    testSingleInsn(a.initialProducersForInputsOf(add), "ParameterProducer(1)")
+
+    testMultiInsns(a.producersForInputsOf(swap), List("IADD", "DUP2"))
+    testSingleInsn(a.consumersOfValueAt(swap.getNext, 4), "ISTORE")
+    testSingleInsn(a.consumersOfValueAt(swap.getNext, 3), "IRETURN")
+    testSingleInsn(a.initialProducersForInputsOf(store), "ParameterProducer(1)")
+    testSingleInsn(a.initialProducersForInputsOf(ret), "IADD")
+  }
+
+  @Test
+  def iincProdCons(): Unit = {
+    import Opcodes._
+    val m = genMethod(descriptor = "(I)I")(
+      Incr(IINC, 1, 1), // producer and cosumer of local variable 1
+      VarOp(ILOAD, 1),
+      Op(IRETURN)
+    )
+    m.maxLocals = 2
+    m.maxStack = 1
+    val a = new ProdConsAnalyzer(m, "C")
+
+    val List(inc) = findInstr(m, "IINC")
+    val List(load) = findInstr(m, "ILOAD")
+    val List(ret) = findInstr(m, "IRETURN")
+
+    testSingleInsn(a.producersForInputsOf(inc), "ParameterProducer(1)")
+    testSingleInsn(a.consumersOfOutputsFrom(inc), "ILOAD")
+    testSingleInsn(a.ultimateConsumersOfOutputsFrom(inc), "IRETURN")
+    testSingleInsn(a.consumersOfValueAt(inc, 1), "IINC") // parameter value has a single consumer, the IINC
+    testSingleInsn(a.ultimateConsumersOfValueAt(inc, 1), "IINC")
+
+    testSingleInsn(a.producersForInputsOf(load), "IINC")
+    testSingleInsn(a.producersForValueAt(load, 1), "IINC")
+
+    testSingleInsn(a.initialProducersForInputsOf(ret), "IINC")
+  }
+
+  @Test
+  def copyingInsns(): Unit = {
+    val List(m) = compileMethods(noOptCompiler)("def f = 0l.asInstanceOf[Int]")
+    val a = new ProdConsAnalyzer(m, "C")
+
+    val List(cnst) = findInstr(m, "LCONST_0")
+    val List(l2i)  = findInstr(m, "L2I") // l2i is not a copying instruction
+    val List(ret)  = findInstr(m, "IRETURN")
+
+    testSingleInsn(a.consumersOfOutputsFrom(cnst), "L2I")
+    testSingleInsn(a.ultimateConsumersOfOutputsFrom(cnst), "L2I")
+
+    testSingleInsn(a.producersForInputsOf(l2i), "LCONST_0")
+    testSingleInsn(a.initialProducersForInputsOf(l2i), "LCONST_0")
+
+    testSingleInsn(a.consumersOfOutputsFrom(l2i), "IRETURN")
+    testSingleInsn(a.producersForInputsOf(ret), "L2I")
+  }
+}

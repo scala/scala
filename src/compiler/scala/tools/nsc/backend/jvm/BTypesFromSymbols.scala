@@ -7,7 +7,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.tools.asm
-import scala.tools.nsc.backend.jvm.opt.{LocalOpt, CallGraph, Inliner, ByteCodeRepository}
+import scala.tools.nsc.backend.jvm.opt._
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo, InternalName}
 import BackendReporting._
 import scala.tools.nsc.settings.ScalaSettings
@@ -41,6 +41,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   val localOpt: LocalOpt[this.type] = new LocalOpt(this)
 
   val inliner: Inliner[this.type] = new Inliner(this)
+
+  val closureOptimizer: ClosureOptimizer[this.type] = new ClosureOptimizer(this)
 
   val callGraph: CallGraph[this.type] = new CallGraph(this)
 

@@ -6,7 +6,7 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.BatchSourceFile
 import scala.reflect.io.VirtualDirectory
 import scala.tools.asm.Opcodes
-import scala.tools.asm.tree.{ClassNode, MethodNode}
+import scala.tools.asm.tree.{AbstractInsnNode, ClassNode, MethodNode}
 import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.StoreReporter
@@ -15,6 +15,7 @@ import scala.tools.nsc.{Settings, Global}
 import scala.tools.partest.ASMConverters
 import scala.collection.JavaConverters._
 import scala.tools.testing.TempDir
+import AsmUtils._
 
 object CodeGenTools {
   import ASMConverters._
@@ -150,6 +151,17 @@ object CodeGenTools {
 
   def getSingleMethod(classNode: ClassNode, name: String): Method =
     convertMethod(classNode.methods.asScala.toList.find(_.name == name).get)
+
+  /**
+   * Instructions that match `query` when textified.
+   * If `query` starts with a `+`, the next instruction is returned.
+   */
+  def findInstr(method: MethodNode, query: String): List[AbstractInsnNode] = {
+    val useNext = query(0) == '+'
+    val instrPart = if (useNext) query.drop(1) else query
+    val insns = method.instructions.iterator.asScala.find(i => textify(i) contains instrPart).toList
+    if (useNext) insns.map(_.getNext) else insns
+  }
 
   def assertHandlerLabelPostions(h: ExceptionHandler, instructions: List[Instruction], startIndex: Int, endIndex: Int, handlerIndex: Int): Unit = {
     val insVec = instructions.toVector

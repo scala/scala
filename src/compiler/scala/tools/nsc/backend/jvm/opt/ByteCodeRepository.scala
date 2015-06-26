@@ -102,7 +102,7 @@ class ByteCodeRepository(val classPath: ClassFileLookup[AbstractFile], val isJav
   }
 
   /**
-   * The method node for a method matching `name` and `descriptor`, accessed in class `classInternalName`.
+   * The method node for a method matching `name` and `descriptor`, accessed in class `ownerInternalNameOrArrayDescriptor`.
    * The declaration of the method may be in one of the parents.
    *
    * @return The [[MethodNode]] of the requested method and the [[InternalName]] of its declaring

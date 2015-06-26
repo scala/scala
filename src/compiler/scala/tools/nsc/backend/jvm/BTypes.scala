@@ -44,6 +44,8 @@ abstract class BTypes {
 
   val inliner: Inliner[this.type]
 
+  val closureOptimizer: ClosureOptimizer[this.type]
+
   val callGraph: CallGraph[this.type]
 
   val backendReporting: BackendReporting
@@ -940,7 +942,7 @@ abstract class BTypes {
      */
     def jvmWiseLUB(other: ClassBType): Either[NoClassBTypeInfo, ClassBType] = {
       def isNotNullOrNothing(c: ClassBType) = !c.isNullType && !c.isNothingType
-      assert(isNotNullOrNothing(this) && isNotNullOrNothing(other), s"jvmWiseLub for null or nothing: $this - $other")
+      assert(isNotNullOrNothing(this) && isNotNullOrNothing(other), s"jvmWiseLUB for null or nothing: $this - $other")
 
       tryEither {
         val res: ClassBType = (this.isInterface.orThrow, other.isInterface.orThrow) match {
@@ -965,7 +967,7 @@ abstract class BTypes {
             firstCommonSuffix(this :: this.superClassesTransitive.orThrow, other :: other.superClassesTransitive.orThrow)
         }
 
-        assert(isNotNullOrNothing(res), s"jvmWiseLub computed: $res")
+        assert(isNotNullOrNothing(res), s"jvmWiseLUB computed: $res")
         Right(res)
       }
     }
