@@ -3,7 +3,7 @@ import scala.tools.partest.JavapTest
 object Test extends JavapTest {
   def code = """
     |def f = 7
-    |:javap -public -raw f
+    |:javap -public f
   """.stripMargin
 
   // it should find f wrapped in repl skins. replstiltskin.
