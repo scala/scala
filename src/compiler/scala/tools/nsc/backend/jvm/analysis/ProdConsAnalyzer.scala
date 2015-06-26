@@ -431,9 +431,9 @@ abstract class InitialProducer extends AbstractInsnNode(-1) {
   override def accept(cv: MethodVisitor): Unit = throw new UnsupportedOperationException
 }
 
-case class ParameterProducer(local: Int)                      extends InitialProducer
-case class UninitializedLocalProducer(local: Int)             extends InitialProducer
-case class ExceptionProducer(handlerFrame: Frame[_ <: Value]) extends InitialProducer
+case class ParameterProducer(local: Int)                         extends InitialProducer
+case class UninitializedLocalProducer(local: Int)                extends InitialProducer
+case class ExceptionProducer[V <: Value](handlerFrame: Frame[V]) extends InitialProducer
 
 class InitialProducerSourceInterpreter extends SourceInterpreter {
   override def newParameterValue(isInstanceMethod: Boolean, local: Int, tp: Type): SourceValue = {
