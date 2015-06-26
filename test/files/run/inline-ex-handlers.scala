@@ -1,7 +1,7 @@
 import scala.tools.partest.IcodeComparison
 
 object Test extends IcodeComparison {
-  override def printIcodeAfterPhase = "inlinehandlers"
+  override def printIcodeAfterPhase = "inlinehandlers"; override def extraSettings: String = super.extraSettings + " -Ybackend:GenASM" // same line to minimize check file changs
 }
 
 import scala.util.Random._

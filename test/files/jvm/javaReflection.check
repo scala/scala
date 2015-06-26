@@ -1,4 +1,4 @@
-#partest !-Ydelambdafy:method
+#partest -Ydelambdafy:inline
 A$$anonfun$$lessinit$greater$1 / null (canon) / $anonfun$$lessinit$greater$1 (simple)
 - declared cls: List()
 - enclosing   : null (declaring cls) / class A (cls) / public A(int) (constr) / null (meth)
@@ -39,7 +39,7 @@ AT$$anonfun$6 / null (canon) / $anonfun$6 (simple)
 - declared cls: List()
 - enclosing   : null (declaring cls) / interface AT (cls) / null (constr) / null (meth)
 - properties  : true (local) / false (member)
-#partest -Ydelambdafy:method
+#partest !-Ydelambdafy:inline
 A$D$lambda$1 / A$D$lambda$1 (canon) / A$D$lambda$1 (simple)
 - declared cls: List()
 - enclosing   : null (declaring cls) / null (cls) / null (constr) / null (meth)

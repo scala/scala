@@ -1,4 +1,4 @@
-#partest !-Ydelambdafy:method
+#partest -Ydelambdafy:inline
 -- A4 --
 A4$$anonfun$f$1 / null / null / 17
 A4$$anonfun$f$1 / null / null / 17
@@ -35,7 +35,7 @@ A20 / null / null
 A20$$anonfun$4 / null / null
 A20$$anonfun$4 / null / null
 A20$$anonfun$4$$anonfun$apply$2 / null / null
-#partest -Ydelambdafy:method
+#partest !-Ydelambdafy:inline
 -- A4 --
 null / null / null
 -- A19 --
