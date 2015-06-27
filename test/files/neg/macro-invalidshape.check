@@ -8,8 +8,9 @@ macro [<static object>].<method name>[[<type args>]] or
 macro [<macro bundle>].<method name>[[<type args>]]
   def foo2(x: Any) = macro Impls.foo(null)(null)
                                  ^
-Macros_Test_2.scala:4: error: missing arguments for method foo in object Impls;
-follow this method with `_' if you want to treat it as a partially applied function
+Macros_Test_2.scala:4: error: missing argument list for method foo in object Impls
+Unapplied methods are only converted to functions when a function type is expected.
+You can make this conversion explicit by writing `foo _` or `foo(_)(_)` instead of `foo`.
   def foo3(x: Any) = macro {2; Impls.foo}
                                      ^
 Macros_Test_2.scala:7: error: macro implementation reference has wrong shape. required:
