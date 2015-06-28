@@ -425,7 +425,7 @@ trait SequentialOps[T] {
   }
   
   def sequentialDiff(sq: Seq[T], sz: Int) = {
-    val occmap = occurences(sq)
+    val occmap = occurrences(sq)
     val b = new collection.mutable.ArrayBuffer[T]
     
     var i = 0
@@ -442,7 +442,7 @@ trait SequentialOps[T] {
   }
   
   def sequentialIntersect(sq: Seq[T], sz: Int) = {
-    val occmap = occurences(sq)
+    val occmap = occurrences(sq)
     val b = new collection.mutable.ArrayBuffer[T]
     
     var i = 0
@@ -461,7 +461,7 @@ trait SequentialOps[T] {
     res
   }
   
-  private def occurences(sq: Seq[T]) = {
+  private def occurrences(sq: Seq[T]) = {
     val occmap = new collection.mutable.HashMap[T, Int] { override def default(k: T) = 0 }
     for (elem <- sq.iterator) occmap(elem) += 1
     occmap
