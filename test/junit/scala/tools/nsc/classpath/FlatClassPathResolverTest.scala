@@ -42,7 +42,7 @@ class FlatClassPathResolverTest {
     // In Java TemporaryFolder in JUnit is managed automatically using @Rule.
     // It would work also in Scala after adding and extending a class like
     // TestWithTempFolder.java containing it. But in this case it doesn't work when running tests
-    // from the command line - java class is not compiled due to some, misterious reasons.
+    // from the command line - java class is not compiled due to some, mysterious reasons.
     // That's why such dirs are here created and deleted manually.
     tempDir.create()
     tempDir.newFile("TestSourceInRootPackage.scala")

@@ -918,7 +918,7 @@ trait Types
     def prefixString = trimPrefix(toString) + "#"
 
    /** Convert toString avoiding infinite recursions by cutting off
-     *  after `maxTostringRecursions` recursion levels. Uses `safeToString`
+     *  after `maxToStringRecursions` recursion levels. Uses `safeToString`
      *  to produce a string on each level.
      */
     override final def toString: String = {
@@ -1489,7 +1489,7 @@ trait Types
           } finally {
             if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
           }
-          // [Martin] suppressing memo-ization solves the problem with "same type after erasure" errors
+          // [Martin] suppressing memoization solves the problem with "same type after erasure" errors
           // when compiling with
           // scalac scala.collection.IterableViewLike.scala scala.collection.IterableLike.scala
           // I have not yet figured out precisely why this is the case.
