@@ -20,7 +20,7 @@ abstract class Reporter extends scala.reflect.internal.Reporter {
   /** Informational messages. If `!force`, they may be suppressed. */
   final def info(pos: Position, msg: String, force: Boolean): Unit = info0(pos, msg, INFO, force)
 
-  /** For sending a message which should not be labeled as a warning/error,
+  /** For sending a message which should not be labelled as a warning/error,
    *  but also shouldn't require -verbose to be visible.
    */
   def echo(msg: String): Unit = info(NoPosition, msg, force = true)

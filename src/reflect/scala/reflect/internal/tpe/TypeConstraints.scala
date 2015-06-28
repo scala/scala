@@ -99,7 +99,7 @@ private[internal] trait TypeConstraints {
       // a lower bound despite the fact that Nothing is always a lower bound.  My current
       // supposition is that the side-effecting type constraint accumulation mechanism
       // depends on these subtype tests being performed to make forward progress when
-      // there are mutally recursive type vars.
+      // there are mutually recursive type vars.
       // See pos/t6367 and pos/t6499 for the competing test cases.
       val mustConsider = tp.typeSymbol match {
         case NothingClass => true

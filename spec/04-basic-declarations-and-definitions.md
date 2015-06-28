@@ -627,7 +627,7 @@ parameters and associate them with their types.
 Each value parameter
 declaration may optionally define a default argument. The default argument
 expression $e$ is type-checked with an expected type $T'$ obtained
-by replacing all occurences of the function's type parameters in $T$ by
+by replacing all occurrences of the function's type parameters in $T$ by
 the undefined type.
 
 For every parameter $p_{i,j}$ with a default argument a method named
