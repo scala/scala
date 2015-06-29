@@ -61,7 +61,8 @@ import scala.reflect.ClassTag
 trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   self =>
 
-  /** Self-documenting abstract methods. */
+  /* Self-documenting abstract methods. */
+
   def foreach[U](f: A => U): Unit
   def isEmpty: Boolean
   def hasDefiniteSize: Boolean
@@ -334,10 +335,10 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
    * {{{
    *      scala> val a = List(1,2,3,4)
    *      a: List[Int] = List(1, 2, 3, 4)
-   *      
+   *
    *      scala> val b = new StringBuilder()
-   *      b: StringBuilder = 
-   *      
+   *      b: StringBuilder =
+   *
    *      scala> a.addString(b , "List(" , ", " , ")")
    *      res5: StringBuilder = List(1, 2, 3, 4)
    * }}}
@@ -376,7 +377,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
    * {{{
    *      scala> val a = List(1,2,3,4)
    *      a: List[Int] = List(1, 2, 3, 4)
-   *      
+   *
    *      scala> val b = new StringBuilder()
    *      b: StringBuilder =
    *
@@ -399,7 +400,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
    * {{{
    *      scala> val a = List(1,2,3,4)
    *      a: List[Int] = List(1, 2, 3, 4)
-   *      
+   *
    *      scala> val b = new StringBuilder()
    *      b: StringBuilder =
    *

@@ -269,16 +269,16 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
    *    {{{
    *      scala> val a = List(1)
    *      a: List[Int] = List(1)
-   *      
+   *
    *      scala> val b = List(2)
    *      b: List[Int] = List(2)
-   *      
+   *
    *      scala> val c = a ++ b
    *      c: List[Int] = List(1, 2)
-   *      
+   *
    *      scala> val d = List('a')
    *      d: List[Char] = List(a)
-   *      
+   *
    *      scala> val e = c ++ d
    *      e: List[AnyVal] = List(1, 2, a)
    *    }}}
