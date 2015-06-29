@@ -19,4 +19,8 @@ trait t6810 {
   val `\u000A` = EOL  // backquoted identifiers are arbitrary string literals
   val `
 ` = EOL               // not raw string literals aka triple-quoted, multiline strings
+
+  val a = '\u000D'    // similar treatment of CR
+  val b = ''        // CR seen as EOL by scanner
+  val c = '\r'        // traditionally
 }

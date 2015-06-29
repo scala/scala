@@ -16,7 +16,13 @@ t6810.scala:20: error: unclosed quoted identifier
 t6810.scala:21: error: unclosed quoted identifier
 ` = EOL               // not raw string literals aka triple-quoted, multiline strings
 ^
-t6810.scala:22: error: '=' expected but '}' found.
-}
+t6810.scala:24: error: unclosed character literal
+  val b = '
+          ^
+t6810.scala:25: error: unclosed character literal
+'        // CR seen as EOL by scanner
 ^
-7 errors found
+t6810.scala:24: error: '=' expected but ';' found.
+  val b = '
+^
+9 errors found
