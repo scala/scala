@@ -12,7 +12,7 @@ object Test {
     str.x1.length
   }
 }
-// another way demonstrating the same underlying problem, as reported by roman kalukiewicz
+// another way demonstrating the same underlying problem, as reported by Roman Kalukiewicz
 
 class Holder[_T](_f1 : _T, _f2 : _T) {
   type T = _T
