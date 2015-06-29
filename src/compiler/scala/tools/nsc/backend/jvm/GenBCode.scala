@@ -167,6 +167,11 @@ abstract class GenBCode extends BCodeSyncAndTry {
             )
         }
 
+        // shim for SBT, see https://github.com/sbt/sbt/issues/2076
+        // TODO put this closer to classfile writing once we have closure elimination
+        // TODO create a nicer public API to find out the correspondence between sourcefile and ultimate classfiles
+        currentUnit.icode += new icodes.IClass(cd.symbol)
+
         // -------------- mirror class, if needed --------------
         val mirrorC =
           if (isTopLevelModuleClass(claszSymbol)) {
