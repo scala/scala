@@ -56,7 +56,7 @@ object Set extends ImmutableSetFactory[Set] {
     def + (elem: Any): Set[Any] = new Set1(elem)
     def - (elem: Any): Set[Any] = this
     def iterator: Iterator[Any] = Iterator.empty
-    override def foreach[U](f: Any =>  U): Unit = {}
+    override def foreach[U](f: Any => U): Unit = {}
     override def toSet[B >: Any]: Set[B] = this.asInstanceOf[Set[B]]
   }
   private[collection] def emptyInstance: Set[Any] = EmptySet
@@ -75,7 +75,7 @@ object Set extends ImmutableSetFactory[Set] {
       else this
     def iterator: Iterator[A] =
       Iterator(elem1)
-    override def foreach[U](f: A =>  U): Unit = {
+    override def foreach[U](f: A => U): Unit = {
       f(elem1)
     }
     override def exists(p: A => Boolean): Boolean = {
@@ -107,7 +107,7 @@ object Set extends ImmutableSetFactory[Set] {
       else this
     def iterator: Iterator[A] =
       Iterator(elem1, elem2)
-    override def foreach[U](f: A =>  U): Unit = {
+    override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2)
     }
     override def exists(p: A => Boolean): Boolean = {
@@ -141,7 +141,7 @@ object Set extends ImmutableSetFactory[Set] {
       else this
     def iterator: Iterator[A] =
       Iterator(elem1, elem2, elem3)
-    override def foreach[U](f: A =>  U): Unit = {
+    override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2); f(elem3)
     }
     override def exists(p: A => Boolean): Boolean = {
@@ -177,7 +177,7 @@ object Set extends ImmutableSetFactory[Set] {
       else this
     def iterator: Iterator[A] =
       Iterator(elem1, elem2, elem3, elem4)
-    override def foreach[U](f: A =>  U): Unit = {
+    override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2); f(elem3); f(elem4)
     }
     override def exists(p: A => Boolean): Boolean = {

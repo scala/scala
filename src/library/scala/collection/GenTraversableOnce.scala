@@ -49,6 +49,22 @@ import scala.language.higherKinds
  */
 trait GenTraversableOnce[+A] extends Any {
 
+  /** Applies a function `f` to all elements of this $coll.
+   *
+   *  @param  f   the function that is applied for its side-effect to every element.
+   *              The result of function `f` is discarded.
+   *
+   *  @tparam  U  the type parameter describing the result of function `f`.
+   *              This result will always be ignored. Typically `U` is `Unit`,
+   *              but this is not necessary.
+   *
+   *  @usecase def foreach(f: A => Unit): Unit
+   *    @inheritdoc
+   *
+   *    Note: this method underlies the implementation of most other bulk operations.
+   *    It's important to implement this method in an efficient way.
+   *
+   */
   def foreach[U](f: A => U): Unit
 
   def hasDefiniteSize: Boolean
