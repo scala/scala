@@ -36,7 +36,7 @@ object DiagramStats {
   private[this] val filterTrack = new TimeTracker("diagrams model filtering")
   private[this] val modelTrack = new TimeTracker("diagrams model generation")
   private[this] val dotGenTrack = new TimeTracker("dot diagram generation")
-  private[this] val dotRunTrack = new TimeTracker("dot process runnning")
+  private[this] val dotRunTrack = new TimeTracker("dot process running")
   private[this] val svgTrack = new TimeTracker("svg processing")
   private[this] var brokenImages = 0
   private[this] var fixedImages = 0

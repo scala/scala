@@ -93,7 +93,7 @@ abstract class Comment {
   def todo: List[Body]
 
   /** Whether the entity is deprecated. Using the `@deprecated` Scala attribute
-    * is prefereable to using this Scaladoc tag. */
+    * is preferable to using this Scaladoc tag. */
   def deprecated: Option[Body]
 
   /** An additional note concerning the contract of the entity. */

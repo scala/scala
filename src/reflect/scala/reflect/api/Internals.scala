@@ -114,7 +114,7 @@ trait Internals { self: Universe =>
     def substituteTypes(tree: Tree, from: List[Symbol], to: List[Type]): Tree
 
     /** Substitute given tree `to` for occurrences of nodes that represent
-     *  `C.this`, where `C` referes to the given class `clazz`.
+     *  `C.this`, where `C` refers to the given class `clazz`.
      */
     def substituteThis(tree: Tree, clazz: Symbol, to: Tree): Tree
 

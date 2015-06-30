@@ -2588,7 +2588,7 @@ trait Types
      * based on the bounds of the type parameters of the quantified type
      * In Scala syntax, given a java-defined class C[T <: String], the existential type C[_]
      * is improved to C[_ <: String] before skolemization, which captures (get it?) what Java does:
-     * enter the type paramers' bounds into the context when checking subtyping/type equality of existential types
+     * enter the type parameters' bounds into the context when checking subtyping/type equality of existential types
      *
      * Also tried doing this once during class file parsing or when creating the existential type,
      * but that causes cyclic errors because it happens too early.
@@ -4263,7 +4263,7 @@ trait Types
       matchesType(res1, res2.substSym(tparams2, tparams1), alwaysMatchSimple)
     (tp1, tp2) match {
       case (MethodType(params1, res1), MethodType(params2, res2)) =>
-        params1.length == params2.length && // useful pre-secreening optimization
+        params1.length == params2.length && // useful pre-screening optimization
         matchingParams(params1, params2, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
         matchesType(res1, res2, alwaysMatchSimple) &&
         tp1.isImplicit == tp2.isImplicit

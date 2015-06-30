@@ -86,7 +86,7 @@ trait Opcodes { self: ICodes =>
    *  Each case subclass will represent a specific operation.
    */
   abstract class Instruction extends Cloneable {
-    // Vlad: I used these for checking the quality of the implementation, and we should regularely run a build with them
+    // Vlad: I used these for checking the quality of the implementation, and we should regularly run a build with them
     // enabled. But for production these should definitely be disabled, unless we enjoy getting angry emails from Greg :)
     //if (!this.isInstanceOf[opcodes.LOAD_EXCEPTION])
     //  assert(consumed == consumedTypes.length)

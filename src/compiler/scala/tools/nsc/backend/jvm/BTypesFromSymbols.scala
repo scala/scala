@@ -355,7 +355,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       // See comment in BTypes, when is a class marked static in the InnerClass table.
       val isStaticNestedClass = isOriginallyStaticOwner(innerClassSym.originalOwner)
 
-      // After lambdalift (which is where we are), the rawowoner field contains the enclosing class.
+      // After lambdalift (which is where we are), the rawowner field contains the enclosing class.
       val enclosingClass = {
         // (1) Example java source: class C { static class D { } }
         // The Scala compiler creates a class and a module symbol for C. Because D is a static

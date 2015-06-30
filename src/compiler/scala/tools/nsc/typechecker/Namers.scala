@@ -204,7 +204,7 @@ trait Namers extends MethodSynthesis {
     }
 
     // FIXME - this logic needs to be thoroughly explained
-    // and justified.  I know it's wrong with repect to package
+    // and justified.  I know it's wrong with respect to package
     // objects, but I think it's also wrong in other ways.
     protected def conflict(newS: Symbol, oldS: Symbol) = (
        (   !oldS.isSourceMethod
@@ -1106,7 +1106,7 @@ trait Namers extends MethodSynthesis {
        * As a first side effect, this method assigns a MethodType constructed using this
        * return type to `meth`. This allows omitting the result type for recursive methods.
        *
-       * As another side effect, this method also assigns paramter types from the overridden
+       * As another side effect, this method also assigns parameter types from the overridden
        * method to parameters of `meth` that have missing types (the parser accepts missing
        * parameter types under -Yinfer-argument-types).
        */
