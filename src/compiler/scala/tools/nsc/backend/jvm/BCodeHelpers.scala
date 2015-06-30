@@ -693,7 +693,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
      *     cache = new java.util.HashMap()
      *     $deserializeLambdaCache$ = cache
      *   }
-     *   return scala.compat.java8.runtime.LambdaDeserializer.deserializeLambda(MethodHandles.lookup(), cache, l);
+     *   return scala.runtime.LambdaDeserializer.deserializeLambda(MethodHandles.lookup(), cache, l);
      * }
      */
     def addLambdaDeserialize(clazz: Symbol, jclass: asm.ClassVisitor): Unit = {
@@ -732,7 +732,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         mv.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodHandles", "lookup", "()Ljava/lang/invoke/MethodHandles$Lookup;", false)
         mv.visitVarInsn(ALOAD, 1)
         mv.visitVarInsn(ALOAD, 0)
-        mv.visitMethodInsn(INVOKESTATIC, "scala/compat/java8/runtime/LambdaDeserializer", "deserializeLambda", "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/util/Map;Ljava/lang/invoke/SerializedLambda;)Ljava/lang/Object;", false)
+        mv.visitMethodInsn(INVOKESTATIC, "scala/runtime/LambdaDeserializer", "deserializeLambda", "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/util/Map;Ljava/lang/invoke/SerializedLambda;)Ljava/lang/Object;", false)
         mv.visitInsn(ARETURN)
         mv.visitEnd()
       }
