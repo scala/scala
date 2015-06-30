@@ -154,6 +154,9 @@ lazy val library = configureAsSubproject(project)
       val libraryAuxDir = (baseDirectory in ThisBuild).value / "src/library-aux"
       Seq("-doc-no-compile", libraryAuxDir.toString)
     },
+    mappings in Compile in packageBin ++= {
+      (mappings in Compile in packageBin in forkjoin).value
+    },
     includeFilter in unmanagedResources in Compile := libIncludes)
   .dependsOn (forkjoin)
 
@@ -183,7 +186,31 @@ lazy val compiler = configureAsSubproject(project)
         streams.value.cacheDirectory) ++
       (mappings in Compile in packageBin in LocalProject("interactive")).value ++
       (mappings in Compile in packageBin in LocalProject("scaladoc")).value ++
-      (mappings in Compile in packageBin in LocalProject("repl")).value,
+      (mappings in Compile in packageBin in LocalProject("repl")).value ++
+      (mappings in Compile in packageBin in LocalProject("repl-jline")).value ++ {
+        import java.util.jar._
+        import collection.JavaConverters._
+        val inputs: Iterator[JarJar.Entry] = {
+          val repljlineClasses = (products in (LocalProject("repl-jline"), Compile)).value.flatMap(base => Path.allSubpaths(base).map(x => (base, x._1)))
+          val jlineJAR = (dependencyClasspath in (LocalProject("repl-jline"), Compile)).value.find(_.get(moduleID.key) == Some(jlineDep)).get.data
+          val jarFile = new JarFile(jlineJAR)
+          val jarEntries = jarFile.entries.asScala.filterNot(_.isDirectory).map(entry => JarJar.JarEntryInput(jarFile, entry))
+          def compiledClasses = repljlineClasses.iterator.map { case (base, file) => JarJar.FileInput(base, file) }
+          println(compiledClasses.map(_.name).mkString("\n"))
+          (jarEntries ++ compiledClasses).filter(x => x.name.endsWith(".class") || x.name.startsWith("META-INF/native"))
+        }
+        import JarJar.JarJarConfig._
+        val config: Seq[JarJar.JarJarConfig] = Seq(
+          Rule("org.fusesource.**", "scala.tools.fusesource_embedded.@1"),
+          Rule("jline.**", "scala.tools.jline_embedded.@1"),
+          Rule("scala.tools.nsc.interpreter.jline.**", "scala.tools.nsc.interpreter.jline_embedded.@1"),
+          Keep("scala.tools.**")
+        )
+        val outdir = (classDirectory in Compile).value
+        val shadedClasses = JarJar(inputs, outdir, config)
+        shadedClasses.pair(relativeTo(outdir))
+      }
+    ,
     includeFilter in unmanagedResources in Compile := compilerIncludes)
   .dependsOn(library, reflect)
 
@@ -191,15 +218,32 @@ lazy val interactive = configureAsSubproject(project)
   .settings(disableDocsAndPublishingTasks: _*)
   .dependsOn(compiler)
 
-// TODO: SI-9339 embed shaded copy of jline & its interface (see #4563)
-lazy val repl = configureAsSubproject(project)
+lazy val replJline: Project = configureAsSubproject(Project("repl-jline", file("dummy")))
   .settings(
+    name := "repl-jline",
+    mainClass in (Compile, run) := Some("scala.tools.nsc.MainGenericRunner"),
     libraryDependencies += jlineDep,
-    connectInput in run := true,
-    outputStrategy in run := Some(StdoutOutput),
-    run <<= (run in Compile).partialInput(" -usejavacp") // Automatically add this so that `repl/run` works without additional arguments.
+    (update in ThisProject) := {
+      // Copy jline.jar to pack
+      val updateReport = (update in ThisProject).value
+      val isJlineFilter = configurationFilter("compile") && artifactFilter(name = "jline", `type` = classpathTypes.value)
+      val jline = updateReport.filter(isJlineFilter).toSeq.head._4
+      IO.copy(List(jline -> buildDirectory.value / "pack/lib/jline.jar"))
+      updateReport
+    }
   )
+  .settings(replRunSettings: _*)
   .settings(disableDocsAndPublishingTasks: _*)
+  .dependsOn(repl)
+
+addCommandAlias("repl", "repl-jline/run")
+
+lazy val repl = configureAsSubproject(project)
+  .settings(disableDocsAndPublishingTasks: _*)
+  .settings(replRunSettings: _*)
+  .settings(
+    mainClass in (Compile, run) := None // Use repl-jline/run instead
+  )
   .dependsOn(compiler)
 
 lazy val scaladoc = configureAsSubproject(project)
@@ -441,7 +485,6 @@ def dependencyClasses(dependencies: Classpath, modules: Set[ModuleID], keep: Fil
 def clearSourceAndResourceDirectories = Seq(Compile, Test).flatMap(config => inConfig(config)(Seq(
   unmanagedSourceDirectories := Nil,
   managedSourceDirectories := Nil,
-  unmanagedResourceDirectories := Nil,
   managedResourceDirectories := Nil
 )))
 
@@ -453,11 +496,14 @@ lazy val mkBinImpl: Def.Initialize[Task[Seq[File]]] = Def.task {
       javaOpts   = "-Xmx256M -Xms32M",
       toolFlags  = "")
   val rootDir = (classDirectory in Compile in compiler).value
-  def writeScripts(scalaTool: ScalaTool, file: String, outDir: File): Seq[File] =
-    Seq(
+  def writeScripts(scalaTool: ScalaTool, file: String, outDir: File): Seq[File] = {
+    val files = Seq(
       scalaTool.writeScript(file, "unix", rootDir, outDir),
       scalaTool.writeScript(file, "windows", rootDir, outDir)
     )
+    files.foreach(_.setExecutable(true))
+    files
+  }
   def mkQuickBin(file: String, mainCls: String, classpath: Seq[Attributed[File]]): Seq[File] = {
     val scalaTool = mkScalaTool(mainCls, classpath)
     val outDir = buildDirectory.value / "quick/bin"
@@ -473,7 +519,7 @@ lazy val mkBinImpl: Def.Initialize[Task[Seq[File]]] = Def.task {
   def mkBin(file: String, mainCls: String, classpath: Seq[Attributed[File]]): Seq[File] =
     mkQuickBin(file, mainCls, classpath) ++ mkPackBin(file, mainCls)
 
-  mkBin("scala"    , "scala.tools.nsc.MainGenericRunner", (fullClasspath in Compile in repl).value) ++
+  mkBin("scala"    , "scala.tools.nsc.MainGenericRunner", (fullClasspath in Compile in replJline).value) ++
   mkBin("scalac"   , "scala.tools.nsc.Main",              (fullClasspath in Compile in compiler).value) ++
   mkBin("fsc"      , "scala.tools.nsc.CompileClient",     (fullClasspath in Compile in compiler).value) ++
   mkBin("scaladoc" , "scala.tools.nsc.ScalaDoc",          (fullClasspath in Compile in scaladoc).value) ++
@@ -495,3 +541,9 @@ lazy val versionProps: Map[String, String] = {
 
 def versionNumber(name: String): String =
   versionProps(s"$name.version.number")
+
+def replRunSettings = List(
+  connectInput in run := true,
+  outputStrategy in run := Some(StdoutOutput),
+  run <<= (run in Compile).partialInput(" -usejavacp") // Automatically add this so that `repl-jline/run` works without additional arguments.
+)

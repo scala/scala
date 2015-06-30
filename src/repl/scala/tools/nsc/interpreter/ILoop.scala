@@ -878,7 +878,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
       if (settings.debug) {
         val readerDiags = (readerClasses, readers).zipped map {
-          case (cls, Failure(e)) => s"  - $cls --> " + e.getStackTrace.mkString(e.toString+"\n\t", "\n\t","\n")
+          case (cls, Failure(e)) => s"  - $cls --> \n\t" + scala.tools.nsc.util.stackTraceString(e) + "\n"
           case (cls, Success(_)) => s"  - $cls OK"
         }
         Console.println(s"All InteractiveReaders tried: ${readerDiags.mkString("\n","\n","\n")}")
