@@ -202,7 +202,9 @@
     <!-- overrides the output directory; used when building multiple projects into the same directory-->
     <attribute name="srcdir" default="@{project}"/>
     <attribute name="java-excludes" default=""/>
+    <attribute name="mixed" default="NOPE"/>
     <sequential>
+      <local name="mixed.true"/><condition property="mixed.true"><equals arg1="@{mixed}" arg2="true"/></condition>
       <!-- TODO: detect zinc anywhere on PATH
            use zinc for the quick stage if it's available;
            would use it for locker but something is iffy in sbt: get a class cast error on global phase -->
@@ -220,12 +222,14 @@
             <then>
               <scalacfork taskname="@{stage}.@{project}" jvmargs="${scalacfork.jvmargs}" compilerpathref="@{with}.compiler.path" destdir="${build-@{stage}.dir}/classes/@{destproject}" srcdir="${src.dir}/@{srcdir}" params="${scalac.args.@{stage}} @{args}">
                 <include name="**/*.scala"/>
+                <include name="**/*.java" if="mixed.true"/>
                 <compilationpath refid="@{stage}.@{project}.build.path"/>
               </scalacfork>
             </then>
             <else>
               <scalacfork taskname="@{stage}.@{project}" jvmargs="${scalacfork.jvmargs}" compilerpathref="@{with}.compiler.path" destdir="${build-@{stage}.dir}/classes/@{destproject}" srcdir="${src.dir}/@{srcdir}" srcpath="@{srcpath}" params="${scalac.args.@{stage}} @{args}">
                 <include name="**/*.scala"/>
+                <include name="**/*.java" if="mixed.true"/>
                 <compilationpath refid="@{stage}.@{project}.build.path"/>
               </scalacfork>
             </else>
@@ -270,6 +274,7 @@
     <attribute name="includes" default="comp.includes"/>
     <attribute name="java-excludes" default=""/>
     <attribute name="version" default=""/>
+    <attribute name="mixed" default="NOPE"/>
     <!-- non-empty for scaladoc: use @{version}.version.number in property file-->
     <sequential>
       <staged-uptodate stage="@{stage}" project="@{project}">
@@ -279,9 +284,18 @@
         <do>
           <stopwatch name="@{stage}.@{project}.timer"/>
           <mkdir dir="${build-@{stage}.dir}/classes/@{project}"/>
-          <staged-javac stage="@{stage}" project="@{project}" excludes="@{java-excludes}"/>
-          <!-- always compile with javac for simplicity and regularity; it's cheap -->
-          <staged-scalac with="@{with}" stage="@{stage}" project="@{project}" srcpath="@{srcpath}" args="@{args}" java-excludes="@{java-excludes}"/>
+          <if>
+            <equals arg1="@{mixed}" arg2="true"/>
+            <then>
+              <staged-scalac with="@{with}" stage="@{stage}" project="@{project}" srcpath="@{srcpath}" args="@{args}" java-excludes="@{java-excludes}" mixed="@{mixed}"/>
+              <staged-javac stage="@{stage}" project="@{project}" excludes="@{java-excludes}"/>
+            </then>
+            <else>
+              <staged-javac stage="@{stage}" project="@{project}" excludes="@{java-excludes}"/>
+              <!-- always compile with javac for simplicity and regularity; it's cheap -->
+              <staged-scalac with="@{with}" stage="@{stage}" project="@{project}" srcpath="@{srcpath}" args="@{args}" java-excludes="@{java-excludes}"/>
+            </else>
+          </if>
           <if>
             <equals arg1="@{version}" arg2=""/>
             <then>

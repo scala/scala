@@ -1053,7 +1053,8 @@ TODO:
     <condition property="locker.locked"><available file="${build-locker.dir}/locker.locked"/></condition></target>
 
   <target name="locker.lib"    depends="locker.start"     unless="locker.locked">
-    <staged-build with="starr" stage="locker" project="library" srcpath="${src.dir}/library" includes="lib.includes"/></target>
+    <!-- "mixed" needed for JFunction classes in scala.runtime.java8 -->
+    <staged-build with="starr" stage="locker" project="library" srcpath="${src.dir}/library" includes="lib.includes" mixed="true"/></target>
 
   <target name="locker.reflect" depends="locker.lib"      unless="locker.locked">
     <staged-build with="starr" stage="locker" project="reflect"/></target>
@@ -1074,7 +1075,8 @@ TODO:
   <target name="quick.start"      depends="locker.done"/>
 
   <target name="quick.lib"        depends="quick.start">
-    <staged-build with="locker"   stage="quick" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes"/></target>
+    <!-- "mixed" needed for JFunction classes in scala.runtime.java8 -->
+    <staged-build with="locker"   stage="quick" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes" mixed="true"/></target>
 
   <target name="quick.reflect"    depends="quick.lib">
     <staged-build with="locker"   stage="quick" project="reflect"/> </target>
@@ -1208,7 +1210,8 @@ TODO:
                                   BOOTSTRAPPING BUILD (STRAP)
 ============================================================================ -->
   <target name="strap.done" depends="pack.done">
-    <staged-build with="pack" stage="strap" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes"/>
+    <!-- "mixed" needed for JFunction classes in scala.runtime.java8 -->
+    <staged-build with="pack" stage="strap" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes" mixed="true"/>
     <staged-build with="pack" stage="strap" project="reflect"/>
     <staged-build with="pack" stage="strap" project="compiler"/>
   </target>
@@ -1428,9 +1431,9 @@ TODO:
       srcdir="${test.junit.src}"
       destdir="${test.junit.classes}"
       classpathref="test.junit.compiler.build.path"
-      target="1.6"
-      source="1.5"
-      compiler="javac1.6"
+      target="1.8"
+      source="1.8"
+      compiler="javac1.8"
       includes="**/*.java"/>
     <scalacfork
       destdir="${test.junit.classes}"
