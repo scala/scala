@@ -142,6 +142,7 @@ lazy val library = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings: _*)
   .settings(
     name := "scala-library",
+    compileOrder := CompileOrder.Mixed, // needed for JFunction classes in scala.runtime.java8
     scalacOptions in Compile ++= Seq[String]("-sourcepath", (scalaSource in Compile).value.toString),
     // Workaround for a bug in `scaladoc` that it seems to not respect the `-sourcepath` option
     // as a result of this bug, the compiler cannot even initialize Definitions without

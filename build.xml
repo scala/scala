@@ -272,7 +272,7 @@ TODO:
 
       <!-- This task has an issue where if the user directory does not exist, so we create it above. UGH. -->
       <artifact:dependencies pathId="extra.tasks.classpath" filesetId="extra.tasks.fileset">
-        <dependency groupId="biz.aQute" artifactId="bnd" version="1.50.0"/>
+        <dependency groupId="biz.aQute.bnd" artifactId="biz.aQute.bnd" version="2.4.1"/>
       </artifact:dependencies>
 
       <artifact:dependencies pathId="jarjar.classpath">
@@ -280,27 +280,26 @@ TODO:
       </artifact:dependencies>
 
       <!-- JUnit -->
-      <property name="junit.version" value="4.11"/>
+      <property name="junit.version" value="4.12"/>
       <artifact:dependencies pathId="junit.classpath" filesetId="junit.fileset">
         <dependency groupId="junit" artifactId="junit" version="${junit.version}"/>
       </artifact:dependencies>
       <copy-deps project="junit"/>
 
       <!-- Pax runner -->
-      <property name="pax.exam.version" value="3.5.0"/><!-- Last version which supports Java 6 -->
-      <property name="osgi.felix.version" value="4.4.0"/>
-      <property name="osgi.equinox.version" value="3.7.1"/>
+      <property name="pax.exam.version" value="4.5.0"/>
+      <property name="osgi.felix.version" value="5.0.1"/>
+      <property name="osgi.equinox.version" value="3.10.100.v20150521-1310"/>
       <artifact:dependencies pathId="pax.exam.classpath" filesetId="pax.exam.fileset">
-        <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-container-native" version="${pax.exam.version}">
-          <exclusion groupId="org.osgi" artifactId="org.osgi.core"/><!-- Avoid dragging in a dependency which requires Java >6 -->
-        </dependency>
+        <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-container-native" version="${pax.exam.version}"/>
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-junit4" version="${pax.exam.version}"/>
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-link-assembly" version="${pax.exam.version}"/>
-        <dependency groupId="org.ops4j.pax.url" artifactId="pax-url-aether" version="2.2.0"/>
-        <dependency groupId="org.ops4j.pax.swissbox" artifactId="pax-swissbox-tracker" version="1.8.0"/>
-        <dependency groupId="ch.qos.logback" artifactId="logback-core" version="1.1.2"/>
-        <dependency groupId="ch.qos.logback" artifactId="logback-classic" version="1.1.2"/>
+        <dependency groupId="org.ops4j.pax.url" artifactId="pax-url-aether" version="2.4.1"/>
+        <dependency groupId="org.ops4j.pax.swissbox" artifactId="pax-swissbox-tracker" version="1.8.1"/>
+        <dependency groupId="ch.qos.logback" artifactId="logback-core" version="1.1.3"/>
+        <dependency groupId="ch.qos.logback" artifactId="logback-classic" version="1.1.3"/>
         <dependency groupId="junit" artifactId="junit" version="${junit.version}"/>
+        <dependency groupId="org.slf4j" artifactId="slf4j-api" version="1.7.12"/>
       </artifact:dependencies>
       <copy-deps project="pax.exam"/>
 
@@ -309,7 +308,7 @@ TODO:
       </artifact:dependencies>
 
       <artifact:dependencies pathId="osgi.framework.equinox">
-        <dependency groupId="org.eclipse.osgi" artifactId="org.eclipse.osgi" version="${osgi.equinox.version}"/>
+        <dependency groupId="org.eclipse.tycho" artifactId="org.eclipse.osgi" version="${osgi.equinox.version}"/>
       </artifact:dependencies>
 
       <artifact:remoteRepository id="sonatype-release" url="https://oss.sonatype.org/content/repositories/releases"/>
@@ -637,18 +636,21 @@ TODO:
 
     <property name="swing.description"             value="Scala Swing Library"/>
     <property name="swing.package"                 value="modules."/>
+    <property name="swing.targetjar"               value="scala-swing${scala-swing.cross}-${scala-swing.version.number}.jar"/>
     <property name="swing.jar"                     value="${scala-swing}"/>
     <property name="swing.src"                     value="false"/>
     <property name="swing.srcjar"                  value="${scala-swing-sources}"/>
 
     <property name="parser-combinators.description" value="Scala Parser Combinators Library"/>
     <property name="parser-combinators.package"    value="modules."/>
+    <property name="parser-combinators.targetjar"  value="scala-parser-combinators${scala-parser-combinators.cross}-${scala-parser-combinators.version.number}.jar"/>
     <property name="parser-combinators.jar"        value="${scala-parser-combinators}"/>
     <property name="parser-combinators.src"        value="false"/>
     <property name="parser-combinators.srcjar"     value="${scala-parser-combinators-sources}"/>
 
     <property name="xml.description"               value="Scala XML Library"/>
     <property name="xml.package"                   value="modules."/>
+    <property name="xml.targetjar"                 value="scala-xml${scala-xml.cross}-${scala-xml.version.number}.jar"/>
     <property name="xml.jar"                       value="${scala-xml}"/>
     <property name="xml.src"                       value="false"/>
     <property name="xml.srcjar"                    value="${scala-xml-sources}"/>
@@ -1091,7 +1093,8 @@ TODO:
     <condition property="locker.locked"><available file="${build-locker.dir}/locker.locked"/></condition></target>
 
   <target name="locker.lib"    depends="locker.start"     unless="locker.locked">
-    <staged-build with="starr" stage="locker" project="library" srcpath="${src.dir}/library" includes="lib.includes"/></target>
+    <!-- "mixed" needed for JFunction classes in scala.runtime.java8 -->
+    <staged-build with="starr" stage="locker" project="library" srcpath="${src.dir}/library" includes="lib.includes" mixed="true"/></target>
 
   <target name="locker.reflect" depends="locker.lib"      unless="locker.locked">
     <staged-build with="starr" stage="locker" project="reflect"/></target>
@@ -1112,7 +1115,8 @@ TODO:
   <target name="quick.start"      depends="locker.done"/>
 
   <target name="quick.lib"        depends="quick.start">
-    <staged-build with="locker"   stage="quick" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes"/></target>
+    <!-- "mixed" needed for JFunction classes in scala.runtime.java8 -->
+    <staged-build with="locker"   stage="quick" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes" mixed="true"/></target>
 
   <target name="quick.reflect"    depends="quick.lib">
     <staged-build with="locker"   stage="quick" project="reflect"/> </target>
@@ -1246,7 +1250,8 @@ TODO:
                                   BOOTSTRAPPING BUILD (STRAP)
 ============================================================================ -->
   <target name="strap.done" depends="pack.done">
-    <staged-build with="pack" stage="strap" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes"/>
+    <!-- "mixed" needed for JFunction classes in scala.runtime.java8 -->
+    <staged-build with="pack" stage="strap" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes" mixed="true"/>
     <staged-build with="pack" stage="strap" project="reflect"/>
     <staged-build with="pack" stage="strap" project="compiler"/>
   </target>
@@ -1466,9 +1471,9 @@ TODO:
       srcdir="${test.junit.src}"
       destdir="${test.junit.classes}"
       classpathref="test.junit.compiler.build.path"
-      target="1.6"
-      source="1.5"
-      compiler="javac1.6"
+      target="1.8"
+      source="1.8"
+      compiler="javac1.8"
       includes="**/*.java"/>
     <scalacfork
       destdir="${test.junit.classes}"
