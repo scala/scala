@@ -10,5 +10,12 @@ object Test extends ReplTest {
     val n = 2
     () => n
   """
+
+  // replace indylambda function names by <function0>
+  override def eval() = {
+    val lines = super.eval
+    val r = """\$\$Lambda.*""".r
+    lines.map(l => r.replaceAllIn(l, "<function0>"))
+  }
 }
 
