@@ -1,5 +1,3 @@
-Type in expressions to have them evaluated.
-Type :help for more information.
 
 scala> val g: scala.reflect.internal.SymbolTable = null; import g.abort
 g: scala.reflect.internal.SymbolTable = null

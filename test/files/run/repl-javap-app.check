@@ -1,7 +1,6 @@
 #partest java6
 Welcome to Scala
-Type in expressions to have them evaluated.
-Type :help for more information.
+Type in expressions for evaluation. Or try :help.
 
 scala> :javap -app MyApp$
 public final void delayedEndpoint$MyApp$1();
@@ -18,8 +17,7 @@ public final void delayedEndpoint$MyApp$1();
 scala> :quit
 #partest java7
 Welcome to Scala
-Type in expressions to have them evaluated.
-Type :help for more information.
+Type in expressions for evaluation. Or try :help.
 
 scala> :javap -app MyApp$
   public final void delayedEndpoint$MyApp$1();
@@ -40,8 +38,7 @@ scala> :javap -app MyApp$
 scala> :quit
 #partest java8
 Welcome to Scala
-Type in expressions to have them evaluated.
-Type :help for more information.
+Type in expressions for evaluation. Or try :help.
 
 scala> :javap -app MyApp$
   public final void delayedEndpoint$MyApp$1();

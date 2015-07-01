@@ -7,9 +7,9 @@ package scala.tools.nsc.interpreter.jline
 
 import _root_.jline.console.history.PersistentHistory
 
-
 import scala.tools.nsc.interpreter
-import scala.tools.nsc.io.{File, Path}
+import scala.reflect.io.{ File, Path }
+import scala.tools.nsc.Properties.{ propOrNone, userHome }
 
 /** TODO: file locking.
   */
@@ -85,9 +85,9 @@ object FileBackedHistory {
   //   val ContinuationChar = '\003'
   //   val ContinuationNL: String = Array('\003', '\n').mkString
 
-  import scala.tools.nsc.Properties.userHome
+  final val defaultFileName = ".scala_history"
 
-  def defaultFileName = ".scala_history"
-
-  def defaultFile: File = File(Path(userHome) / defaultFileName)
+  def defaultFile: File = File(
+    propOrNone("scala.shell.histfile") map (Path.apply) getOrElse (Path(userHome) / defaultFileName)
+  )
 }

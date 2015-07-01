@@ -58,6 +58,10 @@ trait Prop[+T] {
    */
   def option: Option[T]
 
+  // Do not open until 2.12.
+  //** This value if the property is set, an alternative value otherwise. */
+  //def or[T1 >: T](alt: => T1): T1
+
   /** Removes the property from the underlying map.
    */
   def clear(): Unit
