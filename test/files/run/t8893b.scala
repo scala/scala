@@ -5,7 +5,7 @@ object Test {
   def tick(i : Int): Unit =
     if (i == 0) ()
     else if (i == 42) {
-      tick(0) /*not in tail posiiton*/
+      tick(0) /*not in tail position*/
       tick(i - 1)
     } else tick(i - 1)
 
