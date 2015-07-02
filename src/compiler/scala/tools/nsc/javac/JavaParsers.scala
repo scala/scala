@@ -489,8 +489,8 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           val vparams = formalParams()
           if (!isVoid) rtpt = optArrayBrackets(rtpt)
           optThrows()
-          val isStatic = mods hasFlag Flags.STATIC
-          val bodyOk = !inInterface || ((mods hasFlag Flags.DEFAULTMETHOD) || isStatic)
+          val isConcreteInterfaceMethod = !inInterface || (mods hasFlag Flags.DEFAULTMETHOD) || (mods hasFlag Flags.STATIC)
+          val bodyOk = !(mods1 hasFlag Flags.DEFERRED) && isConcreteInterfaceMethod
           val body =
             if (bodyOk && in.token == LBRACE) {
               methodBody()
@@ -509,7 +509,9 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
                 EmptyTree
               }
             }
-          if (inInterface && !isStatic) mods1 |= Flags.DEFERRED
+          // for abstract methods (of classes), the `DEFERRED` flag is alredy set.
+          // here we also set it for interface methods that are not static and not default.
+          if (!isConcreteInterfaceMethod) mods1 |= Flags.DEFERRED
           List {
             atPos(pos) {
               DefDef(mods1, name.toTermName, tparams, List(vparams), rtpt, body)
