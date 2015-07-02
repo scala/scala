@@ -77,10 +77,7 @@ object ScalaVersion {
 
   def apply(versionString: String, errorHandler: String => Unit): ScalaVersion = {
     def error() = errorHandler(
-      s"There was a problem parsing ${versionString}. " +
-      "Versions should be in the form major[.minor[.revision]] " +
-      "where each part is a positive number, as in 2.10.1. " +
-      "The minor and revision parts are optional."
+      s"Bad version (${versionString}) not major[.minor[.revision[-suffix]]]"
     )
 
     def toInt(s: String) = s match {
