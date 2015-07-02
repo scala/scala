@@ -843,8 +843,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
          *     loading another throwable first).
          *
          * New (http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.10.1)
-         *   - Requires consistent stack map frames. GenBCode generates stack frames if -target:jvm-1.6
-         *     or higher.
+         *   - Requires consistent stack map frames. GenBCode always generates stack frames.
          *   - In practice: the ASM library computes stack map frames for us (ClassWriter). Emitting
          *     correct frames after an ATHROW is probably complex, so ASM uses the following strategy:
          *       - Every time when generating an ATHROW, a new basic block is started.

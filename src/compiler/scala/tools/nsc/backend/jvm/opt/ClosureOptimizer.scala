@@ -304,6 +304,10 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
           val isInterface = bodyOpcode == INVOKEINTERFACE
           val bodyInvocation = new MethodInsnNode(bodyOpcode, lambdaBodyHandle.getOwner, lambdaBodyHandle.getName, lambdaBodyHandle.getDesc, isInterface)
           methodNode.instructions.insertBefore(invocation, bodyInvocation)
+
+          val returnType = Type.getReturnType(lambdaBodyHandle.getDesc)
+          fixLoadedNothingOrNullValue(returnType, bodyInvocation, methodNode, btypes) // see comment of that method
+
           methodNode.instructions.remove(invocation)
 
           // update the call graph
