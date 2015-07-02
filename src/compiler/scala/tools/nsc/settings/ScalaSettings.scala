@@ -388,6 +388,23 @@ trait ScalaSettings extends AbsScalaSettings
     val Normal = "normal"
     val Discard = "discard"
   }
+
+  def conflictWarning: Option[String] = {
+    def oldOptimiseFlagsInGenBCode: Option[String] = {
+      val optFlags: List[Setting] = if (optimise.value) List(optimise) else optimiseSettings.filter(_.value)
+      if (isBCodeActive && optFlags.nonEmpty) {
+        val msg = s"""Compiler settings for the 2.11 optimizer (${optFlags.map(_.name).mkString(", ")}) are incompatible with -Ybackend:GenBCode (which is the default in 2.12).
+                     |The optimizer settings are ignored. See -Yopt:help for enabling the new optimizer in 2.12.""".stripMargin
+        Some(msg)
+      } else
+        None
+    }
+
+    List(oldOptimiseFlagsInGenBCode /*, moreToCome */).flatten match {
+      case Nil => None
+      case warnings => Some("Conflicting compiler settings were detected. Some settings will be ignored.\n" + warnings.mkString("\n"))
+    }
+  }
 }
 
 object ClassPathRepresentationType {
