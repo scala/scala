@@ -1,3 +1,6 @@
+/*
+ * filter: inliner warnings; re-run with
+ */
 import scala.tools.nsc.interactive.tests._
 import scala.reflect.internal.util._
 

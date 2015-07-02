@@ -6,7 +6,7 @@
     <attribute name="name"/>
     <sequential>
       <antcall target="@{name}">
-        <param name="scalac.args.optimise" value="-optimise"/>
+        <param name="scalac.args.optimise" value="-Yopt:l:classpath"/>
       </antcall>
     </sequential>
   </macrodef>
