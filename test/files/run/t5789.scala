@@ -5,7 +5,7 @@ import scala.tools.partest.ReplTest
 
 
 object Test extends ReplTest {
-  override def extraSettings = "-Yinline"
+  override def extraSettings = "-Yinline -Ybackend:GenASM"
   def code = """
     val n = 2
     () => n
