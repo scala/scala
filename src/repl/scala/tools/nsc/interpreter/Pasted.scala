@@ -21,7 +21,13 @@ abstract class Pasted {
   def PromptString: String
   def AltPromptString: String = "scala> "
 
-  private val testBoth = PromptString != AltPromptString
+  /* `testBoth` cannot be a val, as `Pasted` is inherited by `object paste` in ILoop,
+    which would cause `val testBoth` to be initialized before `val PromptString` was.
+
+      object paste extends Pasted {
+        val PromptString   = prompt.lines.toList.last
+  */
+  private def testBoth = PromptString != AltPromptString
   private val spacey   = " \t".toSet
 
   def matchesPrompt(line: String) = matchesString(line, PromptString) || testBoth && matchesString(line, AltPromptString)
