@@ -15,7 +15,7 @@ import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
 import util.{ ClassFileLookup, ClassPath, MergedClassPath, StatisticsInfo, returning }
 import scala.reflect.ClassTag
-import scala.reflect.internal.util.{ SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
+import scala.reflect.internal.util.{ ScalaClassLoader, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.PickleBuffer
 import symtab.{ Flags, SymbolTable, SymbolTrackers }
 import symtab.classfile.Pickler
@@ -90,7 +90,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     this(new Settings(err => reporter.error(null, err)), reporter)
 
   def this(settings: Settings) =
-    this(settings, new ConsoleReporter(settings))
+    this(settings, Global.reporter(settings))
 
   def picklerPhase: Phase = if (currentRun.isDefined) currentRun.picklerPhase else NoPhase
 
@@ -1703,4 +1703,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
 object Global {
   def apply(settings: Settings, reporter: Reporter): Global = new Global(settings, reporter)
+
+  def apply(settings: Settings): Global = new Global(settings, reporter(settings))
+
+  private def reporter(settings: Settings): Reporter = {
+    //val loader = ScalaClassLoader(getClass.getClassLoader)  // apply does not make delegate
+    val loader = new ClassLoader(getClass.getClassLoader) with ScalaClassLoader
+    loader.create[Reporter](settings.reporter.value, settings.errorFn)(settings)
+  }
 }
