@@ -47,12 +47,10 @@ trait ScalaClassLoader extends JClassLoader {
   def create(path: String): AnyRef =
     tryToInitializeClass[AnyRef](path).map(_.newInstance()).orNull
 
-  /** Create an instance with ctor args, or invoke errorFn before throwing FatalError. */
+  /** Create an instance with ctor args, or invoke errorFn before throwing. */
   def create[T <: AnyRef : ClassTag](path: String, errorFn: String => Unit)(args: AnyRef*): T = {
-    def fail(msg: String) = {
-      errorFn(msg)
-      throw FatalError(msg)
-    }
+    def fail(msg: String) = error(msg, new IllegalArgumentException(msg))
+    def error(msg: String, e: Throwable) = { errorFn(msg) ; throw e }
     try {
       val clazz = Class.forName(path, /*initialize =*/ true, /*loader =*/ this)
       if (classTag[T].runtimeClass isAssignableFrom clazz) {
@@ -69,10 +67,10 @@ trait ScalaClassLoader extends JClassLoader {
         fail(s"Not a ${classTag[T]}: ${path}")
       }
     } catch {
-      case _: ClassNotFoundException =>
-        fail(s"Class not found: ${path}")
+      case e: ClassNotFoundException =>
+        error(s"Class not found: ${path}", e)
       case e @ (_: LinkageError | _: ReflectiveOperationException) =>
-        fail(s"Unable to create instance: ${path}: ${e.toString}")
+        error(s"Unable to create instance: ${path}: ${e.toString}", e)
     }
   }
 
