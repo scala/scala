@@ -57,4 +57,9 @@ class ScalaVersionTest {
     assertThrows[NumberFormatException] { ScalaVersion("2-.") } // scalacheck territory
     assertThrows[NumberFormatException] { ScalaVersion("any.7") }
   }
+
+  // SI-9377
+  @Test def `missing version is as good as none`() {
+    assertEquals(NoScalaVersion, ScalaVersion(""))
+  }
 }

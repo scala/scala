@@ -97,6 +97,7 @@ object ScalaVersion {
 
     versionString match {
       case "none" => NoScalaVersion
+      case ""     => NoScalaVersion
       case "any"  => AnyScalaVersion
       case vpat(majorS, minorS, revS, buildS) =>
         SpecificScalaVersion(toInt(majorS), toInt(minorS), toInt(revS), toBuild(buildS))
