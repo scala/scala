@@ -728,11 +728,11 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         mv.visitVarInsn(ALOAD, 1)
         mv.visitFieldInsn(PUTSTATIC, clazz.javaBinaryName.toString, "$deserializeLambdaCache$", "Ljava/util/Map;")
         mv.visitLabel(l0)
-        mv.visitFrame(asm.Opcodes.F_APPEND,1, Array("java/util/Map"), 0, null)
+        mv.visitFieldInsn(GETSTATIC, "scala/compat/java8/runtime/LambdaDeserializer$", "MODULE$", "Lscala/compat/java8/runtime/LambdaDeserializer$;")
         mv.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodHandles", "lookup", "()Ljava/lang/invoke/MethodHandles$Lookup;", false)
         mv.visitVarInsn(ALOAD, 1)
         mv.visitVarInsn(ALOAD, 0)
-        mv.visitMethodInsn(INVOKESTATIC, "scala/compat/java8/runtime/LambdaDeserializer", "deserializeLambda", "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/util/Map;Ljava/lang/invoke/SerializedLambda;)Ljava/lang/Object;", false)
+        mv.visitMethodInsn(INVOKEVIRTUAL, "scala/compat/java8/runtime/LambdaDeserializer$", "deserializeLambda", "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/util/Map;Ljava/lang/invoke/SerializedLambda;)Ljava/lang/Object;", false)
         mv.visitInsn(ARETURN)
         mv.visitEnd()
       }
