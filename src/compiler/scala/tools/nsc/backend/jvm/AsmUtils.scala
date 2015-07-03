@@ -10,6 +10,7 @@ import java.io.{StringWriter, PrintWriter}
 import scala.tools.asm.util.{CheckClassAdapter, TraceClassVisitor, TraceMethodVisitor, Textifier}
 import scala.tools.asm.{ClassWriter, Attribute, ClassReader}
 import scala.collection.convert.decorateAsScala._
+import scala.tools.nsc.backend.jvm.analysis.InitialProducer
 import scala.tools.nsc.backend.jvm.opt.InlineInfoAttributePrototype
 
 object AsmUtils {
@@ -81,13 +82,16 @@ object AsmUtils {
   /**
    * Returns a human-readable representation of the given instruction.
    */
-  def textify(insn: AbstractInsnNode): String = {
-    val trace = new TraceMethodVisitor(new Textifier)
-    insn.accept(trace)
-    val sw = new StringWriter
-    val pw = new PrintWriter(sw)
-    trace.p.print(pw)
-    sw.toString.trim
+  def textify(insn: AbstractInsnNode): String = insn match {
+    case _: InitialProducer =>
+      insn.toString
+    case _ =>
+      val trace = new TraceMethodVisitor(new Textifier)
+      insn.accept(trace)
+      val sw = new StringWriter
+      val pw = new PrintWriter(sw)
+      trace.p.print(pw)
+      sw.toString.trim
   }
 
   /**
