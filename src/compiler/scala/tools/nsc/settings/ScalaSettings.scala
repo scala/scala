@@ -136,7 +136,7 @@ trait ScalaSettings extends AbsScalaSettings
   val sourceReader       = StringSetting       ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
   val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom reporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
   val strictInference    = BooleanSetting      ("-Xstrict-inference", "Don't infer known-unsound types")
-  val source             = ScalaVersionSetting ("-Xsource", "version", "Treat compiler input as Scala source for the specified version, see SI-8126.", initial = ScalaVersion("2.11"))
+  val source             = ScalaVersionSetting ("-Xsource", "version", "Treat compiler input as Scala source for the specified version, see SI-8126.", initial = ScalaVersion("2.12"))
 
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
   val XfullLubs         = BooleanSetting ("-Xfull-lubs", "Retains pre 2.10 behavior of less aggressive truncation of least upper bounds.")
@@ -387,6 +387,23 @@ trait ScalaSettings extends AbsScalaSettings
     val None = "none"
     val Normal = "normal"
     val Discard = "discard"
+  }
+
+  def conflictWarning: Option[String] = {
+    def oldOptimiseFlagsInGenBCode: Option[String] = {
+      val optFlags: List[Setting] = if (optimise.value) List(optimise) else optimiseSettings.filter(_.value)
+      if (isBCodeActive && optFlags.nonEmpty) {
+        val msg = s"""Compiler settings for the 2.11 optimizer (${optFlags.map(_.name).mkString(", ")}) are incompatible with -Ybackend:GenBCode (which is the default in 2.12).
+                     |The optimizer settings are ignored. See -Yopt:help for enabling the new optimizer in 2.12.""".stripMargin
+        Some(msg)
+      } else
+        None
+    }
+
+    List(oldOptimiseFlagsInGenBCode /*, moreToCome */).flatten match {
+      case Nil => None
+      case warnings => Some("Conflicting compiler settings were detected. Some settings will be ignored.\n" + warnings.mkString("\n"))
+    }
   }
 }
 
