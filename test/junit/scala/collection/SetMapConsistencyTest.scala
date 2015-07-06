@@ -190,7 +190,9 @@ class SetMapConsistencyTest {
   def boxMbs = new BoxMutableSet[Int, cm.BitSet](new cm.BitSet, "mutable.BitSet")
   
   def boxMhs[A] = new BoxMutableSet[A, cm.HashSet[A]](new cm.HashSet[A], "mutable.HashSet")
-  
+
+  def boxMts[A: Ordering] = new BoxMutableSet[A, cm.TreeSet[A]](new cm.TreeSet[A], "mutable.TreeSet")
+
   def boxJavaS[A] = new BoxMutableSet[A, cm.Set[A]]((new java.util.HashSet[A]).asScala, "java.util.HashSet") {
     override def adders = 3
     override def subbers = 1
@@ -354,7 +356,7 @@ class SetMapConsistencyTest {
   def churnIntSets() {
     val sets = Array[() => MapBox[Int]](
       () => boxMhm[Int], () => boxIhm[Int], () => boxJavaS[Int],
-      () => boxMbs, () => boxMhs[Int], () => boxIbs, () => boxIhs[Int], () => boxIls[Int], () => boxIts[Int]
+      () => boxMbs, () => boxMhs[Int], () => boxMts[Int], () => boxIbs, () => boxIhs[Int], () => boxIls[Int], () => boxIts[Int]
     )
     assert( sets.sliding(2).forall{ ms => churn(ms(0)(), ms(1)(), smallKeys, 1000, valuer = _ => 0) } )
   }

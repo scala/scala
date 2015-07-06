@@ -5,6 +5,7 @@ import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop.forAll
 
 import scala.collection.generic.CanBuildFrom
+import scala.collection.immutable
 import scala.collection.mutable
 import scala.util.Try
 import scala.collection.mutable.{RedBlackTree => RB}
@@ -107,8 +108,9 @@ package scala.collection.mutable {
     }
 
     property("++=") = forAll { (map: mutable.TreeMap[K, V], entries: Seq[(K, V)]) =>
+      val oldEntries = map.toMap
       map ++= entries
-      entries.toMap.forall { case (k, v) => map.get(k) == Some(v) }
+      (oldEntries ++ entries).forall { case (k, v) => map.get(k) == Some(v) }
     }
 
     property("-=") = forAll { (map: mutable.TreeMap[K, V], k: K) =>
@@ -121,8 +123,10 @@ package scala.collection.mutable {
     }
 
     property("--=") = forAll { (map: mutable.TreeMap[K, V], ks: Seq[K]) =>
+      val oldElems = map.toList
       map --= ks
-      ks.toSet.forall { k => map.get(k) == None }
+      val deletedElems = ks.toSet
+      oldElems.forall { case (k, v) => map.get(k) == (if(deletedElems(k)) None else Some(v)) }
     }
 
     property("iterator") = forAll { (entries: Map[K, V]) =>
@@ -175,6 +179,18 @@ package scala.collection.mutable {
       val in = new ObjectInputStream(new ByteArrayInputStream(bytes))
       val sameMap = in.readObject().asInstanceOf[mutable.TreeMap[K, V]]
       map.iterator.toSeq == sameMap.iterator.toSeq
+    }
+
+    property("same behavior as immutable.TreeMap") = forAll { ops: Seq[Either[(K, V), K]] =>
+      var imap = immutable.TreeMap[K, V]()
+      val mmap = mutable.TreeMap[K, V]()
+
+      ops.foreach {
+        case Left((k, v)) => imap += k -> v; mmap += k -> v
+        case Right(k) => imap -= k; mmap -= k
+      }
+
+      imap.toList == mmap.toList
     }
   }
 

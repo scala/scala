@@ -52,6 +52,20 @@ sealed class TreeMap[A, B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   override def empty = TreeMap.empty
   override protected[this] def newBuilder = TreeMap.newBuilder[A, B]
 
+  /**
+   * Creates a ranged projection of this map. Any mutations in the ranged projection will update the original map and
+   * vice versa.
+   *
+   * Only entries with keys between this projection's key range will ever appear as elements of this map, independently
+   * of whether the entries are added through the original map or through this view. That means that if one inserts a
+   * key-value in a view whose key is outside the view's bounds, calls to `get` or `contains` will _not_ consider the
+   * newly added entry. Mutations are always reflected in the original map, though.
+   *
+   * @param from the lower bound (inclusive) of this projection wrapped in a `Some`, or `None` if there is no lower
+   *             bound.
+   * @param until the upper bound (exclusive) of this projection wrapped in a `Some`, or `None` if there is no upper
+   *              bound.
+   */
   def rangeImpl(from: Option[A], until: Option[A]): TreeMap[A, B] = new TreeMapView(from, until)
 
   def -=(key: A): this.type = { RB.delete(tree, key); this }
@@ -157,10 +171,15 @@ sealed class TreeMap[A, B] private (tree: RB.Tree[A, B])(implicit val ordering: 
       }
     }
 
+    // Using the iterator should be efficient enough; if performance is deemed a problem later, specialized
+    // `foreach(f, from, until)` and `transform(f, from, until)` methods can be created in `RedBlackTree`. See
+    // https://github.com/scala/scala/pull/4608#discussion_r34307985 for a discussion about this.
     override def foreach[U](f: ((A, B)) => U): Unit = iterator.foreach(f)
     override def transform(f: (A, B) => B) = {
       iterator.foreach { case (key, value) => update(key, f(key, value)) }
       this
     }
+
+    override def clone() = super.clone().rangeImpl(from, until)
   }
 }

@@ -82,6 +82,11 @@ private[collection] object RedBlackTree {
     case node => Some((node.key, node.value))
   }
 
+  def minKey[A](tree: Tree[A, _]): Option[A] = minNode(tree.root) match {
+    case null => None
+    case node => Some(node.key)
+  }
+
   private def minNode[A, B](node: Node[A, B]): Node[A, B] =
     if (node eq null) null else minNodeNonNull(node)
 
@@ -91,6 +96,11 @@ private[collection] object RedBlackTree {
   def max[A, B](tree: Tree[A, B]): Option[(A, B)] = maxNode(tree.root) match {
     case null => None
     case node => Some((node.key, node.value))
+  }
+
+  def maxKey[A](tree: Tree[A, _]): Option[A] = maxNode(tree.root) match {
+    case null => None
+    case node => Some(node.key)
   }
 
   private def maxNode[A, B](node: Node[A, B]): Node[A, B] =
@@ -107,6 +117,12 @@ private[collection] object RedBlackTree {
     minNodeAfter(tree.root, key) match {
       case null => None
       case node => Some((node.key, node.value))
+    }
+
+  def minKeyAfter[A](tree: Tree[A, _], key: A)(implicit ord: Ordering[A]): Option[A] =
+    minNodeAfter(tree.root, key) match {
+      case null => None
+      case node => Some(node.key)
     }
 
   private[this] def minNodeAfter[A, B](node: Node[A, B], key: A)(implicit ord: Ordering[A]): Node[A, B] = {
@@ -131,6 +147,12 @@ private[collection] object RedBlackTree {
     maxNodeBefore(tree.root, key) match {
       case null => None
       case node => Some((node.key, node.value))
+    }
+
+  def maxKeyBefore[A](tree: Tree[A, _], key: A)(implicit ord: Ordering[A]): Option[A] =
+    maxNodeBefore(tree.root, key) match {
+      case null => None
+      case node => Some(node.key)
     }
 
   private[this] def maxNodeBefore[A, B](node: Node[A, B], key: A)(implicit ord: Ordering[A]): Node[A, B] = {
@@ -409,6 +431,17 @@ private[collection] object RedBlackTree {
     if (node.left ne null) foreachNodeNonNull(node.left, f)
     f((node.key, node.value))
     if (node.right ne null) foreachNodeNonNull(node.right, f)
+  }
+
+  def foreachKey[A, U](tree: Tree[A, _], f: A => U): Unit = foreachNodeKey(tree.root, f)
+
+  private[this] def foreachNodeKey[A, U](node: Node[A, _], f: A => U): Unit =
+    if (node ne null) foreachNodeKeyNonNull(node, f)
+
+  private[this] def foreachNodeKeyNonNull[A, U](node: Node[A, _], f: A => U): Unit = {
+    if (node.left ne null) foreachNodeKeyNonNull(node.left, f)
+    f(node.key)
+    if (node.right ne null) foreachNodeKeyNonNull(node.right, f)
   }
 
   def transform[A, B](tree: Tree[A, B], f: (A, B) => B): Unit = transformNode(tree.root, f)
