@@ -58,21 +58,24 @@ object ASMConverters {
 
   case class Method(instructions: List[Instruction], handlers: List[ExceptionHandler], localVars: List[LocalVariable])
 
-  case class Field       (opcode: Int, owner: String, name: String, desc: String)               extends Instruction
-  case class Incr        (opcode: Int, `var`: Int, incr: Int)                                   extends Instruction
-  case class Op          (opcode: Int)                                                          extends Instruction
-  case class IntOp       (opcode: Int, operand: Int)                                            extends Instruction
-  case class Jump        (opcode: Int, label: Label)                                            extends Instruction
-  case class Ldc         (opcode: Int, cst: Any)                                                extends Instruction
-  case class LookupSwitch(opcode: Int, dflt: Label, keys: List[Int], labels: List[Label])       extends Instruction
-  case class TableSwitch (opcode: Int, min: Int, max: Int, dflt: Label, labels: List[Label])    extends Instruction
-  case class Invoke      (opcode: Int, owner: String, name: String, desc: String, itf: Boolean) extends Instruction
-  case class NewArray    (opcode: Int, desc: String, dims: Int)                                 extends Instruction
-  case class TypeOp      (opcode: Int, desc: String)                                            extends Instruction
-  case class VarOp       (opcode: Int, `var`: Int)                                              extends Instruction
-  case class Label       (offset: Int)                                                          extends Instruction { def opcode: Int = -1 }
-  case class FrameEntry  (`type`: Int, local: List[Any], stack: List[Any])                      extends Instruction { def opcode: Int = -1 }
-  case class LineNumber  (line: Int, start: Label)                                              extends Instruction { def opcode: Int = -1 }
+  case class Field        (opcode: Int, owner: String, name: String, desc: String)                            extends Instruction
+  case class Incr         (opcode: Int, `var`: Int, incr: Int)                                                extends Instruction
+  case class Op           (opcode: Int)                                                                       extends Instruction
+  case class IntOp        (opcode: Int, operand: Int)                                                         extends Instruction
+  case class Jump         (opcode: Int, label: Label)                                                         extends Instruction
+  case class Ldc          (opcode: Int, cst: Any)                                                             extends Instruction
+  case class LookupSwitch (opcode: Int, dflt: Label, keys: List[Int], labels: List[Label])                    extends Instruction
+  case class TableSwitch  (opcode: Int, min: Int, max: Int, dflt: Label, labels: List[Label])                 extends Instruction
+  case class Invoke       (opcode: Int, owner: String, name: String, desc: String, itf: Boolean)              extends Instruction
+  case class InvokeDynamic(opcode: Int, name: String, desc: String, bsm: MethodHandle, bsmArgs: List[AnyRef]) extends Instruction
+  case class NewArray     (opcode: Int, desc: String, dims: Int)                                              extends Instruction
+  case class TypeOp       (opcode: Int, desc: String)                                                         extends Instruction
+  case class VarOp        (opcode: Int, `var`: Int)                                                           extends Instruction
+  case class Label        (offset: Int)                                                                       extends Instruction { def opcode: Int = -1 }
+  case class FrameEntry   (`type`: Int, local: List[Any], stack: List[Any])                                   extends Instruction { def opcode: Int = -1 }
+  case class LineNumber   (line: Int, start: Label)                                                           extends Instruction { def opcode: Int = -1 }
+
+  case class MethodHandle(tag: Int, owner: String, name: String, desc: String)
 
   case class ExceptionHandler(start: Label, end: Label, handler: Label, desc: Option[String])
   case class LocalVariable(name: String, desc: String, signature: Option[String], start: Label, end: Label, index: Int)
@@ -111,6 +114,7 @@ object ASMConverters {
       case i: t.LookupSwitchInsnNode   => LookupSwitch (op(i), applyLabel(i.dflt), lst(i.keys) map (x => x: Int), lst(i.labels) map applyLabel)
       case i: t.TableSwitchInsnNode    => TableSwitch  (op(i), i.min, i.max, applyLabel(i.dflt), lst(i.labels) map applyLabel)
       case i: t.MethodInsnNode         => Invoke       (op(i), i.owner, i.name, i.desc, i.itf)
+      case i: t.InvokeDynamicInsnNode  => InvokeDynamic(op(i), i.name, i.desc, convertMethodHandle(i.bsm), convertBsmArgs(i.bsmArgs))
       case i: t.MultiANewArrayInsnNode => NewArray     (op(i), i.desc, i.dims)
       case i: t.TypeInsnNode           => TypeOp       (op(i), i.desc)
       case i: t.VarInsnNode            => VarOp        (op(i), i.`var`)
@@ -118,6 +122,13 @@ object ASMConverters {
       case i: t.FrameNode              => FrameEntry   (i.`type`, mapOverFrameTypes(lst(i.local)), mapOverFrameTypes(lst(i.stack)))
       case i: t.LineNumberNode         => LineNumber   (i.line, applyLabel(i.start))
     }
+
+    private def convertBsmArgs(a: Array[Object]): List[Object] = a.map({
+      case h: asm.Handle => convertMethodHandle(h)
+      case _ => a // can be: Class, method Type, primitive constant
+    })(collection.breakOut)
+
+    private def convertMethodHandle(h: asm.Handle): MethodHandle = MethodHandle(h.getTag, h.getOwner, h.getName, h.getDesc)
 
     private def convertHandlers(method: t.MethodNode): List[ExceptionHandler] = {
       method.tryCatchBlocks.asScala.map(h => ExceptionHandler(applyLabel(h.start), applyLabel(h.end), applyLabel(h.handler), Option(h.`type`)))(collection.breakOut)
@@ -197,21 +208,28 @@ object ASMConverters {
     case x => x.asInstanceOf[Object]
   }
 
+  def unconvertMethodHandle(h: MethodHandle): asm.Handle = new asm.Handle(h.tag, h.owner, h.name, h.desc)
+  def unconvertBsmArgs(a: List[Object]): Array[Object] = a.map({
+    case h: MethodHandle => unconvertMethodHandle(h)
+    case o => o
+  })(collection.breakOut)
+
   private def visitMethod(method: t.MethodNode, instruction: Instruction, asmLabel: Map[Label, asm.Label]): Unit = instruction match {
-    case Field(op, owner, name, desc)            => method.visitFieldInsn(op, owner, name, desc)
-    case Incr(op, vr, incr)                      => method.visitIincInsn(vr, incr)
-    case Op(op)                                  => method.visitInsn(op)
-    case IntOp(op, operand)                      => method.visitIntInsn(op, operand)
-    case Jump(op, label)                         => method.visitJumpInsn(op, asmLabel(label))
-    case Ldc(op, cst)                            => method.visitLdcInsn(cst)
-    case LookupSwitch(op, dflt, keys, labels)    => method.visitLookupSwitchInsn(asmLabel(dflt), keys.toArray, (labels map asmLabel).toArray)
-    case TableSwitch(op, min, max, dflt, labels) => method.visitTableSwitchInsn(min, max, asmLabel(dflt), (labels map asmLabel).toArray: _*)
-    case Invoke(op, owner, name, desc, itf)      => method.visitMethodInsn(op, owner, name, desc, itf)
-    case NewArray(op, desc, dims)                => method.visitMultiANewArrayInsn(desc, dims)
-    case TypeOp(op, desc)                        => method.visitTypeInsn(op, desc)
-    case VarOp(op, vr)                           => method.visitVarInsn(op, vr)
-    case l: Label                                => method.visitLabel(asmLabel(l))
-    case FrameEntry(tp, local, stack)            => method.visitFrame(tp, local.length, frameTypesToAsm(local, asmLabel).toArray, stack.length, frameTypesToAsm(stack, asmLabel).toArray)
-    case LineNumber(line, start)                 => method.visitLineNumber(line, asmLabel(start))
+    case Field(op, owner, name, desc)                => method.visitFieldInsn(op, owner, name, desc)
+    case Incr(op, vr, incr)                          => method.visitIincInsn(vr, incr)
+    case Op(op)                                      => method.visitInsn(op)
+    case IntOp(op, operand)                          => method.visitIntInsn(op, operand)
+    case Jump(op, label)                             => method.visitJumpInsn(op, asmLabel(label))
+    case Ldc(op, cst)                                => method.visitLdcInsn(cst)
+    case LookupSwitch(op, dflt, keys, labels)        => method.visitLookupSwitchInsn(asmLabel(dflt), keys.toArray, (labels map asmLabel).toArray)
+    case TableSwitch(op, min, max, dflt, labels)     => method.visitTableSwitchInsn(min, max, asmLabel(dflt), (labels map asmLabel).toArray: _*)
+    case Invoke(op, owner, name, desc, itf)          => method.visitMethodInsn(op, owner, name, desc, itf)
+    case InvokeDynamic(op, name, desc, bsm, bsmArgs) => method.visitInvokeDynamicInsn(name, desc, unconvertMethodHandle(bsm), unconvertBsmArgs(bsmArgs))
+    case NewArray(op, desc, dims)                    => method.visitMultiANewArrayInsn(desc, dims)
+    case TypeOp(op, desc)                            => method.visitTypeInsn(op, desc)
+    case VarOp(op, vr)                               => method.visitVarInsn(op, vr)
+    case l: Label                                    => method.visitLabel(asmLabel(l))
+    case FrameEntry(tp, local, stack)                => method.visitFrame(tp, local.length, frameTypesToAsm(local, asmLabel).toArray, stack.length, frameTypesToAsm(stack, asmLabel).toArray)
+    case LineNumber(line, start)                     => method.visitLineNumber(line, asmLabel(start))
   }
 }
