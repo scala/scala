@@ -436,7 +436,7 @@ trait MethodSynthesis {
           if (tree.symbol.owner.isTrait || hasUnitType(basisSym)) rhs1
           else gen.mkAssignAndReturn(basisSym, rhs1)
         )
-        derivedSym setPos tree.pos // cannot set it at createAndEnterSymbol because basisSym can possible stil have NoPosition
+        derivedSym setPos tree.pos // cannot set it at createAndEnterSymbol because basisSym can possibly still have NoPosition
         val ddefRes = DefDef(derivedSym, new ChangeOwnerAndModuleClassTraverser(basisSym, derivedSym)(body))
         // ValDef will have its position focused whereas DefDef will have original correct rangepos
         // ideally positions would be correct at the creation time but lazy vals are really a special case

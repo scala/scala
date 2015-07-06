@@ -870,7 +870,7 @@ trait StdNames {
     val toFloat: NameType  = "toFloat"
     val toDouble: NameType = "toDouble"
 
-    // primitive operation methods for structual types mostly
+    // primitive operation methods for structural types mostly
     // overlap with the above, but not for these two.
     val toCharacter: NameType = "toCharacter"
     val toInteger: NameType   = "toInteger"
