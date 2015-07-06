@@ -846,7 +846,7 @@ trait Implicits {
           errors.collectFirst { case err: DivergentImplicitTypeError => err } foreach saveDivergent
 
           if (search.isDivergent && divergentError.isEmpty) {
-            // Divergence triggered by `i` at this level of the implicit serach. We haven't
+            // Divergence triggered by `i` at this level of the implicit search. We haven't
             // seen divergence so far, we won't issue this error just yet, and instead temporarily
             // treat `i` as a failed candidate.
             saveDivergent(DivergentImplicitTypeError(tree, pt, i.sym))

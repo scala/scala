@@ -7,7 +7,7 @@ object Even{
 }
 
 object Test extends App{
-  val LongWord = "supercalifragilisticexpialadocious";
+  val LongWord = "supercalifragilisticexpialidocious";
 
   def foo(x : Int, y : String) : Int = (x, y) match {
     case (Even(i), "bar") => 1

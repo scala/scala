@@ -1384,7 +1384,7 @@ trait ScalaActorRef extends ActorRefShared { ref: ActorRef =>
       "\n\tYou have probably: " +
       "\n\t\t1. Sent a message to an Actor from an instance that is NOT an Actor." +
       "\n\t\t2. Invoked a method on an TypedActor from an instance NOT an TypedActor." +
-      "\n\tElse you might want to use 'reply_?' which returns Boolean(true) if succes and Boolean(false) if no sender in scope")
+      "\n\tElse you might want to use 'reply_?' which returns Boolean(true) if success and Boolean(false) if no sender in scope")
 
   /**
    * Use <code>reply_?(..)</code> to reply with a message to the original sender of the message currently

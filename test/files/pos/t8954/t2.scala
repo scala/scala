@@ -19,7 +19,7 @@ class C {
 }
 
 // 2.1 overriding with a deprecated def should be fine
-// and also shoudln't trigger the "deprecation is useless"
+// and also should not trigger the "deprecation is useless"
 // warning
 class D extends C {
   @deprecated("","") override def foo(): Unit = ???

@@ -15,7 +15,7 @@ import scala.tools.nsc.interpreter
 import scala.tools.nsc.interpreter.session.{History, SimpleHistory}
 
 
-/** A straight scalification of the jline interface which mixes
+/** A straight scalafication of the jline interface which mixes
  *  in the sparse jline-independent one too.
  */
 trait JLineHistory extends JHistory with History {

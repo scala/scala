@@ -1,5 +1,5 @@
 object Test {
-	// After the first attempt to make seprately compiled value
+	// After the first attempt to make separately compiled value
 	// classes respect the privacy of constructors, we got:
 	//
 	//   exception when typing v.a().==(v.a())/class scala.reflect.internal.Trees$Apply
