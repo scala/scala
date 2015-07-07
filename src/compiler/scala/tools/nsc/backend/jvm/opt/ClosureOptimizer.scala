@@ -24,8 +24,29 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
   import callGraph._
 
   def rewriteClosureApplyInvocations(): Unit = {
-    closureInstantiations foreach {
-      case (indy, (methodNode, ownerClass)) =>
+    implicit object closureInitOrdering extends Ordering[(InvokeDynamicInsnNode, MethodNode, ClassBType)] {
+      // Note: this code is cleaned up in a future commit, no more tuples.
+      override def compare(x: (InvokeDynamicInsnNode, MethodNode, ClassBType), y: (InvokeDynamicInsnNode, MethodNode, ClassBType)): Int = {
+        val cls = x._3.internalName compareTo y._3.internalName
+        if (cls != 0) return cls
+
+        val mName = x._2.name compareTo y._2.name
+        if (mName != 0) return mName
+
+        val mDesc = x._2.desc compareTo y._2.desc
+        if (mDesc != 0) return mDesc
+
+        def pos(indy: InvokeDynamicInsnNode) = x._2.instructions.indexOf(indy)
+        pos(x._1) - pos(y._1)
+      }
+    }
+
+    val sorted = closureInstantiations.iterator.map({
+      case (indy, (methodNode, ownerClass)) => (indy, methodNode, ownerClass)
+    }).to[collection.immutable.TreeSet]
+
+    sorted foreach {
+      case (indy, methodNode, ownerClass) =>
         val warnings = rewriteClosureApplyInvocations(indy, methodNode, ownerClass)
         warnings.foreach(w => backendReporting.inlinerWarning(w.pos, w.toString))
     }
