@@ -456,9 +456,9 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
         case indy: InvokeDynamicInsnNode =>
           callGraph.closureInstantiations.get(indy) match {
-            case Some((methodNode, ownerClass)) =>
+            case Some(closureInit) =>
               val newIndy = instructionMap(indy).asInstanceOf[InvokeDynamicInsnNode]
-              callGraph.closureInstantiations(newIndy) = (callsiteMethod, callsiteClass)
+              callGraph.closureInstantiations(newIndy) = ClosureInstantiation(closureInit.lambdaMetaFactoryCall.copy(indy = newIndy), callsiteMethod, callsiteClass)
 
             case None =>
           }
@@ -688,7 +688,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
           }
         }
 
-      case indy: InvokeDynamicInsnNode =>
+      case LMFInvokeDynamic(lmf) =>
         // an indy instr points to a "call site specifier" (CSP) [1]
         //  - a reference to a bootstrap method [2]
         //    - bootstrap method name
@@ -734,21 +734,20 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         // the implMethod is public, lambdaMetaFactory doesn't use the Lookup object's extended
         // capability, and we can safely inline the instruction into a different class.
 
-        if (destinationClass == calleeDeclarationClass) {
-          Right(true) // within the same class, any indy instruction can be inlined
-        } else if (closureOptimizer.isClosureInstantiation(indy)) {
-          val implMethod = indy.bsmArgs(1).asInstanceOf[Handle] // safe, checked in isClosureInstantiation
-          val methodRefClass = classBTypeFromParsedClassfile(implMethod.getOwner)
-          for {
-            (methodNode, methodDeclClassNode) <- byteCodeRepository.methodNode(methodRefClass.internalName, implMethod.getName, implMethod.getDesc): Either[OptimizerWarning, (MethodNode, InternalName)]
-            methodDeclClass                   =  classBTypeFromParsedClassfile(methodDeclClassNode)
-            res                               <- memberIsAccessible(methodNode.access, methodDeclClass, methodRefClass, destinationClass)
-          } yield {
-            res
-          }
-        } else {
-          Left(UnknownInvokeDynamicInstruction)
+        val methodRefClass = classBTypeFromParsedClassfile(lmf.implMethod.getOwner)
+        for {
+          (methodNode, methodDeclClassNode) <- byteCodeRepository.methodNode(methodRefClass.internalName, lmf.implMethod.getName, lmf.implMethod.getDesc): Either[OptimizerWarning, (MethodNode, InternalName)]
+          methodDeclClass                   =  classBTypeFromParsedClassfile(methodDeclClassNode)
+          res                               <- memberIsAccessible(methodNode.access, methodDeclClass, methodRefClass, destinationClass)
+        } yield {
+          res
         }
+
+      case indy: InvokeDynamicInsnNode =>
+        if (destinationClass == calleeDeclarationClass)
+          Right(true) // within the same class, any indy instruction can be inlined
+        else
+          Left(UnknownInvokeDynamicInstruction)
 
       case ci: LdcInsnNode => ci.cst match {
         case t: asm.Type => classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(t.getInternalName), destinationClass)

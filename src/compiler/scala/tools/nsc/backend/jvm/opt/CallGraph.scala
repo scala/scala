@@ -9,7 +9,7 @@ package opt
 
 import scala.reflect.internal.util.{NoPosition, Position}
 import scala.tools.asm.tree.analysis.{Value, Analyzer, BasicInterpreter}
-import scala.tools.asm.{Opcodes, Type}
+import scala.tools.asm.{Opcodes, Type, Handle}
 import scala.tools.asm.tree._
 import scala.collection.concurrent
 import scala.collection.convert.decorateAsScala._
@@ -24,7 +24,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
 
   val callsites: concurrent.Map[MethodInsnNode, Callsite] = recordPerRunCache(concurrent.TrieMap.empty)
 
-  val closureInstantiations: concurrent.Map[InvokeDynamicInsnNode, (MethodNode, ClassBType)] = recordPerRunCache(concurrent.TrieMap.empty)
+  val closureInstantiations: concurrent.Map[InvokeDynamicInsnNode, ClosureInstantiation] = recordPerRunCache(concurrent.TrieMap.empty)
 
   def addClass(classNode: ClassNode): Unit = {
     val classType = classBTypeFromClassNode(classNode)
@@ -33,14 +33,14 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
       (calls, closureInits) = analyzeCallsites(m, classType)
     } {
       calls foreach (callsite => callsites(callsite.callsiteInstruction) = callsite)
-      closureInits foreach (indy => closureInstantiations(indy) = (m, classType))
+      closureInits foreach (lmf => closureInstantiations(lmf.indy) = ClosureInstantiation(lmf, m, classType))
     }
   }
 
   /**
    * Returns a list of callsites in the method, plus a list of closure instantiation indy instructions.
    */
-  def analyzeCallsites(methodNode: MethodNode, definingClass: ClassBType): (List[Callsite], List[InvokeDynamicInsnNode]) = {
+  def analyzeCallsites(methodNode: MethodNode, definingClass: ClassBType): (List[Callsite], List[LambdaMetaFactoryCall]) = {
 
     case class CallsiteInfo(safeToInline: Boolean, safeToRewrite: Boolean,
                             annotatedInline: Boolean, annotatedNoInline: Boolean,
@@ -129,7 +129,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
     }
 
     val callsites = new collection.mutable.ListBuffer[Callsite]
-    val closureInstantiations = new collection.mutable.ListBuffer[InvokeDynamicInsnNode]
+    val closureInstantiations = new collection.mutable.ListBuffer[LambdaMetaFactoryCall]
 
     methodNode.instructions.iterator.asScala foreach {
       case call: MethodInsnNode =>
@@ -173,8 +173,8 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           callsitePosition = callsitePositions.getOrElse(call, NoPosition)
         )
 
-      case indy: InvokeDynamicInsnNode =>
-        if (closureOptimizer.isClosureInstantiation(indy)) closureInstantiations += indy
+      case LMFInvokeDynamic(lmf) =>
+        closureInstantiations += lmf
 
       case _ =>
     }
@@ -235,5 +235,92 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
                           annotatedInline: Boolean, annotatedNoInline: Boolean,
                           calleeInfoWarning: Option[CalleeInfoWarning]) {
     assert(!(safeToInline && safeToRewrite), s"A callee of ${callee.name} can be either safeToInline or safeToRewrite, but not both.")
+  }
+
+  final case class ClosureInstantiation(lambdaMetaFactoryCall: LambdaMetaFactoryCall, ownerMethod: MethodNode, ownerClass: ClassBType) {
+    override def toString = s"ClosureInstantiation($lambdaMetaFactoryCall, ${ownerMethod.name + ownerMethod.desc}, $ownerClass)"
+  }
+  final case class LambdaMetaFactoryCall(indy: InvokeDynamicInsnNode, samMethodType: Type, implMethod: Handle, instantiatedMethodType: Type)
+
+  object LMFInvokeDynamic {
+    private val lambdaMetaFactoryInternalName: InternalName = "java/lang/invoke/LambdaMetafactory"
+
+    private val metafactoryHandle = {
+      val metafactoryMethodName: String = "metafactory"
+      val metafactoryDesc: String       = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;"
+      new Handle(Opcodes.H_INVOKESTATIC, lambdaMetaFactoryInternalName, metafactoryMethodName, metafactoryDesc)
+    }
+
+    private val altMetafactoryHandle = {
+      val altMetafactoryMethodName: String = "altMetafactory"
+      val altMetafactoryDesc: String       = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;"
+      new Handle(Opcodes.H_INVOKESTATIC, lambdaMetaFactoryInternalName, altMetafactoryMethodName, altMetafactoryDesc)
+    }
+
+    private def extractLambdaMetaFactoryCall(indy: InvokeDynamicInsnNode) = {
+      if (indy.bsm == metafactoryHandle || indy.bsm == altMetafactoryHandle) indy.bsmArgs match {
+        case Array(samMethodType: Type, implMethod: Handle, instantiatedMethodType: Type, xs@_*) =>
+          // LambdaMetaFactory performs a number of automatic adaptations when invoking the lambda
+          // implementation method (casting, boxing, unboxing, and primitive widening, see Javadoc).
+          //
+          // The closure optimizer supports only one of those adaptations: it will cast arguments
+          // to the correct type when re-writing a closure call to the body method. Example:
+          //
+          //   val fun: String => String = l => l
+          //   val l = List("")
+          //   fun(l.head)
+          //
+          // The samMethodType of Function1 is `(Object)Object`, while the instantiatedMethodType
+          // is `(String)String`. The return type of `List.head` is `Object`.
+          //
+          // The implMethod has the signature `C$anonfun(String)String`.
+          //
+          // At the closure callsite, we have an `INVOKEINTERFACE Function1.apply (Object)Object`,
+          // so the object returned by `List.head` can be directly passed into the call (no cast).
+          //
+          // The closure object will cast the object to String before passing it to the implMethod.
+          //
+          // When re-writing the closure callsite to the implMethod, we have to insert a cast.
+          //
+          // The check below ensures that
+          //   (1) the implMethod type has the expected singature (captured types plus argument types
+          //       from instantiatedMethodType)
+          //   (2) the receiver of the implMethod matches the first captured type
+          //   (3) all parameters that are not the same in samMethodType and instantiatedMethodType
+          //       are reference types, so that we can insert casts to perform the same adaptation
+          //       that the closure object would.
+
+          val isStatic = implMethod.getTag == Opcodes.H_INVOKESTATIC
+          val indyParamTypes = Type.getArgumentTypes(indy.desc)
+          val instantiatedMethodArgTypes = instantiatedMethodType.getArgumentTypes
+          val expectedImplMethodType = {
+            val paramTypes = (if (isStatic) indyParamTypes else indyParamTypes.tail) ++ instantiatedMethodArgTypes
+            Type.getMethodType(instantiatedMethodType.getReturnType, paramTypes: _*)
+          }
+
+          val isIndyLambda = {
+            Type.getType(implMethod.getDesc) == expectedImplMethodType // (1)
+          } && {
+            isStatic || implMethod.getOwner == indyParamTypes(0).getInternalName // (2)
+          } && {
+            def isReference(t: Type) = t.getSort == Type.OBJECT || t.getSort == Type.ARRAY
+            (samMethodType.getArgumentTypes, instantiatedMethodArgTypes).zipped forall {
+              case (samArgType, instArgType) =>
+                samArgType == instArgType || isReference(samArgType) && isReference(instArgType) // (3)
+            }
+          }
+
+          if (isIndyLambda) Some(LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType))
+          else None
+
+        case _ => None
+      }
+      else None
+    }
+
+    def unapply(insn: AbstractInsnNode): Option[LambdaMetaFactoryCall] = insn match {
+      case indy: InvokeDynamicInsnNode => extractLambdaMetaFactoryCall(indy)
+      case _ => None
+    }
   }
 }
