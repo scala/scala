@@ -688,7 +688,12 @@ class Inliner[BT <: BTypes](val btypes: BT) {
           }
         }
 
-      case LMFInvokeDynamic(lmf) =>
+      case _: InvokeDynamicInsnNode if destinationClass == calleeDeclarationClass =>
+        // within the same class, any indy instruction can be inlined
+         Right(true)
+
+      // does the InvokeDynamicInsnNode call LambdaMetaFactory?
+      case LambdaMetaFactoryCall(_, _, implMethod, _) =>
         // an indy instr points to a "call site specifier" (CSP) [1]
         //  - a reference to a bootstrap method [2]
         //    - bootstrap method name
@@ -734,20 +739,16 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         // the implMethod is public, lambdaMetaFactory doesn't use the Lookup object's extended
         // capability, and we can safely inline the instruction into a different class.
 
-        val methodRefClass = classBTypeFromParsedClassfile(lmf.implMethod.getOwner)
+        val methodRefClass = classBTypeFromParsedClassfile(implMethod.getOwner)
         for {
-          (methodNode, methodDeclClassNode) <- byteCodeRepository.methodNode(methodRefClass.internalName, lmf.implMethod.getName, lmf.implMethod.getDesc): Either[OptimizerWarning, (MethodNode, InternalName)]
+          (methodNode, methodDeclClassNode) <- byteCodeRepository.methodNode(methodRefClass.internalName, implMethod.getName, implMethod.getDesc): Either[OptimizerWarning, (MethodNode, InternalName)]
           methodDeclClass                   =  classBTypeFromParsedClassfile(methodDeclClassNode)
           res                               <- memberIsAccessible(methodNode.access, methodDeclClass, methodRefClass, destinationClass)
         } yield {
           res
         }
 
-      case indy: InvokeDynamicInsnNode =>
-        if (destinationClass == calleeDeclarationClass)
-          Right(true) // within the same class, any indy instruction can be inlined
-        else
-          Left(UnknownInvokeDynamicInstruction)
+      case _: InvokeDynamicInsnNode => Left(UnknownInvokeDynamicInstruction)
 
       case ci: LdcInsnNode => ci.cst match {
         case t: asm.Type => classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(t.getInternalName), destinationClass)
