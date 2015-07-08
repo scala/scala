@@ -255,7 +255,7 @@ object BackendReporting {
    * Used in `rewriteClosureApplyInvocations` when a closure apply callsite cannot be rewritten
    * to the closure body method.
    */
-  trait RewriteClosureApplyToClosureBodyFailed extends OptimizerWarning {
+  sealed trait RewriteClosureApplyToClosureBodyFailed extends OptimizerWarning {
     def pos: Position
 
     override def emitWarning(settings: ScalaSettings): Boolean = this match {

@@ -57,8 +57,20 @@ import scala.collection.convert.decorateAsScala._
  * copying operations.
  */
 class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) {
+
+  /* Timers for benchmarking ProdCons
+  import scala.reflect.internal.util.Statistics._
+  import ProdConsAnalyzer._
+  val analyzerTimer = newSubTimer(classInternalName + "#" + methodNode.name + " - analysis", prodConsAnalyzerTimer)
+  val consumersTimer = newSubTimer(classInternalName + "#" + methodNode.name + " - consumers", prodConsAnalyzerTimer)
+  */
+
   val analyzer = new Analyzer(new InitialProducerSourceInterpreter)
+
+//  val start = analyzerTimer.start()
   analyzer.analyze(classInternalName, methodNode)
+//  analyzerTimer.stop(start)
+//  println(analyzerTimer.line)
 
   def frameAt(insn: AbstractInsnNode) = analyzer.frameAt(insn, methodNode)
 
@@ -392,6 +404,7 @@ class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) 
 
   /** For each instruction, a set of potential consumers of the produced values. */
   private lazy val _consumersOfOutputsFrom: Map[AbstractInsnNode, Vector[Set[AbstractInsnNode]]] = {
+//    val start = consumersTimer.start()
     var res = Map.empty[AbstractInsnNode, Vector[Set[AbstractInsnNode]]]
     for {
       insn <- methodNode.instructions.iterator.asScala
@@ -404,11 +417,18 @@ class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) 
       val outputIndex = producedSlots.indexOf(i)
       res = res.updated(producer, currentConsumers.updated(outputIndex, currentConsumers(outputIndex) + insn))
     }
+//    consumersTimer.stop(start)
+//    println(consumersTimer.line)
     res
   }
 
   private val _initialProducersCache:  mutable.AnyRefMap[(AbstractInsnNode, Int), Set[AbstractInsnNode]] = mutable.AnyRefMap.empty
   private val _ultimateConsumersCache: mutable.AnyRefMap[(AbstractInsnNode, Int), Set[AbstractInsnNode]] = mutable.AnyRefMap.empty
+}
+
+object ProdConsAnalyzer {
+  import scala.reflect.internal.util.Statistics._
+  val prodConsAnalyzerTimer = newTimer("Time in ProdConsAnalyzer", "jvm")
 }
 
 /**
