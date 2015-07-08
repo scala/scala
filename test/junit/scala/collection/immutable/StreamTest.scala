@@ -12,11 +12,13 @@ import scala.util.Try
 class StreamTest {
 
   @Test
-  def t6727_and_t6440(): Unit = {
+  def t6727_and_t6440_and_8627(): Unit = {
     assertTrue(Stream.continually(()).filter(_ => true).take(2) == Seq((), ()))
     assertTrue(Stream.continually(()).filterNot(_ => false).take(2) == Seq((), ()))
     assertTrue(Stream(1,2,3,4,5).filter(_ < 4) == Seq(1,2,3))
     assertTrue(Stream(1,2,3,4,5).filterNot(_ > 4) == Seq(1,2,3,4))
+    assertTrue(Stream.from(1).filter(_ > 4).take(3) == Seq(5,6,7))
+    assertTrue(Stream.from(1).filterNot(_ <= 4).take(3) == Seq(5,6,7))
   }
 
   /** Test helper to verify that the given Stream operation allows
