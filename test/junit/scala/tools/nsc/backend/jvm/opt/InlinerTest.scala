@@ -991,4 +991,41 @@ class InlinerTest extends ClearAfterClass {
     assert(2 == t.collect({case Ldc(_, "hai!") => }).size)     // twice the body of f
     assert(1 == t.collect({case Jump(IFNONNULL, _) => }).size) // one single null check
   }
+
+  @Test
+  def inlineIndyLambda(): Unit = {
+    val code =
+      """object M {
+        |  @inline def m(s: String) = {
+        |    val f = (x: String) => x.trim
+        |    f(s)
+        |  }
+        |}
+        |class C {
+        |  @inline final def m(s: String) = {
+        |    val f = (x: String) => x.trim
+        |    f(s)
+        |  }
+        |  def t1 = m("foo")
+        |  def t2 = M.m("bar")
+        |}
+      """.stripMargin
+
+    val List(c, _, _) = compile(code)
+
+    val t1 = getSingleMethod(c, "t1")
+    assert(t1.instructions exists {
+      case _: InvokeDynamic => true
+      case _ => false
+    })
+    // the indy call is inlined into t, and the closure elimination rewrites the closure invocation to the body method
+    assertInvoke(t1, "C", "C$$$anonfun$2")
+
+    val t2 = getSingleMethod(c, "t2")
+    assert(t2.instructions exists {
+      case _: InvokeDynamic => true
+      case _ => false
+    })
+    assertInvoke(t2, "M$", "M$$$anonfun$1")
+  }
 }

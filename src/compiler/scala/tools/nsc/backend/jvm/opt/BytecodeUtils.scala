@@ -104,6 +104,8 @@ object BytecodeUtils {
 
   def isStrictfpMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_STRICT) != 0
 
+  def isReference(t: Type) = t.getSort == Type.OBJECT || t.getSort == Type.ARRAY
+
   def nextExecutableInstruction(instruction: AbstractInsnNode, alsoKeep: AbstractInsnNode => Boolean = Set()): Option[AbstractInsnNode] = {
     var result = instruction
     do { result = result.getNext }
