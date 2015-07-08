@@ -1408,7 +1408,7 @@ trait Implicits {
       }
 
       if (result.isFailure && settings.debug) // debuglog is not inlined for some reason
-        log("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+implicitsOfExpectedType)
+        log(s"no implicits found for ${pt} ${pt.typeSymbol.info.baseClasses} ${implicitsOfExpectedType}")
 
       result
     }
