@@ -357,8 +357,6 @@ they appear and all the resulting evidence parameters are concatenated
 in one implicit parameter section.  Since traits do not take
 constructor parameters, this translation does not work for them.
 Consequently, type-parameters in traits may not be view- or context-bounded.
-Also, a method or class with view- or context bounds may not define any
-additional implicit parameters.
 
 ###### Example
 The `<=` method from the [`Ordered` example](#example-ordered) can be declared
