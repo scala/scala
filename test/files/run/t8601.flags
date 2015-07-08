@@ -1,1 +1,1 @@
--optimize
+-optimize -Ybackend:GenASM

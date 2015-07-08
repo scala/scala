@@ -1,3 +1,6 @@
+/*
+ * filter: inliner warning; re-run with
+ */
 import scala.tools.partest._
 import scala.tools.nsc._
 

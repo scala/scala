@@ -19,7 +19,7 @@ ant $antArgs $scalacArgs $targets
 
 antArgs tend to be:
  -Darchives.skipxz=true
- -Dscalac.args.optimise=-optimise
+ -Dscalac.args.optimise=-Yopt:l:classpath
 
 scalacArgs examples:
   "-Dscalac.args=\"-Yrangepos\" -Dpartest.scalac_opts=\"-Yrangepos\""
@@ -79,13 +79,13 @@ TODO:
   <target name="publish-opt-nodocs" description="Publishes Scala (optimized) without generating docs/testing (library/reflect/compiler/swing).">
     <antcall target="publish">
       <param name="docs.skip" value="1"/>
-      <param name="scalac.args.optimise" value="-optimise"/>
+      <param name="scalac.args.optimise" value="-Yopt:l:classpath"/>
     </antcall>
   </target>
   <target name="publish-core-opt-nodocs" description="Builds an untested, undocumented optimised core (library/reflect/compiler) and publishes to maven.">
     <antcall target="publish-core">
       <param name="docs.skip" value="1"/>
-      <param name="scalac.args.optimise" value="-optimise"/>
+      <param name="scalac.args.optimise" value="-Yopt:l:classpath"/>
     </antcall>
   </target>
   <target name="publish-core-local-nodocs" description="Builds an untested, undocumented core (library/reflect/compiler) and locally publishes to maven">
@@ -1042,7 +1042,7 @@ TODO:
     <antcall target="publish-core-local">
       <param name="maven.version.suffix" value="-STARR-${git.commit.sha}-SNAPSHOT"/>
       <param name="docs.skip" value="1"/>
-      <param name="scalac.args.optimise" value="-optimise"/>
+      <param name="scalac.args.optimise" value="-Yopt:l:classpath"/>
       <param name="update.starr.version" value="alright then"/>
     </antcall>
   </target>

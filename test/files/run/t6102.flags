@@ -1,1 +1,1 @@
--Ydead-code -Ydebug -Xfatal-warnings
+-Yopt:l:classpath -Xfatal-warnings
