@@ -38,7 +38,7 @@ abstract class Any {
    *  - It is reflexive: for any instance `x` of type `Any`, `x.equals(x)` should return `true`.
    *  - It is symmetric: for any instances `x` and `y` of type `Any`, `x.equals(y)` should return `true` if and
    *    only if `y.equals(x)` returns `true`.
-   *  - It is transitive: for any instances `x`, `y`, and `z` of type `AnyRef` if `x.equals(y)` returns `true` and
+   *  - It is transitive: for any instances `x`, `y`, and `z` of type `Any` if `x.equals(y)` returns `true` and
    *    `y.equals(z)` returns `true`, then `x.equals(z)` should return `true`.
    *
    *  If you override this method, you should verify that your implementation remains an equivalence relation.
