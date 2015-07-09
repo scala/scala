@@ -27,7 +27,9 @@ object InlineInfoTest extends ClearAfterClass.Clearable {
 }
 
 @RunWith(classOf[JUnit4])
-class InlineInfoTest {
+class InlineInfoTest extends ClearAfterClass {
+  ClearAfterClass.stateToClear = InlineInfoTest
+
   val compiler = InlineInfoTest.compiler
 
   def compile(code: String) = {
