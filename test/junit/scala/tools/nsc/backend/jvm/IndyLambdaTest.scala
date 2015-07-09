@@ -18,7 +18,8 @@ object IndyLambdaTest extends ClearAfterClass.Clearable {
   }
 }
 
-class IndyLambdaTest {
+class IndyLambdaTest extends ClearAfterClass {
+  ClearAfterClass.stateToClear = IndyLambdaTest
   val compiler = IndyLambdaTest.compiler
 
   @Test def boxingBridgeMethodUsedSelectively(): Unit = {
@@ -35,7 +36,7 @@ class IndyLambdaTest {
     // This is because Scala's unboxing of null values gives zero, whereas Java's throw a NPE.
 
     // 1. Here we show that we are calling the boxing bridge (the lambda bodies here are compiled into
-    //    methods of `(I)java/lang/Object;` / `(I)java/lang/Object;` respectively.)
+    //    methods of `(I)Ljava/lang/Object;` / `(I)Ljava/lang/Object;` respectively.)
     assertEquals("(Ljava/lang/Object;)Ljava/lang/Object;", implMethodDescriptorFor("(x: Int) => new Object"))
     assertEquals("(Ljava/lang/Object;)Ljava/lang/Object;", implMethodDescriptorFor("(x: Object) => 0"))
 
