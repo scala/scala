@@ -632,10 +632,11 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             case _ =>
               abort(s"Cannot instantiate $tpt of kind: $generatedType")
           }
-        case Apply(_, args) if app.hasAttachment[delambdafy.LambdaMetaFactoryCapable] =>
+        case Apply(fun, args) if app.hasAttachment[delambdafy.LambdaMetaFactoryCapable] =>
           val attachment = app.attachments.get[delambdafy.LambdaMetaFactoryCapable].get
           genLoadArguments(args, paramTKs(app))
           genInvokeDynamicLambda(attachment.target, attachment.arity, attachment.functionalInterface)
+          generatedType = asmMethodType(fun.symbol).returnType
 
         case Apply(fun @ _, List(expr)) if currentRun.runDefinitions.isBox(fun.symbol) =>
           val nativeKind = tpeTK(expr)
