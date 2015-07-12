@@ -6,8 +6,8 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/scala-compiler"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/scala-library"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/partest-extras"/>
-	<classpathentry kind="var" path="M2_REPO/org/scala-lang/modules/scala-xml_2.11/1.0.2/scala-xml_2.11-1.0.2.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/scala-lang/modules/scala-parser-combinators_2.11/1.0.1/scala-parser-combinators_2.11-1.0.1.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/scala-lang/modules/scala-partest_2.11/1.0.0/scala-partest_2.11-1.0.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/scala-lang/modules/scala-xml_2.12.0-M1/1.0.4/scala-xml_2.12.0-M1-1.0.4"/>
+	<classpathentry kind="var" path="M2_REPO/org/scala-lang/modules/scala-parser-combinators_2.12.0-M1/1.0.4/scala-parser-combinators_2.12.0-M1-1.0.4.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/scala-lang/modules/scala-partest_2.12.0-M1/1.0.7/scala-partest_2.12.0-M1-1.0.7.jar"/>
 	<classpathentry kind="output" path="build-quick-scaladoc"/>
 </classpath>

@@ -925,7 +925,7 @@ trait Types
     def prefixString = trimPrefix(toString) + "#"
 
    /** Convert toString avoiding infinite recursions by cutting off
-     *  after `maxTostringRecursions` recursion levels. Uses `safeToString`
+     *  after `maxToStringRecursions` recursion levels. Uses `safeToString`
      *  to produce a string on each level.
      */
     override final def toString: String = {
@@ -1496,7 +1496,7 @@ trait Types
           } finally {
             if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
           }
-          // [Martin] suppressing memo-ization solves the problem with "same type after erasure" errors
+          // [Martin] suppressing memoization solves the problem with "same type after erasure" errors
           // when compiling with
           // scalac scala.collection.IterableViewLike.scala scala.collection.IterableLike.scala
           // I have not yet figured out precisely why this is the case.
@@ -2602,7 +2602,7 @@ trait Types
      * based on the bounds of the type parameters of the quantified type
      * In Scala syntax, given a java-defined class C[T <: String], the existential type C[_]
      * is improved to C[_ <: String] before skolemization, which captures (get it?) what Java does:
-     * enter the type paramers' bounds into the context when checking subtyping/type equality of existential types
+     * enter the type parameters' bounds into the context when checking subtyping/type equality of existential types
      *
      * Also tried doing this once during class file parsing or when creating the existential type,
      * but that causes cyclic errors because it happens too early.
@@ -4277,7 +4277,7 @@ trait Types
       matchesType(res1, res2.substSym(tparams2, tparams1), alwaysMatchSimple)
     (tp1, tp2) match {
       case (MethodType(params1, res1), MethodType(params2, res2)) =>
-        params1.length == params2.length && // useful pre-secreening optimization
+        params1.length == params2.length && // useful pre-screening optimization
         matchingParams(params1, params2, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
         matchesType(res1, res2, alwaysMatchSimple) &&
         tp1.isImplicit == tp2.isImplicit

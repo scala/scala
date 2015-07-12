@@ -1,0 +1,21 @@
+missing-arg-list.scala:9: error: missing argument list for method id in trait T
+Unapplied methods are only converted to functions when a function type is expected.
+You can make this conversion explicit by writing `id _` or `id(_)` instead of `id`.
+  val w = id
+          ^
+missing-arg-list.scala:10: error: missing argument list for method f in trait T
+Unapplied methods are only converted to functions when a function type is expected.
+You can make this conversion explicit by writing `f _` or `f(_)(_)` instead of `f`.
+  val x = f
+          ^
+missing-arg-list.scala:11: error: missing argument list for method g in trait T
+Unapplied methods are only converted to functions when a function type is expected.
+You can make this conversion explicit by writing `g _` or `g(_,_,_)` instead of `g`.
+  val y = g
+          ^
+missing-arg-list.scala:12: error: missing argument list for method h in trait T
+Unapplied methods are only converted to functions when a function type is expected.
+You can make this conversion explicit by writing `h _` or `h(_,_,_)(_)` instead of `h`.
+  val z = h
+          ^
+four errors found

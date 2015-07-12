@@ -56,13 +56,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   private var globalFuture: Future[Boolean] = _
 
-  /** Print a welcome message */
-  def printWelcome() {
-    echo(s"""
-      |Welcome to Scala $versionString ($javaVmName, Java $javaVersion).
-      |Type in expressions to have them evaluated.
-      |Type :help for more information.""".trim.stripMargin
-    )
+  /** Print a welcome message! */
+  def printWelcome(): Unit = {
+    Option(replProps.welcome) filter (!_.isEmpty) foreach echo
     replinfo("[info] started at " + new java.util.Date)
   }
 
@@ -111,10 +107,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   class ILoopInterpreter extends IMain(settings, out) {
-    // the expanded prompt but without color escapes and without leading newline, for purposes of indenting
-    override lazy val formatting: Formatting = new Formatting(
-      (replProps.promptString format Properties.versionNumberString).lines.toList.last.length
-    )
     override protected def parentClassLoader =
       settings.explicitParentLoader.getOrElse( classOf[ILoop].getClassLoader )
   }
@@ -679,9 +671,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   def verbosity() = {
-    val old = intp.printResults
-    intp.printResults = !old
-    echo("Switched " + (if (old) "off" else "on") + " result printing.")
+    intp.printResults = !intp.printResults
+    replinfo(s"Result printing is ${ if (intp.printResults) "on" else "off" }.")
   }
 
   /** Run one command submitted by the user.  Two values are returned:
@@ -761,7 +752,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   private object paste extends Pasted {
     import scala.util.matching.Regex.quote
-    val ContinueString = "     | "
+    val ContinuePrompt = replProps.continuePrompt
+    val ContinueString = replProps.continueText     // "     | "
     val PromptString   = prompt.lines.toList.last
     val anyPrompt = s"""\\s*(?:${quote(PromptString.trim)}|${quote(AltPromptString.trim)})\\s*""".r
 
@@ -805,7 +797,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         echo("You typed two blank lines.  Starting a new command.")
         None
       case IR.Incomplete =>
-        in.readLine(paste.ContinueString) match {
+        in.readLine(paste.ContinuePrompt) match {
           case null =>
             // we know compilation is going to fail since we're at EOF and the
             // parser thinks the input is still incomplete, but since this is
@@ -948,8 +940,9 @@ object ILoop {
       Console.withOut(ostream) {
         val output = new JPrintWriter(new OutputStreamWriter(ostream), true) {
           // skip margin prefix for continuation lines, unless preserving session text for test
+          // should test for repl.paste.ContinueString or replProps.continueText.contains(ch)
           override def write(str: String) =
-            if (!inSession && (str forall (ch => ch.isWhitespace || ch == '|'))) ()  // repl.paste.ContinueString
+            if (!inSession && (str forall (ch => ch.isWhitespace || ch == '|'))) ()
             else super.write(str)
         }
         val input = new BufferedReader(new StringReader(code.trim + "\n")) {

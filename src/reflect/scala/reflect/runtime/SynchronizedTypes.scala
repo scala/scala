@@ -82,9 +82,9 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   override def toStringSubjects = _toStringSubjects.get
 
   /* The idea of caches is as follows.
-   * When in reflexive mode, a cache is either null, or one sentinal
+   * When in reflexive mode, a cache is either null, or one sentinel
    * value representing undefined or the final defined
-   * value. Hence, we can ask in non-synchronized ode whether the cache field
+   * value. Hence, we can ask in non-synchronized mode whether the cache field
    * is non null and different from the sentinel (if a sentinel exists).
    * If that's true, the cache value is current.
    * Otherwise we arrive in one of the defined... methods listed below

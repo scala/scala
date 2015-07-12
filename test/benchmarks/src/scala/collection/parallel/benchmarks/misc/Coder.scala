@@ -16,7 +16,7 @@ class SeqCoder(words: List[String]) {
       '2' -> "ABC", '3' -> "DEF", '4' -> "GHI", '5' -> "JKL", 
       '6' -> "MNO", '7' -> "PQRS", '8' -> "TUV", '9' -> "WXYZ")
       
-  /** Invert the mnemnonics map to give a map from chars 'A' ... 'Z' to '2' ... '9' */
+  /** Invert the mnemonics map to give a map from chars 'A' ... 'Z' to '2' ... '9' */
   private val charCode: Map[Char, Char] = 
     for ((digit, letters) <- m; letter <- letters) yield letter -> digit
     
@@ -63,7 +63,7 @@ class ParCoder(words: List[String]) {
       '2' -> "ABC", '3' -> "DEF", '4' -> "GHI", '5' -> "JKL", 
       '6' -> "MNO", '7' -> "PQRS", '8' -> "TUV", '9' -> "WXYZ")
       
-  /** Invert the mnemnonics map to give a map from chars 'A' ... 'Z' to '2' ... '9' */
+  /** Invert the mnemonics map to give a map from chars 'A' ... 'Z' to '2' ... '9' */
   private val charCode: Map[Char, Char] = 
     for ((digit, letters) <- m; letter <- letters) yield letter -> digit
     

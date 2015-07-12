@@ -24,7 +24,7 @@ abstract class MutableSortedSetFactory[CC[A] <: mutable.SortedSet[A] with Sorted
 
   /**
    * mutable.SetBuilder uses '+' which is not a primitive for anything extending mutable.SetLike,
-   * this causes serious perfomances issues since each time 'elems = elems + x'
+   * this causes serious performance issues since each time 'elems = elems + x'
    * is evaluated elems is cloned (which is O(n)).
    *
    * Fortunately GrowingBuilder comes to rescue.

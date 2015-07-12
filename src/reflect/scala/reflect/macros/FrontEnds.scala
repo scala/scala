@@ -12,7 +12,7 @@ package macros
 trait FrontEnds {
   self: blackbox.Context =>
 
-  /** For sending a message which should not be labeled as a warning/error,
+  /** For sending a message which should not be labelled as a warning/error,
    *  but also shouldn't require -verbose to be visible.
    *  Use `enclosingPosition` if you're in doubt what position to pass to `pos`.
    */

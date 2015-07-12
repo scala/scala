@@ -648,7 +648,7 @@ abstract class BTypes {
    * JVMS 4.7.7: the attribute must be present "if and only if it represents a local class
    * or an anonymous class" (i.e. not for member classes).
    *
-   * The attribute is mis-named, it should be called "EnclosingClass". It has to be defined for all
+   * The attribute is misnamed, it should be called "EnclosingClass". It has to be defined for all
    * local and anonymous classes, no matter if there is an enclosing method or not. Accordingly, the
    * "class" field (see below) must be always defined, while the "method" field may be null.
    *
@@ -798,7 +798,7 @@ abstract class BTypes {
    *   2. The ClassBType should be built from a classfile, but the class could not be found on the
    *      compilation classpath.
    *
-   * Note that all ClassBTypes required in a non-optimzied run are built during code generation from
+   * Note that all ClassBTypes required in a non-optimized run are built during code generation from
    * the class symbols referenced by the ASTs, so they have a valid info. Therefore the backend
    * often invokes `info.get` (which asserts the info to exist) when reading data from the ClassBType.
    *

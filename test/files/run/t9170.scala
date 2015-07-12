@@ -6,9 +6,7 @@ object Test extends SessionTest {
   override def stripMargins = false
 
   def session =
-"""Type in expressions to have them evaluated.
-Type :help for more information.
-
+"""
 scala> object Y { def f[A](a: => A) = 1 ; def f[A](a: => Either[Exception, A]) = 2 }
 <console>:10: error: double definition:
 def f[A](a: => A): Int at line 10 and

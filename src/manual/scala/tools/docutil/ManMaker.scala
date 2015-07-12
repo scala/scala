@@ -18,7 +18,7 @@ class ManMaker extends Task {
   /** The directory to put html pages in */
   private var htmlout: Option[File] = None
 
-  /** The directory to put man pags in */
+  /** The directory to put man pages in */
   private var manout: Option[File] = None
 
 

@@ -478,7 +478,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     override lazy val comment = {
       def nonRootTemplate(sym: Symbol): Option[DocTemplateImpl] =
         if (sym eq RootPackage) None else findTemplateMaybe(sym)
-      /* Variable precendence order for implicitly added members: Take the variable definitions from ...
+      /* Variable precedence order for implicitly added members: Take the variable definitions from ...
        * 1. the target of the implicit conversion
        * 2. the definition template (owner)
        * 3. the current template
@@ -994,7 +994,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     // pruning modules that shouldn't be documented
     // Why Symbol.isInitialized? Well, because we need to avoid exploring all the space available to scaladoc
     // from the classpath -- scaladoc is a hog, it will explore everything starting from the root package unless we
-    // somehow prune the tree. And isInitialized is a good heuristic for prunning -- if the package was not explored
+    // somehow prune the tree. And isInitialized is a good heuristic for pruning -- if the package was not explored
     // during typer and refchecks, it's not necessary for the current application and there's no need to explore it.
     (!sym.isModule || sym.moduleClass.isInitialized) &&
     // documenting only public and protected members

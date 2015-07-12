@@ -1,5 +1,3 @@
-Type in expressions to have them evaluated.
-Type :help for more information.
 
 scala> var s = 0
 s: Int = 0

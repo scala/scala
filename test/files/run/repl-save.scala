@@ -2,9 +2,7 @@ import scala.tools.partest.SessionTest
 
 object Test extends SessionTest {
   def session =
-s"""|Type in expressions to have them evaluated.
-    |Type :help for more information.
-    |
+s"""|
     |scala> val i = 7
     |i: Int = 7
     |

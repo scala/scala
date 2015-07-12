@@ -183,7 +183,7 @@ trait MemberEntity extends Entity {
   /** Indicates whether the member is inherited by implicit conversion */
   def isImplicitlyInherited: Boolean
 
-  /** Indicates whether there is another member with the same name in the template that will take precendence */
+  /** Indicates whether there is another member with the same name in the template that will take precedence */
   def isShadowedImplicit: Boolean
 
   /** Indicates whether there are other implicitly inherited members that have similar signatures (and thus they all

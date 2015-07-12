@@ -1,5 +1,3 @@
-Type in expressions to have them evaluated.
-Type :help for more information.
 
 scala> case class `X"`(var xxx: Any)
 defined class X$u0022

@@ -305,7 +305,7 @@ trait PatternTypers {
       // clearing the type is necessary so that ref will be stabilized; see bug 881
       val fun1 = typedPos(fun.pos)(Apply(Select(fun.clearType(), unapplyMethod), unapplyArgTree :: Nil))
 
-      def makeTypedUnApply() = {
+      def makeTypedUnapply() = {
         // the union of the expected type and the inferred type of the argument to unapply
         val glbType        = glb(ensureFullyDefined(pt) :: unapplyArg.tpe_* :: Nil)
         val wrapInTypeTest = canRemedy && !(fun1.symbol.owner isNonBottomSubClass ClassTagClass)
@@ -325,7 +325,7 @@ trait PatternTypers {
         if (isBlackbox(unapplyMethod)) duplErrorTree(BlackboxExtractorExpansion(tree))
         else duplErrorTree(WrongShapeExtractorExpansion(tree))
       } else
-        makeTypedUnApply()
+        makeTypedUnapply()
     }
 
     def wrapClassTagUnapply(uncheckedPattern: Tree, classTagExtractor: Tree, pt: Type): Tree = {

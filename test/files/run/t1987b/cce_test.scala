@@ -1,5 +1,5 @@
 package scales.xml
-//import scales.xml._ // using another pacakge and importing doesn't CCE
+//import scales.xml._ // using another package and importing doesn't CCE
 
 object CCE_Test {
   def main(args: Array[String]): Unit = {

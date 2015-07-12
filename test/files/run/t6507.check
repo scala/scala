@@ -1,8 +1,5 @@
-Type in expressions to have them evaluated.
-Type :help for more information.
 
 scala> :silent
-Switched off result printing.
 
 scala> class A { override def toString() = { println("!"); "A" } }
 
@@ -15,7 +12,6 @@ scala> b = new A
 scala> new A
 
 scala> :silent
-Switched on result printing.
 
 scala> res0
 !

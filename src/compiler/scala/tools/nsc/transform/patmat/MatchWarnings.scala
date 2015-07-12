@@ -40,7 +40,7 @@ trait MatchWarnings {
       }
     }
 
-    // Issue better warnings than "unreachable code" when people mis-use
+    // Issue better warnings than "unreachable code" when people misuse
     // variable patterns thinking they bind to existing identifiers.
     //
     // Possible TODO: more deeply nested variable patterns, like

@@ -1,5 +1,3 @@
-Type in expressions to have them evaluated.
-Type :help for more information.
 
 scala> // should infer List[scala.collection.immutable.Seq[Nothing]]
 

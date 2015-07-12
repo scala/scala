@@ -1,0 +1,6 @@
+t6895.scala:19: error: polymorphic expression cannot be instantiated to expected type;
+ found   : [F3[F3_P]]Foo[F3]
+ required: Foo[[X3]Bar[[X1]String]]
+  val nok: Foo[({type L[X3] = Bar[M]})#L] = barFoo /* Type inference can't unify F with L */
+                                            ^
+one error found

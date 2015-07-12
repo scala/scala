@@ -1495,7 +1495,7 @@ object ContextMode {
   final val TypeConstructorAllowed: ContextMode   = 1 << 16
 
   /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
-   *  To mimick the sticky mode behavior, when captain stickyfingers
+   *  To mimic the sticky mode behavior, when captain stickyfingers
    *  comes around we need to propagate those modes but forget the other
    *  context modes which were once mode bits; those being so far the
    *  ones listed here.

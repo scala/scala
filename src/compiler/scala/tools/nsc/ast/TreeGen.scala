@@ -233,7 +233,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   }
 
   /** Return the synchronized part of the double-checked locking idiom around the syncBody tree. It guards with `cond` and
-   *  synchronizez on `clazz.this`. Additional statements can be included after initialization,
+   *  synchronizes on `clazz.this`. Additional statements can be included after initialization,
    *  (outside the synchronized block).
    *
    *  The idiom works only if the condition is using a volatile field.

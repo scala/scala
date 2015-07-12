@@ -114,7 +114,7 @@ trait MemberLookupBase {
     // Maintaining compatibility with previous links is a bit tricky here:
     // we have a preference for term names for all terms except for the last, where we prefer a class:
     // How to do this:
-    //  - at each step we do a DFS search with the prefered strategy
+    //  - at each step we do a DFS search with the preferred strategy
     //  - if the search doesn't return any members, we backtrack on the last decision
     //     * we look for terms with the last member's name
     //     * we look for types with the same name, all the way up

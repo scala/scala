@@ -6,9 +6,9 @@ import reporters.{Reporter => CompilerReporter}
 import scala.tools.nsc.interactive.InteractiveReporter
 import scala.reflect.internal.util.SourceFile
 
-/** Determistically interrupts typechecking of `code` when a defintion named
-  * `MagicInterruptionMarker` is typechecked, and then performs a targetted
-  * typecheck of the tree at the specal comment marker marker
+/** Deterministically interrupts typechecking of `code` when a definition named
+  * `MagicInterruptionMarker` is typechecked, and then performs a targeted
+  * typecheck of the tree at the special comment marker marker
   */  
 abstract class IdempotencyTest { self =>
   private val settings = new Settings

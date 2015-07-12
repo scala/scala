@@ -30,3 +30,6 @@ class Formatting(indent: Int) {
     }
   )
 }
+object Formatting {
+  def forPrompt(prompt: String) = new Formatting(prompt.lines.toList.last.length)
+}

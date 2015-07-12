@@ -6,8 +6,9 @@
 package scala.tools.partest
 
 import scala.tools.nsc.Settings
-import scala.tools.nsc.interpreter.ILoop
+import scala.tools.nsc.interpreter.{ ILoop, replProps }
 import java.lang.reflect.{ Method => JMethod, Field => JField }
+import scala.util.matching.Regex
 import scala.util.matching.Regex.Match
 
 /** A class for testing repl code.
@@ -19,30 +20,33 @@ abstract class ReplTest extends DirectTest {
   // final because we need to enforce the existence of a couple settings.
   final override def settings: Settings = {
     val s = super.settings
-    // s.Yreplsync.value = true
     s.Xnojline.value = true
     transformSettings(s)
   }
+  def normalize(s: String) = s
   /** True for SessionTest to preserve session text. */
   def inSession: Boolean = false
-  /** True to preserve welcome text. */
+  /** True to preserve welcome header, eliding version number. */
   def welcoming: Boolean = false
-  lazy val welcome = "(Welcome to Scala) version .*".r
-  def normalize(s: String) = s match {
-    case welcome(w) => w
-    case s          => s
-  }
-  def unwelcoming(s: String) = s match {
-    case welcome(w) => false
-    case _          => true
-  }
+  lazy val header = replProps.welcome
   def eval() = {
     val s = settings
     log("eval(): settings = " + s)
-    //ILoop.runForTranscript(code, s).lines drop 1  // not always first line
     val lines = ILoop.runForTranscript(code, s, inSession = inSession).lines
-    if (welcoming) lines map normalize
-    else lines filter unwelcoming
+    (if (welcoming) {
+      val welcome = "(Welcome to Scala).*".r
+      //val welcome = Regex.quote(header.lines.next).r
+      //val version = "(.*version).*".r   // version on separate line?
+      //var inHead  = false
+      lines map {
+        //case s @ welcome()        => inHead = true  ; s
+        //case version(s) if inHead => inHead = false ; s
+        case welcome(s) => s
+        case s          => s
+      }
+    } else {
+      lines drop header.lines.size
+    }) map normalize
   }
   def show() = eval() foreach println
 }
