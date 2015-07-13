@@ -47,6 +47,7 @@ A new language feature requires a SIP (Scala Improvement Process) proposal. For 
 #### Summary
 
 1. We require regression tests for bug fixes. New features and enhancements must be supported by a respectable test suite.
+   - Consider including comments in the test files that indicates what you're testing and why. Expected outcome, what happened before the fix, what happens now, that sort of thing.
 2. Documentation. Yep! Also required :-)
 3. Please follow these standard code standards, though in moderation (scouts quickly learn to let sleeping dogs lie):
    - Not violate [DRY](http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself).
