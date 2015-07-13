@@ -1022,7 +1022,7 @@ trait Infer extends Checkable {
      */
     def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt0: Type) {
       val pt       = abstractTypesToBounds(pt0)
-      val ptparams = freeTypeParamsOfTerms(pt)
+      val ptparams = freeTypeParams(pt)
       val ctorTp   = tree.tpe
       val resTp    = ctorTp.finalResultType
 
@@ -1164,8 +1164,8 @@ trait Infer extends Checkable {
 
     def inferTypedPattern(tree0: Tree, pattp: Type, pt0: Type, canRemedy: Boolean): Type = {
       val pt        = abstractTypesToBounds(pt0)
-      val ptparams  = freeTypeParamsOfTerms(pt)
-      val tpparams  = freeTypeParamsOfTerms(pattp)
+      val ptparams  = freeTypeParams(pt)
+      val tpparams  = freeTypeParams(pattp)
 
       def ptMatchesPattp = pt matchesPattern pattp.widen
       def pattpMatchesPt = pattp matchesPattern pt
@@ -1218,7 +1218,7 @@ trait Infer extends Checkable {
 
     def inferModulePattern(pat: Tree, pt: Type) =
       if (!(pat.tpe <:< pt)) {
-        val ptparams = freeTypeParamsOfTerms(pt)
+        val ptparams = freeTypeParams(pt)
         debuglog("free type params (2) = " + ptparams)
         val ptvars = ptparams map freshVar
         val pt1 = pt.instantiateTypeParams(ptparams, ptvars)
@@ -1244,7 +1244,7 @@ trait Infer extends Checkable {
 
     /** Collects type parameters referred to in a type.
      */
-    def freeTypeParamsOfTerms(tp: Type): List[Symbol] = {
+    def freeTypeParams(tp: Type): List[Symbol] = {
       // An inferred type which corresponds to an unknown type
       // constructor creates a file/declaration order-dependent crasher
       // situation, the behavior of which depends on the state at the
@@ -1253,15 +1253,12 @@ trait Infer extends Checkable {
       // have type constructors amongst their bounds. See SI-4070.
       def isFreeTypeParamOfTerm(sym: Symbol) = (
         sym.isAbstractType
-          && sym.owner.isTerm
           && !sym.info.bounds.exists(_.typeParams.nonEmpty)
         )
 
       // Intentionally *not* using `Type#typeSymbol` here, which would normalize `tp`
       // and collect symbols from the result type of any resulting `PolyType`s, which
       // are not free type parameters of `tp`.
-      //
-      // Contrast with `isFreeTypeParamNoSkolem`.
       val syms = tp collect {
         case TypeRef(_, sym, _) if isFreeTypeParamOfTerm(sym) => sym
       }
