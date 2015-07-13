@@ -35,7 +35,7 @@ object Test extends StoreReporterDirectTest {
   def app2 = """
     package pack3
     object Test {
-      pack2.V.u.t // we have to fail if T.class is misisng
+      pack2.V.u.t // we have to fail if T.class is missing
     }
   """
 

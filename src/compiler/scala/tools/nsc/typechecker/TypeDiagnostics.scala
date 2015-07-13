@@ -309,6 +309,7 @@ trait TypeDiagnostics {
     // save the name because it will be mutated until it has been
     // distinguished from the other types in the same error message
     private val savedName = sym.name
+    private var postQualifiedWith: List[Symbol] = Nil
     def restoreName()     = sym.name = savedName
     def modifyName(f: String => String) = sym setName newTypeName(f(sym.name.toString))
 
@@ -317,12 +318,12 @@ trait TypeDiagnostics {
      */
     def qualifyDefaultNamespaces() = {
       val intersect = Set(trueOwner, aliasOwner) intersect UnqualifiedOwners
-      if (intersect.nonEmpty) preQualify()
+      if (intersect.nonEmpty && tp.typeSymbolDirect.name == tp.typeSymbol.name) preQualify()
     }
 
     // functions to manipulate the name
     def preQualify()   = modifyName(trueOwner.fullName + "." + _)
-    def postQualify()  = modifyName(_ + "(in " + trueOwner + ")")
+    def postQualify()  = if (!(postQualifiedWith contains trueOwner)) { postQualifiedWith ::= trueOwner; modifyName(_ + "(in " + trueOwner + ")") }
     def typeQualify()  = if (sym.isTypeParameterOrSkolem) postQualify()
     def nameQualify()  = if (trueOwner.isPackageClass) preQualify() else postQualify()
 

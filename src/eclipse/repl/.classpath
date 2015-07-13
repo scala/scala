@@ -2,7 +2,8 @@
 <classpath>
   <classpathentry kind="src" path="repl"/>
   <classpathentry combineaccessrules="false" kind="src" path="/asm"/>
-  <classpathentry kind="var" path="M2_REPO/jline/jline/2.12/jline-2.12.jar"/>
+  <classpathentry kind="var" path="M2_REPO/jline/jline/2.12.1/jline-2.12.1.jar"/>
+  <!-- <classpathentry kind="var" path="SCALA_BASEDIR/build/deps/repl/jline-2.12.jar"/> -->
   <classpathentry combineaccessrules="false" kind="src" path="/scala-compiler"/>
   <classpathentry combineaccessrules="false" kind="src" path="/scala-library"/>
   <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>

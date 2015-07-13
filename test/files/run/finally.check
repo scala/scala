@@ -29,7 +29,7 @@ body
 in finally
 java.lang.Exception
 ----------------------------------------
-Running nestedFinalies
+Running nestedFinallyBlocks
 in finally 1
 in finally 2
 ----------------------------------------

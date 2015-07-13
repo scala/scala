@@ -317,7 +317,7 @@ trait Reifiers { self: Quasiquotes =>
      *  Reification of non-trivial list is done in two steps:
      *
      *  1. split the list into groups where every placeholder is always
-     *     put in a group of its own and all subsquent non-holeMap are
+     *     put in a group of its own and all subsequent non-holeMap are
      *     grouped together; element is considered to be a placeholder if it's
      *     in the domain of the fill function;
      *

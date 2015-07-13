@@ -438,7 +438,7 @@ case object Nil extends List[Nothing] {
     throw new NoSuchElementException("head of empty list")
   override def tail: List[Nothing] =
     throw new NoSuchElementException("tail of empty list")
-  // Removal of equals method here might lead to an infinite recusion similar to IntMap.equals.
+  // Removal of equals method here might lead to an infinite recursion similar to IntMap.equals.
   override def equals(that: Any) = that match {
     case that1: Seq[_] => that1.isEmpty
     case _ => false

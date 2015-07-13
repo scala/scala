@@ -1,5 +1,3 @@
-Type in expressions to have them evaluated.
-Type :help for more information.
 
 scala> import scala.language.dynamics
 import scala.language.dynamics

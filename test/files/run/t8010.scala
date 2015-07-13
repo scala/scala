@@ -5,7 +5,7 @@ trait Base {
   def bt(n: Int) = n
 }
 trait Derived extends Base {
-  // was: double defintion error
+  // was: double definition error
   override def t          = 1 + super.t
   override def t(n: Int)  = 1 + super.t(n)
   override def bt         = 1 + super.bt
@@ -14,7 +14,7 @@ trait Derived extends Base {
 
 object Test extends App {
   val d = new Derived {}
-  // not the focus of thie bug, but let's just check the runtime behaviour while we're here.
+  // not the focus of this bug, but let's just check the runtime behaviour while we're here.
   assert(d.t == 2)
   assert(d.t(1) == 2)
   assert(d.bt == 3)

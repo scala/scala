@@ -346,7 +346,7 @@ trait MethodConstruction { self: QuasiquoteProperties =>
     }
   }
 
-  property("can't unquote annotations with arguments specificed twice") = test {
+  property("can't unquote annotations with arguments specified twice") = test {
     val a = q"new a(x)"
     assertThrows[IllegalArgumentException] {
       q"@$a(y) def foo"
@@ -370,7 +370,7 @@ trait PackageConstruction { self: QuasiquoteProperties =>
     assertEqAst(q"package $name { }", "package foo.bar { }")
   }
 
-  property("splce name into package name") = test{
+  property("splice name into package name") = test{
     val name = TermName("bippy")
     assertEqAst(q"package $name { }", "package bippy { }")
   }

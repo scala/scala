@@ -142,7 +142,7 @@ object ASMConverters {
   import collection.mutable.{Map => MMap}
 
   /**
-   * Bytecode is equal modula local variable numbering and label numbering.
+   * Bytecode is equal modulo local variable numbering and label numbering.
    */
   def equivalentBytecode(as: List[Instruction], bs: List[Instruction], varMap: MMap[Int, Int] = MMap(), labelMap: MMap[Int, Int] = MMap()): Boolean = {
     def same(v1: Int, v2: Int, m: MMap[Int, Int]) = {

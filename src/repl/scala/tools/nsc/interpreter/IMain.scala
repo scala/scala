@@ -113,9 +113,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   def this() = this(new Settings())
 
   // the expanded prompt but without color escapes and without leading newline, for purposes of indenting
-  lazy val formatting: Formatting = new Formatting(
-    (replProps.promptString format Properties.versionNumberString).lines.toList.last.length
-  )
+  lazy val formatting = Formatting.forPrompt(replProps.promptText)
   lazy val reporter: ReplReporter = new ReplReporter(this)
 
   import formatting.indentCode

@@ -162,7 +162,7 @@ object ErrorProps extends QuasiquoteProperties("errors") {
       q"$n"
     """)
 
-  property("SI-8211: check unbound placeholder paremeters") = fails(
+  property("SI-8211: check unbound placeholder parameters") = fails(
     "unbound placeholder parameter",
     """
       q"_"

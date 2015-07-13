@@ -103,7 +103,7 @@ trait Definitions extends api.StandardDefinitions {
     def isNumericValueClass(sym: Symbol) = ScalaNumericValueClasses contains sym
 
     def isGetClass(sym: Symbol) = (
-         sym.name == nme.getClass_ // this condition is for performance only, this is called from `Typer#stabliize`.
+         sym.name == nme.getClass_ // this condition is for performance only, this is called from `Typer#stabilize`.
       && getClassMethods(sym)
     )
 

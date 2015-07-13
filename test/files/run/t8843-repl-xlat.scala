@@ -4,9 +4,7 @@ import scala.tools.partest.SessionTest
 // Handy hamburger helper for repl resources
 object Test extends SessionTest {
   def session =
-"""Type in expressions to have them evaluated.
-Type :help for more information.
-
+"""
 scala> $intp.isettings.unwrapStrings = false
 $intp.isettings.unwrapStrings: Boolean = false
 

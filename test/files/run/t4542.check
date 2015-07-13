@@ -1,5 +1,3 @@
-Type in expressions to have them evaluated.
-Type :help for more information.
 
 scala> @deprecated("foooo", "ReplTest version 1.0-FINAL") class Foo() {
   override def toString = "Bippy"

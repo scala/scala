@@ -112,7 +112,7 @@ trait ModelFactoryTypeSupport {
           def needsPrefix: Boolean = {
             if ((owner != bSym.owner || preSym.isRefinementClass) && (normalizeTemplate(owner) != inTpl.sym))
               return true
-            // don't get tricked into prefixng method type params and existentials:
+            // don't get tricked into prefixing method type params and existentials:
             // I tried several tricks BUT adding the method for which I'm creating the type => that simply won't scale,
             // as ValueParams are independent of their parent member, and I really don't want to add this information to
             // all terms, as we're already over the allowed memory footprint

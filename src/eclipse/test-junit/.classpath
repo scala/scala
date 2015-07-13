@@ -2,7 +2,7 @@
 <classpath>
 	<classpathentry kind="src" path="test-junit"/>
 	<classpathentry kind="var" path="SCALA_BASEDIR/lib/ant/ant.jar"/>
-	<classpathentry kind="var" path="M2_REPO/junit/junit/4.10/junit-4.10.jar"/>
+	<classpathentry kind="var" path="M2_REPO/junit/junit/4.11/junit-4.11.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/reflect"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/scala-library"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>

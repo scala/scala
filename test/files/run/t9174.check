@@ -1,5 +1,3 @@
-Type in expressions to have them evaluated.
-Type :help for more information.
 
 scala> import scala.util.{Success, Failure}
 import scala.util.{Success, Failure}

@@ -1,5 +1,3 @@
-Type in expressions to have them evaluated.
-Type :help for more information.
 
 scala> :paste
 // Entering paste mode (ctrl-D to finish)
