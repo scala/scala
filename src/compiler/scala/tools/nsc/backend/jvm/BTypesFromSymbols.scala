@@ -351,6 +351,14 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     val isTopLevel = innerClassSym.rawowner.isPackageClass
     // impl classes are considered top-level, see comment in BTypes
     if (isTopLevel || considerAsTopLevelImplementationArtifact(innerClassSym)) None
+    else if (innerClassSym.rawowner.isTerm)
+      // SI-9392 An errant macro might leave a reference to a local class symbol that no longer exists in the tree,
+      //         this avoids an assertion error in that case. AFAICT, we don't actually need the `NestedInfo` for all BTypes,
+      //         only for ones that describe classes defined in the trees that reach the backend, so this is safe enough.
+      //
+      //         TODO Can we avoid creating `NestedInfo` for each type that is referred to, and instead only create if for
+      //         symbols of ClassDefs?
+      None
     else {
       // See comment in BTypes, when is a class marked static in the InnerClass table.
       val isStaticNestedClass = isOriginallyStaticOwner(innerClassSym.originalOwner)
