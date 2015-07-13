@@ -1022,7 +1022,6 @@ trait Infer extends Checkable {
      */
     def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt0: Type) {
       val pt       = abstractTypesToBounds(pt0)
-      val ptparams = freeTypeParams(pt)
       val ctorTp   = tree.tpe
       val resTp    = ctorTp.finalResultType
 
@@ -1061,6 +1060,7 @@ trait Infer extends Checkable {
 
       def inferForApproxPt =
         if (isFullyDefined(pt)) {
+          val ptparams = freeTypeParams(pt)
           inferFor(pt.instantiateTypeParams(ptparams, ptparams map (x => WildcardType))) flatMap { targs =>
             val ctorTpInst = tree.tpe.instantiateTypeParams(undetparams, targs)
             val resTpInst  = skipImplicit(ctorTpInst.finalResultType)
@@ -1085,8 +1085,10 @@ trait Infer extends Checkable {
 
       inferFor(pt) orElse inferForApproxPt match {
         case Some(targs) =>
-          new TreeTypeSubstituter(undetparams, targs).traverse(tree)
-          notifyUndetparamsInferred(undetparams, targs)
+          if (!undetparams.isEmpty) {
+            new TreeTypeSubstituter(undetparams, targs).traverse(tree)
+            notifyUndetparamsInferred(undetparams, targs)
+          }
         case _ =>
           def not = if (isFullyDefined(pt)) "" else "not "
           devWarning(s"failed inferConstructorInstance for $tree: ${tree.tpe} undet=$undetparams, pt=$pt (${not}fully defined)")
