@@ -38,84 +38,104 @@ Please make sure the JIRA ticket's fix version corresponds to the upcoming miles
 
 #### Enhancement or New Feature
 
-For longer-running development, likely required for this category of code contributions, we suggest you include "topic" or "wip" in your branch name, to indicate that this is work in progress, and that others should be prepared to rebase if they branch off your branch.
+For longer-running development, likely required for this category of code contributions, we suggest you include "topic/" or "wip/" in your branch name, to indicate that this is work in progress, and that others should be prepared to rebase if they branch off your branch.
 
 Any language change (including bug fixes) must be accompanied by the relevant updates to the spec, which lives in the same repository for this reason.
 
 A new language feature requires a SIP (Scala Improvement Process) proposal. For more details on submitting SIPs, see [how to submit a SIP](http://docs.scala-lang.org/sips/sip-submission.html).
 
-#### Summary
+## Guidelines
 
-1. We require regression tests for bug fixes. New features and enhancements must be supported by a respectable test suite.
-   - Consider including comments in the test files that indicates what you're testing and why. Expected outcome, what happened before the fix, what happens now, that sort of thing.
-2. Documentation. Yep! Also required :-)
-3. Please follow these standard code standards, though in moderation (scouts quickly learn to let sleeping dogs lie):
-   - Not violate [DRY](http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself).
-   - [Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule) should be applied.
+Here is some advice on how to craft a pull request with the best possible
+chance of being accepted.
 
-Please also have a look at our [Pull Request Policy](https://github.com/scala/scala/wiki/Pull-Request-Policy), as well as the [Scala Hacker Guide](http://www.scala-lang.org/contribute/hacker-guide.html) by @xeno-by.
+### Merging
 
+A pull request should merge cleanly.  (If enough time passes after
+your initial submission, we may ask you to rebase it onto the current
+mainline code.)
 
-# Pull Request Policy
+### Tests
 
-taken from https://github.com/scala/scala/wiki/Pull-Request-Policy
-before it was put out of its misery
+Bug fixes should include regression tests -- in the same commit as the fix.
 
-Hi there, pull request submitter!
+If testing isn't feasible, the commit message should explain why.
+(Consider discussing on scala-internals first.)
 
-Your pull request should:
-  - (... have been discussed on scala-internals)
-  - merge cleanly
-  - consist of commits with messages that clearly state which problem this commit resolves and how
-    - it should be stated in the active, present tense
-    - its subject should be 60 characters or less
-    - [conventions](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html)
-    - for a bug fix, the title must look like "SI-NNNN - don't crash when moon is in wrong phase"
-    - overall, think of the first line of the commit as a description of the action performed by the commit on the code base, so use the present tense -- that also makes them easy to reuse in release notes
-    - backports should be tagged as [backport], it's also nice to mention this when a commit purely refactors and is not intended to change behaviour
-    - when working on maintenance branches (e.g., 2.10.x), include [nomerge] if this commit should not be merged forward into the next release branch
-  - come with tests (included in the same commit as the functional change), or explain in detail why it cannot be tested (discuss this on scala-internals first). The tests itself should:
-    - be minimal, deterministic, stable (unaffected by irrelevant changes), easy to understand and review
-    - have minimal dependencies: a compiler bug should not depend on, e.g. the Scala library
-    - typically fail before your fix is applied (so we see that you are fixing a legitimate bug) and should obviously pass after your fix
-  - come with appropriate documentation
-    - for example, any API additions should include Scaladoc
-  - each commit must pass the test suite (checked automatically by the build bot by running approximately `ant test-opt`) 
-     - a commit is considered a unit of useful change and must thus pass the test suite
-       (this way we stand a chance running git bisect later)
-  - be assigned to one or more reviewers (if you're not sure, see the list below or contact scala-internals)
-     - to assign a reviewer, add a "review by @reviewer" to your PR description. NOTE: it's best not to @mention in commit messages, as github pings you every time a commit with your @name on it shuffles through the system (even in other repos, on merges,...)
-  - get the green light from the reviewer ("LGTM" -- looks good to me)
-     - review feedback may be addressed by pushing new commits to the request,
-       if these commits stand on their own
+New features and enhancements must be supported by a respectable test suite.
 
-Once all these conditions are met, and we agree with the change
-(we are available on scala-internals to discuss this beforehand),
-we will merge your changes.
+Consider including comments in the test files that indicate what you're testing and why. Expected outcome, what happened before the fix, what happens now, that sort of thing.
+
+Some characteristics of good tests:
+
+* be minimal, deterministic, stable (unaffected by irrelevant changes), easy to understand and review
+* have minimal dependencies: a compiler bug test should not depend on, e.g., the Scala library
+* typically fail before your fix is applied (so we see that you are fixing a legitimate bug) and should obviously pass after your fix
+
+### Documentation
+
+This is of course required for new features and enhancements.
+
+Any API additions should include Scaladoc.
+
+Don't forget to update the package-level doc (in the package object), if appropriate.
+
+### Coding standards
+
+Please follow these standard code standards, though in moderation (scouts quickly learn to let sleeping dogs lie):
+
+* Don't violate [DRY](http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself).
+* Follow the [Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule).
+
+Please also have a look at the [Scala Hacker Guide](http://www.scala-lang.org/contribute/hacker-guide.html) by @xeno-by.
+
+### Clean commits, clean history
+
+A pull request should consist of commits with messages that clearly state what problem the commit resolves and how.
+
+Commit logs should be stated in the active, present tense.
+
+A commit's subject should be 60 characters or less.  Overall, think of
+the first line of the commit as a description of the action performed
+by the commit on the code base, so use the active voice and the
+present tense.  That also makes the commit subjects easy to reuse in
+release notes.
+
+For a bugfix, the title must look like "SI-NNNN - don't crash when
+moon is in wrong phase".
+
+If a commit purely refactors and is not intended to change behaviour,
+say so.
+
+Backports should be tagged as "[backport]".
+
+When working on maintenance branches (e.g., 2.11.x), include "[nomerge]"
+if this commit should not be merged forward into the next release
+branch.
+
+Here are is standard advice on good commit messages:
+http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
+
+### Pass Scabot
+
+Our pull request bot, Scabot, automatically builds all the commits in a PR individually. (All, so we can `git bisect` later.)
+
+Click on the little x next to a commit sha to go to the overview of the PR validation job. To diagnose a failure, consult the console output of the job that failed.
+
+See the [scala-jenkins-infra repo](https://github.com/scala/scala-jenkins-infra) and [Scabot repo](https://github.com/) for full details on PR validation.  One tip you should know is that commenting `/rebuild` on a PR asks validation to be run again on the same commits. This is only necessary when a spurious failure occurred.
+
+### Pass code review
+
+Your PR will need to be assigned to one or more reviewers.  You can suggest reviewers yourself; if you're not sure, see the list in [README.md](README.md) or ask on scala-internals.
+
+To assign a reviewer, add a "review by @reviewer" to your PR description.
+
+NOTE: it's best not to @mention in commit messages, as github pings you every time a commit with your @name on it shuffles through the system (even in other repos, on merges,...).
+
+A reviewer gives the green light by commenting "LGTM" (looks good to me).
+
+A review feedback may be addressed by pushing new commits to the request, if these commits stand on their own.
+
+Once all these conditions are met, and we agree with the change (we are available on scala-internals to discuss this beforehand, before you put in the coding work!), we will merge your changes.
 
 Please note: you are responsible for meeting these criteria  (reminding your reviewer, for example).
-
-### Pull request bot mechanics
-* The build bot automatically builds commits as they appear in a PR. Click on the little x next to a commit sha to go to the overview of the PR validation job. To diagnose a failure, consult the console output of the job that failed.
-  * 'PLS REBUILD ALL' will force the bot to rebuild (only necessary when a spurious failure occurred -- i.e., you expect a different validation outcome without changing the commit shas that make up the PR)
-
-### List of reviewers by area:
-
-* library: @phaller (Philipp Haller), @axel22 (Aleksander Prokopec -- concurrent & collection) 
-* specialisation: @axel22 (Aleksander Prokopec), @vladureche (Vlad Ureche), @dragos (Iulian Dragos)
-* named / default args, annotations, plugins: @lrytz (Lukas Rytz)
-* macros, reflection, manifests, string interpolation: @xeno-by (Eugene Burmako), @cvogt (Christopher Vogt)
-* type checker, inference: @odersky (Martin Odersky), @adriaanm (Adriaan Moors)
-* Language specification, value classes: @odersky (Martin Odersky)
-* new pattern matcher, implicit search: @adriaanm (Adriaan Moors)
-* partest, Continuations Plugin: @phaller (Philipp Haller)
-* error handling, lazy vals: @hubertp (Hubert Plociniczak)
-* backend: @magarciaEPFL (Miguel Garcia), @gkossakowski (Grzegorz Kossakowski), @dragos (Iulian Dragos)
-* repl, compiler performance: @retronym (Jason Zaugg)
-* swing: @ingoem (Ingo Maier)
-* scaladoc: @dickwall (Dick Wall)
-* optimizer: @vladureche (Vlad Ureche), @magarciaEPFL (Miguel Garcia)
-* build: @jsuereth (Josh Suereth)
-* random compiler bugs: @lrytz, @adriaanm, @hubertp
-* documentation: @heathermiller (Heather Miller), @dickwall (Dick Wall)
-* cps: @TiarkRompf (Tiark Rompf)

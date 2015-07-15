@@ -23,8 +23,26 @@ If you need some help with your PR at any time, please feel free to @-mention an
  <img src="https://avatars.githubusercontent.com/xeno-by"      height="50px" title="Eugene Burmako"/>       | [`@xeno-by`](https://github.com/xeno-by)             | macros and reflection |
  <img src="https://avatars.githubusercontent.com/dickwall"     height="50px" title="Dick Wall"/>            | [`@dickwall`](https://github.com/dickwall)           | process & community |
 
+additional reviewer suggestions:
 
-PS: If you have some spare time to help out around here, we would be delighted to add your name to this list! 
+* library: @phaller (Philipp Haller), @axel22 (Aleksander Prokopec -- concurrent & collection)
+* specialisation: @axel22 (Aleksander Prokopec), @vladureche (Vlad Ureche), @dragos (Iulian Dragos)
+* named / default args, annotations, plugins: @lrytz (Lukas Rytz)
+* macros, reflection, manifests, string interpolation: @xeno-by (Eugene Burmako), @cvogt (Christopher Vogt)
+* type checker, inference: @odersky (Martin Odersky), @adriaanm (Adriaan Moors)
+* language specification, value classes: @odersky (Martin Odersky)
+* new pattern matcher, implicit search: @adriaanm (Adriaan Moors)
+* partest: @phaller (Philipp Haller)
+* error handling, lazy vals: @hubertp (Hubert Plociniczak)
+* backend: @lrytz (Lukas Rytz), @retronym (Jason Zaugg), @dragos (Iulian Dragos)
+* repl, compiler performance: @retronym (Jason Zaugg)
+* scaladoc: @dickwall (Dick Wall), @vladureche (Vlad Ureche)
+* optimizer: @vladureche (Vlad Ureche), @lrytz (Lukas Rytz)
+* build: @jsuereth (Josh Suereth)
+* random compiler bugs: @retronym, @lrytz, @adriaanm
+* documentation: @heathermiller (Heather Miller), @dickwall (Dick Wall)
+
+P.S.: If you have some spare time to help out around here, we would be delighted to add your name to this list!
 
 # Handy Links
   - [A wealth of documentation](http://docs.scala-lang.org)
