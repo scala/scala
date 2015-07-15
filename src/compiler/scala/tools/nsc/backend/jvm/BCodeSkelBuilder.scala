@@ -153,9 +153,9 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
      */
     private def initJClass(jclass: asm.ClassVisitor) {
 
-      val ps = claszSymbol.info.parents
-      val superClass: String = if (ps.isEmpty) ObjectReference.internalName else internalName(ps.head.typeSymbol)
-      val interfaceNames = classBTypeFromSymbol(claszSymbol).info.get.interfaces map {
+      val bType = classBTypeFromSymbol(claszSymbol)
+      val superClass = bType.info.get.superClass.getOrElse(ObjectReference).internalName
+      val interfaceNames = bType.info.get.interfaces map {
         case classBType =>
           if (classBType.isNestedClass.get) { innerClassBufferASM += classBType }
           classBType.internalName
