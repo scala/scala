@@ -149,9 +149,7 @@ object Test extends BytecodeTest {
 
   def testA11() = {
     val List(ann) = innerClassNodes("A11")
-    // in the java class file, the INNERCLASS attribute has more flags (public | static | abstract | interface | annotation)
-    // the scala compiler has its own interpretation of java annotations ant their flags.. it only emits publicStatic.
-    assertMember(ann, "JavaAnnot_1", "Ann", flags = publicStatic)
+    assertMember(ann, "JavaAnnot_1", "Ann", flags = publicAbstractInterface | Flags.ACC_STATIC | Flags.ACC_ANNOTATION)
   }
 
   def testA13() = {

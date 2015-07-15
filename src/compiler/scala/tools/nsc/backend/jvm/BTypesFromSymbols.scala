@@ -216,7 +216,18 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   }
 
   private def setClassInfo(classSym: Symbol, classBType: ClassBType): ClassBType = {
-    val superClassSym = if (classSym.isImplClass) ObjectClass else classSym.superClass
+    // Check for isImplClass: trait implementation classes have NoSymbol as superClass
+    // Check for hasAnnotationFlag for SI-9393: the classfile / java source parsers add
+    // scala.annotation.Annotation as superclass to java annotations. In reality, java
+    // annotation classfiles have superclass Object (like any interface classfile).
+    val superClassSym = if (classSym.isImplClass || classSym.hasJavaAnnotationFlag) ObjectClass else {
+      val sc = classSym.superClass
+      // SI-9393: Java annotation classes don't have the ABSTRACT/INTERFACE flag, so they appear
+      // (wrongly) as superclasses. Fix this for BTypes: the java annotation will appear as interface
+      // (handled by method implementedInterfaces), the superclass is set to Object.
+      if (sc.hasJavaAnnotationFlag) ObjectClass
+      else sc
+    }
     assert(
       if (classSym == ObjectClass)
         superClassSym == NoSymbol
