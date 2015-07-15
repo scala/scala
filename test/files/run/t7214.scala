@@ -1,4 +1,4 @@
-// pattern matcher crashes here trying to synthesize an uneeded outer test.
+// pattern matcher crashes here trying to synthesize an unneeded outer test.
 //     no-symbol does not have an owner
 // at scala.reflect.internal.SymbolTable.abort(SymbolTable.scala:49)
 // at scala.tools.nsc.Global.abort(Global.scala:253)

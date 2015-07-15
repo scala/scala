@@ -131,7 +131,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
   /** The character encoding of the files to compile. */
   protected var encoding: Option[String] = None
 
-  // the targetted backend
+  // the targeted backend
   protected var backend: Option[String] = None
 
   /** Whether to force compilation of all files or not. */
