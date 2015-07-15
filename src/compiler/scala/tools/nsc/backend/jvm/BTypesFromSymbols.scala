@@ -351,15 +351,15 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     val isTopLevel = innerClassSym.rawowner.isPackageClass
     // impl classes are considered top-level, see comment in BTypes
     if (isTopLevel || considerAsTopLevelImplementationArtifact(innerClassSym)) None
-    else if (innerClassSym.rawowner.isTerm)
-      // SI-9392 An errant macro might leave a reference to a local class symbol that no longer exists in the tree,
-      //         this avoids an assertion error in that case. AFAICT, we don't actually need the `NestedInfo` for all BTypes,
-      //         only for ones that describe classes defined in the trees that reach the backend, so this is safe enough.
-      //
-      //         TODO Can we avoid creating `NestedInfo` for each type that is referred to, and instead only create if for
-      //         symbols of ClassDefs?
+    else if (innerClassSym.rawowner.isTerm) {
+      // This case should never be reached: the lambdalift phase mutates the rawowner field of all
+      // classes to be the enclosing class. SI-9392 shows an errant macro that leaves a reference
+      // to a local class symbol that no longer exists, which is not updated by lambdalift.
+      devWarning(innerClassSym.pos,
+        s"""The class symbol $innerClassSym with the term symbol ${innerClassSym.rawowner} as `rawowner` reached the backend.
+           |Most likely this indicates a stale reference to a non-existing class introduced by a macro, see SI-9392.""".stripMargin)
       None
-    else {
+    } else {
       // See comment in BTypes, when is a class marked static in the InnerClass table.
       val isStaticNestedClass = isOriginallyStaticOwner(innerClassSym.originalOwner)
 
