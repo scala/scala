@@ -1,0 +1,5 @@
+<plugin>
+  <name>ignored</name>
+  <classname>scala.test.plugins.ThePlugin</classname>
+</plugin>
+

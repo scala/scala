@@ -158,8 +158,8 @@ object Plugin {
       def loop(qs: List[Path]): Try[PluginDescription] = qs match {
         case Nil       => Failure(new MissingPluginException(ps))
         case p :: rest =>
-          if (p.isDirectory) loadDescriptionFromFile(p.toDirectory / PluginXML)
-          else if (p.isFile) loadDescriptionFromJar(p.toFile)
+          if (p.isDirectory) loadDescriptionFromFile(p.toDirectory / PluginXML) orElse loop(rest)
+          else if (p.isFile) loadDescriptionFromJar(p.toFile) orElse loop(rest)
           else loop(rest)
       }
       loop(ps)
