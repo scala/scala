@@ -57,13 +57,11 @@ If testing isn't feasible, the commit message should explain why.
 
 New features and enhancements must be supported by a respectable test suite.
 
-Consider including comments in the test files that indicate what you're testing and why. Expected outcome, what happened before the fix, what happens now, that sort of thing.
-
 Some characteristics of good tests:
 
+* includes comments: what is being tested and why?
 * be minimal, deterministic, stable (unaffected by irrelevant changes), easy to understand and review
 * have minimal dependencies: a compiler bug test should not depend on, e.g., the Scala library
-* typically fail before your fix is applied (so we see that you are fixing a legitimate bug) and should obviously pass after your fix
 
 ### Documentation
 
@@ -71,7 +69,7 @@ This is of course required for new features and enhancements.
 
 Any API additions should include Scaladoc.
 
-Don't forget to update the package-level doc (in the package object), if appropriate.
+Consider updating the package-level doc (in the package object), if appropriate.
 
 ### Coding standards
 
@@ -106,7 +104,7 @@ When working on maintenance branches (e.g., 2.11.x), include "[nomerge]"
 if this commit should not be merged forward into the next release
 branch.
 
-Here are is standard advice on good commit messages:
+Here is standard advice on good commit messages:
 http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
 
 ### Pass Scabot
