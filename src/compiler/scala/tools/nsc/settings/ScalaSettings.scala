@@ -22,13 +22,9 @@ trait ScalaSettings extends AbsScalaSettings
   /** Set of settings */
   protected[scala] lazy val allSettings = mutable.HashSet[Setting]()
 
-  /** Against my better judgment, giving in to martin here and allowing
-   *  CLASSPATH to be used automatically.  So for the user-specified part
-   *  of the classpath:
-   *
-   *  - If -classpath or -cp is given, it is that
-   *  - Otherwise, if CLASSPATH is set, it is that
-   *  - If neither of those, then "." is used.
+  /** The user class path, specified by `-classpath` or `-cp`,
+   *  defaults to the value of CLASSPATH env var if it is set, as in Java,
+   *  or else to `"."` for the current user directory.
    */
   protected def defaultClasspath = sys.env.getOrElse("CLASSPATH", ".")
 

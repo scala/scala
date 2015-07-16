@@ -254,17 +254,7 @@ abstract class PathResolverBase[BaseClassPathType <: ClassFileLookup[AbstractFil
      * TODO: we should refactor this as a separate -bootstrap option to have a clean implementation, no? */
     def sourcePath          = if (!settings.isScaladoc) cmdLineOrElse("sourcepath", Defaults.scalaSourcePath) else ""
 
-    /** Against my better judgment, giving in to martin here and allowing
-     *  CLASSPATH to be used automatically.  So for the user-specified part
-     *  of the classpath:
-     *
-     *  - If -classpath or -cp is given, it is that
-     *  - Otherwise, if CLASSPATH is set, it is that
-     *  - If neither of those, then "." is used.
-     */
-    def userClassPath =
-      if (!settings.classpath.isDefault) settings.classpath.value
-      else sys.env.getOrElse("CLASSPATH", ".")
+    def userClassPath = settings.classpath.value  // default is specified by settings and can be overridden there
 
     import classPathFactory._
 
