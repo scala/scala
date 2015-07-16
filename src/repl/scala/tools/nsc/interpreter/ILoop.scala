@@ -863,7 +863,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
           case _ if settings.noCompletion => NoCompletion
           case "none"   => NoCompletion
           case "adhoc"  => new JLineCompletion(intp) // JLineCompletion is a misnomer; it's not tied to jline
-          case "pc" | _ => new PresentationCompilerCompletionProvider(intp)
+          case "pc" | _ => new PresentationCompilerCompleter(intp)
         }
       }
 
