@@ -169,7 +169,7 @@ to build the compiler. You can run `sbt test` to run unit (JUnit) tests.
 Use `sbt test/it:test` to run integration (partest) tests.
 
 We would like to migrate to sbt build as quickly as possible. If you would
-like to help please contact scala-internals@ mailing list to discuss your
+like to help please use the scala-internals mailing list to discuss your
 ideas and coordinate your effort with others.
 
 ### Tips and tricks
