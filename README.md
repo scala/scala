@@ -25,20 +25,18 @@ If you need some help with your PR at any time, please feel free to @-mention an
 
 additional reviewer suggestions:
 
-* library: @phaller (Philipp Haller), @axel22 (Aleksander Prokopec -- concurrent & collection)
+* library: @axel22 (Aleksander Prokopec -- concurrent & collection)
 * specialisation: @axel22 (Aleksander Prokopec), @vladureche (Vlad Ureche), @dragos (Iulian Dragos)
 * named / default args, annotations, plugins: @lrytz (Lukas Rytz)
-* macros, reflection, manifests, string interpolation: @xeno-by (Eugene Burmako), @cvogt (Christopher Vogt)
-* type checker, inference: @odersky (Martin Odersky), @adriaanm (Adriaan Moors)
-* language specification, value classes: @odersky (Martin Odersky)
+* macros, reflection, manifests, string interpolation: @xeno-by (Eugene Burmako)
+* type checker, inference: @adriaanm (Adriaan Moors)
+* language specification: @adriaanm (Adriaan Moors)
 * new pattern matcher, implicit search: @adriaanm (Adriaan Moors)
-* partest: @phaller (Philipp Haller)
-* error handling, lazy vals: @hubertp (Hubert Plociniczak)
 * backend: @lrytz (Lukas Rytz), @retronym (Jason Zaugg), @dragos (Iulian Dragos)
 * repl, compiler performance: @retronym (Jason Zaugg)
 * scaladoc: @dickwall (Dick Wall), @vladureche (Vlad Ureche)
 * optimizer: @vladureche (Vlad Ureche), @lrytz (Lukas Rytz)
-* build: @jsuereth (Josh Suereth)
+* build: @SethTisue
 * random compiler bugs: @retronym, @lrytz, @adriaanm
 * documentation: @heathermiller (Heather Miller), @dickwall (Dick Wall)
 

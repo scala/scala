@@ -49,18 +49,11 @@ A new language feature requires a SIP (Scala Improvement Process) proposal. For 
 Here is some advice on how to craft a pull request with the best possible
 chance of being accepted.
 
-### Merging
-
-A pull request should merge cleanly.  (If enough time passes after
-your initial submission, we may ask you to rebase it onto the current
-mainline code.)
-
 ### Tests
 
 Bug fixes should include regression tests -- in the same commit as the fix.
 
 If testing isn't feasible, the commit message should explain why.
-(Consider discussing on scala-internals first.)
 
 New features and enhancements must be supported by a respectable test suite.
 
@@ -137,5 +130,3 @@ A reviewer gives the green light by commenting "LGTM" (looks good to me).
 A review feedback may be addressed by pushing new commits to the request, if these commits stand on their own.
 
 Once all these conditions are met, and we agree with the change (we are available on scala-internals to discuss this beforehand, before you put in the coding work!), we will merge your changes.
-
-Please note: you are responsible for meeting these criteria  (reminding your reviewer, for example).
