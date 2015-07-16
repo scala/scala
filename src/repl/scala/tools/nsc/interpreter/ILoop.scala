@@ -657,12 +657,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     unleashAndSetPhase()
     asyncEcho(isDuringInit, power.banner)
   }
-  private def unleashAndSetPhase() {
-    if (isReplPower) {
-      power.unleash()
-      // Set the phase to "typer"
-      intp beSilentDuring phaseCommand("typer")
-    }
+  private def unleashAndSetPhase() = if (isReplPower) {
+    power.unleash()
+    intp beSilentDuring phaseCommand("typer") // Set the phase to "typer"
   }
 
   def asyncEcho(async: Boolean, msg: => String) {
