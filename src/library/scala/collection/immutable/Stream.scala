@@ -509,21 +509,6 @@ self =>
     else Stream.Empty
   }
 
-  /** Returns all the elements of this `Stream` that satisfy the predicate `p`
-   * in a new `Stream` - i.e., it is still a lazy data structure. The order of
-   * the elements is preserved
-   *
-   *  @param p the predicate used to filter the stream.
-   *  @return the elements of this stream satisfying `p`.
-   *
-   * @example {{{
-   * $naturalsEx
-   * naturalsFrom(1)  10 } filter { _ % 5 == 0 } take 10 mkString(", ")
-   * // produces
-   * }}}
-   */
-  override def filter(p: A => Boolean): Stream[A] = filterImpl(p, isFlipped = false) // This override is only left in 2.11 because of binary compatibility, see PR #3925
-
   /** A FilterMonadic which allows GC of the head of stream during processing */
   @noinline // Workaround SI-9137, see https://github.com/scala/scala/pull/4284#issuecomment-73180791
   override final def withFilter(p: A => Boolean): FilterMonadic[A, Stream[A]] = new Stream.StreamWithFilter(this, p)

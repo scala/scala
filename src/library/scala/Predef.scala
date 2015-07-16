@@ -269,13 +269,6 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     @inline def formatted(fmtstr: String): String = fmtstr format self
   }
 
-  // TODO: remove, only needed for binary compatibility of 2.11.0-RC1 with 2.11.0-M8
-  // note that `private[scala]` becomes `public` in bytecode
-  private[scala] final class StringAdd[A](private val self: A) extends AnyVal {
-    def +(other: String): String = String.valueOf(self) + other
-  }
-  private[scala] def StringAdd(x: Any): Any = new StringAdd(x)
-
   // SI-8229 retaining the pre 2.11 name for source compatibility in shadowing this implicit
   implicit final class any2stringadd[A](private val self: A) extends AnyVal {
     def +(other: String): String = String.valueOf(self) + other
