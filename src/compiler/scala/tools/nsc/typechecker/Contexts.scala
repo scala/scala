@@ -802,6 +802,14 @@ trait Contexts { self: Analyzer =>
         (e ne null) && (e.owner == scope) && (!settings.isScala212 || e.sym.exists)
       })
 
+    /** Do something with the symbols with name `name` imported via the import in `imp`,
+     *  if any such symbol is accessible from this context and is a qualifying implicit.
+     */
+    private def withQualifyingImplicitAlternatives(imp: ImportInfo, name: Name, pre: Type)(f: Symbol => Unit) = for {
+      sym <- importedAccessibleSymbol(imp, name, requireExplicit = false, record = false).alternatives
+      if isQualifyingImplicit(name, sym, pre, imported = true)
+    } f(sym)
+
     private def collectImplicits(syms: Scope, pre: Type, imported: Boolean = false): List[ImplicitInfo] =
       for (sym <- syms.toList if isQualifyingImplicit(sym.name, sym, pre, imported)) yield
         new ImplicitInfo(sym.name, pre, sym)
@@ -819,9 +827,9 @@ trait Contexts { self: Analyzer =>
         case ImportSelector(from, _, to, _) :: sels1 =>
           var impls = collect(sels1) filter (info => info.name != from)
           if (to != nme.WILDCARD) {
-            for (sym <- importedAccessibleSymbol(imp, to).alternatives)
-              if (isQualifyingImplicit(to, sym, pre, imported = true))
-                impls = new ImplicitInfo(to, pre, sym) :: impls
+            withQualifyingImplicitAlternatives(imp, to, pre) { sym =>
+              impls = new ImplicitInfo(to, pre, sym) :: impls
+            }
           }
           impls
       }
@@ -946,9 +954,6 @@ trait Contexts { self: Analyzer =>
     /** The symbol with name `name` imported via the import in `imp`,
      *  if any such symbol is accessible from this context.
      */
-    def importedAccessibleSymbol(imp: ImportInfo, name: Name): Symbol =
-      importedAccessibleSymbol(imp, name, requireExplicit = false, record = false)
-
     private def importedAccessibleSymbol(imp: ImportInfo, name: Name, requireExplicit: Boolean, record: Boolean): Symbol =
       imp.importedSymbol(name, requireExplicit, record) filter (s => isAccessible(s, imp.qual.tpe, superAccess = false))
 
