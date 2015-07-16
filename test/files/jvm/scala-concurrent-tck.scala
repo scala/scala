@@ -629,7 +629,7 @@ trait BlockContexts extends TestBase {
   // test BlockContext in our default ExecutionContext
   def testDefaultFJP(): Unit = {
     val bc = getBlockContext(BlockContext.current)
-    assert(bc.isInstanceOf[scala.concurrent.forkjoin.ForkJoinWorkerThread])
+    assert(bc.isInstanceOf[java.util.concurrent.ForkJoinWorkerThread])
   }
 
   // test BlockContext inside BlockContext.withBlockContext

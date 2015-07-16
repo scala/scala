@@ -61,8 +61,4 @@ This license is used by the following third-party libraries:
   * sizzle
   * tools tooltip
 
-### Public Domain
-The following libraries are freely available in the public domain:
-
-  * forkjoin
 

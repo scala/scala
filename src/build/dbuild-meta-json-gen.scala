@@ -16,7 +16,7 @@ val meta =
   ProjMeta(version = "2.12.0", projects = Seq(
     Project("scala-library", "org.scala-lang",
       Seq(ProjectRef("scala-library", "org.scala-lang")),
-      Seq.empty), // TODO: forkjoin
+      Seq.empty),
     Project("scala-reflect", "org.scala-lang",
       Seq(ProjectRef("scala-reflect", "org.scala-lang")),
       Seq(ProjectRef("scala-library", "org.scala-lang"))),

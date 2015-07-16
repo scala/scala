@@ -91,7 +91,6 @@
 
   <macrodef name="simple-javac">
     <attribute name="project"/>
-    <!-- project: forkjoin -->
     <attribute name="args" default=""/>
     <attribute name="jar" default="yes"/>
     <sequential>
