@@ -285,7 +285,7 @@ extends scala.collection.AbstractSeq[Int]
    */
   final override def splitAt(n: Int) = (take(n), drop(n))
 
-  /** Creates a new range consisting of the `length - n` last elements of the range.
+  /** Creates a new range consisting of the last `n` elements of the range.
    *
    *  $doesNotUseBuilders
    */
