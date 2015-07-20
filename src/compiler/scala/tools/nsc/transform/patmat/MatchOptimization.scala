@@ -286,8 +286,8 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
             else Apply(Ident(defaultLabel), Nil)
 
           val guardedBody = same.foldRight(jumpToDefault){
-            // the last case may be un-guarded (we know it's the last one since fold's accum == jumpToDefault)
-            // --> replace jumpToDefault by the un-guarded case's body
+            // the last case may be unguarded (we know it's the last one since fold's accum == jumpToDefault)
+            // --> replace jumpToDefault by the unguarded case's body
             case (CaseDef(_, EmptyTree, b), `jumpToDefault`)     => b
             case (cd@CaseDef(_, g, b), els) if isGuardedCase(cd) => If(g, b, els)
           }
@@ -322,7 +322,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         var remainingCases = cases
         val collapsed      = scala.collection.mutable.ListBuffer.empty[CaseDef]
 
-        // when some of collapsed cases (except for the default case itself) did not include an un-guarded case
+        // when some of collapsed cases (except for the default case itself) did not include an unguarded case
         // we'll need to emit a labeldef for the default case
         var needDefault  = false
 

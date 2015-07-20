@@ -79,9 +79,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
   /** Does this field require an initialized bit?
    *  Note: fields of classes inheriting DelayedInit are not checked.
-   *        This is because the they are neither initialized in the constructor
+   *        This is because they are neither initialized in the constructor
    *        nor do they have a setter (not if they are vals anyway). The usual
-   *        logic for setting bitmaps does therefor not work for such fields.
+   *        logic for setting bitmaps does therefore not work for such fields.
    *        That's why they are excluded.
    *  Note: The `checkinit` option does not check if transient fields are initialized.
    */

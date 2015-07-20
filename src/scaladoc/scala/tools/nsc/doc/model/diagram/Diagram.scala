@@ -99,7 +99,7 @@ case class NormalNode(tpe: TypeEntity, tpl: Option[TemplateEntity])(val tooltip:
 
 /** A class or trait the thisnode can be converted to by an implicit conversion
  *  TODO: I think it makes more sense to use the tpe links to templates instead of the TemplateEntity for implicit nodes
- *  since some implicit conversions convert the class to complex types that cannot be represented as a single tmeplate
+ *  since some implicit conversions convert the class to complex types that cannot be represented as a single template
  */
 case class ImplicitNode(tpe: TypeEntity, tpl: Option[TemplateEntity])(val tooltip: Option[String] = None) extends Node { override def isImplicitNode = true }
 

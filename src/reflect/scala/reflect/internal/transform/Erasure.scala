@@ -90,7 +90,7 @@ trait Erasure {
     }
   }
 
-  /** Does this vakue class have an underlying type that's a type parameter of
+  /** Does this value class have an underlying type that's a type parameter of
    *  the class itself?
    *  This method needs to be called at a phase no later than erasurephase
    */

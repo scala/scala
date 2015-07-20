@@ -28,5 +28,5 @@
 
     }
 
-The constructor invocation of Bar is done within the scope of object Foo's constructor, and therefor the private constructor of Foo should be visible and accessible.
+The constructor invocation of Bar is done within the scope of object Foo's constructor, and therefore the private constructor of Foo should be visible and accessible.
 */
