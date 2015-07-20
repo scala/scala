@@ -195,7 +195,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *  import scala.collection.parallel._
    *  val pc = mutable.ParArray(1, 2, 3)
    *  pc.tasksupport = new ForkJoinTaskSupport(
-   *    new scala.concurrent.forkjoin.ForkJoinPool(2))
+   *    new java.util.concurrent.ForkJoinPool(2))
    *  }}}
    *
    *  @see [[scala.collection.parallel.TaskSupport]]

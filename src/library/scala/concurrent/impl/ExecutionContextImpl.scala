@@ -10,10 +10,9 @@ package scala.concurrent.impl
 
 
 
-import java.util.concurrent.{ LinkedBlockingQueue, Callable, Executor, ExecutorService, Executors, ThreadFactory, TimeUnit, ThreadPoolExecutor }
+import java.util.concurrent.{ ForkJoinPool, ForkJoinWorkerThread, ForkJoinTask, LinkedBlockingQueue, Callable, Executor, ExecutorService, Executors, ThreadFactory, TimeUnit, ThreadPoolExecutor }
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.Collection
-import scala.concurrent.forkjoin._
 import scala.concurrent.{ BlockContext, ExecutionContext, Awaitable, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService }
 import scala.util.control.NonFatal
 import scala.annotation.tailrec

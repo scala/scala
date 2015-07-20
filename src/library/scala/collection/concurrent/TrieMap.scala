@@ -471,7 +471,7 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
     val offset =
       if (array.length > 0)
         //util.Random.nextInt(array.length) /* <-- benchmarks show that this causes observable contention */
-        scala.concurrent.forkjoin.ThreadLocalRandom.current.nextInt(0, array.length)
+        java.util.concurrent.ThreadLocalRandom.current.nextInt(0, array.length)
       else 0
     while (i < array.length) {
       val pos = (i + offset) % array.length

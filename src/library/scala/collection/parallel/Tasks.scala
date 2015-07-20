@@ -10,7 +10,7 @@ package scala
 package collection.parallel
 
 import java.util.concurrent.ThreadPoolExecutor
-import scala.concurrent.forkjoin._
+import java.util.concurrent.{ForkJoinPool, RecursiveAction, ForkJoinWorkerThread}
 import scala.concurrent.ExecutionContext
 import scala.util.control.Breaks._
 import scala.annotation.unchecked.uncheckedVariance
