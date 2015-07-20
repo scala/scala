@@ -14,5 +14,6 @@
     <orderEntry type="library" name="scaladoc-deps" level="project" />
     <orderEntry type="library" name="ant" level="project" />
     <orderEntry type="library" name="partest" level="project" />
+    <orderEntry type="library" name="asm" level="project" />
   </component>
 </module>
