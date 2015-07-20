@@ -46,7 +46,7 @@ object TestSetterInline {
  * The access of the local variable 'y' should be replaced by the
  * constant.
  */
-object TestAliasChainConstat {
+object TestAliasChainConstant {
 
   def main(args: Array[String]): Unit = {
     val x = 2
