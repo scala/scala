@@ -3031,7 +3031,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
      *
      *  Rationale for this normalization:
      *    test/files/run/private-inline.scala after -optimize is chock full of
-     *    BasicBlocks containing just JUMP(whereTo), where no exception handler straddles them.
+     *    BasicBlocks containing just JUMP(whereto), where no exception handler straddles them.
      *    They should be collapsed by IMethod.normalize() but aren't.
      *    That was fine in FJBG times when by the time the exception table was emitted,
      *    it already contained "anchored" labels (ie instruction offsets were known)

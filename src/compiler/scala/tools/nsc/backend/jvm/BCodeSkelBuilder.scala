@@ -443,7 +443,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
      *        which rethrows the caught exception once it's done with the cleanup code.
      *
      *  A particular cleanup may in general contain LabelDefs. Care is needed when duplicating such jump-targets,
-     *  so as to preserve agreement wit the (also duplicated) jump-sources.
+     *  so as to preserve agreement with the (also duplicated) jump-sources.
      *  This is achieved based on the bookkeeping provided by two maps:
      *    - `labelDefsAtOrUnder` lists all LabelDefs enclosed by a given Tree node (the key)
      *    - `labelDef` provides the LabelDef node whose symbol is used as key.
