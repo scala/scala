@@ -28,7 +28,7 @@ object PathSettings {
   private def cwd = Directory.Current getOrElse sys.error("user.dir property not set")
   private def isPartestDir(d: Directory) = (d.name == "test") && (d / testSourcePath isDirectory)
   private def findJar(name: String, ds: Directory*): Either[String, File] =
-    ds.toStream flatMap (_.files) filter (_ hasExtension "jar") find ( _.name startsWith name ) map (Right(_)) getOrElse
+    ds.iterator flatMap (_.files) filter (_ hasExtension "jar") find ( _.name startsWith name ) map (Right(_)) getOrElse
       Left(s"'${name}.jar' not found in '${ds map (_.path) mkString ", "}'.")
 
   // Directory <root>/test
