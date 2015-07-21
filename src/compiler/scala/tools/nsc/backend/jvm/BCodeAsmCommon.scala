@@ -258,15 +258,15 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
     GenBCode.mkFlags(
       // SI-9393: the classfile / java source parser make java annotation symbols look like classes.
       // here we recover the actual classfile flags.
-      if (classSym.hasJavaAnnotationFlag)                    ACC_ANNOTATION | ACC_INTERFACE | ACC_ABSTRACT else 0,
-      if (classSym.isPublic)                                 ACC_PUBLIC    else 0,
-      if (classSym.isFinal)                                  ACC_FINAL     else 0,
+      if (classSym.hasJavaAnnotationFlag)                        ACC_ANNOTATION | ACC_INTERFACE | ACC_ABSTRACT else 0,
+      if (classSym.isPublic)                                     ACC_PUBLIC    else 0,
+      if (classSym.isFinal)                                      ACC_FINAL     else 0,
       // see the link above. javac does the same: ACC_SUPER for all classes, but not interfaces.
-      if (classSym.isInterface)                              ACC_INTERFACE else ACC_SUPER,
+      if (classSym.isInterface)                                  ACC_INTERFACE else ACC_SUPER,
       // for Java enums, we cannot trust `hasAbstractFlag` (see comment in enumFlags)
-      if (!classSym.hasEnumFlag && classSym.hasAbstractFlag) ACC_ABSTRACT  else 0,
-      if (classSym.isArtifact)                               ACC_SYNTHETIC else 0,
-      if (classSym.hasEnumFlag)                              enumFlags     else 0
+      if (!classSym.hasJavaEnumFlag && classSym.hasAbstractFlag) ACC_ABSTRACT  else 0,
+      if (classSym.isArtifact)                                   ACC_SYNTHETIC else 0,
+      if (classSym.hasJavaEnumFlag)                              enumFlags     else 0
     )
   }
 
