@@ -217,8 +217,7 @@ buildXML() {
   then echo "Found scala-xml $XML_VER; not building."
   else
     update scala scala-xml "$XML_REF" && gfxd
-    # TODO: compile under 2.12 source level once `scala.xml.XMLTest.escape` is fixed (see #4451)
-    sbtBuild 'set scalacOptions += "-Xsource:2.11"' 'set version := "'$XML_VER'-DOC"' $clean doc  'set version := "'$XML_VER'"' test "${buildTasks[@]}"
+    sbtBuild 'set version := "'$XML_VER'-DOC"' $clean doc  'set version := "'$XML_VER'"' test "${buildTasks[@]}"
     XML_BUILT="yes" # ensure the module is built and published when buildXML is invoked for the second time, see comment above
   fi
 }
