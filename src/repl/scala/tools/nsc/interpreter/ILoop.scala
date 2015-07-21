@@ -24,9 +24,9 @@ import io.AbstractFile
 import scala.collection.generic.Clearable
 import scala.concurrent.{ ExecutionContext, Await, Future, future }
 import ExecutionContext.Implicits._
-import java.io.{ BufferedReader, FileReader }
+import java.io.{ BufferedReader, FileReader, StringReader }
 
-import scala.util.{Try, Success, Failure}
+import scala.util.{ Try, Success, Failure }
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.
@@ -748,28 +748,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     result
   }
 
-  private object paste extends Pasted {
-    import scala.util.matching.Regex.quote
-    val ContinuePrompt = replProps.continuePrompt
-    val ContinueString = replProps.continueText     // "     | "
-    val PromptString   = prompt.lines.toList.last
-    val anyPrompt = s"""\\s*(?:${quote(PromptString.trim)}|${quote(AltPromptString.trim)})\\s*""".r
-
-    def isPrompted(line: String)   = matchesPrompt(line)
-    def isPromptOnly(line: String) = line match { case anyPrompt() => true ; case _ => false }
-
-    def interpret(line: String): Unit = {
-      echo(line.trim)
-      intp interpret line
-      echo("")
-    }
-
-    def transcript(start: String) = {
-      echo("\n// Detected repl transcript paste: ctrl-D to finish.\n")
-      apply(Iterator(start) ++ readWhile(!isPromptOnly(_)))
-    }
-
-    def unapply(line: String): Boolean = isPrompted(line)
+  private object paste extends Pasted(prompt) {
+    def interpret(line: String) = intp interpret line
+    def echo(message: String)   = ILoop.this echo message
   }
 
   private object invocation {
@@ -784,29 +765,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     * read, go ahead and interpret it.  Return the full string
     * to be recorded for replay, if any.
     */
-  def interpretStartingWith(code: String): Option[String] = {
+  @tailrec final def interpretStartingWith(code: String): Option[String] = {
     // signal completion non-completion input has been received
     in.completion.resetVerbosity()
-
-    def reallyInterpret = intp.interpret(code) match {
-      case IR.Error      => None
-      case IR.Success    => Some(code)
-      case IR.Incomplete if in.interactive && code.endsWith("\n\n") =>
-        echo("You typed two blank lines.  Starting a new command.")
-        None
-      case IR.Incomplete =>
-        in.readLine(paste.ContinuePrompt) match {
-          case null =>
-            // we know compilation is going to fail since we're at EOF and the
-            // parser thinks the input is still incomplete, but since this is
-            // a file being read non-interactively we want to fail.  So we send
-            // it straight to the compiler for the nice error message.
-            intp.compileString(code)
-            None
-
-          case line => interpretStartingWith(code + "\n" + line)
-        }
-    }
 
     /* Here we place ourselves between the user and the interpreter and examine
      * the input they are ostensibly submitting.  We intervene in several cases:
@@ -820,9 +781,29 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     code match {
       case ""                                       => None
       case lineComment()                            => None                 // line comment, do nothing
-      case paste() if !paste.running                => paste.transcript(code) ; None
+      case paste() if !paste.running                => paste.transcript(Iterator(code) ++ readWhile(!paste.isPromptOnly(_))) match {
+                                                         case Some(s) => interpretStartingWith(s)
+                                                         case _       => None
+                                                       }
       case invocation() if intp.mostRecentVar != "" => interpretStartingWith(intp.mostRecentVar + code)
-      case _                                        => reallyInterpret
+      case _                                        => intp.interpret(code) match {
+        case IR.Error      => None
+        case IR.Success    => Some(code)
+        case IR.Incomplete if in.interactive && code.endsWith("\n\n") =>
+          echo("You typed two blank lines.  Starting a new command.")
+          None
+        case IR.Incomplete => in.readLine(paste.ContinuePrompt) match {
+          case null =>
+            // we know compilation is going to fail since we're at EOF and the
+            // parser thinks the input is still incomplete, but since this is
+            // a file being read non-interactively we want to fail.  So we send
+            // it straight to the compiler for the nice error message.
+            intp.compileString(code)
+            None
+
+          case line => interpretStartingWith(s"$code\n$line")
+        }
+      }
     }
   }
 
