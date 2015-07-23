@@ -992,6 +992,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
              isPrivate
           || isLocalToBlock
          )
+      || isClass && originalOwner.isTerm && children.isEmpty // we track known subclasses of term-owned classes, use that infer finality
     )
     /** Is this symbol effectively final or a concrete term member of sealed class whose children do not override it */
     final def isEffectivelyFinalOrNotOverridden: Boolean = isEffectivelyFinal || (isTerm && !isDeferred && isNotOverridden)
