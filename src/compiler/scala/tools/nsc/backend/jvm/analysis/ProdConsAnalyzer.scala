@@ -103,7 +103,11 @@ class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) 
   def initialProducersForValueAt(insn: AbstractInsnNode, slot: Int): Set[AbstractInsnNode] = {
     def initialProducers(insn: AbstractInsnNode, producedSlot: Int): Set[AbstractInsnNode] = {
       if (isCopyOperation(insn)) {
-        _initialProducersCache.getOrElseUpdate((insn, producedSlot), {
+        val key = (insn, producedSlot)
+        _initialProducersCache.getOrElseUpdate(key, {
+          // prevent infinite recursion if an instruction is its own producer or consumer
+          // see cyclicProdCons in ProdConsAnalyzerTest
+          _initialProducersCache(key) = Set.empty
           val (sourceValue, sourceValueSlot) = copyOperationSourceValue(insn, producedSlot)
           sourceValue.insns.iterator.asScala.flatMap(initialProducers(_, sourceValueSlot)).toSet
         })
@@ -121,7 +125,11 @@ class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) 
   def ultimateConsumersOfValueAt(insn: AbstractInsnNode, slot: Int): Set[AbstractInsnNode] = {
     def ultimateConsumers(insn: AbstractInsnNode, consumedSlot: Int): Set[AbstractInsnNode] = {
       if (isCopyOperation(insn)) {
-        _ultimateConsumersCache.getOrElseUpdate((insn, consumedSlot), {
+        val key = (insn, consumedSlot)
+        _ultimateConsumersCache.getOrElseUpdate(key, {
+          // prevent infinite recursion if an instruction is its own producer or consumer
+          // see cyclicProdCons in ProdConsAnalyzerTest
+          _ultimateConsumersCache(key) = Set.empty
           for {
             producedSlot     <- copyOperationProducedValueSlots(insn, consumedSlot)
             consumer         <- consumersOfValueAt(insn.getNext, producedSlot)

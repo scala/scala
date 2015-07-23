@@ -714,7 +714,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       {
         val mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambda$", "(Ljava/lang/invoke/SerializedLambda;)Ljava/lang/Object;", null, null)
         mv.visitCode()
-        mv.visitFieldInsn(GETSTATIC, clazz.javaBinaryName.encoded, "$deserializeLambdaCache$", "Ljava/util/Map;")
+        // javaBinaryName returns the internal name of a class. Also used in BTypesFromsymbols.classBTypeFromSymbol.
+        mv.visitFieldInsn(GETSTATIC, clazz.javaBinaryName.toString, "$deserializeLambdaCache$", "Ljava/util/Map;")
         mv.visitVarInsn(ASTORE, 1)
         mv.visitVarInsn(ALOAD, 1)
         val l0 = new asm.Label()
@@ -724,13 +725,13 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         mv.visitMethodInsn(INVOKESPECIAL, "java/util/HashMap", "<init>", "()V", false)
         mv.visitVarInsn(ASTORE, 1)
         mv.visitVarInsn(ALOAD, 1)
-        mv.visitFieldInsn(PUTSTATIC, clazz.javaBinaryName.encoded, "$deserializeLambdaCache$", "Ljava/util/Map;")
+        mv.visitFieldInsn(PUTSTATIC, clazz.javaBinaryName.toString, "$deserializeLambdaCache$", "Ljava/util/Map;")
         mv.visitLabel(l0)
-        mv.visitFrame(asm.Opcodes.F_APPEND,1, Array("java/util/Map"), 0, null)
+        mv.visitFieldInsn(GETSTATIC, "scala/runtime/LambdaDeserializer$", "MODULE$", "Lscala/runtime/LambdaDeserializer$;")
         mv.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodHandles", "lookup", "()Ljava/lang/invoke/MethodHandles$Lookup;", false)
         mv.visitVarInsn(ALOAD, 1)
         mv.visitVarInsn(ALOAD, 0)
-        mv.visitMethodInsn(INVOKESTATIC, "scala/compat/java8/runtime/LambdaDeserializer", "deserializeLambda", "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/util/Map;Ljava/lang/invoke/SerializedLambda;)Ljava/lang/Object;", false)
+        mv.visitMethodInsn(INVOKEVIRTUAL, "scala/compat/java8/LambdaDeserializer$", "deserializeLambda", "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/util/Map;Ljava/lang/invoke/SerializedLambda;)Ljava/lang/Object;", false)
         mv.visitInsn(ARETURN)
         mv.visitEnd()
       }
