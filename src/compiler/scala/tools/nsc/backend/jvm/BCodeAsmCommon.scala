@@ -289,7 +289,7 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
   lazy val AnnotationRetentionPolicyRuntimeValue = AnnotationRetentionPolicyModule.tpe.member(TermName("RUNTIME"))
 
   /** Whether an annotation should be emitted as a Java annotation
-    * .initialize: if 'annot' is read from pickle, atp might be un-initialized
+    * .initialize: if 'annot' is read from pickle, atp might be uninitialized
     */
   def shouldEmitAnnotation(annot: AnnotationInfo) = {
     annot.symbol.initialize.isJavaDefined &&

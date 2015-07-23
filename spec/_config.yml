@@ -6,5 +6,3 @@ markdown: redcarpet
 encoding: utf-8
 redcarpet:
   extensions: ["no_intra_emphasis", "fenced_code_blocks", "autolink", "tables", "with_toc_data", "strikethrough", "lax_spacing", "space_after_headers", "superscript", "footnotes"]
-# with_toc_data requires redcarpet 3.1 to get
-# pretty ID attributes for Hn headers (https://github.com/vmg/redcarpet/pull/186)

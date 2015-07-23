@@ -1117,7 +1117,7 @@ trait Infer extends Checkable {
 
     // this is quite nasty: it destructively changes the info of the syms of e.g., method type params
     // (see #3692, where the type param T's bounds were set to > : T <: T, so that parts looped)
-    // the changes are rolled back by restoreTypeBounds, but might be unintentially observed in the mean time
+    // the changes are rolled back by restoreTypeBounds, but might be unintentionally observed in the mean time
     def instantiateTypeVar(tvar: TypeVar) {
       val tparam                    = tvar.origin.typeSymbol
       val TypeBounds(lo0, hi0)      = tparam.info.bounds

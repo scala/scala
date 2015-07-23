@@ -682,7 +682,6 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
             if (diagramSvg != NodeSeq.Empty) {
               <div class="toggleContainer block diagram-container" id={ id + "-container"}>
                 <span class="toggle diagram-link">{ description }</span>
-                <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#diagrams" target="_blank" class="diagram-help">Learn more about scaladoc diagrams</a>
                 <div class="diagram" id={ id }>{
                   diagramSvg
                 }</div>
