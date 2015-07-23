@@ -168,13 +168,13 @@ trait Contexts { self: Analyzer =>
    *     fine grained control is needed based on the kind of error; ambiguity errors are often
    *     suppressed during exploratory typing, such as determining whether `a == b` in an argument
    *     position is an assignment or a named argument, when `Inferencer#isApplicableSafe` type checks
-   *     applications with and without an expected type, or whtn `Typer#tryTypedApply` tries to fit arguments to
+   *     applications with and without an expected type, or when `Typer#tryTypedApply` tries to fit arguments to
    *     a function type with/without implicit views.
    *
-   *     When the error policies entails error/warning buffering, the mutable [[ReportBuffer]] records
+   *     When the error policies entail error/warning buffering, the mutable [[ReportBuffer]] records
    *     everything that is issued. It is important to note, that child Contexts created with `make`
    *     "inherit" the very same `ReportBuffer` instance, whereas children spawned through `makeSilent`
-   *     receive an separate, fresh buffer.
+   *     receive a separate, fresh buffer.
    *
    * @param tree  Tree associated with this context
    * @param owner The current owner

@@ -1,5 +1,5 @@
 // this crazy code simply tries to nest pattern matches so that the last call is in a tricky-to-determine
-// tail position (my initial tightenign of tailpos detection for SI-6089 ruled this out)
+// tail position (my initial tightening of tailpos detection for SI-6089 ruled this out)
 class BKTree {
  @annotation.tailrec
  final def -?-[AA](a: AA): Boolean = this match {

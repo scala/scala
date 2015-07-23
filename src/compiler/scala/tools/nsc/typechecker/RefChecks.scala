@@ -1134,13 +1134,13 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           t hasSymbolWhich (_.accessedOrSelf == valOrDef.symbol)
         case _ => false
       }
-      val trivialInifiniteLoop = (
+      val trivialInfiniteLoop = (
         !valOrDef.isErroneous
      && !valOrDef.symbol.isValueParameter
      && valOrDef.symbol.paramss.isEmpty
      && callsSelf
       )
-      if (trivialInifiniteLoop)
+      if (trivialInfiniteLoop)
         reporter.warning(valOrDef.rhs.pos, s"${valOrDef.symbol.fullLocationString} does nothing other than call itself recursively")
     }
 

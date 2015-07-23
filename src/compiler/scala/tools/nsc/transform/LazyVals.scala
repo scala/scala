@@ -168,7 +168,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
     /** Add the bitmap definitions to the rhs of a method definition.
      *  If the rhs has been tail-call transformed, insert the bitmap
      *  definitions inside the top-level label definition, so that each
-     *  iteration has the lazy values un-initialized. Otherwise add them
+     *  iteration has the lazy values uninitialized. Otherwise add them
      *  at the very beginning of the method.
      */
     private def addBitmapDefs(methSym: Symbol, rhs: Tree): Tree = {
