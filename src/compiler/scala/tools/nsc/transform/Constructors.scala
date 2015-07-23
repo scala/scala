@@ -165,11 +165,13 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
         return
       }
 
+      val isEffectivelyFinal = clazz.isEffectivelyFinal
       def isParamCandidateForElision(sym: Symbol) = (sym.isParamAccessor && sym.isPrivateLocal)
-      def isOuterCandidateForElision(sym: Symbol) = (sym.isOuterAccessor && sym.owner.isEffectivelyFinal && !sym.isOverridingSymbol)
+      def isOuterCandidateForElision(sym: Symbol) = (sym.isOuterAccessor && isEffectivelyFinal && !sym.isOverridingSymbol)
 
-      val paramCandidatesForElision: Set[ /*Field*/  Symbol] = (clazz.info.decls.toSet filter isParamCandidateForElision)
-      val outerCandidatesForElision: Set[ /*Method*/ Symbol] = (clazz.info.decls.toSet filter isOuterCandidateForElision)
+      val decls = clazz.info.decls.toSet
+      val paramCandidatesForElision: Set[ /*Field*/  Symbol] = (decls filter isParamCandidateForElision)
+      val outerCandidatesForElision: Set[ /*Method*/ Symbol] = (decls filter isOuterCandidateForElision)
 
       omittables ++= paramCandidatesForElision
       omittables ++= outerCandidatesForElision
