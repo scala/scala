@@ -1694,6 +1694,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               psym addChild context.owner
             else
               pending += ParentSealedInheritanceError(parent, psym)
+          if (psym.isLocalToBlock && !phase.erasedTypes)
+            psym addChild context.owner
           val parentTypeOfThis = parent.tpe.dealias.typeOfThis
 
           if (!(selfType <:< parentTypeOfThis) &&

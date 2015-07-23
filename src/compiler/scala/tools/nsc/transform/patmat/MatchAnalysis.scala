@@ -138,7 +138,7 @@ trait TreeAndTypeAnalysis extends Debugging {
 
           if(grouped) {
             def enumerateChildren(sym: Symbol) = {
-              sym.children.toList
+              sym.sealedChildren.toList
                 .sortBy(_.sealedSortName)
                 .filterNot(x => x.isSealed && x.isAbstractClass && !isPrimitiveValueClass(x))
             }

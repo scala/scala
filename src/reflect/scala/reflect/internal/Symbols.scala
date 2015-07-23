@@ -980,7 +980,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private def isNotOverridden = (
       owner.isClass && (
            owner.isEffectivelyFinal
-        || owner.isSealed && owner.children.forall(c => c.isEffectivelyFinal && (overridingSymbol(c) == NoSymbol))
+        || (owner.isSealed && owner.sealedChildren.forall(c => c.isEffectivelyFinal && (overridingSymbol(c) == NoSymbol)))
       )
     )
 
@@ -992,6 +992,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
              isPrivate
           || isLocalToBlock
          )
+      || isClass && originalOwner.isTerm && children.isEmpty // we track known subclasses of term-owned classes, use that infer finality
     )
     /** Is this symbol effectively final or a concrete term member of sealed class whose children do not override it */
     final def isEffectivelyFinalOrNotOverridden: Boolean = isEffectivelyFinal || (isTerm && !isDeferred && isNotOverridden)
@@ -2495,14 +2496,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def associatedFile: AbstractFile = enclosingTopLevelClass.associatedFile
     def associatedFile_=(f: AbstractFile) { abort("associatedFile_= inapplicable for " + this) }
 
-    /** If this is a sealed class, its known direct subclasses.
+    /** If this is a sealed or local class, its known direct subclasses.
      *  Otherwise, the empty set.
      */
     def children: Set[Symbol] = Set()
+    final def sealedChildren: Set[Symbol] = if (!isSealed) Set.empty else children
 
     /** Recursively assemble all children of this symbol.
      */
-    def sealedDescendants: Set[Symbol] = children.flatMap(_.sealedDescendants) + this
+    final def sealedDescendants: Set[Symbol] = if (!isSealed) Set(this) else children.flatMap(_.sealedDescendants) + this
 
     @inline final def orElse(alt: => Symbol): Symbol = if (this ne NoSymbol) this else alt
     @inline final def andAlso(f: Symbol => Unit): Symbol = { if (this ne NoSymbol) f(this) ; this }

@@ -165,11 +165,19 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
         return
       }
 
+      // Note: elision of outer reference is based on a class-wise analysis, if a class might have subclasses,
+      //       it doesn't work. For example, `LocalParent` retains the outer reference in:
+      //
+      //   class Outer { def test = {class LocalParent; class LocalChild extends LocalParent } }
+      //
+      // See run/t9408.scala for related test cases.
+      val isEffectivelyFinal = clazz.isEffectivelyFinal
       def isParamCandidateForElision(sym: Symbol) = (sym.isParamAccessor && sym.isPrivateLocal)
-      def isOuterCandidateForElision(sym: Symbol) = (sym.isOuterAccessor && sym.owner.isEffectivelyFinal && !sym.isOverridingSymbol)
+      def isOuterCandidateForElision(sym: Symbol) = (sym.isOuterAccessor && isEffectivelyFinal && !sym.isOverridingSymbol)
 
-      val paramCandidatesForElision: Set[ /*Field*/  Symbol] = (clazz.info.decls.toSet filter isParamCandidateForElision)
-      val outerCandidatesForElision: Set[ /*Method*/ Symbol] = (clazz.info.decls.toSet filter isOuterCandidateForElision)
+      val decls = clazz.info.decls.toSet
+      val paramCandidatesForElision: Set[ /*Field*/  Symbol] = (decls filter isParamCandidateForElision)
+      val outerCandidatesForElision: Set[ /*Method*/ Symbol] = (decls filter isOuterCandidateForElision)
 
       omittables ++= paramCandidatesForElision
       omittables ++= outerCandidatesForElision
