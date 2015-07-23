@@ -31,7 +31,7 @@ trait CommentFactory extends base.CommentFactoryBase {
       defineComment(sym, linkTarget, inTpl)
     })
 
-  /** A comment is usualy created by the parser, however for some special
+  /** A comment is usually created by the parser, however for some special
     * cases we have to give some `inTpl` comments (parent class for example)
     * to the comment of the symbol.
     * This function manages some of those cases : Param accessor and Primary constructor */

@@ -1,0 +1,4 @@
+t9401.scala:3: error: cannot find class tag for element type T
+  gencastarray = new Array[T](0)
+                 ^
+one error found

@@ -1102,7 +1102,7 @@ TODO:
   </target>
 
   <target name="quick.scaladoc"   depends="quick.comp">
-    <staged-build with="locker"   stage="quick" project="scaladoc" version="scaladoc"/> </target>
+    <staged-build with="locker"   stage="quick" project="scaladoc"/> </target>
 
   <target name="quick.interactive" depends="quick.comp, quick.scaladoc">
     <staged-build with="locker"    stage="quick" project="interactive"/> </target>

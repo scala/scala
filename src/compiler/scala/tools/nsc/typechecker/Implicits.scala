@@ -1358,7 +1358,7 @@ trait Implicits {
         val succstart = if (stats) Statistics.startTimer(oftypeSucceedNanos) else null
 
         // SI-6667, never search companions after an ambiguous error in in-scope implicits
-        val wasAmbigious = result.isAmbiguousFailure
+        val wasAmbiguous = result.isAmbiguousFailure
 
         // TODO: encapsulate
         val previousErrs = context.reporter.errors
@@ -1368,7 +1368,7 @@ trait Implicits {
 
         // `materializeImplicit` does some preprocessing for `pt`
         // is it only meant for manifests/tags or we need to do the same for `implicitsOfExpectedType`?
-        if (result.isFailure && !wasAmbigious)
+        if (result.isFailure && !wasAmbiguous)
           result = searchImplicit(implicitsOfExpectedType, isLocalToCallsite = false)
 
         if (result.isFailure)

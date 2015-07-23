@@ -397,7 +397,7 @@ abstract class UnPickler {
         val sym = readSymbolRef() match {
           case stub: StubSymbol if !stub.isClass =>
             // SI-8502 This allows us to create a stub for a unpickled reference to `missingPackage.Foo`.
-            stub.owner.newStubSymbol(stub.name.toTypeName, stub.missingMessage)
+            stub.owner.newStubSymbol(stub.name.toTypeName, stub.missingMessage, isPackage = true)
           case sym => sym
         }
         ThisType(sym)

@@ -739,7 +739,7 @@ private[internal] trait TypeMaps {
           substFor(sym)
         case ClassInfoType(parents, decls, sym) =>
           val parents1 = parents mapConserve this
-          // We don't touch decls here; they will be touched when an enclosing TreeSubstitutor
+          // We don't touch decls here; they will be touched when an enclosing TreeSubstituter
           // transforms the tree that defines them.
           if (parents1 eq parents) tp
           else ClassInfoType(parents1, decls, sym)
