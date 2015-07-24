@@ -6,6 +6,7 @@
 package scala.tools.nsc
 package typechecker
 
+import scala.tools.nsc.ast.TreeDSL
 import symtab.Flags._
 import scala.collection.{ mutable, immutable }
 import transform.InfoTransform
@@ -41,7 +42,7 @@ import scala.tools.nsc.settings.NoScalaVersion
  *
  *  @todo    Check whether we always check type parameter bounds.
  */
-abstract class RefChecks extends InfoTransform with scala.reflect.internal.transform.RefChecks {
+abstract class RefChecks extends InfoTransform with scala.reflect.internal.transform.RefChecks with TreeDSL {
 
   val global: Global               // need to repeat here because otherwise last mixin defines global as
                                    // SymbolTable. If we had DOT this would not be an issue
@@ -1194,7 +1195,28 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         val body      = if (site.isTrait) rhs else gen.mkAssignAndReturn(moduleVar, rhs)
         val accessor  = DefDef(module, body.changeOwner(moduleVar -> module))
 
-        ValDef(moduleVar) :: accessor :: Nil
+        val hasSyntheticReadResolve = module.moduleClass.info.member(nme.readResolve).isSynthetic
+        val rawAccessor = if (hasSyntheticReadResolve && moduleVar.owner.isClass) { // TODO: moduleVar.owner.isClass is always true, no?
+          // TODO: naming cleanup
+          val accesorName = newTermNameCached("" + module.name + "$moduleRaw")
+          val tp = NullaryMethodType(module.tpe.finalResultType)
+          val flags = SYNTHETIC
+          val rawAccessorSym = site.newMethod(accesorName, module.pos.focus, flags)
+          if (module.isPrivate) rawAccessorSym.expandName(site) // TODO: cleanup naming of notPRIVATE modules
+          if (site.isClass) rawAccessorSym setInfoAndEnter tp else rawAccessorSym setInfo tp
+          // for traits, if we leave in the getter body, mixin produces the error "getter for variable O$module in trait T"
+          // therefore we just put null: the body will be discarded anyway, not added to the impl class, just like the body of the
+          // ordinary module getter. this happens in Mixin's isImplementedStatically.
+
+          // we don't need the getter body in the impl class because mixin adds the body to classes mixing in the trait.
+
+          // we cannot leave the body out and make the getter abstract: that adds and abstract method to the trait, which leads to
+          // "class C needs to be abstract, since method O$moduleRaw in trait T is not defined"
+          val rhs = if (site.isTrait) Literal(Constant(null)) else Select(This(moduleVar.owner), moduleVar)
+          List(DefDef(rawAccessorSym, rhs))
+        } else Nil
+
+        ValDef(moduleVar) :: accessor :: rawAccessor
       }
       def matchingInnerObject() = {
         val newFlags = (module.flags | STABLE) & ~MODULE
@@ -1211,6 +1233,29 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           newInnerObject()
       )
       transformTrees(newTrees map localTyper.typedPos(moduleDef.pos))
+    }
+
+    def fixModuleReadResolve(tree: DefDef): List[Tree] = exitingRefchecks {
+      val moduleClass = tree.symbol.owner
+      val module = moduleClass.module
+      val owner = module.owner
+      val name = {
+        // TODO: naming of notPrivate modules
+        val n = newTermNameCached("" + module.name + "$moduleRaw")
+        if (module.isPrivate) nme.expandedName(n, owner) else n
+      }
+      // TODO: should probably use the same condition as for generating the accessor, instead of searching for it
+      val moduleRawAccessor = owner.info.member(name)
+      val res = if (moduleRawAccessor == NoSymbol) tree else {
+        import CODE._
+        // TODO: save `gen.mkAttributedRef(moduleRawAccessor)` into a ValDef
+        // TODO: should this method be synchronized???
+        val rhs = localTyper.typedPos(tree.pos) {
+          If(gen.mkAttributedRef(moduleRawAccessor) MEMBER_== NULL, This(moduleClass), gen.mkAttributedRef(moduleRawAccessor))
+        }
+        treeCopy.DefDef(tree, tree.mods, tree.name, tree.tparams, tree.vparamss, tree.tpt, rhs)
+      }
+      List(res)
     }
 
     def transformStat(tree: Tree, index: Int): List[Tree] = tree match {
@@ -1236,6 +1281,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         }
       case Import(_, _)                                                                       => Nil
       case DefDef(mods, _, _, _, _, _) if (mods hasFlag MACRO) || (tree.symbol hasFlag MACRO) => Nil
+      case dd @ DefDef(_, name, _, _, _, _) if name == nme.readResolve && tree.symbol.isSynthetic && tree.symbol.owner.isModuleClass => fixModuleReadResolve(dd)
       case _                                                                                  => transform(tree) :: Nil
     }
 

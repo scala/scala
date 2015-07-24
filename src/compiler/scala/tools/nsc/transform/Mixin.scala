@@ -47,6 +47,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     && sym.isMethod
     && (!sym.isModule || sym.hasFlag(PRIVATE | LIFTED))
     && (!(sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isLazy)
+    && (!sym.name.endsWith("$moduleRaw")) // TODO cleanup
   )
 
   /** A member of a trait is static only if it belongs only to the
@@ -1094,6 +1095,18 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             val rhs1         = mkInnerClassAccessorDoubleChecked(attrThis, assignAndRet, sym, List())
 
             addDefDef(sym, rhs1)
+
+            // TODO: really remove code duplication with refchecks (already the code right above this line is duplication)
+            val hasSyntheticReadResolve = enteringPickler(sym.moduleClass.info.member(nme.readResolve).isSynthetic)
+            if (hasSyntheticReadResolve) {
+              val accesorName = newTermNameCached("" + sym.name + "$moduleRaw") // TODO clenaup naming
+              val tp = NullaryMethodType(sym.tpe.finalResultType)
+              val flags = SYNTHETIC
+              val rawAccessorSym = sym.owner.newMethod(accesorName, sym.pos.focus, flags)
+              if (sym.owner.isClass) rawAccessorSym setInfoAndEnter tp else rawAccessorSym setInfo tp
+              val rhs = Select(This(vsym.owner), vsym)
+              addDefDef(rawAccessorSym, rhs)
+            }
           }
           else if (!sym.isMethod) {
             // add fields
