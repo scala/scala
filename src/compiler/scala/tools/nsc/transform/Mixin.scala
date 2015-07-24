@@ -778,7 +778,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val defSym = clazz.newMethod(nme.newLazyValSlowComputeName(lzyVal.name.toTermName), lzyVal.pos, PRIVATE)
         val params = defSym newSyntheticValueParams args.map(_.symbol.tpe)
         defSym setInfoAndEnter MethodType(params, lzyVal.tpe.resultType)
-        val rhs: Tree = (gen.mkSynchronizedCheck(attrThis, cond, syncBody, stats)).changeOwner(currentOwner -> defSym)
+        val rhs: Tree = gen.mkSynchronizedCheck(attrThis, cond, syncBody, stats).changeOwner(currentOwner -> defSym)
         val strictSubst = new TreeSymSubstituterWithCopying(args.map(_.symbol), params)
         addDef(position(defSym), DefDef(defSym, strictSubst(BLOCK(rhs, retVal))))
         defSym
