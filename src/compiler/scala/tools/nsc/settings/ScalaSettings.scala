@@ -175,6 +175,7 @@ trait ScalaSettings extends AbsScalaSettings
   val YconstOptimization  = BooleanSetting    ("-Yconst-opt", "Perform optimization with constant values.")
   val Ycompacttrees   = BooleanSetting    ("-Ycompact-trees", "Use compact tree printer when displaying trees.")
   val noCompletion    = BooleanSetting    ("-Yno-completion", "Disable tab-completion in the REPL.")
+  val completion      = ChoiceSetting     ("-Ycompletion", "provider", "Select tab-completion in the REPL.", List("pc","adhoc","none"), "pc")
   val Xdce            = BooleanSetting    ("-Ydead-code", "Perform dead code elimination.")
   val debug           = BooleanSetting    ("-Ydebug", "Increase the quantity of debugging output.")
   //val doc           = BooleanSetting    ("-Ydoc", "Generate documentation")

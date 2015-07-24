@@ -661,7 +661,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** Make sure unit is typechecked
    */
-  private def typeCheck(unit: RichCompilationUnit) {
+  private[scala] def typeCheck(unit: RichCompilationUnit) {
     debugLog("type checking: "+unit)
     parseAndEnter(unit)
     unit.status = PartiallyChecked
@@ -792,7 +792,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** A fully attributed tree located at position `pos` */
-  private[interactive] def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
+  private[scala] def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
     case None =>
       reloadSources(List(pos.source))
       try typedTreeAt(pos)
@@ -1022,7 +1022,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** Return all members visible without prefix in context enclosing `pos`. */
-  private def scopeMembers(pos: Position): List[ScopeMember] = {
+  private[scala] def scopeMembers(pos: Position): List[ScopeMember] = {
     typedTreeAt(pos) // to make sure context is entered
     val context = doLocateContext(pos)
     val locals = new Members[ScopeMember]
@@ -1072,7 +1072,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     //if (debugIDE) typeMembers(pos)
   }
 
-  private def typeMembers(pos: Position): Stream[List[TypeMember]] = {
+  def typeMembers(pos: Position): Stream[List[TypeMember]] = {
     // Choosing which tree will tell us the type members at the given position:
     //   If pos leads to an Import, type the expr
     //   If pos leads to a Select, type the qualifier as long as it is not erroneous

@@ -21,6 +21,27 @@ trait JavaPlatform extends Platform {
 
   private[nsc] var currentClassPath: Option[MergedClassPath[AbstractFile]] = None
 
+  val forceIndexPackages: collection.mutable.Set[String] = collection.mutable.Set.empty
+  val classPathIndexByClassName: collection.mutable.Map[String, Set[String]] = collection.mutable.Map.empty
+
+  def addForceIndexPackages(packages: Set[String]) = {
+    forceIndexPackages ++= packages
+  }
+
+  def updateIndex() = {
+    def addIfInitialized(pkg: Symbol): Unit = {
+      if (pkg.hasCompleteInfo || forceIndexPackages.exists(p => p startsWith pkg.fullName)) {
+        for (m <- pkg.info.members if m != pkg) { // _root_ is member of _root_ it seems, so filter m != pkg
+          if (m.isClass)
+            classPathIndexByClassName(m.name.toString) = classPathIndexByClassName.getOrElse(m.name.toString, Set.empty) + m.fullName
+          if (m.moduleClass.isPackageClass)
+            addIfInitialized(m.moduleClass)
+        }
+      }
+    }
+    addIfInitialized(rootMirror.getPackage("_root_": TermName))
+  }
+
   def classPath: ClassPath[AbstractFile] = {
     assert(settings.YclasspathImpl.value == ClassPathRepresentationType.Recursive,
       "To use recursive classpath representation you must enable it with -YclasspathImpl:recursive compiler option.")

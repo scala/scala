@@ -92,7 +92,8 @@ trait Imports {
    * last one imported is actually usable.
    */
   case class ComputedImports(prepend: String, append: String, access: String)
-  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper, definesClass: Boolean): ComputedImports = {
+
+  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper, definesClass: Boolean, generousImports: Boolean): ComputedImports = {
     /** Narrow down the list of requests from which imports
      *  should be taken.  Removes requests which cannot contribute
      *  useful imports for the specified set of wanted names.
@@ -109,8 +110,9 @@ trait Imports {
         def keepHandler(handler: MemberHandler) = handler match {
         /* While defining classes in class based mode - implicits are not needed. */
           case h: ImportHandler if isClassBased && definesClass => h.importedNames.exists(x => wanted.contains(x))
-          case _: ImportHandler => true
-          case x                => x.definesImplicit || (x.definedNames exists wanted)
+          case _: ImportHandler     => true
+          case x if generousImports => x.definesImplicit || (x.definedNames exists (d => wanted.exists(w => d.startsWith(w))))
+          case x                    => x.definesImplicit || (x.definedNames exists wanted)
         }
 
         reqs match {

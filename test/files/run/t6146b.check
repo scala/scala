@@ -4,11 +4,9 @@ It would fail on the following inputs: S2(), S3()
                        ^
 
 scala> :power
-** Power User mode enabled - BEEP WHIR GYVE **
-** :phase has been set to 'typer'.          **
-** scala.tools.nsc._ has been imported      **
-** global._, definitions._ also imported    **
-** Try  :help, :vals, power.<tab>           **
+Power mode enabled. :phase is at typer.
+import scala.tools.nsc._, intp.global._, definitions._
+Try :help or completions for vals._ and power._
 
 scala> val u = rootMirror.universe; import u._, language._
 u: $r.intp.global.type = <global>
