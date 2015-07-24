@@ -3,11 +3,11 @@
  */
 package bug;
 
-import bug.Named;
+import bug.Named_1;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 
-public class NamedImpl implements Named {
+public class NamedImpl_1 implements Named_1 {
 
     public Class<? extends Annotation> annotationType() {
         return null;

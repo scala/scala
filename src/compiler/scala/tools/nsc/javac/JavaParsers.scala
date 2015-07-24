@@ -370,7 +370,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
             flags |= Flags.FINAL
             in.nextToken()
           case DEFAULT =>
-            flags |= Flags.DEFAULTMETHOD
+            flags |= Flags.JAVA_DEFAULTMETHOD
             in.nextToken()
           case NATIVE =>
             addAnnot(NativeAttr)
@@ -489,7 +489,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           val vparams = formalParams()
           if (!isVoid) rtpt = optArrayBrackets(rtpt)
           optThrows()
-          val isConcreteInterfaceMethod = !inInterface || (mods hasFlag Flags.DEFAULTMETHOD) || (mods hasFlag Flags.STATIC)
+          val isConcreteInterfaceMethod = !inInterface || (mods hasFlag Flags.JAVA_DEFAULTMETHOD) || (mods hasFlag Flags.STATIC)
           val bodyOk = !(mods1 hasFlag Flags.DEFERRED) && isConcreteInterfaceMethod
           val body =
             if (bodyOk && in.token == LBRACE) {
@@ -751,7 +751,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val (statics, body) = typeBody(AT, name)
       val templ = makeTemplate(annotationParents, body)
       addCompanionObject(statics, atPos(pos) {
-        ClassDef(mods, name, List(), templ)
+        ClassDef(mods | Flags.JAVA_ANNOTATION, name, List(), templ)
       })
     }
 
@@ -809,7 +809,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         if (hasAbstractMember) Flags.ABSTRACT else 0l
       }
       addCompanionObject(consts ::: statics ::: predefs, atPos(pos) {
-        ClassDef(mods | Flags.ENUM | finalFlag | abstractFlag, name, List(),
+        ClassDef(mods | Flags.JAVA_ENUM | finalFlag | abstractFlag, name, List(),
                  makeTemplate(superclazz :: interfaces, body))
       })
     }
@@ -830,7 +830,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           skipAhead()
           accept(RBRACE)
         }
-        ValDef(Modifiers(Flags.ENUM | Flags.STABLE | Flags.JAVA | Flags.STATIC), name.toTermName, enumType, blankExpr)
+        ValDef(Modifiers(Flags.JAVA_ENUM | Flags.STABLE | Flags.JAVA | Flags.STATIC), name.toTermName, enumType, blankExpr)
       }
       (res, hasClassBody)
     }

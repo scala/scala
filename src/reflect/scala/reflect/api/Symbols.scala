@@ -504,6 +504,18 @@ trait Symbols { self: Universe =>
      */
     def isImplicit: Boolean
 
+    /** Does this symbol represent a java enum class or a java enum value?
+      *
+      *  @group Tests
+      */
+    def isJavaEnum: Boolean
+
+    /** Does this symbol represent a java annotation interface?
+      *
+      *  @group Tests
+      */
+    def isJavaAnnotation: Boolean
+
     /******************* helpers *******************/
 
     /** Provides an alternate if symbol is a NoSymbol.
