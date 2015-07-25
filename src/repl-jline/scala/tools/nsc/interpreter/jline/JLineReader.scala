@@ -15,7 +15,7 @@ import jconsole.history.{History => JHistory}
 
 
 import scala.tools.nsc.interpreter
-import scala.tools.nsc.interpreter.Completion
+import scala.tools.nsc.interpreter.{Completion, JLineCompletion, NoCompletion}
 import scala.tools.nsc.interpreter.Completion.Candidates
 import scala.tools.nsc.interpreter.session.History
 
@@ -121,23 +121,27 @@ private class JLineConsoleReader extends jconsole.ConsoleReader with interpreter
   def initCompletion(completion: Completion): Unit = {
     this setBellEnabled false
 
-    if (completion ne interpreter.NoCompletion) {
-      val jlineCompleter = new ArgumentCompleter(new JLineDelimiter,
-          new Completer {
-            val tc = completion.completer()
-            def complete(_buf: String, cursor: Int, candidates: JList[CharSequence]): Int = {
-              val buf = if (_buf == null) "" else _buf
-              val Candidates(newCursor, newCandidates) = tc.complete(buf, cursor)
-              newCandidates foreach (candidates add _)
-              newCursor
-            }
-          }
-        )
+    // adapt the JLine completion interface
+    def completer =
+      new Completer {
+        val tc = completion.completer()
+        def complete(_buf: String, cursor: Int, candidates: JList[CharSequence]): Int = {
+          val buf = if (_buf == null) "" else _buf
+          val Candidates(newCursor, newCandidates) = tc.complete(buf, cursor)
+          newCandidates foreach (candidates add _)
+          newCursor
+        }
+      }
 
-      jlineCompleter setStrict false
-
-      this addCompleter jlineCompleter
-      this setAutoprintThreshold 400 // max completion candidates without warning
+    // a last bit of nastiness: parsing help depending on the flavor of completer (fixme)
+    completion match {
+      case _: JLineCompletion =>
+        val jlineCompleter = new ArgumentCompleter(new JLineDelimiter, completer)
+        jlineCompleter setStrict false
+        this addCompleter jlineCompleter
+      case NoCompletion       => ()
+      case _                  => this addCompleter completer
     }
+    setAutoprintThreshold(400) // max completion candidates without warning
   }
 }
