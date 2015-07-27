@@ -85,9 +85,9 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
    */
   case class MacroImplBinding(
       // Is this macro impl a bundle (a trait extending *box.Macro) or a vanilla def?
-      val isBundle: Boolean,
+      isBundle: Boolean,
       // Is this macro impl blackbox (i.e. having blackbox.Context in its signature)?
-      val isBlackbox: Boolean,
+      isBlackbox: Boolean,
       // Java class name of the class that contains the macro implementation
       // is used to load the corresponding object with Java reflection
       className: String,
