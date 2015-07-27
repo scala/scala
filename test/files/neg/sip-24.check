@@ -1,0 +1,19 @@
+sip-24.scala:15: error: invalid string interpolation: `$$', `$'ident or `$'BlockExpr expected
+  def `brace yourselves`             = s"ABCs: $`a..z`"
+                                         ^
+sip-24.scala:15: error: unclosed string literal
+  def `brace yourselves`             = s"ABCs: $`a..z`"
+                                                      ^
+sip-24.scala:17: error: invalid string interpolation: `$$', `$'ident or `$'BlockExpr expected
+  def `embedded dollars`             = s"<$`x$y`"
+                                         ^
+sip-24.scala:17: error: unclosed string literal
+  def `embedded dollars`             = s"<$`x$y`"
+                                                ^
+sip-24.scala:19: error: invalid string interpolation: `$$', `$'ident or `$'BlockExpr expected
+  def `one style of embedded quote`  = s"$"Don't quote me on that!$" he objected."
+                                         ^
+sip-24.scala:19: error: unclosed string literal
+  def `one style of embedded quote`  = s"$"Don't quote me on that!$" he objected."
+                                                                                 ^
+6 errors found
