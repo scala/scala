@@ -158,7 +158,7 @@ ideas and coordinate your effort with others.
 
 Here are some common commands. Most ant targets offer a `-opt` variant that runs under `-optimise` (CI runs the -optimize variant).
 
-  - `./pull-binary-libs.sh` [downloads](http://typesafe.artifactoryonline.com/typesafe) all binary artifacts associated with this commit.
+  - `./pull-binary-libs.sh` downloads all binary artifacts associated with this commit.
   - `ant -p` prints out information about the commonly used ant targets.
   - `ant` or `ant build`: A quick compilation (to build/quick) of your changes using the locker compiler.
 
