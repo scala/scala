@@ -284,7 +284,7 @@ abstract class ClassfileParser {
 
     def getType(index: Int): Type              = getType(null, index)
     def getType(sym: Symbol, index: Int): Type = sigToType(sym, getExternalName(index))
-    def getSuperClass(index: Int): Symbol      = if (index == 0) AnyClass else getClassSymbol(index)
+    def getSuperClass(index: Int): Symbol      = if (index == 0) AnyClass else getClassSymbol(index) // the only classfile that is allowed to have `0` in the super_class is java/lang/Object (see jvm spec)
 
     private def createConstant(index: Int): Constant = {
       val start = starts(index)
@@ -862,7 +862,7 @@ abstract class ClassfileParser {
           srcfile0 = settings.outputDirs.srcFilesFor(in.file, srcpath).find(_.exists)
         case tpnme.CodeATTR =>
           if (sym.owner.isInterface) {
-            sym setFlag DEFAULTMETHOD
+            sym setFlag JAVA_DEFAULTMETHOD
             log(s"$sym in ${sym.owner} is a java8+ default method.")
           }
           in.skip(attrLen)

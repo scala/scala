@@ -1,0 +1,5 @@
+class C extends scala.AnyRef {
+  def this() = { /* compiled code */ }
+  def m: java.lang.String = { /* compiled code */ }
+}
+

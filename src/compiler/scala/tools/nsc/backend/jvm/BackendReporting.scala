@@ -1,7 +1,7 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.tools.asm.tree.{AbstractInsnNode, MethodNode}
+import scala.tools.asm.tree.{InvokeDynamicInsnNode, AbstractInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.reflect.internal.util.Position
 import scala.tools.nsc.settings.ScalaSettings
@@ -246,11 +246,16 @@ object BackendReporting {
   case class ResultingMethodTooLarge(calleeDeclarationClass: InternalName, name: String, descriptor: String,
                                      callsiteClass: InternalName, callsiteName: String, callsiteDesc: String) extends CannotInlineWarning
 
+  case object UnknownInvokeDynamicInstruction extends OptimizerWarning {
+    override def toString = "The callee contains an InvokeDynamic instruction with an unknown bootstrap method (not a LambdaMetaFactory)."
+    def emitWarning(settings: ScalaSettings): Boolean = settings.YoptWarningEmitAtInlineFailed
+  }
+
   /**
    * Used in `rewriteClosureApplyInvocations` when a closure apply callsite cannot be rewritten
    * to the closure body method.
    */
-  trait RewriteClosureApplyToClosureBodyFailed extends OptimizerWarning {
+  sealed trait RewriteClosureApplyToClosureBodyFailed extends OptimizerWarning {
     def pos: Position
 
     override def emitWarning(settings: ScalaSettings): Boolean = this match {
