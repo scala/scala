@@ -765,7 +765,7 @@ class SuiteRunner(
 
   def banner = {
     val baseDir = fileManager.compilerUnderTest.parent.toString
-    def relativize(path: String) = path.replace(baseDir, "$baseDir").replace(PathSettings.srcDir.toString, "$sourceDir")
+    def relativize(path: String) = path.replace(baseDir, s"$$baseDir").replace(PathSettings.srcDir.toString, "$sourceDir")
     val vmBin  = javaHome + fileSeparator + "bin"
     val vmName = "%s (build %s, %s)".format(javaVmName, javaVmVersion, javaVmInfo)
 
