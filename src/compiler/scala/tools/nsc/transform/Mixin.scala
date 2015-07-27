@@ -1122,7 +1122,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       if (scope exists (_.isLazy)) {
         val map = mutable.Map[Symbol, Set[Symbol]]() withDefaultValue Set()
         // check what fields can be nulled for
-        for ((field, users) <- singleUseFields(templ); lazyFld <- users)
+        for ((field, users) <- singleUseFields(templ); lazyFld <- users if !lazyFld.accessed.hasAnnotation(TransientAttr))
           map(lazyFld) += field
 
         map.toMap
