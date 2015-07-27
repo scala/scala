@@ -13,32 +13,18 @@ If you need some help with your PR at any time, please feel free to @-mention an
 
                                                                                                   | username                                                       | talk to me about...                               |
 --------------------------------------------------------------------------------------------------|----------------------------------------------------------------|---------------------------------------------------|
- <img src="https://avatars.githubusercontent.com/adriaanm"     height="50px" title="Adriaan Moors"/>        | [`@adriaanm`](https://github.com/adriaanm)           | how we can help // type checker, pattern matcher, infrastructure |
- <img src="https://avatars.githubusercontent.com/SethTisue"    height="50px" title="Seth Tisue"/>           | [`@SethTisue`](https://github.com/SethTisue)         | back-end, library, improving the *welcome to Scala* experience |
- <img src="https://avatars.githubusercontent.com/retronym"     height="50px" title="Jason Zaugg"/>          | [`@retronym`](https://github.com/retronym)           | Java 8 lambdas, tricky bug detective work         |
- <img src="https://avatars.githubusercontent.com/Ichoran"      height="50px" title="Rex Kerr"/>             | [`@Ichoran`](https://github.com/Ichoran)             | the collections library, performance              |
+ <img src="https://avatars.githubusercontent.com/adriaanm"     height="50px" title="Adriaan Moors"/>        | [`@adriaanm`](https://github.com/adriaanm)           | type checker, pattern matcher, infrastructure, language spec |
+ <img src="https://avatars.githubusercontent.com/SethTisue"    height="50px" title="Seth Tisue"/>           | [`@SethTisue`](https://github.com/SethTisue)         | back-end, library, the welcome-to-Scala experience, build |
+ <img src="https://avatars.githubusercontent.com/retronym"     height="50px" title="Jason Zaugg"/>          | [`@retronym`](https://github.com/retronym)           | compiler performance, weird compiler bugs, Java 8 lambdas, REPL |
+ <img src="https://avatars.githubusercontent.com/Ichoran"      height="50px" title="Rex Kerr"/>             | [`@Ichoran`](https://github.com/Ichoran)             | collections library, performance              |
  <img src="https://avatars.githubusercontent.com/lrytz"        height="50px" title="Lukas Rytz"/>           | [`@lrytz`](https://github.com/lrytz)                 | optimizer, named & default arguments              |
- <img src="https://avatars.githubusercontent.com/VladUreche"   height="50px" title="Vlad Ureche"/>          | [`@VladUreche`](https://github.com/VladUreche)       | specialization & the scaladoc tool                |
+ <img src="https://avatars.githubusercontent.com/VladUreche"   height="50px" title="Vlad Ureche"/>          | [`@VladUreche`](https://github.com/VladUreche)       | specialization, Scaladoc tool |
  <img src="https://avatars.githubusercontent.com/densh"        height="50px" title="Denys Shabalin"/>       | [`@densh`](https://github.com/densh)                 | quasiquotes, parser, string interpolators, macros in standard library |
  <img src="https://avatars.githubusercontent.com/xeno-by"      height="50px" title="Eugene Burmako"/>       | [`@xeno-by`](https://github.com/xeno-by)             | macros and reflection |
- <img src="https://avatars.githubusercontent.com/dickwall"     height="50px" title="Dick Wall"/>            | [`@dickwall`](https://github.com/dickwall)           | process & community |
-
-additional reviewer suggestions:
-
-* library: @axel22 (Aleksander Prokopec -- concurrent & collection)
-* specialisation: @axel22 (Aleksander Prokopec), @vladureche (Vlad Ureche), @dragos (Iulian Dragos)
-* named / default args, annotations, plugins: @lrytz (Lukas Rytz)
-* macros, reflection, manifests, string interpolation: @xeno-by (Eugene Burmako)
-* type checker, inference: @adriaanm (Adriaan Moors)
-* language specification: @adriaanm (Adriaan Moors)
-* new pattern matcher, implicit search: @adriaanm (Adriaan Moors)
-* backend: @lrytz (Lukas Rytz), @retronym (Jason Zaugg), @dragos (Iulian Dragos)
-* repl, compiler performance: @retronym (Jason Zaugg)
-* scaladoc: @dickwall (Dick Wall), @vladureche (Vlad Ureche)
-* optimizer: @vladureche (Vlad Ureche), @lrytz (Lukas Rytz)
-* build: @SethTisue
-* random compiler bugs: @retronym, @lrytz, @adriaanm
-* documentation: @heathermiller (Heather Miller), @dickwall (Dick Wall)
+ <img src="https://avatars.githubusercontent.com/heathermiller" height="50px" title="Heather Miller"/>      | [`@heathermiller`](https://github.com/heathermiller) | documentation |
+ <img src="https://avatars.githubusercontent.com/dickwall"     height="50px" title="Dick Wall"/>            | [`@dickwall`](https://github.com/dickwall)           | process & community, documentation |
+ <img src="https://avatars.githubusercontent.com/dragos"       height="50px" title="Iulian Dragos"/>        | [`@dragos`](https://github.com/dragos)               | specialization, back end |
+ <img src="https://avatars.githubusercontent.com/axel22"       height="50px" title="Aleksandr Prokopec"/>   | [`@axel22`](https://github.com/axel22)               | collections, concurrency, specialization |
 
 P.S.: If you have some spare time to help out around here, we would be delighted to add your name to this list!
 
