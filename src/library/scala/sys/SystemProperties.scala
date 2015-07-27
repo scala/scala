@@ -86,6 +86,8 @@ object SystemProperties {
   lazy val headless            = bool("java.awt.headless", "system should not utilize a display device")
   lazy val preferIPv4Stack     = bool("java.net.preferIPv4Stack", "system should prefer IPv4 sockets")
   lazy val preferIPv6Addresses = bool("java.net.preferIPv6Addresses", "system should prefer IPv6 addresses")
-  lazy val noTraceSupression   = bool("scala.control.noTraceSuppression", "scala should not suppress any stack trace creation")
+  lazy val noTraceSuppression  = bool("scala.control.noTraceSuppression", "scala should not suppress any stack trace creation")
+  @deprecated("Use noTraceSuppression", "2.12.0")
+  def noTraceSupression        = noTraceSuppression
 }
 
