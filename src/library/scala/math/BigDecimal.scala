@@ -124,7 +124,7 @@ object BigDecimal {
    */
   def exact(s: String): BigDecimal = exact(new BigDec(s))
   
-  /** Constructs a 'BigDecimal` that exactly represents the number
+  /** Constructs a `BigDecimal` that exactly represents the number
    *  specified in base 10 in a character array.
    */
  def exact(cs: Array[Char]): BigDecimal = exact(new BigDec(cs))
