@@ -12,7 +12,7 @@ import java.security.cert.Certificate
 import java.security.{ ProtectionDomain, CodeSource }
 import java.util.{ Collections => JCollections, Enumeration => JEnumeration }
 
-/** A class loader that loads files from a {@link scala.tools.nsc.io.AbstractFile}.
+/** A class loader that loads files from a [[scala.reflect.io.AbstractFile]].
  *
  *  @author Lex Spoon
  */
