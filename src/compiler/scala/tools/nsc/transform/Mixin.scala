@@ -47,6 +47,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     && sym.isMethod
     && (!sym.isModule || sym.hasFlag(PRIVATE | LIFTED))
     && (!(sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isLazy)
+    && (!sym.name.endsWith("$moduleRaw")) // TODO cleanup
   )
 
   /** A member of a trait is static only if it belongs only to the
@@ -778,7 +779,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val defSym = clazz.newMethod(nme.newLazyValSlowComputeName(lzyVal.name.toTermName), lzyVal.pos, PRIVATE)
         val params = defSym newSyntheticValueParams args.map(_.symbol.tpe)
         defSym setInfoAndEnter MethodType(params, lzyVal.tpe.resultType)
-        val rhs: Tree = (gen.mkSynchronizedCheck(attrThis, cond, syncBody, stats)).changeOwner(currentOwner -> defSym)
+        val rhs: Tree = gen.mkSynchronizedCheck(attrThis, cond, syncBody, stats).changeOwner(currentOwner -> defSym)
         val strictSubst = new TreeSymSubstituterWithCopying(args.map(_.symbol), params)
         addDef(position(defSym), DefDef(defSym, strictSubst(BLOCK(rhs, retVal))))
         defSym
@@ -1094,6 +1095,18 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             val rhs1         = mkInnerClassAccessorDoubleChecked(attrThis, assignAndRet, sym, List())
 
             addDefDef(sym, rhs1)
+
+            // TODO: really remove code duplication with refchecks (already the code right above this line is duplication)
+            val hasSyntheticReadResolve = enteringPickler(sym.moduleClass.info.member(nme.readResolve).isSynthetic)
+            if (hasSyntheticReadResolve) {
+              val accesorName = newTermNameCached("" + sym.name + "$moduleRaw") // TODO clenaup naming
+              val tp = NullaryMethodType(sym.tpe.finalResultType)
+              val flags = SYNTHETIC
+              val rawAccessorSym = sym.owner.newMethod(accesorName, sym.pos.focus, flags)
+              if (sym.owner.isClass) rawAccessorSym setInfoAndEnter tp else rawAccessorSym setInfo tp
+              val rhs = Select(This(vsym.owner), vsym)
+              addDefDef(rawAccessorSym, rhs)
+            }
           }
           else if (!sym.isMethod) {
             // add fields
