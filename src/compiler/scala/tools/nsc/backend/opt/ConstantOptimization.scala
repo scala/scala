@@ -170,9 +170,11 @@ abstract class ConstantOptimization extends SubComponent {
         // out all the possibilities
         case Impossible(possible2) => (possible -- possible2).nonEmpty
       })
-      def mightNotEqual(other: Contents): Boolean = (this ne other) && (other match {
-        // two Possibles might not be equal if either has possible members that the other doesn't
-        case Possible(possible2) => (possible -- possible2).nonEmpty || (possible2 -- possible).nonEmpty
+      def mightNotEqual(other: Contents): Boolean = (other match {
+        case Possible(possible2) =>
+          // two Possibles must equal if each is known to be of the same, single value
+          val mustEqual = possible.size == 1 && possible == possible2
+          !mustEqual
         case Impossible(_) => true
       })
     }
