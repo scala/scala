@@ -110,7 +110,7 @@ trait ExistentialsAndSkolems {
   /**
    * Compute an existential type from hidden symbols `hidden` and type `tp`.
    * @param hidden   The symbols that will be existentially abstracted
-   * @param hidden   The original type
+   * @param tp       The original type
    * @param rawOwner The owner for Java raw types.
    */
   final def packSymbols(hidden: List[Symbol], tp: Type, rawOwner: Symbol = NoSymbol): Type =

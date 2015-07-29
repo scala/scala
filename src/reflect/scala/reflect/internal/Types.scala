@@ -732,7 +732,7 @@ trait Types
      *
      * `SubstThisAndSymMap` performs a breadth-first map over this type, which meant that
      * symbol substitution occurred before `ThisType` substitution. Consequently, in substitution
-     * of a `SingleType(ThisType(`from`), sym), symbols were rebound to `from` rather than `to`.
+     * of a `SingleType(ThisType(from), sym)`, symbols were rebound to `from` rather than `to`.
      */
     def substThisAndSym(from: Symbol, to: Type, symsFrom: List[Symbol], symsTo: List[Symbol]): Type =
       if (symsFrom eq symsTo) substThis(from, to)
@@ -756,7 +756,7 @@ trait Types
     /** Apply `f` to each part of this type */
     def foreach(f: Type => Unit) { new ForEachTypeTraverser(f).traverse(this) }
 
-    /** Apply `pf' to each part of this type on which the function is defined */
+    /** Apply `pf` to each part of this type on which the function is defined */
     def collect[T](pf: PartialFunction[Type, T]): List[T] = new CollectTypeCollector(pf).collect(this)
 
     /** Apply `f` to each part of this type; children get mapped before their parents */
@@ -2045,7 +2045,7 @@ trait Types
     /** SI-3731, SI-8177: when prefix is changed to `newPre`, maintain consistency of prefix and sym
      *  (where the symbol refers to a declaration "embedded" in the prefix).
      *
-     *  @returns newSym so that `newPre` binds `sym.name` to `newSym`,
+     *  @return newSym so that `newPre` binds `sym.name` to `newSym`,
      *                  to remain consistent with `pre` previously binding `sym.name` to `sym`.
      *
      *  `newSym` and `sym` are conceptually the same symbols, but some change to our `prefix`

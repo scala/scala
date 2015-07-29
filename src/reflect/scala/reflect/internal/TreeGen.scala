@@ -594,13 +594,12 @@ abstract class TreeGen {
   *        TupleN(x_1, ..., x_N)
   *      } ...)
   *
-  *    If any of the P_i are variable patterns, the corresponding `x_i @ P_i' is not generated
+  *    If any of the P_i are variable patterns, the corresponding `x_i @ P_i` is not generated
   *    and the variable constituting P_i is used instead of x_i
   *
-  *  @param mapName      The name to be used for maps (either map or foreach)
-  *  @param flatMapName  The name to be used for flatMaps (either flatMap or foreach)
   *  @param enums        The enumerators in the for expression
-  *  @param body          The body of the for expression
+  *  @param sugarBody    The body of the for expression
+  *  @param fresh        A source of new names
   */
   def mkFor(enums: List[Tree], sugarBody: Tree)(implicit fresh: FreshNameCreator): Tree = {
     val (mapName, flatMapName, body) = sugarBody match {
