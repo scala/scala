@@ -47,8 +47,7 @@ C(2,3)
     case <synthetic> def unapply(x$0: C): Option[(Int, Int)] = if (x$0.==(null))
       scala.this.None
     else
-      Some.apply[(Int, Int)](scala.Tuple2.apply[Int, Int](x$0.x, x$0.y));
-    <synthetic> private def readResolve(): Object = C
+      Some.apply[(Int, Int)](scala.Tuple2.apply[Int, Int](x$0.x, x$0.y))
   };
   Predef.println(C.apply(2, 3))
 }
