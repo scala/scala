@@ -1190,7 +1190,7 @@ object Stream extends SeqFactory[Stream] {
     def #:::(prefix: Stream[A]): Stream[A] = prefix append tl
   }
 
-  /** A wrapper method that adds `#::` for cons and `#::: for concat as operations
+  /** A wrapper method that adds `#::` for cons and `#:::` for concat as operations
    *  to streams.
    */
   implicit def consWrapper[A](stream: => Stream[A]): ConsWrapper[A] =
