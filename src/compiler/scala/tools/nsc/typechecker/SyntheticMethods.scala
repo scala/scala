@@ -304,6 +304,7 @@ trait SyntheticMethods extends ast.TreeDSL {
          clazz.isModuleClass
       && clazz.isSerializable
       && !hasConcreteImpl(nme.readResolve)
+      && clazz.isStatic
     )
 
     def synthesize(): List[Tree] = {
