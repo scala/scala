@@ -1375,7 +1375,7 @@ trait Infer extends Checkable {
      *  Otherwise, if there is no best alternative, error.
      *
      *  @param argtpes0 contains the argument types. If an argument is named, as
-     *    "a = 3", the corresponding type is `NamedType("a", Int)'. If the name
+     *    "a = 3", the corresponding type is `NamedType("a", Int)`. If the name
      *    of some NamedType does not exist in an alternative's parameter names,
      *    the type is replaces by `Unit`, i.e. the argument is treated as an
      *    assignment expression.

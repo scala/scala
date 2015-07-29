@@ -110,10 +110,10 @@ trait Implicits {
    * Ignore their constr field! The list of type constraints returned along with each tree specifies the constraints that
    * must be met by the corresponding type parameter in `tpars` (for the returned implicit view to be valid).
    *
-   * @arg tp      from-type for the implicit conversion
-   * @arg context search implicits here
-   * @arg tpars   symbols that should be considered free type variables
-   *              (implicit search should not try to solve them, just track their constraints)
+   * @param tp      from-type for the implicit conversion
+   * @param context search implicits here
+   * @param tpars   symbols that should be considered free type variables
+   *                (implicit search should not try to solve them, just track their constraints)
    */
   def allViewsFrom(tp: Type, context: Context, tpars: List[Symbol]): List[(SearchResult, List[TypeConstraint])] = {
     // my untouchable typevars are better than yours (they can't be constrained by them)
