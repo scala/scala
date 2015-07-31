@@ -20,6 +20,16 @@ class PriorityQueueTest {
   }
 
   @Test
+  def stringRepresentationMaintainsOrder(): Unit = {
+    val pq = new mutable.PriorityQueue[Int]()
+    pq += 2
+    pq += 10
+    pq += 3
+
+    assert(pq.toString == "PriorityQueue(2, 3, 10)", pq.toStringgit )
+  }
+
+  @Test
   def maintainsStateWhenDeserialized() {
     val outputStream = new ByteArrayOutputStream()
     new ObjectOutputStream(outputStream).writeObject(priorityQueue)
