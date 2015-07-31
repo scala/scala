@@ -106,7 +106,6 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
     resarr.p_array(resarr.p_size0) = elem.asInstanceOf[AnyRef]
     fixUp(resarr.p_array, resarr.p_size0)
     resarr.p_size0 += 1
-    fixDown(resarr.p_array, 1, resarr.p_size0 - 1)
     this
   }
 
