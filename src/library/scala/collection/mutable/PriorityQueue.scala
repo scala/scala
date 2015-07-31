@@ -106,6 +106,7 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
     resarr.p_array(resarr.p_size0) = elem.asInstanceOf[AnyRef]
     fixUp(resarr.p_array, resarr.p_size0)
     resarr.p_size0 += 1
+    fixDown(resarr.p_array, 1, resarr.p_size0 - 1)
     this
   }
 
@@ -232,7 +233,7 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
    *
    *  @return the string representation of this queue.
    */
-  override def toString() = toList.mkString("PriorityQueue(", ", ", ")")
+  override def toString() = clone.dequeueAll.mkString("PriorityQueue(", ", ", ")")
 
   /** Converts this $coll to a list.
    *

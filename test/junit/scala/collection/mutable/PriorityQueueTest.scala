@@ -26,7 +26,7 @@ class PriorityQueueTest {
     pq += 10
     pq += 3
 
-    assert(pq.toString == "PriorityQueue(2, 3, 10)", pq.toStringgit )
+    assert(pq.toString == "PriorityQueue(10, 3, 2)", pq.toString)
   }
 
   @Test
