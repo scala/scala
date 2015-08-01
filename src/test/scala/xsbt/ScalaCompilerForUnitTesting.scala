@@ -62,8 +62,8 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = false) {
    * file system-independent way of testing dependencies between source code "files".
    */
   def extractDependenciesFromSrcs(srcs: List[Map[Symbol, String]]): ExtractedSourceDependencies = {
-    val rawGroupedSrcs = srcs.map(_.values.toList).toList
-    val symbols = srcs.map(_.keys).flatten
+    val rawGroupedSrcs = srcs.map(_.values.toList)
+    val symbols = srcs.flatMap(_.keys)
     val (tempSrcFiles, testCallback) = compileSrcs(rawGroupedSrcs)
     val fileToSymbol = (tempSrcFiles zip symbols).toMap
 
