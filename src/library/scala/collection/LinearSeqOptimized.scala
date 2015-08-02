@@ -133,9 +133,9 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
     else op(head, tail.foldRight(z)(op))
 
   override /*TraversableLike*/
-  def reduceLeft[B >: A](f: (B, A) => B): B =
+  def reduceLeft[B >: A](op: (B, A) => B): B =
     if (isEmpty) throw new UnsupportedOperationException("empty.reduceLeft")
-    else tail.foldLeft[B](head)(f)
+    else tail.foldLeft[B](head)(op)
 
   override /*IterableLike*/
   def reduceRight[B >: A](op: (A, B) => B): B =
