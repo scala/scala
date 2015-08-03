@@ -154,17 +154,17 @@ extends scala.collection.AbstractSeq[Int]
 
   @inline final override def foreach[@specialized(Unit) U](f: Int => U) {
     validateMaxLength()
-    val isCommonCase = (start != Int.MinValue || end != Int.MinValue)
-    var i: Long = start
+    val isCommonCase = start != Int.MinValue && start != Int.MaxValue && end != Int.MinValue && end != Int.MaxValue
+    var i = start
     var count = 0
-    val step: Long = this.step.toLong
-    val terminal: Long = lastElement.toLong + step
+    val step = this.step
+    val terminal = lastElement + step
 
     while(
       if(isCommonCase) { i != terminal }
       else             { count < numRangeElements }
     ) {
-      f(i.toInt)
+      f(i)
       count += 1
       i += step
     }
