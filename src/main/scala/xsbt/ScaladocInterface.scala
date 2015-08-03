@@ -18,7 +18,7 @@ private class Runner(args: Array[String], log: Logger, delegate: xsbti.Reporter)
   def noErrors = !reporter.hasErrors && command.ok
 
   import forScope._
-  def run() {
+  def run(): Unit = {
     debug(log, "Calling Scaladoc with arguments:\n\t" + args.mkString("\n\t"))
     if (noErrors) {
       import doc._ // 2.8 trunk and Beta1-RC4 have doc.DocFactory.  For other Scala versions, the next line creates forScope.DocFactory
@@ -48,7 +48,7 @@ private class Runner(args: Array[String], log: Logger, delegate: xsbti.Reporter)
           def process(units: Iterator[CompilationUnit]) = error("for 2.8 compatibility only")
         }
       }
-      def document(ignore: Seq[String]) {
+      def document(ignore: Seq[String]): Unit = {
         import compiler._
         val run = new Run
         run compile command.files

@@ -57,7 +57,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
          * that is coming from either source code (not necessarily compiled in this compilation
          * run) or from class file and calls respective callback method.
          */
-        def processDependency(on: Symbol, context: DependencyContext) {
+        def processDependency(on: Symbol, context: DependencyContext): Unit = {
           def binaryDependency(file: File, className: String) = callback.binaryDependency(file, className, sourceFile, context)
           val onSource = on.sourceFile
           if (onSource == null) {
@@ -166,7 +166,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
   }
 
   /** Copied straight from Scala 2.10 as it does not exist in Scala 2.9 compiler */
-  private final def debuglog(msg: => String) {
+  private final def debuglog(msg: => String): Unit = {
     if (settings.debug.value)
       log(msg)
   }

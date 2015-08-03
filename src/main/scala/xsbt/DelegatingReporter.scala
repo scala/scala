@@ -17,22 +17,21 @@ private object DelegatingReporter {
 private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, private[this] var delegate: xsbti.Reporter) extends scala.tools.nsc.reporters.Reporter {
   import scala.tools.nsc.util.{ FakePos, NoPosition, Position }
 
-  def dropDelegate() { delegate = null }
-  def error(msg: String) { error(FakePos("scalac"), msg) }
+  def dropDelegate(): Unit = { delegate = null }
+  def error(msg: String): Unit = error(FakePos("scalac"), msg)
 
-  def printSummary() = delegate.printSummary()
+  def printSummary(): Unit = delegate.printSummary()
 
   override def hasErrors = delegate.hasErrors
   override def hasWarnings = delegate.hasWarnings
   def problems = delegate.problems
-  override def comment(pos: Position, msg: String) = delegate.comment(convert(pos), msg)
+  override def comment(pos: Position, msg: String): Unit = delegate.comment(convert(pos), msg)
 
-  override def reset =
-    {
-      super.reset
-      delegate.reset
-    }
-  protected def info0(pos: Position, msg: String, rawSeverity: Severity, force: Boolean) {
+  override def reset(): Unit = {
+    super.reset
+    delegate.reset()
+  }
+  protected def info0(pos: Position, msg: String, rawSeverity: Severity, force: Boolean): Unit = {
     val skip = rawSeverity == WARNING && noWarn
     if (!skip) {
       val severity = if (warnFatal && rawSeverity == WARNING) ERROR else rawSeverity

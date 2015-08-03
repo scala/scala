@@ -13,7 +13,7 @@ class ConsoleInterface {
   def commandArguments(args: Array[String], bootClasspathString: String, classpathString: String, log: Logger): Array[String] =
     MakeSettings.sync(args, bootClasspathString, classpathString, log).recreateArgs.toArray[String]
 
-  def run(args: Array[String], bootClasspathString: String, classpathString: String, initialCommands: String, cleanupCommands: String, loader: ClassLoader, bindNames: Array[String], bindValues: Array[Any], log: Logger) {
+  def run(args: Array[String], bootClasspathString: String, classpathString: String, initialCommands: String, cleanupCommands: String, loader: ClassLoader, bindNames: Array[String], bindValues: Array[Any], log: Logger): Unit = {
     lazy val interpreterSettings = MakeSettings.sync(args.toList, log)
     val compilerSettings = MakeSettings.sync(args, bootClasspathString, classpathString, log)
 
@@ -36,7 +36,7 @@ class ConsoleInterface {
         } else
           super.createInterpreter()
 
-        def bind(values: Seq[(String, Any)]) {
+        def bind(values: Seq[(String, Any)]): Unit = {
           // for 2.8 compatibility
           final class Compat {
             def bindValue(id: String, value: Any) =
@@ -53,7 +53,7 @@ class ConsoleInterface {
         if (!initialCommands.isEmpty)
           interpreter.interpret(initialCommands)
       }
-      override def closeInterpreter() {
+      override def closeInterpreter(): Unit = {
         if (!cleanupCommands.isEmpty)
           interpreter.interpret(cleanupCommands)
         super.closeInterpreter()

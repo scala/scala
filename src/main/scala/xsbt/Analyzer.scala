@@ -28,7 +28,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
         // build list of generated classes
         for (iclass <- unit.icode) {
           val sym = iclass.symbol
-          def addGenerated(separatorRequired: Boolean) {
+          def addGenerated(separatorRequired: Boolean): Unit = {
             for (classFile <- outputDirs map (fileForClass(_, sym, separatorRequired)) find (_.exists))
               callback.generatedClass(sourceFile, classFile, className(sym, '.', separatorRequired))
           }
@@ -43,4 +43,3 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
     }
   }
 }
-

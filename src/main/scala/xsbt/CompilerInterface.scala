@@ -29,7 +29,7 @@ final class CompilerInterface {
 sealed trait GlobalCompat { self: Global =>
   def registerTopLevelSym(sym: Symbol): Unit
   sealed trait RunCompat {
-    def informUnitStarting(phase: Phase, unit: CompilationUnit) {}
+    def informUnitStarting(phase: Phase, unit: CompilationUnit): Unit = ()
   }
 }
 sealed abstract class CallbackGlobal(settings: Settings, reporter: reporters.Reporter, output: Output) extends Global(settings, reporter) with GlobalCompat {
@@ -43,7 +43,7 @@ sealed abstract class CallbackGlobal(settings: Settings, reporter: reporters.Rep
   }
   // Map source files to public inherited dependencies.  These dependencies are tracked as the symbol for the dealiased base class.
   val inheritedDependencies = new mutable.HashMap[File, mutable.Set[Symbol]]
-  def addInheritedDependencies(file: File, deps: Iterable[Symbol]) {
+  def addInheritedDependencies(file: File, deps: Iterable[Symbol]): Unit = {
     inheritedDependencies.getOrElseUpdate(file, new mutable.HashSet) ++= deps
   }
 }
@@ -52,13 +52,13 @@ class InterfaceCompileFailed(val arguments: Array[String], val problems: Array[P
 class InterfaceCompileCancelled(val arguments: Array[String], override val toString: String) extends xsbti.CompileCancelled
 
 private final class WeakLog(private[this] var log: Logger, private[this] var delegate: Reporter) {
-  def apply(message: String) {
+  def apply(message: String): Unit = {
     assert(log ne null, "Stale reference to logger")
     log.error(Message(message))
   }
   def logger: Logger = log
   def reporter: Reporter = delegate
-  def clear() {
+  def clear(): Unit = {
     log = null
     delegate = null
   }
@@ -95,7 +95,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
     try { run(sources.toList, changes, callback, log, dreporter, progress) }
     finally { dreporter.dropDelegate() }
   }
-  private[this] def run(sources: List[File], changes: DependencyChanges, callback: AnalysisCallback, log: Logger, dreporter: DelegatingReporter, compileProgress: CompileProgress) {
+  private[this] def run(sources: List[File], changes: DependencyChanges, callback: AnalysisCallback, log: Logger, dreporter: DelegatingReporter, compileProgress: CompileProgress): Unit = {
     if (command.shouldStopWithInfo) {
       dreporter.info(null, command.getInfoMessage(compiler), true)
       throw new InterfaceCompileFailed(args, Array(), "Compiler option supplied that disabled actual compilation.")
@@ -104,10 +104,10 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
       debug(log, args.mkString("Calling Scala compiler with arguments  (CompilerInterface):\n\t", "\n\t", ""))
       compiler.set(callback, dreporter)
       val run = new compiler.Run with compiler.RunCompat {
-        override def informUnitStarting(phase: Phase, unit: compiler.CompilationUnit) {
+        override def informUnitStarting(phase: Phase, unit: compiler.CompilationUnit): Unit = {
           compileProgress.startUnit(phase.name, unit.source.path)
         }
-        override def progress(current: Int, total: Int) {
+        override def progress(current: Int, total: Int): Unit = {
           if (!compileProgress.advance(current, total))
             cancel
         }
@@ -134,7 +134,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
     debug(log, "Compilation cancelled (CompilerInterface)")
     throw new InterfaceCompileCancelled(args, "Compilation has been cancelled")
   }
-  def processUnreportedWarnings(run: compiler.Run) {
+  def processUnreportedWarnings(run: compiler.Run): Unit = {
     // allConditionalWarnings and the ConditionalWarning class are only in 2.10+
     final class CondWarnCompat(val what: String, val warnings: mutable.ListBuffer[(compiler.Position, String)])
     implicit def compat(run: AnyRef): Compat = new Compat
@@ -225,11 +225,11 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
         for ((what, warnings) <- seq; (pos, msg) <- warnings) yield callback.problem(what, drep.convert(pos), msg, Severity.Warn, false)
       }
 
-    def set(callback: AnalysisCallback, dreporter: DelegatingReporter) {
+    def set(callback: AnalysisCallback, dreporter: DelegatingReporter): Unit = {
       this.callback0 = callback
       reporter = dreporter
     }
-    def clear() {
+    def clear(): Unit = {
       callback0 = null
       superDropRun()
       reporter = null
