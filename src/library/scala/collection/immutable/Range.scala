@@ -158,10 +158,9 @@ extends scala.collection.AbstractSeq[Int]
     var i = start
     var count = 0
     val step = this.step
-    val terminal = lastElement + step
 
     while(
-      if(isCommonCase) { i != terminal }
+      if(isCommonCase) { i != terminalElement }
       else             { count < numRangeElements }
     ) {
       f(i)
