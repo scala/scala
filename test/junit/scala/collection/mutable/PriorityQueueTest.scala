@@ -20,13 +20,20 @@ class PriorityQueueTest {
   }
 
   @Test
-  def stringRepresentationMaintainsOrder(): Unit = {
+  def stringRepresentationShowHeadIfExists(): Unit = {
     val pq = new mutable.PriorityQueue[Int]()
     pq += 2
     pq += 10
     pq += 3
 
-    assert(pq.toString == "PriorityQueue(10, 3, 2)", pq.toString)
+    assert(pq.toString == "PriorityQueue(head=Some(10))", pq.toString)
+  }
+
+  @Test
+  def stringRepresentationShowNoneIfExists(): Unit = {
+    val pq = new mutable.PriorityQueue[Int]()
+
+    assert(pq.toString == "PriorityQueue(head=None)", pq.toString)
   }
 
   @Test
