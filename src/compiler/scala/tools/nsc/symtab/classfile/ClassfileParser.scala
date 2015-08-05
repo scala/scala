@@ -84,6 +84,9 @@ abstract class ClassfileParser {
   protected final def u2(): Int = in.nextChar.toInt
   protected final def u4(): Int = in.nextInt
 
+  protected final def s1(): Int = in.nextByte.toInt // sign-extend the byte to int
+  protected final def s2(): Int = (in.nextByte.toInt << 8) | u1 // sign-extend and shift the first byte, or with the unsigned second byte
+
   private def readInnerClassFlags() = readClassFlags()
   private def readClassFlags()      = JavaAccFlags classFlags u2
   private def readMethodFlags()     = JavaAccFlags methodFlags u2
