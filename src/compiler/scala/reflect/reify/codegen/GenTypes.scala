@@ -55,7 +55,12 @@ trait GenTypes {
       case tpe @ ConstantType(value) =>
         mirrorBuildCall(nme.ConstantType, reifyProduct(value))
       case tpe @ TypeRef(pre, sym, args) =>
-        reifyBuildCall(nme.TypeRef, pre, sym, args)
+        if (pre != NoPrefix && !sym.isLocatable) {
+          val pre1 = reify(pre)
+          val sym1 = Apply(Select(pre1, nme.member), reifyName(sym.name) :: Nil)
+          mirrorBuildCall(nme.TypeRef, pre1, sym1, reify(args))
+        } else
+          reifyBuildCall(nme.TypeRef, pre, sym, args)
       case tpe @ TypeBounds(lo, hi) =>
         reifyBuildCall(nme.TypeBounds, lo, hi)
       case tpe @ NullaryMethodType(restpe) =>
