@@ -183,7 +183,7 @@ TODO:
 
   <property name="dists.dir"               value="${basedir}/dists"/>
 
-  <property name="copyright.string"        value="Copyright 2002-2013, LAMP/EPFL"/>
+  <property name="copyright.string"        value="Copyright 2002-2015, LAMP/EPFL"/>
 
   <!-- These are NOT the flags used to run SuperSabbus, but the ones written
        into the script runners created with scala.tools.ant.ScalaTool -->
@@ -763,7 +763,7 @@ TODO:
     </path>
 
     <path id="quick.bin.tool.path">
-      <path refid="quick.repl.build.path"/>
+      <path refid="quick.repl-jline.build.path"/>
       <pathelement location="${build-quick.dir}/classes/scalap"/>
       <pathelement location="${build-quick.dir}/classes/scaladoc"/>
       <path refid="external-modules-nocore"/>

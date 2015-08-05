@@ -143,7 +143,7 @@ trait Trees { self: Universe =>
     /** Find all subtrees matching predicate `p`. Same as `withFilter` */
     def filter(f: Tree => Boolean): List[Tree]
 
-    /** Apply `pf' to each subtree on which the function is defined and collect the results.
+    /** Apply `pf` to each subtree on which the function is defined and collect the results.
      */
     def collect[T](pf: PartialFunction[Tree, T]): List[T]
 

@@ -173,7 +173,7 @@ object StringContext {
   /** An exception that is thrown if a string contains a backslash (`\`) character
    *  that does not start a valid escape sequence.
    *  @param  str   The offending string
-   *  @param  idx   The index of the offending backslash character in `str`.
+   *  @param  index   The index of the offending backslash character in `str`.
    */
   class InvalidEscapeException(str: String, @deprecatedName('idx) val index: Int) extends IllegalArgumentException(
     s"""invalid escape ${

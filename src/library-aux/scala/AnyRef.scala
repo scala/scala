@@ -45,7 +45,7 @@ trait AnyRef extends Any {
    */
   def synchronized[T](body: => T): T
 
-  /** Tests whether the argument (`arg0`) is a reference to the receiver object (`this`).
+  /** Tests whether the argument (`that`) is a reference to the receiver object (`this`).
    *
    *  The `eq` method implements an [[http://en.wikipedia.org/wiki/Equivalence_relation equivalence relation]] on
    *  non-null instances of `AnyRef`, and has three additional properties:
@@ -73,7 +73,7 @@ trait AnyRef extends Any {
 
   /** The expression `x == that` is equivalent to `if (x eq null) that eq null else x.equals(that)`.
    *
-   *  @param    arg0  the object to compare against this object for equality.
+   *  @param    that  the object to compare against this object for equality.
    *  @return         `true` if the receiver object is equivalent to the argument; `false` otherwise.
    */
   final def ==(that: Any): Boolean =
