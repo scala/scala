@@ -282,8 +282,17 @@ trait Erasure {
   }
 
   object boxingErasure extends ScalaErasureMap {
+    private var boxPrimitives = true
+
+    override def applyInArray(tp: Type): Type = {
+      val saved = boxPrimitives
+      boxPrimitives = false
+      try super.applyInArray(tp)
+      finally boxPrimitives = saved
+    }
+
     override def eraseNormalClassRef(tref: TypeRef) =
-      if (isPrimitiveValueClass(tref.sym)) boxedClass(tref.sym).tpe
+      if (boxPrimitives && isPrimitiveValueClass(tref.sym)) boxedClass(tref.sym).tpe
       else super.eraseNormalClassRef(tref)
     override def eraseDerivedValueClassRef(tref: TypeRef) =
       super.eraseNormalClassRef(tref)

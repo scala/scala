@@ -8,11 +8,11 @@ package reflect
 package internal
 
 /** Provides delegates to the reporter doing the actual work.
- * All forwarding methods should be marked final,
- * but some subclasses out of our reach stil override them.
+ *  All forwarding methods should be marked final,
+ *  but some subclasses out of our reach stil override them.
  *
- * Eventually, this interface should be reduced to one method: `reporter`,
- * and clients should indirect themselves (reduce duplication of forwarders).
+ *  Eventually, this interface should be reduced to one method: `reporter`,
+ *  and clients should indirect themselves (reduce duplication of forwarders).
  */
 trait Reporting { self : Positions =>
   def reporter: Reporter
@@ -71,8 +71,8 @@ import util.Position
 
 /** Report information, warnings and errors.
  *
- * This describes the (future) external interface for issuing information, warnings and errors.
- * Currently, scala.tools.nsc.Reporter is used by sbt/ide/partest.
+ *  This describes the (future) external interface for issuing information, warnings and errors.
+ *  Currently, scala.tools.nsc.Reporter is used by sbt/ide/partest.
  */
 abstract class Reporter {
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit
@@ -101,7 +101,10 @@ abstract class Reporter {
     resetCount(ERROR)
   }
 
-  def flush(): Unit = { }
+  def flush(): Unit = ()
+
+  /** Finish reporting: print summaries, release resources. */
+  def finish(): Unit = ()
 }
 
 // TODO: move into superclass once partest cuts tie on Severity

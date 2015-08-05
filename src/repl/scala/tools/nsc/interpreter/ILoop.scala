@@ -267,8 +267,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
   }
 
-  protected def newJavap() =
-    JavapClass(addToolsJarToLoader(), new IMain.ReplStrippingWriter(intp), Some(intp))
+  protected def newJavap() = JavapClass(addToolsJarToLoader(), new IMain.ReplStrippingWriter(intp), intp)
 
   private lazy val javap = substituteAndLog[Javap]("javap", NoJavap)(newJavap())
 
@@ -307,7 +306,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     if (javap == null)
       s":javap unavailable, no tools.jar at $jdkHome.  Set JDK_HOME."
     else if (line == "")
-      ":javap [-lcsvp] [path1 path2 ...]"
+      Javap.helpText
     else
       javap(words(line)) foreach { res =>
         if (res.isError) return s"Failed: ${res.value}"

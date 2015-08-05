@@ -239,7 +239,6 @@ abstract class UnPickler {
             if      (missing.startsWith("scala.xml"))                Some(("org.scala-lang.modules", "scala-xml"))
             else if (missing.startsWith("scala.util.parsing"))       Some(("org.scala-lang.modules", "scala-parser-combinators"))
             else if (missing.startsWith("scala.swing"))              Some(("org.scala-lang.modules", "scala-swing"))
-            else if (missing.startsWith("scala.util.continuations")) Some(("org.scala-lang.plugins", "scala-continuations-library"))
             else None
 
           (module map { case (group, art) =>

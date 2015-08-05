@@ -13,6 +13,7 @@ import scala.collection.{ Seq, IndexedSeq, TraversableView, AbstractIterator }
 import scala.collection.mutable.WrappedArray
 import scala.collection.immutable.{ StringLike, NumericRange, List, Stream, Nil, :: }
 import scala.collection.generic.{ Sorted, IsTraversableLike }
+import scala.collection.parallel.ParIterable
 import scala.reflect.{ ClassTag, classTag }
 import scala.util.control.ControlThrowable
 import java.lang.{ Class => jClass }
@@ -326,6 +327,7 @@ object ScalaRunTime {
       case x: AnyRef if isArray(x)      => arrayToString(x)
       case x: scala.collection.Map[_, _]      => x.iterator take maxElements map mapInner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Iterable[_]               => x.iterator take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
+      case x: ParIterable[_]            => x.iterator take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Traversable[_]            => x take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Product1[_] if isTuple(x) => "(" + inner(x._1) + ",)" // that special trailing comma
       case x: Product if isTuple(x)     => x.productIterator map inner mkString ("(", ",", ")")

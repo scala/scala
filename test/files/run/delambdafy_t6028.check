@@ -21,7 +21,7 @@ package <empty> {
     def tryy(tryyParam: String): Function0 = {
       var tryyLocal: runtime.ObjectRef = scala.runtime.ObjectRef.create("");
       {
-        (new <$anon: Function0>(T.this, tryyParam, tryyLocal): Function0)
+        (() => T.this.$anonfun$2(tryyParam, tryyLocal)).$asInstanceOf[Function0]()
       }
     };
     final <artifact> private[this] def $anonfun$1(methodParam$1: String, methodLocal$1: String): String = T.this.classParam.+(T.this.field()).+(methodParam$1).+(methodLocal$1);
@@ -48,24 +48,9 @@ package <empty> {
       };
       scala.this.Predef.print(barParam$1)
     };
-    @SerialVersionUID(value = 0) final <synthetic> class $anonfun$tryy$1 extends scala.runtime.AbstractFunction0$mcV$sp with Serializable {
-      def <init>($outer: T, tryyParam$1: String, tryyLocal$1: runtime.ObjectRef): <$anon: Function0> = {
-        $anonfun$tryy$1.super.<init>();
-        ()
-      };
-      final def apply(): Unit = $anonfun$tryy$1.this.apply$mcV$sp();
-      <specialized> def apply$mcV$sp(): Unit = try {
-        $anonfun$tryy$1.this.tryyLocal$1.elem = $anonfun$tryy$1.this.tryyParam$1
-      } finally ();
-      <synthetic> <paramaccessor> <artifact> private[this] val $outer: T = _;
-      <synthetic> <stable> <artifact> def $outer(): T = $anonfun$tryy$1.this.$outer;
-      final <bridge> <artifact> def apply(): Object = {
-        $anonfun$tryy$1.this.apply();
-        scala.runtime.BoxedUnit.UNIT
-      };
-      <synthetic> <paramaccessor> private[this] val tryyParam$1: String = _;
-      <synthetic> <paramaccessor> private[this] val tryyLocal$1: runtime.ObjectRef = _
-    }
+    final <artifact> private[this] def $anonfun$2(tryyParam$1: String, tryyLocal$1: runtime.ObjectRef): Unit = try {
+      tryyLocal$1.elem = tryyParam$1
+    } finally ()
   }
 }
 

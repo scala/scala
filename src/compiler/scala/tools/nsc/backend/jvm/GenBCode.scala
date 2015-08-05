@@ -252,6 +252,9 @@ abstract class GenBCode extends BCodeSyncAndTry {
               localOptimizations(item.plain)
               addToQ3(item)
           } catch {
+              case e: java.lang.RuntimeException if e.getMessage != null && (e.getMessage contains "too large!") =>
+                reporter.error(NoPosition,
+                  s"Could not write class ${item.plain.name} because it exceeds JVM code size limits. ${e.getMessage}")
               case ex: Throwable =>
                 ex.printStackTrace()
                 error(s"Error while emitting ${item.plain.name}\n${ex.getMessage}")

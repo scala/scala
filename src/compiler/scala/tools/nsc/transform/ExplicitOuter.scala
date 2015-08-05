@@ -446,8 +446,10 @@ abstract class ExplicitOuter extends InfoTransform
           //
           // See SI-6552 for an example of why `sym.owner.enclMethod hasAnnotation ScalaInlineClass`
           // is not suitable; if we make a method-local class non-private, it mangles outer pointer names.
-          if (currentClass != sym.owner ||
-              (closestEnclMethod(currentOwner) hasAnnotation ScalaInlineClass))
+          def enclMethodIsInline = closestEnclMethod(currentOwner) hasAnnotation ScalaInlineClass
+          // SI-8710 The extension method condition reflects our knowledge that a call to `new Meter(12).privateMethod`
+          //         with later be rewritten (in erasure) to `Meter.privateMethod$extension(12)`.
+          if ((currentClass != sym.owner || enclMethodIsInline) && !sym.isMethodWithExtension)
             sym.makeNotPrivate(sym.owner)
 
           val qsym = qual.tpe.widen.typeSymbol

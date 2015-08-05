@@ -201,35 +201,64 @@ self =>
    */
   def stripMargin: String = stripMargin('|')
 
-  private def escape(ch: Char): String = "\\Q" + ch + "\\E"
+  private def escape(ch: Char): String = if (
+    (ch >= 'a') && (ch <= 'z') ||
+    (ch >= 'A') && (ch <= 'Z') ||
+    (ch >= '0' && ch <= '9')) ch.toString
+    else "\\" + ch
 
-  def split(separator: Char): Array[String] = {
-    val thisString = toString
-    var pos = thisString.indexOf(separator)
+  /** Split this string around the separator character
+   * 
+   * If this string is the empty string, returns an array of strings
+   * that contains a single empty string.
+   * 
+   * If this string is not the empty string, returns an array containing
+   * the substrings terminated by the start of the string, the end of the
+   * string or the separator character, excluding empty trailing substrings
+   * 
+   * If the separator character is a surrogate character, only split on 
+   * matching surrogate characters if they are not part of a surrogate pair
+   * 
+   * The behaviour follows, and is implemented in terms of <a href="http://docs.oracle.com/javase/7/docs/api/java/lang/String.html#split%28java.lang.String%29">String.split(re: String)</a>
+   * 
+   * 
+   * @example {{{
+   * "a.b".split('.') //returns Array("a", "b")
+   * 
+   * //splitting the empty string always returns the array with a single
+   * //empty string
+   * "".split('.') //returns Array("") 
+   * 
+   * //only trailing empty substrings are removed
+   * "a.".split('.') //returns Array("a")
+   * ".a.".split('.') //returns Array("", "a")
+   * "..a..".split('.') //returns Array("", "", "a")
+   * 
+   * //all parts are empty and trailing
+   * ".".split('.') //returns Array()
+   * "..".split('.') //returns Array()
+   *
+   * //surrogate pairs
+   * val high = 0xD852.toChar
+   * val low = 0xDF62.toChar
+   * val highstring = high.toString
+   * val lowstring = low.toString
+   *
+   * //well-formed surrogate pairs are not split
+   * val highlow = highstring + lowstring
+   * highlow.split(high) //returns Array(highlow)
+   * 
+   * //bare surrogate characters are split
+   * val bare = "_" + highstring + "_"
+   * bare.split(high) //returns Array("_", "_")
+   * 
+   *  }}}
+   * 
+   * @param separator the character used as a delimiter
+   */
+  def split(separator: Char): Array[String] = 
+    toString.split(escape(separator))
 
-    if (pos != -1) {
-      val res = new ArrayBuilder.ofRef[String]
-
-      var prev = 0
-      do {
-        res += thisString.substring(prev, pos)
-        prev = pos + 1
-        pos = thisString.indexOf(separator, prev)
-      } while (pos != -1)
-
-      if (prev != thisString.size)
-        res += thisString.substring(prev, thisString.size)
-
-      val initialResult = res.result()
-      pos = initialResult.length
-      while (pos > 0 && initialResult(pos - 1).isEmpty) pos = pos - 1
-      if (pos != initialResult.length) {
-        val trimmed = new Array[String](pos)
-        Array.copy(initialResult, 0, trimmed, 0, pos)
-        trimmed
-      } else initialResult
-    } else Array[String](thisString)
-  }
 
   @throws(classOf[java.util.regex.PatternSyntaxException])
   def split(separators: Array[Char]): Array[String] = {

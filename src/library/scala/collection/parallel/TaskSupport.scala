@@ -10,7 +10,7 @@ package scala
 package collection.parallel
 
 import java.util.concurrent.ThreadPoolExecutor
-import scala.concurrent.forkjoin.ForkJoinPool
+import java.util.concurrent.ForkJoinPool
 import scala.concurrent.ExecutionContext
 
 /** A trait implementing the scheduling of a parallel collection operation.
@@ -41,7 +41,7 @@ import scala.concurrent.ExecutionContext
  *  import scala.collection.parallel._
  *  val pc = mutable.ParArray(1, 2, 3)
  *  pc.tasksupport = new ForkJoinTaskSupport(
- *    new scala.concurrent.forkjoin.ForkJoinPool(2))
+ *    new java.util.concurrent.ForkJoinPool(2))
  *  }}}
  *
  *  @see [[http://docs.scala-lang.org/overviews/parallel-collections/configuration.html Configuring Parallel Collections]] section

@@ -64,7 +64,7 @@ scala/
 
 ## Requirements
 
-You'll need a Java SDK (6 or newer), Apache Ant (version 1.8.0 or above), and curl (for `./pull-binary-libs.sh`).
+You'll need a Java SDK (8 or newer), Apache Ant (version 1.9.3 or above), and curl (for `./pull-binary-libs.sh`).
 
 ## Git Hygiene
 
@@ -180,7 +180,7 @@ We typically alias `build/quick/bin/scalac -d sandbox` to `qsc` and `build/quick
 Note: on most machines this requires more heap than is allocate by default.  You can adjust the parameters with ANT_OPTS. Example command line:
 
 ```
-ANT_OPTS = "-Xms512M -Xmx2048M -Xss1M -XX:MaxPermSize=128M" ant docs
+ANT_OPTS = "-Xms512M -Xmx2048M -Xss1M" ant docs
 ```
 
   - `ant dist` builds a distribution in 'dists/latest'.

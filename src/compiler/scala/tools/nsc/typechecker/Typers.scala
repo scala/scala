@@ -542,7 +542,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
         val qual = typedQualifier { atPos(tree.pos.makeTransparent) {
           tree match {
-            case Ident(_) => Ident(rootMirror.getPackageObjectWithMember(pre, sym))
+            case Ident(_) =>
+              val packageObject =
+                if (sym.owner.isModuleClass) sym.owner.sourceModule // historical optimization, perhaps no longer needed
+                else pre.typeSymbol.packageObject
+              Ident(packageObject)
             case Select(qual, _) => Select(qual, nme.PACKAGEkw)
             case SelectFromTypeTree(qual, _) => Select(qual, nme.PACKAGEkw)
           }
@@ -928,24 +932,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def insertApply(): Tree = {
         assert(!context.inTypeConstructorAllowed, mode) //@M
         val adapted = adaptToName(tree, nme.apply)
-        def stabilize0(pre: Type): Tree = stabilize(adapted, pre, MonoQualifierModes, WildcardType)
-
-        // TODO reconcile the overlap between Typers#stablize and TreeGen.stabilize
-        val qual = adapted match {
-          case This(_) =>
-            gen.stabilize(adapted)
-          case Ident(_) =>
-            val owner = adapted.symbol.owner
-            val pre =
-              if (owner.isPackageClass) owner.thisType
-              else if (owner.isClass) context.enclosingSubClassContext(owner).prefix
-              else NoPrefix
-            stabilize0(pre)
-          case Select(qualqual, _) =>
-            stabilize0(qualqual.tpe)
-          case other =>
-            other
-        }
+        val qual = gen.stabilize(adapted)
         typedPos(tree.pos, mode, pt) {
           Select(qual setPos tree.pos.makeTransparent, nme.apply)
         }
@@ -1707,6 +1694,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               psym addChild context.owner
             else
               pending += ParentSealedInheritanceError(parent, psym)
+          if (psym.isLocalToBlock && !phase.erasedTypes)
+            psym addChild context.owner
           val parentTypeOfThis = parent.tpe.dealias.typeOfThis
 
           if (!(selfType <:< parentTypeOfThis) &&
@@ -2228,7 +2217,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val allParams = meth.paramss.flatten
         for (p <- allParams) {
           for (n <- p.deprecatedParamName) {
-            if (allParams.exists(p1 => p1.name == n || (p != p1 && p1.deprecatedParamName.exists(_ == n))))
+            if (allParams.exists(p1 => p != p1 && (p1.name == n || p1.deprecatedParamName.exists(_ == n))))
               DeprecatedParamNameError(p, n)
           }
         }
@@ -5228,7 +5217,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (refTyped.isErrorTyped) {
           setError(tree)
         } else {
-          tree setType refTyped.tpe.resultType
+          tree setType refTyped.tpe.resultType.deconst
           if (refTyped.isErrorTyped || treeInfo.admitsTypeSelection(refTyped)) tree
           else UnstableTreeError(tree)
         }

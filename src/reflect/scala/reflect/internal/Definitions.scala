@@ -1517,7 +1517,7 @@ trait Definitions extends api.StandardDefinitions {
       def isPolymorphicSignature(sym: Symbol) = PolySigMethods(sym)
       private lazy val PolySigMethods: Set[Symbol] = Set[Symbol](MethodHandle.info.decl(sn.Invoke), MethodHandle.info.decl(sn.InvokeExact)).filter(_.exists)
 
-      lazy val Scala_Java8_CompatPackage = rootMirror.getPackageIfDefined("scala.compat.java8")
+      lazy val Scala_Java8_CompatPackage = rootMirror.getPackageIfDefined("scala.runtime.java8")
       lazy val Scala_Java8_CompatPackage_JFunction = (0 to MaxFunctionArity).toArray map (i => getMemberIfDefined(Scala_Java8_CompatPackage.moduleClass, TypeName("JFunction" + i)))
     }
   }
