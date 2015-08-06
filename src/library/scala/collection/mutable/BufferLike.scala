@@ -105,15 +105,18 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     */
   def remove(n: Int): A
 
-  /** Removes a number of elements from a given index position.
+  /** Removes a number of elements from a given index position.  Subclasses of `BufferLike`
+   *  will typically override this method to provide better performance than `count`
+   *  successive calls to single-element `remove`.
    *
    *  @param n  the index which refers to the first element to remove.
    *  @param count  the number of elements to remove.
    *  @throws   IndexOutOfBoundsException if the index `n` is not in the valid range
-   *            `0 <= n <= length - count`.
+   *            `0 <= n <= length - count` (with `count > 0`).
    *  @throws   IllegalArgumentException if `count < 0`.
    */
   def remove(n: Int, count: Int) {
+    if (count < 0) throw new IllegalArgumentException("removing negative number of elements: " + count.toString)
     for (i <- 0 until count) remove(n)
   }
 
