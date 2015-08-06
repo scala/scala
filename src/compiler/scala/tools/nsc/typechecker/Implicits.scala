@@ -324,8 +324,10 @@ trait Implicits {
    */
   class ImplicitSearch(tree: Tree, pt: Type, isView: Boolean, context0: Context, pos0: Position = NoPosition) extends Typer(context0) with ImplicitsContextErrors {
     val searchId = implicitSearchId()
-    private def typingLog(what: String, msg: => String) =
-      typingStack.printTyping(tree, f"[search #$searchId] $what $msg")
+    private def typingLog(what: String, msg: => String) = {
+      if (printingOk(tree))
+        typingStack.printTyping(f"[search #$searchId] $what $msg")
+    }
 
     import infer._
     if (Statistics.canEnable) Statistics.incCounter(implicitSearchCount)
