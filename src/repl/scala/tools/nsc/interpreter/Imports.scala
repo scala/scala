@@ -70,7 +70,10 @@ trait Imports {
 
   /** Compute imports that allow definitions from previous
    *  requests to be visible in a new request.  Returns
-   *  three pieces of related code:
+   *  three or four pieces of related code:
+   *
+   *  0. Header code fragment that should go at the beginning
+   *  of the compilation unit, specifically, import Predef.
    *
    *  1. An initial code fragment that should go before
    *  the code of the new request.
@@ -91,30 +94,36 @@ trait Imports {
    * (3) It imports multiple same-named implicits, but only the
    * last one imported is actually usable.
    */
-  case class ComputedImports(prepend: String, append: String, access: String)
-  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper, definesClass: Boolean): ComputedImports = {
+  case class ComputedImports(header: String, prepend: String, append: String, access: String)
+
+  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper, definesClass: Boolean, generousImports: Boolean): ComputedImports = {
+    val header, code, trailingBraces, accessPath = new StringBuilder
+    val currentImps = mutable.HashSet[Name]()
+    var predefEscapes = false      // only emit predef import header if name not resolved in history, loosely
+
     /** Narrow down the list of requests from which imports
      *  should be taken.  Removes requests which cannot contribute
      *  useful imports for the specified set of wanted names.
      */
-    case class ReqAndHandler(req: Request, handler: MemberHandler) { }
+    case class ReqAndHandler(req: Request, handler: MemberHandler)
 
     def reqsToUse: List[ReqAndHandler] = {
       /** Loop through a list of MemberHandlers and select which ones to keep.
-        * 'wanted' is the set of names that need to be imported.
+       *  'wanted' is the set of names that need to be imported.
        */
       def select(reqs: List[ReqAndHandler], wanted: Set[Name]): List[ReqAndHandler] = {
         // Single symbol imports might be implicits! See bug #1752.  Rather than
         // try to finesse this, we will mimic all imports for now.
         def keepHandler(handler: MemberHandler) = handler match {
-        /* While defining classes in class based mode - implicits are not needed. */
+          // While defining classes in class based mode - implicits are not needed.
           case h: ImportHandler if isClassBased && definesClass => h.importedNames.exists(x => wanted.contains(x))
-          case _: ImportHandler => true
-          case x                => x.definesImplicit || (x.definedNames exists wanted)
+          case _: ImportHandler     => true
+          case x if generousImports => x.definesImplicit || (x.definedNames exists (d => wanted.exists(w => d.startsWith(w))))
+          case x                    => x.definesImplicit || (x.definedNames exists wanted)
         }
 
         reqs match {
-          case Nil                                    => Nil
+          case Nil                                    => predefEscapes = wanted contains PredefModule.name ; Nil
           case rh :: rest if !keepHandler(rh.handler) => select(rest, wanted)
           case rh :: rest                             =>
             import rh.handler._
@@ -126,9 +135,6 @@ trait Imports {
       /** Flatten the handlers out and pair each with the original request */
       select(allReqAndHandlers reverseMap { case (r, h) => ReqAndHandler(r, h) }, wanted).reverse
     }
-
-    val code, trailingBraces, accessPath = new StringBuilder
-    val currentImps = mutable.HashSet[Name]()
 
     // add code for a new object to hold some imports
     def addWrapper() {
@@ -146,6 +152,9 @@ trait Imports {
       try op finally addWrapper()
     }
 
+    // imports from Predef are relocated to the template header to allow hiding.
+    def checkHeader(h: ImportHandler) = h.referencedNames contains PredefModule.name
+
     // loop through previous requests, adding imports for each one
     wrapBeforeAndAfter {
       // Reusing a single temporary value when import from a line with multiple definitions.
@@ -153,6 +162,9 @@ trait Imports {
       for (ReqAndHandler(req, handler) <- reqsToUse) {
         val objName = req.lineRep.readPathInstance
         handler match {
+          case h: ImportHandler if checkHeader(h) =>
+            header.clear()
+            header append f"${h.member}%n"
           // If the user entered an import, then just use it; add an import wrapping
           // level if the import might conflict with some other import
           case x: ImportHandler if x.importsWildcard =>
@@ -194,7 +206,8 @@ trait Imports {
       }
     }
 
-    ComputedImports(code.toString, trailingBraces.toString, accessPath.toString)
+    val computedHeader = if (predefEscapes) header.toString else ""
+    ComputedImports(computedHeader, code.toString, trailingBraces.toString, accessPath.toString)
   }
 
   private def allReqAndHandlers =

@@ -1,7 +1,7 @@
 
 scala> scala> 999l
 
-// Detected repl transcript paste: ctrl-D to finish.
+// Detected repl transcript. Paste more, or ctrl-D to finish.
 
 res4: Int = 0123
 
@@ -42,7 +42,7 @@ scala> res5 + res6
 res1: Int = 690
 
 scala> val x = dingus
-<console>:10: error: not found: value dingus
+<console>:11: error: not found: value dingus
        val x = dingus
                ^
 
