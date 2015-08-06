@@ -217,8 +217,8 @@ self =>
         pos = thisString.indexOf(separator, prev)
       } while (pos != -1)
 
-      if (prev != thisString.size)
-        res += thisString.substring(prev, thisString.size)
+      if (prev != thisString.length)
+        res += thisString.substring(prev, thisString.length)
 
       val initialResult = res.result()
       pos = initialResult.length
