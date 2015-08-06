@@ -44,7 +44,7 @@ import scala.language.postfixOps
  *  which is essentially the intersection of X and |P|, where |P| is
  *  the erasure of P.  If XR <: P, then no warning is emitted.
  *
- *  We evaluate "X with conform to P" by checking `X <: P_wild, where
+ *  We evaluate "X with conform to P" by checking `X <: P_wild`, where
  *  P_wild is the result of substituting wildcard types in place of
  *  pattern type variables. This is intentionally stricter than
  *  (X matchesPattern P), see SI-8597 for motivating test cases.

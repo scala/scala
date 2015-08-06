@@ -495,8 +495,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
      *        generic classes or interfaces.
      *
      * @param superName the internal of name of the super class. For interfaces,
-     *        the super class is {@link Object}. May be <tt>null</tt>, but
-     *        only for the {@link Object} class.
+     *        the super class is [[Object]]. May be <tt>null</tt>, but
+     *        only for the [[Object]] class.
      *
      * @param interfaces the internal names of the class's interfaces (see
      *        {@link Type#getInternalName() getInternalName}). May be

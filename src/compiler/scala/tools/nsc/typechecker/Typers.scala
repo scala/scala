@@ -2725,7 +2725,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *
      * If 'T' is not fully defined, it is inferred by type checking
      * `apply$body` without a result type before type checking the block.
-     * The method's inferred result type is used instead of T`. [See test/files/pos/sammy_poly.scala]
+     * The method's inferred result type is used instead of `T`. [See test/files/pos/sammy_poly.scala]
      *
      * The `apply` method is identified by the argument `sam`; `S` corresponds to the argument `samClassTp`,
      * and `resPt` is derived from `samClassTp` -- it may be fully defined, or not...
