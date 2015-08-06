@@ -105,7 +105,7 @@ object Exception {
         case x if rethrow(x)        => throw x
         case x if pf isDefinedAt x  => pf(x)
       }
-      finally fin map (_.invoke())
+      finally fin foreach (_.invoke())
 
     /* Create an empty Try container with this Catch and the supplied `Finally`. */
     def andFinally(body: => Unit): Catch[T] = fin match {
