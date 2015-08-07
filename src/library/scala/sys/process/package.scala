@@ -157,7 +157,8 @@ package scala.sys {
     *     while(input.read() != -1) count += 1
     *     input.close()
     *   }
-    *   cat run new ProcessIO(_.close(), byteCounter, _.close())
+    *   val p = cat run new ProcessIO(_.close(), byteCounter, _.close())
+    *   p.exitValue()
     *   count
     * }
     *
