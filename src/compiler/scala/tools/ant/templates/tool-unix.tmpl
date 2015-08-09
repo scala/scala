@@ -118,7 +118,7 @@ fi
 
 if [[ -n "$cygwin$mingw$msys" ]]; then
     case "$TERM" in
-        rxvt* | xterm*)
+        rxvt* | xterm* | cygwin*)
             stty -icanon min 1 -echo
             WINDOWS_OPT="-Djline.terminal=unix"
         ;;
