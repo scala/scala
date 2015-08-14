@@ -1,7 +1,7 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.tools.asm.tree.{InvokeDynamicInsnNode, AbstractInsnNode, MethodNode}
+import scala.tools.asm.tree.{AbstractInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.reflect.internal.util.Position
 import scala.tools.nsc.settings.ScalaSettings

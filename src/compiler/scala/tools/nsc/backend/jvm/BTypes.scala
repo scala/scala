@@ -38,7 +38,7 @@ abstract class BTypes {
   /**
    * Tools for parsing classfiles, used by the inliner.
    */
-  val byteCodeRepository: ByteCodeRepository
+  val byteCodeRepository: ByteCodeRepository[this.type]
 
   val localOpt: LocalOpt[this.type]
 
@@ -553,6 +553,8 @@ abstract class BTypes {
    *
    * Terminology
    * -----------
+   *
+   * Diagram here: https://blogs.oracle.com/darcy/entry/nested_inner_member_and_top
    *
    *  - Nested class (JLS 8): class whose declaration occurs within the body of another class
    *

@@ -36,7 +36,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   val coreBTypes = new CoreBTypesProxy[this.type](this)
   import coreBTypes._
 
-  val byteCodeRepository = new ByteCodeRepository(global.classPath, javaDefinedClasses, recordPerRunCache(collection.concurrent.TrieMap.empty))
+  val byteCodeRepository: ByteCodeRepository[this.type] = new ByteCodeRepository(global.classPath, this)
 
   val localOpt: LocalOpt[this.type] = new LocalOpt(this)
 

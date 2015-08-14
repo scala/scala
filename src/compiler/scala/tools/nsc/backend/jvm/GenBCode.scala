@@ -186,7 +186,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
         // -------------- "plain" class --------------
         val pcb = new PlainClassBuilder(cunit)
         pcb.genPlainClass(cd)
-        val outF = if (needsOutFolder) getOutFolder(claszSymbol, pcb.thisName, cunit) else null;
+        val outF = if (needsOutFolder) getOutFolder(claszSymbol, pcb.thisName, cunit) else null
         val plainC = pcb.cnode
 
         // -------------- bean info class, if needed --------------
