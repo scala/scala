@@ -270,7 +270,7 @@ trait ScalaSettings extends AbsScalaSettings
   def YoptInlinerEnabled          = YoptInlineProject || YoptInlineGlobal
 
   def YoptBuildCallGraph          = YoptInlinerEnabled || YoptClosureElimination
-  def YoptAddToBytecodeRepository = YoptInlinerEnabled || YoptClosureElimination
+  def YoptAddToBytecodeRepository = YoptBuildCallGraph || YoptInlinerEnabled || YoptClosureElimination
 
   val YoptInlineHeuristics = ChoiceSetting(
     name = "-Yopt-inline-heuristics",

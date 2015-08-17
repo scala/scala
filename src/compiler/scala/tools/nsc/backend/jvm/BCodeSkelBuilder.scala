@@ -9,7 +9,6 @@ package backend
 package jvm
 
 import scala.collection.{ mutable, immutable }
-import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository
 import scala.tools.nsc.symtab._
 
 import scala.tools.asm
@@ -139,11 +138,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       if (AsmUtils.traceClassEnabled && cnode.name.contains(AsmUtils.traceClassPattern))
         AsmUtils.traceClass(cnode)
-
-      if (settings.YoptAddToBytecodeRepository) {
-        // The inliner needs to find all classes in the code repo, also those being compiled
-        byteCodeRepository.add(cnode, ByteCodeRepository.CompilationUnit)
-      }
 
       assert(cd.symbol == claszSymbol, "Someone messed up BCodePhase.claszSymbol during genPlainClass().")
     } // end of method genPlainClass()
