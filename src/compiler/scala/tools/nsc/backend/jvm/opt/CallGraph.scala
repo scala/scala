@@ -11,7 +11,7 @@ import scala.reflect.internal.util.{NoPosition, Position}
 import scala.tools.asm.tree.analysis.{Value, Analyzer, BasicInterpreter}
 import scala.tools.asm.{Opcodes, Type, Handle}
 import scala.tools.asm.tree._
-import scala.collection.concurrent
+import scala.collection.{concurrent, mutable}
 import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
@@ -22,25 +22,41 @@ import BytecodeUtils._
 class CallGraph[BT <: BTypes](val btypes: BT) {
   import btypes._
 
-  val callsites: concurrent.Map[MethodInsnNode, Callsite] = recordPerRunCache(concurrent.TrieMap.empty)
+  /**
+   * The call graph contains the callsites in the program being compiled.
+   *
+   * Indexing the call graph by the containing MethodNode and the invocation MethodInsnNode allows
+   * finding callsites efficiently. For example, an inlining heuristic might want to know all
+   * callsites withing a callee method.
+   *
+   * Note that call graph entries (Callsite instances) keep a reference to the invocation
+   * MethodInsnNode, which keeps all AbstractInsnNodes of the method reachable. Adding classes
+   * from the classpath to the call graph (in addition to classes being compiled) may prevent
+   * method instruction nodes from being GCd. The ByteCodeRepository has a fixed size cache for
+   * parsed ClassNodes - keeping all ClassNodes alive consumed too much memory.
+   * The call graph is less problematic because only methods being called are kept alive, not entire
+   * classes. But we should keep an eye on this.
+   */
+  val callsites: mutable.Map[MethodNode, Map[MethodInsnNode, Callsite]] = recordPerRunCache(concurrent.TrieMap.empty withDefaultValue Map.empty)
 
-  val closureInstantiations: concurrent.Map[InvokeDynamicInsnNode, ClosureInstantiation] = recordPerRunCache(concurrent.TrieMap.empty)
+  /**
+   * Closure instantiations in the program being compiled.
+   *
+   * Indexing closure instantiations by the containing MethodNode is beneficial for the closure
+   * optimizer: finding callsites to re-write requires running a producers-consumers analysis on
+   * the method. Here the closure instantiations are already grouped by method.
+   */
+  val closureInstantiations: mutable.Map[MethodNode, Map[InvokeDynamicInsnNode, ClosureInstantiation]] = recordPerRunCache(concurrent.TrieMap.empty withDefaultValue Map.empty)
 
   def addClass(classNode: ClassNode): Unit = {
     val classType = classBTypeFromClassNode(classNode)
-    for {
-      m <- classNode.methods.asScala
-      (calls, closureInits) = analyzeCallsites(m, classType)
-    } {
-      calls foreach (callsite => callsites(callsite.callsiteInstruction) = callsite)
-      closureInits foreach (lmf => closureInstantiations(lmf.indy) = ClosureInstantiation(lmf, m, classType))
-    }
+    classNode.methods.asScala.foreach(addMethod(_, classType))
   }
 
   /**
    * Returns a list of callsites in the method, plus a list of closure instantiation indy instructions.
    */
-  def analyzeCallsites(methodNode: MethodNode, definingClass: ClassBType): (List[Callsite], List[LambdaMetaFactoryCall]) = {
+  def addMethod(methodNode: MethodNode, definingClass: ClassBType): Unit = {
 
     case class CallsiteInfo(safeToInline: Boolean, safeToRewrite: Boolean,
                             annotatedInline: Boolean, annotatedNoInline: Boolean,
@@ -128,8 +144,8 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
       case _ => false
     }
 
-    val callsites = new collection.mutable.ListBuffer[Callsite]
-    val closureInstantiations = new collection.mutable.ListBuffer[LambdaMetaFactoryCall]
+    var methodCallsites = Map.empty[MethodInsnNode, Callsite]
+    var methodClosureInstantiations = Map.empty[InvokeDynamicInsnNode, ClosureInstantiation]
 
     methodNode.instructions.iterator.asScala foreach {
       case call: MethodInsnNode =>
@@ -162,7 +178,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           receiverNotNullByAnalysis(call, numArgs)
         }
 
-        callsites += Callsite(
+        methodCallsites += call -> Callsite(
           callsiteInstruction = call,
           callsiteMethod = methodNode,
           callsiteClass = definingClass,
@@ -174,15 +190,45 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
         )
 
       case LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType) =>
-        closureInstantiations += LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType)
+        methodClosureInstantiations += indy -> ClosureInstantiation(
+          LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType),
+          methodNode,
+          definingClass)
 
       case _ =>
     }
 
-    (callsites.toList, closureInstantiations.toList)
+    callsites(methodNode) = methodCallsites
+    closureInstantiations(methodNode) = methodClosureInstantiations
   }
 
-  /**
+  def removeCallsite(invocation: MethodInsnNode, methodNode: MethodNode): Option[Callsite] = {
+    val methodCallsites = callsites(methodNode)
+    val newCallsites = methodCallsites - invocation
+    if (newCallsites.isEmpty) callsites.remove(methodNode)
+    else callsites(methodNode) = newCallsites
+    methodCallsites.get(invocation)
+  }
+
+  def addCallsite(callsite: Callsite): Unit = {
+    val methodCallsites = callsites(callsite.callsiteMethod)
+    callsites(callsite.callsiteMethod) = methodCallsites + (callsite.callsiteInstruction -> callsite)
+  }
+
+  def removeClosureInstantiation(indy: InvokeDynamicInsnNode, methodNode: MethodNode): Option[ClosureInstantiation] = {
+    val methodClosureInits = closureInstantiations(methodNode)
+    val newClosureInits = methodClosureInits - indy
+    if (newClosureInits.isEmpty) closureInstantiations.remove(methodNode)
+    else closureInstantiations(methodNode) = newClosureInits
+    methodClosureInits.get(indy)
+  }
+
+  def addClosureInstantiation(closureInit: ClosureInstantiation) = {
+    val methodClosureInits = closureInstantiations(closureInit.ownerMethod)
+    closureInstantiations(closureInit.ownerMethod) = methodClosureInits + (closureInit.lambdaMetaFactoryCall.indy -> closureInit)
+  }
+
+    /**
    * A callsite in the call graph.
    *
    * @param callsiteInstruction The invocation instruction

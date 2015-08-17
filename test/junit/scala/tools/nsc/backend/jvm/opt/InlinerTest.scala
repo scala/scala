@@ -273,7 +273,7 @@ class InlinerTest extends ClearAfterClass {
     assert(gIns contains invokeG, gIns) // f is inlined into g, g invokes itself recursively
 
     assert(callGraph.callsites.size == 3, callGraph.callsites)
-    for (callsite <- callGraph.callsites.values if methods.contains(callsite.callsiteMethod)) {
+    for (callsite <- callGraph.callsites.valuesIterator.flatMap(_.valuesIterator) if methods.contains(callsite.callsiteMethod)) {
       checkCallsite(callsite, g)
     }
   }
@@ -295,8 +295,8 @@ class InlinerTest extends ClearAfterClass {
     assert(gIns.count(_ == invokeG) == 2, gIns)
     assert(hIns.count(_ == invokeG) == 2, hIns)
 
-    assert(callGraph.callsites.size == 7, callGraph.callsites)
-    for (callsite <- callGraph.callsites.values if methods.contains(callsite.callsiteMethod)) {
+    assert(callGraph.callsites.valuesIterator.flatMap(_.valuesIterator).size == 7, callGraph.callsites)
+    for (callsite <- callGraph.callsites.valuesIterator.flatMap(_.valuesIterator) if methods.contains(callsite.callsiteMethod)) {
       checkCallsite(callsite, g)
     }
   }
@@ -336,7 +336,7 @@ class InlinerTest extends ClearAfterClass {
         |}
       """.stripMargin
     val List(c) = compile(code)
-    assert(callGraph.callsites.values exists (_.callsiteInstruction.name == "clone"))
+    assert(callGraph.callsites.valuesIterator.flatMap(_.valuesIterator) exists (_.callsiteInstruction.name == "clone"))
   }
 
   @Test

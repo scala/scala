@@ -94,59 +94,45 @@ class CallGraphTest {
     val List(cf1Call, cf2Call, cf3Call, cf4Call, cf5Call, cf6Call, cf7Call, cg1Call) = callsInMethod(t1)
     val List(df1Call, df2Call, df3Call, df4Call, df5Call, df6Call, df7Call, dg1Call) = callsInMethod(t2)
 
-    def checkCallsite(callsite: callGraph.Callsite,
-                      call: MethodInsnNode, callsiteMethod: MethodNode, target: MethodNode, calleeDeclClass: ClassBType,
-                      safeToInline: Boolean, atInline: Boolean, atNoInline: Boolean) = try {
-      assert(callsite.callsiteInstruction == call)
-      assert(callsite.callsiteMethod == callsiteMethod)
-      val callee = callsite.callee.get
-      assert(callee.callee == target)
-      assert(callee.calleeDeclarationClass == calleeDeclClass)
-      assert(callee.safeToInline == safeToInline)
-      assert(callee.annotatedInline == atInline)
-      assert(callee.annotatedNoInline == atNoInline)
+    def checkCallsite(call: MethodInsnNode, callsiteMethod: MethodNode, target: MethodNode, calleeDeclClass: ClassBType,
+                      safeToInline: Boolean, atInline: Boolean, atNoInline: Boolean) = {
+      val callsite = callGraph.callsites(callsiteMethod)(call)
+      try {
+        assert(callsite.callsiteInstruction == call)
+        assert(callsite.callsiteMethod == callsiteMethod)
+        val callee = callsite.callee.get
+        assert(callee.callee == target)
+        assert(callee.calleeDeclarationClass == calleeDeclClass)
+        assert(callee.safeToInline == safeToInline)
+        assert(callee.annotatedInline == atInline)
+        assert(callee.annotatedNoInline == atNoInline)
 
-      assert(callsite.argInfos == List()) // not defined yet
-    } catch {
-      case e: Throwable => println(callsite); throw e
+        assert(callsite.argInfos == List()) // not defined yet
+      } catch {
+        case e: Throwable => println(callsite); throw e
+      }
     }
 
     val cClassBType  = classBTypeFromClassNode(cCls)
     val cMClassBType = classBTypeFromClassNode(cMod)
     val dClassBType  = classBTypeFromClassNode(dCls)
 
-    checkCallsite(callGraph.callsites(cf1Call),
-      cf1Call, t1, cf1, cClassBType, false, false, false)
-    checkCallsite(callGraph.callsites(cf2Call),
-      cf2Call, t1, cf2, cClassBType, true, false, false)
-    checkCallsite(callGraph.callsites(cf3Call),
-      cf3Call, t1, cf3, cClassBType, false, true, false)
-    checkCallsite(callGraph.callsites(cf4Call),
-      cf4Call, t1, cf4, cClassBType, true, true, false)
-    checkCallsite(callGraph.callsites(cf5Call),
-      cf5Call, t1, cf5, cClassBType, false, false, true)
-    checkCallsite(callGraph.callsites(cf6Call),
-      cf6Call, t1, cf6, cClassBType, true, false, true)
-    checkCallsite(callGraph.callsites(cf7Call),
-      cf7Call, t1, cf7, cClassBType, false, true, true)
-    checkCallsite(callGraph.callsites(cg1Call),
-      cg1Call, t1, g1, cMClassBType, true, false, false)
+    checkCallsite(cf1Call, t1, cf1, cClassBType, false, false, false)
+    checkCallsite(cf2Call, t1, cf2, cClassBType, true, false, false)
+    checkCallsite(cf3Call, t1, cf3, cClassBType, false, true, false)
+    checkCallsite(cf4Call, t1, cf4, cClassBType, true, true, false)
+    checkCallsite(cf5Call, t1, cf5, cClassBType, false, false, true)
+    checkCallsite(cf6Call, t1, cf6, cClassBType, true, false, true)
+    checkCallsite(cf7Call, t1, cf7, cClassBType, false, true, true)
+    checkCallsite(cg1Call, t1, g1, cMClassBType, true, false, false)
 
-    checkCallsite(callGraph.callsites(df1Call),
-      df1Call, t2, df1, dClassBType, false, true, false)
-    checkCallsite(callGraph.callsites(df2Call),
-      df2Call, t2, cf2, cClassBType, true, false, false)
-    checkCallsite(callGraph.callsites(df3Call),
-      df3Call, t2, df3, dClassBType, true, false, false)
-    checkCallsite(callGraph.callsites(df4Call),
-      df4Call, t2, cf4, cClassBType, true, true, false)
-    checkCallsite(callGraph.callsites(df5Call),
-      df5Call, t2, cf5, cClassBType, false, false, true)
-    checkCallsite(callGraph.callsites(df6Call),
-      df6Call, t2, cf6, cClassBType, true, false, true)
-    checkCallsite(callGraph.callsites(df7Call),
-      df7Call, t2, cf7, cClassBType, false, true, true)
-    checkCallsite(callGraph.callsites(dg1Call),
-      dg1Call, t2, g1, cMClassBType, true, false, false)
+    checkCallsite(df1Call, t2, df1, dClassBType, false, true, false)
+    checkCallsite(df2Call, t2, cf2, cClassBType, true, false, false)
+    checkCallsite(df3Call, t2, df3, dClassBType, true, false, false)
+    checkCallsite(df4Call, t2, cf4, cClassBType, true, true, false)
+    checkCallsite(df5Call, t2, cf5, cClassBType, false, false, true)
+    checkCallsite(df6Call, t2, cf6, cClassBType, true, false, true)
+    checkCallsite(df7Call, t2, cf7, cClassBType, false, true, true)
+    checkCallsite(dg1Call, t2, g1, cMClassBType, true, false, false)
   }
 }

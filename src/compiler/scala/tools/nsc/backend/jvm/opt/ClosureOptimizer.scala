@@ -70,23 +70,16 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
       }
     }
 
-    // Grouping the closure instantiations by method allows running the ProdConsAnalyzer only once per
-    // method. Also sort the instantiations: If there are multiple closure instantiations in a method,
-    // closure invocations need to be re-written in a consistent order for bytecode stability. The local
-    // variable slots for storing captured values depends on the order of rewriting.
-    val closureInstantiationsByMethod: Map[MethodNode, immutable.TreeSet[ClosureInstantiation]] = {
-      closureInstantiations.values.groupBy(_.ownerMethod).mapValues(immutable.TreeSet.empty ++ _)
-    }
-
     // For each closure instantiation, a list of callsites of the closure that can be re-written
     // If a callsite cannot be rewritten, for example because the lambda body method is not accessible,
     // a warning is returned instead.
     val callsitesToRewrite: List[(ClosureInstantiation, List[Either[RewriteClosureApplyToClosureBodyFailed, (MethodInsnNode, Int)]])] = {
-      closureInstantiationsByMethod.iterator.flatMap({
+      closureInstantiations.iterator.flatMap({
         case (methodNode, closureInits) =>
           // A lazy val to ensure the analysis only runs if necessary (the value is passed by name to `closureCallsites`)
-          lazy val prodCons = new ProdConsAnalyzer(methodNode, closureInits.head.ownerClass.internalName)
-          closureInits.iterator.map(init => (init, closureCallsites(init, prodCons)))
+          lazy val prodCons = new ProdConsAnalyzer(methodNode, closureInits.valuesIterator.next.ownerClass.internalName)
+          val sortedInits = immutable.TreeSet.empty ++ closureInits.values
+          sortedInits.iterator.map(init => (init, closureCallsites(init, prodCons)))
       }).toList // mapping to a list (not a map) to keep the sorting of closureInstantiationsByMethod
     }
 
@@ -162,7 +155,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
           isAccessible
         }
 
-        def pos = callGraph.callsites.get(invocation).map(_.callsitePosition).getOrElse(NoPosition)
+        def pos = callGraph.callsites(ownerMethod).get(invocation).map(_.callsitePosition).getOrElse(NoPosition)
         val stackSize: Either[RewriteClosureApplyToClosureBodyFailed, Int] = bodyAccessible match {
           case Left(w)      => Left(RewriteClosureAccessCheckFailed(pos, w))
           case Right(false) => Left(RewriteClosureIllegalAccess(pos, ownerClass.internalName))
@@ -237,7 +230,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     ownerMethod.instructions.remove(invocation)
 
     // update the call graph
-    val originalCallsite = callGraph.callsites.remove(invocation)
+    val originalCallsite = callGraph.removeCallsite(invocation, ownerMethod)
 
     // the method node is needed for building the call graph entry
     val bodyMethod = byteCodeRepository.methodNode(lambdaBodyHandle.getOwner, lambdaBodyHandle.getName, lambdaBodyHandle.getDesc)
@@ -266,7 +259,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     //     (corresponding to the receiver) must be non-null"
     // Explanation: If the lambda body method is non-static, the receiver is a captured
     // value. It can only be captured within some instance method, so we know it's non-null.
-    callGraph.callsites(bodyInvocation) = bodyMethodCallsite
+    callGraph.addCallsite(bodyMethodCallsite)
   }
 
   /**
