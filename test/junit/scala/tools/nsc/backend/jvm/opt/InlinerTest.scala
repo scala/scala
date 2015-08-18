@@ -33,7 +33,11 @@ object InlinerTest extends ClearAfterClass.Clearable {
   var compiler = newCompiler(extraArgs = args)
 
   // allows inspecting the caches after a compilation run
-  def notPerRun: List[Clearable] = List(compiler.genBCode.bTypes.classBTypeFromInternalName, compiler.genBCode.bTypes.byteCodeRepository.classes, compiler.genBCode.bTypes.callGraph.callsites)
+  def notPerRun: List[Clearable] = List(
+    compiler.genBCode.bTypes.classBTypeFromInternalName,
+    compiler.genBCode.bTypes.byteCodeRepository.compilingClasses,
+    compiler.genBCode.bTypes.byteCodeRepository.parsedClasses,
+    compiler.genBCode.bTypes.callGraph.callsites)
   notPerRun foreach compiler.perRunCaches.unrecordCache
 
   def clear(): Unit = { compiler = null }

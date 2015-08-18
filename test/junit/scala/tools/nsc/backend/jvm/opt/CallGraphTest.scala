@@ -28,7 +28,7 @@ class CallGraphTest {
   import compiler.genBCode.bTypes._
 
   // allows inspecting the caches after a compilation run
-  val notPerRun: List[Clearable] = List(classBTypeFromInternalName, byteCodeRepository.classes, callGraph.callsites)
+  val notPerRun: List[Clearable] = List(classBTypeFromInternalName, byteCodeRepository.compilingClasses, byteCodeRepository.parsedClasses, callGraph.callsites)
   notPerRun foreach compiler.perRunCaches.unrecordCache
 
   def compile(code: String, allowMessage: StoreReporter#Info => Boolean): List[ClassNode] = {
