@@ -508,8 +508,8 @@ self =>
    *
    * @example {{{
    * $naturalsEx
-   * naturalsFrom(1)  10 } filter { _ % 5 == 0 } take 10 mkString(", ")
-   * // produces
+   * naturalsFrom(1) filter { _ % 5 == 0 } take 10 mkString(", ")
+   * // produces "5, 10, 15, 20, 25, 30, 35, 40, 45, 50"
    * }}}
    */
   override def filter(p: A => Boolean): Stream[A] = {
