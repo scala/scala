@@ -25,6 +25,7 @@ If you need some help with your PR at any time, please feel free to @-mention an
  <img src="https://avatars.githubusercontent.com/dickwall"     height="50px" title="Dick Wall"/>            | [`@dickwall`](https://github.com/dickwall)           | process & community, documentation |
  <img src="https://avatars.githubusercontent.com/dragos"       height="50px" title="Iulian Dragos"/>        | [`@dragos`](https://github.com/dragos)               | specialization, back end |
  <img src="https://avatars.githubusercontent.com/axel22"       height="50px" title="Aleksandr Prokopec"/>   | [`@axel22`](https://github.com/axel22)               | collections, concurrency, specialization |
+ <img src="https://avatars.githubusercontent.com/janekdb"      height="50px" title="Janek Bogucki"/>        | [`@janekdb`](https://github.com/janekdb)             | documentation |
 
 P.S.: If you have some spare time to help out around here, we would be delighted to add your name to this list!
 
