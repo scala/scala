@@ -31,7 +31,7 @@ P.S.: If you have some spare time to help out around here, we would be delighted
 # Handy Links
   - [A wealth of documentation](http://docs.scala-lang.org)
   - [Scala CI](https://scala-ci.typesafe.com/)
-  - [Download the latest nightly](http://www.scala-lang.org/files/archive/nightly/2.11.x/);
+  - [Download the latest nightly](http://www.scala-lang.org/files/archive/nightly/2.11.x/)
   - [(Deprecated) Scala CI at EPFL](https://scala-webapps.epfl.ch/jenkins/)
   - Scala mailing lists:
     - [Compiler and standard library development](https://groups.google.com/group/scala-internals)
@@ -78,7 +78,7 @@ To pinpoint bugs, we often use git bisect, which is only effective when we can c
 
 This facilitates reviewing: a commit that reformats code can be judged quickly not to affect anything, so we can focus on the meat of the PR. It also helps when merging between long-running branches, reducing conflicts (or providing at least a limited scope for each one).
 
-Please do not @mention anyone in the commit message -- that's what the PR description and comments are for. Every time a commit is shuffled through github (in a merge in some fork, say), every @mention results in an email to that person (the core team treats them as personal email, straight to their inbox, so please don't flood us :-)).
+Please do not @-mention anyone in the commit message -- that's what the PR description and comments are for. Every time a commit is shuffled through github (in a merge in some fork, say), every @-mention results in an email to that person (the core team treats them as personal email, straight to their inbox, so please don't flood us :-)).
 
 
 ## Reviews
@@ -91,13 +91,18 @@ To help you plan your contributions, we communicate our plans on a regular basis
 
 ## Reviewing
 
-Once you've gained some experience with the code base and the process, the logical next step is to offers reviews for others's contributions. The main goal of this whole process, in the end, is to ensure the health of the Scala project by improving the quality of the code base, the documentation, as well as this process itself. Thank you for doing your part!
+Once you've gained some experience with the code base and the process, the next step is to review the contributions of others.
+
+The main goal of this whole process is to ensure the health of the Scala project by improving the quality of the code base, the documentation, as well as this process itself. Thank you for doing your part!
 
 ## [Labels](https://github.com/scala/scala/labels)
-  - `reviewed` automatically added by scabot when a comment prefixed with LGTM is posted
-  - `welcome` reviewer / queue curator adds to welcome someone's first PR (for highlighting in the release notes)
-  - `release-notes` reviewer / queue curator adds to make sure this PR is highlighted in the release notes
-  - `on-hold` added when this PR should not yet be merged, even though CI is green
+
+Label           | Description
+--------------- | -----------
+`reviewed`      | automatically added by scabot when a comment prefixed with LGTM is posted
+`welcome`       | reviewer / queue curator adds to welcome someone's first PR (for highlighting in the release notes)
+`release-notes` | reviewer / queue curator adds to make sure this PR is highlighted in the release notes
+`on-hold`       | added when this PR should not yet be merged, even though CI is green
 
 ### Tips & Tricks
 Once the `publish-core` task has completed on a commit, you can try it out in sbt as follows:
@@ -126,14 +131,23 @@ Use the latest IntelliJ IDEA release and install the Scala plugin from within th
 
 The following steps are required to use IntelliJ IDEA on Scala trunk
  - Run `ant init`. This will download some JARs to `./build/deps`, which are included in IntelliJ's classpath.
- - Run src/intellij/setup.sh
- - Open ./src/intellij/scala.ipr in IntelliJ
- - File, Project Settings, Project, SDK. Create an SDK entry named "1.6" containing the Java 1.6 SDK.
+ - Run `./src/intellij/setup.sh`.
+ - Open `./src/intellij/scala.ipr` in IntelliJ.
+ - `File` → `Project Structure` → `Project` → `Project SDK`. Create an SDK entry named "1.6" containing the Java 1.6 SDK.
    (You may use a later SDK for local development, but the CI will verify against Java 6.)
 
-Compilation within IDEA is performed in "-Dlocker.skip=1" mode: the sources are built
-directly using the STARR compiler (which is downloaded from maven, according to `starr.version` in `versions.properties`).
+Compilation within IDEA is performed in `-Dlocker.skip=1` mode: the sources are built
+directly using the STARR compiler (which is downloaded from [the Central Repository](http://central.sonatype.org/), according to `starr.version` in `versions.properties`).
 
+## Building with sbt (EXPERIMENTAL)
+
+The experimental sbt-based build definition has arrived! Run `sbt package`
+to build the compiler. You can run `sbt test` to run unit (JUnit) tests.
+Use `sbt test/it:test` to run integration (partest) tests.
+
+We would like to migrate to sbt build as quickly as possible. If you would
+like to help please use the scala-internals mailing list to discuss your
+ideas and coordinate your effort with others.
 
 ## Building with Ant
 
@@ -144,25 +158,19 @@ Verify your build using `ant test-opt`.
 
 The Scala build system is based on Apache Ant. Most required pre-compiled
 libraries are part of the repository (in 'lib/'). The following however is
-assumed to be installed on the build machine:
+assumed to be installed on the build machine: TODO
 
-## Building with Sbt (EXPERIMENTAL)
-
-The experimental sbt-based build definition has arrived! Run `sbt package`
-to build the compiler. You can run `sbt test` to run unit (JUnit) tests.
-Use `sbt test/it:test` to run integration (partest) tests.
-
-We would like to migrate to sbt build as quickly as possible. If you would
-like to help please use the scala-internals mailing list to discuss your
-ideas and coordinate your effort with others.
-
-### Tips and tricks
+### Ant Tips and tricks
 
 Here are some common commands. Most ant targets offer a `-opt` variant that runs under `-optimise` (CI runs the -optimize variant).
 
-  - `./pull-binary-libs.sh` downloads all binary artifacts associated with this commit.
-  - `ant -p` prints out information about the commonly used ant targets.
-  - `ant` or `ant build`: A quick compilation (to build/quick) of your changes using the locker compiler.
+Command                 | Description
+----------------------- | -----------
+`./pull-binary-libs.sh` | downloads all binary artifacts associated with this commit.
+`ant -p`                | prints out information about the commonly used ant targets.
+`ant` or `ant build`    | A quick compilation (to `build/quick`) of your changes using the locker compiler.
+`ant dist`              | builds a distribution in 'dists/latest'.
+`ant all.clean`         | removes all build files and all distributions.
 
 A typical debug cycle incrementally builds quick, then uses it to compile and run the file
 `sandbox/test.scala` as follows:
@@ -174,17 +182,14 @@ We typically alias `build/quick/bin/scalac -d sandbox` to `qsc` and `build/quick
 `ant test-opt` tests that your code is working and fit to be committed:
 
   - Runs the test suite and bootstrapping test on quick.
-  - You can run the suite only (skipping strap) with 'ant test.suite'.
+  - You can run the suite only (skipping strap) with `ant test.suite`.
 
 `ant docs` generates the HTML documentation for the library from the sources using the scaladoc tool in quick.
-Note: on most machines this requires more heap than is allocate by default.  You can adjust the parameters with ANT_OPTS. Example command line:
+Note: on most machines this requires more heap than is allocated by default.  You can adjust the parameters with `ANT_OPTS`. Example command line:
 
+```sh
+ANT_OPTS="-Xms512M -Xmx2048M -Xss1M -XX:MaxPermSize=128M" ant docs
 ```
-ANT_OPTS = "-Xms512M -Xmx2048M -Xss1M -XX:MaxPermSize=128M" ant docs
-```
-
-  - `ant dist` builds a distribution in 'dists/latest'.
-  - `ant all.clean` Removes all build files and all distributions.
 
 ### Bootstrapping concepts
 NOTE: This is somewhat outdated, but the ideas still hold.
@@ -194,7 +199,7 @@ compiles Scala in layers. Each layer is a complete compiled Scala compiler and l
 A superior layer is always compiled by the layer just below it. Here is a short
 description of the four layers that the build uses, from bottom to top:
 
-  - `starr`: the stable reference Scala release. We use an official version of Scala (specified by `starr.version` in `versions.properties`), downloaded from maven central.
+  - `starr`: the stable reference Scala release. We use an official version of Scala (specified by `starr.version` in `versions.properties`), downloaded from the Central Repository.
   - `locker`: the local reference which is compiled by starr and is the work compiler in a typical development cycle. Add `locker.skip=true` to `build.properties` to skip this step and speed up development when you're not changing code generation. In any case, after it has been built once, it is “frozen” in this state. Updating it to fit the current source code must be explicitly requested (`ant locker.unlock`).
   - `quick`: the layer which is incrementally built when testing changes in the compiler or library. This is considered an actual new version when locker is up-to-date in relation to the source code.
   - `strap`: a test layer used to check stability of the build.
