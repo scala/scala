@@ -1,0 +1,11 @@
+
+scala> import scala.reflect.io.File
+import scala.reflect.io.File
+
+scala> :imports
+ 1) import java.lang._             (...)
+ 2) import scala._                 (...)
+ 3) import scala.Predef._          (...)
+ 4) import scala.reflect.io.File   (...)
+
+scala> :quit
