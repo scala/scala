@@ -296,11 +296,13 @@ trait Names extends api.Names {
      */
     final def pos(s: String, start: Int): Int = {
       var i = pos(s.charAt(0), start)
-      while (i + s.length() <= len) {
+      val sLen = s.length()
+      if (sLen == 1) return i
+      while (i + sLen <= len) {
         var j = 1
         while (s.charAt(j) == chrs(index + i + j)) {
           j += 1
-          if (j == s.length()) return i
+          if (j == sLen) return i
         }
         i = pos(s.charAt(0), i + 1)
       }

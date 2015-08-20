@@ -95,8 +95,9 @@ class NamesTest {
 
   @Test
   def pos(): Unit = {
-    def check(name: Name, sub: String) = {
-      val javaResult = name.toString.indexOf(sub)
+    def check(nameString: String, sub: String) = {
+      val name = TermName(nameString)
+      val javaResult = name.toString.indexOf(sub) match { case -1 => name.length case x => x }
       val nameResult = name.pos(sub)
       assertEquals(javaResult, nameResult)
       if (sub.length == 1) {
@@ -104,17 +105,18 @@ class NamesTest {
         assertEquals(javaResult, nameResultChar)
       }
     }
-    check(nme.EMPTY, "")
-    check(nme.EMPTY, "x")
-    check(nme.EMPTY, "xy")
-    check(TermName("a"), "")
-    check(TermName("a"), "a")
-    check(TermName("a"), "b")
-    check(TermName("a"), "ab")
-    check(TermName("a"), "ba")
-    check(TermName("ab"), "a")
-    check(TermName("ab"), "b")
-    check(TermName("ab"), "ab")
-    check(TermName("ab"), "ba")
+    // check(nme.EMPTY, "") `pos` requires a non-empty string argument
+    //    check("a", "")
+
+    check("a", "a") // was "String index out of range: 1
+    check("a", "b")
+    check("a", "ab")
+    check("a", "ba")
+    check("ab", "a")
+    check("ab", "b")
+    check("ab", "ab")
+    check("ab", "ba")
+    check("", "x")
+    check("", "xy")
   }
 }
