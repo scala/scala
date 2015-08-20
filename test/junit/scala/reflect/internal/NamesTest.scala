@@ -92,4 +92,29 @@ class NamesTest {
     assert(h1 string_== h2)
     assert(h1 string_== h1y)
   }
+
+  @Test
+  def pos(): Unit = {
+    def check(name: Name, sub: String) = {
+      val javaResult = name.toString.indexOf(sub)
+      val nameResult = name.pos(sub)
+      assertEquals(javaResult, nameResult)
+      if (sub.length == 1) {
+        val nameResultChar = name.pos(sub.head)
+        assertEquals(javaResult, nameResultChar)
+      }
+    }
+    check(nme.EMPTY, "")
+    check(nme.EMPTY, "x")
+    check(nme.EMPTY, "xy")
+    check(TermName("a"), "")
+    check(TermName("a"), "a")
+    check(TermName("a"), "b")
+    check(TermName("a"), "ab")
+    check(TermName("a"), "ba")
+    check(TermName("ab"), "a")
+    check(TermName("ab"), "b")
+    check(TermName("ab"), "ab")
+    check(TermName("ab"), "ba")
+  }
 }
