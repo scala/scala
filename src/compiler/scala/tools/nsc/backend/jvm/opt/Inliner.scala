@@ -25,6 +25,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   import btypes._
   import callGraph._
 
+  val heuristics: InlinerHeuristics[btypes.type] = new InlinerHeuristics(btypes)
+
   def eliminateUnreachableCodeAndUpdateCallGraph(methodNode: MethodNode, definingClass: InternalName): Unit = {
     localOpt.minimalRemoveUnreachableCode(methodNode, definingClass) foreach {
       case invocation: MethodInsnNode  => callGraph.removeCallsite(invocation, methodNode)

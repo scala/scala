@@ -132,6 +132,11 @@ class ByteCodeRepository[BT <: BTypes](val classPath: ClassFileLookup[AbstractFi
    * The method node for a method matching `name` and `descriptor`, accessed in class `ownerInternalNameOrArrayDescriptor`.
    * The declaration of the method may be in one of the parents.
    *
+   * TODO: make sure we always return the right method, the one being invoked. write tests.
+   *   - if there's an abstract and a concrete one. could possibly somehow the abstract be returned?
+   *   - with traits and default methods, if there is more than one default method inherited and
+   *     no override: what should be returned? We should not just inline one of the two.
+   *
    * @return The [[MethodNode]] of the requested method and the [[InternalName]] of its declaring
    *         class, or an error message if the method could not be found.
    */

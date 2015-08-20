@@ -234,6 +234,7 @@ abstract class BTypes {
       InlineInfo(
         traitImplClassSelfType = None,
         isEffectivelyFinal = BytecodeUtils.isFinalClass(classNode),
+        sam = inliner.heuristics.javaSam(classNode.name),
         methodInfos = methodInfos,
         warning)
     }
@@ -1106,6 +1107,8 @@ object BTypes {
    * Metadata about a ClassBType, used by the inliner.
    *
    * More information may be added in the future to enable more elaborate inlinine heuristics.
+   * Note that this class should contain information that can only be obtained from the ClassSymbol.
+   * Information that can be computed from the ClassNode should be added to the call graph instead.
    *
    * @param traitImplClassSelfType `Some(tp)` if this InlineInfo describes a trait, and the `self`
    *                               parameter type of the methods in the implementation class is not
@@ -1124,6 +1127,8 @@ object BTypes {
    * @param isEffectivelyFinal     True if the class cannot have subclasses: final classes, module
    *                               classes, trait impl classes.
    *
+   * @param sam                    If this class is a SAM type, the SAM's "$name$descriptor".
+   *
    * @param methodInfos            The [[MethodInlineInfo]]s for the methods declared in this class.
    *                               The map is indexed by the string s"$name$descriptor" (to
    *                               disambiguate overloads).
@@ -1134,10 +1139,11 @@ object BTypes {
    */
   final case class InlineInfo(traitImplClassSelfType: Option[InternalName],
                               isEffectivelyFinal: Boolean,
+                              sam: Option[String],
                               methodInfos: Map[String, MethodInlineInfo],
                               warning: Option[ClassInlineInfoWarning])
 
-  val EmptyInlineInfo = InlineInfo(None, false, Map.empty, None)
+  val EmptyInlineInfo = InlineInfo(None, false, None, Map.empty, None)
 
   /**
    * Metadata about a method, used by the inliner.
