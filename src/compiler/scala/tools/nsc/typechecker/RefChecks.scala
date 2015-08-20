@@ -1511,7 +1511,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         sym.isSourceMethod &&
         sym.isCase &&
         sym.name == nme.apply &&
-        isClassTypeAccessible(tree)
+        isClassTypeAccessible(tree) &&
+        !tree.tpe.resultType.typeSymbol.primaryConstructor.isLessAccessibleThan(tree.symbol)
 
       if (doTransform) {
         tree foreach {

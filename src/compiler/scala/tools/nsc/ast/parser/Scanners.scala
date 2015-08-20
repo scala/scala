@@ -226,7 +226,7 @@ trait Scanners extends ScannersCommon {
      *  RPAREN    if region starts with '('
      *  RBRACKET  if region starts with '['
      *  RBRACE    if region starts with '{'
-     *  ARROW     if region starts with `case'
+     *  ARROW     if region starts with 'case'
      *  STRINGLIT if region is a string interpolation expression starting with '${'
      *            (the STRINGLIT appears twice in succession on the stack iff the
      *             expression is a multiline string literal).
