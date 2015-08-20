@@ -1,3 +1,3 @@
-class scala.ScalaReflectionException: Scala field x isn't represented as a Java field, neither it has a Java accessor method
-note that private parameters of class constructors don't get mapped onto fields and/or accessors,
-unless they are used outside of their declaring constructors.
+class scala.ScalaReflectionException: Scala field x of class A isn't represented as a Java field, nor does it have a
+Java accessor method. One common reason for this is that it may be a private class parameter
+not used outside the primary constructor.
