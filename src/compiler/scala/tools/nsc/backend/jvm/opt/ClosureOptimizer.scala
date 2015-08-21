@@ -359,7 +359,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
   }
 
   /**
-   * Stores a local varaible index the opcode offset required for operating on that variable.
+   * Stores a local variable index the opcode offset required for operating on that variable.
    *
    * The xLOAD / xSTORE opcodes are in the following sequence: I, L, F, D, A, so the offset for
    * a local variable holding a reference (`A`) is 4. See also method `getOpcode` in [[scala.tools.asm.Type]].

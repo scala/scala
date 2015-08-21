@@ -2016,7 +2016,7 @@ abstract class GenICode extends SubComponent {
        *
        *  This could result in unreachable code which has to be cleaned up later, e.g. if the try and all the exception
        *  handlers always end in RETURN then there will be no "normal" flow out of the try/catch/finally.
-       *  Later reachability analysis will remove unreacahble code.
+       *  Later reachability analysis will remove unreachable code.
        */
       def Try(body: Context => Context,
               handlers: List[(Symbol, TypeKind, Context => Context)],
@@ -2060,7 +2060,7 @@ abstract class GenICode extends SubComponent {
         if (settings.YdisableUnreachablePrevention || !outerCtx.bb.ignore) {
           if (finalizer != EmptyTree) {
             val exh = outerCtx.newExceptionHandler(NoSymbol, finalizer.pos) // finalizer covers exception handlers
-            this.addActiveHandler(exh)  // .. and body aswell
+            this.addActiveHandler(exh)  // .. and body as well
             val exhStartCtx = finalizerCtx.enterExceptionHandler(exh)
             exhStartCtx.bb killIf outerCtx.bb.ignore
             val exception = exhStartCtx.makeLocal(finalizer.pos, ThrowableTpe, "exc")

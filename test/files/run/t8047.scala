@@ -1,7 +1,7 @@
 object Test extends App {
   import scala.reflect.runtime.universe._
   //
-  // x's owner is outer Test scope. Previosly the quasiquote expansion
+  // x's owner is outer Test scope. Previously the quasiquote expansion
   // looked like:
   //
   //     object Test {

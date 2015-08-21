@@ -204,7 +204,7 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
   def iincProdCons(): Unit = {
     import Opcodes._
     val m = genMethod(descriptor = "(I)I")(
-      Incr(IINC, 1, 1), // producer and cosumer of local variable 1
+      Incr(IINC, 1, 1), // producer and consumer of local variable 1
       VarOp(ILOAD, 1),
       Op(IRETURN)
     )

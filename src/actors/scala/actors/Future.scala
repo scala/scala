@@ -12,7 +12,7 @@ package scala.actors
 import scala.actors.scheduler.DaemonScheduler
 import scala.concurrent.SyncVar
 
-/** A function of arity 0, returing a value of type `T` that,
+/** A function of arity 0, returning a value of type `T` that,
  *  when applied, blocks the current actor (`Actor.self`)
  *  until the future's value is available.
  *

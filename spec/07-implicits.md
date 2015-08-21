@@ -84,7 +84,7 @@ The _parts_ of a type $T$ are:
 - if $T$ is an abstract type, the parts of its upper bound;
 - if $T$ denotes an implicit conversion to a type with a method with argument types $T_1 , \ldots , T_n$ and result type $U$,
   the union of the parts of $T_1 , \ldots , T_n$ and $U$;
-- the parts of quantified (existential or univeral) and annotated types are defined as the parts of the underlying types (e.g., the parts of `T forSome { ... }` are the parts of `T`);
+- the parts of quantified (existential or universal) and annotated types are defined as the parts of the underlying types (e.g., the parts of `T forSome { ... }` are the parts of `T`);
 - in all other cases, just $T$ itself.
 
 Note that packages are internally represented as classes with companion modules to hold the package members.

@@ -366,7 +366,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
       clonedInstructions.insert(argStores)
 
-      // label for the exit of the inlined functions. xRETURNs are rplaced by GOTOs to this label.
+      // label for the exit of the inlined functions. xRETURNs are replaced by GOTOs to this label.
       val postCallLabel = newLabelNode
       clonedInstructions.add(postCallLabel)
 

@@ -588,7 +588,7 @@ trait Types {
   /** An extractor class to create and pattern match with syntax `TypeRef(pre, sym, args)`
    *  Here, `pre` is the prefix of the type reference, `sym` is the symbol
    *  referred to by the type reference, and `args` is a possible empty list of
-   *  type argumenrts.
+   *  type arguments.
    *  @group Extractors
    */
   abstract class TypeRefExtractor {

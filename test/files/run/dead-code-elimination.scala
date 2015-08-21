@@ -10,7 +10,7 @@
 // the stack after code elimination.
 //
 // Originally, this did not compile, but I included it in the run
-// tests because this was ASM-dependand and did not happen for GenJVM.
+// tests because this was ASM-dependent and did not happen for GenJVM.
 //
 // Thus, we run the code and force the loading of class B -- if the
 // bytecode is incorrect, it will fail the test.

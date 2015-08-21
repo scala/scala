@@ -1601,7 +1601,7 @@ trait Trees extends api.Trees {
           case _          =>
             // no special handling is required for Function or Import nodes here.
             // as they don't have interesting infos attached to their symbols.
-            // Subsitution of the referenced symbol of Return nodes is handled
+            // Substitution of the referenced symbol of Return nodes is handled
             // in .ChangeOwnerTraverser
         }
         tree match {

@@ -12,7 +12,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
 import BytecodeUtils._
 
 /**
- * Some notes on the ASM ananlyzer framework.
+ * Some notes on the ASM analyzer framework.
  *
  * Value
  *  - Abstract, needs to be implemented for each analysis.
