@@ -1188,14 +1188,6 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       // set NoType so it will be ignored.
       val cdef          = ClassDef(module.moduleClass, impl) setType NoType
 
-      def newInnerObject() = {
-        val moduleVar = site newModuleVarSymbol module
-        val rhs       = gen.newModule(module, moduleVar.tpe)
-        val body      = if (site.isTrait) rhs else gen.mkAssignAndReturn(moduleVar, rhs)
-        val accessor  = DefDef(module, body.changeOwner(moduleVar -> module))
-
-        ValDef(moduleVar) :: accessor :: Nil
-      }
       def matchingInnerObject() = {
         val newFlags = (module.flags | STABLE) & ~MODULE
         val newInfo  = NullaryMethodType(module.moduleClass.tpe)
@@ -1208,9 +1200,35 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           // trait T { def f: Object }; object O extends T { object f }. Need to generate method f in O.
           if (module.isOverridingSymbol) matchingInnerObject() else Nil
         else
-          newInnerObject()
+          newInnerObject(site, module)
       )
       transformTrees(newTrees map localTyper.typedPos(moduleDef.pos))
+    }
+    def newInnerObject(site: Symbol, module: Symbol): List[Tree] = {
+      if (site.isTrait)
+        DefDef(module, EmptyTree) :: Nil
+      else {
+        val moduleVar = site newModuleVarSymbol module
+        // used for the mixin case: need a new symbol owned by the subclass for the accessor, rather than repurposing the module symbol
+        def mkAccessorSymbol =
+          site.newMethod(module.name.toTermName, site.pos, STABLE | MODULE | MIXEDIN)
+            .setInfo(moduleVar.tpe)
+            .andAlso(self => if (module.isPrivate) self.expandName(module.owner))
+
+        val accessor = if (module.owner == site) module else mkAccessorSymbol
+        val accessorDef = DefDef(accessor, gen.mkAssignAndReturn(moduleVar, gen.newModule(module, moduleVar.tpe)).changeOwner(moduleVar -> accessor))
+
+        ValDef(moduleVar) :: accessorDef :: Nil
+      }
+    }
+
+    def mixinModuleDefs(clazz: Symbol): List[Tree] = {
+      val res = for {
+        mixinClass <- clazz.mixinClasses.iterator
+        module     <- mixinClass.info.decls.iterator.filter(_.isModule)
+        newMember  <- newInnerObject(clazz, module)
+      } yield transform(localTyper.typedPos(clazz.pos)(newMember))
+      res.toList
     }
 
     def transformStat(tree: Tree, index: Int): List[Tree] = tree match {
@@ -1643,11 +1661,12 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             // SI-7870 default getters for constructors live in the companion module
             checkOverloadedRestrictions(currentOwner, currentOwner.companionModule)
             val bridges = addVarargBridges(currentOwner)
+            val moduleDesugared = if (currentOwner.isTrait) Nil else mixinModuleDefs(currentOwner)
             checkAllOverrides(currentOwner)
             checkAnyValSubclass(currentOwner)
             if (currentOwner.isDerivedValueClass)
               currentOwner.primaryConstructor makeNotPrivate NoSymbol // SI-6601, must be done *after* pickler!
-            if (bridges.nonEmpty) deriveTemplate(tree)(_ ::: bridges) else tree
+            if (bridges.nonEmpty || moduleDesugared.nonEmpty) deriveTemplate(tree)(_ ::: bridges ::: moduleDesugared) else tree
 
           case dc@TypeTreeWithDeferredRefCheck() => abort("adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc")
           case tpt@TypeTree() =>

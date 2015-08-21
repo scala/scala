@@ -861,16 +861,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         typedPos(init.head.pos)(mkFastPathLazyBody(clazz, lzyVal, cond, syncBody, nulls, retVal))
       }
 
-      def mkInnerClassAccessorDoubleChecked(attrThis: Tree, rhs: Tree, moduleSym: Symbol, args: List[Tree]): Tree =
-        rhs match {
-          case Block(List(assign), returnTree) =>
-            val Assign(moduleVarRef, _) = assign
-            val cond                    = Apply(Select(moduleVarRef, Object_eq), List(NULL))
-            mkFastPathBody(clazz, moduleSym, cond, List(assign), List(NULL), returnTree, attrThis, args)
-          case _ =>
-            abort(s"Invalid getter $rhs for module in $clazz")
-        }
-
       def mkCheckedAccessor(clazz: Symbol, retVal: Tree, offset: Int, pos: Position, fieldSym: Symbol): Tree = {
         val sym = fieldSym.getterIn(fieldSym.owner)
         val bitmapSym = bitmapFor(clazz, offset, sym)
@@ -925,18 +915,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             if (needsInitFlag(getter) && fieldOffset.isDefinedAt(getter))
               deriveDefDef(stat)(rhs => Block(List(rhs, localTyper.typed(mkSetFlag(clazz, fieldOffset(getter), getter, bitmapKind(getter)))), UNIT))
             else stat
-          }
-          else if (sym.isModule && (!clazz.isTrait || clazz.isImplClass) && !sym.isBridge) {
-            deriveDefDef(stat)(rhs =>
-              typedPos(stat.pos)(
-                mkInnerClassAccessorDoubleChecked(
-                  // Martin to Hubert: I think this can be replaced by selfRef(tree.pos)
-                  // @PP: It does not seem so, it crashes for me trying to bootstrap.
-                  if (clazz.isImplClass) gen.mkAttributedIdent(stat.vparamss.head.head.symbol) else gen.mkAttributedThis(clazz),
-                  rhs, sym, stat.vparamss.head
-                )
-              )
-            )
           }
           else stat
         }
@@ -1082,18 +1060,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             })
           }
           else if (sym.isModule && !(sym hasFlag LIFTED | BRIDGE)) {
-            // add modules
-            val vsym = sym.owner.newModuleVarSymbol(sym)
-            addDef(position(sym), ValDef(vsym))
-
-            // !!! TODO - unravel the enormous duplication between this code and
-            // eliminateModuleDefs in RefChecks.
-            val rhs          = gen.newModule(sym, vsym.tpe)
-            val assignAndRet = gen.mkAssignAndReturn(vsym, rhs)
-            val attrThis     = gen.mkAttributedThis(clazz)
-            val rhs1         = mkInnerClassAccessorDoubleChecked(attrThis, assignAndRet, sym, List())
-
-            addDefDef(sym, rhs1)
+            // Moved to Refchecks
           }
           else if (!sym.isMethod) {
             // add fields
