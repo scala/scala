@@ -86,7 +86,7 @@ A pull request should consist of commits with messages that clearly state what p
 
 Commit logs should be stated in the active, present tense.
 
-A commit's subject should be 60 characters or less.  Overall, think of
+A commit's subject should be 72 characters or less.  Overall, think of
 the first line of the commit as a description of the action performed
 by the commit on the code base, so use the active voice and the
 present tense.  That also makes the commit subjects easy to reuse in
@@ -113,7 +113,7 @@ Our pull request bot, Scabot, automatically builds all the commits in a PR indiv
 
 Click on the little x next to a commit sha to go to the overview of the PR validation job. To diagnose a failure, consult the console output of the job that failed.
 
-See the [scala-jenkins-infra repo](https://github.com/scala/scala-jenkins-infra) and [Scabot repo](https://github.com/) for full details on PR validation.  One tip you should know is that commenting `/rebuild` on a PR asks validation to be run again on the same commits. This is only necessary when a spurious failure occurred.
+See the [scala-jenkins-infra repo](https://github.com/scala/scala-jenkins-infra) and [Scabot repo](https://github.com/scala/scabot) for full details on PR validation.  One tip you should know is that commenting `/rebuild` on a PR asks validation to be run again on the same commits. This is only necessary when a spurious failure occurred.
 
 ### Pass code review
 
