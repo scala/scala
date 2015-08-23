@@ -92,8 +92,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
     def genThrow(expr: Tree): BType = {
       val thrownKind = tpeTK(expr)
-      // `throw null` is valid although scala.Null (as defined in src/libray-aux) isn't a subtype of Throwable.
-      // Similarly for scala.Nothing (again, as defined in src/libray-aux).
+      // `throw null` is valid although scala.Null (as defined in src/library-aux) isn't a subtype of Throwable.
+      // Similarly for scala.Nothing (again, as defined in src/library-aux).
       assert(thrownKind.isNullType || thrownKind.isNothingType || thrownKind.asClassBType.isSubtypeOf(ThrowableReference).get)
       genLoad(expr, thrownKind)
       lineNumber(expr)

@@ -6,14 +6,14 @@ object Test1 {
 	implicitly[Int]
 }
 
-// Testing for the absense of shadowing #1.
+// Testing for the absence of shadowing #1.
 object Test2 {
 	import A.{x => y}
 	val x = 2
 	implicitly[Int]
 }
 
-// Testing for the absense of shadowing #2.
+// Testing for the absence of shadowing #2.
 object Test3 {
 	{
 		import A.{x => y}

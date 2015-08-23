@@ -1,5 +1,5 @@
 //  This test serves to capture the status quo, but should really
-// emit an accessibiltiy error.
+// emit an accessibility error.
 
 // `Namers#companionSymbolOf` seems too lenient, and currently doesn't
 // implement the same-scope checks mentioned:

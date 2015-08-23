@@ -658,7 +658,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       //
       // Situation #2 requires measures to be taken. If we're in it, then noone's going to help us infer
       // the undetermined type params. Therefore we need to do something ourselves or otherwise this
-      // expandee will forever remaing not expanded (see SI-5692). A traditional way out of this conundrum
+      // expandee will forever remain not expanded (see SI-5692). A traditional way out of this conundrum
       // is to call `instantiate` and let the inferencer try to find the way out. It works for simple cases,
       // but sometimes, if the inferencer lacks information, it will be forced to approximate.
       //

@@ -2031,11 +2031,11 @@ self =>
     /** Drop `private` modifier when followed by a qualifier.
      *  Contract `abstract` and `override` to ABSOVERRIDE
      */
-    private def normalizeModifers(mods: Modifiers): Modifiers =
+    private def normalizeModifiers(mods: Modifiers): Modifiers =
       if (mods.isPrivate && mods.hasAccessBoundary)
-        normalizeModifers(mods &~ Flags.PRIVATE)
+        normalizeModifiers(mods &~ Flags.PRIVATE)
       else if (mods hasAllFlags (Flags.ABSTRACT | Flags.OVERRIDE))
-        normalizeModifers(mods &~ (Flags.ABSTRACT | Flags.OVERRIDE) | Flags.ABSOVERRIDE)
+        normalizeModifiers(mods &~ (Flags.ABSTRACT | Flags.OVERRIDE) | Flags.ABSOVERRIDE)
       else
         mods
 
@@ -2080,7 +2080,7 @@ self =>
      *  AccessModifier ::= (private | protected) [AccessQualifier]
      *  }}}
      */
-    def accessModifierOpt(): Modifiers = normalizeModifers {
+    def accessModifierOpt(): Modifiers = normalizeModifiers {
       in.token match {
         case m @ (PRIVATE | PROTECTED)  => in.nextToken() ; accessQualifierOpt(Modifiers(flagTokens(m)))
         case _                          => NoMods
@@ -2094,7 +2094,7 @@ self =>
      *              |  override
      *  }}}
      */
-    def modifiers(): Modifiers = normalizeModifers {
+    def modifiers(): Modifiers = normalizeModifiers {
       def loop(mods: Modifiers): Modifiers = in.token match {
         case PRIVATE | PROTECTED =>
           loop(accessQualifierOpt(addMod(mods, flagTokens(in.token), tokenRange(in))))
