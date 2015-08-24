@@ -888,7 +888,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     /** Code to import bound names from previous lines - accessPath is code to
       * append to objectName to access anything bound by request.
       */
-    lazy val ComputedImports(importsPreamble, importsTrailer, accessPath) =
+    lazy val ComputedImports(headerPreamble, importsPreamble, importsTrailer, accessPath) =
       exitingTyper(importsCode(referencedNames.toSet, ObjectSourceCode, definesClass))
 
     /** the line of code to compute */
@@ -908,6 +908,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
         else List("def %s = %s".format("$line", tquoted(originalLine)), "def %s = Nil".format("$trees"))
       }
       def preamble = s"""
+        |$headerPreamble
         |${preambleHeader format lineRep.readName}
         |${envLines mkString ("  ", ";\n  ", ";\n")}
         |$importsPreamble

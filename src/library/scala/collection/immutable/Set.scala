@@ -35,7 +35,12 @@ trait Set[A] extends Iterable[A]
   override def companion: GenericCompanion[Set] = Set
   
   
-  override def toSet[B >: A]: Set[B] = to[({type l[a] = immutable.Set[B]})#l] // for bincompat; remove in dev
+  /** Returns this $coll as an immutable map.
+   *  
+   *  A new map will not be built; lazy collections will stay lazy.
+   */
+  @deprecatedOverriding("Immutable sets should do nothing on toSet but return themselves cast as a Set.", "2.11.0")
+  override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set[B]]
   
   override def seq: Set[A] = this
   protected override def parCombiner = ParSet.newCombiner[A] // if `immutable.SetLike` gets introduced, please move this there!
@@ -57,7 +62,6 @@ object Set extends ImmutableSetFactory[Set] {
     def - (elem: Any): Set[Any] = this
     def iterator: Iterator[Any] = Iterator.empty
     override def foreach[U](f: Any =>  U): Unit = {}
-    override def toSet[B >: Any]: Set[B] = this.asInstanceOf[Set[B]]
   }
   private[collection] def emptyInstance: Set[Any] = EmptySet
 
@@ -88,8 +92,6 @@ object Set extends ImmutableSetFactory[Set] {
       if (f(elem1)) Some(elem1)
       else None
     }
-    @deprecatedOverriding("Immutable sets should do nothing on toSet but return themselves cast as a Set.", "2.11.0")
-    override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set[B]]
   }
 
   /** An optimized representation for immutable sets of size 2 */
@@ -121,8 +123,6 @@ object Set extends ImmutableSetFactory[Set] {
       else if (f(elem2)) Some(elem2)
       else None
     }
-    @deprecatedOverriding("Immutable sets should do nothing on toSet but return themselves cast as a Set.", "2.11.0")
-    override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set[B]]
   }
 
   /** An optimized representation for immutable sets of size 3 */
@@ -156,8 +156,6 @@ object Set extends ImmutableSetFactory[Set] {
       else if (f(elem3)) Some(elem3)
       else None
     }
-    @deprecatedOverriding("Immutable sets should do nothing on toSet but return themselves cast as a Set.", "2.11.0")
-    override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set[B]]
   }
 
   /** An optimized representation for immutable sets of size 4 */
@@ -193,8 +191,6 @@ object Set extends ImmutableSetFactory[Set] {
       else if (f(elem4)) Some(elem4)
       else None
     }
-    @deprecatedOverriding("Immutable sets should do nothing on toSet but return themselves cast as a Set.", "2.11.0")
-    override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set[B]]
   }
 }
 

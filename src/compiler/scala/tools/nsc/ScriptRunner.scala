@@ -16,16 +16,16 @@ import util.Exceptional.unwrap
 
 /** An object that runs Scala code in script files.
  *
- *  <p>For example, here is a complete Scala script on Unix:</pre>
- *  <pre>
+ *  For example, here is a complete Scala script on Unix:
+ *  {{{
  *    #!/bin/sh
  *    exec scala "$0" "$@"
  *    !#
  *    Console.println("Hello, world!")
  *    args.toList foreach Console.println
- *  </pre>
- *  <p>And here is a batch file example on Windows XP:</p>
- *  <pre>
+ *  }}}
+ *  And here is a batch file example on Windows XP:
+ *  {{{
  *    ::#!
  *    @echo off
  *    call scala %0 %*
@@ -33,7 +33,7 @@ import util.Exceptional.unwrap
  *    ::!#
  *    Console.println("Hello, world!")
  *    args.toList foreach Console.println
- *  </pre>
+ *  }}}
  *
  *  @author  Lex Spoon
  *  @version 1.0, 15/05/2006
