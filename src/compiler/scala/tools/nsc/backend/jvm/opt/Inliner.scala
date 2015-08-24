@@ -40,7 +40,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     rewriteFinalTraitMethodInvocations()
 
     for (request <- collectAndOrderInlineRequests) {
-      val Right(callee) = request.callee // collectAndOrderInlineRequests returns callsites with a known callee
+      val callsite = request.callsite
+      val Right(callee) = callsite.callee // collectAndOrderInlineRequests returns callsites with a known callee
 
       // Inlining a method can create unreachable code. Example:
       //   def f = throw e
@@ -51,16 +52,18 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
       // DCE above removes unreachable callsites from the call graph. If the inlining request denotes
       // such an eliminated callsite, do nothing.
-      if (callGraph.callsites(request.callsiteMethod).contains(request.callsiteInstruction)) {
-        val r = inline(request.callsiteInstruction, request.callsiteStackHeight, request.callsiteMethod, request.callsiteClass,
+      if (callGraph.callsites(callsite.callsiteMethod).contains(callsite.callsiteInstruction)) {
+        val r = inline(callsite.callsiteInstruction, callsite.callsiteStackHeight, callsite.callsiteMethod, callsite.callsiteClass,
           callee.callee, callee.calleeDeclarationClass,
-          request.receiverKnownNotNull, keepLineNumbers = false)
+          callsite.receiverKnownNotNull, keepLineNumbers = false)
+
+        // TODO: run downstream inline requests
 
         for (warning <- r) {
           if ((callee.annotatedInline && btypes.compilerSettings.YoptWarningEmitAtInlineFailed) || warning.emitWarning(compilerSettings)) {
             val annotWarn = if (callee.annotatedInline) " is annotated @inline but" else ""
             val msg = s"${BackendReporting.methodSignature(callee.calleeDeclarationClass.internalName, callee.callee)}$annotWarn could not be inlined:\n$warning"
-            backendReporting.inlinerWarning(request.callsitePosition, msg)
+            backendReporting.inlinerWarning(callsite.callsitePosition, msg)
           }
         }
       }
@@ -72,19 +75,21 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    *   - Always remove the same request when breaking inlining cycles
    *   - Perform inlinings in a consistent order
    */
-  object callsiteOrdering extends Ordering[Callsite] {
-    override def compare(x: Callsite, y: Callsite): Int = {
-      val cls = x.callsiteClass.internalName compareTo y.callsiteClass.internalName
+  object callsiteOrdering extends Ordering[InlineRequest] {
+    override def compare(x: InlineRequest, y: InlineRequest): Int = {
+      val xCs = x.callsite
+      val yCs = y.callsite
+      val cls = xCs.callsiteClass.internalName compareTo yCs.callsiteClass.internalName
       if (cls != 0) return cls
 
-      val name = x.callsiteMethod.name compareTo y.callsiteMethod.name
+      val name = xCs.callsiteMethod.name compareTo yCs.callsiteMethod.name
       if (name != 0) return name
 
-      val desc = x.callsiteMethod.desc compareTo y.callsiteMethod.desc
+      val desc = xCs.callsiteMethod.desc compareTo yCs.callsiteMethod.desc
       if (desc != 0) return desc
 
       def pos(c: Callsite) = c.callsiteMethod.instructions.indexOf(c.callsiteInstruction)
-      pos(x) - pos(y)
+      pos(xCs) - pos(yCs)
     }
   }
 
@@ -194,15 +199,11 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    * The resulting list is sorted such that the leaves of the inline request graph are on the left.
    * Once these leaves are inlined, the successive elements will be leaves, etc.
    */
-  private def collectAndOrderInlineRequests: List[Callsite] = {
-    val requests = selectCallsitesForInlining
+  private def collectAndOrderInlineRequests: List[InlineRequest] = {
+    val requestsByMethod = selectCallsitesForInlining withDefaultValue Set.empty
 
-    // This map is an index to look up the inlining requests for a method. The value sets are mutable
-    // to allow removing elided requests (to break inlining cycles). The map itself is mutable to
-    // allow efficient building: requests.groupBy would build values as List[Callsite] that need to
-    // be transformed to mutable sets.
-    val inlineRequestsForMethod: mutable.Map[MethodNode, mutable.Set[Callsite]] = mutable.HashMap.empty.withDefaultValue(mutable.HashSet.empty)
-    for (r <- requests) inlineRequestsForMethod.getOrElseUpdate(r.callsiteMethod, mutable.HashSet.empty) += r
+    val elided = mutable.Set.empty[InlineRequest]
+    def nonElidedRequests(methodNode: MethodNode): Set[InlineRequest] = requestsByMethod(methodNode) diff elided
 
     /**
      * Break cycles in the inline request graph by removing callsites.
@@ -210,7 +211,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
      * The list `requests` is traversed left-to-right, removing those callsites that are part of a
      * cycle. Elided callsites are also removed from the `inlineRequestsForMethod` map.
      */
-    def breakInlineCycles(requests: List[Callsite]): List[Callsite] = {
+    def breakInlineCycles: List[InlineRequest] = {
       // is there a path of inline requests from start to goal?
       def isReachable(start: MethodNode, goal: MethodNode): Boolean = {
         @tailrec def reachableImpl(check: List[MethodNode], visited: Set[MethodNode]): Boolean = check match {
@@ -218,7 +219,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
             if (x == goal) true
             else if (visited(x)) reachableImpl(xs, visited)
             else {
-              val callees = inlineRequestsForMethod(x).map(_.callee.get.callee)
+              val callees = nonElidedRequests(x).map(_.callsite.callee.get.callee)
               reachableImpl(xs ::: callees.toList, visited + x)
             }
 
@@ -228,12 +229,14 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         reachableImpl(List(start), Set.empty)
       }
 
-      val result = new mutable.ListBuffer[Callsite]()
+      val result = new mutable.ListBuffer[InlineRequest]()
+      val requests = requestsByMethod.valuesIterator.flatten.toArray
       // sort the inline requests to ensure that removing requests is deterministic
-      for (r <- requests.sorted(callsiteOrdering)) {
+      java.util.Arrays.sort(requests, callsiteOrdering)
+      for (r <- requests) {
         // is there a chain of inlining requests that would inline the callsite method into the callee?
-        if (isReachable(r.callee.get.callee, r.callsiteMethod))
-          inlineRequestsForMethod(r.callsiteMethod) -= r
+        if (isReachable(r.callsite.callee.get.callee, r.callsite.callsiteMethod))
+          elided += r
         else
           result += r
       }
@@ -242,11 +245,11 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
     // sort the remaining inline requests such that the leaves appear first, then those requests
     // that become leaves, etc.
-    def leavesFirst(requests: List[Callsite], visited: Set[Callsite] = Set.empty): List[Callsite] = {
+    def leavesFirst(requests: List[InlineRequest], visited: Set[InlineRequest] = Set.empty): List[InlineRequest] = {
       if (requests.isEmpty) Nil
       else {
         val (leaves, others) = requests.partition(r => {
-          val inlineRequestsForCallee = inlineRequestsForMethod(r.callee.get.callee)
+          val inlineRequestsForCallee = nonElidedRequests(r.callsite.callee.get.callee)
           inlineRequestsForCallee.forall(visited)
         })
         assert(leaves.nonEmpty, requests)
@@ -254,7 +257,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       }
     }
 
-    leavesFirst(breakInlineCycles(requests))
+    leavesFirst(breakInlineCycles)
   }
 
 
