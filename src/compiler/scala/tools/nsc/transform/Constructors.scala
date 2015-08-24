@@ -631,21 +631,11 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
         // recurse on class definition, store in defBuf
         case _: ClassDef => defBuf += new ConstructorTransformer(unit).transform(stat)
 
-        // all methods except the primary constructor go into template
+        // methods (except primary constructor) go into template
+        // (non-primary ctors --> auxConstructorBuf / regular defs --> defBuf)
         case _: DefDef if statSym.isPrimaryConstructor => ()
         case _: DefDef if statSym.isConstructor        => auxConstructorBuf += stat
-
-        // other methods go to defBuf
-        // methods with ConstantType result get the corresponding Literal for their RHS
-        case _: DefDef =>
-          val resTp = statSym.info.resultType
-          def mkLiteral(rhs: Tree) = gen.mkAttributedQualifier(resTp) setPos rhs.pos
-
-          val literalized =
-            if (resTp.isInstanceOf[ConstantType] && statSym.info.params.isEmpty) deriveDefDef(stat)(mkLiteral)
-            else stat
-
-          defBuf += literalized
+        case _: DefDef                                 => defBuf += stat
 
         // val defs with constant right-hand sides are eliminated.
         case _: ValDef if statSym.info.isInstanceOf[ConstantType] => ()
