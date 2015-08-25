@@ -53,6 +53,10 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
     classNode.methods.asScala.foreach(addMethod(_, classType))
   }
 
+  def addIfMissing(methodNode: MethodNode, definingClass: ClassBType): Unit = {
+    if (!callsites.contains(methodNode)) addMethod(methodNode, definingClass)
+  }
+
   /**
    * Returns a list of callsites in the method, plus a list of closure instantiation indy instructions.
    */

@@ -405,6 +405,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     callsiteMethod.localVariables.addAll(cloneLocalVariableNodes(callee, labelsMap, callee.name + "_").asJava)
     callsiteMethod.tryCatchBlocks.addAll(cloneTryCatchBlockNodes(callee, labelsMap).asJava)
 
+    callGraph.addIfMissing(callee, calleeDeclarationClass)
+
     // Add all invocation instructions and closure instantiations that were inlined to the call graph
     callGraph.callsites(callee).valuesIterator foreach { originalCallsite =>
       val newCallsiteIns = instructionMap(originalCallsite.callsiteInstruction).asInstanceOf[MethodInsnNode]
