@@ -135,18 +135,12 @@ trait MethodSynthesis {
     }
 
     // TODO: see if we can link symbol creation & tree derivation by sharing the Field/Getter/Setter factories
-    def enterGetterSetter(tree: ValDef) {
-      val ValDef(mods, name, _, _) = tree
-      if (nme.isSetterName(name))
-        ValOrValWithSetterSuffixError(tree)
-
+    def enterGetterSetter(tree: ValDef): Unit = {
       tree.symbol =
-        if (mods.isLazy) {
+        if (tree.mods.isLazy) {
           val lazyValGetter = LazyValGetter(tree).createAndEnterSymbol()
           enterLazyVal(tree, lazyValGetter)
         } else {
-          if (mods.isPrivateLocal)
-            PrivateThisCaseClassParameterError(tree)
           val getter = Getter(tree)
           val getterSym = getter.createAndEnterSymbol()
 
@@ -162,7 +156,6 @@ trait MethodSynthesis {
           if (Field.noFieldFor(tree)) getterSym setPos tree.pos
           else enterStrictVal(tree)
         }
-
 
       enterBeans(tree)
     }
@@ -184,7 +177,7 @@ trait MethodSynthesis {
     }
 
     def addDerivedTrees(typer: Typer, stat: Tree): List[Tree] = stat match {
-      case vd @ ValDef(mods, name, tpt, rhs) if deriveAccessorTrees(vd) =>
+      case vd @ ValDef(mods, name, tpt, rhs) if deriveAccessors(vd) && !vd.symbol.isModuleVar =>
         // If we don't save the annotations, they seem to wander off.
         val annotations = stat.symbol.initialize.annotations
         val trees = (
