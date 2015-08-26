@@ -6,6 +6,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
 import scala.collection.generic.Clearable
+import scala.collection.immutable.IntMap
 import scala.tools.asm.Opcodes._
 import org.junit.Assert._
 
@@ -21,18 +22,31 @@ import AsmUtils._
 import BackendReporting._
 
 import scala.collection.convert.decorateAsScala._
+import scala.tools.testing.ClearAfterClass
 
-@RunWith(classOf[JUnit4])
-class CallGraphTest {
-  val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:inline-global -Yopt-warnings")
-  import compiler.genBCode.bTypes._
+object CallGraphTest extends ClearAfterClass.Clearable {
+  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:inline-global -Yopt-warnings")
+  def clear(): Unit = { compiler = null }
 
   // allows inspecting the caches after a compilation run
-  val notPerRun: List[Clearable] = List(classBTypeFromInternalName, byteCodeRepository.compilingClasses, byteCodeRepository.parsedClasses, callGraph.callsites)
+  val notPerRun: List[Clearable] = List(
+    compiler.genBCode.bTypes.classBTypeFromInternalName,
+    compiler.genBCode.bTypes.byteCodeRepository.compilingClasses,
+    compiler.genBCode.bTypes.byteCodeRepository.parsedClasses,
+    compiler.genBCode.bTypes.callGraph.callsites)
   notPerRun foreach compiler.perRunCaches.unrecordCache
+}
 
-  def compile(code: String, allowMessage: StoreReporter#Info => Boolean): List[ClassNode] = {
-    notPerRun.foreach(_.clear())
+@RunWith(classOf[JUnit4])
+class CallGraphTest extends ClearAfterClass {
+  ClearAfterClass.stateToClear = CallGraphTest
+
+  val compiler = CallGraphTest.compiler
+  import compiler.genBCode.bTypes._
+  import callGraph._
+
+  def compile(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
+    CallGraphTest.notPerRun.foreach(_.clear())
     compileClasses(compiler)(code, allowMessage = allowMessage)
   }
 
@@ -107,7 +121,7 @@ class CallGraphTest {
         assert(callee.annotatedInline == atInline)
         assert(callee.annotatedNoInline == atNoInline)
 
-        assert(callsite.argInfos == List()) // not defined yet
+        assert(callsite.argInfos == IntMap.empty) // no higher-order methods
       } catch {
         case e: Throwable => println(callsite); throw e
       }
@@ -134,5 +148,41 @@ class CallGraphTest {
     checkCallsite(df6Call, t2, cf6, cClassBType, true, false, true)
     checkCallsite(df7Call, t2, cf7, cClassBType, false, true, true)
     checkCallsite(dg1Call, t2, g1, cMClassBType, true, false, false)
+  }
+
+  /**
+   * NOTE: if this test fails for you when running within the IDE, it's probably because you're
+   * using 2.12.0-M2 for compilining within the IDE, which doesn't add SAM information to the
+   * InlineInfo attribute. So the InlineInfo in the classfile for Function1 doesn't say that
+   * it's a SAM type. The test passes when running with ant (which does a full bootstrap).
+   */
+  @Test
+  def checkArgInfos(): Unit = {
+    val code =
+      """abstract class C {
+        |  def h(f: Int => Int): Int = f(1)
+        |  def t1 = h(x => x + 1)
+        |  def t2(i: Int, f: Int => Int, z: Int) = h(f) + i - z
+        |  def t3(f: Int => Int) = h(x => f(x + 1))
+        |}
+        |abstract class D {
+        |  def iAmASam(x: Int): Int
+        |  def selfSamCall = iAmASam(10)
+        |}
+        |""".stripMargin
+    val List(c, d) = compile(code)
+
+    def callIn(m: String) = callGraph.callsites.find(_._1.name == m).get._2.values.head
+    val t1h = callIn("t1")
+    assertEquals(t1h.argInfos.toList, List((1, FunctionLiteral)))
+
+    val t2h = callIn("t2")
+    assertEquals(t2h.argInfos.toList, List((1, ForwardedParam(2))))
+
+    val t3h = callIn("t3")
+    assertEquals(t3h.argInfos.toList, List((1, FunctionLiteral)))
+
+    val selfSamCall = callIn("selfSamCall")
+    assertEquals(selfSamCall.argInfos.toList, List((0,ForwardedParam(0))))
   }
 }

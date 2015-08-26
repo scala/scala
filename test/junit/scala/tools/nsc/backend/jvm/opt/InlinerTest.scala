@@ -97,7 +97,7 @@ class InlinerTest extends ClearAfterClass {
       callsiteMethod = callsiteMethod,
       callsiteClass = callsiteClass,
       callee = Right(callGraph.Callee(callee = callee, calleeDeclarationClass = calleeDeclarationClass, safeToInline = true, safeToRewrite = false, annotatedInline = false, annotatedNoInline = false, higherOrderParams = IntMap.empty, calleeInfoWarning = None)),
-      argInfos = Nil,
+      argInfos = IntMap.empty,
       callsiteStackHeight = callsiteStackHeight,
       receiverKnownNotNull = receiverKnownNotNull,
       callsitePosition = NoPosition),

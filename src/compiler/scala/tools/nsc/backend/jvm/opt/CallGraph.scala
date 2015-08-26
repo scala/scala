@@ -16,7 +16,7 @@ import scala.collection.{concurrent, mutable}
 import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
-import scala.tools.nsc.backend.jvm.analysis.{NotNull, NullnessAnalyzer}
+import scala.tools.nsc.backend.jvm.analysis.{ParameterProducer, ProdConsAnalyzer, NotNull, NullnessAnalyzer}
 import ByteCodeRepository.{Source, CompilationUnit}
 import BytecodeUtils._
 
@@ -114,6 +114,9 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
     var methodCallsites = Map.empty[MethodInsnNode, Callsite]
     var methodClosureInstantiations = Map.empty[InvokeDynamicInsnNode, ClosureInstantiation]
 
+    // lazy so it is only computed if actually used by computeArgInfos
+    lazy val prodCons = new ProdConsAnalyzer(methodNode, definingClass.internalName)
+
     methodNode.instructions.iterator.asScala foreach {
       case call: MethodInsnNode =>
         val callee: Either[OptimizerWarning, Callee] = for {
@@ -133,13 +136,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
             calleeInfoWarning = warning)
         }
 
-        val argInfos = if (callee.isLeft) Nil else {
-          // TODO: for now it's Nil, because we don't run any data flow analysis
-          // there's no point in using the parameter types, that doesn't add any information.
-          // NOTE: need to run the same analyses after inlining, to re-compute the argInfos for the
-          // new duplicated callsites, see Inliner.inline
-          Nil
-        }
+        val argInfos = computeArgInfos(callee, call, methodNode, definingClass, Some(prodCons))
 
         val receiverNotNull = call.getOpcode == Opcodes.INVOKESTATIC || {
           val numArgs = Type.getArgumentTypes(call.desc).length
@@ -168,6 +165,50 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
 
     callsites(methodNode) = methodCallsites
     closureInstantiations(methodNode) = methodClosureInstantiations
+  }
+  
+  def computeArgInfos(
+                       callee: Either[OptimizerWarning, Callee],
+                       callsiteInsn: MethodInsnNode, callsiteMethod: MethodNode, callsiteClass: ClassBType,
+                       methodProdCons: => Option[ProdConsAnalyzer] = None): IntMap[ArgInfo] = {
+    if (callee.isLeft) IntMap.empty
+    else {
+      if (callee.get.higherOrderParams.nonEmpty) {
+
+        val prodCons = methodProdCons.getOrElse({
+          localOpt.minimalRemoveUnreachableCode(callsiteMethod, callsiteClass.internalName)
+          new ProdConsAnalyzer(callsiteMethod, callsiteClass.internalName)
+        })
+
+        // TODO: use type analysis instead - should be more efficient than prodCons
+        // some random thoughts:
+        //  - assign special types to parameters and indy-lambda-functions to track them
+        //  - upcast should not change type flow analysis: don't lose information.
+        //  - can we do something about factory calls? Foo(x) for case class foo gives a Foo.
+        //    inline the factory? analysis across method boundry?
+
+        lazy val callFrame = prodCons.frameAt(callsiteInsn)
+        val receiverOrFirstArgSlot = {
+          val numArgs = Type.getArgumentTypes(callsiteInsn.desc).length + (if (callsiteInsn.getOpcode == Opcodes.INVOKESTATIC) 0 else 1)
+          callFrame.stackTop - numArgs + 1
+        }
+        callee.get.higherOrderParams flatMap {
+          case (index, paramType) =>
+            val prods = prodCons.initialProducersForValueAt(callsiteInsn, receiverOrFirstArgSlot + index)
+            if (prods.size != 1) None
+            else {
+              val argInfo = prods.head match {
+                case LambdaMetaFactoryCall(_, _, _, _) => Some(FunctionLiteral)
+                case ParameterProducer(local)          => Some(ForwardedParam(local))
+                case _                                 => None
+              }
+              argInfo.map((index, _))
+            }
+        }
+      } else {
+        IntMap.empty
+      }
+    }
   }
 
   /**
@@ -254,7 +295,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    * @param callsitePosition    The source position of the callsite, used for inliner warnings.
    */
   final case class Callsite(callsiteInstruction: MethodInsnNode, callsiteMethod: MethodNode, callsiteClass: ClassBType,
-                            callee: Either[OptimizerWarning, Callee], argInfos: List[ArgInfo],
+                            callee: Either[OptimizerWarning, Callee], argInfos: IntMap[ArgInfo],
                             callsiteStackHeight: Int, receiverKnownNotNull: Boolean, callsitePosition: Position) {
     override def toString =
       "Invocation of" +
@@ -267,8 +308,9 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    * Information about invocation arguments, obtained through data flow analysis of the callsite method.
    */
   sealed trait ArgInfo
-  final case class ArgTypeInfo(argType: BType, isPrecise: Boolean, knownNotNull: Boolean) extends ArgInfo
+  case object FunctionLiteral extends ArgInfo
   final case class ForwardedParam(index: Int) extends ArgInfo
+  //  final case class ArgTypeInfo(argType: BType, isPrecise: Boolean, knownNotNull: Boolean) extends ArgInfo
   // can be extended, e.g., with constant types
 
   /**

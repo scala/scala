@@ -8,6 +8,7 @@ package backend.jvm
 package opt
 
 import scala.annotation.tailrec
+import scala.collection.immutable.IntMap
 import scala.tools.asm
 import asm.Handle
 import asm.Opcodes._
@@ -177,7 +178,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
             annotatedNoInline      = annotatedNoInline,
             higherOrderParams      = staticCallHigherOrderParams,
             calleeInfoWarning      = infoWarning)),
-          argInfos            = Nil,
+          argInfos            = callsite.argInfos,
           callsiteStackHeight = callsite.callsiteStackHeight,
           receiverKnownNotNull = callsite.receiverKnownNotNull,
           callsitePosition = callsite.callsitePosition
@@ -410,6 +411,10 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     callsiteMethod.localVariables.addAll(cloneLocalVariableNodes(callee, labelsMap, callee.name + "_").asJava)
     callsiteMethod.tryCatchBlocks.addAll(cloneTryCatchBlockNodes(callee, labelsMap).asJava)
 
+    callsiteMethod.maxLocals += returnType.getSize + callee.maxLocals
+    val numStoredArgs = calleeParamTypes.length + (if (isStaticMethod(callee)) 0 else 1)
+    callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, callee.maxStack + callsiteStackHeight - numStoredArgs)
+
     callGraph.addIfMissing(callee, calleeDeclarationClass)
 
     // Add all invocation instructions and closure instantiations that were inlined to the call graph
@@ -420,12 +425,11 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         callsiteMethod = callsiteMethod,
         callsiteClass = callsiteClass,
         callee = originalCallsite.callee,
-        argInfos = Nil, // TODO: re-compute argInfos for new destination (once we actually compute them)
+        argInfos = computeArgInfos(originalCallsite.callee, newCallsiteIns, callsiteMethod, callsiteClass), // TODO: try to re-build argInfos from the original callsite's
         callsiteStackHeight = callsiteStackHeight + originalCallsite.callsiteStackHeight,
         receiverKnownNotNull = originalCallsite.receiverKnownNotNull,
         callsitePosition = originalCallsite.callsitePosition
-      )
-      )
+      ))
     }
 
     callGraph.closureInstantiations(callee).valuesIterator foreach { originalClosureInit =>
@@ -440,10 +444,6 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
     // Inlining a method body can render some code unreachable, see example above (in runInliner).
     unreachableCodeEliminated -= callsiteMethod
-
-    callsiteMethod.maxLocals += returnType.getSize + callee.maxLocals
-    val numStoredArgs = calleeParamTypes.length + (if (isStaticMethod(callee)) 0 else 1)
-    callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, callee.maxStack + callsiteStackHeight - numStoredArgs)
 
     instructionMap
   }

@@ -9,6 +9,7 @@ package opt
 
 import scala.annotation.switch
 import scala.collection.immutable
+import scala.collection.immutable.IntMap
 import scala.reflect.internal.util.NoPosition
 import scala.tools.asm.{Type, Opcodes}
 import scala.tools.asm.tree._
@@ -235,24 +236,25 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     // the method node is needed for building the call graph entry
     val bodyMethod = byteCodeRepository.methodNode(lambdaBodyHandle.getOwner, lambdaBodyHandle.getName, lambdaBodyHandle.getDesc)
     def bodyMethodIsBeingCompiled = byteCodeRepository.classNodeAndSource(lambdaBodyHandle.getOwner).map(_._2 == CompilationUnit).getOrElse(false)
+    val callee = bodyMethod.map({
+      case (bodyMethodNode, bodyMethodDeclClass) =>
+        val bodyDeclClassType = classBTypeFromParsedClassfile(bodyMethodDeclClass)
+        Callee(
+          callee = bodyMethodNode,
+          calleeDeclarationClass = bodyDeclClassType,
+          safeToInline = compilerSettings.YoptInlineGlobal || bodyMethodIsBeingCompiled,
+          safeToRewrite = false, // the lambda body method is not a trait interface method
+          annotatedInline = false,
+          annotatedNoInline = false,
+          inliner.heuristics.higherOrderParams(bodyMethodNode, bodyDeclClassType),
+          calleeInfoWarning = None)
+    })
     val bodyMethodCallsite = Callsite(
       callsiteInstruction = bodyInvocation,
       callsiteMethod = ownerMethod,
       callsiteClass = closureInit.ownerClass,
-      callee = bodyMethod.map({
-        case (bodyMethodNode, bodyMethodDeclClass) =>
-          val bodyDeclClassType = classBTypeFromParsedClassfile(bodyMethodDeclClass)
-          Callee(
-            callee = bodyMethodNode,
-            calleeDeclarationClass = bodyDeclClassType,
-            safeToInline = compilerSettings.YoptInlineGlobal || bodyMethodIsBeingCompiled,
-            safeToRewrite = false, // the lambda body method is not a trait interface method
-            annotatedInline = false,
-            annotatedNoInline = false,
-            inliner.heuristics.higherOrderParams(bodyMethodNode, bodyDeclClassType),
-            calleeInfoWarning = None)
-      }),
-      argInfos = Nil,
+      callee = callee,
+      argInfos = computeArgInfos(callee, bodyInvocation, ownerMethod, closureInit.ownerClass),
       callsiteStackHeight = invocationStackHeight,
       receiverKnownNotNull = true, // see below (*)
       callsitePosition = originalCallsite.map(_.callsitePosition).getOrElse(NoPosition)
