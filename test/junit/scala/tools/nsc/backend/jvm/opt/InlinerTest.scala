@@ -6,6 +6,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
 import scala.collection.generic.Clearable
+import scala.collection.immutable.IntMap
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.{NoPosition, BatchSourceFile}
 import scala.tools.asm.Opcodes._
@@ -95,7 +96,7 @@ class InlinerTest extends ClearAfterClass {
       callsiteInstruction = callsiteInstruction,
       callsiteMethod = callsiteMethod,
       callsiteClass = callsiteClass,
-      callee = Right(callGraph.Callee(callee = callee, calleeDeclarationClass = calleeDeclarationClass, safeToInline = true, safeToRewrite = false, annotatedInline = false, annotatedNoInline = false, calleeInfoWarning = None)),
+      callee = Right(callGraph.Callee(callee = callee, calleeDeclarationClass = calleeDeclarationClass, safeToInline = true, safeToRewrite = false, annotatedInline = false, annotatedNoInline = false, higherOrderParams = IntMap.empty, calleeInfoWarning = None)),
       argInfos = Nil,
       callsiteStackHeight = callsiteStackHeight,
       receiverKnownNotNull = receiverKnownNotNull,

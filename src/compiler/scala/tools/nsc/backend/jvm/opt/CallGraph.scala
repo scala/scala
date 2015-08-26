@@ -7,6 +7,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import scala.collection.immutable.IntMap
 import scala.reflect.internal.util.{NoPosition, Position}
 import scala.tools.asm.tree.analysis.{Value, Analyzer, BasicInterpreter}
 import scala.tools.asm.{Opcodes, Type, Handle}
@@ -48,6 +49,32 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    */
   val closureInstantiations: mutable.Map[MethodNode, Map[InvokeDynamicInsnNode, ClosureInstantiation]] = recordPerRunCache(concurrent.TrieMap.empty withDefaultValue Map.empty)
 
+  def removeCallsite(invocation: MethodInsnNode, methodNode: MethodNode): Option[Callsite] = {
+    val methodCallsites = callsites(methodNode)
+    val newCallsites = methodCallsites - invocation
+    if (newCallsites.isEmpty) callsites.remove(methodNode)
+    else callsites(methodNode) = newCallsites
+    methodCallsites.get(invocation)
+  }
+
+  def addCallsite(callsite: Callsite): Unit = {
+    val methodCallsites = callsites(callsite.callsiteMethod)
+    callsites(callsite.callsiteMethod) = methodCallsites + (callsite.callsiteInstruction -> callsite)
+  }
+
+  def removeClosureInstantiation(indy: InvokeDynamicInsnNode, methodNode: MethodNode): Option[ClosureInstantiation] = {
+    val methodClosureInits = closureInstantiations(methodNode)
+    val newClosureInits = methodClosureInits - indy
+    if (newClosureInits.isEmpty) closureInstantiations.remove(methodNode)
+    else closureInstantiations(methodNode) = newClosureInits
+    methodClosureInits.get(indy)
+  }
+
+  def addClosureInstantiation(closureInit: ClosureInstantiation) = {
+    val methodClosureInits = closureInstantiations(closureInit.ownerMethod)
+    closureInstantiations(closureInit.ownerMethod) = methodClosureInits + (closureInit.lambdaMetaFactoryCall.indy -> closureInit)
+  }
+
   def addClass(classNode: ClassNode): Unit = {
     val classType = classBTypeFromClassNode(classNode)
     classNode.methods.asScala.foreach(addMethod(_, classType))
@@ -61,70 +88,6 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    * Returns a list of callsites in the method, plus a list of closure instantiation indy instructions.
    */
   def addMethod(methodNode: MethodNode, definingClass: ClassBType): Unit = {
-
-    case class CallsiteInfo(safeToInline: Boolean, safeToRewrite: Boolean,
-                            annotatedInline: Boolean, annotatedNoInline: Boolean,
-                            warning: Option[CalleeInfoWarning])
-
-    /**
-     * Analyze a callsite and gather meta-data that can be used for inlining decisions.
-     */
-    def analyzeCallsite(calleeMethodNode: MethodNode, calleeDeclarationClassBType: ClassBType, receiverTypeInternalName: InternalName, calleeSource: Source): CallsiteInfo = {
-      val methodSignature = calleeMethodNode.name + calleeMethodNode.desc
-
-      try {
-        // The inlineInfo.methodInfos of a ClassBType holds an InlineInfo for each method *declared*
-        // within a class (not for inherited methods). Since we already have the  classBType of the
-        // callee, we only check there for the methodInlineInfo, we should find it there.
-        calleeDeclarationClassBType.info.orThrow.inlineInfo.methodInfos.get(methodSignature) match {
-          case Some(methodInlineInfo) =>
-            val canInlineFromSource = compilerSettings.YoptInlineGlobal || calleeSource == CompilationUnit
-
-            val isAbstract = BytecodeUtils.isAbstractMethod(calleeMethodNode)
-
-            // (1) A non-final method can be safe to inline if the receiver type is a final subclass. Example:
-            //   class A { @inline def f = 1 }; object B extends A; B.f  // can be inlined
-            //
-            // TODO: type analysis can render more calls statically resolved. Example:
-            //   new A.f  // can be inlined, the receiver type is known to be exactly A.
-            val isStaticallyResolved: Boolean = {
-              methodInlineInfo.effectivelyFinal ||
-                classBTypeFromParsedClassfile(receiverTypeInternalName).info.orThrow.inlineInfo.isEffectivelyFinal // (1)
-            }
-
-            val isRewritableTraitCall = isStaticallyResolved && methodInlineInfo.traitMethodWithStaticImplementation
-
-            val warning = calleeDeclarationClassBType.info.orThrow.inlineInfo.warning.map(
-              MethodInlineInfoIncomplete(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, _))
-
-            // (1) For invocations of final trait methods, the callee isStaticallyResolved but also
-            //     abstract. Such a callee is not safe to inline - it needs to be re-written to the
-            //     static impl method first (safeToRewrite).
-            // (2) Final trait methods can be rewritten from the interface to the static implementation
-            //     method to enable inlining.
-            CallsiteInfo(
-              safeToInline      =
-                canInlineFromSource &&
-                isStaticallyResolved &&  // (1)
-                !isAbstract &&
-                !BytecodeUtils.isConstructor(calleeMethodNode) &&
-                !BytecodeUtils.isNativeMethod(calleeMethodNode),
-              safeToRewrite     = canInlineFromSource && isRewritableTraitCall, // (2)
-              annotatedInline   = methodInlineInfo.annotatedInline,
-              annotatedNoInline = methodInlineInfo.annotatedNoInline,
-              warning           = warning)
-
-          case None =>
-            val warning = MethodInlineInfoMissing(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, calleeDeclarationClassBType.info.orThrow.inlineInfo.warning)
-            CallsiteInfo(false, false, false, false, Some(warning))
-        }
-      } catch {
-        case Invalid(noInfo: NoClassBTypeInfo) =>
-          val warning = MethodInlineInfoError(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, noInfo)
-          CallsiteInfo(false, false, false, false, Some(warning))
-      }
-    }
-
     // TODO: run dataflow analyses to make the call graph more precise
     //  - producers to get forwarded parameters (ForwardedParam)
     //  - typeAnalysis for more precise argument types, more precise callee
@@ -158,7 +121,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           (declarationClassNode, source) <- byteCodeRepository.classNodeAndSource(declarationClass): Either[OptimizerWarning, (ClassNode, Source)]
           declarationClassBType          =  classBTypeFromClassNode(declarationClassNode)
         } yield {
-          val CallsiteInfo(safeToInline, safeToRewrite, annotatedInline, annotatedNoInline, warning) = analyzeCallsite(method, declarationClassBType, call.owner, source)
+          val CallsiteInfo(safeToInline, safeToRewrite, annotatedInline, annotatedNoInline, higherOrderParams, warning) = analyzeCallsite(method, declarationClassBType, call.owner, source)
           Callee(
             callee = method,
             calleeDeclarationClass = declarationClassBType,
@@ -166,6 +129,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
             safeToRewrite = safeToRewrite,
             annotatedInline = annotatedInline,
             annotatedNoInline = annotatedNoInline,
+            higherOrderParams = higherOrderParams,
             calleeInfoWarning = warning)
         }
 
@@ -206,30 +170,73 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
     closureInstantiations(methodNode) = methodClosureInstantiations
   }
 
-  def removeCallsite(invocation: MethodInsnNode, methodNode: MethodNode): Option[Callsite] = {
-    val methodCallsites = callsites(methodNode)
-    val newCallsites = methodCallsites - invocation
-    if (newCallsites.isEmpty) callsites.remove(methodNode)
-    else callsites(methodNode) = newCallsites
-    methodCallsites.get(invocation)
-  }
+  /**
+   * Just a named tuple used as return type of `analyzeCallsite`.
+   */
+  private case class CallsiteInfo(safeToInline: Boolean, safeToRewrite: Boolean,
+                                  annotatedInline: Boolean, annotatedNoInline: Boolean,
+                                  higherOrderParams: IntMap[ClassBType],
+                                  warning: Option[CalleeInfoWarning])
 
-  def addCallsite(callsite: Callsite): Unit = {
-    val methodCallsites = callsites(callsite.callsiteMethod)
-    callsites(callsite.callsiteMethod) = methodCallsites + (callsite.callsiteInstruction -> callsite)
-  }
+  /**
+   * Analyze a callsite and gather meta-data that can be used for inlining decisions.
+   */
+  private def analyzeCallsite(calleeMethodNode: MethodNode, calleeDeclarationClassBType: ClassBType, receiverTypeInternalName: InternalName, calleeSource: Source): CallsiteInfo = {
+    val methodSignature = calleeMethodNode.name + calleeMethodNode.desc
 
-  def removeClosureInstantiation(indy: InvokeDynamicInsnNode, methodNode: MethodNode): Option[ClosureInstantiation] = {
-    val methodClosureInits = closureInstantiations(methodNode)
-    val newClosureInits = methodClosureInits - indy
-    if (newClosureInits.isEmpty) closureInstantiations.remove(methodNode)
-    else closureInstantiations(methodNode) = newClosureInits
-    methodClosureInits.get(indy)
-  }
+    try {
+      // The inlineInfo.methodInfos of a ClassBType holds an InlineInfo for each method *declared*
+      // within a class (not for inherited methods). Since we already have the  classBType of the
+      // callee, we only check there for the methodInlineInfo, we should find it there.
+      calleeDeclarationClassBType.info.orThrow.inlineInfo.methodInfos.get(methodSignature) match {
+        case Some(methodInlineInfo) =>
+          val canInlineFromSource = compilerSettings.YoptInlineGlobal || calleeSource == CompilationUnit
 
-  def addClosureInstantiation(closureInit: ClosureInstantiation) = {
-    val methodClosureInits = closureInstantiations(closureInit.ownerMethod)
-    closureInstantiations(closureInit.ownerMethod) = methodClosureInits + (closureInit.lambdaMetaFactoryCall.indy -> closureInit)
+          val isAbstract = BytecodeUtils.isAbstractMethod(calleeMethodNode)
+
+          val receiverType = classBTypeFromParsedClassfile(receiverTypeInternalName)
+          // (1) A non-final method can be safe to inline if the receiver type is a final subclass. Example:
+          //   class A { @inline def f = 1 }; object B extends A; B.f  // can be inlined
+          //
+          // TODO: type analysis can render more calls statically resolved. Example:
+          //   new A.f  // can be inlined, the receiver type is known to be exactly A.
+          val isStaticallyResolved: Boolean = {
+            methodInlineInfo.effectivelyFinal ||
+              receiverType.info.orThrow.inlineInfo.isEffectivelyFinal // (1)
+          }
+
+          val isRewritableTraitCall = isStaticallyResolved && methodInlineInfo.traitMethodWithStaticImplementation
+
+          val warning = calleeDeclarationClassBType.info.orThrow.inlineInfo.warning.map(
+            MethodInlineInfoIncomplete(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, _))
+
+          // (1) For invocations of final trait methods, the callee isStaticallyResolved but also
+          //     abstract. Such a callee is not safe to inline - it needs to be re-written to the
+          //     static impl method first (safeToRewrite).
+          // (2) Final trait methods can be rewritten from the interface to the static implementation
+          //     method to enable inlining.
+          CallsiteInfo(
+            safeToInline      =
+              canInlineFromSource &&
+                isStaticallyResolved &&  // (1)
+                !isAbstract &&
+                !BytecodeUtils.isConstructor(calleeMethodNode) &&
+                !BytecodeUtils.isNativeMethod(calleeMethodNode),
+            safeToRewrite     = canInlineFromSource && isRewritableTraitCall, // (2)
+            annotatedInline   = methodInlineInfo.annotatedInline,
+            annotatedNoInline = methodInlineInfo.annotatedNoInline,
+            higherOrderParams = inliner.heuristics.higherOrderParams(calleeMethodNode, receiverType),
+            warning           = warning)
+
+        case None =>
+          val warning = MethodInlineInfoMissing(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, calleeDeclarationClassBType.info.orThrow.inlineInfo.warning)
+          CallsiteInfo(false, false, false, false, IntMap.empty, Some(warning))
+      }
+    } catch {
+      case Invalid(noInfo: NoClassBTypeInfo) =>
+        val warning = MethodInlineInfoError(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, noInfo)
+        CallsiteInfo(false, false, false, false, IntMap.empty, Some(warning))
+    }
   }
 
     /**
@@ -277,12 +284,14 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    *                               that can be safely re-written to the static implementation method.
    * @param annotatedInline        True if the callee is annotated @inline
    * @param annotatedNoInline      True if the callee is annotated @noinline
+   * @param higherOrderParams      A map from parameter positions to SAM parameter types
    * @param calleeInfoWarning      An inliner warning if some information was not available while
    *                               gathering the information about this callee.
    */
   final case class Callee(callee: MethodNode, calleeDeclarationClass: ClassBType,
                           safeToInline: Boolean, safeToRewrite: Boolean,
                           annotatedInline: Boolean, annotatedNoInline: Boolean,
+                          higherOrderParams: IntMap[ClassBType],
                           calleeInfoWarning: Option[CalleeInfoWarning]) {
     assert(!(safeToInline && safeToRewrite), s"A callee of ${callee.name} can be either safeToInline or safeToRewrite, but not both.")
   }

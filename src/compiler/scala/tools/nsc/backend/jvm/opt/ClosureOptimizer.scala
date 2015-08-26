@@ -240,14 +240,17 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
       callsiteMethod = ownerMethod,
       callsiteClass = closureInit.ownerClass,
       callee = bodyMethod.map({
-        case (bodyMethodNode, bodyMethodDeclClass) => Callee(
-          callee = bodyMethodNode,
-          calleeDeclarationClass = classBTypeFromParsedClassfile(bodyMethodDeclClass),
-          safeToInline = compilerSettings.YoptInlineGlobal || bodyMethodIsBeingCompiled,
-          safeToRewrite = false, // the lambda body method is not a trait interface method
-          annotatedInline = false,
-          annotatedNoInline = false,
-          calleeInfoWarning = None)
+        case (bodyMethodNode, bodyMethodDeclClass) =>
+          val bodyDeclClassType = classBTypeFromParsedClassfile(bodyMethodDeclClass)
+          Callee(
+            callee = bodyMethodNode,
+            calleeDeclarationClass = bodyDeclClassType,
+            safeToInline = compilerSettings.YoptInlineGlobal || bodyMethodIsBeingCompiled,
+            safeToRewrite = false, // the lambda body method is not a trait interface method
+            annotatedInline = false,
+            annotatedNoInline = false,
+            inliner.heuristics.higherOrderParams(bodyMethodNode, bodyDeclClassType),
+            calleeInfoWarning = None)
       }),
       argInfos = Nil,
       callsiteStackHeight = invocationStackHeight,

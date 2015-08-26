@@ -100,7 +100,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    * True for statically resolved trait callsites that should be rewritten to the static implementation method.
    */
   def doRewriteTraitCallsite(callsite: Callsite) = callsite.callee match {
-    case Right(Callee(callee, calleeDeclarationClass, safeToInline, true, annotatedInline, annotatedNoInline, infoWarning)) => true
+    case Right(Callee(_, _, _, safeToRewrite, _, _, _, _)) => safeToRewrite
     case _ => false
   }
 
@@ -113,7 +113,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    */
   def rewriteFinalTraitMethodInvocation(callsite: Callsite): Unit = {
     if (doRewriteTraitCallsite(callsite)) {
-      val Right(Callee(callee, calleeDeclarationClass, _, _, annotatedInline, annotatedNoInline, infoWarning)) = callsite.callee
+      val Right(Callee(callee, calleeDeclarationClass, _, _, annotatedInline, annotatedNoInline, higherOrderParams, infoWarning)) = callsite.callee
 
       val traitMethodArgumentTypes = asm.Type.getArgumentTypes(callee.desc)
 
@@ -160,6 +160,10 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         callsite.callsiteMethod.instructions.remove(callsite.callsiteInstruction)
 
         callGraph.removeCallsite(callsite.callsiteInstruction, callsite.callsiteMethod)
+        val staticCallHigherOrderParams = {
+          if (selfParamType.info.get.inlineInfo.sam.isEmpty) higherOrderParams - 0
+          else higherOrderParams.updated(0, selfParamType)
+        }
         val staticCallsite = Callsite(
           callsiteInstruction = newCallsiteInstruction,
           callsiteMethod      = callsite.callsiteMethod,
@@ -171,6 +175,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
             safeToRewrite          = false,
             annotatedInline        = annotatedInline,
             annotatedNoInline      = annotatedNoInline,
+            higherOrderParams      = staticCallHigherOrderParams,
             calleeInfoWarning      = infoWarning)),
           argInfos            = Nil,
           callsiteStackHeight = callsite.callsiteStackHeight,
