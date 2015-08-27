@@ -194,6 +194,7 @@ class HashSet[A] extends AbstractSet[A]
 
   protected def writeReplace(): AnyRef = new HashSet.SerializationProxy(this)
 
+  override def toSet[B >: A]: Set[B] = this.asInstanceOf[HashSet[B]]
 }
 
 /** $factoryInfo
