@@ -239,6 +239,17 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           // (1) A non-final method can be safe to inline if the receiver type is a final subclass. Example:
           //   class A { @inline def f = 1 }; object B extends A; B.f  // can be inlined
           //
+          // TODO: (1) doesn't cover the following example:
+          //   trait TravLike { def map = ... }
+          //   sealed trait List extends TravLike { ... } // assume map is not overridden
+          //   final case class :: / final case object Nil
+          //   (l: List).map // can be inlined
+          // we need to know that
+          //   - the recevier is sealed
+          //   - what are the children of the receiver
+          //   - all children are final
+          //   - none of the children overrides map
+          //
           // TODO: type analysis can render more calls statically resolved. Example:
           //   new A.f  // can be inlined, the receiver type is known to be exactly A.
           val isStaticallyResolved: Boolean = {
@@ -336,6 +347,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
                           higherOrderParams: IntMap[ClassBType],
                           calleeInfoWarning: Option[CalleeInfoWarning]) {
     assert(!(safeToInline && safeToRewrite), s"A callee of ${callee.name} can be either safeToInline or safeToRewrite, but not both.")
+    override def toString = s"Callee($calleeDeclarationClass.${callee.name})"
   }
 
   final case class ClosureInstantiation(lambdaMetaFactoryCall: LambdaMetaFactoryCall, ownerMethod: MethodNode, ownerClass: ClassBType) {
