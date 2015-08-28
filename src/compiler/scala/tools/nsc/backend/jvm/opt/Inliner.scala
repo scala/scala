@@ -316,8 +316,9 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
       // We just use an asm.Type here, no need to create the MethodBType.
       val calleAsmType = asm.Type.getMethodType(callee.desc)
+      val calleeParamTypes = calleAsmType.getArgumentTypes
 
-      for(argTp <- calleAsmType.getArgumentTypes) {
+      for(argTp <- calleeParamTypes) {
         val opc = argTp.getOpcode(ISTORE) // returns the correct xSTORE instruction for argTp
         argStores.insert(new VarInsnNode(opc, nextLocalIndex)) // "insert" is "prepend" - the last argument is on the top of the stack
         nextLocalIndex += argTp.getSize
@@ -423,7 +424,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       unreachableCodeEliminated -= callsiteMethod
 
       callsiteMethod.maxLocals += returnType.getSize + callee.maxLocals
-      callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, callee.maxStack + callsiteStackHeight)
+      val numStoredArgs = calleeParamTypes.length + (if (isStaticMethod(callee)) 0 else 1)
+      callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, callee.maxStack + callsiteStackHeight - numStoredArgs)
 
       None
     }

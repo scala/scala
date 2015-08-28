@@ -72,6 +72,10 @@ class InlinerTest extends ClearAfterClass {
   def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
     InlinerTest.notPerRun.foreach(_.clear())
     compileClasses(compiler)(scalaCode, javaCode, allowMessage)
+    // Use the class nodes stored in the byteCodeRepository. The ones returned by compileClasses are not the same,
+    // these are created new from the classfile byte array. They are completely separate instances which cannot
+    // be used to look up methods / callsites in the callGraph hash maps for example.
+    byteCodeRepository.compilingClasses.valuesIterator.toList.sortBy(_.name)
   }
 
   def checkCallsite(callsite: callGraph.Callsite, callee: MethodNode) = {
