@@ -53,13 +53,9 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       // DCE above removes unreachable callsites from the call graph. If the inlining request denotes
       // such an eliminated callsite, do nothing.
       if (callGraph.callsites(callsite.callsiteMethod).contains(callsite.callsiteInstruction)) {
-        val r = inline(callsite.callsiteInstruction, callsite.callsiteStackHeight, callsite.callsiteMethod, callsite.callsiteClass,
-          callee.callee, callee.calleeDeclarationClass,
-          callsite.receiverKnownNotNull, keepLineNumbers = false)
+        val warnings = inline(request)
 
-        // TODO: run downstream inline requests
-
-        for (warning <- r) {
+        for (warning <- warnings) {
           if ((callee.annotatedInline && btypes.compilerSettings.YoptWarningEmitAtInlineFailed) || warning.emitWarning(compilerSettings)) {
             val annotWarn = if (callee.annotatedInline) " is annotated @inline but" else ""
             val msg = s"${BackendReporting.methodSignature(callee.calleeDeclarationClass.internalName, callee.callee)}$annotWarn could not be inlined:\n$warning"
@@ -260,183 +256,199 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     leavesFirst(breakInlineCycles)
   }
 
+  /**
+   * Inline the callsites of an inlining request and its post-inlining requests.
+   *
+   * @return An inliner warning for each callsite that could not be inlined.
+   */
+  def inline(request: InlineRequest): List[CannotInlineWarning] = canInline(request.callsite) match {
+    case Some(warning) => List(warning)
+    case None =>
+      val instructionsMap = inlineCallsite(request.callsite)
+      val postRequests = request.post.flatMap(post => {
+        // the post-request invocation instruction might not exist anymore: it might have been
+        // inlined itself, or eliminated by DCE.
+        for {
+          inlinedInvocationInstr <- instructionsMap.get(post.callsiteInstruction).map(_.asInstanceOf[MethodInsnNode])
+          inlinedCallsite <- callGraph.callsites(request.callsite.callsiteMethod).get(inlinedInvocationInstr)
+        } yield InlineRequest(inlinedCallsite, post.post)
+      })
+      postRequests flatMap inline
+  }
 
   /**
    * Copy and adapt the instructions of a method to a callsite.
    *
    * Preconditions:
+   *   - The callsite can safely be inlined (canInline is true)
    *   - The maxLocals and maxStack values of the callsite method are correctly computed
-   *   - The callsite method contains no unreachable basic blocks, i.e., running an [[Analyzer]]
-   *     does not produce any `null` frames
+   *   - The callsite method contains no unreachable basic blocks, i.e., running an Analyzer does
+   *     not produce any `null` frames
    *
-   * @param callsiteInstruction     The invocation instruction
-   * @param callsiteStackHeight     The stack height at the callsite
-   * @param callsiteMethod          The method in which the invocation occurs
-   * @param callsiteClass           The class in which the callsite method is defined
-   * @param callee                  The invoked method
-   * @param calleeDeclarationClass  The class in which the invoked method is defined
-   * @param receiverKnownNotNull    `true` if the receiver is known to be non-null
-   * @param keepLineNumbers         `true` if LineNumberNodes should be copied to the call site
-   * @return                        `Some(message)` if inlining cannot be performed, `None` otherwise
+   * @return A map associating instruction nodes of the callee with the corresponding cloned
+   *         instruction in the callsite method.
    */
-  def inline(callsiteInstruction: MethodInsnNode, callsiteStackHeight: Int, callsiteMethod: MethodNode, callsiteClass: ClassBType,
-             callee: MethodNode, calleeDeclarationClass: ClassBType,
-             receiverKnownNotNull: Boolean, keepLineNumbers: Boolean): Option[CannotInlineWarning] = {
-    canInline(callsiteInstruction, callsiteStackHeight, callsiteMethod, callsiteClass, callee, calleeDeclarationClass) orElse {
-      // New labels for the cloned instructions
-      val labelsMap = cloneLabels(callee)
-      val (clonedInstructions, instructionMap) = cloneInstructions(callee, labelsMap)
-      if (!keepLineNumbers) {
-        removeLineNumberNodes(clonedInstructions)
+  def inlineCallsite(callsite: Callsite): Map[AbstractInsnNode, AbstractInsnNode] = {
+    import callsite.{callsiteClass, callsiteMethod, callsiteInstruction, receiverKnownNotNull, callsiteStackHeight}
+    val Right(callsiteCallee) = callsite.callee
+    import callsiteCallee.{callee, calleeDeclarationClass}
+
+    // New labels for the cloned instructions
+    val labelsMap = cloneLabels(callee)
+    val (clonedInstructions, instructionMap) = cloneInstructions(callee, labelsMap)
+    val keepLineNumbers = callsiteClass == calleeDeclarationClass
+    if (!keepLineNumbers) {
+      removeLineNumberNodes(clonedInstructions)
+    }
+
+    // local vars in the callee are shifted by the number of locals at the callsite
+    val localVarShift = callsiteMethod.maxLocals
+    clonedInstructions.iterator.asScala foreach {
+      case varInstruction: VarInsnNode => varInstruction.`var` += localVarShift
+      case iinc: IincInsnNode          => iinc.`var` += localVarShift
+      case _ => ()
+    }
+
+    // add a STORE instruction for each expected argument, including for THIS instance if any
+    val argStores = new InsnList
+    var nextLocalIndex = callsiteMethod.maxLocals
+    if (!isStaticMethod(callee)) {
+      if (!receiverKnownNotNull) {
+        argStores.add(new InsnNode(DUP))
+        val nonNullLabel = newLabelNode
+        argStores.add(new JumpInsnNode(IFNONNULL, nonNullLabel))
+        argStores.add(new InsnNode(ACONST_NULL))
+        argStores.add(new InsnNode(ATHROW))
+        argStores.add(nonNullLabel)
+      }
+      argStores.add(new VarInsnNode(ASTORE, nextLocalIndex))
+      nextLocalIndex += 1
+    }
+
+    // We just use an asm.Type here, no need to create the MethodBType.
+    val calleAsmType = asm.Type.getMethodType(callee.desc)
+    val calleeParamTypes = calleAsmType.getArgumentTypes
+
+    for(argTp <- calleeParamTypes) {
+      val opc = argTp.getOpcode(ISTORE) // returns the correct xSTORE instruction for argTp
+      argStores.insert(new VarInsnNode(opc, nextLocalIndex)) // "insert" is "prepend" - the last argument is on the top of the stack
+      nextLocalIndex += argTp.getSize
+    }
+
+    clonedInstructions.insert(argStores)
+
+    // label for the exit of the inlined functions. xRETURNs are rplaced by GOTOs to this label.
+    val postCallLabel = newLabelNode
+    clonedInstructions.add(postCallLabel)
+
+    // replace xRETURNs:
+    //   - store the return value (if any)
+    //   - clear the stack of the inlined method (insert DROPs)
+    //   - load the return value
+    //   - GOTO postCallLabel
+
+    val returnType = calleAsmType.getReturnType
+    val hasReturnValue = returnType.getSort != asm.Type.VOID
+    val returnValueIndex = callsiteMethod.maxLocals + callee.maxLocals
+    nextLocalIndex += returnType.getSize
+
+    def returnValueStore(returnInstruction: AbstractInsnNode) = {
+      val opc = returnInstruction.getOpcode match {
+        case IRETURN => ISTORE
+        case LRETURN => LSTORE
+        case FRETURN => FSTORE
+        case DRETURN => DSTORE
+        case ARETURN => ASTORE
+      }
+      new VarInsnNode(opc, returnValueIndex)
+    }
+
+    // We run an interpreter to know the stack height at each xRETURN instruction and the sizes
+    // of the values on the stack.
+    val analyzer = new AsmAnalyzer(callee, calleeDeclarationClass.internalName)
+
+    for (originalReturn <- callee.instructions.iterator().asScala if isReturn(originalReturn)) {
+      val frame = analyzer.frameAt(originalReturn)
+      var stackHeight = frame.getStackSize
+
+      val inlinedReturn = instructionMap(originalReturn)
+      val returnReplacement = new InsnList
+
+      def drop(slot: Int) = returnReplacement add getPop(frame.peekStack(slot).getSize)
+
+      // for non-void methods, store the stack top into the return local variable
+      if (hasReturnValue) {
+        returnReplacement add returnValueStore(originalReturn)
+        stackHeight -= 1
       }
 
-      // local vars in the callee are shifted by the number of locals at the callsite
-      val localVarShift = callsiteMethod.maxLocals
-      clonedInstructions.iterator.asScala foreach {
-        case varInstruction: VarInsnNode => varInstruction.`var` += localVarShift
-        case iinc: IincInsnNode          => iinc.`var` += localVarShift
-        case _ => ()
-      }
+      // drop the rest of the stack
+      for (i <- 0 until stackHeight) drop(i)
 
-      // add a STORE instruction for each expected argument, including for THIS instance if any
-      val argStores = new InsnList
-      var nextLocalIndex = callsiteMethod.maxLocals
-      if (!isStaticMethod(callee)) {
-        if (!receiverKnownNotNull) {
-          argStores.add(new InsnNode(DUP))
-          val nonNullLabel = newLabelNode
-          argStores.add(new JumpInsnNode(IFNONNULL, nonNullLabel))
-          argStores.add(new InsnNode(ACONST_NULL))
-          argStores.add(new InsnNode(ATHROW))
-          argStores.add(nonNullLabel)
-        }
-        argStores.add(new VarInsnNode(ASTORE, nextLocalIndex))
-        nextLocalIndex += 1
-      }
+      returnReplacement add new JumpInsnNode(GOTO, postCallLabel)
+      clonedInstructions.insert(inlinedReturn, returnReplacement)
+      clonedInstructions.remove(inlinedReturn)
+    }
 
-      // We just use an asm.Type here, no need to create the MethodBType.
-      val calleAsmType = asm.Type.getMethodType(callee.desc)
-      val calleeParamTypes = calleAsmType.getArgumentTypes
-
-      for(argTp <- calleeParamTypes) {
-        val opc = argTp.getOpcode(ISTORE) // returns the correct xSTORE instruction for argTp
-        argStores.insert(new VarInsnNode(opc, nextLocalIndex)) // "insert" is "prepend" - the last argument is on the top of the stack
-        nextLocalIndex += argTp.getSize
-      }
-
-      clonedInstructions.insert(argStores)
-
-      // label for the exit of the inlined functions. xRETURNs are rplaced by GOTOs to this label.
-      val postCallLabel = newLabelNode
-      clonedInstructions.add(postCallLabel)
-
-      // replace xRETURNs:
-      //   - store the return value (if any)
-      //   - clear the stack of the inlined method (insert DROPs)
-      //   - load the return value
-      //   - GOTO postCallLabel
-
-      val returnType = calleAsmType.getReturnType
-      val hasReturnValue = returnType.getSort != asm.Type.VOID
-      val returnValueIndex = callsiteMethod.maxLocals + callee.maxLocals
-      nextLocalIndex += returnType.getSize
-
-      def returnValueStore(returnInstruction: AbstractInsnNode) = {
-        val opc = returnInstruction.getOpcode match {
-          case IRETURN => ISTORE
-          case LRETURN => LSTORE
-          case FRETURN => FSTORE
-          case DRETURN => DSTORE
-          case ARETURN => ASTORE
-        }
+    // Load instruction for the return value
+    if (hasReturnValue) {
+      val retVarLoad = {
+        val opc = returnType.getOpcode(ILOAD)
         new VarInsnNode(opc, returnValueIndex)
       }
-
-      // We run an interpreter to know the stack height at each xRETURN instruction and the sizes
-      // of the values on the stack.
-      val analyzer = new AsmAnalyzer(callee, calleeDeclarationClass.internalName)
-
-      for (originalReturn <- callee.instructions.iterator().asScala if isReturn(originalReturn)) {
-        val frame = analyzer.frameAt(originalReturn)
-        var stackHeight = frame.getStackSize
-
-        val inlinedReturn = instructionMap(originalReturn)
-        val returnReplacement = new InsnList
-
-        def drop(slot: Int) = returnReplacement add getPop(frame.peekStack(slot).getSize)
-
-        // for non-void methods, store the stack top into the return local variable
-        if (hasReturnValue) {
-          returnReplacement add returnValueStore(originalReturn)
-          stackHeight -= 1
-        }
-
-        // drop the rest of the stack
-        for (i <- 0 until stackHeight) drop(i)
-
-        returnReplacement add new JumpInsnNode(GOTO, postCallLabel)
-        clonedInstructions.insert(inlinedReturn, returnReplacement)
-        clonedInstructions.remove(inlinedReturn)
-      }
-
-      // Load instruction for the return value
-      if (hasReturnValue) {
-        val retVarLoad = {
-          val opc = returnType.getOpcode(ILOAD)
-          new VarInsnNode(opc, returnValueIndex)
-        }
-        clonedInstructions.insert(postCallLabel, retVarLoad)
-      }
-
-      callsiteMethod.instructions.insert(callsiteInstruction, clonedInstructions)
-      callsiteMethod.instructions.remove(callsiteInstruction)
-
-      callsiteMethod.localVariables.addAll(cloneLocalVariableNodes(callee, labelsMap, callee.name + "_").asJava)
-      callsiteMethod.tryCatchBlocks.addAll(cloneTryCatchBlockNodes(callee, labelsMap).asJava)
-
-      // Add all invocation instructions and closure instantiations that were inlined to the call graph
-      callGraph.callsites(callee).valuesIterator foreach { originalCallsite =>
-        val newCallsiteIns = instructionMap(originalCallsite.callsiteInstruction).asInstanceOf[MethodInsnNode]
-        callGraph.addCallsite(Callsite(
-          callsiteInstruction = newCallsiteIns,
-          callsiteMethod = callsiteMethod,
-          callsiteClass = callsiteClass,
-          callee = originalCallsite.callee,
-          argInfos = Nil, // TODO: re-compute argInfos for new destination (once we actually compute them)
-          callsiteStackHeight = callsiteStackHeight + originalCallsite.callsiteStackHeight,
-          receiverKnownNotNull = originalCallsite.receiverKnownNotNull,
-          callsitePosition = originalCallsite.callsitePosition
-          )
-        )
-      }
-
-      callGraph.closureInstantiations(callee).valuesIterator foreach { originalClosureInit =>
-        val newIndy = instructionMap(originalClosureInit.lambdaMetaFactoryCall.indy).asInstanceOf[InvokeDynamicInsnNode]
-        callGraph.addClosureInstantiation(
-          ClosureInstantiation(originalClosureInit.lambdaMetaFactoryCall.copy(indy = newIndy), callsiteMethod, callsiteClass)
-        )
-      }
-
-      // Remove the elided invocation from the call graph
-      callGraph.removeCallsite(callsiteInstruction, callsiteMethod)
-
-      // Inlining a method body can render some code unreachable, see example above (in runInliner).
-      unreachableCodeEliminated -= callsiteMethod
-
-      callsiteMethod.maxLocals += returnType.getSize + callee.maxLocals
-      val numStoredArgs = calleeParamTypes.length + (if (isStaticMethod(callee)) 0 else 1)
-      callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, callee.maxStack + callsiteStackHeight - numStoredArgs)
-
-      None
+      clonedInstructions.insert(postCallLabel, retVarLoad)
     }
+
+    callsiteMethod.instructions.insert(callsiteInstruction, clonedInstructions)
+    callsiteMethod.instructions.remove(callsiteInstruction)
+
+    callsiteMethod.localVariables.addAll(cloneLocalVariableNodes(callee, labelsMap, callee.name + "_").asJava)
+    callsiteMethod.tryCatchBlocks.addAll(cloneTryCatchBlockNodes(callee, labelsMap).asJava)
+
+    // Add all invocation instructions and closure instantiations that were inlined to the call graph
+    callGraph.callsites(callee).valuesIterator foreach { originalCallsite =>
+      val newCallsiteIns = instructionMap(originalCallsite.callsiteInstruction).asInstanceOf[MethodInsnNode]
+      callGraph.addCallsite(Callsite(
+        callsiteInstruction = newCallsiteIns,
+        callsiteMethod = callsiteMethod,
+        callsiteClass = callsiteClass,
+        callee = originalCallsite.callee,
+        argInfos = Nil, // TODO: re-compute argInfos for new destination (once we actually compute them)
+        callsiteStackHeight = callsiteStackHeight + originalCallsite.callsiteStackHeight,
+        receiverKnownNotNull = originalCallsite.receiverKnownNotNull,
+        callsitePosition = originalCallsite.callsitePosition
+      )
+      )
+    }
+
+    callGraph.closureInstantiations(callee).valuesIterator foreach { originalClosureInit =>
+      val newIndy = instructionMap(originalClosureInit.lambdaMetaFactoryCall.indy).asInstanceOf[InvokeDynamicInsnNode]
+      callGraph.addClosureInstantiation(
+        ClosureInstantiation(originalClosureInit.lambdaMetaFactoryCall.copy(indy = newIndy), callsiteMethod, callsiteClass)
+      )
+    }
+
+    // Remove the elided invocation from the call graph
+    callGraph.removeCallsite(callsiteInstruction, callsiteMethod)
+
+    // Inlining a method body can render some code unreachable, see example above (in runInliner).
+    unreachableCodeEliminated -= callsiteMethod
+
+    callsiteMethod.maxLocals += returnType.getSize + callee.maxLocals
+    val numStoredArgs = calleeParamTypes.length + (if (isStaticMethod(callee)) 0 else 1)
+    callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, callee.maxStack + callsiteStackHeight - numStoredArgs)
+
+    instructionMap
   }
 
   /**
-   * Check whether an inling can be performed. Parmeters are described in method [[inline]].
+   * Check whether an inling can be performed.
    * @return `Some(message)` if inlining cannot be performed, `None` otherwise
    */
-  def canInline(callsiteInstruction: MethodInsnNode, callsiteStackHeight: Int, callsiteMethod: MethodNode, callsiteClass: ClassBType,
-                callee: MethodNode, calleeDeclarationClass: ClassBType): Option[CannotInlineWarning] = {
+  def canInline(callsite: Callsite): Option[CannotInlineWarning] = {
+    import callsite.{callsiteInstruction, callsiteMethod, callsiteClass, callsiteStackHeight}
+    val Right(callsiteCallee) = callsite.callee
+    import callsiteCallee.{callee, calleeDeclarationClass}
 
     def calleeDesc = s"${callee.name} of type ${callee.desc} in ${calleeDeclarationClass.internalName}"
     def methodMismatch = s"Wrong method node for inlining ${textify(callsiteInstruction)}: $calleeDesc"
