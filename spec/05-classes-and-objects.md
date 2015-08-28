@@ -631,7 +631,7 @@ class Outer {
 ```
 
 Here, accesses to the method `f` can appear anywhere within
-`OuterClass`, but not outside it. Accesses to method
+`Outer`, but not outside it. Accesses to method
 `g` can appear anywhere within the package
 `outerpkg.innerpkg`, as would be the case for
 package-private methods in Java. Finally, accesses to method
