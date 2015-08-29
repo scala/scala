@@ -2,6 +2,7 @@ import scala.collection.immutable.NumericRange
 //#4658
 object Test {
 
+  // Only works for Int values!  Need to rethink explicit otherwise.
   case class R(start: Int, end: Int, step: Int = 1, inclusive: Boolean = true)
 
   val rangeData = Array(
@@ -28,6 +29,14 @@ object Test {
     numericLongRanges.foreach{range => println(range.sum)}
     println("BigIntRanges:")
     numericBigIntRanges.foreach{range => println(range.sum)}
+    println("BigInt agrees with Long: " + 
+      (numericLongRanges zip numericBigIntRanges).forall{ case (lr, bir) => lr.sum == bir.sum }
+    )
+    println("Long agrees with Int when rounded: " + 
+      (numericLongRanges zip numericIntRanges).forall{ case (lr, ir) => lr.sum.toInt == ir.sum }
+    )
+    println("Numeric Int agrees with Range: " +
+      (numericIntRanges zip ranges).forall{ case (ir, r) => ir.sum == r.sum }
+    )
   }
-
 }
