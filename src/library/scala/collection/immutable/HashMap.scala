@@ -65,6 +65,8 @@ class HashMap[A, +B] extends AbstractMap[A, B]
   def - (key: A): HashMap[A, B] =
     removed0(key, computeHash(key), 0)
 
+  override def tail: HashMap[A, B] = this - head._1
+
   override def filter(p: ((A, B)) => Boolean) = {
     val buffer = new Array[HashMap[A, B]](bufferSize(size))
     nullToEmpty(filter0(p, false, 0, buffer, 0))
@@ -156,7 +158,10 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), HashMap[A, B]] = new MapCanBuildFrom[A, B]
   def empty[A, B]: HashMap[A, B] = EmptyHashMap.asInstanceOf[HashMap[A, B]]
 
-  private object EmptyHashMap extends HashMap[Any, Nothing] { }
+  private object EmptyHashMap extends HashMap[Any, Nothing] { 
+    override def head: (Any, Nothing) = throw new NoSuchElementException("Empty Map")
+    override def tail: HashMap[Any, Nothing] = throw new NoSuchElementException("Empty Map")
+  }
 
   // utility method to create a HashTrieMap from two leaf HashMaps (HashMap1 or HashMapCollision1) with non-colliding hash code)
   private def makeHashTrieMap[A, B](hash0:Int, elem0:HashMap[A, B], hash1:Int, elem1:HashMap[A, B], level:Int, size:Int) : HashTrieMap[A, B] = {

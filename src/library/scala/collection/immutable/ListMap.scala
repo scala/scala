@@ -20,6 +20,9 @@ import scala.annotation.tailrec
  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#list_maps "Scala's Collection Library overview"]]
  *  section on `List Maps` for more information.
  *
+ *  Note that `ListMap` is built in reverse order to canonical traversal order (traversal order is oldest first).
+ *  Thus, `head` and `tail` are O(n).  To rapidly partition a `ListMap` into elements, use `last` and `init` instead.  These are O(1).
+ *
  *  @define Coll immutable.ListMap
  *  @define coll immutable list map
  */
@@ -33,6 +36,8 @@ object ListMap extends ImmutableMapFactory[ListMap] {
   private object EmptyListMap extends ListMap[Any, Nothing] {
     override def apply(key: Any) = throw new NoSuchElementException("key not found: " + key)
     override def contains(key: Any) = false
+    override def last: (Any, Nothing) = throw new NoSuchElementException("Empty ListMap")
+    override def init: ListMap[Any, Nothing] = throw new NoSuchElementException("Empty ListMap")
   }
 }
 
@@ -216,5 +221,9 @@ extends AbstractMap[A, B]
         remove0(k, cur.next, cur::acc)
 
     override protected def next: ListMap[A, B1] = ListMap.this
+
+    override def last: (A, B1) = (key, value)
+
+    override def init: ListMap[A, B1] = next
   }
 }
