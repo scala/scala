@@ -20,9 +20,9 @@ import xsbti.api.{ ClassLike, DefinitionType, PathComponent, SimpleType }
  * exposed to a client that can pass them to an instance of CallbackGlobal it holds.
  */
 class ExtractAPI[GlobalType <: CallbackGlobal](val global: GlobalType,
-    // Tracks the source file associated with the CompilationUnit currently being processed by the API phase.
-    // This is used when recording inheritance dependencies.
-    sourceFile: File) extends Compat {
+  // Tracks the source file associated with the CompilationUnit currently being processed by the API phase.
+  // This is used when recording inheritance dependencies.
+  sourceFile: File) extends Compat {
 
   import global._
 
@@ -172,8 +172,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](val global: GlobalType,
   private def annotation(in: Symbol, a: AnnotationInfo) =
     new xsbti.api.Annotation(processType(in, a.atp),
       if (a.assocs.isEmpty) Array(new xsbti.api.AnnotationArgument("", a.args.mkString("(", ",", ")"))) // what else to do with a Tree?
-      else a.assocs.map { case (name, value) => new xsbti.api.AnnotationArgument(name.toString, value.toString) }.toArray[xsbti.api.AnnotationArgument]
-    )
+      else a.assocs.map { case (name, value) => new xsbti.api.AnnotationArgument(name.toString, value.toString) }.toArray[xsbti.api.AnnotationArgument])
   private def annotated(in: Symbol, as: List[AnnotationInfo], tpe: Type) = new xsbti.api.Annotated(processType(in, tpe), annotations(in, as))
 
   private def viewer(s: Symbol) = (if (s.isModule) s.moduleClass else s).thisType
