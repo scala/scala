@@ -28,4 +28,11 @@ class BitSetTest {
     littleBitSet &= bigBitSet
     assert(littleBitSet.toBitMask.length < bigBitSet.toBitMask.length, "Needlessly extended the size of bitset on &=")
   }
+
+  @Test def test_SI8647() {
+    val bs = BitSet()
+    bs.map(_ + 1)    // Just needs to compile
+    val xs = bs: SortedSet[Int]
+    xs.map(_ + 1)    // Also should compile (did before)
+  }
 }
