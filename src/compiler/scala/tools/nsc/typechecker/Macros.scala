@@ -55,6 +55,13 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
 
   def globalSettings = global.settings
 
+  /** Obtains a `ClassLoader` instance used for macro expansion.
+   *
+   *  By default a new `ScalaClassLoader` is created using the classpath
+   *  from global and the classloader of self as parent.
+   *
+   *  Mirrors with runtime definitions (e.g. Repl) need to adjust this method.
+   */
   protected def findMacroClassLoader(): ClassLoader = {
     val classpath = global.classPath.asURLs
     macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
