@@ -38,7 +38,17 @@ class AliasingFrame[V <: Value](nLocals: Int, nStack: Int) extends Frame[V](nLoc
   /**
    * Returns the indices of the values array which are aliases of the object `id`.
    */
-  def valuesWithAliasId(id: Long): Set[Int] = immutable.BitSet.empty ++ aliasIds.indices.iterator.filter(i => aliasId(i) == id)
+  def valuesWithAliasId(id: Long): Set[Int] = {
+    // performance sensitive method
+    var result = immutable.BitSet.empty
+    var i = 0
+    while (i < aliasIds.length) {
+      if (aliasId(i) == id)
+        result = result + i
+      i += 1
+    }
+    result
+  }
 
   /**
    * The set of aliased values for a given entry in the `values` array.
