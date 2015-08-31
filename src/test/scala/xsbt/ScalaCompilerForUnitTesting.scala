@@ -6,7 +6,7 @@ import _root_.scala.tools.nsc.reporters.ConsoleReporter
 import _root_.scala.tools.nsc.Settings
 import xsbti._
 import xsbti.api.SourceAPI
-import sbt.IO.withTemporaryDirectory
+import sbt.io.IO.withTemporaryDirectory
 import xsbti.api.ClassLike
 import xsbti.api.Definition
 import xsbti.api.Def
@@ -142,7 +142,7 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = false) {
 
   private def prepareSrcFile(baseDir: File, fileName: String, src: String): File = {
     val srcFile = new File(baseDir, fileName)
-    sbt.IO.write(srcFile, src)
+    sbt.io.IO.write(srcFile, src)
     srcFile
   }
 
