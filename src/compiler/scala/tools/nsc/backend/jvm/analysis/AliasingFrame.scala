@@ -233,12 +233,15 @@ class AliasingFrame[V <: Value](nLocals: Int, nStack: Int) extends Frame[V](nLoc
     val valuesChanged = super.merge(other, interpreter)
     var aliasesChanged = false
     val aliasingOther = other.asInstanceOf[AliasingFrame[_]]
-    for (i <- aliasIds.indices) {
-      val thisAliases = aliasesOf(i)
-      val thisNotOther = thisAliases diff (thisAliases intersect aliasingOther.aliasesOf(i))
-      if (thisNotOther.nonEmpty) {
-        aliasesChanged = true
-        thisNotOther foreach removeAlias
+    val Threshold = 64
+    if (aliasIds.length < 64) {
+      for (i <- aliasIds.indices) {
+        val thisAliases = aliasesOf(i)
+        val thisNotOther = thisAliases diff (thisAliases intersect aliasingOther.aliasesOf(i))
+        if (thisNotOther.nonEmpty) {
+          aliasesChanged = true
+          thisNotOther foreach removeAlias
+        }
       }
     }
     valuesChanged || aliasesChanged
