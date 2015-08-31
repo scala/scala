@@ -74,11 +74,16 @@ trait ScalacPatternExpanders {
      *  Unfortunately the MethodType does not carry the information of whether
      *  it was unapplySeq, so we have to funnel that information in separately.
      */
-    def unapplyMethodTypes(whole: Type, result: Type, isSeq: Boolean): Extractor = {
+    def unapplyMethodTypes(context: Context, whole: Type, result: Type, isSeq: Boolean): Extractor = {
       if (result =:= BooleanTpe) newExtractor(whole, Nil, NoRepeated)
       else {
         val getResult = typeOfMemberNamedGet(result)
+        def noGetError() = {
+          val name = "unapply" + (if (isSeq) "Seq" else "")
+          context.error(context.tree.pos, s"The result type of an $name method must contain a member `get` to be used as an extractor pattern, no such member exists in ${result}")
+        }
         val expanded = getResult match {
+          case global.NoType => noGetError(); Nil
           case rawGet if !hasSelectors(rawGet) => rawGet :: Nil
           case rawGet                          => typesOfSelectors(rawGet)
         }
@@ -131,8 +136,8 @@ trait ScalacPatternExpanders {
       val isUnapply = sel.symbol.name == nme.unapply
 
       val extractor = sel.symbol.name match {
-        case nme.unapply    => unapplyMethodTypes(firstParamType(fn.tpe), sel.tpe, isSeq = false)
-        case nme.unapplySeq => unapplyMethodTypes(firstParamType(fn.tpe), sel.tpe, isSeq = true)
+        case nme.unapply    => unapplyMethodTypes(context, firstParamType(fn.tpe), sel.tpe, isSeq = false)
+        case nme.unapplySeq => unapplyMethodTypes(context, firstParamType(fn.tpe), sel.tpe, isSeq = true)
         case _              => applyMethodTypes(fn.tpe)
       }
 

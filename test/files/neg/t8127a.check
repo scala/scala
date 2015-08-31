@@ -1,0 +1,4 @@
+t8127a.scala:7: error: The result type of an unapplySeq method must contain a member `get` to be used as an extractor pattern, no such member exists in Seq[_$1]
+    case H(v) =>
+         ^
+one error found
