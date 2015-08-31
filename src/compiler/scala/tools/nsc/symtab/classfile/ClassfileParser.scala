@@ -816,6 +816,23 @@ abstract class ClassfileParser {
           val c1 = convertTo(c, symtype)
           if (c1 ne null) sym.setInfo(ConstantType(c1))
           else devWarning(s"failure to convert $c to $symtype")
+        case tpnme.MethodParametersATTR =>
+          def readParamNames(): Unit = {
+            import tools.asm.Opcodes.ACC_SYNTHETIC
+            val paramCount = u1
+            var i = 0
+            while (i < paramCount) {
+              val name = pool.getName(u2)
+              val access = u2
+              if ((access & ACC_SYNTHETIC) != ACC_SYNTHETIC) { // name not synthetic
+                val params = sym.paramss.head // Java only has exactly one parameter list
+                params(i).name = name.encode
+                params(i).resetFlag(SYNTHETIC)
+              }
+              i += 1
+            }
+          }
+          readParamNames()
         case tpnme.ScalaSignatureATTR =>
           if (!isScalaAnnot) {
             devWarning(s"symbol ${sym.fullName} has pickled signature in attribute")

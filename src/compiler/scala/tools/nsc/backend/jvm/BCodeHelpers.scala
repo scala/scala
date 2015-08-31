@@ -841,6 +841,17 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       }
     }
 
+    /*
+     * must-single-thread
+     */
+    def emitParamNames(jmethod: asm.MethodVisitor, params: List[Symbol]) = {
+      for (param <- params) {
+        var access = asm.Opcodes.ACC_FINAL
+        if (param.isArtifact)
+          access |= asm.Opcodes.ACC_SYNTHETIC
+        jmethod.visitParameter(param.name.decoded, access)
+      }
+    }
   } // end of trait BCAnnotGen
 
   trait BCJGenSigGen {

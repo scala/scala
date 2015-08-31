@@ -512,7 +512,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     /*
      * must-single-thread
      */
-    def initJMethod(flags: Int, paramAnnotations: List[List[AnnotationInfo]]) {
+    def initJMethod(flags: Int, params: List[Symbol]) {
 
       val jgensig = getGenericSignature(methSymbol, claszSymbol)
       addRemoteExceptionAnnot(isCZRemote, hasPublicBitSet(flags), methSymbol)
@@ -532,10 +532,9 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         mkArray(thrownExceptions)
       ).asInstanceOf[asm.tree.MethodNode]
 
-      // TODO param names: (m.params map (p => javaName(p.sym)))
-
+      emitParamNames(mnode, params)
       emitAnnotations(mnode, others)
-      emitParamAnnotations(mnode, paramAnnotations)
+      emitParamAnnotations(mnode, params.map(_.annotations))
 
     } // end of method initJMethod
 
@@ -574,8 +573,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         if (isNative)                asm.Opcodes.ACC_NATIVE     else 0  // native methods of objects are generated in mirror classes
       )
 
-      // TODO needed? for(ann <- m.symbol.annotations) { ann.symbol.initialize }
-      initJMethod(flags, params.map(p => p.symbol.annotations))
+      initJMethod(flags, params.map(_.symbol))
 
       /* Add method-local vars for LabelDef-params.
        *
