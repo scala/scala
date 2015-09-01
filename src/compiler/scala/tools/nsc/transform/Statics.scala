@@ -18,7 +18,7 @@ abstract class Statics extends Transform with ast.TreeDSL {
     /** changes the template for the class so that it contains a static constructor with symbol fields inits,
       * augments an existing static ctor if one already existed.
       */
-    def addStaticInits(template: Template, newStaticInits: Buffer[Tree], localTyper: analyzer.Typer): Template = {
+    def addStaticInits(template: Template, newStaticInits: List[Tree], localTyper: analyzer.Typer): Template = {
       if (newStaticInits.isEmpty)
         template
       else {
@@ -30,15 +30,15 @@ abstract class Statics extends Transform with ast.TreeDSL {
             deriveDefDef(ctor) {
               case block @ Block(stats, expr) =>
                 // need to add inits to existing block
-                treeCopy.Block(block, newStaticInits.toList ::: stats, expr)
+                treeCopy.Block(block, newStaticInits ::: stats, expr)
               case term: TermTree =>
                 // need to create a new block with inits and the old term
-                treeCopy.Block(term, newStaticInits.toList, term)
+                treeCopy.Block(term, newStaticInits, term)
             }
           case _ =>
             // create new static ctor
             val staticCtorSym  = currentClass.newStaticConstructor(template.pos)
-            val rhs            = Block(newStaticInits.toList, Literal(Constant(())))
+            val rhs            = Block(newStaticInits, Literal(Constant(())))
 
             localTyper.typedPos(template.pos)(DefDef(staticCtorSym, rhs))
         }
