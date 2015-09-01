@@ -631,6 +631,29 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
       for (stat <- stats) {
         val statSym = stat.symbol
 
+        // Move the RHS of a Val/Def (traits don't have vals, their getter holds the RHS) to the appropriate part of the ctor.
+        // If the val def is an early initialized or a parameter accessor,
+        // it goes before the superclass constructor call, otherwise it goes after.
+        // A lazy val's effect is not moved to the constructor, as it is delayed.
+        // Returns `true` when a `ValDef` is needed.
+        def moveEffectToCtor(mods: Modifiers, rhs: Tree) = {
+          val const = statSym.info.isInstanceOf[ConstantType]
+          val initializingRhs =
+            if (statSym.isLazy || const) EmptyTree
+            else if (!mods.hasStaticFlag) intoConstructor(statSym, primaryConstr.symbol)(rhs)
+            else rhs
+
+          if (initializingRhs ne EmptyTree) {
+            val initPhase =
+              if (mods hasFlag STATIC) classInitStatBuf
+              else if (mods hasFlag PRESUPER | PARAMACCESSOR) constrPrefixBuf
+              else constrStatBuf
+
+            initPhase += mkAssign(statSym, initializingRhs)
+          }
+          !const // needs field unless it's a constant
+        }
+
         stat match {
           // recurse on class definition, store in defBuf
           case _: ClassDef => defBuf += new ConstructorTransformer(unit).transform(stat)
@@ -642,30 +665,15 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
           case _: DefDef if statSym.isConstructor        => auxConstructorBuf += stat
           case _: DefDef                                 => defBuf += stat
 
-          // val defs with constant right-hand sides are eliminated.
-          case _: ValDef if statSym.info.isInstanceOf[ConstantType] => ()
-
-          // For all other val defs, an empty valdef goes into the template.
-          // Additionally, non-lazy vals are initialized by an assignment in:
+          // If a val needs a field, an empty valdef goes into the template.
+          // Except for lazy and ConstantTyped vals, the field is initialized by an assignment in:
           //   - the class initializer (static),
           //   - the constructor, before the super call (early initialized or a parameter accessor),
           //   - the constructor, after the super call (regular val).
           case ValDef(mods, _, _, rhs) =>
-            val initializingRhs =
-              if (statSym.isLazy) EmptyTree
-              else if (!mods.hasStaticFlag) intoConstructor(statSym, primaryConstr.symbol)(rhs)
-              else rhs
+            val memoized = moveEffectToCtor(mods, rhs)
 
-            if (initializingRhs ne EmptyTree) {
-              val initPhase =
-                if (mods hasFlag STATIC) classInitStatBuf
-                else if (mods hasFlag PRESUPER | PARAMACCESSOR) constrPrefixBuf
-                else constrStatBuf
-
-              initPhase += mkAssign(statSym, initializingRhs)
-            }
-
-            defBuf += deriveValDef(stat)(_ => EmptyTree)
+            if (memoized) defBuf += deriveValDef(stat)(_ => EmptyTree)
 
           // all other statements go into the constructor
           case _ => constrStatBuf += intoConstructor(impl.symbol, primaryConstr.symbol)(stat)
