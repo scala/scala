@@ -723,7 +723,11 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
       val prunedStats = (defs filterNot omittableStat) ::: delayedHookDefs ::: constructors
 
       //  Add the static initializers
-      addStaticInits(deriveTemplate(impl)(_ => prunedStats), classInitStats, localTyper)
+      if (classInitStats.isEmpty) deriveTemplate(impl)(_ => prunedStats)
+      else {
+        val staticCtor = staticConstructor(prunedStats, localTyper, impl.pos)(classInitStats)
+        deriveTemplate(impl)(_ => staticCtor :: prunedStats)
+      }
     }
   } // TemplateTransformer
 }
