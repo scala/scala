@@ -57,6 +57,7 @@ final class API(val global: CallbackGlobal) extends Compat {
     val definitions = new ListBuffer[xsbti.api.Definition]
     def `class`(c: Symbol): Unit = {
       definitions += extractApi.classLike(c.owner, c)
+      ()
     }
     /** Record packages declared in the source file*/
     def `package`(p: Symbol): Unit = {
@@ -70,8 +71,8 @@ final class API(val global: CallbackGlobal) extends Compat {
   }
 
   private abstract class TopLevelTraverser extends Traverser {
-    def `class`(s: Symbol)
-    def `package`(s: Symbol)
+    def `class`(s: Symbol): Unit
+    def `package`(s: Symbol): Unit
     override def traverse(tree: Tree): Unit = {
       tree match {
         case (_: ClassDef | _: ModuleDef) if isTopLevel(tree.symbol) => `class`(tree.symbol)

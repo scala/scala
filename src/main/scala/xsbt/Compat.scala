@@ -81,7 +81,7 @@ abstract class Compat {
   def hasMacro(s: Symbol): Boolean =
     {
       val MACRO = Flags.MACRO // will be DummyValue for versions before 2.10
-      MACRO != DummyValue && s.hasFlag(MACRO)
+      MACRO != DummyValue && s.hasFlag(MACRO.toLong)
     }
   def moduleSuffix(s: Symbol): String = s.moduleSuffix
 
@@ -121,7 +121,7 @@ abstract class Compat {
           import analyzer._ // this is where MEA lives in 2.11.x
           tree.attachments.all.collect {
             case att: MacroExpansionAttachment => att.expandee
-          } headOption
+          }.headOption
         }
       }
     }

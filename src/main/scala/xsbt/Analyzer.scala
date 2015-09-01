@@ -22,7 +22,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
   private class AnalyzerPhase(prev: Phase) extends Phase(prev) {
     override def description = "Finds concrete instances of provided superclasses, and application entry points."
     def name = Analyzer.name
-    def run {
+    def run: Unit = {
       for (unit <- currentRun.units if !unit.isJava) {
         val sourceFile = unit.source.file.file
         // build list of generated classes

@@ -62,6 +62,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
     def addSymbol(symbol: Symbol): Unit = {
       val symbolNameAsString = symbol.name.decode.trim
       namesBuffer += symbolNameAsString
+      ()
     }
 
     def handleTreeNode(node: Tree): Unit = {
@@ -76,8 +77,10 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
         // that logic was introduced in 2005 without any justification I'll just ignore the
         // import node altogether and just process the selectors in the import node
         case Import(_, selectors: List[ImportSelector]) =>
-          def usedNameInImportSelector(name: Name): Unit =
+          def usedNameInImportSelector(name: Name): Unit = {
             if ((name != null) && (name != nme.WILDCARD)) namesBuffer += name.toString
+            ()
+          }
           selectors foreach { selector =>
             usedNameInImportSelector(selector.name)
             usedNameInImportSelector(selector.rename)

@@ -36,7 +36,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
   private class DependencyPhase(prev: Phase) extends Phase(prev) {
     override def description = "Extracts dependency information"
     def name = Dependency.name
-    def run {
+    def run: Unit = {
       for (unit <- currentRun.units if !unit.isJava) {
         // build dependencies structure
         val sourceFile = unit.source.file.file
@@ -91,12 +91,13 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
       if (pf.isDefinedAt(tpe))
         collected = pf(tpe) :: collected
       mapOver(tpe)
+      ()
     }
   }
 
   private abstract class ExtractDependenciesTraverser extends Traverser {
     protected val depBuf = collection.mutable.ArrayBuffer.empty[Symbol]
-    protected def addDependency(dep: Symbol): Unit = depBuf += dep
+    protected def addDependency(dep: Symbol): Unit = { depBuf += dep; () }
     def dependencies: collection.immutable.Set[Symbol] = {
       // convert to immutable set and remove NoSymbol if we have one
       depBuf.toSet - NoSymbol

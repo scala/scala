@@ -52,6 +52,8 @@ class ConsoleInterface {
 
         if (!initialCommands.isEmpty)
           interpreter.interpret(initialCommands)
+
+        ()
       }
       override def closeInterpreter(): Unit = {
         if (!cleanupCommands.isEmpty)

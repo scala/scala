@@ -45,6 +45,7 @@ sealed abstract class CallbackGlobal(settings: Settings, reporter: reporters.Rep
   val inheritedDependencies = new mutable.HashMap[File, mutable.Set[Symbol]]
   def addInheritedDependencies(file: File, deps: Iterable[Symbol]): Unit = {
     inheritedDependencies.getOrElseUpdate(file, new mutable.HashSet) ++= deps
+    ()
   }
 }
 class InterfaceCompileFailed(val arguments: Array[String], val problems: Array[Problem], override val toString: String) extends xsbti.CompileFailed
@@ -90,7 +91,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
     (command.settings.recreateArgs ++ sources.map(_.getAbsolutePath)).toArray[String]
 
   def run(sources: Array[File], changes: DependencyChanges, callback: AnalysisCallback, log: Logger, delegate: Reporter, progress: CompileProgress): Unit = synchronized {
-    debug(log, "Running cached compiler " + hashCode.toHexString + ", interfacing (CompilerInterface) with Scala compiler " + scala.tools.nsc.Properties.versionString)
+    debug(log, "Running cached compiler " + hashCode.toLong.toHexString + ", interfacing (CompilerInterface) with Scala compiler " + scala.tools.nsc.Properties.versionString)
     val dreporter = DelegatingReporter(settings, delegate)
     try { run(sources.toList, changes, callback, log, dreporter, progress) }
     finally { dreporter.dropDelegate() }
@@ -212,7 +213,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
     // Required because computePhaseDescriptors is private in 2.8 (changed to protected sometime later).
     private[this] def superComputePhaseDescriptors() = superCall("computePhaseDescriptors").asInstanceOf[List[SubComponent]]
     private[this] def superDropRun(): Unit =
-      try { superCall("dropRun") } catch { case e: NoSuchMethodException => () } // dropRun not in 2.8.1
+      try { superCall("dropRun"); () } catch { case e: NoSuchMethodException => () } // dropRun not in 2.8.1
     private[this] def superCall(methodName: String): AnyRef =
       {
         val meth = classOf[Global].getDeclaredMethod(methodName)
@@ -223,9 +224,10 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
       {
         val drep = reporter.asInstanceOf[DelegatingReporter]
         for ((what, warnings) <- seq; (pos, msg) <- warnings) yield callback.problem(what, drep.convert(pos), msg, Severity.Warn, false)
+        ()
       }
 
-    def set(callback: AnalysisCallback, dreporter: DelegatingReporter): Unit = {
+    final def set(callback: AnalysisCallback, dreporter: DelegatingReporter): Unit = {
       this.callback0 = callback
       reporter = dreporter
     }
