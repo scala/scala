@@ -793,7 +793,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** A fully attributed tree located at position `pos` */
-  private[interactive] def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
+  private[scala] def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
     case None =>
       reloadSources(List(pos.source))
       try typedTreeAt(pos)
