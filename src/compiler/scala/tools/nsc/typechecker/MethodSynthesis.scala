@@ -338,10 +338,11 @@ trait MethodSynthesis {
         case _                => NoSymbol
       }
 
-      // TODO: when is `derivedSym.isOverloaded`??? is it always an error?
-      private def setterRhs =
+      private def setterRhs = {
+        assert(!derivedSym.isOverloaded, s"Unexpected overloaded setter $derivedSym for $basisSym in $enclClass")
         if (Field.noFieldFor(tree) || derivedSym.isOverloaded) EmptyTree
         else Assign(fieldSelection, Ident(setterParam))
+      }
 
       private def setterDef = DefDef(derivedSym, setterRhs)
       override def derivedTree: Tree = if (setterParam == NoSymbol) EmptyTree else setterDef
