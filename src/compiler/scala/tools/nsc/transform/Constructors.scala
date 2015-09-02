@@ -575,6 +575,9 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
       }
     }
 
+    // Constant typed vals are not memoized.
+    def memoizeValue(sym: Symbol) = !sym.info.isInstanceOf[ConstantType]
+
     /** Triage definitions and statements in this template into the following categories.
       * The primary constructor is treated separately, as it is assembled in part from these pieces.
       *
@@ -599,8 +602,8 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
             val fields = presupers filter (_.getterName == name)
             assert(fields.length == 1)
             val to = fields.head.symbol
-            if (!to.tpe.isInstanceOf[ConstantType])
-              constrStatBuf += mkAssign(to, Ident(stat.symbol))
+
+            if (memoizeValue(to)) constrStatBuf += mkAssign(to, Ident(stat.symbol))
           case _ =>
         }
       }
@@ -608,15 +611,14 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
       for (stat <- stats) {
         val statSym = stat.symbol
 
-        // Move the RHS of a Val/Def (traits don't have vals, their getter holds the RHS) to the appropriate part of the ctor.
-        // If the val def is an early initialized or a parameter accessor,
+        // Move the RHS of a ValDef to the appropriate part of the ctor.
+        // If the val is an early initialized or a parameter accessor,
         // it goes before the superclass constructor call, otherwise it goes after.
         // A lazy val's effect is not moved to the constructor, as it is delayed.
         // Returns `true` when a `ValDef` is needed.
-        def moveEffectToCtor(mods: Modifiers, rhs: Tree) = {
-          val const = statSym.info.isInstanceOf[ConstantType]
+        def moveEffectToCtor(mods: Modifiers, rhs: Tree, memoized: Boolean): Unit = {
           val initializingRhs =
-            if (statSym.isLazy || const) EmptyTree
+            if (!memoized || statSym.isLazy) EmptyTree // not memoized, or effect delayed (for lazy val)
             else if (!mods.hasStaticFlag) intoConstructor(statSym, primaryConstr.symbol)(rhs)
             else rhs
 
@@ -628,7 +630,6 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
 
             initPhase += mkAssign(statSym, initializingRhs)
           }
-          !const // needs field unless it's a constant
         }
 
         stat match {
@@ -648,9 +649,10 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
           //   - the constructor, before the super call (early initialized or a parameter accessor),
           //   - the constructor, after the super call (regular val).
           case ValDef(mods, _, _, rhs) =>
-            val memoized = moveEffectToCtor(mods, rhs)
+            val emitField = memoizeValue(statSym)
+            moveEffectToCtor(mods, rhs, emitField)
 
-            if (memoized) defBuf += deriveValDef(stat)(_ => EmptyTree)
+            if (emitField) defBuf += deriveValDef(stat)(_ => EmptyTree)
 
           // all other statements go into the constructor
           case _ => constrStatBuf += intoConstructor(impl.symbol, primaryConstr.symbol)(stat)
@@ -668,6 +670,8 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
         if (isDelayedInitSubclass) Set.empty
         else computeOmittableAccessors(clazz, defs, auxConstructors)
 
+      // TODO: need to add the following disjunction to omittableSym to omit symbol corresponding to suppressed ValDef tree...
+      // `|| (sym.isValue && !sym.isMethod && !memoizeValue(sym))`
       def omittableSym(sym: Symbol) = omittableAccessor(sym)
       def omittableStat(stat: Tree) = omittableSym(stat.symbol)
 
