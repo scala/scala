@@ -574,19 +574,23 @@ trait Contexts { self: Analyzer =>
     /** Issue/buffer/throw the given implicit ambiguity error according to the current mode for error reporting. */
     private[typechecker] def issueAmbiguousError(err: AbsAmbiguousTypeError) = reporter.issueAmbiguousError(err)(this)
     /** Issue/throw the given error message according to the current mode for error reporting. */
-    def error(pos: Position, msg: String)                                    = reporter.error(pos, msg)
+    def error(pos: Position, msg: String)                                    = reporter.error(fixPosition(pos), msg)
     /** Issue/throw the given error message according to the current mode for error reporting. */
-    def warning(pos: Position, msg: String)                                  = reporter.warning(pos, msg)
-    def echo(pos: Position, msg: String)                                     = reporter.echo(pos, msg)
+    def warning(pos: Position, msg: String)                                  = reporter.warning(fixPosition(pos), msg)
+    def echo(pos: Position, msg: String)                                     = reporter.echo(fixPosition(pos), msg)
+    def fixPosition(pos: Position): Position = pos match {
+      case NoPosition => nextEnclosing(_.tree.pos != NoPosition).tree.pos
+      case _ => pos
+    }
 
 
     def deprecationWarning(pos: Position, sym: Symbol, msg: String): Unit =
-      currentRun.reporting.deprecationWarning(pos, sym, msg)
+      currentRun.reporting.deprecationWarning(fixPosition(pos), sym, msg)
     def deprecationWarning(pos: Position, sym: Symbol): Unit =
-      currentRun.reporting.deprecationWarning(pos, sym) // TODO: allow this to escalate to an error, and implicit search will ignore deprecated implicits
+      currentRun.reporting.deprecationWarning(fixPosition(pos), sym) // TODO: allow this to escalate to an error, and implicit search will ignore deprecated implicits
 
     def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean): Unit =
-      currentRun.reporting.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
+      currentRun.reporting.featureWarning(fixPosition(pos), featureName, featureDesc, featureTrait, construct, required)
 
 
     // nextOuter determines which context is searched next for implicits
@@ -1239,7 +1243,7 @@ trait Contexts { self: Analyzer =>
     type Error = AbsTypeError
     type Warning = (Position, String)
 
-    def issue(err: AbsTypeError)(implicit context: Context): Unit = handleError(err.errPos, addDiagString(err.errMsg))
+    def issue(err: AbsTypeError)(implicit context: Context): Unit = handleError(context.fixPosition(err.errPos), addDiagString(err.errMsg))
 
     protected def handleError(pos: Position, msg: String): Unit
     protected def handleSuppressedAmbiguous(err: AbsAmbiguousTypeError): Unit = ()
@@ -1256,7 +1260,7 @@ trait Contexts { self: Analyzer =>
      *  - else, let this context reporter decide
      */
     final def issueAmbiguousError(err: AbsAmbiguousTypeError)(implicit context: Context): Unit =
-      if (context.ambiguousErrors) reporter.error(err.errPos, addDiagString(err.errMsg)) // force reporting... see TODO above
+      if (context.ambiguousErrors) reporter.error(context.fixPosition(err.errPos), addDiagString(err.errMsg)) // force reporting... see TODO above
       else handleSuppressedAmbiguous(err)
 
     @inline final def withFreshErrorBuffer[T](expr: => T): T = {
