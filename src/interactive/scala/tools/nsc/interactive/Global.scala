@@ -662,7 +662,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** Make sure unit is typechecked
    */
-  private def typeCheck(unit: RichCompilationUnit) {
+  private[scala] def typeCheck(unit: RichCompilationUnit) {
     debugLog("type checking: "+unit)
     parseAndEnter(unit)
     unit.status = PartiallyChecked
@@ -1147,6 +1147,82 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       Stream(members.allMembers)
     }
   }
+
+  sealed abstract class CompletionResult {
+    type M <: Member
+    def results: List[M]
+    /** The (possibly partial) detected that precedes the cursor */
+    def name: Name
+    def positionDelta: Int
+    def matchingResults(matcher: (M, Name) => Boolean = CompletionResult.prefixMatcher): List[M] = {
+      results filter (r => matcher(r, name))
+    }
+    def qualifierType: Type = NoType
+  }
+  object CompletionResult {
+    final case class ScopeMembers(positionDelta: Int, results: List[ScopeMember], name: Name) extends CompletionResult {
+      type M = ScopeMember
+    }
+    final case class TypeMembers(positionDelta: Int, qualifier: Tree, tree: Tree, results: List[TypeMember], name: Name) extends CompletionResult {
+      type M = TypeMember
+      override def qualifierType: Type = qualifier.tpe
+    }
+    case object NoResults extends CompletionResult {
+      override def results = Nil
+      override def name = nme.EMPTY
+      override def positionDelta = 0
+
+    }
+    val prefixMatcher = (member: Member, name: Name) => {
+      val symbol = member.sym
+      val prefix = if (name == nme.ERROR) nme.EMPTY else name
+      def isStable = member.tpe.isStable || member.sym.isStable || member.sym.getterIn(member.sym.owner).isStable
+      val nameMatches = !symbol.isConstructor && (prefix.isEmpty || symbol.name.startsWith(prefix) && (symbol.name.isTermName == prefix.isTermName || prefix.isTypeName && isStable))
+      nameMatches && member.accessible
+    }
+  }
+
+  final def completionsAt(pos: Position): CompletionResult = {
+    val focus1: Tree = typedTreeAt(pos)
+    def typeCompletions(tree: Tree, qual: Tree, nameStart: Int, name: Name): CompletionResult = {
+      val qualPos = qual.pos
+      val allTypeMembers = typeMembers(qualPos).toList.flatten
+
+      val positionDelta: Int = nameStart - pos.start
+      val subName = name.subName(0, -positionDelta)
+      CompletionResult.TypeMembers(positionDelta, qual, tree, allTypeMembers, subName)
+    }
+    focus1 match {
+      case imp@Import(i @ Ident(name), head :: Nil) if head.name == nme.ERROR =>
+        val allMembers = scopeMembers(pos)
+        val nameStart = i.pos.start
+        val positionDelta: Int = nameStart - pos.start
+        val subName = name.subName(0, pos.start - i.pos.start)
+        CompletionResult.ScopeMembers(positionDelta, allMembers, subName)
+      case imp@Import(qual, selectors) =>
+        selectors.reverseIterator.find(_.namePos <= pos.start) match {
+          case None => CompletionResult.NoResults
+          case Some(selector) =>
+            typeCompletions(imp, qual, selector.namePos, selector.name)
+        }
+      case sel@Select(qual, name) =>
+        val qualPos = qual.pos
+        def fallback = qualPos.end + 2
+        val source = pos.source
+        val nameStart: Int = (qualPos.end + 1 until focus1.pos.end).find(p =>
+          source.identifier(source.position(p)).exists(_.length > 0)
+        ).getOrElse(fallback)
+        typeCompletions(sel, qual, nameStart, name)
+      case Ident(name) =>
+        val allMembers = scopeMembers(pos)
+        val positionDelta: Int = focus1.pos.start - pos.start
+        val subName = name.subName(0, -positionDelta)
+        CompletionResult.ScopeMembers(positionDelta, allMembers, subName)
+      case _ =>
+        CompletionResult.NoResults
+    }
+  }
+
 
   /** Implements CompilerControl.askLoadedTyped */
   private[interactive] def waitLoadedTyped(source: SourceFile, response: Response[Tree], keepLoaded: Boolean = false, onSameThread: Boolean = true) {
