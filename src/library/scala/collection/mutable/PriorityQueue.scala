@@ -18,8 +18,19 @@ import generic._
  *
  *  Only the `dequeue` and `dequeueAll` methods will return methods in priority
  *  order (while removing elements from the heap).  Standard collection methods
- *  including `drop` and `iterator` will remove or traverse the heap in whichever
- *  order seems most convenient.
+ *  including `drop`, `iterator`, and `toString` will remove or traverse the heap
+ *  in whichever order seems most convenient.
+ *
+ *  Therefore, printing a `PriorityQueue` will not reveal the priority order of
+ *  the elements, though the highest-priority element will be printed first.  To
+ *  print the elements in order, one must duplicate the `PriorityQueue` (by using
+ *  `clone`, for instance) and then dequeue them:
+ *
+ *  @example {{{
+ *  val pq = collection.mutable.PriorityQueue(1, 2, 5, 3, 7)
+ *  println(pq)                  // elements probably not in order
+ *  println(pq.clone.dequeueAll) // prints Vector(7, 5, 3, 2, 1)
+ *  }}}
  *
  *  @tparam A    type of the elements in this priority queue.
  *  @param ord   implicit ordering used to compare the elements of type `A`.
