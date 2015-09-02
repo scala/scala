@@ -641,7 +641,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
       //  a) they are recorded as normal source methods anyway
       //  b) there is no way to distinguish them from user-defined methods
       val associated = List(b, b.getter(b.enclClass), b.setter(b.enclClass)).filter(_ != NoSymbol)
-      associated.flatMap(ss => annotations(in, ss.annotations)).distinct.toArray;
+      associated.flatMap(ss => annotations(in, ss.annotations.filter(_.isStatic))).distinct.toArray;
     }
   private def annotatedType(in: Symbol, at: AnnotatedType): xsbti.api.Type =
     {
