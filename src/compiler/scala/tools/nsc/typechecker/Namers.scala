@@ -118,7 +118,7 @@ trait Namers extends MethodSynthesis {
     // PRIVATE | LOCAL are fields generated for primary constructor arguments
     // @PP: ...or fields declared as private[this].  PARAMACCESSOR marks constructor arguments.
     // Neither gets accessors so the code is as far as I know still correct.
-    def noEnterGetterSetter(vd: ValDef) = !vd.mods.isLazy && (
+    def deriveAccessors(vd: ValDef) = vd.mods.isLazy || !(
          !owner.isClass
       || (vd.mods.isPrivateLocal && !vd.mods.isCaseAccessor)
       || (vd.name startsWith nme.OUTER)
@@ -126,7 +126,7 @@ trait Namers extends MethodSynthesis {
       || isEnumConstant(vd)
     )
 
-    def noFinishGetterSetter(vd: ValDef) = (
+    def deriveAccessorTrees(vd: ValDef) = !(
          (vd.mods.isPrivateLocal && !vd.mods.isLazy) // all lazy vals need accessors, even private[this]
       || vd.symbol.isModuleVar
       || isEnumConstant(vd))
@@ -656,10 +656,8 @@ trait Namers extends MethodSynthesis {
     }
 
     def enterValDef(tree: ValDef) {
-      if (noEnterGetterSetter(tree))
-        assignAndEnterFinishedSymbol(tree)
-      else
-        enterGetterSetter(tree)
+      if (deriveAccessors(tree)) enterGetterSetter(tree)
+      else assignAndEnterFinishedSymbol(tree)
 
       if (isEnumConstant(tree))
         tree.symbol setInfo ConstantType(Constant(tree.symbol))
