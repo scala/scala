@@ -428,13 +428,15 @@ trait Definitions extends api.StandardDefinitions {
     def elementType(container: Symbol, tp: Type): Type       = elementExtract(container, tp)
 
     // collections classes
-    lazy val ConsClass          = requiredClass[scala.collection.immutable.::[_]]
-    lazy val IteratorClass      = requiredClass[scala.collection.Iterator[_]]
-    lazy val IterableClass      = requiredClass[scala.collection.Iterable[_]]
-    lazy val ListClass          = requiredClass[scala.collection.immutable.List[_]]
-    lazy val SeqClass           = requiredClass[scala.collection.Seq[_]]
-    lazy val StringBuilderClass = requiredClass[scala.collection.mutable.StringBuilder]
-    lazy val TraversableClass   = requiredClass[scala.collection.Traversable[_]]
+    lazy val ConsClass              = requiredClass[scala.collection.immutable.::[_]]
+    lazy val IteratorClass          = requiredClass[scala.collection.Iterator[_]]
+    lazy val IterableClass          = requiredClass[scala.collection.Iterable[_]]
+    lazy val ListClass              = requiredClass[scala.collection.immutable.List[_]]
+    lazy val SeqClass               = requiredClass[scala.collection.Seq[_]]
+    lazy val JavaStringBuilderClass = requiredClass[java.lang.StringBuilder]
+    lazy val JavaStringBufferClass  = requiredClass[java.lang.StringBuffer]
+    lazy val JavaCharSequenceClass  = requiredClass[java.lang.CharSequence]
+    lazy val TraversableClass       = requiredClass[scala.collection.Traversable[_]]
 
     lazy val ListModule       = requiredModule[scala.collection.immutable.List.type]
          def List_apply       = getMemberMethod(ListModule, nme.apply)

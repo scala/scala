@@ -95,7 +95,9 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
   lazy val ObjectRef                 : ClassBType = classBTypeFromSymbol(ObjectClass)
   lazy val StringRef                 : ClassBType = classBTypeFromSymbol(StringClass)
   lazy val PredefRef                 : ClassBType = classBTypeFromSymbol(PredefModule.moduleClass)
-  lazy val jlStringBuilderRef        : ClassBType = classBTypeFromSymbol(StringBuilderClass)
+  lazy val jlStringBuilderRef        : ClassBType = classBTypeFromSymbol(JavaStringBuilderClass)
+  lazy val jlStringBufferRef         : ClassBType = classBTypeFromSymbol(JavaStringBufferClass)
+  lazy val jlCharSequenceRef         : ClassBType = classBTypeFromSymbol(JavaCharSequenceClass)
   lazy val jlThrowableRef            : ClassBType = classBTypeFromSymbol(ThrowableClass)
   lazy val jlCloneableRef            : ClassBType = classBTypeFromSymbol(JavaCloneableClass)        // java/lang/Cloneable
   lazy val jiSerializableRef         : ClassBType = classBTypeFromSymbol(JavaSerializableClass)     // java/io/Serializable
@@ -343,6 +345,8 @@ final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: 
   def StringRef                 : ClassBType = _coreBTypes.StringRef
   def PredefRef                 : ClassBType = _coreBTypes.PredefRef
   def jlStringBuilderRef        : ClassBType = _coreBTypes.jlStringBuilderRef
+  def jlStringBufferRef         : ClassBType = _coreBTypes.jlStringBufferRef
+  def jlCharSequenceRef         : ClassBType = _coreBTypes.jlCharSequenceRef
   def jlThrowableRef            : ClassBType = _coreBTypes.jlThrowableRef
   def jlCloneableRef            : ClassBType = _coreBTypes.jlCloneableRef
   def jiSerializableRef         : ClassBType = _coreBTypes.jiSerializableRef
