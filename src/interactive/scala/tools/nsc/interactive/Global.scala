@@ -120,6 +120,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   val debugIDE: Boolean = settings.YpresentationDebug.value
   val verboseIDE: Boolean = settings.YpresentationVerbose.value
+  private val anyThread: Boolean = settings.YpresentationAnyThread.value
 
   private def replayName = settings.YpresentationReplay.value
   private def logName = settings.YpresentationLog.value
@@ -532,7 +533,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    */
   @elidable(elidable.WARNING)
   override def assertCorrectThread() {
-    assert(initializing || onCompilerThread,
+    assert(initializing || anyThread || onCompilerThread,
         "Race condition detected: You are running a presentation compiler method outside the PC thread.[phase: %s]".format(globalPhase) +
         " Please file a ticket with the current stack trace at https://www.assembla.com/spaces/scala-ide/support/tickets")
   }
