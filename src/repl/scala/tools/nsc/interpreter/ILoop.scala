@@ -1,8 +1,7 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
+ * Copyright 2005-2015 LAMP/EPFL
  * @author Alexander Spoon
  */
-
 package scala
 package tools.nsc
 package interpreter
@@ -819,9 +818,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     case _ =>
   }
 
-  /** Tries to create a JLineReader, falling back to SimpleReader:
-   *  unless settings or properties are such that it should start
-   *  with SimpleReader.
+  /** Tries to create a JLineReader, falling back to SimpleReader,
+   *  unless settings or properties are such that it should start with SimpleReader.
+   *  The constructor of the InteractiveReader must take a Completion strategy,
+   *  supplied as a `() => Completion`; the Completion object provides a concrete Completer.
    */
   def chooseReader(settings: Settings): InteractiveReader = {
     if (settings.Xnojline || Properties.isEmacsShell) SimpleReader()
@@ -829,20 +829,25 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       type Completer = () => Completion
       type ReaderMaker = Completer => InteractiveReader
 
-      def instantiate(className: String): ReaderMaker = completer => {
-        if (settings.debug) Console.println(s"Trying to instantiate a InteractiveReader from $className")
+      def instantiater(className: String): ReaderMaker = completer => {
+        if (settings.debug) Console.println(s"Trying to instantiate an InteractiveReader from $className")
         Class.forName(className).getConstructor(classOf[Completer]).
           newInstance(completer).
           asInstanceOf[InteractiveReader]
       }
 
-      def mkReader(maker: ReaderMaker) =
-        if (settings.noCompletion) maker(() => NoCompletion)
-        else maker(() => new JLineCompletion(intp)) // JLineCompletion is a misnomer -- it's not tied to jline
+      def mkReader(maker: ReaderMaker) = maker { () =>
+        settings.completion.value match {
+          case _ if settings.noCompletion => NoCompletion
+          case "none"   => NoCompletion
+          case "adhoc"  => new JLineCompletion(intp) // JLineCompletion is a misnomer; it's not tied to jline
+          case "pc" | _ => new PresentationCompilerCompleter(intp)
+        }
+      }
 
       def internalClass(kind: String) = s"scala.tools.nsc.interpreter.$kind.InteractiveReader"
       val readerClasses = sys.props.get("scala.repl.reader").toStream ++ Stream(internalClass("jline"), internalClass("jline_embedded"))
-      val readers = readerClasses map (cls => Try { mkReader(instantiate(cls)) })
+      val readers = readerClasses map (cls => Try { mkReader(instantiater(cls)) })
 
       val reader = (readers collect { case Success(reader) => reader } headOption) getOrElse SimpleReader()
 

@@ -272,6 +272,7 @@ trait CompilerControl { self: Global =>
     val tpe: Type
     val accessible: Boolean
     def implicitlyAdded = false
+    def symNameDropLocal: Name = sym.name.dropLocal
 
     private def accessible_s = if (accessible) "" else "[inaccessible] "
     def forceInfoString = {
