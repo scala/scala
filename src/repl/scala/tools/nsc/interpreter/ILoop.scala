@@ -840,12 +840,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       }
 
       def mkReader(maker: ReaderMaker) = maker { () =>
-        settings.completion.value match {
-          case _ if settings.noCompletion => NoCompletion
-          case "none"   => NoCompletion
-          case "adhoc"  => new JLineCompletion(intp) // JLineCompletion is a misnomer; it's not tied to jline
-          case "pc" | _ => new PresentationCompilerCompleter(intp)
-        }
+        if (settings.noCompletion) NoCompletion else new PresentationCompilerCompleter(intp)
       }
 
       def internalClass(kind: String) = s"scala.tools.nsc.interpreter.$kind.InteractiveReader"
