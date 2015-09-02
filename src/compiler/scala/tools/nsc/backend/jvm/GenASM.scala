@@ -2700,7 +2700,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
               case CMPG =>
                 (kind: @unchecked) match {
                   case FLOAT  => emit(Opcodes.FCMPG)
-                  case DOUBLE => emit(Opcodes.DCMPL) // TODO bug? why not DCMPG? http://docs.oracle.com/javase/specs/jvms/se5.0/html/Instructions2.doc3.html
+                  case DOUBLE => emit(Opcodes.DCMPL) // TODO bug? why not DCMPG? http://docs.oracle.com/javase/specs/jvms/se6/html/Instructions2.doc3.html
 
                 }
             }
