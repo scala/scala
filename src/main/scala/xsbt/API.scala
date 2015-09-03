@@ -16,7 +16,7 @@ object API {
   val name = "xsbt-api"
 }
 
-final class API(val global: CallbackGlobal) extends Compat {
+final class API(val global: CallbackGlobal) {
   import global._
 
   @inline def debug(msg: => String) = if (settings.verbose.value) inform(msg)

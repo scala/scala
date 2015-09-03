@@ -22,7 +22,7 @@ import xsbti.api.{ ClassLike, DefinitionType, PathComponent, SimpleType }
 class ExtractAPI[GlobalType <: CallbackGlobal](val global: GlobalType,
   // Tracks the source file associated with the CompilationUnit currently being processed by the API phase.
   // This is used when recording inheritance dependencies.
-  sourceFile: File) extends Compat {
+  sourceFile: File) {
 
   import global._
 
