@@ -82,7 +82,7 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion with ScalaCo
               Completion.NoCandidates // don't offer completion if the only option has been fully typed already
             else {
               // regular completion
-              val memberCompletions: List[String] = matching.map(_.symNameDropLocal.decoded).distinct
+              val memberCompletions: List[String] = matching.map(_.symNameDropLocal.decoded).distinct.sorted
               Candidates(cursor + r.positionDelta, memberCompletions)
             }
           }
