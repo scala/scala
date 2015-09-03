@@ -34,10 +34,10 @@ abstract class LocateClassFile extends Compat {
       }
     }
   private def flatname(s: Symbol, separator: Char) =
-    atPhase(currentRun.flattenPhase.next) { s fullName separator }
+    enteringPhase(currentRun.flattenPhase.next) { s fullName separator }
 
   protected def isTopLevelModule(sym: Symbol): Boolean =
-    atPhase(currentRun.picklerPhase.next) {
+    enteringPhase(currentRun.picklerPhase.next) {
       sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass
     }
   protected def className(s: Symbol, sep: Char, dollarRequired: Boolean): String =

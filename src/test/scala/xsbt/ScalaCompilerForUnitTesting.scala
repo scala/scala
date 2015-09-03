@@ -12,7 +12,7 @@ import xsbti.api.Definition
 import xsbti.api.Def
 import xsbt.api.SameAPI
 import sbt.internal.util.ConsoleLogger
-import xsbti.DependencyContext._
+import xsbti.api.DependencyContext._
 
 import ScalaCompilerForUnitTesting.ExtractedSourceDependencies
 

@@ -6,8 +6,8 @@ package xsbt
 import scala.tools.nsc.{ io, symtab, Phase }
 import io.{ AbstractFile, PlainFile, ZipArchive }
 import symtab.Flags
-import xsbti.DependencyContext
-import xsbti.DependencyContext._
+import xsbti.api.DependencyContext
+import xsbti.api.DependencyContext._
 
 import java.io.File
 
@@ -144,7 +144,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
         // See sbt/sbt#1593 and sbt/sbt#1655.
         case typeTree: TypeTree if typeTree.tpe != null =>
           val typeSymbolCollector = new CollectTypeTraverser({
-            case tpe if !tpe.typeSymbol.isPackage => tpe.typeSymbol
+            case tpe if !tpe.typeSymbol.hasPackageFlag => tpe.typeSymbol
           })
           typeSymbolCollector.traverse(typeTree.tpe)
           val deps = typeSymbolCollector.collected.toSet

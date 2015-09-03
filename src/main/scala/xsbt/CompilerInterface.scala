@@ -146,12 +146,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
       compiler.logUnreportedWarnings(warnings.map(cw => ("" /*cw.what*/ , cw.warnings.toList)))
   }
 
-  val compiler: Compiler = {
-    if (command.settings.Yrangepos.value)
-      new Compiler() with RangePositions // unnecessary in 2.11
-    else
-      new Compiler()
-  }
+  val compiler: Compiler = new Compiler()
   class Compiler extends CallbackGlobal(command.settings, dreporter, output) {
     object dummy // temporary fix for #4426
     object sbtAnalyzer extends {

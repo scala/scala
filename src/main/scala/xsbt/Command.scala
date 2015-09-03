@@ -21,7 +21,7 @@ object Command {
   }
 
   def getWarnFatal(settings: Settings): Boolean =
-    settings.Xwarnfatal.value
+    settings.fatalWarnings.value
 
   def getNoWarn(settings: Settings): Boolean =
     settings.nowarn.value

@@ -92,7 +92,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
         // not what we need
         case t: TypeTree if t.original != null =>
           t.original.foreach(handleTreeNode)
-        case t if t.hasSymbol && eligibleAsUsedName(t.symbol) =>
+        case t if t.hasSymbolField && eligibleAsUsedName(t.symbol) =>
           addSymbol(t.symbol)
         case _ => ()
       }
