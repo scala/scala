@@ -94,6 +94,9 @@ class CompletionTest {
     // and performs as-seen-from with respect to the prefix
     checkExact(completer, "trait T[A]{ lazy val x_y_z: A }; class C extends T[Int] { x_y_z")()
     checkExact(completer, "trait T[A]{ lazy val x_y_z: A }; class C extends T[Int] { x_y_z")(EmptyString, "lazy val x_y_z: Int")
+
+    checkExact(completer, "trait T[A] { def foo: A }; (t: T[Int]) => t.foo")()
+    checkExact(completer, "trait T[A] { def foo: A }; (t: T[Int]) => t.foo")(EmptyString, "def foo: Int")
   }
 
   @Test

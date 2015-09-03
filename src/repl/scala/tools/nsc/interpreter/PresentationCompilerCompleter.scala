@@ -54,28 +54,27 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion with ScalaCo
       Candidates(cursor, "" :: tpString :: Nil)
     }
     def candidates(result: Result): Candidates = {
-      import result.compiler.CompletionResult._, result.compiler.{Symbol, NoSymbol, Type, Member, NoType, Name}
-      def defStringCandidates(qualTpe: Type, matching: List[Member], name: Name): Candidates = {
+      import result.compiler._
+      import CompletionResult._
+      def defStringCandidates(matching: List[Member], name: Name): Candidates = {
         val defStrings = for {
           member <- matching
           if member.symNameDropLocal == name
           sym <- member.sym.alternatives
           sugared = sym.sugaredSymbolOrSelf
         } yield {
-            val tp = qualTpe match {
-              case NoType => member.tpe
-              case _ => qualTpe memberType sym
-            }
+            val tp = member.prefix memberType sym
             sugared.defStringSeenAs(tp)
           }
         Candidates(cursor, "" :: defStrings.distinct)
       }
       val found = result.completionsAt(cursor) match {
         case NoResults => Completion.NoCandidates
-        case r => val matching = r.matchingResults()
+        case r =>
+          val matching = r.matchingResults()
           val tabAfterCommonPrefixCompletion = lastCommonPrefixCompletion.contains(buf.substring(0, cursor)) && matching.exists(_.symNameDropLocal == r.name)
           val doubleTab = tabCount > 0 && matching.forall(_.symNameDropLocal == r.name)
-          if (tabAfterCommonPrefixCompletion || doubleTab) defStringCandidates(r.qualifierType, matching, r.name)
+          if (tabAfterCommonPrefixCompletion || doubleTab) defStringCandidates(matching, r.name)
           else {
             if (matching.nonEmpty && matching.forall(_.symNameDropLocal == r.name))
               Completion.NoCandidates // don't offer completion if the only option has been fully typed already

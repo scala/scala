@@ -268,6 +268,7 @@ trait CompilerControl { self: Global =>
   /** Info given for every member found by completion
    */
   abstract class Member {
+    def prefix: Type
     val sym: Symbol
     val tpe: Type
     val accessible: Boolean
@@ -289,6 +290,8 @@ trait CompilerControl { self: Global =>
     accessible: Boolean,
     inherited: Boolean,
     viaView: Symbol) extends Member {
+    // should be a case class parameter, but added as a var instead to preserve compatibility with the IDE
+    var prefix: Type = NoType
     override def implicitlyAdded = viaView != NoSymbol
   }
 
@@ -296,7 +299,10 @@ trait CompilerControl { self: Global =>
     sym: Symbol,
     tpe: Type,
     accessible: Boolean,
-    viaImport: Tree) extends Member
+    viaImport: Tree) extends Member {
+    // should be a case class parameter, but added as a var instead to preserve compatibility with the IDE
+    var prefix: Type = NoType
+  }
 
   // items that get sent to scheduler
 

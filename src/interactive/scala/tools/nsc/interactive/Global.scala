@@ -1031,10 +1031,12 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     def addScopeMember(sym: Symbol, pre: Type, viaImport: Tree) =
       locals.add(sym, pre, implicitlyAdded = false) { (s, st) =>
         // imported val and var are always marked as inaccessible, but they could be accessed through their getters. SI-7995
-        if (s.hasGetter)
+        val member = if (s.hasGetter)
           new ScopeMember(s, st, context.isAccessible(s.getter, pre, superAccess = false), viaImport)
         else
           new ScopeMember(s, st, context.isAccessible(s, pre, superAccess = false), viaImport)
+        member.prefix = pre
+        member
       }
     def localsToEnclosing() = {
       enclosing.addNonShadowed(locals)
@@ -1101,10 +1103,13 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     def addTypeMember(sym: Symbol, pre: Type, inherited: Boolean, viaView: Symbol) = {
       val implicitlyAdded = viaView != NoSymbol
       members.add(sym, pre, implicitlyAdded) { (s, st) =>
-        new TypeMember(s, st,
+        val result = new TypeMember(s, st,
           context.isAccessible(if (s.hasGetter) s.getter(s.owner) else s, pre, superAccess && !implicitlyAdded),
           inherited,
           viaView)
+        result.prefix = pre
+        result
+
       }
     }
 
@@ -1157,7 +1162,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     def matchingResults(matcher: (M, Name) => Boolean = CompletionResult.prefixMatcher): List[M] = {
       results filter (r => matcher(r, name))
     }
-    def qualifierType: Type = NoType
   }
   object CompletionResult {
     final case class ScopeMembers(positionDelta: Int, results: List[ScopeMember], name: Name) extends CompletionResult {
@@ -1165,7 +1169,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
     final case class TypeMembers(positionDelta: Int, qualifier: Tree, tree: Tree, results: List[TypeMember], name: Name) extends CompletionResult {
       type M = TypeMember
-      override def qualifierType: Type = qualifier.tpe
     }
     case object NoResults extends CompletionResult {
       override def results = Nil
