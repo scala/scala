@@ -42,6 +42,10 @@ class CompletionTest {
     // stable terms are offered in type completion as they might be used as a prefix
     checkExact(completer, """object O { def x_y_z = 0; val x_z_y = ""; type T = x_""")("x_z_y")
     checkExact(completer, """def method { def x_y_z = 0; val x_z_y = ""; type T = x_""")("x_z_y")
+
+    // We exclude inherited members of the synthetic interpreter wrapper classes
+    checkExact(completer, """asInstanceO""")()
+    checkExact(completer, """class C { asInstanceO""")("asInstanceOf")
   }
 
   @Test

@@ -71,7 +71,9 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion with ScalaCo
       val found = result.completionsAt(cursor) match {
         case NoResults => Completion.NoCandidates
         case r =>
-          val matching = r.matchingResults()
+          def isInterpreterWrapperMember(m: Member): Boolean =
+            definitions.isUniversalMember(m.sym) && nme.isReplWrapperName(m.prefix.typeSymbol.name)
+          val matching = r.matchingResults().filterNot(isInterpreterWrapperMember)
           val tabAfterCommonPrefixCompletion = lastCommonPrefixCompletion.contains(buf.substring(0, cursor)) && matching.exists(_.symNameDropLocal == r.name)
           val doubleTab = tabCount > 0 && matching.forall(_.symNameDropLocal == r.name)
           if (tabAfterCommonPrefixCompletion || doubleTab) defStringCandidates(matching, r.name)
