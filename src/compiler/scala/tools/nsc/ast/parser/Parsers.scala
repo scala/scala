@@ -1765,6 +1765,9 @@ self =>
      */
     def generator(eqOK: Boolean, allowNestedIf: Boolean = true): List[Tree] = {
       val start  = in.offset
+      val hasImplicit = in.token == IMPLICIT
+      if (hasImplicit)
+        in.nextToken()
       val hasVal = in.token == VAL
       if (hasVal)
         in.nextToken()
@@ -1793,7 +1796,7 @@ self =>
       // why max? IDE stress tests have shown that lastOffset could be less than start,
       // I guess this happens if instead if a for-expression we sit on a closing paren.
       val genPos = r2p(start, point, in.lastOffset max start)
-      gen.mkGenerator(genPos, pat, hasEq, rhs) :: tail
+      gen.mkGenerator(genPos, pat, hasEq, hasImplicit, rhs) :: tail
     }
 
     def makeFilter(start: Offset, tree: Tree) = gen.Filter(tree).setPos(r2p(start, tree.pos.point, tree.pos.end))

@@ -594,9 +594,9 @@ trait ReificationSupport { self: SymbolTable =>
     object SyntacticValFrom extends SyntacticValFromExtractor {
       def apply(pat: Tree, rhs: Tree): Tree = gen.ValFrom(pat, gen.mkCheckIfRefutable(pat, rhs))
       def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
-        case gen.ValFrom(pat, UnCheckIfRefutable(pat1, rhs1)) if pat.equalsStructure(pat1) =>
+        case gen.ValFrom(_, pat, UnCheckIfRefutable(pat1, rhs1)) if pat.equalsStructure(pat1) =>
           Some((pat, rhs1))
-        case gen.ValFrom(pat, rhs) =>
+        case gen.ValFrom(_, pat, rhs) =>
           Some((pat, rhs))
         case _ => None
       }
@@ -604,7 +604,10 @@ trait ReificationSupport { self: SymbolTable =>
 
     object SyntacticValEq extends SyntacticValEqExtractor {
       def apply(pat: Tree, rhs: Tree): Tree         = gen.ValEq(pat, rhs)
-      def unapply(tree: Tree): Option[(Tree, Tree)] = gen.ValEq.unapply(tree)
+      def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
+        case gen.ValEq(_, pat, rhs) => Some((pat, rhs))
+        case _ => None
+      }
     }
 
     object SyntacticFilter extends SyntacticFilterExtractor {
