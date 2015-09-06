@@ -40,17 +40,25 @@ trait UnCurry {
           apply(MethodType(h.cloneSymbol.resetFlag(IMPLICIT) :: t, restpe))
         case NullaryMethodType(restpe) =>
           apply(MethodType(List(), restpe))
-        case TypeRef(pre, ByNameParamClass, arg :: Nil) =>
-          apply(functionType(List(), arg))
-        case TypeRef(pre, RepeatedParamClass, arg :: Nil) =>
-          apply(seqType(arg))
-        case TypeRef(pre, JavaRepeatedParamClass, arg :: Nil) =>
-          apply(arrayType(
-            if (isUnboundedGeneric(arg)) ObjectTpe else arg))
+        case DesugaredParameterType(desugaredTpe) =>
+          apply(desugaredTpe)
         case _ =>
           expandAlias(mapOver(tp))
       }
     }
+  }
+
+  object DesugaredParameterType {
+    def unapply(tpe: Type): Option[Type] = tpe match {
+      case TypeRef(pre, ByNameParamClass, arg :: Nil) =>
+        Some(functionType(List(), arg))
+      case TypeRef(pre, RepeatedParamClass, arg :: Nil) =>
+        Some(seqType(arg))
+      case TypeRef(pre, JavaRepeatedParamClass, arg :: Nil) =>
+        Some(arrayType(if (isUnboundedGeneric(arg)) ObjectTpe else arg))
+      case _ =>
+        None
+      }
   }
 
   private val uncurryType = new TypeMap {
