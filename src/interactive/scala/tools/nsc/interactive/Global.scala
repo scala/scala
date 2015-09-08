@@ -19,6 +19,7 @@ import scala.annotation.{ elidable, tailrec }
 import scala.language.implicitConversions
 import scala.tools.nsc.typechecker.Typers
 import scala.util.control.Breaks._
+import scala.reflect.internal.Chars.isIdentifierStart
 
 /**
  * This trait allows the IDE to have an instance of the PC that
@@ -1165,7 +1166,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       results filter { (member: Member) =>
         val symbol = member.sym
         def isStable = member.tpe.isStable || member.sym.isStable || member.sym.getterIn(member.sym.owner).isStable
-        member.accessible && !symbol.isConstructor && (name.isEmpty || matcher(member.sym.name) && (symbol.name.isTermName == name.isTermName || name.isTypeName && isStable))
+        def isJunk = symbol.name.isEmpty || !isIdentifierStart(member.sym.name.charAt(0)) // e.g. <byname>
+        !isJunk && member.accessible && !symbol.isConstructor && (name.isEmpty || matcher(member.sym.name) && (symbol.name.isTermName == name.isTermName || name.isTypeName && isStable))
       }
     }
   }
