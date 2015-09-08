@@ -705,9 +705,9 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         //  - a method name+type
         //
         // execution [3]
-        //  - resolve the CSP, yielding the boostrap method handle, the static args and the name+type
+        //  - resolve the CSP, yielding the bootstrap method handle, the static args and the name+type
         //    - resolution entails accessibility checking [4]
-        //  - execute the `invoke` method of the boostrap method handle (which is signature polymorphic, check its javadoc)
+        //  - execute the `invoke` method of the bootstrap method handle (which is signature polymorphic, check its javadoc)
         //    - the descriptor for the call is made up from the actual arguments on the stack:
         //      - the first parameters are "MethodHandles.Lookup, String, MethodType", then the types of the constant arguments,
         //      - the return type is CallSite

@@ -1418,7 +1418,7 @@ trait Trees extends api.Trees {
                            transformTypeDefs(tparams), transform(rhs))
         }
       case LabelDef(name, params, rhs) =>
-        treeCopy.LabelDef(tree, name, transformIdents(params), transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LamdaLifter.proxy'
+        treeCopy.LabelDef(tree, name, transformIdents(params), transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LambdaLifter.proxy'
       case PackageDef(pid, stats) =>
         treeCopy.PackageDef(
           tree, transform(pid).asInstanceOf[RefTree],

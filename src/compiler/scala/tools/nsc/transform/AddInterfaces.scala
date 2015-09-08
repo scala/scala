@@ -111,7 +111,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
     impl setInfo new LazyImplClassType(iface)
   }
 
-  /** Return the implementation class of a trait; create a new one of one does not yet exist */
+  /** Return the implementation class of a trait; create a new one if one does not yet exist */
   def implClass(iface: Symbol): Symbol = {
     iface.info
 

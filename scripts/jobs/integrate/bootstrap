@@ -33,7 +33,7 @@
 #    - Set <MODULE>_VER to override the default, e.g. XML_VER="1.0.4".
 #    - The git revision is set to <MODULE>_REF="v$<MODULE>_VER". Make sure the tag exists (you can't override <MODULE>_REF).
 #
-#  - Otherwise (moduleVersioning has some other value): in this mode we use nightly version nubmers for modules.
+#  - Otherwise (moduleVersioning has some other value): in this mode we use nightly version numbers for modules.
 #    - By default the script sets all <MODULE>_REF to "HEAD", override to build a specific revision.
 #    - The <MODULE>_VER is set to a nightly version, for example "1.0.3-7-g14888a2-nightly" (you can't override <MODULE>_VER)
 
@@ -348,7 +348,7 @@ scalaVerToBinary() {
   #  - the suffix starts with "-bin": 2.12.0-bin-M1
   #  - the patch version is > 0     : 2.12.1-M1, 1.12.3-RC2, 2.12.1-sha-nightly, 2.12.2-SNAPSHOT
   #
-  # Othwersise, the binary version is the full version: 2.12.0-M1, 2.12.0-RC2, 2.12.0-sha-nightly, 2.12.0-SNAPSHOT
+  # Otherwise, the binary version is the full version: 2.12.0-M1, 2.12.0-RC2, 2.12.0-sha-nightly, 2.12.0-SNAPSHOT
   #
   # Adapted from sbt: https://github.com/sbt/sbt/blob/0.13.8/util/cross/src/main/input_sources/CrossVersionUtil.scala#L39
   #
@@ -564,7 +564,7 @@ bootstrap() {
 
   echo "### Bootstrapping Scala using locker"
 
-  # # TODO: close all open staging repos so that we can be reaonably sure the only open one we see after publishing below is ours
+  # # TODO: close all open staging repos so that we can be reasonably sure the only open one we see after publishing below is ours
   # # the ant call will create a new one
   #
   # Rebuild Scala with these modules so that all binary versions are consistent.
