@@ -77,14 +77,23 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion with ScalaCo
           val tabAfterCommonPrefixCompletion = lastCommonPrefixCompletion.contains(buf.substring(0, cursor)) && matching.exists(_.symNameDropLocal == r.name)
           val doubleTab = tabCount > 0 && matching.forall(_.symNameDropLocal == r.name)
           if (tabAfterCommonPrefixCompletion || doubleTab) defStringCandidates(matching, r.name)
+          else if (matching.isEmpty) {
+            // Lenient matching based on camel case and on eliding JavaBean "get" / "is" boilerplate
+            val camelMatches: List[Member] = r.matchingResults(CompletionResult.camelMatch(_)).filterNot(isInterpreterWrapperMember)
+            val memberCompletions = camelMatches.map(_.symNameDropLocal.decoded).distinct.sorted
+            def allowCompletion = (
+                 (memberCompletions.size == 1)
+              || CompletionResult.camelMatch(r.name)(r.name.newName(StringOps.longestCommonPrefix(memberCompletions)))
+            )
+            if (memberCompletions.isEmpty) Completion.NoCandidates
+            else if (allowCompletion) Candidates(cursor + r.positionDelta, memberCompletions)
+            else Candidates(cursor, "" :: memberCompletions)
+          } else if (matching.nonEmpty && matching.forall(_.symNameDropLocal == r.name))
+            Completion.NoCandidates // don't offer completion if the only option has been fully typed already
           else {
-            if (matching.nonEmpty && matching.forall(_.symNameDropLocal == r.name))
-              Completion.NoCandidates // don't offer completion if the only option has been fully typed already
-            else {
-              // regular completion
-              val memberCompletions: List[String] = matching.map(_.symNameDropLocal.decoded).distinct.sorted
-              Candidates(cursor + r.positionDelta, memberCompletions)
-            }
+            // regular completion
+            val memberCompletions: List[String] = matching.map(_.symNameDropLocal.decoded).distinct.sorted
+            Candidates(cursor + r.positionDelta, memberCompletions)
           }
       }
       lastCommonPrefixCompletion =

@@ -52,6 +52,17 @@ class CompletionTest {
   }
 
   @Test
+  def camelCompletions(): Unit = {
+    val intp = newIMain()
+    val completer = new PresentationCompilerCompleter(intp)
+    checkExact(completer, "object O { def theCatSatOnTheMat = 1 }; import O._; tCSO")("theCatSatOnTheMat")
+    checkExact(completer, "object O { def getBlerganator = 1 }; import O._; blerga")("getBlerganator")
+    checkExact(completer, "object O { def xxxxYyyyyZzzz = 1; def xxxxYyZeee = 1 }; import O._; xYZ")("", "xxxxYyyyyZzzz", "xxxxYyZeee")
+    checkExact(completer, "object O { def xxxxYyyyyZzzz = 1; def xxxxYyyyyZeee = 1 }; import O._; xYZ")("xxxxYyyyyZzzz", "xxxxYyyyyZeee")
+    checkExact(completer, "object O { class AbstractMetaFactoryFactory }; new O.AMFF")("AbstractMetaFactoryFactory")
+  }
+
+  @Test
   def previousLineCompletions(): Unit = {
     val intp = newIMain()
     intp.interpret("class C { val x_y_z = 42 }")

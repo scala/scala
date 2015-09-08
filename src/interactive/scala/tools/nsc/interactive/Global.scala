@@ -1159,8 +1159,14 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     /** The (possibly partial) detected that precedes the cursor */
     def name: Name
     def positionDelta: Int
-    def matchingResults(matcher: (M, Name) => Boolean = CompletionResult.prefixMatcher): List[M] = {
-      results filter (r => matcher(r, name))
+    def matchingResults(nameMatcher: (Name) => Name => Boolean = entered => candidate => candidate.startsWith(entered)): List[M] = {
+      val enteredName = if (name == nme.ERROR) nme.EMPTY else name
+      val matcher = nameMatcher(enteredName)
+      results filter { (member: Member) =>
+        val symbol = member.sym
+        def isStable = member.tpe.isStable || member.sym.isStable || member.sym.getterIn(member.sym.owner).isStable
+        member.accessible && !symbol.isConstructor && (name.isEmpty || matcher(member.sym.name) && (symbol.name.isTermName == name.isTermName || name.isTypeName && isStable))
+      }
     }
   }
   object CompletionResult {
@@ -1176,12 +1182,24 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       override def positionDelta = 0
 
     }
-    val prefixMatcher = (member: Member, name: Name) => {
-      val symbol = member.sym
-      val prefix = if (name == nme.ERROR) nme.EMPTY else name
-      def isStable = member.tpe.isStable || member.sym.isStable || member.sym.getterIn(member.sym.owner).isStable
-      val nameMatches = !symbol.isConstructor && (prefix.isEmpty || symbol.name.startsWith(prefix) && (symbol.name.isTermName == prefix.isTermName || prefix.isTypeName && isStable))
-      nameMatches && member.accessible
+    private val CamelRegex = "([A-Z][^A-Z]*)".r
+    private def camelComponents(s: String): List[String] = {
+      CamelRegex.findAllIn("X" + s).toList match { case head :: tail => head.drop(1) :: tail; case Nil => Nil }
+    }
+    def camelMatch(entered: Name): Name => Boolean = {
+      val chunks: List[String] = camelComponents(entered.toString)
+
+      (candidate: Name) => {
+        val candidateChunks = camelComponents(candidate.toString)
+        val exactCamelMatch =
+          (chunks corresponds candidateChunks.take(chunks.length))((x, y) => y.startsWith(x))
+        def beanCamelMatch = candidateChunks match {
+          case ("get" | "is") :: tail =>
+            (chunks corresponds tail.take(chunks.length))((x, y) => y.toLowerCase.startsWith(x.toLowerCase))
+          case _ => false
+        }
+        exactCamelMatch || beanCamelMatch
+      }
     }
   }
 
