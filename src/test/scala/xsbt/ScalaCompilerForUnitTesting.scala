@@ -11,7 +11,7 @@ import xsbti.api.ClassLike
 import xsbti.api.Definition
 import xsbti.api.Def
 import xsbt.api.SameAPI
-import sbt.ConsoleLogger
+import sbt.internal.util.ConsoleLogger
 import xsbti.DependencyContext._
 
 import ScalaCompilerForUnitTesting.ExtractedSourceDependencies

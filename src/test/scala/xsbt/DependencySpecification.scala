@@ -4,15 +4,13 @@ import org.junit.runner.RunWith
 import xsbti.api.ClassLike
 import xsbti.api.Def
 import xsbt.api.SameAPI
-import org.specs2.mutable.Specification
-import org.specs2.runner.JUnitRunner
+import sbt.internal.util.UnitSpec
 
 import ScalaCompilerForUnitTesting.ExtractedSourceDependencies
 
-@RunWith(classOf[JUnitRunner])
-class DependencySpecification extends Specification {
+class DependencySpecification extends UnitSpec {
 
-  "Extracted source dependencies from public members" in {
+  "Dependency phase" should "extract source dependencies from public members" in {
     val sourceDependencies = extractSourceDependenciesPublic
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
@@ -31,9 +29,10 @@ class DependencySpecification extends Specification {
     memberRef('H) === Set('B, 'E, 'G)
     // aliases and applied type constructors are expanded so we have inheritance dependency on B
     inheritance('H) === Set('B, 'E)
+    ()
   }
 
-  "Extracted source dependencies from private members" in {
+  it should "extract source dependencies from private members" in {
     val sourceDependencies = extractSourceDependenciesPrivate
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
@@ -45,9 +44,10 @@ class DependencySpecification extends Specification {
     inheritance('C) === Set('A)
     memberRef('D) === Set('B)
     inheritance('D) === Set('B)
+    ()
   }
 
-  "Extracted source dependencies with trait as first parent" in {
+  it should "extract source dependencies with trait as first parent" in {
     val sourceDependencies = extractSourceDependenciesTraitAsFirstPatent
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
@@ -63,9 +63,10 @@ class DependencySpecification extends Specification {
     // same as above but indirect (C -> B -> A), note that only A is visible here
     memberRef('D) === Set('A, 'C)
     inheritance('D) === Set('A, 'C)
+    ()
   }
 
-  "Extracted source dependencies from macro arguments" in {
+  it should "extract source dependencies from macro arguments" in {
     val sourceDependencies = extractSourceDependenciesFromMacroArgument
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
@@ -76,6 +77,7 @@ class DependencySpecification extends Specification {
     inheritance('B) === Set.empty
     memberRef('C) === Set.empty
     inheritance('C) === Set.empty
+    ()
   }
 
   private def extractSourceDependenciesPublic: ExtractedSourceDependencies = {
@@ -143,4 +145,5 @@ class DependencySpecification extends Specification {
       compilerForTesting.extractDependenciesFromSrcs(List(Map('B -> srcB, 'C -> srcC), Map('A -> srcA)))
     sourceDependencies
   }
+
 }

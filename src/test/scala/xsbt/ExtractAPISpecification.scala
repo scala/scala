@@ -4,17 +4,13 @@ import org.junit.runner.RunWith
 import xsbti.api.ClassLike
 import xsbti.api.Def
 import xsbt.api.SameAPI
-import org.specs2.mutable.Specification
-import org.specs2.runner.JUnitRunner
+import sbt.internal.util.UnitSpec
 
-@RunWith(classOf[JUnitRunner])
-class ExtractAPISpecification extends Specification {
+class ExtractAPISpecification extends UnitSpec {
 
-  "Existential types in method signatures" should {
-    "have stable names" in { stableExistentialNames }
-  }
+  "Existential types in method signatures" should "have stable names" in stableExistentialNames()
 
-  def stableExistentialNames: Boolean = {
+  def stableExistentialNames() = {
     def compileAndGetFooMethodApi(src: String): Def = {
       val compilerForTesting = new ScalaCompilerForUnitTesting
       val sourceApi = compilerForTesting.extractApiFromSrc(src)
@@ -37,6 +33,6 @@ class ExtractAPISpecification extends Specification {
 				|
 				}""".stripMargin
     val fooMethodApi2 = compileAndGetFooMethodApi(src2)
-    SameAPI.apply(fooMethodApi1, fooMethodApi2)
+    assert(SameAPI.apply(fooMethodApi1, fooMethodApi2), "APIs are not the same.")
   }
 }
