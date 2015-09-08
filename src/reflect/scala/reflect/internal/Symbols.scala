@@ -884,10 +884,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // string.  So this needs attention.  For now the fact that migration is
     // private[scala] ought to provide enough protection.
     def hasMigrationAnnotation = hasAnnotation(MigrationAnnotationClass)
-    def migrationMessage    = getAnnotation(MigrationAnnotationClass) flatMap { _.stringArg(0) }
-    def migrationVersion    = getAnnotation(MigrationAnnotationClass) flatMap { _.stringArg(1) }
-    def elisionLevel        = getAnnotation(ElidableMethodClass) flatMap { _.intArg(0) }
-    def implicitNotFoundMsg = getAnnotation(ImplicitNotFoundClass) flatMap { _.stringArg(0) }
+    def migrationMessage     = getAnnotation(MigrationAnnotationClass) flatMap { _.stringArg(0) }
+    def migrationVersion     = getAnnotation(MigrationAnnotationClass) flatMap { _.stringArg(1) }
+    def elisionLevel         = getAnnotation(ElidableMethodClass) flatMap { _.intArg(0) }
+    def implicitNotFoundMsg  = getAnnotation(ImplicitNotFoundClass) flatMap { _.stringArg(0) }
+    def implicitAmbiguousMsg = getAnnotation(ImplicitAmbiguousClass) flatMap { _.stringArg(0) }
 
     def isCompileTimeOnly       = hasAnnotation(CompileTimeOnlyAttr)
     def compileTimeOnlyMessage  = getAnnotation(CompileTimeOnlyAttr) flatMap (_ stringArg 0)
