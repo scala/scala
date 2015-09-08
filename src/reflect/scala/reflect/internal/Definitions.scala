@@ -233,6 +233,8 @@ trait Definitions extends api.StandardDefinitions {
       || tp =:= AnyRefTpe
     )
 
+    def isUnitType(tp: Type) = tp.typeSymbol == UnitClass && tp.annotations.isEmpty
+
     def hasMultipleNonImplicitParamLists(member: Symbol): Boolean = hasMultipleNonImplicitParamLists(member.info)
     def hasMultipleNonImplicitParamLists(info: Type): Boolean = info match {
       case PolyType(_, restpe)                                   => hasMultipleNonImplicitParamLists(restpe)

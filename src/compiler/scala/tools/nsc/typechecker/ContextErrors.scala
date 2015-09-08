@@ -1105,7 +1105,7 @@ trait ContextErrors {
       def GetterDefinedTwiceError(getter: Symbol) =
         issueSymbolTypeError(getter, getter+" is defined twice")
 
-      def ValOrValWithSetterSuffixError(tree: Tree) =
+      def ValOrVarWithSetterSuffixError(tree: Tree) =
         issueNormalTypeError(tree, "Names of vals or vars may not end in `_='")
 
       def PrivateThisCaseClassParameterError(tree: Tree) =
