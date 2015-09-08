@@ -1188,20 +1188,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       // set NoType so it will be ignored.
       val cdef          = ClassDef(module.moduleClass, impl) setType NoType
 
-      // Create the module var unless the immediate owner is a class and
-      // the module var already exists there. See SI-5012, SI-6712.
-      def findOrCreateModuleVar() = {
-        val vsym = (
-          if (site.isTerm) NoSymbol
-          else site.info decl nme.moduleVarName(moduleName)
-        )
-        vsym orElse (site newModuleVarSymbol module)
-      }
       def newInnerObject() = {
-        // Create the module var unless it is already in the module owner's scope.
-        // The lookup is on module.enclClass and not module.owner lest there be a
-        // nullary method between us and the class; see SI-5012.
-        val moduleVar = findOrCreateModuleVar()
+        val moduleVar = site newModuleVarSymbol module
         val rhs       = gen.newModule(module, moduleVar.tpe)
         val body      = if (site.isTrait) rhs else gen.mkAssignAndReturn(moduleVar, rhs)
         val accessor  = DefDef(module, body.changeOwner(moduleVar -> module))
@@ -1217,6 +1205,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       }
       val newTrees = cdef :: (
         if (module.isStatic)
+          // trait T { def f: Object }; object O extends T { object f }. Need to generate method f in O.
           if (module.isOverridingSymbol) matchingInnerObject() else Nil
         else
           newInnerObject()
