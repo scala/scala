@@ -49,7 +49,7 @@ package scala
  * It's important to note that user-defined value classes are limited, and in some circumstances,
  * still must allocate a value class instance at runtime. These limitations and circumstances are
  * explained in greater detail in the [[http://docs.scala-lang.org/overviews/core/value-classes.html Value Classes Guide]]
- * as well as in [[http://docs.scala-lang.org/sips/pending/value-classes.html SIP-15: Value Classes]],
+ * as well as in [[http://docs.scala-lang.org/sips/completed/value-classes.html SIP-15: Value Classes]],
  * the Scala Improvement Proposal.
  */
 abstract class AnyVal extends Any {

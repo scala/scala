@@ -4,7 +4,7 @@ object Unchecked {
 
       // t is a fresh pattern type variable, despite our attempts to
       // backtick our way to the enclosing `t`. Under this interpretation,
-      // the absense of an unchecked warning is expected.
+      // the absence of an unchecked warning is expected.
       (null: Any) match {
         case _: Some[t] => // no warn
       }

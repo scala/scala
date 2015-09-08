@@ -2124,7 +2124,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** The package class containing this symbol, or NoSymbol if there
      *  is not one.
      *  TODO: formulate as enclosingSuchThat, after making sure
-     *        we can start with current symbol rather than onwner.
+     *        we can start with current symbol rather than owner.
      *  TODO: Also harmonize with enclClass, enclMethod etc.
      */
     def enclosingPackageClass: Symbol = {

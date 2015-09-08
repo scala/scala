@@ -237,7 +237,7 @@ trait Kinds {
    *
    * Proper types are represented using ProperTypeKind.
    *
-   * Type constructors are reprented using TypeConKind.
+   * Type constructors are represented using TypeConKind.
    */
   abstract class Kind {
     import Kind.StringState

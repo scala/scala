@@ -3294,7 +3294,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.12.3
           //
           // One can think of these methods as being infinitely overloaded. We create
-          // a ficticious new cloned method symbol for each call site that takes on a signature
+          // a fictitious new cloned method symbol for each call site that takes on a signature
           // governed by a) the argument types and b) the expected type
           val args1 = typedArgs(args, forArgMode(fun, mode))
           val pts = args1.map(_.tpe.deconst)
@@ -4095,7 +4095,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         def resultingTypeTree(tpe: Type) = {
           // we need symbol-ful originals for reification
-          // hence we go the extra mile to hand-craft tis guy
+          // hence we go the extra mile to hand-craft this guy
           val original = arg1 match {
             case tt @ TypeTree() if tt.original != null => Annotated(ann, tt.original)
             // this clause is needed to correctly compile stuff like "new C @D" or "@(inline @getter)"
@@ -4247,7 +4247,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // in the special (though common) case where the types are equal, it pays to pack before comparing
         // especially virtpatmat needs more aggressive unification of skolemized types
         // this breaks src/library/scala/collection/immutable/TrieIterator.scala
-        // annotated types need to be lubbed regardless (at least, continations break if you by pass them like this)
+        // annotated types need to be lubbed regardless (at least, continuations break if you bypass them like this)
         def samePackedTypes = (
              !isPastTyper
           && thenp1.tpe.annotations.isEmpty

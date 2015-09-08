@@ -1126,7 +1126,7 @@ object BTypes {
    *                               The map is indexed by the string s"$name$descriptor" (to
    *                               disambiguate overloads).
    *
-   * @param warning                Contains an warning message if an error occured when building this
+   * @param warning                Contains an warning message if an error occurred when building this
    *                               InlineInfo, for example if some classfile could not be found on
    *                               the classpath. This warning can be reported later by the inliner.
    */

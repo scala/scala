@@ -179,4 +179,6 @@ class ListSet[A] extends AbstractSet[A]
 
     override def tail: ListSet[A] = self
   }
+  
+  override def toSet[B >: A]: Set[B] = this.asInstanceOf[ListSet[B]]
 }

@@ -1,15 +1,31 @@
 package scala.tools
 package reflect
 
+import scala.reflect.internal.util.ScalaClassLoader
 import scala.tools.nsc.Global
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.Settings
+import scala.tools.nsc.typechecker.Analyzer
 
 /** A version of Global that uses reflection to get class
  *  infos, instead of reading class or source files.
  */
 class ReflectGlobal(currentSettings: Settings, reporter: Reporter, override val rootClassLoader: ClassLoader)
   extends Global(currentSettings, reporter) with scala.tools.reflect.ReflectSetup with scala.reflect.runtime.SymbolTable {
+
+  override lazy val analyzer = new {
+    val global: ReflectGlobal.this.type = ReflectGlobal.this
+  } with Analyzer {
+    /** Obtains the classLoader used for runtime macro expansion.
+     *
+     *  Macro expansion can use everything available in [[global.classPath]] or [[rootClassLoader]].
+     *  The [[rootClassLoader]] is used to obtain runtime defined macros.
+     */
+    override protected def findMacroClassLoader(): ClassLoader = {
+      val classpath = global.classPath.asURLs
+      ScalaClassLoader.fromURLs(classpath, rootClassLoader)
+    }
+  }
 
   override def transformedType(sym: Symbol) =
     postErasure.transformInfo(sym,

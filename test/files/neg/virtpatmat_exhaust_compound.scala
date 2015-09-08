@@ -10,7 +10,7 @@ case object O3 extends Base2
 case object O4 extends Base with Base2
 
 object Test {
-  val a /*: Product with Serialiable with Base */ = if (true) O1 else O2
+  val a /*: Product with Serializable with Base */ = if (true) O1 else O2
   a match {
     case null =>
   }

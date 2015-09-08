@@ -145,7 +145,7 @@ class DotProcess(settings: doc.Settings) {
         // we shouldn't just sit there for 50s not reporting anything, no?
         settings.printMsg("Graphviz dot encountered an error when generating the diagram for:")
         settings.printMsg(templateName)
-        settings.printMsg("These are usually spurious errors, but if you notice a persistant error on")
+        settings.printMsg("These are usually spurious errors, but if you notice a persistent error on")
         settings.printMsg("a diagram, please use the " + settings.docDiagramsDebug.name + " flag and report a bug with the output.")
       }
     }

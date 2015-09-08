@@ -137,7 +137,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
    *       and thus may only be accessed from value or method definitions owned by the current class
    *       (ie there's no point drilling down into nested classes).
    *
-   *   (d) regarding candidates in (b), they are accesible from all places listed in (c) and in addition
+   *   (d) regarding candidates in (b), they are accessible from all places listed in (c) and in addition
    *       from nested classes (nested at any number of levels).
    *
    * In all cases, we're done with traversing as soon as all candidates have been ruled out.
