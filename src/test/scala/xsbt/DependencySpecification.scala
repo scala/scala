@@ -14,56 +14,53 @@ class DependencySpecification extends UnitSpec {
     val sourceDependencies = extractSourceDependenciesPublic
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
-    memberRef('A) === Set.empty
-    inheritance('A) === Set.empty
-    memberRef('B) === Set('A, 'D)
-    inheritance('B) === Set('D)
-    memberRef('C) === Set('A)
-    inheritance('C) === Set.empty
-    memberRef('D) === Set.empty
-    inheritance('D) === Set.empty
-    memberRef('E) === Set.empty
-    inheritance('E) === Set.empty
-    memberRef('F) === Set('A, 'B, 'C, 'D, 'E)
-    inheritance('F) === Set('A, 'E)
-    memberRef('H) === Set('B, 'E, 'G)
+    assert(memberRef('A) === Set.empty)
+    assert(inheritance('A) === Set.empty)
+    assert(memberRef('B) === Set('A, 'D))
+    assert(inheritance('B) === Set('D))
+    assert(memberRef('C) === Set('A))
+    assert(inheritance('C) === Set.empty)
+    assert(memberRef('D) === Set.empty)
+    assert(inheritance('D) === Set.empty)
+    assert(memberRef('E) === Set.empty)
+    assert(inheritance('E) === Set.empty)
+    assert(memberRef('F) === Set('A, 'B, 'C, 'D, 'E))
+    assert(inheritance('F) === Set('A, 'E))
+    assert(memberRef('H) === Set('B, 'E, 'G))
     // aliases and applied type constructors are expanded so we have inheritance dependency on B
-    inheritance('H) === Set('B, 'E)
-    ()
+    assert(inheritance('H) === Set('B, 'E))
   }
 
   it should "extract source dependencies from private members" in {
     val sourceDependencies = extractSourceDependenciesPrivate
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
-    memberRef('A) === Set.empty
-    inheritance('A) === Set.empty
-    memberRef('B) === Set.empty
-    inheritance('B) === Set.empty
-    memberRef('C) === Set('A)
-    inheritance('C) === Set('A)
-    memberRef('D) === Set('B)
-    inheritance('D) === Set('B)
-    ()
+    assert(memberRef('A) === Set.empty)
+    assert(inheritance('A) === Set.empty)
+    assert(memberRef('B) === Set.empty)
+    assert(inheritance('B) === Set.empty)
+    assert(memberRef('C) === Set('A))
+    assert(inheritance('C) === Set('A))
+    assert(memberRef('D) === Set('B))
+    assert(inheritance('D) === Set('B))
   }
 
   it should "extract source dependencies with trait as first parent" in {
     val sourceDependencies = extractSourceDependenciesTraitAsFirstPatent
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
-    memberRef('A) === Set.empty
-    inheritance('A) === Set.empty
-    memberRef('B) === Set('A)
-    inheritance('B) === Set('A)
+    assert(memberRef('A) === Set.empty)
+    assert(inheritance('A) === Set.empty)
+    assert(memberRef('B) === Set('A))
+    assert(inheritance('B) === Set('A))
     // verify that memberRef captures the oddity described in documentation of `Relations.inheritance`
     // we are mainly interested whether dependency on A is captured in `memberRef` relation so
     // the invariant that says that memberRef is superset of inheritance relation is preserved
-    memberRef('C) === Set('A, 'B)
-    inheritance('C) === Set('A, 'B)
+    assert(memberRef('C) === Set('A, 'B))
+    assert(inheritance('C) === Set('A, 'B))
     // same as above but indirect (C -> B -> A), note that only A is visible here
-    memberRef('D) === Set('A, 'C)
-    inheritance('D) === Set('A, 'C)
-    ()
+    assert(memberRef('D) === Set('A, 'C))
+    assert(inheritance('D) === Set('A, 'C))
   }
 
   it should "extract source dependencies from macro arguments" in {
@@ -71,13 +68,12 @@ class DependencySpecification extends UnitSpec {
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
 
-    memberRef('A) === Set('B, 'C)
-    inheritance('A) === Set.empty
-    memberRef('B) === Set.empty
-    inheritance('B) === Set.empty
-    memberRef('C) === Set.empty
-    inheritance('C) === Set.empty
-    ()
+    assert(memberRef('A) === Set('B, 'C))
+    assert(inheritance('A) === Set.empty)
+    assert(memberRef('B) === Set.empty)
+    assert(inheritance('B) === Set.empty)
+    assert(memberRef('C) === Set.empty)
+    assert(inheritance('C) === Set.empty)
   }
 
   private def extractSourceDependenciesPublic: ExtractedSourceDependencies = {

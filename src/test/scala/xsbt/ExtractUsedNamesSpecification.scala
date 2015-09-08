@@ -17,8 +17,8 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(src)
     val expectedNames = standardNames ++ Set("a", "A", "A2", "b")
-    usedNames === expectedNames
-    ()
+    assert(usedNames === expectedNames)
+
   }
 
   // test covers https://github.com/gkossakowski/sbt/issues/6
@@ -39,8 +39,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(srcA, srcB)
     val expectedNames = standardNames ++ Set("a", "A", "B", "C", "D", "b", "X", "BB")
-    usedNames === expectedNames
-    ()
+    assert(usedNames === expectedNames)
   }
 
   // test for https://github.com/gkossakowski/sbt/issues/5
@@ -54,8 +53,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(srcA, srcB)
     val expectedNames = standardNames ++ Set("A", "a", "B", "=")
-    usedNames === expectedNames
-    ()
+    assert(usedNames === expectedNames)
   }
 
   // test for https://github.com/gkossakowski/sbt/issues/3
@@ -64,8 +62,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(src)
     val expectedNames = standardNames ++ Set("A", "foo", "Int")
-    usedNames === expectedNames
-    ()
+    assert(usedNames === expectedNames)
   }
 
   // pending test for https://issues.scala-lang.org/browse/SI-7173
@@ -74,8 +71,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(src)
     val expectedNames = standardNames ++ Set("A", "foo", "Int")
-    usedNames === expectedNames
-    ()
+    assert(usedNames === expectedNames)
   }
 
   // test for https://github.com/gkossakowski/sbt/issues/4
@@ -88,8 +84,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(srcA, srcB)
     val expectedNames = standardNames ++ Set("B", "A", "a", "Int", "selectDynamic", "bla")
-    usedNames === expectedNames
-    ()
+    assert(usedNames === expectedNames)
   }
 
   /**
