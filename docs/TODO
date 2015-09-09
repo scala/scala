@@ -53,7 +53,7 @@
 
   The process is about the same for symbols in PolyTypes. The main
   difference is that type parameters may be referenced and thus we
-  need something like De Bruijn indicies to represent these
+  need something like De Bruijn indices to represent these
   references.
 
 

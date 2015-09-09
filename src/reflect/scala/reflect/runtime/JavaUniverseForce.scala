@@ -445,7 +445,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ScalaValueClassesNoUnit
     definitions.ScalaValueClasses
 
-
+    uncurry.DesugaredParameterType
     erasure.GenericArray
     erasure.scalaErasure
     erasure.specialScalaErasure

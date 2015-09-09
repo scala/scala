@@ -133,7 +133,6 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     }
     catch AbstractOrMissingHandler()
   }
-  private def tquoted(s: String) = "\"\"\"" + s + "\"\"\""
   private val logScope = scala.sys.props contains "scala.repl.scope"
   private def scopelog(msg: String) = if (logScope) Console.err.println(msg)
 
@@ -905,7 +904,10 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       def path = originalPath("$intp")
       def envLines = {
         if (!isReplPower) Nil // power mode only for now
-        else List("def %s = %s".format("$line", tquoted(originalLine)), "def %s = Nil".format("$trees"))
+        else {
+          val escapedLine = Constant(originalLine).escapedStringValue
+          List(s"""def $$line = $escapedLine """, """def $trees = _root_.scala.Nil""")
+        }
       }
       def preamble = s"""
         |$headerPreamble

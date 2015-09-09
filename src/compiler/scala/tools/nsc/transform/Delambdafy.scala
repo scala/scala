@@ -281,7 +281,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         val parents = addSerializable(abstractFunctionErasedType)
         val funOwner = originalFunction.symbol.owner
 
-        // TODO harmonize the naming of delamdafy anon-fun classes with those spun up by Uncurry
+        // TODO harmonize the naming of delambdafy anon-fun classes with those spun up by Uncurry
         //      - make `anonClass.isAnonymousClass` true.
         //      - use `newAnonymousClassSymbol` or push the required variations into a similar factory method
         //      - reinstate the assertion in `Erasure.resolveAnonymousBridgeClash`

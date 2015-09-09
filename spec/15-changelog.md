@@ -31,7 +31,7 @@ formal parameter types. Added section on
 [numeric widening](06-expressions.html#numeric-widening) to support
 weak conformance.
 
-Tightened rules to avoid accidential [overrides](05-classes-and-objects.html#overriding).
+Tightened rules to avoid accidental [overrides](05-classes-and-objects.html#overriding).
 
 Removed class literals.
 
@@ -53,7 +53,7 @@ has been brought in line with. From now on `+=`, has the same precedence as `=`.
 
 #### Wildcards as function parameters
 
-A formal parameter to an anonymous fucntion may now be a
+A formal parameter to an anonymous function may now be a
 [wildcard represented by an underscore](06-expressions.html#placeholder-syntax-for-anonymous-functions).
 
 >      _ => 7   // The function that ignores its argument

@@ -14,7 +14,7 @@ class A {
 
     (null: Any) match { case PrimaryKey => }
 
-    PrimaryKey // was already ambigious in 2.10.3
+    PrimaryKey // was already ambiguous in 2.10.3
   }
 }
 

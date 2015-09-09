@@ -270,7 +270,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    *  // Returns None because the partial function doesn't cover the case.
    *  Some("ftp") collect {case "http" => "HTTP"}
    *
-   *  // Returns None because None is passed to the collect method.
+   *  // Returns None because the option is empty. There is no value to pass to the partial function.
    *  None collect {case value => value}
    *  }}}
    *

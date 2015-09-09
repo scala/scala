@@ -262,7 +262,14 @@ abstract class TreeCheckers extends Analyzer {
         checkedTyped(tree, mode, pt)
     )
     private def checkedTyped(tree: Tree, mode: Mode, pt: Type): Tree = {
-      val typed = wrap(tree)(super.typed(tree, mode, pt))
+      val typed = wrap(tree)(super.typed(tree.clearType(), mode, pt))
+
+      // Vlad: super.typed returns null for package defs, why is that?
+      if (typed eq null)
+        return tree
+
+      if (typed.tpe ne null)
+        assert(!typed.tpe.isErroneous, "Tree has erroneous type: " + typed)
 
       if (tree ne typed)
         treesDiffer(tree, typed)

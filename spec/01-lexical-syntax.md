@@ -450,9 +450,10 @@ multiLineChars  ::=  {[‘"’] [‘"’] charNoDoubleQuote} {‘"’}
 A multi-line string literal is a sequence of characters enclosed in
 triple quotes `""" ... """`. The sequence of characters is
 arbitrary, except that it may contain three or more consecutive quote characters
-only at the very end. In particular, embedded newlines
-are permitted.  Unicode escapes work as everywhere else, but none
-of the [escape sequences](#escape-sequences) are interpreted.
+only at the very end. Characters
+must not necessarily be printable; newlines or other
+control characters are also permitted.  Unicode escapes work as everywhere else, but none
+of the escape sequences [here](#escape-sequences) are interpreted.
 
 > ```scala
 >   """the present string
