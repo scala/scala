@@ -1223,9 +1223,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     def typeCompletions(tree: Tree, qual: Tree, nameStart: Int, name: Name): CompletionResult = {
       val qualPos = qual.pos
       val allTypeMembers = typeMembers(qualPos).toList.flatten
-
       val positionDelta: Int = nameStart - pos.start
-      val subName = name.subName(0, -positionDelta)
+      val subName: Name = name.newName(new String(pos.source.content, nameStart, pos.start - nameStart)).encodedName
       CompletionResult.TypeMembers(positionDelta, qual, tree, allTypeMembers, subName)
     }
     focus1 match {
