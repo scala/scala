@@ -55,6 +55,11 @@ import scala.collection.convert.decorateAsScala._
  *
  * If ever needed, we could introduce a mode where primitive conversions (l2i) are considered as
  * copying operations.
+ *
+ * Note on performance: thee data flow analysis (SourceValue / SourceInterpreter, provided by ASM)
+ * is roughly 2-3x slower than a simple analysis (like BasicValue). The reason is that the merge
+ * function (merging producer sets) is more complex than merging simple basic values.
+ * See also the doc comment in the package object `analysis`.
  */
 class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) {
 

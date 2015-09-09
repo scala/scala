@@ -7,66 +7,12 @@ import java.util
 import scala.annotation.switch
 import scala.tools.asm.{Type, Opcodes}
 import scala.tools.asm.tree.{MethodInsnNode, LdcInsnNode, AbstractInsnNode}
-import scala.tools.asm.tree.analysis.{Frame, Analyzer, Interpreter, Value}
+import scala.tools.asm.tree.analysis._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
 import BytecodeUtils._
 
 /**
- * Some notes on the ASM ananlyzer framework.
- *
- * Value
- *  - Abstract, needs to be implemented for each analysis.
- *  - Represents the desired information about local variables and stack values, for example:
- *    - Is this value known to be null / not null?
- *    - What are the instructions that could potentially have produced this value?
- *
- * Interpreter
- *  - Abstract, needs to be implemented for each analysis. Sometimes one can subclass an existing
- *    interpreter, e.g., SourceInterpreter or BasicInterpreter.
- *  - Multiple abstract methods that receive an instruction and the instruction's input values, and
- *    return a value representing the result of that instruction.
- *    - Note: due to control flow, the interpreter can be invoked multiple times for the same
- *      instruction, until reaching a fixed point.
- *  - Abstract `merge` function that computes the least upper bound of two values. Used by
- *    Frame.merge (see below).
- *
- * Frame
- *  - Can be used directly for many analyses, no subclass required.
- *  - Every frame has an array of values: one for each local variable and for each stack slot.
- *    - A `top` index stores the index of the current stack top
- *    - NOTE: for a size-2 local variable at index i, the local variable at i+1 is set to an empty
- *      value. However, for a size-2 value at index i on the stack, the value at i+1 holds the next
- *      stack value.
- *  - Defines the `execute(instruction)` method.
- *    - executing mutates the state of the frame according to the effect of the instruction
- *      - pop consumed values from the stack
- *      - pass them to the interpreter together with the instruction
- *      - if applicable, push the resulting value on the stack
- *  - Defines the `merge(otherFrame)` method
- *    - called by the analyzer when multiple control flow paths lead to an instruction
- *      - the frame at the branching instruction is merged into the current frame of the
- *        instruction (held by the analyzer)
- *      - mutates the values of the current frame, merges all values using interpreter.merge.
- *
- * Analyzer
- *   - Stores a frame for each instruction
- *   - `merge` function takes an instruction and a frame, merges the existing frame for that instr
- *     (from the frames array) with the new frame passed as argument.
- *     if the frame changed, puts the instruction on the work queue (fixpiont).
- *   - initial frame: initialized for first instr by calling interpreter.new[...]Value
- *     for each slot (locals and params), stored in frames[firstInstr] by calling `merge`
- *   - work queue of instructions (`queue` array, `top` index for next instruction to analyze)
- *   - analyze(method): simulate control flow. while work queue non-empty:
- *     - copy the state of `frames[instr]` into a local frame `current`
- *     - call `current.execute(instr, interpreter)`, mutating the `current` frame
- *     - if it's a branching instruction
- *       - for all potential destination instructions
- *         - merge the destination instruction frame with the `current` frame
- *           (this enqueues the destination instr if its frame changed)
- *       - invoke `newControlFlowEdge` (see below)
- *   - the analyzer also tracks active exception handlers at each instruction
- *   - the empty method `newControlFlowEdge` can be overridden to track control flow if required
- *
+ * See the package object `analysis` for details on the ASM analysis framework.
  *
  * Some notes on nullness analysis.
  *
@@ -219,8 +165,10 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
   override def execute(insn: AbstractInsnNode, interpreter: Interpreter[NullnessValue]): Unit = {
     import Opcodes._
 
-    // get the object id of the object that is known to be not-null after this operation
-    val nullCheckedAliasId: Long = (insn.getOpcode: @switch) match {
+    // get the alias set the object that is known to be not-null after this operation.
+    // alias sets are mutable / mutated, so after super.execute, this set contains the remaining
+    // aliases of the value that becomes not-null.
+    val nullCheckedAliases: AliasSet = (insn.getOpcode: @switch) match {
       case IALOAD |
            LALOAD |
            FALOAD |
@@ -229,7 +177,7 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
            BALOAD |
            CALOAD |
            SALOAD =>
-        aliasId(this.stackTop - 1)
+        aliasesOf(this.stackTop - 1)
 
       case IASTORE |
            FASTORE |
@@ -239,35 +187,36 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
            SASTORE |
            LASTORE |
            DASTORE =>
-        aliasId(this.stackTop - 2)
+        aliasesOf(this.stackTop - 2)
 
       case GETFIELD =>
-        aliasId(this.stackTop)
+        aliasesOf(this.stackTop)
 
       case PUTFIELD =>
-        aliasId(this.stackTop - 1)
+        aliasesOf(this.stackTop - 1)
 
       case INVOKEVIRTUAL |
            INVOKESPECIAL |
            INVOKEINTERFACE =>
         val desc = insn.asInstanceOf[MethodInsnNode].desc
         val numArgs = Type.getArgumentTypes(desc).length
-        aliasId(this.stackTop - numArgs)
+        aliasesOf(this.stackTop - numArgs)
 
       case ARRAYLENGTH |
            MONITORENTER |
            MONITOREXIT =>
-        aliasId(this.stackTop)
+        aliasesOf(this.stackTop)
 
       case _ =>
-        -1
+        null
     }
 
     super.execute(insn, interpreter)
 
-    if (nullCheckedAliasId != -1) {
-      for (i <- valuesWithAliasId(nullCheckedAliasId))
-        this.setValue(i, NotNullValue)
+    if (nullCheckedAliases != null) {
+      val it = nullCheckedAliases.iterator
+      while (it.hasNext)
+        this.setValue(it.next(), NotNullValue)
     }
   }
 }
