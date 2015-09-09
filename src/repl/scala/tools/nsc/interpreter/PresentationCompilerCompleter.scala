@@ -71,15 +71,26 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion with ScalaCo
       val found = result.completionsAt(cursor) match {
         case NoResults => Completion.NoCandidates
         case r =>
-          def isInterpreterWrapperMember(m: Member): Boolean =
-            definitions.isUniversalMember(m.sym) && nme.isReplWrapperName(m.prefix.typeSymbol.name)
-          val matching = r.matchingResults().filterNot(isInterpreterWrapperMember)
+          def shouldHide(m: Member): Boolean = {
+            val isUniversal = definitions.isUniversalMember(m.sym)
+            def viaUniversalExtensionMethod = m match {
+              case t: TypeMember if t.implicitlyAdded && t.viaView.info.params.head.info.bounds.isEmptyBounds => true
+              case _ => false
+            }
+            (
+                 isUniversal && nme.isReplWrapperName(m.prefix.typeSymbol.name)
+              || isUniversal && tabCount == 0 && r.name.isEmpty
+              || viaUniversalExtensionMethod && tabCount == 0 && r.name.isEmpty
+            )
+          }
+
+          val matching = r.matchingResults().filterNot(shouldHide)
           val tabAfterCommonPrefixCompletion = lastCommonPrefixCompletion.contains(buf.substring(0, cursor)) && matching.exists(_.symNameDropLocal == r.name)
           val doubleTab = tabCount > 0 && matching.forall(_.symNameDropLocal == r.name)
           if (tabAfterCommonPrefixCompletion || doubleTab) defStringCandidates(matching, r.name)
           else if (matching.isEmpty) {
             // Lenient matching based on camel case and on eliding JavaBean "get" / "is" boilerplate
-            val camelMatches: List[Member] = r.matchingResults(CompletionResult.camelMatch(_)).filterNot(isInterpreterWrapperMember)
+            val camelMatches: List[Member] = r.matchingResults(CompletionResult.camelMatch(_)).filterNot(shouldHide)
             val memberCompletions = camelMatches.map(_.symNameDropLocal.decoded).distinct.sorted
             def allowCompletion = (
                  (memberCompletions.size == 1)

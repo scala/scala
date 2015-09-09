@@ -133,6 +133,15 @@ class CompletionTest {
     checkExact(completer, " 1.toHexString //print")(EmptyString, "scala.Predef.intWrapper(1).toHexString // : String")
   }
 
+  @Test
+  def firstCompletionWithNoPrefixHidesUniversalMethodsAndExtensionMethods(): Unit = {
+    val intp = newIMain()
+    val completer = new PresentationCompilerCompleter(intp)
+    checkExact(completer, "case class C(a: Int, b: Int) { this.")("a", "b")
+    assert(Set("asInstanceOf", "==").diff(completer.complete("case class C(a: Int, b: Int) { this.").candidates.toSet).isEmpty)
+    checkExact(completer, "case class D(a: Int, b: Int) { this.a")("a", "asInstanceOf")
+  }
+
   def checkExact(completer: PresentationCompilerCompleter, before: String, after: String = "")(expected: String*): Unit = {
     assertEquals(expected.toSet, completer.complete(before, after).candidates.toSet)
   }
