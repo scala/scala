@@ -136,7 +136,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
             calleeInfoWarning = warning)
         }
 
-        val argInfos = computeArgInfos(callee, call, methodNode, definingClass, Some(prodCons))
+        val argInfos = computeArgInfos(callee, call, prodCons)
 
         val receiverNotNull = call.getOpcode == Opcodes.INVOKESTATIC || {
           val numArgs = Type.getArgumentTypes(call.desc).length
@@ -155,10 +155,13 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
         )
 
       case LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType) =>
+        val lmf = LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType)
+        val capturedArgInfos = computeCapturedArgInfos(lmf, prodCons)
         methodClosureInstantiations += indy -> ClosureInstantiation(
-          LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType),
+          lmf,
           methodNode,
-          definingClass)
+          definingClass,
+          capturedArgInfos)
 
       case _ =>
     }
@@ -166,48 +169,47 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
     callsites(methodNode) = methodCallsites
     closureInstantiations(methodNode) = methodClosureInstantiations
   }
-  
-  def computeArgInfos(
-                       callee: Either[OptimizerWarning, Callee],
-                       callsiteInsn: MethodInsnNode, callsiteMethod: MethodNode, callsiteClass: ClassBType,
-                       methodProdCons: => Option[ProdConsAnalyzer] = None): IntMap[ArgInfo] = {
+
+  def computeArgInfos(callee: Either[OptimizerWarning, Callee], callsiteInsn: MethodInsnNode, prodCons: => ProdConsAnalyzer): IntMap[ArgInfo] = {
     if (callee.isLeft) IntMap.empty
     else {
-      if (callee.get.samParamTypes.nonEmpty) {
+      lazy val numArgs = Type.getArgumentTypes(callsiteInsn.desc).length + (if (callsiteInsn.getOpcode == Opcodes.INVOKESTATIC) 0 else 1)
+      argInfosForSams(callee.get.samParamTypes, callsiteInsn, numArgs, prodCons)
+    }
+  }
 
-        val prodCons = methodProdCons.getOrElse({
-          localOpt.minimalRemoveUnreachableCode(callsiteMethod, callsiteClass.internalName)
-          new ProdConsAnalyzer(callsiteMethod, callsiteClass.internalName)
-        })
+  def computeCapturedArgInfos(lmf: LambdaMetaFactoryCall, prodCons: => ProdConsAnalyzer): IntMap[ArgInfo] = {
+    val capturedSams = capturedSamTypes(lmf)
+    val numCaptures = Type.getArgumentTypes(lmf.indy.desc).length
+    argInfosForSams(capturedSams, lmf.indy, numCaptures, prodCons)
+  }
 
-        // TODO: use type analysis instead - should be more efficient than prodCons
-        // some random thoughts:
-        //  - assign special types to parameters and indy-lambda-functions to track them
-        //  - upcast should not change type flow analysis: don't lose information.
-        //  - can we do something about factory calls? Foo(x) for case class foo gives a Foo.
-        //    inline the factory? analysis across method boundry?
+  private def argInfosForSams(sams: IntMap[ClassBType], consumerInsn: AbstractInsnNode, numConsumed: => Int, prodCons: => ProdConsAnalyzer): IntMap[ArgInfo] = {
+    // TODO: use type analysis instead of ProdCons - should be more efficient
+    // some random thoughts:
+    //  - assign special types to parameters and indy-lambda-functions to track them
+    //  - upcast should not change type flow analysis: don't lose information.
+    //  - can we do something about factory calls? Foo(x) for case class foo gives a Foo.
+    //    inline the factory? analysis across method boundary?
 
-        lazy val callFrame = prodCons.frameAt(callsiteInsn)
-        val receiverOrFirstArgSlot = {
-          val numArgs = Type.getArgumentTypes(callsiteInsn.desc).length + (if (callsiteInsn.getOpcode == Opcodes.INVOKESTATIC) 0 else 1)
-          callFrame.stackTop - numArgs + 1
+    // assign to a lazy val to prevent repeated evaluation of the by-name arg
+    lazy val prodConsI = prodCons
+    lazy val firstConsumedSlot = {
+      val consumerFrame = prodConsI.frameAt(consumerInsn)
+      consumerFrame.stackTop - numConsumed + 1
+    }
+    sams flatMap {
+      case (index, _) =>
+        val prods = prodConsI.initialProducersForValueAt(consumerInsn, firstConsumedSlot + index)
+        if (prods.size != 1) None
+        else {
+          val argInfo = prods.head match {
+            case LambdaMetaFactoryCall(_, _, _, _) => Some(FunctionLiteral)
+            case ParameterProducer(local)          => Some(ForwardedParam(local))
+            case _                                 => None
+          }
+          argInfo.map((index, _))
         }
-        callee.get.samParamTypes flatMap {
-          case (index, paramType) =>
-            val prods = prodCons.initialProducersForValueAt(callsiteInsn, receiverOrFirstArgSlot + index)
-            if (prods.size != 1) None
-            else {
-              val argInfo = prods.head match {
-                case LambdaMetaFactoryCall(_, _, _, _) => Some(FunctionLiteral)
-                case ParameterProducer(local)          => Some(ForwardedParam(local))
-                case _                                 => None
-              }
-              argInfo.map((index, _))
-            }
-        }
-      } else {
-        IntMap.empty
-      }
     }
   }
 
@@ -377,7 +379,16 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
     override def toString = s"Callee($calleeDeclarationClass.${callee.name})"
   }
 
-  final case class ClosureInstantiation(lambdaMetaFactoryCall: LambdaMetaFactoryCall, ownerMethod: MethodNode, ownerClass: ClassBType) {
+  /**
+   * Metadata about a closure instantiation, stored in the call graph
+   *
+   * @param lambdaMetaFactoryCall the InvokeDynamic instruction
+   * @param ownerMethod           the method where the closure is allocated
+   * @param ownerClass            the class containing the above method
+   * @param capturedArgInfos      information about captured arguments. Used for updating the call
+   *                              graph when re-writing a closure invocation to the body method.
+   */
+  final case class ClosureInstantiation(lambdaMetaFactoryCall: LambdaMetaFactoryCall, ownerMethod: MethodNode, ownerClass: ClassBType, capturedArgInfos: IntMap[ArgInfo]) {
     override def toString = s"ClosureInstantiation($lambdaMetaFactoryCall, ${ownerMethod.name + ownerMethod.desc}, $ownerClass)"
   }
   final case class LambdaMetaFactoryCall(indy: InvokeDynamicInsnNode, samMethodType: Type, implMethod: Handle, instantiatedMethodType: Type)

@@ -185,4 +185,28 @@ class CallGraphTest extends ClearAfterClass {
     val selfSamCall = callIn("selfSamCall")
     assertEquals(selfSamCall.argInfos.toList, List((0,ForwardedParam(0))))
   }
+
+  @Test
+  def argInfoAfterInlining(): Unit = {
+    val code =
+      """class C {
+        |  def foo(f: Int => Int) = f(1)                 // not inlined
+        |  @inline final def bar(g: Int => Int) = foo(g) // forwarded param 1
+        |  @inline final def baz = foo(x => x + 1)       // literal
+        |
+        |  def t1 = bar(x => x + 1)                   // call to foo should have argInfo literal
+        |  def t2(x: Int, f: Int => Int) = x + bar(f) // call to foo should have argInfo forwarded param 2
+        |  def t3 = baz                               // call to foo should have argInfo literal
+        |  def someFun: Int => Int = null
+        |  def t4(x: Int) = x + bar(someFun)          // call to foo has empty argInfo
+        |}
+      """.stripMargin
+
+    compile(code)
+    def callIn(m: String) = callGraph.callsites.find(_._1.name == m).get._2.values.head
+    assertEquals(callIn("t1").argInfos.toList, List((1, FunctionLiteral)))
+    assertEquals(callIn("t2").argInfos.toList, List((1, ForwardedParam(2))))
+    assertEquals(callIn("t3").argInfos.toList, List((1, FunctionLiteral)))
+    assertEquals(callIn("t4").argInfos.toList, Nil)
+  }
 }

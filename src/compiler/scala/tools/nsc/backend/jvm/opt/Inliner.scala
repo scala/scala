@@ -410,20 +410,26 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     callsiteMethod.tryCatchBlocks.addAll(cloneTryCatchBlockNodes(callee, labelsMap).asJava)
 
     callsiteMethod.maxLocals += returnType.getSize + callee.maxLocals
-    val numStoredArgs = calleeParamTypes.length + (if (isStaticMethod(callee)) 0 else 1)
+    val numStoredArgs = calleeParamTypes.length + (if (isStaticMethod(callee)) 0 else 1) // every value takes 1 slot on the stack (also long / double), JVMS 2.6.2
     callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, callee.maxStack + callsiteStackHeight - numStoredArgs)
 
     callGraph.addIfMissing(callee, calleeDeclarationClass)
 
+    def mapArgInfo(argInfo: (Int, ArgInfo)): Option[(Int, ArgInfo)] = argInfo match {
+      case lit @ (_, FunctionLiteral)             => Some(lit)
+      case (argIndex, ForwardedParam(paramIndex)) => callsite.argInfos.get(paramIndex).map((argIndex, _))
+    }
+
     // Add all invocation instructions and closure instantiations that were inlined to the call graph
     callGraph.callsites(callee).valuesIterator foreach { originalCallsite =>
       val newCallsiteIns = instructionMap(originalCallsite.callsiteInstruction).asInstanceOf[MethodInsnNode]
+      val argInfos = originalCallsite.argInfos flatMap mapArgInfo
       callGraph.addCallsite(Callsite(
         callsiteInstruction = newCallsiteIns,
         callsiteMethod = callsiteMethod,
         callsiteClass = callsiteClass,
         callee = originalCallsite.callee,
-        argInfos = computeArgInfos(originalCallsite.callee, newCallsiteIns, callsiteMethod, callsiteClass), // TODO: try to re-build argInfos from the original callsite's
+        argInfos = argInfos,
         callsiteStackHeight = callsiteStackHeight + originalCallsite.callsiteStackHeight,
         receiverKnownNotNull = originalCallsite.receiverKnownNotNull,
         callsitePosition = originalCallsite.callsitePosition
@@ -432,8 +438,13 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
     callGraph.closureInstantiations(callee).valuesIterator foreach { originalClosureInit =>
       val newIndy = instructionMap(originalClosureInit.lambdaMetaFactoryCall.indy).asInstanceOf[InvokeDynamicInsnNode]
+      val capturedArgInfos = originalClosureInit.capturedArgInfos flatMap mapArgInfo
       callGraph.addClosureInstantiation(
-        ClosureInstantiation(originalClosureInit.lambdaMetaFactoryCall.copy(indy = newIndy), callsiteMethod, callsiteClass)
+        ClosureInstantiation(
+          originalClosureInit.lambdaMetaFactoryCall.copy(indy = newIndy),
+          callsiteMethod,
+          callsiteClass,
+          capturedArgInfos)
       )
     }
 

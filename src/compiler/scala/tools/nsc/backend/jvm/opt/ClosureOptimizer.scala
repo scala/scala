@@ -204,8 +204,8 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     insertLoadOps(invocation, ownerMethod, argumentLocalsList)
 
     // update maxStack
-    val capturesStackSize = localsForCapturedValues.size
-    val invocationStackHeight = stackHeight + capturesStackSize - 1 // -1 because the closure is gone
+    val numCapturedValues = localsForCapturedValues.locals.length // not `localsForCapturedValues.size`: every value takes 1 slot on the stack (also long / double), JVMS 2.6.2
+    val invocationStackHeight = stackHeight + numCapturedValues - 1 // -1 because the closure is gone
     if (invocationStackHeight > ownerMethod.maxStack)
       ownerMethod.maxStack = invocationStackHeight
 
@@ -249,12 +249,15 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
           samParamTypes = callGraph.samParamTypes(bodyMethodNode, bodyDeclClassType),
           calleeInfoWarning = None)
     })
+    val argInfos = closureInit.capturedArgInfos ++ originalCallsite.map(cs => cs.argInfos map {
+      case (index, info) => (index + numCapturedValues, info)
+    }).getOrElse(IntMap.empty)
     val bodyMethodCallsite = Callsite(
       callsiteInstruction = bodyInvocation,
       callsiteMethod = ownerMethod,
       callsiteClass = closureInit.ownerClass,
       callee = callee,
-      argInfos = computeArgInfos(callee, bodyInvocation, ownerMethod, closureInit.ownerClass),
+      argInfos = argInfos,
       callsiteStackHeight = invocationStackHeight,
       receiverKnownNotNull = true, // see below (*)
       callsitePosition = originalCallsite.map(_.callsitePosition).getOrElse(NoPosition)
