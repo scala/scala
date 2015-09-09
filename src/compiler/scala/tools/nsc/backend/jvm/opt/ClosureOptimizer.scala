@@ -78,10 +78,10 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
       closureInstantiations.iterator.flatMap({
         case (methodNode, closureInits) =>
           // A lazy val to ensure the analysis only runs if necessary (the value is passed by name to `closureCallsites`)
-          lazy val prodCons = new ProdConsAnalyzer(methodNode, closureInits.valuesIterator.next.ownerClass.internalName)
+          lazy val prodCons = new ProdConsAnalyzer(methodNode, closureInits.valuesIterator.next().ownerClass.internalName)
           val sortedInits = immutable.TreeSet.empty ++ closureInits.values
-          sortedInits.iterator.map(init => (init, closureCallsites(init, prodCons)))
-      }).toList // mapping to a list (not a map) to keep the sorting of closureInstantiationsByMethod
+          sortedInits.iterator.map(init => (init, closureCallsites(init, prodCons))).filter(_._2.nonEmpty)
+      }).toList // mapping to a list (not a map) to keep the sorting
     }
 
     // Rewrite all closure callsites (or issue inliner warnings for those that cannot be rewritten)
@@ -268,6 +268,10 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     // Explanation: If the lambda body method is non-static, the receiver is a captured
     // value. It can only be captured within some instance method, so we know it's non-null.
     callGraph.addCallsite(bodyMethodCallsite)
+
+    // Rewriting a closure invocation may render code unreachable. For example, the body method of
+    // (x: T) => ??? has return type Nothing$, and an ATHROW is added (see fixLoadedNothingOrNullValue).
+    unreachableCodeEliminated -= ownerMethod
   }
 
   /**

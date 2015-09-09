@@ -308,14 +308,14 @@ object BytecodeUtils {
    * Clone the local variable descriptors of `methodNode` and map their `start` and `end` labels
    * according to the `labelMap`.
    */
-  def cloneLocalVariableNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], prefix: String): List[LocalVariableNode] = {
+  def cloneLocalVariableNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], prefix: String, shift: Int): List[LocalVariableNode] = {
     methodNode.localVariables.iterator().asScala.map(localVariable => new LocalVariableNode(
       prefix + localVariable.name,
       localVariable.desc,
       localVariable.signature,
       labelMap(localVariable.start),
       labelMap(localVariable.end),
-      localVariable.index
+      localVariable.index + shift
     )).toList
   }
 

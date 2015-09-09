@@ -196,7 +196,6 @@ object LocalOptImpls {
     a.analyze(ownerClassName, method)
     val frames = a.getFrames
 
-    val initialSize = method.instructions.size
     var i = 0
     var liveLabels = Set.empty[LabelNode]
     var removedInstructions = Set.empty[AbstractInsnNode]
