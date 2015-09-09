@@ -63,6 +63,15 @@ class CompletionTest {
   }
 
   @Test
+  def lenientCamelCompletions(): Unit = {
+    val intp = newIMain()
+    val completer = new PresentationCompilerCompleter(intp)
+    checkExact(completer, "object O { def theCatSatOnTheMat = 1 }; import O._; tcso")("theCatSatOnTheMat")
+    checkExact(completer, "object O { def theCatSatOnTheMat = 1 }; import O._; sotm")("theCatSatOnTheMat")
+    checkExact(completer, "object O { def theCatSatOnTheMat = 1 }; import O._; TCSOTM")()
+  }
+
+  @Test
   def previousLineCompletions(): Unit = {
     val intp = newIMain()
     intp.interpret("class C { val x_y_z = 42 }")

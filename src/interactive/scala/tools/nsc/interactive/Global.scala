@@ -1189,18 +1189,31 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       CamelRegex.findAllIn("X" + s).toList match { case head :: tail => head.drop(1) :: tail; case Nil => Nil }
     }
     def camelMatch(entered: Name): Name => Boolean = {
-      val chunks: List[String] = camelComponents(entered.toString)
+      val enteredS = entered.toString
+      val enteredLowercaseSet = enteredS.toLowerCase().toSet
 
       (candidate: Name) => {
-        val candidateChunks = camelComponents(candidate.toString)
-        val exactCamelMatch =
-          (chunks corresponds candidateChunks.take(chunks.length))((x, y) => y.startsWith(x))
-        def beanCamelMatch = candidateChunks match {
-          case ("get" | "is") :: tail =>
-            (chunks corresponds tail.take(chunks.length))((x, y) => y.toLowerCase.startsWith(x.toLowerCase))
-          case _ => false
+        def candidateChunks = camelComponents(candidate.toString)
+        // Loosely based on IntelliJ's autocompletion: the user can just write everything in
+        // lowercase, as we'll let `isl` match `GenIndexedSeqLike` or `isLovely`.
+        def lenientMatch(entered: String, candidate: List[String], matchCount: Int): Boolean = {
+          candidate match {
+            case Nil => entered.isEmpty && matchCount > 0
+            case head :: tail =>
+              val enteredAlternatives = Set(entered, entered.capitalize)
+              head.inits.filter(_.length <= entered.length).exists(init =>
+                enteredAlternatives.exists(entered =>
+                  lenientMatch(entered.stripPrefix(init), tail, matchCount + (if (init.isEmpty) 0 else 1))
+                )
+              )
+          }
         }
-        exactCamelMatch || beanCamelMatch
+        val containsAllEnteredChars = {
+          // Trying to rule out some candidates quickly before the more expensive `lenientMatch`
+          val candidateLowercaseSet = candidate.toString.toLowerCase().toSet
+          enteredLowercaseSet.diff(candidateLowercaseSet).isEmpty
+        }
+        containsAllEnteredChars && lenientMatch(enteredS, candidateChunks, 0)
       }
     }
   }
