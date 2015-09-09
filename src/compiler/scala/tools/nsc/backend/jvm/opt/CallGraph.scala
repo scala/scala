@@ -16,7 +16,7 @@ import scala.collection.{concurrent, mutable}
 import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
-import scala.tools.nsc.backend.jvm.analysis.{ParameterProducer, ProdConsAnalyzer, NotNull, NullnessAnalyzer}
+import scala.tools.nsc.backend.jvm.analysis._
 import ByteCodeRepository.{Source, CompilationUnit}
 import BytecodeUtils._
 
@@ -106,7 +106,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
     def receiverNotNullByAnalysis(call: MethodInsnNode, numArgs: Int) = analyzer match {
       case nullnessAnalyzer: NullnessAnalyzer =>
         val frame = nullnessAnalyzer.frameAt(call, methodNode)
-        frame.getStack(frame.getStackSize - 1 - numArgs).nullness == NotNull
+        frame.getStack(frame.getStackSize - 1 - numArgs) eq NotNullValue
 
       case _ => false
     }
