@@ -155,8 +155,8 @@ trait ProcessCreation {
     * import java.net.URL
     * import java.io.File
     *
-    * val spde = new URL("http://technically.us/spde/About")
-    * val dispatch = new URL("http://databinder.net/dispatch/About")
+    * val spde = new URL("http://technically.us/spde.html")
+    * val dispatch = new URL("http://dispatch.databinder.net/Dispatch.html")
     * val build = new File("project/build.properties")
     * cat(spde, dispatch, build) #| "grep -i scala" !
     * }}}
