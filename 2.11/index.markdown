@@ -271,3 +271,5 @@ scala> e.eval("1 to n.asInstanceOf[Int] foreach println")
 10
 res4: Object = null
 ```
+
+Note that not all JSR-223 features are supported; see for example [SI-7916](https://issues.scala-lang.org/browse/SI-7916), [SI-8422](https://issues.scala-lang.org/browse/SI-8422).
