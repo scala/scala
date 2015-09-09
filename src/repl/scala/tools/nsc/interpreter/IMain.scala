@@ -80,6 +80,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   private var _isInitialized: Future[Boolean] = null      // set up initialization future
   private var bindExceptions                  = true      // whether to bind the lastException variable
   private var _executionWrapper               = ""        // code to be wrapped around all lines
+  var partialInput: String = ""                           // code accumulated in multi-line REPL input
 
   /** We're going to go to some trouble to initialize the compiler asynchronously.
    *  It's critical that nothing call into it until it's been initialized or we will

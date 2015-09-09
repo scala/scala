@@ -764,7 +764,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     * read, go ahead and interpret it.  Return the full string
     * to be recorded for replay, if any.
     */
-  @tailrec final def interpretStartingWith(code: String): Option[String] = {
+  final def interpretStartingWith(code: String): Option[String] = {
     // signal completion non-completion input has been received
     in.completion.resetVerbosity()
 
@@ -791,17 +791,21 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         case IR.Incomplete if in.interactive && code.endsWith("\n\n") =>
           echo("You typed two blank lines.  Starting a new command.")
           None
-        case IR.Incomplete => in.readLine(paste.ContinuePrompt) match {
-          case null =>
-            // we know compilation is going to fail since we're at EOF and the
-            // parser thinks the input is still incomplete, but since this is
-            // a file being read non-interactively we want to fail.  So we send
-            // it straight to the compiler for the nice error message.
-            intp.compileString(code)
-            None
-
-          case line => interpretStartingWith(s"$code\n$line")
-        }
+        case IR.Incomplete =>
+          val saved = intp.partialInput
+          intp.partialInput = code + "\n"
+          try {
+            in.readLine(paste.ContinuePrompt) match {
+              case null =>
+                // we know compilation is going to fail since we're at EOF and the
+                // parser thinks the input is still incomplete, but since this is
+                // a file being read non-interactively we want to fail.  So we send
+                // it straight to the compiler for the nice error message.
+                intp.compileString(code)
+                None
+              case line => interpretStartingWith(s"$code\n$line")
+            }
+          } finally intp.partialInput = saved
       }
     }
   }
