@@ -29,7 +29,7 @@ object Dependency {
  * where it originates from. The Symbol->Classfile mapping is implemented by
  * LocateClassFile that we inherit from.
  */
-final class Dependency(val global: CallbackGlobal) extends LocateClassFile with GlobalHelpers {
+final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
   import global._
 
   def newPhase(prev: Phase): Phase = new DependencyPhase(prev)
@@ -144,7 +144,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
         // See sbt/sbt#1593 and sbt/sbt#1655.
         case typeTree: TypeTree if typeTree.tpe != null =>
           val typeSymbolCollector = new CollectTypeTraverser({
-            case tpe if !tpe.typeSymbol.hasPackageFlag => tpe.typeSymbol
+            case tpe if !tpe.typeSymbol.isPackage => tpe.typeSymbol
           })
           typeSymbolCollector.traverse(typeTree.tpe)
           val deps = typeSymbolCollector.collected.toSet

@@ -22,7 +22,7 @@ import xsbti.api.{ ClassLike, DefinitionType, PathComponent, SimpleType }
 class ExtractAPI[GlobalType <: CallbackGlobal](val global: GlobalType,
   // Tracks the source file associated with the CompilationUnit currently being processed by the API phase.
   // This is used when recording inheritance dependencies.
-  sourceFile: File) {
+  sourceFile: File) extends Compat {
 
   import global._
 
@@ -193,7 +193,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](val global: GlobalType,
               build(base, typeParameters(in, typeParams0), Nil)
             case MethodType(params, resultType) =>
               build(resultType, typeParams, parameterList(params) :: valueParameters)
-            case NullaryMethodType(resultType) =>
+            case Nullary(resultType) => // 2.9 and later
               build(resultType, typeParams, valueParameters)
             case returnType =>
               val t2 = processType(in, dropConst(returnType))
@@ -231,8 +231,8 @@ class ExtractAPI[GlobalType <: CallbackGlobal](val global: GlobalType,
     case _                      => t
   }
   private def dropNullary(t: Type): Type = t match {
-    case NullaryMethodType(un) => un
-    case _                     => t
+    case Nullary(un) => un
+    case _           => t
   }
 
   private def typeDef(in: Symbol, s: Symbol): xsbti.api.TypeMember =
@@ -265,7 +265,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](val global: GlobalType,
 
   private def mkStructure(info: Type, s: Symbol, inherit: Boolean): xsbti.api.Structure =
     {
-      val (declared, inherited) = info.members.toList.reverse.partition(_.owner == s)
+      val (declared, inherited) = info.members.reverse.partition(_.owner == s)
       val baseTypes = info.baseClasses.tail.map(info.baseType)
       val ds = if (s.isModuleClass) removeConstructors(declared) else declared
       val is = if (inherit) removeConstructors(inherited) else Nil
@@ -277,7 +277,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](val global: GlobalType,
   private[this] def isPublicStructure(s: Symbol): Boolean =
     s.isStructuralRefinement ||
       // do not consider templates that are private[this] or private
-      !(s.isPrivate && (s.privateWithin == NoSymbol || s.isLocalToBlock))
+      !(s.isPrivate && (s.privateWithin == NoSymbol || s.isLocal))
 
   private def mkStructure(s: Symbol, bases: List[Type], declared: List[Symbol], inherited: List[Symbol]): xsbti.api.Structure = {
     if (isPublicStructure(s))
@@ -309,13 +309,13 @@ class ExtractAPI[GlobalType <: CallbackGlobal](val global: GlobalType,
         None
     }
   private def ignoreClass(sym: Symbol): Boolean =
-    sym.isLocalClass || sym.isAnonymousClass || sym.fullName.endsWith(tpnme.LOCAL_CHILD.toString)
+    sym.isLocalClass || sym.isAnonymousClass || sym.fullName.endsWith(LocalChild.toString)
 
   // This filters private[this] vals/vars that were not in the original source.
   //  The getter will be used for processing instead.
   private def isSourceField(sym: Symbol): Boolean =
     {
-      val getter = sym.getterIn(sym.enclClass)
+      val getter = sym.getter(sym.enclClass)
       // the check `getter eq sym` is a precaution against infinite recursion
       // `isParamAccessor` does not exist in all supported versions of Scala, so the flag check is done directly
       (getter == NoSymbol && !sym.hasFlag(Flags.PARAMACCESSOR)) || (getter eq sym)
@@ -326,7 +326,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](val global: GlobalType,
       val absOver = s.hasFlag(ABSOVERRIDE)
       val abs = s.hasFlag(ABSTRACT) || s.hasFlag(DEFERRED) || absOver
       val over = s.hasFlag(OVERRIDE) || absOver
-      new xsbti.api.Modifiers(abs, over, s.isFinal, s.hasFlag(SEALED), isImplicit(s), s.hasFlag(LAZY), s.hasFlag(MACRO))
+      new xsbti.api.Modifiers(abs, over, s.isFinal, s.hasFlag(SEALED), isImplicit(s), s.hasFlag(LAZY), hasMacro(s))
     }
 
   private def isImplicit(s: Symbol) = s.hasFlag(Flags.IMPLICIT)
@@ -412,7 +412,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](val global: GlobalType,
         case t: ExistentialType               => makeExistentialType(in, t)
         case NoType                           => Constants.emptyType // this can happen when there is an error that will be reported by a later phase
         case PolyType(typeParams, resultType) => new xsbti.api.Polymorphic(processType(in, resultType), typeParameters(in, typeParams))
-        case NullaryMethodType(resultType) =>
+        case Nullary(resultType) =>
           warning("sbt-api: Unexpected nullary method type " + in + " in " + in.owner); Constants.emptyType
         case _ => warning("sbt-api: Unhandled type " + t.getClass + " : " + t); Constants.emptyType
       }
@@ -465,7 +465,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](val global: GlobalType,
       val defType =
         if (c.isTrait) DefinitionType.Trait
         else if (isModule) {
-          if (c.hasPackageFlag) DefinitionType.PackageModule
+          if (c.isPackage) DefinitionType.PackageModule
           else DefinitionType.Module
         } else DefinitionType.ClassDef
       new xsbti.api.ClassLike(defType, lzy(selfType(in, c)), lzy(structure(in, struct)), emptyStringArray, typeParameters(in, c), name, getAccess(c), getModifiers(c), annotations(in, c))
@@ -508,19 +508,19 @@ class ExtractAPI[GlobalType <: CallbackGlobal](val global: GlobalType,
 
   private def simpleName(s: Symbol): String =
     {
-      val n = s.unexpandedName
+      val n = s.originalName
       val n2 = if (n.toString == "<init>") n else n.decode
       n2.toString.trim
     }
 
   private def annotations(in: Symbol, s: Symbol): Array[xsbti.api.Annotation] =
-    enteringPhase(currentRun.typerPhase) {
+    atPhase(currentRun.typerPhase) {
       val base = if (s.hasFlag(Flags.ACCESSOR)) s.accessed else NoSymbol
       val b = if (base == NoSymbol) s else base
       // annotations from bean methods are not handled because:
       //  a) they are recorded as normal source methods anyway
       //  b) there is no way to distinguish them from user-defined methods
-      val associated = List(b, b.getterIn(b.enclClass), b.setterIn(b.enclClass)).filter(_ != NoSymbol)
+      val associated = List(b, b.getter(b.enclClass), b.setter(b.enclClass)).filter(_ != NoSymbol)
       associated.flatMap(ss => annotations(in, ss.annotations)).distinct.toArray;
     }
   private def annotatedType(in: Symbol, at: AnnotatedType): xsbti.api.Type =

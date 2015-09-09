@@ -38,7 +38,7 @@ import scala.tools.nsc._
  * The tree walking algorithm walks into TypeTree.original explicitly.
  *
  */
-class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) extends GlobalHelpers {
+class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) extends Compat {
   import global._
 
   def extract(unit: CompilationUnit): Set[String] = {
@@ -92,7 +92,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
         // not what we need
         case t: TypeTree if t.original != null =>
           t.original.foreach(handleTreeNode)
-        case t if t.hasSymbolField && eligibleAsUsedName(t.symbol) =>
+        case t if t.hasSymbol && eligibleAsUsedName(t.symbol) =>
           addSymbol(t.symbol)
         case _ => ()
       }
