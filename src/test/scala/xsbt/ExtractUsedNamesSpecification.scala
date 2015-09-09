@@ -65,19 +65,18 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     assert(usedNames === expectedNames)
   }
 
-  // test for https://issues.scala-lang.org/browse/SI-7173
-  // Note: This tests is disabled for Scala pre-2.11 because of the issue mentioned above.
-  it should "extract names of constants (only for 2.11)" in {
+  // pending test for https://issues.scala-lang.org/browse/SI-7173
+  it should "extract names of constants" in pendingUntilFixed {
     val src = "class A { final val foo = 12; def bar: Int = foo }"
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(src)
     val expectedNames = standardNames ++ Set("A", "foo", "Int")
-    assert(!isScala211 || usedNames === expectedNames)
+    assert(usedNames === expectedNames)
   }
 
   // test for https://github.com/gkossakowski/sbt/issues/4
-  // Note: This tests is disabled for Scala pre-2.11 because of the issue mentioned above.
-  it should "extract names from method calls on Dynamic (only for 2.11)" in {
+  // TODO: we should fix it by having special treatment of `selectDynamic` and `applyDynamic` calls
+  it should "extract names from method calls on Dynamic" in pendingUntilFixed {
     val srcA = """|import scala.language.dynamics
                   |class A extends Dynamic {
                   | def selectDynamic(name: String): Int = name.length
@@ -86,10 +85,8 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(srcA, srcB)
     val expectedNames = standardNames ++ Set("B", "A", "a", "Int", "selectDynamic", "bla")
-    assert(!isScala211 || usedNames === expectedNames)
+    assert(usedNames === expectedNames)
   }
-
-  private val isScala211 = scala.util.Properties.versionNumberString.startsWith("2.11")
 
   /**
    * Standard names that appear in every compilation unit that has any class
