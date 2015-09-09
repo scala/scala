@@ -25,9 +25,7 @@ import scala.tools.nsc.backend.jvm.BTypes.InternalName
 class Inliner[BT <: BTypes](val btypes: BT) {
   import btypes._
   import callGraph._
-
-  val heuristics: InlinerHeuristics[btypes.type] = new InlinerHeuristics(btypes)
-  import heuristics._
+  import inlinerHeuristics._
 
   def eliminateUnreachableCodeAndUpdateCallGraph(methodNode: MethodNode, definingClass: InternalName): Unit = {
     localOpt.minimalRemoveUnreachableCode(methodNode, definingClass) foreach {

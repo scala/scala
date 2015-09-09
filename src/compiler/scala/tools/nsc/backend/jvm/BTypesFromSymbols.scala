@@ -42,6 +42,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
   val inliner: Inliner[this.type] = new Inliner(this)
 
+  val inlinerHeuristics: InlinerHeuristics[this.type] = new InlinerHeuristics(this)
+
   val closureOptimizer: ClosureOptimizer[this.type] = new ClosureOptimizer(this)
 
   val callGraph: CallGraph[this.type] = new CallGraph(this)

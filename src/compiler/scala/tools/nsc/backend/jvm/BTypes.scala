@@ -44,6 +44,8 @@ abstract class BTypes {
 
   val inliner: Inliner[this.type]
 
+  val inlinerHeuristics: InlinerHeuristics[this.type]
+
   val closureOptimizer: ClosureOptimizer[this.type]
 
   val callGraph: CallGraph[this.type]
@@ -234,7 +236,7 @@ abstract class BTypes {
       InlineInfo(
         traitImplClassSelfType = None,
         isEffectivelyFinal = BytecodeUtils.isFinalClass(classNode),
-        sam = inliner.heuristics.javaSam(classNode.name),
+        sam = inlinerHeuristics.javaSam(classNode.name),
         methodInfos = methodInfos,
         warning)
     }

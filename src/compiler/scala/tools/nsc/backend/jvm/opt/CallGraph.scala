@@ -277,7 +277,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
             safeToRewrite     = canInlineFromSource && isRewritableTraitCall, // (2)
             annotatedInline   = methodInlineInfo.annotatedInline,
             annotatedNoInline = methodInlineInfo.annotatedNoInline,
-            higherOrderParams = inliner.heuristics.higherOrderParams(calleeMethodNode, receiverType),
+            higherOrderParams = inlinerHeuristics.higherOrderParams(calleeMethodNode, receiverType),
             warning           = warning)
 
         case None =>

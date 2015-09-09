@@ -91,7 +91,7 @@ class InlinerTest extends ClearAfterClass {
   def makeInlineRequest( callsiteInstruction: MethodInsnNode, callsiteMethod: MethodNode, callsiteClass: ClassBType,
                          callee: MethodNode, calleeDeclarationClass: ClassBType,
                          callsiteStackHeight: Int, receiverKnownNotNull: Boolean,
-                         post: List[inliner.heuristics.PostInlineRequest] = Nil) = inliner.heuristics.InlineRequest(
+                         post: List[inlinerHeuristics.PostInlineRequest] = Nil) = inlinerHeuristics.InlineRequest(
     callsite = callGraph.Callsite(
       callsiteInstruction = callsiteInstruction,
       callsiteMethod = callsiteMethod,
@@ -1093,7 +1093,7 @@ class InlinerTest extends ClearAfterClass {
       calleeDeclarationClass = cTp,
       callsiteStackHeight = analyzer.frameAt(gCall).getStackSize,
       receiverKnownNotNull = false,
-      post = List(inliner.heuristics.PostInlineRequest(fCall, Nil))
+      post = List(inlinerHeuristics.PostInlineRequest(fCall, Nil))
     )
 
     val r = inliner.inline(request)
