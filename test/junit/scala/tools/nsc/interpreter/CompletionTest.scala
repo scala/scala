@@ -81,6 +81,12 @@ class CompletionTest {
 
     checkExact(completer, "new C().x_y")("x_y_z")
     checkExact(completer, "(1 : O.T).toCha")("toChar")
+
+    intp.interpret("case class X_y_z()")
+    val completer1 = new PresentationCompilerCompleter(intp)
+    checkExact(completer1, "new X_y_")("X_y_z")
+    checkExact(completer1, "X_y_")("X_y_z")
+    checkExact(completer1, "X_y_z.app")("apply")
   }
 
   @Test
@@ -137,8 +143,8 @@ class CompletionTest {
   def firstCompletionWithNoPrefixHidesUniversalMethodsAndExtensionMethods(): Unit = {
     val intp = newIMain()
     val completer = new PresentationCompilerCompleter(intp)
-    checkExact(completer, "case class C(a: Int, b: Int) { this.")("a", "b")
-    assert(Set("asInstanceOf", "==").diff(completer.complete("case class C(a: Int, b: Int) { this.").candidates.toSet).isEmpty)
+    checkExact(completer, "class C(val a: Int, val b: Int) { this.")("a", "b")
+    assert(Set("asInstanceOf", "==").diff(completer.complete("class C(val a: Int, val b: Int) { this.").candidates.toSet).isEmpty)
     checkExact(completer, "case class D(a: Int, b: Int) { this.a")("a", "asInstanceOf")
   }
 
