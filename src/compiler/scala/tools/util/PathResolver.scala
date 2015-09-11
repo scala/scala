@@ -67,6 +67,7 @@ object PathResolver {
     /** The java classpath and whether to use it. */
     def javaUserClassPath   = propOrElse("java.class.path", "")
     def useJavaClassPath    = propOrFalse("scala.usejavacp")
+    def useURLClassPath     = propOrFalse("scala.useurlcp")
 
     override def toString = s"""
       |object Environment {
@@ -87,6 +88,7 @@ object PathResolver {
     def javaUserClassPath = Environment.javaUserClassPath
     def javaExtDirs       = Environment.javaExtDirs
     def useJavaClassPath  = Environment.useJavaClassPath
+    def useURLClassPath   = Environment.useURLClassPath
 
     def scalaHome         = Environment.scalaHome
     def scalaHomeDir      = Directory(scalaHome)
@@ -238,6 +240,7 @@ abstract class PathResolverBase[BaseClassPathType <: ClassFileLookup[AbstractFil
     def scalaHome           = Defaults.scalaHome
     def useJavaClassPath    = settings.usejavacp.value || Defaults.useJavaClassPath
     def useManifestClassPath= settings.usemanifestcp.value
+    def useURLClassPath     = settings.useurlcp.value || Defaults.useURLClassPath
     def javaBootClassPath   = cmdLineOrElse("javabootclasspath", Defaults.javaBootClassPath)
     def javaExtDirs         = cmdLineOrElse("javaextdirs", Defaults.javaExtDirs)
     def javaUserClassPath   = if (useJavaClassPath) Defaults.javaUserClassPath else ""
@@ -276,6 +279,7 @@ abstract class PathResolverBase[BaseClassPathType <: ClassFileLookup[AbstractFil
       classesInPath(scalaBootClassPath),            // 4. The Scala boot class path.
       contentsOfDirsInPath(scalaExtDirs),           // 5. The Scala extension class path.
       classesInExpandedPath(userClassPath),         // 6. The Scala application class path.
+      classesInURLs(useURLClassPath),               // 9. The URL class path.
       classesInManifest(useManifestClassPath),      // 8. The Manifest class path.
       sourcesInPath(sourcePath)                     // 7. The Scala source path.
     )
