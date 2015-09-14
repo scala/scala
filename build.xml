@@ -1222,7 +1222,10 @@ TODO:
 <!-- ===========================================================================
                                   PACKED QUICK BUILD (PACK)
 ============================================================================ -->
-  <target name="pack.lib"    depends="quick.lib, forkjoin.done"> <staged-pack project="library"/></target>
+  <target name="pack.lib"    depends="quick.lib, forkjoin.done"> <staged-pack project="library"/>
+    <taskdef name="jarlister" classname="scala.tools.ant.JarLister" classpathref="quick.compiler.build.path"/>
+    <jarlister file="${build-pack.dir}/lib/scala-library.jar"/>
+  </target>
 
   <target name="pack.reflect" depends="quick.reflect"> <staged-pack project="reflect"/> </target>
 
@@ -1754,7 +1757,7 @@ TODO:
         <taskdef name="genman"
                  classname="scala.tools.docutil.ManMaker"
                  classpathref="manual.build.path"/>
-        <genman command="fsc, scala, scalac, scaladoc, scalap"
+        <genman command="fsc, scala, scalac, scaladoc, scalap, jarlister"
                 htmlout="${build-pack.dir}/doc/tools"
                 manout="${build-manual.dir}/genman"/>
       </do>
