@@ -52,11 +52,9 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
           for (on <- unit.depends) processDependency(on, context = DependencyByMemberRef)
           for (on <- inheritedDependencies.getOrElse(sourceFile, Nil: Iterable[Symbol])) processDependency(on, context = DependencyByInheritance)
         }
-        /**
-         * Handles dependency on given symbol by trying to figure out if represents a term
-         * that is coming from either source code (not necessarily compiled in this compilation
-         * run) or from class file and calls respective callback method.
-         */
+        // Handles dependency on given symbol by trying to figure out if represents a term
+        // that is coming from either source code (not necessarily compiled in this compilation
+        // run) or from class file and calls respective callback method.
         def processDependency(on: Symbol, context: DependencyContext): Unit = {
           def binaryDependency(file: File, className: String) = callback.binaryDependency(file, className, sourceFile, context)
           val onSource = on.sourceFile
