@@ -50,7 +50,7 @@
  *     https://groups.google.com/d/topic/scala-internals/gp5JsM1E0Fo/discussion
  */
 
-val bootstrapScalaVersion = "2.11.7"
+val bootstrapScalaVersion = versionProps("starr.version")
 
 def withoutScalaLang(moduleId: ModuleID): ModuleID = moduleId exclude("org.scala-lang", "*")
 
@@ -64,7 +64,7 @@ val junitIntefaceDep = "com.novocode" % "junit-interface" % "0.11" % "test"
 val asmDep = "org.scala-lang.modules" % "scala-asm" % versionProps("scala-asm.version")
 val jlineDep = "jline" % "jline" % versionProps("jline.version")
 val antDep = "org.apache.ant" % "ant" % "1.9.4"
-val scalacheckDep = withoutScalaLang("org.scalacheck" %% "scalacheck" % "1.11.6")
+val scalacheckDep = withoutScalaLang("org.scalacheck" %% "scalacheck" % versionNumber("scalacheck"))
 
 lazy val commonSettings = clearSourceAndResourceDirectories ++ Seq[Setting[_]](
   organization := "org.scala-lang",
