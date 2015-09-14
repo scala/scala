@@ -205,6 +205,21 @@ class AliasingFrame[V <: Value](nLocals: Int, nStack: Int) extends Frame[V](nLoc
   }
 
   /**
+   * When entering an exception handler, all values are dropped from the stack (and the exception
+   * value is pushed). The ASM analyzer invokes `firstHandlerInstructionFrame.clearStack()`. To
+   * ensure consistent aliasing sets, we need to remove the dropped values from aliasing sets.
+   */
+  override def clearStack(): Unit = {
+    var i = getLocals
+    val end = i + getStackSize
+    while (i < end) {
+      removeAlias(i)
+      i += 1
+    }
+    super.clearStack()
+  }
+
+  /**
    * Merge the AliasingFrame `other` into this AliasingFrame.
    *
    * Aliases that are common in both frames are kept. Example:
