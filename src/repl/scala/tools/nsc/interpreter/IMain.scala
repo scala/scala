@@ -25,7 +25,6 @@ import scala.tools.nsc.util._
 import ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.util.Exceptional.unwrap
 import scala.tools.nsc.backend.JavaPlatform
-import javax.script.{AbstractScriptEngine, Bindings, ScriptContext, ScriptEngine, ScriptEngineFactory, ScriptException, CompiledScript, Compilable}
 import java.net.URL
 import java.io.File
 
@@ -61,10 +60,11 @@ import java.io.File
  *  @author Moez A. Abdel-Gawad
  *  @author Lex Spoon
  */
-class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Settings, protected val out: JPrintWriter) extends AbstractScriptEngine with Compilable with Imports with PresentationCompilation {
+class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends Imports with PresentationCompilation {
   imain =>
 
-  setBindings(createBindings, ScriptContext.ENGINE_SCOPE)
+  def this(initialSettings: Settings) = this(initialSettings, IMain.defaultOut)
+
   object replOutput extends ReplOutput(settings.Yreploutdir) { }
 
   @deprecated("Use replOutput.dir instead", "2.11.0")
@@ -108,13 +108,6 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     try body
     finally if (!saved) settings.nowarn.value = false
   }
-
-  /** construct an interpreter that reports to Console */
-  def this(settings: Settings, out: JPrintWriter) = this(null, settings, out)
-  def this(factory: ScriptEngineFactory, settings: Settings) = this(factory, settings, new NewLinePrintWriter(new ConsoleWriter, true))
-  def this(settings: Settings) = this(settings, new NewLinePrintWriter(new ConsoleWriter, true))
-  def this(factory: ScriptEngineFactory) = this(factory, new Settings())
-  def this() = this(new Settings())
 
   // the expanded prompt but without color escapes and without leading newline, for purposes of indenting
   lazy val formatting = Formatting.forPrompt(replProps.promptText)
@@ -469,7 +462,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     pos
   }
 
-  private[interpreter] def requestFromLine(line: String, synthetic: Boolean): Either[IR.Result, Request] = {
+  private[interpreter] def requestFromLine(line: String, synthetic: Boolean = false): Either[IR.Result, Request] = {
     val content = line
 
     val trees: List[global.Tree] = parse(content) match {
@@ -564,77 +557,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
    */
   def interpret(line: String): IR.Result = interpret(line, synthetic = false)
   def interpretSynthetic(line: String): IR.Result = interpret(line, synthetic = true)
-  def interpret(line: String, synthetic: Boolean): IR.Result = compile(line, synthetic) match {
-    case Left(result) => result
-    case Right(req)   => new WrappedRequest(req).loadAndRunReq
-  }
-
-  private def compile(line: String, synthetic: Boolean): Either[IR.Result, Request] = {
-    if (global == null) Left(IR.Error)
-    else requestFromLine(line, synthetic) match {
-      case Left(result) => Left(result)
-      case Right(req)   =>
-       // null indicates a disallowed statement type; otherwise compile and
-       // fail if false (implying e.g. a type error)
-       if (req == null || !req.compile) Left(IR.Error) else Right(req)
-    }
-  }
-
-  var code = ""
-  var bound = false
-  def compiled(script: String): CompiledScript = {
-    if (!bound) {
-      quietBind("engine" -> this.asInstanceOf[ScriptEngine])
-      bound = true
-    }
-    val cat = code + script
-    compile(cat, false) match {
-      case Left(result) => result match {
-        case IR.Incomplete => {
-          code = cat + "\n"
-          new CompiledScript {
-            def eval(context: ScriptContext): Object = null
-            def getEngine: ScriptEngine = IMain.this
-          }
-        }
-        case _ => {
-          code = ""
-          throw new ScriptException("compile-time error")
-        }
-      }
-      case Right(req)   => {
-        code = ""
-        new WrappedRequest(req)
-      }
-    }
-  }
-
-  private class WrappedRequest(val req: Request) extends CompiledScript {
-    var recorded = false
-
-    /** In Java we would have to wrap any checked exception in the declared
-     *  ScriptException. Runtime exceptions and errors would be ok and would
-     *  not need to be caught. So let us do the same in Scala : catch and
-     *  wrap any checked exception, and let runtime exceptions and errors
-     *  escape. We could have wrapped runtime exceptions just like other
-     *  exceptions in ScriptException, this is a choice.
-     */
-    @throws[ScriptException]
-    def eval(context: ScriptContext): Object = {
-      val result = req.lineRep.evalEither match {
-        case Left(e: RuntimeException) => throw e
-        case Left(e: Exception) => throw new ScriptException(e)
-        case Left(e) => throw e
-        case Right(result) => result.asInstanceOf[Object]
-      }
-      if (!recorded) {
-        recordRequest(req)
-        recorded = true
-      }
-      result
-    }
-
-    def loadAndRunReq = classLoader.asContext {
+  def interpret(line: String, synthetic: Boolean): IR.Result = {
+    def loadAndRunReq(req: Request) = classLoader.asContext {
       val (result, succeeded) = req.loadAndRun
 
       /** To our displeasure, ConsoleReporter offers only printMessage,
@@ -659,7 +583,21 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       }
     }
 
-    def getEngine: ScriptEngine = IMain.this
+    compile(line, synthetic) match {
+      case Left(result) => result
+      case Right(req)   => loadAndRunReq(req)
+    }
+  }
+
+  private[interpreter] def compile(line: String, synthetic: Boolean): Either[IR.Result, Request] = {
+    if (global == null) Left(IR.Error)
+    else requestFromLine(line, synthetic) match {
+      case err @ Left(result) => err
+      case Right(req)         =>
+       // null indicates a disallowed statement type; otherwise compile and
+       // fail if false (implying e.g. a type error)
+       if (req == null || !req.compile) Left(IR.Error) else Right(req)
+    }
   }
 
   /** Bind a specified name to a specified value.  The name may
@@ -686,7 +624,9 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
         IR.Error
 
       case Right(_) =>
-        val line = "%sval %s = %s.value".format(modifiers map (_ + " ") mkString, name, bindRep.evalPath)
+        //val line = "%sval %s = %s.value".format(modifiers map (_ + " ") mkString, name, bindRep.evalPath)
+        val mods = modifiers mkString " " // live with extra space if mods is empty
+        val line = s"${mods} val $name = ${ bindRep.evalPath }.value"
         repldbg("Interpreting: " + line)
         interpret(line)
     }
@@ -1051,31 +991,6 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     override def toString = "Request(line=%s, %s trees)".format(line, trees.size)
   }
 
-  def createBindings: Bindings = new IBindings {
-    override def put(name: String, value: Object): Object = {
-      val n = name.indexOf(":")
-      val p: NamedParam = if (n < 0) (name, value) else {
-        val nme = name.substring(0, n).trim
-        val tpe = name.substring(n + 1).trim
-        NamedParamClass(nme, tpe, value)
-      }
-      if (!p.name.startsWith("javax.script")) bind(p)
-      null
-    }
-  }
-
-  @throws[ScriptException]
-  def compile(script: String): CompiledScript = eval("new javax.script.CompiledScript { def eval(context: javax.script.ScriptContext): Object = { " + script + " }.asInstanceOf[Object]; def getEngine: javax.script.ScriptEngine = engine }").asInstanceOf[CompiledScript]
-
-  @throws[ScriptException]
-  def compile(reader: java.io.Reader): CompiledScript = compile(stringFromReader(reader))
-
-  @throws[ScriptException]
-  def eval(script: String, context: ScriptContext): Object = compiled(script).eval(context)
-
-  @throws[ScriptException]
-  def eval(reader: java.io.Reader, context: ScriptContext): Object = eval(stringFromReader(reader), context)
-
   override def finalize = close
 
   /** Returns the name of the most recent interpreter result.
@@ -1272,53 +1187,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
 /** Utility methods for the Interpreter. */
 object IMain {
-  import java.util.Arrays.{ asList => asJavaList }
   /** Dummy identifier fragement inserted at the cursor before presentation compilation. Needed to support completion of `global.def<TAB>` */
   val DummyCursorFragment = "_CURSOR_"
-
-  class Factory extends ScriptEngineFactory {
-    @BeanProperty
-    val engineName = "Scala Interpreter"
-
-    @BeanProperty
-    val engineVersion = "1.0"
-
-    @BeanProperty
-    val extensions: JList[String] = asJavaList("scala")
-
-    @BeanProperty
-    val languageName = "Scala"
-
-    @BeanProperty
-    val languageVersion = scala.util.Properties.versionString
-
-    def getMethodCallSyntax(obj: String, m: String, args: String*): String = null
-
-    @BeanProperty
-    val mimeTypes: JList[String] = asJavaList("application/x-scala")
-
-    @BeanProperty
-    val names: JList[String] = asJavaList("scala")
-
-    def getOutputStatement(toDisplay: String): String = null
-
-    def getParameter(key: String): Object = key match {
-      case ScriptEngine.ENGINE => engineName
-      case ScriptEngine.ENGINE_VERSION => engineVersion
-      case ScriptEngine.LANGUAGE => languageName
-      case ScriptEngine.LANGUAGE_VERSION => languageVersion
-      case ScriptEngine.NAME => names.get(0)
-      case _ => null
-    }
-
-    def getProgram(statements: String*): String = null
-
-    def getScriptEngine: ScriptEngine = {
-      val settings = new Settings()
-      settings.usemanifestcp.value = true
-      new IMain(this, settings)
-    }
-  }
 
   // The two name forms this is catching are the two sides of this assignment:
   //
@@ -1371,5 +1241,10 @@ object IMain {
 
     def stripImpl(str: String): String = naming.unmangle(str)
   }
+  private[interpreter] def defaultSettings = new Settings()
+  private[scala] def defaultOut = new NewLinePrintWriter(new ConsoleWriter, true)
+
+  /** construct an interpreter that reports to Console */
+  def apply(initialSettings: Settings = defaultSettings, out: JPrintWriter = defaultOut) = new IMain(initialSettings, out)
 }
 
