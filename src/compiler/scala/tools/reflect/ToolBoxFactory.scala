@@ -38,8 +38,26 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         case None => new VirtualDirectory("(memory)", None)
       }
 
-    class ToolBoxGlobal(settings: scala.tools.nsc.Settings, reporter0: Reporter)
-    extends ReflectGlobal(settings, reporter0, toolBoxSelf.classLoader) {
+    class ReflectToolBoxGlobal(settings: scala.tools.nsc.Settings, reporter0: Reporter)
+      extends ReflectGlobal(settings, reporter0, toolBoxSelf.classLoader) with ToolBoxGlobal
+
+    class NoReflectToolBoxGlobal(settings: scala.tools.nsc.Settings, reporter0: Reporter)
+      extends Global(settings, reporter0) with ToolBoxGlobal {
+      def init(): Unit = {
+        val t = Thread.currentThread()
+        val saved = t.getContextClassLoader
+        t.setContextClassLoader(toolBoxSelf.classLoader) // this will be picked up by `Classpath.urls`
+        try {
+          classPath
+        } finally {
+          t.setContextClassLoader(saved)
+        }
+        new Run
+      }
+      init()
+    }
+
+    trait ToolBoxGlobal extends Global {
       import definitions._
 
       private val trace = scala.tools.nsc.util.trace when settings.debug.value
@@ -332,7 +350,14 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
             val errorFn: String => Unit = msg => frontEnd.log(scala.reflect.internal.util.NoPosition, msg, frontEnd.ERROR)
             val command = new CompilerCommand(arguments.toList, errorFn)
             command.settings.outputDirs setSingleOutput virtualDirectory
-            val instance = new ToolBoxGlobal(command.settings, frontEndToReporter(frontEnd, command.settings))
+            val reporter = frontEndToReporter(frontEnd, command.settings)
+            // TODO This is a pretty ugly switch to make. Should we do the same if `-classpath` is provided
+            //      explicitly? Should we lift this out to a new toolbox factory method alongside `mkToolBox`?
+            val instance =
+              if (command.settings.useurlcp.value)
+                new NoReflectToolBoxGlobal(command.settings, reporter)
+              else
+                new ReflectToolBoxGlobal(command.settings, reporter)
             if (frontEnd.hasErrors) {
               throw ToolBoxError(
                 "reflective compilation has failed: cannot initialize the compiler:" + EOL + EOL +

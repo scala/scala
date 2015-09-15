@@ -121,7 +121,7 @@ object ClassPath {
       if (cl == null) acc.reverse else getClassPath(cl.getParent, cp :: acc)
     }
 
-    val classPath = getClassPath(this.getClass.getClassLoader)
+    val classPath = getClassPath(Thread.currentThread().getContextClassLoader)
     val currentClassPath = classPath.head
 
     currentClassPath ::: (if (currentClassPath.size == 1 && currentClassPath(0).getPath.endsWith(".jar")) {
