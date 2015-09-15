@@ -71,12 +71,12 @@ class NullnessAnalyzerTest extends ClearAfterClass {
     // So in the frame for `ALOAD 0`, the stack is still empty.
 
     val res =
-      """                                                          L0: 0:  NotNull
-        |                                             LINENUMBER 1 L0: 0:  NotNull
-        |                                                     ALOAD 0: 0:  NotNull
-        |INVOKEVIRTUAL java/lang/Object.toString ()Ljava/lang/String;: 0:  NotNull, 1:  NotNull
-        |                                                     ARETURN: 0:  NotNull, 1: Unknown1
-        |                                                          L0: null""".stripMargin
+      sm"""                                                          L0: 0:  NotNull
+          |                                             LINENUMBER 1 L0: 0:  NotNull
+          |                                                     ALOAD 0: 0:  NotNull
+          |INVOKEVIRTUAL java/lang/Object.toString ()Ljava/lang/String;: 0:  NotNull, 1:  NotNull
+          |                                                     ARETURN: 0:  NotNull, 1: Unknown1
+          |                                                          L0: null"""
     assertEquals(showAllNullnessFrames(newNullnessAnalyzer(m), m), res)
   }
 
@@ -217,4 +217,7 @@ class NullnessAnalyzerTest extends ClearAfterClass {
       (trim, 3, NotNull)  // receiver at `trim`
     )) testNullness(a, m, insn, index, nullness)
   }
+
+  // add "sm" interpolator
+  implicit class StrContextStripMarginOps(val stringContext: StringContext) extends scala.reflect.internal.util.StripMarginInterpolator
 }
