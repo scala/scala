@@ -38,7 +38,7 @@ trait Logic extends Debugging  {
     padded.transpose.map(alignedColumns).transpose map (_.mkString(sep)) mkString(lineSep)
   }
 
-  // http://www.cis.upenn.edu/~cis510/tcl/chap3.pdf
+  // ftp://ftp.cis.upenn.edu/pub/cis511/public_html/Spring04/chap3.pdf
   // http://users.encs.concordia.ca/~ta_ahmed/ms_thesis.pdf
   // propositional logic with constants and equality
   trait PropositionalLogic {
