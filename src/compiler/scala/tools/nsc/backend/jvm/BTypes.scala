@@ -97,7 +97,7 @@ abstract class BTypes {
   /**
    * Obtain the BType for a type descriptor or internal name. For class descriptors, the ClassBType
    * is constructed by parsing the corresponding classfile.
-   * 
+   *
    * Some JVM operations use either a full descriptor or only an internal name. Example:
    *   ANEWARRAY java/lang/String    // a new array of strings (internal name for the String class)
    *   ANEWARRAY [Ljava/lang/String; // a new array of array of string (full descriptor for the String class)
@@ -900,7 +900,7 @@ abstract class BTypes {
             // the static flag in the InnerClass table has a special meaning, see InnerClass comment
             i.flags & ~Opcodes.ACC_STATIC,
             if (isStaticNestedClass) Opcodes.ACC_STATIC else 0
-          ) & BCodeAsmCommon.INNER_CLASSES_FLAGS
+          ) & BCodeHelpers.INNER_CLASSES_FLAGS
         )
     })
 

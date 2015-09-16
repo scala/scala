@@ -40,9 +40,7 @@ trait JavaPlatform extends Platform {
   def updateClassPath(subst: Map[ClassPath[AbstractFile], ClassPath[AbstractFile]]) =
     currentClassPath = Some(new DeltaClassPath(currentClassPath.get, subst))
 
-  private def classEmitPhase =
-    if (settings.isBCodeActive) genBCode
-    else genASM
+  private def classEmitPhase = genBCode
 
   def platformPhases = List(
     flatten,        // get rid of inner classes
