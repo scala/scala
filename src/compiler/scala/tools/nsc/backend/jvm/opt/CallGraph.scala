@@ -9,7 +9,6 @@ package opt
 
 import scala.collection.immutable.IntMap
 import scala.reflect.internal.util.{NoPosition, Position}
-import scala.tools.asm.tree.analysis.{Value, Analyzer, BasicInterpreter}
 import scala.tools.asm.{Opcodes, Type, Handle}
 import scala.tools.asm.tree._
 import scala.collection.{concurrent, mutable}
@@ -22,6 +21,7 @@ import BytecodeUtils._
 
 class CallGraph[BT <: BTypes](val btypes: BT) {
   import btypes._
+  import analyzers._
 
   /**
    * The call graph contains the callsites in the program being compiled.
@@ -97,13 +97,12 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
     // It is also used to get the stack height at the call site.
     localOpt.minimalRemoveUnreachableCode(methodNode, definingClass.internalName)
 
-    val analyzer: Analyzer[_ <: Value] = {
-      if (compilerSettings.YoptNullnessTracking) new NullnessAnalyzer
-      else new Analyzer(new BasicInterpreter)
+    val analyzer = {
+      if (compilerSettings.YoptNullnessTracking) new AsmAnalyzer(methodNode, definingClass.internalName, new NullnessAnalyzer)
+      else new AsmAnalyzer(methodNode, definingClass.internalName)
     }
-    analyzer.analyze(definingClass.internalName, methodNode)
 
-    def receiverNotNullByAnalysis(call: MethodInsnNode, numArgs: Int) = analyzer match {
+    def receiverNotNullByAnalysis(call: MethodInsnNode, numArgs: Int) = analyzer.analyzer match {
       case nullnessAnalyzer: NullnessAnalyzer =>
         val frame = nullnessAnalyzer.frameAt(call, methodNode)
         frame.getStack(frame.getStackSize - 1 - numArgs) eq NotNullValue
@@ -149,7 +148,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           callsiteClass = definingClass,
           callee = callee,
           argInfos = argInfos,
-          callsiteStackHeight = analyzer.frameAt(call, methodNode).getStackSize,
+          callsiteStackHeight = analyzer.frameAt(call).getStackSize,
           receiverKnownNotNull = receiverNotNull,
           callsitePosition = callsitePositions.getOrElse(call, NoPosition)
         )

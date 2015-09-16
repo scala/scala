@@ -173,6 +173,11 @@ object BytecodeUtils {
     case Opcodes.IFNONNULL => Opcodes.IFNULL
   }
 
+  def isSize2LoadOrStore(opcode: Int): Boolean = (opcode: @switch) match {
+    case Opcodes.LLOAD | Opcodes.DLOAD | Opcodes.LSTORE | Opcodes.DSTORE => true
+    case _ => false
+  }
+
   def getPop(size: Int): InsnNode = {
     val op = if (size == 1) Opcodes.POP else Opcodes.POP2
     new InsnNode(op)
@@ -220,29 +225,6 @@ object BytecodeUtils {
         if (handler.handler == from) handler.handler = to
         if (handler.end == from) handler.end = to
     }
-  }
-
-  /**
-   * In order to run an Analyzer, the maxLocals / maxStack fields need to be available. The ASM
-   * framework only computes these values during bytecode generation.
-   *
-   * Since there's currently no better way, we run a bytecode generator on the method and extract
-   * the computed values. This required changes to the ASM codebase:
-   *   - the [[MethodWriter]] class was made public
-   *   - accessors for maxLocals / maxStack were added to the MethodWriter class
-   *
-   * We could probably make this faster (and allocate less memory) by hacking the ASM framework
-   * more: create a subclass of MethodWriter with a /dev/null byteVector. Another option would be
-   * to create a separate visitor for computing those values, duplicating the functionality from the
-   * MethodWriter.
-   */
-  def computeMaxLocalsMaxStack(method: MethodNode): Unit = {
-    val cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
-    val excs = method.exceptions.asScala.toArray
-    val mw = cw.visitMethod(method.access, method.name, method.desc, method.signature, excs).asInstanceOf[MethodWriter]
-    method.accept(mw)
-    method.maxLocals = mw.getMaxLocals
-    method.maxStack = mw.getMaxStack
   }
 
   def codeSizeOKForInlining(caller: MethodNode, callee: MethodNode): Boolean = {
@@ -350,15 +332,6 @@ object BytecodeUtils {
       methodNode.instructions.insert(loadInstr, new InsnNode(Opcodes.ACONST_NULL))
       methodNode.instructions.insert(loadInstr, new InsnNode(Opcodes.POP))
     }
-  }
-
-  /**
-   * A wrapper to make ASM's Analyzer a bit easier to use.
-   */
-  class AsmAnalyzer[V <: Value](methodNode: MethodNode, classInternalName: InternalName, interpreter: Interpreter[V] = new BasicInterpreter) {
-    val analyzer = new Analyzer(interpreter)
-    analyzer.analyze(classInternalName, methodNode)
-    def frameAt(instruction: AbstractInsnNode): Frame[V] = analyzer.frameAt(instruction, methodNode)
   }
 
   implicit class AnalyzerExtensions[V <: Value](val analyzer: Analyzer[V]) extends AnyVal {

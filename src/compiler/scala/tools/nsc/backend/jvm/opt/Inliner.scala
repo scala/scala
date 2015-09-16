@@ -8,9 +8,7 @@ package backend.jvm
 package opt
 
 import scala.annotation.tailrec
-import scala.collection.immutable.IntMap
 import scala.tools.asm
-import asm.Handle
 import asm.Opcodes._
 import asm.tree._
 import scala.collection.convert.decorateAsScala._
@@ -18,7 +16,7 @@ import scala.collection.convert.decorateAsJava._
 import AsmUtils._
 import BytecodeUtils._
 import collection.mutable
-import scala.tools.asm.tree.analysis.SourceInterpreter
+import scala.tools.asm.tree.analysis.{Analyzer, SourceInterpreter}
 import BackendReporting._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 
@@ -26,6 +24,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   import btypes._
   import callGraph._
   import inlinerHeuristics._
+  import analyzers._
 
   def eliminateUnreachableCodeAndUpdateCallGraph(methodNode: MethodNode, definingClass: InternalName): Unit = {
     localOpt.minimalRemoveUnreachableCode(methodNode, definingClass) foreach {
@@ -146,7 +145,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         if (!selfTypeOk) {
           // there's no need to run eliminateUnreachableCode here. building the call graph does that
           // already, no code can become unreachable in the meantime.
-          val analyzer = new AsmAnalyzer(callsite.callsiteMethod, callsite.callsiteClass.internalName, new SourceInterpreter)
+          val analyzer = new AsmAnalyzer(callsite.callsiteMethod, callsite.callsiteClass.internalName, new Analyzer(new SourceInterpreter))
           val receiverValue = analyzer.frameAt(callsite.callsiteInstruction).peekStack(traitMethodArgumentTypes.length)
           for (i <- receiverValue.insns.asScala) {
             val cast = new TypeInsnNode(CHECKCAST, selfParamType.internalName)
@@ -410,8 +409,20 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     callsiteMethod.tryCatchBlocks.addAll(cloneTryCatchBlockNodes(callee, labelsMap).asJava)
 
     callsiteMethod.maxLocals += returnType.getSize + callee.maxLocals
-    val numStoredArgs = calleeParamTypes.length + (if (isStaticMethod(callee)) 0 else 1) // every value takes 1 slot on the stack (also long / double), JVMS 2.6.2
-    callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, callee.maxStack + callsiteStackHeight - numStoredArgs)
+    val maxStackOfInlinedCode = {
+      // One slot per value is correct for long / double, see comment in the `analysis` package object.
+      val numStoredArgs = calleeParamTypes.length + (if (isStaticMethod(callee)) 0 else 1)
+      callee.maxStack + callsiteStackHeight - numStoredArgs
+    }
+    val stackHeightAtNullCheck = {
+      // When adding a null check for the receiver, a DUP is inserted, which might cause a new maxStack.
+      // If the callsite has other argument values than the receiver on the stack, these are pop'ed
+      // and stored into locals before the null check, so in that case the maxStack doesn't grow.
+      val stackSlotForNullCheck = if (!isStaticMethod(callee) && !receiverKnownNotNull && calleeParamTypes.isEmpty) 1 else 0
+      callsiteStackHeight + stackSlotForNullCheck
+    }
+
+    callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, math.max(stackHeightAtNullCheck, maxStackOfInlinedCode))
 
     callGraph.addIfMissing(callee, calleeDeclarationClass)
 

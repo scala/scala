@@ -7,6 +7,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.tools.asm
+import scala.tools.nsc.backend.jvm.analysis.Analyzers
 import scala.tools.nsc.backend.jvm.opt._
 import scala.tools.nsc.backend.jvm.BTypes._
 import BackendReporting._
@@ -47,6 +48,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   val closureOptimizer: ClosureOptimizer[this.type] = new ClosureOptimizer(this)
 
   val callGraph: CallGraph[this.type] = new CallGraph(this)
+
+  val analyzers: Analyzers[this.type] = new Analyzers(this)
 
   val backendReporting: BackendReporting = new BackendReportingImpl(global)
 

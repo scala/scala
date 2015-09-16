@@ -31,25 +31,22 @@ object NullnessAnalyzerTest extends ClearAfterClass.Clearable {
 class NullnessAnalyzerTest extends ClearAfterClass {
   ClearAfterClass.stateToClear = NullnessAnalyzerTest
   val noOptCompiler = NullnessAnalyzerTest.noOptCompiler
+  import noOptCompiler.genBCode.bTypes.analyzers._
 
-  def newNullnessAnalyzer(methodNode: MethodNode, classInternalName: InternalName = "C"): NullnessAnalyzer = {
-    val nullnessAnalyzer = new NullnessAnalyzer
-    nullnessAnalyzer.analyze(classInternalName, methodNode)
-    nullnessAnalyzer
-  }
+  def newNullnessAnalyzer(methodNode: MethodNode, classInternalName: InternalName = "C") = new AsmAnalyzer(methodNode, classInternalName, new NullnessAnalyzer)
 
-  def testNullness(analyzer: NullnessAnalyzer, method: MethodNode, query: String, index: Int, nullness: NullnessValue): Unit = {
+  def testNullness(analyzer: AsmAnalyzer[NullnessValue], method: MethodNode, query: String, index: Int, nullness: NullnessValue): Unit = {
     for (i <- findInstr(method, query)) {
-      val r = analyzer.frameAt(i, method).getValue(index)
+      val r = analyzer.frameAt(i).getValue(index)
       assertTrue(s"Expected: $nullness, found: $r. At instr ${textify(i)}", nullness == r)
     }
   }
 
   // debug / helper for writing tests
-  def showAllNullnessFrames(analyzer: NullnessAnalyzer, method: MethodNode): String = {
+  def showAllNullnessFrames(analyzer: AsmAnalyzer[NullnessValue], method: MethodNode): String = {
     val instrLength = method.instructions.iterator.asScala.map(textify(_).length).max
     val lines = for (i <- method.instructions.iterator.asScala) yield {
-      val f = analyzer.frameAt(i, method)
+      val f = analyzer.frameAt(i)
       val frameString = {
         if (f == null) "null"
         else (0 until (f.getLocals + f.getStackSize)).iterator

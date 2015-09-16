@@ -26,7 +26,8 @@ package scala.tools.nsc.backend.jvm
  *    - A `top` index stores the index of the current stack top
  *    - NOTE: for a size-2 local variable at index i, the local variable at i+1 is set to an empty
  *      value. However, for a size-2 value at index i on the stack, the value at i+1 holds the next
- *      stack value.
+ *      stack value. IMPORTANT: this is only the case in ASM's analysis framework, not in bytecode.
+ *      See comment below.
  *  - Defines the `execute(instruction)` method.
  *    - executing mutates the state of the frame according to the effect of the instruction
  *      - pop consumed values from the stack
@@ -56,6 +57,50 @@ package scala.tools.nsc.backend.jvm
  *       - invoke `newControlFlowEdge` (see below)
  *   - the analyzer also tracks active exception handlers at each instruction
  *   - the empty method `newControlFlowEdge` can be overridden to track control flow if required
+ *
+ *
+ * MaxLocals and MaxStack
+ * ----------------------
+ *
+ * At the JVM level, long and double values occupy two slots, both as local variables and on the
+ * stack, as specified in the JVM spec 2.6.2:
+ *   "At any point in time, an operand stack has an associated depth, where a value of type long or
+ *    double contributes two units to the depth and a value of any other type contributes one unit."
+ *
+ * For example, a method
+ *   class A { def f(a: Long, b: Long) = a + b }
+ * has MAXSTACK=4 in the classfile. This value is computed by the ClassWriter / MethodWriter when
+ * generating the classfile (we always pass COMPUTE_MAXS to the ClassWriter).
+ *
+ * For running an ASM Analyzer, long and double values occupy two local variable slots, but only
+ * a single slot on the call stack, as shown by the following snippet:
+ *
+ *   import scala.tools.nsc.backend.jvm._
+ *   import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
+ *   import scala.collection.convert.decorateAsScala._
+ *   import scala.tools.asm.tree.analysis._
+ *
+ *   val cn = AsmUtils.readClass("/Users/luc/scala/scala/sandbox/A.class")
+ *   val m = cn.methods.iterator.asScala.find(_.name == "f").head
+ *
+ *   // the value is read from the classfile, so it's 4
+ *   println(s"maxLocals: ${m.maxLocals}, maxStack: ${m.maxStack}") // maxLocals: 5, maxStack: 4
+ *
+ *   // we can safely set it to 2 for running the analyzer.
+ *   m.maxStack = 2
+ *
+ *   val a = new Analyzer(new BasicInterpreter)
+ *   a.analyze(cn.name, m)
+ *   val addInsn = m.instructions.iterator.asScala.find(_.getOpcode == 97).get // LADD Opcode
+ *   val addFrame = a.frameAt(addInsn, m)
+ *
+ *   addFrame.getStackSize // 2: the two long values only take one slot each
+ *   addFrame.getLocals    // 5: this takes one slot, the two long parameters take 2 slots each
+ *
+ *
+ * While running the optimizer, we need to make sure that the `maxStack` value of a method is
+ * large enough for running an ASM analyzer. We don't need to worry if the value is incorrect in
+ * the JVM perspective: the value will be re-computed and overwritten in the ClassWriter.
  *
  *
  * Lessons learnt while benchmarking the alias tracking analysis

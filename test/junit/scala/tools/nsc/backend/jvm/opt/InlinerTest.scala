@@ -14,7 +14,6 @@ import org.junit.Assert._
 
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
-import scala.tools.nsc.backend.jvm.opt.BytecodeUtils.AsmAnalyzer
 import scala.tools.nsc.io._
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.testing.AssertUtil._
@@ -69,6 +68,7 @@ class InlinerTest extends ClearAfterClass {
 
   val compiler = InlinerTest.compiler
   import compiler.genBCode.bTypes._
+  import compiler.genBCode.bTypes.analyzers._
 
   def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
     InlinerTest.notPerRun.foreach(_.clear())

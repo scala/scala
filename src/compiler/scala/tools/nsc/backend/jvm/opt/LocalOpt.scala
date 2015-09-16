@@ -8,8 +8,7 @@ package backend.jvm
 package opt
 
 import scala.annotation.switch
-import scala.tools.asm.Opcodes
-import scala.tools.asm.tree.analysis.{Analyzer, BasicInterpreter}
+import scala.tools.asm.{Type, ClassWriter, MethodWriter, Opcodes}
 import scala.tools.asm.tree._
 import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
@@ -49,6 +48,39 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 class LocalOpt[BT <: BTypes](val btypes: BT) {
   import LocalOptImpls._
   import btypes._
+  import analyzers._
+
+  /**
+   * In order to run an Analyzer, the maxLocals / maxStack fields need to be available. The ASM
+   * framework only computes these values during bytecode generation.
+   *
+   * Since there's currently no better way, we run a bytecode generator on the method and extract
+   * the computed values. This required changes to the ASM codebase:
+   *   - the [[MethodWriter]] class was made public
+   *   - accessors for maxLocals / maxStack were added to the MethodWriter class
+   *
+   * We could probably make this faster (and allocate less memory) by hacking the ASM framework
+   * more: create a subclass of MethodWriter with a /dev/null byteVector. Another option would be
+   * to create a separate visitor for computing those values, duplicating the functionality from the
+   * MethodWriter.
+   *
+   * NOTE: the maxStack value computed by this method allocates two slots for long / double values,
+   * as required by the JVM spec. For running an Analyzer, one slot per long / double would be fine.
+   * See comment in `analysis` package object.
+   */
+  def computeMaxLocalsMaxStack(method: MethodNode): Unit = {
+    if (!maxLocalsMaxStackComputed(method)) {
+      method.maxLocals = 0
+      method.maxStack = 0
+      val cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
+      val excs = method.exceptions.asScala.toArray
+      val mw = cw.visitMethod(method.access, method.name, method.desc, method.signature, excs).asInstanceOf[MethodWriter]
+      method.accept(mw)
+      method.maxLocals = mw.getMaxLocals
+      method.maxStack = mw.getMaxStack
+      maxLocalsMaxStackComputed += method
+    }
+  }
 
   /**
    * Remove unreachable code from a method.
@@ -179,46 +211,55 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
     codeHandlersOrJumpsChanged || localsRemoved || lineNumbersRemoved || labelsRemoved
   }
 
-}
-
-object LocalOptImpls {
   /**
    * Removes unreachable basic blocks.
-   *
-   * TODO: rewrite, don't use computeMaxLocalsMaxStack (runs a ClassWriter) / Analyzer. Too slow.
    *
    * @return A set containing eliminated instructions, and a set containing all live label nodes.
    */
   def removeUnreachableCodeImpl(method: MethodNode, ownerClassName: InternalName): (Set[AbstractInsnNode], Set[LabelNode]) = {
-    // The data flow analysis requires the maxLocals / maxStack fields of the method to be computed.
-    computeMaxLocalsMaxStack(method)
-    val a = new Analyzer(new BasicInterpreter)
-    a.analyze(ownerClassName, method)
-    val frames = a.getFrames
+    val a = new AsmAnalyzer(method, ownerClassName)
+    val frames = a.analyzer.getFrames
 
     var i = 0
     var liveLabels = Set.empty[LabelNode]
     var removedInstructions = Set.empty[AbstractInsnNode]
+    var maxLocals = Type.getArgumentsAndReturnSizes(method.desc) >> 2 - (if (BytecodeUtils.isStaticMethod(method)) 1 else 0)
+    var maxStack = 0
     val itr = method.instructions.iterator()
     while (itr.hasNext) {
-      itr.next() match {
-        case l: LabelNode =>
-          if (frames(i) != null) liveLabels += l
+      val insn = itr.next()
+      val isLive = frames(i) != null
+      if (isLive) maxStack = math.max(maxStack, frames(i).getStackSize)
 
-        case ins =>
+      insn match {
+        case l: LabelNode =>
           // label nodes are not removed: they might be referenced for example in a LocalVariableNode
-          if (frames(i) == null || ins.getOpcode == Opcodes.NOP) {
+          if (isLive) liveLabels += l
+
+        case v: VarInsnNode if isLive =>
+          val longSize = if (isSize2LoadOrStore(v.getOpcode)) 1 else 0
+          maxLocals = math.max(maxLocals, v.`var` + longSize + 1) // + 1 becauase local numbers are 0-based
+
+        case i: IincInsnNode if isLive =>
+          maxLocals = math.max(maxLocals, i.`var` + 1)
+
+        case _ =>
+          if (!isLive || insn.getOpcode == Opcodes.NOP) {
             // Instruction iterators allow removing during iteration.
             // Removing is O(1): instructions are doubly linked list elements.
             itr.remove()
-            removedInstructions += ins
+            removedInstructions += insn
           }
       }
       i += 1
     }
+    method.maxLocals = maxLocals
+    method.maxStack  = maxStack
     (removedInstructions, liveLabels)
   }
+}
 
+object LocalOptImpls {
   /**
    * Remove exception handlers that cover empty code blocks. A block is considered empty if it
    * consist only of labels, frames, line numbers, nops and gotos.
@@ -311,10 +352,7 @@ object LocalOptImpls {
     // Add the index of the local variable used by `varIns` to the `renumber` array.
     def addVar(varIns: VarInsnNode): Unit = {
       val index = varIns.`var`
-      val isWide = (varIns.getOpcode: @switch) match {
-        case Opcodes.LLOAD | Opcodes.DLOAD | Opcodes.LSTORE | Opcodes.DSTORE => true
-        case _ => false
-      }
+      val isWide = isSize2LoadOrStore(varIns.getOpcode)
 
       // Ensure the length of `renumber`. Unused variable indices are mapped to -1.
       val minLength = if (isWide) index + 2 else index + 1

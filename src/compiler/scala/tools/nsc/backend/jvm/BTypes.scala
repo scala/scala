@@ -11,9 +11,10 @@ import scala.collection.concurrent.TrieMap
 import scala.reflect.internal.util.Position
 import scala.tools.asm
 import asm.Opcodes
-import scala.tools.asm.tree.{MethodNode, MethodInsnNode, InnerClassNode, ClassNode}
+import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
 import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.nsc.backend.jvm.analysis.Analyzers
 import scala.tools.nsc.backend.jvm.opt._
 import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.settings.ScalaSettings
@@ -50,6 +51,8 @@ abstract class BTypes {
 
   val callGraph: CallGraph[this.type]
 
+  val analyzers: Analyzers[this.type]
+
   val backendReporting: BackendReporting
 
   // Allows to define per-run caches here and in the CallGraph component, which don't have a global
@@ -57,7 +60,6 @@ abstract class BTypes {
 
   // Allows access to the compiler settings for backend components that don't have a global in scope
   def compilerSettings: ScalaSettings
-
 
   /**
    * A map from internal names to ClassBTypes. Every ClassBType is added to this map on its
@@ -95,6 +97,13 @@ abstract class BTypes {
    * is already optimized, DCE can return early.
    */
   val unreachableCodeEliminated: collection.mutable.Set[MethodNode] = recordPerRunCache(collection.mutable.Set.empty)
+
+  /**
+   * Cache of methods which have correct `maxLocals` / `maxStack` values assigned. This allows
+   * invoking `computeMaxLocalsMaxStack` whenever running an analyzer but performing the actual
+   * computation only when necessary.
+   */
+  val maxLocalsMaxStackComputed: collection.mutable.Set[MethodNode] = recordPerRunCache(collection.mutable.Set.empty)
 
   /**
    * Obtain the BType for a type descriptor or internal name. For class descriptors, the ClassBType

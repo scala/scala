@@ -14,7 +14,6 @@ import scala.reflect.internal.util.NoPosition
 import scala.tools.asm.{Type, Opcodes}
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
-import scala.tools.nsc.backend.jvm.analysis.ProdConsAnalyzer
 import BytecodeUtils._
 import BackendReporting._
 import Opcodes._
@@ -24,6 +23,7 @@ import scala.collection.convert.decorateAsScala._
 class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
   import btypes._
   import callGraph._
+  import analyzers._
 
   /**
    * If a closure is allocated and invoked within the same method, re-write the invocation to the
@@ -204,7 +204,8 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     insertLoadOps(invocation, ownerMethod, argumentLocalsList)
 
     // update maxStack
-    val numCapturedValues = localsForCapturedValues.locals.length // not `localsForCapturedValues.size`: every value takes 1 slot on the stack (also long / double), JVMS 2.6.2
+    // One slot per value is correct for long / double, see comment in the `analysis` package object.
+    val numCapturedValues = localsForCapturedValues.locals.length
     val invocationStackHeight = stackHeight + numCapturedValues - 1 // -1 because the closure is gone
     if (invocationStackHeight > ownerMethod.maxStack)
       ownerMethod.maxStack = invocationStackHeight
