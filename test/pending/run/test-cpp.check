@@ -6,7 +6,7 @@
 +  locals: value args
    startBlock: 1
 @@ -59,10 +59,6 @@
-   1: 
+   1:
 -    52	CONSTANT(2)
 -    52	STORE_LOCAL(value x)
      52	SCOPE_ENTER value x
@@ -37,7 +37,7 @@
 +  locals: value args
    startBlock: 1
 @@ -157,10 +151,6 @@
-   1: 
+   1:
 -    66	THIS(TestAliasChainDerefThis)
 -    66	STORE_LOCAL(value x)
      66	SCOPE_ENTER value x
@@ -54,7 +54,7 @@
 +  locals: value x
    startBlock: 1
 @@ -198,7 +188,5 @@
-   1: 
+   1:
 -    29	LOAD_LOCAL(value x)
 -    29	STORE_LOCAL(value y)
      29	SCOPE_ENTER value y

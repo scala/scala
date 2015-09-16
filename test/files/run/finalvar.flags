@@ -1,1 +1,1 @@
--Yoverride-vars -Yinline -Ybackend:GenASM
+-Yoverride-vars -Yopt:l:project
