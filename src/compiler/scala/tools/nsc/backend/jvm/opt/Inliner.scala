@@ -143,8 +143,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         // VerifyError. We run a `SourceInterpreter` to find all producer instructions of the
         // receiver value and add a cast to the self type after each.
         if (!selfTypeOk) {
-          // there's no need to run eliminateUnreachableCode here. building the call graph does that
-          // already, no code can become unreachable in the meantime.
+          localOpt.minimalRemoveUnreachableCode(callsite.callsiteMethod, callsite.callsiteClass.internalName)
           val analyzer = new AsmAnalyzer(callsite.callsiteMethod, callsite.callsiteClass.internalName, new Analyzer(new SourceInterpreter))
           val receiverValue = analyzer.frameAt(callsite.callsiteInstruction).peekStack(traitMethodArgumentTypes.length)
           for (i <- receiverValue.insns.asScala) {

@@ -95,7 +95,6 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
     // For now we run a NullnessAnalyzer. It is used to determine if the receiver of an instance
     // call is known to be not-null, in which case we don't have to emit a null check when inlining.
     // It is also used to get the stack height at the call site.
-    localOpt.minimalRemoveUnreachableCode(methodNode, definingClass.internalName)
 
     val analyzer = {
       if (compilerSettings.YoptNullnessTracking) new AsmAnalyzer(methodNode, definingClass.internalName, new NullnessAnalyzer)
@@ -117,7 +116,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
     lazy val prodCons = new ProdConsAnalyzer(methodNode, definingClass.internalName)
 
     methodNode.instructions.iterator.asScala foreach {
-      case call: MethodInsnNode =>
+      case call: MethodInsnNode if analyzer.frameAt(call) != null => // skips over unreachable code
         val callee: Either[OptimizerWarning, Callee] = for {
           (method, declarationClass)     <- byteCodeRepository.methodNode(call.owner, call.name, call.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
           (declarationClassNode, source) <- byteCodeRepository.classNodeAndSource(declarationClass): Either[OptimizerWarning, (ClassNode, Source)]
@@ -153,7 +152,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           callsitePosition = callsitePositions.getOrElse(call, NoPosition)
         )
 
-      case LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType) =>
+      case LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType) if analyzer.frameAt(indy) != null =>
         val lmf = LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType)
         val capturedArgInfos = computeCapturedArgInfos(lmf, prodCons)
         methodClosureInstantiations += indy -> ClosureInstantiation(

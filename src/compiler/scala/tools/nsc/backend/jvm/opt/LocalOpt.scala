@@ -87,7 +87,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
    *
    * This implementation only removes instructions that are unreachable for an ASM analyzer /
    * interpreter. This ensures that future analyses will not produce `null` frames. The inliner
-   * and call graph builder depend on this property.
+   * depends on this property.
    *
    * @return A set containing the eliminated instructions
    */
