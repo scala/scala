@@ -94,8 +94,10 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = false) {
 
   def extractDependenciesFromSrcs(srcs: (Symbol, String)*): ExtractedSourceDependencies = {
     val symbols = srcs.map(_._1)
-    assert(symbols.distinct.size == symbols.size,
-      s"Duplicate symbols for srcs detected: $symbols")
+    assert(
+      symbols.distinct.size == symbols.size,
+      s"Duplicate symbols for srcs detected: $symbols"
+    )
     extractDependenciesFromSrcs(List(srcs.toMap))
   }
 

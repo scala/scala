@@ -96,6 +96,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     // AnyRef is added as default parent of a class
     "scala", "AnyRef",
     // class receives a default constructor which is internally called "<init>"
-    "<init>")
+    "<init>"
+  )
 
 }
