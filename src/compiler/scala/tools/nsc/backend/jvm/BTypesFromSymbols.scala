@@ -29,8 +29,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   import definitions._
   import genBCode._
 
-  val bCodeICodeCommon: BCodeICodeCommon[global.type] = new BCodeICodeCommon(global)
-
   // Why the proxy, see documentation of class [[CoreBTypes]].
   val coreBTypes = new CoreBTypesProxy[this.type](this)
   import coreBTypes._
