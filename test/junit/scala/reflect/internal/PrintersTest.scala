@@ -3,6 +3,7 @@ package scala.reflect.internal
 import org.junit.Test
 import org.junit.Assert._
 import scala.tools.reflect._
+import scala.reflect.internal.util.StringContextStripMarginOps
 import scala.reflect.runtime.universe._
 import scala.reflect.runtime.{currentMirror=>cm}
 import org.junit.runner.RunWith
@@ -68,7 +69,6 @@ object PrinterHelper {
     else assertResultCode(source)(parsedCode = source, wrap = wrapCode)
   }
 
-  implicit class StrContextStripMarginOps(val stringContext: StringContext) extends util.StripMarginInterpolator
 }
 
 import PrinterHelper._

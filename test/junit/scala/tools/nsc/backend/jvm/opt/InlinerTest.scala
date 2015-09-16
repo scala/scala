@@ -27,6 +27,7 @@ import BackendReporting._
 
 import scala.collection.convert.decorateAsScala._
 import scala.tools.testing.ClearAfterClass
+import scala.reflect.internal.util.StringContextStripMarginOps
 
 object InlinerTest extends ClearAfterClass.Clearable {
 
@@ -993,7 +994,4 @@ class InlinerTest extends ClearAfterClass {
     assert(1 == t.collect({case Jump(IFNONNULL, _) => }).size) // one single null check
   }
 
-  // add "sm" interpolator
-  implicit class StrContextStripMarginOps(val stringContext: StringContext)
-      extends scala.reflect.internal.util.StripMarginInterpolator
 }

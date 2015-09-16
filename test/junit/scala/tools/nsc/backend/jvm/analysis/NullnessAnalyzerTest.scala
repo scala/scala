@@ -16,6 +16,7 @@ import ASMConverters._
 import scala.tools.testing.ClearAfterClass
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 import AsmUtils._
+import scala.reflect.internal.util.StringContextStripMarginOps
 
 import scala.collection.convert.decorateAsScala._
 
@@ -218,6 +219,4 @@ class NullnessAnalyzerTest extends ClearAfterClass {
     )) testNullness(a, m, insn, index, nullness)
   }
 
-  // add "sm" interpolator
-  implicit class StrContextStripMarginOps(val stringContext: StringContext) extends scala.reflect.internal.util.StripMarginInterpolator
 }

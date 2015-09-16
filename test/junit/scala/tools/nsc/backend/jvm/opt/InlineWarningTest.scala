@@ -27,6 +27,7 @@ import BackendReporting._
 
 import scala.collection.convert.decorateAsScala._
 import scala.tools.testing.ClearAfterClass
+import scala.reflect.internal.util.StringContextStripMarginOps
 
 object InlineWarningTest extends ClearAfterClass.Clearable {
   val argsNoWarn = "-Ybackend:GenBCode -Yopt:l:classpath"
@@ -192,7 +193,4 @@ class InlineWarningTest extends ClearAfterClass {
     assert(c == 1, c)
   }
 
-  // add "sm" interpolator
-  implicit class StrContextStripMarginOps(val stringContext: StringContext)
-      extends scala.reflect.internal.util.StripMarginInterpolator
 }
