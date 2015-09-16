@@ -94,6 +94,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
   def minimalRemoveUnreachableCode(method: MethodNode, ownerClassName: InternalName): Set[AbstractInsnNode] = {
     if (method.instructions.size == 0) return Set.empty     // fast path for abstract methods
     if (unreachableCodeEliminated(method)) return Set.empty // we know there is no unreachable code
+    if (!AsmAnalyzer.sizeOKForBasicValue(method)) return Set.empty // the method is too large for running an analyzer
 
     // For correctness, after removing unreachable code, we have to eliminate empty exception
     // handlers, see scaladoc of def methodOptimizations. Removing an live handler may render more
@@ -169,9 +170,10 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
     // This triggers "ClassFormatError: Illegal exception table range in class file C". Similar
     // for local variables in dead blocks. Maybe that's a bug in the ASM framework.
 
+    def canRunDCE = AsmAnalyzer.sizeOKForBasicValue(method)
     def removalRound(): Boolean = {
       // unreachable-code, empty-handlers and simplify-jumps run until reaching a fixpoint (see doc on class LocalOpt)
-      val (codeRemoved, handlersRemoved, liveHandlerRemoved) = if (compilerSettings.YoptUnreachableCode) {
+      val (codeRemoved, handlersRemoved, liveHandlerRemoved) = if (compilerSettings.YoptUnreachableCode && canRunDCE) {
         val (removedInstructions, liveLabels) = removeUnreachableCodeImpl(method, ownerClassName)
         val removedHandlers = removeEmptyExceptionHandlers(method)
         (removedInstructions.nonEmpty, removedHandlers.nonEmpty, removedHandlers.exists(h => liveLabels(h.start)))

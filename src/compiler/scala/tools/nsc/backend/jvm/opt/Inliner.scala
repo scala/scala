@@ -143,6 +143,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         // VerifyError. We run a `SourceInterpreter` to find all producer instructions of the
         // receiver value and add a cast to the self type after each.
         if (!selfTypeOk) {
+          // We don't need to worry about the method being too large for running an analysis.
+          // Callsites of large methods are not added to the call graph.
           localOpt.minimalRemoveUnreachableCode(callsite.callsiteMethod, callsite.callsiteClass.internalName)
           val analyzer = new AsmAnalyzer(callsite.callsiteMethod, callsite.callsiteClass.internalName, new Analyzer(new SourceInterpreter))
           val receiverValue = analyzer.frameAt(callsite.callsiteInstruction).peekStack(traitMethodArgumentTypes.length)
@@ -367,6 +369,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
     // We run an interpreter to know the stack height at each xRETURN instruction and the sizes
     // of the values on the stack.
+    // We don't need to worry about the method being too large for running an analysis. Callsites of
+    // large methods are not added to the call graph.
     val analyzer = new AsmAnalyzer(callee, calleeDeclarationClass.internalName)
 
     for (originalReturn <- callee.instructions.iterator().asScala if isReturn(originalReturn)) {
