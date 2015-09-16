@@ -119,7 +119,6 @@ trait ScalaSettings extends AbsScalaSettings
   val require            = MultiStringSetting  ("-Xplugin-require", "plugin", "Abort if a named plugin is not loaded.")
   val pluginsDir         = StringSetting       ("-Xpluginsdir", "path", "Path to search for plugin archives.", Defaults.scalaPluginPath)
   val Xprint             = PhasesSetting       ("-Xprint", "Print out program after")
-  val writeICode         = PhasesSetting       ("-Xprint-icode", "Log internal icode to *.icode files after", "icode")
   val Xprintpos          = BooleanSetting      ("-Xprint-pos", "Print tree positions, as offsets.")
   val printtypes         = BooleanSetting      ("-Xprint-types", "Print tree types (debugging option).")
   val prompt             = BooleanSetting      ("-Xprompt", "Display a prompt after each error (debugging option).")

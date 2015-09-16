@@ -44,7 +44,7 @@ trait TypeKinds { self: ICodes =>
   }
   /** Reverse map for toType */
   private lazy val reversePrimitiveMap: Map[TypeKind, Symbol] =
-    (primitiveTypeMap map (_.swap)).toMap
+    primitiveTypeMap.map(_.swap)
 
   /** This class represents a type kind. Type kinds
    * represent the types that the VM know (or the ICode
@@ -169,7 +169,7 @@ trait TypeKinds { self: ICodes =>
       else if (b.isNullType) a
       else toTypeKind(lub0(a, b))
     }
-    else throw new CheckerException("Incompatible types: " + a + " with " + b)
+    else throw new UnsupportedOperationException("Incompatible types: " + a + " with " + b)
   }
 
   /** The unit value */
