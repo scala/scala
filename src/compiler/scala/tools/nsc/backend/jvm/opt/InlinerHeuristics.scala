@@ -67,24 +67,6 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
     }).filterNot(_._2.isEmpty).toMap
   }
 
-  def higherOrderParams(methodNode: MethodNode, receiverType: ClassBType): IntMap[ClassBType] = {
-    var res = IntMap.empty[ClassBType]
-    val paramTypes = {
-      val params = Type.getMethodType(methodNode.desc).getArgumentTypes.map(t => bTypeForDescriptorOrInternalNameFromClassfile(t.getDescriptor))
-      val isStatic = BytecodeUtils.isStaticMethod(methodNode)
-      if (isStatic) params else receiverType +: params
-    }
-    for (i <- paramTypes.indices) {
-      paramTypes(i) match {
-        case c: ClassBType =>
-          if (c.info.get.inlineInfo.sam.isDefined) res = res.updated(i, c)
-
-        case _ =>
-      }
-    }
-    res
-  }
-
   /**
    * Returns the inline request for a callsite if the callsite should be inlined according to the
    * current heuristics (`-Yopt-inline-heuristics`).

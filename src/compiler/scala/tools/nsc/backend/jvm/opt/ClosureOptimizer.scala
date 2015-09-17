@@ -246,7 +246,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
           safeToRewrite = false, // the lambda body method is not a trait interface method
           annotatedInline = false,
           annotatedNoInline = false,
-          inlinerHeuristics.higherOrderParams(bodyMethodNode, bodyDeclClassType),
+          samParamTypes = callGraph.samParamTypes(bodyMethodNode, bodyDeclClassType),
           calleeInfoWarning = None)
     })
     val bodyMethodCallsite = Callsite(

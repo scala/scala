@@ -112,7 +112,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    */
   def rewriteFinalTraitMethodInvocation(callsite: Callsite): Unit = {
     if (doRewriteTraitCallsite(callsite)) {
-      val Right(Callee(callee, calleeDeclarationClass, _, _, annotatedInline, annotatedNoInline, higherOrderParams, infoWarning)) = callsite.callee
+      val Right(Callee(callee, calleeDeclarationClass, _, _, annotatedInline, annotatedNoInline, samParamTypes, infoWarning)) = callsite.callee
 
       val traitMethodArgumentTypes = asm.Type.getArgumentTypes(callee.desc)
 
@@ -159,9 +159,9 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         callsite.callsiteMethod.instructions.remove(callsite.callsiteInstruction)
 
         callGraph.removeCallsite(callsite.callsiteInstruction, callsite.callsiteMethod)
-        val staticCallHigherOrderParams = {
-          if (selfParamType.info.get.inlineInfo.sam.isEmpty) higherOrderParams - 0
-          else higherOrderParams.updated(0, selfParamType)
+        val staticCallSamParamTypes = {
+          if (selfParamType.info.get.inlineInfo.sam.isEmpty) samParamTypes - 0
+          else samParamTypes.updated(0, selfParamType)
         }
         val staticCallsite = Callsite(
           callsiteInstruction = newCallsiteInstruction,
@@ -174,7 +174,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
             safeToRewrite          = false,
             annotatedInline        = annotatedInline,
             annotatedNoInline      = annotatedNoInline,
-            higherOrderParams      = staticCallHigherOrderParams,
+            samParamTypes          = staticCallSamParamTypes,
             calleeInfoWarning      = infoWarning)),
           argInfos            = callsite.argInfos,
           callsiteStackHeight = callsite.callsiteStackHeight,

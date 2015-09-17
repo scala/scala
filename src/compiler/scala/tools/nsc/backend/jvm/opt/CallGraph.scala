@@ -124,7 +124,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           (declarationClassNode, source) <- byteCodeRepository.classNodeAndSource(declarationClass): Either[OptimizerWarning, (ClassNode, Source)]
           declarationClassBType          =  classBTypeFromClassNode(declarationClassNode)
         } yield {
-          val CallsiteInfo(safeToInline, safeToRewrite, annotatedInline, annotatedNoInline, higherOrderParams, warning) = analyzeCallsite(method, declarationClassBType, call.owner, source)
+          val CallsiteInfo(safeToInline, safeToRewrite, annotatedInline, annotatedNoInline, samParamTypes, warning) = analyzeCallsite(method, declarationClassBType, call.owner, source)
           Callee(
             callee = method,
             calleeDeclarationClass = declarationClassBType,
@@ -132,7 +132,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
             safeToRewrite = safeToRewrite,
             annotatedInline = annotatedInline,
             annotatedNoInline = annotatedNoInline,
-            higherOrderParams = higherOrderParams,
+            samParamTypes = samParamTypes,
             calleeInfoWarning = warning)
         }
 
@@ -173,7 +173,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
                        methodProdCons: => Option[ProdConsAnalyzer] = None): IntMap[ArgInfo] = {
     if (callee.isLeft) IntMap.empty
     else {
-      if (callee.get.higherOrderParams.nonEmpty) {
+      if (callee.get.samParamTypes.nonEmpty) {
 
         val prodCons = methodProdCons.getOrElse({
           localOpt.minimalRemoveUnreachableCode(callsiteMethod, callsiteClass.internalName)
@@ -192,7 +192,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           val numArgs = Type.getArgumentTypes(callsiteInsn.desc).length + (if (callsiteInsn.getOpcode == Opcodes.INVOKESTATIC) 0 else 1)
           callFrame.stackTop - numArgs + 1
         }
-        callee.get.higherOrderParams flatMap {
+        callee.get.samParamTypes flatMap {
           case (index, paramType) =>
             val prods = prodCons.initialProducersForValueAt(callsiteInsn, receiverOrFirstArgSlot + index)
             if (prods.size != 1) None
@@ -211,12 +211,39 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
     }
   }
 
+  def samParamTypes(methodNode: MethodNode, receiverType: ClassBType): IntMap[ClassBType] = {
+    val paramTypes = {
+      val params = Type.getMethodType(methodNode.desc).getArgumentTypes.map(t => bTypeForDescriptorOrInternalNameFromClassfile(t.getDescriptor))
+      val isStatic = BytecodeUtils.isStaticMethod(methodNode)
+      if (isStatic) params else receiverType +: params
+    }
+    samTypes(paramTypes)
+  }
+
+  def capturedSamTypes(lmf: LambdaMetaFactoryCall): IntMap[ClassBType] = {
+    val capturedTypes = Type.getArgumentTypes(lmf.indy.desc).map(t => bTypeForDescriptorOrInternalNameFromClassfile(t.getDescriptor))
+    samTypes(capturedTypes)
+  }
+
+  private def samTypes(types: Array[BType]): IntMap[ClassBType] = {
+    var res = IntMap.empty[ClassBType]
+    for (i <- types.indices) {
+      types(i) match {
+        case c: ClassBType =>
+          if (c.info.get.inlineInfo.sam.isDefined) res = res.updated(i, c)
+
+        case _ =>
+      }
+    }
+    res
+  }
+
   /**
    * Just a named tuple used as return type of `analyzeCallsite`.
    */
   private case class CallsiteInfo(safeToInline: Boolean, safeToRewrite: Boolean,
                                   annotatedInline: Boolean, annotatedNoInline: Boolean,
-                                  higherOrderParams: IntMap[ClassBType],
+                                  samParamTypes: IntMap[ClassBType],
                                   warning: Option[CalleeInfoWarning])
 
   /**
@@ -277,7 +304,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
             safeToRewrite     = canInlineFromSource && isRewritableTraitCall, // (2)
             annotatedInline   = methodInlineInfo.annotatedInline,
             annotatedNoInline = methodInlineInfo.annotatedNoInline,
-            higherOrderParams = inlinerHeuristics.higherOrderParams(calleeMethodNode, receiverType),
+            samParamTypes     = samParamTypes(calleeMethodNode, receiverType),
             warning           = warning)
 
         case None =>
@@ -337,14 +364,14 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    *                               that can be safely re-written to the static implementation method.
    * @param annotatedInline        True if the callee is annotated @inline
    * @param annotatedNoInline      True if the callee is annotated @noinline
-   * @param higherOrderParams      A map from parameter positions to SAM parameter types
+   * @param samParamTypes          A map from parameter positions to SAM parameter types
    * @param calleeInfoWarning      An inliner warning if some information was not available while
    *                               gathering the information about this callee.
    */
   final case class Callee(callee: MethodNode, calleeDeclarationClass: ClassBType,
                           safeToInline: Boolean, safeToRewrite: Boolean,
                           annotatedInline: Boolean, annotatedNoInline: Boolean,
-                          higherOrderParams: IntMap[ClassBType],
+                          samParamTypes: IntMap[ClassBType],
                           calleeInfoWarning: Option[CalleeInfoWarning]) {
     assert(!(safeToInline && safeToRewrite), s"A callee of ${callee.name} can be either safeToInline or safeToRewrite, but not both.")
     override def toString = s"Callee($calleeDeclarationClass.${callee.name})"
