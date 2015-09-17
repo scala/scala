@@ -19,7 +19,6 @@ import scala.collection.mutable
  *
  * @author  Martin Odersky
  * @version 1.0
- * @see     [[scala.tools.nsc.backend.icode.Linearizers]]
  */
 trait WorklistAlgorithm {
   type Elem
