@@ -1,4 +1,4 @@
-Predef.this.classOf[C1]
-Predef.this.classOf[C2]
-Predef.this.classOf[C1]
-Predef.this.classOf[C2]
+scala.Predef.classOf[C1]
+scala.Predef.classOf[C2]
+scala.Predef.classOf[C1]
+scala.Predef.classOf[C2]

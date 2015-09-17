@@ -58,7 +58,7 @@ package <empty> {
       def /*MethodLocalTrait$1$class*/$init$(barParam$1: Int): Unit = {
         ()
       };
-      scala.this.Predef.print(scala.Int.box(barParam$1))
+      scala.Predef.print(scala.Int.box(barParam$1))
     };
     @SerialVersionUID(value = 0) final <synthetic> class $anonfun$tryy$1 extends scala.runtime.AbstractFunction0$mcV$sp with Serializable {
       def <init>($outer: T, tryyParam$1: Int, tryyLocal$1: runtime.IntRef): <$anon: Function0> = {

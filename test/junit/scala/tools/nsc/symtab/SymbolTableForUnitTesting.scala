@@ -119,7 +119,9 @@ class SymbolTableForUnitTesting extends SymbolTable {
     }
     phasesArray
   }
-  lazy val treeInfo: scala.reflect.internal.TreeInfo{val global: SymbolTableForUnitTesting.this.type} = ???
+  lazy val treeInfo = new scala.reflect.internal.TreeInfo {
+    val global: SymbolTableForUnitTesting.this.type = SymbolTableForUnitTesting.this
+  }
 
   val currentFreshNameCreator = new reflect.internal.util.FreshNameCreator
 

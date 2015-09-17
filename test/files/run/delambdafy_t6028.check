@@ -46,7 +46,7 @@ package <empty> {
       def /*MethodLocalTrait$1$class*/$init$(barParam$1: String): Unit = {
         ()
       };
-      scala.this.Predef.print(barParam$1)
+      scala.Predef.print(barParam$1)
     };
     final <artifact> private[this] def $anonfun$2(tryyParam$1: String, tryyLocal$1: runtime.ObjectRef): Unit = try {
       tryyLocal$1.elem = tryyParam$1
