@@ -276,8 +276,8 @@ trait ScalaSettings extends AbsScalaSettings
     name = "-Yopt-inline-heuristics",
     helpArg = "strategy",
     descr = "Set the heuristics for inlining decisions.",
-    choices = List("at-inline-annotated", "everything"),
-    default = "at-inline-annotated")
+    choices = List("at-inline-annotated", "everything", "default"),
+    default = "default")
 
   object YoptWarningsChoices extends MultiChoiceEnumeration {
     val none                               = Choice("none"                       , "No optimizer warnings.")

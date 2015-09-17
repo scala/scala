@@ -1101,4 +1101,37 @@ class InlinerTest extends ClearAfterClass {
     assertInvoke(getSingleMethod(c, "g"), "C", "f") // g itself still has the call to f
     assert(r.isEmpty, r)
   }
+
+  /**
+   * NOTE: if this test fails for you when running within the IDE, it's probably because you're
+   * using 2.12.0-M2 for compilining within the IDE, which doesn't add SAM information to the
+   * InlineInfo attribute. So the InlineInfo in the classfile for Function1 doesn't say that
+   * it's a SAM type. The test passes when running with ant (which does a full bootstrap).
+   */
+  @Test
+  def inlineHigherOrder(): Unit = {
+    val code =
+      """class C {
+        |  final def h(f: Int => Int): Int = f(0)
+        |  def t1 = h(x => x + 1)
+        |  def t2 = {
+        |    val fun = (x: Int) => x + 1
+        |    h(fun)
+        |  }
+        |  def t3(f: Int => Int) = h(f)
+        |  def t4(f: Int => Int) = {
+        |    val fun = f
+        |    h(fun)
+        |  }
+        |  def t5 = h(Map(0 -> 10)) // not currently inlined
+        |}
+      """.stripMargin
+
+    val List(c) = compile(code)
+    assertInvoke(getSingleMethod(c, "t1"), "C", "C$$$anonfun$1")
+    assertInvoke(getSingleMethod(c, "t2"), "C", "C$$$anonfun$2")
+    assertInvoke(getSingleMethod(c, "t3"), "scala/Function1", "apply$mcII$sp")
+    assertInvoke(getSingleMethod(c, "t4"), "scala/Function1", "apply$mcII$sp")
+    assertInvoke(getSingleMethod(c, "t5"), "C", "h")
+  }
 }

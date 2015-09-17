@@ -84,8 +84,16 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
       if (callee.safeToInline && callee.annotatedInline) Some(InlineRequest(callsite, Nil))
       else None
 
-//    case "default" =>
+    case "default" =>
+      val callee = callsite.callee.get
+      if (callee.safeToInline && !callee.annotatedNoInline) {
+        val shouldInlineHO = callee.samParamTypes.nonEmpty && (callee.samParamTypes exists {
+          case (index, _) => callsite.argInfos.contains(index)
+        })
 
+        if (shouldInlineHO || callee.annotatedInline) Some(InlineRequest(callsite, Nil))
+        else None
+      } else None
   }
 
   /*
