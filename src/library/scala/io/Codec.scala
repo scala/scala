@@ -21,8 +21,8 @@ import scala.language.implicitConversions
 // XML: optional encoding parameter.
 //   <?xml version="1.0" encoding="ISO8859-1" ?>
 //
-// MacRoman vs. UTF-8: see http://jira.codehaus.org/browse/JRUBY-3576
-// -Dfile.encoding: see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4375816
+// MacRoman vs. UTF-8: see http://osdir.com/ml/lang-jruby-devel/2009-04/msg00071.html
+// -Dfile.encoding: see http://bugs.java.com/bugdatabase/view_bug.do?bug_id=4375816
 
 /** A class for character encoding/decoding preferences.
  *
