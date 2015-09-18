@@ -54,3 +54,6 @@
 /project/target/
 /project/project/target
 /build-sbt/
+
+# Seems that "dist" directory is not required on git
+/dist/
