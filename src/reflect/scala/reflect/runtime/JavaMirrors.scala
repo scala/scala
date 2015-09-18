@@ -124,9 +124,9 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
     private def ErrorArrayConstructor(sym: Symbol, owner: Symbol) = abort(s"Cannot instantiate arrays with mirrors. Consider using `scala.reflect.ClassTag(<class of element>).newArray(<length>)` instead")
     private def ErrorFree(member: Symbol, freeType: Symbol)       = abort(s"cannot reflect ${member.kindString} ${member.name}, because it's a member of a weak type ${freeType.name}")
     private def ErrorNonExistentField(sym: Symbol)                = abort(
-      sm"""Scala field ${sym.name} isn't represented as a Java field, neither it has a Java accessor method
-          |note that private parameters of class constructors don't get mapped onto fields and/or accessors,
-          |unless they are used outside of their declaring constructors.""")
+      sm"""Scala field ${sym.name} of ${sym.owner} isn't represented as a Java field, nor does it have a
+          |Java accessor method. One common reason for this is that it may be a private class parameter
+          |not used outside the primary constructor.""")
 
     /** Helper functions for extracting typed values from a (Class[_], Any)
      *  representing an annotation argument.
