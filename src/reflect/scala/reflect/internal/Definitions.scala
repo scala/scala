@@ -233,6 +233,8 @@ trait Definitions extends api.StandardDefinitions {
       || tp =:= AnyRefTpe
     )
 
+    def isUnitType(tp: Type) = tp.typeSymbol == UnitClass && tp.annotations.isEmpty
+
     def hasMultipleNonImplicitParamLists(member: Symbol): Boolean = hasMultipleNonImplicitParamLists(member.info)
     def hasMultipleNonImplicitParamLists(info: Type): Boolean = info match {
       case PolyType(_, restpe)                                   => hasMultipleNonImplicitParamLists(restpe)
@@ -1105,6 +1107,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val BridgeClass                = requiredClass[scala.annotation.bridge]
     lazy val ElidableMethodClass        = requiredClass[scala.annotation.elidable]
     lazy val ImplicitNotFoundClass      = requiredClass[scala.annotation.implicitNotFound]
+    lazy val ImplicitAmbiguousClass     = getClassIfDefined("scala.annotation.implicitAmbiguous")
     lazy val MigrationAnnotationClass   = requiredClass[scala.annotation.migration]
     lazy val ScalaStrictFPAttr          = requiredClass[scala.annotation.strictfp]
     lazy val SwitchClass                = requiredClass[scala.annotation.switch]

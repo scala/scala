@@ -226,7 +226,7 @@ trait Scanners extends ScannersCommon {
      *  RPAREN    if region starts with '('
      *  RBRACKET  if region starts with '['
      *  RBRACE    if region starts with '{'
-     *  ARROW     if region starts with `case'
+     *  ARROW     if region starts with 'case'
      *  STRINGLIT if region is a string interpolation expression starting with '${'
      *            (the STRINGLIT appears twice in succession on the stack iff the
      *             expression is a multiline string literal).
@@ -515,7 +515,7 @@ trait Scanners extends ScannersCommon {
               charLitOr(getIdentRest)
             else if (isOperatorPart(ch) && (ch != '\\'))
               charLitOr(getOperatorRest)
-            else {
+            else if (!isAtEnd && (ch != SU && ch != CR && ch != LF || isUnicodeEscape)) {
               getLitChar()
               if (ch == '\'') {
                 nextChar()
@@ -525,6 +525,8 @@ trait Scanners extends ScannersCommon {
                 syntaxError("unclosed character literal")
               }
             }
+            else
+              syntaxError("unclosed character literal")
           }
           fetchSingleQuote()
         case '.' =>
@@ -690,7 +692,7 @@ trait Scanners extends ScannersCommon {
 
     private def unclosedStringLit(): Unit = syntaxError("unclosed string literal")
 
-    private def getRawStringLit(): Unit = {
+    @tailrec private def getRawStringLit(): Unit = {
       if (ch == '\"') {
         nextRawChar()
         if (isTripleQuote()) {
@@ -707,7 +709,7 @@ trait Scanners extends ScannersCommon {
       }
     }
 
-    @scala.annotation.tailrec private def getStringPart(multiLine: Boolean): Unit = {
+    @tailrec private def getStringPart(multiLine: Boolean): Unit = {
       def finishStringPart() = {
         setStrVal()
         token = STRINGPART

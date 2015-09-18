@@ -1,0 +1,28 @@
+t6810.scala:4: error: unclosed character literal
+  val y = '
+          ^
+t6810.scala:5: error: unclosed character literal
+'                     // but not embedded EOL sequences not represented as escapes
+^
+t6810.scala:9: error: unclosed string literal
+  val Y = "
+          ^
+t6810.scala:10: error: unclosed string literal
+"                     // obviously not
+^
+t6810.scala:20: error: unclosed quoted identifier
+  val `
+      ^
+t6810.scala:21: error: unclosed quoted identifier
+` = EOL               // not raw string literals aka triple-quoted, multiline strings
+^
+t6810.scala:24: error: unclosed character literal
+  val b = '
+          ^
+t6810.scala:25: error: unclosed character literal
+'        // CR seen as EOL by scanner
+^
+t6810.scala:24: error: '=' expected but ';' found.
+  val b = '
+^
+9 errors found

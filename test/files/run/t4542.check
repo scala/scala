@@ -5,7 +5,7 @@ scala> @deprecated("foooo", "ReplTest version 1.0-FINAL") class Foo() {
 defined class Foo
 
 scala> val f = new Foo
-<console>:11: warning: class Foo is deprecated: foooo
+<console>:12: warning: class Foo is deprecated: foooo
        val f = new Foo
                    ^
 f: Foo = Bippy

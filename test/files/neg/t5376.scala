@@ -12,7 +12,7 @@ object Test {
     "a": Int
   }
 
-  // Import one implict and one non-implicit method with the
+  // Import one implicit and one non-implicit method with the
   // same name in the same scope.
   def m2 = {
     import O1._

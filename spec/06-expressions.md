@@ -1736,7 +1736,7 @@ so `scala.Any` is the type inferred for `a`.
 _Eta-expansion_ converts an expression of method type to an
 equivalent expression of function type. It proceeds in two steps.
 
-First, one identifes the maximal sub-expressions of $e$; let's
+First, one identifies the maximal sub-expressions of $e$; let's
 say these are $e_1 , \ldots , e_m$. For each of these, one creates a
 fresh name $x_i$. Let $e'$ be the expression resulting from
 replacing every maximal subexpression $e_i$ in $e$ by the

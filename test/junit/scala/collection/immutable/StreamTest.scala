@@ -107,4 +107,20 @@ class StreamTest {
   def withFilter_map_properly_lazy_in_tail: Unit = {
     assertStreamOpLazyInTail(_.withFilter(_ % 2 == 0).map(identity), List(1, 2))
   }
+
+  @Test
+  def test_si9379() {
+    class Boom {
+      private var i = -1
+      def inc = {
+        i += 1
+        if (i > 1000) throw new NoSuchElementException("Boom! Too many elements!")
+        i
+      }
+    }
+    val b = new Boom
+    val s = Stream.continually(b.inc)
+    // zipped.toString must allow s to short-circuit evaluation
+    assertTrue((s, s).zipped.toString contains s.toString)
+  }
 }

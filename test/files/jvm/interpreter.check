@@ -30,7 +30,7 @@ scala> val four: anotherint = 4
 four: anotherint = 4
 
 scala> val bogus: anotherint = "hello"
-<console>:11: error: type mismatch;
+<console>:12: error: type mismatch;
  found   : String("hello")
  required: anotherint
     (which expands to)  Int
@@ -353,7 +353,7 @@ defined class Term
 scala> def f(e: Exp) = e match {  // non-exhaustive warning here
   case _:Fact => 3
 }
-<console>:21: warning: match may not be exhaustive.
+<console>:22: warning: match may not be exhaustive.
 It would fail on the following inputs: Exp(), Term()
        def f(e: Exp) = e match {  // non-exhaustive warning here
                        ^
@@ -363,6 +363,6 @@ scala> :quit
 plusOne: (x: Int)Int
 res0: Int = 6
 res0: String = after reset
-<console>:11: error: not found: value plusOne
+<console>:12: error: not found: value plusOne
        plusOne(5) // should be undefined now
        ^

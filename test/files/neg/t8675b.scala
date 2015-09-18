@@ -9,7 +9,7 @@ object Test {
   }
   trait Reportable1[Params, R]
 
-  // "missing paramater type" error was swallowed in 2.11.0 leading to a crash
+  // "missing parameter type" error was swallowed in 2.11.0 leading to a crash
   // in the backend.
   //
   // This error is itself a regression (or at least a change) in 2.11.0-M7,

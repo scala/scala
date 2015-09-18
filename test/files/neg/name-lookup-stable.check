@@ -6,6 +6,6 @@ import ColumnOption._
 name-lookup-stable.scala:17: error: reference to PrimaryKey is ambiguous;
 it is both defined in class A and imported subsequently by
 import ColumnOption._
-    PrimaryKey // was already ambigious in 2.10.3
+    PrimaryKey // was already ambiguous in 2.10.3
     ^
 two errors found

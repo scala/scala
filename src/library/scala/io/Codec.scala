@@ -22,7 +22,7 @@ import scala.language.implicitConversions
 //   <?xml version="1.0" encoding="ISO8859-1" ?>
 //
 // MacRoman vs. UTF-8: see http://jira.codehaus.org/browse/JRUBY-3576
-// -Dfile.encoding: see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4375816
+// -Dfile.encoding: see http://bugs.java.com/bugdatabase/view_bug.do?bug_id=4375816
 
 /** A class for character encoding/decoding preferences.
  *

@@ -8,17 +8,17 @@ object Test extends SessionTest {
   def session =
 """
 scala> object Y { def f[A](a: => A) = 1 ; def f[A](a: => Either[Exception, A]) = 2 }
-<console>:10: error: double definition:
-def f[A](a: => A): Int at line 10 and
-def f[A](a: => Either[Exception,A]): Int at line 10
+<console>:11: error: double definition:
+def f[A](a: => A): Int at line 11 and
+def f[A](a: => Either[Exception,A]): Int at line 11
 have same type after erasure: (a: Function0)Int
        object Y { def f[A](a: => A) = 1 ; def f[A](a: => Either[Exception, A]) = 2 }
                                               ^
 
 scala> object Y { def f[A](a: => A) = 1 ; def f[A](a: => Either[Exception, A]) = 2 }
-<console>:10: error: double definition:
-def f[A](a: => A): Int at line 10 and
-def f[A](a: => Either[Exception,A]): Int at line 10
+<console>:11: error: double definition:
+def f[A](a: => A): Int at line 11 and
+def f[A](a: => Either[Exception,A]): Int at line 11
 have same type after erasure: (a: Function0)Int
        object Y { def f[A](a: => A) = 1 ; def f[A](a: => Either[Exception, A]) = 2 }
                                               ^
@@ -27,9 +27,9 @@ scala> object Y {
      |   def f[A](a: =>  A) = 1
      |   def f[A](a: => Either[Exception, A]) = 2
      | }
-<console>:12: error: double definition:
-def f[A](a: => A): Int at line 11 and
-def f[A](a: => Either[Exception,A]): Int at line 12
+<console>:13: error: double definition:
+def f[A](a: => A): Int at line 12 and
+def f[A](a: => Either[Exception,A]): Int at line 13
 have same type after erasure: (a: Function0)Int
          def f[A](a: => Either[Exception, A]) = 2
              ^
@@ -44,9 +44,9 @@ object Y {
 
 // Exiting paste mode, now interpreting.
 
-<console>:12: error: double definition:
-def f[A](a: => A): Int at line 11 and
-def f[A](a: => Either[Exception,A]): Int at line 12
+<console>:13: error: double definition:
+def f[A](a: => A): Int at line 12 and
+def f[A](a: => Either[Exception,A]): Int at line 13
 have same type after erasure: (a: Function0)Int
          def f[A](a: => Either[Exception, A]) = 2
              ^

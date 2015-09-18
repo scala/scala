@@ -492,8 +492,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
      *        generic classes or interfaces.
      *
      * @param superName the internal of name of the super class. For interfaces,
-     *        the super class is {@link Object}. May be <tt>null</tt>, but
-     *        only for the {@link Object} class.
+     *        the super class is [[Object]]. May be <tt>null</tt>, but
+     *        only for the [[Object]] class.
      *
      * @param interfaces the internal names of the class's interfaces (see
      *        {@link Type#getInternalName() getInternalName}). May be
@@ -529,6 +529,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
         case e: java.lang.RuntimeException if e.getMessage != null && (e.getMessage contains "too large!") =>
           reporter.error(sym.pos,
             s"Could not write class $jclassName because it exceeds JVM code size limits. ${e.getMessage}")
+        case e: java.io.IOException if e.getMessage != null && (e.getMessage contains "File name too long")  =>
+          reporter.error(sym.pos, e.getMessage + "\n" +
+            "This can happen on some encrypted or legacy file systems.  Please see SI-3623 for more details.")
+
       }
     }
 
@@ -2693,7 +2697,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
               case CMPG =>
                 (kind: @unchecked) match {
                   case FLOAT  => emit(Opcodes.FCMPG)
-                  case DOUBLE => emit(Opcodes.DCMPL) // TODO bug? why not DCMPG? http://docs.oracle.com/javase/specs/jvms/se5.0/html/Instructions2.doc3.html
+                  case DOUBLE => emit(Opcodes.DCMPL) // TODO bug? why not DCMPG? http://docs.oracle.com/javase/specs/jvms/se6/html/Instructions2.doc3.html
 
                 }
             }

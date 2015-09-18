@@ -398,40 +398,46 @@ members of type `Boolean`.
 ### Character Literals
 
 ```ebnf
-characterLiteral  ::=  ‘'’ (printableChar | charEscapeSeq) ‘'’
+characterLiteral  ::=  ‘'’ (charNoQuoteOrNewline | UnicodeEscape | charEscapeSeq) ‘'’
 ```
 
 A character literal is a single character enclosed in quotes.
-The character is either a printable unicode character or is described
-by an [escape sequence](#escape-sequences).
+The character can be any Unicode character except the single quote
+delimiter or `\u000A` (LF) or `\u000D` (CR);
+or any Unicode character represented by either a
+[Unicode escape](01-lexical-syntax.html) or by an [escape sequence](#escape-sequences).
 
 > ```scala
 > 'a'    '\u0041'    '\n'    '\t'
 > ```
 
-Note that `'\u000A'` is _not_ a valid character literal because
-Unicode conversion is done before literal parsing and the Unicode
-character `\u000A` (line feed) is not a printable
-character. One can use instead the escape sequence `'\n'` or
-the octal escape `'\12'` ([see here](#escape-sequences)).
+Note that although Unicode conversion is done early during parsing,
+so that Unicode characters are generally equivalent to their escaped
+expansion in the source text, literal parsing accepts arbitrary
+Unicode escapes, including the character literal `'\u000A'`,
+which can also be written using the escape sequence `'\n'`.
 
 ### String Literals
 
 ```ebnf
 stringLiteral  ::=  ‘"’ {stringElement} ‘"’
-stringElement  ::=  printableCharNoDoubleQuote  |  charEscapeSeq
+stringElement  ::=  charNoDoubleQuoteOrNewline | UnicodeEscape | charEscapeSeq
 ```
 
-A string literal is a sequence of characters in double quotes.  The
-characters are either printable unicode character or are described by
-[escape sequences](#escape-sequences). If the string literal
-contains a double quote character, it must be escaped,
-i.e. `"\""`. The value of a string literal is an instance of
-class `String`.
+A string literal is a sequence of characters in double quotes.
+The characters can be any Unicode character except the double quote
+delimiter or `\u000A` (LF) or `\u000D` (CR);
+or any Unicode character represented by either a
+[Unicode escape](01-lexical-syntax.html) or by an [escape sequence](#escape-sequences).
+
+If the string literal contains a double quote character, it must be escaped using
+`"\""`.
+
+The value of a string literal is an instance of class `String`.
 
 > ```scala
-> "Hello,\nWorld!"
-> "This string contains a \" character."
+> "Hello, world!\n"
+> "\"Hello,\" replied the world."
 > ```
 
 #### Multi-Line String Literals
@@ -443,7 +449,7 @@ multiLineChars  ::=  {[‘"’] [‘"’] charNoDoubleQuote} {‘"’}
 
 A multi-line string literal is a sequence of characters enclosed in
 triple quotes `""" ... """`. The sequence of characters is
-arbitrary, except that it may contain three or more consuctive quote characters
+arbitrary, except that it may contain three or more consecutive quote characters
 only at the very end. Characters
 must not necessarily be printable; newlines or other
 control characters are also permitted.  Unicode escapes work as everywhere else, but none

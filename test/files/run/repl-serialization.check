@@ -20,6 +20,5 @@ u: U = U
   evaluating O
   constructing A
 == reconstituting into a fresh classloader
-  evaluating O
 == evaluating reconstituted lambda
   constructing A

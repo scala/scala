@@ -261,7 +261,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
    * Create a method based on a Function
    *
    * Used both to under `-Ydelambdafy:method` create a lifted function and
-   * under `-Ydelamdafy:inline` to create the apply method on the anonymous
+   * under `-Ydelambdafy:inline` to create the apply method on the anonymous
    * class.
    *
    * It creates a method definition with value params cloned from the

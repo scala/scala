@@ -1,7 +1,7 @@
 package scala.tools.nsc.backend.jvm
 
 /**
- * Summary on the ASM ananlyzer framework
+ * Summary on the ASM analyzer framework
  * --------------------------------------
  *
  * Value
