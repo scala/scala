@@ -409,7 +409,11 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     callsiteMethod.instructions.remove(callsiteInstruction)
 
     callsiteMethod.localVariables.addAll(cloneLocalVariableNodes(callee, labelsMap, callee.name + "_", localVarShift).asJava)
-    callsiteMethod.tryCatchBlocks.addAll(cloneTryCatchBlockNodes(callee, labelsMap).asJava)
+    // prepend the handlers of the callee. the order of handlers matters: when an exception is thrown
+    // at some instruction, the first handler guarding that instruction and having a matching exception
+    // type is executed. prepending the callee's handlers makes sure to test those handlers first if
+    // an exception is thrown in the inlined code.
+    callsiteMethod.tryCatchBlocks.addAll(0, cloneTryCatchBlockNodes(callee, labelsMap).asJava)
 
     callsiteMethod.maxLocals += returnType.getSize + callee.maxLocals
     val maxStackOfInlinedCode = {
