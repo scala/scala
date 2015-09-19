@@ -10,15 +10,9 @@ package nest
 
 import java.io.{
   File,
-  FilenameFilter,
   IOException,
-  StringWriter,
-  FileInputStream,
-  FileOutputStream,
-  BufferedReader,
-  FileReader,
-  PrintWriter,
-  FileWriter
+  OutputStreamWriter,
+  FileOutputStream
 }
 import java.net.URI
 import scala.reflect.io.AbstractFile
@@ -97,6 +91,19 @@ object FileManager {
     val diff = difflib.DiffUtils.diff(original.asJava, revised.asJava)
     if (diff.getDeltas.isEmpty) ""
     else difflib.DiffUtils.generateUnifiedDiff(originalName, revisedName, original.asJava, diff, 1).asScala.mkString("\n")
+  }
+
+  def withTempFile[A](outFile: File, fileBase: String, lines: Seq[String])(body: File => A): A = {
+    val prefix = s"tmp-$fileBase"
+    val suffix = ".check"
+    val f = File.createTempFile(prefix, suffix, outFile)
+    try {
+      import scala.reflect.io.{ File => Feil }
+      Feil(f).writeAll(lines map (line => f"$line%n"): _*)
+      body(f)
+    } finally {
+      f.delete()
+    }
   }
 }
 

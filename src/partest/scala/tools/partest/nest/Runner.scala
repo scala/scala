@@ -18,14 +18,13 @@ import scala.reflect.internal.util.ScalaClassLoader
 import scala.sys.process.{ Process, ProcessLogger }
 import scala.tools.nsc.Properties.{ envOrNone, isWin, jdkHome, javaHome, propOrEmpty, setProp, versionMsg, javaVmName, javaVmVersion, javaVmInfo }
 import scala.tools.nsc.{ Settings, CompilerCommand, Global }
-import scala.tools.nsc.io.{ AbstractFile }
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.{ Exceptional, stackTraceString }
 import scala.util.{ Try, Success, Failure }
 import ClassPath.{ join, split }
 import TestState.{ Pass, Fail, Crash, Uninitialized, Updated }
 
-import FileManager.{compareFiles, compareContents, joinPaths}
+import FileManager.{ compareFiles, compareContents, joinPaths, withTempFile }
 
 class TestTranscript {
   import NestUI.color._
@@ -375,13 +374,13 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
         genUpdated()
       case Some(false) =>
         // Get a word-highlighted diff from git if we can find it
-        val bestDiff = if (updating.isEmpty) "" else {
-          if (checkFile.canRead)
-            gitDiff(logFile, checkFile) getOrElse {
-              s"diff $logFile $checkFile\n$diff"
+        val bestDiff =
+          if (updating.isEmpty) ""
+          else if (checkFile.canRead)
+            withTempFile(outFile, fileBase, filteredCheck) { f =>
+              gitDiff(logFile, f) getOrElse f"diff $logFile $checkFile%n$diff"
             }
           else diff
-        }
         _transcript append bestDiff
         genFail("output differs")
         // TestState.fail("output differs", "output differs",
@@ -606,7 +605,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
     val prompt = "\nnsc> "
     val (swr, wr) = newTestWriters()
 
-    NestUI.verbose(this+" running test "+fileBase)
+    NestUI.verbose(s"$this running test $fileBase")
     val dir = parentFile
     val resFile = new File(dir, fileBase + ".res")
 
