@@ -957,7 +957,7 @@ trait Contexts { self: Analyzer =>
     private def importedAccessibleSymbol(imp: ImportInfo, name: Name, requireExplicit: Boolean, record: Boolean): Symbol =
       imp.importedSymbol(name, requireExplicit, record) filter (s => isAccessible(s, imp.qual.tpe, superAccess = false))
 
-    private def requiresQualifier(s: Symbol) = (
+    private def requiresQualifier(s: Symbol): Boolean = (
          s.owner.isClass
       && !s.owner.isPackageClass
       && !s.isTypeParameterOrSkolem
@@ -967,8 +967,10 @@ trait Contexts { self: Analyzer =>
     /** Must `sym` defined in package object of package `pkg`, if
      *  it selected from a prefix with `pkg` as its type symbol?
      */
-    def isInPackageObject(sym: Symbol, pkg: Symbol): Boolean =
-      pkg.isPackage && sym.owner != pkg && requiresQualifier(sym)
+    def isInPackageObject(sym: Symbol, pkg: Symbol): Boolean = {
+      if (sym.isOverloaded) sym.alternatives.exists(alt => isInPackageObject(alt, pkg))
+      else pkg.isPackage && sym.owner != pkg && requiresQualifier(sym)
+    }
 
     def isNameInScope(name: Name) = lookupSymbol(name, _ => true).isSuccess
 
