@@ -190,8 +190,8 @@ extends scala.collection.AbstractSeq[T]
     val e = if (_end == UndeterminedEnd) _end else start + _end
     var f = first1
     while (f.end <= s && !f.isLast) {
-      if (f.next eq null) f.addMore(more)
-      f = f.next
+      if (f.next eq null) f = f.addMore(more)
+      else f = f.next
     }
     // Warning -- not refining `more` means that slices can freely request and obtain
     // data outside of their slice.  This is part of the design of PagedSeq
