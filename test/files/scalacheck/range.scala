@@ -134,7 +134,22 @@ abstract class RangeTest(kind: String) extends Properties("Range "+kind) {
     val expected = r.length match {
       case 0 => 0
       case 1 => r.head
-      case _ => ((r.head + r.last).toLong * r.length  / 2).toInt
+      case x if x < 1000 => 
+        // Explicit sum, to guard against having the same mistake in both the
+        // range implementation and test implementation of sum formula.
+        // (Yes, this happened before.)
+        var i = r.head
+        var s = 0L
+        var n = x
+        while (n > 0) {
+          s += i
+          i += r.step
+          n -= 1
+        }
+        s.toInt
+      case _ =>
+        // Make sure head + last doesn't overflow!
+        ((r.head.toLong + r.last) * r.length  / 2).toInt
     }
 //   println("size: " + r.length)
 //   println("expected: " + expected)

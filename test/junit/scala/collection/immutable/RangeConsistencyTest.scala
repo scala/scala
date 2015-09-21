@@ -148,4 +148,28 @@ class RangeConsistencyTest {
     val bdRange = bd(-10.0) until bd(0.0) by bd(4.5)
     assert( bdRange sameElements List(bd(-10.0), bd(-5.5), bd(-1.0)) )
   }
+
+  @Test
+  def test_SI9388()  {
+    val possiblyNotDefaultNumeric = new scala.math.Numeric[Int] {
+      def fromInt(x: Int) = x
+      def minus(x: Int, y: Int): Int = x - y
+      def negate(x: Int): Int = -x
+      def plus(x: Int, y: Int): Int = x + y
+      def times(x: Int, y: Int): Int = x*y
+      def toDouble(x: Int): Double = x.toDouble
+      def toFloat(x: Int): Float = x.toFloat
+      def toInt(x: Int): Int = x
+      def toLong(x: Int): Long = x.toLong
+      def compare(x: Int, y: Int) = x compare y
+    }
+    val r = (Int.MinValue to Int.MaxValue by (1<<23))
+    val nr = NumericRange(Int.MinValue, Int.MaxValue, 1 << 23)
+    assert({ var i = 0; r.foreach(_ => i += 1); i } == 512)
+    assert({ var i = 0; nr.foreach(_ => i += 1); i } == 512)
+    assert(r.sum == Int.MinValue)
+    assert(nr.sum == Int.MinValue)
+    assert(r.sum(possiblyNotDefaultNumeric) == Int.MinValue)
+    assert(nr.sum(possiblyNotDefaultNumeric) == Int.MinValue)
+  }
 }
