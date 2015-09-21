@@ -95,11 +95,6 @@ trait ScalacPatternExpanders {
     }
   }
   object alignPatterns extends ScalacPatternExpander {
-    /** Converts a T => (A, B, C) extractor to a T => ((A, B, CC)) extractor.
-     */
-    def tupleExtractor(extractor: Extractor): Extractor =
-      extractor.copy(fixed = tupleType(extractor.fixed) :: Nil)
-
     private def validateAligned(context: Context, tree: Tree, aligned: Aligned): Aligned = {
       import aligned._
 
