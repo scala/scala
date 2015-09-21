@@ -35,7 +35,16 @@ trait MemberHandlers {
         // XXX this is obviously inadequate but it's going to require some effort
         // to get right.
         if (name.toString startsWith "x$") ()
-        else importVars += name
+        else {
+          importVars += name
+          // Needed to import `xxx` during line 2 of:
+          //   scala> val xxx = ""
+          //   scala> def foo: x<TAB>
+          if (name.endsWith(IMain.DummyCursorFragment)) {
+            val stripped = name.stripSuffix(IMain.DummyCursorFragment)
+            importVars += stripped
+          }
+        }
       case _        => super.traverse(ast)
     }
   }

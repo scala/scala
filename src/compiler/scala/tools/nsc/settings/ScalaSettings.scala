@@ -175,6 +175,7 @@ trait ScalaSettings extends AbsScalaSettings
   val YconstOptimization  = BooleanSetting    ("-Yconst-opt", "Perform optimization with constant values.")
   val Ycompacttrees   = BooleanSetting    ("-Ycompact-trees", "Use compact tree printer when displaying trees.")
   val noCompletion    = BooleanSetting    ("-Yno-completion", "Disable tab-completion in the REPL.")
+  val completion      = ChoiceSetting     ("-Ycompletion", "provider", "Select tab-completion in the REPL.", List("pc","adhoc","none"), "pc")
   val Xdce            = BooleanSetting    ("-Ydead-code", "Perform dead code elimination.")
   val debug           = BooleanSetting    ("-Ydebug", "Increase the quantity of debugging output.")
   //val doc           = BooleanSetting    ("-Ydoc", "Generate documentation")
@@ -366,8 +367,8 @@ trait ScalaSettings extends AbsScalaSettings
    */
   val YpresentationVerbose = BooleanSetting("-Ypresentation-verbose", "Print information about presentation compiler tasks.")
   val YpresentationDebug   = BooleanSetting("-Ypresentation-debug",  "Enable debugging output for the presentation compiler.")
-  val YpresentationStrict  = BooleanSetting("-Ypresentation-strict", "Do not report type errors in sources with syntax errors.")
-
+  val YpresentationAnyThread  = BooleanSetting("-Ypresentation-any-thread", "Allow use of the presentation compiler from any thread")
+  val YpresentationStrict     = BooleanSetting("-Ypresentation-strict", "Do not report type errors in sources with syntax errors.")
   val YpresentationLog     = StringSetting("-Ypresentation-log", "file", "Log presentation compiler events into file", "")
   val YpresentationReplay  = StringSetting("-Ypresentation-replay", "file", "Replay presentation compiler events from file", "")
   val YpresentationDelay   = IntSetting("-Ypresentation-delay", "Wait number of ms after typing before starting typechecking", 0, Some((0, 999)), str => Some(str.toInt))

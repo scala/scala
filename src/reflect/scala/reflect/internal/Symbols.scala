@@ -500,6 +500,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       case _            => new StubTermSymbol(this, name.toTermName, missingMessage)
     }
 
+    /** Given a field, construct a term symbol that represents the source construct that gave rise the the field */
+    def sugaredSymbolOrSelf = {
+      val getter = getterIn(owner)
+      if (getter == NoSymbol) {
+        this
+      } else {
+        val result = owner.newValue(getter.name.toTermName, newFlags = getter.flags & ~Flags.METHOD).setPrivateWithin(getter.privateWithin).setInfo(getter.info.resultType)
+        val setter = setterIn(owner)
+        if (setter != NoSymbol) result.setFlag(Flags.MUTABLE)
+        result
+      }
+    }
+
 // ----- locking and unlocking ------------------------------------------------------
 
     // True if the symbol is unlocked.
