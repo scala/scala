@@ -1157,8 +1157,9 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   sealed abstract class CompletionResult {
     type M <: Member
     def results: List[M]
-    /** The (possibly partial) detected that precedes the cursor */
+    /** The (possibly partial) name detected that precedes the cursor */
     def name: Name
+    /** Cursor Offset - positionDelta == position of the start of the name */
     def positionDelta: Int
     def matchingResults(nameMatcher: (Name) => Name => Boolean = entered => candidate => candidate.startsWith(entered)): List[M] = {
       val enteredName = if (name == nme.ERROR) nme.EMPTY else name
@@ -1223,7 +1224,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     def typeCompletions(tree: Tree, qual: Tree, nameStart: Int, name: Name): CompletionResult = {
       val qualPos = qual.pos
       val allTypeMembers = typeMembers(qualPos).toList.flatten
-      val positionDelta: Int = nameStart - pos.start
+      val positionDelta: Int = pos.start - nameStart
       val subName: Name = name.newName(new String(pos.source.content, nameStart, pos.start - nameStart)).encodedName
       CompletionResult.TypeMembers(positionDelta, qual, tree, allTypeMembers, subName)
     }
@@ -1231,7 +1232,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       case imp@Import(i @ Ident(name), head :: Nil) if head.name == nme.ERROR =>
         val allMembers = scopeMembers(pos)
         val nameStart = i.pos.start
-        val positionDelta: Int = nameStart - pos.start
+        val positionDelta: Int = pos.start - nameStart
         val subName = name.subName(0, pos.start - i.pos.start)
         CompletionResult.ScopeMembers(positionDelta, allMembers, subName)
       case imp@Import(qual, selectors) =>
@@ -1250,8 +1251,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         typeCompletions(sel, qual, nameStart, name)
       case Ident(name) =>
         val allMembers = scopeMembers(pos)
-        val positionDelta: Int = focus1.pos.start - pos.start
-        val subName = name.subName(0, -positionDelta)
+        val positionDelta: Int = pos.start - focus1.pos.start
+        val subName = name.subName(0, positionDelta)
         CompletionResult.ScopeMembers(positionDelta, allMembers, subName)
       case _ =>
         CompletionResult.NoResults

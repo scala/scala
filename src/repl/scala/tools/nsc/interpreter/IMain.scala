@@ -1180,7 +1180,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     case class Incomplete(trees: List[Tree]) extends Result
     case class Success(trees: List[Tree]) extends Result
 
-    def apply(line: String, forPresentation: Boolean = false): Result = debugging(s"""parse("$line")""")  {
+    def apply(line: String): Result = debugging(s"""parse("$line")""")  {
       var isIncomplete = false
       def parse = {
         reporter.reset()
