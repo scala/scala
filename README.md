@@ -65,7 +65,7 @@ scala/
 
 ## Requirements
 
-You'll need a Java SDK (6 or newer), Apache Ant (version 1.8.0 or above), and curl (for `./pull-binary-libs.sh`).
+You'll need a Java SDK (6 or newer), Apache Ant (version 1.9.0 or above), and curl (for `./pull-binary-libs.sh`).
 
 ## Git Hygiene
 
