@@ -1182,11 +1182,23 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     private def eliminateModuleDefs(moduleDef: Tree): List[Tree] = exitingRefchecks {
       val ModuleDef(_, _, impl) = moduleDef
       val module        = moduleDef.symbol
+      val moduleClass   = module.moduleClass
       val site          = module.owner
       val moduleName    = module.name.toTermName
       // The typer doesn't take kindly to seeing this ClassDef; we have to
       // set NoType so it will be ignored.
-      val cdef          = ClassDef(module.moduleClass, impl) setType NoType
+      val cdef          = ClassDef(moduleClass, impl) setType NoType
+
+      // This code is related to the fix of SI-9375, which stops adding `readResolve` methods to
+      // non-static (nested) modules. Before the fix, the method would cause the module accessor
+      // to become notPrivate. To prevent binary changes in the 2.11.x branch, we mimic that behavior.
+      // There is a bit of code duplication between here and SyntheticMethods. We cannot call
+      // makeNotPrivate already in SyntheticMethod: that is during type checking, and not all references
+      // are resolved yet, so we cannot rename a definition. This code doesn't exist in the 2.12.x branch.
+      def hasConcreteImpl(name: Name) = moduleClass.info.member(name).alternatives exists (m => !m.isDeferred)
+      val hadReadResolveBeforeSI9375 = moduleClass.isSerializable && !hasConcreteImpl(nme.readResolve)
+      if (hadReadResolveBeforeSI9375)
+        moduleClass.sourceModule.makeNotPrivate(moduleClass.sourceModule.owner)
 
       // Create the module var unless the immediate owner is a class and
       // the module var already exists there. See SI-5012, SI-6712.
@@ -1210,7 +1222,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       }
       def matchingInnerObject() = {
         val newFlags = (module.flags | STABLE) & ~MODULE
-        val newInfo  = NullaryMethodType(module.moduleClass.tpe)
+        val newInfo  = NullaryMethodType(moduleClass.tpe)
         val accessor = site.newMethod(moduleName, module.pos, newFlags) setInfoAndEnter newInfo
 
         DefDef(accessor, Select(This(site), module)) :: Nil
