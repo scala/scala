@@ -21,7 +21,7 @@ import generic._
  *  @author  Martin Odersky
  *  @version 2.8
  *  @since   1
- *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#mutable_queues "Scala's Collection Library overview"]]
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#queues "Scala's Collection Library overview"]]
  *  section on `Queues` for more information.
  *
  *  @define Coll `mutable.Queue`

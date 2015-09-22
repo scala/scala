@@ -454,6 +454,11 @@ TODO:
     </condition>
 
     <fail if="has.unsupported.jdk" message="JDK ${ant.java.version} is not supported by this build!"/>
+    <fail message="Ant 1.9+ required">
+      <condition>
+        <not><antversion atleast="1.9" /></not>
+      </condition>
+    </fail>
 
     <!-- Allow this to be overridden simply -->
     <property name="sbt.latest.version"    value="0.12.4"/>
@@ -717,6 +722,7 @@ TODO:
 
     <path id="quick.repl.build.path">
       <path refid="quick.compiler.build.path"/>
+      <path refid="quick.interactive.build.path"/>
       <pathelement location="${build-quick.dir}/classes/repl"/>
     </path>
 
@@ -1074,7 +1080,7 @@ TODO:
   <target name="quick.comp"       depends="quick.reflect">
     <staged-build with="locker"   stage="quick" project="compiler"/> </target>
 
-  <target name="quick.repl"       depends="quick.comp">
+  <target name="quick.repl"       depends="quick.comp, quick.interactive">
     <staged-build with="locker"   stage="quick" project="repl"/>
     <staged-build with="locker"   stage="quick" project="repl-jline"/>
 

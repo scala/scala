@@ -2524,6 +2524,9 @@ trait Types
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
     override def narrow: Type = resultType.narrow
 
+    // SI-9475: PolyTypes with dependent method types are still dependent
+    override def isDependentMethodType = resultType.isDependentMethodType
+
     /** @M: typeDefSig wraps a TypeBounds in a PolyType
      *  to represent a higher-kinded type parameter
      *  wrap lo&hi in polytypes to bind variables

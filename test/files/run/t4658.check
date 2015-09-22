@@ -1,5 +1,5 @@
 Ranges:
-1073741824
+-1073741824
 1073741824
 0
 0
@@ -20,7 +20,7 @@ Ranges:
 -10
 IntRanges:
 -1073741824
--1073741824
+1073741824
 0
 0
 55
@@ -78,3 +78,6 @@ BigIntRanges:
 -24
 -30
 -10
+BigInt agrees with Long: true
+Long agrees with Int when rounded: true
+Numeric Int agrees with Range: true

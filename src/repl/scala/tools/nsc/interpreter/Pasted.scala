@@ -15,19 +15,23 @@ package interpreter
  *  a transcript should itself be pasteable and should achieve
  *  the same result.
  */
-abstract class Pasted {
-  def interpret(line: String): Unit
-  def ContinueString: String
-  def PromptString: String
-  def AltPromptString: String = "scala> "
+abstract class Pasted(prompt: String) {
+  def interpret(line: String): IR.Result
+  def echo(message: String): Unit
 
-  /* `testBoth` cannot be a val, as `Pasted` is inherited by `object paste` in ILoop,
-    which would cause `val testBoth` to be initialized before `val PromptString` was.
+  val PromptString    = prompt.lines.toList.last
+  val AltPromptString = "scala> "
+  val ContinuePrompt  = replProps.continuePrompt
+  val ContinueString  = replProps.continueText     // "     | "
+  val anyPrompt = {
+    import scala.util.matching.Regex.quote
+    s"""\\s*(?:${quote(PromptString.trim)}|${quote(AltPromptString.trim)})\\s*""".r
+  }
 
-      object paste extends Pasted {
-        val PromptString   = prompt.lines.toList.last
-  */
-  private def testBoth = PromptString != AltPromptString
+  def isPrompted(line: String)   = matchesPrompt(line)
+  def isPromptOnly(line: String) = line match { case anyPrompt() => true ; case _ => false }
+
+  private val testBoth = PromptString != AltPromptString
   private val spacey   = " \t".toSet
 
   def matchesPrompt(line: String) = matchesString(line, PromptString) || testBoth && matchesString(line, AltPromptString)
@@ -91,13 +95,26 @@ abstract class Pasted {
       case _ => code
     }
 
-    def run(): Unit = {
-      println("// Replaying %d commands from transcript.\n" format cmds.size)
-      cmds foreach { cmd =>
-        print(ActualPromptString)
-        interpret(cmd)
-      }
+    def interpreted(line: String) = {
+      echo(line.trim)
+      val res = interpret(line)
+      if (res != IR.Incomplete) echo("")
+      res
     }
+    def incompletely(cmd: String) = {
+      print(ActualPromptString)
+      interpreted(cmd) == IR.Incomplete
+    }
+    def run(): Option[String] = {
+      echo(s"// Replaying ${cmds.size} commands from transcript.\n")
+      cmds find incompletely
+    }
+  }
+
+  // Run transcript and return incomplete line if any.
+  def transcript(lines: TraversableOnce[String]): Option[String] = {
+    echo("\n// Detected repl transcript. Paste more, or ctrl-D to finish.\n")
+    apply(lines)
   }
 
   /** Commands start on lines beginning with "scala>" and each successive
@@ -105,9 +122,10 @@ abstract class Pasted {
    *  Everything else is discarded.  When the end of the transcript is spotted,
    *  all the commands are replayed.
    */
-  def apply(lines: TraversableOnce[String]) = {
+  def apply(lines: TraversableOnce[String]): Option[String] = {
     isRunning = true
-    try new PasteAnalyzer(lines.toList) run()
+    try new PasteAnalyzer(lines.toList).run()
     finally isRunning = false
   }
+  def unapply(line: String): Boolean = isPrompted(line)
 }
