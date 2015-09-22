@@ -21,6 +21,7 @@ import scala.tools.nsc.typechecker.Typers
 import scala.util.control.Breaks._
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.JavaConverters.mapAsScalaMapConverter
+import scala.reflect.internal.Chars.isIdentifierStart
 
 /**
  * This trait allows the IDE to have an instance of the PC that
@@ -122,6 +123,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   val debugIDE: Boolean = settings.YpresentationDebug.value
   val verboseIDE: Boolean = settings.YpresentationVerbose.value
+  private val anyThread: Boolean = settings.YpresentationAnyThread.value
 
   private def replayName = settings.YpresentationReplay.value
   private def logName = settings.YpresentationLog.value
@@ -521,7 +523,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    */
   @elidable(elidable.WARNING)
   override def assertCorrectThread() {
-    assert(initializing || onCompilerThread,
+    assert(initializing || anyThread || onCompilerThread,
         "Race condition detected: You are running a presentation compiler method outside the PC thread.[phase: %s]".format(globalPhase) +
         " Please file a ticket with the current stack trace at https://www.assembla.com/spaces/scala-ide/support/tickets")
   }
@@ -650,7 +652,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** Make sure unit is typechecked
    */
-  private def typeCheck(unit: RichCompilationUnit) {
+  private[scala] def typeCheck(unit: RichCompilationUnit) {
     debugLog("type checking: "+unit)
     parseAndEnter(unit)
     unit.status = PartiallyChecked
@@ -781,7 +783,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** A fully attributed tree located at position `pos` */
-  private[interactive] def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
+  private[scala] def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
     case None =>
       reloadSources(List(pos.source))
       try typedTreeAt(pos)
@@ -987,7 +989,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     def add(sym: Symbol, pre: Type, implicitlyAdded: Boolean)(toMember: (Symbol, Type) => M) {
       if ((sym.isGetter || sym.isSetter) && sym.accessed != NoSymbol) {
         add(sym.accessed, pre, implicitlyAdded)(toMember)
-      } else if (!sym.name.decodedName.containsName("$") && !sym.isSynthetic && sym.hasRawInfo) {
+      } else if (!sym.name.decodedName.containsName("$") && !sym.isError && !sym.isArtifact && sym.hasRawInfo) {
         val symtpe = pre.memberType(sym) onTypeError ErrorType
         matching(sym, symtpe, this(sym.name)) match {
           case Some(m) =>
@@ -1019,10 +1021,12 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     def addScopeMember(sym: Symbol, pre: Type, viaImport: Tree) =
       locals.add(sym, pre, implicitlyAdded = false) { (s, st) =>
         // imported val and var are always marked as inaccessible, but they could be accessed through their getters. SI-7995
-        if (s.hasGetter)
+        val member = if (s.hasGetter)
           new ScopeMember(s, st, context.isAccessible(s.getter, pre, superAccess = false), viaImport)
         else
           new ScopeMember(s, st, context.isAccessible(s, pre, superAccess = false), viaImport)
+        member.prefix = pre
+        member
       }
     def localsToEnclosing() = {
       enclosing.addNonShadowed(locals)
@@ -1089,10 +1093,13 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     def addTypeMember(sym: Symbol, pre: Type, inherited: Boolean, viaView: Symbol) = {
       val implicitlyAdded = viaView != NoSymbol
       members.add(sym, pre, implicitlyAdded) { (s, st) =>
-        new TypeMember(s, st,
+        val result = new TypeMember(s, st,
           context.isAccessible(if (s.hasGetter) s.getterIn(s.owner) else s, pre, superAccess && !implicitlyAdded),
           inherited,
           viaView)
+        result.prefix = pre
+        result
+
       }
     }
 
@@ -1135,6 +1142,112 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       Stream(members.allMembers)
     }
   }
+
+  sealed abstract class CompletionResult {
+    type M <: Member
+    def results: List[M]
+    /** The (possibly partial) name detected that precedes the cursor */
+    def name: Name
+    /** Cursor Offset - positionDelta == position of the start of the name */
+    def positionDelta: Int
+    def matchingResults(nameMatcher: (Name) => Name => Boolean = entered => candidate => candidate.startsWith(entered)): List[M] = {
+      val enteredName = if (name == nme.ERROR) nme.EMPTY else name
+      val matcher = nameMatcher(enteredName)
+      results filter { (member: Member) =>
+        val symbol = member.sym
+        def isStable = member.tpe.isStable || member.sym.isStable || member.sym.getterIn(member.sym.owner).isStable
+        def isJunk = symbol.name.isEmpty || !isIdentifierStart(member.sym.name.charAt(0)) // e.g. <byname>
+        !isJunk && member.accessible && !symbol.isConstructor && (name.isEmpty || matcher(member.sym.name) && (symbol.name.isTermName == name.isTermName || name.isTypeName && isStable))
+      }
+    }
+  }
+  object CompletionResult {
+    final case class ScopeMembers(positionDelta: Int, results: List[ScopeMember], name: Name) extends CompletionResult {
+      type M = ScopeMember
+    }
+    final case class TypeMembers(positionDelta: Int, qualifier: Tree, tree: Tree, results: List[TypeMember], name: Name) extends CompletionResult {
+      type M = TypeMember
+    }
+    case object NoResults extends CompletionResult {
+      override def results = Nil
+      override def name = nme.EMPTY
+      override def positionDelta = 0
+
+    }
+    private val CamelRegex = "([A-Z][^A-Z]*)".r
+    private def camelComponents(s: String): List[String] = {
+      CamelRegex.findAllIn("X" + s).toList match { case head :: tail => head.drop(1) :: tail; case Nil => Nil }
+    }
+    def camelMatch(entered: Name): Name => Boolean = {
+      val enteredS = entered.toString
+      val enteredLowercaseSet = enteredS.toLowerCase().toSet
+
+      (candidate: Name) => {
+        def candidateChunks = camelComponents(candidate.toString)
+        // Loosely based on IntelliJ's autocompletion: the user can just write everything in
+        // lowercase, as we'll let `isl` match `GenIndexedSeqLike` or `isLovely`.
+        def lenientMatch(entered: String, candidate: List[String], matchCount: Int): Boolean = {
+          candidate match {
+            case Nil => entered.isEmpty && matchCount > 0
+            case head :: tail =>
+              val enteredAlternatives = Set(entered, entered.capitalize)
+              head.inits.filter(_.length <= entered.length).exists(init =>
+                enteredAlternatives.exists(entered =>
+                  lenientMatch(entered.stripPrefix(init), tail, matchCount + (if (init.isEmpty) 0 else 1))
+                )
+              )
+          }
+        }
+        val containsAllEnteredChars = {
+          // Trying to rule out some candidates quickly before the more expensive `lenientMatch`
+          val candidateLowercaseSet = candidate.toString.toLowerCase().toSet
+          enteredLowercaseSet.diff(candidateLowercaseSet).isEmpty
+        }
+        containsAllEnteredChars && lenientMatch(enteredS, candidateChunks, 0)
+      }
+    }
+  }
+
+  final def completionsAt(pos: Position): CompletionResult = {
+    val focus1: Tree = typedTreeAt(pos)
+    def typeCompletions(tree: Tree, qual: Tree, nameStart: Int, name: Name): CompletionResult = {
+      val qualPos = qual.pos
+      val allTypeMembers = typeMembers(qualPos).toList.flatten
+      val positionDelta: Int = pos.start - nameStart
+      val subName: Name = name.newName(new String(pos.source.content, nameStart, pos.start - nameStart)).encodedName
+      CompletionResult.TypeMembers(positionDelta, qual, tree, allTypeMembers, subName)
+    }
+    focus1 match {
+      case imp@Import(i @ Ident(name), head :: Nil) if head.name == nme.ERROR =>
+        val allMembers = scopeMembers(pos)
+        val nameStart = i.pos.start
+        val positionDelta: Int = pos.start - nameStart
+        val subName = name.subName(0, pos.start - i.pos.start)
+        CompletionResult.ScopeMembers(positionDelta, allMembers, subName)
+      case imp@Import(qual, selectors) =>
+        selectors.reverseIterator.find(_.namePos <= pos.start) match {
+          case None => CompletionResult.NoResults
+          case Some(selector) =>
+            typeCompletions(imp, qual, selector.namePos, selector.name)
+        }
+      case sel@Select(qual, name) =>
+        val qualPos = qual.pos
+        def fallback = qualPos.end + 2
+        val source = pos.source
+        val nameStart: Int = (qualPos.end + 1 until focus1.pos.end).find(p =>
+          source.identifier(source.position(p)).exists(_.length > 0)
+        ).getOrElse(fallback)
+        typeCompletions(sel, qual, nameStart, name)
+      case Ident(name) =>
+        val allMembers = scopeMembers(pos)
+        val positionDelta: Int = pos.start - focus1.pos.start
+        val subName = name.subName(0, positionDelta)
+        CompletionResult.ScopeMembers(positionDelta, allMembers, subName)
+      case _ =>
+        CompletionResult.NoResults
+    }
+  }
+
 
   /** Implements CompilerControl.askLoadedTyped */
   private[interactive] def waitLoadedTyped(source: SourceFile, response: Response[Tree], keepLoaded: Boolean = false, onSameThread: Boolean = true) {
