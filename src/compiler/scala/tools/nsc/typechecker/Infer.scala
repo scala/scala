@@ -308,7 +308,11 @@ trait Infer extends Checkable {
         || isCompatibleSam(tp, pt)
       )
     }
-    def isCompatibleArgs(tps: List[Type], pts: List[Type]) = (tps corresponds pts)(isCompatible)
+    def isCompatibleArgs(tps: List[Type], pts: List[Type]) = (tps corresponds pts) { (tp, pt) =>
+      (    context.inTuplingEnabled
+        || (isRepeatedParamType(tp) == isRepeatedParamType(pt))   // no tupling, so only varargs conform to varargs
+      ) && isCompatible(tp, pt)
+    }
 
     def isWeaklyCompatible(tp: Type, pt: Type): Boolean = {
       def isCompatibleNoParamsMethod = tp match {
@@ -1277,8 +1281,8 @@ trait Infer extends Checkable {
      *  If no alternative matches `pt`, take the parameterless one anyway.
      */
     def inferExprAlternative(tree: Tree, pt: Type): Tree = {
-      val `context'` = context
-      class InferTwice(pre: Type, alts: List[Symbol]) extends `context'`.TryTwice {
+      val contextVal = context
+      class InferTwice(pre: Type, alts: List[Symbol]) extends contextVal.TryTwice {
         def tryOnce(isSecondTry: Boolean): Unit = {
           val alts0 = alts filter (alt => isWeaklyCompatible(pre memberType alt, pt))
           val alts1 = if (alts0.isEmpty) alts else alts0
@@ -1387,8 +1391,8 @@ trait Infer extends Checkable {
       // This potentially makes up to four attempts: tryOnce may execute
       // with and without views enabled, and bestForExpectedType will try again
       // with pt = WildcardType if it fails with pt != WildcardType.
-      val `context'` = context
-      class InferMethodAlternativeTwice extends `context'`.TryTwice {
+      val contextVal = context
+      class InferMethodAlternativeTwice extends contextVal.TryTwice {
         private[this] val OverloadedType(pre, alts) = tree.tpe
         private[this] var varargsStar = false
         private[this] val argtpes = argtpes0 mapConserve {
