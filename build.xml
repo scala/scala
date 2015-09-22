@@ -454,6 +454,11 @@ TODO:
     </condition>
 
     <fail if="has.unsupported.jdk" message="JDK ${ant.java.version} is not supported by this build!"/>
+    <fail message="Ant 1.9+ required">
+      <condition>
+        <not><antversion atleast="1.9" /></not>
+      </condition>
+    </fail>
 
     <!-- Allow this to be overridden simply -->
     <property name="sbt.latest.version"    value="0.12.4"/>

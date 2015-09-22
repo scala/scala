@@ -1156,8 +1156,6 @@ private[immutable] trait VectorPointer[T] {
         if (depth == 3) {
           display3 = new Array(32)
           display3((oldIndex >> 15) & 31) = display2
-          display2 = new Array(32)
-          display1 = new Array(32)
           depth +=1
         }
         display2 = display3((newIndex >> 15) & 31).asInstanceOf[Array[AnyRef]]
@@ -1170,9 +1168,6 @@ private[immutable] trait VectorPointer[T] {
         if (depth == 4) {
           display4 = new Array(32)
           display4((oldIndex >> 20) & 31) = display3
-          display3 = new Array(32)
-          display2 = new Array(32)
-          display1 = new Array(32)
           depth +=1
         }
         display3 = display4((newIndex >> 20) & 31).asInstanceOf[Array[AnyRef]]
@@ -1187,13 +1182,9 @@ private[immutable] trait VectorPointer[T] {
         if (depth == 5) {
           display5 = new Array(32)
           display5((oldIndex >>  25) & 31) = display4
-          display4 = new Array(32)
-          display3 = new Array(32)
-          display2 = new Array(32)
-          display1 = new Array(32)
           depth +=1
         }
-        display4 = display5((newIndex >> 20) & 31).asInstanceOf[Array[AnyRef]]
+        display4 = display5((newIndex >> 25) & 31).asInstanceOf[Array[AnyRef]]
         if (display4 == null) display4 = new Array(32)
         display3 = display4((newIndex >> 20) & 31).asInstanceOf[Array[AnyRef]]
         if (display3 == null) display3 = new Array(32)
