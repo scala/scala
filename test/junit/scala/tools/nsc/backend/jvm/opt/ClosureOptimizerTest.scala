@@ -13,7 +13,6 @@ import org.junit.Assert._
 
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
-import scala.tools.nsc.backend.jvm.opt.BytecodeUtils.AsmAnalyzer
 import scala.tools.nsc.io._
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.testing.AssertUtil._
@@ -29,7 +28,7 @@ import scala.collection.convert.decorateAsScala._
 import scala.tools.testing.ClearAfterClass
 
 object ClosureOptimizerTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Yopt:l:classpath -Yopt-warnings")
+  var compiler = newCompiler(extraArgs = "-Yopt:l:classpath -Yopt-warnings:_")
   def clear(): Unit = { compiler = null }
 }
 

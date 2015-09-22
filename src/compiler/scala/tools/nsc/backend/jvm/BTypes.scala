@@ -11,9 +11,10 @@ import scala.collection.concurrent.TrieMap
 import scala.reflect.internal.util.Position
 import scala.tools.asm
 import asm.Opcodes
-import scala.tools.asm.tree.{MethodNode, MethodInsnNode, InnerClassNode, ClassNode}
+import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
 import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.nsc.backend.jvm.analysis.Analyzers
 import scala.tools.nsc.backend.jvm.opt._
 import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.settings.ScalaSettings
@@ -38,15 +39,19 @@ abstract class BTypes {
   /**
    * Tools for parsing classfiles, used by the inliner.
    */
-  val byteCodeRepository: ByteCodeRepository
+  val byteCodeRepository: ByteCodeRepository[this.type]
 
   val localOpt: LocalOpt[this.type]
 
   val inliner: Inliner[this.type]
 
+  val inlinerHeuristics: InlinerHeuristics[this.type]
+
   val closureOptimizer: ClosureOptimizer[this.type]
 
   val callGraph: CallGraph[this.type]
+
+  val analyzers: Analyzers[this.type]
 
   val backendReporting: BackendReporting
 
@@ -55,7 +60,6 @@ abstract class BTypes {
 
   // Allows access to the compiler settings for backend components that don't have a global in scope
   def compilerSettings: ScalaSettings
-
 
   /**
    * A map from internal names to ClassBTypes. Every ClassBType is added to this map on its
@@ -93,6 +97,13 @@ abstract class BTypes {
    * is already optimized, DCE can return early.
    */
   val unreachableCodeEliminated: collection.mutable.Set[MethodNode] = recordPerRunCache(collection.mutable.Set.empty)
+
+  /**
+   * Cache of methods which have correct `maxLocals` / `maxStack` values assigned. This allows
+   * invoking `computeMaxLocalsMaxStack` whenever running an analyzer but performing the actual
+   * computation only when necessary.
+   */
+  val maxLocalsMaxStackComputed: collection.mutable.Set[MethodNode] = recordPerRunCache(collection.mutable.Set.empty)
 
   /**
    * Obtain the BType for a type descriptor or internal name. For class descriptors, the ClassBType
@@ -234,6 +245,7 @@ abstract class BTypes {
       InlineInfo(
         traitImplClassSelfType = None,
         isEffectivelyFinal = BytecodeUtils.isFinalClass(classNode),
+        sam = inlinerHeuristics.javaSam(classNode.name),
         methodInfos = methodInfos,
         warning)
     }
@@ -553,6 +565,8 @@ abstract class BTypes {
    *
    * Terminology
    * -----------
+   *
+   * Diagram here: https://blogs.oracle.com/darcy/entry/nested_inner_member_and_top
    *
    *  - Nested class (JLS 8): class whose declaration occurs within the body of another class
    *
@@ -1104,6 +1118,8 @@ object BTypes {
    * Metadata about a ClassBType, used by the inliner.
    *
    * More information may be added in the future to enable more elaborate inlinine heuristics.
+   * Note that this class should contain information that can only be obtained from the ClassSymbol.
+   * Information that can be computed from the ClassNode should be added to the call graph instead.
    *
    * @param traitImplClassSelfType `Some(tp)` if this InlineInfo describes a trait, and the `self`
    *                               parameter type of the methods in the implementation class is not
@@ -1122,6 +1138,8 @@ object BTypes {
    * @param isEffectivelyFinal     True if the class cannot have subclasses: final classes, module
    *                               classes, trait impl classes.
    *
+   * @param sam                    If this class is a SAM type, the SAM's "$name$descriptor".
+   *
    * @param methodInfos            The [[MethodInlineInfo]]s for the methods declared in this class.
    *                               The map is indexed by the string s"$name$descriptor" (to
    *                               disambiguate overloads).
@@ -1132,10 +1150,11 @@ object BTypes {
    */
   final case class InlineInfo(traitImplClassSelfType: Option[InternalName],
                               isEffectivelyFinal: Boolean,
+                              sam: Option[String],
                               methodInfos: Map[String, MethodInlineInfo],
                               warning: Option[ClassInlineInfoWarning])
 
-  val EmptyInlineInfo = InlineInfo(None, false, Map.empty, None)
+  val EmptyInlineInfo = InlineInfo(None, false, None, Map.empty, None)
 
   /**
    * Metadata about a method, used by the inliner.

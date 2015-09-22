@@ -55,24 +55,16 @@ import scala.collection.convert.decorateAsScala._
  *
  * If ever needed, we could introduce a mode where primitive conversions (l2i) are considered as
  * copying operations.
+ *
+ * Note on performance: thee data flow analysis (SourceValue / SourceInterpreter, provided by ASM)
+ * is roughly 2-3x slower than a simple analysis (like BasicValue). The reason is that the merge
+ * function (merging producer sets) is more complex than merging simple basic values.
+ * See also the doc comment in the package object `analysis`.
  */
-class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) {
+trait ProdConsAnalyzerImpl {
+  val methodNode: MethodNode
 
-  /* Timers for benchmarking ProdCons
-  import scala.reflect.internal.util.Statistics._
-  import ProdConsAnalyzer._
-  val analyzerTimer = newSubTimer(classInternalName + "#" + methodNode.name + " - analysis", prodConsAnalyzerTimer)
-  val consumersTimer = newSubTimer(classInternalName + "#" + methodNode.name + " - consumers", prodConsAnalyzerTimer)
-  */
-
-  val analyzer = new Analyzer(new InitialProducerSourceInterpreter)
-
-//  val start = analyzerTimer.start()
-  analyzer.analyze(classInternalName, methodNode)
-//  analyzerTimer.stop(start)
-//  println(analyzerTimer.line)
-
-  def frameAt(insn: AbstractInsnNode) = analyzer.frameAt(insn, methodNode)
+  def frameAt(insn: AbstractInsnNode): Frame[SourceValue]
 
   /**
    * Returns the potential producer instructions of a (local or stack) value in the frame of `insn`.
@@ -404,7 +396,6 @@ class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) 
 
   /** For each instruction, a set of potential consumers of the produced values. */
   private lazy val _consumersOfOutputsFrom: Map[AbstractInsnNode, Vector[Set[AbstractInsnNode]]] = {
-//    val start = consumersTimer.start()
     var res = Map.empty[AbstractInsnNode, Vector[Set[AbstractInsnNode]]]
     for {
       insn <- methodNode.instructions.iterator.asScala
@@ -417,18 +408,11 @@ class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) 
       val outputIndex = producedSlots.indexOf(i)
       res = res.updated(producer, currentConsumers.updated(outputIndex, currentConsumers(outputIndex) + insn))
     }
-//    consumersTimer.stop(start)
-//    println(consumersTimer.line)
     res
   }
 
   private val _initialProducersCache:  mutable.AnyRefMap[(AbstractInsnNode, Int), Set[AbstractInsnNode]] = mutable.AnyRefMap.empty
   private val _ultimateConsumersCache: mutable.AnyRefMap[(AbstractInsnNode, Int), Set[AbstractInsnNode]] = mutable.AnyRefMap.empty
-}
-
-object ProdConsAnalyzer {
-  import scala.reflect.internal.util.Statistics._
-  val prodConsAnalyzerTimer = newTimer("Time in ProdConsAnalyzer", "jvm")
 }
 
 /**

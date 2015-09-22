@@ -266,7 +266,6 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     (b.toList, these)
   }
   
-  @noinline // TODO - fix optimizer bug that requires noinline (see SI-8334)
   final override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     if (bf eq List.ReusableCBF) {
       if (this eq Nil) Nil.asInstanceOf[That] else {
@@ -285,7 +284,6 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     else super.map(f)
   }
   
-  @noinline // TODO - fix optimizer bug that requires noinline for map; applied here to be safe (see SI-8334)
   final override def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     if (bf eq List.ReusableCBF) {
       if (this eq Nil) Nil.asInstanceOf[That] else {
@@ -315,7 +313,6 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     else super.collect(pf)
   }
   
-  @noinline // TODO - fix optimizer bug that requires noinline for map; applied here to be safe (see SI-8334)
   final override def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     if (bf eq List.ReusableCBF) {
       if (this eq Nil) Nil.asInstanceOf[That] else {

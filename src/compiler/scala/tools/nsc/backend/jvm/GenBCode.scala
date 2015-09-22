@@ -14,6 +14,7 @@ import scala.reflect.internal.util.Statistics
 
 import scala.tools.asm
 import scala.tools.asm.tree.ClassNode
+import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository
 
 /*
  *  Prepare in-memory representations of classfiles using the ASM Tree API, and serialize them to disk.
@@ -186,7 +187,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
         // -------------- "plain" class --------------
         val pcb = new PlainClassBuilder(cunit)
         pcb.genPlainClass(cd)
-        val outF = if (needsOutFolder) getOutFolder(claszSymbol, pcb.thisName, cunit) else null;
+        val outF = if (needsOutFolder) getOutFolder(claszSymbol, pcb.thisName, cunit) else null
         val plainC = pcb.cnode
 
         // -------------- bean info class, if needed --------------
@@ -221,12 +222,18 @@ abstract class GenBCode extends BCodeSyncAndTry {
     class Worker2 {
       def runGlobalOptimizations(): Unit = {
         import scala.collection.convert.decorateAsScala._
-        if (settings.YoptBuildCallGraph) {
-          q2.asScala foreach {
-            case Item2(_, _, plain, _, _) =>
-              // skip mirror / bean: wd don't inline into tem, and they are not used in the plain class
-              if (plain != null) callGraph.addClass(plain)
-          }
+
+        // add classes to the bytecode repo before building the call graph: the latter needs to
+        // look up classes and methods in the code repo.
+        if (settings.YoptAddToBytecodeRepository) q2.asScala foreach {
+          case Item2(_, mirror, plain, bean, _) =>
+            if (mirror != null) byteCodeRepository.add(mirror, ByteCodeRepository.CompilationUnit)
+            if (plain != null)  byteCodeRepository.add(plain, ByteCodeRepository.CompilationUnit)
+            if (bean != null)   byteCodeRepository.add(bean, ByteCodeRepository.CompilationUnit)
+        }
+        if (settings.YoptBuildCallGraph) q2.asScala foreach { item =>
+          // skip call graph for mirror / bean: wd don't inline into tem, and they are not used in the plain class
+          if (item.plain != null) callGraph.addClass(item.plain)
         }
         if (settings.YoptInlinerEnabled)
           bTypes.inliner.runInliner()

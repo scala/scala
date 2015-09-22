@@ -390,6 +390,17 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
 
     val isEffectivelyFinal = classSym.isEffectivelyFinal
 
+    val sam = {
+      if (classSym.isImplClass || classSym.isEffectivelyFinal) None
+      else {
+        // Phase travel necessary. For example, nullary methods (getter of an abstract val) get an
+        // empty parameter list in later phases and would therefore be picked as SAM.
+        val samSym = exitingPickler(definitions.findSam(classSym.tpe))
+        if (samSym == NoSymbol) None
+        else Some(samSym.javaSimpleName.toString + methodSymToDescriptor(samSym))
+      }
+    }
+
     var warning = Option.empty[ClassSymbolInfoFailureSI9111]
 
     // Primitive methods cannot be inlined, so there's no point in building a MethodInlineInfo. Also, some
@@ -447,7 +458,7 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
         }
     }).toMap
 
-    InlineInfo(traitSelfType, isEffectivelyFinal, methodInlineInfos, warning)
+    InlineInfo(traitSelfType, isEffectivelyFinal, sam, methodInlineInfos, warning)
   }
 }
 

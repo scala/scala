@@ -7,8 +7,9 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.tools.asm
+import scala.tools.nsc.backend.jvm.analysis.Analyzers
 import scala.tools.nsc.backend.jvm.opt._
-import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo, InternalName}
+import scala.tools.nsc.backend.jvm.BTypes._
 import BackendReporting._
 import scala.tools.nsc.settings.ScalaSettings
 
@@ -36,15 +37,19 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   val coreBTypes = new CoreBTypesProxy[this.type](this)
   import coreBTypes._
 
-  val byteCodeRepository = new ByteCodeRepository(global.classPath, javaDefinedClasses, recordPerRunCache(collection.concurrent.TrieMap.empty))
+  val byteCodeRepository: ByteCodeRepository[this.type] = new ByteCodeRepository(global.classPath, this)
 
   val localOpt: LocalOpt[this.type] = new LocalOpt(this)
 
   val inliner: Inliner[this.type] = new Inliner(this)
 
+  val inlinerHeuristics: InlinerHeuristics[this.type] = new InlinerHeuristics(this)
+
   val closureOptimizer: ClosureOptimizer[this.type] = new ClosureOptimizer(this)
 
   val callGraph: CallGraph[this.type] = new CallGraph(this)
+
+  val analyzers: Analyzers[this.type] = new Analyzers(this)
 
   val backendReporting: BackendReporting = new BackendReportingImpl(global)
 
@@ -444,7 +449,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
         case Right(classNode) =>
           inlineInfoFromClassfile(classNode)
         case Left(missingClass) =>
-          InlineInfo(None, false, Map.empty, Some(ClassNotFoundWhenBuildingInlineInfoFromSymbol(missingClass)))
+          EmptyInlineInfo.copy(warning = Some(ClassNotFoundWhenBuildingInlineInfoFromSymbol(missingClass)))
       }
     }
   }
@@ -467,7 +472,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
         flags = asm.Opcodes.ACC_SUPER | asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_FINAL,
         nestedClasses = nested,
         nestedInfo = None,
-        InlineInfo(None, true, Map.empty, None))) // no InlineInfo needed, scala never invokes methods on the mirror class
+        inlineInfo = EmptyInlineInfo.copy(isEffectivelyFinal = true))) // no method inline infos needed, scala never invokes methods on the mirror class
       c
     })
   }
