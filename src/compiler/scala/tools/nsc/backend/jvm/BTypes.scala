@@ -7,6 +7,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.annotation.switch
+import scala.collection.{mutable, concurrent}
 import scala.collection.concurrent.TrieMap
 import scala.reflect.internal.util.Position
 import scala.tools.asm
@@ -72,19 +73,19 @@ abstract class BTypes {
    * Concurrent because stack map frames are computed when in the class writer, which might run
    * on multiple classes concurrently.
    */
-  val classBTypeFromInternalName: collection.concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
+  val classBTypeFromInternalName: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
 
   /**
    * Store the position of every MethodInsnNode during code generation. This allows each callsite
    * in the call graph to remember its source position, which is required for inliner warnings.
    */
-  val callsitePositions: collection.concurrent.Map[MethodInsnNode, Position] = recordPerRunCache(TrieMap.empty)
+  val callsitePositions: concurrent.Map[MethodInsnNode, Position] = recordPerRunCache(TrieMap.empty)
 
   /**
    * Contains the internal names of all classes that are defined in Java source files of the current
    * compilation run (mixed compilation). Used for more detailed error reporting.
    */
-  val javaDefinedClasses: collection.mutable.Set[InternalName] = recordPerRunCache(collection.mutable.Set.empty)
+  val javaDefinedClasses: mutable.Set[InternalName] = recordPerRunCache(mutable.Set.empty)
 
   /**
    * Cache, contains methods whose unreachable instructions are eliminated.
@@ -96,14 +97,23 @@ abstract class BTypes {
    * This cache allows running dead code elimination whenever an analyzer is used. If the method
    * is already optimized, DCE can return early.
    */
-  val unreachableCodeEliminated: collection.mutable.Set[MethodNode] = recordPerRunCache(collection.mutable.Set.empty)
+  val unreachableCodeEliminated: mutable.Set[MethodNode] = recordPerRunCache(mutable.Set.empty)
 
   /**
    * Cache of methods which have correct `maxLocals` / `maxStack` values assigned. This allows
    * invoking `computeMaxLocalsMaxStack` whenever running an analyzer but performing the actual
    * computation only when necessary.
    */
-  val maxLocalsMaxStackComputed: collection.mutable.Set[MethodNode] = recordPerRunCache(collection.mutable.Set.empty)
+  val maxLocalsMaxStackComputed: mutable.Set[MethodNode] = recordPerRunCache(mutable.Set.empty)
+
+  /**
+   * Classes with indyLambda closure instantiations where the SAM type is serializable (e.g. Scala's
+   * FunctionN) need a `$deserializeLambda$` method. This map contains classes for which such a
+   * method has been generated. It is used during ordinary code generation, as well as during
+   * inlining: when inlining an indyLambda instruction into a class, we need to make sure the class
+   * has the method.
+   */
+  val indyLambdaHosts: mutable.Set[InternalName] = recordPerRunCache(mutable.Set.empty)
 
   /**
    * Obtain the BType for a type descriptor or internal name. For class descriptors, the ClassBType

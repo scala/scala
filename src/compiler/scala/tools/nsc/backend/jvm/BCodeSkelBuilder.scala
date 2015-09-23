@@ -67,8 +67,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     var isCZStaticModule           = false
     var isCZRemote                 = false
 
-    protected val indyLambdaHosts = collection.mutable.Set[Symbol]()
-
     /* ---------------- idiomatic way to ask questions to typer ---------------- */
 
     def paramTKs(app: Apply): List[BType] = {
@@ -127,7 +125,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       val shouldAddLambdaDeserialize = (
         settings.target.value == "jvm-1.8"
           && settings.Ydelambdafy.value == "method"
-          && indyLambdaHosts.contains(claszSymbol))
+          && indyLambdaHosts.contains(cnode.name))
 
       if (shouldAddLambdaDeserialize)
         backendUtils.addLambdaDeserialize(cnode)

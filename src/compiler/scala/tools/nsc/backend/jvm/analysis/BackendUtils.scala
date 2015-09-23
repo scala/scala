@@ -3,10 +3,13 @@ package backend.jvm
 package analysis
 
 import scala.tools.asm.Label
-import scala.tools.asm.tree.{ClassNode, AbstractInsnNode, MethodNode}
+import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis.{Frame, BasicInterpreter, Analyzer, Value}
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
+import java.lang.invoke.LambdaMetafactory
+import scala.collection.convert.decorateAsJava._
+import scala.collection.convert.decorateAsScala._
 
 /**
  * This component hosts tools and utilities used in the backend that require access to a `BTypes`
@@ -70,6 +73,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     btypes.coreBTypes.javaUtilHashMapReference
     btypes.coreBTypes.javaUtilMapReference
 
+    // This is fine, even if `visitInnerClass` was called before for MethodHandles.Lookup: duplicates are not emitted.
     cw.visitInnerClass("java/lang/invoke/MethodHandles$Lookup", "java/lang/invoke/MethodHandles", "Lookup", ACC_PUBLIC + ACC_FINAL + ACC_STATIC)
 
     {
@@ -101,5 +105,32 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
       mv.visitInsn(ARETURN)
       mv.visitEnd()
     }
+  }
+
+  /**
+   * Clone the instructions in `methodNode` into a new [[InsnList]], mapping labels according to
+   * the `labelMap`. Returns the new instruction list and a map from old to new instructions, and
+   * a boolean indicating if the instruction list contains an instantiation of a serializable SAM
+   * type.
+   */
+  def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode]): (InsnList, Map[AbstractInsnNode, AbstractInsnNode], Boolean) = {
+    val javaLabelMap = labelMap.asJava
+    val result = new InsnList
+    var map = Map.empty[AbstractInsnNode, AbstractInsnNode]
+    var hasSerializableClosureInstantiation = false
+    for (ins <- methodNode.instructions.iterator.asScala) {
+      if (!hasSerializableClosureInstantiation) ins match {
+        case callGraph.LambdaMetaFactoryCall(indy, _, _, _) => indy.bsmArgs match {
+          case Array(_, _, _, flags: Integer, xs@_*) if (flags.intValue & LambdaMetafactory.FLAG_SERIALIZABLE) != 0 =>
+            hasSerializableClosureInstantiation = true
+          case _ =>
+        }
+        case _ =>
+      }
+      val cloned = ins.clone(javaLabelMap)
+      result add cloned
+      map += ((ins, cloned))
+    }
+    (result, map, hasSerializableClosureInstantiation)
   }
 }

@@ -1316,7 +1316,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         /* markerInterfaces[0]    = */ ScalaSerializable,
         /* bridgeCount            = */ 0.asInstanceOf[AnyRef]
       )
-      indyLambdaHosts += this.claszSymbol
+      indyLambdaHosts += cnode.name
     }
   }
 

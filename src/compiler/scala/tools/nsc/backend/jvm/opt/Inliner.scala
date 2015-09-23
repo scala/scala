@@ -299,7 +299,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
     // New labels for the cloned instructions
     val labelsMap = cloneLabels(callee)
-    val (clonedInstructions, instructionMap) = cloneInstructions(callee, labelsMap)
+    val (clonedInstructions, instructionMap, hasSerializableClosureInstantiation) = cloneInstructions(callee, labelsMap)
     val keepLineNumbers = callsiteClass == calleeDeclarationClass
     if (!keepLineNumbers) {
       removeLineNumberNodes(clonedInstructions)
@@ -430,6 +430,11 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     }
 
     callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, math.max(stackHeightAtNullCheck, maxStackOfInlinedCode))
+
+    if (hasSerializableClosureInstantiation && !indyLambdaHosts(callsiteClass.internalName)) {
+      indyLambdaHosts += callsiteClass.internalName
+      addLambdaDeserialize(byteCodeRepository.classNode(callsiteClass.internalName).get)
+    }
 
     callGraph.addIfMissing(callee, calleeDeclarationClass)
 

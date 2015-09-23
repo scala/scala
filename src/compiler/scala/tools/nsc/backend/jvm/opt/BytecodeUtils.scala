@@ -16,8 +16,6 @@ import scala.tools.asm.{MethodWriter, ClassWriter, Label, Opcodes, Type}
 import scala.tools.asm.tree._
 import GenBCode._
 import scala.collection.convert.decorateAsScala._
-import scala.collection.convert.decorateAsJava._
-import scala.tools.nsc.backend.jvm.BTypes._
 
 object BytecodeUtils {
 
@@ -268,22 +266,6 @@ object BytecodeUtils {
     val labelNode = new LabelNode(label)
     label.info = labelNode
     labelNode
-  }
-
-  /**
-   * Clone the instructions in `methodNode` into a new [[InsnList]], mapping labels according to
-   * the `labelMap`. Returns the new instruction list and a map from old to new instructions.
-   */
-  def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode]): (InsnList, Map[AbstractInsnNode, AbstractInsnNode]) = {
-    val javaLabelMap = labelMap.asJava
-    val result = new InsnList
-    var map = Map.empty[AbstractInsnNode, AbstractInsnNode]
-    for (ins <- methodNode.instructions.iterator.asScala) {
-      val cloned = ins.clone(javaLabelMap)
-      result add cloned
-      map += ((ins, cloned))
-    }
-    (result, map)
   }
 
   /**
