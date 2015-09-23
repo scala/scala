@@ -2,7 +2,8 @@ package scala.tools.nsc
 package backend.jvm
 package analysis
 
-import scala.tools.asm.tree.{AbstractInsnNode, MethodNode}
+import scala.tools.asm.Label
+import scala.tools.asm.tree.{ClassNode, AbstractInsnNode, MethodNode}
 import scala.tools.asm.tree.analysis.{Frame, BasicInterpreter, Analyzer, Value}
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
@@ -47,4 +48,58 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
   }
 
   class ProdConsAnalyzer(val methodNode: MethodNode, classInternalName: InternalName) extends AsmAnalyzer(methodNode, classInternalName, new Analyzer(new InitialProducerSourceInterpreter)) with ProdConsAnalyzerImpl
+
+  /**
+   * Add:
+   * private static java.util.Map $deserializeLambdaCache$ = null
+   * private static Object $deserializeLambda$(SerializedLambda l) {
+   *   var cache = $deserializeLambdaCache$
+   *   if (cache eq null) {
+   *     cache = new java.util.HashMap()
+   *     $deserializeLambdaCache$ = cache
+   *   }
+   *   return scala.runtime.LambdaDeserializer.deserializeLambda(MethodHandles.lookup(), cache, l);
+   * }
+   */
+  def addLambdaDeserialize(classNode: ClassNode): Unit = {
+    val cw = classNode
+    import scala.tools.asm.Opcodes._
+
+    // Need to force creation of BTypes for these as `getCommonSuperClass` is called on
+    // automatically computing the max stack size (`visitMaxs`) during method writing.
+    btypes.coreBTypes.javaUtilHashMapReference
+    btypes.coreBTypes.javaUtilMapReference
+
+    cw.visitInnerClass("java/lang/invoke/MethodHandles$Lookup", "java/lang/invoke/MethodHandles", "Lookup", ACC_PUBLIC + ACC_FINAL + ACC_STATIC)
+
+    {
+      val fv = cw.visitField(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambdaCache$", "Ljava/util/Map;", null, null)
+      fv.visitEnd()
+    }
+
+    {
+      val mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambda$", "(Ljava/lang/invoke/SerializedLambda;)Ljava/lang/Object;", null, null)
+      mv.visitCode()
+      // javaBinaryName returns the internal name of a class. Also used in BTypesFromsymbols.classBTypeFromSymbol.
+      mv.visitFieldInsn(GETSTATIC, classNode.name, "$deserializeLambdaCache$", "Ljava/util/Map;")
+      mv.visitVarInsn(ASTORE, 1)
+      mv.visitVarInsn(ALOAD, 1)
+      val l0 = new Label()
+      mv.visitJumpInsn(IFNONNULL, l0)
+      mv.visitTypeInsn(NEW, "java/util/HashMap")
+      mv.visitInsn(DUP)
+      mv.visitMethodInsn(INVOKESPECIAL, "java/util/HashMap", "<init>", "()V", false)
+      mv.visitVarInsn(ASTORE, 1)
+      mv.visitVarInsn(ALOAD, 1)
+      mv.visitFieldInsn(PUTSTATIC, classNode.name, "$deserializeLambdaCache$", "Ljava/util/Map;")
+      mv.visitLabel(l0)
+      mv.visitFieldInsn(GETSTATIC, "scala/runtime/LambdaDeserializer$", "MODULE$", "Lscala/runtime/LambdaDeserializer$;")
+      mv.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodHandles", "lookup", "()Ljava/lang/invoke/MethodHandles$Lookup;", false)
+      mv.visitVarInsn(ALOAD, 1)
+      mv.visitVarInsn(ALOAD, 0)
+      mv.visitMethodInsn(INVOKEVIRTUAL, "scala/runtime/LambdaDeserializer$", "deserializeLambda", "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/util/Map;Ljava/lang/invoke/SerializedLambda;)Ljava/lang/Object;", false)
+      mv.visitInsn(ARETURN)
+      mv.visitEnd()
+    }
+  }
 }
