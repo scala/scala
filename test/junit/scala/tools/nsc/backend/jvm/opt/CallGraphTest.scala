@@ -47,12 +47,33 @@ class CallGraphTest extends ClearAfterClass {
 
   def compile(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
     CallGraphTest.notPerRun.foreach(_.clear())
-    compileClasses(compiler)(code, allowMessage = allowMessage)
+    compileClasses(compiler)(code, allowMessage = allowMessage).map(c => byteCodeRepository.classNode(c.name).get)
   }
+
+  def getMethods(c: ClassNode, p: String => Boolean) = c.methods.iterator.asScala.filter(m => p(m.name)).toList.sortBy(_.name)
+  def getMethod(c: ClassNode, name: String) = getMethods(c, _ == name).head
 
   def callsInMethod(methodNode: MethodNode): List[MethodInsnNode] = methodNode.instructions.iterator.asScala.collect({
     case call: MethodInsnNode => call
   }).toList
+
+  def checkCallsite(call: MethodInsnNode, callsiteMethod: MethodNode, target: MethodNode, calleeDeclClass: ClassBType,
+                    safeToInline: Boolean, atInline: Boolean, atNoInline: Boolean, argInfos: IntMap[ArgInfo] = IntMap.empty) = {
+    val callsite = callGraph.callsites(callsiteMethod)(call)
+    try {
+      assert(callsite.callsiteInstruction == call)
+      assert(callsite.callsiteMethod == callsiteMethod)
+      val callee = callsite.callee.get
+      assert(callee.callee == target)
+      assert(callee.calleeDeclarationClass == calleeDeclClass)
+      assert(callee.safeToInline == safeToInline)
+      assert(callee.annotatedInline == atInline)
+      assert(callee.annotatedNoInline == atNoInline)
+      assert(callsite.argInfos == argInfos)
+    } catch {
+      case e: Throwable => println(callsite); throw e
+    }
+  }
 
   @Test
   def callGraphStructure(): Unit = {
@@ -97,35 +118,16 @@ class CallGraphTest extends ClearAfterClass {
       msgCount += 1
       ok exists (m.msg contains _)
     }
-    val List(cCls, cMod, dCls, testCls) = compile(code, checkMsg).map(c => byteCodeRepository.classNode(c.name).get)
+    val List(cCls, cMod, dCls, testCls) = compile(code, checkMsg)
     assert(msgCount == 6, msgCount)
 
-    val List(cf1, cf2, cf3, cf4, cf5, cf6, cf7) = cCls.methods.iterator.asScala.filter(_.name.startsWith("f")).toList.sortBy(_.name)
-    val List(df1, df3) = dCls.methods.iterator.asScala.filter(_.name.startsWith("f")).toList.sortBy(_.name)
-    val g1 = cMod.methods.iterator.asScala.find(_.name == "g1").get
-    val List(t1, t2) = testCls.methods.iterator.asScala.filter(_.name.startsWith("t")).toList.sortBy(_.name)
+    val List(cf1, cf2, cf3, cf4, cf5, cf6, cf7) = getMethods(cCls, _.startsWith("f"))
+    val List(df1, df3) = getMethods(dCls, _.startsWith("f"))
+    val g1 = getMethod(cMod, "g1")
+    val List(t1, t2) = getMethods(testCls, _.startsWith("t"))
 
     val List(cf1Call, cf2Call, cf3Call, cf4Call, cf5Call, cf6Call, cf7Call, cg1Call) = callsInMethod(t1)
     val List(df1Call, df2Call, df3Call, df4Call, df5Call, df6Call, df7Call, dg1Call) = callsInMethod(t2)
-
-    def checkCallsite(call: MethodInsnNode, callsiteMethod: MethodNode, target: MethodNode, calleeDeclClass: ClassBType,
-                      safeToInline: Boolean, atInline: Boolean, atNoInline: Boolean) = {
-      val callsite = callGraph.callsites(callsiteMethod)(call)
-      try {
-        assert(callsite.callsiteInstruction == call)
-        assert(callsite.callsiteMethod == callsiteMethod)
-        val callee = callsite.callee.get
-        assert(callee.callee == target)
-        assert(callee.calleeDeclarationClass == calleeDeclClass)
-        assert(callee.safeToInline == safeToInline)
-        assert(callee.annotatedInline == atInline)
-        assert(callee.annotatedNoInline == atNoInline)
-
-        assert(callsite.argInfos == IntMap.empty) // no higher-order methods
-      } catch {
-        case e: Throwable => println(callsite); throw e
-      }
-    }
 
     val cClassBType  = classBTypeFromClassNode(cCls)
     val cMClassBType = classBTypeFromClassNode(cMod)
@@ -148,6 +150,22 @@ class CallGraphTest extends ClearAfterClass {
     checkCallsite(df6Call, t2, cf6, cClassBType, true, false, true)
     checkCallsite(df7Call, t2, cf7, cClassBType, false, true, true)
     checkCallsite(dg1Call, t2, g1, cMClassBType, true, false, false)
+  }
+
+  @Test
+  def callerSensitiveNotSafeToInline(): Unit = {
+    val code =
+      """class C {
+        |  def m = java.lang.Class.forName("C")
+        |}
+      """.stripMargin
+    val List(c) = compile(code)
+    val m = getMethod(c, "m")
+    val List(fn) = callsInMethod(m)
+    val forNameMeth = byteCodeRepository.methodNode("java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;").get._1
+    val classTp = classBTypeFromInternalName("java/lang/Class")
+    val r = callGraph.callsites(m)(fn)
+    checkCallsite(fn, m, forNameMeth, classTp, safeToInline = false, atInline = false, atNoInline = false)
   }
 
   /**
