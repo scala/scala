@@ -358,6 +358,16 @@ in one implicit parameter section.  Since traits do not take
 constructor parameters, this translation does not work for them.
 Consequently, type-parameters in traits may not be view- or context-bounded.
 
+Evidence parameters are prepended to the existing implicit parameter section, if one exists.
+
+For example:
+
+```scala
+def foo[A: M](implicit b: B): C
+// expands to:
+// def foo[A](implicit evidence$1: M[A], b: B): C
+```
+
 ###### Example
 The `<=` method from the [`Ordered` example](#example-ordered) can be declared
 more concisely as follows:
