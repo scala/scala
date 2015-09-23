@@ -14,7 +14,7 @@ import asm.Opcodes
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
 import scala.tools.nsc.backend.jvm.BackendReporting._
-import scala.tools.nsc.backend.jvm.analysis.Analyzers
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt._
 import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.settings.ScalaSettings
@@ -29,6 +29,8 @@ import scala.tools.nsc.settings.ScalaSettings
  */
 abstract class BTypes {
   import BTypes.InternalName
+
+  val backendUtils: BackendUtils[this.type]
 
   // Some core BTypes are required here, in class BType, where no Global instance is available.
   // The Global is only available in the subclass BTypesFromSymbols. We cannot depend on the actual
@@ -50,8 +52,6 @@ abstract class BTypes {
   val closureOptimizer: ClosureOptimizer[this.type]
 
   val callGraph: CallGraph[this.type]
-
-  val analyzers: Analyzers[this.type]
 
   val backendReporting: BackendReporting
 

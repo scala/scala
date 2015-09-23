@@ -7,7 +7,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.tools.asm
-import scala.tools.nsc.backend.jvm.analysis.Analyzers
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt._
 import scala.tools.nsc.backend.jvm.BTypes._
 import BackendReporting._
@@ -33,6 +33,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   val bCodeAsmCommon: BCodeAsmCommon[global.type] = new BCodeAsmCommon(global)
   import bCodeAsmCommon._
 
+  val backendUtils: BackendUtils[this.type] = new BackendUtils(this)
+
   // Why the proxy, see documentation of class [[CoreBTypes]].
   val coreBTypes = new CoreBTypesProxy[this.type](this)
   import coreBTypes._
@@ -48,8 +50,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   val closureOptimizer: ClosureOptimizer[this.type] = new ClosureOptimizer(this)
 
   val callGraph: CallGraph[this.type] = new CallGraph(this)
-
-  val analyzers: Analyzers[this.type] = new Analyzers(this)
 
   val backendReporting: BackendReporting = new BackendReportingImpl(global)
 

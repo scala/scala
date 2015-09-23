@@ -31,7 +31,7 @@ object NullnessAnalyzerTest extends ClearAfterClass.Clearable {
 class NullnessAnalyzerTest extends ClearAfterClass {
   ClearAfterClass.stateToClear = NullnessAnalyzerTest
   val noOptCompiler = NullnessAnalyzerTest.noOptCompiler
-  import noOptCompiler.genBCode.bTypes.analyzers._
+  import noOptCompiler.genBCode.bTypes.backendUtils._
 
   def newNullnessAnalyzer(methodNode: MethodNode, classInternalName: InternalName = "C") = new AsmAnalyzer(methodNode, classInternalName, new NullnessAnalyzer)
 

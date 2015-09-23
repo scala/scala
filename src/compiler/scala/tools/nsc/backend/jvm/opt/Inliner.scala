@@ -24,7 +24,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   import btypes._
   import callGraph._
   import inlinerHeuristics._
-  import analyzers._
+  import backendUtils._
 
   def eliminateUnreachableCodeAndUpdateCallGraph(methodNode: MethodNode, definingClass: InternalName): Unit = {
     localOpt.minimalRemoveUnreachableCode(methodNode, definingClass) foreach {

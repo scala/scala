@@ -48,7 +48,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 class LocalOpt[BT <: BTypes](val btypes: BT) {
   import LocalOptImpls._
   import btypes._
-  import analyzers._
+  import backendUtils._
 
   /**
    * In order to run an Analyzer, the maxLocals / maxStack fields need to be available. The ASM

@@ -8,12 +8,14 @@ import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
 /**
- * This component hosts tools for running ASM analyzers that require access to a `BTypes` instance.
- * In particular, the AsmAnalyzer class runs `computeMaxLocalsMaxStack` on the methodNode to be
- * analyzed. This method in turn lives inside the BTypes assembly because it queries the per-run
+ * This component hosts tools and utilities used in the backend that require access to a `BTypes`
+ * instance.
+ *
+ * One example is the AsmAnalyzer class, which runs `computeMaxLocalsMaxStack` on the methodNode to
+ * be analyzed. This method in turn lives inside the BTypes assembly because it queries the per-run
  * cache `maxLocalsMaxStackComputed` defined in there.
  */
-class Analyzers[BT <: BTypes](val btypes: BT) {
+class BackendUtils[BT <: BTypes](val btypes: BT) {
   import btypes._
 
   /**
