@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+#
+# Script to compare the scaladoc of the current commit with the scaladoc
+# of the parent commit. No arguments.
+#
+
+
+oldsha=$(git log -1 --format="%H" HEAD^)
+oldsha=${oldsha#g}
+oldsha=${oldsha:0:10}
+
+sha=`sh tools/get-scala-commit-sha`
+echo "parent commit sha: $oldsha. current commit sha: $sha"
+
+# create scaladoc for parent commit if not done already
+if [ ! -f "build/scaladoc-output-$oldsha.txt" ]
+then
+  echo "making scaladoc for parent commit ($oldsha)"
+  git checkout HEAD^
+  ant docs.lib -Dscaladoc.raw.output='yes' > build/scaladoc-output-$oldsha.txt
+  cp -r build/scaladoc/ build/scaladoc-${oldsha}
+  git checkout $sha
+fi
+
+# create scaladoc for current commit
+echo "making scaladoc for current commit ($sha)"
+ant docs.lib -Dscaladoc.raw.output='yes' > build/scaladoc-output-$sha.txt
+cp -r build/scaladoc/ build/scaladoc-${sha}
+echo "opendiff build/scaladoc-output-$oldsha.txt build/scaladoc-output-$sha.txt"
+opendiff build/scaladoc-output-$oldsha.txt build/scaladoc-output-$sha.txt
+
+echo "Comparing files..."
+
+difffile=build/scaladoc-diff-${sha}-$oldsha.txt
+sh tools/scaladoc-compare build/scaladoc-${sha}/ build/scaladoc-$oldsha/ &> $difffile
+open $difffile &
+
+# Adapted from tools/scaladoc-compare
+echo "Comparing versions with difftool: build/scaladoc-${sha}/ build/scaladoc-$oldsha/"
+NEW_PATH=build/scaladoc-${sha}/
+OLD_PATH=build/scaladoc-$oldsha/
+
+FILES=`find $NEW_PATH -name '*.html.raw'`
+if [ "$FILES" == "" ]
+then
+  echo "No .html.raw files found in $NEW_PATH!"
+  exit 1
+fi
+
+for NEW_FILE in $FILES
+do
+  OLD_FILE=${NEW_FILE/$NEW_PATH/$OLD_PATH}
+  if [ -f $OLD_FILE ]
+  then
+    DIFF=`diff -q -w $NEW_FILE $OLD_FILE 2>&1`
+    if [ "$DIFF" != "" ]
+    then
+      opendiff $OLD_FILE $NEW_FILE > /dev/null
+      echo "next [y\N]? "
+      read -n 1 -s input
+
+      if [ "$input" == "N" ]
+      then exit 0
+      fi
+    fi
+  else
+    echo -e "$NEW_FILE: No corresponding file (expecting $OLD_FILE)\n\n"
+  fi
+done
+
+echo "Done."
