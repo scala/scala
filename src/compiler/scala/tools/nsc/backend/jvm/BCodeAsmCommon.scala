@@ -395,7 +395,7 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
       else {
         // Phase travel necessary. For example, nullary methods (getter of an abstract val) get an
         // empty parameter list in later phases and would therefore be picked as SAM.
-        val samSym = exitingPickler(definitions.findSam(classSym.tpe))
+        val samSym = exitingPickler(definitions.samOf(classSym.tpe))
         if (samSym == NoSymbol) None
         else Some(samSym.javaSimpleName.toString + methodSymToDescriptor(samSym))
       }
