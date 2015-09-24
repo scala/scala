@@ -311,7 +311,8 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
                 isStaticallyResolved &&  // (1)
                 !isAbstract &&
                 !BytecodeUtils.isConstructor(calleeMethodNode) &&
-                !BytecodeUtils.isNativeMethod(calleeMethodNode),
+                !BytecodeUtils.isNativeMethod(calleeMethodNode) &&
+                !BytecodeUtils.hasCallerSensitiveAnnotation(calleeMethodNode),
             safeToRewrite     = canInlineFromSource && isRewritableTraitCall, // (2)
             annotatedInline   = methodInlineInfo.annotatedInline,
             annotatedNoInline = methodInlineInfo.annotatedNoInline,
