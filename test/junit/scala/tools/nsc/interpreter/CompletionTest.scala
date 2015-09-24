@@ -52,6 +52,17 @@ class CompletionTest {
   }
 
   @Test
+  def annotations(): Unit = {
+    val intp = newIMain()
+    val completer = new PresentationCompilerCompleter(intp)
+    checkExact(completer, "def foo[@specialize", " A]")("specialized")
+    checkExact(completer, "def foo[@specialize")("specialized")
+    checkExact(completer, """@deprecatedN""", """ class Foo""")("deprecatedName")
+    checkExact(completer, """@deprecateN""")("deprecatedName")
+    checkExact(completer, """{@deprecateN""")("deprecatedName")
+  }
+
+  @Test
   def incompleteStringInterpolation(): Unit = {
     val intp = newIMain()
     val completer = new PresentationCompilerCompleter(intp)
