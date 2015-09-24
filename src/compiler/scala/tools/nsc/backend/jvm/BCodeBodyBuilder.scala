@@ -11,6 +11,7 @@ package jvm
 
 import scala.annotation.switch
 import scala.reflect.internal.Flags
+import java.lang.invoke.LambdaMetafactory
 
 import scala.tools.asm
 import GenBCode._
@@ -1303,7 +1304,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val samName = sam.name.toString
       val samMethodType = asmMethodType(sam).toASMType
 
-      val flags = 3 // TODO 2.12.x Replace with LambdaMetafactory.FLAG_SERIALIZABLE | LambdaMetafactory.FLAG_MARKERS
+      val flags = LambdaMetafactory.FLAG_SERIALIZABLE | LambdaMetafactory.FLAG_MARKERS
 
       val ScalaSerializable = classBTypeFromSymbol(definitions.SerializableClass).toASMType
       bc.jmethod.visitInvokeDynamicInsn(samName, invokedType, lambdaMetaFactoryBootstrapHandle,
@@ -1315,7 +1316,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         /* markerInterfaces[0]    = */ ScalaSerializable,
         /* bridgeCount            = */ 0.asInstanceOf[AnyRef]
       )
-      indyLambdaHosts += this.claszSymbol
+      indyLambdaHosts += cnode.name
     }
   }
 

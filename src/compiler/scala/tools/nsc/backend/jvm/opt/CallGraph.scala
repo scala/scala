@@ -21,7 +21,7 @@ import BytecodeUtils._
 
 class CallGraph[BT <: BTypes](val btypes: BT) {
   import btypes._
-  import analyzers._
+  import backendUtils._
 
   /**
    * The call graph contains the callsites in the program being compiled.

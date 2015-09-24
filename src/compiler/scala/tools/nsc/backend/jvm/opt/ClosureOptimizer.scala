@@ -23,7 +23,7 @@ import scala.collection.convert.decorateAsScala._
 class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
   import btypes._
   import callGraph._
-  import analyzers._
+  import backendUtils._
 
   /**
    * If a closure is allocated and invoked within the same method, re-write the invocation to the

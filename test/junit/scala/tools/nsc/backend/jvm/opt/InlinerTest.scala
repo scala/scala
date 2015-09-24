@@ -68,7 +68,7 @@ class InlinerTest extends ClearAfterClass {
 
   val compiler = InlinerTest.compiler
   import compiler.genBCode.bTypes._
-  import compiler.genBCode.bTypes.analyzers._
+  import compiler.genBCode.bTypes.backendUtils._
 
   def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
     InlinerTest.notPerRun.foreach(_.clear())

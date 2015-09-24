@@ -26,7 +26,7 @@ object ProdConsAnalyzerTest extends ClearAfterClass.Clearable {
 class ProdConsAnalyzerTest extends ClearAfterClass {
   ClearAfterClass.stateToClear = ProdConsAnalyzerTest
   val noOptCompiler = ProdConsAnalyzerTest.noOptCompiler
-  import noOptCompiler.genBCode.bTypes.analyzers._
+  import noOptCompiler.genBCode.bTypes.backendUtils._
 
   def prodToString(producer: AbstractInsnNode) = producer match {
     case p: InitialProducer => p.toString
