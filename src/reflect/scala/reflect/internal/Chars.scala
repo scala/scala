@@ -66,7 +66,7 @@ trait Chars {
     '0' <= c && c <= '9' || 'A' <= c && c <= 'Z' || 'a' <= c && c <= 'z'
 
   /** Can character start an alphanumeric Scala identifier? */
-    def isIdentifierStart(c: Char): Boolean =
+  def isIdentifierStart(c: Char): Boolean =
     (c == '_') || (c == '$') || Character.isUnicodeIdentifierStart(c)
 
   /** Can character form part of an alphanumeric Scala identifier? */
