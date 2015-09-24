@@ -809,9 +809,7 @@ trait Definitions extends api.StandardDefinitions {
      * The class defining the method is a supertype of `tp` that
      * has a public no-arg primary constructor.
      */
-    def samOf(tp: Type): Symbol = if (!settings.Xexperimental) NoSymbol else findSam(tp)
-
-    def findSam(tp: Type): Symbol = {
+    def samOf(tp: Type): Symbol = {
       // if tp has a constructor, it must be public and must not take any arguments
       // (not even an implicit argument list -- to keep it simple for now)
       val tpSym  = tp.typeSymbol
