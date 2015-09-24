@@ -52,6 +52,14 @@ class CompletionTest {
   }
 
   @Test
+  def incompleteStringInterpolation(): Unit = {
+    val intp = newIMain()
+    val completer = new PresentationCompilerCompleter(intp)
+    checkExact(completer, """val x_y_z = 1; s"${x_""", "}\"")("x_y_z")
+    checkExact(completer, """val x_y_z = 1; s"${x_""", "\"")("x_y_z")
+  }
+
+  @Test
   def symbolically(): Unit = {
     val intp = newIMain()
     val completer = new PresentationCompilerCompleter(intp)

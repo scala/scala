@@ -36,7 +36,7 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion with ScalaCo
     // secret handshakes
     val slashPrint  = """.*// *print *""".r
     val slashTypeAt = """.*// *typeAt *(\d+) *(\d+) *""".r
-    val Cursor = IMain.DummyCursorFragment
+    val Cursor = IMain.DummyCursorFragment + " "
 
     def print(result: Result) = {
       val offset = result.preambleLength
