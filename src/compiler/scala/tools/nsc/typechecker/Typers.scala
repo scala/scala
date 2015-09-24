@@ -3558,6 +3558,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def typedAnnotation(ann: Tree, mode: Mode = EXPRmode): AnnotationInfo = {
       var hasError: Boolean = false
       val pending = ListBuffer[AbsTypeError]()
+      def ErroneousAnnotation = new ErroneousAnnotation().setOriginal(ann)
 
       def finish(res: AnnotationInfo): AnnotationInfo = {
         if (hasError) {

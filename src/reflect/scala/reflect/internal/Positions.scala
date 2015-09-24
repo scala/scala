@@ -252,7 +252,14 @@ trait Positions extends api.Positions { self: SymbolTable =>
             super.traverse(t)
           } else t match {
             case mdef: MemberDef =>
-              traverseTrees(mdef.mods.annotations)
+              val annTrees = mdef.mods.annotations match {
+                case Nil if mdef.symbol != null =>
+                  // After typechecking, annotations are mvoed from the modifiers
+                  // to the annotation on the symbol of the anotatee.
+                  mdef.symbol.annotations.map(_.original)
+                case anns => anns
+              }
+              traverseTrees(annTrees)
             case _ =>
           }
       }
