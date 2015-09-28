@@ -734,10 +734,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         } getOrElse ""
       case (eof, _) =>
         echo(s"// Entering paste mode (${ eof getOrElse "ctrl-D" } to finish)\n")
-        val input = readWhile(s => eof.isEmpty || eof.get != s) mkString "\n"
+        val delimiter = eof orElse replProps.pasteDelimiter.option
+        val input = readWhile(s => delimiter.isEmpty || delimiter.get != s) mkString "\n"
         val text = (
-          margin filter (_.nonEmpty) map (input stripMargin _.head)   // ignore excess chars in "<<||"
-          getOrElse input
+          margin filter (_.nonEmpty) map {
+            case "-" => input.lines map (_.trim) mkString "\n"
+            case m   => input stripMargin m.head   // ignore excess chars in "<<||"
+          } getOrElse input
         ).trim
         if (text.isEmpty) echo("\n// Nothing pasted, nothing gained.\n")
         else echo("\n// Exiting paste mode, now interpreting.\n")
