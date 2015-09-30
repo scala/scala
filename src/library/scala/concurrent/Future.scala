@@ -497,7 +497,7 @@ object Future {
   def sequence[A, M[X] <: TraversableOnce[X]](in: M[Future[A]])(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]], executor: ExecutionContext): Future[M[A]] = {
     in.foldLeft(successful(cbf(in))) {
       (fr, fa) => for (r <- fr; a <- fa) yield (r += a)
-    } map (_.result())
+    }.map(_.result())(InternalCallbackExecutor)
   }
 
   /** Returns a new `Future` to the result of the first future in the list that is completed.
