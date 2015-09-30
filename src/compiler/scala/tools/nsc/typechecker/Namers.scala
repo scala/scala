@@ -163,13 +163,9 @@ trait Namers extends MethodSynthesis {
     def updatePosFlags(sym: Symbol, pos: Position, flags: Long): Symbol = {
       debuglog("[overwrite] " + sym)
       val newFlags = (sym.flags & LOCKED) | flags
-      sym.rawInfo match {
-        case tr: TypeRef =>
-          // !!! needed for: pos/t5954d; the uniques type cache will happily serve up the same TypeRef
-          // over this mutated symbol, and we witness a stale cache for `parents`.
-          tr.invalidateCaches()
-        case _ =>
-      }
+      // !!! needed for: pos/t5954d; the uniques type cache will happily serve up the same TypeRef
+      // over this mutated symbol, and we witness a stale cache for `parents`.
+      invalidateCaches(sym.rawInfo, sym :: sym.moduleClass :: Nil)
       sym reset NoType setFlag newFlags setPos pos
       sym.moduleClass andAlso (updatePosFlags(_, pos, moduleClassFlags(flags)))
 
