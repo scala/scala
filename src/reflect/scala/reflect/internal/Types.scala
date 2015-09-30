@@ -1989,8 +1989,8 @@ trait Types
      * several times. Hence, no need to protected with synchronized in a multi-threaded
      * usage scenario.
      */
-    private var relativeInfoCache: Type = _
-    private var relativeInfoPeriod: Period = NoPeriod
+    private[Types] var relativeInfoCache: Type = _
+    private[Types] var relativeInfoPeriod: Period = NoPeriod
 
     private[Types] def relativeInfo = /*trace(s"relativeInfo(${safeToString}})")*/{
       if (relativeInfoPeriod != currentPeriod) {
@@ -4568,6 +4568,22 @@ trait Types
   def objToAny(tp: Type): Type =
     if (!phase.erasedTypes && tp.typeSymbol == ObjectClass) AnyTpe
     else tp
+
+  def invalidateTreeTpeCaches(tree: Tree, updatedSyms: List[Symbol]) = if (updatedSyms.nonEmpty)
+    for (t <- tree if t.tpe != null)
+      for (tp <- t.tpe) {
+        invalidateCaches(tp, updatedSyms)
+      }
+
+  def invalidateCaches(t: Type, updatedSyms: List[Symbol]) = t match {
+    case st: SingleType if updatedSyms.contains(st.sym) =>
+      st.underlyingCache = NoType
+      st.underlyingPeriod = NoPeriod
+    case tr: NonClassTypeRef if updatedSyms.contains(tr.sym) =>
+      tr.relativeInfoCache = NoType
+      tr.relativeInfoPeriod = NoPeriod
+    case _ =>
+  }
 
   val shorthands = Set(
     "scala.collection.immutable.List",
