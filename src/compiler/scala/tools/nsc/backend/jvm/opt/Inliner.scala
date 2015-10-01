@@ -41,6 +41,10 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       val callsite = request.callsite
       val Right(callee) = callsite.callee // collectAndOrderInlineRequests returns callsites with a known callee
 
+      // TODO: if the request has downstream requests, create a snapshot to which we could roll back in case some downstream callsite cannot be inlined
+      // (Needs to revert modifications to the callee method, but also the call graph)
+      // (This assumes that inlining a request only makes sense if its downstream requests are satisfied - sync with heuristics!)
+
       // Inlining a method can create unreachable code. Example:
       //   def f = throw e
       //   def g = f; println() // println is unreachable after inlining f
@@ -265,8 +269,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    *
    * @return An inliner warning for each callsite that could not be inlined.
    */
-  def inline(request: InlineRequest): List[CannotInlineWarning] = canInline(request.callsite) match {
-    case Some(warning) => List(warning)
+  def inline(request: InlineRequest): List[CannotInlineWarning] = canInlineBody(request.callsite) match {
+    case Some(w) => List(w)
     case None =>
       val instructionsMap = inlineCallsite(request.callsite)
       val postRequests = request.post.flatMap(post => {
@@ -284,7 +288,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    * Copy and adapt the instructions of a method to a callsite.
    *
    * Preconditions:
-   *   - The callsite can safely be inlined (canInline is true)
+   *   - The callsite can safely be inlined (canInlineBody is true)
    *   - The maxLocals and maxStack values of the callsite method are correctly computed
    *   - The callsite method contains no unreachable basic blocks, i.e., running an Analyzer does
    *     not produce any `null` frames
@@ -481,10 +485,45 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   }
 
   /**
-   * Check whether an inling can be performed.
+   * Check whether an inlining can be performed. This method performs tests that don't change even
+   * if the body of the callee is changed by the inliner / optimizer, so it can be used early
+   * (when looking at the call graph and collecting inline requests for the program).
+   *
+   * The tests that inspect the callee's instructions are implemented in method `canInlineBody`,
+   * which is queried when performing an inline.
+   *
    * @return `Some(message)` if inlining cannot be performed, `None` otherwise
    */
-  def canInline(callsite: Callsite): Option[CannotInlineWarning] = {
+  def earlyCanInlineCheck(callsite: Callsite): Option[CannotInlineWarning] = {
+    import callsite.{callsiteMethod, callsiteClass}
+    val Right(callsiteCallee) = callsite.callee
+    import callsiteCallee.{callee, calleeDeclarationClass}
+
+    if (isSynchronizedMethod(callee)) {
+      // Could be done by locking on the receiver, wrapping the inlined code in a try and unlocking
+      // in finally. But it's probably not worth the effort, scala never emits synchronized methods.
+      Some(SynchronizedMethod(calleeDeclarationClass.internalName, callee.name, callee.desc))
+    } else if (isStrictfpMethod(callsiteMethod) != isStrictfpMethod(callee)) {
+      Some(StrictfpMismatch(
+        calleeDeclarationClass.internalName, callee.name, callee.desc,
+        callsiteClass.internalName, callsiteMethod.name, callsiteMethod.desc))
+    } else
+      None
+  }
+
+  /**
+   * Check whether the body of the callee contains any instructions that prevent the callsite from
+   * being inlined. See also method `earlyCanInlineCheck`.
+   *
+   * The result of this check depends on changes to the callee method's body. For example, if the
+   * callee initially invokes a private method, it cannot be inlined into a different class. If the
+   * private method is inlined into the callee, inlining the callee becomes possible. Therefore
+   * we don't query it while traversing the call graph and selecting callsites to inline - it might
+   * rule out callsites that can be inlined just fine.
+   *
+   * @return `Some(message)` if inlining cannot be performed, `None` otherwise
+   */
+  def canInlineBody(callsite: Callsite): Option[CannotInlineWarning] = {
     import callsite.{callsiteInstruction, callsiteMethod, callsiteClass, callsiteStackHeight}
     val Right(callsiteCallee) = callsite.callee
     import callsiteCallee.{callee, calleeDeclarationClass}
@@ -516,14 +555,6 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
     if (codeSizeOKForInlining(callsiteMethod, callee)) {
       Some(ResultingMethodTooLarge(
-        calleeDeclarationClass.internalName, callee.name, callee.desc,
-        callsiteClass.internalName, callsiteMethod.name, callsiteMethod.desc))
-    } else if (isSynchronizedMethod(callee)) {
-      // Could be done by locking on the receiver, wrapping the inlined code in a try and unlocking
-      // in finally. But it's probably not worth the effort, scala never emits synchronized methods.
-      Some(SynchronizedMethod(calleeDeclarationClass.internalName, callee.name, callee.desc))
-    } else if (isStrictfpMethod(callsiteMethod) != isStrictfpMethod(callee)) {
-      Some(StrictfpMismatch(
         calleeDeclarationClass.internalName, callee.name, callee.desc,
         callsiteClass.internalName, callsiteMethod.name, callsiteMethod.desc))
     } else if (!callee.tryCatchBlocks.isEmpty && stackHasNonParameters) {

@@ -16,8 +16,8 @@ object DefaultMethodTest extends ClearAfterClass.Clearable {
 }
 
 class DefaultMethodTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = DirectCompileTest
-  val compiler = DirectCompileTest.compiler
+  ClearAfterClass.stateToClear = DefaultMethodTest
+  val compiler = DefaultMethodTest.compiler
 
   @Test
   def defaultMethodsViaGenBCode(): Unit = {
