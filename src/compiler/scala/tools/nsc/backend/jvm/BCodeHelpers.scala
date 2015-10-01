@@ -1052,7 +1052,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
 
       for (m <- moduleClass.info.membersBasedOnFlags(BCodeHelpers.ExcludedForwarderFlags, symtab.Flags.METHOD)) {
         if (m.isType || m.isDeferred || (m.owner eq definitions.ObjectClass) || m.isConstructor)
-          debuglog(s"No forwarder for '$m' from $jclassName to '$moduleClass'")
+          debuglog(s"No forwarder for '$m' from $jclassName to '$moduleClass': ${m.isType} || ${m.isDeferred} || ${m.owner eq definitions.ObjectClass} || ${m.isConstructor}")
         else if (conflictingNames(m.name))
           log(s"No forwarder for $m due to conflict with ${linkedClass.info.member(m.name)}")
         else if (m.hasAccessBoundary)
