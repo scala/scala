@@ -272,14 +272,12 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   def inline(request: InlineRequest): List[CannotInlineWarning] = canInlineBody(request.callsite) match {
     case Some(w) => List(w)
     case None =>
-      val instructionsMap = inlineCallsite(request.callsite)
+      inlineCallsite(request.callsite)
       val postRequests = request.post.flatMap(post => {
-        // the post-request invocation instruction might not exist anymore: it might have been
-        // inlined itself, or eliminated by DCE.
-        for {
-          inlinedInvocationInstr <- instructionsMap.get(post.callsiteInstruction).map(_.asInstanceOf[MethodInsnNode])
-          inlinedCallsite <- callGraph.callsites(request.callsite.callsiteMethod).get(inlinedInvocationInstr)
-        } yield InlineRequest(inlinedCallsite, post.post)
+        post.callsite.inlinedClones.find(cs => cs.callsiteMethod == request.callsite.callsiteMethod) match {
+          case Some(inlinedPostCallsite) if callGraph.containsCallsite(inlinedPostCallsite) => Some(InlineRequest(inlinedPostCallsite, post.post))
+          case _ => None
+        }
       })
       postRequests flatMap inline
   }
@@ -296,7 +294,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    * @return A map associating instruction nodes of the callee with the corresponding cloned
    *         instruction in the callsite method.
    */
-  def inlineCallsite(callsite: Callsite): Map[AbstractInsnNode, AbstractInsnNode] = {
+  def inlineCallsite(callsite: Callsite): Unit = {
     import callsite.{callsiteClass, callsiteMethod, callsiteInstruction, receiverKnownNotNull, callsiteStackHeight}
     val Right(callsiteCallee) = callsite.callee
     import callsiteCallee.{callee, calleeDeclarationClass}
@@ -451,7 +449,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     callGraph.callsites(callee).valuesIterator foreach { originalCallsite =>
       val newCallsiteIns = instructionMap(originalCallsite.callsiteInstruction).asInstanceOf[MethodInsnNode]
       val argInfos = originalCallsite.argInfos flatMap mapArgInfo
-      callGraph.addCallsite(Callsite(
+      val newCallsite = Callsite(
         callsiteInstruction = newCallsiteIns,
         callsiteMethod = callsiteMethod,
         callsiteClass = callsiteClass,
@@ -460,19 +458,21 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         callsiteStackHeight = callsiteStackHeight + originalCallsite.callsiteStackHeight,
         receiverKnownNotNull = originalCallsite.receiverKnownNotNull,
         callsitePosition = originalCallsite.callsitePosition
-      ))
+      )
+      originalCallsite.inlinedClones += newCallsite
+      callGraph.addCallsite(newCallsite)
     }
 
     callGraph.closureInstantiations(callee).valuesIterator foreach { originalClosureInit =>
       val newIndy = instructionMap(originalClosureInit.lambdaMetaFactoryCall.indy).asInstanceOf[InvokeDynamicInsnNode]
       val capturedArgInfos = originalClosureInit.capturedArgInfos flatMap mapArgInfo
-      callGraph.addClosureInstantiation(
-        ClosureInstantiation(
-          originalClosureInit.lambdaMetaFactoryCall.copy(indy = newIndy),
-          callsiteMethod,
-          callsiteClass,
-          capturedArgInfos)
-      )
+      val newClosureInit = ClosureInstantiation(
+        originalClosureInit.lambdaMetaFactoryCall.copy(indy = newIndy),
+        callsiteMethod,
+        callsiteClass,
+        capturedArgInfos)
+      originalClosureInit.inlinedClones += newClosureInit
+      callGraph.addClosureInstantiation(newClosureInit)
     }
 
     // Remove the elided invocation from the call graph
@@ -480,8 +480,6 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
     // Inlining a method body can render some code unreachable, see example above (in runInliner).
     unreachableCodeEliminated -= callsiteMethod
-
-    instructionMap
   }
 
   /**

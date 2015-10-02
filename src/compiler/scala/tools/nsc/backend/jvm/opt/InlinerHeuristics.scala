@@ -19,8 +19,10 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
   import inliner._
   import callGraph._
 
-  case class InlineRequest(callsite: Callsite, post: List[PostInlineRequest])
-  case class PostInlineRequest(callsiteInstruction: MethodInsnNode, post: List[PostInlineRequest])
+  case class InlineRequest(callsite: Callsite, post: List[InlineRequest]) {
+    // invariant: all post inline requests denote callsites in the callee of the main callsite
+    for (pr <- post) assert(pr.callsite.callsiteMethod == callsite.callee.get.callee, s"Callsite method mismatch: main $callsite - post ${pr.callsite}")
+  }
 
   /**
    * Select callsites from the call graph that should be inlined, grouped by the containing method.

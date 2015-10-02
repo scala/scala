@@ -169,6 +169,9 @@ object CodeGenTools {
   def getSingleMethod(classNode: ClassNode, name: String): Method =
     convertMethod(classNode.methods.asScala.toList.find(_.name == name).get)
 
+  def findAsmMethods(c: ClassNode, p: String => Boolean) = c.methods.iterator.asScala.filter(m => p(m.name)).toList.sortBy(_.name)
+  def findAsmMethod(c: ClassNode, name: String) = findAsmMethods(c, _ == name).head
+
   /**
    * Instructions that match `query` when textified.
    * If `query` starts with a `+`, the next instruction is returned.
