@@ -697,7 +697,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           else
             debuglog("conflicting env for " + m + " env: " + env)
         }
-        else if (m.isDeferred) { // abstract methods
+        else if (m.isDeferred && m.isSpecialized) { // abstract methods
           val specMember = enterMember(cloneInSpecializedClass(m, _ | DEFERRED))
           // debuglog("deferred " + specMember.fullName + " remains abstract")
 
@@ -705,11 +705,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           // was: new Forward(specMember) {
           //   override def target = m.owner.info.member(specializedName(m, env))
           // }
-        } else if (m.isMethod && !m.hasAccessorFlag) { // other concrete methods
+        } else if (!sClass.isTrait && m.isMethod && !m.hasAccessorFlag) { // other concrete methods
           // log("other concrete " + m)
           forwardToOverload(m)
 
-        } else if (m.isMethod && m.hasFlag(LAZY)) {
+        } else if (!sClass.isTrait && m.isMethod && m.hasFlag(LAZY)) {
           forwardToOverload(m)
 
         } else if (m.isValue && !m.isMethod && !m.hasFlag(LAZY)) { // concrete value definition

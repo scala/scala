@@ -11,6 +11,7 @@ package jvm
 
 import scala.annotation.switch
 import scala.reflect.internal.Flags
+import java.lang.invoke.LambdaMetafactory
 
 import scala.tools.asm
 import GenBCode._
@@ -843,8 +844,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
          *     loading another throwable first).
          *
          * New (http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.10.1)
-         *   - Requires consistent stack map frames. GenBCode generates stack frames if -target:jvm-1.6
-         *     or higher.
+         *   - Requires consistent stack map frames. GenBCode always generates stack frames.
          *   - In practice: the ASM library computes stack map frames for us (ClassWriter). Emitting
          *     correct frames after an ATHROW is probably complex, so ASM uses the following strategy:
          *       - Every time when generating an ATHROW, a new basic block is started.
@@ -922,7 +922,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     def genLoadModule(tree: Tree): BType = {
       val module = (
         if (!tree.symbol.isPackageClass) tree.symbol
-        else tree.symbol.info.member(nme.PACKAGE) match {
+        else tree.symbol.info.packageObject match {
           case NoSymbol => abort(s"SI-5604: Cannot use package as value: $tree")
           case s        => abort(s"SI-5604: found package class where package object expected: $tree")
         }
@@ -1232,7 +1232,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         val equalsMethod: Symbol = {
           if (l.tpe <:< BoxedNumberClass.tpe) {
             if (r.tpe <:< BoxedNumberClass.tpe) platform.externalEqualsNumNum
-            else if (r.tpe <:< BoxedCharacterClass.tpe) platform.externalEqualsNumObject // will be externalEqualsNumChar in 2.12, SI-9030
+            else if (r.tpe <:< BoxedCharacterClass.tpe) platform.externalEqualsNumChar
             else platform.externalEqualsNumObject
           } else platform.externalEquals
         }
@@ -1304,7 +1304,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val samName = sam.name.toString
       val samMethodType = asmMethodType(sam).toASMType
 
-      val flags = 3 // TODO 2.12.x Replace with LambdaMetafactory.FLAG_SERIALIZABLE | LambdaMetafactory.FLAG_MARKERS
+      val flags = LambdaMetafactory.FLAG_SERIALIZABLE | LambdaMetafactory.FLAG_MARKERS
 
       val ScalaSerializable = classBTypeFromSymbol(definitions.SerializableClass).toASMType
       bc.jmethod.visitInvokeDynamicInsn(samName, invokedType, lambdaMetaFactoryBootstrapHandle,
@@ -1316,7 +1316,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         /* markerInterfaces[0]    = */ ScalaSerializable,
         /* bridgeCount            = */ 0.asInstanceOf[AnyRef]
       )
-      indyLambdaHosts += this.claszSymbol
+      indyLambdaHosts += cnode.name
     }
   }
 

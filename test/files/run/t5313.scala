@@ -3,7 +3,7 @@ import scala.tools.partest.IcodeComparison
 object Test extends IcodeComparison {
   override def printIcodeAfterPhase = "dce"
 
-  override def extraSettings: String = super.extraSettings + " -optimize"
+  override def extraSettings: String = super.extraSettings + " -optimize -Ybackend:GenASM"
 
   override def code =
     """class Foo {

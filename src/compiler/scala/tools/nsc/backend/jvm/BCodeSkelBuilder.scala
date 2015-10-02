@@ -9,7 +9,6 @@ package backend
 package jvm
 
 import scala.collection.{ mutable, immutable }
-import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository
 import scala.tools.nsc.symtab._
 
 import scala.tools.asm
@@ -67,8 +66,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     var isCZParcelable             = false
     var isCZStaticModule           = false
     var isCZRemote                 = false
-
-    protected val indyLambdaHosts = collection.mutable.Set[Symbol]()
 
     /* ---------------- idiomatic way to ask questions to typer ---------------- */
 
@@ -128,10 +125,10 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       val shouldAddLambdaDeserialize = (
         settings.target.value == "jvm-1.8"
           && settings.Ydelambdafy.value == "method"
-          && indyLambdaHosts.contains(claszSymbol))
+          && indyLambdaHosts.contains(cnode.name))
 
       if (shouldAddLambdaDeserialize)
-        addLambdaDeserialize(claszSymbol, cnode)
+        backendUtils.addLambdaDeserialize(cnode)
 
       addInnerClassesASM(cnode, innerClassBufferASM.toList)
 
@@ -139,11 +136,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       if (AsmUtils.traceClassEnabled && cnode.name.contains(AsmUtils.traceClassPattern))
         AsmUtils.traceClass(cnode)
-
-      if (settings.YoptAddToBytecodeRepository) {
-        // The inliner needs to find all classes in the code repo, also those being compiled
-        byteCodeRepository.add(cnode, ByteCodeRepository.CompilationUnit)
-      }
 
       assert(cd.symbol == claszSymbol, "Someone messed up BCodePhase.claszSymbol during genPlainClass().")
     } // end of method genPlainClass()
@@ -587,10 +579,10 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       }
 
       val isNative         = methSymbol.hasAnnotation(definitions.NativeAttr)
-      val isAbstractMethod = (methSymbol.isDeferred || methSymbol.owner.isInterface)
+      val isAbstractMethod = (methSymbol.isDeferred || methSymbol.owner.isInterface) && !methSymbol.hasFlag(Flags.JAVA_DEFAULTMETHOD)
       val flags = GenBCode.mkFlags(
         javaFlags(methSymbol),
-        if (claszSymbol.isInterface) asm.Opcodes.ACC_ABSTRACT   else 0,
+        if (isAbstractMethod)        asm.Opcodes.ACC_ABSTRACT   else 0,
         if (methSymbol.isStrictFP)   asm.Opcodes.ACC_STRICT     else 0,
         if (isNative)                asm.Opcodes.ACC_NATIVE     else 0  // native methods of objects are generated in mirror classes
       )

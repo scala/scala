@@ -589,7 +589,12 @@ trait Types
     def nonPrivateMembersAdmitting(admit: Long): Scope = membersBasedOnFlags(BridgeAndPrivateFlags & ~admit, 0)
 
     /** A list of all implicit symbols of this type  (defined or inherited) */
-    def implicitMembers: Scope = membersBasedOnFlags(BridgeFlags, IMPLICIT)
+    def implicitMembers: Scope = {
+      typeSymbolDirect match {
+        case sym: ModuleClassSymbol => sym.implicitMembers
+        case _ => membersBasedOnFlags(BridgeFlags, IMPLICIT)
+      }
+    }
 
     /** A list of all deferred symbols of this type  (defined or inherited) */
     def deferredMembers: Scope = membersBasedOnFlags(BridgeFlags, DEFERRED)
@@ -605,6 +610,8 @@ trait Types
      */
     def nonPrivateMember(name: Name): Symbol =
       memberBasedOnName(name, BridgeAndPrivateFlags)
+
+    def packageObject: Symbol = member(nme.PACKAGE)
 
     /** The non-private member with given name, admitting members with given flags `admit`.
      *  "Admitting" refers to the fact that members with a PRIVATE, BRIDGE, or VBRIDGE
@@ -659,7 +666,7 @@ trait Types
         )
         if (trivial) this
         else {
-          val m     = newAsSeenFromMap(pre.normalize, clazz)
+          val m     = new AsSeenFromMap(pre.normalize, clazz)
           val tp    = m(this)
           val tp1   = existentialAbstraction(m.capturedParams, tp)
 
@@ -1600,7 +1607,14 @@ trait Types
     private var normalized: Type = _
     private def normalizeImpl = {
       // TODO see comments around def intersectionType and def merge
-      def flatten(tps: List[Type]): List[Type] = tps flatMap { case RefinedType(parents, ds) if ds.isEmpty => flatten(parents) case tp => List(tp) }
+      // SI-8575 The dealias is needed here to keep subtyping transitive, example in run/t8575b.scala
+      def flatten(tps: List[Type]): List[Type] = {
+        def dealiasRefinement(tp: Type) = if (tp.dealias.isInstanceOf[RefinedType]) tp.dealias else tp
+        tps map dealiasRefinement flatMap {
+          case RefinedType(parents, ds) if ds.isEmpty => flatten(parents)
+          case tp => List(tp)
+        }
+      }
       val flattened = flatten(parents).distinct
       if (decls.isEmpty && hasLength(flattened, 1)) {
         flattened.head

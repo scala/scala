@@ -1,7 +1,7 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.tools.asm.tree.{InvokeDynamicInsnNode, AbstractInsnNode, MethodNode}
+import scala.tools.asm.tree.{AbstractInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.reflect.internal.util.Position
 import scala.tools.nsc.settings.ScalaSettings
@@ -228,7 +228,7 @@ object BackendReporting {
 
     def emitWarning(settings: ScalaSettings): Boolean = this match {
       case _: IllegalAccessInstruction | _: MethodWithHandlerCalledOnNonEmptyStack | _: SynchronizedMethod | _: StrictfpMismatch | _: ResultingMethodTooLarge =>
-        settings.YoptWarningEmitAtInlineFailed
+        settings.YoptWarnings.contains(settings.YoptWarningsChoices.anyInlineFailed)
 
       case IllegalAccessCheckFailed(_, _, _, _, _, cause) =>
         cause.emitWarning(settings)
@@ -246,9 +246,11 @@ object BackendReporting {
   case class ResultingMethodTooLarge(calleeDeclarationClass: InternalName, name: String, descriptor: String,
                                      callsiteClass: InternalName, callsiteName: String, callsiteDesc: String) extends CannotInlineWarning
 
+  // TODO: this should be a subtype of CannotInlineWarning
+  // but at the place where it's created (in findIllegalAccess) we don't have the necessary data (calleeName, calleeDescriptor).
   case object UnknownInvokeDynamicInstruction extends OptimizerWarning {
     override def toString = "The callee contains an InvokeDynamic instruction with an unknown bootstrap method (not a LambdaMetaFactory)."
-    def emitWarning(settings: ScalaSettings): Boolean = settings.YoptWarningEmitAtInlineFailed
+    def emitWarning(settings: ScalaSettings): Boolean = settings.YoptWarnings.contains(settings.YoptWarningsChoices.anyInlineFailed)
   }
 
   /**
@@ -260,7 +262,7 @@ object BackendReporting {
 
     override def emitWarning(settings: ScalaSettings): Boolean = this match {
       case RewriteClosureAccessCheckFailed(_, cause) => cause.emitWarning(settings)
-      case RewriteClosureIllegalAccess(_, _)         => settings.YoptWarningEmitAtInlineFailed
+      case RewriteClosureIllegalAccess(_, _)         => settings.YoptWarnings.contains(settings.YoptWarningsChoices.anyInlineFailed)
     }
 
     override def toString: String = this match {

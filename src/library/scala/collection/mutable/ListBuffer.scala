@@ -12,7 +12,7 @@ package mutable
 
 import generic._
 import immutable.{List, Nil, ::}
-import java.io._
+import java.io.{ObjectOutputStream, ObjectInputStream}
 import scala.annotation.migration
 
 /** A `Buffer` implementation backed by a list. It provides constant time
@@ -262,13 +262,14 @@ final class ListBuffer[A]
    *
    *  @param n         the index which refers to the first element to remove.
    *  @param count     the number of elements to remove.
+   *  @throws   IndexOutOfBoundsException if the index `n` is not in the valid range
+   *            `0 <= n <= length - count` (with `count > 0`).
+   *  @throws   IllegalArgumentException if `count < 0`.
    */
-  @migration("Invalid input values will be rejected in future releases.", "2.11")
   override def remove(n: Int, count: Int) {
-    if (n >= len)
-      return
-    if (count < 0)
-      throw new IllegalArgumentException(s"removing negative number ($count) of elements")
+    if (count < 0) throw new IllegalArgumentException("removing negative number of elements: " + count.toString)
+    else if (count == 0) return  // Nothing to do
+    if (n < 0 || n > len - count) throw new IndexOutOfBoundsException("at " + n.toString + " deleting " + count.toString)
     if (exported) copy()
     val n1 = n max 0
     val count1 = count min (len - n1)
@@ -408,9 +409,6 @@ final class ListBuffer[A]
       }
   }
 
-  @deprecated("The result of this method will change along with this buffer, which is often not what's expected.", "2.11.0")
-  override def readOnly: List[A] = start
-
   // Private methods
 
   /** Copy contents of this buffer */
@@ -426,7 +424,7 @@ final class ListBuffer[A]
   }
 
   override def equals(that: Any): Boolean = that match {
-    case that: ListBuffer[_] => this.readOnly equals that.readOnly
+    case that: ListBuffer[_] => this.start equals that.start
     case _                   => super.equals(that)
   }
 

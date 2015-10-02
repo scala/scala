@@ -55,6 +55,13 @@ object AsmUtils {
     node
   }
 
+  def readClass(filename: String): ClassNode = {
+    val f = new java.io.RandomAccessFile(filename, "r")
+    val b = new Array[Byte](f.length.toInt)
+    f.read(b)
+    readClass(b)
+  }
+
   /**
    * Returns a human-readable representation of the cnode ClassNode.
    */

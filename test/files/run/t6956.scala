@@ -19,6 +19,8 @@ class Switches {
 }
 
 object Test extends IcodeComparison {
+  override def extraSettings: String = super.extraSettings + " -Ybackend:GenASM"
+
   // ensure we get two switches out of this -- ignore the rest of the output for robustness
   // exclude the constant we emit for the "SWITCH ..." string below (we get the icode for all the code you see in this file)
   override def show() = {

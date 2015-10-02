@@ -16,7 +16,7 @@ import jconsole.history.{History => JHistory}
 
 
 import scala.tools.nsc.interpreter
-import scala.tools.nsc.interpreter.{Completion, JLineCompletion, NoCompletion}
+import scala.tools.nsc.interpreter.{Completion, NoCompletion}
 import scala.tools.nsc.interpreter.Completion.Candidates
 import scala.tools.nsc.interpreter.session.History
 
@@ -125,21 +125,16 @@ private class JLineConsoleReader extends jconsole.ConsoleReader with interpreter
     // adapt the JLine completion interface
     def completer =
       new Completer {
-        val tc = completion.completer()
+        val tc = completion
         def complete(_buf: String, cursor: Int, candidates: JList[CharSequence]): Int = {
           val buf = if (_buf == null) "" else _buf
-          val Candidates(newCursor, newCandidates) = tc.complete(buf, cursor)
+          val Candidates(newCursor, newCandidates) = completion.complete(buf, cursor)
           newCandidates foreach (candidates add _)
           newCursor
         }
       }
 
-    // a last bit of nastiness: parsing help depending on the flavor of completer (fixme)
     completion match {
-      case _: JLineCompletion =>
-        val jlineCompleter = new ArgumentCompleter(new JLineDelimiter, completer)
-        jlineCompleter setStrict false
-        this addCompleter jlineCompleter
       case NoCompletion       => ()
       case _                  => this addCompleter completer
     }

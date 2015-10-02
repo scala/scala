@@ -13,7 +13,6 @@ import org.junit.Assert._
 
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
-import scala.tools.nsc.backend.jvm.opt.BytecodeUtils.AsmAnalyzer
 import scala.tools.nsc.io._
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.testing.AssertUtil._
@@ -32,7 +31,8 @@ object InlineWarningTest extends ClearAfterClass.Clearable {
   val argsNoWarn = "-Ybackend:GenBCode -Yopt:l:classpath"
   val args = argsNoWarn + " -Yopt-warnings"
   var compiler = newCompiler(extraArgs = args)
-  def clear(): Unit = { compiler = null }
+  var compilerWarnAll = newCompiler(extraArgs = argsNoWarn + " -Yopt-warnings:_")
+  def clear(): Unit = { compiler = null; compilerWarnAll = null }
 }
 
 @RunWith(classOf[JUnit4])
@@ -40,8 +40,9 @@ class InlineWarningTest extends ClearAfterClass {
   ClearAfterClass.stateToClear = InlineWarningTest
 
   val compiler = InlineWarningTest.compiler
+  val compilerWarnAll = InlineWarningTest.compilerWarnAll
 
-  def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
+  def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false, compiler: Global = compiler): List[ClassNode] = {
     compileClasses(compiler)(scalaCode, javaCode, allowMessage)
   }
 
@@ -168,6 +169,33 @@ class InlineWarningTest extends ClearAfterClass {
 
     var c = 0
     compile(code, allowMessage = i => { c += 1; i.msg contains warn })
+    assert(c == 1, c)
+  }
+
+  @Test
+  def dontWarnWhenNotIlnineAnnotated(): Unit = {
+    val code =
+      """class M {
+        |  final def f(t: Int => Int) = {
+        |    @noinline def nested = 0
+        |    nested + t(1)
+        |  }
+        |  def t = f(x => x + 1)
+        |}
+        |
+        |class N {
+        |  def t(a: M) = a.f(x => x + 1)
+        |}
+      """.stripMargin
+    compile(code, allowMessage = _ => false) // no warnings allowed
+
+    val warn =
+      """M::f(Lscala/Function1;)I could not be inlined:
+        |The callee M::f(Lscala/Function1;)I contains the instruction INVOKESPECIAL M.nested$1 ()I
+        |that would cause an IllegalAccessError when inlined into class N""".stripMargin
+
+    var c = 0
+    compile(code, compiler = compilerWarnAll, allowMessage = i => { c += 1; i.msg contains warn })
     assert(c == 1, c)
   }
 

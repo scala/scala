@@ -94,7 +94,7 @@ trait ModelFactoryTypeSupport {
                     LinkToMember(bMbr, oTpl)
                   case _ =>
                     val name = makeQualifiedName(bSym)
-                    if (!bSym.owner.isPackage)
+                    if (!bSym.owner.hasPackageFlag)
                       Tooltip(name)
                     else
                       findExternalLink(bSym, name).getOrElse (

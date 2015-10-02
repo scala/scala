@@ -57,11 +57,12 @@ floatType        ::=  ‘F’ | ‘f’ | ‘D’ | ‘d’
 
 booleanLiteral   ::=  ‘true’ | ‘false’
 
-characterLiteral ::=  ‘'’ (printableChar | charEscapeSeq) ‘'’
+characterLiteral ::=  ‘'’ (charNoQuoteOrNewline | UnicodeEscape | charEscapeSeq) ‘'’
 
 stringLiteral    ::=  ‘"’ {stringElement} ‘"’
                  |  ‘"""’ multiLineChars ‘"""’
-stringElement    ::=  (printableChar except ‘"’)
+stringElement    ::=  charNoDoubleQuoteOrNewline
+                 |  UnicodeEscape
                  |  charEscapeSeq
 multiLineChars   ::=  {[‘"’] [‘"’] charNoDoubleQuote} {‘"’}
 

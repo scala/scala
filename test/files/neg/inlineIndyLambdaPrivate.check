@@ -1,0 +1,16 @@
+Test_2.scala:2: warning: A_1::test()Ljava/lang/String; could not be inlined:
+The callee A_1::test()Ljava/lang/String; contains the instruction INVOKEDYNAMIC m()LA_1$Fun; [
+      // handle kind 0x6 : INVOKESTATIC
+      java/lang/invoke/LambdaMetafactory.metafactory(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;
+      // arguments:
+      (Ljava/lang/String;)Ljava/lang/String;,
+      // handle kind 0x6 : INVOKESTATIC
+      A_1.lambda$test$0(Ljava/lang/String;)Ljava/lang/String;,
+      (Ljava/lang/String;)Ljava/lang/String;
+    ]
+that would cause an IllegalAccessError when inlined into class Test.
+  def foo = A_1.test
+                ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

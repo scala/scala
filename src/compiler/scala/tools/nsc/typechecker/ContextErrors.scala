@@ -1105,7 +1105,7 @@ trait ContextErrors {
       def GetterDefinedTwiceError(getter: Symbol) =
         issueSymbolTypeError(getter, getter+" is defined twice")
 
-      def ValOrValWithSetterSuffixError(tree: Tree) =
+      def ValOrVarWithSetterSuffixError(tree: Tree) =
         issueNormalTypeError(tree, "Names of vals or vars may not end in `_='")
 
       def PrivateThisCaseClassParameterError(tree: Tree) =
@@ -1212,7 +1212,8 @@ trait ContextErrors {
 
     import definitions._
 
-    def AmbiguousImplicitError(info1: ImplicitInfo, info2: ImplicitInfo,
+    def AmbiguousImplicitError(info1: ImplicitInfo, tree1: Tree,
+                               info2: ImplicitInfo, tree2: Tree,
                                pre1: String, pre2: String, trailer: String)
                                (isView: Boolean, pt: Type, tree: Tree)(implicit context0: Context) = {
       if (!info1.tpe.isErroneous && !info2.tpe.isErroneous) {
@@ -1248,10 +1249,20 @@ trait ContextErrors {
             if (explanation == "") "" else "\n" + explanation
           )
         }
+
+        def treeTypeArgs(annotatedTree: Tree) = annotatedTree match {
+          case TypeApply(_, args) => args.map(_.toString)
+          case _ => Nil
+        }
+
         context.issueAmbiguousError(AmbiguousImplicitTypeError(tree,
-          if (isView) viewMsg
-          else s"ambiguous implicit values:\n${coreMsg}match expected type $pt")
-        )
+          (tree1.symbol, tree2.symbol) match {
+            case (ImplicitAmbiguousMsg(msg), _) => msg.format(treeTypeArgs(tree1))
+            case (_, ImplicitAmbiguousMsg(msg)) => msg.format(treeTypeArgs(tree2))
+            case (_, _) if isView => viewMsg
+            case (_, _) => s"ambiguous implicit values:\n${coreMsg}match expected type $pt"
+          }
+        ))
       }
     }
 

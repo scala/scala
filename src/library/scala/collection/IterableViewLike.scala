@@ -69,6 +69,10 @@ trait IterableViewLike[+A,
   trait Appended[B >: A] extends super.Appended[B] with Transformed[B] {
     def iterator = self.iterator ++ rest
   }
+  
+  trait Prepended[B >: A] extends super.Prepended[B] with Transformed[B] {
+    def iterator = fst.toIterator ++ self
+  }
 
   trait Filtered extends super.Filtered with Transformed[A] {
     def iterator = self.iterator filter pred
@@ -110,6 +114,7 @@ trait IterableViewLike[+A,
   } with AbstractTransformed[(A1, B)] with ZippedAll[A1, B]
   protected override def newForced[B](xs: => GenSeq[B]): Transformed[B] = new { val forced = xs } with AbstractTransformed[B] with Forced[B]
   protected override def newAppended[B >: A](that: GenTraversable[B]): Transformed[B] = new { val rest = that } with AbstractTransformed[B] with Appended[B]
+  protected override def newPrepended[B >: A](that: GenTraversable[B]): Transformed[B] = new { val fst = that } with AbstractTransformed[B] with Prepended[B]
   protected override def newMapped[B](f: A => B): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with Mapped[B]
   protected override def newFlatMapped[B](f: A => GenTraversableOnce[B]): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with FlatMapped[B]
   protected override def newFiltered(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with Filtered

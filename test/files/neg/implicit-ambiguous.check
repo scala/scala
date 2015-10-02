@@ -1,0 +1,4 @@
+implicit-ambiguous.scala:10: error: Could not prove Int =!= Int
+  implicitly[Int =!= Int]
+            ^
+one error found

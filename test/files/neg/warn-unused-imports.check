@@ -1,33 +1,55 @@
-warn-unused-imports.scala:57: warning: Unused import
+warn-unused-imports_2.scala:133: error: type mismatch;
+ found   : Int(42)
+ required: Sample.X
+    f(42)                       // error
+      ^
+warn-unused-imports_2.scala:57: warning: Unused import
     import p1.A // warn
               ^
-warn-unused-imports.scala:62: warning: Unused import
+warn-unused-imports_2.scala:62: warning: Unused import
     import p1.{ A, B } // warn on A
                 ^
-warn-unused-imports.scala:67: warning: Unused import
+warn-unused-imports_2.scala:67: warning: Unused import
     import p1.{ A, B } // warn on both
                 ^
-warn-unused-imports.scala:67: warning: Unused import
+warn-unused-imports_2.scala:67: warning: Unused import
     import p1.{ A, B } // warn on both
                    ^
-warn-unused-imports.scala:73: warning: Unused import
+warn-unused-imports_2.scala:73: warning: Unused import
     import c._  // warn
              ^
-warn-unused-imports.scala:78: warning: Unused import
+warn-unused-imports_2.scala:78: warning: Unused import
     import p1._ // warn
               ^
-warn-unused-imports.scala:85: warning: Unused import
+warn-unused-imports_2.scala:85: warning: Unused import
     import c._  // warn
              ^
-warn-unused-imports.scala:91: warning: Unused import
+warn-unused-imports_2.scala:91: warning: Unused import
     import p1.c._  // warn
                 ^
-warn-unused-imports.scala:98: warning: Unused import
+warn-unused-imports_2.scala:98: warning: Unused import
     import p1._   // warn
               ^
-warn-unused-imports.scala:118: warning: Unused import
+warn-unused-imports_2.scala:118: warning: Unused import
     import p1.A   // warn
               ^
-error: No warnings can be incurred under -Xfatal-warnings.
-10 warnings found
+warn-unused-imports_2.scala:132: warning: Unused import
+    import Sample.Implicits._   // warn
+                            ^
+warn-unused-imports_2.scala:143: warning: Unused import
+    import Sample.Implicits.useless     // warn
+                            ^
+warn-unused-imports_2.scala:147: warning: Unused import
+    import java.io.File                 // warn
+                   ^
+warn-unused-imports_2.scala:148: warning: Unused import
+    import scala.concurrent.Future      // warn
+                            ^
+warn-unused-imports_2.scala:149: warning: Unused import
+    import scala.concurrent.ExecutionContext.Implicits.global // warn
+                                                       ^
+warn-unused-imports_2.scala:150: warning: Unused import
+    import p1.A                         // warn
+              ^
+16 warnings found
 one error found

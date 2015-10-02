@@ -165,6 +165,100 @@ def testTransformFailure(): Unit = once {
       g onFailure { case e => done(e eq transformed) }
   }
 
+  def testTransformResultToResult(): Unit = once {
+    done =>
+      Future("foo").transform {
+        case Success(s) => Success(s.toUpperCase)
+        case Failure(f) => throw new Exception("test failed")
+      } onComplete {
+        case Success("FOO") => done(true)
+        case _ => done(false)
+      }
+  }
+
+  def testTransformResultToFailure(): Unit = once {
+    done => 
+      val e = new Exception("expected")
+      Future("foo").transform {
+        case Success(s) => Failure(e)
+        case Failure(f) => throw new Exception("test failed")
+      } onComplete {
+        case Failure(`e`) => done(true)
+        case _ => done(false)
+      }
+  }
+
+  def testTransformFailureToResult(): Unit = once {
+    done =>
+    val e = "foo"
+      Future(throw new Exception("initial")).transform {
+        case Success(s) => throw new Exception("test failed")
+        case Failure(f) => Success(e)
+      } onComplete {
+        case Success(`e`) => done(true)
+        case _ => done(false)
+      }
+  }
+
+  def testTransformFailureToFailure(): Unit = once {
+    done =>
+      val e = new Exception("expected")
+      Future(throw new Exception("initial")).transform {
+        case Success(s) => throw new Exception("test failed")
+        case Failure(f) => Failure(e)
+      } onComplete {
+        case Failure(`e`) => done(true)
+        case _ => done(false)
+      }
+  }
+
+    def testTransformWithResultToResult(): Unit = once {
+    done =>
+      Future("foo").transformWith {
+        case Success(s) => Future(s.toUpperCase)
+        case Failure(f) => throw new Exception("test failed")
+      } onComplete {
+        case Success("FOO") => done(true)
+        case _ => done(false)
+      }
+  }
+
+  def testTransformWithResultToFailure(): Unit = once {
+    done => 
+      val e = new Exception("expected")
+      Future("foo").transformWith {
+        case Success(s) => Future(throw e)
+        case Failure(f) => throw new Exception("test failed")
+      } onComplete {
+        case Failure(`e`) => done(true)
+        case _ => done(false)
+      }
+  }
+
+  def testTransformWithFailureToResult(): Unit = once {
+    done =>
+    val e = "foo"
+      Future(throw new Exception("initial")).transformWith {
+        case Success(s) => throw new Exception("test failed")
+        case Failure(f) => Future(e)
+      } onComplete {
+        case Success(`e`) => done(true)
+        case _ => done(false)
+      }
+  }
+
+  def testTransformWithFailureToFailure(): Unit = once {
+    done =>
+      val e = new Exception("expected")
+      Future(throw new Exception("initial")).transformWith {
+        case Success(s) => throw new Exception("test failed")
+        case Failure(f) => Future(throw e)
+      } onComplete {
+        case Failure(`e`) => done(true)
+        case _ => done(false)
+      }
+  }
+
   def testFoldFailure(): Unit = once {
     done =>
       val f = Future[Unit] { throw new Exception("expected") }
@@ -352,6 +446,14 @@ def testTransformFailure(): Unit = once {
     h onFailure { case e => done(e eq cause) }
   }
 
+  def testFallbackToThis(): Unit = {
+    def check(f: Future[Int]) = assert((f fallbackTo f) eq f)
+
+    check(Future { 1 })
+    check(Future.successful(1))
+    check(Future.failed[Int](new Exception))
+  }
+
   testMapSuccess()
   testMapFailure()
   testFlatMapSuccess()
@@ -373,6 +475,16 @@ def testTransformFailure(): Unit = once {
   testFallbackToFailure()
   testTransformSuccess()
   testTransformSuccessPF()
+  testTransformFailure()
+  testTransformFailurePF()
+  testTransformResultToResult()
+  testTransformResultToFailure()
+  testTransformFailureToResult()
+  testTransformFailureToFailure()
+  testTransformWithResultToResult()
+  testTransformWithResultToFailure()
+  testTransformWithFailureToResult()
+  testTransformWithFailureToFailure()
 }
 
 
@@ -517,7 +629,7 @@ trait BlockContexts extends TestBase {
   // test BlockContext in our default ExecutionContext
   def testDefaultFJP(): Unit = {
     val bc = getBlockContext(BlockContext.current)
-    assert(bc.isInstanceOf[scala.concurrent.forkjoin.ForkJoinWorkerThread])
+    assert(bc.isInstanceOf[java.util.concurrent.ForkJoinWorkerThread])
   }
 
   // test BlockContext inside BlockContext.withBlockContext
@@ -591,6 +703,17 @@ trait Promises extends TestBase {
 trait Exceptions extends TestBase {
   import ExecutionContext.Implicits._
 
+}
+
+trait GlobalExecutionContext extends TestBase {
+  def testNameOfGlobalECThreads(): Unit = once {
+    done => Future({
+        val expectedName = "scala-execution-context-global-"+ Thread.currentThread.getId
+        done(expectedName == Thread.currentThread.getName)
+      })(ExecutionContext.global)
+  }
+
+  testNameOfGlobalECThreads()
 }
 
 trait CustomExecutionContext extends TestBase {
@@ -772,6 +895,7 @@ with FutureProjections
 with Promises
 with BlockContexts
 with Exceptions
+with GlobalExecutionContext
 with CustomExecutionContext
 with ExecutionContextPrepare
 {

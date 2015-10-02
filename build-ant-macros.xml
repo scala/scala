@@ -6,7 +6,7 @@
     <attribute name="name"/>
     <sequential>
       <antcall target="@{name}">
-        <param name="scalac.args.optimise" value="-optimise"/>
+        <param name="scalac.args.optimise" value="-Yopt:l:classpath"/>
       </antcall>
     </sequential>
   </macrodef>
@@ -91,7 +91,6 @@
 
   <macrodef name="simple-javac">
     <attribute name="project"/>
-    <!-- project: forkjoin -->
     <attribute name="args" default=""/>
     <attribute name="jar" default="yes"/>
     <sequential>
@@ -105,7 +104,7 @@
         <then>
           <stopwatch name="@{project}.timer"/>
           <mkdir dir="${@{project}-classes}"/>
-          <javac debug="true" srcdir="${src.dir}/@{project}" destdir="${@{project}-classes}" classpath="${@{project}-classes}" includes="**/*.java" target="1.6" source="1.5" compiler="javac1.6">
+          <javac debug="true" srcdir="${src.dir}/@{project}" destdir="${@{project}-classes}" classpath="${@{project}-classes}" includes="**/*.java" target="1.8" source="1.8" compiler="javac1.8">
             <compilerarg line="${javac.args} @{args}"/>
           </javac>
           <if>
@@ -126,13 +125,13 @@
     <attribute name="stage"/>
     <!-- current stage (locker, quick, strap) -->
     <attribute name="project"/>
-    <!-- project: library/reflect/compiler/actors -->
+    <!-- project: library/reflect/compiler -->
     <attribute name="destproject" default="@{project}"/>
     <!-- overrides the output directory; used when building multiple projects into the same directory-->
     <attribute name="args" default=""/>
     <attribute name="excludes" default=""/>
     <sequential>
-      <javac debug="true" srcdir="${src.dir}/@{project}" destdir="${build-@{stage}.dir}/classes/@{destproject}" includes="**/*.java" excludes="@{excludes}" target="1.6" source="1.5">
+      <javac debug="true" srcdir="${src.dir}/@{project}" destdir="${build-@{stage}.dir}/classes/@{destproject}" includes="**/*.java" excludes="@{excludes}" target="1.8" source="1.8">
         <compilerarg line="${javac.args} @{args}"/>
         <classpath refid="@{stage}.@{destproject}.build.path"/>
       </javac>
@@ -193,7 +192,7 @@
     <attribute name="stage"/>
     <!-- current stage (locker, quick, strap) -->
     <attribute name="project"/>
-    <!-- project: library/reflect/compiler/actors -->
+    <!-- project: library/reflect/compiler -->
     <attribute name="srcpath" default="NOT SET"/>
     <!-- needed to compile the library -->
     <attribute name="args" default=""/>
@@ -202,7 +201,9 @@
     <!-- overrides the output directory; used when building multiple projects into the same directory-->
     <attribute name="srcdir" default="@{project}"/>
     <attribute name="java-excludes" default=""/>
+    <attribute name="mixed" default="NOPE"/>
     <sequential>
+      <local name="mixed.true"/><condition property="mixed.true"><equals arg1="@{mixed}" arg2="true"/></condition>
       <!-- TODO: detect zinc anywhere on PATH
            use zinc for the quick stage if it's available;
            would use it for locker but something is iffy in sbt: get a class cast error on global phase -->
@@ -220,12 +221,14 @@
             <then>
               <scalacfork taskname="@{stage}.@{project}" jvmargs="${scalacfork.jvmargs}" compilerpathref="@{with}.compiler.path" destdir="${build-@{stage}.dir}/classes/@{destproject}" srcdir="${src.dir}/@{srcdir}" params="${scalac.args.@{stage}} @{args}">
                 <include name="**/*.scala"/>
+                <include name="**/*.java" if="mixed.true"/>
                 <compilationpath refid="@{stage}.@{project}.build.path"/>
               </scalacfork>
             </then>
             <else>
               <scalacfork taskname="@{stage}.@{project}" jvmargs="${scalacfork.jvmargs}" compilerpathref="@{with}.compiler.path" destdir="${build-@{stage}.dir}/classes/@{destproject}" srcdir="${src.dir}/@{srcdir}" srcpath="@{srcpath}" params="${scalac.args.@{stage}} @{args}">
                 <include name="**/*.scala"/>
+                <include name="**/*.java" if="mixed.true"/>
                 <compilationpath refid="@{stage}.@{project}.build.path"/>
               </scalacfork>
             </else>
@@ -262,7 +265,7 @@
     <attribute name="stage"/>
     <!-- current stage (locker, quick, strap) -->
     <attribute name="project"/>
-    <!-- project: library/reflect/compiler/actors -->
+    <!-- project: library/reflect/compiler -->
     <attribute name="srcpath" default="NOT SET"/>
     <!-- needed to compile the library -->
     <attribute name="args" default=""/>
@@ -270,6 +273,7 @@
     <attribute name="includes" default="comp.includes"/>
     <attribute name="java-excludes" default=""/>
     <attribute name="version" default=""/>
+    <attribute name="mixed" default="NOPE"/>
     <!-- non-empty for scaladoc: use @{version}.version.number in property file-->
     <sequential>
       <staged-uptodate stage="@{stage}" project="@{project}">
@@ -279,9 +283,18 @@
         <do>
           <stopwatch name="@{stage}.@{project}.timer"/>
           <mkdir dir="${build-@{stage}.dir}/classes/@{project}"/>
-          <staged-javac stage="@{stage}" project="@{project}" excludes="@{java-excludes}"/>
-          <!-- always compile with javac for simplicity and regularity; it's cheap -->
-          <staged-scalac with="@{with}" stage="@{stage}" project="@{project}" srcpath="@{srcpath}" args="@{args}" java-excludes="@{java-excludes}"/>
+          <if>
+            <equals arg1="@{mixed}" arg2="true"/>
+            <then>
+              <staged-scalac with="@{with}" stage="@{stage}" project="@{project}" srcpath="@{srcpath}" args="@{args}" java-excludes="@{java-excludes}" mixed="@{mixed}"/>
+              <staged-javac stage="@{stage}" project="@{project}" excludes="@{java-excludes}"/>
+            </then>
+            <else>
+              <staged-javac stage="@{stage}" project="@{project}" excludes="@{java-excludes}"/>
+              <!-- always compile with javac for simplicity and regularity; it's cheap -->
+              <staged-scalac with="@{with}" stage="@{stage}" project="@{project}" srcpath="@{srcpath}" args="@{args}" java-excludes="@{java-excludes}"/>
+            </else>
+          </if>
           <if>
             <equals arg1="@{version}" arg2=""/>
             <then>
@@ -474,9 +487,8 @@
           <filter token="SCALA_COMPILER_INTERACTIVE_VERSION" value="${scala-compiler-interactive.version.number}"/>
           <filter token="XML_VERSION"                value="${scala-xml.version.number}" />
           <filter token="PARSER_COMBINATORS_VERSION" value="${scala-parser-combinators.version.number}" />
-          <filter token="CONTINUATIONS_PLUGIN_VERSION"  value="${scala-continuations-plugin.version.number}" />
-          <filter token="CONTINUATIONS_LIBRARY_VERSION" value="${scala-continuations-library.version.number}" />
-          <filter token="SCALA_SWING_VERSION"           value="${scala-swing.version.number}" />
+          <filter token="SCALA_SWING_VERSION"        value="${scala-swing.version.osgi}" />
+          <filter token="SOURCE_JARNAME"             value="${@{project}.targetjar}"/>
         </filterset>
       </copy>
       <bnd classpath="${@{project}.jar}" eclipse="false" failok="false" exceptions="true" files="${build-osgi.dir}/${@{project}.name}.bnd" output="${build-osgi.dir}"/>
@@ -600,14 +612,10 @@
           <filter token="SCALA_FULL_VERSION"         value="${scala.full.version}" />
           <filter token="XML_VERSION"                value="${scala-xml.version.number}" />
           <filter token="PARSER_COMBINATORS_VERSION" value="${scala-parser-combinators.version.number}" />
-          <filter token="CONTINUATIONS_PLUGIN_VERSION"  value="${scala-continuations-plugin.version.number}" />
-          <filter token="CONTINUATIONS_LIBRARY_VERSION" value="${scala-continuations-library.version.number}" />
-          <filter token="SCALA_SWING_VERSION"           value="${scala-swing.version.number}" />
+          <filter token="SCALA_SWING_VERSION"        value="${scala-swing.version.number}" />
           <filter token="RELEASE_REPOSITORY"         value="${remote.release.repository}" />
           <filter token="SNAPSHOT_REPOSITORY"        value="${remote.snapshot.repository}" />
           <filter token="JLINE_VERSION"              value="${jline.version}" />
-          <filter token="AKKA_ACTOR_VERSION"         value="${akka-actor.version.number}" />
-          <filter token="ACTORS_MIGRATION_VERSION"   value="${actors-migration.version.number}" />
 
           <!-- TODO modularize compiler.
           <filter token="SCALA_COMPILER_DOC_VERSION" value="${scala-compiler-doc.version.number}" />
@@ -746,7 +754,6 @@
       <deploy-one name="scala-compiler-interactive" local="@{local}" signed="@{signed}"/>
       -->
 
-      <deploy-one name="scala-actors"      local="@{local}" signed="@{signed}"/>
       <deploy-one name="scalap"            local="@{local}" signed="@{signed}"/>
     </sequential>
   </macrodef>

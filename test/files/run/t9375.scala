@@ -1,6 +1,3 @@
-/*
- * filter: inliner warning
- */
 import java.io._
 
 object SerDes {

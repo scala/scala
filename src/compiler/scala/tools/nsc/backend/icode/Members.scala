@@ -9,6 +9,7 @@ package backend
 package icode
 
 import scala.collection.{ mutable, immutable }
+import scala.reflect.internal.Flags
 import scala.reflect.internal.util.{ SourceFile, NoSourceFile }
 
 trait ReferenceEquality {
@@ -217,7 +218,7 @@ trait Members {
 
     /** Is this method deferred ('abstract' in Java sense)?
      */
-    def isAbstractMethod = symbol.isDeferred || symbol.owner.isInterface || native
+    def isAbstractMethod = symbol.isDeferred || (symbol.owner.isInterface && !symbol.hasFlag(Flags.JAVA_DEFAULTMETHOD)) || native
 
     def isStatic: Boolean = symbol.isStaticMember
 
