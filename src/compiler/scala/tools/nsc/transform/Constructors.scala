@@ -300,16 +300,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
       satelliteClass.asInstanceOf[ClassDef]
     }
 
-    /** For a DelayedInit subclass, wrap remainingConstrStats into a DelayedInit closure.
-      *
-      * TODO: XXX This condition (`isDelayedInitSubclass && remainingConstrStats.nonEmpty`) is not correct:
-      * remainingConstrStats.nonEmpty excludes too much,
-      * but excluding it includes too much.  The constructor sequence being mimicked
-      * needs to be reproduced with total fidelity.
-      *
-      * See test case files/run/bug4680.scala, the output of which is wrong in many
-      * particulars.
-      */
+    /** For a DelayedInit subclass, wrap remainingConstrStats into a DelayedInit closure. */
     def delayedInitDefsAndConstrStats(defs: List[Tree], remainingConstrStats: List[Tree]): (List[Tree], List[Tree]) = {
       val delayedHook     = delayedEndpointDef(remainingConstrStats)
       val delayedHookSym  = delayedHook.symbol.asInstanceOf[MethodSymbol]
@@ -670,8 +661,8 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
         if (isDelayedInitSubclass) Set.empty
         else computeOmittableAccessors(clazz, defs, auxConstructors)
 
-      // TODO: need to add the following disjunction to omittableSym to omit symbol corresponding to suppressed ValDef tree...
-      // `|| (sym.isValue && !sym.isMethod && !memoizeValue(sym))`
+      // TODO: this should omit fields for non-memoized (constant-typed, unit-typed vals need no storage --
+      // all the action is in the getter)
       def omittableSym(sym: Symbol) = omittableAccessor(sym)
       def omittableStat(stat: Tree) = omittableSym(stat.symbol)
 
@@ -703,6 +694,15 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
       }
 
       val (uptoSuperStats, remainingConstrStats) = splitAtSuper(constructorStats)
+
+      /* TODO: XXX This condition (`isDelayedInitSubclass && remainingConstrStats.nonEmpty`) is not correct:
+      * remainingConstrStats.nonEmpty excludes too much,
+      * but excluding it includes too much.  The constructor sequence being mimicked
+      * needs to be reproduced with total fidelity.
+      *
+      * See test case files/run/bug4680.scala, the output of which is wrong in many
+      * particulars.
+      */
       val (delayedHookDefs, remainingConstrStatsDelayedInit) =
         if (isDelayedInitSubclass && remainingConstrStats.nonEmpty) delayedInitDefsAndConstrStats(defs, remainingConstrStats)
         else (Nil, remainingConstrStats)
