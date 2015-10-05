@@ -26,7 +26,7 @@ private[html] object SyntaxHigh {
     "new", "null", "object", "override", "package",
     "private", "protected", "return", "sealed", "super",
     "this", "throw", "trait", "true", "try", "type",
-    "val", "var", "while", "with", "yield")
+    "val", "var", "while", "with", "yield").sorted
 
   /** Annotations, sorted alphabetically */
   val annotations = Array(
@@ -38,18 +38,18 @@ private[html] object SyntaxHigh {
     "remote", "setter", "specialized", "strictfp", "switch",
     "tailrec", "throws", "transient",
     "unchecked", "uncheckedStable", "uncheckedVariance",
-    "varargs", "volatile")
+    "varargs", "volatile").sorted
 
   /** Standard library classes/objects, sorted alphabetically */
-  val standards = Array (
-    "WeakTypeTag", "Any", "AnyRef", "AnyVal", "App", "Array",
-    "Boolean", "Byte", "Char", "Class", "ClassTag", "ClassManifest",
+  val standards = Array(
+    "Any", "AnyRef", "AnyVal", "App", "Array",
+    "Boolean", "Byte", "Char", "Class", "ClassManifest", "ClassTag",
     "Console", "Double", "Enumeration", "Float", "Function", "Int",
     "List", "Long", "Manifest", "Map",
     "NoManifest", "None", "Nothing", "Null", "Object", "Option", "OptManifest",
     "Pair", "Predef",
     "Seq", "Set", "Short", "Some", "String", "Symbol",
-    "Triple", "TypeTag", "Unit")
+    "Triple", "TypeTag", "Unit", "WeakTypeTag").sorted
 
   def apply(data: String): NodeSeq = {
     val buf = data.toCharArray
