@@ -27,10 +27,12 @@ import generic.CanBuildFrom
  *  rapidly as 2^30^ is approached.
  *
  */
+@SerialVersionUID(1L)
 final class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initialBufferSize: Int, initBlank: Boolean)
 extends AbstractMap[K, V]
    with Map[K, V]
    with MapLike[K, V, AnyRefMap[K, V]]
+   with Serializable
 {
   import AnyRefMap._
   def this() = this(AnyRefMap.exceptionDefault, 16, true)
