@@ -27,6 +27,10 @@ object Streamable {
    *  efficient method implementations.
    *
    *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
+   *
+   *  Note that this code was not written with resource management in mind.
+   *  Several methods (such as `chars` and `lines`) create InputStreams they
+   *  don't close
    */
   trait Bytes {
     def inputStream(): InputStream
@@ -82,9 +86,13 @@ object Streamable {
      */
     def creationCodec: Codec = implicitly[Codec]
 
+    /** Caller is responsible for closing the returned BufferedSource. */
     def chars(codec: Codec): BufferedSource = Source.fromInputStream(inputStream())(codec)
 
+    /** Beware! Leaks an InputStream which will not be closed until it gets finalized. */
     def lines(): Iterator[String] = lines(creationCodec)
+
+    /** Beware! Leaks an InputStream which will not be closed until it gets finalized. */
     def lines(codec: Codec): Iterator[String] = chars(codec).getLines()
 
     /** Obtains an InputStreamReader wrapped around a FileInputStream.
