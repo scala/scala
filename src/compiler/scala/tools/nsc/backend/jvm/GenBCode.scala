@@ -199,6 +199,12 @@ abstract class GenBCode extends BCodeSyncAndTry {
             )
           } else null
 
+          if (claszSymbol.isClass) {
+            analyzer.pluginsCustomAttributes(claszSymbol.asInstanceOf[ClassSymbol]) foreach {
+              (if (mirrorC ne null) mirrorC else plainC).visitAttribute(_)  
+            }
+          }
+
           // ----------- hand over to pipeline-2
 
         val item2 =

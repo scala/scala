@@ -1,0 +1,4 @@
+<plugin>
+  <name>backend-custom-attrs</name>
+  <classname>backendAttrs.genASM.Plugin</classname>
+</plugin>
