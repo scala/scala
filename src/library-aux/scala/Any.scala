@@ -77,7 +77,7 @@ abstract class Any {
    *
    *  @return a class object corresponding to the runtime type of the receiver.
    */
-  def getClass(): Class[_]
+  final def getClass(): Class[_] = sys.error("getClass")
 
   /** Test two objects for equality.
    *  The expression `x == that` is equivalent to `if (x eq null) that eq null else x.equals(that)`.
@@ -116,7 +116,7 @@ abstract class Any {
    *
    *  @return `true` if the receiver object is an instance of erasure of type `T0`; `false` otherwise.
    */
-  def isInstanceOf[T0]: Boolean = sys.error("isInstanceOf")
+  final def isInstanceOf[T0]: Boolean = sys.error("isInstanceOf")
 
   /** Cast the receiver object to be of type `T0`.
    *
@@ -129,5 +129,5 @@ abstract class Any {
    *  @throws ClassCastException if the receiver object is not an instance of the erasure of type `T0`.
    *  @return the receiver object.
    */
-  def asInstanceOf[T0]: T0 = sys.error("asInstanceOf")
+  final def asInstanceOf[T0]: T0 = sys.error("asInstanceOf")
 }
