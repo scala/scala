@@ -823,7 +823,12 @@ trait Contexts { self: Analyzer =>
         case List() =>
           List()
         case List(ImportSelector(nme.WILDCARD, _, _, _)) =>
-          collectImplicits(pre.implicitMembers, pre, imported = true)
+          // Using pre.implicitMembers seems to exposes a problem with out-dated symbols in the IDE,
+          // see the example in https://www.assembla.com/spaces/scala-ide/tickets/1002552#/activity/ticket
+          // I haven't been able to boil that down the an automated test yet.
+          // Looking up implicit members in the package, rather than package object, here is at least
+          // consistent with what is done just below for named imports.
+          collectImplicits(qual.tpe.implicitMembers, pre, imported = true)
         case ImportSelector(from, _, to, _) :: sels1 =>
           var impls = collect(sels1) filter (info => info.name != from)
           if (to != nme.WILDCARD) {
