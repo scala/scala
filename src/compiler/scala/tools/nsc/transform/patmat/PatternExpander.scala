@@ -86,8 +86,24 @@ trait PatternExpander[Pattern, Type] {
    *  @param  fixed     The non-sequence types which are extracted
    *  @param  repeated  The sequence type which is extracted
    */
-  final case class Extractor(whole: Type, fixed: List[Type], repeated: Repeated) {
+  final case class Extractor(whole: Type, fixed: List[Type], repeated: Repeated, typeOfSinglePattern: Type) {
     require(whole != NoType, s"expandTypes($whole, $fixed, $repeated)")
+
+    /** A pattern with arity-1 that doesn't match the arity of the Product-like result of the `get` method,
+      * will match that result in its entirety. Example:
+      *
+      * {{{
+      * warning: there was one deprecation warning; re-run with -deprecation for details
+      * scala> object Extractor { def unapply(a: Any): Option[(Int, String)] = Some((1, "2")) }
+      * defined object Extractor
+      *
+      * scala> "" match { case Extractor(x: Int, y: String) => }
+      *
+      * scala> "" match { case Extractor(xy : (Int, String)) => }
+      * warning: there was one deprecation warning; re-run with -deprecation for details
+      * }}}
+      * */
+    def asSinglePattern: Extractor = copy(fixed = List(typeOfSinglePattern))
 
     def productArity = fixed.length
     def hasSeq       = repeated.exists

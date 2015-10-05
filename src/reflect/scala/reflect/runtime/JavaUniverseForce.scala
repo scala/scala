@@ -106,7 +106,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.AnnotationInfo
     this.Annotation
     this.UnmappableAnnotation
-    this.ErroneousAnnotation
     this.ThrownException
     this.typeNames
     this.tpnme

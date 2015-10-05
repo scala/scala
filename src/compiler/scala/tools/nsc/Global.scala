@@ -1690,7 +1690,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       try {
         val stream = new FileOutputStream(file)
         printer.setWriter(new PrintWriter(stream, true))
-        printer.printClass(cls)
+        try
+          printer.printClass(cls)
+        finally
+          stream.close()
         informProgress(s"wrote $file")
       } catch {
         case e: IOException =>

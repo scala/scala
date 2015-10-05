@@ -68,7 +68,7 @@ trait ProcessCreation {
   /** Creates a [[scala.sys.process.ProcessBuilder]] with working dir set to `File` and extra
     * environment variables.
     *
-    * @example {{{ apply("java", new java.ioFile("/opt/app"), "CLASSPATH" -> "library.jar") }}}
+    * @example {{{ apply("java", new java.io.File("/opt/app"), "CLASSPATH" -> "library.jar") }}}
     */
   def apply(command: String, cwd: File, extraEnv: (String, String)*): ProcessBuilder =
     apply(command, Some(cwd), extraEnv: _*)
@@ -76,7 +76,7 @@ trait ProcessCreation {
   /** Creates a [[scala.sys.process.ProcessBuilder]] with working dir set to `File` and extra
     * environment variables.
     *
-    * @example {{{ apply("java" :: javaArgs, new java.ioFile("/opt/app"), "CLASSPATH" -> "library.jar") }}}
+    * @example {{{ apply("java" :: javaArgs, new java.io.File("/opt/app"), "CLASSPATH" -> "library.jar") }}}
     */
   def apply(command: Seq[String], cwd: File, extraEnv: (String, String)*): ProcessBuilder =
     apply(command, Some(cwd), extraEnv: _*)
