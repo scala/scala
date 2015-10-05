@@ -2692,7 +2692,10 @@ self =>
           case t if t == SUPERTYPE || t == SUBTYPE || t == COMMA || t == RBRACE || isStatSep(t) =>
             TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
           case _ =>
-            syntaxErrorOrIncompleteAnd("`=', `>:', or `<:' expected", skipIt = true)(EmptyTree)
+            syntaxErrorOrIncompleteAnd("`=', `>:', or `<:' expected", skipIt = true)(
+              // assume a dummy type def so as to have somewhere to stash the annotations
+              TypeDef(mods, tpnme.ERROR, Nil, EmptyTree)
+            )
         }
       }
     }
@@ -2725,7 +2728,10 @@ self =>
         case CASEOBJECT =>
           objectDef(pos, (mods | Flags.CASE) withPosition (Flags.CASE, tokenRange(in.prev /*scanner skips on 'case' to 'object', thus take prev*/)))
         case _ =>
-          syntaxErrorOrIncompleteAnd("expected start of definition", skipIt = true)(EmptyTree)
+          syntaxErrorOrIncompleteAnd("expected start of definition", skipIt = true)(
+            // assume a class definition so as to have somewhere to stash the annotations
+            atPos(pos)(gen.mkClassDef(mods, tpnme.ERROR, Nil, Template(Nil, noSelfType, Nil)))
+          )
       }
     }
 

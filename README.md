@@ -154,6 +154,10 @@ ideas and coordinate your effort with others.
 
 NOTE: we are working on migrating the build to sbt.
 
+If you are behind a HTTP proxy, include
+[`ANT_ARGS=-autoproxy`](https://ant.apache.org/manual/proxy.html) in
+your environment.
+
 Run `ant build-opt` to build an optimized version of the compiler.
 Verify your build using `ant test-opt`.
 

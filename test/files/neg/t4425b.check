@@ -22,16 +22,28 @@ t4425b.scala:10: error: object X is not a case class, nor does it have an unappl
 Note: def unapply(x: String)(y: String): Nothing exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
     println((X: Any) match { case X(_, _) => "ok" ; case _ => "fail" })
                                   ^
-t4425b.scala:18: error: too many patterns for object X: expected 1, found 2
+t4425b.scala:18: error: The result type of an unapply method must contain a member `get` to be used as an extractor pattern, no such member exists in Nothing
+    println(      "" match { case _ X _   => "ok" ; case _ => "fail" })
+                                  ^
+t4425b.scala:18: error: too many patterns for object X offering Boolean: expected 0, found 2
     println(      "" match { case _ X _   => "ok" ; case _ => "fail" })
                                     ^
-t4425b.scala:19: error: too many patterns for object X: expected 1, found 2
+t4425b.scala:19: error: The result type of an unapply method must contain a member `get` to be used as an extractor pattern, no such member exists in Nothing
+    println((X: Any) match { case _ X _   => "ok" ; case _ => "fail" })
+                                  ^
+t4425b.scala:19: error: too many patterns for object X offering Boolean: expected 0, found 2
     println((X: Any) match { case _ X _   => "ok" ; case _ => "fail" })
                                     ^
-t4425b.scala:22: error: too many patterns for object X: expected 1, found 2
+t4425b.scala:20: error: The result type of an unapply method must contain a member `get` to be used as an extractor pattern, no such member exists in Nothing
+    println(      "" match { case X(_)    => "ok" ; case _ => "fail" })
+                                  ^
+t4425b.scala:21: error: The result type of an unapply method must contain a member `get` to be used as an extractor pattern, no such member exists in Nothing
+    println((X: Any) match { case X(_)    => "ok" ; case _ => "fail" })
+                                  ^
+t4425b.scala:22: error: The result type of an unapply method must contain a member `get` to be used as an extractor pattern, no such member exists in Nothing
     println(      "" match { case X(_, _) => "ok" ; case _ => "fail" })
                                   ^
-t4425b.scala:23: error: too many patterns for object X: expected 1, found 2
+t4425b.scala:23: error: The result type of an unapply method must contain a member `get` to be used as an extractor pattern, no such member exists in Nothing
     println((X: Any) match { case X(_, _) => "ok" ; case _ => "fail" })
                                   ^
 t4425b.scala:31: error: too many patterns for object X offering Nothing: expected 1, found 2
@@ -46,4 +58,4 @@ t4425b.scala:35: error: too many patterns for object X offering Nothing: expecte
 t4425b.scala:36: error: too many patterns for object X offering Nothing: expected 1, found 2
     println((X: Any) match { case X(_, _) => "ok" ; case _ => "fail" })
                                   ^
-14 errors found
+18 errors found

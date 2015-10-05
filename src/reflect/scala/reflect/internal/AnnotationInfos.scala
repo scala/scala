@@ -404,7 +404,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
 
   object UnmappableAnnotation extends CompleteAnnotationInfo(NoType, Nil, Nil)
 
-  object ErroneousAnnotation extends CompleteAnnotationInfo(ErrorType, Nil, Nil)
+  class ErroneousAnnotation() extends CompleteAnnotationInfo(ErrorType, Nil, Nil)
 
   /** Extracts symbol of thrown exception from AnnotationInfo.
     *
