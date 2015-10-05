@@ -507,7 +507,7 @@ def f[B](t: Term[B]): B = t match {
 The expected type of the pattern `y: Number` is
 `Term[B]`.  The type `Number` does not conform to
 `Term[B]`; hence Case 2 of the rules above
-applies. This means that `b` is treated as another type
+applies. This means that `B` is treated as another type
 variable for which subtype constraints are inferred. In our case the
 applicable constraint is `Number <: Term[B]`, which
 entails `B = Int`.  Hence, `B` is treated in
