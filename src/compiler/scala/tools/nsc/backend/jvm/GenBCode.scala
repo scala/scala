@@ -201,7 +201,8 @@ abstract class GenBCode extends BCodeSyncAndTry {
 
           if (claszSymbol.isClass) {
             analyzer.pluginsCustomAttributes(claszSymbol.asInstanceOf[ClassSymbol]) foreach {
-              (if (mirrorC ne null) mirrorC else plainC).visitAttribute(_)  
+              attr =>
+                (if (mirrorC ne null) mirrorC else plainC).visitAttribute(new asm.CustomAttr(attr.name, attr.value))  
             }
           }
 

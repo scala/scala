@@ -1224,7 +1224,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
       isStaticModule(sym) && isTopLevelModule(sym) && sym.companionClass == NoSymbol
 
     if (sym.isClass && !(isJMirrorBuilder ^ isTopLevelStaticModule)) {
-      analyzer.pluginsCustomAttributes(sym.asInstanceOf[ClassSymbol]) foreach (jclass.visitAttribute)
+      analyzer.pluginsCustomAttributes(sym.asInstanceOf[ClassSymbol]) foreach {
+        attr =>
+          jclass.visitAttribute(new asm.CustomAttr(attr.name, attr.value))
+      }
     }
   }
 
