@@ -1,0 +1,7 @@
+t9509-c.scala:8: error: invalid string interpolation: `$$', `$'alnums or `$'BlockExpr expected
+  def sign = s"$ᛯ"
+               ^
+t9509-c.scala:8: error: unclosed string literal
+  def sign = s"$ᛯ"
+                 ^
+two errors found

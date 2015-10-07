@@ -312,7 +312,7 @@ trait Scanners extends ScannersCommon {
           lastOffset -= 1
         }
         if (inStringInterpolation) fetchStringPart() else fetchToken()
-        if(token == ERROR) {
+        if (token == ERROR) {
           if (inMultiLineInterpolation)
             sepRegions = sepRegions.tail.tail
           else if (inStringInterpolation)
@@ -743,12 +743,20 @@ trait Scanners extends ScannersCommon {
           finishStringPart()
           nextRawChar()
           next.token = USCORE
-        } else if (Character.isUnicodeIdentifierStart(ch)) {
+        } else if (Character.isLetter(ch) || (!settings.future && Character.isUnicodeIdentifierStart(ch))) {
+          def warnInvalid = {
+            val msg =
+              if (ch == '_') "Embedded underscore in interpolated identifier is deprecated; use an `${ expression }' instead."
+              else "Interpolating identifiers containing characters other than letters or digits is deprecated; use an `${ expression }' instead."
+            if (!settings.future) deprecationWarning(msg)
+            !settings.future
+          }
+          if (!Character.isLetter(ch)) warnInvalid
           finishStringPart()
           do {
             putChar(ch)
             nextRawChar()
-          } while (ch != SU && Character.isUnicodeIdentifierPart(ch))
+          } while (ch != SU && Character.isUnicodeIdentifierPart(ch) && (Character.isLetterOrDigit(ch) || warnInvalid))
           next.token = IDENTIFIER
           next.name = newTermName(cbuf.toString)
           cbuf.clear()
@@ -757,7 +765,7 @@ trait Scanners extends ScannersCommon {
             next.token = kwArray(idx)
           }
         } else {
-          syntaxError("invalid string interpolation: `$$', `$'ident or `$'BlockExpr expected")
+          syntaxError("invalid string interpolation: `$$', `$'alnums or `$'BlockExpr expected")
         }
       } else {
         val isUnclosedLiteral = !isUnicodeEscape && (ch == SU || (!multiLine && (ch == CR || ch == LF)))
