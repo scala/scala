@@ -1,9 +1,18 @@
 # Welcome!
 This is the official repository for the [Scala Programming Language](http://www.scala-lang.org).
 
+# How to contribute
+
 To contribute to the Scala Standard Library, Scala Compiler and Scala Language Specification, please send us a [pull request](https://help.github.com/articles/using-pull-requests/#fork--pull) from your fork of this repository! We do have to ask you to sign the [Scala CLA](http://typesafe.com/contribute/cla/scala) before we can merge any of your work into our code base, to protect its open source nature.
 
-For more information on building and developing the core of Scala, read on! Please also check out our [guidelines for contributing](CONTRIBUTING.md).
+For more information on building and developing the core of Scala, read on!
+
+Please also check out:
+
+* our [guidelines for contributing](CONTRIBUTING.md).
+* the ["Scala Hacker Guide"](http://scala-lang.org/contribute/hacker-guide.html) covers some of the same ground as this README, but in greater detail and in a more tutorial style, using a running example.
+
+# Reporting issues
 
 We're still using Jira for issue reporting, so please [report any issues](https://issues.scala-lang.org) over there.
 (We would love to start using GitHub Issues, but we're too resource-constrained to take on this migration right now.)
