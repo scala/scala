@@ -84,12 +84,12 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
     (b1.result(), b2.result())
   }
 
-  def exists(f: (El1, El2) => Boolean): Boolean = {
+  def exists(@deprecatedName('f) p: (El1, El2) => Boolean): Boolean = {
     val elems2 = colls._2.iterator
 
     for (el1 <- colls._1) {
       if (elems2.hasNext) {
-        if (f(el1, elems2.next()))
+        if (p(el1, elems2.next()))
           return true
       }
       else return false
@@ -97,8 +97,8 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
     false
   }
 
-  def forall(f: (El1, El2) => Boolean): Boolean =
-    !exists((x, y) => !f(x, y))
+  def forall(@deprecatedName('f) p: (El1, El2) => Boolean): Boolean =
+    !exists((x, y) => !p(x, y))
 
   def foreach[U](f: (El1, El2) => U): Unit = {
     val elems2 = colls._2.iterator

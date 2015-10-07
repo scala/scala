@@ -33,7 +33,7 @@ trait Set[A] extends Iterable[A]
                 with Parallelizable[A, ParSet[A]]
 {
   override def companion: GenericCompanion[Set] = Set
-  
+
   
   /** Returns this $coll as an immutable set, perhaps accepting a
    *  wider range of elements.  Since it already is an
@@ -63,7 +63,7 @@ trait Set[A] extends Iterable[A]
 object Set extends ImmutableSetFactory[Set] {
   /** $setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] = setCanBuildFrom[A]
-  
+
   /** An optimized representation for immutable empty sets */
   private object EmptySet extends AbstractSet[Any] with Set[Any] with Serializable {
     override def size: Int = 0
@@ -71,7 +71,7 @@ object Set extends ImmutableSetFactory[Set] {
     def + (elem: Any): Set[Any] = new Set1(elem)
     def - (elem: Any): Set[Any] = this
     def iterator: Iterator[Any] = Iterator.empty
-    override def foreach[U](f: Any =>  U): Unit = {}
+    override def foreach[U](f: Any => U): Unit = ()
     override def toSet[B >: Any]: Set[B] = this.asInstanceOf[Set[B]]
   }
   private[collection] def emptyInstance: Set[Any] = EmptySet
@@ -90,17 +90,17 @@ object Set extends ImmutableSetFactory[Set] {
       else this
     def iterator: Iterator[A] =
       Iterator(elem1)
-    override def foreach[U](f: A =>  U): Unit = {
+    override def foreach[U](f: A => U): Unit = {
       f(elem1)
     }
-    override def exists(f: A => Boolean): Boolean = {
-      f(elem1)
+    override def exists(@deprecatedName('f) p: A => Boolean): Boolean = {
+      p(elem1)
     }
-    override def forall(f: A => Boolean): Boolean = {
-      f(elem1)
+    override def forall(@deprecatedName('f) p: A => Boolean): Boolean = {
+      p(elem1)
     }
-    override def find(f: A => Boolean): Option[A] = {
-      if (f(elem1)) Some(elem1)
+    override def find(@deprecatedName('f) p: A => Boolean): Option[A] = {
+      if (p(elem1)) Some(elem1)
       else None
     }
     // Why is Set1 non-final?  Need to fix that!
@@ -124,18 +124,18 @@ object Set extends ImmutableSetFactory[Set] {
       else this
     def iterator: Iterator[A] =
       Iterator(elem1, elem2)
-    override def foreach[U](f: A =>  U): Unit = {
+    override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2)
     }
-    override def exists(f: A => Boolean): Boolean = {
-      f(elem1) || f(elem2)
+    override def exists(@deprecatedName('f) p: A => Boolean): Boolean = {
+      p(elem1) || p(elem2)
     }
-    override def forall(f: A => Boolean): Boolean = {
-      f(elem1) && f(elem2)
+    override def forall(@deprecatedName('f) p: A => Boolean): Boolean = {
+      p(elem1) && p(elem2)
     }
-    override def find(f: A => Boolean): Option[A] = {
-      if (f(elem1)) Some(elem1)
-      else if (f(elem2)) Some(elem2)
+    override def find(@deprecatedName('f) p: A => Boolean): Option[A] = {
+      if (p(elem1)) Some(elem1)
+      else if (p(elem2)) Some(elem2)
       else None
     }
     // Why is Set2 non-final?  Need to fix that!
@@ -159,19 +159,19 @@ object Set extends ImmutableSetFactory[Set] {
       else this
     def iterator: Iterator[A] =
       Iterator(elem1, elem2, elem3)
-    override def foreach[U](f: A =>  U): Unit = {
+    override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2); f(elem3)
     }
-    override def exists(f: A => Boolean): Boolean = {
-      f(elem1) || f(elem2) || f(elem3)
+    override def exists(@deprecatedName('f) p: A => Boolean): Boolean = {
+      p(elem1) || p(elem2) || p(elem3)
     }
-    override def forall(f: A => Boolean): Boolean = {
-      f(elem1) && f(elem2) && f(elem3)
+    override def forall(@deprecatedName('f) p: A => Boolean): Boolean = {
+      p(elem1) && p(elem2) && p(elem3)
     }
-    override def find(f: A => Boolean): Option[A] = {
-      if (f(elem1)) Some(elem1)
-      else if (f(elem2)) Some(elem2)
-      else if (f(elem3)) Some(elem3)
+    override def find(@deprecatedName('f) p: A => Boolean): Option[A] = {
+      if (p(elem1)) Some(elem1)
+      else if (p(elem2)) Some(elem2)
+      else if (p(elem3)) Some(elem3)
       else None
     }
     // Why is Set3 non-final?  Need to fix that!
@@ -196,20 +196,20 @@ object Set extends ImmutableSetFactory[Set] {
       else this
     def iterator: Iterator[A] =
       Iterator(elem1, elem2, elem3, elem4)
-    override def foreach[U](f: A =>  U): Unit = {
+    override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2); f(elem3); f(elem4)
     }
-    override def exists(f: A => Boolean): Boolean = {
-      f(elem1) || f(elem2) || f(elem3) || f(elem4)
+    override def exists(@deprecatedName('f) p: A => Boolean): Boolean = {
+      p(elem1) || p(elem2) || p(elem3) || p(elem4)
     }
-    override def forall(f: A => Boolean): Boolean = {
-      f(elem1) && f(elem2) && f(elem3) && f(elem4)
+    override def forall(@deprecatedName('f) p: A => Boolean): Boolean = {
+      p(elem1) && p(elem2) && p(elem3) && p(elem4)
     }
-    override def find(f: A => Boolean): Option[A] = {
-      if (f(elem1)) Some(elem1)
-      else if (f(elem2)) Some(elem2)
-      else if (f(elem3)) Some(elem3)
-      else if (f(elem4)) Some(elem4)
+    override def find(@deprecatedName('f) p: A => Boolean): Option[A] = {
+      if (p(elem1)) Some(elem1)
+      else if (p(elem2)) Some(elem2)
+      else if (p(elem3)) Some(elem3)
+      else if (p(elem4)) Some(elem4)
       else None
     }
     // Why is Set4 non-final?  Need to fix that!
