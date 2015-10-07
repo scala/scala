@@ -84,4 +84,18 @@ class StringContextTest {
   // Use this method to avoid problems with a locale-dependent decimal mark.
   // The string interpolation is not used here intentionally as this method is used to test string interpolation.
   private def formatUsingCurrentLocale(number: Double, decimalPlaces: Int = 2) = ("%." + decimalPlaces + "f").format(number)
+
+  @Test def t5856(): Unit = {
+    class X {
+      override def toString = "Test"
+
+      assertEquals("Test", s"$this")
+      assertEquals("TestTest", s"$this$this")
+      assertEquals("Test$", s"$this$$")
+      assertEquals("Test.##", s"$this.##")
+      assertEquals("Test.toString", s"$this.toString")
+      assertEquals("Test=THIS", s"$this=THIS")
+    }
+    new X
+  }
 }
