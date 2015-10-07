@@ -1,0 +1,4 @@
+sip-24.scala:11: error: not found: value x_
+  def `fails but x_ is not alnum`    = s"$x_"   // not emitted b/c not a parse error
+                                          ^
+one error found
