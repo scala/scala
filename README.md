@@ -31,16 +31,12 @@ P.S.: If you have some spare time to help out around here, we would be delighted
 
 # Handy Links
   - [A wealth of documentation](http://docs.scala-lang.org)
+  - [mailing lists](http://www.scala-lang.org/community/)
+  - [Gitter room for Scala contributors](https://gitter.im/scala/contributors)
   - [Scala CI](https://scala-ci.typesafe.com/)
-  - [Download the latest nightly](http://www.scala-lang.org/files/archive/nightly/2.11.x/)
-  - [(Deprecated) Scala CI at EPFL](https://scala-webapps.epfl.ch/jenkins/)
-  - Scala mailing lists:
-    - [Compiler and standard library development](https://groups.google.com/group/scala-internals)
-    - [Users of Scala](https://groups.google.com/group/scala-user)
-    - [Scala language discussion](https://groups.google.com/group/scala-language)
-    - [Scala Improvement Process](https://groups.google.com/group/scala-sips)
-    - [Debate](https://groups.google.com/group/scala-debate)
-    - [Announcements](https://groups.google.com/group/scala-announce)
+  - download the latest nightlies:
+      - [2.11.x](http://www.scala-lang.org/files/archive/nightly/2.11.x/)
+      - [2.12.x](http://www.scala-lang.org/files/archive/nightly/2.12.x/)
 
 # Repository structure
 
@@ -65,7 +61,7 @@ scala/
 
 ## Requirements
 
-You'll need a Java SDK (6 or newer), Apache Ant (version 1.9.0 or above), and curl (for `./pull-binary-libs.sh`).
+You'll need a Java SDK (6 for 2.11.x, 8 for 2.12.x), Apache Ant (version 1.9.0 or above), and curl (for `./pull-binary-libs.sh`).
 
 ## Git Hygiene
 
