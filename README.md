@@ -76,6 +76,8 @@ scala/
 
 You'll need a Java SDK (6 or newer), Apache Ant (version 1.9.0 or above), and curl (for `./pull-binary-libs.sh`).
 
+Mac OS X and Linux work. Windows may work if you use Cygwin. (Community help with keeping the build working on Windows is appreciated.)
+
 ## Git Hygiene
 
 As git history is forever, we take great pride in the quality of the commits we merge into the repository. The title of your commit will be read hundreds (of thousands? :-)) of times, so it pays off to spend just a little bit more time to polish it, making it descriptive and concise. Please take a minute to read the advice [most projects agree on](https://github.com/erlang/otp/wiki/Writing-good-commit-messages), and stick to 72 or fewer characters for the first line, wrapping subsequent ones at 80 (at most).
