@@ -61,7 +61,11 @@ scala/
 
 ## Requirements
 
-You'll need a Java SDK (6 for 2.11.x, 8 for 2.12.x), Apache Ant (version 1.9.0 or above), and curl (for `./pull-binary-libs.sh`).
+You'll need a Java SDK.  The baseline version is 6 for 2.11.x, 8 for
+2.12.x. (It's also possible to use a later SDK for local development,
+but the CI will verify against the baseline version.)
+
+You'll also need Apache Ant (version 1.9.0 or above) and curl (for `./pull-binary-libs.sh`).
 
 ## Git Hygiene
 
@@ -116,25 +120,10 @@ Here, `<milestone>` is the milestone targeted by the PR (e.g., 2.11.6), and `<sh
 
 ## IDE Setup
 ### Eclipse
-Download the [Scala IDE bundle](http://scala-ide.org/download/sdk.html). It comes preconfigured for optimal performance.
-
-  - Run `ant init` to download some necessary jars.
-  - Import the project (in `src/eclipse`) via `File` → `Import Existing Projects into Workspace`. Check all projects and click ok.
-
-For important details on building, debugging and file encodings, please see [the excellent tutorial on scala-ide.org](http://scala-ide.org/docs/tutorials/scalac-trunk/index.html) and the included README.md in src/eclipse.
+See `src/eclipse/README.md`.
 
 ### IntelliJ 14
-Use the latest IntelliJ IDEA release and install the Scala plugin from within the IDE.
-
-The following steps are required to use IntelliJ IDEA on Scala trunk
- - Run `ant init`. This will download some JARs to `./build/deps`, which are included in IntelliJ's classpath.
- - Run `./src/intellij/setup.sh`.
- - Open `./src/intellij/scala.ipr` in IntelliJ.
- - `File` → `Project Structure` → `Project` → `Project SDK`. Create an SDK entry named "1.6" containing the Java 1.6 SDK.
-   (You may use a later SDK for local development, but the CI will verify against Java 6.)
-
-Compilation within IDEA is performed in `-Dlocker.skip=1` mode: the sources are built
-directly using the STARR compiler (which is downloaded from [the Central Repository](http://central.sonatype.org/), according to `starr.version` in `versions.properties`).
+See `src/intellij/README.md`.
 
 ## Building with sbt (EXPERIMENTAL)
 
