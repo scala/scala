@@ -9,4 +9,5 @@ Import-Package: jline.*;resolution:=optional, \
                 scala.xml.*;version="${range;[====,====];@XML_VERSION@}";resolution:=optional, \
                 scala.*;version="${range;[==,=+);${ver}}", \
                 *
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6, JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Include-Resource: @@SOURCE_JARNAME@

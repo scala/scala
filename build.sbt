@@ -83,7 +83,7 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ Seq[Setting[_]](
   // we always assume that Java classes are standalone and do not have any dependency
   // on Scala classes
   compileOrder := CompileOrder.JavaThenScala,
-  javacOptions in Compile ++= Seq("-g", "-source", "1.5", "-target", "1.6"),
+  javacOptions in Compile ++= Seq("-g", "-source", "1.8", "-target", "1.8"),
   // we don't want any unmanaged jars; as a reminder: unmanaged jar is a jar stored
   // directly on the file system and it's not resolved through Ivy
   // Ant's build stored unmanaged jars in `lib/` directory
@@ -142,6 +142,7 @@ lazy val library = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings: _*)
   .settings(
     name := "scala-library",
+    compileOrder := CompileOrder.Mixed, // needed for JFunction classes in scala.runtime.java8
     scalacOptions in Compile ++= Seq[String]("-sourcepath", (scalaSource in Compile).value.toString),
     // Workaround for a bug in `scaladoc` that it seems to not respect the `-sourcepath` option
     // as a result of this bug, the compiler cannot even initialize Definitions without
@@ -155,7 +156,6 @@ lazy val library = configureAsSubproject(project)
       Seq("-doc-no-compile", libraryAuxDir.toString)
     },
     includeFilter in unmanagedResources in Compile := libIncludes)
-  .dependsOn (forkjoin)
 
 lazy val reflect = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings: _*)
@@ -212,15 +212,6 @@ lazy val scaladoc = configureAsSubproject(project)
 lazy val scalap = configureAsSubproject(project).
   dependsOn(compiler)
 
-// deprecated Scala Actors project
-// TODO: it packages into actors.jar but it should be scala-actors.jar
-lazy val actors = configureAsSubproject(project)
-  .settings(generatePropertiesFileSettings: _*)
-  .settings(name := "scala-actors")
-  .dependsOn(library)
-
-lazy val forkjoin = configureAsForkOfJavaProject(project)
-
 lazy val partestExtras = configureAsSubproject(Project("partest-extras", file(".") / "src" / "partest-extras"))
   .dependsOn(repl)
   .settings(clearSourceAndResourceDirectories: _*)
@@ -259,7 +250,7 @@ lazy val partestJavaAgent = (project in file(".") / "src" / "partest-javaagent")
   )
 
 lazy val test = project.
-  dependsOn(compiler, interactive, actors, repl, scalap, partestExtras, partestJavaAgent, scaladoc).
+  dependsOn(compiler, interactive, repl, scalap, partestExtras, partestJavaAgent, scaladoc).
   configs(IntegrationTest).
   settings(disableDocsAndPublishingTasks: _*).
   settings(commonSettings: _*).
@@ -289,8 +280,8 @@ lazy val test = project.
   )
 
 lazy val root = (project in file(".")).
-  aggregate(library, forkjoin, reflect, compiler, interactive, repl,
-    scaladoc, scalap, actors, partestExtras, junit).settings(
+  aggregate(library, reflect, compiler, interactive, repl,
+    scaladoc, scalap, partestExtras, junit).settings(
     sources in Compile := Seq.empty,
     onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
       |This build definition has an EXPERIMENTAL status. If you are not
@@ -318,27 +309,6 @@ def configureAsSubproject(project: Project): Project = {
   (project in base).settings(scalaSubprojectSettings: _*)
 }
 
-/**
- * Configuration for subprojects that are forks of some Java projects
- * we depend on. At the moment there's just forkjoin.
- *
- * We do not publish artifacts for those projects but we package their
- * binaries in a jar of other project (compiler or library).
- *
- * For that reason we disable docs generation, packaging and publishing.
- */
-def configureAsForkOfJavaProject(project: Project): Project = {
-  val base = file(".") / "src" / project.id
-  (project in base).
-    settings(commonSettings: _*).
-    settings(disableDocsAndPublishingTasks: _*).
-    settings(
-      sourceDirectory in Compile := baseDirectory.value,
-      javaSource in Compile := (sourceDirectory in Compile).value,
-      sources in Compile in doc := Seq.empty,
-      classDirectory in Compile := buildDirectory.value / "libs/classes" / thisProject.value.id
-    )
-}
 
 lazy val buildDirectory = settingKey[File]("The directory where all build products go. By default ./build")
 lazy val copyrightString = settingKey[String]("Copyright string.")

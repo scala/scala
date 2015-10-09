@@ -27,10 +27,12 @@ import generic.CanBuildFrom
  *  rapidly as 2^30^ is approached.
  *
  */
+@SerialVersionUID(1L)
 final class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initialBufferSize: Int, initBlank: Boolean)
 extends AbstractMap[K, V]
    with Map[K, V]
    with MapLike[K, V, AnyRefMap[K, V]]
+   with Serializable
 {
   import AnyRefMap._
   def this() = this(AnyRefMap.exceptionDefault, 16, true)
@@ -332,6 +334,24 @@ extends AbstractMap[K, V]
     val vz = java.util.Arrays.copyOf(_values,  _values.length)
     val arm = new AnyRefMap[K, V](defaultEntry, 1, false)
     arm.initializeTo(mask, _size, _vacant, hz, kz,  vz)
+    arm
+  }
+  
+  override def +[V1 >: V](kv: (K, V1)): AnyRefMap[K, V1] = {
+    val arm = clone().asInstanceOf[AnyRefMap[K, V1]]
+    arm += kv
+    arm
+  }
+  
+  override def ++[V1 >: V](xs: GenTraversableOnce[(K, V1)]): AnyRefMap[K, V1] = {
+    val arm = clone().asInstanceOf[AnyRefMap[K, V1]]
+    xs.foreach(kv => arm += kv)
+    arm
+  }
+  
+  override def updated[V1 >: V](key: K, value: V1): AnyRefMap[K, V1] = {
+    val arm = clone().asInstanceOf[AnyRefMap[K, V1]]
+    arm += (key, value)
     arm
   }
   

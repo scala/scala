@@ -13,23 +13,16 @@ import Completion._
  */
 trait Completion {
   def resetVerbosity(): Unit
-  def completer(): ScalaCompleter
+  def complete(buffer: String, cursor: Int): Candidates
 }
 object NoCompletion extends Completion {
   def resetVerbosity() = ()
-  def completer() = NullCompleter
+  def complete(buffer: String, cursor: Int) = NoCandidates
 }
 
 object Completion {
   case class Candidates(cursor: Int, candidates: List[String]) { }
   val NoCandidates = Candidates(-1, Nil)
-
-  object NullCompleter extends ScalaCompleter {
-    def complete(buffer: String, cursor: Int): Candidates = NoCandidates
-  }
-  trait ScalaCompleter {
-    def complete(buffer: String, cursor: Int): Candidates
-  }
 
   def looksLikeInvocation(code: String) = (
         (code != null)
@@ -38,10 +31,4 @@ object Completion {
     && !(code startsWith "./")
     && !(code startsWith "..")
   )
-  object Forwarder {
-    def apply(forwardTo: () => Option[CompletionAware]): CompletionAware = new CompletionAware {
-      def completions(verbosity: Int) = forwardTo() map (_ completions verbosity) getOrElse Nil
-      override def follow(s: String) = forwardTo() flatMap (_ follow s)
-    }
-  }
 }

@@ -9,19 +9,25 @@ import scala.tools.asm.Opcodes._
 import org.junit.Assert._
 
 import CodeGenTools._
+import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.BTypes.{MethodInlineInfo, InlineInfo}
 import scala.tools.partest.ASMConverters
 import ASMConverters._
 import scala.collection.convert.decorateAsScala._
+import scala.tools.testing.ClearAfterClass
 
-object ScalaInlineInfoTest {
+object ScalaInlineInfoTest extends ClearAfterClass.Clearable {
   var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:none")
   def clear(): Unit = { compiler = null }
 }
 
 @RunWith(classOf[JUnit4])
-class ScalaInlineInfoTest {
+class ScalaInlineInfoTest extends ClearAfterClass {
+  ClearAfterClass.stateToClear = ScalaInlineInfoTest
+
   val compiler = newCompiler()
+
+  def inlineInfo(c: ClassNode): InlineInfo = c.attrs.asScala.collect({ case a: InlineInfoAttribute => a.inlineInfo }).head
 
   @Test
   def traitMembersInlineInfo(): Unit = {
@@ -58,10 +64,11 @@ class ScalaInlineInfoTest {
       """.stripMargin
 
     val cs @ List(t, tl, to, tCls) = compileClasses(compiler)(code)
-    val List(info) = t.attrs.asScala.collect({ case a: InlineInfoAttribute => a.inlineInfo }).toList
-    val expect = InlineInfo(
+    val info = inlineInfo(t)
+    val expect = InlineInfo (
       None,  // self type
       false, // final class
+      None, // not a sam
       Map(
         ("O()LT$O$;",                            MethodInlineInfo(true, false,false,false)),
         ("T$$super$toString()Ljava/lang/String;",MethodInlineInfo(false,false,false,false)),
@@ -81,5 +88,44 @@ class ScalaInlineInfoTest {
       None // warning
     )
     assert(info == expect, info)
+  }
+
+  @Test
+  def inlineInfoSam(): Unit = {
+    val code =
+      """abstract class C {
+        |  def f = 0
+        |  def g(x: Int): Int
+        |  val foo = "hi"
+        |}
+        |abstract class D {
+        |  val biz: Int
+        |}
+        |trait T {
+        |  def h(a: String): Int
+        |}
+        |abstract class E extends T {
+        |  def hihi(x: Int) = x
+        |}
+        |class F extends T {
+        |  def h(a: String) = 0
+        |}
+        |trait U {
+        |  def conc() = 10
+        |  def nullary: Int
+        |}
+      """.stripMargin
+    val cs = compileClasses(compiler)(code)
+    val sams = cs.map(c => (c.name, inlineInfo(c).sam))
+    assertEquals(sams,
+      List(
+        ("C",Some("g(I)I")),
+        ("D",None),
+        ("E",Some("h(Ljava/lang/String;)I")),
+        ("F",None),
+        ("T",Some("h(Ljava/lang/String;)I")),
+        ("U",None),
+        ("U$class",None)))
+
   }
 }

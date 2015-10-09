@@ -16,8 +16,6 @@ import scala.tools.asm.{MethodWriter, ClassWriter, Label, Opcodes, Type}
 import scala.tools.asm.tree._
 import GenBCode._
 import scala.collection.convert.decorateAsScala._
-import scala.collection.convert.decorateAsJava._
-import scala.tools.nsc.backend.jvm.BTypes._
 
 object BytecodeUtils {
 
@@ -98,6 +96,8 @@ object BytecodeUtils {
 
   def isNativeMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_NATIVE) != 0
 
+  def hasCallerSensitiveAnnotation(methodNode: MethodNode) = methodNode.visibleAnnotations != null && methodNode.visibleAnnotations.asScala.exists(_.desc == "Lsun/reflect/CallerSensitive;")
+
   def isFinalClass(classNode: ClassNode): Boolean = (classNode.access & Opcodes.ACC_FINAL) != 0
 
   def isFinalMethod(methodNode: MethodNode): Boolean = (methodNode.access & (Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC)) != 0
@@ -173,6 +173,11 @@ object BytecodeUtils {
     case Opcodes.IFNONNULL => Opcodes.IFNULL
   }
 
+  def isSize2LoadOrStore(opcode: Int): Boolean = (opcode: @switch) match {
+    case Opcodes.LLOAD | Opcodes.DLOAD | Opcodes.LSTORE | Opcodes.DSTORE => true
+    case _ => false
+  }
+
   def getPop(size: Int): InsnNode = {
     val op = if (size == 1) Opcodes.POP else Opcodes.POP2
     new InsnNode(op)
@@ -222,29 +227,6 @@ object BytecodeUtils {
     }
   }
 
-  /**
-   * In order to run an Analyzer, the maxLocals / maxStack fields need to be available. The ASM
-   * framework only computes these values during bytecode generation.
-   *
-   * Since there's currently no better way, we run a bytecode generator on the method and extract
-   * the computed values. This required changes to the ASM codebase:
-   *   - the [[MethodWriter]] class was made public
-   *   - accessors for maxLocals / maxStack were added to the MethodWriter class
-   *
-   * We could probably make this faster (and allocate less memory) by hacking the ASM framework
-   * more: create a subclass of MethodWriter with a /dev/null byteVector. Another option would be
-   * to create a separate visitor for computing those values, duplicating the functionality from the
-   * MethodWriter.
-   */
-  def computeMaxLocalsMaxStack(method: MethodNode): Unit = {
-    val cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
-    val excs = method.exceptions.asScala.toArray
-    val mw = cw.visitMethod(method.access, method.name, method.desc, method.signature, excs).asInstanceOf[MethodWriter]
-    method.accept(mw)
-    method.maxLocals = mw.getMaxLocals
-    method.maxStack = mw.getMaxStack
-  }
-
   def codeSizeOKForInlining(caller: MethodNode, callee: MethodNode): Boolean = {
     // Looking at the implementation of CodeSizeEvaluator, all instructions except tableswitch and
     // lookupswitch are <= 8 bytes. These should be rare enough for 8 to be an OK rough upper bound.
@@ -289,33 +271,17 @@ object BytecodeUtils {
   }
 
   /**
-   * Clone the instructions in `methodNode` into a new [[InsnList]], mapping labels according to
-   * the `labelMap`. Returns the new instruction list and a map from old to new instructions.
-   */
-  def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode]): (InsnList, Map[AbstractInsnNode, AbstractInsnNode]) = {
-    val javaLabelMap = labelMap.asJava
-    val result = new InsnList
-    var map = Map.empty[AbstractInsnNode, AbstractInsnNode]
-    for (ins <- methodNode.instructions.iterator.asScala) {
-      val cloned = ins.clone(javaLabelMap)
-      result add cloned
-      map += ((ins, cloned))
-    }
-    (result, map)
-  }
-
-  /**
    * Clone the local variable descriptors of `methodNode` and map their `start` and `end` labels
    * according to the `labelMap`.
    */
-  def cloneLocalVariableNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], prefix: String): List[LocalVariableNode] = {
+  def cloneLocalVariableNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], prefix: String, shift: Int): List[LocalVariableNode] = {
     methodNode.localVariables.iterator().asScala.map(localVariable => new LocalVariableNode(
       prefix + localVariable.name,
       localVariable.desc,
       localVariable.signature,
       labelMap(localVariable.start),
       labelMap(localVariable.end),
-      localVariable.index
+      localVariable.index + shift
     )).toList
   }
 
@@ -350,15 +316,6 @@ object BytecodeUtils {
       methodNode.instructions.insert(loadInstr, new InsnNode(Opcodes.ACONST_NULL))
       methodNode.instructions.insert(loadInstr, new InsnNode(Opcodes.POP))
     }
-  }
-
-  /**
-   * A wrapper to make ASM's Analyzer a bit easier to use.
-   */
-  class AsmAnalyzer[V <: Value](methodNode: MethodNode, classInternalName: InternalName, interpreter: Interpreter[V] = new BasicInterpreter) {
-    val analyzer = new Analyzer(interpreter)
-    analyzer.analyze(classInternalName, methodNode)
-    def frameAt(instruction: AbstractInsnNode): Frame[V] = analyzer.frameAt(instruction, methodNode)
   }
 
   implicit class AnalyzerExtensions[V <: Value](val analyzer: Analyzer[V]) extends AnyVal {

@@ -86,4 +86,11 @@ class FlagsTest {
 
     assertEquals(withFlagMask(AllFlags)(sym.setFlag(lateFlags).flags), lateFlags | lateable)
   }
+
+  @Test
+  def javaClassMirrorAnnotationFlag(): Unit = {
+    import scala.reflect.runtime.universe._
+    val dep = typeOf[java.lang.Deprecated].typeSymbol
+    assertTrue(dep.isJavaAnnotation && dep.isJava)
+  }
 }

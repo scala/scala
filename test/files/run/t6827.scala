@@ -31,4 +31,24 @@ object Test extends App {
 
   // okay, see SI-7128
   "...".toIterator.copyToArray(new Array[Char](0), 0, 0)
+
+
+  // Bonus test from @som-snytt to check for overflow in
+  // index calculations.
+  def testOverflow(start: Int, len: Int, expected: List[Char]) {
+    def copyFromIterator = {
+      val arr = Array.fill[Char](3)('-')
+      "abc".toIterator.copyToArray(arr, start, len)
+      arr.toList
+    }
+    def copyFromArray = {
+      val arr = Array.fill[Char](3)('-')
+      "abc".toArray.copyToArray(arr, start, len)
+      arr.toList
+    }
+    assert(copyFromIterator == expected)
+    assert(copyFromArray == expected)
+  }
+  testOverflow(1, Int.MaxValue - 1, "-ab".toList)
+  testOverflow(1, Int.MaxValue, "-ab".toList)
 }

@@ -20,15 +20,15 @@ C(2,3)
       case 1 => C.this.y
       case _ => throw new IndexOutOfBoundsException(x$1.toString())
     };
-    override <synthetic> def productIterator: Iterator[Any] = runtime.this.ScalaRunTime.typedProductIterator[Any](C.this);
+    override <synthetic> def productIterator: Iterator[Any] = scala.runtime.ScalaRunTime.typedProductIterator[Any](C.this);
     <synthetic> def canEqual(x$1: Any): Boolean = x$1.$isInstanceOf[C]();
     override <synthetic> def hashCode(): Int = {
       <synthetic> var acc: Int = -889275714;
-      acc = Statics.this.mix(acc, x);
-      acc = Statics.this.mix(acc, y);
-      Statics.this.finalizeHash(acc, 2)
+      acc = scala.runtime.Statics.mix(acc, x);
+      acc = scala.runtime.Statics.mix(acc, y);
+      scala.runtime.Statics.finalizeHash(acc, 2)
     };
-    override <synthetic> def toString(): String = ScalaRunTime.this._toString(C.this);
+    override <synthetic> def toString(): String = scala.runtime.ScalaRunTime._toString(C.this);
     override <synthetic> def equals(x$1: Any): Boolean = C.this.eq(x$1.asInstanceOf[Object]).||(x$1 match {
   case (_: C) => true
   case _ => false
@@ -45,7 +45,7 @@ C(2,3)
     final override <synthetic> def toString(): String = "C";
     case <synthetic> def apply(x: Int, y: Int): C = new C(x, y);
     case <synthetic> def unapply(x$0: C): Option[(Int, Int)] = if (x$0.==(null))
-      scala.this.None
+      scala.None
     else
       Some.apply[(Int, Int)](scala.Tuple2.apply[Int, Int](x$0.x, x$0.y))
   };

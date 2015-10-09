@@ -589,7 +589,12 @@ trait Types
     def nonPrivateMembersAdmitting(admit: Long): Scope = membersBasedOnFlags(BridgeAndPrivateFlags & ~admit, 0)
 
     /** A list of all implicit symbols of this type  (defined or inherited) */
-    def implicitMembers: Scope = membersBasedOnFlags(BridgeFlags, IMPLICIT)
+    def implicitMembers: Scope = {
+      typeSymbolDirect match {
+        case sym: ModuleClassSymbol => sym.implicitMembers
+        case _ => membersBasedOnFlags(BridgeFlags, IMPLICIT)
+      }
+    }
 
     /** A list of all deferred symbols of this type  (defined or inherited) */
     def deferredMembers: Scope = membersBasedOnFlags(BridgeFlags, DEFERRED)
@@ -605,6 +610,8 @@ trait Types
      */
     def nonPrivateMember(name: Name): Symbol =
       memberBasedOnName(name, BridgeAndPrivateFlags)
+
+    def packageObject: Symbol = member(nme.PACKAGE)
 
     /** The non-private member with given name, admitting members with given flags `admit`.
      *  "Admitting" refers to the fact that members with a PRIVATE, BRIDGE, or VBRIDGE
@@ -659,7 +666,7 @@ trait Types
         )
         if (trivial) this
         else {
-          val m     = newAsSeenFromMap(pre.normalize, clazz)
+          val m     = new AsSeenFromMap(pre.normalize, clazz)
           val tp    = m(this)
           val tp1   = existentialAbstraction(m.capturedParams, tp)
 
@@ -1207,6 +1214,10 @@ trait Types
 
     private[reflect] var underlyingCache: Type = NoType
     private[reflect] var underlyingPeriod = NoPeriod
+    private[Types] def invalidateSingleTypeCaches(): Unit = {
+      underlyingCache = NoType
+      underlyingPeriod = NoPeriod
+    }
     override def underlying: Type = {
       val cache = underlyingCache
       if (underlyingPeriod == currentPeriod && cache != null) cache
@@ -1347,6 +1358,12 @@ trait Types
     private[reflect] var baseTypeSeqPeriod = NoPeriod
     private[reflect] var baseClassesCache: List[Symbol] = _
     private[reflect] var baseClassesPeriod = NoPeriod
+    private[Types] def invalidatedCompoundTypeCaches() {
+      baseTypeSeqCache = null
+      baseTypeSeqPeriod = NoPeriod
+      baseClassesCache = null
+      baseClassesPeriod = NoPeriod
+    }
 
     override def baseTypeSeq: BaseTypeSeq = {
       val cached = baseTypeSeqCache
@@ -1600,7 +1617,14 @@ trait Types
     private var normalized: Type = _
     private def normalizeImpl = {
       // TODO see comments around def intersectionType and def merge
-      def flatten(tps: List[Type]): List[Type] = tps flatMap { case RefinedType(parents, ds) if ds.isEmpty => flatten(parents) case tp => List(tp) }
+      // SI-8575 The dealias is needed here to keep subtyping transitive, example in run/t8575b.scala
+      def flatten(tps: List[Type]): List[Type] = {
+        def dealiasRefinement(tp: Type) = if (tp.dealias.isInstanceOf[RefinedType]) tp.dealias else tp
+        tps map dealiasRefinement flatMap {
+          case RefinedType(parents, ds) if ds.isEmpty => flatten(parents)
+          case tp => List(tp)
+        }
+      }
       val flattened = flatten(parents).distinct
       if (decls.isEmpty && hasLength(flattened, 1)) {
         flattened.head
@@ -1898,6 +1922,9 @@ trait Types
 
       narrowedCache
     }
+    private[Types] def invalidateModuleTypeRefCaches(): Unit = {
+      narrowedCache = null
+    }
     override protected def finishPrefix(rest: String) = objectPrefix + rest
     override def directObjectString = super.safeToString
     override def toLongString = toString
@@ -1977,6 +2004,10 @@ trait Types
      */
     private var relativeInfoCache: Type = _
     private var relativeInfoPeriod: Period = NoPeriod
+    private[Types] def invalidateNonClassTypeRefCaches(): Unit = {
+      relativeInfoCache = NoType
+      relativeInfoPeriod = NoPeriod
+    }
 
     private[Types] def relativeInfo = /*trace(s"relativeInfo(${safeToString}})")*/{
       if (relativeInfoPeriod != currentPeriod) {
@@ -2109,6 +2140,10 @@ trait Types
       }
       thisInfoCache
     }
+    private[Types] def invalidateAbstractTypeRefCaches(): Unit = {
+      symInfoCache = null
+      thisInfoCache = null
+    }
     override def bounds   = thisInfo.bounds
     override protected[Types] def baseTypeSeqImpl: BaseTypeSeq = transform(bounds.hi).baseTypeSeq prepend this
     override def kind = "AbstractTypeRef"
@@ -2128,9 +2163,12 @@ trait Types
         trivial = fromBoolean(!sym.isTypeParameter && pre.isTrivial && areTrivialTypes(args))
       toBoolean(trivial)
     }
-    private[scala] def invalidateCaches(): Unit = {
+    private[Types] def invalidateTypeRefCaches(): Unit = {
+      parentsCache = null
       parentsPeriod = NoPeriod
+      baseTypeSeqCache = null
       baseTypeSeqPeriod = NoPeriod
+      normalized = null
     }
     private[reflect] var parentsCache: List[Type]      = _
     private[reflect] var parentsPeriod                 = NoPeriod
@@ -4554,6 +4592,39 @@ trait Types
   def objToAny(tp: Type): Type =
     if (!phase.erasedTypes && tp.typeSymbol == ObjectClass) AnyTpe
     else tp
+
+  def invalidateTreeTpeCaches(tree: Tree, updatedSyms: List[Symbol]) = if (updatedSyms.nonEmpty)
+    for (t <- tree if t.tpe != null)
+      for (tp <- t.tpe) {
+        invalidateCaches(tp, updatedSyms)
+      }
+
+  def invalidateCaches(t: Type, updatedSyms: List[Symbol]) = {
+    t match {
+      case st: SingleType if updatedSyms.contains(st.sym) => st.invalidateSingleTypeCaches()
+      case  _ =>
+    }
+    t match {
+      case tr: NonClassTypeRef if updatedSyms.contains(tr.sym) => tr.invalidateNonClassTypeRefCaches()
+      case _ =>
+    }
+    t match {
+      case tr: AbstractTypeRef if updatedSyms.contains(tr.sym) => tr.invalidateAbstractTypeRefCaches()
+      case _ =>
+    }
+    t match {
+      case tr: TypeRef if updatedSyms.contains(tr.sym) => tr.invalidateTypeRefCaches()
+      case _ =>
+    }
+    t match {
+      case tr: ModuleTypeRef if updatedSyms.contains(tr.sym) => tr.invalidateModuleTypeRefCaches()
+      case _ =>
+    }
+    t match {
+      case ct: CompoundType if ct.baseClasses.exists(updatedSyms.contains) => ct.invalidatedCompoundTypeCaches()
+      case _ =>
+    }
+  }
 
   val shorthands = Set(
     "scala.collection.immutable.List",

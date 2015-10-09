@@ -35,8 +35,15 @@ extends mutable.AbstractMap[String, String]
   override def empty = new SystemProperties
   override def default(key: String): String = null
 
-  def iterator: Iterator[(String, String)] =
-    wrapAccess(System.getProperties().asScala.iterator) getOrElse Iterator.empty
+  def iterator: Iterator[(String, String)] = wrapAccess {
+    val ps = System.getProperties()
+    names map (k => (k, ps getProperty k)) filter (_._2 ne null)
+  } getOrElse Iterator.empty
+
+  def names: Iterator[String] = wrapAccess (
+    System.getProperties().stringPropertyNames().asScala.iterator
+  ) getOrElse Iterator.empty
+
   def get(key: String) =
     wrapAccess(Option(System.getProperty(key))) flatMap (x => x)
   override def contains(key: String) =
@@ -79,6 +86,8 @@ object SystemProperties {
   lazy val headless            = bool("java.awt.headless", "system should not utilize a display device")
   lazy val preferIPv4Stack     = bool("java.net.preferIPv4Stack", "system should prefer IPv4 sockets")
   lazy val preferIPv6Addresses = bool("java.net.preferIPv6Addresses", "system should prefer IPv6 addresses")
-  lazy val noTraceSupression   = bool("scala.control.noTraceSuppression", "scala should not suppress any stack trace creation")
+  lazy val noTraceSuppression  = bool("scala.control.noTraceSuppression", "scala should not suppress any stack trace creation")
+  @deprecated("Use noTraceSuppression", "2.12.0")
+  def noTraceSupression        = noTraceSuppression
 }
 

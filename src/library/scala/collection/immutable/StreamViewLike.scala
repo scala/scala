@@ -53,6 +53,7 @@ extends SeqView[A, Coll]
   /** boilerplate */
   protected override def newForced[B](xs: => scala.collection.GenSeq[B]): Transformed[B] = new { val forced = xs } with AbstractTransformed[B] with Forced[B]
   protected override def newAppended[B >: A](that: scala.collection.GenTraversable[B]): Transformed[B] = new { val rest = that } with AbstractTransformed[B] with Appended[B]
+  protected override def newPrepended[B >: A](that: scala.collection.GenTraversable[B]): Transformed[B] = new { protected[this] val fst = that } with AbstractTransformed[B] with Prepended[B]
   protected override def newMapped[B](f: A => B): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with Mapped[B]
   protected override def newFlatMapped[B](f: A => scala.collection.GenTraversableOnce[B]): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with FlatMapped[B]
   protected override def newFiltered(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with Filtered
@@ -67,7 +68,6 @@ extends SeqView[A, Coll]
   protected override def newPatched[B >: A](_from: Int, _patch: scala.collection.GenSeq[B], _replaced: Int): Transformed[B] = {
     new { val from = _from; val patch = _patch; val replaced = _replaced } with AbstractTransformed[B] with Patched[B]
   }
-  protected override def newPrepended[B >: A](elem: B): Transformed[B] = new { protected[this] val fst = elem } with AbstractTransformed[B] with Prepended[B]
 
   override def stringPrefix = "StreamView"
 }

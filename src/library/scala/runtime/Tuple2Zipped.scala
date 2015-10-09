@@ -110,6 +110,8 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
         return
     }
   }
+
+  override def toString = "(%s, %s).zipped".format(colls._1.toString, colls._2.toString)
 }
 
 object Tuple2Zipped {

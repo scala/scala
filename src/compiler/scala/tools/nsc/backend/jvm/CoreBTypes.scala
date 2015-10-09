@@ -206,12 +206,14 @@ trait CoreBTypesProxyGlobalIndependent[BTS <: BTypes] {
 
   def boxedClasses: Set[ClassBType]
 
-  def RT_NOTHING : ClassBType
-  def RT_NULL    : ClassBType
+  def RT_NOTHING: ClassBType
+  def RT_NULL   : ClassBType
 
-  def ObjectReference          : ClassBType
-  def jlCloneableReference     : ClassBType
-  def jioSerializableReference : ClassBType
+  def ObjectReference         : ClassBType
+  def jlCloneableReference    : ClassBType
+  def jioSerializableReference: ClassBType
+  def javaUtilHashMapReference: ClassBType
+  def javaUtilMapReference    : ClassBType
 }
 
 /**

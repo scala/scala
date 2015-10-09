@@ -1207,6 +1207,7 @@ trait Infer extends Checkable {
           }
         }
         tvars foreach instantiateTypeVar
+        invalidateTreeTpeCaches(tree0, tvars.map(_.origin.typeSymbol))
       }
       /* If the scrutinee has free type parameters but the pattern does not,
        * we have to flip the arguments so the expected type is treated as more
@@ -1446,7 +1447,7 @@ trait Infer extends Checkable {
           log(s"Attaching AntiPolyType-carrying overloaded type to $sym")
           // Multiple alternatives which are within bounds; spin up an
           // overloaded type which carries an "AntiPolyType" as a prefix.
-          val tparams = newAsSeenFromMap(pre, hd.owner) mapOver hd.typeParams
+          val tparams = new AsSeenFromMap(pre, hd.owner) mapOver hd.typeParams
           val bounds  = tparams map (_.tpeHK) // see e.g., #1236
           val tpe     = PolyType(tparams, OverloadedType(AntiPolyType(pre, bounds), alts))
           finish(sym setInfo tpe, tpe)

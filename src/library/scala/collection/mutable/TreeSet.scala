@@ -11,8 +11,7 @@ package collection
 package mutable
 
 import generic._
-import scala.collection.immutable.{RedBlackTree => RB}
-import scala.runtime.ObjectRef
+import scala.collection.mutable.{RedBlackTree => RB}
 
 /**
  * @define Coll `mutable.TreeSet`
@@ -29,88 +28,162 @@ object TreeSet extends MutableSortedSetFactory[TreeSet] {
    */
   def empty[A](implicit ordering: Ordering[A]) = new TreeSet[A]()
 
+  /** $sortedMapCanBuildFromInfo */
+  implicit def canBuildFrom[A](implicit ord: Ordering[A]): CanBuildFrom[Coll, A, TreeSet[A]] =
+    new SortedSetCanBuildFrom[A]
 }
 
 /**
- * A mutable SortedSet using an immutable RedBlack Tree as underlying data structure.
+ * A mutable sorted set implemented using a mutable red-black tree as underlying data structure.
  *
- * @author Lucien Pereira
+ * @param ordering the implicit ordering used to compare objects of type `A`.
+ * @tparam A the type of the keys contained in this tree set.
  *
+ * @author Rui Gonçalves
+ * @version 2.12
+ * @since 2.10
+ *
+ * @define Coll mutable.TreeSet
+ * @define coll mutable tree set
  */
-@deprecatedInheritance("TreeSet is not designed to enable meaningful subclassing.", "2.11.0")
-class TreeSet[A] private (treeRef: ObjectRef[RB.Tree[A, Null]], from: Option[A], until: Option[A])(implicit val ordering: Ordering[A])
-  extends SortedSet[A] with SetLike[A, TreeSet[A]]
-  with SortedSetLike[A, TreeSet[A]] with Set[A] with Serializable {
+// Original API designed in part by Lucien Pereira
+@SerialVersionUID(-3642111301929493640L)
+sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: Ordering[A])
+  extends AbstractSortedSet[A]
+  with SortedSet[A]
+  with SetLike[A, TreeSet[A]]
+  with SortedSetLike[A, TreeSet[A]]
+  with Serializable {
 
   if (ordering eq null)
     throw new NullPointerException("ordering must not be null")
 
-  def this()(implicit ordering: Ordering[A]) = this(new ObjectRef(null), None, None)
+  /**
+   * Creates an empty `TreeSet`.
+   * @param ord the implicit ordering used to compare objects of type `A`.
+   * @return an empty `TreeSet`.
+   */
+  def this()(implicit ord: Ordering[A]) = this(RB.Tree.empty)(ord)
 
-  override def size: Int = RB.countInRange(treeRef.elem, from, until)
+  override def empty = TreeSet.empty
+  override protected[this] def newBuilder = TreeSet.newBuilder[A]
+
+  /**
+   * Creates a ranged projection of this set. Any mutations in the ranged projection affect will update the original set
+   * and vice versa.
+   *
+   * Only keys between this projection's key range will ever appear as elements of this set, independently of whether
+   * the elements are added through the original set or through this view. That means that if one inserts an element in
+   * a view whose key is outside the view's bounds, calls to `contains` will _not_ consider the newly added element.
+   * Mutations are always reflected in the original set, though.
+   *
+   * @param from the lower bound (inclusive) of this projection wrapped in a `Some`, or `None` if there is no lower
+   *             bound.
+   * @param until the upper bound (exclusive) of this projection wrapped in a `Some`, or `None` if there is no upper
+   *              bound.
+   */
+  def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = new TreeSetView(from, until)
+
+  def -=(key: A): this.type = { RB.delete(tree, key); this }
+  def +=(elem: A): this.type = { RB.insert(tree, elem, null); this }
+
+  def contains(elem: A) = RB.contains(tree, elem)
+
+  def iterator = RB.keysIterator(tree)
+  def keysIteratorFrom(start: A) = RB.keysIterator(tree, Some(start))
+  override def iteratorFrom(start: A) = RB.keysIterator(tree, Some(start))
+
+  override def size = RB.size(tree)
+  override def isEmpty = RB.isEmpty(tree)
+
+  override def head = RB.minKey(tree).get
+  override def headOption = RB.minKey(tree)
+  override def last = RB.maxKey(tree).get
+  override def lastOption = RB.maxKey(tree)
+
+  override def foreach[U](f: A => U): Unit = RB.foreachKey(tree, f)
+  override def clear(): Unit = RB.clear(tree)
 
   override def stringPrefix = "TreeSet"
 
-  override def empty: TreeSet[A] = TreeSet.empty
-
-  private def pickBound(comparison: (A, A) => A, oldBound: Option[A], newBound: Option[A]) = (newBound, oldBound) match {
-    case (Some(newB), Some(oldB)) => Some(comparison(newB, oldB))
-    case (None, _) => oldBound
-    case _ => newBound
-  }
-
-  override def rangeImpl(fromArg: Option[A], untilArg: Option[A]): TreeSet[A] = {
-    val newFrom = pickBound(ordering.max, fromArg, from)
-    val newUntil = pickBound(ordering.min, untilArg, until)
-
-    new TreeSet(treeRef, newFrom, newUntil)
-  }
-
-  override def -=(elem: A): this.type = {
-    treeRef.elem = RB.delete(treeRef.elem, elem)
-    this
-  }
-
-  override def +=(elem: A): this.type = {
-    treeRef.elem = RB.update(treeRef.elem, elem, null, overwrite = false)
-    this
-  }
-
   /**
-   * Thanks to the immutable nature of the
-   * underlying Tree, we can share it with
-   * the clone. So clone complexity in time is O(1).
+   * A ranged projection of a [[TreeSet]]. Mutations on this set affect the original set and vice versa.
    *
+   * Only keys between this projection's key range will ever appear as elements of this set, independently of whether
+   * the elements are added through the original set or through this view. That means that if one inserts an element in
+   * a view whose key is outside the view's bounds, calls to `contains` will _not_ consider the newly added element.
+   * Mutations are always reflected in the original set, though.
+   *
+   * @param from the lower bound (inclusive) of this projection wrapped in a `Some`, or `None` if there is no lower
+   *             bound.
+   * @param until the upper bound (exclusive) of this projection wrapped in a `Some`, or `None` if there is no upper
+   *              bound.
    */
-  override def clone(): TreeSet[A] =
-    new TreeSet[A](new ObjectRef(treeRef.elem), from, until)
+  @SerialVersionUID(7087824939194006086L)
+  private[this] final class TreeSetView(from: Option[A], until: Option[A]) extends TreeSet[A](tree) {
 
-  private val notProjection = !(from.isDefined || until.isDefined)
-
-  override def contains(elem: A): Boolean = {
-    def leftAcceptable: Boolean = from match {
-      case Some(lb) => ordering.gteq(elem, lb)
-      case _ => true
+    /**
+     * Given a possible new lower bound, chooses and returns the most constraining one (the maximum).
+     */
+    private[this] def pickLowerBound(newFrom: Option[A]): Option[A] = (from, newFrom) match {
+      case (Some(fr), Some(newFr)) => Some(ordering.max(fr, newFr))
+      case (None, _) => newFrom
+      case _ => from
     }
 
-    def rightAcceptable: Boolean = until match {
-      case Some(ub) => ordering.lt(elem, ub)
-      case _ => true
+    /**
+     * Given a possible new upper bound, chooses and returns the most constraining one (the minimum).
+     */
+    private[this] def pickUpperBound(newUntil: Option[A]): Option[A] = (until, newUntil) match {
+      case (Some(unt), Some(newUnt)) => Some(ordering.min(unt, newUnt))
+      case (None, _) => newUntil
+      case _ => until
     }
 
-    (notProjection || (leftAcceptable && rightAcceptable)) &&
-      RB.contains(treeRef.elem, elem)
-  }
-
-  override def iterator: Iterator[A] = iteratorFrom(None)
-
-  override def keysIteratorFrom(start: A) = iteratorFrom(Some(start))
-
-  private def iteratorFrom(start: Option[A]) = {
-    val it = RB.keysIterator(treeRef.elem, pickBound(ordering.max, from, start))
-    until match {
-      case None => it
-      case Some(ub) => it takeWhile (k => ordering.lt(k, ub))
+    /**
+     * Returns true if the argument is inside the view bounds (between `from` and `until`).
+     */
+    private[this] def isInsideViewBounds(key: A): Boolean = {
+      val afterFrom = from.isEmpty || ordering.compare(from.get, key) <= 0
+      val beforeUntil = until.isEmpty || ordering.compare(key, until.get) < 0
+      afterFrom && beforeUntil
     }
+
+    override def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] =
+      new TreeSetView(pickLowerBound(from), pickUpperBound(until))
+
+    override def contains(key: A) = isInsideViewBounds(key) && RB.contains(tree, key)
+
+    override def iterator = RB.keysIterator(tree, from, until)
+    override def keysIteratorFrom(start: A) = RB.keysIterator(tree, pickLowerBound(Some(start)), until)
+    override def iteratorFrom(start: A) = RB.keysIterator(tree, pickLowerBound(Some(start)), until)
+
+    override def size = iterator.length
+    override def isEmpty = !iterator.hasNext
+
+    override def head = headOption.get
+    override def headOption = {
+      val elem = if (from.isDefined) RB.minKeyAfter(tree, from.get) else RB.minKey(tree)
+      (elem, until) match {
+        case (Some(e), Some(unt)) if ordering.compare(e, unt) >= 0 => None
+        case _ => elem
+      }
+    }
+
+    override def last = lastOption.get
+    override def lastOption = {
+      val elem = if (until.isDefined) RB.maxKeyBefore(tree, until.get) else RB.maxKey(tree)
+      (elem, from) match {
+        case (Some(e), Some(fr)) if ordering.compare(e, fr) < 0 => None
+        case _ => elem
+      }
+    }
+
+    // Using the iterator should be efficient enough; if performance is deemed a problem later, a specialized
+    // `foreachKey(f, from, until)` method can be created in `RedBlackTree`. See
+    // https://github.com/scala/scala/pull/4608#discussion_r34307985 for a discussion about this.
+    override def foreach[U](f: A => U): Unit = iterator.foreach(f)
+
+    override def clone() = super.clone().rangeImpl(from, until)
   }
 }

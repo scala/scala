@@ -369,6 +369,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.BridgeClass
     definitions.ElidableMethodClass
     definitions.ImplicitNotFoundClass
+    definitions.ImplicitAmbiguousClass
     definitions.MigrationAnnotationClass
     definitions.ScalaStrictFPAttr
     definitions.SwitchClass

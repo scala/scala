@@ -9,11 +9,11 @@ package opt
 
 import scala.annotation.switch
 import scala.collection.immutable
+import scala.collection.immutable.IntMap
 import scala.reflect.internal.util.NoPosition
 import scala.tools.asm.{Type, Opcodes}
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
-import scala.tools.nsc.backend.jvm.analysis.ProdConsAnalyzer
 import BytecodeUtils._
 import BackendReporting._
 import Opcodes._
@@ -23,6 +23,7 @@ import scala.collection.convert.decorateAsScala._
 class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
   import btypes._
   import callGraph._
+  import backendUtils._
 
   /**
    * If a closure is allocated and invoked within the same method, re-write the invocation to the
@@ -70,24 +71,19 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
       }
     }
 
-    // Grouping the closure instantiations by method allows running the ProdConsAnalyzer only once per
-    // method. Also sort the instantiations: If there are multiple closure instantiations in a method,
-    // closure invocations need to be re-written in a consistent order for bytecode stability. The local
-    // variable slots for storing captured values depends on the order of rewriting.
-    val closureInstantiationsByMethod: Map[MethodNode, immutable.TreeSet[ClosureInstantiation]] = {
-      closureInstantiations.values.groupBy(_.ownerMethod).mapValues(immutable.TreeSet.empty ++ _)
-    }
-
     // For each closure instantiation, a list of callsites of the closure that can be re-written
     // If a callsite cannot be rewritten, for example because the lambda body method is not accessible,
     // a warning is returned instead.
     val callsitesToRewrite: List[(ClosureInstantiation, List[Either[RewriteClosureApplyToClosureBodyFailed, (MethodInsnNode, Int)]])] = {
-      closureInstantiationsByMethod.iterator.flatMap({
+      closureInstantiations.iterator.flatMap({
         case (methodNode, closureInits) =>
           // A lazy val to ensure the analysis only runs if necessary (the value is passed by name to `closureCallsites`)
-          lazy val prodCons = new ProdConsAnalyzer(methodNode, closureInits.head.ownerClass.internalName)
-          closureInits.iterator.map(init => (init, closureCallsites(init, prodCons)))
-      }).toList // mapping to a list (not a map) to keep the sorting of closureInstantiationsByMethod
+          // We don't need to worry about the method being too large for running an analysis: large
+          // methods are not added to the call graph / closureInstantiations map.
+          lazy val prodCons = new ProdConsAnalyzer(methodNode, closureInits.valuesIterator.next().ownerClass.internalName)
+          val sortedInits = immutable.TreeSet.empty ++ closureInits.values
+          sortedInits.iterator.map(init => (init, closureCallsites(init, prodCons))).filter(_._2.nonEmpty)
+      }).toList // mapping to a list (not a map) to keep the sorting
     }
 
     // Rewrite all closure callsites (or issue inliner warnings for those that cannot be rewritten)
@@ -162,7 +158,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
           isAccessible
         }
 
-        def pos = callGraph.callsites.get(invocation).map(_.callsitePosition).getOrElse(NoPosition)
+        def pos = callGraph.callsites(ownerMethod).get(invocation).map(_.callsitePosition).getOrElse(NoPosition)
         val stackSize: Either[RewriteClosureApplyToClosureBodyFailed, Int] = bodyAccessible match {
           case Left(w)      => Left(RewriteClosureAccessCheckFailed(pos, w))
           case Right(false) => Left(RewriteClosureIllegalAccess(pos, ownerClass.internalName))
@@ -210,8 +206,9 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     insertLoadOps(invocation, ownerMethod, argumentLocalsList)
 
     // update maxStack
-    val capturesStackSize = localsForCapturedValues.size
-    val invocationStackHeight = stackHeight + capturesStackSize - 1 // -1 because the closure is gone
+    // One slot per value is correct for long / double, see comment in the `analysis` package object.
+    val numCapturedValues = localsForCapturedValues.locals.length
+    val invocationStackHeight = stackHeight + numCapturedValues - 1 // -1 because the closure is gone
     if (invocationStackHeight > ownerMethod.maxStack)
       ownerMethod.maxStack = invocationStackHeight
 
@@ -237,26 +234,33 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     ownerMethod.instructions.remove(invocation)
 
     // update the call graph
-    val originalCallsite = callGraph.callsites.remove(invocation)
+    val originalCallsite = callGraph.removeCallsite(invocation, ownerMethod)
 
     // the method node is needed for building the call graph entry
     val bodyMethod = byteCodeRepository.methodNode(lambdaBodyHandle.getOwner, lambdaBodyHandle.getName, lambdaBodyHandle.getDesc)
     def bodyMethodIsBeingCompiled = byteCodeRepository.classNodeAndSource(lambdaBodyHandle.getOwner).map(_._2 == CompilationUnit).getOrElse(false)
-    val bodyMethodCallsite = Callsite(
-      callsiteInstruction = bodyInvocation,
-      callsiteMethod = ownerMethod,
-      callsiteClass = closureInit.ownerClass,
-      callee = bodyMethod.map({
-        case (bodyMethodNode, bodyMethodDeclClass) => Callee(
+    val callee = bodyMethod.map({
+      case (bodyMethodNode, bodyMethodDeclClass) =>
+        val bodyDeclClassType = classBTypeFromParsedClassfile(bodyMethodDeclClass)
+        Callee(
           callee = bodyMethodNode,
-          calleeDeclarationClass = classBTypeFromParsedClassfile(bodyMethodDeclClass),
+          calleeDeclarationClass = bodyDeclClassType,
           safeToInline = compilerSettings.YoptInlineGlobal || bodyMethodIsBeingCompiled,
           safeToRewrite = false, // the lambda body method is not a trait interface method
           annotatedInline = false,
           annotatedNoInline = false,
+          samParamTypes = callGraph.samParamTypes(bodyMethodNode, bodyDeclClassType),
           calleeInfoWarning = None)
-      }),
-      argInfos = Nil,
+    })
+    val argInfos = closureInit.capturedArgInfos ++ originalCallsite.map(cs => cs.argInfos map {
+      case (index, info) => (index + numCapturedValues, info)
+    }).getOrElse(IntMap.empty)
+    val bodyMethodCallsite = Callsite(
+      callsiteInstruction = bodyInvocation,
+      callsiteMethod = ownerMethod,
+      callsiteClass = closureInit.ownerClass,
+      callee = callee,
+      argInfos = argInfos,
       callsiteStackHeight = invocationStackHeight,
       receiverKnownNotNull = true, // see below (*)
       callsitePosition = originalCallsite.map(_.callsitePosition).getOrElse(NoPosition)
@@ -266,7 +270,11 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     //     (corresponding to the receiver) must be non-null"
     // Explanation: If the lambda body method is non-static, the receiver is a captured
     // value. It can only be captured within some instance method, so we know it's non-null.
-    callGraph.callsites(bodyInvocation) = bodyMethodCallsite
+    callGraph.addCallsite(bodyMethodCallsite)
+
+    // Rewriting a closure invocation may render code unreachable. For example, the body method of
+    // (x: T) => ??? has return type Nothing$, and an ATHROW is added (see fixLoadedNothingOrNullValue).
+    unreachableCodeEliminated -= ownerMethod
   }
 
   /**

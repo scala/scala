@@ -115,21 +115,14 @@ trait Namers extends MethodSynthesis {
         TypeSigError(tree, ex)
         alt
     }
-    // PRIVATE | LOCAL are fields generated for primary constructor arguments
-    // @PP: ...or fields declared as private[this].  PARAMACCESSOR marks constructor arguments.
-    // Neither gets accessors so the code is as far as I know still correct.
-    def noEnterGetterSetter(vd: ValDef) = !vd.mods.isLazy && (
-         !owner.isClass
-      || (vd.mods.isPrivateLocal && !vd.mods.isCaseAccessor)
-      || (vd.name startsWith nme.OUTER)
-      || (context.unit.isJava)
-      || isEnumConstant(vd)
-    )
 
-    def noFinishGetterSetter(vd: ValDef) = (
-         (vd.mods.isPrivateLocal && !vd.mods.isLazy) // all lazy vals need accessors, even private[this]
-      || vd.symbol.isModuleVar
-      || isEnumConstant(vd))
+    // All lazy vals need accessors, including those owned by terms (e.g., in method) or private[this] in a class
+    def deriveAccessors(vd: ValDef) = vd.mods.isLazy || (owner.isClass && deriveAccessorsInClass(vd))
+
+    private def deriveAccessorsInClass(vd: ValDef) =
+      !vd.mods.isPrivateLocal &&         // note, private[this] lazy vals do get accessors -- see outer disjunction of deriveAccessors
+      !(vd.name startsWith nme.OUTER) && // outer accessors are added later, in explicitouter
+      !isEnumConstant(vd)                // enums can only occur in classes, so only check here
 
     /** Determines whether this field holds an enum constant.
       * To qualify, the following conditions must be met:
@@ -170,13 +163,9 @@ trait Namers extends MethodSynthesis {
     def updatePosFlags(sym: Symbol, pos: Position, flags: Long): Symbol = {
       debuglog("[overwrite] " + sym)
       val newFlags = (sym.flags & LOCKED) | flags
-      sym.rawInfo match {
-        case tr: TypeRef =>
-          // !!! needed for: pos/t5954d; the uniques type cache will happily serve up the same TypeRef
-          // over this mutated symbol, and we witness a stale cache for `parents`.
-          tr.invalidateCaches()
-        case _ =>
-      }
+      // !!! needed for: pos/t5954d; the uniques type cache will happily serve up the same TypeRef
+      // over this mutated symbol, and we witness a stale cache for `parents`.
+      invalidateCaches(sym.rawInfo, sym :: sym.moduleClass :: Nil)
       sym reset NoType setFlag newFlags setPos pos
       sym.moduleClass andAlso (updatePosFlags(_, pos, moduleClassFlags(flags)))
 
@@ -655,11 +644,15 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-    def enterValDef(tree: ValDef) {
-      if (noEnterGetterSetter(tree))
-        assignAndEnterFinishedSymbol(tree)
-      else
-        enterGetterSetter(tree)
+    def enterValDef(tree: ValDef): Unit = {
+      val isScala = !context.unit.isJava
+      if (isScala) {
+        if (nme.isSetterName(tree.name)) ValOrVarWithSetterSuffixError(tree)
+        if (tree.mods.isPrivateLocal && tree.mods.isCaseAccessor) PrivateThisCaseClassParameterError(tree)
+      }
+
+      if (isScala && deriveAccessors(tree)) enterGetterSetter(tree)
+      else assignAndEnterFinishedSymbol(tree)
 
       if (isEnumConstant(tree))
         tree.symbol setInfo ConstantType(Constant(tree.symbol))

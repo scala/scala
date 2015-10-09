@@ -129,7 +129,16 @@ abstract class TreeGen {
 
   /** Builds a reference to given symbol. */
   def mkAttributedRef(sym: Symbol): RefTree =
-    if (sym.owner.isClass) mkAttributedRef(sym.owner.thisType, sym)
+    if (sym.owner.isStaticOwner) {
+      if (sym.owner.isRoot)
+        mkAttributedIdent(sym)
+      else {
+        val ownerModule = sym.owner.sourceModule
+        assert(ownerModule != NoSymbol, sym.owner)
+        mkAttributedSelect(mkAttributedRef(sym.owner.sourceModule), sym)
+      }
+    }
+    else if (sym.owner.isClass) mkAttributedRef(sym.owner.thisType, sym)
     else mkAttributedIdent(sym)
 
   def mkUnattributedRef(sym: Symbol): RefTree = mkUnattributedRef(sym.fullNameAsName('.'))
@@ -191,8 +200,8 @@ abstract class TreeGen {
       )
       val pkgQualifier =
         if (needsPackageQualifier) {
-          val packageObject = rootMirror.getPackageObjectWithMember(qual.tpe, sym)
-          Select(qual, nme.PACKAGE) setSymbol packageObject setType singleType(qual.tpe, packageObject)
+          val packageObject = qualsym.packageObject
+          Select(qual, nme.PACKAGE) setSymbol packageObject setType packageObject.typeOfThis
         }
         else qual
 

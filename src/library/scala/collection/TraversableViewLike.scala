@@ -189,6 +189,15 @@ trait TraversableViewLike[+A,
     }
     final override protected[this] def viewIdentifier = "A"
   }
+  
+  trait Prepended[B >: A] extends Transformed[B] {
+    protected[this] val fst: GenTraversable[B]
+    def foreach[U](f: B => U) {
+      fst foreach f
+      self foreach f
+    }
+    final override protected[this] def viewIdentifier = "A"
+  }
 
   trait Filtered extends Transformed[A] {
     protected[this] val pred: A => Boolean
@@ -222,11 +231,15 @@ trait TraversableViewLike[+A,
     final override protected[this] def viewIdentifier = "D"
   }
 
-  override def ++[B >: A, That](xs: GenTraversableOnce[B])(implicit bf: CanBuildFrom[This, B, That]): That = {
+  override def ++[B >: A, That](xs: GenTraversableOnce[B])(implicit bf: CanBuildFrom[This, B, That]): That =
     newAppended(xs.seq.toTraversable).asInstanceOf[That]
-// was:    if (bf.isInstanceOf[ByPassCanBuildFrom]) newAppended(that).asInstanceOf[That]
-//         else super.++[B, That](that)(bf)
-  }
+  
+  override def ++:[B >: A, That](xs: TraversableOnce[B])(implicit bf: CanBuildFrom[This, B, That]): That = 
+    newPrepended(xs.seq.toTraversable).asInstanceOf[That]
+    
+  // Need second one because of optimization in TraversableLike
+  override def ++:[B >: A, That](xs: Traversable[B])(implicit bf: CanBuildFrom[This, B, That]): That = 
+    newPrepended(xs).asInstanceOf[That]
 
   override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That = {
     newMapped(f).asInstanceOf[That]
@@ -253,6 +266,7 @@ trait TraversableViewLike[+A,
    */
   protected def newForced[B](xs: => GenSeq[B]): Transformed[B] = new { val forced = xs } with AbstractTransformed[B] with Forced[B]
   protected def newAppended[B >: A](that: GenTraversable[B]): Transformed[B] = new { val rest = that } with AbstractTransformed[B] with Appended[B]
+  protected def newPrepended[B >: A](that: GenTraversable[B]): Transformed[B] = new { val fst = that } with AbstractTransformed[B] with Prepended[B]
   protected def newMapped[B](f: A => B): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with Mapped[B]
   protected def newFlatMapped[B](f: A => GenTraversableOnce[B]): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with FlatMapped[B]
   protected def newFiltered(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with Filtered
