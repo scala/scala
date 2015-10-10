@@ -136,7 +136,11 @@ extends AbstractMap[Key, Value]
       None
     } else {
       val res = entry.value
-      if (entry.value == None) { size += 1; modCount += 1 }
+      if (entry.value == None) {
+        size += 1
+        deleted -= 1
+        modCount += 1
+      }
       entry.value = Some(value)
       res
     }
