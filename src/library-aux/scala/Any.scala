@@ -27,7 +27,7 @@ package scala
  *     w.print()
  * }}}
  *
- * See the [[http://docs.scala-lang.org/sips/pending/value-classes.html value classes guide]] for more
+ * See the [[http://docs.scala-lang.org/overviews/core/value-classes.html Value Classes and Universal Traits]] for more
  * details on the interplay of universal traits and value classes.
  */
 abstract class Any {

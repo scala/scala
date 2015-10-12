@@ -50,7 +50,7 @@
  *     https://groups.google.com/d/topic/scala-internals/gp5JsM1E0Fo/discussion
  */
 
-val bootstrapScalaVersion = "2.11.5"
+val bootstrapScalaVersion = versionProps("starr.version")
 
 def withoutScalaLang(moduleId: ModuleID): ModuleID = moduleId exclude("org.scala-lang", "*")
 
@@ -64,11 +64,11 @@ val junitIntefaceDep = "com.novocode" % "junit-interface" % "0.11" % "test"
 val asmDep = "org.scala-lang.modules" % "scala-asm" % versionProps("scala-asm.version")
 val jlineDep = "jline" % "jline" % versionProps("jline.version")
 val antDep = "org.apache.ant" % "ant" % "1.9.4"
-val scalacheckDep = withoutScalaLang("org.scalacheck" %% "scalacheck" % "1.11.4")
+val scalacheckDep = withoutScalaLang("org.scalacheck" %% "scalacheck" % versionNumber("scalacheck") % "it")
 
 lazy val commonSettings = clearSourceAndResourceDirectories ++ Seq[Setting[_]](
   organization := "org.scala-lang",
-  version := "2.11.6-SNAPSHOT",
+  version := "2.11.8-SNAPSHOT",
   scalaVersion := bootstrapScalaVersion,
   // we don't cross build Scala itself
   crossPaths := false,
@@ -131,7 +131,7 @@ lazy val setJarLocation: Setting[_] =
 lazy val scalaSubprojectSettings: Seq[Setting[_]] = commonSettings :+ setJarLocation
 
 lazy val generatePropertiesFileSettings = Seq[Setting[_]](
-  copyrightString := "Copyright 2002-2013, LAMP/EPFL",
+  copyrightString := "Copyright 2002-2015, LAMP/EPFL",
   resourceGenerators in Compile += generateVersionPropertiesFile.map(file => Seq(file)).taskValue,
   generateVersionPropertiesFile := generateVersionPropertiesFileImpl.value
 )
@@ -200,7 +200,7 @@ lazy val repl = configureAsSubproject(project)
     run <<= (run in Compile).partialInput(" -usejavacp") // Automatically add this so that `repl/run` works without additional arguments.
   )
   .settings(disableDocsAndPublishingTasks: _*)
-  .dependsOn(compiler)
+  .dependsOn(compiler, interactive)
 
 lazy val scaladoc = configureAsSubproject(project)
   .settings(

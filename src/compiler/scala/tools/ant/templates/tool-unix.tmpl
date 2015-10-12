@@ -67,6 +67,11 @@ if uname | grep -q ^MINGW; then
   mingw="$(uname)"
 fi
 
+unset msys
+if uname | grep -q ^MSYS; then
+  msys="$(uname)"
+fi
+
 # Finding the root folder for this Scala distribution
 SCALA_HOME="$(findScalaHome)"
 SEP=":"
@@ -111,9 +116,9 @@ if [[ -n "$cygwin" ]]; then
     TOOL_CLASSPATH="$(cygpath --path --$format "$TOOL_CLASSPATH")"
 fi
 
-if [[ -n "$cygwin$mingw" ]]; then
+if [[ -n "$cygwin$mingw$msys" ]]; then
     case "$TERM" in
-        rxvt* | xterm*)
+        rxvt* | xterm* | cygwin*)
             stty -icanon min 1 -echo
             WINDOWS_OPT="-Djline.terminal=unix"
         ;;
@@ -182,10 +187,10 @@ fi
 
 declare -a classpath_args
 
-# default to the boot classpath for speed, except on cygwin/mingw because
+# default to the boot classpath for speed, except on cygwin/mingw/msys because
 # JLine on Windows requires a custom DLL to be loaded.
 unset usebootcp
-if [[ -z "$cygwin$mingw" ]]; then
+if [[ -z "$cygwin$mingw$msys" ]]; then
   usebootcp="true"
 fi
 

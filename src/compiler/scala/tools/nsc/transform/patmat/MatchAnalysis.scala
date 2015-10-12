@@ -150,7 +150,11 @@ trait TreeAndTypeAnalysis extends Debugging {
                               acc: List[List[Type]]): List[List[Type]] = wl match {
               case hd :: tl =>
                 val children = enumerateChildren(hd)
-                groupChildren(tl ++ children, acc :+ filterChildren(children))
+                // put each trait in a new group, since traits could belong to the same
+                // group as a derived class
+                val (traits, nonTraits) = children.partition(_.isTrait)
+                val filtered = (traits.map(List(_)) ++ List(nonTraits)).map(filterChildren)
+                groupChildren(tl ++ children, acc ++ filtered)
               case Nil      => acc
             }
 

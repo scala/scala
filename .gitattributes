@@ -2,20 +2,24 @@
 # this must be first so later entries will override it
 * text=auto
 
+# check out text files with lf, not crlf, on Windows.  (especially
+# important for Scala source files, since """ preserves line endings)
+text eol=lf
+
 # These files are text and should be normalized (convert crlf => lf)
-*.c       text
-*.check   text
-*.css     text
-*.flags   text
-*.html    text
-*.java    text
-*.js      text
-*.policy  text
-*.sbt     text
-*.scala   text
-*.sh      text
-*.txt     text
-*.xml     text
+*.c       eol=lf
+*.check   eol=lf
+*.css     eol=lf
+*.flags   eol=lf
+*.html    eol=lf
+*.java    eol=lf
+*.js      eol=lf
+*.policy  eol=lf
+*.sbt     eol=lf
+*.scala   eol=lf
+*.sh      eol=lf
+*.txt     eol=lf
+*.xml     eol=lf
 
 # Windows-specific files get windows endings
 *.bat     eol=crlf

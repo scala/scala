@@ -343,7 +343,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
     /**
       * This function takes care of duplicating the basic block code for inlining the handler
       *
-      * Note: This function does not duplicate the same basic block twice. It wil contain a map of the duplicated
+      * Note: This function does not duplicate the same basic block twice. It will contain a map of the duplicated
       * basic blocks
       */
     private def duplicateExceptionHandlerCache(handler: BasicBlock) =

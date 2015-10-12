@@ -112,7 +112,6 @@ if $cygwin; then
         JAVAC_CMD=`cygpath --$format "$JAVAC_CMD"`
     fi
     SCALA_HOME=`cygpath --$format "$SCALA_HOME"`
-    PARTEST_CLASSPATH=`cygpath --path --$format "$PARTEST_CLASSPATH"`
 fi
 
 # last arg wins, so if JAVA_OPTS already contains -Xmx or -Xms the

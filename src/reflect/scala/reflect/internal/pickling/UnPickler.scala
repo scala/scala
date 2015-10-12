@@ -168,7 +168,7 @@ abstract class UnPickler {
     }
 
     /** If entry at `i` is undefined, define it by performing
-     *  operation `op` with `readIndex at start of i'th
+     *  operation `op` with `readIndex` at start of i'th
      *  entry. Restore `readIndex` afterwards.
      */
     protected def at[T <: AnyRef](i: Int, op: () => T): T = {
@@ -244,7 +244,7 @@ abstract class UnPickler {
 
           (module map { case (group, art) =>
             s"""\n(NOTE: It looks like the $art module is missing; try adding a dependency on "$group" : "$art".
-               |       See http://docs.scala-lang.org/overviews/core/scala-2.11.html for more information.)""".stripMargin
+               |       See http://docs.scala-lang.org/overviews/ for more information.)""".stripMargin
            } getOrElse "")
         }
 
@@ -398,7 +398,7 @@ abstract class UnPickler {
         val sym = readSymbolRef() match {
           case stub: StubSymbol if !stub.isClass =>
             // SI-8502 This allows us to create a stub for a unpickled reference to `missingPackage.Foo`.
-            stub.owner.newStubSymbol(stub.name.toTypeName, stub.missingMessage)
+            stub.owner.newStubSymbol(stub.name.toTypeName, stub.missingMessage, isPackage = true)
           case sym => sym
         }
         ThisType(sym)

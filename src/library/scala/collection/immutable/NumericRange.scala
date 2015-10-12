@@ -175,34 +175,68 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
     catch { case _: ClassCastException => false }
 
   final override def sum[B >: T](implicit num: Numeric[B]): B = {
-    // arithmetic series formula  can be used for regular addition
-    if ((num eq scala.math.Numeric.IntIsIntegral)||
-        (num eq scala.math.Numeric.BigIntIsIntegral)||
-        (num eq scala.math.Numeric.ShortIsIntegral)||
-        (num eq scala.math.Numeric.ByteIsIntegral)||
-        (num eq scala.math.Numeric.CharIsIntegral)||
-        (num eq scala.math.Numeric.LongIsIntegral)||
-        (num eq scala.math.Numeric.FloatAsIfIntegral)||
-        (num eq scala.math.Numeric.BigDecimalIsFractional)||
-        (num eq scala.math.Numeric.DoubleAsIfIntegral)) {
-      val numAsIntegral = num.asInstanceOf[Integral[B]]
-      import numAsIntegral._
-      if (isEmpty) num fromInt 0
-      else if (numRangeElements == 1) head
-      else ((num fromInt numRangeElements) * (head + last) / (num fromInt 2))
-    } else {
-      // user provided custom Numeric, we cannot rely on arithmetic series formula
-      if (isEmpty) num.zero
+    if (isEmpty) num.zero
+    else if (numRangeElements == 1) head
+    else {
+      // If there is no overflow, use arithmetic series formula
+      //   a + ... (n terms total) ... + b = n*(a+b)/2
+      if ((num eq scala.math.Numeric.IntIsIntegral)||
+          (num eq scala.math.Numeric.ShortIsIntegral)||
+          (num eq scala.math.Numeric.ByteIsIntegral)||
+          (num eq scala.math.Numeric.CharIsIntegral)) {
+        // We can do math with no overflow in a Long--easy
+        val exact = (numRangeElements * ((num toLong head) + (num toInt last))) / 2
+        num fromInt exact.toInt
+      }
+      else if (num eq scala.math.Numeric.LongIsIntegral) {
+        // Uh-oh, might be overflow, so we have to divide before we overflow.
+        // Either numRangeElements or (head + last) must be even, so divide the even one before multiplying
+        val a = head.toLong
+        val b = last.toLong
+        val ans = 
+          if ((numRangeElements & 1) == 0) (numRangeElements / 2) * (a + b)
+          else numRangeElements * {
+            // Sum is even, but we might overflow it, so divide in pieces and add back remainder
+            val ha = a/2
+            val hb = b/2
+            ha + hb + ((a - 2*ha) + (b - 2*hb)) / 2
+          }
+        ans.asInstanceOf[B]
+      }
+      else if ((num eq scala.math.Numeric.FloatAsIfIntegral) ||
+               (num eq scala.math.Numeric.DoubleAsIfIntegral)) {
+        // Try to compute sum with reasonable accuracy, avoiding over/underflow
+        val numAsIntegral = num.asInstanceOf[Integral[B]]
+        import numAsIntegral._
+        val a = math.abs(head.toDouble)
+        val b = math.abs(last.toDouble)
+        val two = num fromInt 2
+        val nre = num fromInt numRangeElements
+        if (a > 1e38 || b > 1e38) nre * ((head / two) + (last / two))  // Compute in parts to avoid Infinity if possible
+        else (nre / two) * (head + last)    // Don't need to worry about infinity; this will be more accurate and avoid underflow
+      }
+      else if ((num eq scala.math.Numeric.BigIntIsIntegral) ||
+               (num eq scala.math.Numeric.BigDecimalIsFractional)) {
+        // No overflow, so we can use arithmetic series formula directly
+        // (not going to worry about running out of memory)
+        val numAsIntegral = num.asInstanceOf[Integral[B]]
+        import numAsIntegral._
+        ((num fromInt numRangeElements) * (head + last)) / (num fromInt 2)
+      }
       else {
-        var acc = num.zero
-        var i = head
-        var idx = 0
-        while(idx < length) {
-          acc = num.plus(acc, i)
-          i = i + step
-          idx = idx + 1
+        // User provided custom Numeric, so we cannot rely on arithmetic series formula (e.g. won't work on something like Z_6)
+        if (isEmpty) num.zero
+        else {
+          var acc = num.zero
+          var i = head
+          var idx = 0
+          while(idx < length) {
+            acc = num.plus(acc, i)
+            i = i + step
+            idx = idx + 1
+          }
+          acc
         }
-        acc
       }
     }
   }

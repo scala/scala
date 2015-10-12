@@ -1,10 +1,8 @@
 
 scala> :power
-** Power User mode enabled - BEEP WHIR GYVE **
-** :phase has been set to 'typer'.          **
-** scala.tools.nsc._ has been imported      **
-** global._, definitions._ also imported    **
-** Try  :help, :vals, power.<tab>           **
+Power mode enabled. :phase is at typer.
+import scala.tools.nsc._, intp.global._, definitions._
+Try :help or completions for vals._ and power._
 
 scala> // guarding against "error: reference to global is ambiguous"
 
@@ -24,5 +22,8 @@ m: $r.treedsl.global.Literal = 10
 
 scala> typed(m).tpe                              // typed is in scope
 res2: $r.treedsl.global.Type = Int(10)
+
+scala> """escaping is hard, m'kah"""
+res3: String = escaping is hard, m'kah
 
 scala> :quit

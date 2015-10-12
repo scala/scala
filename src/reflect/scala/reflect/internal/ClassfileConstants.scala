@@ -14,7 +14,7 @@ object ClassfileConstants {
   final val JAVA_MAJOR_VERSION = 45
   final val JAVA_MINOR_VERSION = 3
 
-  /** (see http://java.sun.com/docs/books/jvms/second_edition/jvms-clarify.html)
+  /** (see http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.1)
    *
    *  If the `ACC_INTERFACE` flag is set, the `ACC_ABSTRACT` flag must also
    *  be set (ch. 2.13.1).
@@ -344,7 +344,8 @@ object ClassfileConstants {
       case JAVA_ACC_STATIC     => STATIC
       case JAVA_ACC_ABSTRACT   => if (isAnnotation) 0L else if (isClass) ABSTRACT else DEFERRED
       case JAVA_ACC_INTERFACE  => if (isAnnotation) 0L else TRAIT | INTERFACE | ABSTRACT
-      case JAVA_ACC_ENUM       => ENUM
+      case JAVA_ACC_ENUM       => JAVA_ENUM
+      case JAVA_ACC_ANNOTATION => JAVA_ANNOTATION
       case _                   => 0L
     }
     private def translateFlags(jflags: Int, baseFlags: Long, isClass: Boolean): Long = {
@@ -360,6 +361,7 @@ object ClassfileConstants {
       res |= translateFlag0(jflags & JAVA_ACC_ABSTRACT)
       res |= translateFlag0(jflags & JAVA_ACC_INTERFACE)
       res |= translateFlag0(jflags & JAVA_ACC_ENUM)
+      res |= translateFlag0(jflags & JAVA_ACC_ANNOTATION)
       res
     }
 

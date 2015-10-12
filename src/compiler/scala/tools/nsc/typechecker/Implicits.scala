@@ -110,10 +110,10 @@ trait Implicits {
    * Ignore their constr field! The list of type constraints returned along with each tree specifies the constraints that
    * must be met by the corresponding type parameter in `tpars` (for the returned implicit view to be valid).
    *
-   * @arg tp      from-type for the implicit conversion
-   * @arg context search implicits here
-   * @arg tpars   symbols that should be considered free type variables
-   *              (implicit search should not try to solve them, just track their constraints)
+   * @param tp      from-type for the implicit conversion
+   * @param context search implicits here
+   * @param tpars   symbols that should be considered free type variables
+   *                (implicit search should not try to solve them, just track their constraints)
    */
   def allViewsFrom(tp: Type, context: Context, tpars: List[Symbol]): List[(SearchResult, List[TypeConstraint])] = {
     // my untouchable typevars are better than yours (they can't be constrained by them)
@@ -324,8 +324,10 @@ trait Implicits {
    */
   class ImplicitSearch(tree: Tree, pt: Type, isView: Boolean, context0: Context, pos0: Position = NoPosition) extends Typer(context0) with ImplicitsContextErrors {
     val searchId = implicitSearchId()
-    private def typingLog(what: String, msg: => String) =
-      typingStack.printTyping(tree, f"[search #$searchId] $what $msg")
+    private def typingLog(what: String, msg: => String) = {
+      if (printingOk(tree))
+        typingStack.printTyping(f"[search #$searchId] $what $msg")
+    }
 
     import infer._
     if (Statistics.canEnable) Statistics.incCounter(implicitSearchCount)
@@ -918,7 +920,7 @@ trait Implicits {
 
       /** Returns all eligible ImplicitInfos and their SearchResults in a map.
        */
-      def findAll() = linkedMapFrom(eligible)(typedImplicit(_, ptChecked = false, isLocalToCallsite))
+      def findAll() = linkedMapFrom(eligible)(x => try typedImplicit(x, ptChecked = false, isLocalToCallsite) finally context.reporter.clearAll())
 
       /** Returns the SearchResult of the best match.
        */
@@ -1361,7 +1363,7 @@ trait Implicits {
         val succstart = if (stats) Statistics.startTimer(oftypeSucceedNanos) else null
 
         // SI-6667, never search companions after an ambiguous error in in-scope implicits
-        val wasAmbigious = result.isAmbiguousFailure
+        val wasAmbiguous = result.isAmbiguousFailure
 
         // TODO: encapsulate
         val previousErrs = context.reporter.errors
@@ -1371,7 +1373,7 @@ trait Implicits {
 
         // `materializeImplicit` does some preprocessing for `pt`
         // is it only meant for manifests/tags or we need to do the same for `implicitsOfExpectedType`?
-        if (result.isFailure && !wasAmbigious)
+        if (result.isFailure && !wasAmbiguous)
           result = searchImplicit(implicitsOfExpectedType, isLocalToCallsite = false)
 
         if (result.isFailure)

@@ -433,7 +433,7 @@ abstract class UnCurry extends InfoTransform
 
       val sym = tree.symbol
 
-      // true if the taget is a lambda body that's been lifted into a method
+      // true if the target is a lambda body that's been lifted into a method
       def isLiftedLambdaBody(target: Tree) = target.symbol.isLocalToBlock && target.symbol.isArtifact && target.symbol.name.containsName(nme.ANON_FUN_NAME)
 
       val result = (
@@ -475,13 +475,6 @@ abstract class UnCurry extends InfoTransform
               withNeedLift(needLift = true) { super.transform(tree) }
             else
               super.transform(tree)
-          case UnApply(fn, args) =>
-            val fn1   = transform(fn)
-            val args1 = fn.symbol.name match {
-              case nme.unapplySeq => transformArgs(tree.pos, fn.symbol, args, patmat.alignPatterns(global.typer.context, tree).expectedTypes)
-              case _              => args
-            }
-            treeCopy.UnApply(tree, fn1, args1)
 
           case Apply(fn, args) =>
             val needLift = needTryLift || !fn.symbol.isLabel // SI-6749, no need to lift in args to label jumps.
@@ -691,9 +684,46 @@ abstract class UnCurry extends InfoTransform
               // declared type and assign this to a synthetic val. Later, we'll patch
               // the method body to refer to this, rather than the parameter.
               val tempVal: ValDef = {
+                // SI-9442: using the "uncurry-erased" type (the one after the uncurry phase) can lead to incorrect 
+                // tree transformations. For example, compiling:
+                // ```
+                //   def foo(c: Ctx)(l: c.Tree): Unit = {
+                //     val l2: c.Tree = l
+                //   }
+                // ```
+                // Results in the following AST:
+                // ```
+                //   def foo(c: Ctx, l: Ctx#Tree): Unit = {
+                //     val l$1: Ctx#Tree = l.asInstanceOf[Ctx#Tree]
+                //     val l2: c.Tree = l$1 // no, not really, it's not.
+                //   }
+                // ```
+                // Of course, this is incorrect, since `l$1` has type `Ctx#Tree`, which is not a subtype of `c.Tree`.
+                //
+                // So what we need to do is to use the pre-uncurry type when creating `l$1`, which is `c.Tree` and is
+                // correct. Now, there are two additional problems:
+                // 1. when varargs and byname params are involved, the uncurry transformation desugares these special
+                //    cases to actual typerefs, eg:
+                //    ```
+                //           T*  ~> Seq[T] (Scala-defined varargs)
+                //           T*  ~> Array[T] (Java-defined varargs)
+                //           =>T ~> Function0[T] (by name params)
+                //    ```
+                //    we use the DesugaredParameterType object (defined in scala.reflect.internal.transform.UnCurry)
+                //    to redo this desugaring manually here
+                // 2. the type needs to be normalized, since `gen.mkCast` checks this (no HK here, just aliases have
+                //    to be expanded before handing the type to `gen.mkAttributedCast`, which calls `gen.mkCast`)
+                val info0 = 
+                  enteringUncurry(p.symbol.info) match {
+                    case DesugaredParameterType(desugaredTpe) =>
+                      desugaredTpe
+                    case tpe =>
+                      tpe
+                  }
+                val info = info0.normalize
                 val tempValName = unit freshTermName (p.name + "$")
-                val newSym = dd.symbol.newTermSymbol(tempValName, p.pos, SYNTHETIC).setInfo(p.symbol.info)
-                atPos(p.pos)(ValDef(newSym, gen.mkAttributedCast(Ident(p.symbol), p.symbol.info)))
+                val newSym = dd.symbol.newTermSymbol(tempValName, p.pos, SYNTHETIC).setInfo(info)
+                atPos(p.pos)(ValDef(newSym, gen.mkAttributedCast(Ident(p.symbol), info)))
               }
               Packed(newParam, tempVal)
             }

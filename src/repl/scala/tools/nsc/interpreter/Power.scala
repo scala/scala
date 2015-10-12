@@ -113,10 +113,13 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     }
   }
 
-  private def customBanner = replProps.powerBanner.option flatMap (f => io.File(f).safeSlurp())
+  private def customBanner = replProps.powerBanner.option flatMap {
+    case f if f.getName == "classic" => Some(classic)
+    case f => io.File(f).safeSlurp()
+  }
   private def customInit   = replProps.powerInitCode.option flatMap (f => io.File(f).safeSlurp())
 
-  def banner = customBanner getOrElse """
+  def classic = """
     |** Power User mode enabled - BEEP WHIR GYVE **
     |** :phase has been set to 'typer'.          **
     |** scala.tools.nsc._ has been imported      **
@@ -124,28 +127,30 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     |** Try  :help, :vals, power.<tab>           **
   """.stripMargin.trim
 
-  private def initImports = List(
-    "scala.tools.nsc._",
-    "scala.collection.JavaConverters._",
-    "intp.global.{ error => _, _ }",
-    "definitions.{ getClass => _, _ }",
-    "power.rutil._",
-    "replImplicits._",
-    "treedsl.CODE._"
-  )
+  def banner = customBanner getOrElse """
+    |Power mode enabled. :phase is at typer.
+    |import scala.tools.nsc._, intp.global._, definitions._
+    |Try :help or completions for vals._ and power._
+  """.stripMargin.trim
 
-  def init = customInit match {
-    case Some(x)  => x
-    case _        => initImports.mkString("import ", ", ", "")
-  }
+  private def initImports =
+  """scala.tools.nsc._
+    |scala.collection.JavaConverters._
+    |intp.global.{ error => _, _ }
+    |definitions.{ getClass => _, _ }
+    |power.rutil._
+    |replImplicits._
+    |treedsl.CODE._""".stripMargin.lines
 
-  /** Starts up power mode and runs whatever is in init.
+  def init = customInit getOrElse initImports.mkString("import ", ", ", "")
+
+  /** Quietly starts up power mode and runs whatever is in init.
    */
   def unleash(): Unit = beQuietDuring {
     // First we create the ReplVals instance and bind it to $r
     intp.bind("$r", replVals)
     // Then we import everything from $r.
-    intp interpret ("import " + intp.originalPath("$r") + "._")
+    intp interpret s"import ${ intp.originalPath("$r") }._"
     // And whatever else there is to do.
     init.lines foreach (intp interpret _)
   }

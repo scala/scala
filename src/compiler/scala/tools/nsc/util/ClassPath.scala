@@ -22,7 +22,7 @@ import Jar.isJarOrZip
 
 /** <p>
  *    This module provides star expansion of '-classpath' option arguments, behaves the same as
- *    java, see [http://java.sun.com/javase/6/docs/technotes/tools/windows/classpath.html]
+ *    java, see [[http://docs.oracle.com/javase/6/docs/technotes/tools/windows/classpath.html]]
  *  </p>
  *
  *  @author Stepan Koltsov

@@ -12,7 +12,7 @@ import scala.collection.mutable
 import scala.reflect.internal.util.Collections._
 import scala.tools.asm.commons.CodeSizeEvaluator
 import scala.tools.asm.tree.analysis._
-import scala.tools.asm.{MethodWriter, ClassWriter, Label, Opcodes}
+import scala.tools.asm.{MethodWriter, ClassWriter, Label, Opcodes, Type}
 import scala.tools.asm.tree._
 import GenBCode._
 import scala.collection.convert.decorateAsScala._
@@ -103,6 +103,8 @@ object BytecodeUtils {
   def isFinalMethod(methodNode: MethodNode): Boolean = (methodNode.access & (Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC)) != 0
 
   def isStrictfpMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_STRICT) != 0
+
+  def isReference(t: Type) = t.getSort == Type.OBJECT || t.getSort == Type.ARRAY
 
   def nextExecutableInstruction(instruction: AbstractInsnNode, alsoKeep: AbstractInsnNode => Boolean = Set()): Option[AbstractInsnNode] = {
     var result = instruction
@@ -328,6 +330,26 @@ object BytecodeUtils {
       labelMap(tryCatch.handler),
       tryCatch.`type`
     )).toList
+  }
+
+  /**
+   * This method is used by optimizer components to eliminate phantom values of instruction
+   * that load a value of type `Nothing$` or `Null$`. Such values on the stack don't interact well
+   * with stack map frames.
+   *
+   * For example, `opt.getOrElse(throw e)` is re-written to an invocation of the lambda body, a
+   * method with return type `Nothing$`. Similarly for `opt.getOrElse(null)` and `Null$`.
+   *
+   * During bytecode generation this is handled by BCodeBodyBuilder.adapt. See the comment in that
+   * method which explains the issue with such phantom values.
+   */
+  def fixLoadedNothingOrNullValue(loadedType: Type, loadInstr: AbstractInsnNode, methodNode: MethodNode, bTypes: BTypes): Unit = {
+    if (loadedType == bTypes.coreBTypes.RT_NOTHING.toASMType) {
+      methodNode.instructions.insert(loadInstr, new InsnNode(Opcodes.ATHROW))
+    } else if (loadedType == bTypes.coreBTypes.RT_NULL.toASMType) {
+      methodNode.instructions.insert(loadInstr, new InsnNode(Opcodes.ACONST_NULL))
+      methodNode.instructions.insert(loadInstr, new InsnNode(Opcodes.POP))
+    }
   }
 
   /**

@@ -1,6 +1,0 @@
-BitSet: List(invariant, invariant, invariant, invariant)
-HashSet: List(covariant (true), covariant (true), covariant (true), covariant (true))
-ListSet: List(covariant (true), covariant (true), covariant (true), covariant (true))
-SortedSet: List(invariant, invariant, invariant, invariant)
-TreeSet: List(invariant, invariant, invariant, invariant)
-ValueSet: invariant

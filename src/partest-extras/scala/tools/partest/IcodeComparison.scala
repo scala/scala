@@ -48,8 +48,13 @@ abstract class IcodeComparison extends DirectTest {
     compile("-d" :: testOutput.path :: arg0 :: args.toList : _*)
     val icodeFiles = testOutput.files.toList filter (_ hasExtension "icode")
 
-    try     icodeFiles sortBy (_.name) flatMap (f => f.lines.toList)
-    finally icodeFiles foreach (f => f.delete())
+    // Some methods in scala.reflect.io.File leak an InputStream, leaving the underlying file open.
+    // Windows won't delete an open file, but we must ensure the files get deleted, since the logic
+    // here depends on it (collectIcode will be called multiple times, and we can't allow crosstalk
+    // between calls).  So we are careful to use `slurp` which does call `close`, and careful to
+    // check that `delete` returns true indicating successful deletion.
+    try     icodeFiles sortBy (_.name) flatMap (f => f.slurp().lines.toList)
+    finally icodeFiles foreach (f => require(f.delete()))
   }
 
   /** Collect icode at the default phase, `printIcodeAfterPhase`. */

@@ -815,7 +815,7 @@ trait Definitions extends api.StandardDefinitions {
         // must filter out "universal" members (getClass is deferred for some reason)
         val deferredMembers = (
           tp membersBasedOnFlags (excludedFlags = BridgeAndPrivateFlags, requiredFlags = METHOD)
-          filter (mem => mem.isDeferredNotDefault && !isUniversalMember(mem)) // TODO: test
+          filter (mem => mem.isDeferredNotJavaDefault && !isUniversalMember(mem)) // TODO: test
         )
 
         // if there is only one, it's monomorphic and has a single argument list

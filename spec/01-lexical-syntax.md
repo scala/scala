@@ -443,7 +443,7 @@ multiLineChars  ::=  {[‘"’] [‘"’] charNoDoubleQuote} {‘"’}
 
 A multi-line string literal is a sequence of characters enclosed in
 triple quotes `""" ... """`. The sequence of characters is
-arbitrary, except that it may contain three or more consuctive quote characters
+arbitrary, except that it may contain three or more consecutive quote characters
 only at the very end. Characters
 must not necessarily be printable; newlines or other
 control characters are also permitted.  Unicode escapes work as everywhere else, but none

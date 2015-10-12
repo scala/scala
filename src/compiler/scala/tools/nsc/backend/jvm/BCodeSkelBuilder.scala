@@ -153,9 +153,9 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
      */
     private def initJClass(jclass: asm.ClassVisitor) {
 
-      val ps = claszSymbol.info.parents
-      val superClass: String = if (ps.isEmpty) ObjectReference.internalName else internalName(ps.head.typeSymbol)
-      val interfaceNames = classBTypeFromSymbol(claszSymbol).info.get.interfaces map {
+      val bType = classBTypeFromSymbol(claszSymbol)
+      val superClass = bType.info.get.superClass.getOrElse(ObjectReference).internalName
+      val interfaceNames = bType.info.get.interfaces map {
         case classBType =>
           if (classBType.isNestedClass.get) { innerClassBufferASM += classBType }
           classBType.internalName
@@ -443,7 +443,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
      *        which rethrows the caught exception once it's done with the cleanup code.
      *
      *  A particular cleanup may in general contain LabelDefs. Care is needed when duplicating such jump-targets,
-     *  so as to preserve agreement wit the (also duplicated) jump-sources.
+     *  so as to preserve agreement with the (also duplicated) jump-sources.
      *  This is achieved based on the bookkeeping provided by two maps:
      *    - `labelDefsAtOrUnder` lists all LabelDefs enclosed by a given Tree node (the key)
      *    - `labelDef` provides the LabelDef node whose symbol is used as key.

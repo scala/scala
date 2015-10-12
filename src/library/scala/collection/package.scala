@@ -69,6 +69,9 @@ package scala
  * characteristics which are described
  * in [[http://docs.scala-lang.org/overviews/collections/performance-characteristics.html the guide]].
  *
+ * The concrete parallel collections also have specific performance characteristics which are
+ * described in [[http://docs.scala-lang.org/overviews/parallel-collections/concrete-parallel-collections.html#performance-characteristics the parallel collections guide]]
+ *
  * === Converting between Java Collections ===
  *
  * The `JavaConversions` object provides implicit defs that will allow mostly seamless integration

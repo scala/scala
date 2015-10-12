@@ -15,10 +15,13 @@ import scala.concurrent.{ Future, ExecutionContext }
 import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.{ ClassTag, classTag }
 import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
+import scala.tools.nsc.interactive
+import scala.tools.nsc.reporters.StoreReporter
+import scala.tools.nsc.util.ClassPath.DefaultJavaContext
 import scala.tools.util.PathResolverFactory
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.typechecker.{ TypeStrings, StructuredTypeStrings }
-import scala.tools.nsc.util.{ ScalaClassLoader, stringFromReader, stringFromWriter, StackTraceOps, ClassPath, MergedClassPath }
+import scala.tools.nsc.util._
 import ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.util.Exceptional.unwrap
 import scala.tools.nsc.backend.JavaPlatform
@@ -58,7 +61,7 @@ import java.io.File
  *  @author Moez A. Abdel-Gawad
  *  @author Lex Spoon
  */
-class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Settings, protected val out: JPrintWriter) extends AbstractScriptEngine with Compilable with Imports {
+class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Settings, protected val out: JPrintWriter) extends AbstractScriptEngine with Compilable with Imports with PresentationCompilation {
   imain =>
 
   setBindings(createBindings, ScriptContext.ENGINE_SCOPE)
@@ -77,6 +80,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   private var _isInitialized: Future[Boolean] = null      // set up initialization future
   private var bindExceptions                  = true      // whether to bind the lastException variable
   private var _executionWrapper               = ""        // code to be wrapped around all lines
+  var partialInput: String = ""                           // code accumulated in multi-line REPL input
 
   /** We're going to go to some trouble to initialize the compiler asynchronously.
    *  It's critical that nothing call into it until it's been initialized or we will
@@ -133,7 +137,6 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     }
     catch AbstractOrMissingHandler()
   }
-  private def tquoted(s: String) = "\"\"\"" + s + "\"\"\""
   private val logScope = scala.sys.props contains "scala.repl.scope"
   private def scopelog(msg: String) = if (logScope) Console.err.println(msg)
 
@@ -447,7 +450,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
   /** Build a request from the user. `trees` is `line` after being parsed.
    */
-  private def buildRequest(line: String, trees: List[Tree]): Request = {
+  private[interpreter] def buildRequest(line: String, trees: List[Tree]): Request = {
     executingRequest = new Request(line, trees)
     executingRequest
   }
@@ -466,11 +469,12 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     pos
   }
 
-  private def requestFromLine(line: String, synthetic: Boolean): Either[IR.Result, Request] = {
-    val content = line  //indentCode(line)
-    val trees = parse(content) match {
-      case parse.Incomplete     => return Left(IR.Incomplete)
-      case parse.Error          => return Left(IR.Error)
+  private[interpreter] def requestFromLine(line: String, synthetic: Boolean): Either[IR.Result, Request] = {
+    val content = line
+
+    val trees: List[global.Tree] = parse(content) match {
+      case parse.Incomplete(_)     => return Left(IR.Incomplete)
+      case parse.Error(_)          => return Left(IR.Error)
       case parse.Success(trees) => trees
     }
     repltrace(
@@ -855,7 +859,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   }
 
   /** One line of code submitted by the user for interpretation */
-  class Request(val line: String, val trees: List[Tree]) {
+  class Request(val line: String, val trees: List[Tree], generousImports: Boolean = false) {
     def defines    = defHandlers flatMap (_.definedSymbols)
     def imports    = importedSymbols
     def value      = Some(handlers.last) filter (h => h.definesValue) map (h => definedSymbols(h.definesTerm.get)) getOrElse NoSymbol
@@ -888,8 +892,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     /** Code to import bound names from previous lines - accessPath is code to
       * append to objectName to access anything bound by request.
       */
-    lazy val ComputedImports(importsPreamble, importsTrailer, accessPath) =
-      exitingTyper(importsCode(referencedNames.toSet, ObjectSourceCode, definesClass))
+    lazy val ComputedImports(headerPreamble, importsPreamble, importsTrailer, accessPath) =
+      exitingTyper(importsCode(referencedNames.toSet, ObjectSourceCode, definesClass, generousImports))
 
     /** the line of code to compute */
     def toCompute = line
@@ -905,13 +909,18 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       def path = originalPath("$intp")
       def envLines = {
         if (!isReplPower) Nil // power mode only for now
-        else List("def %s = %s".format("$line", tquoted(originalLine)), "def %s = Nil".format("$trees"))
+        else {
+          val escapedLine = Constant(originalLine).escapedStringValue
+          List(s"""def $$line = $escapedLine """, """def $trees = _root_.scala.Nil""")
+        }
       }
       def preamble = s"""
+        |$headerPreamble
         |${preambleHeader format lineRep.readName}
         |${envLines mkString ("  ", ";\n  ", ";\n")}
         |$importsPreamble
         |${indentCode(toCompute)}""".stripMargin
+      def preambleLength = preamble.length - toCompute.length - 1
 
       val generate = (m: MemberHandler) => m extraCodeToEvaluate Request.this
 
@@ -951,7 +960,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       def postwrap = s"}\nval $iw = new $iw\n"
     }
 
-    private lazy val ObjectSourceCode: Wrapper =
+    private[interpreter] lazy val ObjectSourceCode: Wrapper =
       if (isClassBased) new ClassBasedWrapper else new ObjectBasedWrapper
 
     private object ResultObjectSourceCode extends IMain.CodeAssembler[MemberHandler] {
@@ -1012,6 +1021,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     }
 
     lazy val resultSymbol = lineRep.resolvePathToSymbol(fullAccessPath)
+
     def applyToResultMember[T](name: Name, f: Symbol => T) = exitingTyper(f(resultSymbol.info.nonPrivateDecl(name)))
 
     /* typeOf lookup with encoding */
@@ -1165,20 +1175,22 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
   /** Parse a line into and return parsing result (error, incomplete or success with list of trees) */
   object parse {
-    abstract sealed class Result
-    case object Error extends Result
-    case object Incomplete extends Result
+    abstract sealed class Result { def trees: List[Tree] }
+    case class Error(trees: List[Tree]) extends Result
+    case class Incomplete(trees: List[Tree]) extends Result
     case class Success(trees: List[Tree]) extends Result
 
     def apply(line: String): Result = debugging(s"""parse("$line")""")  {
       var isIncomplete = false
-      currentRun.parsing.withIncompleteHandler((_, _) => isIncomplete = true) {
+      def parse = {
         reporter.reset()
         val trees = newUnitParser(line).parseStats()
-        if (reporter.hasErrors) Error
-        else if (isIncomplete) Incomplete
+        if (reporter.hasErrors) Error(trees)
+        else if (isIncomplete) Incomplete(trees)
         else Success(trees)
       }
+      currentRun.parsing.withIncompleteHandler((_, _) => isIncomplete = true) {parse}
+
     }
   }
 
@@ -1261,6 +1273,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 /** Utility methods for the Interpreter. */
 object IMain {
   import java.util.Arrays.{ asList => asJavaList }
+  /** Dummy identifier fragement inserted at the cursor before presentation compilation. Needed to support completion of `global.def<TAB>` */
+  val DummyCursorFragment = "_CURSOR_"
 
   class Factory extends ScriptEngineFactory {
     @BeanProperty
@@ -1358,3 +1372,4 @@ object IMain {
     def stripImpl(str: String): String = naming.unmangle(str)
   }
 }
+

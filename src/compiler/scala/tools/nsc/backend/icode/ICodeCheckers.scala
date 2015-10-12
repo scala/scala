@@ -20,7 +20,7 @@ abstract class ICodeCheckers {
    *  </p>
    *  <ul>
    *    <li>
-   *      for primitive operations: the type and numer of operands match
+   *      for primitive operations: the type and number of operands match
    *      the type of the operation
    *    </li>
    *    <li>

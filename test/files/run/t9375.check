@@ -1,0 +1,60 @@
+  konstruktor: class A
+  konstruktor: class A$O$12$
+  konstruktor: class A$$anon$1
+  konstruktor: class A$A
+  konstruktor: class A$C
+  konstruktor: class C
+  konstruktor: class T$O$15$
+  konstruktor: class T$$anon$2
+  konstruktor: class T$A
+  konstruktor: class T$C
+  konstruktor: class A$N$
+  konstruktor: class T$N$
+serializing outer objects should not initialize any nested objects
+now initializing nested objects
+  konstruktor: class A$O$
+  konstruktor: class A$Op$
+  konstruktor: class A$N$O$
+  konstruktor: class A$N$Op$
+  konstruktor: class A$A$O$
+  konstruktor: class A$A$Op$
+  konstruktor: class A$T$O$
+  konstruktor: class A$T$Op$
+  konstruktor: class A$O$11$
+  konstruktor: class A$$anonfun$1$O$13$
+  konstruktor: class A$$anon$1$O$
+  konstruktor: class A$$anon$1$Op$
+  konstruktor: class T$O$
+  konstruktor: class T$Op$
+  konstruktor: class T$N$O$
+  konstruktor: class T$N$Op$
+  konstruktor: class T$A$O$
+  konstruktor: class T$A$Op$
+  konstruktor: class T$T$O$
+  konstruktor: class T$T$Op$
+  konstruktor: class T$O$14$
+  konstruktor: class T$$anonfun$2$O$16$
+  konstruktor: class T$$anon$2$O$
+  konstruktor: class T$$anon$2$Op$
+no object konstruktors called when serializing / deserializing objects (starting at the outer or the object itself)
+deserializing outer objects with non-initialized inners again
+accessing modules triggers initialization
+  konstruktor: class A$O$
+  konstruktor: class A$Op$
+  konstruktor: class A$N$O$
+  konstruktor: class A$N$Op$
+deserializing creates a new object graph, including new scala 'object' instances, no matter where serialization starts
+init static module M and field v
+  konstruktor: class M$
+  konstruktor: class M$O$18$
+serDeser does not initialize nested static modules
+init M.O
+  konstruktor: class M$O$
+serDeser nested static module
+objects declared in field decls are not static modules, so they deserialize to new instances
+init lazy val M.w
+objects declared in lazy val are not static modules either
+  konstruktor: class M$O$19$
+object declared in a function: new instance created on each invocation
+  konstruktor: class M$$anonfun$3$O$20$
+  konstruktor: class M$$anonfun$3$O$20$

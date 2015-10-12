@@ -171,7 +171,7 @@ Any numeric value type $T$ supports the following methods.
     evaluated by converting the receiver and its argument to their
     operation type and performing the given arithmetic operation of that
     type.
-  * Parameterless arithmethic methods identity (`+`) and negation
+  * Parameterless arithmetic methods identity (`+`) and negation
     (`-`), with result type $T$.  The first of these returns the
     receiver unchanged, whereas the second returns its negation.
   * Conversion methods `toByte`, `toShort`, `toChar`,
@@ -194,7 +194,7 @@ Integer numeric value types support in addition the following operations:
     operation of that type.
 
   * A parameterless bit-negation method (`~`). Its result type is
-    the reciver type $T$ or `Int`, whichever is larger.
+    the receiver type $T$ or `Int`, whichever is larger.
     The operation is evaluated by converting the receiver to the result
     type and negating every bit in its value.
   * Bit-shift methods left-shift (`<<`), arithmetic right-shift
@@ -745,7 +745,7 @@ object Predef {
   def readf2(format: String) = Console.readf2(format)
   def readf3(format: String) = Console.readf3(format)
 
-  // Implict conversions ------------------------------------------------
+  // Implicit conversions ------------------------------------------------
 
   ...
 }

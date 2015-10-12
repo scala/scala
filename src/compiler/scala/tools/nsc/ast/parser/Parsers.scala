@@ -2031,11 +2031,11 @@ self =>
     /** Drop `private` modifier when followed by a qualifier.
      *  Contract `abstract` and `override` to ABSOVERRIDE
      */
-    private def normalizeModifers(mods: Modifiers): Modifiers =
+    private def normalizeModifiers(mods: Modifiers): Modifiers =
       if (mods.isPrivate && mods.hasAccessBoundary)
-        normalizeModifers(mods &~ Flags.PRIVATE)
+        normalizeModifiers(mods &~ Flags.PRIVATE)
       else if (mods hasAllFlags (Flags.ABSTRACT | Flags.OVERRIDE))
-        normalizeModifers(mods &~ (Flags.ABSTRACT | Flags.OVERRIDE) | Flags.ABSOVERRIDE)
+        normalizeModifiers(mods &~ (Flags.ABSTRACT | Flags.OVERRIDE) | Flags.ABSOVERRIDE)
       else
         mods
 
@@ -2080,7 +2080,7 @@ self =>
      *  AccessModifier ::= (private | protected) [AccessQualifier]
      *  }}}
      */
-    def accessModifierOpt(): Modifiers = normalizeModifers {
+    def accessModifierOpt(): Modifiers = normalizeModifiers {
       in.token match {
         case m @ (PRIVATE | PROTECTED)  => in.nextToken() ; accessQualifierOpt(Modifiers(flagTokens(m)))
         case _                          => NoMods
@@ -2094,7 +2094,7 @@ self =>
      *              |  override
      *  }}}
      */
-    def modifiers(): Modifiers = normalizeModifers {
+    def modifiers(): Modifiers = normalizeModifiers {
       def loop(mods: Modifiers): Modifiers = in.token match {
         case PRIVATE | PROTECTED =>
           loop(accessQualifierOpt(addMod(mods, flagTokens(in.token), tokenRange(in))))
@@ -2680,7 +2680,10 @@ self =>
           case t if t == SUPERTYPE || t == SUBTYPE || t == COMMA || t == RBRACE || isStatSep(t) =>
             TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
           case _ =>
-            syntaxErrorOrIncompleteAnd("`=', `>:', or `<:' expected", skipIt = true)(EmptyTree)
+            syntaxErrorOrIncompleteAnd("`=', `>:', or `<:' expected", skipIt = true)(
+              // assume a dummy type def so as to have somewhere to stash the annotations
+              TypeDef(mods, tpnme.ERROR, Nil, EmptyTree)
+            )
         }
       }
     }
@@ -2713,7 +2716,10 @@ self =>
         case CASEOBJECT =>
           objectDef(pos, (mods | Flags.CASE) withPosition (Flags.CASE, tokenRange(in.prev /*scanner skips on 'case' to 'object', thus take prev*/)))
         case _ =>
-          syntaxErrorOrIncompleteAnd("expected start of definition", skipIt = true)(EmptyTree)
+          syntaxErrorOrIncompleteAnd("expected start of definition", skipIt = true)(
+            // assume a class definition so as to have somewhere to stash the annotations
+            atPos(pos)(gen.mkClassDef(mods, tpnme.ERROR, Nil, Template(Nil, noSelfType, Nil)))
+          )
       }
     }
 

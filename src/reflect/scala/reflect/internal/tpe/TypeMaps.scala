@@ -343,7 +343,7 @@ private[internal] trait TypeMaps {
     object rawToExistentialInJava extends TypeMap {
       def apply(tp: Type): Type = tp match {
         // any symbol that occurs in a java sig, not just java symbols
-        // see http://lampsvn.epfl.ch/trac/scala/ticket/2454#comment:14
+        // see https://issues.scala-lang.org/browse/SI-2454?focusedCommentId=46618
         case TypeRef(pre, sym, List()) if !sym.typeParams.isEmpty =>
           val eparams = typeParamsToExistentials(sym, sym.typeParams)
           existentialAbstraction(eparams, TypeRef(pre, sym, eparams map (_.tpe)))
@@ -736,7 +736,7 @@ private[internal] trait TypeMaps {
           substFor(sym)
         case ClassInfoType(parents, decls, sym) =>
           val parents1 = parents mapConserve this
-          // We don't touch decls here; they will be touched when an enclosing TreeSubstitutor
+          // We don't touch decls here; they will be touched when an enclosing TreeSubstituter
           // transforms the tree that defines them.
           if (parents1 eq parents) tp
           else ClassInfoType(parents1, decls, sym)

@@ -217,7 +217,7 @@ abstract class SymbolPairs {
       bs(nshifted) |= nmask
     }
 
-    /** Implements `bs1 * bs2 * {0..n} != 0.
+    /** Implements `bs1 * bs2 * {0..n} != 0`.
      *  Used in hasCommonParentAsSubclass */
     private def intersectionContainsElementLeq(bs1: BitSet, bs2: BitSet, n: Int): Boolean = {
       val nshifted = n >> 5

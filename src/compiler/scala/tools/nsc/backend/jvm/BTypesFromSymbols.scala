@@ -216,7 +216,18 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   }
 
   private def setClassInfo(classSym: Symbol, classBType: ClassBType): ClassBType = {
-    val superClassSym = if (classSym.isImplClass) ObjectClass else classSym.superClass
+    // Check for isImplClass: trait implementation classes have NoSymbol as superClass
+    // Check for hasAnnotationFlag for SI-9393: the classfile / java source parsers add
+    // scala.annotation.Annotation as superclass to java annotations. In reality, java
+    // annotation classfiles have superclass Object (like any interface classfile).
+    val superClassSym = if (classSym.isImplClass || classSym.hasJavaAnnotationFlag) ObjectClass else {
+      val sc = classSym.superClass
+      // SI-9393: Java annotation classes don't have the ABSTRACT/INTERFACE flag, so they appear
+      // (wrongly) as superclasses. Fix this for BTypes: the java annotation will appear as interface
+      // (handled by method implementedInterfaces), the superclass is set to Object.
+      if (sc.hasJavaAnnotationFlag) ObjectClass
+      else sc
+    }
     assert(
       if (classSym == ObjectClass)
         superClassSym == NoSymbol
@@ -351,7 +362,15 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     val isTopLevel = innerClassSym.rawowner.isPackageClass
     // impl classes are considered top-level, see comment in BTypes
     if (isTopLevel || considerAsTopLevelImplementationArtifact(innerClassSym)) None
-    else {
+    else if (innerClassSym.rawowner.isTerm) {
+      // This case should never be reached: the lambdalift phase mutates the rawowner field of all
+      // classes to be the enclosing class. SI-9392 shows an errant macro that leaves a reference
+      // to a local class symbol that no longer exists, which is not updated by lambdalift.
+      devWarning(innerClassSym.pos,
+        s"""The class symbol $innerClassSym with the term symbol ${innerClassSym.rawowner} as `rawowner` reached the backend.
+           |Most likely this indicates a stale reference to a non-existing class introduced by a macro, see SI-9392.""".stripMargin)
+      None
+    } else {
       // See comment in BTypes, when is a class marked static in the InnerClass table.
       val isStaticNestedClass = isOriginallyStaticOwner(innerClassSym.originalOwner)
 
@@ -559,7 +578,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       if (sym.isBridge) ACC_BRIDGE | ACC_SYNTHETIC else 0,
       if (sym.isArtifact) ACC_SYNTHETIC else 0,
       if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
-      if (sym.hasEnumFlag) ACC_ENUM else 0,
+      if (sym.hasJavaEnumFlag) ACC_ENUM else 0,
       if (sym.isVarargsMethod) ACC_VARARGS else 0,
       if (sym.hasFlag(symtab.Flags.SYNCHRONIZED)) ACC_SYNCHRONIZED else 0,
       if (sym.isDeprecated) asm.Opcodes.ACC_DEPRECATED else 0

@@ -204,7 +204,7 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
   def iincProdCons(): Unit = {
     import Opcodes._
     val m = genMethod(descriptor = "(I)I")(
-      Incr(IINC, 1, 1), // producer and cosumer of local variable 1
+      Incr(IINC, 1, 1), // producer and consumer of local variable 1
       VarOp(ILOAD, 1),
       Op(IRETURN)
     )
@@ -245,5 +245,47 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
 
     testSingleInsn(a.consumersOfOutputsFrom(l2i), "IRETURN")
     testSingleInsn(a.producersForInputsOf(ret), "L2I")
+  }
+
+  @Test
+  def cyclicProdCons(): Unit = {
+    import Opcodes._
+    val m = genMethod(descriptor = "(I)I")(
+      Label(1),
+      VarOp(ILOAD, 1),
+      IntOp(BIPUSH, 10),
+      Op(IADD),          // consumer of the above ILOAD
+
+      Op(ICONST_0),
+      Jump(IF_ICMPNE, Label(2)),
+
+      VarOp(ILOAD, 1),
+      VarOp(ISTORE, 1),
+      Jump(GOTO, Label(1)),
+
+      Label(2),
+      IntOp(BIPUSH, 9),
+      Op(IRETURN)
+    )
+    m.maxLocals = 2
+    m.maxStack = 2
+    val a = new ProdConsAnalyzer(m, "C")
+
+    val List(iadd) = findInstr(m, "IADD")
+    val firstLoad = iadd.getPrevious.getPrevious
+    assert(firstLoad.getOpcode == ILOAD)
+    val secondLoad = findInstr(m, "ISTORE").head.getPrevious
+    assert(secondLoad.getOpcode == ILOAD)
+
+    testSingleInsn(a.producersForValueAt(iadd, 2), "ILOAD")
+    testSingleInsn(a.initialProducersForValueAt(iadd, 2), "ParameterProducer(1)")
+    testMultiInsns(a.producersForInputsOf(firstLoad), List("ParameterProducer", "ISTORE"))
+    testMultiInsns(a.producersForInputsOf(secondLoad), List("ParameterProducer", "ISTORE"))
+
+    testSingleInsn(a.ultimateConsumersOfOutputsFrom(firstLoad), "IADD")
+    testSingleInsn(a.ultimateConsumersOfOutputsFrom(secondLoad), "IADD")
+
+    testSingleInsn(a.consumersOfOutputsFrom(firstLoad), "IADD")
+    testSingleInsn(a.consumersOfOutputsFrom(secondLoad), "ISTORE")
   }
 }

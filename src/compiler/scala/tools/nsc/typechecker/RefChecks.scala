@@ -421,7 +421,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             overrideError("cannot be used here - classes can only override abstract types")
           } else if (other.isEffectivelyFinal) { // (1.2)
             overrideError("cannot override final member")
-          } else if (!other.isDeferredOrDefault && !other.hasFlag(DEFAULTMETHOD) && !member.isAnyOverride && !member.isSynthetic) { // (*)
+          } else if (!other.isDeferredOrJavaDefault && !other.hasFlag(JAVA_DEFAULTMETHOD) && !member.isAnyOverride && !member.isSynthetic) { // (*)
             // (*) Synthetic exclusion for (at least) default getters, fixes SI-5178. We cannot assign the OVERRIDE flag to
             // the default getter: one default getter might sometimes override, sometimes not. Example in comment on ticket.
               if (isNeitherInClass && !(other.owner isSubClass member.owner))
@@ -604,7 +604,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         def checkNoAbstractMembers(): Unit = {
           // Avoid spurious duplicates: first gather any missing members.
           def memberList = clazz.info.nonPrivateMembersAdmitting(VBRIDGE)
-          val (missing, rest) = memberList partition (m => m.isDeferredNotDefault && !ignoreDeferred(m))
+          val (missing, rest) = memberList partition (m => m.isDeferredNotJavaDefault && !ignoreDeferred(m))
           // Group missing members by the name of the underlying symbol,
           // to consolidate getters and setters.
           val grouped = missing groupBy (sym => analyzer.underlyingSymbol(sym).name)
@@ -1134,13 +1134,13 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           t hasSymbolWhich (_.accessedOrSelf == valOrDef.symbol)
         case _ => false
       }
-      val trivialInifiniteLoop = (
+      val trivialInfiniteLoop = (
         !valOrDef.isErroneous
      && !valOrDef.symbol.isValueParameter
      && valOrDef.symbol.paramss.isEmpty
      && callsSelf
       )
-      if (trivialInifiniteLoop)
+      if (trivialInfiniteLoop)
         reporter.warning(valOrDef.rhs.pos, s"${valOrDef.symbol.fullLocationString} does nothing other than call itself recursively")
     }
 
@@ -1182,11 +1182,23 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     private def eliminateModuleDefs(moduleDef: Tree): List[Tree] = exitingRefchecks {
       val ModuleDef(_, _, impl) = moduleDef
       val module        = moduleDef.symbol
+      val moduleClass   = module.moduleClass
       val site          = module.owner
       val moduleName    = module.name.toTermName
       // The typer doesn't take kindly to seeing this ClassDef; we have to
       // set NoType so it will be ignored.
-      val cdef          = ClassDef(module.moduleClass, impl) setType NoType
+      val cdef          = ClassDef(moduleClass, impl) setType NoType
+
+      // This code is related to the fix of SI-9375, which stops adding `readResolve` methods to
+      // non-static (nested) modules. Before the fix, the method would cause the module accessor
+      // to become notPrivate. To prevent binary changes in the 2.11.x branch, we mimic that behavior.
+      // There is a bit of code duplication between here and SyntheticMethods. We cannot call
+      // makeNotPrivate already in SyntheticMethod: that is during type checking, and not all references
+      // are resolved yet, so we cannot rename a definition. This code doesn't exist in the 2.12.x branch.
+      def hasConcreteImpl(name: Name) = moduleClass.info.member(name).alternatives exists (m => !m.isDeferred)
+      val hadReadResolveBeforeSI9375 = moduleClass.isSerializable && !hasConcreteImpl(nme.readResolve)
+      if (hadReadResolveBeforeSI9375)
+        moduleClass.sourceModule.makeNotPrivate(moduleClass.sourceModule.owner)
 
       // Create the module var unless the immediate owner is a class and
       // the module var already exists there. See SI-5012, SI-6712.
@@ -1210,7 +1222,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       }
       def matchingInnerObject() = {
         val newFlags = (module.flags | STABLE) & ~MODULE
-        val newInfo  = NullaryMethodType(module.moduleClass.tpe)
+        val newInfo  = NullaryMethodType(moduleClass.tpe)
         val accessor = site.newMethod(moduleName, module.pos, newFlags) setInfoAndEnter newInfo
 
         DefDef(accessor, Select(This(site), module)) :: Nil
@@ -1511,7 +1523,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         sym.isSourceMethod &&
         sym.isCase &&
         sym.name == nme.apply &&
-        isClassTypeAccessible(tree)
+        isClassTypeAccessible(tree) &&
+        !tree.tpe.resultType.typeSymbol.primaryConstructor.isLessAccessibleThan(tree.symbol)
 
       if (doTransform) {
         tree foreach {

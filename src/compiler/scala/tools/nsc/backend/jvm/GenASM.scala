@@ -307,7 +307,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
       if (sym.isBridge) ACC_BRIDGE | ACC_SYNTHETIC else 0,
       if (sym.isArtifact) ACC_SYNTHETIC else 0,
       if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
-      if (sym.hasEnumFlag) ACC_ENUM else 0,
+      if (sym.hasJavaEnumFlag) ACC_ENUM else 0,
       if (sym.isVarargsMethod) ACC_VARARGS else 0,
       if (sym.hasFlag(Flags.SYNCHRONIZED)) ACC_SYNCHRONIZED else 0
     )
@@ -495,8 +495,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
      *        generic classes or interfaces.
      *
      * @param superName the internal of name of the super class. For interfaces,
-     *        the super class is {@link Object}. May be <tt>null</tt>, but
-     *        only for the {@link Object} class.
+     *        the super class is [[Object]]. May be <tt>null</tt>, but
+     *        only for the [[Object]] class.
      *
      * @param interfaces the internal names of the class's interfaces (see
      *        {@link Type#getInternalName() getInternalName}). May be
@@ -532,6 +532,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
         case e: java.lang.RuntimeException if e.getMessage != null && (e.getMessage contains "too large!") =>
           reporter.error(sym.pos,
             s"Could not write class $jclassName because it exceeds JVM code size limits. ${e.getMessage}")
+        case e: java.io.IOException if e.getMessage != null && (e.getMessage contains "File name too long")  =>
+          reporter.error(sym.pos, e.getMessage + "\n" +
+            "This can happen on some encrypted or legacy file systems.  Please see SI-3623 for more details.")
+
       }
     }
 
@@ -2696,7 +2700,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
               case CMPG =>
                 (kind: @unchecked) match {
                   case FLOAT  => emit(Opcodes.FCMPG)
-                  case DOUBLE => emit(Opcodes.DCMPL) // TODO bug? why not DCMPG? http://docs.oracle.com/javase/specs/jvms/se5.0/html/Instructions2.doc3.html
+                  case DOUBLE => emit(Opcodes.DCMPL) // TODO bug? why not DCMPG? http://docs.oracle.com/javase/specs/jvms/se6/html/Instructions2.doc3.html
 
                 }
             }
@@ -3031,7 +3035,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
      *
      *  Rationale for this normalization:
      *    test/files/run/private-inline.scala after -optimize is chock full of
-     *    BasicBlocks containing just JUMP(whereTo), where no exception handler straddles them.
+     *    BasicBlocks containing just JUMP(whereto), where no exception handler straddles them.
      *    They should be collapsed by IMethod.normalize() but aren't.
      *    That was fine in FJBG times when by the time the exception table was emitted,
      *    it already contained "anchored" labels (ie instruction offsets were known)

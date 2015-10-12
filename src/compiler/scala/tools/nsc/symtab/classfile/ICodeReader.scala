@@ -326,8 +326,8 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.dconst_0    => code emit CONSTANT(Constant(0.0))
         case JVM.dconst_1    => code emit CONSTANT(Constant(1.0))
 
-        case JVM.bipush      => code.emit(CONSTANT(Constant(u1))); size += 1
-        case JVM.sipush      => code.emit(CONSTANT(Constant(u2))); size += 2
+        case JVM.bipush      => code.emit(CONSTANT(Constant(s1))); size += 1
+        case JVM.sipush      => code.emit(CONSTANT(Constant(s2))); size += 2
         case JVM.ldc         => code.emit(CONSTANT(pool.getConstant(u1))); size += 1
         case JVM.ldc_w       => code.emit(CONSTANT(pool.getConstant(u2))); size += 2
         case JVM.ldc2_w      => code.emit(CONSTANT(pool.getConstant(u2))); size += 2
@@ -466,7 +466,7 @@ abstract class ICodeReader extends ClassfileParser {
           size += 2
           val local = code.getLocal(u1, INT)
           code.emit(LOAD_LOCAL(local))
-          code.emit(CONSTANT(Constant(u1)))
+          code.emit(CONSTANT(Constant(s1)))
           code.emit(CALL_PRIMITIVE(Arithmetic(ADD, INT)))
           code.emit(STORE_LOCAL(local))
 

@@ -9,6 +9,7 @@ package opt
 
 import scala.annotation.tailrec
 import scala.tools.asm
+import asm.Handle
 import asm.Opcodes._
 import asm.tree._
 import scala.collection.convert.decorateAsScala._
@@ -365,7 +366,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
       clonedInstructions.insert(argStores)
 
-      // label for the exit of the inlined functions. xRETURNs are rplaced by GOTOs to this label.
+      // label for the exit of the inlined functions. xRETURNs are replaced by GOTOs to this label.
       val postCallLabel = newLabelNode
       clonedInstructions.add(postCallLabel)
 
@@ -455,9 +456,9 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
         case indy: InvokeDynamicInsnNode =>
           callGraph.closureInstantiations.get(indy) match {
-            case Some((methodNode, ownerClass)) =>
+            case Some(closureInit) =>
               val newIndy = instructionMap(indy).asInstanceOf[InvokeDynamicInsnNode]
-              callGraph.closureInstantiations(newIndy) = (callsiteMethod, callsiteClass)
+              callGraph.closureInstantiations(newIndy) = ClosureInstantiation(closureInit.lambdaMetaFactoryCall.copy(indy = newIndy), callsiteMethod, callsiteClass)
 
             case None =>
           }
@@ -687,9 +688,67 @@ class Inliner[BT <: BTypes](val btypes: BT) {
           }
         }
 
-      case ivd: InvokeDynamicInsnNode =>
-        // TODO @lry check necessary conditions to inline an indy, instead of giving up
-        Right(false)
+      case _: InvokeDynamicInsnNode if destinationClass == calleeDeclarationClass =>
+        // within the same class, any indy instruction can be inlined
+         Right(true)
+
+      // does the InvokeDynamicInsnNode call LambdaMetaFactory?
+      case LambdaMetaFactoryCall(_, _, implMethod, _) =>
+        // an indy instr points to a "call site specifier" (CSP) [1]
+        //  - a reference to a bootstrap method [2]
+        //    - bootstrap method name
+        //    - references to constant arguments, which can be:
+        //      - constant (string, long, int, float, double)
+        //      - class
+        //      - method type (without name)
+        //      - method handle
+        //  - a method name+type
+        //
+        // execution [3]
+        //  - resolve the CSP, yielding the bootstrap method handle, the static args and the name+type
+        //    - resolution entails accessibility checking [4]
+        //  - execute the `invoke` method of the bootstrap method handle (which is signature polymorphic, check its javadoc)
+        //    - the descriptor for the call is made up from the actual arguments on the stack:
+        //      - the first parameters are "MethodHandles.Lookup, String, MethodType", then the types of the constant arguments,
+        //      - the return type is CallSite
+        //    - the values for the call are
+        //      - the bootstrap method handle of the CSP is the receiver
+        //      - the Lookup object for the class in which the callsite occurs (obtained as through calling MethodHandles.lookup())
+        //      - the method name of the CSP
+        //      - the method type of the CSP
+        //      - the constants of the CSP (primitives are not boxed)
+        //  - the resulting `CallSite` object
+        //    - has as `type` the method type of the CSP
+        //    - is popped from the operand stack
+        //  - the `invokeExact` method (signature polymorphic!) of the `target` method handle of the CallSite is invoked
+        //    - the method descriptor is that of the CSP
+        //    - the receiver is the target of the CallSite
+        //    - the other argument values are those that were on the operand stack at the indy instruction (indyLambda: the captured values)
+        //
+        // [1] http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4.10
+        // [2] http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7.23
+        // [3] http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokedynamic
+        // [4] http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-5.html#jvms-5.4.3
+
+        // We cannot generically check if an `invokedynamic` instruction can be safely inlined into
+        // a different class, that depends on the bootstrap method. The Lookup object passed to the
+        // bootstrap method is a capability to access private members of the callsite class. We can
+        // only move the invokedynamic to a new class if we know that the bootstrap method doesn't
+        // use this capability for otherwise non-accessible members.
+        // In the case of indyLambda, it depends on the visibility of the implMethod handle. If
+        // the implMethod is public, lambdaMetaFactory doesn't use the Lookup object's extended
+        // capability, and we can safely inline the instruction into a different class.
+
+        val methodRefClass = classBTypeFromParsedClassfile(implMethod.getOwner)
+        for {
+          (methodNode, methodDeclClassNode) <- byteCodeRepository.methodNode(methodRefClass.internalName, implMethod.getName, implMethod.getDesc): Either[OptimizerWarning, (MethodNode, InternalName)]
+          methodDeclClass                   =  classBTypeFromParsedClassfile(methodDeclClassNode)
+          res                               <- memberIsAccessible(methodNode.access, methodDeclClass, methodRefClass, destinationClass)
+        } yield {
+          res
+        }
+
+      case _: InvokeDynamicInsnNode => Left(UnknownInvokeDynamicInstruction)
 
       case ci: LdcInsnNode => ci.cst match {
         case t: asm.Type => classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(t.getInternalName), destinationClass)

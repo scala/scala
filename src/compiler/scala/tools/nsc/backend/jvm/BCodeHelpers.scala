@@ -329,7 +329,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       // If the `sym` is a java module class, we use the java class instead. This ensures that we
       // register the class (instead of the module class) in innerClassBufferASM.
       // The two symbols have the same name, so the resulting internalName is the same.
-      val classSym = if (sym.isJavaDefined && sym.isModuleClass) sym.linkedClassOfClass else sym
+      // Phase travel (exitingPickler) required for SI-6613 - linkedCoC is only reliable in early phases (nesting)
+      val classSym = if (sym.isJavaDefined && sym.isModuleClass) exitingPickler(sym.linkedClassOfClass) else sym
       getClassBTypeAndRegisterInnerClass(classSym).internalName
     }
 
@@ -714,7 +715,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       {
         val mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambda$", "(Ljava/lang/invoke/SerializedLambda;)Ljava/lang/Object;", null, null)
         mv.visitCode()
-        mv.visitFieldInsn(GETSTATIC, clazz.javaBinaryName.encoded, "$deserializeLambdaCache$", "Ljava/util/Map;")
+        // javaBinaryName returns the internal name of a class. Also used in BTypesFromsymbols.classBTypeFromSymbol.
+        mv.visitFieldInsn(GETSTATIC, clazz.javaBinaryName.toString, "$deserializeLambdaCache$", "Ljava/util/Map;")
         mv.visitVarInsn(ASTORE, 1)
         mv.visitVarInsn(ALOAD, 1)
         val l0 = new asm.Label()
@@ -724,13 +726,13 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         mv.visitMethodInsn(INVOKESPECIAL, "java/util/HashMap", "<init>", "()V", false)
         mv.visitVarInsn(ASTORE, 1)
         mv.visitVarInsn(ALOAD, 1)
-        mv.visitFieldInsn(PUTSTATIC, clazz.javaBinaryName.encoded, "$deserializeLambdaCache$", "Ljava/util/Map;")
+        mv.visitFieldInsn(PUTSTATIC, clazz.javaBinaryName.toString, "$deserializeLambdaCache$", "Ljava/util/Map;")
         mv.visitLabel(l0)
-        mv.visitFrame(asm.Opcodes.F_APPEND,1, Array("java/util/Map"), 0, null)
+        mv.visitFieldInsn(GETSTATIC, "scala/compat/java8/runtime/LambdaDeserializer$", "MODULE$", "Lscala/compat/java8/runtime/LambdaDeserializer$;")
         mv.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodHandles", "lookup", "()Ljava/lang/invoke/MethodHandles$Lookup;", false)
         mv.visitVarInsn(ALOAD, 1)
         mv.visitVarInsn(ALOAD, 0)
-        mv.visitMethodInsn(INVOKESTATIC, "scala/compat/java8/runtime/LambdaDeserializer", "deserializeLambda", "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/util/Map;Ljava/lang/invoke/SerializedLambda;)Ljava/lang/Object;", false)
+        mv.visitMethodInsn(INVOKEVIRTUAL, "scala/compat/java8/runtime/LambdaDeserializer$", "deserializeLambda", "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/util/Map;Ljava/lang/invoke/SerializedLambda;)Ljava/lang/Object;", false)
         mv.visitInsn(ARETURN)
         mv.visitEnd()
       }

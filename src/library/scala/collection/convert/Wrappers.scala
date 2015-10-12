@@ -265,17 +265,11 @@ private[collection] trait Wrappers {
     def +=(kv: (A, B)): this.type = { underlying.put(kv._1, kv._2); this }
     def -=(key: A): this.type = { underlying remove key; this }
 
-    override def put(k: A, v: B): Option[B] = {
-      val r = underlying.put(k, v)
-      if (r != null) Some(r) else None
-    }
+    override def put(k: A, v: B): Option[B] = Option(underlying.put(k, v))
 
     override def update(k: A, v: B) { underlying.put(k, v) }
 
-    override def remove(k: A): Option[B] = {
-      val r = underlying remove k
-      if (r != null) Some(r) else None
-    }
+    override def remove(k: A): Option[B] = Option(underlying remove k)
 
     def iterator: Iterator[(A, B)] = new AbstractIterator[(A, B)] {
       val ui = underlying.entrySet.iterator
@@ -326,25 +320,15 @@ private[collection] trait Wrappers {
     * are not guaranteed to be atomic.
     */
   case class JConcurrentMapWrapper[A, B](underlying: juc.ConcurrentMap[A, B]) extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JConcurrentMapWrapper[A, B]] with concurrent.Map[A, B] {
-    override def get(k: A) = {
-      val v = underlying get k
-      if (v != null) Some(v)
-      else None
-    }
+    override def get(k: A) = Option(underlying get k)
 
     override def empty = new JConcurrentMapWrapper(new juc.ConcurrentHashMap[A, B])
 
-    def putIfAbsent(k: A, v: B): Option[B] = {
-      val r = underlying.putIfAbsent(k, v)
-      if (r != null) Some(r) else None
-    }
+    def putIfAbsent(k: A, v: B): Option[B] = Option(underlying.putIfAbsent(k, v))
 
     def remove(k: A, v: B): Boolean = underlying.remove(k, v)
 
-    def replace(k: A, v: B): Option[B] = {
-      val prev = underlying.replace(k, v)
-      if (prev != null) Some(prev) else None
-    }
+    def replace(k: A, v: B): Option[B] = Option(underlying.replace(k, v))
 
     def replace(k: A, oldvalue: B, newvalue: B): Boolean =
       underlying.replace(k, oldvalue, newvalue)
@@ -380,25 +364,16 @@ private[collection] trait Wrappers {
   case class JDictionaryWrapper[A, B](underlying: ju.Dictionary[A, B]) extends mutable.AbstractMap[A, B] with mutable.Map[A, B] {
     override def size: Int = underlying.size
 
-    def get(k: A) = {
-      val v = underlying get k
-      if (v != null) Some(v) else None
-    }
+    def get(k: A) = Option(underlying get k)
 
     def +=(kv: (A, B)): this.type = { underlying.put(kv._1, kv._2); this }
     def -=(key: A): this.type = { underlying remove key; this }
 
-    override def put(k: A, v: B): Option[B] = {
-      val r = underlying.put(k, v)
-      if (r != null) Some(r) else None
-    }
+    override def put(k: A, v: B): Option[B] = Option(underlying.put(k, v))
 
     override def update(k: A, v: B) { underlying.put(k, v) }
 
-    override def remove(k: A): Option[B] = {
-      val r = underlying remove k
-      if (r != null) Some(r) else None
-    }
+    override def remove(k: A): Option[B] = Option(underlying remove k)
 
     def iterator = enumerationAsScalaIterator(underlying.keys) map (k => (k, underlying get k))
 

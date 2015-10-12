@@ -92,8 +92,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
     def genThrow(expr: Tree): BType = {
       val thrownKind = tpeTK(expr)
-      // `throw null` is valid although scala.Null (as defined in src/libray-aux) isn't a subtype of Throwable.
-      // Similarly for scala.Nothing (again, as defined in src/libray-aux).
+      // `throw null` is valid although scala.Null (as defined in src/library-aux) isn't a subtype of Throwable.
+      // Similarly for scala.Nothing (again, as defined in src/library-aux).
       assert(thrownKind.isNullType || thrownKind.isNothingType || thrownKind.asClassBType.isSubtypeOf(ThrowableReference).get)
       genLoad(expr, thrownKind)
       lineNumber(expr)
@@ -632,10 +632,11 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             case _ =>
               abort(s"Cannot instantiate $tpt of kind: $generatedType")
           }
-        case Apply(_, args) if app.hasAttachment[delambdafy.LambdaMetaFactoryCapable] =>
+        case Apply(fun, args) if app.hasAttachment[delambdafy.LambdaMetaFactoryCapable] =>
           val attachment = app.attachments.get[delambdafy.LambdaMetaFactoryCapable].get
           genLoadArguments(args, paramTKs(app))
           genInvokeDynamicLambda(attachment.target, attachment.arity, attachment.functionalInterface)
+          generatedType = asmMethodType(fun.symbol).returnType
 
         case Apply(fun @ _, List(expr)) if currentRun.runDefinitions.isBox(fun.symbol) =>
           val nativeKind = tpeTK(expr)

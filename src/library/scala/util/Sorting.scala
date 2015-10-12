@@ -88,7 +88,7 @@ object Sorting {
               a(pL - 1) = current
               pL -= 1
             case x if x < 0 =>
-              // Already in place.  Just update indicies.
+              // Already in place.  Just update indices.
               iA += 1
             case _ if iB > pR =>
               // Wrong side.  There's room on the other side, so swap

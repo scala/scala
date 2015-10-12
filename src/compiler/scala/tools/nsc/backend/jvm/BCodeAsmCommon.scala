@@ -256,14 +256,17 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
       if (hasAbstractMethod) ACC_ABSTRACT else 0
     }
     GenBCode.mkFlags(
-      if (classSym.isPublic)                                 ACC_PUBLIC    else 0,
-      if (classSym.isFinal)                                  ACC_FINAL     else 0,
+      // SI-9393: the classfile / java source parser make java annotation symbols look like classes.
+      // here we recover the actual classfile flags.
+      if (classSym.hasJavaAnnotationFlag)                        ACC_ANNOTATION | ACC_INTERFACE | ACC_ABSTRACT else 0,
+      if (classSym.isPublic)                                     ACC_PUBLIC    else 0,
+      if (classSym.isFinal)                                      ACC_FINAL     else 0,
       // see the link above. javac does the same: ACC_SUPER for all classes, but not interfaces.
-      if (classSym.isInterface)                              ACC_INTERFACE else ACC_SUPER,
+      if (classSym.isInterface)                                  ACC_INTERFACE else ACC_SUPER,
       // for Java enums, we cannot trust `hasAbstractFlag` (see comment in enumFlags)
-      if (!classSym.hasEnumFlag && classSym.hasAbstractFlag) ACC_ABSTRACT  else 0,
-      if (classSym.isArtifact)                               ACC_SYNTHETIC else 0,
-      if (classSym.hasEnumFlag)                              enumFlags     else 0
+      if (!classSym.hasJavaEnumFlag && classSym.hasAbstractFlag) ACC_ABSTRACT  else 0,
+      if (classSym.isArtifact)                                   ACC_SYNTHETIC else 0,
+      if (classSym.hasJavaEnumFlag)                              enumFlags     else 0
     )
   }
 
@@ -289,7 +292,7 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
   lazy val AnnotationRetentionPolicyRuntimeValue = AnnotationRetentionPolicyModule.tpe.member(TermName("RUNTIME"))
 
   /** Whether an annotation should be emitted as a Java annotation
-    * .initialize: if 'annot' is read from pickle, atp might be un-initialized
+    * .initialize: if 'annot' is read from pickle, atp might be uninitialized
     */
   def shouldEmitAnnotation(annot: AnnotationInfo) = {
     annot.symbol.initialize.isJavaDefined &&
@@ -310,10 +313,10 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
   }
 
   private def retentionPolicyOf(annot: AnnotationInfo): Symbol =
-    annot.atp.typeSymbol.getAnnotation(AnnotationRetentionAttr).map(_.assocs).map(assoc =>
+    annot.atp.typeSymbol.getAnnotation(AnnotationRetentionAttr).map(_.assocs).flatMap(assoc =>
       assoc.collectFirst {
         case (`nme`.value, LiteralAnnotArg(Constant(value: Symbol))) => value
-      }).flatten.getOrElse(AnnotationRetentionPolicyClassValue)
+      }).getOrElse(AnnotationRetentionPolicyClassValue)
 
   def implementedInterfaces(classSym: Symbol): List[Symbol] = {
     // Additional interface parents based on annotations and other cues
@@ -322,9 +325,18 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
       case _          => None
     }
 
-    def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait
+    // SI-9393: java annotations are interfaces, but the classfile / java source parsers make them look like classes.
+    def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait || sym.hasJavaAnnotationFlag
 
-    val allParents = classSym.info.parents ++ classSym.annotations.flatMap(newParentForAnnotation)
+    val classParents = {
+      val parents = classSym.info.parents
+      // SI-9393: the classfile / java source parsers add Annotation and ClassfileAnnotation to the
+      // parents of a java annotations. undo this for the backend (where we need classfile-level information).
+      if (classSym.hasJavaAnnotationFlag) parents.filterNot(c => c.typeSymbol == ClassfileAnnotationClass || c.typeSymbol == AnnotationClass)
+      else parents
+    }
+
+    val allParents = classParents ++ classSym.annotations.flatMap(newParentForAnnotation)
 
     // We keep the superClass when computing minimizeParents to eliminate more interfaces.
     // Example: T can be eliminated from D

@@ -1,0 +1,4 @@
+t8989.scala:11: error: The result type of an unapply method must contain a member `get` to be used as an extractor pattern, no such member exists in A
+  val f = p match {case d(1) => true; case _ => false}
+                        ^
+one error found

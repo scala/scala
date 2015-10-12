@@ -280,7 +280,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
 
       {
         if (Set("epfl", "EPFL").contains(tpl.universe.settings.docfooter.value))
-          <div id="footer">Scala programming documentation. Copyright (c) 2003-2013 <a href="http://www.epfl.ch" target="_top">EPFL</a>, with contributions from <a href="http://typesafe.com" target="_top">Typesafe</a>.</div>
+          <div id="footer">Scala programming documentation. Copyright (c) 2003-2015 <a href="http://www.epfl.ch" target="_top">EPFL</a>, with contributions from <a href="http://typesafe.com" target="_top">Typesafe</a>.</div>
         else
           <div id="footer"> { tpl.universe.settings.docfooter.value } </div>
       }
@@ -676,7 +676,6 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
             if (diagramSvg != NodeSeq.Empty) {
               <div class="toggleContainer block diagram-container" id={ id + "-container"}>
                 <span class="toggle diagram-link">{ description }</span>
-                <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#diagrams" target="_blank" class="diagram-help">Learn more about scaladoc diagrams</a>
                 <div class="diagram" id={ id }>{
                   diagramSvg
                 }</div>
@@ -782,7 +781,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
           if (isReduced) NodeSeq.Empty else {
             def paramsToHtml(vlsss: List[List[ValueParam]]): NodeSeq = {
               def param0(vl: ValueParam): NodeSeq =
-                // notice the }{ in the next lines, they are necessary to avoid an undesired withspace in output
+                // notice the }{ in the next lines, they are necessary to avoid an undesired whitespace in output
                 <span name={ vl.name }>{
                   Text(vl.name)
                 }{ Text(": ") ++ typeToHtml(vl.resultType, hasLinks) }{

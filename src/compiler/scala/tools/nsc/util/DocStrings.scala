@@ -37,7 +37,7 @@ object DocStrings {
   /** Returns index of string `str` after `start` skipping longest
    *  sequence of space and tab characters, possibly also containing
    *  a single `*` character or the `/``**` sequence.
-   *  @pre  start == str.length || str(start) == `\n'
+   *  @pre  start == str.length || str(start) == `\n`
    */
   def skipLineLead(str: String, start: Int): Int =
     if (start == str.length) start
@@ -49,7 +49,7 @@ object DocStrings {
       else idx
     }
 
-  /** Skips to next occurrence of `\n' or to the position after the `/``**` sequence following index `start`.
+  /** Skips to next occurrence of `\n` or to the position after the `/``**` sequence following index `start`.
    */
   def skipToEol(str: String, start: Int): Int =
     if (start + 2 < str.length && (str charAt start) == '/' && (str charAt (start + 1)) == '*' && (str charAt (start + 2)) == '*') start + 3
