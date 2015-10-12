@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="partest-extras"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/asm"/>
+	<classpathentry kind="var" path="M2_REPO/org/scala-lang/modules/scala-asm/5.0.4-scala-3/scala-asm-5.0.4-scala-3.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/repl"/>
 	<classpathentry kind="var" path="M2_REPO/com/googlecode/java-diff-utils/diffutils/1.3.0/diffutils-1.3.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/scala-sbt/test-interface/1.0/test-interface-1.0.jar"/>
