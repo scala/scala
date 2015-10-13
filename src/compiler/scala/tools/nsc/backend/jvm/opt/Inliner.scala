@@ -154,10 +154,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
           if (selfParamType.info.get.inlineInfo.sam.isEmpty) samParamTypes - 0
           else samParamTypes.updated(0, selfParamType)
         }
-        val staticCallsite = Callsite(
+        val staticCallsite = callsite.copy(
           callsiteInstruction = newCallsiteInstruction,
-          callsiteMethod      = callsite.callsiteMethod,
-          callsiteClass       = callsite.callsiteClass,
           callee              = Right(Callee(
             callee                 = implClassMethod,
             calleeDeclarationClass = implClassBType,
@@ -166,11 +164,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
             annotatedInline        = annotatedInline,
             annotatedNoInline      = annotatedNoInline,
             samParamTypes          = staticCallSamParamTypes,
-            calleeInfoWarning      = infoWarning)),
-          argInfos            = callsite.argInfos,
-          callsiteStackHeight = callsite.callsiteStackHeight,
-          receiverKnownNotNull = callsite.receiverKnownNotNull,
-          callsitePosition = callsite.callsitePosition
+            calleeInfoWarning      = infoWarning))
         )
         callGraph.addCallsite(staticCallsite)
       }
@@ -501,15 +495,12 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     callGraph.callsites(callee).valuesIterator foreach { originalCallsite =>
       val newCallsiteIns = instructionMap(originalCallsite.callsiteInstruction).asInstanceOf[MethodInsnNode]
       val argInfos = originalCallsite.argInfos flatMap mapArgInfo
-      val newCallsite = Callsite(
+      val newCallsite = originalCallsite.copy(
         callsiteInstruction = newCallsiteIns,
         callsiteMethod = callsiteMethod,
         callsiteClass = callsiteClass,
-        callee = originalCallsite.callee,
         argInfos = argInfos,
-        callsiteStackHeight = callsiteStackHeight + originalCallsite.callsiteStackHeight,
-        receiverKnownNotNull = originalCallsite.receiverKnownNotNull,
-        callsitePosition = originalCallsite.callsitePosition
+        callsiteStackHeight = callsiteStackHeight + originalCallsite.callsiteStackHeight
       )
       originalCallsite.inlinedClones += ClonedCallsite(newCallsite, callsite)
       callGraph.addCallsite(newCallsite)

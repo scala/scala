@@ -52,4 +52,8 @@ trait StdAttachments {
 
   /** Untyped list of subpatterns attached to selector dummy. */
   case class SubpatternsAttachment(patterns: List[Tree])
+
+  abstract class InlineAnnotatedAttachment
+  case object NoInlineCallsiteAttachment extends InlineAnnotatedAttachment
+  case object InlineCallsiteAttachment extends InlineAnnotatedAttachment
 }

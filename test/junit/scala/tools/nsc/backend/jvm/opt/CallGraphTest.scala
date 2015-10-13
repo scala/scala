@@ -165,12 +165,6 @@ class CallGraphTest extends ClearAfterClass {
     checkCallsite(fn, m, forNameMeth, classTp, safeToInline = false, atInline = false, atNoInline = false)
   }
 
-  /**
-   * NOTE: if this test fails for you when running within the IDE, it's probably because you're
-   * using 2.12.0-M2 for compilining within the IDE, which doesn't add SAM information to the
-   * InlineInfo attribute. So the InlineInfo in the classfile for Function1 doesn't say that
-   * it's a SAM type. The test passes when running with ant (which does a full bootstrap).
-   */
   @Test
   def checkArgInfos(): Unit = {
     val code =

@@ -82,6 +82,14 @@ abstract class BTypes {
   val callsitePositions: concurrent.Map[MethodInsnNode, Position] = recordPerRunCache(TrieMap.empty)
 
   /**
+   * Stores callsite instructions of invocatinos annotated `f(): @inline/noinline`.
+   * Instructions are added during code generation (BCodeBodyBuilder). The maps are then queried
+   * when building the CallGraph, every Callsite object has an annotated(No)Inline field.
+   */
+  val inlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
+  val noInlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
+
+  /**
    * Contains the internal names of all classes that are defined in Java source files of the current
    * compilation run (mixed compilation). Used for more detailed error reporting.
    */

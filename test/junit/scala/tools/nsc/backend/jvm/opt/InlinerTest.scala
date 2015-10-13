@@ -1056,12 +1056,75 @@ class InlinerTest extends ClearAfterClass {
     assertNoInvoke(convertMethod(d))
   }
 
-  /**
-   * NOTE: if this test fails for you when running within the IDE, it's probably because you're
-   * using 2.12.0-M2 for compilining within the IDE, which doesn't add SAM information to the
-   * InlineInfo attribute. So the InlineInfo in the classfile for Function1 doesn't say that
-   * it's a SAM type. The test passes when running with ant (which does a full bootstrap).
-   */
+  @Test
+  def inlineAnnotatedCallsite(): Unit = {
+    val code =
+      """class C {
+        |  final def a(x: Int, f: Int => Int): Int = f(x)
+        |  final def b(x: Int) = x
+        |  final def c = 1
+        |  final def d[T] = 2
+        |  final def e[T](x: T) = c
+        |  final def f[T](x: T) = println(x)
+        |  final def g(x: Int)(y: Int) = x
+        |
+        |  def t1 = a(10, _ + 1)
+        |  def t2 = a(10, _ + 1): @noinline
+        |  def t3 = b(3)
+        |  def t4 = b(3): @inline
+        |  def t5 = c: @inline
+        |  def t6 = d[Int]: @inline
+        |  def t7 = e[Int](2): @inline
+        |  def t8 = f[Int](2): @inline
+        |  def t9 = g(1)(2): @inline
+        |}
+      """.stripMargin
+
+    val List(c) = compile(code)
+    assertInvoke(getSingleMethod(c, "t1"), "C", "C$$$anonfun$1")
+    assertInvoke(getSingleMethod(c, "t2"), "C", "a")
+    assertInvoke(getSingleMethod(c, "t3"), "C", "b")
+    assertNoInvoke(getSingleMethod(c, "t4"))
+    assertNoInvoke(getSingleMethod(c, "t5"))
+    assertNoInvoke(getSingleMethod(c, "t6"))
+    assertInvoke(getSingleMethod(c, "t7"), "C", "c")
+    assertInvoke(getSingleMethod(c, "t8"), "scala/Predef$", "println")
+    assertNoInvoke(getSingleMethod(c, "t9"))
+  }
+
+  @Test
+  def inlineNoInlineOverride(): Unit = {
+    val code =
+      """class C {
+        |  @inline   final def f1(x: Int) = x
+        |  @noinline final def f2(x: Int) = x
+        |            final def f3(x: Int) = x
+        |
+        |  def t1 = f1(1)             // inlined
+        |  def t2 = f2(1)             // not inlined
+        |  def t3 = f1(1): @noinline  // not inlined
+        |  def t4 = f2(1): @inline    // not inlined (cannot override the def-site @noinline)
+        |  def t5 = f3(1): @inline    // inlined
+        |  def t6 = f3(1): @noinline  // not inlined
+        |
+        |  def t7 = f1(1) + (f3(1): @inline)   // without parenthesis, the ascription encloses the entire expression..
+        |  def t8 = f1(1) + (f1(1): @noinline)
+        |  def t9 = f1(1) + f1(1) : @noinline  // the ascription goes on the entire expression, so on the + invocation.. both f1 are inlined
+        |}
+      """.stripMargin
+
+    val List(c) = compile(code)
+    assertNoInvoke(getSingleMethod(c, "t1"))
+    assertInvoke(getSingleMethod(c, "t2"), "C", "f2")
+    assertInvoke(getSingleMethod(c, "t3"), "C", "f1")
+    assertInvoke(getSingleMethod(c, "t4"), "C", "f2")
+    assertNoInvoke(getSingleMethod(c, "t5"))
+    assertInvoke(getSingleMethod(c, "t6"), "C", "f3")
+    assertNoInvoke(getSingleMethod(c, "t7"))
+    assertInvoke(getSingleMethod(c, "t8"), "C", "f1")
+    assertNoInvoke(getSingleMethod(c, "t9"))
+  }
+
   @Test
   def inlineHigherOrder(): Unit = {
     val code =

@@ -161,7 +161,9 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
             argInfos = argInfos,
             callsiteStackHeight = a.frameAt(call).getStackSize,
             receiverKnownNotNull = receiverNotNull,
-            callsitePosition = callsitePositions.getOrElse(call, NoPosition)
+            callsitePosition = callsitePositions.getOrElse(call, NoPosition),
+            annotatedInline = inlineAnnotatedCallsites(call),
+            annotatedNoInline = noInlineAnnotatedCallsites(call)
           )
 
         case LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType) if a.frameAt(indy) != null =>
@@ -348,7 +350,8 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    */
   final case class Callsite(callsiteInstruction: MethodInsnNode, callsiteMethod: MethodNode, callsiteClass: ClassBType,
                             callee: Either[OptimizerWarning, Callee], argInfos: IntMap[ArgInfo],
-                            callsiteStackHeight: Int, receiverKnownNotNull: Boolean, callsitePosition: Position) {
+                            callsiteStackHeight: Int, receiverKnownNotNull: Boolean, callsitePosition: Position,
+                            annotatedInline: Boolean, annotatedNoInline: Boolean) {
     /**
      * Contains callsites that were created during inlining by cloning this callsite. Used to find
      * corresponding callsites when inlining post-inline requests.
