@@ -409,11 +409,11 @@ object RedBlackTree {
 
     def cons[B](x: B, xs: NList[B]): NList[B] = new NList(x, xs)
 
-    def foldLeft[A, B](xs: NList[A], z: B)(f: (B, A) => B): B = {
+    def foldLeft[A, B](xs: NList[A], z: B)(op: (B, A) => B): B = {
       var acc = z
       var these = xs
       while (these ne null) {
-        acc = f(acc, these.head)
+        acc = op(acc, these.head)
         these = these.tail
       }
       acc
