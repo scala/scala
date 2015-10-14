@@ -64,6 +64,8 @@ class ReplProps {
     if (p.isSet) p.get else shellWelcomeString
   }
 
+  val pasteDelimiter = Prop[String]("scala.repl.here")
+
   /** CSV of paged,across to enable pagination or `-x` style
    *  columns, "across" instead of down the column.  Since
    *  pagination turns off columnar output, these flags are
