@@ -520,22 +520,22 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *
    *  $abortsignalling
    *
-   *  @param pred    a predicate used to test elements
+   *  @param p       a predicate used to test elements
    *  @return        true if `p` holds for all elements, false otherwise
    */
-  def forall(pred: T => Boolean): Boolean = {
-    tasksupport.executeAndWaitResult(new Forall(pred, splitter assign new DefaultSignalling with VolatileAbort))
+  def forall(@deprecatedName('pred) p: T => Boolean): Boolean = {
+    tasksupport.executeAndWaitResult(new Forall(p, splitter assign new DefaultSignalling with VolatileAbort))
   }
 
   /** Tests whether a predicate holds for some element of this $coll.
    *
    *  $abortsignalling
    *
-   *  @param pred    a predicate used to test elements
+   *  @param p       a predicate used to test elements
    *  @return        true if `p` holds for some element, false otherwise
    */
-  def exists(pred: T => Boolean): Boolean = {
-    tasksupport.executeAndWaitResult(new Exists(pred, splitter assign new DefaultSignalling with VolatileAbort))
+  def exists(@deprecatedName('pred) p: T => Boolean): Boolean = {
+    tasksupport.executeAndWaitResult(new Exists(p, splitter assign new DefaultSignalling with VolatileAbort))
   }
 
   /** Finds some element in the collection for which the predicate holds, if such
@@ -546,11 +546,11 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *
    *  $abortsignalling
    *
-   *  @param pred     predicate used to test the elements
+   *  @param p        predicate used to test the elements
    *  @return         an option value with the element if such an element exists, or `None` otherwise
    */
-  def find(pred: T => Boolean): Option[T] = {
-    tasksupport.executeAndWaitResult(new Find(pred, splitter assign new DefaultSignalling with VolatileAbort))
+  def find(@deprecatedName('pred) p: T => Boolean): Option[T] = {
+    tasksupport.executeAndWaitResult(new Find(p, splitter assign new DefaultSignalling with VolatileAbort))
   }
 
   /** Creates a combiner factory. Each combiner factory instance is used

@@ -90,13 +90,13 @@ final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](val colls: (Travers
     result
   }
 
-  def exists(f: (El1, El2, El3) => Boolean): Boolean = {
+  def exists(@deprecatedName('f) p: (El1, El2, El3) => Boolean): Boolean = {
     val elems2 = colls._2.iterator
     val elems3 = colls._3.iterator
 
     for (el1 <- colls._1) {
       if (elems2.hasNext && elems3.hasNext) {
-        if (f(el1, elems2.next(), elems3.next()))
+        if (p(el1, elems2.next(), elems3.next()))
           return true
       }
       else return false
@@ -104,8 +104,8 @@ final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](val colls: (Travers
     false
   }
 
-  def forall(f: (El1, El2, El3) => Boolean): Boolean =
-    !exists((x, y, z) => !f(x, y, z))
+  def forall(@deprecatedName('f) p: (El1, El2, El3) => Boolean): Boolean =
+    !exists((x, y, z) => !p(x, y, z))
 
   def foreach[U](f: (El1, El2, El3) => U): Unit = {
     val elems2 = colls._2.iterator

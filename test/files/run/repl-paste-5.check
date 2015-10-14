@@ -1,0 +1,28 @@
+
+scala> :paste < EOF
+// Entering paste mode (EOF to finish)
+
+class C { def c = 42 }
+EOF
+
+// Exiting paste mode, now interpreting.
+
+defined class C
+
+scala> new C().c
+res0: Int = 42
+
+scala> :paste <| EOF
+// Entering paste mode (EOF to finish)
+
+  |class D { def d = 42 }
+EOF
+
+// Exiting paste mode, now interpreting.
+
+defined class D
+
+scala> new D().d
+res1: Int = 42
+
+scala> :quit
