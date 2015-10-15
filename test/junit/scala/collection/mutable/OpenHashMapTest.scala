@@ -11,13 +11,13 @@ class OpenHashMapTest {
   /** Test that an [[OpenHashMap]] correctly maintains its internal `deleted` count. */
   @Test
   def maintainsDeletedCount {
-    import scala.reflect.runtime.{universe => ru}
-
     val m = OpenHashMap.empty[Int, Int]
 
     // Reflect to get the private `deleted` field's value, which should be zero.
 
     /* TODO Doesn't work, due to SI-9306.
+    import scala.reflect.runtime.{universe => ru}
+
     val mirror = ru.runtimeMirror(m.getClass.getClassLoader)
     val mapType = ru.typeOf[OpenHashMap[Int, Int]]
     val termSym = mapType.decls
