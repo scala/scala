@@ -20,7 +20,7 @@ import scala.collection.convert.decorateAsScala._
 object BytecodeUtils {
 
   // http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.9.1
-  final val maxJVMMethodSize         = 65535
+  final val maxJVMMethodSize = 65535
 
   // 5% margin, more than enough for the instructions added by the inliner (store / load args, null check for instance methods)
   final val maxMethodSizeAfterInline = maxJVMMethodSize - (maxJVMMethodSize / 20)

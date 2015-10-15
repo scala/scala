@@ -256,13 +256,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     /* The InnerClass table of a class C must contain all nested classes of C, even if they are only
      * declared but not otherwise referenced in C (from the bytecode or a method / field signature).
      * We collect them here.
-     *
-     * Nested classes that are also referenced in C will be added to the innerClassBufferASM during
-     * code generation, but those duplicates will be eliminated when emitting the InnerClass
-     * attribute.
-     *
-     * Why do we need to collect classes into innerClassBufferASM at all? To collect references to
-     * nested classes, but NOT nested in C, that are used within C.
      */
     val nestedClassSymbols = {
       val linkedClass = exitingPickler(classSym.linkedClassOfClass) // linkedCoC does not work properly in late phases
@@ -455,7 +448,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   }
 
   /**
-   * For top-level objects without a companion class, the compilere generates a mirror class with
+   * For top-level objects without a companion class, the compiler generates a mirror class with
    * static forwarders (Java compat). There's no symbol for the mirror class, but we still need a
    * ClassBType (its info.nestedClasses will hold the InnerClass entries, see comment in BTypes).
    */
@@ -473,6 +466,21 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
         nestedClasses = nested,
         nestedInfo = None,
         inlineInfo = EmptyInlineInfo.copy(isEffectivelyFinal = true))) // no method inline infos needed, scala never invokes methods on the mirror class
+      c
+    })
+  }
+
+  def beanInfoClassClassBType(mainClass: Symbol): ClassBType = {
+    val internalName = mainClass.javaBinaryName.toString + "BeanInfo"
+    classBTypeFromInternalName.getOrElse(internalName, {
+      val c = ClassBType(internalName)
+      c.info = Right(ClassInfo(
+        superClass = Some(ScalaBeanInfoReference),
+        interfaces = Nil,
+        flags = javaFlags(mainClass),
+        nestedClasses = Nil,
+        nestedInfo = None,
+        inlineInfo = EmptyInlineInfo))
       c
     })
   }

@@ -157,7 +157,7 @@ abstract class BTypes {
       val res = ClassBType(internalName)
       byteCodeRepository.classNode(internalName) match {
         case Left(msg) => res.info = Left(NoClassBTypeInfoMissingBytecode(msg)); res
-        case Right(c)  => setClassInfoFromParsedClassfile(c, res)
+        case Right(c)  => setClassInfoFromClassNode(c, res)
       }
     })
   }
@@ -167,11 +167,11 @@ abstract class BTypes {
    */
   def classBTypeFromClassNode(classNode: ClassNode): ClassBType = {
     classBTypeFromInternalName.getOrElse(classNode.name, {
-      setClassInfoFromParsedClassfile(classNode, ClassBType(classNode.name))
+      setClassInfoFromClassNode(classNode, ClassBType(classNode.name))
     })
   }
 
-  private def setClassInfoFromParsedClassfile(classNode: ClassNode, classBType: ClassBType): ClassBType = {
+  private def setClassInfoFromClassNode(classNode: ClassNode, classBType: ClassBType): ClassBType = {
     val superClass = classNode.superName match {
       case null =>
         assert(classNode.name == ObjectReference.internalName, s"class with missing super type: ${classNode.name}")

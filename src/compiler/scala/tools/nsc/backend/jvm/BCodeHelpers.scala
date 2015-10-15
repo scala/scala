@@ -192,20 +192,18 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
   }
 
   /*
-   * Populates the InnerClasses JVM attribute with `refedInnerClasses`.
-   * In addition to inner classes mentioned somewhere in `jclass` (where `jclass` is a class file being emitted)
-   * `refedInnerClasses` should contain those inner classes defined as direct member classes of `jclass`
-   * but otherwise not mentioned in `jclass`.
+   * Populates the InnerClasses JVM attribute with `refedInnerClasses`. See also the doc on inner
+   * classes in BTypes.scala.
    *
-   * `refedInnerClasses` may contain duplicates,
-   * need not contain the enclosing inner classes of each inner class it lists (those are looked up for consistency).
+   * `refedInnerClasses` may contain duplicates, need not contain the enclosing inner classes of
+   * each inner class it lists (those are looked up and included).
    *
-   * This method serializes in the InnerClasses JVM attribute in an appropriate order,
-   * not necessarily that given by `refedInnerClasses`.
+   * This method serializes in the InnerClasses JVM attribute in an appropriate order, not
+   * necessarily that given by `refedInnerClasses`.
    *
    * can-multi-thread
    */
-  final def addInnerClassesASM(jclass: asm.ClassVisitor, refedInnerClasses: List[ClassBType]) {
+  final def addInnerClasses(jclass: asm.ClassVisitor, refedInnerClasses: List[ClassBType]) {
     val allNestedClasses = refedInnerClasses.flatMap(_.enclosingNestedClassesChain.get).distinct
 
     // sorting ensures nested classes are listed after their enclosing class thus satisfying the Eclipse Java compiler
@@ -311,78 +309,28 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     final val emitLines  = debugLevel >= 2
     final val emitVars   = debugLevel >= 3
 
-    /*
-     *  Contains class-symbols that:
-     *    (a) are known to denote inner classes
-     *    (b) are mentioned somewhere in the class being generated.
-     *
-     *  In other words, the lifetime of `innerClassBufferASM` is associated to "the class being generated".
-     */
-    final val innerClassBufferASM = mutable.Set.empty[ClassBType]
-
     /**
-     * The class internal name for a given class symbol. If the symbol describes a nested class, the
-     * ClassBType is added to the innerClassBufferASM.
+     * The class internal name for a given class symbol.
      */
     final def internalName(sym: Symbol): String = {
       // For each java class, the scala compiler creates a class and a module (thus a module class).
-      // If the `sym` is a java module class, we use the java class instead. This ensures that we
-      // register the class (instead of the module class) in innerClassBufferASM.
+      // If the `sym` is a java module class, we use the java class instead. This ensures that the
+      // ClassBType is created from the main class (instead of the module class).
       // The two symbols have the same name, so the resulting internalName is the same.
       // Phase travel (exitingPickler) required for SI-6613 - linkedCoC is only reliable in early phases (nesting)
       val classSym = if (sym.isJavaDefined && sym.isModuleClass) exitingPickler(sym.linkedClassOfClass) else sym
-      getClassBTypeAndRegisterInnerClass(classSym).internalName
+      classBTypeFromSymbol(classSym).internalName
     }
 
     /**
-     * The ClassBType for a class symbol. If the class is nested, the ClassBType is added to the
-     * innerClassBufferASM.
-     *
-     * TODO: clean up the way we track referenced inner classes.
-     * doing it during code generation is not correct when the optimizer changes the code.
+     * The jvm descriptor of a type.
      */
-    final def getClassBTypeAndRegisterInnerClass(sym: Symbol): ClassBType = {
-      val r = classBTypeFromSymbol(sym)
-      if (r.isNestedClass.get) innerClassBufferASM += r
-      r
-    }
+    final def descriptor(t: Type): String = typeToBType(t).descriptor
 
     /**
-     * The BType for a type reference. If the result is a ClassBType for a nested class, it is added
-     * to the innerClassBufferASM.
-     * TODO: clean up the way we track referenced inner classes.
+     * The jvm descriptor for a symbol.
      */
-    final def toTypeKind(t: Type): BType = typeToBType(t) match {
-      case c: ClassBType if c.isNestedClass.get =>
-        innerClassBufferASM += c
-        c
-      case r => r
-    }
-
-    /**
-     * Class components that are nested classes are added to the innerClassBufferASM.
-     * TODO: clean up the way we track referenced inner classes.
-     */
-    final def asmMethodType(msym: Symbol): MethodBType = {
-      val r = methodBTypeFromSymbol(msym)
-      (r.returnType :: r.argumentTypes) foreach {
-        case c: ClassBType if c.isNestedClass.get => innerClassBufferASM += c
-        case _ =>
-      }
-      r
-    }
-
-    /**
-     * The jvm descriptor of a type. If `t` references a nested class, its ClassBType is added to
-     * the innerClassBufferASM.
-     */
-    final def descriptor(t: Type):   String = { toTypeKind(t).descriptor   }
-
-    /**
-     * The jvm descriptor for a symbol. If `sym` represents a nested class, its ClassBType is added
-     * to the innerClassBufferASM.
-     */
-    final def descriptor(sym: Symbol): String = { getClassBTypeAndRegisterInnerClass(sym).descriptor }
+    final def descriptor(sym: Symbol): String = classBTypeFromSymbol(sym).descriptor
 
   } // end of trait BCInnerClassGen
 
@@ -421,7 +369,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
               case StringTag  =>
                 assert(const.value != null, const) // TODO this invariant isn't documented in `case class Constant`
                 av.visit(name, const.stringValue)  // `stringValue` special-cases null, but that execution path isn't exercised for a const with StringTag
-              case ClazzTag   => av.visit(name, toTypeKind(const.typeValue).toASMType)
+              case ClazzTag   => av.visit(name, typeToBType(const.typeValue).toASMType)
               case EnumTag =>
                 val edesc  = descriptor(const.tpe) // the class descriptor of the enumeration class.
                 val evalue = const.symbolValue.name.toString // value the actual enumeration value.
@@ -561,7 +509,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     private def addForwarder(isRemoteClass: Boolean, jclass: asm.ClassVisitor, module: Symbol, m: Symbol) {
       val moduleName     = internalName(module)
       val methodInfo     = module.thisType.memberInfo(m)
-      val paramJavaTypes: List[BType] = methodInfo.paramTypes map toTypeKind
+      val paramJavaTypes: List[BType] = methodInfo.paramTypes map typeToBType
       // val paramNames     = 0 until paramJavaTypes.length map ("x_" + _)
 
       /* Forwarders must not be marked final,
@@ -580,7 +528,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       val (throws, others) = m.annotations partition (_.symbol == definitions.ThrowsClass)
       val thrownExceptions: List[String] = getExceptions(throws)
 
-      val jReturnType = toTypeKind(methodInfo.resultType)
+      val jReturnType = typeToBType(methodInfo.resultType)
       val mdesc = MethodBType(paramJavaTypes, jReturnType).descriptor
       val mirrorMethodName = m.javaSimpleName.toString
       val mirrorMethod: asm.MethodVisitor = jclass.visitMethod(
@@ -605,7 +553,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         index += jparamType.size
       }
 
-      mirrorMethod.visitMethodInsn(asm.Opcodes.INVOKEVIRTUAL, moduleName, mirrorMethodName, asmMethodType(m).descriptor, false)
+      mirrorMethod.visitMethodInsn(asm.Opcodes.INVOKEVIRTUAL, moduleName, mirrorMethodName, methodBTypeFromSymbol(m).descriptor, false)
       mirrorMethod.visitInsn(jReturnType.typedOpcode(asm.Opcodes.IRETURN))
 
       mirrorMethod.visitMaxs(0, 0) // just to follow protocol, dummy arguments
@@ -709,7 +657,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     def genMirrorClass(moduleClass: Symbol, cunit: CompilationUnit): asm.tree.ClassNode = {
       assert(moduleClass.isModuleClass)
       assert(moduleClass.companionClass == NoSymbol, moduleClass)
-      innerClassBufferASM.clear()
       this.cunit = cunit
 
       val bType = mirrorClassClassBType(moduleClass)
@@ -731,9 +678,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       emitAnnotations(mirrorClass, moduleClass.annotations ++ ssa)
 
       addForwarders(isRemote(moduleClass), mirrorClass, bType.internalName, moduleClass)
-
-      innerClassBufferASM ++= bType.info.get.nestedClasses
-      addInnerClassesASM(mirrorClass, innerClassBufferASM.toList)
 
       mirrorClass.visitEnd()
 
@@ -758,18 +702,15 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
 
       def javaSimpleName(s: Symbol): String = { s.javaSimpleName.toString }
 
-      innerClassBufferASM.clear()
+      val beanInfoType = beanInfoClassClassBType(cls)
 
-      val flags = javaFlags(cls)
-
-      val beanInfoName  = (internalName(cls) + "BeanInfo")
       val beanInfoClass = new asm.tree.ClassNode
       beanInfoClass.visit(
         classfileVersion,
-        flags,
-        beanInfoName,
+        beanInfoType.info.get.flags,
+        beanInfoType.internalName,
         null, // no java-generic-signature
-        "scala/beans/ScalaBeanInfo",
+        ScalaBeanInfoReference.internalName,
         EMPTY_STRING_ARRAY
       )
 
@@ -848,9 +789,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       constructor.visitMaxs(0, 0) // just to follow protocol, dummy arguments
       constructor.visitEnd()
 
-      innerClassBufferASM ++= classBTypeFromSymbol(cls).info.get.nestedClasses
-      addInnerClassesASM(beanInfoClass, innerClassBufferASM.toList)
-
       beanInfoClass.visitEnd()
 
       beanInfoClass
@@ -879,8 +817,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
      * must-single-thread
      */
     def legacyAddCreatorCode(clinit: asm.MethodVisitor, cnode: asm.tree.ClassNode, thisName: String) {
-      // this tracks the inner class in innerClassBufferASM, if needed.
-      val androidCreatorType = getClassBTypeAndRegisterInnerClass(AndroidCreatorClass)
+      val androidCreatorType = classBTypeFromSymbol(AndroidCreatorClass)
       val tdesc_creator = androidCreatorType.descriptor
 
       cnode.visitField(

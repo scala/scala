@@ -464,7 +464,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
         case ClazzTag   =>
           val toPush: BType = {
-            toTypeKind(const.typeValue) match {
+            typeToBType(const.typeValue) match {
               case kind: PrimitiveBType => boxedClassOfPrimitive(kind)
               case kind => kind
             }
@@ -475,7 +475,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           val sym       = const.symbolValue
           val ownerName = internalName(sym.owner)
           val fieldName = sym.javaSimpleName.toString
-          val fieldDesc = toTypeKind(sym.tpe.underlying).descriptor
+          val fieldDesc = typeToBType(sym.tpe.underlying).descriptor
           mnode.visitFieldInsn(
             asm.Opcodes.GETSTATIC,
             ownerName,
@@ -588,7 +588,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
           genLoadArguments(args, paramTKs(app))
           genCallMethod(fun.symbol, invokeStyle, app.pos)
-          generatedType = asmMethodType(fun.symbol).returnType
+          generatedType = methodBTypeFromSymbol(fun.symbol).returnType
 
         // 'new' constructor call: Note: since constructors are
         // thought to return an instance of what they construct,
@@ -638,18 +638,18 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           val attachment = app.attachments.get[delambdafy.LambdaMetaFactoryCapable].get
           genLoadArguments(args, paramTKs(app))
           genInvokeDynamicLambda(attachment.target, attachment.arity, attachment.functionalInterface)
-          generatedType = asmMethodType(fun.symbol).returnType
+          generatedType = methodBTypeFromSymbol(fun.symbol).returnType
 
         case Apply(fun @ _, List(expr)) if currentRun.runDefinitions.isBox(fun.symbol) =>
           val nativeKind = tpeTK(expr)
           genLoad(expr, nativeKind)
           val MethodNameAndType(mname, methodType) = asmBoxTo(nativeKind)
           bc.invokestatic(BoxesRunTime.internalName, mname, methodType.descriptor, app.pos)
-          generatedType = boxResultType(fun.symbol) // was toTypeKind(fun.symbol.tpe.resultType)
+          generatedType = boxResultType(fun.symbol) // was typeToBType(fun.symbol.tpe.resultType)
 
         case Apply(fun @ _, List(expr)) if currentRun.runDefinitions.isUnbox(fun.symbol) =>
           genLoad(expr)
-          val boxType = unboxResultType(fun.symbol) // was toTypeKind(fun.symbol.owner.linkedClassOfClass.tpe)
+          val boxType = unboxResultType(fun.symbol) // was typeToBType(fun.symbol.owner.linkedClassOfClass.tpe)
           generatedType = boxType
           val MethodNameAndType(mname, methodType) = asmUnboxTo(boxType)
           bc.invokestatic(BoxesRunTime.internalName, mname, methodType.descriptor, app.pos)
@@ -728,7 +728,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
             genNormalMethodCall()
 
-            generatedType = asmMethodType(sym).returnType
+            generatedType = methodBTypeFromSymbol(sym).returnType
           }
 
       }
@@ -958,7 +958,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           asm.Opcodes.GETSTATIC,
           mbt.internalName /* + "$" */ ,
           strMODULE_INSTANCE_FIELD,
-          mbt.descriptor // for nostalgics: toTypeKind(module.tpe).descriptor
+          mbt.descriptor // for nostalgics: typeToBType(module.tpe).descriptor
         )
       }
     }
@@ -1037,7 +1037,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val receiver = if (useMethodOwner) methodOwner else hostSymbol
       val jowner   = internalName(receiver)
       val jname    = method.javaSimpleName.toString
-      val bmType   = asmMethodType(method)
+      val bmType   = methodBTypeFromSymbol(method)
       val mdescr   = bmType.descriptor
 
       def initModule() {
@@ -1309,16 +1309,16 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         new asm.Handle(if (lambdaTarget.hasFlag(Flags.STATIC)) asm.Opcodes.H_INVOKESTATIC else asm.Opcodes.H_INVOKEVIRTUAL,
           classBTypeFromSymbol(lambdaTarget.owner).internalName,
           lambdaTarget.name.toString,
-          asmMethodType(lambdaTarget).descriptor)
+          methodBTypeFromSymbol(lambdaTarget).descriptor)
       val receiver = if (isStaticMethod) Nil else lambdaTarget.owner :: Nil
       val (capturedParams, lambdaParams) = lambdaTarget.paramss.head.splitAt(lambdaTarget.paramss.head.length - arity)
       // Requires https://github.com/scala/scala-java8-compat on the runtime classpath
-      val invokedType = asm.Type.getMethodDescriptor(asmType(functionalInterface), (receiver ::: capturedParams).map(sym => toTypeKind(sym.info).toASMType): _*)
+      val invokedType = asm.Type.getMethodDescriptor(asmType(functionalInterface), (receiver ::: capturedParams).map(sym => typeToBType(sym.info).toASMType): _*)
 
-      val constrainedType = new MethodBType(lambdaParams.map(p => toTypeKind(p.tpe)), toTypeKind(lambdaTarget.tpe.resultType)).toASMType
+      val constrainedType = new MethodBType(lambdaParams.map(p => typeToBType(p.tpe)), typeToBType(lambdaTarget.tpe.resultType)).toASMType
       val sam = functionalInterface.info.decls.find(_.isDeferred).getOrElse(functionalInterface.info.member(nme.apply))
       val samName = sam.name.toString
-      val samMethodType = asmMethodType(sam).toASMType
+      val samMethodType = methodBTypeFromSymbol(sam).toASMType
 
       val flags = LambdaMetafactory.FLAG_SERIALIZABLE | LambdaMetafactory.FLAG_MARKERS
 

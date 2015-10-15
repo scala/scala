@@ -29,7 +29,7 @@ import scala.annotation.switch
 class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
   import bTypes._
   import global._
-  import rootMirror.{requiredClass, getClassIfDefined}
+  import rootMirror.{requiredClass, requiredModule, getClassIfDefined}
   import definitions._
 
   /**
@@ -116,6 +116,11 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
   lazy val classCastExceptionReference : ClassBType = classBTypeFromSymbol(ClassCastExceptionClass)   // java/lang/ClassCastException
   lazy val javaUtilMapReference        : ClassBType = classBTypeFromSymbol(JavaUtilMap)               // java/util/Map
   lazy val javaUtilHashMapReference    : ClassBType = classBTypeFromSymbol(JavaUtilHashMap)           // java/util/HashMap
+  lazy val ScalaBeanInfoReference      : ClassBType = classBTypeFromSymbol(requiredClass[scala.beans.ScalaBeanInfo])
+  lazy val jliSerializedLambda         : ClassBType = classBTypeFromSymbol(requiredClass[java.lang.invoke.SerializedLambda])
+  lazy val jliMethodHandles            : ClassBType = classBTypeFromSymbol(requiredClass[java.lang.invoke.MethodHandles])
+  lazy val jliMethodHandlesLookup      : ClassBType = classBTypeFromSymbol(exitingPickler(rootMirror.getRequiredClass("java.lang.invoke.MethodHandles.Lookup")))
+  lazy val srLambdaDeserializer        : ClassBType = classBTypeFromSymbol(requiredModule[scala.runtime.LambdaDeserializer.type].moduleClass)
 
   lazy val srBooleanRef : ClassBType = classBTypeFromSymbol(requiredClass[scala.runtime.BooleanRef])
   lazy val srByteRef    : ClassBType = classBTypeFromSymbol(requiredClass[scala.runtime.ByteRef])
@@ -214,6 +219,11 @@ trait CoreBTypesProxyGlobalIndependent[BTS <: BTypes] {
   def jioSerializableReference: ClassBType
   def javaUtilHashMapReference: ClassBType
   def javaUtilMapReference    : ClassBType
+
+  def jliSerializedLambda     : ClassBType
+  def jliMethodHandles        : ClassBType
+  def jliMethodHandlesLookup  : ClassBType
+  def srLambdaDeserializer    : ClassBType
 }
 
 /**
@@ -264,6 +274,11 @@ final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: 
   def classCastExceptionReference : ClassBType = _coreBTypes.classCastExceptionReference
   def javaUtilMapReference        : ClassBType = _coreBTypes.javaUtilMapReference
   def javaUtilHashMapReference    : ClassBType = _coreBTypes.javaUtilHashMapReference
+  def ScalaBeanInfoReference      : ClassBType = _coreBTypes.ScalaBeanInfoReference
+  def jliSerializedLambda         : ClassBType = _coreBTypes.jliSerializedLambda
+  def jliMethodHandles            : ClassBType = _coreBTypes.jliMethodHandles
+  def jliMethodHandlesLookup      : ClassBType = _coreBTypes.jliMethodHandlesLookup
+  def srLambdaDeserializer        : ClassBType = _coreBTypes.srLambdaDeserializer
 
   def srBooleanRef : ClassBType = _coreBTypes.srBooleanRef
   def srByteRef    : ClassBType = _coreBTypes.srByteRef
