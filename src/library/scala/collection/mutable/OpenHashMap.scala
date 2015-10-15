@@ -81,6 +81,9 @@ extends AbstractMap[Key, Value]
     h ^ (h >>> 7) ^ (h >>> 4)
   }
 
+  /** Increase the size of the table.
+    * Copy only the occupied slots, effectively eliminating the deleted slots.
+    */
   private[this] def growTable() = {
     val oldSize = mask + 1
     val newSize = 4 * oldSize
@@ -92,8 +95,18 @@ extends AbstractMap[Key, Value]
     deleted = 0
   }
 
+  /** Return the index of the first slot in the hash table (in probe order)
+    * that either is empty, or is or was last occupied by the given key.
+    */
   private[this] def findIndex(key: Key) : Int = findIndex(key, hashOf(key))
 
+  /** Return the index of the first slot in the hash table (in probe order)
+    * that either is empty, or is or was last occupied by the given key.
+    * 
+    * This method is an optimization for when the hash value is in hand.
+    * 
+    * @param hash hash value for `key`
+    */
   private[this] def findIndex(key: Key, hash: Int): Int = {
     var j = hash
 
@@ -136,7 +149,11 @@ extends AbstractMap[Key, Value]
       None
     } else {
       val res = entry.value
-      if (entry.value == None) { size += 1; modCount += 1 }
+      if (entry.value == None) {
+        size += 1
+        deleted -= 1
+        modCount += 1
+      }
       entry.value = Some(value)
       res
     }
