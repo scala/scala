@@ -666,7 +666,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         bType.info.get.flags,
         bType.internalName,
         null /* no java-generic-signature */,
-        ObjectReference.internalName,
+        ObjectRef.internalName,
         EMPTY_STRING_ARRAY
       )
 
@@ -710,7 +710,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         beanInfoType.info.get.flags,
         beanInfoType.internalName,
         null, // no java-generic-signature
-        ScalaBeanInfoReference.internalName,
+        sbScalaBeanInfoRef.internalName,
         EMPTY_STRING_ARRAY
       )
 
@@ -747,7 +747,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         EMPTY_STRING_ARRAY // no throwable exceptions
       )
 
-      val stringArrayJType: BType = ArrayBType(StringReference)
+      val stringArrayJType: BType = ArrayBType(StringRef)
       val conJType: BType = MethodBType(
         classBTypeFromSymbol(definitions.ClassClass) :: stringArrayJType :: stringArrayJType :: Nil,
         UNIT
@@ -760,7 +760,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
           constructor.visitLdcInsn(new java.lang.Integer(fi))
           if (f == null) { constructor.visitInsn(asm.Opcodes.ACONST_NULL) }
           else           { constructor.visitLdcInsn(f) }
-          constructor.visitInsn(StringReference.typedOpcode(asm.Opcodes.IASTORE))
+          constructor.visitInsn(StringRef.typedOpcode(asm.Opcodes.IASTORE))
           fi += 1
         }
       }
@@ -773,12 +773,12 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
 
       // push the string array of field information
       constructor.visitLdcInsn(new java.lang.Integer(fieldList.length))
-      constructor.visitTypeInsn(asm.Opcodes.ANEWARRAY, StringReference.internalName)
+      constructor.visitTypeInsn(asm.Opcodes.ANEWARRAY, StringRef.internalName)
       push(fieldList)
 
       // push the string array of method information
       constructor.visitLdcInsn(new java.lang.Integer(methodList.length))
-      constructor.visitTypeInsn(asm.Opcodes.ANEWARRAY, StringReference.internalName)
+      constructor.visitTypeInsn(asm.Opcodes.ANEWARRAY, StringRef.internalName)
       push(methodList)
 
       // invoke the superclass constructor, which will do the

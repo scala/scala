@@ -30,7 +30,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
 
     def genSynchronized(tree: Apply, expectedType: BType): BType = {
       val Apply(fun, args) = tree
-      val monitor = locals.makeLocal(ObjectReference, "monitor")
+      val monitor = locals.makeLocal(ObjectRef, "monitor")
       val monCleanup = new asm.Label
 
       // if the synchronized block returns a result, store it in a local variable.
@@ -40,7 +40,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
 
       /* ------ (1) pushing and entering the monitor, also keeping a reference to it in a local var. ------ */
       genLoadQualifier(fun)
-      bc dup ObjectReference
+      bc dup ObjectRef
       locals.store(monitor)
       emit(asm.Opcodes.MONITORENTER)
 
@@ -75,7 +75,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
        *            Protected by whatever protects the whole synchronized expression.
        * ------
        */
-      protect(startProtected, endProtected, currProgramPoint(), ThrowableReference)
+      protect(startProtected, endProtected, currProgramPoint(), jlThrowableRef)
       locals.load(monitor)
       emit(asm.Opcodes.MONITOREXIT)
       emit(asm.Opcodes.ATHROW)
@@ -184,7 +184,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
         for (CaseDef(pat, _, caseBody) <- catches) yield {
           pat match {
             case Typed(Ident(nme.WILDCARD), tpt)  => NamelessEH(tpeTK(tpt).asClassBType, caseBody)
-            case Ident(nme.WILDCARD)              => NamelessEH(ThrowableReference,  caseBody)
+            case Ident(nme.WILDCARD)              => NamelessEH(jlThrowableRef,  caseBody)
             case Bind(_, _)                       => BoundEH   (pat.symbol, caseBody)
           }
         }
@@ -290,7 +290,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
         nopIfNeeded(startTryBody)
         val finalHandler = currProgramPoint() // version of the finally-clause reached via unhandled exception.
         protect(startTryBody, finalHandler, finalHandler, null)
-        val Local(eTK, _, eIdx, _) = locals(locals.makeLocal(ThrowableReference, "exc"))
+        val Local(eTK, _, eIdx, _) = locals(locals.makeLocal(jlThrowableRef, "exc"))
         bc.store(eIdx, eTK)
         emitFinalizer(finalizer, null, isDuplicate = true)
         bc.load(eIdx, eTK)

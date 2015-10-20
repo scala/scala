@@ -140,7 +140,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     private def initJClass(jclass: asm.ClassVisitor) {
 
       val bType = classBTypeFromSymbol(claszSymbol)
-      val superClass = bType.info.get.superClass.getOrElse(ObjectReference).internalName
+      val superClass = bType.info.get.superClass.getOrElse(ObjectRef).internalName
       val interfaceNames = bType.info.get.interfaces.map(_.internalName)
 
       val flags = javaFlags(claszSymbol)

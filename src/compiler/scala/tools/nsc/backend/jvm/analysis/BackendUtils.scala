@@ -77,10 +77,10 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     // stack map frames and invokes the `getCommonSuperClass` method. This method expects all
     // ClassBTypes mentioned in the source code to exist in the map.
 
-    val mapDesc = javaUtilMapReference.descriptor
-    val nilLookupDesc = MethodBType(Nil, jliMethodHandlesLookup).descriptor
-    val serlamObjDesc = MethodBType(jliSerializedLambda :: Nil, ObjectReference).descriptor
-    val lookupMapSerlamObjDesc = MethodBType(jliMethodHandlesLookup :: javaUtilMapReference :: jliSerializedLambda :: Nil, ObjectReference).descriptor
+    val mapDesc = juMapRef.descriptor
+    val nilLookupDesc = MethodBType(Nil, jliMethodHandlesLookupRef).descriptor
+    val serlamObjDesc = MethodBType(jliSerializedLambdaRef :: Nil, ObjectRef).descriptor
+    val lookupMapSerlamObjDesc = MethodBType(jliMethodHandlesLookupRef :: juMapRef :: jliSerializedLambdaRef :: Nil, ObjectRef).descriptor
 
     {
       val fv = cw.visitField(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambdaCache$", mapDesc, null, null)
@@ -96,18 +96,18 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
       mv.visitVarInsn(ALOAD, 1)
       val l0 = new Label()
       mv.visitJumpInsn(IFNONNULL, l0)
-      mv.visitTypeInsn(NEW, javaUtilHashMapReference.internalName)
+      mv.visitTypeInsn(NEW, juHashMapRef.internalName)
       mv.visitInsn(DUP)
-      mv.visitMethodInsn(INVOKESPECIAL, javaUtilHashMapReference.internalName, "<init>", "()V", false)
+      mv.visitMethodInsn(INVOKESPECIAL, juHashMapRef.internalName, "<init>", "()V", false)
       mv.visitVarInsn(ASTORE, 1)
       mv.visitVarInsn(ALOAD, 1)
       mv.visitFieldInsn(PUTSTATIC, classNode.name, "$deserializeLambdaCache$", mapDesc)
       mv.visitLabel(l0)
-      mv.visitFieldInsn(GETSTATIC, srLambdaDeserializer.internalName, "MODULE$", srLambdaDeserializer.descriptor)
-      mv.visitMethodInsn(INVOKESTATIC, jliMethodHandles.internalName, "lookup", nilLookupDesc, false)
+      mv.visitFieldInsn(GETSTATIC, srLambdaDeserializerRef.internalName, "MODULE$", srLambdaDeserializerRef.descriptor)
+      mv.visitMethodInsn(INVOKESTATIC, jliMethodHandlesRef.internalName, "lookup", nilLookupDesc, false)
       mv.visitVarInsn(ALOAD, 1)
       mv.visitVarInsn(ALOAD, 0)
-      mv.visitMethodInsn(INVOKEVIRTUAL, srLambdaDeserializer.internalName, "deserializeLambda", lookupMapSerlamObjDesc, false)
+      mv.visitMethodInsn(INVOKEVIRTUAL, srLambdaDeserializerRef.internalName, "deserializeLambda", lookupMapSerlamObjDesc, false)
       mv.visitInsn(ARETURN)
       mv.visitEnd()
     }

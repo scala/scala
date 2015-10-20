@@ -110,8 +110,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     assert(classSym.isClass, s"Cannot create ClassBType from non-class symbol $classSym")
     assertClassNotArrayNotPrimitive(classSym)
     assert(!primitiveTypeMap.contains(classSym) || isCompilingPrimitive, s"Cannot create ClassBType for primitive class symbol $classSym")
-    if (classSym == NothingClass) RT_NOTHING
-    else if (classSym == NullClass) RT_NULL
+    if (classSym == NothingClass) srNothingRef
+    else if (classSym == NullClass) srNullRef
     else {
       val internalName = classSym.javaBinaryName.toString
       classBTypeFromInternalName.getOrElse(internalName, {
@@ -164,7 +164,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
      */
     def nonClassTypeRefToBType(sym: Symbol): ClassBType = {
       assert(sym.isType && isCompilingArray, sym)
-      ObjectReference
+      ObjectRef
     }
 
     t.dealiasWiden match {
@@ -201,7 +201,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
             "If possible, please file a bug on issues.scala-lang.org.")
 
         tp match {
-          case ThisType(ArrayClass)               => ObjectReference // was introduced in 9b17332f11 to fix SI-999, but this code is not reached in its test, or any other test
+          case ThisType(ArrayClass)               => ObjectRef // was introduced in 9b17332f11 to fix SI-999, but this code is not reached in its test, or any other test
           case ThisType(sym)                      => classBTypeFromSymbol(sym)
           case SingleType(_, sym)                 => primitiveOrClassToBType(sym)
           case ConstantType(_)                    => typeToBType(t.underlying)
@@ -460,7 +460,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       // class info consistent with BCodeHelpers.genMirrorClass
       val nested = exitingPickler(memberClassesForInnerClassTable(moduleClassSym)) map classBTypeFromSymbol
       c.info = Right(ClassInfo(
-        superClass = Some(ObjectReference),
+        superClass = Some(ObjectRef),
         interfaces = Nil,
         flags = asm.Opcodes.ACC_SUPER | asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_FINAL,
         nestedClasses = nested,
@@ -475,7 +475,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     classBTypeFromInternalName.getOrElse(internalName, {
       val c = ClassBType(internalName)
       c.info = Right(ClassInfo(
-        superClass = Some(ScalaBeanInfoReference),
+        superClass = Some(sbScalaBeanInfoRef),
         interfaces = Nil,
         flags = javaFlags(mainClass),
         nestedClasses = Nil,

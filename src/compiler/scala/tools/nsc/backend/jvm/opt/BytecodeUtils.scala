@@ -310,9 +310,9 @@ object BytecodeUtils {
    * method which explains the issue with such phantom values.
    */
   def fixLoadedNothingOrNullValue(loadedType: Type, loadInstr: AbstractInsnNode, methodNode: MethodNode, bTypes: BTypes): Unit = {
-    if (loadedType == bTypes.coreBTypes.RT_NOTHING.toASMType) {
+    if (loadedType == bTypes.coreBTypes.srNothingRef.toASMType) {
       methodNode.instructions.insert(loadInstr, new InsnNode(Opcodes.ATHROW))
-    } else if (loadedType == bTypes.coreBTypes.RT_NULL.toASMType) {
+    } else if (loadedType == bTypes.coreBTypes.srNullRef.toASMType) {
       methodNode.instructions.insert(loadInstr, new InsnNode(Opcodes.ACONST_NULL))
       methodNode.instructions.insert(loadInstr, new InsnNode(Opcodes.POP))
     }

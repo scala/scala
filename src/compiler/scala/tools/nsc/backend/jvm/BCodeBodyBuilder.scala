@@ -96,12 +96,12 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val thrownKind = tpeTK(expr)
       // `throw null` is valid although scala.Null (as defined in src/library-aux) isn't a subtype of Throwable.
       // Similarly for scala.Nothing (again, as defined in src/library-aux).
-      assert(thrownKind.isNullType || thrownKind.isNothingType || thrownKind.asClassBType.isSubtypeOf(ThrowableReference).get)
+      assert(thrownKind.isNullType || thrownKind.isNothingType || thrownKind.asClassBType.isSubtypeOf(jlThrowableRef).get)
       genLoad(expr, thrownKind)
       lineNumber(expr)
       emit(asm.Opcodes.ATHROW) // ICode enters here into enterIgnoreMode, we'll rely instead on DCE at ClassNode level.
 
-      RT_NOTHING // always returns the same, the invoker should know :)
+      srNothingRef // always returns the same, the invoker should know :)
     }
 
     /* Generate code for primitive arithmetic operations. */
@@ -325,7 +325,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           else {
             mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
             generatedType =
-              if (tree.symbol == ArrayClass) ObjectReference
+              if (tree.symbol == ArrayClass) ObjectRef
               else classBTypeFromSymbol(claszSymbol)
           }
 
@@ -368,7 +368,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           if (value.tag != UnitTag) (value.tag, expectedType) match {
             case (IntTag,   LONG  ) => bc.lconst(value.longValue);       generatedType = LONG
             case (FloatTag, DOUBLE) => bc.dconst(value.doubleValue);     generatedType = DOUBLE
-            case (NullTag,  _     ) => bc.emit(asm.Opcodes.ACONST_NULL); generatedType = RT_NULL
+            case (NullTag,  _     ) => bc.emit(asm.Opcodes.ACONST_NULL); generatedType = srNullRef
             case _                  => genConstant(value);               generatedType = tpeTK(tree)
           }
 
@@ -553,8 +553,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             else if (l.isPrimitive) {
               bc drop l
               if (cast) {
-                mnode.visitTypeInsn(asm.Opcodes.NEW, classCastExceptionReference.internalName)
-                bc dup ObjectReference
+                mnode.visitTypeInsn(asm.Opcodes.NEW, jlClassCastExceptionRef.internalName)
+                bc dup ObjectRef
                 emit(asm.Opcodes.ATHROW)
               } else {
                 bc boolconst false
@@ -644,7 +644,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           val nativeKind = tpeTK(expr)
           genLoad(expr, nativeKind)
           val MethodNameAndType(mname, methodType) = asmBoxTo(nativeKind)
-          bc.invokestatic(BoxesRunTime.internalName, mname, methodType.descriptor, app.pos)
+          bc.invokestatic(srBoxesRunTimeRef.internalName, mname, methodType.descriptor, app.pos)
           generatedType = boxResultType(fun.symbol) // was typeToBType(fun.symbol.tpe.resultType)
 
         case Apply(fun @ _, List(expr)) if currentRun.runDefinitions.isUnbox(fun.symbol) =>
@@ -652,7 +652,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           val boxType = unboxResultType(fun.symbol) // was typeToBType(fun.symbol.owner.linkedClassOfClass.tpe)
           generatedType = boxType
           val MethodNameAndType(mname, methodType) = asmUnboxTo(boxType)
-          bc.invokestatic(BoxesRunTime.internalName, mname, methodType.descriptor, app.pos)
+          bc.invokestatic(srBoxesRunTimeRef.internalName, mname, methodType.descriptor, app.pos)
 
         case app @ Apply(fun, args) =>
           val sym = fun.symbol
@@ -997,7 +997,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
         // Optimization for expressions of the form "" + x.  We can avoid the StringBuilder.
         case List(Literal(Constant("")), arg) =>
-          genLoad(arg, ObjectReference)
+          genLoad(arg, ObjectRef)
           genCallMethod(String_valueOf, icodes.opcodes.Static(onInstance = false), arg.pos)
 
         case concatenations =>
@@ -1011,7 +1011,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
       }
 
-      StringReference
+      StringRef
     }
 
     def genCallMethod(method: Symbol, style: InvokeStyle, pos: Position, hostClass0: Symbol = null) {
@@ -1076,7 +1076,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     /* Generate the scala ## method. */
     def genScalaHash(tree: Tree, applyPos: Position): BType = {
       genLoadModule(ScalaRunTimeModule) // TODO why load ScalaRunTimeModule if ## has InvokeStyle of Static(false) ?
-      genLoad(tree, ObjectReference)
+      genLoad(tree, ObjectRef)
       genCallMethod(hashMethodSym, icodes.opcodes.Static(onInstance = false), applyPos)
 
       INT
@@ -1164,8 +1164,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         if (scalaPrimitives.isReferenceEqualityOp(code) &&
             { nonNullSide = ifOneIsNull(l, r); nonNullSide != null }
         ) {
-          genLoad(nonNullSide, ObjectReference)
-          genCZJUMP(success, failure, op, ObjectReference)
+          genLoad(nonNullSide, ObjectRef)
+          genCZJUMP(success, failure, op, ObjectRef)
         }
         else {
           val tk = tpeTK(l).maxType(tpeTK(r))
@@ -1252,42 +1252,42 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             else platform.externalEqualsNumObject
           } else platform.externalEquals
         }
-        genLoad(l, ObjectReference)
-        genLoad(r, ObjectReference)
+        genLoad(l, ObjectRef)
+        genLoad(r, ObjectRef)
         genCallMethod(equalsMethod, icodes.opcodes.Static(onInstance = false), pos)
         genCZJUMP(success, failure, icodes.NE, BOOL)
       }
       else {
         if (isNull(l)) {
           // null == expr -> expr eq null
-          genLoad(r, ObjectReference)
-          genCZJUMP(success, failure, icodes.EQ, ObjectReference)
+          genLoad(r, ObjectRef)
+          genCZJUMP(success, failure, icodes.EQ, ObjectRef)
         } else if (isNull(r)) {
           // expr == null -> expr eq null
-          genLoad(l, ObjectReference)
-          genCZJUMP(success, failure, icodes.EQ, ObjectReference)
+          genLoad(l, ObjectRef)
+          genCZJUMP(success, failure, icodes.EQ, ObjectRef)
         } else if (isNonNullExpr(l)) {
           // SI-7852 Avoid null check if L is statically non-null.
-          genLoad(l, ObjectReference)
-          genLoad(r, ObjectReference)
+          genLoad(l, ObjectRef)
+          genLoad(r, ObjectRef)
           genCallMethod(Object_equals, icodes.opcodes.Dynamic, pos)
           genCZJUMP(success, failure, icodes.NE, BOOL)
         } else {
           // l == r -> if (l eq null) r eq null else l.equals(r)
-          val eqEqTempLocal = locals.makeLocal(ObjectReference, nme.EQEQ_LOCAL_VAR.toString)
+          val eqEqTempLocal = locals.makeLocal(ObjectRef, nme.EQEQ_LOCAL_VAR.toString)
           val lNull    = new asm.Label
           val lNonNull = new asm.Label
 
-          genLoad(l, ObjectReference)
-          genLoad(r, ObjectReference)
+          genLoad(l, ObjectRef)
+          genLoad(r, ObjectRef)
           locals.store(eqEqTempLocal)
-          bc dup ObjectReference
-          genCZJUMP(lNull, lNonNull, icodes.EQ, ObjectReference)
+          bc dup ObjectRef
+          genCZJUMP(lNull, lNonNull, icodes.EQ, ObjectRef)
 
           markProgramPoint(lNull)
-          bc drop ObjectReference
+          bc drop ObjectRef
           locals.load(eqEqTempLocal)
-          genCZJUMP(success, failure, icodes.EQ, ObjectReference)
+          genCZJUMP(success, failure, icodes.EQ, ObjectRef)
 
           markProgramPoint(lNonNull)
           locals.load(eqEqTempLocal)
