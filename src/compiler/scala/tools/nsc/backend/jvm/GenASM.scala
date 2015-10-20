@@ -1304,7 +1304,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
         for (constructor <- c.lookupStaticCtor) {
           addStaticInit(Some(constructor))
         }
-        val skipStaticForwarders = (c.symbol.isInterface || settings.noForwarders)
+        val skipStaticForwarders = settings.noForwarders
         if (!skipStaticForwarders) {
           val lmoc = c.symbol.companionModule
           // add static forwarders if there are no name conflicts; see bugs #363 and #1735
