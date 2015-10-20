@@ -353,7 +353,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
      * Contains callsites that were created during inlining by cloning this callsite. Used to find
      * corresponding callsites when inlining post-inline requests.
      */
-    val inlinedClones = mutable.Set.empty[Callsite]
+    val inlinedClones = mutable.Set.empty[ClonedCallsite]
 
     override def toString =
       "Invocation of" +
@@ -361,6 +361,8 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
         s"@${callsiteMethod.instructions.indexOf(callsiteInstruction)}" +
         s" in ${callsiteClass.internalName}.${callsiteMethod.name}"
   }
+
+  final case class ClonedCallsite(callsite: Callsite, clonedWhenInlining: Callsite)
 
   /**
    * Information about invocation arguments, obtained through data flow analysis of the callsite method.

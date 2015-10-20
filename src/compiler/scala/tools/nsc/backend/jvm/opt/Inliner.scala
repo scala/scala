@@ -38,31 +38,18 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     rewriteFinalTraitMethodInvocations()
 
     for (request <- collectAndOrderInlineRequests) {
-      val callsite = request.callsite
-      val Right(callee) = callsite.callee // collectAndOrderInlineRequests returns callsites with a known callee
+      val Right(callee) = request.callsite.callee // collectAndOrderInlineRequests returns callsites with a known callee
 
       // TODO: if the request has downstream requests, create a snapshot to which we could roll back in case some downstream callsite cannot be inlined
       // (Needs to revert modifications to the callee method, but also the call graph)
       // (This assumes that inlining a request only makes sense if its downstream requests are satisfied - sync with heuristics!)
 
-      // Inlining a method can create unreachable code. Example:
-      //   def f = throw e
-      //   def g = f; println() // println is unreachable after inlining f
-      // If we have an inline request for a call to g, and f has been already inlined into g, we
-      // need to run DCE before inlining g.
-      eliminateUnreachableCodeAndUpdateCallGraph(callee.callee, callee.calleeDeclarationClass.internalName)
-
-      // DCE above removes unreachable callsites from the call graph. If the inlining request denotes
-      // such an eliminated callsite, do nothing.
-      if (callGraph.callsites(callsite.callsiteMethod).contains(callsite.callsiteInstruction)) {
-        val warnings = inline(request)
-
-        for (warning <- warnings) {
-          if ((callee.annotatedInline && btypes.compilerSettings.YoptWarningEmitAtInlineFailed) || warning.emitWarning(compilerSettings)) {
-            val annotWarn = if (callee.annotatedInline) " is annotated @inline but" else ""
-            val msg = s"${BackendReporting.methodSignature(callee.calleeDeclarationClass.internalName, callee.callee)}$annotWarn could not be inlined:\n$warning"
-            backendReporting.inlinerWarning(callsite.callsitePosition, msg)
-          }
+      val warnings = inline(request)
+      for (warning <- warnings) {
+        if ((callee.annotatedInline && btypes.compilerSettings.YoptWarningEmitAtInlineFailed) || warning.emitWarning(compilerSettings)) {
+          val annotWarn = if (callee.annotatedInline) " is annotated @inline but" else ""
+          val msg = s"${BackendReporting.methodSignature(callee.calleeDeclarationClass.internalName, callee.callee)}$annotWarn could not be inlined:\n$warning"
+          backendReporting.inlinerWarning(request.callsite.callsitePosition, msg)
         }
       }
     }
@@ -265,21 +252,86 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   }
 
   /**
-   * Inline the callsites of an inlining request and its post-inlining requests.
+   * Given an InlineRequest(mainCallsite, post = List(postCallsite)), the postCallsite is a callsite
+   * in the method `mainCallsite.callee`. Once the mainCallsite is inlined into the target method
+   * (mainCallsite.callsiteMethod), we need to find the cloned callsite that corresponds to the
+   * postCallsite so we can inline that into the target method as well.
+   *
+   * However, it is possible that there is no cloned callsite at all that corresponds to the
+   * postCallsite, for example if the corresponding callsite already inlined. Example:
+   *
+   *   def a() = 1
+   *   def b() = a() + 2
+   *   def c() = b() + 3
+   *   def d() = c() + 4
+   *
+   * We have the following callsite objects in the call graph:
+   *
+   *   c1 = a() in b
+   *   c2 = b() in c
+   *   c3 = c() in d
+   *
+   * Assume we have the following inline request
+   *   r = InlineRequest(c3,
+   *         post = List(InlineRequest(c2,
+   *           post = List(InlineRequest(c1, post = Nil)))))
+   *
+   * But before inlining r, assume a separate InlineRequest(c2, post = Nil) is inlined first. We get
+   *
+   *   c1' = a() in c                  // added to the call graph
+   *   c1.inlinedClones += (c1' at c2) // remember that c1' was created when inlining c2
+   *   ~c2~                            // c2 is removed from the call graph
+   *
+   * If we now inline r, we first inline c3. We get
+   *
+   *   c1'' = a() in d                   // added to call graph
+   *   c1'.inlinedClones += (c1'' at c3) // remember that c1'' was created when inlining c3
+   *   ~c3~
+   *
+   * Now we continue with the post-requests for r, i.e. c2.
+   *   - we try to find the clone of c2 that was created when inlining c3 - but there is none. c2
+   *     was already inlined before
+   *   - we continue with the post-request of c2: c1
+   *     - we search for the callsite of c1 that was cloned when inlining c2, we find c1'
+   *     - recursively we search for the callsite of c1' that was cloned when inlining c3, we find c1''
+   *     - so we create an inline request for c1''
+   */
+  def adaptPostRequestForMainCallsite(post: InlineRequest, mainCallsite: Callsite): List[InlineRequest] = {
+    def impl(post: InlineRequest, at: Callsite): List[InlineRequest] = {
+      post.callsite.inlinedClones.find(_.clonedWhenInlining == at) match {
+        case Some(clonedCallsite) =>
+          List(InlineRequest(clonedCallsite.callsite, post.post))
+        case None =>
+          post.post.flatMap(impl(_, post.callsite)).flatMap(impl(_, at))
+      }
+    }
+    impl(post, mainCallsite)
+  }
+
+
+  /**
+   * Inline the callsite of an inlining request and its post-inlining requests.
    *
    * @return An inliner warning for each callsite that could not be inlined.
    */
   def inline(request: InlineRequest): List[CannotInlineWarning] = canInlineBody(request.callsite) match {
     case Some(w) => List(w)
     case None =>
-      inlineCallsite(request.callsite)
-      val postRequests = request.post.flatMap(post => {
-        post.callsite.inlinedClones.find(cs => cs.callsiteMethod == request.callsite.callsiteMethod) match {
-          case Some(inlinedPostCallsite) if callGraph.containsCallsite(inlinedPostCallsite) => Some(InlineRequest(inlinedPostCallsite, post.post))
-          case _ => None
-        }
-      })
-      postRequests flatMap inline
+      // Inlining a method can create unreachable code. Example:
+      //   def f = throw e
+      //   def g = f; println() // println is unreachable after inlining f
+      // If we have an inline request for a call to g, and f has been already inlined into g, we
+      // need to run DCE before inlining g.
+      val Right(callee) = request.callsite.callee
+      eliminateUnreachableCodeAndUpdateCallGraph(callee.callee, callee.calleeDeclarationClass.internalName)
+      // Skip over DCE'd callsites
+      if (callGraph.containsCallsite(request.callsite)) {
+        inlineCallsite(request.callsite)
+        val postRequests = request.post.flatMap(adaptPostRequestForMainCallsite(_, request.callsite))
+        postRequests flatMap inline
+      } else {
+        Nil
+      }
   }
 
   /**
@@ -459,7 +511,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         receiverKnownNotNull = originalCallsite.receiverKnownNotNull,
         callsitePosition = originalCallsite.callsitePosition
       )
-      originalCallsite.inlinedClones += newCallsite
+      originalCallsite.inlinedClones += ClonedCallsite(newCallsite, callsite)
       callGraph.addCallsite(newCallsite)
     }
 

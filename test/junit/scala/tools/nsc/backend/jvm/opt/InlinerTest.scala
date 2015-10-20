@@ -1007,21 +1007,53 @@ class InlinerTest extends ClearAfterClass {
         |  final def f = 10
         |  final def g = f + 19
         |  final def h = g + 29
+        |  final def i = h + 39
         |}
       """.stripMargin
 
     val List(c) = compile(code)
     val hMeth = findAsmMethod(c, "h")
     val gMeth = findAsmMethod(c, "g")
-    val gCall = getCallsite(hMeth, "g")
+    val iMeth = findAsmMethod(c, "i")
     val fCall = getCallsite(gMeth, "f")
+    val gCall = getCallsite(hMeth, "g")
+    val hCall = getCallsite(iMeth, "h")
 
     val warning = inliner.canInlineBody(gCall)
     assert(warning.isEmpty, warning)
 
-    inliner.inline(InlineRequest(gCall, List(InlineRequest(fCall, Nil))))
-    assertNoInvoke(getSingleMethod(c, "h")) // no invoke in h: first g is inlined, then the inlined call to f is also inlined
-    assertInvoke(getSingleMethod(c, "g"), "C", "f") // g itself still has the call to f
+    inliner.inline(InlineRequest(hCall,
+      post = List(InlineRequest(gCall,
+        post = List(InlineRequest(fCall, Nil))))))
+    assertNoInvoke(convertMethod(iMeth)) // no invoke in i: first h is inlined, then the inlined call to g is also inlined, etc for f
+    assertInvoke(convertMethod(gMeth), "C", "f") // g itself still has the call to f
+  }
+
+  @Test
+  def postRequestSkipAlreadyInlined(): Unit = {
+    val code =
+      """class C {
+        |  final def a = 10
+        |  final def b = a + 20
+        |  final def c = b + 30
+        |  final def d = c + 40
+        |}
+      """.stripMargin
+
+    val List(cl) = compile(code)
+    val List(b, c, d) = List("b", "c", "d").map(findAsmMethod(cl, _))
+    val aCall = getCallsite(b, "a")
+    val bCall = getCallsite(c, "b")
+    val cCall = getCallsite(d, "c")
+
+    inliner.inline(InlineRequest(bCall, Nil))
+
+    val req = InlineRequest(cCall,
+      List(InlineRequest(bCall,
+        List(InlineRequest(aCall, Nil)))))
+    inliner.inline(req)
+
+    assertNoInvoke(convertMethod(d))
   }
 
   /**
