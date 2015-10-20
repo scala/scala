@@ -41,6 +41,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.ForAttachment
     this.SyntheticUnitAttachment
     this.SubpatternsAttachment
+    this.NoInlineCallsiteAttachment
+    this.InlineCallsiteAttachment
     this.noPrint
     this.typeDebug
     this.Range

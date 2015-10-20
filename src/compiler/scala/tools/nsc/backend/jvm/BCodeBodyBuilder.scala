@@ -16,6 +16,7 @@ import java.lang.invoke.LambdaMetafactory
 import scala.tools.asm
 import GenBCode._
 import BackendReporting._
+import scala.tools.asm.tree.MethodInsnNode
 
 /*
  *
@@ -706,6 +707,21 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               }
               else {
                 genCallMethod(sym, invokeStyle, app.pos, hostClass)
+                // Check if the Apply tree has an InlineAnnotatedAttachment, added by the typer
+                // for callsites marked `f(): @inline/noinline`. For nullary calls, the attachment
+                // is on the Select node (not on the Apply node added by UnCurry).
+                def checkInlineAnnotated(t: Tree): Unit = {
+                  if (t.hasAttachment[InlineAnnotatedAttachment]) bc.jmethod.instructions.getLast match {
+                    case m: MethodInsnNode =>
+                      if (app.hasAttachment[NoInlineCallsiteAttachment.type]) noInlineAnnotatedCallsites += m
+                      else inlineAnnotatedCallsites += m
+                    case _ =>
+                  } else t match {
+                    case Apply(fun, _) => checkInlineAnnotated(fun)
+                    case _ =>
+                  }
+                }
+                checkInlineAnnotated(app)
               }
 
             } // end of genNormalMethodCall()

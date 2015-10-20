@@ -12,14 +12,17 @@ import scala.tools.asm.Type
 import scala.tools.asm.tree.{MethodNode, MethodInsnNode}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.collection.convert.decorateAsScala._
+import scala.tools.nsc.backend.jvm.BackendReporting.OptimizerWarning
 
 class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
   import bTypes._
   import inliner._
   import callGraph._
 
-  case class InlineRequest(callsite: Callsite, post: List[PostInlineRequest])
-  case class PostInlineRequest(callsiteInstruction: MethodInsnNode, post: List[PostInlineRequest])
+  case class InlineRequest(callsite: Callsite, post: List[InlineRequest]) {
+    // invariant: all post inline requests denote callsites in the callee of the main callsite
+    for (pr <- post) assert(pr.callsite.callsiteMethod == callsite.callee.get.callee, s"Callsite method mismatch: main $callsite - post ${pr.callsite}")
+  }
 
   /**
    * Select callsites from the call graph that should be inlined, grouped by the containing method.
@@ -38,28 +41,35 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
     compilingMethods.map(methodNode => {
       var requests = Set.empty[InlineRequest]
       callGraph.callsites(methodNode).valuesIterator foreach {
-        case callsite @ Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, _, annotatedInline, _, _, warning)), _, _, _, pos) =>
-          val request = inlineRequest(callsite)
-          requests ++= request
-          if (request.isEmpty) {
-            if (annotatedInline && bTypes.compilerSettings.YoptWarningEmitAtInlineFailed) {
-              // if the callsite is annotated @inline, we report an inline warning even if the underlying
-              // reason is, for example, mixed compilation (which has a separate -Yopt-warning flag).
-              def initMsg = s"${BackendReporting.methodSignature(calleeDeclClass.internalName, callee)} is annotated @inline but cannot be inlined"
-              def warnMsg = warning.map(" Possible reason:\n" + _).getOrElse("")
-              if (doRewriteTraitCallsite(callsite))
-                backendReporting.inlinerWarning(pos, s"$initMsg: the trait method call could not be rewritten to the static implementation method." + warnMsg)
-              else if (!safeToInline)
-                backendReporting.inlinerWarning(pos, s"$initMsg: the method is not final and may be overridden." + warnMsg)
-              else
-                backendReporting.inlinerWarning(pos, s"$initMsg." + warnMsg)
-            } else if (warning.isDefined && warning.get.emitWarning(compilerSettings)) {
-              // when annotatedInline is false, and there is some warning, the callsite metadata is possibly incomplete.
-              backendReporting.inlinerWarning(pos, s"there was a problem determining if method ${callee.name} can be inlined: \n"+ warning.get)
-            }
+        case callsite @ Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, _, calleeAnnotatedInline, _, _, callsiteWarning)), _, _, _, pos, _, _) =>
+          inlineRequest(callsite) match {
+            case Some(Right(req)) => requests += req
+            case Some(Left(w))    =>
+              if ((calleeAnnotatedInline && bTypes.compilerSettings.YoptWarningEmitAtInlineFailed) || w.emitWarning(compilerSettings)) {
+                val annotWarn = if (calleeAnnotatedInline) " is annotated @inline but" else ""
+                val msg = s"${BackendReporting.methodSignature(calleeDeclClass.internalName, callee)}$annotWarn could not be inlined:\n$w"
+                backendReporting.inlinerWarning(callsite.callsitePosition, msg)
+              }
+
+            case None =>
+              if (calleeAnnotatedInline && !callsite.annotatedNoInline && bTypes.compilerSettings.YoptWarningEmitAtInlineFailed) {
+                // if the callsite is annotated @inline, we report an inline warning even if the underlying
+                // reason is, for example, mixed compilation (which has a separate -Yopt-warning flag).
+                def initMsg = s"${BackendReporting.methodSignature(calleeDeclClass.internalName, callee)} is annotated @inline but cannot be inlined"
+                def warnMsg = callsiteWarning.map(" Possible reason:\n" + _).getOrElse("")
+                if (doRewriteTraitCallsite(callsite))
+                  backendReporting.inlinerWarning(pos, s"$initMsg: the trait method call could not be rewritten to the static implementation method." + warnMsg)
+                else if (!safeToInline)
+                  backendReporting.inlinerWarning(pos, s"$initMsg: the method is not final and may be overridden." + warnMsg)
+                else
+                  backendReporting.inlinerWarning(pos, s"$initMsg." + warnMsg)
+              } else if (callsiteWarning.isDefined && callsiteWarning.get.emitWarning(compilerSettings)) {
+                // when annotatedInline is false, and there is some warning, the callsite metadata is possibly incomplete.
+                backendReporting.inlinerWarning(pos, s"there was a problem determining if method ${callee.name} can be inlined: \n"+ callsiteWarning.get)
+              }
           }
 
-        case Callsite(ins, _, _, Left(warning), _, _, _, pos) =>
+        case Callsite(ins, _, _, Left(warning), _, _, _, pos, _, _) =>
           if (warning.emitWarning(compilerSettings))
             backendReporting.inlinerWarning(pos, s"failed to determine if ${ins.name} should be inlined:\n$warning")
       }
@@ -73,27 +83,39 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
    *
    * The resulting inline request may contain post-inlining requests of callsites that in turn are
    * also selected as individual inlining requests.
+   *
+   * @return `None` if this callsite should not be inlined according to the active heuristic
+   *         `Some(Left)` if the callsite cannot be inlined (for example because that would cause
+   *           an IllegalAccessError) but should be according to the heuristic
+   *           TODO: what if a downstream inline request would cause an IAE and we don't create an
+   *           InlineRequest for the original callsite? new subclass of OptimizerWarning.
+   *         `Some(Right)` if the callsite should be and can be inlined
    */
-  def inlineRequest(callsite: Callsite): Option[InlineRequest] = compilerSettings.YoptInlineHeuristics.value match {
-    case "everything" =>
-      if (callsite.callee.get.safeToInline) Some(InlineRequest(callsite, Nil))
-      else None
+  def inlineRequest(callsite: Callsite): Option[Either[OptimizerWarning, InlineRequest]] = {
+    val callee = callsite.callee.get
+    def requestIfCanInline(callsite: Callsite): Either[OptimizerWarning, InlineRequest] = inliner.earlyCanInlineCheck(callsite) match {
+      case Some(w) => Left(w)
+      case None => Right(InlineRequest(callsite, Nil))
+    }
 
-    case "at-inline-annotated" =>
-      val callee = callsite.callee.get
-      if (callee.safeToInline && callee.annotatedInline) Some(InlineRequest(callsite, Nil))
-      else None
-
-    case "default" =>
-      val callee = callsite.callee.get
-      if (callee.safeToInline && !callee.annotatedNoInline) {
-        val shouldInlineHO = callee.samParamTypes.nonEmpty && (callee.samParamTypes exists {
-          case (index, _) => callsite.argInfos.contains(index)
-        })
-
-        if (shouldInlineHO || callee.annotatedInline) Some(InlineRequest(callsite, Nil))
+    compilerSettings.YoptInlineHeuristics.value match {
+      case "everything" =>
+        if (callee.safeToInline) Some(requestIfCanInline(callsite))
         else None
-      } else None
+
+      case "at-inline-annotated" =>
+        if (callee.safeToInline && callee.annotatedInline) Some(requestIfCanInline(callsite))
+        else None
+
+      case "default" =>
+        if (callee.safeToInline && !callee.annotatedNoInline && !callsite.annotatedNoInline) {
+          def shouldInlineHO = callee.samParamTypes.nonEmpty && (callee.samParamTypes exists {
+            case (index, _) => callsite.argInfos.contains(index)
+          })
+          if (callee.annotatedInline || callsite.annotatedInline || shouldInlineHO) Some(requestIfCanInline(callsite))
+          else None
+        } else None
+    }
   }
 
   /*

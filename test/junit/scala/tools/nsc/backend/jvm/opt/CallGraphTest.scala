@@ -50,9 +50,6 @@ class CallGraphTest extends ClearAfterClass {
     compileClasses(compiler)(code, allowMessage = allowMessage).map(c => byteCodeRepository.classNode(c.name).get)
   }
 
-  def getMethods(c: ClassNode, p: String => Boolean) = c.methods.iterator.asScala.filter(m => p(m.name)).toList.sortBy(_.name)
-  def getMethod(c: ClassNode, name: String) = getMethods(c, _ == name).head
-
   def callsInMethod(methodNode: MethodNode): List[MethodInsnNode] = methodNode.instructions.iterator.asScala.collect({
     case call: MethodInsnNode => call
   }).toList
@@ -121,10 +118,10 @@ class CallGraphTest extends ClearAfterClass {
     val List(cCls, cMod, dCls, testCls) = compile(code, checkMsg)
     assert(msgCount == 6, msgCount)
 
-    val List(cf1, cf2, cf3, cf4, cf5, cf6, cf7) = getMethods(cCls, _.startsWith("f"))
-    val List(df1, df3) = getMethods(dCls, _.startsWith("f"))
-    val g1 = getMethod(cMod, "g1")
-    val List(t1, t2) = getMethods(testCls, _.startsWith("t"))
+    val List(cf1, cf2, cf3, cf4, cf5, cf6, cf7) = findAsmMethods(cCls, _.startsWith("f"))
+    val List(df1, df3) = findAsmMethods(dCls, _.startsWith("f"))
+    val g1 = findAsmMethod(cMod, "g1")
+    val List(t1, t2) = findAsmMethods(testCls, _.startsWith("t"))
 
     val List(cf1Call, cf2Call, cf3Call, cf4Call, cf5Call, cf6Call, cf7Call, cg1Call) = callsInMethod(t1)
     val List(df1Call, df2Call, df3Call, df4Call, df5Call, df6Call, df7Call, dg1Call) = callsInMethod(t2)
@@ -160,7 +157,7 @@ class CallGraphTest extends ClearAfterClass {
         |}
       """.stripMargin
     val List(c) = compile(code)
-    val m = getMethod(c, "m")
+    val m = findAsmMethod(c, "m")
     val List(fn) = callsInMethod(m)
     val forNameMeth = byteCodeRepository.methodNode("java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;").get._1
     val classTp = classBTypeFromInternalName("java/lang/Class")
@@ -168,12 +165,6 @@ class CallGraphTest extends ClearAfterClass {
     checkCallsite(fn, m, forNameMeth, classTp, safeToInline = false, atInline = false, atNoInline = false)
   }
 
-  /**
-   * NOTE: if this test fails for you when running within the IDE, it's probably because you're
-   * using 2.12.0-M2 for compilining within the IDE, which doesn't add SAM information to the
-   * InlineInfo attribute. So the InlineInfo in the classfile for Function1 doesn't say that
-   * it's a SAM type. The test passes when running with ant (which does a full bootstrap).
-   */
   @Test
   def checkArgInfos(): Unit = {
     val code =

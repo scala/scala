@@ -67,6 +67,8 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
     callsites(callsite.callsiteMethod) = methodCallsites + (callsite.callsiteInstruction -> callsite)
   }
 
+  def containsCallsite(callsite: Callsite): Boolean = callsites(callsite.callsiteMethod) contains callsite.callsiteInstruction
+
   def removeClosureInstantiation(indy: InvokeDynamicInsnNode, methodNode: MethodNode): Option[ClosureInstantiation] = {
     val methodClosureInits = closureInstantiations(methodNode)
     val newClosureInits = methodClosureInits - indy
@@ -130,8 +132,8 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           val callee: Either[OptimizerWarning, Callee] = for {
             (method, declarationClass)     <- byteCodeRepository.methodNode(call.owner, call.name, call.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
             (declarationClassNode, source) <- byteCodeRepository.classNodeAndSource(declarationClass): Either[OptimizerWarning, (ClassNode, Source)]
-            declarationClassBType          =  classBTypeFromClassNode(declarationClassNode)
           } yield {
+              val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
               val CallsiteInfo(safeToInline, safeToRewrite, annotatedInline, annotatedNoInline, samParamTypes, warning) = analyzeCallsite(method, declarationClassBType, call.owner, source)
               Callee(
                 callee = method,
@@ -159,7 +161,9 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
             argInfos = argInfos,
             callsiteStackHeight = a.frameAt(call).getStackSize,
             receiverKnownNotNull = receiverNotNull,
-            callsitePosition = callsitePositions.getOrElse(call, NoPosition)
+            callsitePosition = callsitePositions.getOrElse(call, NoPosition),
+            annotatedInline = inlineAnnotatedCallsites(call),
+            annotatedNoInline = noInlineAnnotatedCallsites(call)
           )
 
         case LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType) if a.frameAt(indy) != null =>
@@ -346,13 +350,22 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    */
   final case class Callsite(callsiteInstruction: MethodInsnNode, callsiteMethod: MethodNode, callsiteClass: ClassBType,
                             callee: Either[OptimizerWarning, Callee], argInfos: IntMap[ArgInfo],
-                            callsiteStackHeight: Int, receiverKnownNotNull: Boolean, callsitePosition: Position) {
+                            callsiteStackHeight: Int, receiverKnownNotNull: Boolean, callsitePosition: Position,
+                            annotatedInline: Boolean, annotatedNoInline: Boolean) {
+    /**
+     * Contains callsites that were created during inlining by cloning this callsite. Used to find
+     * corresponding callsites when inlining post-inline requests.
+     */
+    val inlinedClones = mutable.Set.empty[ClonedCallsite]
+
     override def toString =
       "Invocation of" +
         s" ${callee.map(_.calleeDeclarationClass.internalName).getOrElse("?")}.${callsiteInstruction.name + callsiteInstruction.desc}" +
         s"@${callsiteMethod.instructions.indexOf(callsiteInstruction)}" +
         s" in ${callsiteClass.internalName}.${callsiteMethod.name}"
   }
+
+  final case class ClonedCallsite(callsite: Callsite, clonedWhenInlining: Callsite)
 
   /**
    * Information about invocation arguments, obtained through data flow analysis of the callsite method.
@@ -399,6 +412,10 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    *                              graph when re-writing a closure invocation to the body method.
    */
   final case class ClosureInstantiation(lambdaMetaFactoryCall: LambdaMetaFactoryCall, ownerMethod: MethodNode, ownerClass: ClassBType, capturedArgInfos: IntMap[ArgInfo]) {
+    /**
+     * Contains closure instantiations that were created during inlining by cloning this instantiation.
+     */
+    val inlinedClones = mutable.Set.empty[ClosureInstantiation]
     override def toString = s"ClosureInstantiation($lambdaMetaFactoryCall, ${ownerMethod.name + ownerMethod.desc}, $ownerClass)"
   }
   final case class LambdaMetaFactoryCall(indy: InvokeDynamicInsnNode, samMethodType: Type, implMethod: Handle, instantiatedMethodType: Type)

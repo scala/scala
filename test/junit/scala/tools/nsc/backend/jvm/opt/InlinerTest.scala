@@ -6,17 +6,11 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
 import scala.collection.generic.Clearable
-import scala.collection.immutable.IntMap
-import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.{NoPosition, BatchSourceFile}
 import scala.tools.asm.Opcodes._
 import org.junit.Assert._
 
 import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis._
-import scala.tools.nsc.io._
 import scala.tools.nsc.reporters.StoreReporter
-import scala.tools.testing.AssertUtil._
 
 import CodeGenTools._
 import scala.tools.partest.ASMConverters
@@ -69,6 +63,7 @@ class InlinerTest extends ClearAfterClass {
   val compiler = InlinerTest.compiler
   import compiler.genBCode.bTypes._
   import compiler.genBCode.bTypes.backendUtils._
+  import inlinerHeuristics._
 
   def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
     InlinerTest.notPerRun.foreach(_.clear())
@@ -88,44 +83,25 @@ class InlinerTest extends ClearAfterClass {
     assert(callsite.callee.get.callee == callee, callsite.callee.get.callee.name)
   }
 
-  def makeInlineRequest( callsiteInstruction: MethodInsnNode, callsiteMethod: MethodNode, callsiteClass: ClassBType,
-                         callee: MethodNode, calleeDeclarationClass: ClassBType,
-                         callsiteStackHeight: Int, receiverKnownNotNull: Boolean,
-                         post: List[inlinerHeuristics.PostInlineRequest] = Nil) = inlinerHeuristics.InlineRequest(
-    callsite = callGraph.Callsite(
-      callsiteInstruction = callsiteInstruction,
-      callsiteMethod = callsiteMethod,
-      callsiteClass = callsiteClass,
-      callee = Right(callGraph.Callee(callee = callee, calleeDeclarationClass = calleeDeclarationClass, safeToInline = true, safeToRewrite = false, annotatedInline = false, annotatedNoInline = false, samParamTypes = IntMap.empty, calleeInfoWarning = None)),
-      argInfos = IntMap.empty,
-      callsiteStackHeight = callsiteStackHeight,
-      receiverKnownNotNull = receiverKnownNotNull,
-      callsitePosition = NoPosition),
-    post = post)
+  def getCallsite(method: MethodNode, calleeName: String) = callGraph.callsites(method).valuesIterator.find(_.callee.get.callee.name == calleeName).get
 
-  // inline first invocation of f into g in class C
-  def inlineTest(code: String, mod: ClassNode => Unit = _ => ()): (MethodNode, List[CannotInlineWarning]) = {
-    val List(cls) = compile(code)
-    mod(cls)
-    val clsBType = classBTypeFromParsedClassfile(cls.name)
+  def gMethAndFCallsite(code: String, mod: ClassNode => Unit = _ => ()) = {
+    val List(c) = compile(code)
+    mod(c)
+    val gMethod = findAsmMethod(c, "g")
+    val fCall = getCallsite(gMethod, "f")
+    (gMethod, fCall)
+  }
 
-    val List(f, g) = cls.methods.asScala.filter(m => Set("f", "g")(m.name)).toList.sortBy(_.name)
-    val fCall = g.instructions.iterator.asScala.collect({ case i: MethodInsnNode if i.name == "f" => i }).next()
+  def canInlineTest(code: String, mod: ClassNode => Unit = _ => ()): Option[OptimizerWarning] = {
+    val cs = gMethAndFCallsite(code, mod)._2
+    inliner.earlyCanInlineCheck(cs) orElse inliner.canInlineBody(cs)
+  }
 
-    val analyzer = new AsmAnalyzer(g, clsBType.internalName)
-
-    val request = makeInlineRequest(
-      callsiteInstruction = fCall,
-      callsiteMethod = g,
-      callsiteClass = clsBType,
-      callee = f,
-      calleeDeclarationClass = clsBType,
-      callsiteStackHeight = analyzer.frameAt(fCall).getStackSize,
-      receiverKnownNotNull = true
-    )
-
-    val r = inliner.inline(request)
-    (g, r)
+  def inlineTest(code: String, mod: ClassNode => Unit = _ => ()): MethodNode = {
+    val (gMethod, fCall) = gMethAndFCallsite(code, mod)
+    inliner.inline(InlineRequest(fCall, Nil))
+    gMethod
   }
 
   @Test
@@ -137,7 +113,7 @@ class InlinerTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val (g, _) = inlineTest(code)
+    val g = inlineTest(code)
 
     val gConv = convertMethod(g)
     assertSameCode(gConv.instructions.dropNonOp,
@@ -171,7 +147,7 @@ class InlinerTest extends ClearAfterClass {
 
     // See also discussion around ATHROW in BCodeBodyBuilder
 
-    val (g, _) = inlineTest(code)
+    val g = inlineTest(code)
     val expectedInlined = List(
       VarOp(ALOAD, 0), VarOp(ASTORE, 1), // store this
       Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"), Invoke(INVOKEVIRTUAL, "scala/Predef$", "$qmark$qmark$qmark", "()Lscala/runtime/Nothing$;", false)) // inlined call to ???
@@ -192,11 +168,11 @@ class InlinerTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val (_, can) = inlineTest(code, cls => {
+    val can = canInlineTest(code, cls => {
       val f = cls.methods.asScala.find(_.name == "f").get
       f.access |= ACC_SYNCHRONIZED
     })
-    assert(can.length == 1 && can.head.isInstanceOf[SynchronizedMethod], can)
+    assert(can.nonEmpty && can.get.isInstanceOf[SynchronizedMethod], can)
   }
 
   @Test
@@ -207,7 +183,7 @@ class InlinerTest extends ClearAfterClass {
         |  def g = f + 1
         |}
       """.stripMargin
-    val (_, r) = inlineTest(code)
+    val r = canInlineTest(code)
     assert(r.isEmpty, r)
   }
 
@@ -221,8 +197,8 @@ class InlinerTest extends ClearAfterClass {
         |  def g = println(f)
         |}
       """.stripMargin
-    val (_, r) = inlineTest(code)
-    assert(r.length == 1 && r.head.isInstanceOf[MethodWithHandlerCalledOnNonEmptyStack], r)
+    val r = canInlineTest(code)
+    assert(r.nonEmpty && r.get.isInstanceOf[MethodWithHandlerCalledOnNonEmptyStack], r)
   }
 
   @Test
@@ -242,31 +218,10 @@ class InlinerTest extends ClearAfterClass {
       """.stripMargin
 
     val List(c, d) = compile(code)
-
-    val cTp = classBTypeFromParsedClassfile(c.name)
-    val dTp = classBTypeFromParsedClassfile(d.name)
-
-    val g = c.methods.asScala.find(_.name == "g").get
-    val h = d.methods.asScala.find(_.name == "h").get
-    val gCall = h.instructions.iterator.asScala.collect({
-      case m: MethodInsnNode if m.name == "g" => m
-    }).next()
-
-    val analyzer = new AsmAnalyzer(h, dTp.internalName)
-
-    val request = makeInlineRequest(
-      callsiteInstruction = gCall,
-      callsiteMethod = h,
-      callsiteClass = dTp,
-      callee = g,
-      calleeDeclarationClass = cTp,
-      callsiteStackHeight = analyzer.frameAt(gCall).getStackSize,
-      receiverKnownNotNull = true
-    )
-
-    val r = inliner.inline(request)
-
-    assert(r.length == 1 && r.head.isInstanceOf[IllegalAccessInstruction], r)
+    val hMeth = findAsmMethod(d, "h")
+    val gCall = getCallsite(hMeth, "g")
+    val r = inliner.canInlineBody(gCall)
+    assert(r.nonEmpty && r.get.isInstanceOf[IllegalAccessInstruction], r)
   }
 
   @Test
@@ -403,27 +358,14 @@ class InlinerTest extends ClearAfterClass {
       """.stripMargin
 
     val List(c) = compile(code)
-    val f = c.methods.asScala.find(_.name == "f").get
-    val callsiteIns = f.instructions.iterator().asScala.collect({ case c: MethodInsnNode => c }).next()
-    val clsBType = classBTypeFromParsedClassfile(c.name)
-    val analyzer = new AsmAnalyzer(f, clsBType.internalName)
+    val fMeth = findAsmMethod(c, "f")
+    val call = getCallsite(fMeth, "lowestOneBit")
 
-    val integerClassBType = classBTypeFromInternalName("java/lang/Integer")
-    val lowestOneBitMethod = byteCodeRepository.methodNode(integerClassBType.internalName, "lowestOneBit", "(I)I").get._1
+    val warning = inliner.canInlineBody(call)
+    assert(warning.isEmpty, warning)
 
-    val request = makeInlineRequest(
-      callsiteInstruction = callsiteIns,
-      callsiteMethod = f,
-      callsiteClass = clsBType,
-      callee = lowestOneBitMethod,
-      calleeDeclarationClass = integerClassBType,
-      callsiteStackHeight = analyzer.frameAt(callsiteIns).getStackSize,
-      receiverKnownNotNull = false
-    )
-
-    val r = inliner.inline(request)
-    assert(r.isEmpty, r)
-    val ins = instructionsFromMethod(f)
+    inliner.inline(InlineRequest(call, Nil))
+    val ins = instructionsFromMethod(fMeth)
 
     // no invocations, lowestOneBit is inlined
     assertNoInvoke(ins)
@@ -1065,49 +1007,124 @@ class InlinerTest extends ClearAfterClass {
         |  final def f = 10
         |  final def g = f + 19
         |  final def h = g + 29
+        |  final def i = h + 39
         |}
       """.stripMargin
 
     val List(c) = compile(code)
+    val hMeth = findAsmMethod(c, "h")
+    val gMeth = findAsmMethod(c, "g")
+    val iMeth = findAsmMethod(c, "i")
+    val fCall = getCallsite(gMeth, "f")
+    val gCall = getCallsite(hMeth, "g")
+    val hCall = getCallsite(iMeth, "h")
 
-    val cTp = classBTypeFromParsedClassfile(c.name)
+    val warning = inliner.canInlineBody(gCall)
+    assert(warning.isEmpty, warning)
 
-    val f = c.methods.asScala.find(_.name == "f").get
-    val g = c.methods.asScala.find(_.name == "g").get
-    val h = c.methods.asScala.find(_.name == "h").get
-
-    val gCall = h.instructions.iterator.asScala.collect({
-      case m: MethodInsnNode if m.name == "g" => m
-    }).next()
-    val fCall = g.instructions.iterator.asScala.collect({
-      case m: MethodInsnNode if m.name == "f" => m
-    }).next()
-
-    val analyzer = new AsmAnalyzer(h, cTp.internalName)
-
-    val request = makeInlineRequest(
-      callsiteInstruction = gCall,
-      callsiteMethod = h,
-      callsiteClass = cTp,
-      callee = g,
-      calleeDeclarationClass = cTp,
-      callsiteStackHeight = analyzer.frameAt(gCall).getStackSize,
-      receiverKnownNotNull = false,
-      post = List(inlinerHeuristics.PostInlineRequest(fCall, Nil))
-    )
-
-    val r = inliner.inline(request)
-    assertNoInvoke(getSingleMethod(c, "h")) // no invoke in h: first g is inlined, then the inlined call to f is also inlined
-    assertInvoke(getSingleMethod(c, "g"), "C", "f") // g itself still has the call to f
-    assert(r.isEmpty, r)
+    inliner.inline(InlineRequest(hCall,
+      post = List(InlineRequest(gCall,
+        post = List(InlineRequest(fCall, Nil))))))
+    assertNoInvoke(convertMethod(iMeth)) // no invoke in i: first h is inlined, then the inlined call to g is also inlined, etc for f
+    assertInvoke(convertMethod(gMeth), "C", "f") // g itself still has the call to f
   }
 
-  /**
-   * NOTE: if this test fails for you when running within the IDE, it's probably because you're
-   * using 2.12.0-M2 for compilining within the IDE, which doesn't add SAM information to the
-   * InlineInfo attribute. So the InlineInfo in the classfile for Function1 doesn't say that
-   * it's a SAM type. The test passes when running with ant (which does a full bootstrap).
-   */
+  @Test
+  def postRequestSkipAlreadyInlined(): Unit = {
+    val code =
+      """class C {
+        |  final def a = 10
+        |  final def b = a + 20
+        |  final def c = b + 30
+        |  final def d = c + 40
+        |}
+      """.stripMargin
+
+    val List(cl) = compile(code)
+    val List(b, c, d) = List("b", "c", "d").map(findAsmMethod(cl, _))
+    val aCall = getCallsite(b, "a")
+    val bCall = getCallsite(c, "b")
+    val cCall = getCallsite(d, "c")
+
+    inliner.inline(InlineRequest(bCall, Nil))
+
+    val req = InlineRequest(cCall,
+      List(InlineRequest(bCall,
+        List(InlineRequest(aCall, Nil)))))
+    inliner.inline(req)
+
+    assertNoInvoke(convertMethod(d))
+  }
+
+  @Test
+  def inlineAnnotatedCallsite(): Unit = {
+    val code =
+      """class C {
+        |  final def a(x: Int, f: Int => Int): Int = f(x)
+        |  final def b(x: Int) = x
+        |  final def c = 1
+        |  final def d[T] = 2
+        |  final def e[T](x: T) = c
+        |  final def f[T](x: T) = println(x)
+        |  final def g(x: Int)(y: Int) = x
+        |
+        |  def t1 = a(10, _ + 1)
+        |  def t2 = a(10, _ + 1): @noinline
+        |  def t3 = b(3)
+        |  def t4 = b(3): @inline
+        |  def t5 = c: @inline
+        |  def t6 = d[Int]: @inline
+        |  def t7 = e[Int](2): @inline
+        |  def t8 = f[Int](2): @inline
+        |  def t9 = g(1)(2): @inline
+        |}
+      """.stripMargin
+
+    val List(c) = compile(code)
+    assertInvoke(getSingleMethod(c, "t1"), "C", "C$$$anonfun$1")
+    assertInvoke(getSingleMethod(c, "t2"), "C", "a")
+    assertInvoke(getSingleMethod(c, "t3"), "C", "b")
+    assertNoInvoke(getSingleMethod(c, "t4"))
+    assertNoInvoke(getSingleMethod(c, "t5"))
+    assertNoInvoke(getSingleMethod(c, "t6"))
+    assertInvoke(getSingleMethod(c, "t7"), "C", "c")
+    assertInvoke(getSingleMethod(c, "t8"), "scala/Predef$", "println")
+    assertNoInvoke(getSingleMethod(c, "t9"))
+  }
+
+  @Test
+  def inlineNoInlineOverride(): Unit = {
+    val code =
+      """class C {
+        |  @inline   final def f1(x: Int) = x
+        |  @noinline final def f2(x: Int) = x
+        |            final def f3(x: Int) = x
+        |
+        |  def t1 = f1(1)             // inlined
+        |  def t2 = f2(1)             // not inlined
+        |  def t3 = f1(1): @noinline  // not inlined
+        |  def t4 = f2(1): @inline    // not inlined (cannot override the def-site @noinline)
+        |  def t5 = f3(1): @inline    // inlined
+        |  def t6 = f3(1): @noinline  // not inlined
+        |
+        |  def t7 = f1(1) + (f3(1): @inline)   // without parenthesis, the ascription encloses the entire expression..
+        |  def t8 = f1(1) + (f1(1): @noinline)
+        |  def t9 = f1(1) + f1(1) : @noinline  // the ascription goes on the entire expression, so on the + invocation.. both f1 are inlined
+        |}
+      """.stripMargin
+
+    val List(c) = compile(code)
+    assertNoInvoke(getSingleMethod(c, "t1"))
+    assertInvoke(getSingleMethod(c, "t2"), "C", "f2")
+    assertInvoke(getSingleMethod(c, "t3"), "C", "f1")
+    assertInvoke(getSingleMethod(c, "t4"), "C", "f2")
+    assertNoInvoke(getSingleMethod(c, "t5"))
+    assertInvoke(getSingleMethod(c, "t6"), "C", "f3")
+    assertNoInvoke(getSingleMethod(c, "t7"))
+    assertInvoke(getSingleMethod(c, "t8"), "C", "f1")
+    assertNoInvoke(getSingleMethod(c, "t9"))
+  }
+
   @Test
   def inlineHigherOrder(): Unit = {
     val code =
@@ -1133,5 +1150,69 @@ class InlinerTest extends ClearAfterClass {
     assertInvoke(getSingleMethod(c, "t3"), "scala/Function1", "apply$mcII$sp")
     assertInvoke(getSingleMethod(c, "t4"), "scala/Function1", "apply$mcII$sp")
     assertInvoke(getSingleMethod(c, "t5"), "C", "h")
+  }
+
+  @Test
+  def twoStepNoInlineHandler(): Unit = {
+    val code =
+      """class C {
+        |  @inline final def f = try 1 catch { case _: Throwable => 2 }
+        |  @inline final def g = f
+        |  def t = println(g)       // cannot inline g onto non-empty stack once that f was inlined into g
+        |}
+      """.stripMargin
+
+    val warn =
+      """C::g()I is annotated @inline but could not be inlined:
+        |The operand stack at the callsite in C::t()V contains more values than the
+        |arguments expected by the callee C::g()I. These values would be discarded
+        |when entering an exception handler declared in the inlined method.""".stripMargin
+
+    val List(c) = compile(code, allowMessage = _.msg contains warn)
+    assertInvoke(getSingleMethod(c, "t"), "C", "g")
+  }
+
+  @Test
+  def twoStepNoInlinePrivate(): Unit = {
+    val code =
+      """class C {
+        |  @inline final def g = {
+        |    @noinline def f = 0
+        |    f
+        |  }
+        |  @inline final def h = g   // after inlining g, h has an invocate of private method f$1
+        |}
+        |class D {
+        |  def t(c: C) = c.h  // cannot inline
+        |}
+      """.stripMargin
+
+    val warn =
+      """C::h()I is annotated @inline but could not be inlined:
+        |The callee C::h()I contains the instruction INVOKESPECIAL C.f$1 ()I
+        |that would cause an IllegalAccessError when inlined into class D.""".stripMargin
+
+    val List(c, d) = compile(code, allowMessage = _.msg contains warn)
+    assertInvoke(getSingleMethod(c, "h"), "C", "f$1")
+    assertInvoke(getSingleMethod(d, "t"), "C", "h")
+  }
+
+  @Test
+  def twoStepInlinePrivate(): Unit = {
+    val code =
+      """class C {
+        |  @inline final def g = {  // initially, g invokes the private method f$1, but then f$1 is inlined
+        |    @inline def f = 0
+        |    f
+        |  }
+        |}
+        |class D {
+        |  def t(c: C) = c.g  // can inline
+        |}
+      """.stripMargin
+
+    val List(c, d) = compile(code)
+    assertNoInvoke(getSingleMethod(c, "g"))
+    assertNoInvoke(getSingleMethod(d, "t"))
   }
 }

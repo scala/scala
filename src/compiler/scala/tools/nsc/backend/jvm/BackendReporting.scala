@@ -44,7 +44,7 @@ object BackendReporting {
   implicit class RightBiasedEither[A, B](val v: Either[A, B]) extends AnyVal {
     def map[U](f: B => U) = v.right.map(f)
     def flatMap[BB](f: B => Either[A, BB]) = v.right.flatMap(f)
-    def filter(f: B => Boolean)(implicit empty: A): Either[A, B] = v match {
+    def withFilter(f: B => Boolean)(implicit empty: A): Either[A, B] = v match {
       case Left(_)  => v
       case Right(e) => if (f(e)) v else Left(empty) // scalaz.\/ requires an implicit Monoid m to get m.empty
     }
@@ -86,8 +86,8 @@ object BackendReporting {
     def emitWarning(settings: ScalaSettings): Boolean
   }
 
-  // Method filter in RightBiasedEither requires an implicit empty value. Taking the value here
-  // in scope allows for-comprehensions that desugar into filter calls (for example when using a
+  // Method withFilter in RightBiasedEither requires an implicit empty value. Taking the value here
+  // in scope allows for-comprehensions that desugar into withFilter calls (for example when using a
   // tuple de-constructor).
   implicit object emptyOptimizerWarning extends OptimizerWarning {
     def emitWarning(settings: ScalaSettings): Boolean = false

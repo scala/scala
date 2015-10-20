@@ -4130,6 +4130,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             ann setType arg1.tpe.withAnnotation(annotInfo)
           }
           val atype = ann.tpe
+          // For `f(): @inline/noinline` callsites, add the InlineAnnotatedAttachment. TypeApplys
+          // are eliminated by erasure, so add it to the underlying function in this case.
+          def setInlineAttachment(t: Tree, att: InlineAnnotatedAttachment): Unit = t match {
+            case TypeApply(fun, _) => setInlineAttachment(fun, att)
+            case _ => t.updateAttachment(att)
+          }
+          if (atype.hasAnnotation(definitions.ScalaNoInlineClass)) setInlineAttachment(arg1, NoInlineCallsiteAttachment)
+          else if (atype.hasAnnotation(definitions.ScalaInlineClass)) setInlineAttachment(arg1, InlineCallsiteAttachment)
           Typed(arg1, resultingTypeTree(atype)) setPos tree.pos setType atype
         }
       }
