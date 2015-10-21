@@ -64,6 +64,9 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
    *   return scala.runtime.LambdaDeserializer.deserializeLambda(MethodHandles.lookup(), cache, l);
    * }
    */
+  // TODO the cache can't be emitted if we're in an interface, is it acceptable to pay for a method handle
+  // lookup for each call? We could use a more global cache (e.g. in LambdaDeserializer), but then we have to
+  // worry about using weak references to avoid classloader leaks.
   def addLambdaDeserialize(classNode: ClassNode): Unit = {
     val cw = classNode
     import scala.tools.asm.Opcodes._
@@ -76,7 +79,8 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     // This is fine, even if `visitInnerClass` was called before for MethodHandles.Lookup: duplicates are not emitted.
     cw.visitInnerClass("java/lang/invoke/MethodHandles$Lookup", "java/lang/invoke/MethodHandles", "Lookup", ACC_PUBLIC + ACC_FINAL + ACC_STATIC)
 
-    {
+    val isInterface = (classNode.access | ACC_INTERFACE) != 0
+    if (isInterface){
       val fv = cw.visitField(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambdaCache$", "Ljava/util/Map;", null, null)
       fv.visitEnd()
     }
@@ -84,8 +88,12 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     {
       val mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambda$", "(Ljava/lang/invoke/SerializedLambda;)Ljava/lang/Object;", null, null)
       mv.visitCode()
-      // javaBinaryName returns the internal name of a class. Also used in BTypesFromsymbols.classBTypeFromSymbol.
-      mv.visitFieldInsn(GETSTATIC, classNode.name, "$deserializeLambdaCache$", "Ljava/util/Map;")
+      if (isInterface)
+        mv.visitInsn(ACONST_NULL)
+      else {
+        // javaBinaryName returns the internal name of a class. Also used in BTypesFromsymbols.classBTypeFromSymbol.
+        mv.visitFieldInsn(GETSTATIC, classNode.name, "$deserializeLambdaCache$", "Ljava/util/Map;")
+      }
       mv.visitVarInsn(ASTORE, 1)
       mv.visitVarInsn(ALOAD, 1)
       val l0 = new Label()
