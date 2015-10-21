@@ -357,7 +357,7 @@ trait TraversableLike[+A, +Repr] extends Any
     result
   }
 
-  /** Tests whether a predicate holds for some of the elements of this $coll.
+  /** Tests whether a predicate holds for at least one element of this $coll.
    *
    *  $mayNotTerminateInf
    *

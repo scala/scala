@@ -36,7 +36,7 @@ object ListMap extends ImmutableMapFactory[ListMap] {
   }
 }
 
-/** This class implements immutable maps using a list-based data structure.
+/** This class implements immutable maps using a list-based data structure, which preserves insertion order.
  *  Instances of `ListMap` represent empty maps; they can be either created by
  *  calling the constructor directly, or by applying the function `ListMap.empty`.
  *

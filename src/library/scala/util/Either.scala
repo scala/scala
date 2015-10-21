@@ -329,8 +329,8 @@ object Either {
      * }}}
      *
      */
-    def forall(f: A => Boolean) = e match {
-      case Left(a) => f(a)
+    def forall(@deprecatedName('f) p: A => Boolean) = e match {
+      case Left(a) => p(a)
       case Right(_) => true
     }
 
@@ -345,8 +345,8 @@ object Either {
      * }}}
      *
      */
-    def exists(f: A => Boolean) = e match {
-      case Left(a) => f(a)
+    def exists(@deprecatedName('f) p: A => Boolean) = e match {
+      case Left(a) => p(a)
       case Right(_) => false
     }
 
@@ -507,9 +507,9 @@ object Either {
      * Left(12).right.exists(_ > 10)   // false
      * }}}
      */
-    def exists(f: B => Boolean) = e match {
+    def exists(@deprecatedName('f) p: B => Boolean) = e match {
       case Left(_) => false
-      case Right(b) => f(b)
+      case Right(b) => p(b)
     }
 
     /**

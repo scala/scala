@@ -693,25 +693,37 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     Iterator continually in.readLine("") takeWhile (x => x != null && cond(x))
   }
 
+  /* :paste -raw file
+   * or
+   * :paste < EOF
+   *   your code
+   * EOF
+   * :paste <~ EOF
+   *   ~your code
+   * EOF
+   */
   def pasteCommand(arg: String): Result = {
     var shouldReplay: Option[String] = None
     def result = Result(keepRunning = true, shouldReplay)
-    val (raw, file) =
-      if (arg.isEmpty) (false, None)
+    val (raw, file, margin) =
+      if (arg.isEmpty) (false, None, None)
       else {
-        val r = """(-raw)?(\s+)?([^\-]\S*)?""".r
-        arg match {
-          case r(flag, sep, name) =>
-            if (flag != null && name != null && sep == null)
-              echo(s"""I assume you mean "$flag $name"?""")
-            (flag != null, Option(name))
-          case _ =>
-            echo("usage: :paste -raw file")
-            return result
+        def maybeRaw(ss: List[String]) = if (ss.nonEmpty && ss.head == "-raw") (true, ss.tail) else (false, ss)
+        def maybeHere(ss: List[String]) =
+          if (ss.nonEmpty && ss.head.startsWith("<")) (ss.head.dropWhile(_ == '<'), ss.tail)
+          else (null, ss)
+
+        val (raw0, ss0) = maybeRaw(words(arg))
+        val (margin0, ss1) = maybeHere(ss0)
+        val file0 = ss1 match {
+          case Nil      => null
+          case x :: Nil => x
+          case _        => echo("usage: :paste [-raw] file | < EOF") ; return result
         }
+        (raw0, Option(file0), Option(margin0))
       }
-    val code = file match {
-      case Some(name) =>
+    val code = (file, margin) match {
+      case (Some(name), None) =>
         withFile(name) { f =>
           shouldReplay = Some(s":paste $arg")
           val s = f.slurp.trim
@@ -719,9 +731,16 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
           else echo(s"Pasting file $f...")
           s
         } getOrElse ""
-      case None =>
-        echo("// Entering paste mode (ctrl-D to finish)\n")
-        val text = (readWhile(_ => true) mkString "\n").trim
+      case (eof, _) =>
+        echo(s"// Entering paste mode (${ eof getOrElse "ctrl-D" } to finish)\n")
+        val delimiter = eof orElse replProps.pasteDelimiter.option
+        val input = readWhile(s => delimiter.isEmpty || delimiter.get != s) mkString "\n"
+        val text = (
+          margin filter (_.nonEmpty) map {
+            case "-" => input.lines map (_.trim) mkString "\n"
+            case m   => input stripMargin m.head   // ignore excess chars in "<<||"
+          } getOrElse input
+        ).trim
         if (text.isEmpty) echo("\n// Nothing pasted, nothing gained.\n")
         else echo("\n// Exiting paste mode, now interpreting.\n")
         text
