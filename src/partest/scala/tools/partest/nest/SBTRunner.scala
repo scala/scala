@@ -51,11 +51,11 @@ class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, log
     }
 
   def makeStatus(t: TestState): (Status, OptionalThrowable) = t match {
-    case _: Uninitialized => (Status.Pending, new OptionalThrowable)
-    case _: Pass => (Status.Success, new OptionalThrowable)
-    case _: Updated => (Status.Success, new OptionalThrowable)
-    case _: Skip => (Status.Skipped, new OptionalThrowable)
-    case _: Fail => (Status.Failure, new OptionalThrowable)
-    case Crash(_,e,_) => (Status.Error, new OptionalThrowable(e))
+    case Uninitialized(_) => (Status.Pending, new OptionalThrowable)
+    case Pass(_)          => (Status.Success, new OptionalThrowable)
+    case Updated(_)       => (Status.Success, new OptionalThrowable)
+    case Skip(_, _)       => (Status.Skipped, new OptionalThrowable)
+    case Fail(_, _, _)    => (Status.Failure, new OptionalThrowable)
+    case Crash(_, e, _)   => (Status.Error, new OptionalThrowable(e))
   }
 }
