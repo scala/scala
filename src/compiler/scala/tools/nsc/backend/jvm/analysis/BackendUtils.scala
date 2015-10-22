@@ -3,7 +3,7 @@ package backend.jvm
 package analysis
 
 import scala.annotation.switch
-import scala.tools.asm.{Handle, Type, Label}
+import scala.tools.asm.{Opcodes, Handle, Type, Label}
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis.{Frame, BasicInterpreter, Analyzer, Value}
 import scala.tools.nsc.backend.jvm.BTypes._
@@ -28,7 +28,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
    * A wrapper to make ASM's Analyzer a bit easier to use.
    */
   class AsmAnalyzer[V <: Value](methodNode: MethodNode, classInternalName: InternalName, val analyzer: Analyzer[V] = new Analyzer(new BasicInterpreter)) {
-    localOpt.computeMaxLocalsMaxStack(methodNode)
+    computeMaxLocalsMaxStack(methodNode)
     analyzer.analyze(classInternalName, methodNode)
     def frameAt(instruction: AbstractInsnNode): Frame[V] = analyzer.frameAt(instruction, methodNode)
   }
@@ -255,5 +255,131 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
       }
     }
     innerClasses.toList
+  }
+
+  /**
+   * In order to run an Analyzer, the maxLocals / maxStack fields need to be available. The ASM
+   * framework only computes these values during bytecode generation.
+   *
+   * NOTE 1: as explained in the `analysis` package object, the maxStack value used by the Analyzer
+   * may be smaller than the correct maxStack value in the classfile (Analyzers only use a single
+   * slot for long / double values). The maxStack computed here are correct for running an analyzer,
+   * but not for writing in the classfile. We let the ClassWriter recompute max's.
+   *
+   * NOTE 2: the maxStack value computed here may be larger than the smallest correct value
+   * that would allow running an analyzer, see `InstructionStackEffect.forAsmAnalysisConservative`.
+   *
+   * NOTE 3: the implementation doesn't look at instructions that cannot be reached, it computes
+   * the max local / stack size in the reachable code. These max's work just fine for running an
+   * Analyzer: its implementation also skips over unreachable code in the same way.
+   */
+  def computeMaxLocalsMaxStack(method: MethodNode): Unit = {
+    import Opcodes._
+
+    if (isAbstractMethod(method) || isNativeMethod(method)) {
+      method.maxLocals = 0
+      method.maxStack = 0
+    } else if (!maxLocalsMaxStackComputed(method)) {
+      val size = method.instructions.size
+
+      var maxLocals = (Type.getArgumentsAndReturnSizes(method.desc) >> 2) - (if (isStaticMethod(method)) 1 else 0)
+      var maxStack = 0
+
+      // queue of instruction indices where analysis should start
+      var queue = new Array[Int](8)
+      var top = -1
+      def enq(i: Int): Unit = {
+        if (top == queue.length - 1) {
+          val nq = new Array[Int](queue.length * 2)
+          Array.copy(queue, 0, nq, 0, queue.length)
+          queue = nq
+        }
+        top += 1
+        queue(top) = i
+      }
+      def deq(): Int = {
+        val r = queue(top)
+        top -= 1
+        r
+      }
+
+      // for each instruction in the queue, contains the stack height at this instruction.
+      // once an instruction has been treated, contains -1 to prevent re-enqueuing
+      val stackHeights = new Array[Int](size)
+
+      def enqInsn(insn: AbstractInsnNode, height: Int): Unit = {
+        enqInsnIndex(method.instructions.indexOf(insn), height)
+      }
+
+      def enqInsnIndex(insnIndex: Int, height: Int): Unit = {
+        if (insnIndex < size && stackHeights(insnIndex) != -1) {
+          stackHeights(insnIndex) = height
+          enq(insnIndex)
+        }
+      }
+
+      val tcbIt = method.tryCatchBlocks.iterator()
+      while (tcbIt.hasNext) {
+        val tcb = tcbIt.next()
+        enqInsn(tcb.handler, 1)
+        if (maxStack == 0) maxStack = 1
+      }
+
+      enq(0)
+      while (top != -1) {
+        val insnIndex = deq()
+        val insn = method.instructions.get(insnIndex)
+        val initHeight = stackHeights(insnIndex)
+        stackHeights(insnIndex) = -1 // prevent i from being enqueued again
+
+        if (insn.getOpcode == -1) { // frames, labels, line numbers
+          enqInsnIndex(insnIndex + 1, initHeight)
+        } else {
+          val (cons, prod) = InstructionStackEffect.forAsmAnalysisConservative(insn)
+          val heightAfter = initHeight - cons + prod
+          if (heightAfter > maxStack) maxStack = heightAfter
+
+          // update maxLocals
+          insn match {
+            case v: VarInsnNode =>
+              val longSize = if (isSize2LoadOrStore(v.getOpcode)) 1 else 0
+              maxLocals = math.max(maxLocals, v.`var` + longSize + 1) // + 1 becauase local numbers are 0-based
+
+            case i: IincInsnNode =>
+              maxLocals = math.max(maxLocals, i.`var` + 1)
+
+            case _ =>
+          }
+
+          insn match {
+            case j: JumpInsnNode =>
+              enqInsn(j.label, heightAfter)
+              val opc = j.getOpcode
+              if (opc != GOTO) enqInsnIndex(insnIndex + 1, heightAfter) // jump is conditional, so the successor is also a possible control flow target
+            case l: LookupSwitchInsnNode =>
+              var j = 0
+              while (j < l.labels.size) {
+                enqInsn(l.labels.get(j), heightAfter); j += 1
+              }
+              enqInsn(l.dflt, heightAfter)
+            case t: TableSwitchInsnNode =>
+              var j = 0
+              while (j < t.labels.size) {
+                enqInsn(t.labels.get(j), heightAfter); j += 1
+              }
+              enqInsn(t.dflt, heightAfter)
+            case _ =>
+              val opc = insn.getOpcode
+              if (opc != ATHROW && !isReturn(insn))
+                enqInsnIndex(insnIndex + 1, heightAfter)
+          }
+        }
+      }
+
+      method.maxLocals = maxLocals
+      method.maxStack = maxStack
+
+      maxLocalsMaxStackComputed += method
+    }
   }
 }

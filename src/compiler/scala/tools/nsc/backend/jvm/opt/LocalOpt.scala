@@ -51,38 +51,6 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
   import backendUtils._
 
   /**
-   * In order to run an Analyzer, the maxLocals / maxStack fields need to be available. The ASM
-   * framework only computes these values during bytecode generation.
-   *
-   * Since there's currently no better way, we run a bytecode generator on the method and extract
-   * the computed values. This required changes to the ASM codebase:
-   *   - the [[MethodWriter]] class was made public
-   *   - accessors for maxLocals / maxStack were added to the MethodWriter class
-   *
-   * We could probably make this faster (and allocate less memory) by hacking the ASM framework
-   * more: create a subclass of MethodWriter with a /dev/null byteVector. Another option would be
-   * to create a separate visitor for computing those values, duplicating the functionality from the
-   * MethodWriter.
-   *
-   * NOTE: the maxStack value computed by this method allocates two slots for long / double values,
-   * as required by the JVM spec. For running an Analyzer, one slot per long / double would be fine.
-   * See comment in `analysis` package object.
-   */
-  def computeMaxLocalsMaxStack(method: MethodNode): Unit = {
-    if (!maxLocalsMaxStackComputed(method)) {
-      method.maxLocals = 0
-      method.maxStack = 0
-      val cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
-      val excs = method.exceptions.asScala.toArray
-      val mw = cw.visitMethod(method.access, method.name, method.desc, method.signature, excs).asInstanceOf[MethodWriter]
-      method.accept(mw)
-      method.maxLocals = mw.getMaxLocals
-      method.maxStack = mw.getMaxStack
-      maxLocalsMaxStackComputed += method
-    }
-  }
-
-  /**
    * Remove unreachable code from a method.
    *
    * This implementation only removes instructions that are unreachable for an ASM analyzer /
@@ -225,7 +193,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
     var i = 0
     var liveLabels = Set.empty[LabelNode]
     var removedInstructions = Set.empty[AbstractInsnNode]
-    var maxLocals = Type.getArgumentsAndReturnSizes(method.desc) >> 2 - (if (BytecodeUtils.isStaticMethod(method)) 1 else 0)
+    var maxLocals = (Type.getArgumentsAndReturnSizes(method.desc) >> 2) - (if (BytecodeUtils.isStaticMethod(method)) 1 else 0)
     var maxStack = 0
     val itr = method.instructions.iterator()
     while (itr.hasNext) {
