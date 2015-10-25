@@ -45,7 +45,7 @@ object Sorting {
 
   /** Sort an array of Floats using `java.util.Arrays.sort`. */
   def quickSort(a: Array[Float]): Unit  = java.util.Arrays.sort(a)
-  
+
   private final val qsortThreshold = 16
 
   /** Sort array `a` with quicksort, using the Ordering on its elements.
@@ -57,9 +57,9 @@ object Sorting {
     def inner(a: Array[K], i0: Int, iN: Int, ord: Ordering[K]): Unit = {
       if (iN - i0 < qsortThreshold) insertionSort(a, i0, iN, ord)
       else {
-        var iK = (i0 + iN) >>> 1    // Unsigned div by 2
+        val iK = (i0 + iN) >>> 1    // Unsigned div by 2
         // Find index of median of first, central, and last elements
-        var pL = 
+        var pL =
           if (ord.compare(a(i0), a(iN - 1)) <= 0)
             if (ord.compare(a(i0), a(iK)) < 0)
               if (ord.compare(a(iN - 1), a(iK)) < 0) iN - 1 else iK
@@ -140,9 +140,9 @@ object Sorting {
     }
     inner(a, 0, a.length, implicitly[Ordering[K]])
   }
-  
+
   private final val mergeThreshold = 32
-  
+
   // Ordering[T] might be slow especially for boxed primitives, so use binary search variant of insertion sort
   // Caller must pass iN >= i0 or math will fail.  Also, i0 >= 0.
   private def insertionSort[@specialized T](a: Array[T], i0: Int, iN: Int, ord: Ordering[T]): Unit = {
@@ -176,7 +176,7 @@ object Sorting {
       m += 1
     }
   }
-  
+
   // Caller is required to pass iN >= i0, else math will fail.  Also, i0 >= 0.
   private def mergeSort[@specialized T: ClassTag](a: Array[T], i0: Int, iN: Int, ord: Ordering[T], scratch: Array[T] = null): Unit = {
     if (iN - i0 < mergeThreshold) insertionSort(a, i0, iN, ord)
@@ -188,7 +188,7 @@ object Sorting {
       mergeSorted(a, i0, iK, iN, ord, sc)
     }
   }
-  
+
   // Must have 0 <= i0 < iK < iN
   private def mergeSorted[@specialized T](a: Array[T], i0: Int, iK: Int, iN: Int, ord: Ordering[T], scratch: Array[T]): Unit = {
     // Check to make sure we're not already in order
@@ -212,7 +212,7 @@ object Sorting {
       // Don't need to finish a(i) because it's already in place, k = i
     }
   }
-  
+
   // Why would you even do this?
   private def booleanSort(a: Array[Boolean]): Unit = {
     var i = 0
@@ -235,7 +235,7 @@ object Sorting {
   // TODO: add upper bound: T <: AnyRef, propagate to callers below (not binary compatible)
   // Maybe also rename all these methods to `sort`.
   @inline private def sort[T](a: Array[T], ord: Ordering[T]): Unit = a match {
-    case _: Array[AnyRef]  => 
+    case _: Array[AnyRef]  =>
       // Note that runtime matches are covariant, so could actually be any Array[T] s.t. T is not primitive (even boxed value classes)
       if (a.length > 1 && (ord eq null)) throw new NullPointerException("Ordering")
       java.util.Arrays.sort(a, ord)

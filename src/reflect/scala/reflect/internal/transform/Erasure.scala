@@ -3,8 +3,6 @@ package reflect
 package internal
 package transform
 
-import Flags.{PARAMACCESSOR, METHOD}
-
 trait Erasure {
 
   val global: SymbolTable

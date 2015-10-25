@@ -10,7 +10,7 @@ package scala
 package tools.ant
 package sabbus
 
-import java.io.{ File, FileWriter }
+import java.io.File
 import org.apache.tools.ant.Project
 import org.apache.tools.ant.taskdefs.Java
 import org.apache.tools.ant.util.{ GlobPatternMapper, SourceFileScanner }

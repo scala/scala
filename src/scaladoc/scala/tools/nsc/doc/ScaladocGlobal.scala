@@ -6,11 +6,7 @@
 package scala.tools.nsc
 package doc
 
-import scala.tools.nsc.ast.parser.{ SyntaxAnalyzer, BracePatch }
 import reporters.Reporter
-import typechecker.Analyzer
-import scala.reflect.internal.util.{ BatchSourceFile, RangePosition }
-
 
 trait ScaladocGlobalTrait extends Global {
   outer =>

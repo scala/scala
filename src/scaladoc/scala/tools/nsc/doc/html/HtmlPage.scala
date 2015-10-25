@@ -15,7 +15,7 @@ import model._
 
 import scala.xml.NodeSeq
 import scala.xml.Elem
-import scala.xml.dtd.{DocType, PublicID}
+import scala.xml.dtd.DocType
 import scala.collection._
 import java.io.Writer
 
@@ -245,10 +245,10 @@ abstract class HtmlPage extends Page { thisPage =>
         <img src={ relativeLinkTo(List("permalink.png", "lib")) } alt="Permalink" />
       </a>
     </span>
-	
-  def docEntityKindToCompanionTitle(ety: DocTemplateEntity, baseString: String = "See companion") = 
+
+  def docEntityKindToCompanionTitle(ety: DocTemplateEntity, baseString: String = "See companion") =
     ety.companion match{
-	  case Some(companion) => 
+          case Some(companion) =>
 	    s"$baseString${
 		if(companion.isObject) " object"
 		else if(companion.isTrait) " trait"

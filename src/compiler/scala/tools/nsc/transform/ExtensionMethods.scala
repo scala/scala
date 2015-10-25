@@ -7,7 +7,7 @@ package transform
 
 import symtab._
 import Flags._
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 
 /**
  * Perform Step 1 in the inline classes SIP: Creates extension methods for all

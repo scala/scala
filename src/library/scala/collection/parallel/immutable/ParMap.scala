@@ -16,7 +16,6 @@ import scala.collection.generic.GenericParMapCompanion
 import scala.collection.generic.CanCombineFrom
 import scala.collection.parallel.ParMapLike
 import scala.collection.parallel.Combiner
-import scala.collection.GenMapLike
 
 /** A template trait for immutable parallel maps.
  *

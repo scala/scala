@@ -726,7 +726,7 @@ trait ReificationSupport { self: SymbolTable =>
     protected object FilterCall {
       def unapply(tree: Tree): Option[(Tree,Tree)] = tree match {
         case Apply(Select(obj, nme.withFilter | nme.filter), arg :: Nil) =>
-          Some(obj, arg)
+          Some((obj, arg))
         case _ => None
       }
     }
@@ -760,10 +760,10 @@ trait ReificationSupport { self: SymbolTable =>
       def unapply(tree: Tree) = tree match {
         case SyntacticApplied(SyntacticTypeApplied(sel @ Select(lhs, meth), _), (f :: Nil) :: Nil)
           if name == meth && sel.hasAttachment[ForAttachment.type] =>
-          Some(lhs, f)
+          Some((lhs, f))
         case SyntacticApplied(SyntacticTypeApplied(sel @ Select(lhs, meth), _), (f :: Nil) :: _ :: Nil)
           if name == meth && sel.hasAttachment[ForAttachment.type] =>
-          Some(lhs, f)
+          Some((lhs, f))
         case _ => None
       }
     }
@@ -1132,7 +1132,7 @@ trait ReificationSupport { self: SymbolTable =>
       def apply(tpt: Tree, where: List[Tree]): ExistentialTypeTree =
         ExistentialTypeTree(tpt, where.map {
           case md: MemberDef => md
-          case tree => throw new IllegalArgumentException("$tree is not legal forSome definition")
+          case tree => throw new IllegalArgumentException(s"$tree is not legal forSome definition")
         })
       def unapply(tree: Tree): Option[(Tree, List[MemberDef])] = tree match {
         case MaybeTypeTreeOriginal(ExistentialTypeTree(tpt, where)) =>

@@ -12,7 +12,6 @@ abstract class DefaultMacroCompiler extends Resolvers
   import treeInfo._
   import definitions._
   val runDefinitions = currentRun.runDefinitions
-  import runDefinitions.Predef_???
 
   val typer: global.analyzer.Typer
   val context = typer.context

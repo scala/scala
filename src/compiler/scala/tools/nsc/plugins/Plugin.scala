@@ -6,14 +6,12 @@
 package scala.tools.nsc
 package plugins
 
-import scala.tools.nsc.io.{ Jar }
+import scala.tools.nsc.io.Jar
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.{ Directory, File, Path }
 import java.io.InputStream
-import java.util.zip.ZipException
 
 import scala.collection.mutable
-import mutable.ListBuffer
 import scala.util.{ Try, Success, Failure }
 
 /** Information about a plugin loaded from a jar file.

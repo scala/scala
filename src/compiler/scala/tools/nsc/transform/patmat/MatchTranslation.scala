@@ -7,7 +7,7 @@
 package scala.tools.nsc.transform.patmat
 
 import scala.language.postfixOps
-import scala.collection.mutable
+
 import scala.reflect.internal.util.Statistics
 
 /** Translate typed Trees that represent pattern matches into the patternmatching IR, defined by TreeMakers.
@@ -18,8 +18,7 @@ trait MatchTranslation {
   import PatternMatchingStats._
   import global._
   import definitions._
-  import global.analyzer.{ErrorUtils, formalTypes}
-  import treeInfo.{ WildcardStarArg, Unapplied, isStar, unbind }
+  import treeInfo.{ Unapplied, unbind }
   import CODE._
 
   // Always map repeated params to sequences

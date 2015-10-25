@@ -15,19 +15,14 @@ import scala.concurrent.{ Future, ExecutionContext }
 import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.{ ClassTag, classTag }
 import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
-import scala.tools.nsc.interactive
-import scala.tools.nsc.reporters.StoreReporter
-import scala.tools.nsc.util.ClassPath.DefaultJavaContext
 import scala.tools.util.PathResolverFactory
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.typechecker.{ TypeStrings, StructuredTypeStrings }
 import scala.tools.nsc.util._
 import ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.util.Exceptional.unwrap
-import scala.tools.nsc.backend.JavaPlatform
 import javax.script.{AbstractScriptEngine, Bindings, ScriptContext, ScriptEngine, ScriptEngineFactory, ScriptException, CompiledScript, Compilable}
 import java.net.URL
-import java.io.File
 
 /** An interpreter for Scala code.
  *

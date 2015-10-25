@@ -5,14 +5,11 @@ import java.lang.Math.min
 import symtab.Flags._
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.runtime.ReflectionUtils
-import scala.collection.mutable.ListBuffer
-import scala.reflect.ClassTag
 import scala.reflect.internal.util.Statistics
 import scala.reflect.macros.util._
 import scala.util.control.ControlThrowable
 import scala.reflect.internal.util.ListOfNil
 import scala.reflect.macros.runtime.{AbortMacroException, MacroRuntimes}
-import scala.reflect.runtime.{universe => ru}
 import scala.reflect.macros.compiler.DefaultMacroCompiler
 import scala.tools.reflect.FastTrack
 import scala.runtime.ScalaRunTime

@@ -12,7 +12,7 @@ import java.io.{ IOException, InputStream, ByteArrayInputStream, FilterInputStre
 import java.io.{ File => JFile }
 import java.util.zip.{ ZipEntry, ZipFile, ZipInputStream }
 import java.util.jar.Manifest
-import scala.collection.{ immutable, mutable }
+import scala.collection.mutable
 import scala.collection.convert.WrapAsScala.asScalaIterator
 import scala.annotation.tailrec
 

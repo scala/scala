@@ -8,9 +8,9 @@ package tools
 package nsc
 package interpreter
 
-import scala.collection.{ mutable, immutable }
-import mutable.ListBuffer
 import scala.language.implicitConversions
+
+import scala.collection.mutable.ListBuffer
 
 class ProcessResult(val line: String) {
   import scala.sys.process._

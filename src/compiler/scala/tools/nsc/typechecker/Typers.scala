@@ -14,7 +14,7 @@ package tools.nsc
 package typechecker
 
 import scala.collection.{mutable, immutable}
-import scala.reflect.internal.util.{ BatchSourceFile, Statistics, shortClassOfInstance, ListOfNil }
+import scala.reflect.internal.util.{ Statistics, ListOfNil }
 import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
@@ -110,7 +110,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with PatternTyper with TyperContextErrors {
     import context0.unit
-    import typeDebug.{ ptTree, ptBlock, ptLine, inGreen, inRed }
+    import typeDebug.ptTree
     import TyperErrorGen._
     val runDefinitions = currentRun.runDefinitions
     import runDefinitions._

@@ -9,13 +9,9 @@
 package scala
 package collection.parallel.mutable
 
-import scala.collection.generic.Sizing
 import scala.collection.mutable.ArraySeq
-import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.UnrolledBuffer
 import scala.collection.mutable.UnrolledBuffer.Unrolled
-import scala.collection.parallel.TaskSupport
-import scala.collection.parallel.unsupportedop
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.Task
 import scala.reflect.ClassTag
@@ -62,7 +58,7 @@ extends Combiner[T, ParArray[T]] {
     case that: UnrolledParArrayCombiner[t] =>
       buff concat that.buff
       this
-    case _ => unsupportedop("Cannot combine with combiner of different type.")
+    case _ => throw new UnsupportedOperationException("Cannot combine with combiner of different type.")
   }
 
   def size = buff.size

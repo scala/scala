@@ -9,10 +9,9 @@
 package scala.tools.nsc
 package ast.parser
 
-import scala.collection.{ mutable, immutable }
-import mutable.{ ListBuffer, StringBuilder }
+import scala.collection.mutable
+import mutable.ListBuffer
 import scala.reflect.internal.{ Precedence, ModifierFlags => Flags }
-import scala.reflect.internal.Chars.{ isScalaLetter }
 import scala.reflect.internal.util.{ SourceFile, Position, FreshNameCreator, ListOfNil }
 import Tokens._
 

@@ -9,8 +9,8 @@
 package scala
 package runtime
 
-import scala.collection.{ mutable, immutable }
-import scala.math.{ ScalaNumericConversions, ScalaNumericAnyConversions }
+import scala.collection.immutable
+import scala.math.ScalaNumericAnyConversions
 import immutable.NumericRange
 import Proxy.Typed
 

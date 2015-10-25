@@ -8,7 +8,7 @@
 
 package scala.tools.ant
 
-import org.apache.tools.ant.{AntClassLoader, Project}
+import org.apache.tools.ant.AntClassLoader
 import org.apache.tools.ant.taskdefs.Java
 import org.apache.tools.ant.types.Path
 

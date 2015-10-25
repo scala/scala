@@ -10,8 +10,6 @@ package scala
 package collection
 package immutable
 
-import mutable.{ Builder, ListBuffer }
-
 // TODO: Now the specialization exists there is no clear reason to have
 // separate classes for Range/NumericRange.  Investigate and consolidate.
 
@@ -193,7 +191,7 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
         // Either numRangeElements or (head + last) must be even, so divide the even one before multiplying
         val a = head.toLong
         val b = last.toLong
-        val ans = 
+        val ans =
           if ((numRangeElements & 1) == 0) (numRangeElements / 2) * (a + b)
           else numRangeElements * {
             // Sum is even, but we might overflow it, so divide in pieces and add back remainder

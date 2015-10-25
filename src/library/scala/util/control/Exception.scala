@@ -10,9 +10,7 @@ package scala
 package util
 package control
 
-import scala.collection.immutable.List
 import scala.reflect.{ ClassTag, classTag }
-import java.lang.reflect.InvocationTargetException
 import scala.language.implicitConversions
 
 

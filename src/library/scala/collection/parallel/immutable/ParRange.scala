@@ -12,7 +12,6 @@ package collection.parallel.immutable
 import scala.collection.immutable.Range
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.SeqSplitter
-import scala.collection.generic.CanCombineFrom
 import scala.collection.Iterator
 
 /** Parallel ranges.

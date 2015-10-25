@@ -9,13 +9,10 @@
 package scala
 package collection.parallel
 
-import scala.collection.Parallel
 import scala.collection.generic.Signalling
 import scala.collection.generic.DelegatedSignalling
 import scala.collection.generic.IdleSignalling
-import scala.collection.generic.CanCombineFrom
 import scala.collection.mutable.Builder
-import scala.collection.Iterator.empty
 import scala.collection.GenTraversableOnce
 import scala.collection.parallel.immutable.repetition
 
