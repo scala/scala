@@ -8,10 +8,9 @@ package scala
 package reflect
 package io
 
-import java.io.{ FileOutputStream, IOException, InputStream, OutputStream, BufferedOutputStream, ByteArrayOutputStream }
+import java.io.{ IOException, InputStream, OutputStream, BufferedOutputStream, ByteArrayOutputStream }
 import java.io.{ File => JFile }
 import java.net.URL
-import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.util.Statistics
 
 /**

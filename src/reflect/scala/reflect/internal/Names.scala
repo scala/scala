@@ -7,9 +7,9 @@ package scala
 package reflect
 package internal
 
-import scala.io.Codec
-import java.security.MessageDigest
 import scala.language.implicitConversions
+
+import scala.io.Codec
 
 trait Names extends api.Names {
   private final val HASH_SIZE  = 0x8000

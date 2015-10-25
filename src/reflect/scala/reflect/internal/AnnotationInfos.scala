@@ -7,7 +7,6 @@ package scala
 package reflect
 package internal
 
-import pickling.ByteCodecs
 import scala.annotation.tailrec
 import scala.collection.immutable.ListMap
 import scala.language.postfixOps

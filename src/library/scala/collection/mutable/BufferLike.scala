@@ -14,7 +14,7 @@ package mutable
 
 import generic._
 import script._
-import scala.annotation.{migration, bridge}
+import scala.annotation.migration
 
 /** A template trait for buffers of type `Buffer[A]`.
  *

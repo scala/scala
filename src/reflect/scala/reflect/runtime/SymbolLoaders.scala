@@ -2,8 +2,6 @@ package scala
 package reflect
 package runtime
 
-import internal.Flags
-import java.lang.{Class => jClass, Package => jPackage}
 import scala.collection.mutable
 import scala.reflect.runtime.ReflectionUtils.scalacShouldntLoadClass
 import scala.reflect.internal.Flags._

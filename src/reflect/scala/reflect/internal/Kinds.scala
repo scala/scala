@@ -7,7 +7,6 @@ package scala
 package reflect
 package internal
 
-import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.util.StringOps.{ countAsString, countElementsAsString }
 
 trait Kinds {

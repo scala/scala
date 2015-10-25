@@ -6,14 +6,13 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.collection.{ mutable, immutable }
-import scala.util.matching.Regex
-import scala.io.Codec
-import java.net.{ URL, MalformedURLException }
-import io.{ Path }
 import scala.language.implicitConversions
+
+import scala.collection.mutable
+import scala.io.Codec
+import java.net.URL
 import scala.reflect.runtime.{universe => ru}
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.ClassTag
 
 /** Collecting some power mode examples.
 
@@ -43,7 +42,7 @@ Lost after 18/flatten {
 /** A class for methods to be injected into the intp in power mode.
  */
 class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, replVals: ReplValsImpl) {
-  import intp.{ beQuietDuring, typeOfExpression, interpret, parse }
+  import intp.{ beQuietDuring, parse }
   import intp.global._
   import definitions.{ compilerTypeFromTag, compilerSymbolFromTag}
 

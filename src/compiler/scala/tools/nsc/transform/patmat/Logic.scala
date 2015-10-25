@@ -8,9 +8,9 @@ package scala
 package tools.nsc.transform.patmat
 
 import scala.language.postfixOps
+
 import scala.collection.mutable
 import scala.reflect.internal.util.{NoPosition, Position, Statistics, HashSet}
-import scala.tools.nsc.Global
 
 trait Logic extends Debugging  {
   import PatternMatchingStats._
@@ -646,7 +646,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
     }
 
 
-    import global.{ConstantType, Constant, EmptyScope, SingletonType, Literal, Ident, refinedType, singleType, TypeBounds, NoSymbol}
+    import global.{ConstantType, SingletonType, Literal, Ident, singleType, TypeBounds, NoSymbol}
     import global.definitions._
 
 

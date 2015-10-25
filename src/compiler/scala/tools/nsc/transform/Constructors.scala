@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package transform
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.ListOfNil
 import symtab.Flags._

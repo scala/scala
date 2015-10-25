@@ -6,16 +6,16 @@
 package scala
 package reflect.internal.util
 
+import scala.language.implicitConversions
+
 import java.lang.{ ClassLoader => JClassLoader }
-import java.lang.reflect.{ Constructor, Modifier, Method }
-import java.io.{ File => JFile }
+import java.lang.reflect.Modifier
 import java.net.{ URLClassLoader => JURLClassLoader }
 import java.net.URL
-import scala.reflect.internal.FatalError
+
 import scala.reflect.runtime.ReflectionUtils.{ show, unwrapHandler }
 import ScalaClassLoader._
 import scala.util.control.Exception.{ catching }
-import scala.language.implicitConversions
 import scala.reflect.{ ClassTag, classTag }
 
 trait HasClassPath {

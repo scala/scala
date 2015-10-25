@@ -5,8 +5,8 @@
 package scala
 package reflect.internal.util
 
-import scala.collection.{ mutable, immutable }
-import scala.reflect.io.{ AbstractFile, Streamable }
+import scala.collection.mutable
+import scala.reflect.io.AbstractFile
 import java.net.{ URL, URLConnection, URLStreamHandler }
 import java.security.cert.Certificate
 import java.security.{ ProtectionDomain, CodeSource }

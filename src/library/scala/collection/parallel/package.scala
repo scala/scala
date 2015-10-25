@@ -35,15 +35,7 @@ package object parallel {
     else sz
   }
 
-  private[parallel] def unsupported = throw new UnsupportedOperationException
-
-  private[parallel] def unsupportedop(msg: String) = throw new UnsupportedOperationException(msg)
-
-  private[parallel] def outofbounds(idx: Int) = throw new IndexOutOfBoundsException(idx.toString)
-
-  private[parallel] def getTaskSupport: TaskSupport = new ExecutionContextTaskSupport
-
-  val defaultTaskSupport: TaskSupport = getTaskSupport
+  val defaultTaskSupport: TaskSupport = new ExecutionContextTaskSupport
 
   def setTaskSupport[Coll](c: Coll, t: TaskSupport): Coll = {
     c match {
@@ -98,7 +90,7 @@ package parallel {
       }
     }
   }
-  
+
   trait FactoryOps[From, Elem, To] {
     trait Otherwise[R] {
       def otherwise(notbody: => R): R

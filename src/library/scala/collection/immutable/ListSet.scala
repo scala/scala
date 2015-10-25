@@ -11,8 +11,8 @@ package collection
 package immutable
 
 import generic._
-import scala.annotation.{tailrec, bridge}
-import mutable.{ ListBuffer, Builder }
+import scala.annotation.tailrec
+import mutable.Builder
 
 /** $factoryInfo
  *  @define Coll immutable.ListSet
@@ -179,6 +179,6 @@ class ListSet[A] extends AbstractSet[A]
 
     override def tail: ListSet[A] = self
   }
-  
+
   override def toSet[B >: A]: Set[B] = this.asInstanceOf[ListSet[B]]
 }

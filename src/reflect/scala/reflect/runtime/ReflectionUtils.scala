@@ -10,7 +10,6 @@ import java.lang.{Class => jClass}
 import java.lang.reflect.{ Method, InvocationTargetException, UndeclaredThrowableException }
 import scala.reflect.internal.util.AbstractFileClassLoader
 import scala.reflect.io._
-import java.io.{File => JFile}
 
 /** A few java-reflection oriented utility functions useful during reflection bootstrapping.
  */

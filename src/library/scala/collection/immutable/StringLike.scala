@@ -10,7 +10,7 @@ package scala
 package collection
 package immutable
 
-import mutable.{ ArrayBuilder, Builder }
+import mutable.Builder
 import scala.util.matching.Regex
 import scala.math.ScalaNumber
 import scala.reflect.ClassTag
@@ -208,32 +208,32 @@ self =>
     else "\\" + ch
 
   /** Split this string around the separator character
-   * 
+   *
    * If this string is the empty string, returns an array of strings
    * that contains a single empty string.
-   * 
+   *
    * If this string is not the empty string, returns an array containing
    * the substrings terminated by the start of the string, the end of the
    * string or the separator character, excluding empty trailing substrings
-   * 
-   * If the separator character is a surrogate character, only split on 
+   *
+   * If the separator character is a surrogate character, only split on
    * matching surrogate characters if they are not part of a surrogate pair
-   * 
+   *
    * The behaviour follows, and is implemented in terms of <a href="http://docs.oracle.com/javase/7/docs/api/java/lang/String.html#split%28java.lang.String%29">String.split(re: String)</a>
-   * 
-   * 
+   *
+   *
    * @example {{{
    * "a.b".split('.') //returns Array("a", "b")
-   * 
+   *
    * //splitting the empty string always returns the array with a single
    * //empty string
-   * "".split('.') //returns Array("") 
-   * 
+   * "".split('.') //returns Array("")
+   *
    * //only trailing empty substrings are removed
    * "a.".split('.') //returns Array("a")
    * ".a.".split('.') //returns Array("", "a")
    * "..a..".split('.') //returns Array("", "", "a")
-   * 
+   *
    * //all parts are empty and trailing
    * ".".split('.') //returns Array()
    * "..".split('.') //returns Array()
@@ -247,16 +247,16 @@ self =>
    * //well-formed surrogate pairs are not split
    * val highlow = highstring + lowstring
    * highlow.split(high) //returns Array(highlow)
-   * 
+   *
    * //bare surrogate characters are split
    * val bare = "_" + highstring + "_"
    * bare.split(high) //returns Array("_", "_")
-   * 
+   *
    *  }}}
-   * 
+   *
    * @param separator the character used as a delimiter
    */
-  def split(separator: Char): Array[String] = 
+  def split(separator: Char): Array[String] =
     toString.split(escape(separator))
 
 

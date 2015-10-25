@@ -11,7 +11,7 @@ package collection
 package mutable
 
 import generic._
-import immutable.{List, Nil}
+import immutable.List
 
 /**
  *  This class is used internally to represent mutable lists. It is the

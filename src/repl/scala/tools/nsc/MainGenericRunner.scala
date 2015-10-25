@@ -6,8 +6,8 @@
 package scala
 package tools.nsc
 
-import io.{ File }
-import util.{ ClassPath, ScalaClassLoader }
+import io.File
+import util.ClassPath
 import GenericRunnerCommand._
 
 object JarRunner extends CommonRunner {

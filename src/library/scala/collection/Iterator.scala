@@ -12,8 +12,6 @@ package collection
 import mutable.ArrayBuffer
 import scala.annotation.migration
 import immutable.Stream
-import scala.collection.generic.CanBuildFrom
-import scala.annotation.unchecked.{ uncheckedVariance => uV }
 
 /** The `Iterator` object provides various functions for creating specialized iterators.
  *
@@ -521,13 +519,13 @@ trait Iterator[+A] extends TraversableOnce[A] {
   def collect[B](pf: PartialFunction[A, B]): Iterator[B] = new AbstractIterator[B] {
     // Manually buffer to avoid extra layer of wrapping with buffered
     private[this] var hd: A = _
-    
+
     // Little state machine to keep track of where we are
     // Seek = 0; Found = 1; Empty = -1
     // Not in vals because scalac won't make them static (@inline def only works with -optimize)
     // BE REALLY CAREFUL TO KEEP COMMENTS AND NUMBERS IN SYNC!
     private[this] var status = 0/*Seek*/
-    
+
     def hasNext = {
       while (status == 0/*Seek*/) {
         if (self.hasNext) {
@@ -700,9 +698,9 @@ trait Iterator[+A] extends TraversableOnce[A] {
         }
       }
     }
-    
+
     val leading = new Leading
-    
+
     val trailing = new AbstractIterator[A] {
       private[this] var myLeading = leading
       /* Status flags meanings:
@@ -738,7 +736,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
         }
         else Iterator.empty.next()
       }
-            
+
       override def toString = "unknown-if-empty iterator"
     }
 
@@ -772,7 +770,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
         status = 1
         false
       }
-    def next() = 
+    def next() =
       if (hasNext) {
         if (status == 1) self.next()
         else {
@@ -1325,7 +1323,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    */
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Unit = {
     var i = start
-    val end = start + math.min(len, xs.length - start)   
+    val end = start + math.min(len, xs.length - start)
     while (i < end && hasNext) {
       xs(i) = next()
       i += 1

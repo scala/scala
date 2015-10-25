@@ -7,12 +7,11 @@ package scala
 package reflect
 package io
 
-import java.io.{
-  FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
-  BufferedInputStream, BufferedOutputStream, RandomAccessFile, File => JFile }
+import scala.language.implicitConversions
+
+import java.io.{ RandomAccessFile, File => JFile }
 import java.net.{ URI, URL }
 import scala.util.Random.alphanumeric
-import scala.language.implicitConversions
 import scala.reflect.internal.util.Statistics
 
 /** An abstraction for filesystem paths.  The differences between

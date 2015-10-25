@@ -7,7 +7,7 @@ package scala
 package tools
 package nsc
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 import scala.reflect.internal.util.StringOps.countElementsAsString
 
 /** Provides delegates to the reporter doing the actual work.

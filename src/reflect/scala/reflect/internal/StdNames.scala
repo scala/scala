@@ -7,11 +7,11 @@ package scala
 package reflect
 package internal
 
+import scala.language.implicitConversions
+
 import java.security.MessageDigest
-import java.util.UUID.randomUUID
 import Chars.isOperatorPart
 import scala.annotation.switch
-import scala.language.implicitConversions
 import scala.collection.immutable
 import scala.io.Codec
 

@@ -18,7 +18,6 @@ import scala.collection.generic.GenericParCompanion
 import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.CanBuildFrom
 import scala.collection.generic.ParFactory
-import scala.collection.generic.Sizing
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.SeqSplitter
 import scala.collection.parallel.ParSeqLike

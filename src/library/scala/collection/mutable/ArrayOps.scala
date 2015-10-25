@@ -10,7 +10,6 @@ package scala
 package collection
 package mutable
 
-import scala.compat.Platform.arraycopy
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime._
 import parallel.mutable.ParArray
@@ -106,9 +105,9 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
       bb.result()
     }
   }
-  
+
   /** Converts an array of pairs into an array of first elements and an array of second elements.
-   *  
+   *
    *  @tparam T1    the type of the first half of the element pairs
    *  @tparam T2    the type of the second half of the element pairs
    *  @param asPair an implicit conversion which asserts that the element type
@@ -134,9 +133,9 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
     }
     (a1, a2)
   }
-  
+
   /** Converts an array of triples into three arrays, one containing the elements from each position of the triple.
-   *  
+   *
    *  @tparam T1      the type of the first of three elements in the triple
    *  @tparam T2      the type of the second of three elements in the triple
    *  @tparam T3      the type of the third of three elements in the triple
@@ -168,7 +167,7 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
     }
     (a1, a2, a3)
   }
-  
+
 
   def seq = thisCollection
 

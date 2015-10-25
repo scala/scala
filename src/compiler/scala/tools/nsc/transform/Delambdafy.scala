@@ -4,8 +4,6 @@ package transform
 import symtab._
 import Flags._
 import scala.collection._
-import scala.language.postfixOps
-import scala.reflect.internal.Symbols
 import scala.collection.mutable.LinkedHashMap
 
 /**

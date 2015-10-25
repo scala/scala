@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.tools.ant
 
 import java.io.File
@@ -15,9 +14,8 @@ import org.apache.tools.ant.Project
 import org.apache.tools.ant.types.{Path, Reference}
 import org.apache.tools.ant.util.{FileUtils, GlobPatternMapper}
 
-import scala.tools.nsc.Global
 import scala.tools.nsc.doc.Settings
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
+import scala.tools.nsc.reporters.ConsoleReporter
 
 /** An Ant task to document Scala code.
  *

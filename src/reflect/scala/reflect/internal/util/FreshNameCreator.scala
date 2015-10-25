@@ -8,7 +8,6 @@ package util
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
-import scala.collection.mutable
 import scala.reflect.NameTransformer
 
 class FreshNameCreator(creatorPrefix: String = "") {

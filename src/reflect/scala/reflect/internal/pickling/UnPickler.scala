@@ -14,7 +14,7 @@ import java.lang.Double.longBitsToDouble
 
 import Flags._
 import PickleFormat._
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.annotation.switch
 

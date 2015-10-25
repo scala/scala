@@ -7,7 +7,7 @@ package scala
 package reflect
 package internal
 
-import scala.collection.{ mutable, immutable, generic }
+import scala.collection.{ mutable, immutable }
 import scala.ref.WeakReference
 import mutable.ListBuffer
 import Flags._

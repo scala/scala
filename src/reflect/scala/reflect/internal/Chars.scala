@@ -6,9 +6,10 @@ package scala
 package reflect
 package internal
 
-import scala.annotation.{ tailrec, switch }
-import java.lang.{ Character => JCharacter }
 import scala.language.postfixOps
+
+import scala.annotation.switch
+import java.lang.{ Character => JCharacter }
 
 /** Contains constants and classifier methods for characters */
 trait Chars {

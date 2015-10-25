@@ -9,8 +9,6 @@
 package scala
 package collection
 
-import mutable.ListBuffer
-import immutable.List
 import scala.annotation.tailrec
 
 /** A template trait for linear sequences of type `LinearSeq[A]` which optimizes

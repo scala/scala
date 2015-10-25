@@ -10,8 +10,7 @@ package scala
 package collection
 
 import generic._
-import immutable.{ List, Stream }
-import scala.annotation.unchecked.uncheckedVariance
+import immutable.Stream
 
 /** A template trait for iterable collections of type `Iterable[A]`.
  *  $iterableInfo
@@ -83,8 +82,8 @@ self =>
     iterator.foldRight(z)(op)
   override /*TraversableLike*/ def reduceRight[B >: A](op: (A, B) => B): B =
     iterator.reduceRight(op)
-    
-  
+
+
   /** Returns this $coll as an iterable collection.
    *
    *  A new collection will not be built; lazy collections will stay lazy.
@@ -94,7 +93,7 @@ self =>
    */
   override /*TraversableLike*/ def toIterable: Iterable[A] =
     thisCollection
-  
+
   /** Returns an Iterator over the elements in this $coll.  Produces the same
    *  result as `iterator`.
    *  $willNotTerminateInf
@@ -102,7 +101,7 @@ self =>
    */
   @deprecatedOverriding("toIterator should stay consistent with iterator for all Iterables: override iterator instead.", "2.11.0")
   override def toIterator: Iterator[A] = iterator
-  
+
   override /*TraversableLike*/ def head: A =
     iterator.next()
 

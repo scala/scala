@@ -13,7 +13,6 @@ package mutable
 import generic._
 import immutable.{List, Nil, ::}
 import java.io.{ObjectOutputStream, ObjectInputStream}
-import scala.annotation.migration
 
 /** A `Buffer` implementation backed by a list. It provides constant time
  *  prepend and append. Most other operations are linear.

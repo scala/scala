@@ -10,7 +10,7 @@ package html
 package page
 package diagram
 
-import scala.xml.{NodeSeq, XML, PrefixedAttribute, Elem, MetaData, Null, UnprefixedAttribute}
+import scala.xml.{NodeSeq, PrefixedAttribute, Elem, Null, UnprefixedAttribute}
 import scala.collection.immutable._
 import model._
 import model.diagram._

@@ -7,7 +7,6 @@
 package scala.tools.nsc
 package ast
 
-import symtab.Flags
 import scala.language.implicitConversions
 
 /** A DSL for generating scala code.  The goal is that the
