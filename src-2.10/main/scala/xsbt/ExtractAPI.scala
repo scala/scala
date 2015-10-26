@@ -535,20 +535,25 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
   private def selfType(in: Symbol, s: Symbol): xsbti.api.Type = processType(in, s.thisSym.typeOfThis)
 
   def classLike(in: Symbol, c: Symbol): ClassLike = classLikeCache.getOrElseUpdate((in, c), mkClassLike(in, c))
-  private def mkClassLike(in: Symbol, c: Symbol): ClassLike =
-    {
-      val name = c.fullName
-      val isModule = c.isModuleClass || c.isModule
-      val struct = if (isModule) c.moduleClass else c
-      val defType =
-        if (c.isTrait) DefinitionType.Trait
-        else if (isModule) {
-          if (c.isPackage) DefinitionType.PackageModule
-          else DefinitionType.Module
-        } else DefinitionType.ClassDef
-      new xsbti.api.ClassLike(defType, lzy(selfType(in, c)), lzy(structure(in, struct)), emptyStringArray, typeParameters(in, c), name, getAccess(c), getModifiers(c), annotations(in, c))
-    }
+  private def mkClassLike(in: Symbol, c: Symbol): ClassLike = {
+    // Normalize to a class symbol, and initialize it.
+    // (An object -- aka module -- also has a term symbol,
+    //  but it's the module class that holds the info about its structure.)
+    val sym = (if (c.isModule) c.moduleClass else c).initialize
+    val defType =
+      if (sym.isTrait) DefinitionType.Trait
+      else if (sym.isModuleClass) {
+        if (sym.isPackageClass) DefinitionType.PackageModule
+        else DefinitionType.Module
+      } else DefinitionType.ClassDef
 
+    new xsbti.api.ClassLike(
+      defType, lzy(selfType(in, sym)), lzy(structure(in, sym)), emptyStringArray, typeParameters(in, sym), // look at class symbol
+      c.fullName, getAccess(c), getModifiers(c), annotations(in, c)) // use original symbol (which is a term symbol when `c.isModule`) for `name` and other non-classy stuff
+  }
+
+  // TODO: could we restrict ourselves to classes, ignoring the term symbol for modules,
+  // since everything we need to track about a module is in the module's class (`moduleSym.moduleClass`)?
   private[this] def isClass(s: Symbol) = s.isClass || s.isModule
   // necessary to ensure a stable ordering of classes in the definitions list:
   //  modules and classes come first and are sorted by name
