@@ -44,24 +44,8 @@ trait ReplGlobal extends Global {
     }
   }
 
-  object replPhase extends {
-    val global: ReplGlobal.this.type = ReplGlobal.this
-  } with SubComponent {
-    val phaseName = "repl"
-    val runsAfter = List[String]("typer")
-    val runsRightAfter = None
-    def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
-      def apply(unit: CompilationUnit) {
-        repldbg("Running replPhase on " + unit.body)
-        // newNamer(rootContext(unit)).enterSym(unit.body)
-      }
-    }
-    // add to initial or terminal phase to sanity check Run at construction
-    override val requires = List("typer")  // ensure they didn't -Ystop-after:parser
-  }
-
   override protected def computeInternalPhases(): Unit = {
-    addToPhasesSet(replPhase, "repl")
+    //addToPhasesSet(replPhase, "repl")
     super.computeInternalPhases()
   }
 }
