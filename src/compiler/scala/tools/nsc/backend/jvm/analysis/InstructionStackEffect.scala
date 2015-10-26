@@ -10,59 +10,49 @@ import scala.tools.asm.tree.analysis.{Frame, Value}
 import opt.BytecodeUtils._
 
 object InstructionStackEffect {
-  // x up to 10, which covers most cases and limits the cache. y doesn't go above 6 (see cases).
-  val maxCachedX = 10
-  val maxCachedY = 6
-  val xShift = 3
-  private val cache = new Array[(Int, Int)]((maxCachedX << xShift) + maxCachedY + 1)
-  private def t(x: Int, y: Int): (Int, Int) = {
-    if (x > maxCachedX || y > maxCachedY) (x, y)
-    else {
-      val key = (x << xShift) + y
-      if (cache(key) != null) {
-        cache(key)
-      } else {
-        val r = (x, y)
-        cache(key) = r
-        r
-      }
-    }
-  }
+  val consShift = 3
+  val prodMask = (1 << consShift) - 1
+
+  def cons(i: Int) = i >>> consShift
+  def prod(i: Int) = i & prodMask
+
+  private def t(x: Int, y: Int): Int = (x << consShift) | y
 
   /**
-   * Returns a pair with the number of stack values consumed and produced by `insn`. The returned
-   * values are correct for use in asm's Analyzer framework. For example, a LLOAD instruction
-   * produces one stack value. See also doc in `analysis` package object.
+   * Returns the number of stack values consumed and produced by `insn`, encoded in a single `Int`
+   * (the `cons` / `prod` extract individual values). The returned values are correct for use in
+   * asm's Analyzer framework. For example, a LLOAD instruction produces one stack value. See also
+   * doc in `analysis` package object.
    *
    * This method requires the `frame` to be in the state **before** executing / interpreting the
    * `insn`.
    */
-  def forAsmAnalysis[V <: Value](insn: AbstractInsnNode, frame: Frame[V]): (Int, Int) = computeConsProd(insn, frame = frame)
+  def forAsmAnalysis[V <: Value](insn: AbstractInsnNode, frame: Frame[V]): Int = computeConsProd(insn, frame = frame)
 
   /**
-   * Returns a pair with the number of stack values consumed and produced by `insn`. The returned
-   * values are usually the same as used in asm's Analyzer framework, but they may be larger. For
+   * Returns the maximal possible growth of the stack when executing `insn`. The returned value
+   * is usually the same as expected by asm's Analyzer framework, but it may be larger. For
    * example, consider a POP2 instruction:
    *   - if two size-1 values are popped, then the asm Analyzer consumes two values
    *   - if a size-2 value is popped, the asm Analyzer consumes only one stack slot (see doc in the
-   *     `analysis` package object
+   *     `analysis` package object)
    *
    * If a precise result is needed, invoke the `forAsmAnalysis` and provide a `frame` value that
    * allows looking up the sizes of values on the stack.
-   *
-   * When the precise stack effect is unknown, this method returns values that are safe for
-   * computing an upper bound on the stack size for running an Analyzer: (prod - cons) is the
-   * largest possible value for any input sizes.
    */
-  def forAsmAnalysisConservative(insn: AbstractInsnNode): (Int, Int) = computeConsProd(insn, conservative = true)
+  def maxStackGrowth(insn: AbstractInsnNode): Int = {
+    val prodCons = computeConsProd(insn, conservative = true)
+    prod(prodCons) - cons(prodCons)
+  }
 
   /**
-   * Returns a pair with the number of stack values consumed and produced by `insn`. The returned
-   * values are correct for writing into a classfile (see doc on `analysis` package object).
+   * Returns the number of stack values consumed and produced by `insn`, encoded in a single `Int`
+   * (the `cons` / `prod` extract individual values).  The returned values are correct for writing
+   * into a classfile (see doc on the `analysis` package object).
    */
-  def forClassfile(insn: AbstractInsnNode): (Int, Int) = computeConsProd(insn, forClassfile = true)
+  def forClassfile(insn: AbstractInsnNode): Int = computeConsProd(insn, forClassfile = true)
 
-  private def invokeConsProd(methodDesc: String, insn: AbstractInsnNode, forClassfile: Boolean): (Int, Int) = {
+  private def invokeConsProd(methodDesc: String, insn: AbstractInsnNode, forClassfile: Boolean): Int = {
     val consumesReceiver = insn.getOpcode != INVOKESTATIC && insn.getOpcode != INVOKEDYNAMIC
     if (forClassfile) {
       val sizes = Type.getArgumentsAndReturnSizes(methodDesc)
@@ -81,7 +71,7 @@ object InstructionStackEffect {
     d == "J" || d == "D"
   }
 
-  private def computeConsProd[V <: Value](insn: AbstractInsnNode, forClassfile: Boolean = false, conservative: Boolean = false, frame: Frame[V] = null): (Int, Int) = {
+  private def computeConsProd[V <: Value](insn: AbstractInsnNode, forClassfile: Boolean = false, conservative: Boolean = false, frame: Frame[V] = null): Int = {
     // not used if `forClassfile || conservative`: in these cases, `frame` is allowed to be `null`
     def peekStack(n: Int): V = frame.peekStack(n)
 

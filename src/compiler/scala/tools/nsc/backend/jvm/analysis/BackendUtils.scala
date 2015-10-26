@@ -337,8 +337,8 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
         if (insn.getOpcode == -1) { // frames, labels, line numbers
           enqInsnIndex(insnIndex + 1, initHeight)
         } else {
-          val (cons, prod) = InstructionStackEffect.forAsmAnalysisConservative(insn)
-          val heightAfter = initHeight - cons + prod
+          val stackGrowth = InstructionStackEffect.maxStackGrowth(insn)
+          val heightAfter = initHeight + stackGrowth
           if (heightAfter > maxStack) maxStack = heightAfter
 
           // update maxLocals
