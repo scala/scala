@@ -20,7 +20,7 @@ import scala.collection.convert.decorateAsScala._
 object BytecodeUtils {
 
   // http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.9.1
-  final val maxJVMMethodSize         = 65535
+  final val maxJVMMethodSize = 65535
 
   // 5% margin, more than enough for the instructions added by the inliner (store / load args, null check for instance methods)
   final val maxMethodSizeAfterInline = maxJVMMethodSize - (maxJVMMethodSize / 20)
@@ -310,9 +310,9 @@ object BytecodeUtils {
    * method which explains the issue with such phantom values.
    */
   def fixLoadedNothingOrNullValue(loadedType: Type, loadInstr: AbstractInsnNode, methodNode: MethodNode, bTypes: BTypes): Unit = {
-    if (loadedType == bTypes.coreBTypes.RT_NOTHING.toASMType) {
+    if (loadedType == bTypes.coreBTypes.srNothingRef.toASMType) {
       methodNode.instructions.insert(loadInstr, new InsnNode(Opcodes.ATHROW))
-    } else if (loadedType == bTypes.coreBTypes.RT_NULL.toASMType) {
+    } else if (loadedType == bTypes.coreBTypes.srNullRef.toASMType) {
       methodNode.instructions.insert(loadInstr, new InsnNode(Opcodes.ACONST_NULL))
       methodNode.instructions.insert(loadInstr, new InsnNode(Opcodes.POP))
     }

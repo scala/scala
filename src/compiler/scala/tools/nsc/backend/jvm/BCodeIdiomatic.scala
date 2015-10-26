@@ -220,10 +220,10 @@ abstract class BCodeIdiomatic extends SubComponent {
     final def genStringConcat(el: BType, pos: Position): Unit = {
 
       val jtype =
-        if (el.isArray || el.isClass) ObjectReference
+        if (el.isArray || el.isClass) ObjectRef
         else el
 
-      val bt = MethodBType(List(jtype), StringBuilderReference)
+      val bt = MethodBType(List(jtype), jlStringBuilderRef)
 
       invokevirtual(StringBuilderClassName, "append", bt.descriptor, pos)
     }

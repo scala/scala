@@ -157,7 +157,7 @@ abstract class BTypes {
       val res = ClassBType(internalName)
       byteCodeRepository.classNode(internalName) match {
         case Left(msg) => res.info = Left(NoClassBTypeInfoMissingBytecode(msg)); res
-        case Right(c)  => setClassInfoFromParsedClassfile(c, res)
+        case Right(c)  => setClassInfoFromClassNode(c, res)
       }
     })
   }
@@ -167,14 +167,14 @@ abstract class BTypes {
    */
   def classBTypeFromClassNode(classNode: ClassNode): ClassBType = {
     classBTypeFromInternalName.getOrElse(classNode.name, {
-      setClassInfoFromParsedClassfile(classNode, ClassBType(classNode.name))
+      setClassInfoFromClassNode(classNode, ClassBType(classNode.name))
     })
   }
 
-  private def setClassInfoFromParsedClassfile(classNode: ClassNode, classBType: ClassBType): ClassBType = {
+  private def setClassInfoFromClassNode(classNode: ClassNode, classBType: ClassBType): ClassBType = {
     val superClass = classNode.superName match {
       case null =>
-        assert(classNode.name == ObjectReference.internalName, s"class with missing super type: ${classNode.name}")
+        assert(classNode.name == ObjectRef.internalName, s"class with missing super type: ${classNode.name}")
         None
       case superName =>
         Some(classBTypeFromParsedClassfile(superName))
@@ -321,8 +321,8 @@ abstract class BTypes {
 
     final def isNonVoidPrimitiveType = isPrimitive && this != UNIT
 
-    final def isNullType             = this == RT_NULL
-    final def isNothingType          = this == RT_NOTHING
+    final def isNullType             = this == srNullRef
+    final def isNothingType          = this == srNothingRef
 
     final def isBoxed = this.isClass && boxedClasses(this.asClassBType)
 
@@ -345,7 +345,7 @@ abstract class BTypes {
 
       this match {
         case ArrayBType(component) =>
-          if (other == ObjectReference || other == jlCloneableReference || other == jioSerializableReference) true
+          if (other == ObjectRef || other == jlCloneableRef || other == jiSerializableRef) true
           else other match {
             case ArrayBType(otherComponent) => component.conformsTo(otherComponent).orThrow
             case _ => false
@@ -354,7 +354,7 @@ abstract class BTypes {
         case classType: ClassBType =>
           if (isBoxed) {
             if (other.isBoxed) this == other
-            else if (other == ObjectReference) true
+            else if (other == ObjectRef) true
             else other match {
               case otherClassType: ClassBType => classType.isSubtypeOf(otherClassType).orThrow // e.g., java/lang/Double conforms to java/lang/Number
               case _ => false
@@ -397,7 +397,7 @@ abstract class BTypes {
 
         assert(other.isRef, s"Cannot compute maxType: $this, $other")
         // Approximate `lub`. The common type of two references is always ObjectReference.
-        ObjectReference
+        ObjectRef
 
       case _: MethodBType =>
         assertionError(s"unexpected method type when computing maxType: $this")
@@ -869,7 +869,7 @@ abstract class BTypes {
       // best-effort verification. also we don't report an error if the info is a Left.
       def ifInit(c: ClassBType)(p: ClassBType => Boolean): Boolean = c._info == null || c.info.isLeft || p(c)
 
-      def isJLO(t: ClassBType) = t.internalName == ObjectReference.internalName
+      def isJLO(t: ClassBType) = t.internalName == ObjectRef.internalName
 
       assert(!ClassBType.isInternalPhantomType(internalName), s"Cannot create ClassBType for phantom type $this")
 
@@ -949,7 +949,7 @@ abstract class BTypes {
     def isSubtypeOf(other: ClassBType): Either[NoClassBTypeInfo, Boolean] = try {
       if (this == other) return Right(true)
       if (isInterface.orThrow) {
-        if (other == ObjectReference) return Right(true) // interfaces conform to Object
+        if (other == ObjectRef) return Right(true) // interfaces conform to Object
         if (!other.isInterface.orThrow) return Right(false)   // this is an interface, the other is some class other than object. interfaces cannot extend classes, so the result is false.
         // else: this and other are both interfaces. continue to (*)
       } else {
@@ -982,13 +982,13 @@ abstract class BTypes {
             // exercised by test/files/run/t4761.scala
             if (other.isSubtypeOf(this).orThrow) this
             else if (this.isSubtypeOf(other).orThrow) other
-            else ObjectReference
+            else ObjectRef
 
           case (true, false) =>
-            if (other.isSubtypeOf(this).orThrow) this else ObjectReference
+            if (other.isSubtypeOf(this).orThrow) this else ObjectRef
 
           case (false, true) =>
-            if (this.isSubtypeOf(other).orThrow) other else ObjectReference
+            if (this.isSubtypeOf(other).orThrow) other else ObjectRef
 
           case _ =>
             // TODO @lry I don't really understand the reasoning here.

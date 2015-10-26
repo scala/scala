@@ -245,6 +245,11 @@ abstract class GenBCode extends BCodeSyncAndTry {
         BackendStats.timed(BackendStats.methodOptTimer)(localOpt.methodOptimizations(classNode))
       }
 
+      def setInnerClasses(classNode: ClassNode): Unit = if (classNode != null) {
+        classNode.innerClasses.clear()
+        addInnerClasses(classNode, bTypes.backendUtils.collectNestedClasses(classNode))
+      }
+
       def run() {
         runGlobalOptimizations()
 
@@ -257,6 +262,9 @@ abstract class GenBCode extends BCodeSyncAndTry {
           else {
             try {
               localOptimizations(item.plain)
+              setInnerClasses(item.plain)
+              setInnerClasses(item.mirror)
+              setInnerClasses(item.bean)
               addToQ3(item)
           } catch {
               case e: java.lang.RuntimeException if e.getMessage != null && (e.getMessage contains "too large!") =>
