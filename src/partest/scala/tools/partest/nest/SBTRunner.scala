@@ -24,10 +24,16 @@ import TestState._
 // called reflectively from scala-partest-test-interface
 class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, loggers: Array[Logger],
     srcDir: String, testClassLoader: URLClassLoader, javaCmd: File, javacCmd: File, scalacArgs: Array[String], args: Array[String])
-    extends AbstractRunner(args.mkString(" ")) {
+    extends AbstractRunner(args.filter(a => !a.startsWith("-D")).mkString(" ")) {
 
   // no summary, SBT will do that for us
   summarizing = true
+
+  val javaOpts = {
+    val l = args.filter(_.startsWith("-Dpartest.java_opts=")).map(_.substring(20))
+    if(l.isEmpty) PartestDefaults.javaOpts
+    else l.mkString(" ")
+  }
 
   override val suiteRunner = new SuiteRunner(
     testSourcePath = Option(srcDir) getOrElse PartestDefaults.sourcePath,
@@ -36,7 +42,8 @@ class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, log
     failed  = optFailed,
     javaCmdPath = Option(javaCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd,
     javacCmdPath = Option(javacCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd,
-    scalacExtraArgs = scalacArgs) {
+    scalacExtraArgs = scalacArgs,
+    javaOpts = javaOpts) {
 
       override def onFinishTest(testFile: File, result: TestState): TestState = {
         eventHandler.handle(new Event {

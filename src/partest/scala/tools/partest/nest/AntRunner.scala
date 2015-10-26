@@ -19,9 +19,8 @@ abstract class AntRunner(srcDir: String, testClassLoader: URLClassLoader, javaCm
   failed  = false,
   javaCmdPath = Option(javaCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd,
   javacCmdPath = Option(javacCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd,
-  scalacExtraArgs = scalacArgs) {
-
-  for (jOpts <- javaOpts) System.setProperty("partest.java_opts", jOpts mkString " ")
+  scalacExtraArgs = scalacArgs,
+  javaOpts = javaOpts.map(_.mkString(" ")).getOrElse(PartestDefaults.javaOpts)) {
 
   def error(msg: String): Nothing = sys.error(msg)
   def echo(msg: String): Unit

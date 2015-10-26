@@ -146,7 +146,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
 
     val testFullPath = testFile.getAbsolutePath
 
-    // Note! As this currently functions, PartestDefaults.javaOpts must precede argString
+    // Note! As this currently functions, suiteRunner.javaOpts must precede argString
     // because when an option is repeated to java only the last one wins.
     // That means until now all the .javaopts files were being ignored because
     // they all attempt to change options which are also defined in
@@ -174,7 +174,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
     val classpath = joinPaths(extraClasspath ++ testClassPath)
 
     javaCmdPath +: (
-      (PartestDefaults.javaOpts.split(' ') ++ extraJavaOptions ++ argString.split(' ')).map(_.trim).filter(_ != "").toList ++ Seq(
+      (suiteRunner.javaOpts.split(' ') ++ extraJavaOptions ++ argString.split(' ')).map(_.trim).filter(_ != "").toList ++ Seq(
         "-classpath",
         join(outDir.toString, classpath)
       ) ++ propertyOptions ++ Seq(
@@ -516,7 +516,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
       if (NestUI._verbose) List("-verbose", "-noinput")
       else List("-noinput")
     val cmd = javaCmdPath +: (
-      PartestDefaults.javaOpts.split(' ').map(_.trim).filter(_ != "") ++ Seq(
+      suiteRunner.javaOpts.split(' ').map(_.trim).filter(_ != "") ++ Seq(
         "-classpath",
         antLauncher.path,
         "org.apache.tools.ant.launch.Launcher"
@@ -753,7 +753,8 @@ class SuiteRunner(
   val failed: Boolean,
   val javaCmdPath: String = PartestDefaults.javaCmd,
   val javacCmdPath: String = PartestDefaults.javacCmd,
-  val scalacExtraArgs: Seq[String] = Seq.empty) {
+  val scalacExtraArgs: Seq[String] = Seq.empty,
+  val javaOpts: String = PartestDefaults.javaOpts) {
 
   import PartestDefaults.{ numThreads, waitTime }
 
@@ -775,7 +776,7 @@ class SuiteRunner(
       |Compilation Path:    ${relativize(joinPaths(fileManager.testClassPath))}
       |Java binaries in:    $vmBin
       |Java runtime is:     $vmName
-      |Java options are:    ${PartestDefaults.javaOpts}
+      |Java options are:    $javaOpts
       |baseDir:             $baseDir
       |sourceDir:           ${PathSettings.srcDir}
     """.stripMargin
