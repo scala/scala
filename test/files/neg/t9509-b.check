@@ -1,0 +1,7 @@
+t9509-b.scala:9: error: not found: value foo
+  def f = s"$foo_bar"
+             ^
+t9509-b.scala:10: error: not found: value foo
+  def g = s"$foo＿bar"
+             ^
+two errors found

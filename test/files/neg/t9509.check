@@ -1,0 +1,14 @@
+t9509.scala:11: warning: Embedded underscore in interpolated identifier is deprecated; use an `${ expression }' instead.
+  def f = s"$foo_bar"
+            ^
+t9509.scala:12: warning: Interpolating identifiers containing characters other than letters or digits is deprecated; use an `${ expression }' instead.
+  def g = s"$foo＿bar"
+            ^
+t9509.scala:14: warning: Interpolating identifiers containing characters other than letters or digits is deprecated; use an `${ expression }' instead.
+  def sign = s"$ᛯ"
+               ^
+t9509.scala:16: error: $_ not supported in interpolated strings, except in patterns
+  def h = s"$_"
+             ^
+three warnings found
+one error found

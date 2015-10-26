@@ -1234,10 +1234,9 @@ self =>
     }
 
     private def interpolatedString(inPattern: Boolean): Tree = {
-      def errpolation() = syntaxErrorOrIncompleteAnd("error in interpolated string: identifier or block expected",
-                                                     skipIt = true)(EmptyTree)
       // Like Swiss cheese, with holes
       def stringCheese: Tree = atPos(in.offset) {
+        def emiterr(msg: String) = syntaxErrorOrIncompleteAnd(msg, skipIt = true)(EmptyTree)
         val start        = in.offset
         val interpolator = in.name.encoded // ident() for INTERPOLATIONID
 
@@ -1251,9 +1250,10 @@ self =>
             else in.token match {
               case IDENTIFIER => atPos(in.offset)(Ident(ident()))
               //case USCORE   => freshPlaceholder()  // ifonly etapolation
+              case USCORE     => emiterr("$_ not supported in interpolated strings, except in patterns")
               case LBRACE     => expr()              // dropAnyBraces(expr0(Local))
               case THIS       => in.nextToken(); atPos(in.offset)(This(tpnme.EMPTY))
-              case _          => errpolation()
+              case _          => emiterr("error in interpolated string: identifier or block expected")
             }
           )
         }
