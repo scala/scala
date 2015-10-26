@@ -1,0 +1,7 @@
+t9535.scala:4: error: not found: type E1
+  @throws[E1] def f[E1 <: Exception] = 1
+          ^
+t9535.scala:6: error: class type required but E found
+  @throws(classOf[E]) def g: E = ??? // neg test: classOf requires class type
+                  ^
+two errors found

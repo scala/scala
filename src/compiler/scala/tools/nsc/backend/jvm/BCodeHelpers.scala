@@ -542,11 +542,15 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
      * must-single-thread
      */
     def addRemoteExceptionAnnot(isRemoteClass: Boolean, isJMethodPublic: Boolean, meth: Symbol) {
-      val needsAnnotation = (
-        (  isRemoteClass ||
-           isRemote(meth) && isJMethodPublic
-        ) && !(meth.throwsAnnotations contains definitions.RemoteExceptionClass)
-      )
+      def hasThrowsRemoteException = meth.annotations.exists {
+        case ThrownException(exc) => exc.typeSymbol == definitions.RemoteExceptionClass
+        case _ => false
+      }
+      val needsAnnotation = {
+        (isRemoteClass ||
+          isRemote(meth) && isJMethodPublic
+          ) && !hasThrowsRemoteException
+      }
       if (needsAnnotation) {
         val c   = Constant(definitions.RemoteExceptionClass.tpe)
         val arg = Literal(c) setType c.tpe
@@ -655,8 +659,11 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
      * must-single-thread
      */
     def getExceptions(excs: List[AnnotationInfo]): List[String] = {
-      for (ThrownException(exc) <- excs.distinct)
-      yield internalName(exc)
+      for (ThrownException(tp) <- excs.distinct)
+      yield {
+        val erased = enteringErasure(erasure.erasure(tp.typeSymbol)(tp))
+        internalName(erased.typeSymbol)
+      }
     }
 
   } // end of trait BCForwardersGen

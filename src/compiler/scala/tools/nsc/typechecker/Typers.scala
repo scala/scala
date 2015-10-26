@@ -3653,7 +3653,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val annType = annTpt.tpe
 
       finish(
-        if (typedFun.isErroneous)
+        if (typedFun.isErroneous || annType == null)
           ErroneousAnnotation
         else if (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass) {
           // annotation to be saved as java classfile annotation

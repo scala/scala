@@ -891,8 +891,11 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
      * This method returns such list of internal names.
      */
     def getExceptions(excs: List[AnnotationInfo]): List[String] =
-      for (ThrownException(exc) <- excs.distinct)
-      yield javaName(exc)
+      for (ThrownException(tp) <- excs.distinct)
+        yield {
+          val erased = enteringErasure(erasure.erasure(tp.typeSymbol)(tp))
+          javaName(erased.typeSymbol)
+        }
 
     def getCurrentCUnit(): CompilationUnit
 
@@ -995,10 +998,14 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
      * Invoked from genMethod() and addForwarder().
      */
     def addRemoteExceptionAnnot(isRemoteClass: Boolean, isJMethodPublic: Boolean, meth: Symbol) {
+      def hasThrowsRemoteException = meth.annotations.exists {
+        case ThrownException(exc) => exc.typeSymbol == definitions.RemoteExceptionClass
+        case _ => false
+      }
       val needsAnnotation = (
         (  isRemoteClass ||
            isRemote(meth) && isJMethodPublic
-        ) && !(meth.throwsAnnotations contains RemoteExceptionClass)
+        ) && !hasThrowsRemoteException
       )
       if (needsAnnotation) {
         val c   = Constant(RemoteExceptionClass.tpe)
