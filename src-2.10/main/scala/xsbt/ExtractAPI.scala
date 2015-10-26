@@ -532,7 +532,16 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
         s.fullName
     }
   }
-  private def selfType(in: Symbol, s: Symbol): xsbti.api.Type = processType(in, s.thisSym.typeOfThis)
+
+  /* Representation for the self type of a class symbol `s`, or `emptyType` for an *unascribed* self variable (or no self variable at all).
+     Only the self variable's explicitly ascribed type is relevant for incremental compilation. */
+  private def selfType(in: Symbol, s: Symbol): xsbti.api.Type =
+    // `sym.typeOfThis` is implemented as `sym.thisSym.info`, which ensures the *self* symbol is initialized (the type completer is run).
+    // We can safely avoid running the type completer for `thisSym` for *class* symbols where `thisSym == this`,
+    // as that invariant is established on completing the class symbol (`mkClassLike` calls `s.initialize` before calling us).
+    // Technically, we could even ignore a self type that's a supertype of the class's type,
+    // as it does not contribute any information relevant outside of the class definition.
+    if ((s.thisSym eq s) || s.typeOfThis == s.info) Constants.emptyType else processType(in, s.typeOfThis)
 
   def classLike(in: Symbol, c: Symbol): ClassLike = classLikeCache.getOrElseUpdate((in, c), mkClassLike(in, c))
   private def mkClassLike(in: Symbol, c: Symbol): ClassLike = {
