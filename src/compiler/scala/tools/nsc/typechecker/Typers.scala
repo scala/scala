@@ -3247,7 +3247,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       fun.tpe match {
         case OverloadedType(pre, alts) =>
-          def handleOverloaded = {
+          def handleOverloaded = context.withinTuplingEnabled {
             val undetparams = context.undetparams
             val (args1, argTpes) = context.savingUndeterminedTypeParams() {
               val amode = forArgMode(fun, mode)
@@ -3315,21 +3315,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
            * to that. This is the last thing which is tried (after
            * default arguments)
            */
-          def tryTupleApply: Tree = {
+          def tryTupleApply: Tree = context.withinTuplingEnabled {
             if (eligibleForTupleConversion(paramTypes, argslen) && !phase.erasedTypes) {
               val tupleArgs = List(atPos(tree.pos.makeTransparent)(gen.mkTuple(args)))
               // expected one argument, but got 0 or >1 ==>  try applying to tuple
               // the inner "doTypedApply" does "extractUndetparams" => restore when it fails
               val savedUndetparams = context.undetparams
               silent(_.doTypedApply(tree, fun, tupleArgs, mode, pt)) map { t =>
-                // Depending on user options, may warn or error here if
-                // a Unit or tuple was inserted.
-                val keepTree = (
-                     !mode.typingExprNotFun // why? introduced in 4e488a60, doc welcome
-                  || t.symbol == null       // ditto
-                  || checkValidAdaptation(t, args)
-                )
-                if (keepTree) t else EmptyTree
+                // Depending on user options, may warn or error here if a Unit or tuple was inserted.
+                // Overloading not done in FUNmode, need a sym for post-check.
+                val tossTree = mode.typingExprNotFun && t.symbol != null && !checkValidAdaptation(t, args)
+                if (!tossTree) t else EmptyTree
               } orElse { _ => context.undetparams = savedUndetparams ; EmptyTree }
             }
             else EmptyTree

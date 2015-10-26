@@ -1,0 +1,13 @@
+scam_2.scala:3: error: No adaptation of argument list for Java method.
+        signature: Jamb_1.k(x$1: Any): String
+  given arguments: 42, true, false
+ after adaptation: Jamb_1.k((42, true, false): (Int, Boolean, Boolean))
+  def f = new Jamb_1().k(42, true, false)
+                        ^
+scam_2.scala:4: error: No adaptation of argument list for Java method.
+        signature: Jamb_1.f(x$1: Any): String
+  given arguments: 42, true, false
+ after adaptation: Jamb_1.f((42, true, false): (Int, Boolean, Boolean))
+  def g = new Jamb_1().f(42, true, false)
+                        ^
+two errors found
