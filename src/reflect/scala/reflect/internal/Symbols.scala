@@ -2964,7 +2964,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       loop(info)
     }
 
-    override def exceptions = annotations flatMap ThrownException.unapply
+    override def exceptions = for (ThrownException(tp) <- annotations) yield tp.typeSymbol
   }
   implicit val MethodSymbolTag = ClassTag[MethodSymbol](classOf[MethodSymbol])
 

@@ -71,7 +71,9 @@ abstract class Erasure extends AddInterfaces
   }
 
   override protected def verifyJavaErasure = settings.Xverify || settings.debug
-  def needsJavaSig(tp: Type) = !settings.Ynogenericsig && NeedsSigCollector.collect(tp)
+  def needsJavaSig(tp: Type, throwsArgs: List[Type]) = !settings.Ynogenericsig && {
+    NeedsSigCollector.collect(tp) || throwsArgs.exists(NeedsSigCollector.collect)
+  }
 
   // only refer to type params that will actually make it into the sig, this excludes:
   // * higher-order type parameters
@@ -277,7 +279,7 @@ abstract class Erasure extends AddInterfaces
             val preRebound = pre.baseType(sym.owner) // #2585
             dotCleanup(
               (
-                if (needsJavaSig(preRebound)) {
+                if (needsJavaSig(preRebound, Nil)) {
                   val s = jsig(preRebound, existentiallyBound)
                   if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + "." + sym.javaSimpleName
                   else fullNameInSig(sym)
@@ -356,8 +358,9 @@ abstract class Erasure extends AddInterfaces
           else jsig(etp)
       }
     }
-    if (needsJavaSig(info)) {
-      try Some(jsig(info, toplevel = true))
+    val throwsArgs = sym0.annotations flatMap ThrownException.unapply
+    if (needsJavaSig(info, throwsArgs)) {
+      try Some(jsig(info, toplevel = true) + throwsArgs.map("^" + jsig(_, toplevel = true)).mkString(""))
       catch { case ex: UnknownSig => None }
     }
     else None
