@@ -1,12 +1,24 @@
-import scala.tools.partest.ReplTest
+import scala.tools.partest.SessionTest
+import scala.PartialFunction.{ cond => when }
 
-object Test extends ReplTest {
+object Elision {
+  val elideMsg = """  ... \d+ elided""".r
+}
+
+object Test extends SessionTest {
+  import Elision._
+
   // Filter out the abbreviated stacktrace "... X elided" 
   // because the number seems to differ between versions/platforms/...
-  override def show = eval() filterNot (_ contains "elided") foreach println
-  def code =
+  def elided(s: String) = when(s) { case elideMsg() => true }
+  override def eval() = super.eval() filterNot elided
+  def session =
 """
-val 1 = 2
-val List(1) = List(1)
+scala> val 1 = 2
+scala.MatchError: 2 (of class java.lang.Integer)
+
+scala> val List(1) = List(1)
+
+scala> :quit
 """
 }
