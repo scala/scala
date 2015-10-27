@@ -154,6 +154,7 @@ lazy val library = configureAsSubproject(project)
       val libraryAuxDir = (baseDirectory in ThisBuild).value / "src/library-aux"
       Seq("-doc-no-compile", libraryAuxDir.toString)
     },
+    unmanagedResourceDirectories in Compile += (baseDirectory in ThisBuild).value / "src" / project.id,
     includeFilter in unmanagedResources in Compile := libIncludes)
   .dependsOn (forkjoin)
 
@@ -184,6 +185,7 @@ lazy val compiler = configureAsSubproject(project)
       (mappings in Compile in packageBin in LocalProject("interactive")).value ++
       (mappings in Compile in packageBin in LocalProject("scaladoc")).value ++
       (mappings in Compile in packageBin in LocalProject("repl")).value,
+    unmanagedResourceDirectories in Compile += (baseDirectory in ThisBuild).value / "src" / project.id,
     includeFilter in unmanagedResources in Compile := compilerIncludes)
   .dependsOn(library, reflect)
 
@@ -299,7 +301,8 @@ lazy val root = (project in file(".")).
   )
 
 lazy val dist = (project in file("dist")).settings(
-  mkBin := mkBinImpl.value
+  mkBin := mkBinImpl.value,
+  target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id
 )
 
 /**
@@ -446,6 +449,7 @@ def clearSourceAndResourceDirectories = Seq(Compile, Test).flatMap(config => inC
 )))
 
 lazy val mkBinImpl: Def.Initialize[Task[Seq[File]]] = Def.task {
+  import java.io.IOException
   def mkScalaTool(mainCls: String, classpath: Seq[Attributed[File]]): ScalaTool =
     ScalaTool(mainClass  = mainCls,
       classpath  = classpath.toList.map(_.data.getAbsolutePath),
@@ -453,11 +457,18 @@ lazy val mkBinImpl: Def.Initialize[Task[Seq[File]]] = Def.task {
       javaOpts   = "-Xmx256M -Xms32M",
       toolFlags  = "")
   val rootDir = (classDirectory in Compile in compiler).value
-  def writeScripts(scalaTool: ScalaTool, file: String, outDir: File): Seq[File] =
-    Seq(
+  def writeScripts(scalaTool: ScalaTool, file: String, outDir: File): Seq[File] = {
+    val res = Seq(
       scalaTool.writeScript(file, "unix", rootDir, outDir),
       scalaTool.writeScript(file, "windows", rootDir, outDir)
     )
+    res.foreach { f =>
+      //TODO 2.12: Use Files.setPosixFilePermissions() (Java 7+) instead of calling out to chmod
+      if(Process(List("chmod", "ugo+rx", f.getAbsolutePath())).! > 0)
+        throw new IOException("chmod failed")
+    }
+    res
+  }
   def mkQuickBin(file: String, mainCls: String, classpath: Seq[Attributed[File]]): Seq[File] = {
     val scalaTool = mkScalaTool(mainCls, classpath)
     val outDir = buildDirectory.value / "quick/bin"
