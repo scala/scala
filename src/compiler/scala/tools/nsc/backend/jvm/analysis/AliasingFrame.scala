@@ -92,10 +92,9 @@ class AliasingFrame[V <: Value](nLocals: Int, nStack: Int) extends Frame[V](nLoc
     def stackTop: Int = this.stackTop
     def peekStack(n: Int): V = this.peekStack(n)
 
-    // the val pattern `val (p, c) = f` still allocates a tuple (https://github.com/scala-opt/scala/issues/28)
-    val prodCons = InstructionStackEffect(insn, this) // needs to be called before super.execute, see its doc
-    val consumed = prodCons._1
-    val produced = prodCons._2
+    val prodCons = InstructionStackEffect.forAsmAnalysis(insn, this) // needs to be called before super.execute, see its doc
+    val consumed = InstructionStackEffect.cons(prodCons)
+    val produced = InstructionStackEffect.prod(prodCons)
 
     super.execute(insn, interpreter)
 

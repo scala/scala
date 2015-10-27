@@ -91,95 +91,94 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
     if (!callsites.contains(methodNode)) addMethod(methodNode, definingClass)
   }
 
-  /**
-   * Returns a list of callsites in the method, plus a list of closure instantiation indy instructions.
-   */
   def addMethod(methodNode: MethodNode, definingClass: ClassBType): Unit = {
-    // TODO: run dataflow analyses to make the call graph more precise
-    //  - producers to get forwarded parameters (ForwardedParam)
-    //  - typeAnalysis for more precise argument types, more precise callee
+    if (!BytecodeUtils.isAbstractMethod(methodNode) && !BytecodeUtils.isNativeMethod(methodNode)) {
+      // TODO: run dataflow analyses to make the call graph more precise
+      //  - producers to get forwarded parameters (ForwardedParam)
+      //  - typeAnalysis for more precise argument types, more precise callee
 
-    // For now we run a NullnessAnalyzer. It is used to determine if the receiver of an instance
-    // call is known to be not-null, in which case we don't have to emit a null check when inlining.
-    // It is also used to get the stack height at the call site.
+      // For now we run a NullnessAnalyzer. It is used to determine if the receiver of an instance
+      // call is known to be not-null, in which case we don't have to emit a null check when inlining.
+      // It is also used to get the stack height at the call site.
 
-    val analyzer = {
-      if (compilerSettings.YoptNullnessTracking && AsmAnalyzer.sizeOKForNullness(methodNode)) {
-        Some(new AsmAnalyzer(methodNode, definingClass.internalName, new NullnessAnalyzer))
-      } else if (AsmAnalyzer.sizeOKForBasicValue(methodNode)) {
-        Some(new AsmAnalyzer(methodNode, definingClass.internalName))
-      } else None
-    }
-
-    // if the method is too large to run an analyzer, it is not added to the call graph
-    if (analyzer.nonEmpty) {
-      val Some(a) = analyzer
-      def receiverNotNullByAnalysis(call: MethodInsnNode, numArgs: Int) = a.analyzer match {
-        case nullnessAnalyzer: NullnessAnalyzer =>
-          val frame = nullnessAnalyzer.frameAt(call, methodNode)
-          frame.getStack(frame.getStackSize - 1 - numArgs) eq NotNullValue
-        case _ => false
+      val analyzer = {
+        if (compilerSettings.YoptNullnessTracking && AsmAnalyzer.sizeOKForNullness(methodNode)) {
+          Some(new AsmAnalyzer(methodNode, definingClass.internalName, new NullnessAnalyzer))
+        } else if (AsmAnalyzer.sizeOKForBasicValue(methodNode)) {
+          Some(new AsmAnalyzer(methodNode, definingClass.internalName))
+        } else None
       }
 
-      var methodCallsites = Map.empty[MethodInsnNode, Callsite]
-      var methodClosureInstantiations = Map.empty[InvokeDynamicInsnNode, ClosureInstantiation]
+      // if the method is too large to run an analyzer, it is not added to the call graph
+      if (analyzer.nonEmpty) {
+        val Some(a) = analyzer
+        def receiverNotNullByAnalysis(call: MethodInsnNode, numArgs: Int) = a.analyzer match {
+          case nullnessAnalyzer: NullnessAnalyzer =>
+            val frame = nullnessAnalyzer.frameAt(call, methodNode)
+            frame.getStack(frame.getStackSize - 1 - numArgs) eq NotNullValue
+          case _ => false
+        }
 
-      // lazy so it is only computed if actually used by computeArgInfos
-      lazy val prodCons = new ProdConsAnalyzer(methodNode, definingClass.internalName)
+        var methodCallsites = Map.empty[MethodInsnNode, Callsite]
+        var methodClosureInstantiations = Map.empty[InvokeDynamicInsnNode, ClosureInstantiation]
 
-      methodNode.instructions.iterator.asScala foreach {
-        case call: MethodInsnNode if a.frameAt(call) != null => // skips over unreachable code
-          val callee: Either[OptimizerWarning, Callee] = for {
-            (method, declarationClass)     <- byteCodeRepository.methodNode(call.owner, call.name, call.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
-            (declarationClassNode, source) <- byteCodeRepository.classNodeAndSource(declarationClass): Either[OptimizerWarning, (ClassNode, Source)]
-          } yield {
-              val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
-              val CallsiteInfo(safeToInline, safeToRewrite, annotatedInline, annotatedNoInline, samParamTypes, warning) = analyzeCallsite(method, declarationClassBType, call.owner, source)
-              Callee(
-                callee = method,
-                calleeDeclarationClass = declarationClassBType,
-                safeToInline = safeToInline,
-                safeToRewrite = safeToRewrite,
-                annotatedInline = annotatedInline,
-                annotatedNoInline = annotatedNoInline,
-                samParamTypes = samParamTypes,
-                calleeInfoWarning = warning)
+        // lazy so it is only computed if actually used by computeArgInfos
+        lazy val prodCons = new ProdConsAnalyzer(methodNode, definingClass.internalName)
+
+        methodNode.instructions.iterator.asScala foreach {
+          case call: MethodInsnNode if a.frameAt(call) != null => // skips over unreachable code
+            val callee: Either[OptimizerWarning, Callee] = for {
+              (method, declarationClass)     <- byteCodeRepository.methodNode(call.owner, call.name, call.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
+              (declarationClassNode, source) <- byteCodeRepository.classNodeAndSource(declarationClass): Either[OptimizerWarning, (ClassNode, Source)]
+            } yield {
+                val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
+                val CallsiteInfo(safeToInline, safeToRewrite, annotatedInline, annotatedNoInline, samParamTypes, warning) = analyzeCallsite(method, declarationClassBType, call.owner, source)
+                Callee(
+                  callee = method,
+                  calleeDeclarationClass = declarationClassBType,
+                  safeToInline = safeToInline,
+                  safeToRewrite = safeToRewrite,
+                  annotatedInline = annotatedInline,
+                  annotatedNoInline = annotatedNoInline,
+                  samParamTypes = samParamTypes,
+                  calleeInfoWarning = warning)
+              }
+
+            val argInfos = computeArgInfos(callee, call, prodCons)
+
+            val receiverNotNull = call.getOpcode == Opcodes.INVOKESTATIC || {
+              val numArgs = Type.getArgumentTypes(call.desc).length
+              receiverNotNullByAnalysis(call, numArgs)
             }
 
-          val argInfos = computeArgInfos(callee, call, prodCons)
+            methodCallsites += call -> Callsite(
+              callsiteInstruction = call,
+              callsiteMethod = methodNode,
+              callsiteClass = definingClass,
+              callee = callee,
+              argInfos = argInfos,
+              callsiteStackHeight = a.frameAt(call).getStackSize,
+              receiverKnownNotNull = receiverNotNull,
+              callsitePosition = callsitePositions.getOrElse(call, NoPosition),
+              annotatedInline = inlineAnnotatedCallsites(call),
+              annotatedNoInline = noInlineAnnotatedCallsites(call)
+            )
 
-          val receiverNotNull = call.getOpcode == Opcodes.INVOKESTATIC || {
-            val numArgs = Type.getArgumentTypes(call.desc).length
-            receiverNotNullByAnalysis(call, numArgs)
-          }
+          case LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType) if a.frameAt(indy) != null =>
+            val lmf = LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType)
+            val capturedArgInfos = computeCapturedArgInfos(lmf, prodCons)
+            methodClosureInstantiations += indy -> ClosureInstantiation(
+              lmf,
+              methodNode,
+              definingClass,
+              capturedArgInfos)
 
-          methodCallsites += call -> Callsite(
-            callsiteInstruction = call,
-            callsiteMethod = methodNode,
-            callsiteClass = definingClass,
-            callee = callee,
-            argInfos = argInfos,
-            callsiteStackHeight = a.frameAt(call).getStackSize,
-            receiverKnownNotNull = receiverNotNull,
-            callsitePosition = callsitePositions.getOrElse(call, NoPosition),
-            annotatedInline = inlineAnnotatedCallsites(call),
-            annotatedNoInline = noInlineAnnotatedCallsites(call)
-          )
+          case _ =>
+        }
 
-        case LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType) if a.frameAt(indy) != null =>
-          val lmf = LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType)
-          val capturedArgInfos = computeCapturedArgInfos(lmf, prodCons)
-          methodClosureInstantiations += indy -> ClosureInstantiation(
-            lmf,
-            methodNode,
-            definingClass,
-            capturedArgInfos)
-
-        case _ =>
+        callsites(methodNode) = methodCallsites
+        closureInstantiations(methodNode) = methodClosureInstantiations
       }
-
-      callsites(methodNode) = methodCallsites
-      closureInstantiations(methodNode) = methodClosureInstantiations
     }
   }
 

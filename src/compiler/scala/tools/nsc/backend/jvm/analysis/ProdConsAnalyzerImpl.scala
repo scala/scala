@@ -368,9 +368,9 @@ trait ProdConsAnalyzerImpl {
       Seq(insn.asInstanceOf[IincInsnNode].`var`)
     } else {
       val frame = frameAt(insn)
-      val stackEffect = InstructionStackEffect(insn, frame)
+      val prodCons = InstructionStackEffect.forAsmAnalysis(insn, frame)
       val stackSize = frame.getLocals + frame.getStackSize
-      (stackSize - stackEffect._1) until stackSize
+      (stackSize - InstructionStackEffect.cons(prodCons)) until stackSize
     }
   }
 
@@ -387,10 +387,10 @@ trait ProdConsAnalyzerImpl {
         Seq(insn.asInstanceOf[IincInsnNode].`var`)
       } else {
         val frame = frameAt(insn)
-        val stackEffect = InstructionStackEffect(insn, frame)
+        val prodCons = InstructionStackEffect.forAsmAnalysis(insn, frame)
         val nextFrame = frameAt(insn.getNext)
         val stackSize = nextFrame.getLocals + nextFrame.getStackSize
-        (stackSize - stackEffect._2) until stackSize
+        (stackSize - InstructionStackEffect.prod(prodCons)) until stackSize
       }
   }
 

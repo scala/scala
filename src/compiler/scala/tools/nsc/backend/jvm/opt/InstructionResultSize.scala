@@ -33,14 +33,10 @@ object InstructionResultSize {
 
     case LDC =>
       instruction.asInstanceOf[LdcInsnNode].cst match {
-        case _: java.lang.Integer |
-             _: java.lang.Float |
-             _: String |
-             _: Type |
-             _: Handle => 1
-
         case _: java.lang.Long |
              _: java.lang.Double => 2
+
+        case _ => 1
       }
 
     case ILOAD |
