@@ -1250,13 +1250,14 @@ trait ContextErrors {
           )
         }
 
-        def treeTypeArgs(annotatedTree: Tree) = annotatedTree match {
+        def treeTypeArgs(annotatedTree: Tree): List[String] = annotatedTree match {
           case TypeApply(_, args) => args.map(_.toString)
+          case Block(_, Function(_, treeInfo.Applied(_, targs, _))) => targs.map(_.toString) // eta expansion, see neg/t9527b.scala
           case _ => Nil
         }
 
         context.issueAmbiguousError(AmbiguousImplicitTypeError(tree,
-          (tree1.symbol, tree2.symbol) match {
+          (info1.sym, info2.sym) match {
             case (ImplicitAmbiguousMsg(msg), _) => msg.format(treeTypeArgs(tree1))
             case (_, ImplicitAmbiguousMsg(msg)) => msg.format(treeTypeArgs(tree2))
             case (_, _) if isView => viewMsg

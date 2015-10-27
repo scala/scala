@@ -1,0 +1,7 @@
+t9527a.scala:5: error: ambiguous implicit values:
+ both method f in class C of type (x: Int)String
+ and method g in class C of type (x: Int)String
+ match expected type Int => String
+    implicitly[Int => String]
+              ^
+one error found
