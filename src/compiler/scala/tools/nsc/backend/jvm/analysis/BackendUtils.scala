@@ -303,6 +303,8 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
         r
       }
 
+      val subroutineRetTargets = new mutable.Stack[AbstractInsnNode]
+
       // for each instruction in the queue, contains the stack height at this instruction.
       // once an instruction has been treated, contains -1 to prevent re-enqueuing
       val stackHeights = new Array[Int](size)
@@ -353,21 +355,34 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
 
           insn match {
             case j: JumpInsnNode =>
-              enqInsn(j.label, heightAfter)
-              val opc = j.getOpcode
-              if (opc != GOTO) enqInsnIndex(insnIndex + 1, heightAfter) // jump is conditional, so the successor is also a possible control flow target
+              if (j.getOpcode == JSR) {
+                val jsrTargetHeight = heightAfter + 1
+                if (jsrTargetHeight > maxStack) maxStack = jsrTargetHeight
+                subroutineRetTargets.push(j.getNext)
+                enqInsn(j.label, jsrTargetHeight)
+              } else {
+                enqInsn(j.label, heightAfter)
+                val opc = j.getOpcode
+                if (opc != GOTO) enqInsnIndex(insnIndex + 1, heightAfter) // jump is conditional, so the successor is also a possible control flow target
+              }
+
             case l: LookupSwitchInsnNode =>
               var j = 0
               while (j < l.labels.size) {
                 enqInsn(l.labels.get(j), heightAfter); j += 1
               }
               enqInsn(l.dflt, heightAfter)
+
             case t: TableSwitchInsnNode =>
               var j = 0
               while (j < t.labels.size) {
                 enqInsn(t.labels.get(j), heightAfter); j += 1
               }
               enqInsn(t.dflt, heightAfter)
+
+            case r: VarInsnNode if r.getOpcode == RET =>
+              enqInsn(subroutineRetTargets.pop(), heightAfter)
+
             case _ =>
               val opc = insn.getOpcode
               if (opc != ATHROW && !isReturn(insn))
