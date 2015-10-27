@@ -184,7 +184,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
   /**
    * Loops over the key, value pairs of the map in unsigned order of the keys.
    */
-  override final def foreach[U](f: ((Int, T)) =>  U): Unit = this match {
+  override final def foreach[U](f: ((Int, T)) => U): Unit = this match {
     case IntMap.Bin(_, _, left, right) => { left.foreach(f); right.foreach(f) }
     case IntMap.Tip(key, value) => f((key, value))
     case IntMap.Nil =>

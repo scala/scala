@@ -32,7 +32,7 @@ extends AbstractSet[A]
 
   def contains(elem: A): Boolean = set.contains(elem)
 
-  override def foreach[U](f: A =>  U): Unit = set.foreach(f)
+  override def foreach[U](f: A => U): Unit = set.foreach(f)
 
   override def exists(p: A => Boolean): Boolean = set.exists(p)
 

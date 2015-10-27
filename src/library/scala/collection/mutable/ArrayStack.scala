@@ -233,7 +233,7 @@ extends AbstractSeq[T]
     }
   }
 
-  override def foreach[U](f: T =>  U) {
+  override def foreach[U](f: T => U) {
     var currentIndex = index
     while (currentIndex > 0) {
       currentIndex -= 1
