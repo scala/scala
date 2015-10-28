@@ -92,7 +92,7 @@ extends AbstractSeq[A]
   /** Returns the `n`-th element of this list or `None`
    *  if index does not exist.
    */
-  def get(n: Int): Option[A] = first0.get(n)
+  override def get(n: Int): Option[A] = first0.get(n)
 
   protected def prependElem(elem: A) {
     first0 = new LinkedList[A](elem, first0)
