@@ -37,5 +37,3 @@ package neg2 {
     def f = Foo.mkFoo() bar 10
   }
 }
-
-"Due to SI-6142 this emits no warnings, so we'll just break it until that's fixed."

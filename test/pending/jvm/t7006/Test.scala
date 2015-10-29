@@ -7,8 +7,10 @@ object Test extends BytecodeTest {
   def show: Unit = {
     val classNode = loadClassNode("Foo_1")
     val methodNode = getMethod(classNode, "foo")
-    assert(count(methodNode.instructions, asm.Opcodes.NOP) == 0)
-    assert(count(methodNode.instructions, asm.Opcodes.GOTO) == 1)
+    val nopCount  = count(methodNode.instructions, asm.Opcodes.NOP)
+    val gotoCount = count(methodNode.instructions, asm.Opcodes.GOTO)
+    assert(nopCount  == 0, s"NOPs  expected: 0, actual: $nopCount")
+    assert(gotoCount == 1, s"GOTOs expected: 1, actual: $gotoCount")
   }
 
   def count(insnList: InsnList, opcode: Int): Int = {
