@@ -99,7 +99,7 @@ class AliasingFrame[V <: Value](nLocals: Int, nStack: Int) extends Frame[V](nLoc
     super.execute(insn, interpreter)
 
     (insn.getOpcode: @switch) match {
-      case ALOAD =>
+      case ILOAD | LLOAD | FLOAD | DLOAD | ALOAD =>
         newAlias(assignee = stackTop, source = insn.asInstanceOf[VarInsnNode].`var`)
 
       case DUP =>
@@ -212,23 +212,26 @@ class AliasingFrame[V <: Value](nLocals: Int, nStack: Int) extends Frame[V](nLoc
         }
 
       case opcode =>
-        if (opcode == ASTORE) {
-          // not a separate case: we re-use the code below that removes the consumed stack value from alias sets
-          val stackTopBefore = stackTop - produced + consumed
-          val local = insn.asInstanceOf[VarInsnNode].`var`
-          newAlias(assignee = local, source = stackTopBefore)
-          // if the value written is size 2, it overwrites the subsequent slot, which is then no
-          // longer an alias of anything. see the corresponding case in `Frame.execute`.
-          if (getLocal(local).getSize == 2)
-            removeAlias(local + 1)
+        (opcode: @switch) match {
+          case ISTORE | LSTORE | FSTORE | DSTORE | ASTORE =>
+            // not a separate case: we re-use the code below that removes the consumed stack value from alias sets
+            val stackTopBefore = stackTop - produced + consumed
+            val local = insn.asInstanceOf[VarInsnNode].`var`
+            newAlias(assignee = local, source = stackTopBefore)
+            // if the value written is size 2, it overwrites the subsequent slot, which is then no
+            // longer an alias of anything. see the corresponding case in `Frame.execute`.
+            if (getLocal(local).getSize == 2)
+              removeAlias(local + 1)
 
-          // if the value at the preceding index is size 2, it is no longer valid, so we remove its
-          // aliasing. see corresponding case in `Frame.execute`
-          if (local > 0) {
-            val precedingValue = getLocal(local - 1)
-            if (precedingValue != null && precedingValue.getSize == 2)
-              removeAlias(local - 1)
-          }
+            // if the value at the preceding index is size 2, it is no longer valid, so we remove its
+            // aliasing. see corresponding case in `Frame.execute`
+            if (local > 0) {
+              val precedingValue = getLocal(local - 1)
+              if (precedingValue != null && precedingValue.getSize == 2)
+                removeAlias(local - 1)
+            }
+
+          case _ =>
         }
 
         // Remove consumed stack values from aliasing sets.
