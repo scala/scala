@@ -17,6 +17,7 @@ import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import GenBCode._
 import scala.collection.convert.decorateAsScala._
+import scala.tools.nsc.backend.jvm.analysis.InstructionStackEffect
 
 object BytecodeUtils {
 
@@ -187,7 +188,7 @@ object BytecodeUtils {
     new InsnNode(op)
   }
 
-  def instructionResultSize(instruction: AbstractInsnNode) = InstructionResultSize(instruction)
+  def instructionResultSize(insn: AbstractInsnNode) = InstructionStackEffect.prod(InstructionStackEffect.forClassfile(insn))
 
   /**
    * The number of local variable slots used for parameters and for the `this` reference.
