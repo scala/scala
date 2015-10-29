@@ -176,14 +176,14 @@ trait WrapAsScala {
 
   /**
    * Implicitly converts a Java `Dictionary` to a Scala mutable
-   * `Map[String, String]`.
+   * `Map`.
    *
-   * The returned Scala `Map[String, String]` is backed by the provided Java
+   * The returned Scala `Map` is backed by the provided Java
    * `Dictionary` and any side-effects of using it via the Scala interface
    * will be visible via the Java interface and vice versa.
    *
    * @param p The Dictionary to be converted.
-   * @return  A Scala mutable Map[String, String] view of the argument.
+   * @return  A Scala mutable Map view of the argument.
    */
   implicit def dictionaryAsScalaMap[A, B](p: ju.Dictionary[A, B]): mutable.Map[A, B] = p match {
     case null                       => null
