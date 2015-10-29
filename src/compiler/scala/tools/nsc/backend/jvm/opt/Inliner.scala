@@ -26,14 +26,6 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   import inlinerHeuristics._
   import backendUtils._
 
-  def eliminateUnreachableCodeAndUpdateCallGraph(methodNode: MethodNode, definingClass: InternalName): Unit = {
-    localOpt.minimalRemoveUnreachableCode(methodNode, definingClass) foreach {
-      case invocation: MethodInsnNode  => callGraph.removeCallsite(invocation, methodNode)
-      case indy: InvokeDynamicInsnNode => callGraph.removeClosureInstantiation(indy, methodNode)
-      case _ =>
-    }
-  }
-
   def runInliner(): Unit = {
     rewriteFinalTraitMethodInvocations()
 
@@ -136,7 +128,6 @@ class Inliner[BT <: BTypes](val btypes: BT) {
         if (!selfTypeOk) {
           // We don't need to worry about the method being too large for running an analysis.
           // Callsites of large methods are not added to the call graph.
-          localOpt.minimalRemoveUnreachableCode(callsite.callsiteMethod, callsite.callsiteClass.internalName)
           val analyzer = new AsmAnalyzer(callsite.callsiteMethod, callsite.callsiteClass.internalName, new Analyzer(new SourceInterpreter))
           val receiverValue = analyzer.frameAt(callsite.callsiteInstruction).peekStack(traitMethodArgumentTypes.length)
           for (i <- receiverValue.insns.asScala) {
@@ -317,7 +308,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       // If we have an inline request for a call to g, and f has been already inlined into g, we
       // need to run DCE before inlining g.
       val Right(callee) = request.callsite.callee
-      eliminateUnreachableCodeAndUpdateCallGraph(callee.callee, callee.calleeDeclarationClass.internalName)
+      localOpt.minimalRemoveUnreachableCode(callee.callee, callee.calleeDeclarationClass.internalName)
       // Skip over DCE'd callsites
       if (callGraph.containsCallsite(request.callsite)) {
         inlineCallsite(request.callsite)

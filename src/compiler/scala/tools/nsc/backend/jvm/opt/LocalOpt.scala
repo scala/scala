@@ -60,28 +60,27 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
    *
    * @return A set containing the eliminated instructions
    */
-  def minimalRemoveUnreachableCode(method: MethodNode, ownerClassName: InternalName): Set[AbstractInsnNode] = {
-    if (method.instructions.size == 0) return Set.empty     // fast path for abstract methods
-    if (unreachableCodeEliminated(method)) return Set.empty // we know there is no unreachable code
-    if (!AsmAnalyzer.sizeOKForBasicValue(method)) return Set.empty // the method is too large for running an analyzer
+  def minimalRemoveUnreachableCode(method: MethodNode, ownerClassName: InternalName): Boolean = {
+    if (method.instructions.size == 0) return false     // fast path for abstract methods
+    if (unreachableCodeEliminated(method)) return false // we know there is no unreachable code
+    if (!AsmAnalyzer.sizeOKForBasicValue(method)) return false // the method is too large for running an analyzer
 
     // For correctness, after removing unreachable code, we have to eliminate empty exception
     // handlers, see scaladoc of def methodOptimizations. Removing an live handler may render more
     // code unreachable and therefore requires running another round.
-    def removalRound(): Set[AbstractInsnNode] = {
-      val (removedInstructions, liveLabels) = removeUnreachableCodeImpl(method, ownerClassName)
-      val removedRecursively = if (removedInstructions.nonEmpty) {
+    def removalRound(): Boolean = {
+      val (insnsRemoved, liveLabels) = removeUnreachableCodeImpl(method, ownerClassName)
+      if (insnsRemoved) {
         val liveHandlerRemoved = removeEmptyExceptionHandlers(method).exists(h => liveLabels(h.start))
         if (liveHandlerRemoved) removalRound()
-        else Set.empty
-      } else Set.empty
-      removedInstructions ++ removedRecursively
+      }
+      insnsRemoved
     }
 
-    val removedInstructions = removalRound()
-    if (removedInstructions.nonEmpty) removeUnusedLocalVariableNodes(method)()
+    val changed = removalRound()
+    if (changed) removeUnusedLocalVariableNodes(method)()
     unreachableCodeEliminated += method
-    removedInstructions
+    changed
   }
 
   /**
@@ -139,15 +138,12 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
     // This triggers "ClassFormatError: Illegal exception table range in class file C". Similar
     // for local variables in dead blocks. Maybe that's a bug in the ASM framework.
 
-    def canRunDCE = AsmAnalyzer.sizeOKForBasicValue(method)
     def removalRound(): Boolean = {
       // unreachable-code, empty-handlers and simplify-jumps run until reaching a fixpoint (see doc on class LocalOpt)
-      val (codeRemoved, handlersRemoved, liveHandlerRemoved) = if (compilerSettings.YoptUnreachableCode && canRunDCE) {
-        val (removedInstructions, liveLabels) = removeUnreachableCodeImpl(method, ownerClassName)
+      val (codeRemoved, handlersRemoved, liveHandlerRemoved) = {
+        val (insnsRemoved, liveLabels) = removeUnreachableCodeImpl(method, ownerClassName)
         val removedHandlers = removeEmptyExceptionHandlers(method)
-        (removedInstructions.nonEmpty, removedHandlers.nonEmpty, removedHandlers.exists(h => liveLabels(h.start)))
-      } else {
-        (false, false, false)
+        (insnsRemoved, removedHandlers.nonEmpty, removedHandlers.exists(h => liveLabels(h.start)))
       }
 
       val jumpsChanged = if (compilerSettings.YoptSimplifyJumps) simplifyJumps(method) else false
@@ -159,7 +155,13 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
       codeRemoved || handlersRemoved || jumpsChanged
     }
 
-    val codeHandlersOrJumpsChanged = removalRound()
+    val codeHandlersOrJumpsChanged = if (compilerSettings.YoptUnreachableCode && AsmAnalyzer.sizeOKForBasicValue(method)) {
+      // we run DCE even if the method is already in the `unreachableCodeEliminated` map: the DCE
+      // here is more thorough than `minimalRemoveUnreachableCode`
+      val r = removalRound()
+      unreachableCodeEliminated += method
+      r
+    } else false
 
     // (*) Removing stale local variable descriptors is required for correctness of unreachable-code
     val localsRemoved =
@@ -187,13 +189,13 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
    *
    * @return A set containing eliminated instructions, and a set containing all live label nodes.
    */
-  def removeUnreachableCodeImpl(method: MethodNode, ownerClassName: InternalName): (Set[AbstractInsnNode], Set[LabelNode]) = {
+  def removeUnreachableCodeImpl(method: MethodNode, ownerClassName: InternalName): (Boolean, Set[LabelNode]) = {
     val a = new AsmAnalyzer(method, ownerClassName)
     val frames = a.analyzer.getFrames
 
     var i = 0
     var liveLabels = Set.empty[LabelNode]
-    var removedInstructions = Set.empty[AbstractInsnNode]
+    var changed = false
     var maxLocals = parametersSize(method)
     var maxStack = 0
     val itr = method.instructions.iterator()
@@ -219,14 +221,19 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
             // Instruction iterators allow removing during iteration.
             // Removing is O(1): instructions are doubly linked list elements.
             itr.remove()
-            removedInstructions += insn
+            changed = true
+            insn match {
+              case invocation: MethodInsnNode => callGraph.removeCallsite(invocation, method)
+              case indy: InvokeDynamicInsnNode => callGraph.removeClosureInstantiation(indy, method)
+              case _ =>
+            }
           }
       }
       i += 1
     }
     method.maxLocals = maxLocals
     method.maxStack  = maxStack
-    (removedInstructions, liveLabels)
+    (changed, liveLabels)
   }
 }
 
