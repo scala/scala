@@ -310,8 +310,8 @@ object LocalOptImpls {
     val renumber = collection.mutable.ArrayBuffer.empty[Int]
 
     // Add the index of the local variable used by `varIns` to the `renumber` array.
-    def addVar(varIns: VarInsnNode): Unit = {
-      val index = varIns.`var`
+    def addVar(varIns: AbstractInsnNode, slot: Int): Unit = {
+      val index = slot
       val isWide = isSize2LoadOrStore(varIns.getOpcode)
 
       // Ensure the length of `renumber`. Unused variable indices are mapped to -1.
@@ -329,7 +329,7 @@ object LocalOptImpls {
     val firstLocalIndex = parametersSize(method)
     for (i <- 0 until firstLocalIndex) renumber += i // parameters and `this` are always used.
     method.instructions.iterator().asScala foreach {
-      case VarInstruction(varIns) => addVar(varIns)
+      case VarInstruction(varIns, slot) => addVar(varIns, slot)
       case _ =>
     }
 
@@ -350,10 +350,12 @@ object LocalOptImpls {
       // update variable instructions according to the renumber table
       method.maxLocals = nextIndex
       method.instructions.iterator().asScala.foreach {
-        case VarInstruction(varIns) =>
-          val oldIndex = varIns.`var`
-          if (oldIndex >= firstLocalIndex && renumber(oldIndex) != oldIndex)
-            varIns.`var` = renumber(varIns.`var`)
+        case VarInstruction(varIns, slot) =>
+          val oldIndex = slot
+          if (oldIndex >= firstLocalIndex && renumber(oldIndex) != oldIndex) varIns match {
+            case vi: VarInsnNode => vi.`var` = renumber(slot)
+            case ii: IincInsnNode => ii.`var` = renumber(slot)
+          }
         case _ =>
       }
       true

@@ -48,8 +48,9 @@ object BytecodeUtils {
   }
 
   object VarInstruction {
-    def unapply(instruction: AbstractInsnNode): Option[VarInsnNode] = {
-      if (isVarInstruction(instruction)) Some(instruction.asInstanceOf[VarInsnNode])
+    def unapply(instruction: AbstractInsnNode): Option[(AbstractInsnNode, Int)] = {
+      if (isLoadStoreOrRet(instruction)) Some((instruction, instruction.asInstanceOf[VarInsnNode].`var`))
+      else if (instruction.getOpcode == IINC) Some((instruction, instruction.asInstanceOf[IincInsnNode].`var`))
       else None
     }
 
@@ -81,7 +82,9 @@ object BytecodeUtils {
     op >= ISTORE && op <= ASTORE
   }
 
-  def isVarInstruction(instruction: AbstractInsnNode): Boolean = isLoad(instruction) || isStore(instruction)
+  def isLoadStoreOrRet(instruction: AbstractInsnNode): Boolean = isLoad(instruction) || isStore(instruction) || instruction.getOpcode == RET
+
+  def isLoadOrStore(instruction: AbstractInsnNode): Boolean = isLoad(instruction) || isStore(instruction)
 
   def isExecutable(instruction: AbstractInsnNode): Boolean = instruction.getOpcode >= 0
 
@@ -125,7 +128,7 @@ object BytecodeUtils {
   def removeJumpAndAdjustStack(method: MethodNode, jump: JumpInsnNode) {
     val instructions = method.instructions
     val op = jump.getOpcode
-    if ((op >= IFEQ && op <= IFGE) || op == IFNULL || op == IFNONNULL) {
+    if ((op >= IFEQ && op <= IFLE) || op == IFNULL || op == IFNONNULL) {
       instructions.insert(jump, getPop(1))
     } else if ((op >= IF_ICMPEQ && op <= IF_ICMPLE) || op == IF_ACMPEQ || op == IF_ACMPNE) {
       instructions.insert(jump, getPop(1))
