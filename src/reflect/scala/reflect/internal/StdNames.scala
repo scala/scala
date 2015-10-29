@@ -696,6 +696,7 @@ trait StdNames {
     val freshTermName: NameType        = "freshTermName"
     val freshTypeName: NameType        = "freshTypeName"
     val get: NameType                  = "get"
+    val parameterTypes: NameType       = "parameterTypes"
     val hashCode_ : NameType           = "hashCode"
     val hash_ : NameType               = "hash"
     val head : NameType                = "head"
@@ -1170,6 +1171,7 @@ trait StdNames {
     final val InvokeExact: TermName      = newTermName("invokeExact")
 
     final val AltMetafactory: TermName      = newTermName("altMetafactory")
+    final val Bootstrap: TermName           = newTermName("bootstrap")
 
     val Boxed = immutable.Map[TypeName, TypeName](
       tpnme.Boolean -> BoxedBoolean,

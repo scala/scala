@@ -64,15 +64,13 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
 
   /**
    * Add:
-   * private static java.util.Map $deserializeLambdaCache$ = null
    * private static Object $deserializeLambda$(SerializedLambda l) {
-   *   var cache = $deserializeLambdaCache$
-   *   if (cache eq null) {
-   *     cache = new java.util.HashMap()
-   *     $deserializeLambdaCache$ = cache
-   *   }
-   *   return scala.runtime.LambdaDeserializer.deserializeLambda(MethodHandles.lookup(), cache, l);
+   *   return indy[scala.runtime.LambdaDeserialize.bootstrap](l)
    * }
+   *
+   * We use invokedynamic here to enable caching within the deserializer without needing to
+   * host a static field in the enclosing class. This allows us to add this method to interfaces
+   * that define lambdas in default methods.
    */
   def addLambdaDeserialize(classNode: ClassNode): Unit = {
     val cw = classNode
@@ -83,37 +81,14 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     // stack map frames and invokes the `getCommonSuperClass` method. This method expects all
     // ClassBTypes mentioned in the source code to exist in the map.
 
-    val mapDesc = juMapRef.descriptor
     val nilLookupDesc = MethodBType(Nil, jliMethodHandlesLookupRef).descriptor
     val serlamObjDesc = MethodBType(jliSerializedLambdaRef :: Nil, ObjectRef).descriptor
-    val lookupMapSerlamObjDesc = MethodBType(jliMethodHandlesLookupRef :: juMapRef :: jliSerializedLambdaRef :: Nil, ObjectRef).descriptor
-
-    {
-      val fv = cw.visitField(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambdaCache$", mapDesc, null, null)
-      fv.visitEnd()
-    }
 
     {
       val mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambda$", serlamObjDesc, null, null)
       mv.visitCode()
-      // javaBinaryName returns the internal name of a class. Also used in BTypesFromsymbols.classBTypeFromSymbol.
-      mv.visitFieldInsn(GETSTATIC, classNode.name, "$deserializeLambdaCache$", mapDesc)
-      mv.visitVarInsn(ASTORE, 1)
-      mv.visitVarInsn(ALOAD, 1)
-      val l0 = new Label()
-      mv.visitJumpInsn(IFNONNULL, l0)
-      mv.visitTypeInsn(NEW, juHashMapRef.internalName)
-      mv.visitInsn(DUP)
-      mv.visitMethodInsn(INVOKESPECIAL, juHashMapRef.internalName, "<init>", "()V", false)
-      mv.visitVarInsn(ASTORE, 1)
-      mv.visitVarInsn(ALOAD, 1)
-      mv.visitFieldInsn(PUTSTATIC, classNode.name, "$deserializeLambdaCache$", mapDesc)
-      mv.visitLabel(l0)
-      mv.visitFieldInsn(GETSTATIC, srLambdaDeserializerRef.internalName, "MODULE$", srLambdaDeserializerRef.descriptor)
-      mv.visitMethodInsn(INVOKESTATIC, jliMethodHandlesRef.internalName, "lookup", nilLookupDesc, false)
-      mv.visitVarInsn(ALOAD, 1)
       mv.visitVarInsn(ALOAD, 0)
-      mv.visitMethodInsn(INVOKEVIRTUAL, srLambdaDeserializerRef.internalName, "deserializeLambda", lookupMapSerlamObjDesc, false)
+      mv.visitInvokeDynamicInsn("lambdaDeserialize", serlamObjDesc, lambdaDeserializeBootstrapHandle)
       mv.visitInsn(ARETURN)
       mv.visitEnd()
     }

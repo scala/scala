@@ -310,6 +310,15 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         case app : Apply =>
           generatedType = genApply(app, expectedType)
 
+        case app @ ApplyDynamic(qual, Literal(Constant(boostrapMethodRef: Symbol)) :: staticAndDynamicArgs) =>
+          val numStaticArgs = boostrapMethodRef.paramss.head.size - 3 /*JVM provided args*/
+          val (staticArgs, dynamicArgs) = staticAndDynamicArgs.splitAt(numStaticArgs)
+          val boostrapDescriptor = staticHandleFromSymbol(boostrapMethodRef)
+          val bootstrapArgs = staticArgs.map({case t @ Literal(c: Constant) => bootstrapMethodArg(c, t.pos)})
+          val descriptor = methodBTypeFromMethodType(qual.symbol.info, false)
+          genLoadArguments(dynamicArgs, qual.symbol.info.params.map(param => typeToBType(param.info)))
+          mnode.visitInvokeDynamicInsn(qual.symbol.name.encoded, descriptor.descriptor, boostrapDescriptor, bootstrapArgs : _*)
+
         case ApplyDynamic(qual, args) => sys.error("No invokedynamic support yet.")
 
         case This(qual) =>
@@ -1327,7 +1336,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val samName = sam.name.toString
       val samMethodType = methodBTypeFromSymbol(sam).toASMType
 
-      val flags = LambdaMetafactory.FLAG_SERIALIZABLE | LambdaMetafactory.FLAG_MARKERS
+      val flags = java.lang.invoke.LambdaMetafactory.FLAG_SERIALIZABLE | java.lang.invoke.LambdaMetafactory.FLAG_MARKERS
 
       val ScalaSerializable = classBTypeFromSymbol(definitions.SerializableClass).toASMType
       bc.jmethod.visitInvokeDynamicInsn(samName, invokedType, lambdaMetaFactoryBootstrapHandle,
@@ -1342,16 +1351,4 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       indyLambdaHosts += cnode.name
     }
   }
-
-  lazy val lambdaMetaFactoryBootstrapHandle =
-    new asm.Handle(asm.Opcodes.H_INVOKESTATIC,
-      coreBTypes.jliLambdaMetafactoryRef.internalName, sn.AltMetafactory.toString,
-      MethodBType(
-        List(
-          coreBTypes.jliMethodHandlesLookupRef,
-          coreBTypes.StringRef,
-          coreBTypes.jliMethodTypeRef,
-          ArrayBType(ObjectRef)),
-        coreBTypes.jliCallSiteRef
-      ).descriptor)
 }

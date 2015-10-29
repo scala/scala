@@ -130,10 +130,31 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
    */
   final def methodBTypeFromSymbol(methodSymbol: Symbol): MethodBType = {
     assert(methodSymbol.isMethod, s"not a method-symbol: $methodSymbol")
+    methodBTypeFromMethodType(methodSymbol.info, methodSymbol.isClassConstructor || methodSymbol.isConstructor)
+  }
+
+  /**
+   * Builds a [[MethodBType]] for a method type.
+   */
+  final def methodBTypeFromMethodType(tpe: Type, isConstructor: Boolean): MethodBType = {
     val resultType: BType =
-      if (methodSymbol.isClassConstructor || methodSymbol.isConstructor) UNIT
-      else typeToBType(methodSymbol.tpe.resultType)
-    MethodBType(methodSymbol.tpe.paramTypes map typeToBType, resultType)
+      if (isConstructor) UNIT
+      else typeToBType(tpe.resultType)
+    MethodBType(tpe.paramTypes map typeToBType, resultType)
+  }
+
+  def bootstrapMethodArg(t: Constant, pos: Position): AnyRef = t match {
+    case Constant(mt: Type) => methodBTypeFromMethodType(transformedType(mt), isConstructor = false).toASMType
+    case c @ Constant(sym: Symbol) => staticHandleFromSymbol(sym)
+    case c @ Constant(value: String) => value
+    case c @ Constant(value) if c.isNonUnitAnyVal => c.value.asInstanceOf[AnyRef]
+    case _ => reporter.error(pos, "Unable to convert static argument of ApplyDynamic into a classfile constant: " + t); null
+  }
+
+  def staticHandleFromSymbol(sym: Symbol): asm.Handle = {
+    val owner = if (sym.owner.isModuleClass) sym.owner.linkedClassOfClass else sym.owner
+    val descriptor = methodBTypeFromMethodType(sym.info, isConstructor = false).descriptor
+    new asm.Handle(asm.Opcodes.H_INVOKESTATIC, classBTypeFromSymbol(owner).internalName, sym.name.encoded, descriptor)
   }
 
   /**
