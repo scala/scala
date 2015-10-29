@@ -9,6 +9,7 @@ package opt
 
 import scala.annotation.switch
 import scala.tools.asm.{Type, ClassWriter, MethodWriter, Opcodes}
+import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
@@ -193,7 +194,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
     var i = 0
     var liveLabels = Set.empty[LabelNode]
     var removedInstructions = Set.empty[AbstractInsnNode]
-    var maxLocals = (Type.getArgumentsAndReturnSizes(method.desc) >> 2) - (if (BytecodeUtils.isStaticMethod(method)) 1 else 0)
+    var maxLocals = parametersSize(method)
     var maxStack = 0
     val itr = method.instructions.iterator()
     while (itr.hasNext) {
@@ -214,7 +215,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
           maxLocals = math.max(maxLocals, i.`var` + 1)
 
         case _ =>
-          if (!isLive || insn.getOpcode == Opcodes.NOP) {
+          if (!isLive || insn.getOpcode == NOP) {
             // Instruction iterators allow removing during iteration.
             // Removing is O(1): instructions are doubly linked list elements.
             itr.remove()
@@ -247,7 +248,7 @@ object LocalOptImpls {
     def containsExecutableCode(start: AbstractInsnNode, end: LabelNode): Boolean = {
       start != end && ((start.getOpcode : @switch) match {
         // FrameNode, LabelNode and LineNumberNode have opcode == -1.
-        case -1 | Opcodes.GOTO => containsExecutableCode(start.getNext, end)
+        case -1 | GOTO => containsExecutableCode(start.getNext, end)
         case _ => true
       })
     }
@@ -292,17 +293,6 @@ object LocalOptImpls {
       }
     }
     method.localVariables.size != initialNumVars
-  }
-
-  /**
-   * The number of local variable slots used for parameters and for the `this` reference.
-   */
-  private def parametersSize(method: MethodNode): Int = {
-    // Double / long fields occupy two slots, so we sum up the sizes. Since getSize returns 0 for
-    // void, we have to add `max 1`.
-    val paramsSize = scala.tools.asm.Type.getArgumentTypes(method.desc).iterator.map(_.getSize max 1).sum
-    val thisSize   = if ((method.access & Opcodes.ACC_STATIC) == 0) 1 else 0
-    paramsSize + thisSize
   }
 
   /**
@@ -579,7 +569,7 @@ object LocalOptImpls {
     case Goto(jump) =>
       nextExecutableInstruction(jump.label) match {
         case Some(target) =>
-          if (isReturn(target) || target.getOpcode == Opcodes.ATHROW) {
+          if (isReturn(target) || target.getOpcode == ATHROW) {
             method.instructions.set(jump, target.clone(null))
             true
           } else false
