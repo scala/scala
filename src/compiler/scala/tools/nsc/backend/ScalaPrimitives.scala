@@ -31,7 +31,8 @@ abstract class ScalaPrimitives {
 
   import global._
   import definitions._
-  import global.icodes._
+  import global.icodes.{TypeKind, toTypeKind}
+  import global.icodes.{BOOL, BYTE, CHAR, DOUBLE, FLOAT, INT, LONG, SHORT, REFERENCE, ARRAY}
 
   // Arithmetic unary operations
   final val POS = 1                            // +x
@@ -549,10 +550,8 @@ abstract class ScalaPrimitives {
   def isPrimitive(sym: Symbol): Boolean = primitives contains sym
 
   /** Return the code for the given symbol. */
-  def getPrimitive(sym: Symbol): Int = {
-    assert(isPrimitive(sym), "Unknown primitive " + sym)
-    primitives(sym)
-  }
+  def getPrimitive(sym: Symbol): Int =
+    primitives.getOrElse(sym, throw new AssertionError(s"Unknown primitive $sym"))
 
   /**
    * Return the primitive code of the given operation. If the

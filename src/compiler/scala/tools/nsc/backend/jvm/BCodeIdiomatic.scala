@@ -106,7 +106,6 @@ abstract class BCodeIdiomatic extends SubComponent {
     def jmethod: asm.tree.MethodNode
 
     import asm.Opcodes;
-    import icodes.opcodes.{ Static, Dynamic,  SuperCall }
 
     final def emit(opc: Int) { jmethod.visitInsn(opc) }
 

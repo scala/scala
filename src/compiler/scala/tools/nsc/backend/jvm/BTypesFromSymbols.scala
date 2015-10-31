@@ -30,8 +30,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   import definitions._
   import genBCode._
 
-  val bCodeICodeCommon: BCodeICodeCommon[global.type] = new BCodeICodeCommon(global)
-
   val backendUtils: BackendUtils[this.type] = new BackendUtils(this)
 
   // Why the proxy, see documentation of class [[CoreBTypes]].

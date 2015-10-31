@@ -28,7 +28,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
   import global._
   import definitions._
   import bTypes._
-  import bCodeICodeCommon._
   import coreBTypes._
 
   /*
@@ -36,7 +35,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
    */
   abstract class PlainBodyBuilder(cunit: CompilationUnit) extends PlainSkelBuilder(cunit) {
     import icodes.TestOp
-    import icodes.opcodes.InvokeStyle
+    import invokeStyles._
 
     /*  If the selector type has a member with the right name,
      *  it is the host class; otherwise the symbol's owner.
@@ -583,7 +582,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         // therefore, we can ignore this fact, and generate code that leaves nothing
         // on the stack (contrary to what the type in the AST says).
         case Apply(fun @ Select(Super(_, mix), _), args) =>
-          val invokeStyle = icodes.opcodes.SuperCall(mix)
+          val invokeStyle = SuperCall(mix)
           // if (fun.symbol.isConstructor) Static(true) else SuperCall(mix);
           mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
           genLoadArguments(args, paramTKs(app))
@@ -629,7 +628,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               mnode.visitTypeInsn(asm.Opcodes.NEW, rt.internalName)
               bc dup generatedType
               genLoadArguments(args, paramTKs(app))
-              genCallMethod(ctor, icodes.opcodes.Static(onInstance = true), app.pos)
+              genCallMethod(ctor, Static(onInstance = true), app.pos)
 
             case _ =>
               abort(s"Cannot instantiate $tpt of kind: $generatedType")
@@ -667,9 +666,9 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             def genNormalMethodCall() {
 
               val invokeStyle =
-                if (sym.isStaticMember) icodes.opcodes.Static(onInstance = false)
-                else if (sym.isPrivate || sym.isClassConstructor) icodes.opcodes.Static(onInstance = true)
-                else icodes.opcodes.Dynamic;
+                if (sym.isStaticMember) Static(onInstance = false)
+                else if (sym.isPrivate || sym.isClassConstructor) Static(onInstance = true)
+                else Dynamic
 
               if (invokeStyle.hasInstance) {
                 genLoadQualifier(fun)
@@ -998,8 +997,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         // Optimization for expressions of the form "" + x.  We can avoid the StringBuilder.
         case List(Literal(Constant("")), arg) =>
           genLoad(arg, ObjectRef)
-          genCallMethod(String_valueOf, icodes.opcodes.Static(onInstance = false), arg.pos)
-
+          genCallMethod(String_valueOf, Static(onInstance = false), arg.pos)
         case concatenations =>
           bc.genStartConcat(tree.pos)
           for (elem <- concatenations) {
@@ -1030,7 +1028,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       // whether to reference the type of the receiver or
       // the type of the method owner
       val useMethodOwner = (
-           style != icodes.opcodes.Dynamic
+           style != Dynamic
         || hostSymbol.isBottomClass
         || methodOwner == definitions.ObjectClass
       )
@@ -1077,8 +1075,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     def genScalaHash(tree: Tree, applyPos: Position): BType = {
       genLoadModule(ScalaRunTimeModule) // TODO why load ScalaRunTimeModule if ## has InvokeStyle of Static(false) ?
       genLoad(tree, ObjectRef)
-      genCallMethod(hashMethodSym, icodes.opcodes.Static(onInstance = false), applyPos)
-
+      genCallMethod(hashMethodSym, Static(onInstance = false), applyPos)
       INT
     }
 
@@ -1150,6 +1147,13 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     val testOpForPrimitive: Array[TestOp] = Array(
       icodes.EQ, icodes.NE, icodes.EQ, icodes.NE, icodes.LT, icodes.LE, icodes.GE, icodes.GT
     )
+
+    /** Some useful equality helpers. */
+    def isNull(t: Tree) = PartialFunction.cond(t) { case Literal(Constant(null)) => true }
+    def isLiteral(t: Tree) = PartialFunction.cond(t) { case Literal(_) => true }
+    def isNonNullExpr(t: Tree) = isLiteral(t) || ((t.symbol ne null) && t.symbol.isModule)
+    /** If l or r is constant null, returns the other ; otherwise null */
+    def ifOneIsNull(l: Tree, r: Tree) = if (isNull(l)) r else if (isNull(r)) l else null
 
     /*
      * Generate code for conditional expressions.
@@ -1254,7 +1258,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         }
         genLoad(l, ObjectRef)
         genLoad(r, ObjectRef)
-        genCallMethod(equalsMethod, icodes.opcodes.Static(onInstance = false), pos)
+        genCallMethod(equalsMethod, Static(onInstance = false), pos)
         genCZJUMP(success, failure, icodes.NE, BOOL)
       }
       else {
@@ -1270,7 +1274,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           // SI-7852 Avoid null check if L is statically non-null.
           genLoad(l, ObjectRef)
           genLoad(r, ObjectRef)
-          genCallMethod(Object_equals, icodes.opcodes.Dynamic, pos)
+          genCallMethod(Object_equals, Dynamic, pos)
           genCZJUMP(success, failure, icodes.NE, BOOL)
         } else {
           // l == r -> if (l eq null) r eq null else l.equals(r)
@@ -1291,7 +1295,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
           markProgramPoint(lNonNull)
           locals.load(eqEqTempLocal)
-          genCallMethod(Object_equals, icodes.opcodes.Dynamic, pos)
+          genCallMethod(Object_equals, Dynamic, pos)
           genCZJUMP(success, failure, icodes.NE, BOOL)
         }
       }
@@ -1341,4 +1345,53 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       definitions.LambdaMetaFactory.fullName('/'), sn.AltMetafactory.toString,
       "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
 
+  object invokeStyles {
+
+    /** This class represents a method invocation style. */
+    sealed abstract class InvokeStyle {
+      /** Is this a dynamic method call? */
+      def isDynamic: Boolean = false
+
+      /** Is this a static method call? */
+      def isStatic: Boolean = false
+
+      def isSuper: Boolean = false
+
+      /** Is this an instance method call? */
+      def hasInstance: Boolean = true
+
+      /** Returns a string representation of this style. */
+      override def toString(): String
+    }
+
+    /** Virtual calls.
+      *  On JVM, translated to either `invokeinterface` or `invokevirtual`.
+      */
+    case object Dynamic extends InvokeStyle {
+      override def isDynamic = true
+      override def toString(): String = "dynamic"
+    }
+
+    /**
+     * Special invoke:
+     *   Static(true)  is used for calls to private members, ie `invokespecial` on JVM.
+     *   Static(false) is used for calls to class-level instance-less static methods, ie `invokestatic` on JVM.
+     */
+    case class Static(onInstance: Boolean) extends InvokeStyle {
+      override def isStatic    = true
+      override def hasInstance = onInstance
+      override def toString(): String = {
+        if(onInstance) "static-instance"
+        else           "static-class"
+      }
+    }
+
+    /** Call through super[mix].
+      *  On JVM, translated to `invokespecial`.
+      */
+    case class SuperCall(mix: Name) extends InvokeStyle {
+      override def isSuper = true
+      override def toString(): String = { "super(" + mix + ")" }
+    }
+  }
 }
