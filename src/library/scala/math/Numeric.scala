@@ -23,7 +23,7 @@ object Numeric {
      *  def plus[T: Numeric](x: T, y: T) = x + y
      *  }}}
      */
-    implicit def infixNumericOps[T](x: T)(implicit num: Numeric[T]): Numeric[T]#Ops = new num.Ops(x)
+    implicit def infixNumericOps[T](x: T)(implicit num: Numeric[T]): Numeric[T]#NumericOps = new num.NumericOps(x)
   }
   object Implicits extends ExtraImplicits { }
 
@@ -211,7 +211,7 @@ trait Numeric[T] extends Ordering[T] {
     else if (gt(x, zero)) 1
     else 0
 
-  class Ops(lhs: T) {
+  class NumericOps(lhs: T) {
     def +(rhs: T) = plus(lhs, rhs)
     def -(rhs: T) = minus(lhs, rhs)
     def *(rhs: T) = times(lhs, rhs)
@@ -223,5 +223,5 @@ trait Numeric[T] extends Ordering[T] {
     def toFloat(): Float = Numeric.this.toFloat(lhs)
     def toDouble(): Double = Numeric.this.toDouble(lhs)
   }
-  implicit def mkNumericOps(lhs: T): Ops = new Ops(lhs)
+  implicit def mkNumericOps(lhs: T): NumericOps = new NumericOps(lhs)
 }

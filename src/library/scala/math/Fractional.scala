@@ -17,7 +17,7 @@ import scala.language.implicitConversions
 trait Fractional[T] extends Numeric[T] {
   def div(x: T, y: T): T
 
-  class FractionalOps(lhs: T) extends Ops(lhs) {
+  class FractionalOps(lhs: T) extends NumericOps(lhs) {
     def /(rhs: T) = div(lhs, rhs)
   }
   override implicit def mkNumericOps(lhs: T): FractionalOps =

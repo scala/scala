@@ -123,7 +123,7 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   }
 
   /** This inner class defines comparison operators available for `T`. */
-  class Ops(lhs: T) {
+  class OrderingOps(lhs: T) {
     def <(rhs: T) = lt(lhs, rhs)
     def <=(rhs: T) = lteq(lhs, rhs)
     def >(rhs: T) = gt(lhs, rhs)
@@ -136,7 +136,7 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   /** This implicit method augments `T` with the comparison operators defined
     * in `scala.math.Ordering.Ops`.
     */
-  implicit def mkOrderingOps(lhs: T): Ops = new Ops(lhs)
+  implicit def mkOrderingOps(lhs: T): OrderingOps = new OrderingOps(lhs)
 }
 
 trait LowPriorityOrderingImplicits {
@@ -189,7 +189,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       * def lessThan[T: Ordering](x: T, y: T) = x < y
       * }}}
       */
-    implicit def infixOrderingOps[T](x: T)(implicit ord: Ordering[T]): Ordering[T]#Ops = new ord.Ops(x)
+    implicit def infixOrderingOps[T](x: T)(implicit ord: Ordering[T]): Ordering[T]#OrderingOps = new ord.OrderingOps(x)
   }
 
   /** An object containing implicits which are not in the default scope. */
