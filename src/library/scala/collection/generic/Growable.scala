@@ -48,7 +48,7 @@ trait Growable[-A] extends Clearable {
    *  @return  the $coll itself.
    */
   def ++=(xs: TraversableOnce[A]): this.type = {
-    @tailrec def loop(xs: scala.collection.LinearSeq[A]) {
+    @tailrec def loop(xs: scala.collection.LinearSeq[A]): Unit = {
       if (xs.nonEmpty) {
         this += xs.head
         loop(xs.tail)
