@@ -44,11 +44,10 @@ class SyncVar[A] {
     if (elapsed < 0) 0 else TimeUnit.NANOSECONDS.toMillis(elapsed)
   }
 
-  /** Waits for this SyncVar to become defined at least for
-   *  `timeout` milliseconds (possibly more), and gets its
-   *  value.
+  /** Wait at least `timeout` milliseconds (possibly more) for this `SyncVar`
+   *  to become defined and then get its value.
    *
-   *  @param timeout     the amount of milliseconds to wait, 0 means forever
+   *  @param timeout     time in milliseconds to wait
    *  @return            `None` if variable is undefined after `timeout`, `Some(value)` otherwise
    */
   def get(timeout: Long): Option[A] = synchronized {
