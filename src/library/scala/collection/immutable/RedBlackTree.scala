@@ -96,7 +96,7 @@ object RedBlackTree {
 
   def foreach[A,B,U](tree:Tree[A,B], f:((A,B)) => U):Unit = if (tree ne null) _foreach(tree,f)
 
-  private[this] def _foreach[A, B, U](tree: Tree[A, B], f: ((A, B)) => U) {
+  private[this] def _foreach[A, B, U](tree: Tree[A, B], f: ((A, B)) => U): Unit =  {
     if (tree.left ne null) _foreach(tree.left, f)
     f((tree.key, tree.value))
     if (tree.right ne null) _foreach(tree.right, f)
@@ -104,7 +104,7 @@ object RedBlackTree {
 
   def foreachKey[A, U](tree:Tree[A,_], f: A => U):Unit = if (tree ne null) _foreachKey(tree,f)
 
-  private[this] def _foreachKey[A, U](tree: Tree[A, _], f: A => U) {
+  private[this] def _foreachKey[A, U](tree: Tree[A, _], f: A => U): Unit = {
     if (tree.left ne null) _foreachKey(tree.left, f)
     f((tree.key))
     if (tree.right ne null) _foreachKey(tree.right, f)
@@ -484,7 +484,7 @@ object RedBlackTree {
       else if (tree.left eq null) tree
       else findLeftMostOrPopOnEmpty(goLeft(tree))
 
-    private[this] def pushNext(tree: Tree[A, B]) {
+    private[this] def pushNext(tree: Tree[A, B]): Unit = {
       try {
         stackOfNexts(index) = tree
         index += 1
