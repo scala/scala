@@ -25,6 +25,6 @@ import generic._
 class GrowingBuilder[Elem, To <: Growable[Elem]](empty: To) extends Builder[Elem, To] {
   protected var elems: To = empty
   def +=(x: Elem): this.type = { elems += x; this }
-  def clear() { elems = empty }
+  def clear(): Unit = { elems = empty }
   def result: To = elems
 }
