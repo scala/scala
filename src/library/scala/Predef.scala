@@ -312,8 +312,8 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
 
   // views --------------------------------------------------------------
 
-  implicit def tuple2ToZippedOps[T1, T2](x: (T1, T2))                           = new runtime.Tuple2Zipped.Ops(x)
-  implicit def tuple3ToZippedOps[T1, T2, T3](x: (T1, T2, T3))                   = new runtime.Tuple3Zipped.Ops(x)
+  implicit def tuple2ToZippedOps[T1, T2](x: (T1, T2)): runtime.Tuple2Zipped.Ops                           = new runtime.Tuple2Zipped.Ops(x)
+  implicit def tuple3ToZippedOps[T1, T2, T3](x: (T1, T2, T3)): runtime.Tuple3Zipped.Ops                   = new runtime.Tuple3Zipped.Ops(x)
 
   implicit def genericArrayOps[T](xs: Array[T]): ArrayOps[T] = (xs match {
     case x: Array[AnyRef]  => refArrayOps[AnyRef](x)
@@ -342,14 +342,14 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
 
   // "Autoboxing" and "Autounboxing" ---------------------------------------------------
 
-  implicit def byte2Byte(x: Byte)           = java.lang.Byte.valueOf(x)
-  implicit def short2Short(x: Short)        = java.lang.Short.valueOf(x)
-  implicit def char2Character(x: Char)      = java.lang.Character.valueOf(x)
-  implicit def int2Integer(x: Int)          = java.lang.Integer.valueOf(x)
-  implicit def long2Long(x: Long)           = java.lang.Long.valueOf(x)
-  implicit def float2Float(x: Float)        = java.lang.Float.valueOf(x)
-  implicit def double2Double(x: Double)     = java.lang.Double.valueOf(x)
-  implicit def boolean2Boolean(x: Boolean)  = java.lang.Boolean.valueOf(x)
+  implicit def byte2Byte(x: Byte): java.lang.Byte           = java.lang.Byte.valueOf(x)
+  implicit def short2Short(x: Short): java.lang.Short        = java.lang.Short.valueOf(x)
+  implicit def char2Character(x: Char): java.lang.Character      = java.lang.Character.valueOf(x)
+  implicit def int2Integer(x: Int): java.lang.Integer          = java.lang.Integer.valueOf(x)
+  implicit def long2Long(x: Long): java.lang.Long           = java.lang.Long.valueOf(x)
+  implicit def float2Float(x: Float): java.lang.Float        = java.lang.Float.valueOf(x)
+  implicit def double2Double(x: Double): java.lang.Double     = java.lang.Double.valueOf(x)
+  implicit def boolean2Boolean(x: Boolean): java.lang.Boolean  = java.lang.Boolean.valueOf(x)
 
   implicit def Byte2byte(x: java.lang.Byte): Byte             = x.byteValue
   implicit def Short2short(x: java.lang.Short): Short         = x.shortValue
@@ -467,14 +467,14 @@ private[scala] abstract class LowPriorityImplicits {
    *  Even inlined, every call site does a no-op retrieval of Predef's MODULE$
    *  because maybe loading Predef has side effects!
    */
-  @inline implicit def byteWrapper(x: Byte)       = new runtime.RichByte(x)
-  @inline implicit def shortWrapper(x: Short)     = new runtime.RichShort(x)
-  @inline implicit def intWrapper(x: Int)         = new runtime.RichInt(x)
-  @inline implicit def charWrapper(c: Char)       = new runtime.RichChar(c)
-  @inline implicit def longWrapper(x: Long)       = new runtime.RichLong(x)
-  @inline implicit def floatWrapper(x: Float)     = new runtime.RichFloat(x)
-  @inline implicit def doubleWrapper(x: Double)   = new runtime.RichDouble(x)
-  @inline implicit def booleanWrapper(x: Boolean) = new runtime.RichBoolean(x)
+  @inline implicit def byteWrapper(x: Byte): runtime.RichByte       = new runtime.RichByte(x)
+  @inline implicit def shortWrapper(x: Short): runtime.RichShort     = new runtime.RichShort(x)
+  @inline implicit def intWrapper(x: Int): runtime.RichInt         = new runtime.RichInt(x)
+  @inline implicit def charWrapper(c: Char): runtime.RichChar       = new runtime.RichChar(c)
+  @inline implicit def longWrapper(x: Long): runtime.RichLong       = new runtime.RichLong(x)
+  @inline implicit def floatWrapper(x: Float): runtime.RichFloat     = new runtime.RichFloat(x)
+  @inline implicit def doubleWrapper(x: Double): runtime.RichDouble   = new runtime.RichDouble(x)
+  @inline implicit def booleanWrapper(x: Boolean): runtime.RichBoolean = new runtime.RichBoolean(x)
 
   implicit def genericWrapArray[T](xs: Array[T]): WrappedArray[T] =
     if (xs eq null) null

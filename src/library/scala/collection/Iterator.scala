@@ -28,7 +28,7 @@ object Iterator {
    *  operates on `Iterator`s so they can be treated uniformly along with the collections.
    *  See `scala.util.Random.shuffle` for an example.
    */
-  implicit def IteratorCanBuildFrom[A] = new TraversableOnce.BufferedCanBuildFrom[A, Iterator] {
+  implicit def IteratorCanBuildFrom[A]: TraversableOnce.BufferedCanBuildFrom[A, Iterator]  = new TraversableOnce.BufferedCanBuildFrom[A, Iterator] {
     def bufferToColl[B](coll: ArrayBuffer[B]) = coll.iterator
     def traversableToColl[B](t: GenTraversable[B]) = t.toIterator
   }
