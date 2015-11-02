@@ -34,7 +34,7 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
   /** Clears the contents of this builder.
    *  After execution of this method the builder will contain no elements.
    */
-  def clear()
+  def clear(): Unit
 
   /** Produces a collection from the added elements.
    *  The builder's contents are undefined after this operation.
@@ -50,7 +50,7 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
    *
    *  @param size  the hint how many elements will be added.
    */
-  def sizeHint(size: Int) {}
+  def sizeHint(size: Int): Unit = {}
 
   /** Gives a hint that one expects the `result` of this builder
    *  to have the same size as the given collection, plus some delta. This will
@@ -64,7 +64,7 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
    *
    *  @param coll  the collection which serves as a hint for the result's size.
    */
-  def sizeHint(coll: TraversableLike[_, _]) {
+  def sizeHint(coll: TraversableLike[_, _]): Unit = {
     if (coll.isInstanceOf[collection.IndexedSeqLike[_,_]]) {
       sizeHint(coll.size)
     }
@@ -83,7 +83,7 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
    *  @param coll  the collection which serves as a hint for the result's size.
    *  @param delta a correction to add to the `coll.size` to produce the size hint.
    */
-  def sizeHint(coll: TraversableLike[_, _], delta: Int) {
+  def sizeHint(coll: TraversableLike[_, _], delta: Int): Unit = {
     if (coll.isInstanceOf[collection.IndexedSeqLike[_,_]]) {
       sizeHint(coll.size + delta)
     }
@@ -101,7 +101,7 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
    *                       an IndexedSeqLike, then sizes larger
    *                       than collection's size are reduced.
    */
-  def sizeHintBounded(size: Int, boundingColl: TraversableLike[_, _]) {
+  def sizeHintBounded(size: Int, boundingColl: TraversableLike[_, _]): Unit = {
     if (boundingColl.isInstanceOf[collection.IndexedSeqLike[_,_]])
       sizeHint(size min boundingColl.size)
   }
