@@ -172,7 +172,7 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
   }
 
   override /*IterableLike*/
-  def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) {
+  def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Unit = {
     var i = 0
     var j = start
     val end = length min len min (xs.length - start)

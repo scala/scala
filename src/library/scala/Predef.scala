@@ -146,7 +146,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  @param assertion   the expression to test
    */
   @elidable(ASSERTION)
-  def assert(assertion: Boolean) {
+  def assert(assertion: Boolean): Unit = {
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed")
   }
@@ -160,7 +160,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  @param message     a String to include in the failure message
    */
   @elidable(ASSERTION) @inline
-  final def assert(assertion: Boolean, message: => Any) {
+  final def assert(assertion: Boolean, message: => Any): Unit = {
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed: "+ message)
   }
@@ -175,7 +175,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  @param assumption   the expression to test
    */
   @elidable(ASSERTION)
-  def assume(assumption: Boolean) {
+  def assume(assumption: Boolean): Unit = {
     if (!assumption)
       throw new java.lang.AssertionError("assumption failed")
   }
@@ -191,7 +191,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  @param message      a String to include in the failure message
    */
   @elidable(ASSERTION) @inline
-  final def assume(assumption: Boolean, message: => Any) {
+  final def assume(assumption: Boolean, message: => Any): Unit = {
     if (!assumption)
       throw new java.lang.AssertionError("assumption failed: "+ message)
   }
@@ -202,7 +202,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *
    *  @param requirement   the expression to test
    */
-  def require(requirement: Boolean) {
+  def require(requirement: Boolean): Unit = {
     if (!requirement)
       throw new IllegalArgumentException("requirement failed")
   }
@@ -214,7 +214,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  @param requirement   the expression to test
    *  @param message       a String to include in the failure message
    */
-  @inline final def require(requirement: Boolean, message: => Any) {
+  @inline final def require(requirement: Boolean, message: => Any): Unit = {
     if (!requirement)
       throw new IllegalArgumentException("requirement failed: "+ message)
   }

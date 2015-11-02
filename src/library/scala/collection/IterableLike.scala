@@ -245,7 +245,7 @@ self =>
     b.result()
   }
 
-  override /*TraversableLike*/ def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) {
+  override /*TraversableLike*/ def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Unit= {
     var i = start
     val end = (start + len) min xs.length
     val it = iterator

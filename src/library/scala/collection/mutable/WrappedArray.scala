@@ -125,69 +125,69 @@ object WrappedArray {
     lazy val elemTag = ClassTag[T](arrayElementClass(array.getClass))
     def length: Int = array.length
     def apply(index: Int): T = array(index).asInstanceOf[T]
-    def update(index: Int, elem: T) { array(index) = elem }
+    def update(index: Int, elem: T) =  { array(index) = elem }
   }
 
   final class ofByte(val array: Array[Byte]) extends WrappedArray[Byte] with Serializable {
     def elemTag = ClassTag.Byte
     def length: Int = array.length
     def apply(index: Int): Byte = array(index)
-    def update(index: Int, elem: Byte) { array(index) = elem }
+    def update(index: Int, elem: Byte) = { array(index) = elem }
   }
 
   final class ofShort(val array: Array[Short]) extends WrappedArray[Short] with Serializable {
     def elemTag = ClassTag.Short
     def length: Int = array.length
     def apply(index: Int): Short = array(index)
-    def update(index: Int, elem: Short) { array(index) = elem }
+    def update(index: Int, elem: Short) = { array(index) = elem }
   }
 
   final class ofChar(val array: Array[Char]) extends WrappedArray[Char] with Serializable {
     def elemTag = ClassTag.Char
     def length: Int = array.length
     def apply(index: Int): Char = array(index)
-    def update(index: Int, elem: Char) { array(index) = elem }
+    def update(index: Int, elem: Char) = { array(index) = elem }
   }
 
   final class ofInt(val array: Array[Int]) extends WrappedArray[Int] with Serializable {
     def elemTag = ClassTag.Int
     def length: Int = array.length
     def apply(index: Int): Int = array(index)
-    def update(index: Int, elem: Int) { array(index) = elem }
+    def update(index: Int, elem: Int) = { array(index) = elem }
   }
 
   final class ofLong(val array: Array[Long]) extends WrappedArray[Long] with Serializable {
     def elemTag = ClassTag.Long
     def length: Int = array.length
     def apply(index: Int): Long = array(index)
-    def update(index: Int, elem: Long) { array(index) = elem }
+    def update(index: Int, elem: Long) = { array(index) = elem }
   }
 
   final class ofFloat(val array: Array[Float]) extends WrappedArray[Float] with Serializable {
     def elemTag = ClassTag.Float
     def length: Int = array.length
     def apply(index: Int): Float = array(index)
-    def update(index: Int, elem: Float) { array(index) = elem }
+    def update(index: Int, elem: Float) = { array(index) = elem }
   }
 
   final class ofDouble(val array: Array[Double]) extends WrappedArray[Double] with Serializable {
     def elemTag = ClassTag.Double
     def length: Int = array.length
     def apply(index: Int): Double = array(index)
-    def update(index: Int, elem: Double) { array(index) = elem }
+    def update(index: Int, elem: Double) = { array(index) = elem }
   }
 
   final class ofBoolean(val array: Array[Boolean]) extends WrappedArray[Boolean] with Serializable {
     def elemTag = ClassTag.Boolean
     def length: Int = array.length
     def apply(index: Int): Boolean = array(index)
-    def update(index: Int, elem: Boolean) { array(index) = elem }
+    def update(index: Int, elem: Boolean)= { array(index) = elem }
   }
 
   final class ofUnit(val array: Array[Unit]) extends WrappedArray[Unit] with Serializable {
     def elemTag = ClassTag.Unit
     def length: Int = array.length
     def apply(index: Int): Unit = array(index)
-    def update(index: Int, elem: Unit) { array(index) = elem }
+    def update(index: Int, elem: Unit) = { array(index) = elem }
   }
 }

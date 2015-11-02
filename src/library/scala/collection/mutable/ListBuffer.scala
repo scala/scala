@@ -69,7 +69,7 @@ final class ListBuffer[A]
 
   protected def underlying: List[A] = start
 
-  private def writeObject(out: ObjectOutputStream) {
+  private def writeObject(out: ObjectOutputStream) = {
     // write start
     var xs: List[A] = start
     while (!xs.isEmpty) { out.writeObject(xs.head); xs = xs.tail }
@@ -84,7 +84,7 @@ final class ListBuffer[A]
     out.writeInt(len)
   }
 
-  private def readObject(in: ObjectInputStream) {
+  private def readObject(in: ObjectInputStream) = {
     // read start, set last0 appropriately
     var elem: A = in.readObject.asInstanceOf[A]
     if (elem == ListSerializeEnd) {
@@ -134,7 +134,7 @@ final class ListBuffer[A]
    *  @param x  the new element.
    *  @throws IndexOutOfBoundsException if `n` is out of bounds.
    */
-  def update(n: Int, x: A) {
+  def update(n: Int, x: A) = {
     // We check the bounds early, so that we don't trigger copying.
     if (n < 0 || n >= len) throw new IndexOutOfBoundsException(n.toString)
     if (exported) copy()
@@ -189,7 +189,7 @@ final class ListBuffer[A]
 
   /** Clears the buffer contents.
    */
-  def clear() {
+  def clear() = {
     start = Nil
     last0 = null
     exported = false
@@ -219,7 +219,7 @@ final class ListBuffer[A]
    *  @param  seq   the iterable object providing all elements to insert.
    *  @throws IndexOutOfBoundsException if `n` is out of bounds.
    */
-  def insertAll(n: Int, seq: Traversable[A]) {
+  def insertAll(n: Int, seq: Traversable[A]) = {
     // We check the bounds early, so that we don't trigger copying.
     if (n < 0 || n > len) throw new IndexOutOfBoundsException(n.toString)
     if (exported) copy()
@@ -227,7 +227,7 @@ final class ListBuffer[A]
     len += elems.length
     if (n == 0) {
       while (!elems.isEmpty) {
-        val newElem = new :: (elems.head, start)
+        val newElem = :: (elems.head, start)
         if (start.isEmpty) last0 = newElem
         start = newElem
         elems = elems.tail
@@ -240,7 +240,7 @@ final class ListBuffer[A]
         i += 1
       }
       while (!elems.isEmpty) {
-        val newElem = new :: (elems.head, cursor.tail)
+        val newElem = :: (elems.head, cursor.tail)
         if (cursor.tail.isEmpty) last0 = newElem
         cursor.asInstanceOf[::[A]].tl = newElem
         elems = elems.tail
@@ -251,7 +251,7 @@ final class ListBuffer[A]
   /** Reduce the length of the buffer, and null out last0
    *  if this reduces the length to 0.
    */
-  private def reduceLengthBy(num: Int) {
+  private def reduceLengthBy(num: Int) = {
     len -= num
     if (len <= 0)   // obviously shouldn't be < 0, but still better not to leak
       last0 = null
@@ -264,7 +264,7 @@ final class ListBuffer[A]
    *  @param count     the number of elements to remove.
    */
   @migration("Invalid input values will be rejected in future releases.", "2.11")
-  override def remove(n: Int, count: Int) {
+  override def remove(n: Int, count: Int) = {
     if (n >= len)
       return
     if (count < 0)
@@ -414,7 +414,7 @@ final class ListBuffer[A]
   // Private methods
 
   /** Copy contents of this buffer */
-  private def copy() {
+  private def copy(): Unit = {
     if (isEmpty) return
     var cursor = start
     val limit = last0.tail

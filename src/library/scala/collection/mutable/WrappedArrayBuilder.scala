@@ -49,16 +49,16 @@ class WrappedArrayBuilder[A](tag: ClassTag[A]) extends Builder[A, WrappedArray[A
     newelems
   }
 
-  private def resize(size: Int) {
+  private def resize(size: Int) = {
     elems = mkArray(size)
     capacity = size
   }
 
-  override def sizeHint(size: Int) {
+  override def sizeHint(size: Int): Unit = {
     if (capacity < size) resize(size)
   }
 
-  private def ensureSize(size: Int) {
+  private def ensureSize(size: Int): Unit = {
     if (capacity < size) {
       var newsize = if (capacity == 0) 16 else capacity * 2
       while (newsize < size) newsize *= 2
@@ -73,7 +73,7 @@ class WrappedArrayBuilder[A](tag: ClassTag[A]) extends Builder[A, WrappedArray[A
     this
   }
 
-  def clear() {
+  def clear(): Unit = {
     size = 0
   }
 
