@@ -19,17 +19,17 @@ import java.util.concurrent.TimeUnit
  */
 class SyncVar[A] {
   private var isDefined: Boolean = false
-  private var value: Option[A] = None
+  private var value: A = _
 
   /**
-   * Waits for this SyncVar to become defined and returns
-   * the result, without modifying the stored value.
+   * Wait for this SyncVar to become defined and then get
+   * the stored value without modifying it.
    *
    * @return value that is held in this container
    */
   def get: A = synchronized {
     while (!isDefined) wait()
-    value.get
+    value
   }
 
   /** Waits `timeout` millis. If `timeout <= 0` just returns 0.
@@ -60,12 +60,12 @@ class SyncVar[A] {
       val elapsed = waitMeasuringElapsed(rest)
       rest -= elapsed
     }
-    value
+    if (isDefined) Some(value) else None
   }
 
   /**
-   * Waits for this SyncVar to become defined and returns
-   * the result, unsetting the stored value before returning.
+   * Wait for this SyncVar to become defined and then get
+   * the stored value, unsetting it as a side effect.
    *
    * @return value that was held in this container
    */
@@ -74,12 +74,11 @@ class SyncVar[A] {
     finally unsetVal()
   }
 
-  /** Waits for this SyncVar to become defined at least for
-   *  `timeout` milliseconds (possibly more), and takes its
-   *  value by first reading and then removing the value from
-   *  the SyncVar.
+  /** Wait at least `timeout` milliseconds (possibly more) for this `SyncVar`
+   *  to become defined and then get the stored value, unsetting it
+   *  as a side effect.
    *
-   *  @param timeout     the amount of milliseconds to wait, 0 means forever
+   *  @param timeout     the amount of milliseconds to wait
    *  @return            the value or a throws an exception if the timeout occurs
    *  @throws NoSuchElementException on timeout
    */
@@ -96,14 +95,14 @@ class SyncVar[A] {
   // NOTE: Used by SBT 0.13.0-M2 and below
   def set(x: A): Unit = setVal(x)
 
-  /** Places a value in the SyncVar. If the SyncVar already has a stored value,
-   * it waits until another thread takes it */
+  /** Place a value in the SyncVar. If the SyncVar already has a stored value,
+   * wait until another thread takes it. */
   def put(x: A): Unit = synchronized {
     while (isDefined) wait()
     setVal(x)
   }
 
-  /** Checks whether a value is stored in the synchronized variable */
+  /** Check whether a value is stored in the synchronized variable. */
   def isSet: Boolean = synchronized {
     isDefined
   }
@@ -116,7 +115,7 @@ class SyncVar[A] {
   // NOTE: Used by SBT 0.13.0-M2 and below
   def unset(): Unit = synchronized {
     isDefined = false
-    value = None
+    value = null.asInstanceOf[A]
     notifyAll()
   }
 
@@ -125,7 +124,7 @@ class SyncVar[A] {
   // implementation of `set` was moved to `setVal` to achieve this
   private def setVal(x: A): Unit = synchronized {
     isDefined = true
-    value = Some(x)
+    value = x
     notifyAll()
   }
 
@@ -134,8 +133,7 @@ class SyncVar[A] {
   // implementation of `unset` was moved to `unsetVal` to achieve this
   private def unsetVal(): Unit = synchronized {
     isDefined = false
-    value = None
+    value = null.asInstanceOf[A]
     notifyAll()
   }
-
 }
