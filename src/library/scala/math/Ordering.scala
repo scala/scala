@@ -331,11 +331,9 @@ object Ordering extends LowPriorityOrderingImplicits {
 
   trait OptionOrdering[T] extends Ordering[Option[T]] {
     def optionOrdering: Ordering[T]
-    def compare(x: Option[T], y: Option[T]) = (x, y) match {
-      case (None, None)       => 0
-      case (None, _)          => -1
-      case (_, None)          => 1
-      case (Some(x), Some(y)) => optionOrdering.compare(x, y)
+    def compare(x: Option[T], y: Option[T]) = x match {
+      case None    => if (y eq None) 0 else -1
+      case x: Some[T] => if (y eq None) 1 else optionOrdering.compare(x.get, y.get)
     }
   }
   implicit def Option[T](implicit ord: Ordering[T]): Ordering[Option[T]] =
