@@ -125,7 +125,7 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
    */
   def dequeue: (A, Queue[A]) = out match {
     case Nil if !in.isEmpty => val rev = in.reverse ; (rev.head, new Queue(Nil, rev.tail))
-    case x :: xs            => (x, new Queue(in, xs))
+    case x :: xs            => (x, new Queue(in, xs.asInstanceOf[List[A]]))
     case _                  => throw new NoSuchElementException("dequeue on empty queue")
   }
 
