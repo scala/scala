@@ -111,7 +111,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   val ClassManifest     = scala.reflect.ClassManifest
   // TODO undeprecated until Scala reflection becomes non-experimental
   // @deprecated("Use `scala.reflect.ClassTag` (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
-  val Manifest          = scala.reflect.Manifest
+  // val Manifest          = scala.reflect.Manifest
   // TODO undeprecated until Scala reflection becomes non-experimental
   // @deprecated("This notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
   val NoManifest        = scala.reflect.NoManifest
