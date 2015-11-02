@@ -86,7 +86,7 @@ override def companion: GenericCompanion[Vector] = Vector
 
   override def lengthCompare(len: Int): Int = length - len
 
-  private[collection] final def initIterator[B >: A](s: VectorIterator[B]) {
+  private[collection] final def initIterator[B >: A](s: VectorIterator[B]): Unit = {
     s.initFrom(this)
     if (dirty) s.stabilize(focus)
     if (s.depth > 1) s.gotoPos(startIndex, startIndex ^ focus)
