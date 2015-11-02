@@ -402,8 +402,8 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
 
 
 object TraversableOnce {
-  implicit def alternateImplicit[A](trav: TraversableOnce[A]) = new ForceImplicitAmbiguity
-  implicit def flattenTraversableOnce[A, CC[_]](travs: TraversableOnce[CC[A]])(implicit ev: CC[A] => TraversableOnce[A]) =
+  implicit def alternateImplicit[A](trav: TraversableOnce[A]): ForceImplicitAmbiguity = new ForceImplicitAmbiguity
+  implicit def flattenTraversableOnce[A, CC[_]](travs: TraversableOnce[CC[A]])(implicit ev: CC[A] => TraversableOnce[A]): FlattenOps[A] =
     new FlattenOps[A](travs map ev)
 
   /* Functionality reused in Iterator.CanBuildFrom */
@@ -440,7 +440,7 @@ object TraversableOnce {
   }
 
   /** Evidence for building collections from `TraversableOnce` collections */
-  implicit def OnceCanBuildFrom[A] = new OnceCanBuildFrom[A]
+  implicit def OnceCanBuildFrom[A]: OnceCanBuildFrom[A] = new OnceCanBuildFrom[A]
 
   class FlattenOps[A](travs: TraversableOnce[TraversableOnce[A]]) {
     def flatten: Iterator[A] = new AbstractIterator[A] {
