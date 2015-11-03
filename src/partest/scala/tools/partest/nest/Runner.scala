@@ -111,7 +111,9 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
       joinPaths(outDir :: testClassPath),
       "-J-Duser.language=en",
       "-J-Duser.country=US"
-    ) ++ files.map(_.getAbsolutePath)
+    ) ++ (toolArgsFor(files)("javac")
+    ) ++ (files.map(_.getAbsolutePath)
+    )
 
     pushTranscript(args mkString " ")
     val captured = StreamCapture(runCommand(args, logFile))
@@ -439,7 +441,12 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
     perTest ++ perGroup
   }
 
-  def toolArgs(tool: String, split: Boolean = true): List[String] = {
+  // inspect sources for tool args
+  def toolArgs(tool: String, split: Boolean = true): List[String] =
+    toolArgsFor(sources(testFile))(tool, split)
+
+  // inspect given files for tool args
+  def toolArgsFor(files: List[File])(tool: String, split: Boolean = true): List[String] = {
     def argsplitter(s: String) = if (split) words(s) filter (_.nonEmpty) else List(s)
     def argsFor(f: File): List[String] = {
       import scala.util.matching.Regex
@@ -453,7 +460,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
       } finally src.close()
       args.flatten map argsplitter getOrElse Nil
     }
-    sources(testFile) flatMap argsFor
+    files flatMap argsFor
   }
 
   abstract class CompileRound {
