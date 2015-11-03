@@ -1684,20 +1684,15 @@ TODO:
   <target name="docs.lib" depends="docs.start" unless="docs.skip">
     <staged-docs project="library">
       <include name="**/*.scala"/>
-      <exclude name="runtime/*$.scala"/>
-      <exclude name="runtime/ScalaRunTime.scala"/>
-      <exclude name="runtime/StringAdd.scala"/>
+      <exclude name="**/runtime/*$.scala"/>
+      <exclude name="**/runtime/ScalaRunTime.scala"/>
+      <exclude name="**/runtime/StringAdd.scala"/>
     </staged-docs>
   </target>
 
   <target name="docs.reflect" depends="docs.start" unless="docs.skip">
     <staged-docs project="reflect">
       <include name="**/*.scala"/>
-      <exclude name="reflect/Code.scala"/>
-      <exclude name="reflect/Print.scala"/>
-      <exclude name="reflect/Symbol.scala"/>
-      <exclude name="reflect/Tree.scala"/>
-      <exclude name="reflect/Type.scala"/>
     </staged-docs>
   </target>
 

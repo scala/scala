@@ -6,6 +6,7 @@
  *   - Running JUnit tests ("test") and partest ("test/it:test")
  *   - Creating build-sbt/quick with all compiled classes and launcher scripts ("dist/mkQuick")
  *   - Creating build-sbt/pack with all JARs and launcher scripts ("dist/mkPack")
+ *   - Building all scaladoc sets ("doc")
  *
  * You'll notice that this build definition is much more complicated than your typical sbt build.
  * The main reason is that we are not benefiting from sbt's conventions when it comes project
@@ -101,11 +102,12 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ Seq[Setting[_]](
   // each subproject has to ask specifically for files they want to include
   includeFilter in unmanagedResources in Compile := NothingFilter,
   target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id,
-  target in Compile in doc := buildDirectory.value / "scaladoc" / thisProject.value.id,
   classDirectory in Compile := buildDirectory.value / "quick/classes" / thisProject.value.id,
-  // given that classDirectory is overriden to be _outside_ of target directory, we have
-  // to make sure its being cleaned properly
+  target in Compile in doc := buildDirectory.value / "scaladoc" / thisProject.value.id,
+  // given that classDirectory and doc target are overriden to be _outside_ of target directory, we have
+  // to make sure they are being cleaned properly
   cleanFiles += (classDirectory in Compile).value,
+  cleanFiles += (target in Compile in doc).value,
   fork in run := true
 )
 
@@ -140,6 +142,24 @@ lazy val generatePropertiesFileSettings = Seq[Setting[_]](
   generateVersionPropertiesFile := generateVersionPropertiesFileImpl.value
 )
 
+def filterDocSources(ff: FileFilter): Seq[Setting[_]] = Seq(
+  sources in (Compile, doc) ~= (_.filter(ff.accept _)),
+  // Excluded sources may still be referenced by the included sources, so we add the compiler
+  // output to the scaladoc classpath to resolve them. For the `library` project this is
+  // always required because otherwise the compiler cannot even initialize Definitions without
+  // binaries of the library on the classpath. Specifically, we get this error:
+  // (library/compile:doc) scala.reflect.internal.FatalError: package class scala does not have a member Int
+  // Ant build does the same thing always: it puts binaries for documented classes on the classpath
+  // sbt never does this by default (which seems like a good default)
+  dependencyClasspath in (Compile, doc) += (classDirectory in Compile).value,
+  doc in Compile <<= doc in Compile dependsOn (compile in Compile)
+)
+
+def regexFileFilter(s: String): FileFilter = new FileFilter {
+  val pat = s.r.pattern
+  def accept(f: File) = pat.matcher(f.getAbsolutePath.replace('\\', '/')).matches()
+}
+
 val libIncludes: FileFilter = "*.tmpl" | "*.xml" | "*.js" | "*.css" | "rootdoc.txt"
 
 lazy val library = configureAsSubproject(project)
@@ -147,13 +167,6 @@ lazy val library = configureAsSubproject(project)
   .settings(
     name := "scala-library",
     scalacOptions in Compile ++= Seq[String]("-sourcepath", (scalaSource in Compile).value.toString),
-    // Workaround for a bug in `scaladoc` that it seems to not respect the `-sourcepath` option
-    // as a result of this bug, the compiler cannot even initialize Definitions without
-    // binaries of the library on the classpath. Specifically, we get this error:
-    // (library/compile:doc) scala.reflect.internal.FatalError: package class scala does not have a member Int
-    // Ant build does the same thing always: it puts binaries for documented classes on the classpath
-    // sbt never does this by default (which seems like a good default)
-    dependencyClasspath in Compile in doc += (classDirectory in Compile).value,
     scalacOptions in Compile in doc ++= {
       val libraryAuxDir = (baseDirectory in ThisBuild).value / "src/library-aux"
       Seq("-doc-no-compile", libraryAuxDir.toString)
@@ -164,7 +177,10 @@ lazy val library = configureAsSubproject(project)
     mappings in Compile in packageBin ++=
       (mappings in Compile in packageBin in LocalProject("forkjoin")).value
   )
-  .dependsOn (forkjoin)
+  .settings(filterDocSources("*.scala" -- (regexFileFilter(".*/runtime/.*\\$\\.scala") ||
+                                           regexFileFilter(".*/runtime/ScalaRunTime\\.scala") ||
+                                           regexFileFilter(".*/runtime/StringAdd\\.scala"))): _*)
+  .dependsOn(forkjoin)
 
 lazy val reflect = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings: _*)
@@ -213,7 +229,8 @@ lazy val repl = configureAsSubproject(project)
 lazy val replJline = configureAsSubproject(Project("repl-jline", file(".") / "src" / "repl-jline"))
   .settings(
     libraryDependencies += jlineDep,
-    name := "scala-repl-jline"
+    name := "scala-repl-jline",
+    doc := file("!!! NO DOCS !!!")
   )
   .dependsOn(repl)
 
@@ -264,10 +281,10 @@ lazy val scalap = configureAsSubproject(project).
   dependsOn(compiler)
 
 // deprecated Scala Actors project
-// TODO: it packages into actors.jar but it should be scala-actors.jar
 lazy val actors = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings: _*)
   .settings(name := "scala-actors")
+  .settings(filterDocSources("*.scala"): _*)
   .dependsOn(library)
 
 lazy val forkjoin = configureAsForkOfJavaProject(project)
@@ -278,7 +295,8 @@ lazy val partestExtras = configureAsSubproject(Project("partest-extras", file(".
   .settings(
     name := "scala-partest-extras",
     libraryDependencies += partestDep,
-    unmanagedSourceDirectories in Compile := List(baseDirectory.value)
+    unmanagedSourceDirectories in Compile := List(baseDirectory.value),
+    doc := file("!!! NO DOCS !!!")
   )
 
 lazy val junit = project.in(file("test") / "junit")
@@ -289,7 +307,8 @@ lazy val junit = project.in(file("test") / "junit")
     fork in Test := true,
     libraryDependencies ++= Seq(junitDep, junitIntefaceDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
-    unmanagedSourceDirectories in Test := List(baseDirectory.value)
+    unmanagedSourceDirectories in Test := List(baseDirectory.value),
+    doc := file("!!! NO DOCS !!!")
   )
 
 lazy val partestJavaAgent = (project in file(".") / "src" / "partest-javaagent").
