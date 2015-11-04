@@ -242,20 +242,18 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
     }
   }
 
-  private def createMemberDef(tree: Tree, isForInterface: Boolean)(create: Tree => Tree) = {
-    val isInterfaceTree = tree.isDef && isInterfaceMember(tree.symbol)
-    if (isInterfaceTree && needsImplMethod(tree.symbol))
-      create(tree)
-    else if (isInterfaceTree == isForInterface)
-      tree
-    else
-      EmptyTree
-  }
-  private def implMemberDef(tree: Tree): Tree  = createMemberDef(tree, false)(implMethodDef)
-  private def ifaceMemberDef(tree: Tree): Tree = createMemberDef(tree, true)(t => DefDef(t.symbol, EmptyTree))
+  private def isInterfaceTree(tree: Tree) = tree.isDef && isInterfaceMember(tree.symbol)
+
+  private def deriveMemberForImplClass(tree: Tree): Tree  =
+    if (isInterfaceTree(tree)) if (needsImplMethod(tree.symbol)) implMethodDef(tree)            else EmptyTree
+    else tree
+
+  private def deriveMemberForInterface(tree: Tree): Tree =
+    if (isInterfaceTree(tree)) if (needsImplMethod(tree.symbol)) DefDef(tree.symbol, EmptyTree) else tree
+    else EmptyTree
 
   private def ifaceTemplate(templ: Template): Template =
-    treeCopy.Template(templ, templ.parents, noSelfType, templ.body map ifaceMemberDef)
+    treeCopy.Template(templ, templ.parents, noSelfType, templ.body map deriveMemberForInterface)
 
   /** Transforms the member tree containing the implementation
    *  into a member of the impl class.
@@ -286,7 +284,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
 
   private def implTemplate(clazz: Symbol, templ: Template): Template = atPos(templ.pos) {
     val templ1 = (
-      Template(templ.parents, noSelfType, addMixinConstructorDef(clazz, templ.body map implMemberDef))
+      Template(templ.parents, noSelfType, addMixinConstructorDef(clazz, templ.body map deriveMemberForImplClass))
         setSymbol clazz.newLocalDummy(templ.pos)
     )
     templ1.changeOwner(templ.symbol.owner -> clazz, templ.symbol -> templ1.symbol)
