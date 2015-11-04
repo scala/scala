@@ -45,9 +45,14 @@ abstract class Compat {
   val Nullary = global.NullaryMethodType
   val ScalaObjectClass = definitions.ScalaObjectClass
 
+  // In 2.11, afterPostErasure has been renamed to exitingPostErasure
+  implicit def withAfterPostErasure(global: Global) = new WithAfterPostErasure(global)
+  class WithAfterPostErasure(global: Global) {
+    def afterPostErasure[T](op: => T): T = sourceCompatibilityOnly
+  }
   implicit def withExitingPostErasure(global: Global) = new WithExitingPostErasure(global)
   class WithExitingPostErasure(global: Global) {
-    def exitingPostErasure[T](op: => T) = global afterPostErasure op
+    def exitingPostErasure[T](op: => T): T = global afterPostErasure op
   }
 
   private[this] final class MiscCompat {
