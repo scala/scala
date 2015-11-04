@@ -1,6 +1,6 @@
 package xsbt
 
-import scala.tools.nsc.Global
+import scala.tools.nsc.{ Global, Phase }
 import scala.tools.nsc.symtab.Flags
 
 /**
@@ -44,6 +44,11 @@ abstract class Compat {
   val LocalChild = global.tpnme.LOCAL_CHILD
   val Nullary = global.NullaryMethodType
   val ScalaObjectClass = definitions.ScalaObjectClass
+
+  implicit def withExitingPostErasure(global: Global) = new WithExitingPostErasure(global)
+  class WithExitingPostErasure(global: Global) {
+    def exitingPostErasure[T](op: => T) = global afterPostErasure op
+  }
 
   private[this] final class MiscCompat {
     // in 2.9, nme.LOCALCHILD was renamed to tpnme.LOCAL_CHILD
