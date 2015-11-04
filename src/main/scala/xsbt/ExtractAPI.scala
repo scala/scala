@@ -183,6 +183,11 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
   private def printMember(label: String, in: Symbol, t: Type) = println(label + " in " + in + " : " + t + " (debug: " + debugString(t) + " )")
   private def defDef(in: Symbol, s: Symbol): List[xsbti.api.Def] =
     {
+      def isMacro(sym: Symbol): Boolean =
+        sym.isMacro || (sym.info.members.sorted exists isMacro) || (sym.children exists isMacro)
+        //sym.isMacro || (sym.children exists isMacro) || (sym.isType && sym.asType.toType.members.sorted.exists(isMacro))
+      val inspectPostErasure = !isMacro(in.enclosingTopLevelClass)
+
       def build(t: Type, typeParams: Array[xsbti.api.TypeParameter], valueParameters: List[xsbti.api.ParameterList]): List[xsbti.api.Def] =
         {
           def parameterList(syms: List[Symbol]): xsbti.api.ParameterList =
@@ -205,10 +210,15 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
               //                            <- has type (I)I after erasure
               // If we change A from value class to normal class, we need to recompile all clients
               // of def foo.
-              val beforeErasure = parameterList(params) :: valueParameters
-              val afterErasure  = global exitingPostErasure (parameterList(mType.params) :: valueParameters)
+              val beforeErasure =
+                build(resultType, typeParams, parameterList(params) :: valueParameters)
+              val afterErasure  =
+                if (inspectPostErasure)
+                  build(resultType, typeParams, global exitingPostErasure (parameterList(mType.params) :: valueParameters))
+                else
+                  Nil
 
-              build(resultType, typeParams, beforeErasure) ++ build(resultType, typeParams, afterErasure)
+              beforeErasure ++ afterErasure
             case NullaryMethodType(resultType) =>
               build(resultType, typeParams, valueParameters)
             case returnType =>
@@ -229,16 +239,17 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
               //                                 <- has type (I)I after erasure
               // If we change A from value class to normal class, we need to recompile all clients
               // of def foo.
-              val beforeErasure = processType(in, dropConst(returnType))
-              val afterErasure = {
-                val erasedReturn = dropConst(global exitingPostErasure viewer(in).memberInfo(s)) map {
-                  case MethodType(_, r) => r
-                  case other            => other
-                }
-                processType(in, erasedReturn)
-              }
+              val beforeErasure = makeDef(processType(in, dropConst(returnType)))
+              val afterErasure =
+                if (inspectPostErasure) {
+                  val erasedReturn = dropConst(global exitingPostErasure viewer(in).memberInfo(s)) map {
+                    case MethodType(_, r) => r
+                    case other            => other
+                  }
+                  List(makeDef(processType(in, erasedReturn)))
+                } else Nil
 
-              makeDef(beforeErasure) :: makeDef(afterErasure) :: Nil
+              beforeErasure :: afterErasure
           }
         }
       def parameterS(s: Symbol): xsbti.api.MethodParameter =
