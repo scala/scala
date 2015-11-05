@@ -86,6 +86,7 @@ abstract class Compat {
 
     def enclosingTopLevelClass: Symbol = sym.toplevelClass
     def toplevelClass: Symbol = sourceCompatibilityOnly
+    def isMacro: Boolean = false
   }
 
   val DummyValue = 0
