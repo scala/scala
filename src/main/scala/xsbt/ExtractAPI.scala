@@ -183,11 +183,13 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
   private def printMember(label: String, in: Symbol, t: Type) = println(label + " in " + in + " : " + t + " (debug: " + debugString(t) + " )")
   private def defDef(in: Symbol, s: Symbol): List[xsbti.api.Def] =
     {
-      def isMacro(sym: Symbol): Boolean =
-        sym.isMacro || (sym.info.members.sorted exists isMacro) || (sym.children exists isMacro)
-        //sym.isMacro || (sym.children exists isMacro) || (sym.isType && sym.asType.toType.members.sorted.exists(isMacro))
-      val inspectPostErasure = !isMacro(in.enclosingTopLevelClass)
-
+      def collectAll(acc: Set[Symbol], s: Symbol): Set[Symbol] =
+        if (acc contains s) acc
+        else
+          ((s.info.members.sorted ++ s.children) foldLeft (acc + s)) {
+            case (acc, sym) => collectAll(acc, sym)
+          }
+      val inspectPostErasure = !collectAll(Set.empty, in.enclosingTopLevelClass).exists(_.isMacro)
       def build(t: Type, typeParams: Array[xsbti.api.TypeParameter], valueParameters: List[xsbti.api.ParameterList]): List[xsbti.api.Def] =
         {
           def parameterList(syms: List[Symbol]): xsbti.api.ParameterList =
