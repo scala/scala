@@ -25,9 +25,6 @@ trait BytecodeWriters {
   def outputDirectory(sym: Symbol): AbstractFile =
     settings.outputDirs outputDirFor enteringFlatten(sym.sourceFile)
 
-  def outputDirectory(cunitSource: scala.reflect.internal.util.SourceFile): AbstractFile =
-    settings.outputDirs outputDirFor cunitSource.file
-
   /**
    * @param clsName cls.getName
    */

@@ -35,26 +35,14 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
   /*
    * must-single-thread
    */
-  def getOutFolder(csym: Symbol, cName: String, cunit: CompilationUnit): _root_.scala.tools.nsc.io.AbstractFile = Option {
-      try {
-        outputDirectory(csym)
-      } catch {
-        case ex: Throwable =>
-          reporter.warning(cunit.body.pos, s"Couldn't find output folder for symbol source ${csym.name}. Dropping to compliation unit source.\n${ex.getMessage}")
-          null
-      }
-    }.orElse { Option {
-      try {
-        outputDirectory(cunit.source)
-      } catch {
-        case ex: Throwable =>
-          reporter.warning(cunit.body.pos, s"Couldn't find output folder for compilation unit $cName\n${ex.getMessage}")
-	  null
-      }
-    }}.orElse {
-      reporter.error(cunit.body.pos, s"Couldn't create file for class $cName")
-      None
-    }.orNull
+  def getOutFolder(csym: Symbol, cName: String, cunit: CompilationUnit): _root_.scala.tools.nsc.io.AbstractFile =
+    _root_.scala.util.Try {
+      outputDirectory(csym)
+    }.recover {
+      case ex: Throwable =>
+        reporter.error(cunit.body.pos, s"Couldn't create file for class $cName\n${ex.getMessage}")
+        null
+    }.get
 
   var pickledBytes = 0 // statistics
 
