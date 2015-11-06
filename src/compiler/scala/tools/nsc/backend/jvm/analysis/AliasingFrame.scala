@@ -28,6 +28,8 @@ class AliasingFrame[V <: Value](nLocals: Int, nStack: Int) extends Frame[V](nLoc
     init(src)
   }
 
+  override def toString: String = super.toString + " - " + aliases.toList.filter(s => s != null && s.size > 1).map(_.toString).distinct.mkString(",")
+
   /**
    * For every value the set of values that are aliases of it.
    *
@@ -299,18 +301,25 @@ class AliasingFrame[V <: Value](nLocals: Int, nStack: Int) extends Frame[V](nLoc
       if (!knownOk(i)) {
         val thisAliases = this.aliases(i)
         val otherAliases = aliasingOther.aliases(i)
-        if (thisAliases != null && otherAliases != null) {
-          // The iterator yields elements that are in `thisAliases` but not in `otherAliases`.
-          // As a side-effect, for every index `i` that is in both alias sets, the iterator sets
-          // `knownOk(i) = true`: the alias sets for these values don't need to be merged again.
-          val thisNotOtherIt = AliasSet.andNotIterator(thisAliases, otherAliases, knownOk)
-          if (thisNotOtherIt.hasNext) {
-            aliasesChanged = true
-            val newSet = AliasSet.empty
-            while (thisNotOtherIt.hasNext) {
-              val next = thisNotOtherIt.next()
-              newSet += next
-              setAliasSet(next, newSet)
+        if (thisAliases != null) {
+          if (otherAliases == null) {
+            if (thisAliases.size > 1) {
+              aliasesChanged = true
+              removeAlias(i)
+            }
+          } else {
+            // The iterator yields elements that are in `thisAliases` but not in `otherAliases`.
+            // As a side-effect, for every index `i` that is in both alias sets, the iterator sets
+            // `knownOk(i) = true`: the alias sets for these values don't need to be merged again.
+            val thisNotOtherIt = AliasSet.andNotIterator(thisAliases, otherAliases, knownOk)
+            if (thisNotOtherIt.hasNext) {
+              aliasesChanged = true
+              val newSet = AliasSet.empty
+              while (thisNotOtherIt.hasNext) {
+                val next = thisNotOtherIt.next()
+                newSet += next
+                setAliasSet(next, newSet)
+              }
             }
           }
         }
@@ -416,7 +425,7 @@ abstract class IntIterator extends Iterator[Int] {
 class AliasSet(var set: Object /*SmallBitSet | Array[Long]*/, var size: Int) {
   import AliasSet._
 
-  override def toString: String = set.toString
+  override def toString: String = iterator.toSet.mkString("<", ",", ">")
 
   /**
    * An iterator for the elements of this bit set. Note that only one iterator can be used at a
