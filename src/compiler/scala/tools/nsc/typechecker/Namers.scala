@@ -990,6 +990,19 @@ trait Namers extends MethodSynthesis {
       clazz.tpe_*
     }
 
+
+    // make a java method type if meth.isJavaDefined
+    private def methodTypeFor(meth: Symbol, vparamSymss: List[List[Symbol]], restpe: Type) = {
+      def makeJavaMethodType(vparams: List[Symbol], restpe: Type) = {
+        vparams foreach (p => p setInfo objToAny(p.tpe))
+        JavaMethodType(vparams, restpe)
+      }
+      if (vparamSymss.isEmpty) NullaryMethodType(restpe)
+      else if (meth.isJavaDefined) vparamSymss.foldRight(restpe)(makeJavaMethodType)
+      else vparamSymss.foldRight(restpe)(MethodType(_, _))
+    }
+
+
     /**
      * The method type for `ddef`.
      *
@@ -1007,166 +1020,140 @@ trait Namers extends MethodSynthesis {
      * to the non-skolems.
      */
     private def methodSig(ddef: DefDef): Type = {
-
-      // DEPMETTODO: do we need to skolemize value parameter symbols?
-
       val DefDef(_, _, tparams, vparamss, tpt, _) = ddef
 
       val meth = owner
       val methOwner = meth.owner
-      val site = methOwner.thisType
 
       /* tparams already have symbols (created in enterDefDef/completerOf), namely the skolemized ones (created
        * by the PolyTypeCompleter constructor, and assigned to tparams). reenterTypeParams enters the type skolems
        * into scope and returns the non-skolems.
        */
       val tparamSyms = typer.reenterTypeParams(tparams)
-
       val tparamSkolems = tparams.map(_.symbol)
-
-      /* since the skolemized tparams are in scope, the TypeRefs in types of vparamSymss refer to the type skolems
-       * note that for parameters with missing types, `methodSig` reassigns types of these symbols (the parameter
-       * types from the overridden method).
-       */
-      var vparamSymss = enterValueParams(vparamss)
 
 
       /*
        * Creates a method type using tparamSyms and vparamsSymss as argument symbols and `respte` as result type.
        * All typeRefs to type skolems are replaced by references to the corresponding non-skolem type parameter,
        * so the resulting type is a valid external method type, it does not contain (references to) skolems.
+       *
+       * tparamSyms are deskolemized symbols  -- TODO: check that their infos don't refer to method args?
+       * vparamss refer (if they do) to skolemized tparams
        */
-      def thisMethodType(restpe: Type) = {
-        if (vparamSymss.lengthCompare(0) > 0) { // OPT fast path for methods of 0-1 parameter lists
-          val checkDependencies = new DependentTypeChecker(context)(this)
-          checkDependencies check vparamSymss
-        }
+      def deskolemizedPolySig(vparamSymss: List[List[Symbol]], restpe: Type) =
+        GenPolyType(tparamSyms, methodTypeFor(meth, vparamSymss, restpe).substSym(tparamSkolems, tparamSyms))
 
-        val makeMethodType = (vparams: List[Symbol], restpe: Type) => {
-          // TODODEPMET: check that we actually don't need to do anything here
-          // new dependent method types: probably OK already, since 'enterValueParams' above
-          // enters them in scope, and all have a lazy type. so they may depend on other params. but: need to
-          // check that params only depend on ones in earlier sections, not the same. (done by checkDependencies,
-          // so re-use / adapt that)
-          if (meth.isJavaDefined)
-          // TODODEPMET necessary?? new dependent types: replace symbols in restpe with the ones in vparams
-            JavaMethodType(vparams map (p => p setInfo objToAny(p.tpe)), restpe)
-          else
-            MethodType(vparams, restpe)
-        }
-
-
-        val res = GenPolyType(
-          tparamSyms, // deSkolemized symbols  -- TODO: check that their infos don't refer to method args?
-          if (vparamSymss.isEmpty) NullaryMethodType(restpe)
-          // vparamss refer (if they do) to skolemized tparams
-          else (vparamSymss :\ restpe) (makeMethodType)
-        )
-        res.substSym(tparamSkolems, tparamSyms)
-      }
-
-      /*
-       * Creates a schematic method type which has WildcardTypes for non specified
-       * return or parameter types. For instance, in `def f[T](a: T, b) = ...`, the
-       * type schema is
-       *
-       *   PolyType(T, MethodType(List(a: T, b: WildcardType), WildcardType))
-       *
-       * where T are non-skolems.
-       */
-      def methodTypeSchema(resTp: Type) = {
-        // for all params without type set WildcaradType
-        mforeach(vparamss)(v => if (v.tpt.isEmpty) v.symbol setInfo WildcardType)
-        thisMethodType(resTp)
-      }
-
-      def overriddenSymbol(resTp: Type) = {
-        lazy val schema: Type = methodTypeSchema(resTp) // OPT create once. Must be lazy to avoid cycles in neg/t5093.scala
-        intersectionType(methOwner.info.parents).nonPrivateMember(meth.name).filter { sym =>
-          sym != NoSymbol && (site.memberType(sym) matches schema)
-        }
-      }
-      // TODO: see whether this or something similar would work instead:
-      // def overriddenSymbol = meth.nextOverriddenSymbol
-
-
-      /*
-       * If `meth` doesn't have an explicit return type, extracts the return type from the method
-       * overridden by `meth` (if there's an unique one). This type is lateron used as the expected
-       * type for computing the type of the rhs. The resulting type references type skolems for
-       * type parameters (consistent with the result of `typer.typedType(tpt).tpe`).
-       *
-       * As a first side effect, this method assigns a MethodType constructed using this
-       * return type to `meth`. This allows omitting the result type for recursive methods.
-       *
-       * As another side effect, this method also assigns parameter types from the overridden
-       * method to parameters of `meth` that have missing types (the parser accepts missing
-       * parameter types under -Yinfer-argument-types).
-       */
-      def typesFromOverridden(methResTp: Type): Type = {
-        val overridden = overriddenSymbol(methResTp)
-        if (overridden == NoSymbol || overridden.isOverloaded) {
-          methResTp
-        } else {
-          overridden.cookJavaRawInfo() // #3404 xform java rawtypes into existentials
-          var overriddenTp = site.memberType(overridden) match {
-              case PolyType(tparams, rt) => rt.substSym(tparams, tparamSkolems)
-              case mt => mt
-            }
-          for (vparams <- vparamss) {
-            var overriddenParams = overriddenTp.params
-            for (vparam <- vparams) {
-              if (vparam.tpt.isEmpty) {
-                val overriddenParamTp = overriddenParams.head.tpe
-                // references to type parameters in overriddenParamTp link to the type skolems, so the
-                // assigned type is consistent with the other / existing parameter types in vparamSymss.
-                vparam.symbol setInfo overriddenParamTp
-                vparam.tpt defineType overriddenParamTp setPos vparam.pos.focus
-              }
-              overriddenParams = overriddenParams.tail
-            }
-            overriddenTp = overriddenTp.resultType
-          }
-
-          // SI-7668 Substitute parameters from the parent method with those of the overriding method.
-          overriddenTp = overriddenTp.substSym(overridden.paramss.flatten, vparamss.flatten.map(_.symbol))
-
-          overriddenTp match {
-            case NullaryMethodType(rtpe) => overriddenTp = rtpe
-            case MethodType(List(), rtpe) => overriddenTp = rtpe
-            case _ =>
-          }
-
-          if (tpt.isEmpty) {
-            // provisionally assign `meth` a method type with inherited result type
-            // that way, we can leave out the result type even if method is recursive.
-            meth setInfo thisMethodType(overriddenTp)
-            overriddenTp
-          } else {
-            methResTp
-          }
-        }
-      }
 
       if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) {
         tpt defineType context.enclClass.owner.tpe_*
         tpt setPos meth.pos.focus
       }
 
-      val methResTp = if (tpt.isEmpty) WildcardType else typer.typedType(tpt).tpe
-      val resTpFromOverride = if (methOwner.isClass && (tpt.isEmpty || mexists(vparamss)(_.tpt.isEmpty))) {
-          typesFromOverridden(methResTp)
-        } else {
-          methResTp
+      /* since the skolemized tparams are in scope, the TypeRefs in types of vparamSymss refer to the type skolems
+       * note that for parameters with missing types, `methodSig` reassigns types of these symbols (the parameter
+       * types from the overridden method).
+       */
+      val vparamSymss: List[List[Symbol]] = enterValueParams(vparamss)
+
+      val resTpGiven =
+        if (tpt.isEmpty) WildcardType
+        else typer.typedType(tpt).tpe
+
+
+      // ignore missing types unless we can look to overridden method to recover the missing information
+      val canOverride = methOwner.isClass && !meth.isConstructor
+      val inferResTp  = canOverride && tpt.isEmpty
+      val inferArgTp  = canOverride && settings.YmethodInfer && mexists(vparamss)(_.tpt.isEmpty)
+
+
+      /*
+       * Find the overridden method that matches a schematic method type,
+       * which has WildcardTypes for unspecified return or parameter types.
+       * For instance, in `def f[T](a: T, b) = ...`, the type schema is
+       *
+       *   PolyType(T, MethodType(List(a: T, b: WildcardType), WildcardType))
+       *
+       * where T are non-skolems.
+       *
+       * NOTE: mutates info of symbol of vparamss that don't specify a type
+       */
+      val methodSigApproxUnknownArgs: () => Type =
+        if (!inferArgTp) () => deskolemizedPolySig(vparamSymss, resTpGiven)
+        else () => {
+          // for all params without type set WildcardType
+          mforeach(vparamss)(v => if (v.tpt.isEmpty) v.symbol setInfo WildcardType)
+          // must wait to call deskolemizedPolySig until we've temporarily set the WildcardType info for the vparamSymss
+          // (Otherwise, valDefSig will complain about missing argument types.)
+          deskolemizedPolySig(vparamSymss, resTpGiven)
         }
 
-      // Add a () parameter section if this overrides some method with () parameters
-      if (methOwner.isClass && vparamss.isEmpty &&
-        overriddenSymbol(methResTp).alternatives.exists(_.info.isInstanceOf[MethodType])) {
-        vparamSymss = ListOfNil
-      }
+      // Must be lazy about the schema to avoid cycles in neg/t5093.scala
+      val overridden =
+        if (!canOverride) NoSymbol
+        else safeNextOverriddenSymbolLazySchema(meth, methodSigApproxUnknownArgs)
+
+      /*
+       * If `meth` doesn't have an explicit return type, extract the return type from the method
+       * overridden by `meth` (if there's an unique one). This type is later used as the expected
+       * type for computing the type of the rhs. The resulting type references type skolems for
+       * type parameters (consistent with the result of `typer.typedType(tpt).tpe`).
+       *
+       * If the result type is missing, assign a MethodType to `meth` that's constructed using this return type.
+       * This allows omitting the result type for recursive methods.
+       *
+       * Missing parameter types are also recovered from the overridden method (by mutating the info of their symbols).
+       * (The parser accepts missing parameter types under -Yinfer-argument-types.)
+       */
+      val resTpFromOverride =
+        if (!(inferArgTp || inferResTp) || overridden == NoSymbol || overridden.isOverloaded) resTpGiven
+        else {
+          overridden.cookJavaRawInfo() // #3404 xform java rawtypes into existentials
+
+          val (overriddenTparams, overriddenTp) =
+            methOwner.thisType.memberType(overridden) match {
+              case PolyType(tparams, mt) => (tparams, mt.substSym(tparams, tparamSkolems))
+              case mt => (Nil, mt)
+            }
+
+          // try to derive empty parameter types from the overridden method's argument types
+          if (inferArgTp) {
+            val overriddenSyms = overriddenTparams ++ overridden.paramss.flatten
+            val ourSyms = tparamSkolems ++ vparamSymss.flatten
+            foreach2(vparamss, overridden.paramss) { foreach2(_, _) { (vparam, overriddenParam) =>
+              // println(s"infer ${vparam.symbol} from ${overriddenParam}? ${vparam.tpt}")
+              if (vparam.tpt.isEmpty) {
+                val overriddenParamTp = overriddenParam.tpe.substSym(overriddenSyms, ourSyms)
+                // println(s"inferred ${vparam.symbol} : $overriddenParamTp")
+                // references to type parameters in overriddenParamTp link to the type skolems, so the
+                // assigned type is consistent with the other / existing parameter types in vparamSymss.
+                vparam.symbol setInfo overriddenParamTp
+                vparam.tpt defineType overriddenParamTp setPos vparam.pos.focus
+              }
+            }}
+          }
+
+          @tailrec @inline def applyFully(tp: Type, paramss: List[List[Symbol]]): Type =
+            if (paramss.isEmpty) tp match {
+              case NullaryMethodType(rtpe) => rtpe
+              case MethodType(Nil, rtpe)   => rtpe
+              case tp                      => tp
+            }
+            else applyFully(tp.resultType(paramss.head.map(_.tpe)), paramss.tail)
+
+          if (inferResTp) {
+            // SI-7668 Substitute parameters from the parent method with those of the overriding method.
+            val overriddenResTp = applyFully(overriddenTp, vparamSymss).substSym(overriddenTparams, tparamSkolems)
+
+            // provisionally assign `meth` a method type with inherited result type
+            // that way, we can leave out the result type even if method is recursive.
+            meth setInfo deskolemizedPolySig(vparamSymss, overriddenResTp)
+            overriddenResTp
+          } else resTpGiven
+        }
 
       // issue an error for missing parameter types
+      // (computing resTpFromOverride may have required inferring some, meanwhile)
       mforeach(vparamss) { vparam =>
         if (vparam.tpt.isEmpty) {
           MissingParameterOrValTypeError(vparam)
@@ -1174,13 +1161,9 @@ trait Namers extends MethodSynthesis {
         }
       }
 
-      val overridden = {
-        val isConstr   = meth.isConstructor
-        if (isConstr || !methOwner.isClass) NoSymbol else overriddenSymbol(methResTp)
-      }
-      val hasDefaults = mexists(vparamss)(_.symbol.hasDefault) || mexists(overridden.paramss)(_.hasDefault)
-      if (hasDefaults)
-        addDefaultGetters(meth, ddef, vparamss, tparams, overridden)
+      // If we, or the overridden method has defaults, add getters for them
+      if (mexists(vparamss)(_.symbol.hasDefault) || mexists(overridden.paramss)(_.hasDefault))
+        addDefaultGetters(meth, ddef, vparamss, tparams,  overridden)
 
       // fast track macros, i.e. macros defined inside the compiler, are hardcoded
       // hence we make use of that and let them have whatever right-hand side they need
@@ -1191,27 +1174,35 @@ trait Namers extends MethodSynthesis {
       // because @macroImpl annotation only gets assigned during typechecking
       // otherwise macro defs wouldn't be able to robustly coexist with their clients
       // because a client could be typechecked before a macro def that it uses
-      if (meth.isMacro) {
-        typer.computeMacroDefType(ddef, resTpFromOverride)
+      if (meth.isMacro) typer.computeMacroDefType(ddef, resTpFromOverride) // note: `pt` argument ignored in `computeMacroDefType`
+
+      if (vparamSymss.lengthCompare(0) > 0) { // OPT fast path for methods of 0-1 parameter lists
+        val checkDependencies = new DependentTypeChecker(context)(this)
+        checkDependencies check vparamSymss
       }
 
-      val res = thisMethodType({
-        val rt = (
-          if (!tpt.isEmpty) {
-            methResTp
-          } else {
-            // return type is inferred, we don't just use resTpFromOverride. Here, C.f has type String:
-            //   trait T { def f: Object }; class C <: T { def f = "" }
-            // using resTpFromOverride as expected type allows for the following (C.f has type A):
-            //   trait T { def f: A }; class C <: T { implicit def b2a(t: B): A = ???; def f = new B }
-            assignTypeToTree(ddef, typer, resTpFromOverride)
-          })
+      val resTp = {
+        // When return type is inferred, we don't just use resTpFromOverride -- it must be packed and widened.
+        // Here, C.f has type String:
+        //   trait T { def f: Object }; class C extends T { def f = "" }
+        // using resTpFromOverride as expected type allows for the following (C.f has type A):
+        //   trait T { def f: A }; class C extends T { implicit def b2a(t: B): A = ???; def f = new B }
+        val resTpComputedUnlessGiven =
+          if (tpt.isEmpty) assignTypeToTree(ddef, typer, resTpFromOverride)
+          else resTpGiven
+
         // #2382: return type of default getters are always @uncheckedVariance
-        if (meth.hasDefault)
-          rt.withAnnotation(AnnotationInfo(uncheckedVarianceClass.tpe, List(), List()))
-        else rt
-      })
-      pluginsTypeSig(res, typer, ddef, methResTp)
+        if (meth.hasDefault) resTpComputedUnlessGiven.withAnnotation(AnnotationInfo(uncheckedVarianceClass.tpe, List(), List()))
+        else resTpComputedUnlessGiven
+      }
+
+      // Add a () parameter section if this overrides some method with () parameters
+      val vparamSymssOrEmptyParamsFromOverride =
+        if (overridden != NoSymbol && vparamSymss.isEmpty && overridden.alternatives.exists(_.info.isInstanceOf[MethodType])) ListOfNil // NOTEL must check `.info.isInstanceOf[MethodType]`, not `.isMethod`!
+        else vparamSymss
+
+      val methSig = deskolemizedPolySig(vparamSymssOrEmptyParamsFromOverride, resTp)
+      pluginsTypeSig(methSig, typer, ddef, resTpGiven)
     }
 
     /**
@@ -1367,18 +1358,55 @@ trait Namers extends MethodSynthesis {
 
     private def valDefSig(vdef: ValDef) = {
       val ValDef(_, _, tpt, rhs) = vdef
-      val result = if (tpt.isEmpty) {
-        if (rhs.isEmpty) {
-          MissingParameterOrValTypeError(tpt)
-          ErrorType
-        }
-        else assignTypeToTree(vdef, typer, WildcardType)
-      } else {
-        typer.typedType(tpt).tpe
-      }
-      pluginsTypeSig(result, typer, vdef, if (tpt.isEmpty) WildcardType else result)
+      val result =
+        if (tpt.isEmpty) {
+          if (rhs.isEmpty) {
+            MissingParameterOrValTypeError(tpt)
+            ErrorType
+          } else {
+            val valOwner = owner.owner
+            val pt =
+            // there's no overriding outside of classes
+              if (!valOwner.isClass) WildcardType
+              else {
+                // normalize to getter so that we correctly consider a val overriding a def
+                // (a val's name ends in a " ", so can't compare to def)
+                val valSym =
+                  if (vdef.symbol hasFlag ACCESSOR) vdef.symbol
+                  else vdef.symbol.getterIn(valOwner)
 
+                // The symbol's info is currently being determined (up the call stack, you'll find a TypeCompleter's complete method),
+                // so the info will be set to whatever type we return here by the complete method.
+                val overridden = safeNextOverriddenSymbol(valSym)
+
+                if (overridden == NoSymbol || overridden.isOverloaded) WildcardType
+                else valOwner.thisType.memberType(overridden).resultType
+              }
+
+            assignTypeToTree(vdef, typer, pt) // defines (based on `pt`) and returns `vdef.tpt.tpe`
+          }
+        } else typer.typedType(tpt).tpe
+
+      pluginsTypeSig(result, typer, vdef, if (tpt.isEmpty) WildcardType else result)
     }
+
+    // Pretend we're an erroneous symbol, for now, so that we match while finding the overridden symbol,
+    // but are not considered during implicit search.
+    private def safeNextOverriddenSymbol(sym: Symbol, schema: Type = ErrorType): Symbol = {
+      val savedInfo = sym.rawInfo
+      val savedFlags = sym.rawflags
+      try {
+        sym setInfo schema
+        sym.nextOverriddenSymbol
+      } finally {
+        sym setInfo savedInfo // setInfo resets the LOCKED flag, so restore saved flags as well
+        sym.rawflags = savedFlags
+      }
+    }
+
+    private def safeNextOverriddenSymbolLazySchema(sym: Symbol, schema: () => Type): Symbol =
+      safeNextOverriddenSymbol(sym, new LazyType { override def complete(sym: Symbol): Unit = sym setInfo schema() })
+
 
     //@M! an abstract type definition (abstract type member/type parameter)
     // may take type parameters, which are in scope in its bounds
