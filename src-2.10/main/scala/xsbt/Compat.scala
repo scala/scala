@@ -87,6 +87,8 @@ abstract class Compat {
     def enclosingTopLevelClass: Symbol = sym.toplevelClass
     def toplevelClass: Symbol = sourceCompatibilityOnly
     def isMacro: Boolean = false
+    def orElse(alt: => Symbol) = alt
+    def asType: TypeSymbol = sym.asInstanceOf[TypeSymbol]
   }
 
   val DummyValue = 0
@@ -100,6 +102,30 @@ abstract class Compat {
   private[this] def sourceCompatibilityOnly: Nothing = throw new RuntimeException("For source compatibility only: should not get here.")
 
   private[this] final implicit def miscCompat(n: AnyRef): MiscCompat = new MiscCompat
+
+  object DetectMacroImpls {
+
+    private implicit def withRootMirror(x: Any): WithRootMirror = new WithRootMirror(x)
+    private class DummyMirror {
+      def getClassIfDefined(x: String): Symbol = NoSymbol
+    }
+    private class WithRootMirror(x: Any) {
+      def rootMirror = new DummyMirror
+    }
+    private class WithIsScala211(x: Any) {
+      def isScala211 = false
+    }
+    private[this] implicit def withIsScala211(x: Any): WithIsScala211 = new WithIsScala211(x)
+
+    // Copied from scala/scala since these methods do not exists in Scala < 2.11.x
+    private def Context_210 = if (settings.isScala211) NoSymbol else global.rootMirror.getClassIfDefined("scala.reflect.macros.Context")
+    lazy val BlackboxContextClass = global.rootMirror.getClassIfDefined("scala.reflect.macros.blackbox.Context").orElse(Context_210)
+    lazy val WhiteboxContextClass = global.rootMirror.getClassIfDefined("scala.reflect.macros.whitebox.Context").orElse(Context_210)
+    def isContextCompatible(sym: Symbol) = {
+      sym.isNonBottomSubClass(BlackboxContextClass) || sym.isNonBottomSubClass(WhiteboxContextClass)
+    }
+
+  }
 
   object MacroExpansionOf {
     def unapply(tree: Tree): Option[Tree] = {
