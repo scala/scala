@@ -12,7 +12,7 @@ import java.net.URL
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
-import reporters.{ Reporter }
+import reporters.Reporter
 import util.{ ClassFileLookup, ClassPath, MergedClassPath, StatisticsInfo, returning }
 import scala.reflect.ClassTag
 import scala.reflect.internal.util.{ ScalaClassLoader, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
@@ -141,7 +141,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     class IClass(val symbol: Symbol)
   }
 
-  /** Scala primitives, used in genicode */
+  /** Scala primitives, used the backend */
   object scalaPrimitives extends {
     val global: Global.this.type = Global.this
   } with ScalaPrimitives
@@ -1334,8 +1334,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
       if (canCheck) {
         phase = globalPhase
-        /// !!! This is probably not what we want ...
-        if (globalPhase.id <= delambdafyPhase.id)
+        if (globalPhase.id <= cleanupPhase.id)
           treeChecker.checkTrees()
       }
     }
