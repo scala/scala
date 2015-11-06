@@ -25,7 +25,6 @@ import ast.parser._
 import typechecker._
 import transform.patmat.PatternMatching
 import transform._
-import backend.icode.ICodes
 import backend.{ ScalaPrimitives, JavaPlatform }
 import backend.jvm.GenBCode
 import scala.language.postfixOps
@@ -137,10 +136,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val global: Global.this.type = Global.this
   } with ConstantFolder
 
-  /** ICode generator */
-  object icodes extends {
-    val global: Global.this.type = Global.this
-  } with ICodes
+  /** For sbt compatibility (https://github.com/scala/scala/pull/4588) */
+  object icodes {
+    class IClass(val symbol: Symbol)
+  }
 
   /** Scala primitives, used in genicode */
   object scalaPrimitives extends {

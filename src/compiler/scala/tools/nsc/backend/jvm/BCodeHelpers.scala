@@ -1352,4 +1352,18 @@ object BCodeHelpers {
       asm.Opcodes.ACC_ABSTRACT | asm.Opcodes.ACC_SYNTHETIC | asm.Opcodes.ACC_ANNOTATION |
       asm.Opcodes.ACC_ENUM
   }
+
+  class TestOp(val op: Int) extends AnyVal {
+    def opcodeIF = asm.Opcodes.IFEQ + op
+    def opcodeIFICMP = asm.Opcodes.IF_ICMPEQ + op
+  }
+
+  object TestOp {
+    val EQ = new TestOp(0)
+    val NE = new TestOp(1)
+    val LT = new TestOp(2)
+    val GE = new TestOp(3)
+    val GT = new TestOp(4)
+    val LE = new TestOp(5)
+  }
 }

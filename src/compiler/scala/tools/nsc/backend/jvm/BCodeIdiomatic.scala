@@ -12,6 +12,7 @@ import scala.annotation.switch
 import scala.collection.mutable
 import GenBCode._
 import scala.tools.asm.tree.MethodInsnNode
+import scala.tools.nsc.backend.jvm.BCodeHelpers.TestOp
 
 /*
  *  A high-level facade to the ASM API for bytecode generation.
@@ -109,37 +110,17 @@ abstract class BCodeIdiomatic extends SubComponent {
 
     final def emit(opc: Int) { jmethod.visitInsn(opc) }
 
-    /*
-     * can-multi-thread
-     */
-    final def genPrimitiveArithmetic(op: icodes.ArithmeticOp, kind: BType) {
-
-      import icodes.{ ADD, SUB, MUL, DIV, REM, NOT }
-
-      op match {
-
-        case ADD => add(kind)
-        case SUB => sub(kind)
-        case MUL => mul(kind)
-        case DIV => div(kind)
-        case REM => rem(kind)
-
-        case NOT =>
-          if (kind.isIntSizedType) {
-            emit(Opcodes.ICONST_M1)
-            emit(Opcodes.IXOR)
-          } else if (kind == LONG) {
-            jmethod.visitLdcInsn(new java.lang.Long(-1))
-            jmethod.visitInsn(Opcodes.LXOR)
-          } else {
-            abort(s"Impossible to negate an $kind")
-          }
-
-        case _ =>
-          abort(s"Unknown arithmetic primitive $op")
+    final def genPrimitiveNot(bType: BType): Unit = {
+      if (bType.isIntSizedType) {
+        emit(Opcodes.ICONST_M1)
+        emit(Opcodes.IXOR)
+      } else if (bType == LONG) {
+        jmethod.visitLdcInsn(new java.lang.Long(-1))
+        jmethod.visitInsn(Opcodes.LXOR)
+      } else {
+        abort(s"Impossible to negate a $bType")
       }
-
-    } // end of method genPrimitiveArithmetic()
+    }
 
     /*
      * can-multi-thread
@@ -415,13 +396,13 @@ abstract class BCodeIdiomatic extends SubComponent {
     // can-multi-thread
     final def goTo(label: asm.Label) { jmethod.visitJumpInsn(Opcodes.GOTO, label) }
     // can-multi-thread
-    final def emitIF(cond: icodes.TestOp, label: asm.Label)      { jmethod.visitJumpInsn(cond.opcodeIF,     label) }
+    final def emitIF(cond: TestOp, label: asm.Label)      { jmethod.visitJumpInsn(cond.opcodeIF,     label) }
     // can-multi-thread
-    final def emitIF_ICMP(cond: icodes.TestOp, label: asm.Label) { jmethod.visitJumpInsn(cond.opcodeIFICMP, label) }
+    final def emitIF_ICMP(cond: TestOp, label: asm.Label) { jmethod.visitJumpInsn(cond.opcodeIFICMP, label) }
     // can-multi-thread
-    final def emitIF_ACMP(cond: icodes.TestOp, label: asm.Label) {
-      assert((cond == icodes.EQ) || (cond == icodes.NE), cond)
-      val opc = (if (cond == icodes.EQ) Opcodes.IF_ACMPEQ else Opcodes.IF_ACMPNE)
+    final def emitIF_ACMP(cond: TestOp, label: asm.Label) {
+      assert((cond == TestOp.EQ) || (cond == TestOp.NE), cond)
+      val opc = (if (cond == TestOp.EQ) Opcodes.IF_ACMPEQ else Opcodes.IF_ACMPNE)
       jmethod.visitJumpInsn(opc, label)
     }
     // can-multi-thread

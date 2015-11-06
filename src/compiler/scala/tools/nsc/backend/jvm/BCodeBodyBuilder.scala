@@ -17,6 +17,7 @@ import scala.tools.asm
 import GenBCode._
 import BackendReporting._
 import scala.tools.asm.tree.MethodInsnNode
+import scala.tools.nsc.backend.jvm.BCodeHelpers.TestOp
 
 /*
  *
@@ -34,7 +35,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
    * Functionality to build the body of ASM MethodNode, except for `synchronized` and `try` expressions.
    */
   abstract class PlainBodyBuilder(cunit: CompilationUnit) extends PlainSkelBuilder(cunit) {
-    import icodes.TestOp
     import invokeStyles._
 
     /*  If the selector type has a member with the right name,
@@ -120,7 +120,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           code match {
             case POS => () // nothing
             case NEG => bc.neg(resKind)
-            case NOT => bc.genPrimitiveArithmetic(icodes.NOT, resKind)
+            case NOT => bc.genPrimitiveNot(resKind)
             case _ => abort(s"Unknown unary operation: ${fun.symbol.fullName} code: $code")
           }
 
@@ -1104,10 +1104,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         (tk: @unchecked) match {
           case LONG   => emit(asm.Opcodes.LCMP)
           case FLOAT  =>
-            if (op == icodes.LT || op == icodes.LE) emit(asm.Opcodes.FCMPG)
+            if (op == TestOp.LT || op == TestOp.LE) emit(asm.Opcodes.FCMPG)
             else emit(asm.Opcodes.FCMPL)
           case DOUBLE =>
-            if (op == icodes.LT || op == icodes.LE) emit(asm.Opcodes.DCMPG)
+            if (op == TestOp.LT || op == TestOp.LE) emit(asm.Opcodes.DCMPG)
             else emit(asm.Opcodes.DCMPL)
         }
         bc.emitIF(op, success)
@@ -1122,8 +1122,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       } else if (tk.isRef) { // REFERENCE(_) | ARRAY(_)
         // @unchecked because references aren't compared with GT, GE, LT, LE.
         (op : @unchecked) match {
-          case icodes.EQ => bc emitIFNULL    success
-          case icodes.NE => bc emitIFNONNULL success
+          case TestOp.EQ => bc emitIFNULL    success
+          case TestOp.NE => bc emitIFNONNULL success
         }
       } else {
         (tk: @unchecked) match {
@@ -1132,11 +1132,11 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             emit(asm.Opcodes.LCMP)
           case FLOAT  =>
             emit(asm.Opcodes.FCONST_0)
-            if (op == icodes.LT || op == icodes.LE) emit(asm.Opcodes.FCMPG)
+            if (op == TestOp.LT || op == TestOp.LE) emit(asm.Opcodes.FCMPG)
             else emit(asm.Opcodes.FCMPL)
           case DOUBLE =>
             emit(asm.Opcodes.DCONST_0)
-            if (op == icodes.LT || op == icodes.LE) emit(asm.Opcodes.DCMPG)
+            if (op == TestOp.LT || op == TestOp.LE) emit(asm.Opcodes.DCMPG)
             else emit(asm.Opcodes.DCMPL)
         }
         bc.emitIF(op, success)
@@ -1144,9 +1144,16 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       bc goTo failure
     }
 
-    val testOpForPrimitive: Array[TestOp] = Array(
-      icodes.EQ, icodes.NE, icodes.EQ, icodes.NE, icodes.LT, icodes.LE, icodes.GE, icodes.GT
-    )
+    def testOpForPrimitive(primitiveCode: Int) = (primitiveCode: @switch) match {
+      case scalaPrimitives.ID => TestOp.EQ
+      case scalaPrimitives.NI => TestOp.NE
+      case scalaPrimitives.EQ => TestOp.EQ
+      case scalaPrimitives.NE => TestOp.NE
+      case scalaPrimitives.LT => TestOp.LT
+      case scalaPrimitives.LE => TestOp.LE
+      case scalaPrimitives.GE => TestOp.GE
+      case scalaPrimitives.GT => TestOp.GT
+    }
 
     /** Some useful equality helpers. */
     def isNull(t: Tree) = PartialFunction.cond(t) { case Literal(Constant(null)) => true }
@@ -1162,7 +1169,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     private def genCond(tree: Tree, success: asm.Label, failure: asm.Label) {
 
       def genComparisonOp(l: Tree, r: Tree, code: Int) {
-        val op: TestOp = testOpForPrimitive(code - scalaPrimitives.ID)
+        val op: TestOp = testOpForPrimitive(code)
         // special-case reference (in)equality test for null (null eq x, x eq null)
         var nonNullSide: Tree = null
         if (scalaPrimitives.isReferenceEqualityOp(code) &&
@@ -1181,7 +1188,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
       def default() = {
         genLoad(tree, BOOL)
-        genCZJUMP(success, failure, icodes.NE, BOOL)
+        genCZJUMP(success, failure, TestOp.NE, BOOL)
       }
 
       lineNumber(tree)
@@ -1259,23 +1266,23 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         genLoad(l, ObjectRef)
         genLoad(r, ObjectRef)
         genCallMethod(equalsMethod, Static(onInstance = false), pos)
-        genCZJUMP(success, failure, icodes.NE, BOOL)
+        genCZJUMP(success, failure, TestOp.NE, BOOL)
       }
       else {
         if (isNull(l)) {
           // null == expr -> expr eq null
           genLoad(r, ObjectRef)
-          genCZJUMP(success, failure, icodes.EQ, ObjectRef)
+          genCZJUMP(success, failure, TestOp.EQ, ObjectRef)
         } else if (isNull(r)) {
           // expr == null -> expr eq null
           genLoad(l, ObjectRef)
-          genCZJUMP(success, failure, icodes.EQ, ObjectRef)
+          genCZJUMP(success, failure, TestOp.EQ, ObjectRef)
         } else if (isNonNullExpr(l)) {
           // SI-7852 Avoid null check if L is statically non-null.
           genLoad(l, ObjectRef)
           genLoad(r, ObjectRef)
           genCallMethod(Object_equals, Dynamic, pos)
-          genCZJUMP(success, failure, icodes.NE, BOOL)
+          genCZJUMP(success, failure, TestOp.NE, BOOL)
         } else {
           // l == r -> if (l eq null) r eq null else l.equals(r)
           val eqEqTempLocal = locals.makeLocal(ObjectRef, nme.EQEQ_LOCAL_VAR.toString)
@@ -1286,17 +1293,17 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           genLoad(r, ObjectRef)
           locals.store(eqEqTempLocal)
           bc dup ObjectRef
-          genCZJUMP(lNull, lNonNull, icodes.EQ, ObjectRef)
+          genCZJUMP(lNull, lNonNull, TestOp.EQ, ObjectRef)
 
           markProgramPoint(lNull)
           bc drop ObjectRef
           locals.load(eqEqTempLocal)
-          genCZJUMP(success, failure, icodes.EQ, ObjectRef)
+          genCZJUMP(success, failure, TestOp.EQ, ObjectRef)
 
           markProgramPoint(lNonNull)
           locals.load(eqEqTempLocal)
           genCallMethod(Object_equals, Dynamic, pos)
-          genCZJUMP(success, failure, icodes.NE, BOOL)
+          genCZJUMP(success, failure, TestOp.NE, BOOL)
         }
       }
     }

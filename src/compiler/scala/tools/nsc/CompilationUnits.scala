@@ -117,9 +117,7 @@ trait CompilationUnits { global: Global =>
      */
     def targetPos: Position = NoPosition
 
-    /** The icode representation of classes in this compilation unit.
-     *  It is empty up to phase 'icode'.
-     */
+    /** For sbt compatibility (https://github.com/scala/scala/pull/4588) */
     val icode: LinkedHashSet[icodes.IClass] = new LinkedHashSet
 
     @deprecated("Call global.reporter.echo directly instead.", "2.11.2")
