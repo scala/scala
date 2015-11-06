@@ -1,6 +1,6 @@
 package xsbt
 
-import scala.tools.nsc.{ Global, Phase }
+import scala.tools.nsc.Global
 import scala.tools.nsc.symtab.Flags
 
 /**
@@ -87,8 +87,9 @@ abstract class Compat {
     def enclosingTopLevelClass: Symbol = sym.toplevelClass
     def toplevelClass: Symbol = sourceCompatibilityOnly
     def isMacro: Boolean = false
-    def orElse(alt: => Symbol) = alt
+    def orElse(alt: => Symbol) = if (sym ne NoSymbol) sym else alt
     def asType: TypeSymbol = sym.asInstanceOf[TypeSymbol]
+    def asMethod: MethodSymbol = sym.asInstanceOf[MethodSymbol]
   }
 
   val DummyValue = 0
@@ -121,6 +122,11 @@ abstract class Compat {
     private def Context_210 = if (settings.isScala211) NoSymbol else global.rootMirror.getClassIfDefined("scala.reflect.macros.Context")
     lazy val BlackboxContextClass = global.rootMirror.getClassIfDefined("scala.reflect.macros.blackbox.Context").orElse(Context_210)
     lazy val WhiteboxContextClass = global.rootMirror.getClassIfDefined("scala.reflect.macros.whitebox.Context").orElse(Context_210)
+    /**
+     * Determines whether a symbol may be compatible with Scala macros' `Context` (e.g. could it be
+     * the `c: Context` parameter of a macro implementation?). In such cases, we should treat the
+     * method whose parameter this symbol is as a potential macro implementation.
+     */
     def isContextCompatible(sym: Symbol) = {
       sym.isNonBottomSubClass(BlackboxContextClass) || sym.isNonBottomSubClass(WhiteboxContextClass)
     }
