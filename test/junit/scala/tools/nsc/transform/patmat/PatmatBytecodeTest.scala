@@ -55,4 +55,32 @@ class PatmatBytecodeTest extends ClearAfterClass {
     assert(getSingleMethod(c, "s1").instructions.count(_.opcode == TABLESWITCH) == 1, textify(c))
     assert(getSingleMethod(c, "s2").instructions.count(_.opcode == TABLESWITCH) == 1, textify(c))
   }
+
+  @Test
+  def t6955(): Unit = {
+    val code =
+      """class C {
+        |  type Tag = Byte
+        |
+        |  def s1(i: Tag): Int = i match { // notice type of i is Tag = Byte
+        |    case 1 => 1
+        |    case 2 => 2
+        |    case 3 => 3
+        |    case _ => 0
+        |  }
+        |
+        |  // this worked before, should keep working
+        |  def s2(i: Byte): Int = i match {
+        |    case 1 => 1
+        |    case 2 => 2
+        |    case 3 => 3
+        |    case _ => 0
+        |  }
+        |}
+      """.stripMargin
+
+    val List(c) = compileClasses(compiler)(code)
+    assert(getSingleMethod(c, "s1").instructions.count(_.opcode == TABLESWITCH) == 1, textify(c))
+    assert(getSingleMethod(c, "s2").instructions.count(_.opcode == TABLESWITCH) == 1, textify(c))
+  }
 }
