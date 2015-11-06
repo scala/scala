@@ -23,8 +23,9 @@ import scala.collection.convert.decorateAsScala._
 import scala.tools.testing.ClearAfterClass
 
 object InlinerTest extends ClearAfterClass.Clearable {
-  val args = "-Ybackend:GenBCode -Yopt:l:classpath -Yopt-warnings"
+  val args = "-Yopt:l:classpath -Yopt-warnings"
   var compiler = newCompiler(extraArgs = args)
+  var inlineOnlyCompiler = newCompiler(extraArgs = "-Yopt:inline-project")
 
   // allows inspecting the caches after a compilation run
   def notPerRun: List[Clearable] = List(
@@ -34,7 +35,7 @@ object InlinerTest extends ClearAfterClass.Clearable {
     compiler.genBCode.bTypes.callGraph.callsites)
   notPerRun foreach compiler.perRunCaches.unrecordCache
 
-  def clear(): Unit = { compiler = null }
+  def clear(): Unit = { compiler = null; inlineOnlyCompiler = null }
 
   implicit class listStringLines[T](val l: List[T]) extends AnyVal {
     def stringLines = l.mkString("\n")
@@ -64,6 +65,8 @@ class InlinerTest extends ClearAfterClass {
   import compiler.genBCode.bTypes._
   import compiler.genBCode.bTypes.backendUtils._
   import inlinerHeuristics._
+
+  val inlineOnlyCompiler = InlinerTest.inlineOnlyCompiler
 
   def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
     InlinerTest.notPerRun.foreach(_.clear())
@@ -148,15 +151,22 @@ class InlinerTest extends ClearAfterClass {
     // See also discussion around ATHROW in BCodeBodyBuilder
 
     val g = inlineTest(code)
-    val expectedInlined = List(
-      VarOp(ALOAD, 0), VarOp(ASTORE, 1), // store this
-      Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"), Invoke(INVOKEVIRTUAL, "scala/Predef$", "$qmark$qmark$qmark", "()Lscala/runtime/Nothing$;", false)) // inlined call to ???
 
-    assertSameCode(convertMethod(g).instructions.dropNonOp.take(4), expectedInlined)
+    val invokeQQQ = List(
+      Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"),
+      Invoke(INVOKEVIRTUAL, "scala/Predef$", "$qmark$qmark$qmark", "()Lscala/runtime/Nothing$;", false))
+
+    val gBeforeLocalOpt = VarOp(ALOAD, 0) :: VarOp(ASTORE, 1) :: invokeQQQ ::: List(
+      VarOp(ASTORE, 2),
+      Jump(GOTO, Label(11)),
+      Label(11),
+      VarOp(ALOAD, 2),
+      Op(ATHROW))
+
+    assertSameCode(convertMethod(g).instructions.dropNonOp, gBeforeLocalOpt)
 
     compiler.genBCode.bTypes.localOpt.methodOptimizations(g, "C")
-    assertSameCode(convertMethod(g).instructions.dropNonOp,
-      expectedInlined ++ List(VarOp(ASTORE, 2), VarOp(ALOAD, 2), Op(ATHROW)))
+    assertSameCode(convertMethod(g).instructions.dropNonOp, invokeQQQ :+ Op(ATHROW))
   }
 
   @Test
@@ -396,7 +406,8 @@ class InlinerTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val List(c) = compile(code)
+    // use a compiler without local optimizations (cleanups)
+    val List(c) = compileClasses(inlineOnlyCompiler)(code)
     val ms @ List(f1, f2, g1, g2) = c.methods.asScala.filter(_.name.length == 2).toList
 
     // stack height at callsite of f1 is 1, so max of g1 after inlining is max of f1 + 1
@@ -959,7 +970,7 @@ class InlinerTest extends ClearAfterClass {
     val List(c) = compile(code)
     val t = getSingleMethod(c, "t").instructions
     assertNoInvoke(t)
-    assert(2 == t.collect({case Ldc(_, "hai!") => }).size)     // twice the body of f
+    assert(1 == t.collect({case Ldc(_, "hai!") => }).size)     // push-pop eliminates the first LDC("hai!")
     assert(1 == t.collect({case Jump(IFNONNULL, _) => }).size) // one single null check
   }
 
@@ -985,17 +996,17 @@ class InlinerTest extends ClearAfterClass {
     val List(c, _, _) = compile(code)
 
     val t1 = getSingleMethod(c, "t1")
-    assert(t1.instructions exists {
-      case _: InvokeDynamic => true
-      case _ => false
+    assert(t1.instructions forall { // indy is eliminated by push-pop
+      case _: InvokeDynamic => false
+      case _ => true
     })
     // the indy call is inlined into t, and the closure elimination rewrites the closure invocation to the body method
     assertInvoke(t1, "C", "C$$$anonfun$2")
 
     val t2 = getSingleMethod(c, "t2")
-    assert(t2.instructions exists {
-      case _: InvokeDynamic => true
-      case _ => false
+    assert(t2.instructions forall { // indy is eliminated by push-pop
+      case _: InvokeDynamic => false
+      case _ => true
     })
     assertInvoke(t2, "M$", "M$$$anonfun$1")
   }

@@ -47,6 +47,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     private val basicValueSizeLimit  = 9000l * 1000l * 1000l
     private val sourceValueSizeLimit = 8000l * 950l  * 950l
 
+    def sizeOKForAliasing(method: MethodNode): Boolean = size(method) < nullnessSizeLimit
     def sizeOKForNullness(method: MethodNode): Boolean = size(method) < nullnessSizeLimit
     def sizeOKForBasicValue(method: MethodNode): Boolean = size(method) < basicValueSizeLimit
     def sizeOKForSourceValue(method: MethodNode): Boolean = size(method) < sourceValueSizeLimit

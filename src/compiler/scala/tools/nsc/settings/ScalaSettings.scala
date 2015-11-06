@@ -230,6 +230,7 @@ trait ScalaSettings extends AbsScalaSettings
     val emptyLineNumbers        = Choice("empty-line-numbers",        "Eliminate unnecessary line number information.")
     val emptyLabels             = Choice("empty-labels",              "Eliminate and collapse redundant labels in the bytecode.")
     val compactLocals           = Choice("compact-locals",            "Eliminate empty slots in the sequence of local variables.")
+    val copyPropagation         = Choice("copy-propagation",          "Eliminate redundant local variables (locals that are copies of others).")
     val nullnessTracking        = Choice("nullness-tracking",         "Track nullness / non-nullness of local variables and apply optimizations.")
     val closureElimination      = Choice("closure-elimination" ,      "Rewrite closure invocations to the implementation method and eliminate closures.")
     val inlineProject           = Choice("inline-project",            "Inline only methods defined in the files being compiled.")
@@ -240,7 +241,7 @@ trait ScalaSettings extends AbsScalaSettings
     private val defaultChoices = List(unreachableCode)
     val lDefault        = Choice("l:default",   "Enable default optimizations: "+ defaultChoices.mkString(","),                                    expandsTo = defaultChoices)
 
-    private val methodChoices = List(unreachableCode, simplifyJumps, emptyLineNumbers, emptyLabels, compactLocals, nullnessTracking, closureElimination)
+    private val methodChoices = List(unreachableCode, simplifyJumps, emptyLineNumbers, emptyLabels, compactLocals, copyPropagation, nullnessTracking, closureElimination)
     val lMethod         = Choice("l:method",    "Enable intra-method optimizations: "+ methodChoices.mkString(","),                                expandsTo = methodChoices)
 
     private val projectChoices = List(lMethod, inlineProject)
@@ -262,6 +263,7 @@ trait ScalaSettings extends AbsScalaSettings
   def YoptEmptyLineNumbers        = Yopt.contains(YoptChoices.emptyLineNumbers)
   def YoptEmptyLabels             = Yopt.contains(YoptChoices.emptyLabels)
   def YoptCompactLocals           = Yopt.contains(YoptChoices.compactLocals)
+  def YoptCopyPropagation         = Yopt.contains(YoptChoices.copyPropagation)
   def YoptNullnessTracking        = Yopt.contains(YoptChoices.nullnessTracking)
   def YoptClosureElimination      = Yopt.contains(YoptChoices.closureElimination)
 
