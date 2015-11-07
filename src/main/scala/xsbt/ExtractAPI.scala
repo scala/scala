@@ -184,11 +184,18 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
 
   private def defDef(in: Symbol, s: Symbol): List[xsbti.api.Def] =
     {
-      import DetectMacroImpls._
-      def hasContextAsParameter(meth: MethodSymbol): Boolean =
-        meth.paramss.flatten exists (p => isContextCompatible(p.info.typeSymbol))
+      import MirrorHelper._
 
-      val inspectPostErasure = !hasContextAsParameter(s.asMethod)
+      // Here we must be careful to also consider the type parameters, because a tuple (Foo, Int)
+      // may become (Int, Int) for instance.
+      def hasValueClassAsParameter(meth: MethodSymbol): Boolean =
+        meth.paramss.flatten map (_.info) exists (t => isAnyValSubtype(t.typeSymbol))
+
+      // Here too we must care for the type parameters (see above comment).
+      def hasValueClassAsReturnType(meth: MethodSymbol): Boolean =
+        isAnyValSubtype(meth.returnType.typeSymbol)
+
+      val inspectPostErasure = hasValueClassAsParameter(s.asMethod) || hasValueClassAsReturnType(s.asMethod)
       def build(t: Type, typeParams: Array[xsbti.api.TypeParameter], valueParameters: List[xsbti.api.ParameterList]): List[xsbti.api.Def] =
         {
           def parameterList(syms: List[Symbol]): xsbti.api.ParameterList =
