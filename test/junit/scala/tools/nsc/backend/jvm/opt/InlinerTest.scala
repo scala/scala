@@ -1496,4 +1496,24 @@ class InlinerTest extends ClearAfterClass {
         IFNONNULL, ACONST_NULL, ATHROW, -1 /*label*/,
         ILOAD, ICONST_1, IADD, IRETURN))
   }
+
+  @Test // a test taken from the test suite for the 2.11 inliner
+  def oldInlineHigherOrderTest(): Unit = {
+    val code =
+      """class C {
+        |  private var debug = false
+        |  @inline private def ifelse[T](cond: => Boolean, ifPart: => T, elsePart: => T): T = if (cond) ifPart else elsePart
+        |  final def t = ifelse(debug, 1, 2)
+        |}
+      """.stripMargin
+    val List(c) = compile(code)
+    val t = getSingleMethod(c, "t")
+
+    // box-unbox will clean it up
+    assertEquals(getSingleMethod(c, "t").instructions.summary,
+      List(
+        ALOAD, "C$$$anonfun$1", IFEQ /*A*/,
+        "C$$$anonfun$2", IRETURN,
+        -1 /*A*/, "C$$$anonfun$3", IRETURN))
+  }
 }
