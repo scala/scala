@@ -186,16 +186,26 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
     {
       import MirrorHelper._
 
-      // Here we must be careful to also consider the type parameters, because a tuple (Foo, Int)
-      // may become (Int, Int) for instance.
-      def hasValueClassAsParameter(meth: MethodSymbol): Boolean =
-        meth.paramss.flatten map (_.info) exists (t => isAnyValSubtype(t.typeSymbol))
+      val hasValueClassAsParameter: Boolean = {
+        import MirrorHelper._
+        s.asMethod.paramss.flatten map (_.info) exists (t => isAnyValSubtype(t.typeSymbol))
+      }
 
-      // Here too we must care for the type parameters (see above comment).
-      def hasValueClassAsReturnType(meth: MethodSymbol): Boolean =
-        isAnyValSubtype(meth.returnType.typeSymbol)
+      // Note: We only inspect the "outermost type" (i.e. no recursion) because we don't need to
+      // inspect after erasure a function that would, for instance, return a function that returns
+      // a subtype of AnyVal.
+      val hasValueClassAsReturnType: Boolean = {
+        val tpe = viewer(in).memberInfo(s)
+        tpe match {
+          case PolyType(_, base) => isAnyValSubtype(base.typeSymbol)
+          case MethodType(_, resultType) => isAnyValSubtype(resultType.typeSymbol)
+          case Nullary(resultType) => isAnyValSubtype(resultType.typeSymbol)
+          case resultType => isAnyValSubtype(resultType.typeSymbol)
+        }
+      }
 
-      val inspectPostErasure = hasValueClassAsParameter(s.asMethod) || hasValueClassAsReturnType(s.asMethod)
+      val inspectPostErasure = hasValueClassAsParameter || hasValueClassAsReturnType
+
       def build(t: Type, typeParams: Array[xsbti.api.TypeParameter], valueParameters: List[xsbti.api.ParameterList]): List[xsbti.api.Def] =
         {
           def parameterList(syms: List[Symbol]): xsbti.api.ParameterList =
