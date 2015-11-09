@@ -115,4 +115,23 @@ class PatmatBytecodeTest extends ClearAfterClass {
     val c = compileClasses(optCompiler)(code).head
     assert(!getSingleMethod(c, "a").instructions.exists(i => i.opcode == IFNULL || i.opcode == IFNONNULL), textify(findAsmMethod(c, "a")))
   }
+
+  @Test
+  def optNoLoacalForUnderscore(): Unit = {
+    val code =
+      """case class Foo(x: Any, y: String)
+        |class C {
+        |  def a = Foo(1, "a") match {
+        |    case Foo(_: String, y) => y
+        |  }
+        |}
+      """.stripMargin
+    val c = compileClasses(optCompiler)(code).head
+    assertEquals(textify(findAsmMethod(c, "a")), getSingleMethod(c, "a").instructions.summary,
+      List(NEW, DUP, ICONST_1, "boxToInteger", LDC, "<init>", ASTORE /*1*/,
+        ALOAD /*1*/, "y", ASTORE /*2*/,
+        ALOAD /*1*/, "x", INSTANCEOF, IFNE /*R*/,
+        NEW, DUP, ALOAD /*1*/, "<init>", ATHROW,
+        /*R*/ -1, ALOAD /*2*/, ARETURN))
+  }
 }
