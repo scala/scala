@@ -717,4 +717,28 @@ class MethodLevelOptsTest extends ClearAfterClass {
     assertEquals(locals(c, "t4"), List(("this", 0), ("x", 1)))
     assertEquals(locals(c, "t5"), List(("this", 0), ("x", 1)))
   }
+
+  @Test
+  def t7006(): Unit = {
+    val code =
+      """class C {
+        |  def t: Unit = {
+        |    try {
+        |      val x = 3
+        |    } finally {
+        |      print("hello")
+        |    }
+        |    while(true) { }
+        |  }
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(methodOptCompiler)(code)
+    val t = getSingleMethod(c, "t")
+    assertEquals(t.handlers, Nil)
+    assertEquals(locals(c, "t"), List(("this", 0)))
+    assertEquals(t.instructions.summary,
+      List(
+        GETSTATIC, LDC, "print",
+        -1, GOTO))
+  }
 }
