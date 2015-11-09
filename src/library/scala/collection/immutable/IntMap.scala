@@ -46,7 +46,7 @@ import IntMapUtils._
  */
 object IntMap {
   /** $mapCanBuildFromInfo */
-  implicit def canBuildFrom[A, B] = new CanBuildFrom[IntMap[A], (Int, B), IntMap[B]] {
+  implicit def canBuildFrom[A, B]: CanBuildFrom[IntMap[A], (Int, B), IntMap[B]] = new CanBuildFrom[IntMap[A], (Int, B), IntMap[B]] {
     def apply(from: IntMap[A]): Builder[(Int, B), IntMap[B]] = apply()
     def apply(): Builder[(Int, B), IntMap[B]] = new MapBuilder[Int, B, IntMap[B]](empty[B])
   }
