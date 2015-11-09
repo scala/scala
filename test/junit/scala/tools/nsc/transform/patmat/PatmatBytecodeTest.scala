@@ -83,4 +83,23 @@ class PatmatBytecodeTest extends ClearAfterClass {
     assert(getSingleMethod(c, "s1").instructions.count(_.opcode == TABLESWITCH) == 1, textify(c))
     assert(getSingleMethod(c, "s2").instructions.count(_.opcode == TABLESWITCH) == 1, textify(c))
   }
+
+  @Test
+  def optNoPrimitiveTypetest(): Unit = {
+    val code =
+      """case class Foo(x: Int, y: String)
+        |class C {
+        |  def a = Foo(1, "a") match {
+        |    case Foo(_: Int, y) => y
+        |  }
+        |}
+      """.stripMargin
+    val c = compileClasses(optCompiler)(code).head
+
+    assertEquals(textify(findAsmMethod(c, "a")), getSingleMethod(c, "a").instructions.summary,
+      List(
+        NEW, DUP, ICONST_1, LDC, "<init>",
+        "y", ARETURN))
+  }
+
 }
