@@ -188,7 +188,7 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
       }
       result
     }
-    private def swap(i: Int, j: Int) {
+    private def swap(i: Int, j: Int): Unit = {
       val tmpI = idxs(i)
       idxs(i) = idxs(j)
       idxs(j) = tmpI

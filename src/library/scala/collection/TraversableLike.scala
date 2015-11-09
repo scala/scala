@@ -611,7 +611,7 @@ trait TraversableLike[+A, +Repr] extends Any
    *
    *    $willNotTerminateInf
    */
-  def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) {
+  def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Unit = {
     var i = start
     val end = (start + len) min xs.length
     breakable {
