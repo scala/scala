@@ -141,7 +141,7 @@ extends scala.collection.AbstractSeq[Int]
 
   private def description = "%d %s %d by %s".format(start, if (isInclusive) "to" else "until", end, step)
   private def fail() = throw new IllegalArgumentException(description + ": seqs cannot contain more than Int.MaxValue elements.")
-  private def validateMaxLength() {
+  private def validateMaxLength(): Unit = {
     if (numRangeElements < 0)
       fail()
   }
@@ -152,7 +152,7 @@ extends scala.collection.AbstractSeq[Int]
     else start + (step * idx)
   }
 
-  @inline final override def foreach[@specialized(Unit) U](f: Int => U) {
+  @inline final override def foreach[@specialized(Unit) U](f: Int => U): Unit = {
     validateMaxLength()
     val isCommonCase = (start != Int.MinValue || end != Int.MinValue)
     var i = start
