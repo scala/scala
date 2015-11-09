@@ -102,4 +102,17 @@ class PatmatBytecodeTest extends ClearAfterClass {
         "y", ARETURN))
   }
 
+  @Test
+  def optNoNullCheck(): Unit = {
+    val code =
+      """case class Foo(x: Any)
+        |class C {
+        |  def a = (Foo(1): Any) match {
+        |    case Foo(_: String) =>
+        |  }
+        |}
+      """.stripMargin
+    val c = compileClasses(optCompiler)(code).head
+    assert(!getSingleMethod(c, "a").instructions.exists(i => i.opcode == IFNULL || i.opcode == IFNONNULL), textify(findAsmMethod(c, "a")))
+  }
 }
