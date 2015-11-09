@@ -459,7 +459,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     }
 
     protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = that match {
-      case hm: HashMap1[_, _] =>
+      case hm: HashMap1[A, B] =>
         this.updated0(hm.key, hm.hash, level, hm.value.asInstanceOf[B1], hm.kv, merger)
       case hm: HashTrieMap[_, _] =>
         val that = hm.asInstanceOf[HashTrieMap[A, B1]]

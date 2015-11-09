@@ -38,7 +38,7 @@ self =>
     // TODO: It may actually be pretty rare that the guard here ever
     // passes. Is this really worth keeping? If it is, we should add
     // more sensible implementations of == to Ordering.
-    case that: SortedSet[_] if that.ordering == ordering => that.hasAll(this.iterator)
+    case that: SortedSet[A] if that.ordering == ordering => that.hasAll(this.iterator)
     case that => super.subsetOf(that)
   }
 
