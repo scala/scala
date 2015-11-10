@@ -26,7 +26,7 @@ class ThePlugin(val global: Global) extends Plugin {
   private object thePhase2 extends PluginComponent {
     val global = ThePlugin.this.global
 
-    val runsAfter = List[String]("dce","cyclicdependency1")
+    val runsAfter = List[String]("jvm","cyclicdependency1")
 
     val phaseName = ThePlugin.this.name + "2"
 

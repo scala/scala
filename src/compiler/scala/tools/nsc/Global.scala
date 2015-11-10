@@ -7,12 +7,12 @@ package scala
 package tools
 package nsc
 
-import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
+import java.io.{ File, IOException, FileNotFoundException }
 import java.net.URL
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
-import reporters.{ Reporter, ConsoleReporter }
+import reporters.Reporter
 import util.{ ClassFileLookup, ClassPath, MergedClassPath, StatisticsInfo, returning }
 import scala.reflect.ClassTag
 import scala.reflect.internal.util.{ ScalaClassLoader, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
@@ -25,11 +25,8 @@ import ast.parser._
 import typechecker._
 import transform.patmat.PatternMatching
 import transform._
-import backend.icode.{ ICodes, GenICode, ICodeCheckers }
 import backend.{ ScalaPrimitives, JavaPlatform }
 import backend.jvm.GenBCode
-import backend.opt.{ Inliners, InlineExceptionHandlers, ConstantOptimization, ClosureElimination, DeadCodeElimination }
-import backend.icode.analysis._
 import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath.FlatClassPath
@@ -139,12 +136,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val global: Global.this.type = Global.this
   } with ConstantFolder
 
-  /** ICode generator */
-  object icodes extends {
-    val global: Global.this.type = Global.this
-  } with ICodes
+  /** For sbt compatibility (https://github.com/scala/scala/pull/4588) */
+  object icodes {
+    class IClass(val symbol: Symbol)
+  }
 
-  /** Scala primitives, used in genicode */
+  /** Scala primitives, used the backend */
   object scalaPrimitives extends {
     val global: Global.this.type = Global.this
   } with ScalaPrimitives
@@ -155,18 +152,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   } with OverridingPairs
 
   type SymbolPair = overridingPairs.SymbolPair
-
-  // Optimizer components
-
-  /** ICode analysis for optimization */
-  object analysis extends {
-    val global: Global.this.type = Global.this
-  } with TypeFlowAnalysis
-
-  /** Copy propagation for optimization */
-  object copyPropagation extends {
-    val global: Global.this.type = Global.this
-  } with CopyPropagation
 
   // Components for collecting and generating output
 
@@ -590,52 +575,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val runsRightAfter = None
   } with Delambdafy
 
-  // phaseName = "icode"
-  object genicode extends {
-    val global: Global.this.type = Global.this
-    val runsAfter = List("cleanup")
-    val runsRightAfter = None
-  } with GenICode
-
-  // phaseName = "inliner"
-  object inliner extends {
-    val global: Global.this.type = Global.this
-    val runsAfter = List("icode")
-    val runsRightAfter = None
-  } with Inliners
-
-  // phaseName = "inlinehandlers"
-  object inlineExceptionHandlers extends {
-    val global: Global.this.type = Global.this
-    val runsAfter = List("inliner")
-    val runsRightAfter = None
-  } with InlineExceptionHandlers
-
-  // phaseName = "closelim"
-  object closureElimination extends {
-    val global: Global.this.type = Global.this
-    val runsAfter = List("inlinehandlers")
-    val runsRightAfter = None
-  } with ClosureElimination
-
-  // phaseName = "constopt"
-  object constantOptimization extends {
-    val global: Global.this.type = Global.this
-    val runsAfter = List("closelim")
-    val runsRightAfter = None
-  } with ConstantOptimization
-
-  // phaseName = "dce"
-  object deadCode extends {
-    val global: Global.this.type = Global.this
-    val runsAfter = List("closelim")
-    val runsRightAfter = None
-  } with DeadCodeElimination
-
   // phaseName = "bcode"
   object genBCode extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("dce")
+    val runsAfter = List("cleanup")
     val runsRightAfter = None
   } with GenBCode
 
@@ -665,13 +608,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   object treeChecker extends {
     val global: Global.this.type = Global.this
   } with TreeCheckers
-
-  /** Icode verification */
-  object icodeCheckers extends {
-    val global: Global.this.type = Global.this
-  } with ICodeCheckers
-
-  object icodeChecker extends icodeCheckers.ICodeChecker()
 
   object typer extends analyzer.Typer(
     analyzer.NoContext.make(EmptyTree, RootClass, newScope)
@@ -705,12 +641,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       mixer                   -> "mixin composition",
       delambdafy              -> "remove lambdas",
       cleanup                 -> "platform-specific cleanups, generate reflective calls",
-      genicode                -> "generate portable intermediate code",
-      inliner                 -> "optimization: do inlining",
-      inlineExceptionHandlers -> "optimization: inline exception handlers",
-      closureElimination      -> "optimization: eliminate uncalled closures",
-      constantOptimization    -> "optimization: optimize null and other constants",
-      deadCode                -> "optimization: eliminate dead code",
       terminal                -> "the last phase during a compilation run"
     )
 
@@ -1049,9 +979,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   @inline final def enteringErasure[T](op: => T): T       = enteringPhase(currentRun.erasurePhase)(op)
   @inline final def enteringExplicitOuter[T](op: => T): T = enteringPhase(currentRun.explicitouterPhase)(op)
   @inline final def enteringFlatten[T](op: => T): T       = enteringPhase(currentRun.flattenPhase)(op)
-  @inline final def enteringIcode[T](op: => T): T         = enteringPhase(currentRun.icodePhase)(op)
   @inline final def enteringMixin[T](op: => T): T         = enteringPhase(currentRun.mixinPhase)(op)
   @inline final def enteringDelambdafy[T](op: => T): T    = enteringPhase(currentRun.delambdafyPhase)(op)
+  @inline final def enteringJVM[T](op: => T): T           = enteringPhase(currentRun.jvmPhase)(op)
   @inline final def enteringPickler[T](op: => T): T       = enteringPhase(currentRun.picklerPhase)(op)
   @inline final def enteringSpecialize[T](op: => T): T    = enteringPhase(currentRun.specializePhase)(op)
   @inline final def enteringTyper[T](op: => T): T         = enteringPhase(currentRun.typerPhase)(op)
@@ -1325,8 +1255,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     // val superaccessorsPhase          = phaseNamed("superaccessors")
     val picklerPhase                 = phaseNamed("pickler")
     val refchecksPhase               = phaseNamed("refchecks")
-    // val selectiveanfPhase            = phaseNamed("selectiveanf")
-    // val selectivecpsPhase            = phaseNamed("selectivecps")
     val uncurryPhase                 = phaseNamed("uncurry")
     // val tailcallsPhase               = phaseNamed("tailcalls")
     val specializePhase              = phaseNamed("specialize")
@@ -1340,20 +1268,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val mixinPhase                   = phaseNamed("mixin")
     val delambdafyPhase              = phaseNamed("delambdafy")
     val cleanupPhase                 = phaseNamed("cleanup")
-    val icodePhase                   = phaseNamed("icode")
-    val inlinerPhase                 = phaseNamed("inliner")
-    val inlineExceptionHandlersPhase = phaseNamed("inlinehandlers")
-    val closelimPhase                = phaseNamed("closelim")
-    val dcePhase                     = phaseNamed("dce")
-    // val jvmPhase                     = phaseNamed("jvm")
+    val jvmPhase                     = phaseNamed("jvm")
 
     def runIsAt(ph: Phase)   = globalPhase.id == ph.id
-    def runIsAtOptimiz       = {
-      runIsAt(inlinerPhase)                 || // listing phases in full for robustness when -Ystop-after has been given.
-      runIsAt(inlineExceptionHandlersPhase) ||
-      runIsAt(closelimPhase)                ||
-      runIsAt(dcePhase)
-    }
+    def runIsAtOptimiz       = runIsAt(jvmPhase)
 
     isDefined = true
 
@@ -1416,8 +1334,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
       if (canCheck) {
         phase = globalPhase
-        if (globalPhase.id >= icodePhase.id) icodeChecker.checkICodes()
-        else treeChecker.checkTrees()
+        if (globalPhase.id <= cleanupPhase.id)
+          treeChecker.checkTrees()
       }
     }
 
@@ -1498,14 +1416,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
         // progress update
         informTime(globalPhase.description, startTime)
-        val shouldWriteIcode = (
-             (settings.writeICode.isSetByUser && (settings.writeICode containsPhase globalPhase))
-          || (!settings.Xprint.doAllPhases && (settings.Xprint containsPhase globalPhase) && runIsAtOptimiz)
-        )
-        if (shouldWriteIcode) {
-          // Write *.icode files when -Xprint-icode or -Xprint:<some-optimiz-phase> was given.
-          writeICode()
-        } else if ((settings.Xprint containsPhase globalPhase) || settings.printLate && runIsAt(cleanupPhase)) {
+        if ((settings.Xprint containsPhase globalPhase) || settings.printLate && runIsAt(cleanupPhase)) {
           // print trees
           if (settings.Xshowtrees || settings.XshowtreesCompact || settings.XshowtreesStringified) nodePrinters.printAll()
           else printAllUnits()
@@ -1670,30 +1581,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   /** Returns the file with the given suffix for the given class. Used for icode writing. */
   def getFile(clazz: Symbol, suffix: String): File = getFile(clazz.sourceFile, clazz.fullName split '.', suffix)
 
-  private def writeICode() {
-    val printer = new icodes.TextPrinter(writer = null, icodes.linearizer)
-    icodes.classes.values foreach { cls =>
-      val file = {
-        val module = if (cls.symbol.hasModuleFlag) "$" else ""
-        val faze   = if (settings.debug) phase.name else f"${phase.id}%02d" // avoid breaking windows build with long filename
-        getFile(cls.symbol, s"$module-$faze.icode")
-      }
-
-      try {
-        val stream = new FileOutputStream(file)
-        printer.setWriter(new PrintWriter(stream, true))
-        try
-          printer.printClass(cls)
-        finally
-          stream.close()
-        informProgress(s"wrote $file")
-      } catch {
-        case e: IOException =>
-          if (settings.debug) e.printStackTrace()
-          globalError(s"could not write file $file")
-      }
-    }
-  }
   def createJavadoc    = false
 }
 

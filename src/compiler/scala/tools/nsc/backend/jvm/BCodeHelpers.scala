@@ -1352,4 +1352,35 @@ object BCodeHelpers {
       asm.Opcodes.ACC_ABSTRACT | asm.Opcodes.ACC_SYNTHETIC | asm.Opcodes.ACC_ANNOTATION |
       asm.Opcodes.ACC_ENUM
   }
+
+  class TestOp(val op: Int) extends AnyVal {
+    def opcodeIF = asm.Opcodes.IFEQ + op
+    def opcodeIFICMP = asm.Opcodes.IF_ICMPEQ + op
+  }
+
+  object TestOp {
+    val EQ = new TestOp(0)
+    val NE = new TestOp(1)
+    val LT = new TestOp(2)
+    val GE = new TestOp(3)
+    val GT = new TestOp(4)
+    val LE = new TestOp(5)
+  }
+
+  class InvokeStyle(val style: Int) extends AnyVal {
+    import InvokeStyle._
+    def isVirtual: Boolean = this == Virtual
+    def isStatic : Boolean = this == Static
+    def isSpecial: Boolean = this == Special
+    def isSuper  : Boolean = this == Super
+
+    def hasInstance = this != Static
+  }
+
+  object InvokeStyle {
+    val Virtual = new InvokeStyle(0) // InvokeVirtual or InvokeInterface
+    val Static  = new InvokeStyle(1) // InvokeStatic
+    val Special = new InvokeStyle(2) // InvokeSpecial (private methods, constructors)
+    val Super   = new InvokeStyle(3) // InvokeSpecial (super calls)
+  }
 }
