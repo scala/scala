@@ -461,15 +461,17 @@ object BytecodeUtils {
   private def buildFunctionTypes(base: String): Set[InternalName] = {
     def primitives = Iterator("B", "S", "I", "J", "C", "F", "D", "Z", "V")
     def ijfd = Iterator("I", "J", "F", "D")
+    def ijfdzv = Iterator("I", "J", "F", "D", "Z", "V")
     def ijd = Iterator("I", "J", "D")
     Set.empty[String] ++ {
       (0 to 22).map(base + _)
     } ++ {
       primitives.map(base + "0$mc" + _ + "$sp") // Function0
     } ++ {
-      for (a <- ijfd; b <- ijfd) yield base + "1$mc" + a + b + "$sp" // Function1
+      // return type specializations appear first in the name string (alphabetical sorting)
+      for (r <- ijfdzv; a <- ijfd) yield base + "1$mc" + r + a + "$sp" // Function1
     } ++ {
-      for (a <- ijd; b <- ijd; c <- ijd) yield base + "2$mc" + a + b + c + "$sp" // Function2
+      for (r <- ijfdzv; a <- ijd; b <- ijd) yield base + "2$mc" + r + a + b + "$sp" // Function2
     }
   }
 

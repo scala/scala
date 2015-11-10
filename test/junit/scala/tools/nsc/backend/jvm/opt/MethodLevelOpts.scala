@@ -235,4 +235,21 @@ class MethodLevelOpts extends ClearAfterClass {
         VarOp(ILOAD, 3),
         Invoke(INVOKESTATIC, "C", "C$$$anonfun$1", "(III)I", false), Op(IRETURN)))
   }
+
+  @Test
+  def rewriteSpecializedClosureCall(): Unit = {
+    val code =
+      """class C {
+        |  def t = {
+        |    val f1 = (x: Int) => println(x)       // int-unit specialization
+        |    val f2 = (x: Int, y: Long) => x == y  // int-long-boolean
+        |    f1(1)
+        |    f2(3, 4)
+        |  }
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(methodOptCompiler)(code)
+    val t = getSingleMethod(c, "t")
+    assert(!t.instructions.exists(_.opcode == INVOKEDYNAMIC), t)
+  }
 }
