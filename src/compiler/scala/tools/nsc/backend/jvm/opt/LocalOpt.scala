@@ -198,14 +198,14 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
     def removalRound(runDCE: Boolean, runCopyProp: Boolean, maxRecursion: Int = 10): Boolean = {
       if (maxRecursion == 0) return false
 
-      val (codeRemoved, liveLabels) = if (runDCE) removeUnreachableCodeImpl(method, ownerClassName) else (false, Set.empty[LabelNode])
+      // Both AliasingAnalyzer (used in copyProp) and ProdConsAnalyzer (used in eliminateStaleStores)
+      // require not having unreachable instructions (null frames).
+      val dceRequired = runDCE || compilerSettings.YoptCopyPropagation
+      val (codeRemoved, liveLabels) = if (dceRequired) removeUnreachableCodeImpl(method, ownerClassName) else (false, Set.empty[LabelNode])
 
       // runCopyProp is only true in the first iteration; there's no optimization below that enables
       // further copy propagation. it is still part of the fixpoint loop because it needs to run after DCE.
-      val copyPropChanged = if (runCopyProp) {
-        if (!runDCE) minimalRemoveUnreachableCode(method, ownerClassName) // copyProp (AliasingAnalyzer) requires DCE
-        copyProp(method, ownerClassName)
-      } else false
+      val copyPropChanged = if (runCopyProp) copyProp(method, ownerClassName) else false
 
       val storesRemoved = if (compilerSettings.YoptCopyPropagation) eliminateStaleStores(method, ownerClassName) else false
 
@@ -213,7 +213,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
 
       val storeLoadRemoved = if (compilerSettings.YoptCopyPropagation) eliminateStoreLoad(method) else false
 
-      val removedHandlers = if (runDCE) removeEmptyExceptionHandlers(method) else Set.empty[TryCatchBlockNode]
+      val removedHandlers = if (dceRequired) removeEmptyExceptionHandlers(method) else Set.empty[TryCatchBlockNode]
       val handlersRemoved = removedHandlers.nonEmpty
       val liveHandlerRemoved = removedHandlers.exists(h => liveLabels(h.start))
 
@@ -233,7 +233,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
 
     val dceCopyPropHandlersOrJumpsChanged = if (AsmAnalyzer.sizeOKForBasicValue(method)) {
       // we run DCE even if the method is already in the `unreachableCodeEliminated` map: the DCE
-      // here is more thorough than `minimalRemoveUnreachableCode`
+      // here is more thorough than `minimalRemoveUnreachableCode` that run before inlining.
       val r = removalRound(
         runDCE = compilerSettings.YoptUnreachableCode,
         runCopyProp = compilerSettings.YoptCopyPropagation)
@@ -247,9 +247,9 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
       else if (compilerSettings.YoptUnreachableCode) removeUnusedLocalVariableNodes(method)() // (*)
       else false
 
-    val lineNumbersRemoved = if (compilerSettings.YoptEmptyLineNumbers) removeEmptyLineNumbers(method) else false
+    val lineNumbersRemoved = if (compilerSettings.YoptUnreachableCode) removeEmptyLineNumbers(method) else false
 
-    val labelsRemoved = if (compilerSettings.YoptEmptyLabels) removeEmptyLabelNodes(method) else false
+    val labelsRemoved = if (compilerSettings.YoptUnreachableCode) removeEmptyLabelNodes(method) else false
 
     // assert that local variable annotations are empty (we don't emit them) - otherwise we'd have
     // to eliminate those covering an empty range, similar to removeUnusedLocalVariableNodes.
