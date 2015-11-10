@@ -687,7 +687,7 @@ abstract class TreeGen {
 
       // inner for comprehension packages the values (x, x')
       val tupler = mkFor(
-        List(ValFrom(defpat1, rhs).setPos(pos)),
+        List(ValFrom(mods, defpat1, rhs).setPos(pos)),
         Yield(Block(pdefs, atPos(wrappingPos(ids)) { mkTuple(ids) }) setPos wrappingPos(pdefs)))
 
       // detupling generator (p, p') <- tupler
@@ -706,7 +706,7 @@ abstract class TreeGen {
       case (t @ ValFrom(mods, pat, rhs)) :: (rest @ (ValFrom(_, _, _) :: _)) =>
         makeCombination(closurePos(t.pos), flatMapName, qual = rhs, mods, pat = pat, body = mkFor(rest, sugarBody))
       case (t @ ValFrom(mods, pat, rhs)) :: Filter(test) :: rest =>
-        val filtering = makeCombination(rhs.pos union test.pos, nme.withFilter, rhs, Modifiers(0), pat.duplicate, test)
+        val filtering = makeCombination(rhs.pos union test.pos, nme.withFilter, rhs, mods, pat.duplicate, test)
         mkFor(ValFrom(mods, pat, filtering).setPos(t.pos) :: rest, sugarBody)
       case (t @ ValFrom(mods, pat, rhs)) :: rest =>
         mkFor(mkMidstreamTuple(t.pos, mods, pat, rhs, rest), sugarBody)
