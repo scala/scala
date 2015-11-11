@@ -384,15 +384,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
     def apply(unit: CompilationUnit): Unit
 
-    private val isErased = prev.name == "erasure" || prev.erasedTypes
-    override def erasedTypes: Boolean = isErased
-    private val isFlat = prev.name == "flatten" || prev.flatClasses
-    override def flatClasses: Boolean = isFlat
-    private val isSpecialized = prev.name == "specialize" || prev.specialized
-    override def specialized: Boolean = isSpecialized
-    private val isRefChecked = prev.name == "refchecks" || prev.refChecked
-    override def refChecked: Boolean = isRefChecked
-
     /** Is current phase cancelled on this unit? */
     def cancelled(unit: CompilationUnit) = {
       // run the typer only if in `createJavadoc` mode
