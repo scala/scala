@@ -57,3 +57,13 @@ class ManMaker extends Task {
     })
   }
 }
+
+/** Command line runner for ManMaker which is called from the sbt build. */
+object ManMaker extends App {
+  val Array(commands, htmlout, manout) = args
+  val mm = new ManMaker
+  mm.setCommand(commands)
+  mm.setHtmlout(new File(htmlout))
+  mm.setManout(new File(manout))
+  mm.execute()
+}
