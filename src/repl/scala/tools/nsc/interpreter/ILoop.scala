@@ -888,8 +888,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         flatMap (f => io.File(f).safeSlurp())
         foreach (intp quietRun _)
     )
-    // classloader and power mode setup
-    intp.setContextClassLoader()
+    // power mode setup
     if (isReplPower) {
       replProps.power setValue true
       unleashAndSetPhase()
