@@ -46,12 +46,12 @@ abstract class Compat {
   val ScalaObjectClass = definitions.ScalaObjectClass
 
   // `afterPostErasure` doesn't exist in Scala < 2.10
-  implicit def withAfterPostErasure(global: Global) = new WithAfterPostErasure(global)
+  implicit def withAfterPostErasure(global: Global): WithAfterPostErasure = new WithAfterPostErasure(global)
   class WithAfterPostErasure(global: Global) {
     def afterPostErasure[T](op: => T): T = op
   }
   // `exitingPostErasure` was called `afterPostErasure` in 2.10
-  implicit def withExitingPostErasure(global: Global) = new WithExitingPostErasure(global)
+  implicit def withExitingPostErasure(global: Global): WithExitingPostErasure = new WithExitingPostErasure(global)
   class WithExitingPostErasure(global: Global) {
     def exitingPostErasure[T](op: => T): T = global afterPostErasure op
   }
@@ -108,7 +108,7 @@ abstract class Compat {
       def getClassIfDefined(x: String): Symbol = NoSymbol
     }
     private class WithRootMirror(x: Any) {
-      def rootMirror = new DummyMirror
+      def rootMirror: DummyMirror = new DummyMirror
     }
     lazy val AnyValClass = global.rootMirror.getClassIfDefined("scala.AnyVal")
 
