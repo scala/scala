@@ -185,7 +185,7 @@ lazy val library = configureAsSubproject(project)
     includeFilter in unmanagedResources in Compile := "*.tmpl" | "*.xml" | "*.js" | "*.css" | "rootdoc.txt",
     // Include forkjoin classes in scala-library.jar
     mappings in Compile in packageBin ++=
-      (mappings in Compile in packageBin in LocalProject("forkjoin")).value
+      (mappings in Compile in packageBin in forkjoin).value
   )
   .settings(filterDocSources("*.scala" -- (regexFileFilter(".*/runtime/.*\\$\\.scala") ||
                                            regexFileFilter(".*/runtime/ScalaRunTime\\.scala") ||
@@ -393,6 +393,52 @@ lazy val test = project.
           def annotationName = "partest"
         }, true, Array())
      )
+  )
+
+lazy val manual = configureAsSubproject(project)
+  .settings(
+    libraryDependencies ++= Seq(scalaXmlDep, antDep),
+    classDirectory in Compile := (target in Compile).value / "classes"
+  )
+  .settings(disableDocsAndPublishingTasks: _*)
+  .dependsOn(library)
+
+lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-dist-src-dummy")
+  .settings(commonSettings: _*)
+  .settings(
+    doc := file("!!! NO DOCS !!!"),
+    mappings in Compile in packageBin ++= {
+      val binBaseDir = buildDirectory.value / "pack"
+      val binMappings = (mkBin in dist).value.pair(relativeTo(binBaseDir), errorIfNone = false)
+      // With the way the resource files are spread out over the project sources we can't just add
+      // an unmanagedResourceDirectory, so we generate the mappings manually:
+      val docBaseDir = (baseDirectory in ThisBuild).value
+      val docMappings = (docBaseDir / "doc").*** pair relativeTo(docBaseDir)
+      val resBaseDir = (baseDirectory in ThisBuild).value / "src/manual/scala/tools/docutil/resources"
+      val resMappings = resBaseDir ** ("*.html" | "*.css" | "*.gif" | "*.png") pair (p => relativeTo(resBaseDir)(p).map("doc/tools/" + _))
+      docMappings ++ resMappings ++ binMappings
+    },
+    resourceGenerators in Compile += Def.task {
+      val command = "fsc, scala, scalac, scaladoc, scalap"
+      val htmlOut = (resourceManaged in Compile).value / "doc/tools"
+      val manOut = (resourceManaged in Compile).value / "genman"
+      val fixedManOut = (resourceManaged in Compile).value / "man"
+      IO.createDirectory(htmlOut)
+      IO.createDirectory(manOut / "man1")
+      toError(runner.value.run("scala.tools.docutil.ManMaker",
+        (fullClasspath in Compile in manual).value.files,
+        Seq(command, htmlOut.getAbsolutePath, manOut.getAbsolutePath),
+        streams.value.log))
+      (manOut ** "*.1" pair rebase(manOut, fixedManOut)).foreach { case (in, out) =>
+        // Generated manpages should always use LF only. There doesn't seem to be a good reason
+        // for generating them with the platform EOL first and then converting them but that's
+        // what the ant build does.
+        IO.write(out, IO.readBytes(in).filterNot(_ == '\r'))
+      }
+      (htmlOut ** "*.html").get ++ (fixedManOut ** "*.1").get
+    }.taskValue,
+    managedResourceDirectories in Compile := Seq((resourceManaged in Compile).value),
+    packageOptions in Compile in packageBin := Seq.empty
   )
 
 lazy val root = (project in file(".")).
