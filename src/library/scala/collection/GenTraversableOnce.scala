@@ -49,6 +49,22 @@ import scala.language.higherKinds
  */
 trait GenTraversableOnce[+A] extends Any {
 
+  /** Applies a function `f` to all elements of this $coll.
+    *
+    *  @param  f   the function that is applied for its side-effect to every element.
+    *              The result of function `f` is discarded.
+    *
+    *  @tparam  U  the type parameter describing the result of function `f`.
+    *              This result will always be ignored. Typically `U` is `Unit`,
+    *              but this is not necessary.
+    *
+    *  @usecase def foreach(f: A => Unit): Unit
+    *    @inheritdoc
+    *
+    *    Note: this method underlies the implementation of most other bulk operations.
+    *    It's important to implement this method in an efficient way.
+    *
+    */
   def foreach[U](f: A => U): Unit
 
   def hasDefiniteSize: Boolean
@@ -110,13 +126,14 @@ trait GenTraversableOnce[+A] extends Any {
    *  binary operator.
    *
    *  $undefinedorder
+   *  $willNotTerminateInf
    *
    *  @tparam A1     a type parameter for the binary operator, a supertype of `A`.
    *  @param z       a neutral element for the fold operation; may be added to the result
    *                 an arbitrary number of times, and must not change the result (e.g., `Nil` for list concatenation,
-   *                 0 for addition, or 1 for multiplication.)
-   *  @param op      a binary operator that must be associative
-   *  @return        the result of applying fold operator `op` between all the elements and `z`
+   *                 0 for addition, or 1 for multiplication).
+   *  @param op      a binary operator that must be associative.
+   *  @return        the result of applying the fold operator `op` between all the elements and `z`, or `z` if this $coll is empty.
    */
   def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1
 
@@ -205,6 +222,7 @@ trait GenTraversableOnce[+A] extends Any {
    *             op(...op(z, x_1), x_2, ..., x_n)
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
+   *           Returns `z` if this $coll is empty.
    */
   def foldLeft[B](z: B)(op: (B, A) => B): B
 
@@ -222,29 +240,31 @@ trait GenTraversableOnce[+A] extends Any {
    *             op(x_1, op(x_2, ... op(x_n, z)...))
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
+   *           Returns `z` if this $coll is empty.
    */
   def foldRight[B](z: B)(op: (A, B) => B): B
 
   /** Aggregates the results of applying an operator to subsequent elements.
    *
-   *  This is a more general form of `fold` and `reduce`. It has similar
-   *  semantics, but does not require the result to be a supertype of the
-   *  element type. It traverses the elements in different partitions
-   *  sequentially, using `seqop` to update the result, and then applies
-   *  `combop` to results from different partitions. The implementation of
-   *  this operation may operate on an arbitrary number of collection
-   *  partitions, so `combop` may be invoked an arbitrary number of times.
+   *  This is a more general form of `fold` and `reduce`. It is similar to
+   *  `foldLeft` in that it doesn't require the result to be a supertype of the
+   *  element type. In addition, it allows parallel collections to be processed
+   *  in chunks, and then combines the intermediate results.
    *
-   *  For example, one might want to process some elements and then produce
-   *  a `Set`. In this case, `seqop` would process an element and append it
-   *  to the list, while `combop` would concatenate two lists from different
-   *  partitions together. The initial value `z` would be an empty set.
+   *  `aggregate` splits the $coll into partitions and processes each
+   *  partition by sequentially applying `seqop`, starting with `z` (like
+   *  `foldLeft`). Those intermediate results are then combined by using
+   *  `combop` (like `fold`). The implementation of this operation may operate
+   *  on an arbitrary number of collection partitions (even 1), so `combop` may
+   *  be invoked an arbitrary number of times (even 0).
+   *
+   *  As an example, consider summing up the integer values of a list of chars.
+   *  The initial value for the sum is 0. First, `seqop` transforms each input
+   *  character to an Int and adds it to the sum (of the partition). Then,
+   *  `combop` just needs to sum up the intermediate results of the partitions:
    *  {{{
-   *    pc.aggregate(Set[Int]())(_ += process(_), _ ++ _)
+   *    List('a', 'b', 'c').aggregate(0)({ (sum, ch) => sum + ch.toInt }, { (p1, p2) => p1 + p2 })
    *  }}}
-   *
-   *  Another example is calculating geometric mean from a collection of doubles
-   *  (one would typically require big doubles for this).
    *
    *  @tparam B        the type of accumulated results
    *  @param z         the initial value for the accumulated result of the partition - this
@@ -423,13 +443,13 @@ trait GenTraversableOnce[+A] extends Any {
    */
   def find(@deprecatedName('pred) p: A => Boolean): Option[A]
 
-  /** Copies values of this $coll to an array.
+  /** Copies the elements of this $coll to an array.
    *  Fills the given array `xs` with values of this $coll.
    *  Copying will stop once either the end of the current $coll is reached,
-   *  or the end of the array is reached.
+   *  or the end of the target array is reached.
    *
    *  @param  xs     the array to fill.
-   *  @tparam B      the type of the elements of the array.
+   *  @tparam B      the type of the elements of the target array.
    *
    *  @usecase def copyToArray(xs: Array[A]): Unit
    *    @inheritdoc
@@ -438,14 +458,14 @@ trait GenTraversableOnce[+A] extends Any {
    */
   def copyToArray[B >: A](xs: Array[B]): Unit
 
-  /** Copies values of this $coll to an array.
+  /** Copies the elements of this $coll to an array.
    *  Fills the given array `xs` with values of this $coll, beginning at index `start`.
    *  Copying will stop once either the end of the current $coll is reached,
-   *  or the end of the array is reached.
+   *  or the end of the target array is reached.
    *
    *  @param  xs     the array to fill.
    *  @param  start  the starting index.
-   *  @tparam B      the type of the elements of the array.
+   *  @tparam B      the type of the elements of the target array.
    *
    *  @usecase def copyToArray(xs: Array[A], start: Int): Unit
    *    @inheritdoc
@@ -454,6 +474,22 @@ trait GenTraversableOnce[+A] extends Any {
    */
   def copyToArray[B >: A](xs: Array[B], start: Int): Unit
 
+  /** Copies the elements of this $coll to an array.
+   *  Fills the given array `xs` with at most `len` elements of
+   *  this $coll, starting at position `start`.
+   *  Copying will stop once either the end of the current $coll is reached,
+   *  or the end of the target array is reached, or `len` elements have been copied.
+   *
+   *  @param  xs     the array to fill.
+   *  @param  start  the starting index.
+   *  @param  len    the maximal number of elements to copy.
+   *  @tparam B      the type of the elements of the target array.
+   *
+   *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Unit
+   *    @inheritdoc
+   *
+   *    $willNotTerminateInf
+   */
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Unit
 
   /** Displays all elements of this $coll in a string using start, end, and
