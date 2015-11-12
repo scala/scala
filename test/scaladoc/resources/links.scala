@@ -1,6 +1,6 @@
 // that would be:
 // SI-5079 "Scaladoc can't link to an object (only a class or trait)"
-// SI-4497 "Links in ScalaDoc - Spec and implementation unsufficient"
+// SI-4497 "Links in Scaladoc - Spec and implementation unsufficient"
 // SI-4224 "Wiki-links should support method targets"
 // SI-3695 "support non-fully-qualified type links in scaladoc comments"
 // SI-6487 "Scaladoc can't link to inner classes"

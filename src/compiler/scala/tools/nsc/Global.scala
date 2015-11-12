@@ -231,7 +231,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   /** Called from parser, which signals hereby that a method definition has been parsed. */
   def signalParseProgress(pos: Position) {}
 
-  /** Called by ScalaDocAnalyzer when a doc comment has been parsed. */
+  /** Called by ScaladocAnalyzer when a doc comment has been parsed. */
   def signalParsedDocComment(comment: String, pos: Position) = {
     // TODO: this is all very broken (only works for scaladoc comments, not regular ones)
     //       --> add hooks to parser and refactor Interactive global to handle comments directly

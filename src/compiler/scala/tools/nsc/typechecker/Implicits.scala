@@ -588,10 +588,10 @@ trait Implicits {
       if (Statistics.canEnable) Statistics.incCounter(matchingImplicits)
 
       // workaround for deficient context provided by ModelFactoryImplicitSupport#makeImplicitConstraints
-      val isScalaDoc = context.tree == EmptyTree
+      val isScaladoc = context.tree == EmptyTree
 
       val itree0 = atPos(pos.focus) {
-        if (isLocalToCallsite && !isScalaDoc) {
+        if (isLocalToCallsite && !isScaladoc) {
           // SI-4270 SI-5376 Always use an unattributed Ident for implicits in the local scope,
           // rather than an attributed Select, to detect shadowing.
           Ident(info.name)
@@ -628,7 +628,7 @@ trait Implicits {
               // for instance, if we have `class C[T]` and `implicit def conv[T: Numeric](c: C[T]) = ???`
               // then Scaladoc will give us something of type `C[T]`, and it would like to know
               // that `conv` is potentially available under such and such conditions
-              case tree if isImplicitMethodType(tree.tpe) && !isScalaDoc =>
+              case tree if isImplicitMethodType(tree.tpe) && !isScaladoc =>
                 applyImplicitArgs(tree)
               case tree => tree
             }
