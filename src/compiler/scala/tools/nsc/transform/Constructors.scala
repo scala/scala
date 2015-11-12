@@ -359,7 +359,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
       }
 
       log("merging: " + originalStats.mkString("\n") + "\nwith\n" + specializedStats.mkString("\n"))
-      val res = for (s <- originalStats; stat = s.duplicate) yield {
+      for (s <- originalStats; stat = s.duplicate) yield {
         log("merge: looking at " + stat)
         val stat1 = stat match {
           case Assign(sel @ Select(This(_), field), _) =>
@@ -389,9 +389,8 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
         } else
           stat1
       }
-      if (specBuf.nonEmpty)
-        println("residual specialized constructor statements: " + specBuf)
-      res
+//      if (specBuf.nonEmpty)
+//        println("residual specialized constructor statements: " + specBuf)
     }
 
     /* Add an 'if' around the statements coming after the super constructor. This
@@ -591,7 +590,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
           case ValDef(mods, name, _, _) if mods hasFlag PRESUPER =>
             // stat is the constructor-local definition of the field value
             val fields = presupers filter (_.getterName == name)
-            assert(fields.length == 1)
+            assert(fields.length == 1, s"expected exactly one field by name $name in $presupers of $clazz's early initializers")
             val to = fields.head.symbol
 
             if (memoizeValue(to)) constrStatBuf += mkAssign(to, Ident(stat.symbol))
@@ -607,9 +606,9 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
         // it goes before the superclass constructor call, otherwise it goes after.
         // A lazy val's effect is not moved to the constructor, as it is delayed.
         // Returns `true` when a `ValDef` is needed.
-        def moveEffectToCtor(mods: Modifiers, rhs: Tree, memoized: Boolean): Unit = {
+        def moveEffectToCtor(mods: Modifiers, rhs: Tree, assignSym: Symbol): Unit = {
           val initializingRhs =
-            if (!memoized || statSym.isLazy) EmptyTree // not memoized, or effect delayed (for lazy val)
+            if ((assignSym eq NoSymbol) || statSym.isLazy) EmptyTree // not memoized, or effect delayed (for lazy val)
             else if (!mods.hasStaticFlag) intoConstructor(statSym, primaryConstr.symbol)(rhs)
             else rhs
 
@@ -619,7 +618,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
               else if (mods hasFlag PRESUPER | PARAMACCESSOR) constrPrefixBuf
               else constrStatBuf
 
-            initPhase += mkAssign(statSym, initializingRhs)
+            initPhase += mkAssign(assignSym, initializingRhs)
           }
         }
 
@@ -640,10 +639,11 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
           //   - the constructor, before the super call (early initialized or a parameter accessor),
           //   - the constructor, after the super call (regular val).
           case ValDef(mods, _, _, rhs) =>
-            val emitField = memoizeValue(statSym)
-            moveEffectToCtor(mods, rhs, emitField)
-
-            if (emitField) defBuf += deriveValDef(stat)(_ => EmptyTree)
+            if (rhs ne EmptyTree) {
+              val emitField = memoizeValue(statSym)
+              moveEffectToCtor(mods, rhs, if (emitField) statSym else NoSymbol)
+              if (emitField) defBuf += deriveValDef(stat)(_ => EmptyTree)
+            } else defBuf += stat
 
           // all other statements go into the constructor
           case _ => constrStatBuf += intoConstructor(impl.symbol, primaryConstr.symbol)(stat)

@@ -2496,6 +2496,8 @@ trait Types
     override def isJava = true
   }
 
+  // TODO: rename so it's more appropriate for the type that is for a method without argument lists
+  // ("nullary" erroneously implies it has an argument list with zero arguments, it actually has zero argument lists)
   case class NullaryMethodType(override val resultType: Type) extends Type with NullaryMethodTypeApi {
     override def isTrivial = resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
     override def prefix: Type = resultType.prefix
