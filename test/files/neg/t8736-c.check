@@ -2,7 +2,7 @@ t8736-c.scala:4: warning: higher-kinded type should be enabled
 by making the implicit value scala.language.higherKinds visible.
 This can be achieved by adding the import clause 'import scala.language.higherKinds'
 or by setting the compiler option -language:higherKinds.
-See the Scala docs for value scala.language.higherKinds for a discussion
+See the Scaladoc for value scala.language.higherKinds for a discussion
 why the feature should be explicitly enabled.
   def hk[M[_]] = ???
          ^
