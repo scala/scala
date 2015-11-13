@@ -294,6 +294,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         val name = unit.freshTypeName(s"$oldClassPart$suffix".replace("$anon", "$nestedInAnon"))
 
         val lambdaClass = pkg newClassSymbol(name, originalFunction.pos, FINAL | SYNTHETIC) addAnnotation SerialVersionUIDAnnotation
+        lambdaClass.associatedFile = unit.source.file
         // make sure currentRun.compiles(lambdaClass) is true (AddInterfaces does the same for trait impl classes)
         currentRun.symSource(lambdaClass) = funOwner.sourceFile
         lambdaClass setInfo ClassInfoType(parents, newScope, lambdaClass)
