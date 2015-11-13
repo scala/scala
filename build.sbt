@@ -221,13 +221,19 @@ lazy val compiler = configureAsSubproject(project)
         streams.value.cacheDirectory) ++
       (mappings in Compile in packageBin in LocalProject("interactive")).value ++
       (mappings in Compile in packageBin in LocalProject("scaladoc")).value ++
-      (mappings in Compile in packageBin in LocalProject("repl")).value,
+      (mappings in Compile in packageBin in LocalProject("repl")).value ++
+      (mappings in Compile in packageBin in LocalProject("repl-jline")).value.filter(_._2 != "repl-jline.properties") ++
+      (mappings in Compile in packageBin in LocalProject("repl-jline-embedded")).value,
     includeFilter in unmanagedResources in Compile :=
       "*.tmpl" | "*.xml" | "*.js" | "*.css" | "*.html" | "*.properties" | "*.swf" |
       "*.png" | "*.gif" | "*.gif" | "*.txt",
     scalacOptions in Compile in doc ++= Seq(
       "-doc-root-content", (sourceDirectory in Compile).value + "/rootdoc.txt"
-    )
+    ),
+    // Generate the ScriptEngineFactory service definition. The ant build does this when building
+    // the JAR but sbt has no support for it and it is easier to do as a resource generator:
+    generateServiceProviderResources("javax.script.ScriptEngineFactory" -> "scala.tools.nsc.interpreter.IMain$Factory"),
+    managedResourceDirectories in Compile := Seq((resourceManaged in Compile).value)
   )
   .dependsOn(library, reflect)
 
@@ -288,7 +294,10 @@ lazy val replJlineEmbedded = Project("repl-jline-embedded", file(".") / "target"
       )
       val outdir = (classDirectory in Compile).value
       JarJar(inputs, outdir, config)
-    })
+    }),
+    // Exclude repl-jline-embedded.properties from JAR
+    mappings in (Compile, packageBin) :=
+      (mappings in (Compile, packageBin)).value.filter(_._2 != "repl-jline-embedded.properties")
   )
   .dependsOn(replJline)
 
@@ -613,5 +622,15 @@ lazy val mkBinImpl: Def.Initialize[Task[Seq[File]]] = Def.task {
   mkBin("scaladoc" , "scala.tools.nsc.ScalaDoc",          (fullClasspath in Compile in scaladoc).value) ++
   mkBin("scalap"   , "scala.tools.scalap.Main",           (fullClasspath in Compile in scalap).value)
 }
+
+/** Generate service provider definition files under META-INF/services */
+def generateServiceProviderResources(services: (String, String)*): Setting[_] =
+  resourceGenerators in Compile += Def.task {
+    services.map { case (k, v) =>
+      val f = (resourceManaged in Compile).value / "META-INF/services" / k
+      IO.write(f, v + "\n")
+      f
+    }
+  }.taskValue
 
 buildDirectory in ThisBuild := (baseDirectory in ThisBuild).value / "build-sbt"
