@@ -1,10 +1,12 @@
 /*
  * The new, sbt-based build definition for Scala.
  *
- * What you see below is very much work-in-progress. Basics like compiling and packaging jars
- * (into right location) work. Everything else is missing:
- *    building docs, placing shell scripts in right locations (so you can run compiler easily),
- *    running partest test, compiling and running JUnit test, and many, many other things.
+ * What you see below is very much work-in-progress. The following features are implemented:
+ *   - Compiling all classses for the compiler and library ("compile" in the respective subprojects)
+ *   - Running JUnit tests ("test") and partest ("test/it:test")
+ *   - Creating build-sbt/quick with all compiled classes and launcher scripts ("dist/mkQuick")
+ *   - Creating build-sbt/pack with all JARs and launcher scripts ("dist/mkPack")
+ *   - Building all scaladoc sets ("doc")
  *
  * You'll notice that this build definition is much more complicated than your typical sbt build.
  * The main reason is that we are not benefiting from sbt's conventions when it comes project
@@ -50,12 +52,17 @@
  *     https://groups.google.com/d/topic/scala-internals/gp5JsM1E0Fo/discussion
  */
 
+import VersionUtil.{versionProps, versionNumber, generatePropertiesFileSettings, versionProperties, versionPropertiesSettings}
+
 val bootstrapScalaVersion = versionProps("starr.version")
 
 def withoutScalaLang(moduleId: ModuleID): ModuleID = moduleId exclude("org.scala-lang", "*")
 
 // exclusion of the scala-library transitive dependency avoids eviction warnings during `update`.
+val scalaContinuationsLibraryDep = withoutScalaLang("org.scala-lang.plugins" %% "scala-continuations-library" % versionNumber("scala-continuations-library"))
+val scalaContinuationsPluginDep = withoutScalaLang("org.scala-lang.plugins" % ("scala-continuations-plugin_" + versionProps("scala.full.version")) % versionNumber("scala-continuations-plugin"))
 val scalaParserCombinatorsDep = withoutScalaLang("org.scala-lang.modules" %% "scala-parser-combinators" % versionNumber("scala-parser-combinators"))
+val scalaSwingDep = withoutScalaLang("org.scala-lang.modules" %% "scala-swing" % versionNumber("scala-swing"))
 val scalaXmlDep = withoutScalaLang("org.scala-lang.modules" %% "scala-xml" % versionNumber("scala-xml"))
 val partestDep = withoutScalaLang("org.scala-lang.modules" %% "scala-partest" % versionNumber("partest"))
 val partestInterfaceDep = withoutScalaLang("org.scala-lang.modules" %% "scala-partest-interface" % "0.5.0")
@@ -66,8 +73,9 @@ val jlineDep = "jline" % "jline" % versionProps("jline.version")
 val antDep = "org.apache.ant" % "ant" % "1.9.4"
 val scalacheckDep = withoutScalaLang("org.scalacheck" %% "scalacheck" % versionNumber("scalacheck") % "it")
 
-lazy val commonSettings = clearSourceAndResourceDirectories ++ Seq[Setting[_]](
+lazy val commonSettings = clearSourceAndResourceDirectories ++ versionPropertiesSettings ++ Seq[Setting[_]](
   organization := "org.scala-lang",
+  // The ANT build uses the file "build.number" and the property "build.release" to compute the version
   version := "2.11.8-SNAPSHOT",
   scalaVersion := bootstrapScalaVersion,
   // we don't cross build Scala itself
@@ -90,6 +98,7 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ Seq[Setting[_]](
   unmanagedJars in Compile := Seq.empty,
   sourceDirectory in Compile := baseDirectory.value,
   unmanagedSourceDirectories in Compile := List(baseDirectory.value),
+  unmanagedResourceDirectories in Compile += (baseDirectory in ThisBuild).value / "src" / thisProject.value.id,
   scalaSource in Compile := (sourceDirectory in Compile).value,
   javaSource in Compile := (sourceDirectory in Compile).value,
   // resources are stored along source files in our current layout
@@ -97,12 +106,23 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ Seq[Setting[_]](
   // each subproject has to ask specifically for files they want to include
   includeFilter in unmanagedResources in Compile := NothingFilter,
   target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id,
-  target in Compile in doc := buildDirectory.value / "scaladoc" / thisProject.value.id,
   classDirectory in Compile := buildDirectory.value / "quick/classes" / thisProject.value.id,
-  // given that classDirectory is overriden to be _outside_ of target directory, we have
-  // to make sure its being cleaned properly
+  target in Compile in doc := buildDirectory.value / "scaladoc" / thisProject.value.id,
+  // given that classDirectory and doc target are overriden to be _outside_ of target directory, we have
+  // to make sure they are being cleaned properly
   cleanFiles += (classDirectory in Compile).value,
-  fork in run := true
+  cleanFiles += (target in Compile in doc).value,
+  fork in run := true,
+  scalacOptions in Compile in doc ++= Seq(
+    "-doc-footer", "epfl",
+    "-diagrams",
+    "-implicits",
+    "-groups",
+    "-doc-version", versionProperties.value.canonicalVersion,
+    "-doc-title", description.value,
+    "-sourcepath", (baseDirectory in ThisBuild).value.toString,
+    "-doc-source-url", s"https://github.com/scala/scala/tree/${versionProperties.value.githubTree}€{FILE_PATH}.scala#L1"
+  )
 )
 
 // disable various tasks that are not needed for projects that are used
@@ -128,48 +148,66 @@ lazy val setJarLocation: Setting[_] =
     val resolvedArtifactName = s"${resolvedArtifact.name}.${resolvedArtifact.extension}"
     buildDirectory.value / "pack/lib" / resolvedArtifactName
   }
-lazy val scalaSubprojectSettings: Seq[Setting[_]] = commonSettings :+ setJarLocation
+lazy val scalaSubprojectSettings: Seq[Setting[_]] = commonSettings ++ generatePropertiesFileSettings :+ setJarLocation
 
-lazy val generatePropertiesFileSettings = Seq[Setting[_]](
-  copyrightString := "Copyright 2002-2015, LAMP/EPFL",
-  resourceGenerators in Compile += generateVersionPropertiesFile.map(file => Seq(file)).taskValue,
-  generateVersionPropertiesFile := generateVersionPropertiesFileImpl.value
+def filterDocSources(ff: FileFilter): Seq[Setting[_]] = Seq(
+  sources in (Compile, doc) ~= (_.filter(ff.accept _)),
+  // Excluded sources may still be referenced by the included sources, so we add the compiler
+  // output to the scaladoc classpath to resolve them. For the `library` project this is
+  // always required because otherwise the compiler cannot even initialize Definitions without
+  // binaries of the library on the classpath. Specifically, we get this error:
+  // (library/compile:doc) scala.reflect.internal.FatalError: package class scala does not have a member Int
+  // Ant build does the same thing always: it puts binaries for documented classes on the classpath
+  // sbt never does this by default (which seems like a good default)
+  dependencyClasspath in (Compile, doc) += (classDirectory in Compile).value,
+  doc in Compile <<= doc in Compile dependsOn (compile in Compile)
 )
 
-val libIncludes: FileFilter = "*.tmpl" | "*.xml" | "*.js" | "*.css" | "rootdoc.txt"
+def regexFileFilter(s: String): FileFilter = new FileFilter {
+  val pat = s.r.pattern
+  def accept(f: File) = pat.matcher(f.getAbsolutePath.replace('\\', '/')).matches()
+}
 
 lazy val library = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings: _*)
   .settings(
     name := "scala-library",
+    description := "Scala Standard Library",
     scalacOptions in Compile ++= Seq[String]("-sourcepath", (scalaSource in Compile).value.toString),
-    // Workaround for a bug in `scaladoc` that it seems to not respect the `-sourcepath` option
-    // as a result of this bug, the compiler cannot even initialize Definitions without
-    // binaries of the library on the classpath. Specifically, we get this error:
-    // (library/compile:doc) scala.reflect.internal.FatalError: package class scala does not have a member Int
-    // Ant build does the same thing always: it puts binaries for documented classes on the classpath
-    // sbt never does this by default (which seems like a good default)
-    dependencyClasspath in Compile in doc += (classDirectory in Compile).value,
     scalacOptions in Compile in doc ++= {
       val libraryAuxDir = (baseDirectory in ThisBuild).value / "src/library-aux"
-      Seq("-doc-no-compile", libraryAuxDir.toString)
+      Seq(
+        "-doc-no-compile", libraryAuxDir.toString,
+        "-skip-packages", "scala.concurrent.impl",
+        "-doc-root-content", (sourceDirectory in Compile).value + "/rootdoc.txt"
+      )
     },
-    includeFilter in unmanagedResources in Compile := libIncludes)
-  .dependsOn (forkjoin)
+    includeFilter in unmanagedResources in Compile := "*.tmpl" | "*.xml" | "*.js" | "*.css" | "rootdoc.txt",
+    // Include forkjoin classes in scala-library.jar
+    mappings in Compile in packageBin ++=
+      (mappings in Compile in packageBin in LocalProject("forkjoin")).value
+  )
+  .settings(filterDocSources("*.scala" -- (regexFileFilter(".*/runtime/.*\\$\\.scala") ||
+                                           regexFileFilter(".*/runtime/ScalaRunTime\\.scala") ||
+                                           regexFileFilter(".*/runtime/StringAdd\\.scala"))): _*)
+  .dependsOn(forkjoin)
 
 lazy val reflect = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings: _*)
-  .settings(name := "scala-reflect")
+  .settings(
+    name := "scala-reflect",
+    description := "Scala Reflection Library",
+    scalacOptions in Compile in doc ++= Seq(
+      "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
+    )
+  )
   .dependsOn(library)
-
-val compilerIncludes: FileFilter =
-  "*.tmpl" | "*.xml" | "*.js" | "*.css" | "*.html" | "*.properties" | "*.swf" |
-  "*.png" | "*.gif" | "*.gif" | "*.txt"
 
 lazy val compiler = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings: _*)
   .settings(
     name := "scala-compiler",
+    description := "Scala Compiler",
     libraryDependencies ++= Seq(antDep, asmDep),
     // this a way to make sure that classes from interactive and scaladoc projects
     // end up in compiler jar (that's what Ant build does)
@@ -184,49 +222,115 @@ lazy val compiler = configureAsSubproject(project)
       (mappings in Compile in packageBin in LocalProject("interactive")).value ++
       (mappings in Compile in packageBin in LocalProject("scaladoc")).value ++
       (mappings in Compile in packageBin in LocalProject("repl")).value,
-    includeFilter in unmanagedResources in Compile := compilerIncludes)
+    includeFilter in unmanagedResources in Compile :=
+      "*.tmpl" | "*.xml" | "*.js" | "*.css" | "*.html" | "*.properties" | "*.swf" |
+      "*.png" | "*.gif" | "*.gif" | "*.txt",
+    scalacOptions in Compile in doc ++= Seq(
+      "-doc-root-content", (sourceDirectory in Compile).value + "/rootdoc.txt"
+    )
+  )
   .dependsOn(library, reflect)
 
 lazy val interactive = configureAsSubproject(project)
   .settings(disableDocsAndPublishingTasks: _*)
+  .settings(
+    name := "scala-compiler-interactive",
+    description := "Scala Interactive Compiler"
+  )
   .dependsOn(compiler)
 
-// TODO: SI-9339 embed shaded copy of jline & its interface (see #4563)
 lazy val repl = configureAsSubproject(project)
+  .settings(disableDocsAndPublishingTasks: _*)
   .settings(
-    libraryDependencies += jlineDep,
     connectInput in run := true,
     outputStrategy in run := Some(StdoutOutput),
     run <<= (run in Compile).partialInput(" -usejavacp") // Automatically add this so that `repl/run` works without additional arguments.
   )
-  .settings(disableDocsAndPublishingTasks: _*)
   .dependsOn(compiler, interactive)
+
+lazy val replJline = configureAsSubproject(Project("repl-jline", file(".") / "src" / "repl-jline"))
+  .settings(
+    libraryDependencies += jlineDep,
+    name := "scala-repl-jline",
+    doc := file("!!! NO DOCS !!!")
+  )
+  .dependsOn(repl)
+
+lazy val replJlineEmbedded = Project("repl-jline-embedded", file(".") / "target" / "repl-jline-embedded-src-dummy")
+  .settings(scalaSubprojectSettings: _*)
+  .settings(
+    name := "scala-repl-jline-embedded",
+    // There is nothing to compile for this project. Instead we use the compile task to create
+    // shaded versions of repl-jline and jline.jar. dist/mkBin puts all of quick/repl,
+    // quick/repl-jline and quick/repl-jline-shaded on the classpath for quick/bin scripts.
+    // This is different from the ant build where all parts are combined into quick/repl, but
+    // it is cleaner because it avoids circular dependencies.
+    compile in Compile <<= (compile in Compile).dependsOn(Def.task {
+      import java.util.jar._
+      import collection.JavaConverters._
+      val inputs: Iterator[JarJar.Entry] = {
+        val repljlineClasses = (products in Compile in replJline).value.flatMap(base => Path.allSubpaths(base).map(x => (base, x._1)))
+        val jlineJAR = (dependencyClasspath in Compile).value.find(_.get(moduleID.key) == Some(jlineDep)).get.data
+        val jarFile = new JarFile(jlineJAR)
+        val jarEntries = jarFile.entries.asScala.filterNot(_.isDirectory).map(entry => JarJar.JarEntryInput(jarFile, entry))
+        def compiledClasses = repljlineClasses.iterator.map { case (base, file) => JarJar.FileInput(base, file) }
+        (jarEntries ++ compiledClasses).filter(x =>
+          x.name.endsWith(".class") || x.name.endsWith(".properties") || x.name.startsWith("META-INF/native") || x.name.startsWith("META-INF/maven")
+        )
+      }
+      //println(inputs.map(_.name).mkString("\n"))
+      import JarJar.JarJarConfig._
+      val config: Seq[JarJar.JarJarConfig] = Seq(
+        Rule("org.fusesource.**", "scala.tools.fusesource_embedded.@1"),
+        Rule("jline.**", "scala.tools.jline_embedded.@1"),
+        Rule("scala.tools.nsc.interpreter.jline.**", "scala.tools.nsc.interpreter.jline_embedded.@1"),
+        Keep("scala.tools.**")
+      )
+      val outdir = (classDirectory in Compile).value
+      JarJar(inputs, outdir, config)
+    })
+  )
+  .dependsOn(replJline)
 
 lazy val scaladoc = configureAsSubproject(project)
   .settings(
-    libraryDependencies ++= Seq(scalaXmlDep, scalaParserCombinatorsDep, partestDep)
+    name := "scala-compiler-doc",
+    description := "Scala Documentation Generator",
+    libraryDependencies ++= Seq(scalaXmlDep, scalaParserCombinatorsDep, partestDep),
+    includeFilter in unmanagedResources in Compile := "*.html" | "*.css" | "*.gif" | "*.png" | "*.js" | "*.txt"
   )
   .settings(disableDocsAndPublishingTasks: _*)
   .dependsOn(compiler)
 
 lazy val scalap = configureAsSubproject(project).
-  dependsOn(compiler)
+  settings(
+    description := "Scala Bytecode Parser",
+    // Include decoder.properties
+    includeFilter in unmanagedResources in Compile := "*.properties"
+  )
+  .dependsOn(compiler)
 
 // deprecated Scala Actors project
-// TODO: it packages into actors.jar but it should be scala-actors.jar
 lazy val actors = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings: _*)
-  .settings(name := "scala-actors")
+  .settings(
+    name := "scala-actors",
+    description := "Scala Actors Library"
+  )
+  .settings(filterDocSources("*.scala"): _*)
   .dependsOn(library)
 
 lazy val forkjoin = configureAsForkOfJavaProject(project)
 
 lazy val partestExtras = configureAsSubproject(Project("partest-extras", file(".") / "src" / "partest-extras"))
-  .dependsOn(repl)
+  .dependsOn(replJlineEmbedded)
   .settings(clearSourceAndResourceDirectories: _*)
   .settings(
+    name := "scala-partest-extras",
+    description := "Scala Compiler Testing Tool (compiler-specific extras)",
     libraryDependencies += partestDep,
-    unmanagedSourceDirectories in Compile := List(baseDirectory.value)
+    unmanagedSourceDirectories in Compile := List(baseDirectory.value),
+    doc := file("!!! NO DOCS !!!")
   )
 
 lazy val junit = project.in(file("test") / "junit")
@@ -237,18 +341,21 @@ lazy val junit = project.in(file("test") / "junit")
     fork in Test := true,
     libraryDependencies ++= Seq(junitDep, junitIntefaceDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
-    unmanagedSourceDirectories in Test := List(baseDirectory.value)
+    unmanagedSourceDirectories in Test := List(baseDirectory.value),
+    doc := file("!!! NO DOCS !!!")
   )
 
-lazy val partestJavaAgent = (project in file(".") / "src" / "partest-javaagent").
-  settings(commonSettings: _*).
-  settings(
+lazy val partestJavaAgent = Project("partest-javaagent", file(".") / "src" / "partest-javaagent")
+  .settings(commonSettings: _*)
+  .settings(generatePropertiesFileSettings: _*)
+  .settings(
     libraryDependencies += asmDep,
     doc := file("!!! NO DOCS !!!"),
     publishLocal := {},
     publish := {},
     // Setting name to "scala-partest-javaagent" so that the jar file gets that name, which the Runner relies on
     name := "scala-partest-javaagent",
+    description := "Scala Compiler Testing Tool (compiler-specific java agent)",
     // writing jar file to $buildDirectory/pack/lib because that's where it's expected to be found
     setJarLocation,
     // add required manifest entry - previously included from file
@@ -259,7 +366,7 @@ lazy val partestJavaAgent = (project in file(".") / "src" / "partest-javaagent")
   )
 
 lazy val test = project.
-  dependsOn(compiler, interactive, actors, repl, scalap, partestExtras, partestJavaAgent, scaladoc).
+  dependsOn(compiler, interactive, actors, replJlineEmbedded, scalap, partestExtras, partestJavaAgent, scaladoc).
   configs(IntegrationTest).
   settings(disableDocsAndPublishingTasks: _*).
   settings(commonSettings: _*).
@@ -289,7 +396,7 @@ lazy val test = project.
   )
 
 lazy val root = (project in file(".")).
-  aggregate(library, forkjoin, reflect, compiler, interactive, repl,
+  aggregate(library, forkjoin, reflect, compiler, interactive, repl, replJline, replJlineEmbedded,
     scaladoc, scalap, actors, partestExtras, junit).settings(
     sources in Compile := Seq.empty,
     onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
@@ -298,9 +405,35 @@ lazy val root = (project in file(".")).
       |the Ant build definition for now. Check README.md for more information.""".stripMargin
   )
 
-lazy val dist = (project in file("dist")).settings(
-  mkBin := mkBinImpl.value
-)
+// The following subprojects' binaries are required for building "pack":
+lazy val distDependencies = Seq(replJline, replJlineEmbedded, compiler, library, partestExtras, partestJavaAgent, reflect, scalap, actors, scaladoc)
+
+lazy val dist = (project in file("dist"))
+  .settings(commonSettings)
+  .settings(
+    libraryDependencies ++= Seq(scalaContinuationsLibraryDep, scalaContinuationsPluginDep, scalaSwingDep, jlineDep),
+    mkBin := mkBinImpl.value,
+    mkQuick <<= Def.task {} dependsOn ((distDependencies.map(products in Runtime in _) :+ mkBin): _*),
+    mkPack <<= Def.task {} dependsOn (packageBin in Compile, mkBin),
+    target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id,
+    packageBin in Compile := {
+      val extraDeps = Set(scalaContinuationsLibraryDep, scalaContinuationsPluginDep, scalaSwingDep, scalaParserCombinatorsDep, scalaXmlDep)
+      val targetDir = (buildDirectory in ThisBuild).value / "pack" / "lib"
+      def uniqueModule(m: ModuleID) = (m.organization, m.name.replaceFirst("_.*", ""))
+      val extraModules = extraDeps.map(uniqueModule)
+      val extraJars = (externalDependencyClasspath in Compile).value.map(a => (a.get(moduleID.key), a.data)).collect {
+        case (Some(m), f) if extraModules contains uniqueModule(m) => f
+      }
+      val jlineJAR = (dependencyClasspath in Compile).value.find(_.get(moduleID.key) == Some(jlineDep)).get.data
+      val mappings = extraJars.map(f => (f, targetDir / f.getName)) :+ (jlineJAR, targetDir / "jline.jar")
+      IO.copy(mappings, overwrite = true)
+      targetDir
+    },
+    cleanFiles += (buildDirectory in ThisBuild).value / "quick",
+    cleanFiles += (buildDirectory in ThisBuild).value / "pack",
+    packageBin in Compile <<= (packageBin in Compile).dependsOn(distDependencies.map(packageBin in Compile in _): _*)
+  )
+  .dependsOn(distDependencies.map(p => p: ClasspathDep[ProjectReference]): _*)
 
 /**
  * Configures passed project as a subproject (e.g. compiler or repl)
@@ -341,56 +474,9 @@ def configureAsForkOfJavaProject(project: Project): Project = {
 }
 
 lazy val buildDirectory = settingKey[File]("The directory where all build products go. By default ./build")
-lazy val copyrightString = settingKey[String]("Copyright string.")
-lazy val generateVersionPropertiesFile = taskKey[File]("Generating version properties file.")
 lazy val mkBin = taskKey[Seq[File]]("Generate shell script (bash or Windows batch).")
-
-lazy val generateVersionPropertiesFileImpl: Def.Initialize[Task[File]] = Def.task {
-  val propFile = (resourceManaged in Compile).value / s"${thisProject.value.id}.properties"
-  val props = new java.util.Properties
-
-  /**
-   * Regexp that splits version number split into two parts: version and suffix.
-   * Examples of how the split is performed:
-   *
-   *  "2.11.5": ("2.11.5", null)
-   *  "2.11.5-acda7a": ("2.11.5", "-acda7a")
-   *  "2.11.5-SNAPSHOT": ("2.11.5", "-SNAPSHOT")
-   *
-   */
-  val versionSplitted = """([\w+\.]+)(-[\w+\.]+)??""".r
-
-  val versionSplitted(ver, suffixOrNull) = version.value
-  val osgiSuffix = suffixOrNull match {
-    case null => "-VFINAL"
-    case "-SNAPSHOT" => ""
-    case suffixStr => suffixStr
-  }
-
-  def executeTool(tool: String) = {
-      val cmd =
-        if (System.getProperty("os.name").toLowerCase.contains("windows"))
-          s"cmd.exe /c tools\\$tool.bat -p"
-        else s"tools/$tool"
-      Process(cmd).lines.head
-  }
-
-  val commitDate = executeTool("get-scala-commit-date")
-  val commitSha = executeTool("get-scala-commit-sha")
-
-  props.put("version.number", s"${version.value}-$commitDate-$commitSha")
-  props.put("maven.version.number", s"${version.value}")
-  props.put("osgi.version.number", s"$ver.v$commitDate$osgiSuffix-$commitSha")
-  props.put("copyright.string", copyrightString.value)
-
-  // unfortunately, this will write properties in arbitrary order
-  // this makes it harder to test for stability of generated artifacts
-  // consider using https://github.com/etiennestuder/java-ordered-properties
-  // instead of java.util.Properties
-  IO.write(props, null, propFile)
-
-  propFile
-}
+lazy val mkQuick = taskKey[Unit]("Generate a full build, including scripts, in build-sbt/quick")
+lazy val mkPack = taskKey[Unit]("Generate a full build, including scripts, in build-sbt/pack")
 
 /**
  * Extract selected dependencies to the `cacheDirectory` and return a mapping for the content.
@@ -446,6 +532,7 @@ def clearSourceAndResourceDirectories = Seq(Compile, Test).flatMap(config => inC
 )))
 
 lazy val mkBinImpl: Def.Initialize[Task[Seq[File]]] = Def.task {
+  import java.io.IOException
   def mkScalaTool(mainCls: String, classpath: Seq[Attributed[File]]): ScalaTool =
     ScalaTool(mainClass  = mainCls,
       classpath  = classpath.toList.map(_.data.getAbsolutePath),
@@ -453,27 +540,28 @@ lazy val mkBinImpl: Def.Initialize[Task[Seq[File]]] = Def.task {
       javaOpts   = "-Xmx256M -Xms32M",
       toolFlags  = "")
   val rootDir = (classDirectory in Compile in compiler).value
-  def writeScripts(scalaTool: ScalaTool, file: String, outDir: File): Seq[File] =
-    Seq(
+  val quickOutDir = buildDirectory.value / "quick/bin"
+  val packOutDir = buildDirectory.value / "pack/bin"
+  def writeScripts(scalaTool: ScalaTool, file: String, outDir: File): Seq[File] = {
+    val res = Seq(
       scalaTool.writeScript(file, "unix", rootDir, outDir),
       scalaTool.writeScript(file, "windows", rootDir, outDir)
     )
-  def mkQuickBin(file: String, mainCls: String, classpath: Seq[Attributed[File]]): Seq[File] = {
-    val scalaTool = mkScalaTool(mainCls, classpath)
-    val outDir = buildDirectory.value / "quick/bin"
-    writeScripts(scalaTool, file, outDir)
-  }
-
-  def mkPackBin(file: String, mainCls: String): Seq[File] = {
-    val scalaTool = mkScalaTool(mainCls, classpath = Nil)
-    val outDir = buildDirectory.value / "pack/bin"
-    writeScripts(scalaTool, file, outDir)
+    res.foreach { f =>
+      //TODO 2.12: Use Files.setPosixFilePermissions() (Java 7+) instead of calling out to chmod
+      if(Process(List("chmod", "ugo+rx", f.getAbsolutePath())).! > 0)
+        throw new IOException("chmod failed")
+    }
+    res
   }
 
   def mkBin(file: String, mainCls: String, classpath: Seq[Attributed[File]]): Seq[File] =
-    mkQuickBin(file, mainCls, classpath) ++ mkPackBin(file, mainCls)
+    writeScripts(mkScalaTool(mainCls, classpath), file, quickOutDir) ++
+    writeScripts(mkScalaTool(mainCls, Nil      ), file, packOutDir)
 
-  mkBin("scala"    , "scala.tools.nsc.MainGenericRunner", (fullClasspath in Compile in repl).value) ++
+  streams.value.log.info(s"Creating scripts in $quickOutDir and $packOutDir")
+
+  mkBin("scala"    , "scala.tools.nsc.MainGenericRunner", (fullClasspath in Compile in replJlineEmbedded).value) ++
   mkBin("scalac"   , "scala.tools.nsc.Main",              (fullClasspath in Compile in compiler).value) ++
   mkBin("fsc"      , "scala.tools.nsc.CompileClient",     (fullClasspath in Compile in compiler).value) ++
   mkBin("scaladoc" , "scala.tools.nsc.ScalaDoc",          (fullClasspath in Compile in scaladoc).value) ++
@@ -481,17 +569,3 @@ lazy val mkBinImpl: Def.Initialize[Task[Seq[File]]] = Def.task {
 }
 
 buildDirectory in ThisBuild := (baseDirectory in ThisBuild).value / "build-sbt"
-
-lazy val versionProps: Map[String, String] = {
-  import java.io.FileInputStream
-  import java.util.Properties
-  val props = new Properties()
-  val in = new FileInputStream(file("versions.properties"))
-  try props.load(in)
-  finally in.close()
-  import scala.collection.JavaConverters._
-  props.asScala.toMap
-}
-
-def versionNumber(name: String): String =
-  versionProps(s"$name.version.number")
