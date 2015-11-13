@@ -119,6 +119,7 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
   lazy val jliMethodHandlesLookupRef : ClassBType = classBTypeFromSymbol(exitingPickler(rootMirror.getRequiredClass("java.lang.invoke.MethodHandles.Lookup"))) // didn't find a reliable non-stringly-typed way that works for inner classes in the backend
   lazy val srLambdaDeserializerRef   : ClassBType = classBTypeFromSymbol(requiredModule[scala.runtime.LambdaDeserializer.type].moduleClass)
   lazy val srBoxesRunTimeRef         : ClassBType = classBTypeFromSymbol(requiredClass[scala.runtime.BoxesRunTime])
+  lazy val srBoxedUnitRef            : ClassBType = classBTypeFromSymbol(requiredClass[scala.runtime.BoxedUnit])
 
   lazy val hashMethodSym: Symbol = getMember(ScalaRunTimeModule, nme.hash_)
 
@@ -202,6 +203,11 @@ trait CoreBTypesProxyGlobalIndependent[BTS <: BTypes] {
   def jliMethodHandlesRef       : ClassBType
   def jliMethodHandlesLookupRef : ClassBType
   def srLambdaDeserializerRef   : ClassBType
+  def srBoxesRunTimeRef         : ClassBType
+  def srBoxedUnitRef            : ClassBType
+
+  def asmBoxTo  : Map[BType, MethodNameAndType]
+  def asmUnboxTo: Map[BType, MethodNameAndType]
 }
 
 /**
@@ -242,6 +248,7 @@ final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: 
   def jliMethodHandlesLookupRef : ClassBType = _coreBTypes.jliMethodHandlesLookupRef
   def srLambdaDeserializerRef   : ClassBType = _coreBTypes.srLambdaDeserializerRef
   def srBoxesRunTimeRef         : ClassBType = _coreBTypes.srBoxesRunTimeRef
+  def srBoxedUnitRef            : ClassBType = _coreBTypes.srBoxedUnitRef
 
   def hashMethodSym: Symbol = _coreBTypes.hashMethodSym
 

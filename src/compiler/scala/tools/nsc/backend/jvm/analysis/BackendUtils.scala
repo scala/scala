@@ -7,6 +7,7 @@ import scala.tools.asm.{Opcodes, Handle, Type, Label}
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis.{Frame, BasicInterpreter, Analyzer, Value}
 import scala.tools.nsc.backend.jvm.BTypes._
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 import java.lang.invoke.LambdaMetafactory
 import scala.collection.mutable
@@ -23,6 +24,7 @@ import scala.collection.convert.decorateAsScala._
  */
 class BackendUtils[BT <: BTypes](val btypes: BT) {
   import btypes._
+  import callGraph.ClosureInstantiation
 
   /**
    * A wrapper to make ASM's Analyzer a bit easier to use.
@@ -139,6 +141,14 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
       map += ((ins, cloned))
     }
     (result, map, hasSerializableClosureInstantiation)
+  }
+
+  def getBoxedUnit: FieldInsnNode = new FieldInsnNode(Opcodes.GETSTATIC, coreBTypes.srBoxedUnitRef.internalName, "UNIT", coreBTypes.srBoxedUnitRef.descriptor)
+
+  private val anonfunAdaptedName = """.*\$anonfun\$\d+\$adapted"""
+  def hasAdaptedImplMethod(closureInit: ClosureInstantiation): Boolean = {
+    BytecodeUtils.isrJFunctionType(Type.getReturnType(closureInit.lambdaMetaFactoryCall.indy.desc).getInternalName) &&
+    closureInit.lambdaMetaFactoryCall.implMethod.getName.matches(anonfunAdaptedName)
   }
 
   /**
