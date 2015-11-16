@@ -998,10 +998,20 @@ private[internal] trait TypeMaps {
   class ContainsCollector(sym: Symbol) extends TypeCollector(false) {
     def traverse(tp: Type) {
       if (!result) {
-        tp.normalize match {
-          case TypeRef(_, sym1, _) if (sym == sym1) => result = true
-          case SingleType(_, sym1) if (sym == sym1) => result = true
-          case _ => mapOver(tp)
+        tp match {
+          case _: ExistentialType =>
+            // ExistentialType#normalize internally calls contains, which leads to exponential performance
+            // for types like: `A[_ <: B[_ <: ... ]]`. Example: pos/existential-contains.scala.
+            //
+            // We can just map over the components and wait until we see the underlying type before we call
+            // normalize.
+            mapOver(tp)
+          case _ =>
+            tp.normalize match {
+              case TypeRef(_, sym1, _) if (sym == sym1) => result = true
+              case SingleType(_, sym1) if (sym == sym1) => result = true
+              case _ => mapOver(tp)
+            }
         }
       }
     }
