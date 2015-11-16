@@ -40,9 +40,9 @@ self =>
 
   override def empty: SortedMap[A, B] = SortedMap.empty
   override def updated [B1 >: B](key: A, value: B1): SortedMap[A, B1] = this + ((key, value))
-  override def keySet: immutable.SortedSet[A] = new DefaultKeySortedSet
+  override def keySet: immutable.SortedSet[A] = new DefaultKeyImmutableSortedSet
 
-  protected class DefaultKeySortedSet extends super.DefaultKeySortedSet with immutable.SortedSet[A] {
+  protected class DefaultKeyImmutableSortedSet extends DefaultKeySortedSet with immutable.SortedSet[A] {
     override def + (elem: A): SortedSet[A] =
       if (this(elem)) this
       else SortedSet[A]() ++ this + elem
@@ -51,7 +51,7 @@ self =>
       else this
     override def rangeImpl(from : Option[A], until : Option[A]) : SortedSet[A] = {
       val map = self.rangeImpl(from, until)
-      new map.DefaultKeySortedSet
+      new map.DefaultKeyImmutableSortedSet
     }
   }
 
