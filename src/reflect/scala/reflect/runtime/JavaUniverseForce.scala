@@ -363,7 +363,10 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.BoxedUnitClass
     definitions.BoxedUnitModule
     definitions.AnnotationClass
+    definitions.ConstantAnnotationClass
+    definitions.PlatformAnnotationClass
     definitions.ClassfileAnnotationClass
+    definitions.RuntimeAnnotationClass
     definitions.StaticAnnotationClass
     definitions.AnnotationRetentionAttr
     definitions.AnnotationRetentionPolicyAttr
@@ -400,6 +403,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.VolatileAttr
     definitions.BeanGetterTargetClass
     definitions.BeanSetterTargetClass
+    definitions.ConstructorTargetClass
     definitions.FieldTargetClass
     definitions.GetterTargetClass
     definitions.ParamTargetClass

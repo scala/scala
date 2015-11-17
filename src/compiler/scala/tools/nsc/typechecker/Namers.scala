@@ -11,6 +11,7 @@ import scala.annotation.tailrec
 import symtab.Flags._
 import scala.language.postfixOps
 import scala.reflect.internal.util.ListOfNil
+import scala.collection.mutable.MapBuilder
 
 /** This trait declares methods to create symbols and to enter them into scopes.
  *
@@ -706,16 +707,18 @@ trait Namers extends MethodSynthesis {
         val m = ensureCompanionObject(tree, caseModuleDef)
         m.moduleClass.updateAttachment(new ClassForCaseCompanionAttachment(tree))
       }
+
       val hasDefault = impl.body exists treeInfo.isConstructorWithDefault
       if (hasDefault) {
         val m = ensureCompanionObject(tree)
         m.updateAttachment(new ConstructorDefaultsAttachment(tree, null))
       }
+
       val owner = tree.symbol.owner
       if (settings.warnPackageObjectClasses && owner.isPackageObjectClass && !mods.isImplicit) {
         reporter.warning(tree.pos,
           "it is not recommended to define classes/objects inside of package objects.\n" +
-          "If possible, define " + tree.symbol + " in " + owner.skipPackageObject + " instead."
+          s"If possible, define ${tree.symbol} in ${owner.skipPackageObject} instead."
         )
       }
 
@@ -727,14 +730,14 @@ trait Namers extends MethodSynthesis {
         }
         else reporter.error(tree.pos, "implicit classes must accept exactly one primary constructor parameter")
       }
+
       validateCompanionDefs(tree)
     }
 
     // Hooks which are overridden in the presentation compiler
-    def enterExistingSym(sym: Symbol, tree: Tree): Context = {
-      this.context
-    }
-    def enterIfNotThere(sym: Symbol) { }
+    def enterExistingSym(sym: Symbol, tree: Tree): Context = this.context
+
+    def enterIfNotThere(sym: Symbol): Unit = { }
 
     def enterSyntheticSym(tree: Tree): Symbol = {
       enterSym(tree)

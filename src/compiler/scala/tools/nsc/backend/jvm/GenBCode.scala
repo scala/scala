@@ -232,7 +232,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
             if (bean != null)   byteCodeRepository.add(bean, ByteCodeRepository.CompilationUnit)
         }
         if (settings.YoptBuildCallGraph) q2.asScala foreach { item =>
-          // skip call graph for mirror / bean: wd don't inline into tem, and they are not used in the plain class
+          // skip call graph for mirror / bean: we don't inline into them, and they are not used in the plain class
           if (item.plain != null) callGraph.addClass(item.plain)
         }
         if (settings.YoptInlinerEnabled)

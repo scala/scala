@@ -375,7 +375,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     Apply(ctorSelection, reverseEngineerArgs()) setType ann.atp
   }
 
-  protected[scala] def treeToAnnotation(tree: Tree): Annotation = tree match {
+  def treeToAnnotation(tree: Tree): Annotation = tree match {
     case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
       def encodeJavaArg(arg: Tree): ClassfileAnnotArg = arg match {
         case Literal(const) => LiteralAnnotArg(const)
@@ -390,8 +390,11 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
       }
       val atp = tpt.tpe
       if (atp != null && (atp.typeSymbol isNonBottomSubClass StaticAnnotationClass)) AnnotationInfo(atp, args, Nil)
-      else if (atp != null && (atp.typeSymbol isNonBottomSubClass ClassfileAnnotationClass)) AnnotationInfo(atp, Nil, encodeJavaArgs(args))
-      else throw new Exception(s"unexpected annotation type $atp: only subclasses of StaticAnnotation and ClassfileAnnotation are supported")
+      else if (atp != null && (atp.typeSymbol isNonBottomSubClass PlatformAnnotationClass)) {
+        warning(s"AnnotationInfos: PlatformAnnotation $atp")
+        AnnotationInfo(atp, Nil, encodeJavaArgs(args))
+      }
+      else throw new Exception(s"unexpected annotation type $atp: only subclasses of StaticAnnotation and PlatformAnnotation are supported")
     case _ =>
       throw new Exception("""unexpected tree shape: only q"new $annType(..$args)" is supported""")
   }

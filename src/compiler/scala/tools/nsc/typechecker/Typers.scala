@@ -1041,6 +1041,48 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (hasUndets)
             return instantiate(tree, mode, pt)
 
+          /* A Java annotation like
+           *
+           *   @interface Foo {
+           *     String[] value();
+           *   }
+           *
+           * can be used in Java as
+           *
+           *   @Foo("bar")
+           *
+           * (note the String at use-site vs. the String[] at declaration site)
+           * and therefore needs to be adapted.
+           */
+           if (context.unit.isJava) {
+            if (pt.typeSymbol == ArrayClass) {
+              val ptElemType = definitions.elementType(ArrayClass, pt)
+              if (arrayToExistential(tree.tpe) <:< pt)
+                tree.setType(pt)
+              else if (arrayToExistential(tree.tpe) <:< ptElemType) {
+                val adapted = atPos(tree.pos)(ArrayValue(TypeTree(ptElemType), tree :: Nil).setType(ConstantType(Constant(pt))))
+                return adapted
+              }
+            }
+          }
+
+          /**
+           * Converts arguments of the Array type constructor to covariant existentials.
+           * Example: `arrayToExistential(Array[String]) = Array[_ <: String]`
+           */
+          def arrayToExistential(tp: Type, owner: Symbol = NoSymbol): Type = {
+            tp map {
+              case TypeRef(pre, ArrayClass, args) =>
+                val syms = mapWithIndex(args) { (a: Type, i: Int) =>
+                  val name = tpnme.WILDCARD.append('$').append(i.toString)
+                  owner.newExistential(name).setInfo(TypeBounds.upper(a))
+                }
+                val args1 = syms map (sym => typeRef(NoPrefix, sym, Nil))
+                newExistentialType(syms, TypeRef(pre, ArrayClass, args1))
+              case t => t
+            }
+          }
+
           if (context.implicitsEnabled && !pt.isError && !tree.isErrorTyped) {
             // (14); the condition prevents chains of views
             debuglog("inferring view from " + tree.tpe + " to " + pt)
@@ -1748,24 +1790,26 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       assert(clazz != NoSymbol, cdef)
       reenterTypeParams(cdef.tparams)
       val tparams1 = cdef.tparams mapConserve (typedTypeDef)
+
+      if (clazz isNonBottomSubClass PlatformAnnotationClass) {
+        if (!clazz.owner.isPackageClass)
+          context.error(clazz.pos, "inner classes cannot be classfile annotations")
+        // Only set flags for annotations themselves, not the annotation marker classes
+        if (clazz != PlatformAnnotationClass && clazz != RuntimeAnnotationClass && clazz != ClassfileAnnotationClass)
+          clazz.setFlag(JAVA_ANNOTATION | INTERFACE)
+      }
+
       val impl1 = newTyper(context.make(cdef.impl, clazz, newScope)).typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
       if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
         checkEphemeral(clazz, impl2.body)
 
-      if ((clazz isNonBottomSubClass ClassfileAnnotationClass) && (clazz != ClassfileAnnotationClass)) {
-        if (!clazz.owner.isPackageClass)
-          context.error(clazz.pos, "inner classes cannot be classfile annotations")
-        // Ignore @SerialVersionUID, because it is special-cased and handled completely differently.
-        // It only extends ClassfileAnnotationClass instead of StaticAnnotation to get the enforcement
-        // of constant argument values "for free". Related to SI-7041.
-        else if (clazz != SerialVersionUIDAttr) restrictionWarning(cdef.pos, unit,
-          """|subclassing Classfile does not
-             |make your annotation visible at runtime.  If that is what
-             |you want, you must write the annotation class in Java.""".stripMargin)
-      }
-
       warnTypeParameterShadow(tparams1, clazz)
+
+      if (!isPastTyper && clazz.isJavaAnnotation) {
+        warning(s"Typers#typedClassDef: $clazz is annotation")
+        clazz.addAnnotation(AnnotationInfo(clazz.tpe, impl2.body.find(_.symbol.isPrimaryConstructor).toList, List()))
+      }
 
       if (!isPastTyper) {
         for (ann <- clazz.getAnnotation(DeprecatedAttr)) {
@@ -1859,7 +1903,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             clazz.thisSym,
             treeCopy.TypeTree(tpt).setOriginal(tpt) setType vd.symbol.tpe
           )
-          copyValDef(vd)(tpt = tpt1, rhs = EmptyTree) setType NoType
+          copyValDef(vd)(tpt = tpt1) setType NoType
       }
       // was:
       //          val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(tpt))
@@ -1885,7 +1929,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (clazz.isTrait && hasSuperArgs(parents1.head))
         ConstrArgsInParentOfTraitError(parents1.head, clazz)
 
-      if ((clazz isSubClass ClassfileAnnotationClass) && !clazz.isTopLevel)
+      if (clazz.isNonBottomSubClass(PlatformAnnotationClass) && !clazz.isTopLevel)
         context.error(clazz.pos, "inner classes cannot be classfile annotations")
 
       if (!phase.erasedTypes && !clazz.info.resultType.isError) // @S: prevent crash for duplicated type members
@@ -2159,11 +2203,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // for `val` and `var` parameter, look at `target` meta-annotation
       if (!isPastTyper && meth.isPrimaryConstructor) {
+        val isAnnotationConstructor = meth.owner.isJavaAnnotation
+        var namesWithDefaultValues: Map[TermName, Tree] = Map.empty
         for (vparams <- ddef.vparamss; vd <- vparams) {
           if (vd.mods.isParamAccessor) {
             namer.validateParam(vd)
           }
+          if (isAnnotationConstructor) {
+            if (vd.symbol.hasDefault) {
+              warning(s"typedDefDef: DEFAULT FOUND ${vd.rhs}")
+              namesWithDefaultValues += ((vd.name, vd.rhs))
+            }
+          }
         }
+        meth.updateAttachment(new AnnotationDefaultAttachment(namesWithDefaultValues))
       }
 
       val tparams1 = ddef.tparams mapConserve typedTypeDef
@@ -3541,10 +3594,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    /**
-     * Convert an annotation constructor call into an AnnotationInfo.
-     */
+    /** Convert an annotation constructor call into an AnnotationInfo. */
     def typedAnnotation(ann: Tree, mode: Mode = EXPRmode): AnnotationInfo = {
+      //context.warning(ann.pos, ann.toString)
       var hasError: Boolean = false
       val pending = ListBuffer[AbsTypeError]()
       def ErroneousAnnotation = new ErroneousAnnotation().setOriginal(ann)
@@ -3599,7 +3651,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           if (!annType.typeSymbol.isSubClass(pt.typeSymbol))
             reportAnnotationError(AnnotationTypeMismatchError(tpt, annType, annType))
-          else if (!annType.typeSymbol.isSubClass(ClassfileAnnotationClass))
+          else if (!annType.typeSymbol.isSubClass(PlatformAnnotationClass))
             reportAnnotationError(NestedAnnotationError(ann, annType))
 
           if (annInfo.atp.isErroneous) { hasError = true; None }
@@ -3655,15 +3707,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       finish(
         if (typedFun.isErroneous || annType == null)
           ErroneousAnnotation
-        else if (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass) {
-          // annotation to be saved as java classfile annotation
+        // make sure that arguments are constant
+        else if (annType.typeSymbol isNonBottomSubClass ConstantAnnotationClass) {
           val isJava = typedFun.symbol.owner.isJavaDefined
           if (argss.length > 1) {
             reportAnnotationError(MultipleArgumentListForAnnotationError(ann))
           }
           else {
-            val annScope = annType.decls
-                .filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
+            val annScope = annType.decls.filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
             val names = mutable.Set[Symbol]()
             names ++= (if (isJava) annScope.iterator
                        else typedFun.tpe.params.iterator)
@@ -3694,12 +3745,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 reportAnnotationError(ClassfileAnnotationsAsNamedArgsError(arg))
                 (nme.ERROR, None)
             }
-            for (sym <- names) {
-              // make sure the flags are up to date before erroring (jvm/t3415 fails otherwise)
-              sym.initialize
-              if (!sym.hasAnnotation(AnnotationDefaultAttr) && !sym.hasDefault)
-                reportAnnotationError(AnnotationMissingArgError(ann, annType, sym))
-            }
+            // annotation to be saved as java classfile annotation
+            if (annType.typeSymbol isNonBottomSubClass PlatformAnnotationClass)
+              for (sym <- names) {
+                // make sure the flags are up to date before erroring (jvm/t3415 fails otherwise)
+                sym.initialize
+                if (!sym.hasAnnotation(AnnotationDefaultAttr) && !sym.hasDefault)
+                  reportAnnotationError(AnnotationMissingArgError(ann, annType, sym))
+              }
 
             if (hasError) ErroneousAnnotation
             else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)}).setOriginal(Apply(typedFun, args).setPos(ann.pos))

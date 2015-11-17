@@ -226,13 +226,24 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     // SI-9393: java annotations are interfaces, but the classfile / java source parsers make them look like classes.
     def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait || sym.hasJavaAnnotationFlag
+    def isScalaAnnotationClass(sym: Symbol): Boolean = {
+      sym match {
+        case ClassfileAnnotationClass => /*println("sym was s.a.ClassfileAnnotation");*/ true
+        case RuntimeAnnotationClass   => /*println("sym was s.a.RuntimeAnnotation");*/ true
+        case PlatformAnnotationClass  => /*println("sym was s.a.PlatformAnnotation");*/ true
+        case AnnotationClass          => /*println("sym was s.a.Annotation");*/ true
+        case _                        => /*warning(s"${sym.fullName} was something else");*/ false
+      }
+    }
 
     val classParents = {
       val parents = classSym.info.parents
-      // SI-9393: the classfile / java source parsers add Annotation and ClassfileAnnotation to the
+      // SI-9393: the classfile / java source parsers add RuntimeAnnotation, ClassfileAnnotation and Annotation to the
       // parents of a java annotations. undo this for the backend (where we need classfile-level information).
-      if (classSym.hasJavaAnnotationFlag) parents.filterNot(c => c.typeSymbol == ClassfileAnnotationClass || c.typeSymbol == AnnotationClass)
-      else parents
+      if (classSym.hasJavaAnnotationFlag)
+        JavaAnnotationClass.tpe :: parents.filterNot(c => isScalaAnnotationClass(c.typeSymbol))
+      else
+        parents
     }
 
     val allParents = classParents ++ classSym.annotations.flatMap(newParentForAnnotation)
@@ -339,10 +350,9 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     val interfaces = implementedInterfaces(classSym).map(classBTypeFromSymbol)
 
-    val flags = {
+    val flags =
       if (classSym.isJava) javaClassfileFlags(classSym) // see comment on javaClassfileFlags
       else javaFlags(classSym)
-    }
 
     /* The InnerClass table of a class C must contain all nested classes of C, even if they are only
      * declared but not otherwise referenced in C (from the bytecode or a method / field signature).
@@ -683,6 +693,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       if (sym.isArtifact) ACC_SYNTHETIC else 0,
       if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
       if (sym.hasJavaEnumFlag) ACC_ENUM else 0,
+      if (sym.hasJavaAnnotationFlag) ACC_ANNOTATION | ACC_INTERFACE | ACC_ABSTRACT else 0,
       if (sym.isVarargsMethod) ACC_VARARGS else 0,
       if (sym.hasFlag(symtab.Flags.SYNCHRONIZED)) ACC_SYNCHRONIZED else 0,
       if (sym.isDeprecated) asm.Opcodes.ACC_DEPRECATED else 0

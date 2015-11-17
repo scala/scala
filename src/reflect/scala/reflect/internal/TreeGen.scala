@@ -392,7 +392,7 @@ abstract class TreeGen {
     // Field definitions for the class - remove defaults.
 
     val fieldDefs = vparamss.flatten map (vd => {
-      val field = copyValDef(vd)(mods = vd.mods &~ DEFAULTPARAM, rhs = EmptyTree)
+      val field = copyValDef(vd)(mods = vd.mods &~ DEFAULTPARAM/*, rhs = EmptyTree*/)
       // Prevent overlapping of `field` end's position with default argument's start position.
       // This is needed for `Positions.Locator(pos).traverse` to return the correct tree when
       // the `pos` is a point position with all its values equal to `vd.rhs.pos.start`.

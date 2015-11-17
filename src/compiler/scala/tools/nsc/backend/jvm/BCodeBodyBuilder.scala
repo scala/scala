@@ -1018,10 +1018,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       // info calls so that types are up to date; erasure may add lateINTERFACE to traits
       hostSymbol.info ; methodOwner.info
 
-      def needsInterfaceCall(sym: Symbol) = (
-           sym.isInterface
-        || sym.isJavaDefined && sym.isNonBottomSubClass(definitions.ClassfileAnnotationClass)
-      )
+      def needsInterfaceCall(sym: Symbol) =
+           sym.isInterface || sym.isNonBottomSubClass(definitions.PlatformAnnotationClass)
 
       // whether to reference the type of the receiver or
       // the type of the method owner
