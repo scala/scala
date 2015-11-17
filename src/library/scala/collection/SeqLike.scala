@@ -643,14 +643,14 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
    */
   def indices: Range = 0 until length
 
-  override def view = new SeqView[A, Repr] {
+  override def view: SeqView[A, Repr] = new SeqView[A, Repr] {
     protected lazy val underlying = self.repr
     override def iterator = self.iterator
     override def length = self.length
     override def apply(idx: Int) = self.apply(idx)
   }
 
-  override def view(from: Int, until: Int) = view.slice(from, until)
+  override def view(from: Int, until: Int): SeqView[A, Repr] = view.slice(from, until)
 
   /* Need to override string, so that it's not the Function1's string that gets mixed in.
    */
