@@ -151,13 +151,14 @@ A constructor pattern is of the form $c(p_1 , \ldots , p_n)$ where $n
 \geq 0$. It consists of a stable identifier $c$, followed by element
 patterns $p_1 , \ldots , p_n$. The constructor $c$ is a simple or
 qualified name which denotes a [case class](05-classes-and-objects.html#case-classes).
-If the case class is monomorphic, then it
-must conform to the expected type of the pattern, and the formal
-parameter types of $x$'s [primary constructor](05-classes-and-objects.html#class-definitions)
-are taken as the expected types of the element patterns $p_1, \ldots ,
-p_n$.  If the case class is polymorphic, then its type parameters are
-instantiated so that the instantiation of $c$ conforms to the expected
-type of the pattern. The instantiated formal parameter types of $c$'s
+
+For the purposes of type checking patterns, monomorphic and polymorphic
+case classes are treated uniformly: the former is seen as having an
+empty type parameter list.
+
+The type parameters of the case class are
+[instantiated](#type-parameter-inference-in-patterns), which may fail with a static
+error if no instantiation exists. The instantiated formal parameter types of $c$'s
 primary constructor are then taken as the expected types of the
 component patterns $p_1, \ldots , p_n$.  The pattern matches all
 objects created from constructor invocations $c(v_1 , \ldots , v_n)$
