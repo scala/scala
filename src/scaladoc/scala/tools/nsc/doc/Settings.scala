@@ -212,9 +212,10 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
   // For improved help output.
   def scaladocSpecific = Set[Settings#Setting](
     docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator, docRootContent, useStupidTypes,
+    docExternalDoc,
     docAuthor, docDiagrams, docDiagramsDebug, docDiagramsDotPath,
     docDiagramsDotTimeout, docDiagramsDotRestart,
-    docImplicits, docImplicitsDebug, docImplicitsShowAll, docImplicitsHide,
+    docImplicits, docImplicitsDebug, docImplicitsShowAll, docImplicitsHide, docImplicitsSoundShadowing,
     docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses,
     docNoPrefixes, docNoLinkWarnings, docRawOutput, docSkipPackages,
     docExpandAllTypes, docGroups
