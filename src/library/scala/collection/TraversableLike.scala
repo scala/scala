@@ -663,7 +663,7 @@ trait TraversableLike[+A, +Repr] extends Any
    *
    *  @return a non-strict view of this $coll.
    */
-  def view = new TraversableView[A, Repr] {
+  def view: TraversableView[A, Repr] = new TraversableView[A, Repr] {
     protected lazy val underlying = self.repr
     override def foreach[U](f: A => U) = self foreach f
   }

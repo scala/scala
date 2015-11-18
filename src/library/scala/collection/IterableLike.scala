@@ -307,7 +307,7 @@ self =>
    */
   override /*TraversableLike*/ def canEqual(that: Any) = true
 
-  override /*TraversableLike*/ def view = new IterableView[A, Repr] {
+  override /*TraversableLike*/ def view: IterableView[A, Repr] = new IterableView[A, Repr] {
     protected lazy val underlying = self.repr
     override def iterator = self.iterator
   }
