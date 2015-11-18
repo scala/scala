@@ -3,7 +3,6 @@ package reflect.internal.util
 
 import java.lang.ref.{WeakReference, ReferenceQueue}
 import scala.annotation.tailrec
-import scala.collection.generic.Clearable
 import scala.collection.mutable.{Set => MSet}
 
 /**

@@ -6,14 +6,16 @@
 package scala.tools.nsc
 package typechecker
 
-import symtab.Flags._
-import scala.collection.{ mutable, immutable }
-import transform.InfoTransform
-import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
+
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.settings.ScalaVersion
-import scala.tools.nsc.settings.AnyScalaVersion
 import scala.tools.nsc.settings.NoScalaVersion
+
+import symtab.Flags._
+import transform.InfoTransform
+
 
 /** <p>
  *    Post-attribution checking and transformation.
@@ -48,7 +50,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
   import global._
   import definitions._
-  import typer.{typed, typedOperator, atOwner}
+  import typer.typed
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "refchecks"

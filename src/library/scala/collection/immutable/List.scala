@@ -89,8 +89,6 @@ sealed abstract class List[+A] extends AbstractSeq[A]
                                   with scala.Serializable {
   override def companion: GenericCompanion[List] = List
 
-  import scala.collection.{Iterable, Traversable, Seq, IndexedSeq}
-
   def isEmpty: Boolean
   def head: A
   def tail: List[A]
@@ -265,7 +263,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     }
     (b.toList, these)
   }
-  
+
   final override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     if (bf eq List.ReusableCBF) {
       if (this eq Nil) Nil.asInstanceOf[That] else {
@@ -283,7 +281,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     }
     else super.map(f)
   }
-  
+
   final override def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     if (bf eq List.ReusableCBF) {
       if (this eq Nil) Nil.asInstanceOf[That] else {
@@ -312,7 +310,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     }
     else super.collect(pf)
   }
-  
+
   final override def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     if (bf eq List.ReusableCBF) {
       if (this eq Nil) Nil.asInstanceOf[That] else {
@@ -452,7 +450,7 @@ object List extends SeqFactory[List] {
   override def empty[A]: List[A] = Nil
 
   override def apply[A](xs: A*): List[A] = xs.toList
-  
+
   private[collection] val partialNotApplied = new Function1[Any, Any] { def apply(x: Any): Any = this }
 
   @SerialVersionUID(1L)

@@ -9,7 +9,6 @@ package interactive
 import scala.reflect.internal.util._
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.io._
-import java.io.FileWriter
 
 /** Interface of interactive compiler to a client such as an IDE
  */

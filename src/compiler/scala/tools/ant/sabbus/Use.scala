@@ -13,7 +13,6 @@ package sabbus
 
 import java.io.File
 
-import org.apache.tools.ant.types.{Path, Reference}
 import org.apache.tools.ant.util.{GlobPatternMapper, SourceFileScanner}
 
 class Use extends ScalaMatchingTask {

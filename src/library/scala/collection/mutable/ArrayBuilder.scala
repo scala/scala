@@ -11,7 +11,6 @@ package collection
 package mutable
 
 import scala.reflect.ClassTag
-import scala.runtime.ScalaRunTime
 
 /** A builder class for arrays.
  *

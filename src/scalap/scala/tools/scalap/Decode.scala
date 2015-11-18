@@ -10,12 +10,12 @@
 package scala.tools.scalap
 
 import scala.tools.scalap.scalax.rules.scalasig._
-import scala.tools.nsc.util.ScalaClassLoader
-import scala.tools.nsc.util.ScalaClassLoader.appLoader
+import scala.reflect.internal.util.ScalaClassLoader
+import scala.reflect.internal.util.ScalaClassLoader.appLoader
 import scala.reflect.internal.pickling.ByteCodecs
 
 import ClassFileParser.{ ConstValueIndex, Annotation }
-import Main.{ SCALA_SIG, SCALA_SIG_ANNOTATION, BYTES_VALUE }
+import Main.{ SCALA_SIG_ANNOTATION, BYTES_VALUE }
 
 /** Temporary decoder.  This would be better off in the scala.tools.nsc
  *  but right now the compiler won't acknowledge scala.tools.scalap

@@ -10,7 +10,6 @@ package scala
 package collection
 
 import generic._
-import mutable.ArrayBuffer
 import scala.annotation.tailrec
 
 /** A template trait for indexed sequences of type `IndexedSeq[A]` which optimizes

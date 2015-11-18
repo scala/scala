@@ -8,13 +8,14 @@
 
 package scala
 
+import scala.language.implicitConversions
+
 import scala.collection.{ mutable, immutable, generic }
 import immutable.StringOps
 import mutable.ArrayOps
 import generic.CanBuildFrom
 import scala.annotation.{ elidable, implicitNotFound }
 import scala.annotation.elidable.ASSERTION
-import scala.language.{implicitConversions, existentials}
 import scala.io.StdIn
 
 /** The `Predef` object provides definitions that are accessible in all Scala

@@ -4,12 +4,9 @@ package internal
 
 import scala.language.implicitConversions
 import scala.language.higherKinds
-import scala.collection.mutable.WeakHashMap
-import scala.ref.WeakReference
+
 import scala.reflect.api.Universe
 import scala.reflect.macros.Attachments
-import scala.reflect.internal.util.FreshNameCreator
-import scala.reflect.internal.util.ListOfNil
 
 trait Internals extends api.Internals {
   self: SymbolTable =>

@@ -2,7 +2,6 @@ package scala.tools.nsc
 package transform
 
 import scala.tools.nsc.ast.TreeDSL
-import scala.tools.nsc.Global
 
 /**
  * A trait usable by transforms that need to adapt trees of one type to another type

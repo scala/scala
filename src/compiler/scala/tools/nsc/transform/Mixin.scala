@@ -8,7 +8,7 @@ package transform
 
 import symtab._
 import Flags._
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 
 abstract class Mixin extends InfoTransform with ast.TreeDSL {
   import global._

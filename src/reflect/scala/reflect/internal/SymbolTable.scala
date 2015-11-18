@@ -8,7 +8,7 @@ package reflect
 package internal
 
 import scala.annotation.elidable
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 import util._
 import java.util.concurrent.TimeUnit
 import scala.reflect.internal.{TreeGen => InternalTreeGen}

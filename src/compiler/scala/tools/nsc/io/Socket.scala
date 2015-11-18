@@ -8,7 +8,7 @@ package io
 
 import java.io.{ IOException, InputStreamReader, BufferedReader, PrintWriter, Closeable }
 import java.io.{ BufferedOutputStream, BufferedReader }
-import java.net.{ ServerSocket, SocketException, SocketTimeoutException, InetAddress, Socket => JSocket }
+import java.net.{ InetAddress, Socket => JSocket }
 import scala.io.Codec
 
 /** A skeletal only-as-much-as-I-need Socket wrapper.

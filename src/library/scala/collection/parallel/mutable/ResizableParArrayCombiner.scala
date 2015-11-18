@@ -9,17 +9,9 @@
 package scala
 package collection.parallel.mutable
 
-
-
-import scala.collection.generic.Sizing
 import scala.collection.mutable.ArraySeq
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.parallel.TaskSupport
-import scala.collection.parallel.unsupportedop
-import scala.collection.parallel.Combiner
 import scala.collection.parallel.Task
-
-
 
 /** An array combiner that uses a chain of arraybuffers to store elements. */
 trait ResizableParArrayCombiner[T] extends LazyCombiner[T, ParArray[T], ExposedArrayBuffer[T]] {

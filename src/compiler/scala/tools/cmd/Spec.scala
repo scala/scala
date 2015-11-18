@@ -47,6 +47,6 @@ object Spec {
   }
 
   class EnvironmentVar(val name: String) {
-    override def toString = "${%s}" format name
+    override def toString = s"$${$name}"
   }
 }

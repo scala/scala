@@ -3,7 +3,7 @@ package model
 package diagram
 
 import model._
-import java.util.regex.{Pattern, Matcher}
+import java.util.regex.Pattern
 import scala.util.matching.Regex
 
 /**

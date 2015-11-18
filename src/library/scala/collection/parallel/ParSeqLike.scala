@@ -9,11 +9,10 @@
 package scala
 package collection.parallel
 
-import scala.collection.{ Parallel, SeqLike, GenSeqLike, GenSeq, GenIterable, Iterator }
+import scala.collection.{ SeqLike, GenSeq, GenIterable, Iterator }
 import scala.collection.generic.DefaultSignalling
 import scala.collection.generic.AtomicIndexFlag
 import scala.collection.generic.CanBuildFrom
-import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.VolatileAbort
 
 import scala.collection.parallel.ParallelCollectionImplicits._
@@ -365,7 +364,7 @@ self =>
         pit.setIndexFlagIfLesser(from)
       }
     }
-    protected[this] def newSubtask(p: SuperParIterator) = unsupported
+    protected[this] def newSubtask(p: SuperParIterator) = throw new UnsupportedOperationException
     override def split = {
       val pits = pit.splitWithSignalling
       for ((p, untilp) <- pits zip pits.scanLeft(from)(_ + _.remaining)) yield new IndexWhere(pred, untilp, p)
@@ -386,7 +385,7 @@ self =>
         pit.setIndexFlagIfGreater(pos)
       }
     }
-    protected[this] def newSubtask(p: SuperParIterator) = unsupported
+    protected[this] def newSubtask(p: SuperParIterator) = throw new UnsupportedOperationException
     override def split = {
       val pits = pit.splitWithSignalling
       for ((p, untilp) <- pits zip pits.scanLeft(pos)(_ + _.remaining)) yield new LastIndexWhere(pred, untilp, p)
@@ -420,7 +419,7 @@ self =>
       result = pit.sameElements(otherpit)
       if (!result) pit.abort()
     }
-    protected[this] def newSubtask(p: SuperParIterator) = unsupported
+    protected[this] def newSubtask(p: SuperParIterator) = throw new UnsupportedOperationException
     override def split = {
       val fp = pit.remaining / 2
       val sp = pit.remaining - fp
@@ -434,7 +433,7 @@ self =>
   extends Transformer[Combiner[U, That], Updated[U, That]] {
     @volatile var result: Combiner[U, That] = null
     def leaf(prev: Option[Combiner[U, That]]) = result = pit.updated2combiner(pos, elem, pbf())
-    protected[this] def newSubtask(p: SuperParIterator) = unsupported
+    protected[this] def newSubtask(p: SuperParIterator) = throw new UnsupportedOperationException
     override def split = {
       val pits = pit.splitWithSignalling
       for ((p, untilp) <- pits zip pits.scanLeft(0)(_ + _.remaining)) yield new Updated(pos - untilp, elem, pbf, p)
@@ -447,7 +446,7 @@ self =>
   extends Transformer[Combiner[(U, S), That], Zip[U, S, That]] {
     @volatile var result: Result = null
     def leaf(prev: Option[Result]) = result = pit.zip2combiner[U, S, That](otherpit, cf())
-    protected[this] def newSubtask(p: SuperParIterator) = unsupported
+    protected[this] def newSubtask(p: SuperParIterator) = throw new UnsupportedOperationException
     override def split = {
       val fp = len / 2
       val sp = len - len / 2
@@ -468,7 +467,7 @@ self =>
       result = pit.corresponds(corr)(otherpit)
       if (!result) pit.abort()
     }
-    protected[this] def newSubtask(p: SuperParIterator) = unsupported
+    protected[this] def newSubtask(p: SuperParIterator) = throw new UnsupportedOperationException
     override def split = {
       val fp = pit.remaining / 2
       val sp = pit.remaining - fp

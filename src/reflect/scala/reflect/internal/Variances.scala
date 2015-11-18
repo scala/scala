@@ -8,7 +8,7 @@ package reflect
 package internal
 
 import Variance._
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 import scala.annotation.tailrec
 
 /** See comments at scala.reflect.internal.Variance.

@@ -8,7 +8,7 @@ package reflect
 package internal
 
 import Flags._
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 import scala.reflect.macros.Attachments
 import util.Statistics
 

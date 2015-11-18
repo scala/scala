@@ -7,8 +7,6 @@ package scala
 package reflect
 package io
 
-import java.io.{ FileInputStream, FileOutputStream, IOException }
-
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 class PlainDirectory(givenPath: Directory) extends PlainFile(givenPath) {
   override def isDirectory = true

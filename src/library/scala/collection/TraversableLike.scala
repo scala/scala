@@ -11,7 +11,7 @@ package collection
 
 import generic._
 import mutable.{ Builder }
-import scala.annotation.{tailrec, migration, bridge}
+import scala.annotation.migration
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
 import parallel.ParIterable
 import scala.language.higherKinds
@@ -625,7 +625,7 @@ trait TraversableLike[+A, +Repr] extends Any
 
   @deprecatedOverriding("Enforce contract of toTraversable that if it is Traversable it returns itself.", "2.11.0")
   def toTraversable: Traversable[A] = thisCollection
-  
+
   def toIterator: Iterator[A] = toStream.iterator
   def toStream: Stream[A] = toBuffer.toStream
   // Override to provide size hint.

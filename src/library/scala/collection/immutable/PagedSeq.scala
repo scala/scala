@@ -13,7 +13,6 @@ package collection
 package immutable
 
 import java.io.{File, FileReader, Reader}
-import scala.util.matching.Regex
 import scala.reflect.ClassTag
 
 /** The `PagedSeq` object defines a lazy implementations of

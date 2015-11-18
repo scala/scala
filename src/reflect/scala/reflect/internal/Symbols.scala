@@ -7,7 +7,7 @@ package scala
 package reflect
 package internal
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
 import util.{ Statistics, shortClassOfInstance }
 import Flags._
@@ -3441,7 +3441,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   extends ClassSymbol(owner0, pos0, tpnme.REFINE_CLASS_NAME) {
     override def name_=(name: Name) {
       abort("Cannot set name of RefinementClassSymbol to " + name)
-      super.name_=(name)
     }
     override def isRefinementClass       = true
     override def isAnonOrRefinementClass = true

@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.reflect.{ ClassTag, classTag }
+import scala.reflect.ClassTag
 
 class RichClass[T](val clazz: Class[T]) {
   def toTag: ClassTag[T] = ClassTag[T](clazz)

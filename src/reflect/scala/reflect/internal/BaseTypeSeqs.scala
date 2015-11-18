@@ -7,8 +7,7 @@ package reflect
 package internal
 
 // todo implement in terms of BitSet
-import scala.collection.{ mutable, immutable }
-import scala.math.max
+import scala.collection.mutable
 import util.Statistics
 
 /** A base type sequence (BaseTypeSeq) is an ordered sequence spanning all the base types

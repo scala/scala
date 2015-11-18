@@ -13,7 +13,6 @@ package generic
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.ParIterable
 import scala.collection.parallel.ParMap
-import scala.collection.parallel.TaskSupport
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds

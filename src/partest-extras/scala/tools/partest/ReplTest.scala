@@ -7,8 +7,6 @@ package scala.tools.partest
 
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.{ ILoop, replProps }
-import java.lang.reflect.{ Method => JMethod, Field => JField }
-import scala.util.matching.Regex
 import scala.util.matching.Regex.Match
 
 /** A class for testing repl code.
