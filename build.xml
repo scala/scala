@@ -367,7 +367,7 @@ TODO:
 
       <propertyForCrossedArtifact name="scala-parser-combinators" jar="org.scala-lang.modules:scala-parser-combinators"/>
       <propertyForCrossedArtifact name="scala-xml"                jar="org.scala-lang.modules:scala-xml"/>
-      <propertyForCrossedArtifact name="scala-swing"                 jar="org.scala-lang.modules:scala-swing"/>
+      <propertyForCrossedArtifact name="scala-swing"              jar="org.scala-lang.modules:scala-swing"/>
 
       <!-- BND support -->
       <typedef resource="aQute/bnd/ant/taskdef.properties" classpathref="extra.tasks.classpath" />
@@ -791,7 +791,6 @@ TODO:
     <path id="pack.bin.tool.path">
       <pathelement location="${library.jar}"/>
       <pathelement location="${xml.jar}"/>
-      <pathelement location="${parser-combinators.jar}"/>
       <pathelement location="${reflect.jar}"/>
       <pathelement location="${compiler.jar}"/>
       <!-- TODO modularize compiler: <pathelement location="${scaladoc.jar}"/> -->
@@ -804,7 +803,9 @@ TODO:
       <fileset dir="${build-quick.dir}/classes/library"/>
     </path>
 
-    <path id="pack.repl-jline.files">    <fileset dir="${build-quick.dir}/classes/repl-jline"/> </path>
+    <path id="pack.repl-jline.files">
+      <fileset dir="${build-quick.dir}/classes/repl-jline"/>
+    </path>
 
     <path id="pack.compiler.files">
       <fileset dir="${build-quick.dir}/classes/compiler"/>
@@ -913,8 +914,7 @@ TODO:
       <!-- partest's dependencies, which marks most of its dependencies as provided,
            (but not scala-library, so we filter that one out...)
            so we provide them: scala-[library/reflect/compiler], scalap built here,
-           scala-xml, scala-parser-combinators via external-modules-nocore,
-           as part of `partest.classpath` -->
+           scala-xml via external-modules-nocore, as part of `partest.classpath` -->
       <restrict>
         <path refid="partest.classpath"/>
         <rsel:not><rsel:or>
@@ -922,7 +922,6 @@ TODO:
         </rsel:or></rsel:not>
       </restrict>
       <pathelement location="${scala-xml}"/>
-      <pathelement location="${scala-parser-combinators}"/>
       <!-- <pathelement location="${scala-swing}"/> -->
 
       <!-- partest classes specific to the core compiler build -->
@@ -1278,8 +1277,6 @@ TODO:
             <include name="${interactive.jar}"/>
             <include name="${scaladoc.jar}"/>
             -->
-
-          <file name="${parser-combinators.jar}"/>
           <file name="${xml.jar}"/>
           <file name="${swing.jar}"/>
         </filelist>

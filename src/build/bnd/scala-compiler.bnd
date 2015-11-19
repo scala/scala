@@ -5,7 +5,6 @@ Bundle-Version: ${ver}
 Export-Package: *;version=${ver}
 Import-Package: jline.*;resolution:=optional, \
                 org.apache.tools.ant.*;resolution:=optional, \
-                scala.util.parsing.*;version="${range;[====,====];@PARSER_COMBINATORS_VERSION@}";resolution:=optional, \
                 scala.xml.*;version="${range;[====,====];@XML_VERSION@}";resolution:=optional, \
                 scala.*;version="${range;[==,=+);${ver}}", \
                 *

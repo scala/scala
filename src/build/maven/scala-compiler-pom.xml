@@ -45,11 +45,6 @@
       <artifactId>scala-xml_@SCALA_BINARY_VERSION@</artifactId>
       <version>@XML_VERSION@</version>
     </dependency>
-    <dependency> <!-- for scala-compiler-doc -->
-      <groupId>org.scala-lang.modules</groupId>
-      <artifactId>scala-parser-combinators_@SCALA_BINARY_VERSION@</artifactId>
-      <version>@PARSER_COMBINATORS_VERSION@</version>
-    </dependency>
     <dependency> <!-- for scala-compiler-repl; once it moves there, make it required -->
       <groupId>jline</groupId>
       <artifactId>jline</artifactId>
