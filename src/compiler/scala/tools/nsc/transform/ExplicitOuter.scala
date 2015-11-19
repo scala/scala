@@ -159,19 +159,24 @@ abstract class ExplicitOuter extends InfoTransform
    *  elides outer pointers.
    */
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
-    case MethodType(params, restpe1) =>
-      val restpe = transformInfo(sym, restpe1)
-      if (sym.owner.isTrait && ((sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isModule)) { // 5
-        sym.makeNotPrivate(sym.owner)
+    case MethodType(params, resTp) =>
+      val resTpTransformed = transformInfo(sym, resTp)
+
+      // juggle flags (and mangle names) after transforming info
+      if (sym.owner.isTrait) {
+        // TODO: I don't believe any private accessors remain after the fields phase
+        if ((sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isModule) sym.makeNotPrivate(sym.owner) // 5
+        if (sym.isProtected) sym setFlag notPROTECTED // 6
       }
-      if (sym.owner.isTrait && sym.isProtected) sym setFlag notPROTECTED // 6
-      if (sym.isClassConstructor && isInner(sym.owner)) { // 1
-        val p = sym.newValueParameter(innerClassConstructorParamName, sym.pos)
-                   .setInfo(sym.owner.outerClass.thisType)
-        MethodType(p :: params, restpe)
-      } else if (restpe ne restpe1)
-        MethodType(params, restpe)
+
+      val paramsWithOuter =
+        if (sym.isClassConstructor && isInner(sym.owner)) // 1
+          sym.newValueParameter(innerClassConstructorParamName, sym.pos).setInfo(sym.owner.outerClass.thisType) :: params
+        else params
+
+      if ((resTpTransformed ne resTp) || (paramsWithOuter ne params)) MethodType(paramsWithOuter, resTpTransformed)
       else tp
+
     case ClassInfoType(parents, decls, clazz) =>
       var decls1 = decls
       if (isInner(clazz) && !clazz.isInterface) {

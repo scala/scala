@@ -169,6 +169,22 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
 
     def unapply(info: AnnotationInfo): Option[(Type, List[Tree], List[(Name, ClassfileAnnotArg)])] =
       Some((info.atp, info.args, info.assocs))
+
+    def mkFilter(category: Symbol, defaultRetention: Boolean)(ann: AnnotationInfo) =
+      (ann.metaAnnotations, ann.defaultTargets) match {
+        case (Nil, Nil)      => defaultRetention
+        case (Nil, defaults) => defaults contains category
+        case (metas, _)      => metas exists (_ matches category)
+      }
+
+    def mkFilter(categories: List[Symbol], defaultRetention: Boolean)(ann: AnnotationInfo) =
+      (ann.metaAnnotations, ann.defaultTargets) match {
+        case (Nil, Nil)      => defaultRetention
+        case (Nil, defaults) => categories exists defaults.contains
+        case (metas, _)      =>
+          val metaSyms = metas collect { case ann if !ann.symbol.isInstanceOf[StubSymbol] => ann.symbol }
+          categories exists (category => metaSyms exists (_ isNonBottomSubClass category))
+      }
   }
 
   class CompleteAnnotationInfo(

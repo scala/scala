@@ -60,19 +60,7 @@ trait Internals extends api.Internals {
     def typeDef(sym: Symbol): TypeDef = self.TypeDef(sym)
     def labelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef = self.LabelDef(sym, params, rhs)
 
-    def changeOwner(tree: Tree, prev: Symbol, next: Symbol): tree.type = {
-      object changeOwnerAndModuleClassTraverser extends ChangeOwnerTraverser(prev, next) {
-        override def traverse(tree: Tree) {
-          tree match {
-            case _: DefTree => change(tree.symbol.moduleClass)
-            case _          => // do nothing
-          }
-          super.traverse(tree)
-        }
-      }
-      changeOwnerAndModuleClassTraverser.traverse(tree)
-      tree
-    }
+    def changeOwner(tree: Tree, prev: Symbol, next: Symbol): tree.type = { new ChangeOwnerTraverser(prev, next).traverse(tree); tree }
 
     lazy val gen = self.treeBuild
 

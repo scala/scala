@@ -22,17 +22,6 @@ trait MethodSynthesis {
   import definitions._
   import CODE._
 
-  /** The annotations amongst those found on the original symbol which
-   *  should be propagated to this kind of accessor.
-   */
-  def deriveAnnotations(initial: List[AnnotationInfo], category: Symbol, keepClean: Boolean): List[AnnotationInfo] = {
-    def annotationFilter(ann: AnnotationInfo) = ann.metaAnnotations match {
-      case Nil if ann.defaultTargets.isEmpty => keepClean                             // no meta-annotations or default targets
-      case Nil                               => ann.defaultTargets contains category  // default targets exist for ann
-      case metas                             => metas exists (_ matches category)     // meta-annotations attached to ann
-    }
-    initial filter annotationFilter
-  }
 
   class ClassMethodSynthesis(val clazz: Symbol, localTyper: Typer) {
     def mkThis = This(clazz) setPos clazz.pos.focus
@@ -160,13 +149,15 @@ trait MethodSynthesis {
       enterBeans(tree)
     }
 
+    import AnnotationInfo.{mkFilter => annotationFilter}
+
     /** This is called for those ValDefs which addDerivedTrees ignores, but
      *  which might have a warnable annotation situation.
      */
     private def warnForDroppedAnnotations(tree: Tree) {
       val annotations   = tree.symbol.initialize.annotations
       val targetClass   = defaultAnnotationTarget(tree)
-      val retained      = deriveAnnotations(annotations, targetClass, keepClean = true)
+      val retained      = annotations filter annotationFilter(targetClass, defaultRetention = true)
 
       annotations filterNot (retained contains _) foreach (ann => issueAnnotationWarning(tree, ann, targetClass))
     }
@@ -208,8 +199,8 @@ trait MethodSynthesis {
         context.unit.synthetics get meth match {
           case Some(mdef) =>
             context.unit.synthetics -= meth
-            meth setAnnotations deriveAnnotations(annotations, MethodTargetClass, keepClean = false)
-            cd.symbol setAnnotations deriveAnnotations(annotations, ClassTargetClass, keepClean = true)
+            meth setAnnotations (annotations filter annotationFilter(MethodTargetClass, defaultRetention = false))
+            cd.symbol setAnnotations (annotations filter annotationFilter(ClassTargetClass, defaultRetention = true))
             List(cd, mdef)
           case _ =>
             // Shouldn't happen, but let's give ourselves a reasonable error when it does
@@ -293,10 +284,6 @@ trait MethodSynthesis {
       def tree: ValDef
       final def enclClass = basisSym.enclClass
 
-      /** Which meta-annotation is associated with this kind of entity.
-       *  Presently one of: field, getter, setter, beanGetter, beanSetter, param.
-       */
-      def category: Symbol
 
       /* Explicit isSetter required for bean setters (beanSetterSym.isSetter is false) */
       final def completer(sym: Symbol) = namerOf(sym).accessorTypeCompleter(tree, isSetter)
@@ -307,7 +294,6 @@ trait MethodSynthesis {
 
       def isSetter   = false
       def isDeferred = mods.isDeferred
-      def keepClean  = false  // whether annotations whose definitions are not meta-annotated should be kept.
       def validate() { }
       def createAndEnterSymbol(): MethodSymbol = {
         val sym = owner.newMethod(name, tree.pos.focus, derivedMods.flags)
@@ -323,7 +309,29 @@ trait MethodSynthesis {
       }
       final def derive(initial: List[AnnotationInfo]): Tree = {
         validate()
-        derivedSym setAnnotations deriveAnnotations(initial, category, keepClean)
+
+        // see scala.annotation.meta's package class for more info
+        // Annotations on ValDefs can be targeted towards the following: field, getter, setter, beanGetter, beanSetter, param.
+        // The defaults are:
+        //   - (`val`-, `var`- or plain) constructor parameter annotations end up on the parameter, not on any other entity.
+        //   - val/var member annotations solely end up on the underlying field.
+        //
+        // TODO: these defaults can be surprising for annotations not meant for accessors/fields -- should we revisit?
+        // (In order to have `@foo val X` result in the X getter being annotated with `@foo`, foo needs to be meta-annotated with @getter)
+        val annotFilter: AnnotationInfo => Boolean = this match {
+          case _: Param                       => annotationFilter(ParamTargetClass,      defaultRetention = true)
+          // By default annotations go to the field, except if the field is generated for a class parameter (PARAMACCESSOR).
+          case _: Field                       => annotationFilter(FieldTargetClass,      defaultRetention = !mods.isParamAccessor)
+          case _: BaseGetter                  => annotationFilter(GetterTargetClass,     defaultRetention = false)
+          case _: Setter                      => annotationFilter(SetterTargetClass,     defaultRetention = false)
+          case _: BeanSetter                  => annotationFilter(BeanSetterTargetClass, defaultRetention = false)
+          case _: AnyBeanGetter               => annotationFilter(BeanGetterTargetClass, defaultRetention = false)
+        }
+
+        // The annotations amongst those found on the original symbol which
+        // should be propagated to this kind of accessor.
+        derivedSym setAnnotations (initial filter annotFilter)
+
         logDerived(derivedTree)
       }
     }
@@ -370,7 +378,6 @@ trait MethodSynthesis {
 
     sealed abstract class BaseGetter(tree: ValDef) extends DerivedGetter {
       def name       = tree.name
-      def category   = GetterTargetClass
       def flagsMask  = GetterFlags
       def flagsExtra = ACCESSOR.toLong | ( if (tree.mods.isMutable) 0 else STABLE )
 
@@ -395,12 +402,13 @@ trait MethodSynthesis {
         // starts compiling (instead of failing like it's supposed to) because the typer
         // expects to be able to identify escaping locals in typedDefDef, and fails to
         // spot that brand of them. In other words it's an artifact of the implementation.
-        val tpt = derivedSym.tpe_*.finalResultType.widen match {
+        val getterTp = derivedSym.tpe_*.finalResultType
+        val tpt = getterTp.widen match {
           // Range position errors ensue if we don't duplicate this in some
           // circumstances (at least: concrete vals with existential types.)
-          case ExistentialType(_, _)  => TypeTree() setOriginal (tree.tpt.duplicate setPos tree.tpt.pos.focus)
-          case _ if isDeferred        => TypeTree() setOriginal tree.tpt // keep type tree of original abstract field
-          case tp                     => TypeTree(tp)
+          case _: ExistentialType => TypeTree() setOriginal (tree.tpt.duplicate setPos tree.tpt.pos.focus)
+          case _ if isDeferred    => TypeTree() setOriginal tree.tpt // keep type tree of original abstract field
+          case _                  => TypeTree(getterTp)
         }
         tpt setPos tree.tpt.pos.focus
       }
@@ -449,7 +457,6 @@ trait MethodSynthesis {
     }
     case class Setter(tree: ValDef) extends DerivedSetter {
       def name       = tree.setterName
-      def category   = SetterTargetClass
       def flagsMask  = SetterFlags
       def flagsExtra = ACCESSOR
 
@@ -469,18 +476,14 @@ trait MethodSynthesis {
       // NOTE: do not look at `vd.symbol` when called from `enterGetterSetter` (luckily, that call-site implies `!mods.isLazy`),
       // as the symbol info is in the process of being created then.
       // TODO: harmonize tree & symbol creation
-      // TODO: the `def field` call-site does not tollerate including `|| vd.symbol.owner.isTrait` --> tests break
-      def noFieldFor(vd: ValDef) = vd.mods.isDeferred || (vd.mods.isLazy && isUnitType(vd.symbol.info)) // || vd.symbol.owner.isTrait))
+      // TODO: the `def field` call-site breaks when you add `|| vd.symbol.owner.isTrait` (detected in test suite)
+      def noFieldFor(vd: ValDef) = vd.mods.isDeferred || (vd.mods.isLazy && isUnitType(vd.symbol.info))
     }
 
     case class Field(tree: ValDef) extends DerivedFromValDef {
       def name       = tree.localName
-      def category   = FieldTargetClass
       def flagsMask  = FieldFlags
       def flagsExtra = PrivateLocal
-      // By default annotations go to the field, except if the field is
-      // generated for a class parameter (PARAMACCESSOR).
-      override def keepClean = !mods.isParamAccessor
 
       // handle lazy val first for now (we emit a Field even though we probably shouldn't...)
       override def derivedTree =
@@ -491,10 +494,8 @@ trait MethodSynthesis {
     }
     case class Param(tree: ValDef) extends DerivedFromValDef {
       def name       = tree.name
-      def category   = ParamTargetClass
       def flagsMask  = -1L
       def flagsExtra = 0L
-      override def keepClean = true
       override def derivedTree = EmptyTree
     }
     def validateParam(tree: ValDef) {
@@ -508,7 +509,6 @@ trait MethodSynthesis {
       override def derivedSym = enclClass.info decl name
     }
     sealed trait AnyBeanGetter extends BeanAccessor with DerivedGetter {
-      def category = BeanGetterTargetClass
       override def validate() {
         if (derivedSym == NoSymbol) {
           // the namer decides whether to generate these symbols or not. at that point, we don't
@@ -531,9 +531,7 @@ trait MethodSynthesis {
     }
     case class BooleanBeanGetter(tree: ValDef) extends BeanAccessor("is") with AnyBeanGetter { }
     case class BeanGetter(tree: ValDef) extends BeanAccessor("get") with AnyBeanGetter { }
-    case class BeanSetter(tree: ValDef) extends BeanAccessor("set") with DerivedSetter {
-      def category = BeanSetterTargetClass
-    }
+    case class BeanSetter(tree: ValDef) extends BeanAccessor("set") with DerivedSetter
 
     // No Symbols available.
     private def beanAccessorsFromNames(tree: ValDef) = {
