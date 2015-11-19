@@ -398,7 +398,7 @@ abstract class LambdaLift extends InfoTransform {
         case DefDef(_, _, _, vparams :: _, _, _) =>
           val ps = freeParams(sym)
 
-          if (ps isEmpty) tree
+          if (ps.isEmpty) tree
           else {
             val paramSyms = cloneSymbols(ps).map(_.setFlag(PARAM))
             val paramDefs = ps map (p => ValDef(p) setPos tree.pos setType NoType)
@@ -410,7 +410,7 @@ abstract class LambdaLift extends InfoTransform {
         case ClassDef(_, _, _, _) =>
           val freeParamDefs = freeParams(sym) map (p => ValDef(p) setPos tree.pos setType NoType)
 
-          if (freeParamDefs isEmpty) tree
+          if (freeParamDefs.isEmpty) tree
           else deriveClassDef(tree)(impl => deriveTemplate(impl)(_ ::: freeParamDefs))
 
         case _ => tree
