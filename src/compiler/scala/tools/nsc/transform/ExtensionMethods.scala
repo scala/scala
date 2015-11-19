@@ -244,7 +244,10 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
           // These three lines are assembling Foo.bar$extension[T1, T2, ...]($this)
           // which leaves the actual argument application for extensionCall.
-          val sel        = Select(gen.mkAttributedRef(companion), extensionMeth)
+          // SI-9542 We form the selection here from the thisType of the companion's owner. This is motivated
+          //         by the test case, and is a valid way to construct the reference because we know that this
+          //         method is also enclosed by that owner.
+          val sel        = Select(gen.mkAttributedRef(companion.owner.thisType, companion), extensionMeth)
           val targs      = origTpeParams map (_.tpeHK)
           val callPrefix = gen.mkMethodCall(sel, targs, This(origThis) :: Nil)
 
