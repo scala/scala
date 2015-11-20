@@ -38,7 +38,7 @@ trait Set[A] extends Iterable[A]
   override def toSet[B >: A]: Set[B] = to[({type l[a] = immutable.Set[B]})#l] // for bincompat; remove in dev
   
   override def seq: Set[A] = this
-  protected override def parCombiner = ParSet.newCombiner[A] // if `immutable.SetLike` gets introduced, please move this there!
+  protected[this] override def parCombiner = ParSet.newCombiner[A] // if `immutable.SetLike` gets introduced, please move this there!
 }
 
 /** $factoryInfo
