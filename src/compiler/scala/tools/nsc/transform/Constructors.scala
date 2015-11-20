@@ -167,7 +167,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
 
       // no point traversing further once omittables is empty, all candidates ruled out already.
       object detectUsages extends Traverser {
-        lazy val bodyOfOuterAccessor = defs collect { case dd: DefDef if omittableOuterAcc(dd.symbol) => dd.symbol -> dd.rhs } toMap
+        lazy val bodyOfOuterAccessor = defs.collect{ case dd: DefDef if omittableOuterAcc(dd.symbol) => dd.symbol -> dd.rhs }.toMap
 
         override def traverse(tree: Tree): Unit =
           if (omittables.nonEmpty) {

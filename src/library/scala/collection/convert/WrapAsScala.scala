@@ -139,13 +139,13 @@ trait WrapAsScala {
    * If the Java `Map` was previously obtained from an implicit or
    * explicit call of `mapAsScalaMap(scala.collection.mutable.Map)` then
    * the original Scala Map will be returned.
-   * 
+   *
    * If the wrapped map is synchronized (e.g. from `java.util.Collections.synchronizedMap`),
-   * it is your responsibility to wrap all 
+   * it is your responsibility to wrap all
    * non-atomic operations with `underlying.synchronized`.
    * This includes `get`, as `java.util.Map`'s API does not allow for an
    * atomic `get` when `null` values may be present.
-   * 
+   *
    * @param m The Map to be converted.
    * @return A Scala mutable Map view of the argument.
    */
@@ -170,7 +170,7 @@ trait WrapAsScala {
    */
   implicit def mapAsScalaConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): concurrent.Map[A, B] = m match {
     case null                             => null
-    case cmw: ConcurrentMapWrapper[A, B]  => cmw.underlying
+    case cmw: ConcurrentMapWrapper[_, _]  => cmw.underlying
     case _                                => new JConcurrentMapWrapper(m)
   }
 
