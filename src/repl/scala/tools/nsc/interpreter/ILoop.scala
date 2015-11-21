@@ -869,8 +869,11 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       val reader = (readers collect { case Success(reader) => reader } headOption) getOrElse SimpleReader()
 
       if (settings.debug) {
+        val failed = readers.forall(_.isFailure)
         val readerDiags = (readerClasses, readers).zipped map {
-          case (cls, Failure(e)) => s"  - $cls --> " + e.getStackTrace.mkString(e.toString+"\n\t", "\n\t","\n")
+          case (cls, Failure(e)) if failed || !cls.startsWith("scala.tools")
+                                 => s"  - $cls --> ${ e.getStackTrace.mkString(e.toString+"\n\t", "\n\t","\n") }"
+          case (cls, Failure(e)) => s"  - $cls --> $e"
           case (cls, Success(_)) => s"  - $cls OK"
         }
         Console.println(s"All InteractiveReaders tried: ${readerDiags.mkString("\n","\n","\n")}")
