@@ -784,12 +784,12 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         defSym
       }
 
-      def mkFastPathLazyBody(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
+      def mkFastPathLazyBody(clazz: Symbol, lzyVal: Symbol, cond: => Tree, syncBody: List[Tree],
                              stats: List[Tree], retVal: Tree): Tree = {
         mkFastPathBody(clazz, lzyVal, cond, syncBody, stats, retVal, gen.mkAttributedThis(clazz), List())
       }
 
-      def mkFastPathBody(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
+      def mkFastPathBody(clazz: Symbol, lzyVal: Symbol, cond: => Tree, syncBody: List[Tree],
                         stats: List[Tree], retVal: Tree, attrThis: Tree, args: List[Tree]): Tree = {
         val slowPathSym: Symbol = mkSlowPathDef(clazz, lzyVal, cond, syncBody, stats, retVal, attrThis, args)
         If(cond, fn (This(clazz), slowPathSym, args.map(arg => Ident(arg.symbol)): _*), retVal)

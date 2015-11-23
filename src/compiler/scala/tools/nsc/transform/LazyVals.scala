@@ -81,8 +81,6 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
      *      added in the first block, for all lazy values defined in such blocks.
      *  - remove ACCESSOR flags: accessors in traits are not statically implemented,
      *    but moved to the host class. local lazy values should be statically implemented.
-     *
-     * The general pattern is
      */
     override def transform(tree: Tree): Tree = {
       val sym = tree.symbol
@@ -118,7 +116,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
           } else if (sym.hasAllFlags(MODULE | METHOD) && !sym.owner.isTrait) {
             rhs match {
               case b @ Block((assign @ Assign(moduleRef, _)) :: Nil, expr) =>
-                val cond = Apply(Select(moduleRef, Object_eq), List(Literal(Constant(null))))
+                def cond = Apply(Select(moduleRef, Object_eq), List(Literal(Constant(null))))
                 val (fastPath, slowPath) = mkFastPathBody(sym.owner.enclClass, moduleRef.symbol, cond, transform(assign) :: Nil, Nil, transform(expr))
                 (localTyper.typedPos(tree.pos)(fastPath), localTyper.typedPos(tree.pos)(slowPath))
               case rhs =>
@@ -236,7 +234,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
     }
 
 
-    def mkFastPathBody(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
+    def mkFastPathBody(clazz: Symbol, lzyVal: Symbol, cond: => Tree, syncBody: List[Tree],
                        stats: List[Tree], retVal: Tree): (Tree, Tree) = {
       val slowPathDef: Tree = mkSlowPathDef(clazz, lzyVal, cond, syncBody, stats, retVal)
       (If(cond, Apply(Ident(slowPathDef.symbol), Nil), retVal), slowPathDef)
@@ -291,7 +289,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
           (mkBlock(rhs),         UNIT)
       }
 
-      val cond = (bitmapRef GEN_& (mask, bitmapKind)) GEN_== (ZERO, bitmapKind)
+      def cond = (bitmapRef GEN_& (mask, bitmapKind)) GEN_== (ZERO, bitmapKind)
       val lazyDefs = mkFastPathBody(methOrClass.enclClass, lazyVal, cond, List(block), Nil, res)
       (atPos(tree.pos)(localTyper.typed {lazyDefs._1 }), atPos(tree.pos)(localTyper.typed {lazyDefs._2 }))
     }
