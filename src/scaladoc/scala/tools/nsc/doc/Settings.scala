@@ -25,7 +25,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
   )
 
   /** A setting that defines the overall title of the documentation, typically the name of the library being
-    * documented. ''Note:'' This setting is currently not used. */
+    * documented. */
   val doctitle = StringSetting (
     "-doc-title",
     "title",
@@ -34,7 +34,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
   )
 
   /** A setting that defines the overall version number of the documentation, typically the version of the library being
-    * documented. ''Note:'' This setting is currently not used. */
+    * documented. */
   val docversion = StringSetting (
     "-doc-version",
     "version",
