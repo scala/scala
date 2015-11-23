@@ -249,7 +249,7 @@ object PartialFunction {
 
   private[this] val constFalse: Any => Boolean = { _ => false}
 
-  private[this] val empty_pf: PartialFunction[Any, Nothing] = new PartialFunction[Any, Nothing] {
+  private[this] val empty_pf: PartialFunction[Any, Nothing] = new PartialFunction[Any, Nothing] with Serializable {
     def isDefinedAt(x: Any) = false
     def apply(x: Any) = throw new MatchError(x)
     override def orElse[A1, B1](that: PartialFunction[A1, B1]) = that
