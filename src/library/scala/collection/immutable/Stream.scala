@@ -176,9 +176,9 @@ import scala.language.implicitConversions
  *    loop(1, 1)
  *  }
  *  }}}
- * 
+ *
  *  Note that `mkString` forces evaluation of a `Stream`, but `addString` does
- *  not.  In both cases, a `Stream` that is or ends in a cycle 
+ *  not.  In both cases, a `Stream` that is or ends in a cycle
  *  (e.g. `lazy val s: Stream[Int] = 0 #:: s`) will convert additional trips
  *  through the cycle to `...`.  Additionally, `addString` will display an
  *  un-memoized tail as `?`.
@@ -528,7 +528,7 @@ self =>
    *  unless the `f` throws an exception.
    */
   @tailrec
-  override final def foreach[B](f: A => B) {
+  override final def foreach[U](f: A => U) {
     if (!this.isEmpty) {
       f(head)
       tail.foreach(f)

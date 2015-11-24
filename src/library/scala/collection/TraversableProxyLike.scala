@@ -28,7 +28,7 @@ import scala.reflect.ClassTag
 trait TraversableProxyLike[+A, +Repr <: TraversableLike[A, Repr] with Traversable[A]] extends TraversableLike[A, Repr] with Proxy {
   def self: Repr
 
-  override def foreach[B](f: A => B): Unit = self.foreach(f)
+  override def foreach[U](f: A => U): Unit = self.foreach(f)
   override def isEmpty: Boolean = self.isEmpty
   override def nonEmpty: Boolean = self.nonEmpty
   override def size: Int = self.size

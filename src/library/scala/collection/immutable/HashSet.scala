@@ -53,7 +53,7 @@ class HashSet[A] extends AbstractSet[A]
 
   def iterator: Iterator[A] = Iterator.empty
 
-  override def foreach[U](f: A =>  U): Unit = { }
+  override def foreach[U](f: A => U): Unit = ()
 
   def contains(e: A): Boolean = get0(e, computeHash(e), 0)
 
@@ -215,7 +215,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
 
   private object EmptyHashSet extends HashSet[Any] { }
   private[collection] def emptyInstance: HashSet[Any] = EmptyHashSet
-  
+
   // utility method to create a HashTrieSet from two leaf HashSets (HashSet1 or HashSetCollision1) with non-colliding hash code)
   private def makeHashTrieSet[A](hash0:Int, elem0:HashSet[A], hash1:Int, elem1:HashSet[A], level:Int) : HashTrieSet[A] = {
     val index0 = (hash0 >>> level) & 0x1f
@@ -966,7 +966,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       final override def getElem(cc: AnyRef): A = cc.asInstanceOf[HashSet1[A]].key
     }
 
-    override def foreach[U](f: A =>  U): Unit = {
+    override def foreach[U](f: A => U): Unit = {
       var i = 0
       while (i < elems.length) {
         elems(i).foreach(f)

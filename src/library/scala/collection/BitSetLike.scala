@@ -115,7 +115,7 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
       else Iterator.empty.next()
   }
 
-  override def foreach[B](f: Int => B) {
+  override def foreach[U](f: Int => U) {
     /* NOTE: while loops are significantly faster as of 2.11 and
        one major use case of bitsets is performance. Also, there
        is nothing to do when all bits are clear, so use that as

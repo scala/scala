@@ -1,6 +1,6 @@
 
 
-scala> .lines
-res1: List[String] = List(shello, world.)
+scala> .lines.foreach(println)
+shello, world.
 
 scala> :quit

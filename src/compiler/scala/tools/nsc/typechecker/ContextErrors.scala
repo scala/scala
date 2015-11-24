@@ -1190,7 +1190,7 @@ trait ContextErrors {
 
       def IllegalDependentMethTpeError(sym: Symbol)(context: Context) = {
         val errorAddendum =
-          ": parameter appears in the type of another parameter in the same section or an earlier one"
+          ": parameter may only be referenced in a subsequent parameter section"
         issueSymbolTypeError(sym,  "illegal dependent method type" + errorAddendum)(context)
       }
 

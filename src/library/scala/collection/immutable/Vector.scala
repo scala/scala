@@ -951,8 +951,6 @@ private[immutable] trait VectorPointer[T] {
     // STUFF BELOW USED BY APPEND / UPDATE
 
     private[immutable] final def copyOf(a: Array[AnyRef]) = {
-      //println("copy")
-      if (a eq null) println ("NULL")
       val b = new Array[AnyRef](a.length)
       Platform.arraycopy(a, 0, b, 0, a.length)
       b

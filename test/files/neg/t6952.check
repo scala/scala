@@ -2,7 +2,7 @@ t6952.scala:2: error: extension of type scala.Dynamic needs to be enabled
 by making the implicit value scala.language.dynamics visible.
 This can be achieved by adding the import clause 'import scala.language.dynamics'
 or by setting the compiler option -language:dynamics.
-See the Scala docs for value scala.language.dynamics for a discussion
+See the Scaladoc for value scala.language.dynamics for a discussion
 why the feature needs to be explicitly enabled.
 trait B extends Dynamic
                 ^

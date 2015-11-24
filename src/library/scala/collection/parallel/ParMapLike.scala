@@ -99,14 +99,14 @@ self =>
     def - (elem: K): ParSet[K] =
       (ParSet[K]() ++ this - elem).asInstanceOf[ParSet[K]] // !!! concrete overrides abstract problem
     override def size = self.size
-    override def foreach[S](f: K => S) = for ((k, v) <- self) f(k)
+    override def foreach[U](f: K => U) = for ((k, v) <- self) f(k)
     override def seq = self.seq.keySet
   }
 
   protected class DefaultValuesIterable extends ParIterable[V] {
     def splitter = valuesIterator(self.splitter)
     override def size = self.size
-    override def foreach[S](f: V => S) = for ((k, v) <- self) f(v)
+    override def foreach[U](f: V => U) = for ((k, v) <- self) f(v)
     def seq = self.seq.values
   }
 
@@ -118,7 +118,7 @@ self =>
 
   def filterKeys(p: K => Boolean): ParMap[K, V] = new ParMap[K, V] {
     lazy val filtered = self.filter(kv => p(kv._1))
-    override def foreach[S](f: ((K, V)) => S): Unit = for (kv <- self) if (p(kv._1)) f(kv)
+    override def foreach[U](f: ((K, V)) => U): Unit = for (kv <- self) if (p(kv._1)) f(kv)
     def splitter = filtered.splitter
     override def contains(key: K) = self.contains(key) && p(key)
     def get(key: K) = if (!p(key)) None else self.get(key)
@@ -129,7 +129,7 @@ self =>
   }
 
   def mapValues[S](f: V => S): ParMap[K, S] = new ParMap[K, S] {
-    override def foreach[Q](g: ((K, S)) => Q): Unit = for ((k, v) <- self) g((k, f(v)))
+    override def foreach[U](g: ((K, S)) => U): Unit = for ((k, v) <- self) g((k, f(v)))
     def splitter = self.splitter.map(kv => (kv._1, f(kv._2)))
     override def size = self.size
     override def contains(key: K) = self.contains(key)
