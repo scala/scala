@@ -48,7 +48,7 @@ class HashMap[A, +B] extends AbstractMap[A, B]
 
   def iterator: Iterator[(A,B)] = Iterator.empty
 
-  override def foreach[U](f: ((A, B)) =>  U): Unit = { }
+  override def foreach[U](f: ((A, B)) => U): Unit = ()
 
   def get(key: A): Option[B] =
     get0(key, computeHash(key), 0)
@@ -422,7 +422,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       final override def getElem(cc: AnyRef): (A, B) = cc.asInstanceOf[HashMap1[A, B]].ensurePair
     }
 
-    override def foreach[U](f: ((A, B)) =>  U): Unit = {
+    override def foreach[U](f: ((A, B)) => U): Unit = {
       var i = 0
       while (i < elems.length) {
         elems(i).foreach(f)

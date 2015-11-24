@@ -890,7 +890,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @usecase def foreach(f: A => Unit): Unit
    *    @inheritdoc
    */
-  def foreach[U](f: A =>  U) { while (hasNext) f(next()) }
+  def foreach[U](f: A => U) { while (hasNext) f(next()) }
 
   /** Tests whether a predicate holds for all values produced by this iterator.
    *  $mayNotTerminateInf

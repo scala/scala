@@ -9,7 +9,7 @@ import scala.util.Properties.propOrElse
 object Test extends ReplTest {
   def java = propOrElse("javacmd", "java")
   def code = s""":sh $java -classpath $testOutput hello.Hello
-                |.lines""".stripMargin
+                |.lines.foreach(println)""".stripMargin
 }
 
 package hello {
