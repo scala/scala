@@ -18,16 +18,16 @@ import model._
 /** This class takes care of running the graphviz dot utility */
 class DotRunner(settings: doc.Settings) {
 
-  private[this] var dotRestarts = 0
+  private[this] var dotAttempts = 0
   private[this] var dotProcess: DotProcess  = null
 
   def feedToDot(dotInput: String, template: DocTemplateEntity): String = {
 
     if (dotProcess == null) {
-      if (dotRestarts < settings.docDiagramsDotRestart.value) {
-        if (dotRestarts != 0)
+      if (dotAttempts < settings.docDiagramsDotRestart.value + 1) {
+        if (dotAttempts > 0)
           settings.printMsg("Graphviz will be restarted...\n")
-        dotRestarts += 1
+        dotAttempts += 1
         dotProcess = new DotProcess(settings)
       } else
         return null
@@ -41,7 +41,7 @@ class DotRunner(settings: doc.Settings) {
     if (result == null) {
       dotProcess.cleanup()
       dotProcess = null
-      if (dotRestarts == settings.docDiagramsDotRestart.value) {
+      if (dotAttempts == 1 + settings.docDiagramsDotRestart.value) {
         settings.printMsg("\n")
         settings.printMsg("**********************************************************************")
         settings.printMsg("Diagrams will be disabled for this run because the graphviz dot tool")
