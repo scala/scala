@@ -82,8 +82,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       global synchronized { global.log(msg) }
     }
 
-    override def getCurrentCUnit(): CompilationUnit = { cunit }
-
     /* ---------------- helper utils for generating classes and fields ---------------- */
 
     def genPlainClass(cd: ClassDef) {
