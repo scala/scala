@@ -64,7 +64,7 @@ class MetaParser(meta: String) {
         case _: Exception => None
       }
     } else
-      None;
+      None
 
   protected def parseMetaClass: String = {
     nextToken
@@ -100,7 +100,7 @@ class MetaParser(meta: String) {
         parseType
       } while (token == "with")
     }
-    res.toString();
+    res.toString()
   }
 
   protected def parseMetaMethod: String = {
@@ -113,10 +113,10 @@ class MetaParser(meta: String) {
         var loop = true
         res.append("[")
         while (loop) {
-          res.append(token.substring(1));
-          nextToken;
+          res.append(token.substring(1))
+          nextToken
           if (token == "<") {
-            nextToken;
+            nextToken
             res.append(" <: ")
             parseType
           }
@@ -133,16 +133,16 @@ class MetaParser(meta: String) {
     if (token == "(") {
       do {
         if (token == ",") {
-          nextToken;
+          nextToken
           if (token != ")")
             res.append(", ")
         } else {
-          nextToken;
+          nextToken
           res.append("(")
         }
         if (token != ")") {
           if (token == "def") {
-            nextToken;
+            nextToken
             res.append("def ")
           }
           parseType

@@ -91,7 +91,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
 
   def printWithIndent(level: Int, s: String) {
     def indent() {for (i <- 1 to level) print("  ")}
-    indent;
+    indent
     print(s)
   }
 
@@ -208,7 +208,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
       mt.resultType match {
         case mt: MethodType => printMethodType(mt, printResult)({})
         case x => if (printResult) {
-          print(": ");
+          print(": ")
           printType(x)
         }
       }
@@ -374,7 +374,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
       }
       case AnnotatedWithSelfType(typeRef, symbol, attribTreeRefs) => toString(typeRef, sep)
       case ExistentialType(typeRef, symbols) => {
-        val refs = symbols.map(toString _).filter(!_.startsWith("_")).map("type " + _)
+        val refs = symbols.map(toString).filter(!_.startsWith("_")).map("type " + _)
         toString(typeRef, sep) + (if (refs.size > 0) refs.mkString(" forSome {", "; ", "}") else "")
       }
       case _ => sep + t.toString
