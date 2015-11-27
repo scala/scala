@@ -55,7 +55,7 @@ object JarJar {
   def apply(in: Iterator[Entry], outdir: File,
             config: Seq[JarJarConfig], verbose: Boolean = false): Seq[File] = {
     val patterns = config.map(_.toPatternElement).asJava
-    val processor: JarProcessor = newMainProcessor(patterns, verbose, false)
+    val processor = newMainProcessor(patterns, verbose, false)
     def process(e: Entry): Option[File] = {
       val struct = new EntryStruct()
       struct.name = e.name
@@ -77,7 +77,16 @@ object JarJar {
       }
       else None
     }
-    in.flatMap(entry => process(entry)).toList
-
+    val processed = in.flatMap(entry => process(entry)).toSet
+    val getter = processor.getClass.getDeclaredMethod("getExcludes")
+    getter.setAccessible(true)
+    val excludes = getter.invoke(processor).asInstanceOf[java.util.Set[String]].asScala
+    val excluded = excludes.map { name =>
+      val f: File = outdir / name
+      if(f.exists && !f.delete())
+        throw new IOException("Failed to delete excluded file $f")
+      f
+    }
+    (processed -- excluded).toSeq
   }
 }
