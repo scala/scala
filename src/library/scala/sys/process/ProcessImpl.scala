@@ -27,18 +27,18 @@ private[process] trait ProcessImpl {
     }
   }
   private[process] object Future {
-    def apply[T](f: => T): () => T = {
+    def apply[T](f: => T): (Thread, () => T) = {
       val result = new SyncVar[Either[Throwable, T]]
       def run(): Unit =
         try result set Right(f)
         catch { case e: Exception => result set Left(e) }
 
-      Spawn(run())
+      val t = Spawn(run())
 
-      () => result.get match {
+      (t, () => result.get match {
         case Right(value)    => value
         case Left(exception) => throw exception
-      }
+      })
     }
   }
 
@@ -84,16 +84,18 @@ private[process] trait ProcessImpl {
   }
 
   private[process] abstract class CompoundProcess extends BasicProcess {
+    def isAlive()   = processThread.isAlive()
     def destroy()   = destroyer()
-    def exitValue() = getExitValue() getOrElse scala.sys.error("No exit code: process destroyed.")
+    def exitValue() = getExitValue._2() getOrElse scala.sys.error("No exit code: process destroyed.")
     def start()     = getExitValue
 
-    protected lazy val (getExitValue, destroyer) = {
+    protected lazy val (processThread, getExitValue, destroyer) = {
       val code = new SyncVar[Option[Int]]()
       code set None
       val thread = Spawn(code set runAndExitValue())
 
       (
+        thread,
         Future { thread.join(); code.get },
         () => thread.interrupt()
       )
@@ -216,7 +218,8 @@ private[process] trait ProcessImpl {
   * The implementation of `exitValue` waits until these threads die before returning. */
   private[process] class DummyProcess(action: => Int) extends Process {
     private[this] val exitCode = Future(action)
-    override def exitValue() = exitCode()
+    override def isAlive() = exitCode._1.isAlive()
+    override def exitValue() = exitCode._2()
     override def destroy() { }
   }
   /** A thin wrapper around a java.lang.Process.  `outputThreads` are the Threads created to read from the
@@ -225,6 +228,7 @@ private[process] trait ProcessImpl {
   * The implementation of `exitValue` interrupts `inputThread` and then waits until all I/O threads die before
   * returning. */
   private[process] class SimpleProcess(p: JProcess, inputThread: Thread, outputThreads: List[Thread]) extends Process {
+    override def isAlive() = p.isAlive()
     override def exitValue() = {
       try p.waitFor()                   // wait for the process to terminate
       finally inputThread.interrupt()   // we interrupt the input thread to notify it that it can terminate
@@ -241,6 +245,7 @@ private[process] trait ProcessImpl {
     }
   }
   private[process] final class ThreadProcess(thread: Thread, success: SyncVar[Boolean]) extends Process {
+    override def isAlive() = thread.isAlive()
     override def exitValue() = {
       thread.join()
       if (success.get) 0 else 1
