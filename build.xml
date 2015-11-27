@@ -270,7 +270,7 @@ TODO:
       </artifact:dependencies>
 
       <artifact:dependencies pathId="jarjar.classpath">
-        <dependency groupId="com.googlecode.jarjar" artifactId="jarjar" version="1.3"/>
+        <dependency groupId="org.pantsbuild" artifactId="jarjar" version="1.6.0"/>
       </artifact:dependencies>
 
       <!-- JUnit -->
@@ -999,7 +999,7 @@ TODO:
     </patternset>
 
     <taskdef resource="scala/tools/ant/sabbus/antlib.xml" classpathref="starr.compiler.path"/>
-    <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpathref="jarjar.classpath" />
+    <taskdef name="jarjar" classname="org.pantsbuild.jarjar.JarJarTask" classpathref="jarjar.classpath" />
   </target>
 
 <!-- ===========================================================================
