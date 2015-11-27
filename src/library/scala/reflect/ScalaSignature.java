@@ -8,5 +8,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface ScalaSignature {
-    public String bytes();
+    String bytes();
 }

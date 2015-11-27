@@ -15,7 +15,7 @@ private[reflect] trait SynchronizedOps extends internal.SymbolTable
 
   override protected def newBaseTypeSeq(parents: List[Type], elems: Array[Type]) =
     // only need to synchronize BaseTypeSeqs if they contain refined types
-    if (elems.filter(_.isInstanceOf[RefinedType]).nonEmpty) new BaseTypeSeq(parents, elems) with SynchronizedBaseTypeSeq
+    if (elems.exists(_.isInstanceOf[RefinedType])) new BaseTypeSeq(parents, elems) with SynchronizedBaseTypeSeq
     else new BaseTypeSeq(parents, elems)
 
   trait SynchronizedBaseTypeSeq extends BaseTypeSeq {
@@ -31,7 +31,7 @@ private[reflect] trait SynchronizedOps extends internal.SymbolTable
 
     override def lateMap(f: Type => Type): BaseTypeSeq =
       // only need to synchronize BaseTypeSeqs if they contain refined types
-      if (map(f).toList.filter(_.isInstanceOf[RefinedType]).nonEmpty) new MappedBaseTypeSeq(this, f) with SynchronizedBaseTypeSeq
+      if (map(f).toList.exists(_.isInstanceOf[RefinedType])) new MappedBaseTypeSeq(this, f) with SynchronizedBaseTypeSeq
       else new MappedBaseTypeSeq(this, f)
   }
 
