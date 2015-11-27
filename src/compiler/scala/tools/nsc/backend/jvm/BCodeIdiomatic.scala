@@ -197,16 +197,19 @@ abstract class BCodeIdiomatic extends SubComponent {
     /*
      * can-multi-thread
      */
-    final def genStringConcat(el: BType, pos: Position): Unit = {
-      val jtype = el match {
+    def genConcat(elemType: BType, pos: Position): Unit = {
+      val paramType = elemType match {
         case ct: ClassBType if ct.isSubtypeOf(StringRef).get          => StringRef
         case ct: ClassBType if ct.isSubtypeOf(jlStringBufferRef).get  => jlStringBufferRef
         case ct: ClassBType if ct.isSubtypeOf(jlCharSequenceRef).get  => jlCharSequenceRef
-        case rt: RefBType                                             => ObjectRef
-        case pt: PrimitiveBType                                       => pt  // Currently this ends up being boxed in erasure
+        // Don't match for `ArrayBType(CHAR)`, even though StringBuilder has such an overload:
+        // `"a" + Array('b')` should NOT be "ab", but "a[C@...".
+        case _: RefBType                                              => ObjectRef
+        // jlStringBuilder does not have overloads for byte and short, but we can just use the int version
+        case BYTE | SHORT                                             => INT
+        case pt: PrimitiveBType                                       => pt
       }
-
-      val bt = MethodBType(List(jtype), jlStringBuilderRef)
+      val bt = MethodBType(List(paramType), jlStringBuilderRef)
       invokevirtual(JavaStringBuilderClassName, "append", bt.descriptor, pos)
     }
 

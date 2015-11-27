@@ -999,9 +999,17 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         case concatenations =>
           bc.genStartConcat(tree.pos)
           for (elem <- concatenations) {
-            val kind = tpeTK(elem)
-            genLoad(elem, kind)
-            bc.genStringConcat(kind, elem.pos)
+            val loadedElem = elem match {
+              case Apply(boxOp, value :: Nil) if currentRun.runDefinitions.isBox(boxOp.symbol) =>
+                // Eliminate boxing of primitive values. Boxing is introduced by erasure because
+                // there's only a single synthetic `+` method "added" to the string class.
+                value
+
+              case _ => elem
+            }
+            val elemType = tpeTK(loadedElem)
+            genLoad(loadedElem, elemType)
+            bc.genConcat(elemType, loadedElem.pos)
           }
           bc.genEndConcat(tree.pos)
 

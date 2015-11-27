@@ -24,47 +24,110 @@ class StringConcatTest extends ClearAfterClass {
   ClearAfterClass.stateToClear = StringConcatTest
   val compiler = StringConcatTest.compiler
 
-  val commonPreInstructions = List(Label(0), LineNumber(1, Label(0)), TypeOp(NEW, "java/lang/StringBuilder"), Op(DUP), Invoke(INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false), Ldc(LDC, "abc"), Invoke(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false), VarOp(ALOAD, 0))
+  @Test
+  def appendOverloadNoBoxing(): Unit = {
+    val code =
+      """class C {
+        |  def t1(
+        |         v: Unit,
+        |         z: Boolean,
+        |         c: Char,
+        |         b: Byte,
+        |         s: Short,
+        |         i: Int,
+        |         l: Long,
+        |         f: Float,
+        |         d: Double,
+        |         str: String,
+        |         sbuf: java.lang.StringBuffer,
+        |         chsq: java.lang.CharSequence,
+        |         chrs: Array[Char]) = str + this + v + z + c + b + s + i + f + l + d + sbuf + chsq + chrs
+        |
+        |  // similar, but starting off with any2stringadd
+        |  def t2(
+        |         v: Unit,
+        |         z: Boolean,
+        |         c: Char,
+        |         b: Byte,
+        |         s: Short,
+        |         i: Int,
+        |         l: Long,
+        |         f: Float,
+        |         d: Double,
+        |         str: String,
+        |         sbuf: java.lang.StringBuffer,
+        |         chsq: java.lang.CharSequence,
+        |         chrs: Array[Char]) = this + str + v + z + c + b + s + i + f + l + d + sbuf + chsq + chrs
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(compiler)(code)
 
-  val commonPostInstructions = List(Invoke(INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false), Op(ARETURN), Label(12))
+    def invokeNameDesc(m: String): List[String] = getSingleMethod(c, m).instructions collect {
+      case Invoke(_, _, name, desc, _) => name + desc
+    }
+    assertEquals(invokeNameDesc("t1"), List(
+      "<init>()V",
+      "append(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+      "append(Ljava/lang/Object;)Ljava/lang/StringBuilder;",
+      "append(Ljava/lang/Object;)Ljava/lang/StringBuilder;",
+      "append(Z)Ljava/lang/StringBuilder;",
+      "append(C)Ljava/lang/StringBuilder;",
+      "append(I)Ljava/lang/StringBuilder;",
+      "append(I)Ljava/lang/StringBuilder;",
+      "append(I)Ljava/lang/StringBuilder;",
+      "append(F)Ljava/lang/StringBuilder;",
+      "append(J)Ljava/lang/StringBuilder;",
+      "append(D)Ljava/lang/StringBuilder;",
+      "append(Ljava/lang/StringBuffer;)Ljava/lang/StringBuilder;",
+      "append(Ljava/lang/CharSequence;)Ljava/lang/StringBuilder;",
+      "append(Ljava/lang/Object;)Ljava/lang/StringBuilder;", // test that we're not using the [C overload
+      "toString()Ljava/lang/String;"))
 
-  def instructionsWithCommonParts(instructions: List[Instruction]) = commonPreInstructions ++ instructions ++ commonPostInstructions
-
-  def instructionsForResultMethod(code: String): List[Instruction] = {
-    val methods = compileMethods(compiler)(code)
-    val resultMethod = methods.find(_.name == "result").get
-    instructionsFromMethod(resultMethod)
+    assertEquals(invokeNameDesc("t2"), List(
+      "<init>()V",
+      "any2stringadd(Ljava/lang/Object;)Ljava/lang/Object;",
+      "$plus$extension(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/String;",
+      "append(Ljava/lang/String;)Ljava/lang/StringBuilder;",
+      "append(Ljava/lang/Object;)Ljava/lang/StringBuilder;",
+      "append(Z)Ljava/lang/StringBuilder;",
+      "append(C)Ljava/lang/StringBuilder;",
+      "append(I)Ljava/lang/StringBuilder;",
+      "append(I)Ljava/lang/StringBuilder;",
+      "append(I)Ljava/lang/StringBuilder;",
+      "append(F)Ljava/lang/StringBuilder;",
+      "append(J)Ljava/lang/StringBuilder;",
+      "append(D)Ljava/lang/StringBuilder;",
+      "append(Ljava/lang/StringBuffer;)Ljava/lang/StringBuilder;",
+      "append(Ljava/lang/CharSequence;)Ljava/lang/StringBuilder;",
+      "append(Ljava/lang/Object;)Ljava/lang/StringBuilder;", // test that we're not using the [C overload
+      "toString()Ljava/lang/String;"))
   }
 
   @Test
-  def concatStringToStringBuilder: Unit = {
-    val code = """ def string = "def"; def result = "abc" + string """
-    val actualInstructions = instructionsForResultMethod(code)
-    val expectedInstructions = instructionsWithCommonParts(List(Invoke(INVOKEVIRTUAL, "C", "string", "()Ljava/lang/String;", false), Invoke(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false)))
-    assertSameCode(actualInstructions, expectedInstructions)
-  }
-
-  @Test
-  def concatStringBufferToStringBuilder: Unit = {
-    val code = """ def stringBuffer = new java.lang.StringBuffer("def"); def result = "abc" + stringBuffer """
-    val actualInstructions = instructionsForResultMethod(code)
-    val expectedInstructions = instructionsWithCommonParts(List(Invoke(INVOKEVIRTUAL, "C", "stringBuffer", "()Ljava/lang/StringBuffer;", false), Invoke(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/StringBuffer;)Ljava/lang/StringBuilder;", false)))
-    assertSameCode(actualInstructions, expectedInstructions)
-  }
-
-  @Test
-  def concatCharSequenceToStringBuilder: Unit = {
-    val code = """ def charSequence: CharSequence = "def"; def result = "abc" + charSequence """
-    val actualInstructions = instructionsForResultMethod(code)
-    val expectedInstructions = instructionsWithCommonParts(List(Invoke(INVOKEVIRTUAL, "C", "charSequence", "()Ljava/lang/CharSequence;", false), Invoke(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/CharSequence;)Ljava/lang/StringBuilder;", false)))
-    assertSameCode(actualInstructions, expectedInstructions)
-  }
-
-  @Test
-  def concatIntToStringBuilder: Unit = {
-    val code = """ def int = 123; def result = "abc" + int """
-    val actualInstructions = instructionsForResultMethod(code)
-    val expectedInstructions = instructionsWithCommonParts(List(Invoke(INVOKEVIRTUAL, "C", "int", "()I", false), Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "boxToInteger", "(I)Ljava/lang/Integer;", false), Invoke(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/Object;)Ljava/lang/StringBuilder;", false)))
-    assertSameCode(actualInstructions, expectedInstructions)
+  def concatPrimitiveCorrectness(): Unit = {
+    val obj: Object = new { override def toString = "TTT" }
+    def t(
+           v: Unit,
+           z: Boolean,
+           c: Char,
+           b: Byte,
+           s: Short,
+           i: Int,
+           l: Long,
+           f: Float,
+           d: Double,
+           str: String,
+           sbuf: java.lang.StringBuffer,
+           chsq: java.lang.CharSequence,
+           chrs: Array[Char]) = {
+      val s1 = str + obj + v + z + c + b + s + i + f + l + d + sbuf + chsq + chrs
+      val s2 = obj + str + v + z + c + b + s + i + f + l + d + sbuf + chsq + chrs
+      s1 + "//" + s2
+    }
+    def sbuf = { val r = new java.lang.StringBuffer(); r.append("sbuf"); r }
+    def chsq: java.lang.CharSequence = "chsq"
+    val s = t((), true, 'd', 3: Byte, 12: Short, 3, -32l, 12.3f, -4.2d, "me", sbuf, chsq, Array('a', 'b'))
+    val r = s.replaceAll("""\[C@\w+""", "<ARRAY>")
+    assertEquals(r, "meTTT()trued312312.3-32-4.2sbufchsq<ARRAY>//TTTme()trued312312.3-32-4.2sbufchsq<ARRAY>")
   }
 }
