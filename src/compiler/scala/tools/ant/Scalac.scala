@@ -91,7 +91,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     val values = List("namer", "typer", "pickler", "refchecks",
                       "uncurry", "tailcalls", "specialize", "explicitouter",
                       "erasure", "lazyvals", "lambdalift", "constructors",
-                      "flatten", "mixin", "delambdafy", "cleanup", "icode",
+                      "flatten", "mixin", "delambdafy", "cleanup",
                       "jvm", "terminal")
   }
 

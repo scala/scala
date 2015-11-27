@@ -1428,7 +1428,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         // move the pointer
         globalPhase = globalPhase.next
 
-        // run tree/icode checkers
+        // run tree checkers
         if (settings.check containsPhase globalPhase.prev)
           runCheckers()
 
