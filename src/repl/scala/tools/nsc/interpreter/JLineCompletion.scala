@@ -175,7 +175,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
         case Some((clazz, runtimeType)) =>
           val sym = intp.symbolOfTerm(id)
           if (sym.isStable) {
-            val param = new NamedParam.Untyped(id, intp valueOfTerm id getOrElse null)
+            val param = new NamedParam.Untyped(id, intp valueOfTerm id orNull)
             Some(TypeMemberCompletion(tpe, runtimeType, param))
           }
           else default
