@@ -667,7 +667,7 @@ lazy val dist = (project in file("dist"))
     libraryDependencies ++= Seq(scalaContinuationsLibraryDep, scalaContinuationsPluginDep, scalaSwingDep, jlineDep),
     mkBin := mkBinImpl.value,
     mkQuick <<= Def.task {} dependsOn ((distDependencies.map(products in Runtime in _) :+ mkBin): _*),
-    mkPack <<= Def.task {} dependsOn (packageBin in Compile, mkBin),
+    mkPack <<= Def.task {} dependsOn (packagedArtifact in (Compile, packageBin), mkBin),
     target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id,
     packageBin in Compile := {
       val extraDeps = Set(scalaContinuationsLibraryDep, scalaContinuationsPluginDep, scalaSwingDep, scalaParserCombinatorsDep, scalaXmlDep)
@@ -684,7 +684,7 @@ lazy val dist = (project in file("dist"))
     },
     cleanFiles += (buildDirectory in ThisBuild).value / "quick",
     cleanFiles += (buildDirectory in ThisBuild).value / "pack",
-    packageBin in Compile <<= (packageBin in Compile).dependsOn(distDependencies.map(packageBin in Compile in _): _*)
+    packagedArtifact in (Compile, packageBin) <<= (packagedArtifact in (Compile, packageBin)).dependsOn(distDependencies.map(packagedArtifact in (Compile, packageBin) in _): _*)
   )
   .dependsOn(distDependencies.map(p => p: ClasspathDep[ProjectReference]): _*)
 
