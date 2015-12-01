@@ -96,12 +96,9 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
   }
 
   private abstract class ExtractDependenciesTraverser extends Traverser {
-    protected val depBuf = collection.mutable.ArrayBuffer.empty[Symbol]
-    protected def addDependency(dep: Symbol): Unit = { depBuf += dep; () }
-    def dependencies: collection.immutable.Set[Symbol] = {
-      // convert to immutable set and remove NoSymbol if we have one
-      depBuf.toSet - NoSymbol
-    }
+    private val deps = collection.mutable.HashSet.empty[Symbol]
+    protected def addDependency(dep: Symbol): Unit = { if (dep ne NoSymbol) deps += dep }
+    def dependencies: Iterator[Symbol] = deps.iterator
   }
 
   private class ExtractDependenciesByMemberRefTraverser extends ExtractDependenciesTraverser {
@@ -159,7 +156,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
     }
   }
 
-  private def extractDependenciesByMemberRef(unit: CompilationUnit): collection.immutable.Set[Symbol] = {
+  private def extractDependenciesByMemberRef(unit: CompilationUnit): Iterator[Symbol] = {
     val traverser = new ExtractDependenciesByMemberRefTraverser
     traverser.traverse(unit.body)
     val dependencies = traverser.dependencies
@@ -185,7 +182,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
     }
   }
 
-  private def extractDependenciesByInheritance(unit: CompilationUnit): collection.immutable.Set[Symbol] = {
+  private def extractDependenciesByInheritance(unit: CompilationUnit): Iterator[Symbol] = {
     val traverser = new ExtractDependenciesByInheritanceTraverser
     traverser.traverse(unit.body)
     val dependencies = traverser.dependencies
