@@ -520,9 +520,8 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
         case x                          => error("Unknown type parameter info: " + x.getClass)
       }
     }
-  private def tparamID(s: Symbol): String = {
-    val renameTo = existentialRenamings.renaming(s)
-    renameTo match {
+  private def tparamID(s: Symbol): String =
+    existentialRenamings.renaming(s) match {
       case Some(rename) =>
         // can't use debuglog because it doesn't exist in Scala 2.9.x
         if (settings.debug.value)
@@ -531,7 +530,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
       case None =>
         s.fullName
     }
-  }
+
 
   /* Representation for the self type of a class symbol `s`, or `emptyType` for an *unascribed* self variable (or no self variable at all).
      Only the self variable's explicitly ascribed type is relevant for incremental compilation. */
