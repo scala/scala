@@ -334,26 +334,50 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
         error("Unknown type member" + s)
     }
 
-  private def structure(in: Symbol, s: Symbol): xsbti.api.Structure = structure(viewer(in).memberInfo(s), s, true)
-  private def structure(info: Type): xsbti.api.Structure = structure(info, info.typeSymbol, false)
-  private def structure(info: Type, s: Symbol, inherit: Boolean): xsbti.api.Structure =
-    structureCache.getOrElseUpdate(s, mkStructure(info, s, inherit))
+  private def structure(info: Type, s: Symbol): xsbti.api.Structure = structureCache.getOrElseUpdate(s, mkStructure(info, s))
+  private def structureWithInherited(info: Type, s: Symbol): xsbti.api.Structure = structureCache.getOrElseUpdate(s, mkStructureWithInherited(info, s))
 
   private def removeConstructors(ds: List[Symbol]): List[Symbol] = ds filter { !_.isConstructor }
 
-  private def mkStructure(info: Type, s: Symbol, inherit: Boolean): xsbti.api.Structure = {
-    val (declared, inherited) = info.members.reverse.partition(_.owner == s)
-    // Note that the ordering of classes in `baseClasses` is important.
-    // It would be easier to just say `val baseTypes = baseTypeSeq`, but that does not seem
-    // to take linearization into account.
-    // Also, we take info.parents when we're not interested in the full linearization,
-    // which side steps issues with baseType when f-bounded existential types and refined types mix
-    // (and we get cyclic types which cause a stack overflow in showAPI)
-    val baseTypes = if (inherit) info.baseClasses.tail.map(info.baseType) else info.parents
-    val ds = if (s.isModuleClass) removeConstructors(declared) else declared
-    val is = if (inherit) removeConstructors(inherited) else Nil
-    mkStructure(s, baseTypes, ds, is)
+  /**
+   * Create structure as-is, without embedding ancestors
+   *
+   * (for refinement types, and ClassInfoTypes encountered outside of a definition???).
+   */
+  private def mkStructure(info: Type, s: Symbol): xsbti.api.Structure = {
+    // We're not interested in the full linearization, so we can just use `parents`,
+    // which side steps issues with baseType when f-bounded existential types and refined types mix 
+    // (and we get cyclic types which cause a stack overflow in showAPI).
+    //
+    // The old algorithm's semantics for inherited dependencies include all types occurring as a parent anywhere in a type,
+    // so that, in `class C { def foo: A  }; class A extends B`, C is considered to have an "inherited dependency" on `A` and `B`!!!
+    val parentTypes = if (global.callback.nameHashing()) info.parents else linearizedAncestorTypes(info)
+    val decls = info.decls.toList
+    val declsNoModuleCtor = if (s.isModuleClass) removeConstructors(decls) else decls
+    mkStructure(s, parentTypes, declsNoModuleCtor, Nil)
   }
+
+  /**
+   * Track all ancestors and inherited members for a class's API.
+   *
+   * A class's hash does not include hashes for its parent classes -- only the symbolic names --
+   * so we must ensure changes propagate somehow.
+   *
+   * TODO: can we include hashes for parent classes instead? This seems a bit messy.
+   */
+  private def mkStructureWithInherited(info: Type, s: Symbol): xsbti.api.Structure = {
+    val ancestorTypes = linearizedAncestorTypes(info)
+    val decls = info.decls.toList
+    val declsNoModuleCtor = if (s.isModuleClass) removeConstructors(decls) else decls
+    val declSet = decls.toSet
+    val inherited = info.nonPrivateMembers.toList.filterNot(declSet) // private members are not inherited
+    mkStructure(s, ancestorTypes, declsNoModuleCtor, inherited)
+  }
+
+  // Note that the ordering of classes in `baseClasses` is important.
+  // It would be easier to just say `baseTypeSeq.toList.tail`,
+  // but that does not take linearization into account.
+  def linearizedAncestorTypes(info: Type): List[Type] = info.baseClasses.tail.map(info.baseType)
 
   // If true, this template is publicly visible and should be processed as a public inheritance dependency.
   // Local classes and local refinements will never be traversed by the api phase, so we don't need to check for that.
@@ -478,7 +502,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
           if (unrolling ne withoutRecursiveRefs)
             reporter.warning(sym.pos, "sbt-api: approximated refinement ref" + t + " (== " + unrolling + ") to " + withoutRecursiveRefs + "\nThis is currently untested, please report the code you were compiling.")
 
-          structure(withoutRecursiveRefs)
+          structure(withoutRecursiveRefs, sym)
         case tr @ TypeRef(pre, sym, args) =>
           val base = projectionType(in, pre, sym)
           if (args.isEmpty)
@@ -491,7 +515,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
         case SuperType(thistpe: Type, supertpe: Type) =>
           warning("sbt-api: Super type (not implemented): this=" + thistpe + ", super=" + supertpe); Constants.emptyType
         case at: AnnotatedType                => annotatedType(in, at)
-        case rt: CompoundType                 => structure(rt)
+        case rt: CompoundType                 => structure(rt, rt.typeSymbol)
         case t: ExistentialType               => makeExistentialType(in, t)
         case NoType                           => Constants.emptyType // this can happen when there is an error that will be reported by a later phase
         case PolyType(typeParams, resultType) => new xsbti.api.Polymorphic(processType(in, resultType), typeParameters(in, typeParams))
@@ -561,7 +585,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
       } else DefinitionType.ClassDef
 
     new xsbti.api.ClassLike(
-      defType, lzy(selfType(in, sym)), lzy(structure(in, sym)), emptyStringArray, typeParameters(in, sym), // look at class symbol
+      defType, lzy(selfType(in, sym)), lzy(structureWithInherited(viewer(in).memberInfo(sym), sym)), emptyStringArray, typeParameters(in, sym), // look at class symbol
       c.fullName, getAccess(c), getModifiers(c), annotations(in, c)) // use original symbol (which is a term symbol when `c.isModule`) for `name` and other non-classy stuff
   }
 
