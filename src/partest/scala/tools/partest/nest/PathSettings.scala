@@ -42,9 +42,6 @@ object PathSettings {
   // Directory <root>/test/files or .../scaladoc
   def srcDir = Directory(testRoot / testSourcePath toCanonical)
 
-  // Directory <root>/build/pack/lib
-  private def buildPackLibDir = Directory(buildDir / "pack" / "lib")
-
   // Directory <root>/test/files/lib
   private def srcLibDir = Directory(srcDir / "lib")
 
@@ -60,8 +57,4 @@ object PathSettings {
 
   def srcSpecLib     = findJar("instrumented", Directory(srcDir / "speclib"))
   def srcCodeLib     = findJar("code",  Directory(srcDir / "codelib"), Directory(testRoot / "files" / "codelib") /* work with --srcpath pending */)
-  def agentLib       = findJar("scala-partest-javaagent", buildPackLibDir)
-  def scalaCheck     = findJar("scalacheck", buildPackLibDir, srcLibDir)
-  def testInterface  = findJar("test-interface", buildPackLibDir, srcLibDir)
-  def diffUtils      = findJar("diffutils", buildPackLibDir)
 }

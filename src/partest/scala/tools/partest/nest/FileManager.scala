@@ -111,6 +111,7 @@ class FileManager(val testClassLoader: URLClassLoader) {
   lazy val libraryUnderTest: Path  = findArtifact("library")
   lazy val reflectUnderTest: Path  = findArtifact("reflect")
   lazy val compilerUnderTest: Path = findArtifact("compiler")
+  lazy val agentLib: Path = findArtifact("javaagent")
 
   lazy val testClassPath = testClassLoader.getURLs().map(url => Path(new File(url.toURI))).toList
 
@@ -126,13 +127,14 @@ class FileManager(val testClassLoader: URLClassLoader) {
     else "installed"
   }
 
-  // find library/reflect/compiler jar or subdir under build/$stage/classes/
+  // find library/reflect/compiler/javaagent jar or subdir under build/$stage/classes/
   private def findArtifact(name: String): Path = {
     val canaryClass =
       name match {
-        case "library"  => Class.forName("scala.Unit", false, testClassLoader)
-        case "reflect"  => Class.forName("scala.reflect.api.Symbols", false, testClassLoader)
-        case "compiler" => Class.forName("scala.tools.nsc.Main", false, testClassLoader)
+        case "library"   => Class.forName("scala.Unit", false, testClassLoader)
+        case "reflect"   => Class.forName("scala.reflect.api.Symbols", false, testClassLoader)
+        case "compiler"  => Class.forName("scala.tools.nsc.Main", false, testClassLoader)
+        case "javaagent" => Class.forName("scala.tools.partest.javaagent.ProfilingAgent", false, testClassLoader)
       }
 
     val path = Path(canaryClass.getProtectionDomain.getCodeSource.getLocation.getPath)

@@ -551,7 +551,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
     case _              => Nil
   }
   def extraJavaOptions = kind match {
-    case "instrumented" => ("-javaagent:"+PathSettings.agentLib.fold(sys.error, identity)).split(' ')
+    case "instrumented" => ("-javaagent:"+agentLib).split(' ')
     case _              => Array.empty[String]
   }
 
