@@ -667,7 +667,13 @@ lazy val dist = (project in file("dist"))
   .settings(
     libraryDependencies ++= Seq(scalaContinuationsLibraryDep, scalaContinuationsPluginDep, scalaSwingDep, jlineDep),
     mkBin := mkBinImpl.value,
-    mkQuick <<= Def.task {} dependsOn ((distDependencies.map(products in Runtime in _) :+ mkBin): _*),
+    mkQuick <<= Def.task {
+      val cp = (fullClasspath in IntegrationTest in LocalProject("test")).value
+      val propsFile = (buildDirectory in ThisBuild).value / "quick" / "partest.properties"
+      val props = new java.util.Properties()
+      props.setProperty("partest.classpath", cp.map(_.data.getAbsolutePath).mkString(sys.props("path.separator")))
+      IO.write(props, null, propsFile)
+    } dependsOn ((distDependencies.map(products in Runtime in _) :+ mkBin): _*),
     mkPack <<= Def.task {} dependsOn (packagedArtifact in (Compile, packageBin), mkBin),
     target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id,
     packageBin in Compile := {
