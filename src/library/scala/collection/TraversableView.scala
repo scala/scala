@@ -27,7 +27,7 @@ object TraversableView {
     def result() = throw new UnsupportedOperationException("TraversableView.Builder.result")
     def clear() {}
   }
-  type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
+  type Coll = TraversableView[_, _ <: Traversable[_]]
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, TraversableView[A, Traversable[_]]] =
     new CanBuildFrom[Coll, A, TraversableView[A, Traversable[_]]] {
       def apply(from: Coll) = new NoBuilder
