@@ -18,17 +18,25 @@ import scala.annotation.tailrec
 /** Abandons any pretense of type safety for speed.  You can't say I
  *  didn't try: see r23934.
  */
-private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) extends AbstractIterator[T] {
-  outer =>
+private[collection] abstract class TrieIterator[+T](
+      elems: Array[Iterable[T]],
+  val initDepth: Int,
+  val initArrayStack: Array[Array[Iterable[T @uV]]],
+  val initPosStack: Array[Int],
+  val initArrayD: Array[Iterable[T @uV]],
+  val initPosD: Int,
+  val initSubIter: Iterator[T]) extends AbstractIterator[T] { outer =>
+
+  def this(elems: Array[Iterable[T]]) =
+    this(elems,
+      initDepth = 0,
+      initArrayStack = new Array[Array[Iterable[T]]](6),
+      initPosStack = new Array[Int](6),
+      initArrayD = elems,
+      initPosD = 0,
+      initSubIter = null)
 
   private[immutable] def getElem(x: AnyRef): T
-
-  def initDepth                                     = 0
-  def initArrayStack: Array[Array[Iterable[T @uV]]] = new Array[Array[Iterable[T]]](6)
-  def initPosStack                                  = new Array[Int](6)
-  def initArrayD: Array[Iterable[T @uV]]            = elems
-  def initPosD                                      = 0
-  def initSubIter: Iterator[T]                      = null // to traverse collision nodes
 
   private[this] var depth                                     = initDepth
   private[this] var arrayStack: Array[Array[Iterable[T @uV]]] = initArrayStack
@@ -58,14 +66,13 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
     case _                                  => false
   }
 
-  final class DupIterator(xs: Array[Iterable[T]]) extends {
-    override val initDepth                                     = outer.depth
-    override val initArrayStack: Array[Array[Iterable[T @uV]]] = outer.arrayStack
-    override val initPosStack                                  = outer.posStack
-    override val initArrayD: Array[Iterable[T @uV]]            = outer.arrayD
-    override val initPosD                                      = outer.posD
-    override val initSubIter                                   = outer.subIter
-  } with TrieIterator[T](xs) {
+  final class DupIterator(xs: Array[Iterable[T]]) extends TrieIterator[T](xs,
+    initDepth      = outer.depth,
+    initArrayStack = outer.arrayStack,
+    initPosStack   = outer.posStack,
+    initArrayD     = outer.arrayD,
+    initPosD       = outer.posD,
+    initSubIter    = outer.subIter) {
     final override def getElem(x: AnyRef): T = outer.getElem(x)
   }
 
