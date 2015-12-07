@@ -996,6 +996,10 @@ TODO:
       <include name="**/*.png"/>
       <include name="**/*.gif"/>
       <include name="**/*.txt"/>
+      <include name="**/*.eot"/>
+      <include name="**/*.ttf"/>
+      <include name="**/*.woff"/>
+      <include name="**/*.svg"/>
     </patternset>
 
     <taskdef resource="scala/tools/ant/sabbus/antlib.xml" classpathref="starr.compiler.path"/>
@@ -1662,6 +1666,10 @@ TODO:
         <include name="**/*.css"/>
         <include name="**/*.gif"/>
         <include name="**/*.png"/>
+        <include name="**/*.eot"/>
+        <include name="**/*.ttf"/>
+        <include name="**/*.woff"/>
+        <include name="**/*.svg"/>
       </fileset>
     </copy>
   </target>

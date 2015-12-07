@@ -1,7 +1,14 @@
 // © 2009–2010 EPFL/LAMP
-// code by Gilles Dubochet with contributions by Pedro Furlanetto and Marcin Kubala
+// code by Gilles Dubochet with contributions by Pedro Furlanetto, Marcin Kubala and Felix Mulder
 
 $(document).ready(function(){
+
+    $("#template > div > div > ol > li > span > a").click(function(e) {
+        $("#template > div > div > ol > li").removeClass("selected");
+        $(this).parent().parent().addClass("selected");
+        var defHeight = $("#definition").height() + $("#signature").height() + 50;
+        $('html,body').animate({scrollTop: $(this).offset().top - defHeight}, 500);
+    });
 
     var controls = {
         visibility: {
@@ -48,8 +55,9 @@ $(document).ready(function(){
 
         filter();
         window.scrollTo(0, 0);
-        jqElemParent.effect("highlight", {color: "#FFCC85"}, 3000);
-        $('html,body').animate({scrollTop: jqElemParent.offset().top}, 1000);
+        var defHeight = $("#definition").height() + $("#signature").height() + 50;
+        jqElemParent.addClass("selected");
+        $('html,body').animate({scrollTop: jqElemParent.offset().top - defHeight}, 1000);
     }
 
     var isHiddenClass = function (name) {
@@ -68,6 +76,10 @@ $(document).ready(function(){
     $("#implicits li").filter(function(){
         return isHidden(this);
     }).removeClass("in").addClass("out");
+
+    $("#mbrsel > div.toggle").click(function() {
+        $("#filterby").toggle();
+    });
 
     // Pre-filter members
     filter();
@@ -101,7 +113,7 @@ $(document).ready(function(){
             break;
 
         default:
-            window.scrollTo(0, $("#mbrsel").offset().top);
+            window.scrollTo(0, $("#mbrsel").offset().top - 130);
             filter(true);
             break;
 
@@ -110,7 +122,7 @@ $(document).ready(function(){
     input.focus(function(event) {
         input.select();
     });
-    $("#textfilter > .post").click(function() {
+    $("#textfilter > .clear").click(function() {
         $("#textfilter input").attr("value", "");
         filter();
     });
@@ -147,19 +159,19 @@ $(document).ready(function(){
         filter();
     });
 
-    $("#mbrsel > div.ancestors > ol > li.hideall").click(function() {
+    $("#mbrsel > div > div.ancestors > ol > li.hideall").click(function() {
         $("#linearization li.in").removeClass("in").addClass("out");
         $("#linearization li:first").removeClass("out").addClass("in");
         $("#implicits li.in").removeClass("in").addClass("out");
 
-        if ($(this).hasClass("out") && $("#mbrsel > div.ancestors > ol > li.showall").hasClass("in")) {
+        if ($(this).hasClass("out") && $("#mbrsel > div > div.ancestors > ol > li.showall").hasClass("in")) {
             $(this).removeClass("out").addClass("in");
-            $("#mbrsel > div.ancestors > ol > li.showall").removeClass("in").addClass("out");
+            $("#mbrsel > div > div.ancestors > ol > li.showall").removeClass("in").addClass("out");
         }
 
         filter();
     })
-    $("#mbrsel > div.ancestors > ol > li.showall").click(function() {
+    $("#mbrsel > div > div.ancestors > ol > li.showall").click(function() {
         var filteredLinearization =
             $("#linearization li.out").filter(function() {
                 return ! isHiddenClass($(this).attr("name"));
@@ -167,14 +179,14 @@ $(document).ready(function(){
         filteredLinearization.removeClass("out").addClass("in");
 
         var filteredImplicits =
-        $("#implicits li.out").filter(function() {
-            return ! isHidden(this);
-        });
+            $("#implicits li.out").filter(function() {
+                return ! isHidden(this);
+            });
         filteredImplicits.removeClass("out").addClass("in");
 
-        if ($(this).hasClass("out") && $("#mbrsel > div.ancestors > ol > li.hideall").hasClass("in")) {
+        if ($(this).hasClass("out") && $("#mbrsel > div > div.ancestors > ol > li.hideall").hasClass("in")) {
             $(this).removeClass("out").addClass("in");
-            $("#mbrsel > div.ancestors > ol > li.hideall").removeClass("in").addClass("out");
+            $("#mbrsel > div > div.ancestors > ol > li.hideall").removeClass("in").addClass("out");
         }
 
         filter();
@@ -267,6 +279,14 @@ $(document).ready(function(){
             exposeMember(jqElem);
         }
     }
+
+    $("#mbrsel-input").on("focus", function() {
+        $("#textfilter > .clear").show();
+    });
+
+    $("#mbrsel-input").on("blur", function() {
+        $("#textfilter > .clear").hide();
+    });
 });
 
 function orderAlpha() {
