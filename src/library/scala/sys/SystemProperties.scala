@@ -32,7 +32,7 @@ class SystemProperties
 extends mutable.AbstractMap[String, String]
    with mutable.Map[String, String] {
 
-  override def empty = new SystemProperties
+  override def empty = mutable.Map[String, String]()
   override def default(key: String): String = null
 
   def iterator: Iterator[(String, String)] = wrapAccess {
