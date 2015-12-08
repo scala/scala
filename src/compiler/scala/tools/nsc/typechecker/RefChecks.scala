@@ -1182,38 +1182,14 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     private def eliminateModuleDefs(moduleDef: Tree): List[Tree] = exitingRefchecks {
       val ModuleDef(_, _, impl) = moduleDef
       val module        = moduleDef.symbol
-      val moduleClass   = module.moduleClass
       val site          = module.owner
       val moduleName    = module.name.toTermName
       // The typer doesn't take kindly to seeing this ClassDef; we have to
       // set NoType so it will be ignored.
-      val cdef          = ClassDef(moduleClass, impl) setType NoType
+      val cdef          = ClassDef(module.moduleClass, impl) setType NoType
 
-      // This code is related to the fix of SI-9375, which stops adding `readResolve` methods to
-      // non-static (nested) modules. Before the fix, the method would cause the module accessor
-      // to become notPrivate. To prevent binary changes in the 2.11.x branch, we mimic that behavior.
-      // There is a bit of code duplication between here and SyntheticMethods. We cannot call
-      // makeNotPrivate already in SyntheticMethod: that is during type checking, and not all references
-      // are resolved yet, so we cannot rename a definition. This code doesn't exist in the 2.12.x branch.
-      def hasConcreteImpl(name: Name) = moduleClass.info.member(name).alternatives exists (m => !m.isDeferred)
-      val hadReadResolveBeforeSI9375 = moduleClass.isSerializable && !hasConcreteImpl(nme.readResolve)
-      if (hadReadResolveBeforeSI9375)
-        moduleClass.sourceModule.makeNotPrivate(moduleClass.sourceModule.owner)
-
-      // Create the module var unless the immediate owner is a class and
-      // the module var already exists there. See SI-5012, SI-6712.
-      def findOrCreateModuleVar() = {
-        val vsym = (
-          if (site.isTerm) NoSymbol
-          else site.info decl nme.moduleVarName(moduleName)
-        )
-        vsym orElse (site newModuleVarSymbol module)
-      }
       def newInnerObject() = {
-        // Create the module var unless it is already in the module owner's scope.
-        // The lookup is on module.enclClass and not module.owner lest there be a
-        // nullary method between us and the class; see SI-5012.
-        val moduleVar = findOrCreateModuleVar()
+        val moduleVar = site newModuleVarSymbol module
         val rhs       = gen.newModule(module, moduleVar.tpe)
         val body      = if (site.isTrait) rhs else gen.mkAssignAndReturn(moduleVar, rhs)
         val accessor  = DefDef(module, body.changeOwner(moduleVar -> module))
@@ -1222,13 +1198,14 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       }
       def matchingInnerObject() = {
         val newFlags = (module.flags | STABLE) & ~MODULE
-        val newInfo  = NullaryMethodType(moduleClass.tpe)
+        val newInfo  = NullaryMethodType(module.moduleClass.tpe)
         val accessor = site.newMethod(moduleName, module.pos, newFlags) setInfoAndEnter newInfo
 
         DefDef(accessor, Select(This(site), module)) :: Nil
       }
       val newTrees = cdef :: (
         if (module.isStatic)
+          // trait T { def f: Object }; object O extends T { object f }. Need to generate method f in O.
           if (module.isOverridingSymbol) matchingInnerObject() else Nil
         else
           newInnerObject()
@@ -1480,10 +1457,13 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         case m: MemberDef =>
           val sym = m.symbol
           applyChecks(sym.annotations)
-          // validate implicitNotFoundMessage
-          analyzer.ImplicitNotFoundMsg.check(sym) foreach { warn =>
-            reporter.warning(tree.pos, f"Invalid implicitNotFound message for ${sym}%s${sym.locationString}%s:%n$warn")
-          }
+
+          def messageWarning(name: String)(warn: String) =
+            reporter.warning(tree.pos, f"Invalid $name message for ${sym}%s${sym.locationString}%s:%n$warn")
+
+          // validate implicitNotFoundMessage and implicitAmbiguousMessage
+          analyzer.ImplicitNotFoundMsg.check(sym) foreach messageWarning("implicitNotFound")
+          analyzer.ImplicitAmbiguousMsg.check(sym) foreach messageWarning("implicitAmbiguous")
 
         case tpt@TypeTree() =>
           if(tpt.original != null) {

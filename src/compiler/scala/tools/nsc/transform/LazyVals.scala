@@ -38,6 +38,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
 
           case ClassDef(_, _, _, _) | DefDef(_, _, _, _, _, _) | ModuleDef(_, _, _) =>
 
+          // Avoid adding bitmaps when they are fully overshadowed by those that are added inside loops
           case LabelDef(name, _, _) if nme.isLoopHeaderLabel(name) =>
 
           case _ =>
@@ -108,22 +109,16 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
         }
 
         case Template(_, _, body) => atOwner(currentOwner) {
-          val body1 = super.transformTrees(body)
+          // TODO: shady business... can this logic be encapsulated in LocalLazyValFinder?
           var added = false
-          val stats =
-            for (stat <- body1) yield stat match {
-              case Block(_, _) | Apply(_, _) | If(_, _, _) | Try(_, _, _) if !added =>
-                // Avoid adding bitmaps when they are fully overshadowed by those
-                // that are added inside loops
-                if (LocalLazyValFinder.find(stat)) {
-                  added = true
-                  typed(addBitmapDefs(sym, stat))
-                } else stat
-              case ValDef(_, _, _, _) =>
-                typed(deriveValDef(stat)(addBitmapDefs(stat.symbol, _)))
-              case _ =>
-                stat
+          val stats = super.transformTrees(body) mapConserve {
+              case stat: ValDef => typed(deriveValDef(stat)(addBitmapDefs(stat.symbol, _)))
+              case stat: TermTree if !added && (LocalLazyValFinder find stat) =>
+                added = true
+                typed(addBitmapDefs(sym, stat))
+              case stat => stat
             }
+
           val innerClassBitmaps = if (!added && currentOwner.isClass && bitmaps.contains(currentOwner)) {
               // add bitmap to inner class if necessary
                 val toAdd0 = bitmaps(currentOwner).map(s => typed(ValDef(s, ZERO)))

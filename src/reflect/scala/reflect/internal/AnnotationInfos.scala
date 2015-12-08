@@ -30,12 +30,6 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
 
     def staticAnnotations = annotations filter (_.isStatic)
 
-    /** Symbols of any @throws annotations on this symbol.
-     */
-    def throwsAnnotations(): List[Symbol] = annotations collect {
-      case ThrownException(exc) => exc
-    }
-
     def addThrowsAnnotation(throwableSym: Symbol): Self = {
       val throwableTpe = if (throwableSym.isMonomorphicType) throwableSym.tpe else {
         debuglog(s"Encountered polymorphic exception `${throwableSym.fullName}` while parsing class file.")
@@ -175,6 +169,22 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
 
     def unapply(info: AnnotationInfo): Option[(Type, List[Tree], List[(Name, ClassfileAnnotArg)])] =
       Some((info.atp, info.args, info.assocs))
+
+    def mkFilter(category: Symbol, defaultRetention: Boolean)(ann: AnnotationInfo) =
+      (ann.metaAnnotations, ann.defaultTargets) match {
+        case (Nil, Nil)      => defaultRetention
+        case (Nil, defaults) => defaults contains category
+        case (metas, _)      => metas exists (_ matches category)
+      }
+
+    def mkFilter(categories: List[Symbol], defaultRetention: Boolean)(ann: AnnotationInfo) =
+      (ann.metaAnnotations, ann.defaultTargets) match {
+        case (Nil, Nil)      => defaultRetention
+        case (Nil, defaults) => categories exists defaults.contains
+        case (metas, _)      =>
+          val metaSyms = metas collect { case ann if !ann.symbol.isInstanceOf[StubSymbol] => ann.symbol }
+          categories exists (category => metaSyms exists (_ isNonBottomSubClass category))
+      }
   }
 
   class CompleteAnnotationInfo(
@@ -406,24 +416,24 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
 
   class ErroneousAnnotation() extends CompleteAnnotationInfo(ErrorType, Nil, Nil)
 
-  /** Extracts symbol of thrown exception from AnnotationInfo.
+  /** Extracts the type of the thrown exception from an AnnotationInfo.
     *
     * Supports both “old-style” `@throws(classOf[Exception])`
     * as well as “new-stye” `@throws[Exception]("cause")` annotations.
     */
   object ThrownException {
-    def unapply(ann: AnnotationInfo): Option[Symbol] = {
+    def unapply(ann: AnnotationInfo): Option[Type] = {
       ann match {
         case AnnotationInfo(tpe, _, _) if tpe.typeSymbol != ThrowsClass =>
           None
         // old-style: @throws(classOf[Exception]) (which is throws[T](classOf[Exception]))
         case AnnotationInfo(_, List(Literal(Constant(tpe: Type))), _) =>
-          Some(tpe.typeSymbol)
+          Some(tpe)
         // new-style: @throws[Exception], @throws[Exception]("cause")
         case AnnotationInfo(TypeRef(_, _, arg :: _), _, _) =>
-          Some(arg.typeSymbol)
+          Some(arg)
         case AnnotationInfo(TypeRef(_, _, Nil), _, _) =>
-          Some(ThrowableClass)
+          Some(ThrowableTpe)
       }
     }
   }

@@ -47,13 +47,20 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
 
     result.putByte(InlineInfoAttribute.VERSION)
 
-    var hasSelfIsFinal = 0
-    if (inlineInfo.isEffectivelyFinal)               hasSelfIsFinal |= 1
-    if (inlineInfo.traitImplClassSelfType.isDefined) hasSelfIsFinal |= 2
-    result.putByte(hasSelfIsFinal)
+    var finalSelfSam = 0
+    if (inlineInfo.isEffectivelyFinal)               finalSelfSam |= 1
+    if (inlineInfo.traitImplClassSelfType.isDefined) finalSelfSam |= 2
+    if (inlineInfo.sam.isDefined)                    finalSelfSam |= 4
+    result.putByte(finalSelfSam)
 
     for (selfInternalName <- inlineInfo.traitImplClassSelfType) {
       result.putShort(cw.newUTF8(selfInternalName))
+    }
+
+    for (samNameDesc <- inlineInfo.sam) {
+      val (name, desc) = samNameDesc.span(_ != '(')
+      result.putShort(cw.newUTF8(name))
+      result.putShort(cw.newUTF8(desc))
     }
 
     // The method count fits in a short (the methods_count in a classfile is also a short)
@@ -94,15 +101,20 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
 
     val version = nextByte()
     if (version == 1) {
-      val hasSelfIsFinal = nextByte()
-      val isFinal = (hasSelfIsFinal & 1) != 0
-      val hasSelf = (hasSelfIsFinal & 2) != 0
+      val finalSelfSam = nextByte()
+      val isFinal = (finalSelfSam & 1) != 0
+      val hasSelf = (finalSelfSam & 2) != 0
+      val hasSam  = (finalSelfSam & 4) != 0
 
-      val self = if (hasSelf) {
+      val self = if (!hasSelf) None else {
         val selfName = nextUTF8()
         Some(selfName)
-      } else {
-        None
+      }
+
+      val sam = if (!hasSam) None else {
+        val name = nextUTF8()
+        val desc = nextUTF8()
+        Some(name + desc)
       }
 
       val numEntries = nextShort()
@@ -118,7 +130,7 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
         (name + desc, MethodInlineInfo(isFinal, traitMethodWithStaticImplementation, isInline, isNoInline))
       }).toMap
 
-      InlineInfoAttribute(InlineInfo(self, isFinal, infos, None))
+      InlineInfoAttribute(InlineInfo(self, isFinal, sam, infos, None))
     } else {
       val msg = UnknownScalaInlineInfoVersion(cr.getClassName, version)
       InlineInfoAttribute(BTypes.EmptyInlineInfo.copy(warning = Some(msg)))
@@ -129,8 +141,10 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
 object InlineInfoAttribute {
   /**
    * [u1]    version
-   * [u1]    isEffectivelyFinal (<< 0), hasTraitImplClassSelfType (<< 1)
+   * [u1]    isEffectivelyFinal (<< 0), hasTraitImplClassSelfType (<< 1), hasSam (<< 2)
    * [u2]?   traitImplClassSelfType (reference)
+   * [u2]?   samName (reference)
+   * [u2]?   samDescriptor (reference)
    * [u2]    numMethodEntries
    *   [u2]  name (reference)
    *   [u2]  descriptor (reference)
@@ -145,4 +159,4 @@ object InlineInfoAttribute {
  * In order to instruct the ASM framework to de-serialize the ScalaInlineInfo attribute, we need
  * to pass a prototype instance when running the class reader.
  */
-object InlineInfoAttributePrototype extends InlineInfoAttribute(InlineInfo(null, false, null, null))
+object InlineInfoAttributePrototype extends InlineInfoAttribute(InlineInfo(null, false, null, null, null))

@@ -7,8 +7,9 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.tools.asm
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt._
-import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo, InternalName}
+import scala.tools.nsc.backend.jvm.BTypes._
 import BackendReporting._
 import scala.tools.nsc.settings.ScalaSettings
 
@@ -27,20 +28,21 @@ import scala.tools.nsc.settings.ScalaSettings
 class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   import global._
   import definitions._
+  import genBCode._
 
-  val bCodeICodeCommon: BCodeICodeCommon[global.type] = new BCodeICodeCommon(global)
-  val bCodeAsmCommon: BCodeAsmCommon[global.type] = new BCodeAsmCommon(global)
-  import bCodeAsmCommon._
+  val backendUtils: BackendUtils[this.type] = new BackendUtils(this)
 
   // Why the proxy, see documentation of class [[CoreBTypes]].
   val coreBTypes = new CoreBTypesProxy[this.type](this)
   import coreBTypes._
 
-  val byteCodeRepository = new ByteCodeRepository(global.classPath, javaDefinedClasses, recordPerRunCache(collection.concurrent.TrieMap.empty))
+  val byteCodeRepository: ByteCodeRepository[this.type] = new ByteCodeRepository(global.classPath, this)
 
   val localOpt: LocalOpt[this.type] = new LocalOpt(this)
 
   val inliner: Inliner[this.type] = new Inliner(this)
+
+  val inlinerHeuristics: InlinerHeuristics[this.type] = new InlinerHeuristics(this)
 
   val closureOptimizer: ClosureOptimizer[this.type] = new ClosureOptimizer(this)
 
@@ -105,8 +107,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     assert(classSym.isClass, s"Cannot create ClassBType from non-class symbol $classSym")
     assertClassNotArrayNotPrimitive(classSym)
     assert(!primitiveTypeMap.contains(classSym) || isCompilingPrimitive, s"Cannot create ClassBType for primitive class symbol $classSym")
-    if (classSym == NothingClass) RT_NOTHING
-    else if (classSym == NullClass) RT_NULL
+    if (classSym == NothingClass) srNothingRef
+    else if (classSym == NullClass) srNullRef
     else {
       val internalName = classSym.javaBinaryName.toString
       classBTypeFromInternalName.getOrElse(internalName, {
@@ -159,7 +161,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
      */
     def nonClassTypeRefToBType(sym: Symbol): ClassBType = {
       assert(sym.isType && isCompilingArray, sym)
-      ObjectReference
+      ObjectRef
     }
 
     t.dealiasWiden match {
@@ -196,7 +198,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
             "If possible, please file a bug on issues.scala-lang.org.")
 
         tp match {
-          case ThisType(ArrayClass)               => ObjectReference // was introduced in 9b17332f11 to fix SI-999, but this code is not reached in its test, or any other test
+          case ThisType(ArrayClass)               => ObjectRef // was introduced in 9b17332f11 to fix SI-999, but this code is not reached in its test, or any other test
           case ThisType(sym)                      => classBTypeFromSymbol(sym)
           case SingleType(_, sym)                 => primitiveOrClassToBType(sym)
           case ConstantType(_)                    => typeToBType(t.underlying)
@@ -215,7 +217,101 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     assert(!primitiveTypeMap.contains(sym) || isCompilingPrimitive, sym)
   }
 
+  def implementedInterfaces(classSym: Symbol): List[Symbol] = {
+    // Additional interface parents based on annotations and other cues
+    def newParentForAnnotation(ann: AnnotationInfo): Option[Type] = ann.symbol match {
+      case RemoteAttr => Some(RemoteInterfaceClass.tpe)
+      case _          => None
+    }
+
+    // SI-9393: java annotations are interfaces, but the classfile / java source parsers make them look like classes.
+    def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait || sym.hasJavaAnnotationFlag
+
+    val classParents = {
+      val parents = classSym.info.parents
+      // SI-9393: the classfile / java source parsers add Annotation and ClassfileAnnotation to the
+      // parents of a java annotations. undo this for the backend (where we need classfile-level information).
+      if (classSym.hasJavaAnnotationFlag) parents.filterNot(c => c.typeSymbol == ClassfileAnnotationClass || c.typeSymbol == AnnotationClass)
+      else parents
+    }
+
+    val allParents = classParents ++ classSym.annotations.flatMap(newParentForAnnotation)
+
+    // We keep the superClass when computing minimizeParents to eliminate more interfaces.
+    // Example: T can be eliminated from D
+    //   trait T
+    //   class C extends T
+    //   class D extends C with T
+    val interfaces = erasure.minimizeParents(allParents) match {
+      case superClass :: ifs if !isInterfaceOrTrait(superClass.typeSymbol) =>
+        ifs
+      case ifs =>
+        // minimizeParents removes the superclass if it's redundant, for example:
+        //  trait A
+        //  class C extends Object with A  // minimizeParents removes Object
+        ifs
+    }
+    interfaces.map(_.typeSymbol)
+  }
+
+  /**
+   * The member classes of a class symbol. Note that the result of this method depends on the
+   * current phase, for example, after lambdalift, all local classes become member of the enclosing
+   * class.
+   *
+   * Impl classes are always considered top-level, see comment in BTypes.
+   */
+  private def memberClassesForInnerClassTable(classSymbol: Symbol): List[Symbol] = classSymbol.info.decls.collect({
+    case sym if sym.isClass && !considerAsTopLevelImplementationArtifact(sym) =>
+      sym
+    case sym if sym.isModule && !considerAsTopLevelImplementationArtifact(sym) => // impl classes get the lateMODULE flag in mixin
+      val r = exitingPickler(sym.moduleClass)
+      assert(r != NoSymbol, sym.fullLocationString)
+      r
+  })(collection.breakOut)
+
   private def setClassInfo(classSym: Symbol, classBType: ClassBType): ClassBType = {
+    /**
+     * Reconstruct the classfile flags from a Java defined class symbol.
+     *
+     * The implementation of this method is slightly different from `javaFlags` in BTypesFromSymbols.
+     * The javaFlags method is primarily used to map Scala symbol flags to sensible classfile flags
+     * that are used in the generated classfiles. For example, all classes emitted by the Scala
+     * compiler have ACC_PUBLIC.
+     *
+     * When building a [[ClassBType]] from a Java class symbol, the flags in the type's `info` have
+     * to correspond exactly to the flags in the classfile. For example, if the class is package
+     * protected (i.e., it doesn't have the ACC_PUBLIC flag), this needs to be reflected in the
+     * ClassBType. For example, the inliner needs the correct flags for access checks.
+     *
+     * Class flags are listed here:
+     *   https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.1-200-E.1
+     */
+    def javaClassfileFlags(classSym: Symbol): Int = {
+      assert(classSym.isJava, s"Expected Java class symbol, got ${classSym.fullName}")
+      import asm.Opcodes._
+      def enumFlags = ACC_ENUM | {
+        // Java enums have the `ACC_ABSTRACT` flag if they have a deferred method.
+        // We cannot trust `hasAbstractFlag`: the ClassfileParser adds `ABSTRACT` and `SEALED` to all
+        // Java enums for exhaustiveness checking.
+        val hasAbstractMethod = classSym.info.decls.exists(s => s.isMethod && s.isDeferred)
+        if (hasAbstractMethod) ACC_ABSTRACT else 0
+      }
+      GenBCode.mkFlags(
+        // SI-9393: the classfile / java source parser make java annotation symbols look like classes.
+        // here we recover the actual classfile flags.
+        if (classSym.hasJavaAnnotationFlag)                        ACC_ANNOTATION | ACC_INTERFACE | ACC_ABSTRACT else 0,
+        if (classSym.isPublic)                                     ACC_PUBLIC    else 0,
+        if (classSym.isFinal)                                      ACC_FINAL     else 0,
+        // see the link above. javac does the same: ACC_SUPER for all classes, but not interfaces.
+        if (classSym.isInterface)                                  ACC_INTERFACE else ACC_SUPER,
+        // for Java enums, we cannot trust `hasAbstractFlag` (see comment in enumFlags)
+        if (!classSym.hasJavaEnumFlag && classSym.hasAbstractFlag) ACC_ABSTRACT  else 0,
+        if (classSym.isArtifact)                                   ACC_SYNTHETIC else 0,
+        if (classSym.hasJavaEnumFlag)                              enumFlags     else 0
+      )
+    }
+
     // Check for isImplClass: trait implementation classes have NoSymbol as superClass
     // Check for hasAnnotationFlag for SI-9393: the classfile / java source parsers add
     // scala.annotation.Annotation as superclass to java annotations. In reality, java
@@ -251,13 +347,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     /* The InnerClass table of a class C must contain all nested classes of C, even if they are only
      * declared but not otherwise referenced in C (from the bytecode or a method / field signature).
      * We collect them here.
-     *
-     * Nested classes that are also referenced in C will be added to the innerClassBufferASM during
-     * code generation, but those duplicates will be eliminated when emitting the InnerClass
-     * attribute.
-     *
-     * Why do we need to collect classes into innerClassBufferASM at all? To collect references to
-     * nested classes, but NOT nested in C, that are used within C.
      */
     val nestedClassSymbols = {
       val linkedClass = exitingPickler(classSym.linkedClassOfClass) // linkedCoC does not work properly in late phases
@@ -444,13 +533,13 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
         case Right(classNode) =>
           inlineInfoFromClassfile(classNode)
         case Left(missingClass) =>
-          InlineInfo(None, false, Map.empty, Some(ClassNotFoundWhenBuildingInlineInfoFromSymbol(missingClass)))
+          EmptyInlineInfo.copy(warning = Some(ClassNotFoundWhenBuildingInlineInfoFromSymbol(missingClass)))
       }
     }
   }
 
   /**
-   * For top-level objects without a companion class, the compilere generates a mirror class with
+   * For top-level objects without a companion class, the compiler generates a mirror class with
    * static forwarders (Java compat). There's no symbol for the mirror class, but we still need a
    * ClassBType (its info.nestedClasses will hold the InnerClass entries, see comment in BTypes).
    */
@@ -462,12 +551,27 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       // class info consistent with BCodeHelpers.genMirrorClass
       val nested = exitingPickler(memberClassesForInnerClassTable(moduleClassSym)) map classBTypeFromSymbol
       c.info = Right(ClassInfo(
-        superClass = Some(ObjectReference),
+        superClass = Some(ObjectRef),
         interfaces = Nil,
         flags = asm.Opcodes.ACC_SUPER | asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_FINAL,
         nestedClasses = nested,
         nestedInfo = None,
-        InlineInfo(None, true, Map.empty, None))) // no InlineInfo needed, scala never invokes methods on the mirror class
+        inlineInfo = EmptyInlineInfo.copy(isEffectivelyFinal = true))) // no method inline infos needed, scala never invokes methods on the mirror class
+      c
+    })
+  }
+
+  def beanInfoClassClassBType(mainClass: Symbol): ClassBType = {
+    val internalName = mainClass.javaBinaryName.toString + "BeanInfo"
+    classBTypeFromInternalName.getOrElse(internalName, {
+      val c = ClassBType(internalName)
+      c.info = Right(ClassInfo(
+        superClass = Some(sbScalaBeanInfoRef),
+        interfaces = Nil,
+        flags = javaFlags(mainClass),
+        nestedClasses = Nil,
+        nestedInfo = None,
+        inlineInfo = EmptyInlineInfo))
       c
     })
   }
@@ -571,7 +675,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     import asm.Opcodes._
     GenBCode.mkFlags(
       if (privateFlag) ACC_PRIVATE else ACC_PUBLIC,
-      if (sym.isDeferred || sym.hasAbstractFlag) ACC_ABSTRACT else 0,
+      if ((sym.isDeferred && !sym.hasFlag(symtab.Flags.JAVA_DEFAULTMETHOD))|| sym.hasAbstractFlag) ACC_ABSTRACT else 0,
       if (sym.isInterface) ACC_INTERFACE else 0,
       if (finalFlag && !sym.hasAbstractFlag) ACC_FINAL else 0,
       if (sym.isStaticMember) ACC_STATIC else 0,

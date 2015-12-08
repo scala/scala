@@ -253,7 +253,7 @@ trait TraversableLike[+A, +Repr] extends Any
     b.result
   }
 
-  private def filterImpl(p: A => Boolean, isFlipped: Boolean): Repr = {
+  private[scala] def filterImpl(p: A => Boolean, isFlipped: Boolean): Repr = {
     val b = newBuilder
     for (x <- this)
       if (p(x) != isFlipped) b += x

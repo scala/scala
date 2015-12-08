@@ -47,6 +47,13 @@ consider them unchanged:
 
         git update-index --no-assume-unchanged `find src/eclipse -iname .classpath -or -iname .project`
 
+0. The 2.12, sources of Scala need to be built with a 2.12 version of the compiler. One can configure a 2.12 Scala installation
+in Eclipse. In order to do this, go to `Window -> Preferences -> Scala -> Installations` and add a 2.12 installation. You can
+either download a prepackaged version of 2.12 from the Scala homepage or you add the Scala installation that is part of the
+`build/pack/lib` directory. The latter is required in case you absolutely need to depend on a nightly build of the compiler to
+compile the compiler itself. Once the 2.12 Scala installation is created you need to select all Scala projects, do a right click
+and select `Scala -> Set the Scala installation` where you have to choose the newly created 2.12 Scala installation.
+
 If it doesn’t compile
 =====================
 

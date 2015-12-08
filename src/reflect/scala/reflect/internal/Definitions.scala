@@ -233,6 +233,8 @@ trait Definitions extends api.StandardDefinitions {
       || tp =:= AnyRefTpe
     )
 
+    def isUnitType(tp: Type) = tp.typeSymbol == UnitClass && tp.annotations.isEmpty
+
     def hasMultipleNonImplicitParamLists(member: Symbol): Boolean = hasMultipleNonImplicitParamLists(member.info)
     def hasMultipleNonImplicitParamLists(info: Type): Boolean = info match {
       case PolyType(_, restpe)                                   => hasMultipleNonImplicitParamLists(restpe)
@@ -516,7 +518,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaSignatureAnnotation = requiredClass[scala.reflect.ScalaSignature]
     lazy val ScalaLongSignatureAnnotation = requiredClass[scala.reflect.ScalaLongSignature]
 
-    lazy val LambdaMetaFactory = getClassIfDefined("java.lang.invoke.LambdaMetafactory")
     lazy val MethodHandle = getClassIfDefined("java.lang.invoke.MethodHandle")
 
     // Option classes
@@ -795,7 +796,9 @@ trait Definitions extends api.StandardDefinitions {
      * The class defining the method is a supertype of `tp` that
      * has a public no-arg primary constructor.
      */
-    def samOf(tp: Type): Symbol = if (!settings.Xexperimental) NoSymbol else {
+    def samOf(tp: Type): Symbol = if (!settings.Xexperimental) NoSymbol else findSam(tp)
+
+    def findSam(tp: Type): Symbol = {
       // if tp has a constructor, it must be public and must not take any arguments
       // (not even an implicit argument list -- to keep it simple for now)
       val tpSym  = tp.typeSymbol
@@ -1103,6 +1106,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val BridgeClass                = requiredClass[scala.annotation.bridge]
     lazy val ElidableMethodClass        = requiredClass[scala.annotation.elidable]
     lazy val ImplicitNotFoundClass      = requiredClass[scala.annotation.implicitNotFound]
+    lazy val ImplicitAmbiguousClass     = getClassIfDefined("scala.annotation.implicitAmbiguous")
     lazy val MigrationAnnotationClass   = requiredClass[scala.annotation.migration]
     lazy val ScalaStrictFPAttr          = requiredClass[scala.annotation.strictfp]
     lazy val SwitchClass                = requiredClass[scala.annotation.switch]
@@ -1517,7 +1521,7 @@ trait Definitions extends api.StandardDefinitions {
       def isPolymorphicSignature(sym: Symbol) = PolySigMethods(sym)
       private lazy val PolySigMethods: Set[Symbol] = Set[Symbol](MethodHandle.info.decl(sn.Invoke), MethodHandle.info.decl(sn.InvokeExact)).filter(_.exists)
 
-      lazy val Scala_Java8_CompatPackage = rootMirror.getPackageIfDefined("scala.compat.java8")
+      lazy val Scala_Java8_CompatPackage = rootMirror.getPackageIfDefined("scala.runtime.java8")
       lazy val Scala_Java8_CompatPackage_JFunction = (0 to MaxFunctionArity).toArray map (i => getMemberIfDefined(Scala_Java8_CompatPackage.moduleClass, TypeName("JFunction" + i)))
     }
   }

@@ -68,7 +68,7 @@ import scala.language.implicitConversions
  *  @version 1.0, 11/10/2008
  *  @since 2.7
  */
-sealed abstract class Either[+A, +B] {
+sealed abstract class Either[+A, +B] extends Product with Serializable {
   /**
    * Projects this `Either` as a `Left`.
    */

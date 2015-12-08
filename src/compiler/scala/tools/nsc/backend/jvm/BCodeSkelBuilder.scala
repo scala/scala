@@ -9,7 +9,6 @@ package backend
 package jvm
 
 import scala.collection.{ mutable, immutable }
-import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository
 import scala.tools.nsc.symtab._
 
 import scala.tools.asm
@@ -26,7 +25,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
   import global._
   import bTypes._
   import coreBTypes._
-  import bCodeAsmCommon._
 
   /*
    * There's a dedicated PlainClassBuilder for each CompilationUnit,
@@ -68,33 +66,26 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     var isCZStaticModule           = false
     var isCZRemote                 = false
 
-    protected val indyLambdaHosts = collection.mutable.Set[Symbol]()
-
     /* ---------------- idiomatic way to ask questions to typer ---------------- */
 
     def paramTKs(app: Apply): List[BType] = {
       val Apply(fun, _)  = app
       val funSym = fun.symbol
-      (funSym.info.paramTypes map toTypeKind) // this tracks mentioned inner classes (in innerClassBufferASM)
+      funSym.info.paramTypes map typeToBType
     }
 
-    def symInfoTK(sym: Symbol): BType = {
-      toTypeKind(sym.info) // this tracks mentioned inner classes (in innerClassBufferASM)
-    }
+    def symInfoTK(sym: Symbol): BType = typeToBType(sym.info)
 
-    def tpeTK(tree: Tree): BType = { toTypeKind(tree.tpe) }
+    def tpeTK(tree: Tree): BType = typeToBType(tree.tpe)
 
     def log(msg: => AnyRef) {
       global synchronized { global.log(msg) }
     }
 
-    override def getCurrentCUnit(): CompilationUnit = { cunit }
-
     /* ---------------- helper utils for generating classes and fields ---------------- */
 
     def genPlainClass(cd: ClassDef) {
       assert(cnode == null, "GenBCode detected nested methods.")
-      innerClassBufferASM.clear()
 
       claszSymbol       = cd.symbol
       isCZParcelable    = isAndroidParcelableClass(claszSymbol)
@@ -121,29 +112,21 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       addClassFields()
 
-      innerClassBufferASM ++= classBType.info.get.nestedClasses
       gen(cd.impl)
 
 
       val shouldAddLambdaDeserialize = (
         settings.target.value == "jvm-1.8"
           && settings.Ydelambdafy.value == "method"
-          && indyLambdaHosts.contains(claszSymbol))
+          && indyLambdaHosts.contains(cnode.name))
 
       if (shouldAddLambdaDeserialize)
-        addLambdaDeserialize(claszSymbol, cnode)
-
-      addInnerClassesASM(cnode, innerClassBufferASM.toList)
+        backendUtils.addLambdaDeserialize(cnode)
 
       cnode.visitAttribute(classBType.inlineInfoAttribute.get)
 
       if (AsmUtils.traceClassEnabled && cnode.name.contains(AsmUtils.traceClassPattern))
         AsmUtils.traceClass(cnode)
-
-      if (settings.YoptAddToBytecodeRepository) {
-        // The inliner needs to find all classes in the code repo, also those being compiled
-        byteCodeRepository.add(cnode, ByteCodeRepository.CompilationUnit)
-      }
 
       assert(cd.symbol == claszSymbol, "Someone messed up BCodePhase.claszSymbol during genPlainClass().")
     } // end of method genPlainClass()
@@ -154,12 +137,8 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     private def initJClass(jclass: asm.ClassVisitor) {
 
       val bType = classBTypeFromSymbol(claszSymbol)
-      val superClass = bType.info.get.superClass.getOrElse(ObjectReference).internalName
-      val interfaceNames = bType.info.get.interfaces map {
-        case classBType =>
-          if (classBType.isNestedClass.get) { innerClassBufferASM += classBType }
-          classBType.internalName
-      }
+      val superClass = bType.info.get.superClass.getOrElse(ObjectRef).internalName
+      val interfaceNames = bType.info.get.interfaces.map(_.internalName)
 
       val flags = javaFlags(claszSymbol)
 
@@ -172,7 +151,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         cnode.visitSource(cunit.source.toString, null /* SourceDebugExtension */)
       }
 
-      enclosingMethodAttribute(claszSymbol, internalName, asmMethodType(_).descriptor) match {
+      enclosingMethodAttribute(claszSymbol, internalName, methodBTypeFromSymbol(_).descriptor) match {
         case Some(EnclosingMethodEntry(className, methodName, methodDescriptor)) =>
           cnode.visitOuterClass(className, methodName, methodDescriptor)
         case _ => ()
@@ -544,7 +523,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         if (isMethSymStaticCtor) CLASS_CONSTRUCTOR_NAME
         else jMethodName
 
-      val mdesc = asmMethodType(methSymbol).descriptor
+      val mdesc = methodBTypeFromSymbol(methSymbol).descriptor
       mnode = cnode.visitMethod(
         flags,
         bytecodeName,
@@ -568,7 +547,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       methSymbol  = dd.symbol
       jMethodName = methSymbol.javaSimpleName.toString
-      returnType  = asmMethodType(dd.symbol).returnType
+      returnType  = methodBTypeFromSymbol(dd.symbol).returnType
       isMethSymStaticCtor = methSymbol.isStaticConstructor
 
       resetMethodBookkeeping(dd)
@@ -587,10 +566,10 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       }
 
       val isNative         = methSymbol.hasAnnotation(definitions.NativeAttr)
-      val isAbstractMethod = (methSymbol.isDeferred || methSymbol.owner.isInterface)
+      val isAbstractMethod = (methSymbol.isDeferred || methSymbol.owner.isInterface) && !methSymbol.hasFlag(Flags.JAVA_DEFAULTMETHOD)
       val flags = GenBCode.mkFlags(
         javaFlags(methSymbol),
-        if (claszSymbol.isInterface) asm.Opcodes.ACC_ABSTRACT   else 0,
+        if (isAbstractMethod)        asm.Opcodes.ACC_ABSTRACT   else 0,
         if (methSymbol.isStrictFP)   asm.Opcodes.ACC_STRICT     else 0,
         if (isNative)                asm.Opcodes.ACC_NATIVE     else 0  // native methods of objects are generated in mirror classes
       )
@@ -697,7 +676,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         val callee = methSymbol.enclClass.primaryConstructor
         val jname  = callee.javaSimpleName.toString
         val jowner = internalName(callee.owner)
-        val jtype  = asmMethodType(callee).descriptor
+        val jtype  = methodBTypeFromSymbol(callee).descriptor
         insnModB   = new asm.tree.MethodInsnNode(asm.Opcodes.INVOKESPECIAL, jowner, jname, jtype, false)
       }
 
@@ -706,7 +685,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       // android creator code
       if (isCZParcelable) {
         // add a static field ("CREATOR") to this class to cache android.os.Parcelable$Creator
-        val andrFieldDescr = getClassBTypeAndRegisterInnerClass(AndroidCreatorClass).descriptor
+        val andrFieldDescr = classBTypeFromSymbol(AndroidCreatorClass).descriptor
         cnode.visitField(
           asm.Opcodes.ACC_STATIC | asm.Opcodes.ACC_FINAL,
           "CREATOR",
@@ -718,7 +697,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         val callee = definitions.getMember(claszSymbol.companionModule, androidFieldName)
         val jowner = internalName(callee.owner)
         val jname  = callee.javaSimpleName.toString
-        val jtype  = asmMethodType(callee).descriptor
+        val jtype  = methodBTypeFromSymbol(callee).descriptor
         insnParcA  = new asm.tree.MethodInsnNode(asm.Opcodes.INVOKESTATIC, jowner, jname, jtype, false)
         // PUTSTATIC `thisName`.CREATOR;
         insnParcB  = new asm.tree.FieldInsnNode(asm.Opcodes.PUTSTATIC, thisName, "CREATOR", andrFieldDescr)

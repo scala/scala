@@ -449,12 +449,15 @@ private[internal] trait TypeMaps {
     (pre eq NoType) || (pre eq NoPrefix) || !isPossiblePrefix(clazz)
     )
 
-  def newAsSeenFromMap(pre: Type, clazz: Symbol): AsSeenFromMap =
-    new AsSeenFromMap(pre, clazz)
+  @deprecated("Use new AsSeenFromMap instead", "2.12.0")
+  final def newAsSeenFromMap(pre: Type, clazz: Symbol): AsSeenFromMap = new AsSeenFromMap(pre, clazz)
 
   /** A map to compute the asSeenFrom method.
     */
-  class AsSeenFromMap(seenFromPrefix: Type, seenFromClass: Symbol) extends TypeMap with KeepOnlyTypeConstraints {
+  class AsSeenFromMap(seenFromPrefix0: Type, seenFromClass: Symbol) extends TypeMap with KeepOnlyTypeConstraints {
+    private val seenFromPrefix: Type = if (seenFromPrefix0.typeSymbolDirect.hasPackageFlag && !seenFromClass.hasPackageFlag)
+      seenFromPrefix0.packageObject.typeOfThis
+    else seenFromPrefix0
     // Some example source constructs relevant in asSeenFrom:
     //
     // object CaptureThis {

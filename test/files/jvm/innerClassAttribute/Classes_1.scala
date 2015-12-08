@@ -13,7 +13,7 @@ object A3 {
 
 class A4 {
   def f(l: List[String]): List[String] = {
-    l map (_ + "1")
+    l map (_ + "1") : @noinline // inlining adds a reference to the nested class scala/collection/generic/GenTraversableFactory$GenericCanBuildFrom
   }
 }
 
@@ -187,41 +187,30 @@ trait A24 extends A24Base {
 }
 
 class SI_9105 {    
-  // the EnclosingMethod attributes depend on the delambdafy strategy (inline vs method)
-
-                                       //  outerClass-inline   enclMeth-inline   outerClass-method   enclMeth-method
+                                       //      outerClass       enclMeth
   val fun = (s: String) => {
-    class A                            //     closure             null (*)            SI_9105           null
-    def m: Object = { class B; new B } //     closure              m$1                SI_9105            m$1
-    val f: Object = { class C; new C } //     closure             null (*)            SI_9105           null
+    class A                            //        SI_9105           null
+    def m: Object = { class B; new B } //        SI_9105            m$1
+    val f: Object = { class C; new C } //        SI_9105           null
   }
   def met = (s: String) => {
-    class D                            //     closure             null (*)            SI_9105            met
-    def m: Object = { class E; new E } //     closure              m$1                SI_9105            m$1
-    val f: Object = { class F; new F } //     closure             null (*)            SI_9105            met
+    class D                            //        SI_9105            met
+    def m: Object = { class E; new E } //        SI_9105            m$1
+    val f: Object = { class F; new F } //        SI_9105            met
   }
-
-  // (*) the originalOwner chain of A (similar for D) is: SI_9105.fun.$anonfun-value.A
-  //     we can get to the anonfun-class (created by uncurry), but not to the apply method.
-  //
-  //     for C and F, the originalOwner chain is fun.$anonfun-value.f.C. at later phases, the rawowner of f is
-  //     an apply$sp method of the closure class. we could use that as enclosing method, but it would be unsystematic
-  //     (A / D don't have an encl meth either), and also strange to use the $sp, which is a compilation artifact.
-  //     So using `null` looks more like the situation in the source code: C / F are nested classes of the anon-fun, and
-  //     there's no method in between.
 
   def byName(op: => Any) = 0
 
   val bnV = byName {
-    class G                            //     closure             null (*)            SI_9105           null
-    def m: Object = { class H; new H } //     closure              m$1                SI_9105            m$1
-    val f: Object = { class I; new I } //     closure             null (*)            SI_9105           null
+    class G                            //        SI_9105           null
+    def m: Object = { class H; new H } //        SI_9105            m$1
+    val f: Object = { class I; new I } //        SI_9105           null
     ""
   }
   def bnM = byName {
-    class J                            //     closure             null (*)            SI_9105            bnM
-    def m: Object = { class K; new K } //     closure              m$1                SI_9105            m$1
-    val f: Object = { class L; new L } //     closure             null (*)            SI_9105            bnM
+    class J                            //        SI_9105            bnM
+    def m: Object = { class K; new K } //        SI_9105            m$1
+    val f: Object = { class L; new L } //        SI_9105            bnM
     ""
   }
 }
@@ -285,8 +274,8 @@ object NestedInValueClass {
   class A(val arg: String) extends AnyVal {
     // A has InnerClass entries for the two closures (and for A and A$). not for B / C
     def f = {
-      def g = List().map(x => ((s: String) => x)) // outer class A, no outer method (g is moved to the companion, doesn't exist in A)
-      g.map(x => ((s: String) => x))              // outer class A, outer method f
+      def g = List().map(x => ((s: String) => x)): @noinline // outer class A, no outer method (g is moved to the companion, doesn't exist in A)
+      g.map(x => ((s: String) => x)): @noinline              // outer class A, outer method f
     }
     // statements and field declarations are not allowed in value classes
   }

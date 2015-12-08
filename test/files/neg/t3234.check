@@ -1,6 +1,0 @@
-t3234.scala:17: warning: At the end of the day, could not inline @inline-marked method foo3
-    println(foo(42) + foo2(11) + foo3(2))
-                                     ^
-error: No warnings can be incurred under -Xfatal-warnings.
-one warning found
-one error found

@@ -38,13 +38,13 @@ Joint Compilation:
              mixin [    test2.PO]  -  test2.package$PO
            cleanup [    test2.PO]  -  test2.package$PO
 
-             typer [   test2.bar]  -  `package`.this.bar
-           pickler [   test2.bar]  -  `package`.this.bar
-         refchecks [   test2.bar]  -  `package`.this.bar
-           uncurry [   test2.bar]  -  `package`.this.bar
-        specialize [   test2.bar]  -  `package`.this.bar
-     explicitouter [   test2.bar]  -  `package`.this.bar
-           erasure [   test2.bar]  -  `package`.this.bar
+             typer [   test2.bar]  -  test2.`package`.bar
+           pickler [   test2.bar]  -  test2.`package`.bar
+         refchecks [   test2.bar]  -  test2.`package`.bar
+           uncurry [   test2.bar]  -  test2.`package`.bar
+        specialize [   test2.bar]  -  test2.`package`.bar
+     explicitouter [   test2.bar]  -  test2.`package`.bar
+           erasure [   test2.bar]  -  test2.`package`.bar
        posterasure [   test2.bar]  -  test2.`package`.bar
            flatten [   test2.bar]  -  test2.`package`.bar
              mixin [   test2.bar]  -  test2.`package`.bar
@@ -90,13 +90,13 @@ Separate Compilation:
              mixin [          PO]  -  test2.package$PO
            cleanup [          PO]  -  test2.package$PO
 
-             typer [testSep2.bar]  -  `package`.this.bar
-           pickler [testSep2.bar]  -  `package`.this.bar
-         refchecks [testSep2.bar]  -  `package`.this.bar
-           uncurry [testSep2.bar]  -  `package`.this.bar
-        specialize [testSep2.bar]  -  `package`.this.bar
-     explicitouter [testSep2.bar]  -  `package`.this.bar
-           erasure [testSep2.bar]  -  `package`.this.bar
+             typer [testSep2.bar]  -  test2.`package`.bar
+           pickler [testSep2.bar]  -  test2.`package`.bar
+         refchecks [testSep2.bar]  -  test2.`package`.bar
+           uncurry [testSep2.bar]  -  test2.`package`.bar
+        specialize [testSep2.bar]  -  test2.`package`.bar
+     explicitouter [testSep2.bar]  -  test2.`package`.bar
+           erasure [testSep2.bar]  -  test2.`package`.bar
        posterasure [testSep2.bar]  -  test2.`package`.bar
            flatten [testSep2.bar]  -  test2.`package`.bar
              mixin [testSep2.bar]  -  test2.`package`.bar

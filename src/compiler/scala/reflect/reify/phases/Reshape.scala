@@ -325,8 +325,7 @@ trait Reshape {
           if (reifyDebug) println(s"reconstructed lazy val is $vdef1")
           vdef1::Nil
         case ddef: DefDef if ddef.symbol.isLazy =>
-          def hasUnitType(sym: Symbol) = (sym.tpe.typeSymbol == UnitClass) && sym.tpe.annotations.isEmpty
-          if (hasUnitType(ddef.symbol)) {
+          if (isUnitType(ddef.symbol.info)) {
             // since lazy values of type Unit don't have val's
             // we need to create them from scratch
             toPreTyperLazyVal(ddef) :: Nil

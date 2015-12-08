@@ -26,4 +26,11 @@ foo(5)(10)(15)+foo(5)(10)(15)
 List(1) ++ List('a')
 
   """.trim
+
+  // replace indylambda function names by <function0>
+  override def eval() = {
+    val lines = super.eval
+    val r = """\$\$Lambda.*""".r
+    lines.map(l => r.replaceAllIn(l, "<function0>"))
+  }
 }

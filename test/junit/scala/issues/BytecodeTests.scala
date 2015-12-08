@@ -9,10 +9,17 @@ import scala.tools.nsc.backend.jvm.CodeGenTools._
 import org.junit.Assert._
 import scala.collection.JavaConverters._
 import scala.tools.partest.ASMConverters._
+import scala.tools.testing.ClearAfterClass
+
+object BytecodeTests extends ClearAfterClass.Clearable {
+  var compiler = newCompiler()
+  def clear(): Unit = { compiler = null }
+}
 
 @RunWith(classOf[JUnit4])
-class BytecodeTests {
-  val compiler = newCompiler()
+class BytecodeTests extends ClearAfterClass {
+  ClearAfterClass.stateToClear = BytecodeTests
+  val compiler = BytecodeTests.compiler
 
   @Test
   def t8731(): Unit = {
@@ -59,7 +66,6 @@ class BytecodeTests {
         |@AnnotB class B
       """.stripMargin
 
-    val compiler = newCompiler()
     val run = new compiler.Run()
     run.compileSources(List(new BatchSourceFile("AnnotA.java", annotA), new BatchSourceFile("AnnotB.java", annotB), new BatchSourceFile("Test.scala", scalaSrc)))
     val outDir = compiler.settings.outputDirs.getSingleOutput.get
@@ -76,5 +82,56 @@ class BytecodeTests {
     // known issue SI-8928: the visibility of AnnotB should be CLASS, but annotation classes without
     // a @Retention annotation are currently emitted as RUNTIME.
     check("B.class", "AnnotB")
+  }
+
+  @Test
+  def t6288bJumpPosition(): Unit = {
+    val code =
+      """object Case3 {                                 // 01
+        | def unapply(z: Any): Option[Int] = Some(-1)   // 02
+        | def main(args: Array[String]) {               // 03
+        |    ("": Any) match {                          // 04
+        |      case x : String =>                       // 05
+        |        println("case 0")                      // 06 println and jump at 6
+        |      case _ =>                                // 07
+        |        println("default")                     // 08 println and jump at 8
+        |    }                                          // 09
+        |    println("done")                            // 10
+        |  }
+        |}
+      """.stripMargin
+    val List(mirror, module) = compileClasses(compiler)(code)
+
+    val unapplyLineNumbers = getSingleMethod(module, "unapply").instructions.filter(_.isInstanceOf[LineNumber])
+    assert(unapplyLineNumbers == List(LineNumber(2, Label(0))), unapplyLineNumbers)
+
+    import Opcodes._
+    val expected = List(
+      LineNumber(3, Label(0)),
+      LineNumber(4, Label(0)),
+      LineNumber(5, Label(5)),
+      Jump(IFNE, Label(11)),
+      Jump(GOTO, Label(20)),
+
+      LineNumber(6, Label(11)),
+      Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false),
+      Jump(GOTO, Label(33)),
+
+      LineNumber(5, Label(20)),
+      Jump(GOTO, Label(24)),
+
+      LineNumber(8, Label(24)),
+      Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false),
+      Jump(GOTO, Label(33)),
+
+      LineNumber(10, Label(33)),
+      Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false)
+    )
+
+    val mainIns = getSingleMethod(module, "main").instructions filter {
+      case _: LineNumber | _: Invoke | _: Jump => true
+      case _ => false
+    }
+    assertSameCode(mainIns, expected)
   }
 }

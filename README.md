@@ -74,7 +74,7 @@ You'll need a Java SDK.  The baseline version is 6 for 2.11.x, 8 for
 2.12.x. (It's also possible to use a later SDK for local development,
 but the CI will verify against the baseline version.)
 
-You'll also need Apache Ant (version 1.9.0 or above) and curl (for `./pull-binary-libs.sh`).
+You'll also need Apache Ant (version 1.9.3 or above) and curl (for `./pull-binary-libs.sh`).
 
 Mac OS X and Linux work. Windows may work if you use Cygwin. (Community help with keeping the build working on Windows is appreciated.)
 
@@ -189,7 +189,7 @@ We typically alias `build/quick/bin/scalac -d sandbox` to `qsc` and `build/quick
 Note: on most machines this requires more heap than is allocated by default.  You can adjust the parameters with `ANT_OPTS`. Example command line:
 
 ```sh
-ANT_OPTS="-Xms512M -Xmx2048M -Xss1M -XX:MaxPermSize=128M" ant docs
+ANT_OPTS="-Xms512M -Xmx2048M -Xss1M" ant docs
 ```
 
 ### Bootstrapping concepts

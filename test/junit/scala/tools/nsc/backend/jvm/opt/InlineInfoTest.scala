@@ -22,12 +22,17 @@ object InlineInfoTest extends ClearAfterClass.Clearable {
   var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:classpath")
   def clear(): Unit = { compiler = null }
 
-  def notPerRun: List[Clearable] = List(compiler.genBCode.bTypes.classBTypeFromInternalName, compiler.genBCode.bTypes.byteCodeRepository.classes)
+  def notPerRun: List[Clearable] = List(
+    compiler.genBCode.bTypes.classBTypeFromInternalName,
+    compiler.genBCode.bTypes.byteCodeRepository.compilingClasses,
+    compiler.genBCode.bTypes.byteCodeRepository.parsedClasses)
   notPerRun foreach compiler.perRunCaches.unrecordCache
 }
 
 @RunWith(classOf[JUnit4])
-class InlineInfoTest {
+class InlineInfoTest extends ClearAfterClass {
+  ClearAfterClass.stateToClear = InlineInfoTest
+
   val compiler = InlineInfoTest.compiler
 
   def compile(code: String) = {

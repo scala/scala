@@ -22,13 +22,9 @@ trait ScalaSettings extends AbsScalaSettings
   /** Set of settings */
   protected[scala] lazy val allSettings = mutable.HashSet[Setting]()
 
-  /** Against my better judgment, giving in to martin here and allowing
-   *  CLASSPATH to be used automatically.  So for the user-specified part
-   *  of the classpath:
-   *
-   *  - If -classpath or -cp is given, it is that
-   *  - Otherwise, if CLASSPATH is set, it is that
-   *  - If neither of those, then "." is used.
+  /** The user class path, specified by `-classpath` or `-cp`,
+   *  defaults to the value of CLASSPATH env var if it is set, as in Java,
+   *  or else to `"."` for the current user directory.
    */
   protected def defaultClasspath = sys.env.getOrElse("CLASSPATH", ".")
 
@@ -123,7 +119,6 @@ trait ScalaSettings extends AbsScalaSettings
   val require            = MultiStringSetting  ("-Xplugin-require", "plugin", "Abort if a named plugin is not loaded.")
   val pluginsDir         = StringSetting       ("-Xpluginsdir", "path", "Path to search for plugin archives.", Defaults.scalaPluginPath)
   val Xprint             = PhasesSetting       ("-Xprint", "Print out program after")
-  val writeICode         = PhasesSetting       ("-Xprint-icode", "Log internal icode to *.icode files after", "icode")
   val Xprintpos          = BooleanSetting      ("-Xprint-pos", "Print tree positions, as offsets.")
   val printtypes         = BooleanSetting      ("-Xprint-types", "Print tree types (debugging option).")
   val prompt             = BooleanSetting      ("-Xprompt", "Display a prompt after each error (debugging option).")
@@ -134,8 +129,9 @@ trait ScalaSettings extends AbsScalaSettings
   val Xshowobj           = StringSetting       ("-Xshow-object", "object", "Show internal representation of object.", "")
   val showPhases         = BooleanSetting      ("-Xshow-phases", "Print a synopsis of compiler phases.")
   val sourceReader       = StringSetting       ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
+  val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom reporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
   val strictInference    = BooleanSetting      ("-Xstrict-inference", "Don't infer known-unsound types")
-  val source             = ScalaVersionSetting ("-Xsource", "version", "Treat compiler input as Scala source for the specified version, see SI-8126.", initial = ScalaVersion("2.11"))
+  val source             = ScalaVersionSetting ("-Xsource", "version", "Treat compiler input as Scala source for the specified version, see SI-8126.", initial = ScalaVersion("2.12"))
 
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
   val XfullLubs         = BooleanSetting ("-Xfull-lubs", "Retains pre 2.10 behavior of less aggressive truncation of least upper bounds.")
@@ -143,7 +139,7 @@ trait ScalaSettings extends AbsScalaSettings
   // XML parsing options
   object XxmlSettings extends MultiChoiceEnumeration {
     val coalescing   = Choice("coalescing", "Convert PCData to Text and coalesce sibling nodes")
-    def isCoalescing = (Xxml contains coalescing) || (!isScala212 && !Xxml.isSetByUser)
+    def isCoalescing = Xxml contains coalescing
   }
   val Xxml = MultiChoiceSetting(
     name    = "-Xxml",
@@ -175,7 +171,6 @@ trait ScalaSettings extends AbsScalaSettings
   val YconstOptimization  = BooleanSetting    ("-Yconst-opt", "Perform optimization with constant values.")
   val Ycompacttrees   = BooleanSetting    ("-Ycompact-trees", "Use compact tree printer when displaying trees.")
   val noCompletion    = BooleanSetting    ("-Yno-completion", "Disable tab-completion in the REPL.")
-  val completion      = ChoiceSetting     ("-Ycompletion", "provider", "Select tab-completion in the REPL.", List("pc","adhoc","none"), "pc")
   val Xdce            = BooleanSetting    ("-Ydead-code", "Perform dead code elimination.")
   val debug           = BooleanSetting    ("-Ydebug", "Increase the quantity of debugging output.")
   //val doc           = BooleanSetting    ("-Ydoc", "Generate documentation")
@@ -223,11 +218,8 @@ trait ScalaSettings extends AbsScalaSettings
   val YdisableUnreachablePrevention = BooleanSetting("-Ydisable-unreachable-prevention", "Disable the prevention of unreachable blocks in code generation.")
   val YnoLoadImplClass = BooleanSetting   ("-Yno-load-impl-class", "Do not load $class.class files.")
 
-  val exposeEmptyPackage = BooleanSetting("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
-  // the current standard is "inline" but we are moving towards "method"
-  val Ydelambdafy        = ChoiceSetting     ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "inline")
-
-  val YskipInlineInfoAttribute = BooleanSetting("-Yskip-inline-info-attribute", "Do not add the ScalaInlineInfo attribute to classfiles generated by -Ybackend:GenASM")
+  val exposeEmptyPackage = BooleanSetting ("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
+  val Ydelambdafy        = ChoiceSetting  ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "method")
 
   object YoptChoices extends MultiChoiceEnumeration {
     val unreachableCode         = Choice("unreachable-code",          "Eliminate unreachable code, exception handlers protecting no instructions, debug information of eliminated variables.")
@@ -275,19 +267,20 @@ trait ScalaSettings extends AbsScalaSettings
   def YoptInlinerEnabled          = YoptInlineProject || YoptInlineGlobal
 
   def YoptBuildCallGraph          = YoptInlinerEnabled || YoptClosureElimination
-  def YoptAddToBytecodeRepository = YoptInlinerEnabled || YoptClosureElimination
+  def YoptAddToBytecodeRepository = YoptBuildCallGraph || YoptInlinerEnabled || YoptClosureElimination
 
   val YoptInlineHeuristics = ChoiceSetting(
     name = "-Yopt-inline-heuristics",
     helpArg = "strategy",
     descr = "Set the heuristics for inlining decisions.",
-    choices = List("at-inline-annotated", "everything"),
-    default = "at-inline-annotated")
+    choices = List("at-inline-annotated", "everything", "default"),
+    default = "default")
 
   object YoptWarningsChoices extends MultiChoiceEnumeration {
     val none                               = Choice("none"                       , "No optimizer warnings.")
     val atInlineFailedSummary              = Choice("at-inline-failed-summary"   , "One-line summary if there were @inline method calls that could not be inlined.")
     val atInlineFailed                     = Choice("at-inline-failed"           , "A detailed warning for each @inline method call that could not be inlined.")
+    val anyInlineFailed                    = Choice("any-inline-failed"          , "A detailed warning for every callsite that was chosen for inlining by the heuristics, but could not be inlined.")
     val noInlineMixed                      = Choice("no-inline-mixed"            , "In mixed compilation, warn at callsites methods defined in java sources (the inlining decision cannot be made without bytecode).")
     val noInlineMissingBytecode            = Choice("no-inline-missing-bytecode" , "Warn if an inlining decision cannot be made because a the bytecode of a class or member cannot be found on the compilation classpath.")
     val noInlineMissingScalaInlineInfoAttr = Choice("no-inline-missing-attribute", "Warn if an inlining decision cannot be made because a Scala classfile does not have a ScalaInlineInfo attribute.")
@@ -306,7 +299,8 @@ trait ScalaSettings extends AbsScalaSettings
   def YoptWarningEmitAtInlineFailed =
     !YoptWarnings.isSetByUser ||
       YoptWarnings.contains(YoptWarningsChoices.atInlineFailedSummary) ||
-      YoptWarnings.contains(YoptWarningsChoices.atInlineFailed)
+      YoptWarnings.contains(YoptWarningsChoices.atInlineFailed) ||
+      YoptWarnings.contains(YoptWarningsChoices.anyInlineFailed)
 
   def YoptWarningNoInlineMixed                      = YoptWarnings.contains(YoptWarningsChoices.noInlineMixed)
   def YoptWarningNoInlineMissingBytecode            = YoptWarnings.contains(YoptWarningsChoices.noInlineMissingBytecode)
@@ -357,8 +351,8 @@ trait ScalaSettings extends AbsScalaSettings
    * Settings motivated by GenBCode
    */
   val Ybackend = ChoiceSetting ("-Ybackend", "choice of bytecode emitter", "Choice of bytecode emitter.",
-                                List("GenASM", "GenBCode"),
-                                "GenASM")
+                                List("GenBCode"),
+                                "GenBCode")
   // Feature extensions
   val XmacroSettings          = MultiStringSetting("-Xmacro-settings", "option", "Custom settings for macros.")
 
@@ -388,6 +382,23 @@ trait ScalaSettings extends AbsScalaSettings
     val None = "none"
     val Normal = "normal"
     val Discard = "discard"
+  }
+
+  def conflictWarning: Option[String] = {
+    def oldOptimiseFlagsInGenBCode: Option[String] = {
+      val optFlags: List[Setting] = if (optimise.value) List(optimise) else optimiseSettings.filter(_.value)
+      if (isBCodeActive && optFlags.nonEmpty) {
+        val msg = s"""Compiler settings for the 2.11 optimizer (${optFlags.map(_.name).mkString(", ")}) are incompatible with -Ybackend:GenBCode (which is the default in 2.12).
+                     |The optimizer settings are ignored. See -Yopt:help for enabling the new optimizer in 2.12.""".stripMargin
+        Some(msg)
+      } else
+        None
+    }
+
+    List(oldOptimiseFlagsInGenBCode /*, moreToCome */).flatten match {
+      case Nil => None
+      case warnings => Some("Conflicting compiler settings were detected. Some settings will be ignored.\n" + warnings.mkString("\n"))
+    }
   }
 }
 

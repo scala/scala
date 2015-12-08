@@ -131,7 +131,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   def optManifest[T](implicit m: OptManifest[T])     = m
 
   // Minor variations on identity functions
-  def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
+  @inline def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
   @inline def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world -- TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
   @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
 
@@ -269,13 +269,6 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     @inline def formatted(fmtstr: String): String = fmtstr format self
   }
 
-  // TODO: remove, only needed for binary compatibility of 2.11.0-RC1 with 2.11.0-M8
-  // note that `private[scala]` becomes `public` in bytecode
-  private[scala] final class StringAdd[A](private val self: A) extends AnyVal {
-    def +(other: String): String = String.valueOf(self) + other
-  }
-  private[scala] def StringAdd(x: Any): Any = new StringAdd(x)
-
   // SI-8229 retaining the pre 2.11 name for source compatibility in shadowing this implicit
   implicit final class any2stringadd[A](private val self: A) extends AnyVal {
     def +(other: String): String = String.valueOf(self) + other
@@ -334,36 +327,48 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     case null              => null
   }).asInstanceOf[ArrayOps[T]]
 
-  implicit def booleanArrayOps(xs: Array[Boolean]): ArrayOps[Boolean] = new ArrayOps.ofBoolean(xs)
-  implicit def byteArrayOps(xs: Array[Byte]): ArrayOps[Byte]          = new ArrayOps.ofByte(xs)
-  implicit def charArrayOps(xs: Array[Char]): ArrayOps[Char]          = new ArrayOps.ofChar(xs)
-  implicit def doubleArrayOps(xs: Array[Double]): ArrayOps[Double]    = new ArrayOps.ofDouble(xs)
-  implicit def floatArrayOps(xs: Array[Float]): ArrayOps[Float]       = new ArrayOps.ofFloat(xs)
-  implicit def intArrayOps(xs: Array[Int]): ArrayOps[Int]             = new ArrayOps.ofInt(xs)
-  implicit def longArrayOps(xs: Array[Long]): ArrayOps[Long]          = new ArrayOps.ofLong(xs)
-  implicit def refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T]    = new ArrayOps.ofRef[T](xs)
-  implicit def shortArrayOps(xs: Array[Short]): ArrayOps[Short]       = new ArrayOps.ofShort(xs)
-  implicit def unitArrayOps(xs: Array[Unit]): ArrayOps[Unit]          = new ArrayOps.ofUnit(xs)
+  // TODO: when we remove, these should we drop the underscores from the new generation below? (For source compatibility in case someone was shadowing these.)
+  @deprecated("For binary compatibility only. Release new partest and remove in M3.", "2.12.0-M2") def booleanArrayOps(xs: Array[Boolean]): ArrayOps[Boolean] = new ArrayOps.ofBoolean(xs)
+  @deprecated("For binary compatibility only. Release new partest and remove in M3.", "2.12.0-M2") def byteArrayOps(xs: Array[Byte]): ArrayOps[Byte]          = new ArrayOps.ofByte(xs)
+  @deprecated("For binary compatibility only. Release new partest and remove in M3.", "2.12.0-M2") def charArrayOps(xs: Array[Char]): ArrayOps[Char]          = new ArrayOps.ofChar(xs)
+  @deprecated("For binary compatibility only. Release new partest and remove in M3.", "2.12.0-M2") def doubleArrayOps(xs: Array[Double]): ArrayOps[Double]    = new ArrayOps.ofDouble(xs)
+  @deprecated("For binary compatibility only. Release new partest and remove in M3.", "2.12.0-M2") def floatArrayOps(xs: Array[Float]): ArrayOps[Float]       = new ArrayOps.ofFloat(xs)
+  @deprecated("For binary compatibility only. Release new partest and remove in M3.", "2.12.0-M2") def intArrayOps(xs: Array[Int]): ArrayOps[Int]             = new ArrayOps.ofInt(xs)
+  @deprecated("For binary compatibility only. Release new partest and remove in M3.", "2.12.0-M2") def longArrayOps(xs: Array[Long]): ArrayOps[Long]          = new ArrayOps.ofLong(xs)
+  @deprecated("For binary compatibility only. Release new partest and remove in M3.", "2.12.0-M2") def refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T]    = new ArrayOps.ofRef[T](xs)
+  @deprecated("For binary compatibility only. Release new partest and remove in M3.", "2.12.0-M2") def shortArrayOps(xs: Array[Short]): ArrayOps[Short]       = new ArrayOps.ofShort(xs)
+  @deprecated("For binary compatibility only. Release new partest and remove in M3.", "2.12.0-M2") def unitArrayOps(xs: Array[Unit]): ArrayOps[Unit]          = new ArrayOps.ofUnit(xs)
+
+  implicit def _booleanArrayOps(xs: Array[Boolean]): ArrayOps.ofBoolean   = new ArrayOps.ofBoolean(xs)
+  implicit def _byteArrayOps(xs: Array[Byte]): ArrayOps.ofByte            = new ArrayOps.ofByte(xs)
+  implicit def _charArrayOps(xs: Array[Char]): ArrayOps.ofChar            = new ArrayOps.ofChar(xs)
+  implicit def _doubleArrayOps(xs: Array[Double]): ArrayOps.ofDouble      = new ArrayOps.ofDouble(xs)
+  implicit def _floatArrayOps(xs: Array[Float]): ArrayOps.ofFloat         = new ArrayOps.ofFloat(xs)
+  implicit def _intArrayOps(xs: Array[Int]): ArrayOps.ofInt               = new ArrayOps.ofInt(xs)
+  implicit def _longArrayOps(xs: Array[Long]): ArrayOps.ofLong            = new ArrayOps.ofLong(xs)
+  implicit def _refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps.ofRef[T] = new ArrayOps.ofRef[T](xs)
+  implicit def _shortArrayOps(xs: Array[Short]): ArrayOps.ofShort         = new ArrayOps.ofShort(xs)
+  implicit def _unitArrayOps(xs: Array[Unit]): ArrayOps.ofUnit            = new ArrayOps.ofUnit(xs)
 
   // "Autoboxing" and "Autounboxing" ---------------------------------------------------
 
-  implicit def byte2Byte(x: Byte)           = java.lang.Byte.valueOf(x)
-  implicit def short2Short(x: Short)        = java.lang.Short.valueOf(x)
-  implicit def char2Character(x: Char)      = java.lang.Character.valueOf(x)
-  implicit def int2Integer(x: Int)          = java.lang.Integer.valueOf(x)
-  implicit def long2Long(x: Long)           = java.lang.Long.valueOf(x)
-  implicit def float2Float(x: Float)        = java.lang.Float.valueOf(x)
-  implicit def double2Double(x: Double)     = java.lang.Double.valueOf(x)
-  implicit def boolean2Boolean(x: Boolean)  = java.lang.Boolean.valueOf(x)
+  implicit def byte2Byte(x: Byte): java.lang.Byte             = x.asInstanceOf[java.lang.Byte]
+  implicit def short2Short(x: Short): java.lang.Short         = x.asInstanceOf[java.lang.Short]
+  implicit def char2Character(x: Char): java.lang.Character   = x.asInstanceOf[java.lang.Character]
+  implicit def int2Integer(x: Int): java.lang.Integer         = x.asInstanceOf[java.lang.Integer]
+  implicit def long2Long(x: Long): java.lang.Long             = x.asInstanceOf[java.lang.Long]
+  implicit def float2Float(x: Float): java.lang.Float         = x.asInstanceOf[java.lang.Float]
+  implicit def double2Double(x: Double): java.lang.Double     = x.asInstanceOf[java.lang.Double]
+  implicit def boolean2Boolean(x: Boolean): java.lang.Boolean = x.asInstanceOf[java.lang.Boolean]
 
-  implicit def Byte2byte(x: java.lang.Byte): Byte             = x.byteValue
-  implicit def Short2short(x: java.lang.Short): Short         = x.shortValue
-  implicit def Character2char(x: java.lang.Character): Char   = x.charValue
-  implicit def Integer2int(x: java.lang.Integer): Int         = x.intValue
-  implicit def Long2long(x: java.lang.Long): Long             = x.longValue
-  implicit def Float2float(x: java.lang.Float): Float         = x.floatValue
-  implicit def Double2double(x: java.lang.Double): Double     = x.doubleValue
-  implicit def Boolean2boolean(x: java.lang.Boolean): Boolean = x.booleanValue
+  implicit def Byte2byte(x: java.lang.Byte): Byte             = x.asInstanceOf[Byte]
+  implicit def Short2short(x: java.lang.Short): Short         = x.asInstanceOf[Short]
+  implicit def Character2char(x: java.lang.Character): Char   = x.asInstanceOf[Char]
+  implicit def Integer2int(x: java.lang.Integer): Int         = x.asInstanceOf[Int]
+  implicit def Long2long(x: java.lang.Long): Long             = x.asInstanceOf[Long]
+  implicit def Float2float(x: java.lang.Float): Float         = x.asInstanceOf[Float]
+  implicit def Double2double(x: java.lang.Double): Double     = x.asInstanceOf[Double]
+  implicit def Boolean2boolean(x: java.lang.Boolean): Boolean = x.asInstanceOf[Boolean]
 
   // Type Constraints --------------------------------------------------------------
 

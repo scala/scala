@@ -1,3 +1,6 @@
+/*
+ * filter: inliner warnings; re-run with
+ */
 import annotation._
 import elidable._
 

@@ -167,7 +167,7 @@ trait TypecheckedTypes { self: QuasiquoteProperties =>
   property("applied type") = test {
     val tt = typecheckTyp(tq"Map[Int, Int]")
     val tq"$tpt[..$tpts]" = tt
-    val tq"scala.this.Predef.Map" = tpt
+    val tq"scala.Predef.Map" = tpt
     val List(tq"scala.Int", tq"scala.Int") = tpts
   }
 

@@ -542,7 +542,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
         val qual = typedQualifier { atPos(tree.pos.makeTransparent) {
           tree match {
-            case Ident(_) => Ident(rootMirror.getPackageObjectWithMember(pre, sym))
+            case Ident(_) =>
+              val packageObject =
+                if (!sym.isOverloaded && sym.owner.isModuleClass) sym.owner.sourceModule // historical optimization, perhaps no longer needed
+                else pre.typeSymbol.packageObject
+              Ident(packageObject)
             case Select(qual, _) => Select(qual, nme.PACKAGEkw)
             case SelectFromTypeTree(qual, _) => Select(qual, nme.PACKAGEkw)
           }
@@ -858,7 +862,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case Block(_, tree1) => tree1.symbol
           case _               => tree.symbol
         }
-        if (!meth.isConstructor && (isFunctionType(pt) || samOf(pt).exists)) { // (4.2)
+        def shouldEtaExpandToSam: Boolean = {
+          // SI-9536 don't adapt parameterless method types to a to SAM's, fall through to empty application
+          // instead for backwards compatiblity with 2.11. See comments of that ticket and SI-7187
+          // for analogous trouble with non-SAM eta expansion. Suggestions there are: a) deprecate eta expansion to Function0,
+          // or b) switch the order of eta-expansion and empty application in this adaptation.
+          !mt.params.isEmpty && samOf(pt).exists
+        }
+        if (!meth.isConstructor && (isFunctionType(pt) || shouldEtaExpandToSam)) { // (4.2)
           debuglog(s"eta-expanding $tree: ${tree.tpe} to $pt")
           checkParamsConvertible(tree, tree.tpe)
           val tree0 = etaExpand(context.unit, tree, this)
@@ -928,24 +939,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def insertApply(): Tree = {
         assert(!context.inTypeConstructorAllowed, mode) //@M
         val adapted = adaptToName(tree, nme.apply)
-        def stabilize0(pre: Type): Tree = stabilize(adapted, pre, MonoQualifierModes, WildcardType)
-
-        // TODO reconcile the overlap between Typers#stablize and TreeGen.stabilize
-        val qual = adapted match {
-          case This(_) =>
-            gen.stabilize(adapted)
-          case Ident(_) =>
-            val owner = adapted.symbol.owner
-            val pre =
-              if (owner.isPackageClass) owner.thisType
-              else if (owner.isClass) context.enclosingSubClassContext(owner).prefix
-              else NoPrefix
-            stabilize0(pre)
-          case Select(qualqual, _) =>
-            stabilize0(qualqual.tpe)
-          case other =>
-            other
-        }
+        val qual = gen.stabilize(adapted)
         typedPos(tree.pos, mode, pt) {
           Select(qual setPos tree.pos.makeTransparent, nme.apply)
         }
@@ -1707,6 +1701,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               psym addChild context.owner
             else
               pending += ParentSealedInheritanceError(parent, psym)
+          if (psym.isLocalToBlock && !phase.erasedTypes)
+            psym addChild context.owner
           val parentTypeOfThis = parent.tpe.dealias.typeOfThis
 
           if (!(selfType <:< parentTypeOfThis) &&
@@ -2228,7 +2224,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val allParams = meth.paramss.flatten
         for (p <- allParams) {
           for (n <- p.deprecatedParamName) {
-            if (allParams.exists(p1 => p1.name == n || (p != p1 && p1.deprecatedParamName.exists(_ == n))))
+            if (allParams.exists(p1 => p != p1 && (p1.name == n || p1.deprecatedParamName.exists(_ == n))))
               DeprecatedParamNameError(p, n)
           }
         }
@@ -3664,7 +3660,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val annType = annTpt.tpe
 
       finish(
-        if (typedFun.isErroneous)
+        if (typedFun.isErroneous || annType == null)
           ErroneousAnnotation
         else if (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass) {
           // annotation to be saved as java classfile annotation
@@ -4141,6 +4137,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             ann setType arg1.tpe.withAnnotation(annotInfo)
           }
           val atype = ann.tpe
+          // For `f(): @inline/noinline` callsites, add the InlineAnnotatedAttachment. TypeApplys
+          // are eliminated by erasure, so add it to the underlying function in this case.
+          def setInlineAttachment(t: Tree, att: InlineAnnotatedAttachment): Unit = t match {
+            case TypeApply(fun, _) => setInlineAttachment(fun, att)
+            case _ => t.updateAttachment(att)
+          }
+          if (atype.hasAnnotation(definitions.ScalaNoInlineClass)) setInlineAttachment(arg1, NoInlineCallsiteAttachment)
+          else if (atype.hasAnnotation(definitions.ScalaInlineClass)) setInlineAttachment(arg1, InlineCallsiteAttachment)
           Typed(arg1, resultingTypeTree(atype)) setPos tree.pos setType atype
         }
       }
@@ -5229,7 +5233,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (refTyped.isErrorTyped) {
           setError(tree)
         } else {
-          tree setType refTyped.tpe.resultType
+          tree setType refTyped.tpe.resultType.deconst
           if (refTyped.isErrorTyped || treeInfo.admitsTypeSelection(refTyped)) tree
           else UnstableTreeError(tree)
         }

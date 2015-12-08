@@ -237,7 +237,7 @@ abstract class UnCurry extends InfoTransform
 
           def canUseDelamdafyMethod = (
                (inConstructorFlag == 0) // Avoiding synthesizing code prone to SI-6666, SI-8363 by using old-style lambda translation
-            && (!isSpecialized || (settings.isBCodeActive && settings.target.value == "jvm-1.8")) // DelambdafyTransformer currently only emits generic FunctionN-s, use the old style in the meantime
+            && (!isSpecialized || settings.isBCodeActive) // DelambdafyTransformer currently only emits generic FunctionN-s, use the old style in the meantime
           )
           if (inlineFunctionExpansion || !canUseDelamdafyMethod) {
             val parents = addSerializable(abstractFunctionForFunctionType(fun.tpe))
@@ -575,6 +575,7 @@ abstract class UnCurry extends InfoTransform
           }
 
         case dd @ DefDef(_, _, _, vparamss0, _, rhs0) =>
+          val ddSym = dd.symbol
           val (newParamss, newRhs): (List[List[ValDef]], Tree) =
             if (dependentParamTypeErasure isDependent dd)
               dependentParamTypeErasure erase dd
@@ -586,11 +587,22 @@ abstract class UnCurry extends InfoTransform
               (vparamss1, rhs0)
             }
 
+          // A no-arg method with ConstantType result type can safely be reduced to the corresponding Literal
+          // (only pure methods are typed as ConstantType). We could also do this for methods with arguments,
+          // after ensuring the arguments are not referenced.
+          val literalRhsIfConst =
+            if (newParamss.head.isEmpty) { // We know newParamss.length == 1 from above
+              ddSym.info.resultType match {
+                case tp@ConstantType(value) => Literal(value) setType tp setPos newRhs.pos // inlining of gen.mkAttributedQualifier(tp)
+                case _ => newRhs
+              }
+            } else newRhs
+
           val flatdd = copyDefDef(dd)(
             vparamss = newParamss,
-            rhs = nonLocalReturnKeys get dd.symbol match {
-              case Some(k) => atPos(newRhs.pos)(nonLocalReturnTry(newRhs, k, dd.symbol))
-              case None    => newRhs
+            rhs = nonLocalReturnKeys get ddSym match {
+              case Some(k) => atPos(newRhs.pos)(nonLocalReturnTry(literalRhsIfConst, k, ddSym))
+              case None    => literalRhsIfConst
             }
           )
           addJavaVarargsForwarders(dd, flatdd)

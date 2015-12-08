@@ -228,7 +228,7 @@ trait Symbols { self: Universe =>
       throw new ScalaReflectionException(s"$this $msg")
     }
 
-    /** Used to provide a better error message for `asMethod`
+    /** Used to provide a better error message for `asMethod`.
      *
      *  @group Tests
      */
@@ -257,7 +257,7 @@ trait Symbols { self: Universe =>
     def isClass: Boolean = false
 
     /** Does this symbol represent the definition of a class implicitly associated
-     *  with an object definition (module class in scala compiler parlance).
+     *  with an object definition (module class in scala compiler parlance)?
      *  If yes, `isType` is also guaranteed to be true.
      *
      *  Note to compiler developers: During the "mixin" phase, trait implementation class symbols
@@ -294,7 +294,7 @@ trait Symbols { self: Universe =>
 
     /** For a class: the module or case class factory with the same name in the same package.
      *  For a module: the class with the same name in the same package.
-     *  For all others: NoSymbol
+     *  For all others: NoSymbol.
      *
      *  This API may return unexpected results for module classes, packages and package classes.
      *  Use `companion` instead in order to get predictable results.
@@ -345,7 +345,7 @@ trait Symbols { self: Universe =>
      */
     def overrides: List[Symbol]
 
-    /** The overloaded alternatives of this symbol
+    /** The overloaded alternatives of this symbol.
      *
      *  @group Basics
      */
@@ -370,7 +370,7 @@ trait Symbols { self: Universe =>
 
     /** Does this symbol represent a declaration or definition written in a source file as `private[this]`
      *  or generated in tree/symbol form with the combination of flags LOCAL and PRIVATE?
-     *  If yes, `isPrivate` is guaranteed to be true,
+     *  If yes, `isPrivate` is guaranteed to be true.
      *
      *  @group Tests
      */
@@ -503,6 +503,18 @@ trait Symbols { self: Universe =>
      *  @group Tests
      */
     def isImplicit: Boolean
+
+    /** Does this symbol represent a java enum class or a java enum value?
+      *
+      *  @group Tests
+      */
+    def isJavaEnum: Boolean
+
+    /** Does this symbol represent a java annotation interface?
+      *
+      *  @group Tests
+      */
+    def isJavaAnnotation: Boolean
 
     /******************* helpers *******************/
 
@@ -678,7 +690,7 @@ trait Symbols { self: Universe =>
      */
     def toTypeIn(site: Type): Type
 
-    /**  A type reference that refers to this type symbol
+    /**  A type reference that refers to this type symbol.
       *  Note if symbol is a member of a class, one almost always is interested
       *  in `asTypeIn` with a site type instead.
       *
@@ -727,7 +739,7 @@ trait Symbols { self: Universe =>
      */
     def isExistential  : Boolean
 
-    /** For a polymorphic type, its type parameters, the empty list for all other types
+    /** For a polymorphic type, its type parameters, the empty list for all other types.
      *
      *  @group Type
      */
@@ -756,12 +768,13 @@ trait Symbols { self: Universe =>
      */
     def typeParams: List[Symbol]
 
-    /** @see [[paramLists]] */
+    /** @see [[paramLists]]
+     *
+     * The name ending with "ss" indicates that the result type is a list of lists. */
     @deprecated("Use `paramLists` instead", "2.11.0")
     def paramss: List[List[Symbol]]
 
     /** All parameter lists of the method.
-     *  The name ending with "ss" indicates that the result type is a list of lists.
      *
      *  Can be used to distinguish nullary methods and methods with empty parameter lists.
      *  For a nullary method, returns the empty list (i.e. `List()`).
@@ -777,7 +790,7 @@ trait Symbols { self: Universe =>
      */
     def isVarargs: Boolean
 
-    /** The return type of the method
+    /** The return type of the method.
      *
      *  @group Method
      */
@@ -911,7 +924,7 @@ trait Symbols { self: Universe =>
      */
     def superPrefix(supertpe: Type): Type
 
-    /** For a polymorphic class/trait, its type parameters, the empty list for all other classes/trait
+    /** For a polymorphic class/trait, its type parameters, the empty list for all other classes/trait.
      *
      *  @group Class
      */

@@ -456,6 +456,15 @@ self =>
     }
     it
   }
+  /** Drop implemented as simple eager consumption. */
+  override def drop(n: Int): IterableSplitter[T] = {
+    var i = 0
+    while (i < n && hasNext) {
+      next()
+      i += 1
+    }
+    this
+  }
   override def take(n: Int): IterableSplitter[T] = newTaken(n)
   override def slice(from1: Int, until1: Int): IterableSplitter[T] = newSliceInternal(newTaken(until1), from1)
 

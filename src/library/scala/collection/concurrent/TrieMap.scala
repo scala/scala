@@ -471,7 +471,7 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
     val offset =
       if (array.length > 0)
         //util.Random.nextInt(array.length) /* <-- benchmarks show that this causes observable contention */
-        scala.concurrent.forkjoin.ThreadLocalRandom.current.nextInt(0, array.length)
+        java.util.concurrent.ThreadLocalRandom.current.nextInt(0, array.length)
       else 0
     while (i < array.length) {
       val pos = (i + offset) % array.length
@@ -641,7 +641,8 @@ extends scala.collection.concurrent.Map[K, V]
   private var rootupdater = rtupd
   def hashing = hashingobj
   def equality = equalityobj
-  @volatile var root = r
+  @deprecated("This field will be made private", "2.12.0")
+  @volatile /*private*/ var root = r
 
   def this(hashf: Hashing[K], ef: Equiv[K]) = this(
     INode.newRootNode,
@@ -685,11 +686,14 @@ extends scala.collection.concurrent.Map[K, V]
     } while (obj != TrieMapSerializationEnd)
   }
 
-  def CAS_ROOT(ov: AnyRef, nv: AnyRef) = rootupdater.compareAndSet(this, ov, nv)
+  @deprecated("This method will be made private", "2.12.0")
+  /*private*/ def CAS_ROOT(ov: AnyRef, nv: AnyRef) = rootupdater.compareAndSet(this, ov, nv)
 
-  def readRoot(abort: Boolean = false): INode[K, V] = RDCSS_READ_ROOT(abort)
+  @deprecated("This method will be made private", "2.12.0")
+  /*private[collection]*/ def readRoot(abort: Boolean = false): INode[K, V] = RDCSS_READ_ROOT(abort)
 
-  def RDCSS_READ_ROOT(abort: Boolean = false): INode[K, V] = {
+  @deprecated("This method will be made private", "2.12.0")
+  /*private[concurrent]*/ def RDCSS_READ_ROOT(abort: Boolean = false): INode[K, V] = {
     val r = /*READ*/root
     r match {
       case in: INode[K, V] => in
@@ -884,7 +888,7 @@ extends scala.collection.concurrent.Map[K, V]
    *
    *  If the specified mapping function throws an exception,
    *  that exception is rethrown.
-   *  
+   *
    *  Note: This method will invoke op at most once.
    *  However, `op` may be invoked without the result being added to the map if
    *  a concurrent process is also trying to add a value corresponding to the
@@ -1083,6 +1087,7 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
     Seq(this)
   }
 
+  @deprecated("This method will be removed", "2.12.0")
   def printDebug() {
     println("ctrie iterator")
     println(stackpos.mkString(","))

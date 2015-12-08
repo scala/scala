@@ -30,8 +30,9 @@ trait WrapAsScala {
    * @return   A Scala `Iterator` view of the argument.
    */
   implicit def asScalaIterator[A](it: ju.Iterator[A]): Iterator[A] = it match {
+    case null                     => null
     case IteratorWrapper(wrapped) => wrapped
-    case _ => JIteratorWrapper(it)
+    case _                        => JIteratorWrapper(it)
   }
 
   /**
@@ -48,8 +49,9 @@ trait WrapAsScala {
    * @return A Scala Iterator view of the argument.
    */
   implicit def enumerationAsScalaIterator[A](i: ju.Enumeration[A]): Iterator[A] = i match {
+    case null                     => null
     case IteratorWrapper(wrapped) => wrapped
-    case _ => JEnumerationWrapper(i)
+    case _                        => JEnumerationWrapper(i)
   }
 
   /**
@@ -67,8 +69,9 @@ trait WrapAsScala {
    * @return A Scala Iterable view of the argument.
    */
   implicit def iterableAsScalaIterable[A](i: jl.Iterable[A]): Iterable[A] = i match {
+    case null                     => null
     case IterableWrapper(wrapped) => wrapped
-    case _ => JIterableWrapper(i)
+    case _                        => JIterableWrapper(i)
   }
 
   /**
@@ -82,8 +85,9 @@ trait WrapAsScala {
    * @return A Scala Iterable view of the argument.
    */
   implicit def collectionAsScalaIterable[A](i: ju.Collection[A]): Iterable[A] = i match {
+    case null                     => null
     case IterableWrapper(wrapped) => wrapped
-    case _ => JCollectionWrapper(i)
+    case _                        => JCollectionWrapper(i)
   }
 
   /**
@@ -101,8 +105,9 @@ trait WrapAsScala {
    * @return A Scala mutable `Buffer` view of the argument.
    */
   implicit def asScalaBuffer[A](l: ju.List[A]): mutable.Buffer[A] = l match {
-    case MutableBufferWrapper(wrapped) => wrapped
-    case _ =>new JListWrapper(l)
+    case null                           => null
+    case MutableBufferWrapper(wrapped)  => wrapped
+    case _                              => new JListWrapper(l)
   }
 
   /**
@@ -119,8 +124,9 @@ trait WrapAsScala {
    * @return A Scala mutable Set view of the argument.
    */
   implicit def asScalaSet[A](s: ju.Set[A]): mutable.Set[A] = s match {
+    case null                       => null
     case MutableSetWrapper(wrapped) => wrapped
-    case _ =>new JSetWrapper(s)
+    case _                          => new JSetWrapper(s)
   }
 
   /**
@@ -133,20 +139,20 @@ trait WrapAsScala {
    * If the Java `Map` was previously obtained from an implicit or
    * explicit call of `mapAsScalaMap(scala.collection.mutable.Map)` then
    * the original Scala Map will be returned.
-   * 
+   *
    * If the wrapped map is synchronized (e.g. from `java.util.Collections.synchronizedMap`),
-   * it is your responsibility to wrap all 
+   * it is your responsibility to wrap all
    * non-atomic operations with `underlying.synchronized`.
    * This includes `get`, as `java.util.Map`'s API does not allow for an
    * atomic `get` when `null` values may be present.
-   * 
+   *
    * @param m The Map to be converted.
    * @return A Scala mutable Map view of the argument.
    */
   implicit def mapAsScalaMap[A, B](m: ju.Map[A, B]): mutable.Map[A, B] = m match {
-    //case ConcurrentMapWrapper(wrapped) => wrapped
+    case null                       => null
     case MutableMapWrapper(wrapped) => wrapped
-    case _ => new JMapWrapper(m)
+    case _                          => new JMapWrapper(m)
   }
 
   /**
@@ -163,24 +169,26 @@ trait WrapAsScala {
    * @return A Scala mutable ConcurrentMap view of the argument.
    */
   implicit def mapAsScalaConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): concurrent.Map[A, B] = m match {
-    case cmw: ConcurrentMapWrapper[a, b]      => cmw.underlying
-    case _                                    => new JConcurrentMapWrapper(m)
+    case null                             => null
+    case cmw: ConcurrentMapWrapper[_, _]  => cmw.underlying
+    case _                                => new JConcurrentMapWrapper(m)
   }
 
   /**
    * Implicitly converts a Java `Dictionary` to a Scala mutable
-   * `Map[String, String]`.
+   * `Map`.
    *
-   * The returned Scala `Map[String, String]` is backed by the provided Java
+   * The returned Scala `Map` is backed by the provided Java
    * `Dictionary` and any side-effects of using it via the Scala interface
    * will be visible via the Java interface and vice versa.
    *
    * @param p The Dictionary to be converted.
-   * @return  A Scala mutable Map[String, String] view of the argument.
+   * @return  A Scala mutable Map view of the argument.
    */
   implicit def dictionaryAsScalaMap[A, B](p: ju.Dictionary[A, B]): mutable.Map[A, B] = p match {
+    case null                       => null
     case DictionaryWrapper(wrapped) => wrapped
-    case _ => new JDictionaryWrapper(p)
+    case _                          => new JDictionaryWrapper(p)
   }
 
   /**
@@ -194,7 +202,8 @@ trait WrapAsScala {
    * @return  A Scala mutable Map[String, String] view of the argument.
    */
   implicit def propertiesAsScalaMap(p: ju.Properties): mutable.Map[String, String] = p match {
-    case _ => new JPropertiesWrapper(p)
+    case null => null
+    case _    => new JPropertiesWrapper(p)
   }
 }
 

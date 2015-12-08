@@ -72,6 +72,17 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
 
   protected[this] override def parCombiner = ParSet.newCombiner[A]
 
+  /** Converts this $coll to a sequence.
+    *
+    * ```Note```: assumes a fast `size` method.  Subclasses should override if this is not true.
+    */
+  override def toSeq: collection.Seq[A] = {
+    // ArrayBuffer for efficiency, preallocated to the right size.
+    val result = new ArrayBuffer[A](size)
+    foreach(result += _)
+    result
+  }
+
   /** Adds an element to this $coll.
    *
    *  @param elem the element to be added

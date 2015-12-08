@@ -41,6 +41,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.ForAttachment
     this.SyntheticUnitAttachment
     this.SubpatternsAttachment
+    this.NoInlineCallsiteAttachment
+    this.InlineCallsiteAttachment
     this.noPrint
     this.typeDebug
     this.Range
@@ -311,7 +313,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.QuasiquoteClass_api_unapply
     definitions.ScalaSignatureAnnotation
     definitions.ScalaLongSignatureAnnotation
-    definitions.LambdaMetaFactory
     definitions.MethodHandle
     definitions.OptionClass
     definitions.OptionModule
@@ -369,6 +370,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.BridgeClass
     definitions.ElidableMethodClass
     definitions.ImplicitNotFoundClass
+    definitions.ImplicitAmbiguousClass
     definitions.MigrationAnnotationClass
     definitions.ScalaStrictFPAttr
     definitions.SwitchClass

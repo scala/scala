@@ -10,19 +10,19 @@ else
   -0.0
 res: Double = 0.0
 
-trace> Test.this.intercept.apply[Any](if (scala.this.Predef.???)
+trace> Test.this.intercept.apply[Any](if (scala.Predef.???)
   -0.0
 else
   0.0)
 res: Any = class scala.NotImplementedError
 
-trace> Test.this.intercept.apply[Any](if (scala.this.Predef.???)
+trace> Test.this.intercept.apply[Any](if (scala.Predef.???)
   0.0
 else
   0.0)
 res: Any = class scala.NotImplementedError
 
-trace> Test.this.intercept.apply[Any](if (scala.this.Predef.???)
+trace> Test.this.intercept.apply[Any](if (scala.Predef.???)
   ()
 else
   ())

@@ -67,7 +67,7 @@ class InlinerIllegalAccessTest extends ClearAfterClass {
     check(dClass, assertEmpty)
     check(eClass, assertEmpty) // C is public, so accessible in E
 
-    byteCodeRepository.classes.clear()
+    byteCodeRepository.parsedClasses.clear()
     classBTypeFromInternalName.clear()
 
     cClass.access &= ~ACC_PUBLIC // ftw

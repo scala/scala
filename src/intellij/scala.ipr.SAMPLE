@@ -35,9 +35,7 @@
   </component>
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/actors.iml" filepath="$PROJECT_DIR$/actors.iml" />
       <module fileurl="file://$PROJECT_DIR$/compiler.iml" filepath="$PROJECT_DIR$/compiler.iml" />
-      <module fileurl="file://$PROJECT_DIR$/forkjoin.iml" filepath="$PROJECT_DIR$/forkjoin.iml" />
       <module fileurl="file://$PROJECT_DIR$/interactive.iml" filepath="$PROJECT_DIR$/interactive.iml" />
       <module fileurl="file://$PROJECT_DIR$/library.iml" filepath="$PROJECT_DIR$/library.iml" />
       <module fileurl="file://$PROJECT_DIR$/manual.iml" filepath="$PROJECT_DIR$/manual.iml" />
@@ -52,7 +50,7 @@
       <module fileurl="file://$PROJECT_DIR$/test-junit.iml" filepath="$PROJECT_DIR$/test-junit.iml" />
     </modules>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_6" default="true" assert-keyword="true" jdk-15="true" project-jdk-name="1.6" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="true" assert-keyword="true" jdk-15="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/../../out" />
   </component>
   <component name="ScalaCompilerConfiguration">

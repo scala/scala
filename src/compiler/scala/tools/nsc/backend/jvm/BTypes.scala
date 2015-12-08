@@ -7,13 +7,15 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.annotation.switch
+import scala.collection.{mutable, concurrent}
 import scala.collection.concurrent.TrieMap
 import scala.reflect.internal.util.Position
 import scala.tools.asm
 import asm.Opcodes
-import scala.tools.asm.tree.{MethodNode, MethodInsnNode, InnerClassNode, ClassNode}
+import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
 import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt._
 import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.settings.ScalaSettings
@@ -29,6 +31,8 @@ import scala.tools.nsc.settings.ScalaSettings
 abstract class BTypes {
   import BTypes.InternalName
 
+  val backendUtils: BackendUtils[this.type]
+
   // Some core BTypes are required here, in class BType, where no Global instance is available.
   // The Global is only available in the subclass BTypesFromSymbols. We cannot depend on the actual
   // implementation (CoreBTypesProxy) here because it has members that refer to global.Symbol.
@@ -38,11 +42,13 @@ abstract class BTypes {
   /**
    * Tools for parsing classfiles, used by the inliner.
    */
-  val byteCodeRepository: ByteCodeRepository
+  val byteCodeRepository: ByteCodeRepository[this.type]
 
   val localOpt: LocalOpt[this.type]
 
   val inliner: Inliner[this.type]
+
+  val inlinerHeuristics: InlinerHeuristics[this.type]
 
   val closureOptimizer: ClosureOptimizer[this.type]
 
@@ -56,7 +62,6 @@ abstract class BTypes {
   // Allows access to the compiler settings for backend components that don't have a global in scope
   def compilerSettings: ScalaSettings
 
-
   /**
    * A map from internal names to ClassBTypes. Every ClassBType is added to this map on its
    * construction.
@@ -68,19 +73,27 @@ abstract class BTypes {
    * Concurrent because stack map frames are computed when in the class writer, which might run
    * on multiple classes concurrently.
    */
-  val classBTypeFromInternalName: collection.concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
+  val classBTypeFromInternalName: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
 
   /**
    * Store the position of every MethodInsnNode during code generation. This allows each callsite
    * in the call graph to remember its source position, which is required for inliner warnings.
    */
-  val callsitePositions: collection.concurrent.Map[MethodInsnNode, Position] = recordPerRunCache(TrieMap.empty)
+  val callsitePositions: concurrent.Map[MethodInsnNode, Position] = recordPerRunCache(TrieMap.empty)
+
+  /**
+   * Stores callsite instructions of invocatinos annotated `f(): @inline/noinline`.
+   * Instructions are added during code generation (BCodeBodyBuilder). The maps are then queried
+   * when building the CallGraph, every Callsite object has an annotated(No)Inline field.
+   */
+  val inlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
+  val noInlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
 
   /**
    * Contains the internal names of all classes that are defined in Java source files of the current
    * compilation run (mixed compilation). Used for more detailed error reporting.
    */
-  val javaDefinedClasses: collection.mutable.Set[InternalName] = recordPerRunCache(collection.mutable.Set.empty)
+  val javaDefinedClasses: mutable.Set[InternalName] = recordPerRunCache(mutable.Set.empty)
 
   /**
    * Cache, contains methods whose unreachable instructions are eliminated.
@@ -92,12 +105,28 @@ abstract class BTypes {
    * This cache allows running dead code elimination whenever an analyzer is used. If the method
    * is already optimized, DCE can return early.
    */
-  val unreachableCodeEliminated: collection.mutable.Set[MethodNode] = recordPerRunCache(collection.mutable.Set.empty)
+  val unreachableCodeEliminated: mutable.Set[MethodNode] = recordPerRunCache(mutable.Set.empty)
+
+  /**
+   * Cache of methods which have correct `maxLocals` / `maxStack` values assigned. This allows
+   * invoking `computeMaxLocalsMaxStack` whenever running an analyzer but performing the actual
+   * computation only when necessary.
+   */
+  val maxLocalsMaxStackComputed: mutable.Set[MethodNode] = recordPerRunCache(mutable.Set.empty)
+
+  /**
+   * Classes with indyLambda closure instantiations where the SAM type is serializable (e.g. Scala's
+   * FunctionN) need a `$deserializeLambda$` method. This map contains classes for which such a
+   * method has been generated. It is used during ordinary code generation, as well as during
+   * inlining: when inlining an indyLambda instruction into a class, we need to make sure the class
+   * has the method.
+   */
+  val indyLambdaHosts: mutable.Set[InternalName] = recordPerRunCache(mutable.Set.empty)
 
   /**
    * Obtain the BType for a type descriptor or internal name. For class descriptors, the ClassBType
    * is constructed by parsing the corresponding classfile.
-   * 
+   *
    * Some JVM operations use either a full descriptor or only an internal name. Example:
    *   ANEWARRAY java/lang/String    // a new array of strings (internal name for the String class)
    *   ANEWARRAY [Ljava/lang/String; // a new array of array of string (full descriptor for the String class)
@@ -128,7 +157,7 @@ abstract class BTypes {
       val res = ClassBType(internalName)
       byteCodeRepository.classNode(internalName) match {
         case Left(msg) => res.info = Left(NoClassBTypeInfoMissingBytecode(msg)); res
-        case Right(c)  => setClassInfoFromParsedClassfile(c, res)
+        case Right(c)  => setClassInfoFromClassNode(c, res)
       }
     })
   }
@@ -138,14 +167,14 @@ abstract class BTypes {
    */
   def classBTypeFromClassNode(classNode: ClassNode): ClassBType = {
     classBTypeFromInternalName.getOrElse(classNode.name, {
-      setClassInfoFromParsedClassfile(classNode, ClassBType(classNode.name))
+      setClassInfoFromClassNode(classNode, ClassBType(classNode.name))
     })
   }
 
-  private def setClassInfoFromParsedClassfile(classNode: ClassNode, classBType: ClassBType): ClassBType = {
+  private def setClassInfoFromClassNode(classNode: ClassNode, classBType: ClassBType): ClassBType = {
     val superClass = classNode.superName match {
       case null =>
-        assert(classNode.name == ObjectReference.internalName, s"class with missing super type: ${classNode.name}")
+        assert(classNode.name == ObjectRef.internalName, s"class with missing super type: ${classNode.name}")
         None
       case superName =>
         Some(classBTypeFromParsedClassfile(superName))
@@ -234,6 +263,7 @@ abstract class BTypes {
       InlineInfo(
         traitImplClassSelfType = None,
         isEffectivelyFinal = BytecodeUtils.isFinalClass(classNode),
+        sam = inlinerHeuristics.javaSam(classNode.name),
         methodInfos = methodInfos,
         warning)
     }
@@ -291,8 +321,8 @@ abstract class BTypes {
 
     final def isNonVoidPrimitiveType = isPrimitive && this != UNIT
 
-    final def isNullType             = this == RT_NULL
-    final def isNothingType          = this == RT_NOTHING
+    final def isNullType             = this == srNullRef
+    final def isNothingType          = this == srNothingRef
 
     final def isBoxed = this.isClass && boxedClasses(this.asClassBType)
 
@@ -315,7 +345,7 @@ abstract class BTypes {
 
       this match {
         case ArrayBType(component) =>
-          if (other == ObjectReference || other == jlCloneableReference || other == jioSerializableReference) true
+          if (other == ObjectRef || other == jlCloneableRef || other == jiSerializableRef) true
           else other match {
             case ArrayBType(otherComponent) => component.conformsTo(otherComponent).orThrow
             case _ => false
@@ -324,7 +354,7 @@ abstract class BTypes {
         case classType: ClassBType =>
           if (isBoxed) {
             if (other.isBoxed) this == other
-            else if (other == ObjectReference) true
+            else if (other == ObjectRef) true
             else other match {
               case otherClassType: ClassBType => classType.isSubtypeOf(otherClassType).orThrow // e.g., java/lang/Double conforms to java/lang/Number
               case _ => false
@@ -367,7 +397,7 @@ abstract class BTypes {
 
         assert(other.isRef, s"Cannot compute maxType: $this, $other")
         // Approximate `lub`. The common type of two references is always ObjectReference.
-        ObjectReference
+        ObjectRef
 
       case _: MethodBType =>
         assertionError(s"unexpected method type when computing maxType: $this")
@@ -553,6 +583,8 @@ abstract class BTypes {
    *
    * Terminology
    * -----------
+   *
+   * Diagram here: https://blogs.oracle.com/darcy/entry/nested_inner_member_and_top
    *
    *  - Nested class (JLS 8): class whose declaration occurs within the body of another class
    *
@@ -837,7 +869,7 @@ abstract class BTypes {
       // best-effort verification. also we don't report an error if the info is a Left.
       def ifInit(c: ClassBType)(p: ClassBType => Boolean): Boolean = c._info == null || c.info.isLeft || p(c)
 
-      def isJLO(t: ClassBType) = t.internalName == ObjectReference.internalName
+      def isJLO(t: ClassBType) = t.internalName == ObjectRef.internalName
 
       assert(!ClassBType.isInternalPhantomType(internalName), s"Cannot create ClassBType for phantom type $this")
 
@@ -900,7 +932,7 @@ abstract class BTypes {
             // the static flag in the InnerClass table has a special meaning, see InnerClass comment
             i.flags & ~Opcodes.ACC_STATIC,
             if (isStaticNestedClass) Opcodes.ACC_STATIC else 0
-          ) & BCodeAsmCommon.INNER_CLASSES_FLAGS
+          ) & BCodeHelpers.INNER_CLASSES_FLAGS
         )
     })
 
@@ -917,7 +949,7 @@ abstract class BTypes {
     def isSubtypeOf(other: ClassBType): Either[NoClassBTypeInfo, Boolean] = try {
       if (this == other) return Right(true)
       if (isInterface.orThrow) {
-        if (other == ObjectReference) return Right(true) // interfaces conform to Object
+        if (other == ObjectRef) return Right(true) // interfaces conform to Object
         if (!other.isInterface.orThrow) return Right(false)   // this is an interface, the other is some class other than object. interfaces cannot extend classes, so the result is false.
         // else: this and other are both interfaces. continue to (*)
       } else {
@@ -950,13 +982,13 @@ abstract class BTypes {
             // exercised by test/files/run/t4761.scala
             if (other.isSubtypeOf(this).orThrow) this
             else if (this.isSubtypeOf(other).orThrow) other
-            else ObjectReference
+            else ObjectRef
 
           case (true, false) =>
-            if (other.isSubtypeOf(this).orThrow) this else ObjectReference
+            if (other.isSubtypeOf(this).orThrow) this else ObjectRef
 
           case (false, true) =>
-            if (this.isSubtypeOf(other).orThrow) other else ObjectReference
+            if (this.isSubtypeOf(other).orThrow) other else ObjectRef
 
           case _ =>
             // TODO @lry I don't really understand the reasoning here.
@@ -1104,6 +1136,8 @@ object BTypes {
    * Metadata about a ClassBType, used by the inliner.
    *
    * More information may be added in the future to enable more elaborate inlinine heuristics.
+   * Note that this class should contain information that can only be obtained from the ClassSymbol.
+   * Information that can be computed from the ClassNode should be added to the call graph instead.
    *
    * @param traitImplClassSelfType `Some(tp)` if this InlineInfo describes a trait, and the `self`
    *                               parameter type of the methods in the implementation class is not
@@ -1122,6 +1156,8 @@ object BTypes {
    * @param isEffectivelyFinal     True if the class cannot have subclasses: final classes, module
    *                               classes, trait impl classes.
    *
+   * @param sam                    If this class is a SAM type, the SAM's "$name$descriptor".
+   *
    * @param methodInfos            The [[MethodInlineInfo]]s for the methods declared in this class.
    *                               The map is indexed by the string s"$name$descriptor" (to
    *                               disambiguate overloads).
@@ -1132,10 +1168,11 @@ object BTypes {
    */
   final case class InlineInfo(traitImplClassSelfType: Option[InternalName],
                               isEffectivelyFinal: Boolean,
+                              sam: Option[String],
                               methodInfos: Map[String, MethodInlineInfo],
                               warning: Option[ClassInlineInfoWarning])
 
-  val EmptyInlineInfo = InlineInfo(None, false, Map.empty, None)
+  val EmptyInlineInfo = InlineInfo(None, false, None, Map.empty, None)
 
   /**
    * Metadata about a method, used by the inliner.

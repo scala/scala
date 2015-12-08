@@ -91,8 +91,8 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     val values = List("namer", "typer", "pickler", "refchecks",
                       "uncurry", "tailcalls", "specialize", "explicitouter",
                       "erasure", "lazyvals", "lambdalift", "constructors",
-                      "flatten", "mixin", "delambdafy", "cleanup", "icode", "inliner",
-                      "closelim", "dce", "jvm", "terminal")
+                      "flatten", "mixin", "delambdafy", "cleanup",
+                      "jvm", "terminal")
   }
 
   /** Defines valid values for the `target` property. */

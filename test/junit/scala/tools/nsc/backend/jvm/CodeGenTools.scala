@@ -93,6 +93,23 @@ object CodeGenTools {
     getGeneratedClassfiles(compiler.settings.outputDirs.getSingleOutput.get)
   }
 
+  def compileTransformed(compiler: Global)(scalaCode: String, javaCode: List[(String, String)] = Nil, beforeBackend: compiler.Tree => compiler.Tree): List[(String, Array[Byte])] = {
+    compiler.settings.stopBefore.value = "jvm" :: Nil
+    val run = newRun(compiler)
+    import compiler._
+    val scalaUnit = newCompilationUnit(scalaCode, "unitTestSource.scala")
+    val javaUnits = javaCode.map(p => newCompilationUnit(p._1, p._2))
+    val units = scalaUnit :: javaUnits
+    run.compileUnits(units, run.parserPhase)
+    compiler.settings.stopBefore.value = Nil
+    scalaUnit.body = beforeBackend(scalaUnit.body)
+    checkReport(compiler, _ => false)
+    val run1 = newRun(compiler)
+    run1.compileUnits(units, run1.phaseNamed("jvm"))
+    checkReport(compiler, _ => false)
+    getGeneratedClassfiles(compiler.settings.outputDirs.getSingleOutput.get)
+  }
+
   /**
    * Compile multiple Scala files separately into a single output directory.
    *
@@ -151,6 +168,9 @@ object CodeGenTools {
 
   def getSingleMethod(classNode: ClassNode, name: String): Method =
     convertMethod(classNode.methods.asScala.toList.find(_.name == name).get)
+
+  def findAsmMethods(c: ClassNode, p: String => Boolean) = c.methods.iterator.asScala.filter(m => p(m.name)).toList.sortBy(_.name)
+  def findAsmMethod(c: ClassNode, name: String) = findAsmMethods(c, _ == name).head
 
   /**
    * Instructions that match `query` when textified.
