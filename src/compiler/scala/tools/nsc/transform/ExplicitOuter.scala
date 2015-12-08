@@ -259,6 +259,7 @@ abstract class ExplicitOuter extends InfoTransform
         // otherwise it is NoSymbol
         val outerFld =
           if (outerAcc.owner == currentClass &&
+            !outerAcc.owner.isTrait &&
             base.tpe =:= currentClass.thisType &&
             outerAcc.owner.isEffectivelyFinal)
             outerField(currentClass) suchThat (_.owner == currentClass)

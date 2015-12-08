@@ -48,12 +48,30 @@ class Test$bar5$ {
   public java.lang.Object Test$bar5$.h(java.lang.Object)
 }
 
-class Foo1$class {
-  public static java.lang.String Foo1$class.f(Foo1,java.lang.Object)
+interface Foo1 {
+  public abstract java.lang.Object Base.f(java.lang.Object)
+    generic: public abstract R Base.f(T)
+  public default java.lang.String Foo1.f(java.lang.Object)
+    generic: public default java.lang.String Foo1.f(T)
+  public abstract java.lang.Object Base.g(java.lang.Object)
+    generic: public abstract R Base.g(T)
+  public abstract java.lang.String Foo1.g(java.lang.Object)
+    generic: public abstract java.lang.String Foo1.g(T)
+  public default java.lang.Object Base.h(java.lang.Object)
+    generic: public default R Base.h(T)
 }
 
-class Foo2$class {
-  public static java.lang.Object Foo2$class.f(Foo2,java.lang.String)
+interface Foo2 {
+  public abstract java.lang.Object Base.f(java.lang.Object)
+    generic: public abstract R Base.f(T)
+  public default java.lang.Object Foo2.f(java.lang.String)
+    generic: public default R Foo2.f(java.lang.String)
+  public abstract java.lang.Object Base.g(java.lang.Object)
+    generic: public abstract R Base.g(T)
+  public abstract java.lang.Object Foo2.g(java.lang.String)
+    generic: public abstract R Foo2.g(java.lang.String)
+  public default java.lang.Object Base.h(java.lang.Object)
+    generic: public default R Base.h(T)
 }
 
 000000000000000000000000000000000000

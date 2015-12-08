@@ -7,17 +7,6 @@ package scala.runtime.java8;
 
 @FunctionalInterface
 public interface JFunction2<T1, T2, R> extends scala.Function2<T1, T2, R> {
-    default void $init$() {
-    };
-
-    default scala.Function1<T1, scala.Function1<T2, R>> curried() {
-      return scala.Function2$class.curried(this);
-    }
-
-    default scala.Function1<scala.Tuple2<T1, T2>, R> tupled() {
-      return scala.Function2$class.tupled(this);
-    }
-
     default void apply$mcVII$sp(int v1, int v2) {
         apply((T1) scala.runtime.BoxesRunTime.boxToInteger(v1), (T2) scala.runtime.BoxesRunTime.boxToInteger(v2));
     }

@@ -125,7 +125,6 @@ object Test extends BytecodeTest {
   def testA6() = {
     val List(tt1) = innerClassNodes("A6")
     assertMember(tt1, "A6", "TT", flags = publicAbstractInterface)
-    val List() = innerClassNodes("A6$class")
     val List(tt2) = innerClassNodes("A6$TT")
     assertMember(tt2, "A6", "TT", flags = publicAbstractInterface)
   }
@@ -351,24 +350,18 @@ object Test extends BytecodeTest {
     assertMember(ownInnerClassNode("SI_9124$O$"), "SI_9124", "O$")
   }
 
+  // Note: the new trait encoding removed impl classes, so this test name doesn't make sense.
+  // But I've left it here as there were some tests remaining that are still relevant.
   def testImplClassesTopLevel() {
     val classes = List(
       "ImplClassesAreTopLevel$$anon$14",
       "ImplClassesAreTopLevel$$anon$15",
       "ImplClassesAreTopLevel$$anon$16",
-      "ImplClassesAreTopLevel$B1$class",
       "ImplClassesAreTopLevel$B1",
-      "ImplClassesAreTopLevel$B2$1$class",
       "ImplClassesAreTopLevel$B2$1",
-      "ImplClassesAreTopLevel$B3$1$class",
       "ImplClassesAreTopLevel$B3$1",
-      "ImplClassesAreTopLevel$B4$class",
       "ImplClassesAreTopLevel$B4$1",
-      "ImplClassesAreTopLevel$class",
       "ImplClassesAreTopLevel")
-
-    classes.filter(_.endsWith("$class")).foreach(assertNoEnclosingMethod)
-    classes.flatMap(innerClassNodes).foreach(icn => assert(!icn.name.endsWith("$class"), icn))
 
     assertNoEnclosingMethod("ImplClassesAreTopLevel$B1") // member, no encl meth attr
 
@@ -391,17 +384,11 @@ object Test extends BytecodeTest {
     testInner("ImplClassesAreTopLevel$$anon$15", an15, b2)
     testInner("ImplClassesAreTopLevel$$anon$16", an16, b4)
 
-    testInner("ImplClassesAreTopLevel$B1$class", b1)
-    testInner("ImplClassesAreTopLevel$B2$1$class", b2)
-    testInner("ImplClassesAreTopLevel$B3$1$class", b3)
-    testInner("ImplClassesAreTopLevel$B4$class", b4)
-
     testInner("ImplClassesAreTopLevel$B1", b1)
     testInner("ImplClassesAreTopLevel$B2$1", b2)
     testInner("ImplClassesAreTopLevel$B3$1", b3)
     testInner("ImplClassesAreTopLevel$B4$1", b4)
 
-    testInner("ImplClassesAreTopLevel$class", an14, an15, an16)
     testInner("ImplClassesAreTopLevel", an14, an15, an16, b1, b2, b3, b4)
   }
 
