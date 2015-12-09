@@ -5170,47 +5170,56 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // Warn about likely interpolated strings which are missing their interpolators
       def warnMissingInterpolator(lit: Literal): Unit = if (!isPastTyper) {
-        // attempt to avoid warning about trees munged by macros
-        def isMacroExpansion = {
-          // context.tree is not the expandee; it is plain new SC(ps).m(args)
-          //context.tree exists (t => (t.pos includes lit.pos) && hasMacroExpansionAttachment(t))
-          // testing pos works and may suffice
-          //openMacros exists (_.macroApplication.pos includes lit.pos)
-          // tests whether the lit belongs to the expandee of an open macro
-          openMacros exists (_.macroApplication.attachments.get[MacroExpansionAttachment] match {
-            case Some(MacroExpansionAttachment(_, t: Tree)) => t exists (_ == lit)
-            case _                                          => false
-          })
-        }
         // attempt to avoid warning about the special interpolated message string
         // for implicitNotFound or any standard interpolation (with embedded $$).
-        def isRecognizablyNotForInterpolation = context.enclosingApply.tree match {
-          case Apply(Select(Apply(RefTree(_, nme.StringContext), _), _), _) => true
-          case Apply(Select(New(RefTree(_, tpnme.implicitNotFound)), _), _) => true
-          case _                                                            => isMacroExpansion
-        }
-        def requiresNoArgs(tp: Type): Boolean = tp match {
-          case PolyType(_, restpe)     => requiresNoArgs(restpe)
-          case MethodType(Nil, restpe) => requiresNoArgs(restpe)  // may be a curried method - can't tell yet
-          case MethodType(p :: _, _)   => p.isImplicit            // implicit method requires no args
-          case _                       => true                    // catches all others including NullaryMethodType
-        }
-        def isPlausible(m: Symbol) = m.alternatives exists (m => requiresNoArgs(m.info))
+        val couldBeInterpolatedString =
+          context.enclosingApply.tree match {
+            case Apply(Select(Apply(RefTree(_, nme.StringContext), _), _), _) => false
+            case Apply(Select(New(RefTree(_, tpnme.implicitNotFound)), _), _) => false
+            case _ =>
+              // attempt to avoid warning about trees munged by macros
+              // context.tree is not the expandee; it is plain new SC(ps).m(args)
+              //context.tree exists (t => (t.pos includes lit.pos) && hasMacroExpansionAttachment(t))
+              // testing pos works and may suffice
+              //openMacros exists (_.macroApplication.pos includes lit.pos)
+              // tests whether the lit belongs to the expandee of an open macro
+              val isMacroExpansion =
+                openMacros exists (_.macroApplication.attachments.get[MacroExpansionAttachment] match {
+                  case Some(MacroExpansionAttachment(_, t: Tree)) => t exists (_ == lit)
+                  case _                                          => false
+                })
 
-        def maybeWarn(s: String): Unit = {
-          def warn(message: String)         = context.warning(lit.pos, s"possible missing interpolator: $message")
-          def suspiciousSym(name: TermName) = context.lookupSymbol(name, _ => true).symbol
-          def suspiciousExpr                = InterpolatorCodeRegex findFirstIn s
-          def suspiciousIdents              = InterpolatorIdentRegex findAllIn s map (s => suspiciousSym(TermName(s drop 1)))
+              !isMacroExpansion
+            }
 
-          if (suspiciousExpr.nonEmpty)
-            warn("detected an interpolated expression") // "${...}"
-          else
-            suspiciousIdents find isPlausible foreach (sym => warn(s"detected interpolated identifier `$$${sym.name}`")) // "$id"
-        }
-        lit match {
-          case Literal(Constant(s: String)) if !isRecognizablyNotForInterpolation => maybeWarn(s)
-          case _                                                                  =>
+        if (couldBeInterpolatedString) {
+          lit match {
+            case Literal(Constant(s: String)) =>
+              def warn(message: String)         = context.warning(lit.pos, s"possible missing interpolator: $message")
+              def suspiciousSym(name: TermName) = context.lookupSymbol(name, _ => true).symbol
+              def suspiciousExpr                = InterpolatorCodeRegex findFirstIn s
+
+              if (suspiciousExpr.nonEmpty) warn("detected an interpolated expression") // "${...}"
+              else {
+                def isPlausible(m: Symbol) = {
+                  def requiresNoArgs(tp: Type): Boolean = tp match {
+                    case PolyType(_, restpe)     => requiresNoArgs(restpe)
+                    case MethodType(Nil, restpe) => requiresNoArgs(restpe)  // may be a curried method - can't tell yet
+                    case MethodType(p :: _, _)   => p.isImplicit            // implicit method requires no args
+                    case _                       => true                    // catches all others including NullaryMethodType
+                  }
+
+                  m.alternatives exists (m => requiresNoArgs(m.info))
+                }
+
+                val plausibleIdents =
+                  InterpolatorIdentRegex findAllIn s map (s => suspiciousSym(TermName(s drop 1))) find isPlausible
+
+                plausibleIdents foreach (sym => warn(s"detected interpolated identifier `$$${sym.name}`")) // "$id"
+              }
+
+            case _ =>
+          }
         }
       }
 
