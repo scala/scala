@@ -167,13 +167,13 @@ abstract class TreeInfo {
     case EmptyTree
        | This(_)
        | Super(_, _)
-       | Literal(_) =>
+       | LiteralLike(_) =>
       true
     case Ident(_) =>
       tree.symbol.isStable
     // this case is mostly to allow expressions like -5 and +7, but any
     // member of an anyval should be safely pure
-    case Select(Literal(const), name) =>
+    case Select(LiteralLike(const), name) =>
       const.isAnyVal && (const.tpe.member(name) != NoSymbol)
     case Select(qual, _) =>
       tree.symbol.isStable && isExprSafeToInline(qual)
@@ -866,14 +866,25 @@ abstract class TreeInfo {
   }
   object IsTrue extends SeeThroughBlocks[Boolean] {
     protected def unapplyImpl(x: Tree): Boolean = x match {
-      case Literal(Constant(true)) => true
+      case LiteralLike(Constant(true)) => true
       case _                       => false
     }
   }
   object IsFalse extends SeeThroughBlocks[Boolean] {
     protected def unapplyImpl(x: Tree): Boolean = x match {
-      case Literal(Constant(false)) => true
+      case LiteralLike(Constant(false)) => true
       case _                        => false
+    }
+  }
+
+  // Is the tree a Literal or does its type denote the constant it corresponds to?
+  object LiteralLike {
+    def unapply(t: Tree): Option[Constant] = t match {
+      case Literal(c) => Some(c)
+      case _ => t.tpe match {
+        case ConstantType(c) => Some(c)
+        case _ => None
+      }
     }
   }
 
@@ -881,9 +892,9 @@ abstract class TreeInfo {
 
   class DynamicApplicationExtractor(nameTest: Name => Boolean) {
     def unapply(tree: Tree) = tree match {
-      case Apply(TypeApply(Select(qual, oper), _), List(Literal(Constant(name)))) if nameTest(oper) => Some((qual, name))
-      case Apply(Select(qual, oper), List(Literal(Constant(name)))) if nameTest(oper) => Some((qual, name))
-      case Apply(Ident(oper), List(Literal(Constant(name)))) if nameTest(oper) => Some((EmptyTree, name))
+      case Apply(TypeApply(Select(qual, oper), _), List(LiteralLike(Constant(name)))) if nameTest(oper) => Some((qual, name))
+      case Apply(Select(qual, oper), List(LiteralLike(Constant(name)))) if nameTest(oper) => Some((qual, name))
+      case Apply(Ident(oper), List(LiteralLike(Constant(name)))) if nameTest(oper) => Some((EmptyTree, name))
       case _ => None
     }
   }

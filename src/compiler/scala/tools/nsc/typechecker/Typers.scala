@@ -767,8 +767,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     /** Perform the following adaptations of expression, pattern or type `tree` wrt to
      *  given mode `mode` and given prototype `pt`:
-     *  (-1) For expressions with annotated types, let AnnotationCheckers decide what to do
-     *  (0) Convert expressions with constant types to literals (unless in interactive/scaladoc mode)
+     *  (0) For expressions with annotated types, let AnnotationCheckers decide what to do
      *  (1) Resolve overloading, unless mode contains FUNmode
      *  (2) Apply parameterless functions
      *  (3) Apply polymorphic types to fresh instances of their type parameters and
@@ -950,13 +949,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           Select(qual setPos tree.pos.makeTransparent, nme.apply)
         }
       }
-      def adaptConstant(value: Constant): Tree = {
-        val sym = tree.symbol
-        if (sym != null && sym.isDeprecated)
-          context.deprecationWarning(tree.pos, sym)
-
-        treeCopy.Literal(tree, value)
-      }
 
       // Ignore type errors raised in later phases that are due to mismatching types with existential skolems
       // We have lift crashing in 2.9 with an adapt failure in the pattern matcher.
@@ -1128,10 +1120,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (treeInfo.isMacroApplication(tree)) adapt(unmarkMacroImplRef(tree), mode, pt, original)
         else tree
       } else tree.tpe match {
-        case atp @ AnnotatedType(_, _) if canAdaptAnnotations(tree, this, mode, pt) => // (-1)
+        case atp @ AnnotatedType(_, _) if canAdaptAnnotations(tree, this, mode, pt) => // (0)
           adaptAnnotations(tree, this, mode, pt)
-        case ct @ ConstantType(value) if mode.inNone(TYPEmode | FUNmode) && (ct <:< pt) && canAdaptConstantTypeToLiteral => // (0)
-          adaptConstant(value)
         case OverloadedType(pre, alts) if !mode.inFunMode => // (1)
           inferExprAlternative(tree, pt)
           adaptAfterOverloadResolution(tree, mode, pt, original)
@@ -3582,11 +3572,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // e.g. it may have encountered an implicit conversion.
         val ttree = typed(constfold(tr), pt)
         val const: Constant = ttree match {
-          case l @ Literal(c) if !l.isErroneous => c
-          case tree => tree.tpe match {
-            case ConstantType(c)  => c
-            case tpe              => null
-          }
+          case treeInfo.LiteralLike(c) if !ttree.isErroneous => c
+          case _ => null
         }
 
         if (const == null) {
@@ -5194,7 +5181,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         if (couldBeInterpolatedString) {
           lit match {
-            case Literal(Constant(s: String)) =>
+            case treeInfo.LiteralLike(Constant(s: String)) =>
               def warn(message: String)         = context.warning(lit.pos, s"possible missing interpolator: $message")
               def suspiciousSym(name: TermName) = context.lookupSymbol(name, _ => true).symbol
               def suspiciousExpr                = InterpolatorCodeRegex findFirstIn s
@@ -5238,7 +5225,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (refTyped.isErrorTyped) {
           setError(tree)
         } else {
-          tree setType refTyped.tpe.resultType
+          tree setType refTyped.tpe.resultType.deconst
           if (refTyped.isErrorTyped || treeInfo.admitsTypeSelection(refTyped)) tree
           else UnstableTreeError(tree)
         }

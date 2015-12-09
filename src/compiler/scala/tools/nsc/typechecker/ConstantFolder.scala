@@ -15,38 +15,48 @@ import java.lang.ArithmeticException
  *  @version 1.0
  */
 abstract class ConstantFolder {
-
   val global: Global
   import global._
 
-  /** If tree is a constant operation, replace with result. */
-  def apply(tree: Tree): Tree = fold(tree, tree match {
-    case Apply(Select(Literal(x), op), List(Literal(y))) => foldBinop(op, x, y)
-    case Select(Literal(x), op) => foldUnop(op, x)
-    case _ => null
-  })
+  /** Assign a ConstantType to a tree that evaluates to a statically known constant that's coercible to `pt`.
+    *
+    * Used during type checking. In erasure, the tree will be replaced by the literal denoted by its type.
+    */
+  def apply(tree: Tree, pt: Type = WildcardType): Tree = tree match {
+    case Constable(const) =>
+      if (pt eq WildcardType) tree setType ConstantType(const)
+      else {
+        val adaptedConst = const convertTo pt
+        if (adaptedConst ne null) tree setType ConstantType(adaptedConst)
+        else tree
+      }
+    case _ => tree
+  }
 
-  /** If tree is a constant value that can be converted to type `pt`, perform
-   *  the conversion.
-   */
-  def apply(tree: Tree, pt: Type): Tree = fold(apply(tree), tree.tpe match {
-    case ConstantType(x) => x convertTo pt
-    case _ => null
-  })
+  // Can tree be folded to a constant?
+  private object Constable {
+    import treeInfo.LiteralLike
+    def fold(tree: Tree): Constant =
+      try tree match {
+        case Literal(c) => c
+        // the Const extractor in TreeInfo looks both at the tree and its type (tree was folded previously)
+        // TODO should we go deep and use our own extractor (Constable)? probably doesn't make sense because the type checker already drives the recursion
+        case Apply(Select(LiteralLike(x), op), List(LiteralLike(y))) => foldBinop(op, x, y)
+        case Select(LiteralLike(x), op) => foldUnop(op, x)
+        case _ => tree.tpe match {
+          case ConstantType(c) => c
+          case _ => null
+        }
+      } catch { case _: ArithmeticException => null }
 
-  private def fold(tree: Tree, compX: => Constant): Tree =
-    try {
-      val x = compX
-      if ((x ne null) && x.tag != UnitTag) tree setType ConstantType(x)
-      else tree
-    } catch {
-      case _: ArithmeticException => tree   // the code will crash at runtime,
-                                           // but that is better than the
-                                           // compiler itself crashing
+    def unapply(t: Tree): Option[Constant] = fold(t) match {
+      case const if (const ne null) && const.tag != UnitTag => Some(const)
+      case _ => None
     }
+  }
 
   private def foldUnop(op: Name, x: Constant): Constant = (op, x.tag) match {
-    case (nme.UNARY_!, BooleanTag) => Constant(!x.booleanValue)
+    case (nme.UNARY_!, BooleanTag)  => Constant(!x.booleanValue)
 
     case (nme.UNARY_~ , IntTag    ) => Constant(~x.intValue)
     case (nme.UNARY_~ , LongTag   ) => Constant(~x.longValue)
@@ -150,9 +160,9 @@ abstract class ConstantFolder {
     val optag =
       if (x.tag == y.tag) x.tag
       else if (x.isNumeric && y.isNumeric) math.max(x.tag, y.tag)
-      else NoTag
+      else NoTag // TODO: string concatenation when either tag is a String? TODO: also support string interpolation?
 
-    try optag match {
+    optag match {
       case BooleanTag                               => foldBooleanOp(op, x, y)
       case ByteTag | ShortTag | CharTag | IntTag    => foldSubrangeOp(op, x, y)
       case LongTag                                  => foldLongOp(op, x, y)
@@ -160,9 +170,6 @@ abstract class ConstantFolder {
       case DoubleTag                                => foldDoubleOp(op, x, y)
       case StringTag if op == nme.ADD               => Constant(x.stringValue + y.stringValue)
       case _                                        => null
-    }
-    catch {
-      case ex: ArithmeticException => null
     }
   }
 }

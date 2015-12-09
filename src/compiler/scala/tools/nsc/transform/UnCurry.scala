@@ -13,7 +13,12 @@ import scala.language.postfixOps
 import scala.reflect.internal.util.ListOfNil
 
 /*<export> */
-/** - uncurry all symbol and tree types (@see UnCurryPhase) -- this includes normalizing all proper types.
+/**
+ *  - constant fold: trees of type ConstantType are replaced by the corresponding Literal
+ *    (We do this here instead of during erasure, so that it happens before explicitouter,
+ *     which shouldn't see a reference to a final val that will be constant folded away, or it wil make them non-private.
+ *     Similar reasoning applies to tailcalls: constants don't influence code flow.)
+ *  - uncurry all symbol and tree types (@see UnCurryPhase) -- this includes normalizing all proper types.
  *  - for every curried parameter list:  (ps_1) ... (ps_n) ==> (ps_1, ..., ps_n)
  *  - for every curried application: f(args_1)...(args_n) ==> f(args_1, ..., args_n)
  *  - for every type application: f[Ts] ==> f[Ts]() unless followed by parameters
@@ -533,7 +538,7 @@ abstract class UnCurry extends InfoTransform
       result modifyType uncurry
     }
 
-    def postTransform(tree: Tree): Tree = exitingUncurry {
+    def postTransform(tree0: Tree): Tree = exitingUncurry {
       def isThrowable(pat: Tree): Boolean = pat match {
         case Typed(Ident(nme.WILDCARD), tpt) =>
           tpt.tpe =:= ThrowableTpe
@@ -543,6 +548,13 @@ abstract class UnCurry extends InfoTransform
           false
       }
 
+      // tree could be an Ident/Select/Apply -- missing any other cases?
+      def constToLiteral(tree: Tree): Tree = tree.tpe match {
+        case ConstantType(c) => Literal(c) setType tree.tpe setPos tree.pos // TODO: carry over anything else?
+        case _ => tree
+      }
+
+      val tree = constToLiteral(tree0)
       tree match {
         /* Some uncurry post transformations add members to templates.
          *

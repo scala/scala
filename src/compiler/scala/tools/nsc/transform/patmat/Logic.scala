@@ -764,7 +764,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
           val wideTp = widenToClass(tp)
 
           val narrowTp =
-            if (tp.isInstanceOf[SingletonType]) tp
+            if (tp.isInstanceOf[SingletonType] || tp.isInstanceOf[ConstantType]) tp
             else p match {
               case Literal(c) =>
                 if (c.tpe =:= UnitTpe) c.tpe
