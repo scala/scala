@@ -374,8 +374,9 @@ abstract class UnCurry extends InfoTransform
      */
     private def replaceElidableTree(tree: Tree): Tree = {
       tree match {
-        case DefDef(_,_,_,_,_,_) =>
-          deriveDefDef(tree)(rhs => Block(Nil, gen.mkZero(rhs.tpe)) setType rhs.tpe) setSymbol tree.symbol setType tree.tpe
+        case DefDef(_,_,_,_,_,rhs) =>
+          val rhs1 = if (rhs == EmptyTree) rhs else Block(Nil, gen.mkZero(rhs.tpe)) setType rhs.tpe
+          deriveDefDef(tree)(_ => rhs1) setSymbol tree.symbol setType tree.tpe
         case _ =>
           gen.mkZero(tree.tpe) setType tree.tpe
       }
@@ -744,7 +745,7 @@ abstract class UnCurry extends InfoTransform
           case Packed(param, tempVal) => (param, tempVal)
         }.unzip
 
-        val rhs1 = if (tempVals.isEmpty) rhs else {
+        val rhs1 = if (rhs == EmptyTree || tempVals.isEmpty) rhs else {
           localTyper.typedPos(rhs.pos) {
             // Patch the method body to refer to the temp vals
             val rhsSubstituted = rhs.substituteSymbols(packedParams map (_.symbol), tempVals map (_.symbol))

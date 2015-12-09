@@ -32,7 +32,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
    * the InnerClass / EnclosingMethod classfile attributes. See comment in BTypes.
    */
   def considerAsTopLevelImplementationArtifact(classSym: Symbol) =
-    classSym.isImplClass || classSym.isSpecialized
+    classSym.isSpecialized
 
   /**
    * Cache the value of delambdafy == "inline" for each run. We need to query this value many
@@ -248,7 +248,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
    * Build the [[InlineInfo]] for a class symbol.
    */
   def buildInlineInfoFromClassSymbol(classSym: Symbol, classSymToInternalName: Symbol => InternalName, methodSymToDescriptor: Symbol => String): InlineInfo = {
-    val traitSelfType = if (classSym.isTrait && !classSym.isImplClass) {
+    val traitSelfType = if (classSym.isTrait) {
       // The mixin phase uses typeOfThis for the self parameter in implementation class methods.
       val selfSym = classSym.typeOfThis.typeSymbol
       if (selfSym != classSym) Some(classSymToInternalName(selfSym)) else None
@@ -259,7 +259,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     val isEffectivelyFinal = classSym.isEffectivelyFinal
 
     val sam = {
-      if (classSym.isImplClass || classSym.isEffectivelyFinal) None
+      if (classSym.isEffectivelyFinal) None
       else {
         // Phase travel necessary. For example, nullary methods (getter of an abstract val) get an
         // empty parameter list in later phases and would therefore be picked as SAM.
@@ -284,41 +284,15 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
           val name      = methodSym.javaSimpleName.toString // same as in genDefDef
           val signature = name + methodSymToDescriptor(methodSym)
 
-          // Some detours are required here because of changing flags (lateDEFERRED, lateMODULE):
+          // Some detours are required here because of changing flags (lateDEFERRED):
           // 1. Why the phase travel? Concrete trait methods obtain the lateDEFERRED flag in Mixin.
           //    This makes isEffectivelyFinalOrNotOverridden false, which would prevent non-final
           //    but non-overridden methods of sealed traits from being inlined.
-          // 2. Why the special case for `classSym.isImplClass`? Impl class symbols obtain the
-          //    lateMODULE flag during Mixin. During the phase travel to exitingPickler, the late
-          //    flag is ignored. The members are therefore not isEffectivelyFinal (their owner
-          //    is not a module). Since we know that all impl class members are static, we can
-          //    just take the shortcut.
-          val effectivelyFinal = classSym.isImplClass || exitingPickler(methodSym.isEffectivelyFinalOrNotOverridden)
-
-          // Identify trait interface methods that have a static implementation in the implementation
-          // class. Invocations of these methods can be re-wrired directly to the static implementation
-          // if they are final or the receiver is known.
-          //
-          // Using `erasure.needsImplMethod` is not enough: it keeps field accessors, module getters
-          // and super accessors. When AddInterfaces creates the impl class, these methods are
-          // initially added to it.
-          //
-          // The mixin phase later on filters out most of these members from the impl class (see
-          // Mixin.isImplementedStatically). However, accessors for concrete lazy vals remain in the
-          // impl class after mixin. So the filter in mixin is not exactly what we need here (we
-          // want to identify concrete trait methods, not any accessors). So we check some symbol
-          // properties manually.
-          val traitMethodWithStaticImplementation = {
-            import symtab.Flags._
-            classSym.isTrait && !classSym.isImplClass &&
-              erasure.needsImplMethod(methodSym) &&
-              !methodSym.isModule &&
-              !(methodSym hasFlag (ACCESSOR | SUPERACCESSOR))
-          }
+          val effectivelyFinal = exitingPickler(methodSym.isEffectivelyFinalOrNotOverridden) && !(methodSym.owner.isTrait && methodSym.isModule)
 
           val info = MethodInlineInfo(
             effectivelyFinal                    = effectivelyFinal,
-            traitMethodWithStaticImplementation = traitMethodWithStaticImplementation,
+            traitMethodWithStaticImplementation = false,
             annotatedInline                     = methodSym.hasAnnotation(ScalaInlineClass),
             annotatedNoInline                   = methodSym.hasAnnotation(ScalaNoInlineClass)
           )
@@ -866,7 +840,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       || sym.isArtifact
       || sym.isLiftedMethod
       || sym.isBridge
-      || (sym.ownerChain exists (_.isImplClass))
     )
 
     /* @return

@@ -4651,10 +4651,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         def findMixinSuper(site: Type): Type = {
           var ps = site.parents filter (_.typeSymbol.name == mix)
           if (ps.isEmpty)
-            ps = site.parents filter (_.typeSymbol.toInterface.name == mix)
+            ps = site.parents filter (_.typeSymbol.name == mix)
           if (ps.isEmpty) {
             debuglog("Fatal: couldn't find site " + site + " in " + site.parents.map(_.typeSymbol.name))
-            if (phase.erasedTypes && context.enclClass.owner.isImplClass) {
+            if (phase.erasedTypes && context.enclClass.owner.isTrait) {
               // the reference to super class got lost during erasure
               restrictionError(tree.pos, unit, "traits may not select fields or methods from super[C] where C is a class")
               ErrorType

@@ -111,8 +111,6 @@ abstract class TreeCheckers extends Analyzer {
         newSyms += sym
       else if (prevTrees exists (t => (t eq tree) || (t.symbol == sym)))
         ()
-      else if (prevTrees exists (_.symbol.owner == sym.owner.implClass))
-        errorFn("Noticed " + ownerstr(sym) + " moving to implementation class.")
       else {
         val s1 = (prevTrees map wholetreestr).sorted.distinct
         val s2 = wholetreestr(tree)

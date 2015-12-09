@@ -63,28 +63,35 @@ class ScalaInlineInfoTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val cs @ List(t, tl, to, tCls) = compileClasses(compiler)(code)
+    val cs @ List(t, tl, to) = compileClasses(compiler)(code)
     val info = inlineInfo(t)
     val expect = InlineInfo (
       None,  // self type
       false, // final class
       None, // not a sam
       Map(
-        ("O()LT$O$;",                            MethodInlineInfo(true, false,false,false)),
-        ("T$$super$toString()Ljava/lang/String;",MethodInlineInfo(false,false,false,false)),
-        ("T$_setter_$x1_$eq(I)V",                MethodInlineInfo(false,false,false,false)),
-        ("f1()I",                                MethodInlineInfo(false,true, false,false)),
-        ("f3()I",                                MethodInlineInfo(false,true, false,false)),
-        ("f4()Ljava/lang/String;",               MethodInlineInfo(false,true, true, false)),
-        ("f5()I",                                MethodInlineInfo(false,true, false,false)),
-        ("f6()I",                                MethodInlineInfo(false,false,false,true )),
-        ("x1()I",                                MethodInlineInfo(false,false,false,false)),
-        ("x3()I",                                MethodInlineInfo(false,false,false,false)),
-        ("x3_$eq(I)V",                           MethodInlineInfo(false,false,false,false)),
-        ("x4()I",                                MethodInlineInfo(false,false,false,false)),
-        ("x5()I",                                MethodInlineInfo(true, false,false,false)),
-        ("y2()I",                                MethodInlineInfo(false,false,false,false)),
-        ("y2_$eq(I)V",                           MethodInlineInfo(false,false,false,false))),
+        // TODO SD-86: the module accessor used to be `effectivelyFinal` before nuke-impl-classes
+        ("O()LT$O$;",                                                MethodInlineInfo(false,false,false,false)),
+        ("T$$super$toString()Ljava/lang/String;",                    MethodInlineInfo(false,false,false,false)),
+        ("T$_setter_$x1_$eq(I)V",                                    MethodInlineInfo(false,false,false,false)),
+        ("f1()I",                                                    MethodInlineInfo(false,false,false,false)),
+        ("f3()I",                                                    MethodInlineInfo(false,false,false,false)),
+        ("f4()Ljava/lang/String;",                                   MethodInlineInfo(false,false,true, false)),
+        ("f5()I",                                                    MethodInlineInfo(false,false,false,false)),
+        ("f6()I",                                                    MethodInlineInfo(false,false,false,true )),
+        ("x1()I",                                                    MethodInlineInfo(false,false,false,false)),
+        ("x3()I",                                                    MethodInlineInfo(false,false,false,false)),
+        ("x3_$eq(I)V",                                               MethodInlineInfo(false,false,false,false)),
+        ("x4()I",                                                    MethodInlineInfo(false,false,false,false)),
+        ("x5()I",                                                    MethodInlineInfo(true, false,false,false)),
+        ("y2()I",                                                    MethodInlineInfo(false,false,false,false)),
+        ("y2_$eq(I)V",                                               MethodInlineInfo(false,false,false,false)),
+        ("f2()I",                                                    MethodInlineInfo(true, false,false,false)),
+        ("L$lzycompute$1(Lscala/runtime/VolatileObjectRef;)LT$L$2$;",MethodInlineInfo(true, false,false,false)),
+        // TODO SD-86: should probably be effectivelyFinal
+        ("L$1(Lscala/runtime/VolatileObjectRef;)LT$L$2$;",           MethodInlineInfo(false,false,false,false)),
+        ("nest$1()I",                                                MethodInlineInfo(true, false,false,false)),
+        ("$init$()V",                                                MethodInlineInfo(false,false,false,false))),
       None // warning
     )
     assert(info == expect, info)
@@ -124,8 +131,7 @@ class ScalaInlineInfoTest extends ClearAfterClass {
         ("E",Some("h(Ljava/lang/String;)I")),
         ("F",None),
         ("T",Some("h(Ljava/lang/String;)I")),
-        ("U",None),
-        ("U$class",None)))
+        ("U",None)))
 
   }
 }

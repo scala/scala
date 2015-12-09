@@ -120,6 +120,7 @@ trait HasFlags {
   def isSuperAccessor       = hasFlag(SUPERACCESSOR)
   def isSynthetic           = hasFlag(SYNTHETIC)
   def isTrait               = hasFlag(TRAIT) && !hasFlag(PARAM)
+  def isTraitOrInterface    = isTrait || isInterface
 
   def isDeferredOrJavaDefault  = hasFlag(DEFERRED | JAVA_DEFAULTMETHOD)
   def isDeferredNotJavaDefault = isDeferred && !hasFlag(JAVA_DEFAULTMETHOD)

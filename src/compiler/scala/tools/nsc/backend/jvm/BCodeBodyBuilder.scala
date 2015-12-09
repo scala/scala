@@ -588,12 +588,13 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         // to call super constructors explicitly and/or use their 'returned' value.
         // therefore, we can ignore this fact, and generate code that leaves nothing
         // on the stack (contrary to what the type in the AST says).
-        case Apply(fun @ Select(Super(_, _), _), args) =>
+        case Apply(fun @ Select(Super(qual, mix), _), args) =>
           val invokeStyle = InvokeStyle.Super
           // if (fun.symbol.isConstructor) Static(true) else SuperCall(mix);
           mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
+          val hostClass = qual.symbol.parentSymbols.find(_.name == mix).orNull
           genLoadArguments(args, paramTKs(app))
-          genCallMethod(fun.symbol, invokeStyle, app.pos)
+          genCallMethod(fun.symbol, invokeStyle, app.pos, hostClass)
           generatedType = methodBTypeFromSymbol(fun.symbol).returnType
 
         // 'new' constructor call: Note: since constructors are
@@ -1050,19 +1051,26 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       hostSymbol.info ; methodOwner.info
 
       def needsInterfaceCall(sym: Symbol) = (
-           sym.isInterface
+           sym.isTraitOrInterface
         || sym.isJavaDefined && sym.isNonBottomSubClass(definitions.ClassfileAnnotationClass)
       )
 
+      val isTraitCallToObjectMethod =
+        hostSymbol != methodOwner && methodOwner.isTraitOrInterface && ObjectTpe.decl(method.name) != NoSymbol && method.overrideChain.last.owner == ObjectClass
+
       // whether to reference the type of the receiver or
       // the type of the method owner
-      val useMethodOwner = (
+      val useMethodOwner = ((
            !style.isVirtual
         || hostSymbol.isBottomClass
         || methodOwner == definitions.ObjectClass
-      )
+      ) && !(style.isSuper && hostSymbol != null)) || isTraitCallToObjectMethod
       val receiver = if (useMethodOwner) methodOwner else hostSymbol
       val jowner   = internalName(receiver)
+
+      if (style.isSuper && (isTraitCallToObjectMethod || receiver.isTraitOrInterface) && !cnode.interfaces.contains(jowner))
+        cnode.interfaces.add(jowner)
+
       val jname    = method.javaSimpleName.toString
       val bmType   = methodBTypeFromSymbol(method)
       val mdescr   = bmType.descriptor
@@ -1342,7 +1350,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       def asmType(sym: Symbol) = classBTypeFromSymbol(sym).toASMType
 
       val implMethodHandle =
-        new asm.Handle(if (lambdaTarget.hasFlag(Flags.STATIC)) asm.Opcodes.H_INVOKESTATIC else asm.Opcodes.H_INVOKEVIRTUAL,
+        new asm.Handle(if (lambdaTarget.hasFlag(Flags.STATIC)) asm.Opcodes.H_INVOKESTATIC else if (lambdaTarget.owner.isTrait) asm.Opcodes.H_INVOKEINTERFACE else asm.Opcodes.H_INVOKEVIRTUAL,
           classBTypeFromSymbol(lambdaTarget.owner).internalName,
           lambdaTarget.name.toString,
           methodBTypeFromSymbol(lambdaTarget).descriptor)
