@@ -1,13 +1,20 @@
-Use the latest IntelliJ IDEA release and install the Scala plugin from within the IDE.
+# Building Scala using IntelliJ IDEA
 
-Compilation withing IDEA is performed in "-Dlocker.skip=1" mode: the sources are built
-directly using the STARR compiler.
+## Requirements
 
-The following steps are required to use IntelliJ IDEA on Scala trunk
+Use the latest IntelliJ release and install the Scala plugin from within the IDE.
+
+## Initial setup
+
+To create the IntelliJ project definition,
+
  - Run `ant init`. This will download some JARs to `./build/deps`, which are included in IntelliJ's classpath.
  - Run `./src/intellij/setup.sh`.
  - Open `./src/intellij/scala.ipr` in IntelliJ.
- - `File` → `Project Structure` → `Project` → `Project SDK`. Create an SDK entry named "1.6" containing the Java 1.6 SDK. (Or other SDK version; see "Requirements" in the repo's main README.)
+ - In `File` → `Project Structure` → `Project` → `Project SDK`, create an SDK entry named "1.8" containing the Java 1.8 SDK.
 
-Compilation within IDEA is performed in `-Dlocker.skip=1` mode: the sources are built
-directly using the STARR compiler (which is downloaded from [the Central Repository](http://central.sonatype.org/), according to `starr.version` in `versions.properties`).
+## Usage
+
+Compiling, running, and debugging should all work.  You can work on the compiler, the standard library, and other components as well.
+
+Note that compilation within IntelliJ is performed in `-Dlocker.skip=1` mode. Code is compiled not by bootstrapping the current compiler sources, but simply by using the "STARR" (stable reference) compiler, as specified by `starr.version` in `versions.properties`.
