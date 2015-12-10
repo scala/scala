@@ -1041,7 +1041,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case TypeRef(_, UnitClass, _) => // (12)
               if (!isPastTyper && settings.warnValueDiscard)
                 context.warning(tree.pos, "discarded non-Unit value")
-              return typedPos(tree.pos, mode, pt)(Block(List(tree), Literal(Constant(()))))
+              return typedPos(tree.pos, mode, pt)(gen.singleStatementBlock(tree))
             case TypeRef(_, sym, _) if isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt) =>
               if (!isPastTyper && settings.warnNumericWiden)
                 context.warning(tree.pos, "implicit numeric widening")
@@ -1185,7 +1185,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val savedUndetparams = context.undetparams
       silent(_.instantiate(tree, mode, UnitTpe)) orElse { _ =>
         context.undetparams = savedUndetparams
-        val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(Constant(()))))
+        val valueDiscard = atPos(tree.pos)(gen.singleStatementBlock(instantiate(tree, mode, WildcardType)))
         typed(valueDiscard, mode, UnitTpe)
       }
     }
