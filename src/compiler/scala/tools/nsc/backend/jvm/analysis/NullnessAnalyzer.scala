@@ -113,13 +113,13 @@ final class NullnessInterpreter extends Interpreter[NullnessValue](Opcodes.ASM5)
 
   def ternaryOperation(insn: AbstractInsnNode, value1: NullnessValue, value2: NullnessValue, value3: NullnessValue): NullnessValue = UnknownValue1
 
-  def naryOperation(insn: AbstractInsnNode, values: util.List[_ <: NullnessValue]): NullnessValue = (insn.getOpcode: @switch) match {
-    case Opcodes.MULTIANEWARRAY =>
+  def naryOperation(insn: AbstractInsnNode, values: util.List[_ <: NullnessValue]): NullnessValue = insn match {
+    case mi: MethodInsnNode if isNonNullMethodInvocation(mi) =>
       NotNullValue
 
     case _ =>
-      // TODO: use a list of methods that are known to return non-null values
-      NullnessValue.unknown(insn)
+      if (insn.getOpcode == Opcodes.MULTIANEWARRAY) NotNullValue
+      else NullnessValue.unknown(insn)
   }
 
   def returnOperation(insn: AbstractInsnNode, value: NullnessValue, expected: NullnessValue): Unit = ()

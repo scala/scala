@@ -9,7 +9,7 @@ package opt
 
 import scala.annotation.{tailrec, switch}
 import scala.tools.asm.Type
-import scala.tools.asm.tree.analysis.BasicInterpreter
+import scala.tools.asm.tree.analysis.{BasicInterpreter, Frame}
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.collection.{mutable, immutable}
@@ -28,6 +28,13 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  * The optimizations marked UPSTREAM enable optimizations that were already executed, so they cause
  * another iteration in the fixpoint loop.
  *
+ * nullness optimizations: rewrite null-checking branches to GOTO if nullness is known
+ *   + enables downstream
+ *     - unreachable code (null / non-null branch becomes unreachable)
+ *     - box-unbox elimination (may render an escaping consumer of a box unreachable)
+ *     - stale stores (aload x is replaced by aconst_null if it's known null)
+ *     - simplify jumps (replaces conditional jumps by goto, so may enable goto chains)
+ *
  * unreachable code / DCE (removes instructions of basic blocks to which there is no branch)
  *   + enables downstream:
  *     - stale stores (loads may be eliminated, removing consumers of a store)
@@ -41,6 +48,8 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *
  * box-unbox elimination (eliminates box-unbox pairs withing the same method)
  *   + enables UPSTREAM:
+ *     - nullness optimizations (a box extraction operation (unknown nullness) may be rewritten to
+ *       a read of a non-null local. example in doc comment of box-unbox implementation)
  *     - further box-unbox elimination (e.g. an Integer stored in a Tuple; eliminating the tuple may
  *       enable eliminating the Integer)
  *   + enables downstream:
@@ -223,6 +232,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
      * Returns a pair of booleans (codeChanged, requireEliminateUnusedLocals).
      */
     def removalRound(
+        requestNullness: Boolean,
         requestDCE: Boolean,
         requestBoxUnbox: Boolean,
         requestStaleStores: Boolean,
@@ -231,16 +241,20 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
         maxRecursion: Int = 10): (Boolean, Boolean) = {
       if (maxRecursion == 0) return (false, false)
 
+      // NULLNESS OPTIMIZATIONS
+      val runNullness = compilerSettings.YoptNullnessTracking && requestNullness
+      val nullnessOptChanged = runNullness && nullnessOptimizations(method, ownerClassName)
+
       // UNREACHABLE CODE
       // Both AliasingAnalyzer (used in copyProp) and ProdConsAnalyzer (used in eliminateStaleStores,
       // boxUnboxElimination) require not having unreachable instructions (null frames).
-      val runDCE = (compilerSettings.YoptUnreachableCode && requestDCE) ||
+      val runDCE = (compilerSettings.YoptUnreachableCode && (requestDCE || nullnessOptChanged)) ||
         compilerSettings.YoptBoxUnbox ||
         compilerSettings.YoptCopyPropagation
       val (codeRemoved, liveLabels) = if (runDCE) removeUnreachableCodeImpl(method, ownerClassName) else (false, Set.empty[LabelNode])
 
       // BOX-UNBOX
-      val runBoxUnbox = compilerSettings.YoptBoxUnbox && requestBoxUnbox
+      val runBoxUnbox = compilerSettings.YoptBoxUnbox && (requestBoxUnbox || nullnessOptChanged)
       val boxUnboxChanged = runBoxUnbox && boxUnboxElimination(method, ownerClassName)
 
       // COPY PROPAGATION
@@ -248,7 +262,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
       val copyPropChanged = runCopyProp && copyProp(method, ownerClassName)
 
       // STALE STORES
-      val runStaleStores = compilerSettings.YoptCopyPropagation && (requestStaleStores || codeRemoved || boxUnboxChanged || copyPropChanged)
+      val runStaleStores = compilerSettings.YoptCopyPropagation && (requestStaleStores || nullnessOptChanged || codeRemoved || boxUnboxChanged || copyPropChanged)
       val storesRemoved = runStaleStores && eliminateStaleStores(method, ownerClassName)
 
       // REDUNDANT CASTS
@@ -274,13 +288,15 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
       val jumpsChanged = runSimplifyJumps && simplifyJumps(method)
 
       // See doc comment in the beginning of this file (optimizations marked UPSTREAM)
+      val runNullnessAgain = boxUnboxChanged
       val runDCEAgain = liveHandlerRemoved || jumpsChanged
       val runBoxUnboxAgain = boxUnboxChanged || castRemoved || pushPopRemoved || liveHandlerRemoved
       val runStaleStoresAgain = pushPopRemoved
       val runStoreLoadAgain = jumpsChanged
-      val runAgain = runDCEAgain || runBoxUnboxAgain || pushPopRemoved || runStaleStoresAgain || runStoreLoadAgain
+      val runAgain = runNullnessAgain || runDCEAgain || runBoxUnboxAgain || pushPopRemoved || runStaleStoresAgain || runStoreLoadAgain
 
       val downstreamRequireEliminateUnusedLocals = runAgain && removalRound(
+        requestNullness = runNullnessAgain,
         requestDCE = runDCEAgain,
         requestBoxUnbox = runBoxUnboxAgain,
         requestStaleStores = runStaleStoresAgain,
@@ -289,20 +305,22 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
         maxRecursion = maxRecursion - 1)._2
 
       val requireEliminateUnusedLocals = downstreamRequireEliminateUnusedLocals ||
+        nullnessOptChanged || // nullness opt may eliminate stores / loads, rendering a local unused
         codeRemoved ||        // see comment in method `methodOptimizations`
         boxUnboxChanged ||    // box-unbox renders locals (holding boxes) unused
         storesRemoved  ||
         storeLoadRemoved ||
         handlersRemoved
 
-      val codeChanged = codeRemoved || boxUnboxChanged || castRemoved || copyPropChanged || storesRemoved || pushPopRemoved || storeLoadRemoved || handlersRemoved || jumpsChanged
+      val codeChanged = nullnessOptChanged || codeRemoved || boxUnboxChanged || castRemoved || copyPropChanged || storesRemoved || pushPopRemoved || storeLoadRemoved || handlersRemoved || jumpsChanged
       (codeChanged, requireEliminateUnusedLocals)
     }
 
-    val (dceBoxesCopypropPushpopOrJumpsChanged, requireEliminateUnusedLocals) = if (AsmAnalyzer.sizeOKForBasicValue(method)) {
+    val (nullnessDceBoxesCastsCopypropPushpopOrJumpsChanged, requireEliminateUnusedLocals) = if (AsmAnalyzer.sizeOKForBasicValue(method)) {
       // we run DCE even if the method is already in the `unreachableCodeEliminated` map: the DCE
       // here is more thorough than `minimalRemoveUnreachableCode` that run before inlining.
       val r = removalRound(
+        requestNullness = true,
         requestDCE = true,
         requestBoxUnbox = true,
         requestStaleStores = true,
@@ -328,7 +346,101 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
     assert(nullOrEmpty(method.visibleLocalVariableAnnotations), method.visibleLocalVariableAnnotations)
     assert(nullOrEmpty(method.invisibleLocalVariableAnnotations), method.invisibleLocalVariableAnnotations)
 
-    dceBoxesCopypropPushpopOrJumpsChanged || localsRemoved || lineNumbersRemoved || labelsRemoved
+    nullnessDceBoxesCastsCopypropPushpopOrJumpsChanged || localsRemoved || lineNumbersRemoved || labelsRemoved
+  }
+
+  /**
+   * Apply various optimizations based on nullness analysis information.
+   *   - IFNULL / IFNONNULL are rewritten to GOTO if nullness is known
+   *   - IF_ACMPEQ / IF_ACMPNE are rewritten to GOTO if the both references are known null, or if
+   *     one is known null and the other known not-null
+   *   - ALOAD is replaced by ACONST_NULL if the local is known to hold null
+   *   - ASTORE of null is removed if the local is known to hold null
+   *   - INSTANCEOF of null is replaced by `ICONST_0`
+   *   - scala.runtime.BoxesRunTime.unboxToX(null) is rewritten to a zero-value load
+   */
+  def nullnessOptimizations(method: MethodNode, ownerClassName: InternalName): Boolean = {
+    AsmAnalyzer.sizeOKForNullness(method) && {
+      lazy val nullnessAnalyzer = new AsmAnalyzer(method, ownerClassName, new NullnessAnalyzer)
+
+      // When running nullness optimizations the method may still have unreachable code. Analyzer
+      // frames of unreachable instructions are `null`.
+      def frameAt(insn: AbstractInsnNode): Option[Frame[NullnessValue]] = Option(nullnessAnalyzer.frameAt(insn))
+
+      def nullness(insn: AbstractInsnNode, slot: Int): Option[NullnessValue] = {
+        frameAt(insn).map(_.getValue(slot))
+      }
+
+      def isNull(insn: AbstractInsnNode, slot: Int) = nullness(insn, slot).contains(NullValue)
+
+      // cannot change instructions while iterating, it gets the analysis out of synch (indexed by instructions)
+      val toReplace = mutable.Map.empty[AbstractInsnNode, List[AbstractInsnNode]]
+
+      val it = method.instructions.iterator()
+      while (it.hasNext) it.next() match {
+        case vi: VarInsnNode if isNull(vi, vi.`var`) =>
+          if (vi.getOpcode == ALOAD)
+            toReplace(vi) = List(new InsnNode(ACONST_NULL))
+          else if (vi.getOpcode == ASTORE)
+            for (frame <- frameAt(vi) if frame.peekStack(0) == NullValue)
+              toReplace(vi) = List(getPop(1))
+
+        case ji: JumpInsnNode =>
+          val isIfNull = ji.getOpcode == IFNULL
+          val isIfNonNull = ji.getOpcode == IFNONNULL
+          if (isIfNull || isIfNonNull) for (frame <- frameAt(ji)) {
+            val nullness = frame.peekStack(0)
+            val taken = nullness == NullValue && isIfNull || nullness == NotNullValue && isIfNonNull
+            val avoided = nullness == NotNullValue && isIfNull || nullness == NullValue && isIfNonNull
+            if (taken || avoided) {
+              val jump = if (taken) List(new JumpInsnNode(GOTO, ji.label)) else Nil
+              toReplace(ji) = getPop(1) :: jump
+            }
+          } else {
+            val isIfEq = ji.getOpcode == IF_ACMPEQ
+            val isIfNe = ji.getOpcode == IF_ACMPNE
+            if (isIfEq || isIfNe) for (frame <- frameAt(ji)) {
+              val aNullness = frame.peekStack(1)
+              val bNullness = frame.peekStack(0)
+              val eq = aNullness == NullValue && bNullness == NullValue
+              val ne = aNullness == NullValue && bNullness == NotNullValue || aNullness == NotNullValue && bNullness == NullValue
+              val taken = isIfEq && eq || isIfNe && ne
+              val avoided = isIfEq && ne || isIfNe && eq
+              if (taken || avoided) {
+                val jump = if (taken) List(new JumpInsnNode(GOTO, ji.label)) else Nil
+                toReplace(ji) = getPop(1) :: getPop(1) :: jump
+              }
+            }
+          }
+
+        case ti: TypeInsnNode =>
+          if (ti.getOpcode == INSTANCEOF) for (frame <- frameAt(ti) if frame.peekStack(0) == NullValue) {
+            toReplace(ti) = List(getPop(1), new InsnNode(ICONST_0))
+          }
+
+        case mi: MethodInsnNode =>
+          if (isScalaUnbox(mi)) for (frame <- frameAt(mi) if frame.peekStack(0) == NullValue) {
+            toReplace(mi) = List(
+              getPop(1),
+              loadZeroForTypeSort(Type.getReturnType(mi.desc).getSort))
+          }
+
+        case _ =>
+      }
+
+      def removeFromCallGraph(insn: AbstractInsnNode): Unit = insn match {
+        case mi: MethodInsnNode => callGraph.removeCallsite(mi, method)
+        case _ =>
+      }
+
+      for ((oldOp, newOps) <- toReplace) {
+        for (newOp <- newOps) method.instructions.insertBefore(oldOp, newOp)
+        method.instructions.remove(oldOp)
+        removeFromCallGraph(oldOp)
+      }
+
+      toReplace.nonEmpty
+    }
   }
 
   /**

@@ -354,6 +354,10 @@ object BytecodeUtils {
       isSideEffectFreeConstructorCall(insn)
   }
 
+  def isNonNullMethodInvocation(mi: MethodInsnNode): Boolean = {
+    isJavaBox(mi) || isScalaBox(mi) || isPredefAutoBox(mi) || isRefCreate(mi) || isRefZero(mi)
+  }
+
   private val srBoxesRunTimeName = "scala/runtime/BoxesRunTime"
 
   private val boxToMethods = Map(

@@ -338,7 +338,7 @@ class MethodLevelOptsTest extends ClearAfterClass {
     assertNoInvoke(getSingleMethod(c, "t5"))
     assertNoInvoke(getSingleMethod(c, "t6"))
     assertNoInvoke(getSingleMethod(c, "t7"))
-    assertEquals(getSingleMethod(c, "t8").instructions.summary, List(ACONST_NULL, "unboxToInt", IRETURN))
+    assertEquals(getSingleMethod(c, "t8").instructions.summary, List(ICONST_0, IRETURN))
     assertNoInvoke(getSingleMethod(c, "t9"))
     // t10: no invocation of unbox
     assertEquals(getSingleMethod(c, "t10").instructions collect { case Invoke(_, owner, name, _, _) => (owner, name) }, List(
@@ -479,13 +479,68 @@ class MethodLevelOptsTest extends ClearAfterClass {
       ("scala/runtime/BoxesRunTime", "boxToInteger"),
       ("C", "tpl"),
       ("scala/Tuple2", "_1$mcI$sp")))
-    // cannot eliminate boxes because of null checks
-    assert(getSingleMethod(c, "t6").instructions.exists(_.opcode == IFNONNULL))
-    // cannot eliminate boxed because of null checks
-    def castsNullChecks(m: String) = getSingleMethod(c, m).instructions collect { case op if op.opcode == IFNULL || op.opcode == CHECKCAST => op }
-    assertEquals(castsNullChecks("t7"),
-      List(Jump(IFNULL, Label(28)), Jump(IFNULL, Label(28))))
-    assertEquals(castsNullChecks("t8").size, 3)
-    assertEquals(castsNullChecks("t9").size, 2)
+    assertEquals(getSingleMethod(c, "t6").instructions.summary, List(ICONST_1, ICONST_2, ISUB, IRETURN))
+    assertEquals(getSingleMethod(c, "t7").instructions.summary, List(
+      ICONST_1, ICONST_2, ISTORE, ISTORE,
+      ICONST_3, ISTORE,
+      ILOAD, ILOAD, IADD, ILOAD, IADD, IRETURN))
+    assertNoInvoke(getSingleMethod(c, "t8"))
+    assertNoInvoke(getSingleMethod(c, "t9"))
+  }
+
+  @Test
+  def nullnessOpts(): Unit = {
+    val code =
+      """class C {
+        |  def t1 = {
+        |    val a = new C
+        |    if (a == null)
+        |      println() // eliminated
+        |    a
+        |  }
+        |
+        |  def t2 = null.asInstanceOf[Long] // replaced by zero value
+        |
+        |  def t3 = {
+        |    val t = (1, 3)
+        |    val a = null
+        |    if (t ne a) t._1
+        |    else throw new Error()
+        |  }
+        |
+        |  def t4 = {
+        |    val i = Integer.valueOf(1)
+        |    val a = null
+        |    if (i eq a) throw new Error()
+        |    else i.toInt
+        |  }
+        |
+        |  def t5 = {
+        |    val i = runtime.DoubleRef.zero()
+        |    if (i == null) throw new Error()
+        |    else i.elem
+        |  }
+        |
+        |  def t6 = {
+        |    var a = null
+        |    var i = null
+        |    a = i // eliminated (store of null to variable that is already null)
+        |    a // replaced by ACONST_NULL (load of variable that is known null)
+        |  }
+        |
+        |  def t7 = {
+        |    val a = null
+        |    a.isInstanceOf[String] // eliminated, replaced by 0 (null.isInstanceOf is always false)
+        |  }
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(methodOptCompiler)(code)
+    assertEquals(getSingleMethod(c, "t1").instructions.summary, List(NEW, DUP, "<init>", ARETURN))
+    assertSameCode(getSingleMethod(c, "t2").instructions.dropNonOp, List(Op(LCONST_0), Op(LRETURN)))
+    assertSameCode(getSingleMethod(c, "t3").instructions.dropNonOp, List(Op(ICONST_1), Op(IRETURN)))
+    assertSameCode(getSingleMethod(c, "t4").instructions.dropNonOp, List(Op(ICONST_1), Op(IRETURN)))
+    assertSameCode(getSingleMethod(c, "t5").instructions.dropNonOp, List(Op(DCONST_0), Op(DRETURN)))
+    assertSameCode(getSingleMethod(c, "t6").instructions.dropNonOp, List(Op(ACONST_NULL), Op(ARETURN)))
+    assertSameCode(getSingleMethod(c, "t7").instructions.dropNonOp, List(Op(ICONST_0), Op(IRETURN)))
   }
 }

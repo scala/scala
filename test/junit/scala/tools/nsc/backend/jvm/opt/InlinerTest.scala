@@ -1432,10 +1432,9 @@ class InlinerTest extends ClearAfterClass {
     val List(c) = compile(code)
     assertSameCode(getSingleMethod(c, "t1").instructions.dropNonOp, List(Op(ICONST_3), Op(ICONST_4), Op(IADD), Op(IRETURN)))
     assertSameCode(getSingleMethod(c, "t2").instructions.dropNonOp, List(Op(ICONST_1), Op(ICONST_2), Op(IADD), Op(IRETURN)))
-    // tuple not yet eliminated due to null checks
-    assert(getSingleMethod(c, "t3").instructions.exists(_.opcode == IFNONNULL))
-    assert(getSingleMethod(c, "t4").instructions.exists(_.opcode == IFNULL))
-    assert(getSingleMethod(c, "t5").instructions.exists(_.opcode == IFNULL))
+    assertSameCode(getSingleMethod(c, "t3").instructions.dropNonOp, List(Op(ICONST_1), Op(ICONST_3), Op(ISUB), Op(IRETURN)))
+    assertNoInvoke(getSingleMethod(c, "t4"))
+    assertNoInvoke(getSingleMethod(c, "t5"))
   }
 
   @Test
