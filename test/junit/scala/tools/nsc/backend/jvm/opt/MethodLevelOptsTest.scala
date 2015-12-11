@@ -16,16 +16,16 @@ import scala.tools.partest.ASMConverters
 import ASMConverters._
 import scala.tools.testing.ClearAfterClass
 
-object MethodLevelOpts extends ClearAfterClass.Clearable {
+object MethodLevelOptsTest extends ClearAfterClass.Clearable {
   var methodOptCompiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:method")
   def clear(): Unit = { methodOptCompiler = null }
 }
 
 @RunWith(classOf[JUnit4])
-class MethodLevelOpts extends ClearAfterClass {
-  ClearAfterClass.stateToClear = MethodLevelOpts
+class MethodLevelOptsTest extends ClearAfterClass {
+  ClearAfterClass.stateToClear = MethodLevelOptsTest
 
-  val methodOptCompiler = MethodLevelOpts.methodOptCompiler
+  val methodOptCompiler = MethodLevelOptsTest.methodOptCompiler
 
   def wrapInDefault(code: Instruction*) = List(Label(0), LineNumber(1, Label(0))) ::: code.toList ::: List(Label(1))
 
