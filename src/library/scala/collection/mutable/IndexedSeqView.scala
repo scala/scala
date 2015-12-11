@@ -34,54 +34,54 @@ trait IndexedSeqView[A, +Coll] extends IndexedSeq[A]
                                   with SeqViewLike[A, Coll, IndexedSeqView[A, Coll]] {
 self =>
 
-  private[this] type This = IndexedSeqView[A, Coll]
+  protected[this] type This = IndexedSeqView[A, Coll]
 
   def update(idx: Int, elem: A): Unit
 
-  trait Transformed[B] extends IndexedSeqView[B, Coll] with super.Transformed[B] {
+  trait TransformedX[B] extends IndexedSeqView[B, Coll] with super.TransformedS[B] {
     def update(idx: Int, elem: B): Unit
     override def toString = viewToString
   }
 
   /** Explicit instantiation of the `Transformed` trait to reduce class file size in subclasses. */
-  private[collection] abstract class AbstractTransformed[B] extends super.AbstractTransformed[B] with Transformed[B]
+  private[collection] abstract class AbstractTransformedX[B] extends super.AbstractTransformedS[B] with TransformedX[B]
 
   // pre: until <= self.length
-  trait Sliced extends super.Sliced with Transformed[A] {
+  trait SlicedX extends super.SlicedS with TransformedX[A] {
     override def length = endpoints.width
     def update(idx: Int, elem: A) =
       if (idx >= 0 && idx + from < until) self.update(idx + from, elem)
       else throw new IndexOutOfBoundsException(idx.toString)
   }
 
-  trait Filtered extends super.Filtered with Transformed[A] {
+  trait FilteredX extends super.FilteredS with TransformedX[A] {
     def update(idx: Int, elem: A) = self.update(index(idx), elem)
   }
 
-  trait TakenWhile extends super.TakenWhile with Transformed[A] {
+  trait TakenWhileX extends super.TakenWhileS with TransformedX[A] {
     def update(idx: Int, elem: A) =
       if (idx < len) self.update(idx, elem)
       else throw new IndexOutOfBoundsException(idx.toString)
   }
 
-  trait DroppedWhile extends super.DroppedWhile with Transformed[A] {
+  trait DroppedWhileX extends super.DroppedWhileS with TransformedX[A] {
     def update(idx: Int, elem: A) =
       if (idx >= 0) self.update(idx + start, elem)
       else throw new IndexOutOfBoundsException(idx.toString)
   }
 
-  trait Reversed extends super.Reversed with Transformed[A] {
+  trait ReversedX extends super.ReversedS with TransformedX[A] {
     def update(idx: Int, elem: A) = self.update(self.length - 1 - idx, elem)
   }
 
   /** Boilerplate method, to override in each subclass
    *  This method could be eliminated if Scala had virtual classes
    */
-  protected override def newFiltered(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with Filtered
-  protected override def newSliced(_endpoints: SliceInterval): Transformed[A] = new { val endpoints = _endpoints } with AbstractTransformed[A] with Sliced
-  protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with DroppedWhile
-  protected override def newTakenWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with TakenWhile
-  protected override def newReversed: Transformed[A] = new AbstractTransformed[A] with Reversed
+  protected override def newFiltered(p: A => Boolean): TransformedX[A] = new AbstractTransformedX[A] with FilteredX { lazy val pred = p }
+  protected override def newSliced(_endpoints: SliceInterval): TransformedX[A] = new AbstractTransformedX[A] with SlicedX { lazy val endpoints = _endpoints }
+  protected override def newDroppedWhile(p: A => Boolean): TransformedX[A] = new AbstractTransformedX[A] with DroppedWhileX { lazy val pred = p }
+  protected override def newTakenWhile(p: A => Boolean): TransformedX[A] = new AbstractTransformedX[A] with TakenWhileX { lazy val pred = p }
+  protected override def newReversed: TransformedX[A] = new AbstractTransformedX[A] with ReversedX
 
   override def filter(p: A => Boolean): This = newFiltered(p)
   override def init: This = newSliced(SliceInterval(0, self.length - 1))
@@ -105,7 +105,7 @@ self =>
  * `map` cannot do its work and maintain a pointer into the original indexed sequence.
  */
 object IndexedSeqView {
-  type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
+  type Coll = TraversableView[_, _ <: Traversable[_]]
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, SeqView[A, Seq[_]]] =
     new CanBuildFrom[Coll, A, SeqView[A, Seq[_]]] {
       def apply(from: Coll) = new NoBuilder

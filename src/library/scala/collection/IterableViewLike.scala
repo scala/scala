@@ -36,59 +36,59 @@ trait IterableViewLike[+A,
         with TraversableViewLike[A, Coll, This]
 { self =>
 
-  /** Explicit instantiation of the `Transformed` trait to reduce class file size in subclasses. */
-  private[collection] abstract class AbstractTransformed[+B] extends Iterable[B] with super[TraversableViewLike].Transformed[B] with Transformed[B]
+  /** Explicit instantiation of the `TransformedI` trait to reduce class file size in subclasses. */
+  private[collection] abstract class AbstractTransformedI[+B] extends Iterable[B] with super[TraversableViewLike].TransformedT[B] with TransformedI[B]
 
-  trait Transformed[+B] extends IterableView[B, Coll] with super.Transformed[B] {
+  trait TransformedI[+B] extends IterableView[B, Coll] with super.TransformedT[B] {
     def iterator: Iterator[B]
     override def foreach[U](f: B => U): Unit = iterator foreach f
     override def toString = viewToString
     override def isEmpty = !iterator.hasNext
   }
 
-  trait EmptyView extends Transformed[Nothing] with super.EmptyView {
+  trait EmptyViewI extends TransformedI[Nothing] with super.EmptyViewT {
     final def iterator: Iterator[Nothing] = Iterator.empty
   }
 
-  trait Forced[B] extends super.Forced[B] with Transformed[B] {
+  trait ForcedI[B] extends super.ForcedT[B] with TransformedI[B] {
     def iterator = forced.iterator
   }
 
-  trait Sliced extends super.Sliced with Transformed[A] {
+  trait SlicedI extends super.SlicedT with TransformedI[A] {
     def iterator: Iterator[A] = self.iterator.slice(from, until)
   }
 
-  trait Mapped[B] extends super.Mapped[B] with Transformed[B] {
+  trait MappedI[B] extends super.MappedT[B] with TransformedI[B] {
     def iterator = self.iterator map mapping
   }
 
-  trait FlatMapped[B] extends super.FlatMapped[B] with Transformed[B] {
+  trait FlatMappedI[B] extends super.FlatMappedT[B] with TransformedI[B] {
     def iterator: Iterator[B] = self.iterator flatMap mapping
   }
 
-  trait Appended[B >: A] extends super.Appended[B] with Transformed[B] {
+  trait AppendedI[B >: A] extends super.AppendedT[B] with TransformedI[B] {
     def iterator = self.iterator ++ rest
   }
 
-  trait Filtered extends super.Filtered with Transformed[A] {
+  trait FilteredI extends super.FilteredT with TransformedI[A] {
     def iterator = self.iterator filter pred
   }
 
-  trait TakenWhile extends super.TakenWhile with Transformed[A] {
+  trait TakenWhileI extends super.TakenWhileT with TransformedI[A] {
     def iterator = self.iterator takeWhile pred
   }
 
-  trait DroppedWhile extends super.DroppedWhile with Transformed[A] {
+  trait DroppedWhileI extends super.DroppedWhileT with TransformedI[A] {
     def iterator = self.iterator dropWhile pred
   }
 
-  trait Zipped[B] extends Transformed[(A, B)] {
+  trait ZippedI[B] extends TransformedI[(A, B)] {
     protected[this] val other: GenIterable[B]
     def iterator: Iterator[(A, B)] = self.iterator zip other.iterator
     final override protected[this] def viewIdentifier = "Z"
   }
 
-  trait ZippedAll[A1 >: A, B] extends Transformed[(A1, B)] {
+  trait ZippedAllI[A1 >: A, B] extends TransformedI[(A1, B)] {
     protected[this] val other: GenIterable[B]
     protected[this] val thisElem: A1
     protected[this] val thatElem: B
@@ -97,33 +97,33 @@ trait IterableViewLike[+A,
       self.iterator.zipAll(other.iterator, thisElem, thatElem)
   }
 
-  private[this] implicit def asThis(xs: Transformed[A]): This = xs.asInstanceOf[This]
+  private[this] implicit def asThis(xs: TransformedI[A]): This = xs.asInstanceOf[This]
 
   /** Boilerplate method, to override in each subclass
    *  This method could be eliminated if Scala had virtual classes
    */
-  protected def newZipped[B](that: GenIterable[B]): Transformed[(A, B)] = new { val other = that } with AbstractTransformed[(A, B)] with Zipped[B]
-  protected def newZippedAll[A1 >: A, B](that: GenIterable[B], _thisElem: A1, _thatElem: B): Transformed[(A1, B)] = new {
-    val other: GenIterable[B] = that
-    val thisElem = _thisElem
-    val thatElem = _thatElem
-  } with AbstractTransformed[(A1, B)] with ZippedAll[A1, B]
-  protected override def newForced[B](xs: => GenSeq[B]): Transformed[B] = new { val forced = xs } with AbstractTransformed[B] with Forced[B]
-  protected override def newAppended[B >: A](that: GenTraversable[B]): Transformed[B] = new { val rest = that } with AbstractTransformed[B] with Appended[B]
-  protected override def newMapped[B](f: A => B): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with Mapped[B]
-  protected override def newFlatMapped[B](f: A => GenTraversableOnce[B]): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with FlatMapped[B]
-  protected override def newFiltered(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with Filtered
-  protected override def newSliced(_endpoints: SliceInterval): Transformed[A] = new { val endpoints = _endpoints } with AbstractTransformed[A] with Sliced
-  protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with DroppedWhile
-  protected override def newTakenWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with TakenWhile
+  protected def newZipped[B](that: GenIterable[B]): TransformedI[(A, B)] = new AbstractTransformedI[(A, B)] with ZippedI[B] { lazy val other = that }
+   protected def newZippedAll[A1 >: A, B](that: GenIterable[B], _thisElem: A1, _thatElem: B): TransformedI[(A1, B)] = new AbstractTransformedI[(A1, B)] with ZippedAllI[A1, B] {
+    lazy val other: GenIterable[B] = that
+    lazy val thisElem = _thisElem
+    lazy val thatElem = _thatElem
+  }
+  protected override def newForced[B](xs: => GenSeq[B]): TransformedI[B] = new AbstractTransformedI[B] with ForcedI[B] { lazy val forced = xs }
+  protected override def newAppended[B >: A](that: GenTraversable[B]): TransformedI[B] = new AbstractTransformedI[B] with AppendedI[B] { lazy val rest = that }
+  protected override def newMapped[B](f: A => B): TransformedI[B] = new AbstractTransformedI[B] with MappedI[B] { lazy val mapping = f }
+  protected override def newFlatMapped[B](f: A => GenTraversableOnce[B]): TransformedI[B] = new AbstractTransformedI[B] with FlatMappedI[B] { lazy val mapping = f }
+  protected override def newFiltered(p: A => Boolean): TransformedI[A] = new AbstractTransformedI[A] with FilteredI { lazy val pred = p }
+  protected override def newSliced(_endpoints: SliceInterval): TransformedI[A] = new AbstractTransformedI[A] with SlicedI { lazy val endpoints = _endpoints }
+  protected override def newDroppedWhile(p: A => Boolean): TransformedI[A] = new AbstractTransformedI[A] with DroppedWhileI { lazy val pred = p }
+  protected override def newTakenWhile(p: A => Boolean): TransformedI[A] = new AbstractTransformedI[A] with TakenWhileI { lazy val pred = p }
 
   // After adding take and drop overrides to IterableLike, these overrides (which do nothing
   // but duplicate the implementation in TraversableViewLike) had to be added to prevent the
   // overrides in IterableLike from besting the overrides in TraversableViewLike when mixed
   // together in e.g. SeqViewLike.  This is a suboptimal situation.  Examples of failing tests
   // are run/bug2876 and run/viewtest.
-  protected override def newTaken(n: Int): Transformed[A] = newSliced(SliceInterval(0, n))
-  protected override def newDropped(n: Int): Transformed[A] = newSliced(SliceInterval(n, Int.MaxValue))
+  protected override def newTaken(n: Int): TransformedI[A] = newSliced(SliceInterval(0, n))
+  protected override def newDropped(n: Int): TransformedI[A] = newSliced(SliceInterval(n, Int.MaxValue))
   override def drop(n: Int): This = newDropped(n)
   override def take(n: Int): This = newTaken(n)
 

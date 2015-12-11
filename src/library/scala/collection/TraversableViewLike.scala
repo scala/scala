@@ -89,15 +89,15 @@ trait TraversableViewLike[+A,
     b.result()
   }
 
-  /** Explicit instantiation of the `Transformed` trait to reduce class file size in subclasses. */
-  private[collection] abstract class AbstractTransformed[+B] extends Traversable[B] with Transformed[B]
+  /** Explicit instantiation of the `TransformedT` trait to reduce class file size in subclasses. */
+  private[collection] abstract class AbstractTransformedT[+B] extends Traversable[B] with TransformedT[B]
 
 
   /** The implementation base trait of this view.
    *  This trait and all its subtraits has to be re-implemented for each
    *  ViewLike class.
    */
-  trait Transformed[+B] extends TraversableView[B, Coll] {
+  trait TransformedT[+B] extends TraversableView[B, Coll] {
     def foreach[U](f: B => U): Unit
 
     lazy val underlying = self.underlying
@@ -128,7 +128,7 @@ trait TraversableViewLike[+A,
     override def toString = viewToString
   }
 
-  trait EmptyView extends Transformed[Nothing] {
+  trait EmptyViewT extends TransformedT[Nothing] {
     final override def isEmpty = true
     final override def foreach[U](f: Nothing => U): Unit = ()
   }
@@ -136,17 +136,17 @@ trait TraversableViewLike[+A,
   /** A fall back which forces everything into a vector and then applies an operation
    *  on it. Used for those operations which do not naturally lend themselves to a view
    */
-  trait Forced[B] extends Transformed[B] {
+  trait ForcedT[B] extends TransformedT[B] {
     protected[this] val forced: GenSeq[B]
     def foreach[U](f: B => U) = forced foreach f
     final override protected[this] def viewIdentifier = "C"
   }
 
-  trait Sliced extends Transformed[A] {
+  trait SlicedT extends TransformedT[A] {
     protected[this] val endpoints: SliceInterval
     protected[this] def from  = endpoints.from
     protected[this] def until = endpoints.until
-    // protected def newSliced(_endpoints: SliceInterval): Transformed[A] =
+    // protected def newSliced(_endpoints: SliceInterval): TransformedT[A] =
     //   self.newSliced(endpoints.recalculate(_endpoints))
 
     def foreach[U](f: A => U) {
@@ -162,7 +162,7 @@ trait TraversableViewLike[+A,
     final override protected[this] def viewIdentifier = "S"
   }
 
-  trait Mapped[B] extends Transformed[B] {
+  trait MappedT[B] extends TransformedT[B] {
     protected[this] val mapping: A => B
     def foreach[U](f: B => U) {
       for (x <- self)
@@ -171,7 +171,7 @@ trait TraversableViewLike[+A,
     final override protected[this] def viewIdentifier = "M"
   }
 
-  trait FlatMapped[B] extends Transformed[B] {
+  trait FlatMappedT[B] extends TransformedT[B] {
     protected[this] val mapping: A => GenTraversableOnce[B]
     def foreach[U](f: B => U) {
       for (x <- self)
@@ -181,7 +181,7 @@ trait TraversableViewLike[+A,
     final override protected[this] def viewIdentifier = "N"
   }
 
-  trait Appended[B >: A] extends Transformed[B] {
+  trait AppendedT[B >: A] extends TransformedT[B] {
     protected[this] val rest: GenTraversable[B]
     def foreach[U](f: B => U) {
       self foreach f
@@ -190,7 +190,7 @@ trait TraversableViewLike[+A,
     final override protected[this] def viewIdentifier = "A"
   }
 
-  trait Filtered extends Transformed[A] {
+  trait FilteredT extends TransformedT[A] {
     protected[this] val pred: A => Boolean
     def foreach[U](f: A => U) {
       for (x <- self)
@@ -199,7 +199,7 @@ trait TraversableViewLike[+A,
     final override protected[this] def viewIdentifier = "F"
   }
 
-  trait TakenWhile extends Transformed[A] {
+  trait TakenWhileT extends TransformedT[A] {
     protected[this] val pred: A => Boolean
     def foreach[U](f: A => U) {
       for (x <- self) {
@@ -210,7 +210,7 @@ trait TraversableViewLike[+A,
     final override protected[this] def viewIdentifier = "T"
   }
 
-  trait DroppedWhile extends Transformed[A] {
+  trait DroppedWhileT extends TransformedT[A] {
     protected[this] val pred: A => Boolean
     def foreach[U](f: A => U) {
       var go = false
@@ -246,22 +246,22 @@ trait TraversableViewLike[+A,
   }
   override def flatten[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]) =
     newFlatMapped(asTraversable)
-  private[this] implicit def asThis(xs: Transformed[A]): This = xs.asInstanceOf[This]
+  private[this] implicit def asThis(xs: TransformedT[A]): This = xs.asInstanceOf[This]
 
   /** Boilerplate method, to override in each subclass
    *  This method could be eliminated if Scala had virtual classes
    */
-  protected def newForced[B](xs: => GenSeq[B]): Transformed[B] = new { val forced = xs } with AbstractTransformed[B] with Forced[B]
-  protected def newAppended[B >: A](that: GenTraversable[B]): Transformed[B] = new { val rest = that } with AbstractTransformed[B] with Appended[B]
-  protected def newMapped[B](f: A => B): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with Mapped[B]
-  protected def newFlatMapped[B](f: A => GenTraversableOnce[B]): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with FlatMapped[B]
-  protected def newFiltered(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with Filtered
-  protected def newSliced(_endpoints: SliceInterval): Transformed[A] = new { val endpoints = _endpoints } with AbstractTransformed[A] with Sliced
-  protected def newDroppedWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with DroppedWhile
-  protected def newTakenWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with TakenWhile
+  protected def newForced[B](xs: => GenSeq[B]): TransformedT[B] = new AbstractTransformedT[B] with ForcedT[B] { lazy val forced = xs }
+  protected def newAppended[B >: A](that: GenTraversable[B]): TransformedT[B] = new AbstractTransformedT[B] with AppendedT[B] { lazy val rest = that }
+  protected def newMapped[B](f: A => B): TransformedT[B] = new AbstractTransformedT[B] with MappedT[B] { lazy val mapping = f }
+  protected def newFlatMapped[B](f: A => GenTraversableOnce[B]): TransformedT[B] = new AbstractTransformedT[B] with FlatMappedT[B] { lazy val mapping = f }
+  protected def newFiltered(p: A => Boolean): TransformedT[A] = new AbstractTransformedT[A] with FilteredT { lazy val pred = p }
+  protected def newSliced(_endpoints: SliceInterval): TransformedT[A] = new AbstractTransformedT[A] with SlicedT { lazy val endpoints = _endpoints }
+  protected def newDroppedWhile(p: A => Boolean): TransformedT[A] = new AbstractTransformedT[A] with DroppedWhileT { lazy val pred = p }
+  protected def newTakenWhile(p: A => Boolean): TransformedT[A] = new AbstractTransformedT[A] with TakenWhileT { lazy val pred = p }
 
-  protected def newTaken(n: Int): Transformed[A] = newSliced(SliceInterval(0, n))
-  protected def newDropped(n: Int): Transformed[A] = newSliced(SliceInterval(n, Int.MaxValue))
+  protected def newTaken(n: Int): TransformedT[A] = newSliced(SliceInterval(0, n))
+  protected def newDropped(n: Int): TransformedT[A] = newSliced(SliceInterval(n, Int.MaxValue))
 
   override def filter(p: A => Boolean): This = newFiltered(p)
   override def withFilter(p: A => Boolean): This = newFiltered(p)

@@ -34,25 +34,25 @@ trait SeqViewLike[+A,
 { self =>
 
   /** Explicit instantiation of the `Transformed` trait to reduce class file size in subclasses. */
-  private[collection] abstract class AbstractTransformed[+B] extends Seq[B] with super[IterableViewLike].Transformed[B] with Transformed[B]
+  private[collection] abstract class AbstractTransformedS[+B] extends Seq[B] with super[IterableViewLike].TransformedI[B] with TransformedS[B]
 
-  trait Transformed[+B] extends SeqView[B, Coll] with super.Transformed[B] {
+  trait TransformedS[+B] extends SeqView[B, Coll] with super.TransformedI[B] {
     def length: Int
     def apply(idx: Int): B
     override def toString = viewToString
   }
 
-  trait EmptyView extends Transformed[Nothing] with super.EmptyView {
+  trait EmptyViewS extends TransformedS[Nothing] with super.EmptyViewI {
     final override def length = 0
     final override def apply(n: Int) = Nil(n)
   }
 
-  trait Forced[B] extends super.Forced[B] with Transformed[B] {
+  trait ForcedS[B] extends super.ForcedI[B] with TransformedS[B] {
     def length = forced.length
     def apply(idx: Int) = forced.apply(idx)
   }
 
-  trait Sliced extends super.Sliced with Transformed[A] {
+  trait SlicedS extends super.SlicedI with TransformedS[A] {
     def length = iterator.size
     def apply(idx: Int): A =
       if (idx >= 0 && idx + from < until) self.apply(idx + from)
@@ -62,12 +62,12 @@ trait SeqViewLike[+A,
     override def iterator: Iterator[A] = self.iterator drop from take endpoints.width
   }
 
-  trait Mapped[B] extends super.Mapped[B] with Transformed[B] {
+  trait MappedS[B] extends super.MappedI[B] with TransformedS[B] {
     def length = self.length
     def apply(idx: Int): B = mapping(self(idx))
   }
 
-  trait FlatMapped[B] extends super.FlatMapped[B] with Transformed[B] {
+  trait FlatMappedS[B] extends super.FlatMappedI[B] with TransformedS[B] {
     protected[this] lazy val index = {
       val index = new Array[Int](self.length + 1)
       index(0) = 0
@@ -89,14 +89,14 @@ trait SeqViewLike[+A,
     }
   }
 
-  trait Appended[B >: A] extends super.Appended[B] with Transformed[B] {
+  trait AppendedS[B >: A] extends super.AppendedI[B] with TransformedS[B] {
     protected[this] lazy val restSeq = rest.toSeq
     def length = self.length + restSeq.length
     def apply(idx: Int) =
       if (idx < self.length) self(idx) else restSeq(idx - self.length)
   }
 
-  trait Filtered extends super.Filtered with Transformed[A] {
+  trait FilteredS extends super.FilteredI with TransformedS[A] {
     protected[this] lazy val index = {
       var len = 0
       val arr = new Array[Int](self.length)
@@ -111,7 +111,7 @@ trait SeqViewLike[+A,
     def apply(idx: Int) = self(index(idx))
   }
 
-  trait TakenWhile extends super.TakenWhile with Transformed[A] {
+  trait TakenWhileS extends super.TakenWhileI with TransformedS[A] {
     protected[this] lazy val len = self prefixLength pred
     def length = len
     def apply(idx: Int) =
@@ -119,7 +119,7 @@ trait SeqViewLike[+A,
       else throw new IndexOutOfBoundsException(idx.toString)
   }
 
-  trait DroppedWhile extends super.DroppedWhile with Transformed[A] {
+  trait DroppedWhileS extends super.DroppedWhileI with TransformedS[A] {
     protected[this] lazy val start = self prefixLength pred
     def length = self.length - start
     def apply(idx: Int) =
@@ -127,14 +127,14 @@ trait SeqViewLike[+A,
       else throw new IndexOutOfBoundsException(idx.toString)
   }
 
-  trait Zipped[B] extends super.Zipped[B] with Transformed[(A, B)] {
+  trait ZippedS[B] extends super.ZippedI[B] with TransformedS[(A, B)] {
     protected[this] lazy val thatSeq = other.seq.toSeq
     /* Have to be careful here - other may be an infinite sequence. */
     def length = if ((thatSeq lengthCompare self.length) <= 0) thatSeq.length else self.length
     def apply(idx: Int) = (self.apply(idx), thatSeq.apply(idx))
   }
 
-  trait ZippedAll[A1 >: A, B] extends super.ZippedAll[A1, B] with Transformed[(A1, B)] {
+  trait ZippedAllS[A1 >: A, B] extends super.ZippedAllI[A1, B] with TransformedS[(A1, B)] {
     protected[this] lazy val thatSeq = other.seq.toSeq
     def length: Int = self.length max thatSeq.length
     def apply(idx: Int) =
@@ -142,7 +142,7 @@ trait SeqViewLike[+A,
        if (idx < thatSeq.length) thatSeq.apply(idx) else thatElem)
   }
 
-  trait Reversed extends Transformed[A] {
+  trait ReversedS extends TransformedS[A] {
     override def iterator: Iterator[A] = createReversedIterator
     def length: Int = self.length
     def apply(idx: Int): A = self.apply(length - 1 - idx)
@@ -158,7 +158,7 @@ trait SeqViewLike[+A,
   // Note--for this to work, must ensure 0 <= from and 0 <= replaced
   // Must also take care to allow patching inside an infinite stream
   // (patching in an infinite stream is not okay)
-  trait Patched[B >: A] extends Transformed[B] {
+  trait PatchedS[B >: A] extends TransformedS[B] {
     protected[this] val from: Int
     protected[this] val patch: GenSeq[B]
     protected[this] val replaced: Int
@@ -179,7 +179,7 @@ trait SeqViewLike[+A,
     final override protected[this] def viewIdentifier = "P"
   }
 
-  trait Prepended[B >: A] extends Transformed[B] {
+  trait PrependedS[B >: A] extends TransformedS[B] {
     protected[this] val fst: B
     override def iterator: Iterator[B] = Iterator.single(fst) ++ self.iterator
     def length: Int = 1 + self.length
@@ -192,31 +192,32 @@ trait SeqViewLike[+A,
   /** Boilerplate method, to override in each subclass
    *  This method could be eliminated if Scala had virtual classes
    */
-  protected override def newForced[B](xs: => GenSeq[B]): Transformed[B] = new { val forced = xs } with AbstractTransformed[B] with Forced[B]
-  protected override def newAppended[B >: A](that: GenTraversable[B]): Transformed[B] = new { val rest = that } with AbstractTransformed[B] with Appended[B]
-  protected override def newMapped[B](f: A => B): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with Mapped[B]
-  protected override def newFlatMapped[B](f: A => GenTraversableOnce[B]): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with FlatMapped[B]
-  protected override def newFiltered(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with Filtered
-  protected override def newSliced(_endpoints: SliceInterval): Transformed[A] = new { val endpoints = _endpoints } with AbstractTransformed[A] with Sliced
-  protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with DroppedWhile
-  protected override def newTakenWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with TakenWhile
-  protected override def newZipped[B](that: GenIterable[B]): Transformed[(A, B)] = new { val other = that } with AbstractTransformed[(A, B)] with Zipped[B]
-  protected override def newZippedAll[A1 >: A, B](that: GenIterable[B], _thisElem: A1, _thatElem: B): Transformed[(A1, B)] = new {
-    val other = that
-    val thisElem = _thisElem
-    val thatElem = _thatElem
-  } with AbstractTransformed[(A1, B)] with ZippedAll[A1, B]
-  protected def newReversed: Transformed[A] = new AbstractTransformed[A] with Reversed
-  protected def newPatched[B >: A](_from: Int, _patch: GenSeq[B], _replaced: Int): Transformed[B] = new {
-    val from = _from
-    val patch = _patch
-    val replaced = _replaced
-  } with AbstractTransformed[B] with Patched[B]
-  protected def newPrepended[B >: A](elem: B): Transformed[B] = new { protected[this] val fst = elem } with AbstractTransformed[B] with Prepended[B]
+  protected override def newForced[B](xs: => GenSeq[B]): TransformedS[B] = new AbstractTransformedS[B] with ForcedS[B] { lazy val forced = xs }
+  protected override def newAppended[B >: A](that: GenTraversable[B]): TransformedS[B] = new AbstractTransformedS[B] with AppendedS[B] { lazy val rest = that }
+  protected override def newMapped[B](f: A => B): TransformedS[B] = new AbstractTransformedS[B] with MappedS[B] { lazy val mapping = f }
+  protected override def newFlatMapped[B](f: A => GenTraversableOnce[B]): TransformedS[B] = new AbstractTransformedS[B] with FlatMappedS[B] { lazy val mapping = f }
+  protected override def newFiltered(p: A => Boolean): TransformedS[A] = new AbstractTransformedS[A] with FilteredS { lazy val pred = p }
+  protected override def newSliced(_endpoints: SliceInterval): TransformedS[A] = new AbstractTransformedS[A] with SlicedS { lazy val endpoints = _endpoints }
+  protected override def newDroppedWhile(p: A => Boolean): TransformedS[A] = new AbstractTransformedS[A] with DroppedWhileS { lazy val pred = p }
+  protected override def newTakenWhile(p: A => Boolean): TransformedS[A] = new AbstractTransformedS[A] with TakenWhileS { lazy val pred = p }
+  protected override def newZipped[B](that: GenIterable[B]): TransformedS[(A, B)] = new AbstractTransformedS[(A, B)] with ZippedS[B] { lazy val other = that }
+  protected override def newZippedAll[A1 >: A, B](that: GenIterable[B], _thisElem: A1, _thatElem: B): TransformedS[(A1, B)] = new AbstractTransformedS[(A1, B)] with ZippedAllS[A1, B] {
+    lazy val other = that
+    lazy val thisElem = _thisElem
+    lazy val thatElem = _thatElem
+  }
+  protected def newReversed: TransformedS[A] = new AbstractTransformedS[A] with ReversedS
+  protected def newPatched[B >: A](_from: Int, _patch: GenSeq[B], _replaced: Int): TransformedS[B] = new AbstractTransformedS[B] with PatchedS[B] {
+    lazy val from = _from
+    lazy val patch = _patch
+    lazy val replaced = _replaced
+  }
+
+  protected def newPrepended[B >: A](elem: B): TransformedS[B] = new AbstractTransformedS[B] with PrependedS[B] { lazy protected[this] val fst = elem }
 
   // see comment in IterableViewLike.
-  protected override def newTaken(n: Int): Transformed[A] = newSliced(SliceInterval(0, n))
-  protected override def newDropped(n: Int): Transformed[A] = newSliced(SliceInterval(n, Int.MaxValue))
+  protected override def newTaken(n: Int): TransformedS[A] = newSliced(SliceInterval(0, n))
+  protected override def newDropped(n: Int): TransformedS[A] = newSliced(SliceInterval(n, Int.MaxValue))
 
   override def reverse: This = newReversed.asInstanceOf[This]
 
