@@ -36,30 +36,11 @@ object InlinerTest extends ClearAfterClass.Clearable {
   notPerRun foreach compiler.perRunCaches.unrecordCache
 
   def clear(): Unit = { compiler = null; inlineOnlyCompiler = null }
-
-  implicit class listStringLines[T](val l: List[T]) extends AnyVal {
-    def stringLines = l.mkString("\n")
-  }
-
-  def assertNoInvoke(m: Method): Unit = assertNoInvoke(m.instructions)
-  def assertNoInvoke(ins: List[Instruction]): Unit = {
-    assert(!ins.exists(_.isInstanceOf[Invoke]), ins.stringLines)
-  }
-
-  def assertInvoke(m: Method, receiver: String, method: String): Unit = assertInvoke(m.instructions, receiver, method)
-  def assertInvoke(l: List[Instruction], receiver: String, method: String): Unit = {
-    assert(l.exists {
-      case Invoke(_, `receiver`, `method`, _, _) => true
-      case _ => false
-    }, l.stringLines)
-  }
 }
 
 @RunWith(classOf[JUnit4])
 class InlinerTest extends ClearAfterClass {
   ClearAfterClass.stateToClear = InlinerTest
-
-  import InlinerTest.{listStringLines, assertInvoke, assertNoInvoke}
 
   val compiler = InlinerTest.compiler
   import compiler.genBCode.bTypes._

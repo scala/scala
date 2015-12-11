@@ -166,6 +166,19 @@ object CodeGenTools {
     assertTrue(s"\nExpected: $expected\nActual  : $actual", actual === expected)
   }
 
+  def assertNoInvoke(m: Method): Unit = assertNoInvoke(m.instructions)
+  def assertNoInvoke(ins: List[Instruction]): Unit = {
+    assert(!ins.exists(_.isInstanceOf[Invoke]), ins.stringLines)
+  }
+
+  def assertInvoke(m: Method, receiver: String, method: String): Unit = assertInvoke(m.instructions, receiver, method)
+  def assertInvoke(l: List[Instruction], receiver: String, method: String): Unit = {
+    assert(l.exists {
+      case Invoke(_, `receiver`, `method`, _, _) => true
+      case _ => false
+    }, l.stringLines)
+  }
+
   def getSingleMethod(classNode: ClassNode, name: String): Method =
     convertMethod(classNode.methods.asScala.toList.find(_.name == name).get)
 
@@ -194,5 +207,9 @@ object CodeGenTools {
 
   implicit class MortalInstruction(val ins: Instruction) extends AnyVal {
     def dead: (Instruction, Boolean) = (ins, false)
+  }
+
+  implicit class listStringLines[T](val l: List[T]) extends AnyVal {
+    def stringLines = l.mkString("\n")
   }
 }

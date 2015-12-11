@@ -22,7 +22,6 @@ object InlinerSeparateCompilationTest {
 @RunWith(classOf[JUnit4])
 class InlinerSeparateCompilationTest {
   import InlinerSeparateCompilationTest._
-  import InlinerTest.{listStringLines, assertInvoke, assertNoInvoke}
 
   @Test
   def inlnieMixedinMember(): Unit = {
