@@ -382,17 +382,18 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
       lazy val prodCons = new ProdConsAnalyzer(method, owner)
       def hasNoCons(varIns: AbstractInsnNode, slot: Int) = prodCons.consumersOfValueAt(varIns.getNext, slot).isEmpty
 
-      var changed = false
-
       // insns to delete: IINC that have no consumer
       val toDelete = mutable.ArrayBuffer.empty[IincInsnNode]
+
       // xSTORE insns to be replaced by POP or POP2
       val storesToDrop = mutable.ArrayBuffer.empty[VarInsnNode]
+
       // ASTORE insn that have no consumer.
       //   - if the local is not live, the store is replaced by POP
       //   - otherwise, pop the argument value and store NULL instead. Unless the boolean field is
       //     `true`: then the store argument is already known to be ACONST_NULL.
       val toNullOut = mutable.ArrayBuffer.empty[(VarInsnNode, Boolean)]
+
       // `true` for variables that are known to be live
       val liveVars = new Array[Boolean](method.maxLocals)
 
@@ -413,18 +414,16 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
             val isStoreNull = prods.size == 1 && prods.head.getOpcode == ACONST_NULL
             toNullOut += ((vi, isStoreNull))
           }
-          changed = true
 
         case ii: IincInsnNode if hasNoCons(ii, ii.`var`) =>
           toDelete += ii
-          changed = true
 
         case vi: VarInsnNode =>
-          val longSize = if (isSize2LoadOrStore(vi.getOpcode)) 1 else 0
           liveVars(vi.`var`) = true
 
         case ii: IincInsnNode =>
           liveVars(ii.`var`) = true
+
         case _ =>
       }
 
@@ -434,7 +433,9 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
       }
 
       toDelete foreach method.instructions.remove
+
       storesToDrop foreach replaceByPop
+
       for ((vi, isStoreNull) <- toNullOut) {
         if (!liveVars(vi.`var`)) replaceByPop(vi) // can drop `ASTORE x` where x has only dead stores
         else {
@@ -446,7 +447,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
         }
       }
 
-      changed
+      toDelete.nonEmpty || storesToDrop.nonEmpty || toNullOut.nonEmpty
     }
   }
 
