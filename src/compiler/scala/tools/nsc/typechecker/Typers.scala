@@ -124,7 +124,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     /** Overridden to false in scaladoc and/or interactive. */
-    def canAdaptConstantTypeToLiteral = true
     def canTranslateEmptyListToNil    = true
     def missingSelectErrorTree(tree: Tree, qual: Tree, name: Name): Tree = tree
 
