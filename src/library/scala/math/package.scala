@@ -60,11 +60,9 @@ package object math {
   def exp(x: Double): Double = java.lang.Math.exp(x)
 
   /** Returns the natural logarithm of a `double` value.
-   * 
-   * The natural logarithm is the logarithm base Euler's number `e`.
    *
    *  @param  x the number to take the natural logarithm of
-   *  @return the value `ln(x)` where ln is the natural lograrithm
+   *  @return the value `logₑ(x)` where `e` is Eulers number
    */
   def log(x: Double): Double = java.lang.Math.log(x)
   
