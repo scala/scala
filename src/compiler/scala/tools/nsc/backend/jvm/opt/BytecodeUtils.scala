@@ -196,6 +196,18 @@ object BytecodeUtils {
 
   def instructionResultSize(insn: AbstractInsnNode) = InstructionStackEffect.prod(InstructionStackEffect.forClassfile(insn))
 
+  def loadZeroForTypeSort(sort: Int) = (sort: @switch) match {
+    case Type.BOOLEAN |
+         Type.BYTE |
+         Type.CHAR |
+         Type.SHORT |
+         Type.INT => new InsnNode(ICONST_0)
+    case Type.LONG => new InsnNode(LCONST_0)
+    case Type.FLOAT => new InsnNode(FCONST_0)
+    case Type.DOUBLE => new InsnNode(DCONST_0)
+    case Type.OBJECT => new InsnNode(ACONST_NULL)
+  }
+
   /**
    * The number of local variable slots used for parameters and for the `this` reference.
    */
@@ -342,37 +354,53 @@ object BytecodeUtils {
       isSideEffectFreeConstructorCall(insn)
   }
 
-  private val srBoxesRuntimeName = "scala/runtime/BoxesRunTime"
+  private val srBoxesRunTimeName = "scala/runtime/BoxesRunTime"
+
+  private val boxToMethods = Map(
+    Type.BOOLEAN -> ("boxToBoolean",   "(Z)Ljava/lang/Boolean;"),
+    Type.BYTE    -> ("boxToByte",      "(B)Ljava/lang/Byte;"),
+    Type.CHAR    -> ("boxToCharacter", "(C)Ljava/lang/Character;"),
+    Type.SHORT   -> ("boxToShort",     "(S)Ljava/lang/Short;"),
+    Type.INT     -> ("boxToInteger",   "(I)Ljava/lang/Integer;"),
+    Type.LONG    -> ("boxToLong",      "(J)Ljava/lang/Long;"),
+    Type.FLOAT   -> ("boxToFloat",     "(F)Ljava/lang/Float;"),
+    Type.DOUBLE  -> ("boxToDouble",    "(D)Ljava/lang/Double;"))
 
   def isScalaBox(insn: MethodInsnNode): Boolean = {
-    insn.owner == srBoxesRuntimeName && {
+    insn.owner == srBoxesRunTimeName && {
       val args = Type.getArgumentTypes(insn.desc)
-      args.length == 1 && ((args(0).getSort: @switch) match {
-        case Type.BOOLEAN => insn.name == "boxToBoolean"   && insn.desc == "(Z)Ljava/lang/Boolean;"
-        case Type.BYTE    => insn.name == "boxToByte"      && insn.desc == "(B)Ljava/lang/Byte;"
-        case Type.CHAR    => insn.name == "boxToCharacter" && insn.desc == "(C)Ljava/lang/Character;"
-        case Type.SHORT   => insn.name == "boxToShort"     && insn.desc == "(S)Ljava/lang/Short;"
-        case Type.INT     => insn.name == "boxToInteger"   && insn.desc == "(I)Ljava/lang/Integer;"
-        case Type.LONG    => insn.name == "boxToLong"      && insn.desc == "(J)Ljava/lang/Long;"
-        case Type.FLOAT   => insn.name == "boxToFloat"     && insn.desc == "(F)Ljava/lang/Float;"
-        case Type.DOUBLE  => insn.name == "boxToDouble"    && insn.desc == "(D)Ljava/lang/Double;"
+      args.length == 1 && (boxToMethods.get(args(0).getSort) match {
+        case Some((name, desc)) => name == insn.name && desc == insn.desc
         case _ => false
       })
     }
   }
 
+  def getScalaBox(primitiveType: Type): MethodInsnNode = {
+    val (method, desc) = boxToMethods(primitiveType.getSort)
+    new MethodInsnNode(INVOKESTATIC, srBoxesRunTimeName, method, desc, /*itf =*/ false)
+  }
+
+  private val unboxToMethods = Map(
+    Type.BOOLEAN -> ("unboxToBoolean", "(Ljava/lang/Object;)Z"),
+    Type.BYTE    -> ("unboxToByte",    "(Ljava/lang/Object;)B"),
+    Type.CHAR    -> ("unboxToChar",    "(Ljava/lang/Object;)C"),
+    Type.SHORT   -> ("unboxToShort",   "(Ljava/lang/Object;)S"),
+    Type.INT     -> ("unboxToInt",     "(Ljava/lang/Object;)I"),
+    Type.LONG    -> ("unboxToLong",    "(Ljava/lang/Object;)J"),
+    Type.FLOAT   -> ("unboxToFloat",   "(Ljava/lang/Object;)F"),
+    Type.DOUBLE  -> ("unboxToDouble",  "(Ljava/lang/Object;)D"))
+
   def isScalaUnbox(insn: MethodInsnNode): Boolean = {
-    insn.owner == srBoxesRuntimeName && ((Type.getReturnType(insn.desc).getSort: @switch) match {
-      case Type.BOOLEAN => insn.name == "unboxToBoolean" && insn.desc == "(Ljava/lang/Object;)Z"
-      case Type.BYTE    => insn.name == "unboxToByte"   && insn.desc == "(Ljava/lang/Object;)B"
-      case Type.CHAR    => insn.name == "unboxToChar"   && insn.desc == "(Ljava/lang/Object;)C"
-      case Type.SHORT   => insn.name == "unboxToShort"  && insn.desc == "(Ljava/lang/Object;)S"
-      case Type.INT     => insn.name == "unboxToInt"    && insn.desc == "(Ljava/lang/Object;)I"
-      case Type.LONG    => insn.name == "unboxToLong"   && insn.desc == "(Ljava/lang/Object;)J"
-      case Type.FLOAT   => insn.name == "unboxToFloat"  && insn.desc == "(Ljava/lang/Object;)F"
-      case Type.DOUBLE  => insn.name == "unboxToDouble" && insn.desc == "(Ljava/lang/Object;)D"
+    insn.owner == srBoxesRunTimeName && (unboxToMethods.get(Type.getReturnType(insn.desc).getSort) match {
+      case Some((name, desc)) => name == insn.name && desc == insn.desc
       case _ => false
     })
+  }
+
+  def getScalaUnbox(primitiveType: Type): MethodInsnNode = {
+    val (method, desc) = unboxToMethods(primitiveType.getSort)
+    new MethodInsnNode(INVOKESTATIC, srBoxesRunTimeName, method, desc, /*itf =*/ false)
   }
 
   def isJavaBox(insn: MethodInsnNode): Boolean = {
@@ -392,13 +420,109 @@ object BytecodeUtils {
     }
   }
 
-  // unused objects created by these constructors are eliminated by pushPop
-  private val sideEffectFreeConstructors = Set(
-    "java/lang/Object()V",
-    "java/lang/String()V",
-    "java/lang/String(Ljava/lang/String;)V",
-    "java/lang/String([C)V",
+  def isJavaUnbox(insn: MethodInsnNode): Boolean = {
+    insn.desc.startsWith("()") && {
+      (Type.getReturnType(insn.desc).getSort: @switch) match {
+        case Type.BOOLEAN => insn.owner == "java/lang/Boolean"   && insn.name == "booleanValue"
+        case Type.BYTE    => insn.owner == "java/lang/Byte"      && insn.name == "byteValue"
+        case Type.CHAR    => insn.owner == "java/lang/Character" && insn.name == "charValue"
+        case Type.SHORT   => insn.owner == "java/lang/Short"     && insn.name == "shortValue"
+        case Type.INT     => insn.owner == "java/lang/Integer"   && insn.name == "intValue"
+        case Type.LONG    => insn.owner == "java/lang/Long"      && insn.name == "longValue"
+        case Type.FLOAT   => insn.owner == "java/lang/Float"     && insn.name == "floatValue"
+        case Type.DOUBLE  => insn.owner == "java/lang/Double"    && insn.name == "doubleValue"
+        case _ => false
+      }
+    }
+  }
 
+  def isPredefAutoBox(insn: MethodInsnNode): Boolean = {
+    insn.owner == "scala/Predef$" && {
+      val args = Type.getArgumentTypes(insn.desc)
+      args.length == 1 && ((args(0).getSort: @switch) match {
+        case Type.BOOLEAN => insn.name == "boolean2Boolean" && insn.desc == "(Z)Ljava/lang/Boolean;"
+        case Type.BYTE    => insn.name == "byte2Byte"       && insn.desc == "(B)Ljava/lang/Byte;"
+        case Type.CHAR    => insn.name == "char2Character"  && insn.desc == "(C)Ljava/lang/Character;"
+        case Type.SHORT   => insn.name == "short2Short"     && insn.desc == "(S)Ljava/lang/Short;"
+        case Type.INT     => insn.name == "int2Integer"     && insn.desc == "(I)Ljava/lang/Integer;"
+        case Type.LONG    => insn.name == "long2Long"       && insn.desc == "(J)Ljava/lang/Long;"
+        case Type.FLOAT   => insn.name == "float2Float"     && insn.desc == "(F)Ljava/lang/Float;"
+        case Type.DOUBLE  => insn.name == "double2Double"   && insn.desc == "(D)Ljava/lang/Double;"
+        case _ => false
+      })
+    }
+  }
+
+  def isPredefAutoUnbox(insn: MethodInsnNode): Boolean = {
+    insn.owner == "scala/Predef$" && {
+      (Type.getReturnType(insn.desc).getSort: @switch) match {
+        case Type.BOOLEAN => insn.name == "Boolean2boolean" && insn.desc == "(Ljava/lang/Boolean;)Z"
+        case Type.BYTE    => insn.name == "Byte2byte"       && insn.desc == "(Ljava/lang/Byte;)B"
+        case Type.CHAR    => insn.name == "Character2char"  && insn.desc == "(Ljava/lang/Character;)C"
+        case Type.SHORT   => insn.name == "Short2short"     && insn.desc == "(Ljava/lang/Short;)S"
+        case Type.INT     => insn.name == "Integer2int"     && insn.desc == "(Ljava/lang/Integer;)I"
+        case Type.LONG    => insn.name == "Long2long"       && insn.desc == "(Ljava/lang/Long;)J"
+        case Type.FLOAT   => insn.name == "Float2float"     && insn.desc == "(Ljava/lang/Float;)F"
+        case Type.DOUBLE  => insn.name == "Double2double"   && insn.desc == "(Ljava/lang/Double;)D"
+        case _ => false
+      }
+    }
+  }
+
+  def isRefCreate(insn: MethodInsnNode): Boolean = {
+    insn.name == "create" && {
+      val args = Type.getArgumentTypes(insn.desc)
+      args.length == 1 && ((args(0).getSort: @switch) match {
+        case Type.BOOLEAN => insn.owner == "scala/runtime/BooleanRef" && insn.desc == "(Z)Lscala/runtime/BooleanRef;"                 || insn.owner == "scala/runtime/VolatileBooleanRef" && insn.desc == "(Z)Lscala/runtime/VolatileBooleanRef;"
+        case Type.BYTE    => insn.owner == "scala/runtime/ByteRef"    && insn.desc == "(B)Lscala/runtime/ByteRef;"                    || insn.owner == "scala/runtime/VolatileByteRef"    && insn.desc == "(B)Lscala/runtime/VolatileByteRef;"
+        case Type.CHAR    => insn.owner == "scala/runtime/CharRef"    && insn.desc == "(C)Lscala/runtime/CharRef;"                    || insn.owner == "scala/runtime/VolatileCharRef"    && insn.desc == "(C)Lscala/runtime/VolatileCharRef;"
+        case Type.SHORT   => insn.owner == "scala/runtime/ShortRef"   && insn.desc == "(S)Lscala/runtime/ShortRef;"                   || insn.owner == "scala/runtime/VolatileShortRef"   && insn.desc == "(S)Lscala/runtime/VolatileShortRef;"
+        case Type.INT     => insn.owner == "scala/runtime/IntRef"     && insn.desc == "(I)Lscala/runtime/IntRef;"                     || insn.owner == "scala/runtime/VolatileIntRef"     && insn.desc == "(I)Lscala/runtime/VolatileIntRef;"
+        case Type.LONG    => insn.owner == "scala/runtime/LongRef"    && insn.desc == "(J)Lscala/runtime/LongRef;"                    || insn.owner == "scala/runtime/VolatileLongRef"    && insn.desc == "(J)Lscala/runtime/VolatileLongRef;"
+        case Type.FLOAT   => insn.owner == "scala/runtime/FloatRef"   && insn.desc == "(F)Lscala/runtime/FloatRef;"                   || insn.owner == "scala/runtime/VolatileFloatRef"   && insn.desc == "(F)Lscala/runtime/VolatileFloatRef;"
+        case Type.DOUBLE  => insn.owner == "scala/runtime/DoubleRef"  && insn.desc == "(D)Lscala/runtime/DoubleRef;"                  || insn.owner == "scala/runtime/VolatileDoubleRef"  && insn.desc == "(D)Lscala/runtime/VolatileDoubleRef;"
+        case Type.OBJECT  => insn.owner == "scala/runtime/ObjectRef"  && insn.desc == "(Ljava/lang/Object;)Lscala/runtime/ObjectRef;" || insn.owner == "scala/runtime/VolatileObjectRef"  && insn.desc == "(Ljava/lang/Object;)Lscala/runtime/VolatileObjectRef;"
+        case _ => false
+      })
+    }
+  }
+
+  private val jlObjectType = Type.getType("Ljava/lang/Object;")
+
+  private val runtimeRefClassesAndTypes = Map(
+    ("scala/runtime/BooleanRef", Type.BOOLEAN_TYPE),
+    ("scala/runtime/ByteRef",    Type.BYTE_TYPE),
+    ("scala/runtime/CharRef",    Type.CHAR_TYPE),
+    ("scala/runtime/ShortRef",   Type.SHORT_TYPE),
+    ("scala/runtime/IntRef",     Type.INT_TYPE),
+    ("scala/runtime/LongRef",    Type.LONG_TYPE),
+    ("scala/runtime/FloatRef",   Type.FLOAT_TYPE),
+    ("scala/runtime/DoubleRef",  Type.DOUBLE_TYPE),
+    ("scala/runtime/ObjectRef",  jlObjectType),
+    ("scala/runtime/VolatileBooleanRef", Type.BOOLEAN_TYPE),
+    ("scala/runtime/VolatileByteRef",    Type.BYTE_TYPE),
+    ("scala/runtime/VolatileCharRef",    Type.CHAR_TYPE),
+    ("scala/runtime/VolatileShortRef",   Type.SHORT_TYPE),
+    ("scala/runtime/VolatileIntRef",     Type.INT_TYPE),
+    ("scala/runtime/VolatileLongRef",    Type.LONG_TYPE),
+    ("scala/runtime/VolatileFloatRef",   Type.FLOAT_TYPE),
+    ("scala/runtime/VolatileDoubleRef",  Type.DOUBLE_TYPE),
+    ("scala/runtime/VolatileObjectRef",  jlObjectType))
+
+  def isRefZero(insn: MethodInsnNode): Boolean = {
+    insn.name == "zero" && runtimeRefClassesAndTypes.contains(insn.owner) && insn.desc == "()L" + insn.owner + ";"
+  }
+
+  def runtimeRefClassBoxedType(refClass: InternalName): Type = runtimeRefClassesAndTypes(refClass)
+
+  def isModuleLoad(insn: AbstractInsnNode, moduleName: InternalName): Boolean = insn match {
+    case fi: FieldInsnNode => fi.getOpcode == GETSTATIC && fi.owner == moduleName && fi.name == "MODULE$" && fi.desc == ("L" + moduleName + ";")
+    case _ => false
+  }
+
+  def isPredefLoad(insn: AbstractInsnNode) = isModuleLoad(insn, "scala/Predef$")
+
+  private val primitiveBoxConstructors = Set(
     "java/lang/Boolean(Z)V",
     "java/lang/Byte(B)V",
     "java/lang/Character(C)V",
@@ -406,8 +530,13 @@ object BytecodeUtils {
     "java/lang/Integer(I)V",
     "java/lang/Long(J)V",
     "java/lang/Float(F)V",
-    "java/lang/Double(D)V",
+    "java/lang/Double(D)V")
 
+  def isPrimitiveBoxConstructor(insn: MethodInsnNode): Boolean = {
+    insn.name == INSTANCE_CONSTRUCTOR_NAME && primitiveBoxConstructors(insn.owner + insn.desc)
+  }
+
+  private val runtimeRefConstructors = Set(
     "scala/runtime/ObjectRef(Ljava/lang/Object;)V",
     "scala/runtime/BooleanRef(Z)V",
     "scala/runtime/ByteRef(B)V",
@@ -426,8 +555,13 @@ object BytecodeUtils {
     "scala/runtime/VolatileIntRef(I)V",
     "scala/runtime/VolatileLongRef(J)V",
     "scala/runtime/VolatileFloatRef(F)V",
-    "scala/runtime/VolatileDoubleRef(D)V"
-  ) ++ {
+    "scala/runtime/VolatileDoubleRef(D)V")
+
+  def isRuntimeRefConstructor(insn: MethodInsnNode): Boolean = {
+    insn.name == INSTANCE_CONSTRUCTOR_NAME && runtimeRefConstructors(insn.owner + insn.desc)
+  }
+
+  private val tupleConstructors = Set.empty[String] ++ {
     (1 to 22).map(n => "scala/Tuple" + n + "(" + ("Ljava/lang/Object;" * n) + ")V")
   } ++ {
     Iterator("I", "J", "D").map(t => "scala/Tuple1$mc" + t + "$sp(" + t + ")V")
@@ -435,6 +569,20 @@ object BytecodeUtils {
     def tuple2Specs = Iterator("I", "J", "D", "C", "Z")
     for (a <- tuple2Specs; b <- tuple2Specs) yield "scala/Tuple2$mc" + a + b + "$sp(" + a + b + ")V"
   }
+
+  def isTupleConstructor(insn: MethodInsnNode): Boolean = {
+    insn.name == INSTANCE_CONSTRUCTOR_NAME && tupleConstructors(insn.owner + insn.desc)
+  }
+
+  // unused objects created by these constructors are eliminated by pushPop
+  private val sideEffectFreeConstructors = primitiveBoxConstructors ++
+    runtimeRefConstructors ++
+    tupleConstructors ++ Set(
+    "java/lang/Object()V",
+    "java/lang/String()V",
+    "java/lang/String(Ljava/lang/String;)V",
+    "java/lang/String([C)V"
+  )
 
   def isSideEffectFreeConstructorCall(insn: MethodInsnNode): Boolean = {
     insn.name == INSTANCE_CONSTRUCTOR_NAME && sideEffectFreeConstructors(insn.owner + insn.desc)

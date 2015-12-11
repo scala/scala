@@ -34,9 +34,19 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *     - empty handlers (try blocks may become empty)
  *     - simplify jumps (goto l; [dead code]; l: ..) => remove goto
  *     - stale local variable descriptors
+ *     - (not box-unbox, which is implemented using prod-cons, so it doesn't consider dead code)
  *
  *   note that eliminating empty handlers and stale local variable descriptors is required for
  *   correctness, see the comment in the body of `methodOptimizations`.
+ *
+ * box-unbox elimination (eliminates box-unbox pairs withing the same method)
+ *   + enables UPSTREAM:
+ *     - further box-unbox elimination (e.g. an Integer stored in a Tuple; eliminating the tuple may
+ *       enable eliminating the Integer)
+ *   + enables downstream:
+ *     - copy propagation (new locals are introduced, may be aliases of existing)
+ *     - stale stores (multi-value boxes where not all values are used)
+ *     - empty local variable descriptors (local variables that were holding the box may become unused)
  *
  * copy propagation (replaces LOAD n to the LOAD m for the smallest m that is an alias of n)
  *   + enables downstrem:
@@ -51,8 +61,10 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *     - push-pop (the new pop may be the single consumer for an instruction)
  *
  * push-pop (when a POP is the only consumer of a value, remove the POP and its producer)
- *   + eanbles UPSTREAM:
+ *   + enables UPSTREAM:
  *     - stale stores (if a LOAD is removed, a corresponding STORE may become stale)
+ *     - box-unbox elimination (push-pop may eliminate a closure allocation, rendering a captured
+ *       box non-escaping)
  *   + enables downstream:
  *     - store-load pairs (a variable may become non-live)
  *     - stale handlers (push-pop removes code)
@@ -67,6 +79,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  * empty handlers (removes exception handlers whose try block is empty)
  *   + enables UPSTREAM:
  *     - unreachable code (catch block becomes unreachable)
+ *     - box-unbox (a box may be escape in an operation in a dead handler)
  *   + enables downstream:
  *     - simplify jumps
  *
@@ -108,6 +121,9 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
   import LocalOptImpls._
   import btypes._
   import backendUtils._
+
+  val boxUnbox = new BoxUnbox(btypes)
+  import boxUnbox._
 
   /**
    * Remove unreachable code from a method.
@@ -194,57 +210,99 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
     /**
      * Runs the optimizations that depend on each other in a loop until reaching a fixpoint. See
      * comment in class [[LocalOpt]].
+     *
+     * Returns a pair of booleans (codeChanged, requireEliminateUnusedLocals).
      */
-    def removalRound(runDCE: Boolean, runCopyProp: Boolean, maxRecursion: Int = 10): Boolean = {
-      if (maxRecursion == 0) return false
+    def removalRound(
+        requestDCE: Boolean,
+        requestBoxUnbox: Boolean,
+        requestStaleStores: Boolean,
+        requestStoreLoad: Boolean,
+        firstIteration: Boolean,
+        maxRecursion: Int = 10): (Boolean, Boolean) = {
+      if (maxRecursion == 0) return (false, false)
 
-      // Both AliasingAnalyzer (used in copyProp) and ProdConsAnalyzer (used in eliminateStaleStores)
-      // require not having unreachable instructions (null frames).
-      val dceRequired = runDCE || compilerSettings.YoptCopyPropagation
-      val (codeRemoved, liveLabels) = if (dceRequired) removeUnreachableCodeImpl(method, ownerClassName) else (false, Set.empty[LabelNode])
+      // UNREACHABLE CODE
+      // Both AliasingAnalyzer (used in copyProp) and ProdConsAnalyzer (used in eliminateStaleStores,
+      // boxUnboxElimination) require not having unreachable instructions (null frames).
+      val runDCE = (compilerSettings.YoptUnreachableCode && requestDCE) ||
+        compilerSettings.YoptBoxUnbox ||
+        compilerSettings.YoptCopyPropagation
+      val (codeRemoved, liveLabels) = if (runDCE) removeUnreachableCodeImpl(method, ownerClassName) else (false, Set.empty[LabelNode])
 
-      // runCopyProp is only true in the first iteration; there's no optimization below that enables
-      // further copy propagation. it is still part of the fixpoint loop because it needs to run after DCE.
-      val copyPropChanged = if (runCopyProp) copyProp(method, ownerClassName) else false
+      // BOX-UNBOX
+      val runBoxUnbox = compilerSettings.YoptBoxUnbox && requestBoxUnbox
+      val boxUnboxChanged = runBoxUnbox && boxUnboxElimination(method, ownerClassName)
 
-      val storesRemoved = if (compilerSettings.YoptCopyPropagation) eliminateStaleStores(method, ownerClassName) else false
+      // COPY PROPAGATION
+      val runCopyProp = compilerSettings.YoptCopyPropagation && (firstIteration || boxUnboxChanged)
+      val copyPropChanged = runCopyProp && copyProp(method, ownerClassName)
 
-      val pushPopRemoved = if (compilerSettings.YoptCopyPropagation) eliminatePushPop(method, ownerClassName) else false
+      // STALE STORES
+      val runStaleStores = compilerSettings.YoptCopyPropagation && (requestStaleStores || codeRemoved || boxUnboxChanged || copyPropChanged)
+      val storesRemoved = runStaleStores && eliminateStaleStores(method, ownerClassName)
 
-      val storeLoadRemoved = if (compilerSettings.YoptCopyPropagation) eliminateStoreLoad(method) else false
+      // PUSH-POP
+      val runPushPop = compilerSettings.YoptCopyPropagation && (firstIteration || storesRemoved)
+      val pushPopRemoved = runPushPop && eliminatePushPop(method, ownerClassName)
 
-      val removedHandlers = if (dceRequired) removeEmptyExceptionHandlers(method) else Set.empty[TryCatchBlockNode]
+      // STORE-LOAD PAIRS
+      val runStoreLoad = compilerSettings.YoptCopyPropagation && (requestStoreLoad || boxUnboxChanged || copyPropChanged || pushPopRemoved)
+      val storeLoadRemoved = runStoreLoad && eliminateStoreLoad(method)
+
+      // STALE HANDLERS
+      val removedHandlers = if (runDCE) removeEmptyExceptionHandlers(method) else Set.empty[TryCatchBlockNode]
       val handlersRemoved = removedHandlers.nonEmpty
       val liveHandlerRemoved = removedHandlers.exists(h => liveLabels(h.start))
 
-      val jumpsChanged = if (compilerSettings.YoptSimplifyJumps) simplifyJumps(method) else false
+      // SIMPLIFY JUMPS
+      // almost all of the above optimizations enable simplifying more jumps, so we just run it in every iteration
+      val runSimplifyJumps = compilerSettings.YoptSimplifyJumps
+      val jumpsChanged = runSimplifyJumps && simplifyJumps(method)
 
       // See doc comment in the beginning of this file (optimizations marked UPSTREAM)
-      if (liveHandlerRemoved || jumpsChanged) {
-        // changing live handlers or jumps enables DCE to remove more code, so runDCE = true
-        removalRound(runDCE = true, runCopyProp = false, maxRecursion = maxRecursion - 1)
-      } else if (pushPopRemoved) {
-        // pushPop doesn't enable DCE, but other optimizations (stale stores). so we iterate, but without DCE.
-        removalRound(runDCE = false, runCopyProp = false, maxRecursion = maxRecursion - 1)
-      }
+      val runDCEAgain = liveHandlerRemoved || jumpsChanged
+      val runBoxUnboxAgain = boxUnboxChanged || pushPopRemoved || liveHandlerRemoved
+      val runStaleStoresAgain = pushPopRemoved
+      val runStoreLoadAgain = jumpsChanged
+      val runAgain = runDCEAgain || runBoxUnboxAgain || pushPopRemoved || runStaleStoresAgain || runStoreLoadAgain
 
-      codeRemoved || copyPropChanged || storesRemoved || pushPopRemoved || storeLoadRemoved || handlersRemoved || jumpsChanged
+      val downstreamRequireEliminateUnusedLocals = runAgain && removalRound(
+        requestDCE = runDCEAgain,
+        requestBoxUnbox = runBoxUnboxAgain,
+        requestStaleStores = runStaleStoresAgain,
+        requestStoreLoad = runStoreLoadAgain,
+        firstIteration = false,
+        maxRecursion = maxRecursion - 1)._2
+
+      val requireEliminateUnusedLocals = downstreamRequireEliminateUnusedLocals ||
+        codeRemoved ||        // see comment in method `methodOptimizations`
+        boxUnboxChanged ||    // box-unbox renders locals (holding boxes) unused
+        storesRemoved  ||
+        storeLoadRemoved ||
+        handlersRemoved
+
+      val codeChanged = codeRemoved || boxUnboxChanged || copyPropChanged || storesRemoved || pushPopRemoved || storeLoadRemoved || handlersRemoved || jumpsChanged
+      (codeChanged, requireEliminateUnusedLocals)
     }
 
-    val dceCopyPropHandlersOrJumpsChanged = if (AsmAnalyzer.sizeOKForBasicValue(method)) {
+    val (dceBoxesCopypropPushpopOrJumpsChanged, requireEliminateUnusedLocals) = if (AsmAnalyzer.sizeOKForBasicValue(method)) {
       // we run DCE even if the method is already in the `unreachableCodeEliminated` map: the DCE
       // here is more thorough than `minimalRemoveUnreachableCode` that run before inlining.
       val r = removalRound(
-        runDCE = compilerSettings.YoptUnreachableCode,
-        runCopyProp = compilerSettings.YoptCopyPropagation)
+        requestDCE = true,
+        requestBoxUnbox = true,
+        requestStaleStores = true,
+        requestStoreLoad = true,
+        firstIteration = true)
       if (compilerSettings.YoptUnreachableCode) unreachableCodeEliminated += method
       r
-    } else false
+    } else (false, false)
 
-    // (*) Removing stale local variable descriptors is required for correctness of unreachable-code
+    // (*) Removing stale local variable descriptors is required for correctness, see comment in `methodOptimizations`
     val localsRemoved =
       if (compilerSettings.YoptCompactLocals) compactLocalVariables(method) // also removes unused
-      else if (compilerSettings.YoptUnreachableCode) removeUnusedLocalVariableNodes(method)() // (*)
+      else if (requireEliminateUnusedLocals) removeUnusedLocalVariableNodes(method)() // (*)
       else false
 
     val lineNumbersRemoved = if (compilerSettings.YoptUnreachableCode) removeEmptyLineNumbers(method) else false
@@ -257,7 +315,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
     assert(nullOrEmpty(method.visibleLocalVariableAnnotations), method.visibleLocalVariableAnnotations)
     assert(nullOrEmpty(method.invisibleLocalVariableAnnotations), method.invisibleLocalVariableAnnotations)
 
-    dceCopyPropHandlersOrJumpsChanged || localsRemoved || lineNumbersRemoved || labelsRemoved
+    dceBoxesCopypropPushpopOrJumpsChanged || localsRemoved || lineNumbersRemoved || labelsRemoved
   }
 
   /**
@@ -602,8 +660,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
         val ProducedValue(prod, size) = queue.dequeue()
 
         def prodString = s"Producer ${AsmUtils textify prod}@${method.instructions.indexOf(prod)}\n${AsmUtils textify method}"
-        def popAfterProd(): Unit = {
-          toInsertAfter(prod) = getPop(size) }
+        def popAfterProd(): Unit = toInsertAfter(prod) = getPop(size)
 
         (prod.getOpcode: @switch) match {
           case ACONST_NULL | ICONST_M1 | ICONST_0 | ICONST_1 | ICONST_2 | ICONST_3 | ICONST_4 | ICONST_5 | LCONST_0 | LCONST_1 | FCONST_0 | FCONST_1 | FCONST_2 | DCONST_0 | DCONST_1 |
@@ -629,7 +686,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
           case IADD | LADD | FADD | DADD | ISUB | LSUB | FSUB | DSUB | IMUL | LMUL | FMUL | DMUL | FDIV | DDIV | FREM | DREM |
                LSHL | LSHR | LUSHR |
                IAND | IOR | IXOR | LAND | LOR | LXOR |
-               LCMP | FCMPL | FCMPG | DCMPL | DCMPG=>
+               LCMP | FCMPL | FCMPG | DCMPL | DCMPG =>
             toRemove += prod
             handleInputs(prod, 2)
 
@@ -753,7 +810,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
       // vice-versa, eliminating a constructor call adds producers of constructor parameters to the queue.
       // so the two run in a loop.
       runQueue()
-      while(eliminateUnusedPureConstructorCalls())
+      while (eliminateUnusedPureConstructorCalls())
         runQueue()
 
       var changed = false
@@ -976,7 +1033,7 @@ object LocalOptImpls {
   def removeEmptyExceptionHandlers(method: MethodNode): Set[TryCatchBlockNode] = {
     /** True if there exists code between start and end. */
     def containsExecutableCode(start: AbstractInsnNode, end: LabelNode): Boolean = {
-      start != end && ((start.getOpcode : @switch) match {
+      start != end && ((start.getOpcode: @switch) match {
         // FrameNode, LabelNode and LineNumberNode have opcode == -1.
         case -1 | GOTO => containsExecutableCode(start.getNext, end)
         case _ => true
@@ -985,7 +1042,7 @@ object LocalOptImpls {
 
     var removedHandlers = Set.empty[TryCatchBlockNode]
     val handlersIter = method.tryCatchBlocks.iterator()
-    while(handlersIter.hasNext) {
+    while (handlersIter.hasNext) {
       val handler = handlersIter.next()
       if (!containsExecutableCode(handler.start, handler.end)) {
         removedHandlers += handler
@@ -1004,9 +1061,10 @@ object LocalOptImpls {
    * same type or name.
    */
   def removeUnusedLocalVariableNodes(method: MethodNode)(firstLocalIndex: Int = parametersSize(method), renumber: Int => Int = identity): Boolean = {
-    def variableIsUsed(start: AbstractInsnNode, end: LabelNode, varIndex: Int): Boolean = {
+    @tailrec def variableIsUsed(start: AbstractInsnNode, end: LabelNode, varIndex: Int): Boolean = {
       start != end && (start match {
         case v: VarInsnNode if v.`var` == varIndex => true
+        case i: IincInsnNode if i.`var` == varIndex => true
         case _ => variableIsUsed(start.getNext, end, varIndex)
       })
     }

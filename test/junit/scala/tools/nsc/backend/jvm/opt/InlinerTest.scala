@@ -1313,88 +1313,128 @@ class InlinerTest extends ClearAfterClass {
       """.stripMargin
     val List(c, _, _) = compile(code)
 
-    def instructionSummary(m: Method): List[Any] = m.instructions.dropNonOp map {
-      case i: Invoke => i.name
-      case i => i.opcode
-    }
-
-    assertEquals(instructionSummary(getSingleMethod(c, "t1")),
+    assertEquals(getSingleMethod(c, "t1").instructions.summary,
       List(BIPUSH, "C$$$anonfun$1", IRETURN))
 
-    assertEquals(instructionSummary(getSingleMethod(c, "t1a")),
+    assertEquals(getSingleMethod(c, "t1a").instructions.summary,
       List(LCONST_1, "C$$$anonfun$2", IRETURN))
 
-    assertEquals(instructionSummary(getSingleMethod(c, "t2")), List(
-      ICONST_1, "boxToByte",
-      ICONST_2, "boxToInteger", ASTORE,
-      "unboxToByte",
-      ALOAD, "unboxToInt",
-      "C$$$anonfun$3",
-      "boxToInteger", "unboxToInt", IRETURN))
+    assertEquals(getSingleMethod(c, "t2").instructions.summary, List(
+      ICONST_1, ICONST_2, "C$$$anonfun$3",IRETURN))
 
     // val a = new ValKl(n); new ValKl(anonfun(a.x)).x
     // value class instantiation-extraction should be optimized by boxing elim
-    assertEquals(instructionSummary(getSingleMethod(c, "t3")), List(
+    assertEquals(getSingleMethod(c, "t3").instructions.summary, List(
       NEW, DUP, ICONST_1, "<init>", ASTORE,
       NEW, DUP, ALOAD, CHECKCAST, "x",
       "C$$$anonfun$4",
       "<init>", CHECKCAST,
       "x", IRETURN))
 
-    assertEquals(instructionSummary(getSingleMethod(c, "t4")), List(
-      BIPUSH, "boxToInteger", "unboxToInt",
-      "C$$$anonfun$5",
-      "boxToInteger", ARETURN))
+    assertEquals(getSingleMethod(c, "t4").instructions.summary, List(
+      BIPUSH, "C$$$anonfun$5", "boxToInteger", ARETURN))
 
-    assertEquals(instructionSummary(getSingleMethod(c, "t4a")), List(
-      ICONST_1, "boxToInteger",
-      LDC, "boxToDouble", "unboxToDouble", DSTORE,
-      "unboxToInt", DLOAD, "C$$$anonfun$6",
-      "boxToLong", "unboxToLong", LRETURN))
+    assertEquals(getSingleMethod(c, "t4a").instructions.summary, List(
+      ICONST_1, LDC, "C$$$anonfun$6", LRETURN))
 
-    assertEquals(instructionSummary(getSingleMethod(c, "t5")), List(
-      BIPUSH, "boxToInteger",
-      ICONST_3, "boxToByte", ASTORE,
-      "unboxToInt", ALOAD,
-      "unboxToByte",
-      "C$$$anonfun$7",
-      "boxToInteger", ARETURN))
+    assertEquals(getSingleMethod(c, "t5").instructions.summary, List(
+      BIPUSH, ICONST_3, "C$$$anonfun$7", "boxToInteger", ARETURN))
 
-    assertEquals(instructionSummary(getSingleMethod(c, "t5a")), List(
-      BIPUSH, "boxToInteger",
-      BIPUSH, I2B, "boxToByte", ASTORE,
-      "unboxToInt", ALOAD,
-      "unboxToByte",
-      "C$$$anonfun$8",
-      "boxToInteger", "unboxToInt", IRETURN))
+    assertEquals(getSingleMethod(c, "t5a").instructions.summary, List(
+      BIPUSH, BIPUSH, I2B, "C$$$anonfun$8", IRETURN))
 
-    assertEquals(instructionSummary(getSingleMethod(c, "t6")), List(
+    assertEquals(getSingleMethod(c, "t6").instructions.summary, List(
       BIPUSH, "C$$$anonfun$9", RETURN))
 
-    assertEquals(instructionSummary(getSingleMethod(c, "t7")), List(
-      ICONST_1, "boxToBoolean", "unboxToBoolean",
-      "C$$$anonfun$10", RETURN))
+    assertEquals(getSingleMethod(c, "t7").instructions.summary, List(
+      ICONST_1, "C$$$anonfun$10", RETURN))
 
-    assertEquals(instructionSummary(getSingleMethod(c, "t8")), List(
-      ICONST_1, "boxToInteger",
-      LDC, "boxToDouble", "unboxToDouble", DSTORE,
-      "unboxToInt", DLOAD, "C$$$anonfun$11",
-      "boxToLong", "unboxToLong", LRETURN))
+    assertEquals(getSingleMethod(c, "t8").instructions.summary, List(
+      ICONST_1, LDC, "C$$$anonfun$11", LRETURN))
 
-    assertEquals(instructionSummary(getSingleMethod(c, "t9")), List(
+    assertEquals(getSingleMethod(c, "t9").instructions.summary, List(
       ICONST_1, "boxToInteger", "C$$$anonfun$12", RETURN))
 
     // t9a inlines Range.foreach, which is quite a bit of code, so just testing the core
     assertInvoke(getSingleMethod(c, "t9a"), "C", "C$$$anonfun$13")
-    assert(instructionSummary(getSingleMethod(c, "t9a")).contains("boxToInteger"))
+    assert(getSingleMethod(c, "t9a").instructions.summary.contains("boxToInteger"))
 
-    assertEquals(instructionSummary(getSingleMethod(c, "t10")), List(
+    assertEquals(getSingleMethod(c, "t10").instructions.summary, List(
       ICONST_1, ISTORE,
       ALOAD, ILOAD,
       "C$$$anonfun$14", RETURN))
 
     // t10a inlines Range.foreach
     assertInvoke(getSingleMethod(c, "t10a"), "C", "C$$$anonfun$15")
-    assert(!instructionSummary(getSingleMethod(c, "t10a")).contains("boxToInteger"))
+    assert(!getSingleMethod(c, "t10a").instructions.summary.contains("boxToInteger"))
+  }
+
+  @Test
+  def refElimination(): Unit = {
+    val code =
+      """class C {
+        |  def t1 = {
+        |    var i = 0
+        |    @inline def inner() = i += 1
+        |    inner()
+        |    i
+        |  }
+        |
+        |  final def m(f: Int => Unit) = f(10)
+        |  def t2 = {
+        |    var x = -1                  // IntRef not yet eliminated: closure elimination does not
+        |    m(i => if (i == 10) x = 1)  // yet inline the anonfun method, need to improve the heuristsics
+        |    x
+        |  }
+        |}
+      """.stripMargin
+    val List(c) = compile(code)
+    assertSameCode(getSingleMethod(c, "t1").instructions.dropNonOp, List(Op(ICONST_0), Op(ICONST_1), Op(IADD), Op(IRETURN)))
+    assertEquals(getSingleMethod(c, "t2").instructions collect { case i: Invoke => i.owner +"."+ i.name }, List(
+      "scala/runtime/IntRef.create", "C.C$$$anonfun$1"))
+  }
+
+  @Test
+  def tupleElimination(): Unit = {
+    val code =
+      """class C {
+        |  @inline final def tpl[A, B](a: A, b: B) = (a, b)
+        |  @inline final def t_1[A, B](t: (A, B)) = t._1
+        |  @inline final def t_2[A, B](t: (A, B)) = t._2
+        |
+        |  def t1 = {
+        |    val t = (3, 4)  // specialized tuple
+        |    t_1(t) + t_2(t) // invocations to generic _1 / _2, box operation inserted when eliminated
+        |  }
+        |
+        |  def t2 = {
+        |    val t = tpl(1, 2) // generic Tuple2[Integer, Integer] created
+        |    t._1 + t._2       // invokes the specialized _1$mcI$sp, eliminating requires adding an unbox operation
+        |  }
+        |
+        |  @inline final def m = (1, 3)
+        |  def t3 = {
+        |    val (a, b) = m
+        |    a - b
+        |  }
+        |
+        |  def t4 = {
+        |    val ((a, b), (c, d)) = (m, m)
+        |    a + b + c + d
+        |  }
+        |
+        |  def t5 = m match {
+        |    case (1, y) => y
+        |    case (x, y) => x * y
+        |  }
+        |}
+      """.stripMargin
+    val List(c) = compile(code)
+    assertSameCode(getSingleMethod(c, "t1").instructions.dropNonOp, List(Op(ICONST_3), Op(ICONST_4), Op(IADD), Op(IRETURN)))
+    assertSameCode(getSingleMethod(c, "t2").instructions.dropNonOp, List(Op(ICONST_1), Op(ICONST_2), Op(IADD), Op(IRETURN)))
+    // tuple not yet eliminated due to null checks, casts
+    assert(getSingleMethod(c, "t3").instructions.exists(_.opcode == IFNONNULL))
+    assert(getSingleMethod(c, "t4").instructions.exists(_.opcode == CHECKCAST))
+    assert(getSingleMethod(c, "t5").instructions.exists(_.opcode == IFNULL))
   }
 }
