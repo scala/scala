@@ -481,40 +481,47 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
       lazy val prodCons = new ProdConsAnalyzer(method, owner)
 
       /**
-       * True if the values produced by `prod` are all the same. Most instructions produce a single
-       * value. DUP and DUP2 (with a size-2 input) produce two equivalent values. However, there
-       * are some exotic instructions that produce multiple non-equal values (DUP_X1, SWAP, ...).
-       *
-       * Assume we have `DUP_X2; POP`. In order to remove the `POP` we need to change the DUP_X2
-       * into something else, which is not straightforward.
-       *
-       * Since scalac never emits any of those exotic bytecodes, we don't optimize them.
-       */
-      def producerHasSingleOutput(prod: AbstractInsnNode): Boolean = (prod.getOpcode: @switch) match {
-        case DUP_X1 | DUP_X2 | DUP2_X1 | DUP2_X2 | SWAP => false
-        case DUP2 => prodCons.frameAt(prod).peekStack(0).getSize == 2
-        case _ => true
-      }
-
-      // Set.empty if not a single consumer, or if the producer is the exception value of a catch block
-      /**
        * Returns the producers for the stack value `inputSlot` consumed by `cons`, if the consumer
        * instruction is the only consumer for all of these producers.
        *
-       * I a producer has multiple consumers, or the value is the caught exception in a catch
+       * If a producer has multiple consumers, or the value is the caught exception in a catch
        * block, this method returns Set.empty.
        */
       def producersIfSingleConsumer(cons: AbstractInsnNode, inputSlot: Int): Set[AbstractInsnNode] = {
+        /**
+         * True if the values produced by `prod` are all the same. Most instructions produce a single
+         * value. DUP and DUP2 (with a size-2 input) produce two equivalent values. However, there
+         * are some exotic instructions that produce multiple non-equal values (DUP_X1, SWAP, ...).
+         *
+         * Assume we have `DUP_X2; POP`. In order to remove the `POP` we need to change the DUP_X2
+         * into something else, which is not straightforward.
+         *
+         * Since scalac never emits any of those exotic bytecodes, we don't optimize them.
+         */
+        def producerHasSingleOutput(prod: AbstractInsnNode): Boolean = prod match {
+          case _: ExceptionProducer[_] | _: UninitializedLocalProducer =>
+            // POP of an exception in a catch block cannot be removed. For an uninitialized local,
+            // there should not be a consumer. We are conservative and include it here, so the
+            // producer would not be removed.
+            false
+
+          case _: ParameterProducer =>
+            true
+
+          case _ => (prod.getOpcode: @switch) match {
+            case DUP => true
+            case DUP2 => prodCons.frameAt(prod).peekStack(0).getSize == 2
+            case _ => InstructionStackEffect.prod(InstructionStackEffect.forAsmAnalysis(prod, prodCons.frameAt(prod))) == 1
+          }
+        }
+
         val prods = prodCons.producersForValueAt(cons, inputSlot)
-        val singleConsumer = prods forall {
-          case _: ExceptionProducer[_] =>
-            false // POP of an exception in a catch block cannot be removed
-          case prod =>
-            producerHasSingleOutput(prod) && {
-              // for DUP / DUP2, we only consider the value that is actually consumed by cons
-              val conss = prodCons.consumersOfValueAt(prod.getNext, inputSlot)
-              conss.size == 1 && conss.head == cons
-            }
+        val singleConsumer = prods forall { prod =>
+          producerHasSingleOutput(prod) && {
+            // for DUP / DUP2, we only consider the value that is actually consumed by cons
+            val conss = prodCons.consumersOfValueAt(prod.getNext, inputSlot)
+            conss.size == 1 && conss.head == cons
+          }
         }
         if (singleConsumer) prods else Set.empty
       }
@@ -599,12 +606,17 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
 
         (prod.getOpcode: @switch) match {
           case ACONST_NULL | ICONST_M1 | ICONST_0 | ICONST_1 | ICONST_2 | ICONST_3 | ICONST_4 | ICONST_5 | LCONST_0 | LCONST_1 | FCONST_0 | FCONST_1 | FCONST_2 | DCONST_0 | DCONST_1 |
-               BIPUSH | SIPUSH | ILOAD | LLOAD | FLOAD | DLOAD | ALOAD | DUP =>
+               BIPUSH | SIPUSH | ILOAD | LLOAD | FLOAD | DLOAD | ALOAD=>
             toRemove += prod
 
-          case DUP2 =>
-            assert(size == 2, s"DUP2 for two size-1 values; $prodString") // ensured in method `producerHasSingleOutput`
-            toRemove += prod
+          case opc @ (DUP | DUP2) =>
+            assert(opc != 2 || size == 2, s"DUP2 for two size-1 values; $prodString") // ensured in method `producerHasSingleOutput`
+            if (toRemove(prod))
+              // the DUP is already scheduled for removal because one of its consumers is a POP.
+              // now the second consumer is also a POP, so we need to eliminate the DUP's input.
+              handleInputs(prod, 1)
+            else
+              toRemove += prod
 
           case DUP_X1 | DUP_X2 | DUP2_X1 | DUP2_X2 | SWAP =>
             // these are excluded in method `producerHasSingleOutput`
