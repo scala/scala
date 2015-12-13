@@ -62,6 +62,7 @@ object Osgi {
     val jar = synchronized { builder.build }
     builder.getWarnings.foreach(s => log.warn(s"bnd: $s"))
     builder.getErrors.foreach(s => log.error(s"bnd: $s"))
+    IO.createDirectory(artifactPath.getParentFile)
     jar.write(artifactPath)
     artifactPath
   }
