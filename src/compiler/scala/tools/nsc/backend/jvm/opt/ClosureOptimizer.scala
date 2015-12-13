@@ -79,13 +79,15 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     val callsitesToRewrite: List[(ClosureInstantiation, List[Either[RewriteClosureApplyToClosureBodyFailed, (MethodInsnNode, Int)]])] = {
       closureInstantiations.iterator.flatMap({
         case (methodNode, closureInits) =>
-          // A lazy val to ensure the analysis only runs if necessary (the value is passed by name to `closureCallsites`)
-          // We don't need to worry about the method being too large for running an analysis: large
-          // methods are not added to the call graph / closureInstantiations map.
-          lazy val prodCons = new ProdConsAnalyzer(methodNode, closureInits.valuesIterator.next().ownerClass.internalName)
-          // sorting for bytecode stability (e.g. indices of local vars created during the rewrite)
-          val sortedInits = immutable.TreeSet.empty ++ closureInits.values
-          sortedInits.iterator.map(init => (init, closureCallsites(init, prodCons))).filter(_._2.nonEmpty)
+          if (!AsmAnalyzer.sizeOKForSourceValue(methodNode)) Nil else {
+            // A lazy val to ensure the analysis only runs if necessary (the value is passed by name to `closureCallsites`)
+            // We don't need to worry about the method being too large for running an analysis: large
+            // methods are not added to the call graph / closureInstantiations map.
+            lazy val prodCons = new ProdConsAnalyzer(methodNode, closureInits.valuesIterator.next().ownerClass.internalName)
+            // sorting for bytecode stability (e.g. indices of local vars created during the rewrite)
+            val sortedInits = immutable.TreeSet.empty ++ closureInits.values
+            sortedInits.iterator.map(init => (init, closureCallsites(init, prodCons))).filter(_._2.nonEmpty)
+          }
       }).toList // mapping to a list (not a map) to keep the sorting
     }
 
