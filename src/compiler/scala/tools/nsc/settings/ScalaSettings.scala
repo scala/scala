@@ -236,39 +236,50 @@ trait ScalaSettings extends AbsScalaSettings
     val inlineProject           = Choice("inline-project",            "Inline only methods defined in the files being compiled. Enables unreachable-code.")
     val inlineGlobal            = Choice("inline-global",             "Inline methods from any source, including classfiles on the compile classpath. Enables unreachable-code.")
 
-    val lNone           = Choice("l:none",      "Don't enable any optimizations.")
+    // note: unlike the other optimizer levels, "l:none" appears up in the `Yopt.value` set because it's not an expanding option (expandsTo is empty)
+    val lNone           = Choice("l:none",      "Disable optimizations. Takes precedence: `-Yopt:l:none,+box-unbox` / `-Yopt:l:none -Yopt:box-unbox` don't enable box-unbox.")
 
     private val defaultChoices = List(unreachableCode)
-    val lDefault        = Choice("l:default",   "Enable default optimizations: "+ defaultChoices.mkString(","),                                    expandsTo = defaultChoices)
+    val lDefault        = Choice("l:default",   "Enable default optimizations: "+ defaultChoices.mkString("", ",", "."),                                    expandsTo = defaultChoices)
 
     private val methodChoices = List(unreachableCode, simplifyJumps, compactLocals, copyPropagation, redundantCasts, boxUnbox, nullnessTracking, closureInvocations)
-    val lMethod         = Choice("l:method",    "Enable intra-method optimizations: "+ methodChoices.mkString(","),                                expandsTo = methodChoices)
+    val lMethod         = Choice("l:method",    "Enable intra-method optimizations: "+ methodChoices.mkString("", ",", "."),                                expandsTo = methodChoices)
 
     private val projectChoices = List(lMethod, inlineProject)
-    val lProject        = Choice("l:project",   "Enable cross-method optimizations within the current project: "+ projectChoices.mkString(","),    expandsTo = projectChoices)
+    val lProject        = Choice("l:project",   "Enable cross-method optimizations within the current project: "+ projectChoices.mkString("", ",", "."),    expandsTo = projectChoices)
 
     private val classpathChoices = List(lProject, inlineGlobal)
-    val lClasspath      = Choice("l:classpath", "Enable cross-method optimizations across the entire classpath: "+ classpathChoices.mkString(","), expandsTo = classpathChoices)
+    val lClasspath      = Choice("l:classpath", "Enable cross-method optimizations across the entire classpath: "+ classpathChoices.mkString("", ",", "."), expandsTo = classpathChoices)
   }
 
+  // We don't use the `default` parameter of `MultiChoiceSetting`: it specifies the default values
+  // when `-Yopt` is passed without explicit choices. When `-Yopt` is not explicitly specified, the
+  // set `Yopt.value` is empty.
   val Yopt = MultiChoiceSetting(
     name = "-Yopt",
     helpArg = "optimization",
     descr = "Enable optimizations",
     domain = YoptChoices)
 
-  def YoptNone                    = Yopt.isSetByUser && Yopt.value.isEmpty
-  def YoptUnreachableCode         = !Yopt.isSetByUser || Yopt.contains(YoptChoices.unreachableCode)
-  def YoptSimplifyJumps           = Yopt.contains(YoptChoices.simplifyJumps)
-  def YoptCompactLocals           = Yopt.contains(YoptChoices.compactLocals)
-  def YoptCopyPropagation         = Yopt.contains(YoptChoices.copyPropagation)
-  def YoptRedundantCasts          = Yopt.contains(YoptChoices.redundantCasts)
-  def YoptBoxUnbox                = Yopt.contains(YoptChoices.boxUnbox)
-  def YoptNullnessTracking        = Yopt.contains(YoptChoices.nullnessTracking)
-  def YoptClosureInvocations      = Yopt.contains(YoptChoices.closureInvocations)
+  private def optEnabled(choice: YoptChoices.Choice) = {
+    !Yopt.contains(YoptChoices.lNone) && {
+      Yopt.contains(choice) ||
+      !Yopt.isSetByUser && YoptChoices.lDefault.expandsTo.contains(choice)
+    }
+  }
 
-  def YoptInlineProject           = Yopt.contains(YoptChoices.inlineProject)
-  def YoptInlineGlobal            = Yopt.contains(YoptChoices.inlineGlobal)
+  def YoptNone                    = Yopt.contains(YoptChoices.lNone)
+  def YoptUnreachableCode         = optEnabled(YoptChoices.unreachableCode)
+  def YoptSimplifyJumps           = optEnabled(YoptChoices.simplifyJumps)
+  def YoptCompactLocals           = optEnabled(YoptChoices.compactLocals)
+  def YoptCopyPropagation         = optEnabled(YoptChoices.copyPropagation)
+  def YoptRedundantCasts          = optEnabled(YoptChoices.redundantCasts)
+  def YoptBoxUnbox                = optEnabled(YoptChoices.boxUnbox)
+  def YoptNullnessTracking        = optEnabled(YoptChoices.nullnessTracking)
+  def YoptClosureInvocations      = optEnabled(YoptChoices.closureInvocations)
+
+  def YoptInlineProject           = optEnabled(YoptChoices.inlineProject)
+  def YoptInlineGlobal            = optEnabled(YoptChoices.inlineGlobal)
   def YoptInlinerEnabled          = YoptInlineProject || YoptInlineGlobal
 
   def YoptBuildCallGraph          = YoptInlinerEnabled || YoptClosureInvocations
