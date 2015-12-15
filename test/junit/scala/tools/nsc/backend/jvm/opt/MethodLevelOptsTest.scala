@@ -472,8 +472,7 @@ class MethodLevelOptsTest extends ClearAfterClass {
     val List(c) = compileClasses(methodOptCompiler)(code)
     assertNoInvoke(getSingleMethod(c, "t1"))
     assertEquals(getSingleMethod(c, "t2").instructions.summary, List(ICONST_1, ICONST_3, IADD, IRETURN))
-    // cannot eliminate boxes because of casts
-    assertEquals(getSingleMethod(c, "t3").instructions collect { case TypeOp(CHECKCAST, tp) => tp }, List("java/lang/Integer", "java/lang/Integer"))
+    assertEquals(getSingleMethod(c, "t3").instructions.summary, List(ICONST_3, ICONST_4, IADD, IRETURN))
     assertEquals(getSingleMethod(c, "t4").instructions.summary, List(ICONST_3, "boxToInteger", ARETURN))
     assertEquals(getSingleMethod(c, "t5").instructions collect { case Invoke(_, owner, name, _, _) => (owner, name) }, List(
       ("scala/runtime/BoxesRunTime", "boxToInteger"),
@@ -482,11 +481,11 @@ class MethodLevelOptsTest extends ClearAfterClass {
       ("scala/Tuple2", "_1$mcI$sp")))
     // cannot eliminate boxes because of null checks
     assert(getSingleMethod(c, "t6").instructions.exists(_.opcode == IFNONNULL))
-    // cannot eliminate boxed because of casts and null checks
+    // cannot eliminate boxed because of null checks
     def castsNullChecks(m: String) = getSingleMethod(c, m).instructions collect { case op if op.opcode == IFNULL || op.opcode == CHECKCAST => op }
     assertEquals(castsNullChecks("t7"),
-      List(Jump(IFNULL, Label(29)), TypeOp(CHECKCAST, "scala/Tuple2"), Jump(IFNULL, Label(29))))
-    assertEquals(castsNullChecks("t8").size, 7)
+      List(Jump(IFNULL, Label(28)), Jump(IFNULL, Label(28))))
+    assertEquals(castsNullChecks("t8").size, 3)
     assertEquals(castsNullChecks("t9").size, 2)
   }
 }

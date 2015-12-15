@@ -229,6 +229,7 @@ trait ScalaSettings extends AbsScalaSettings
     val simplifyJumps           = Choice("simplify-jumps",            "Simplify branching instructions, eliminate unnecessary ones.")
     val compactLocals           = Choice("compact-locals",            "Eliminate empty slots in the sequence of local variables.")
     val copyPropagation         = Choice("copy-propagation",          "Eliminate redundant local variables and unused values (including closures). Enables unreachable-code.")
+    val redundantCasts          = Choice("redundant-casts",           "Eliminate redundant casts using a type propagation analysis.")
     val boxUnbox                = Choice("box-unbox",                 "Eliminate box-unbox pairs within the same method (also tuples, xRefs, value class instances). Enables unreachable-code.")
     val nullnessTracking        = Choice("nullness-tracking",         "Track nullness / non-nullness of local variables and apply optimizations.")
     val closureInvocations      = Choice("closure-invocations" ,      "Rewrite closure invocations to the implementation method.")
@@ -240,7 +241,7 @@ trait ScalaSettings extends AbsScalaSettings
     private val defaultChoices = List(unreachableCode)
     val lDefault        = Choice("l:default",   "Enable default optimizations: "+ defaultChoices.mkString(","),                                    expandsTo = defaultChoices)
 
-    private val methodChoices = List(unreachableCode, simplifyJumps, compactLocals, copyPropagation, boxUnbox, nullnessTracking, closureInvocations)
+    private val methodChoices = List(unreachableCode, simplifyJumps, compactLocals, copyPropagation, redundantCasts, boxUnbox, nullnessTracking, closureInvocations)
     val lMethod         = Choice("l:method",    "Enable intra-method optimizations: "+ methodChoices.mkString(","),                                expandsTo = methodChoices)
 
     private val projectChoices = List(lMethod, inlineProject)
@@ -261,6 +262,7 @@ trait ScalaSettings extends AbsScalaSettings
   def YoptSimplifyJumps           = Yopt.contains(YoptChoices.simplifyJumps)
   def YoptCompactLocals           = Yopt.contains(YoptChoices.compactLocals)
   def YoptCopyPropagation         = Yopt.contains(YoptChoices.copyPropagation)
+  def YoptRedundantCasts          = Yopt.contains(YoptChoices.redundantCasts)
   def YoptBoxUnbox                = Yopt.contains(YoptChoices.boxUnbox)
   def YoptNullnessTracking        = Yopt.contains(YoptChoices.nullnessTracking)
   def YoptClosureInvocations      = Yopt.contains(YoptChoices.closureInvocations)

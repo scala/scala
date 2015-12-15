@@ -85,6 +85,6 @@ class ClosureOptimizerTest extends ClearAfterClass {
     assertSameCode(getSingleMethod(c, "t").instructions.dropNonOp,
       List(VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "scala/collection/immutable/List", "head", "()Ljava/lang/Object;", false),
         TypeOp(CHECKCAST, "java/lang/String"), Invoke(INVOKESTATIC, "C", "C$$$anonfun$1", "(Ljava/lang/String;)Ljava/lang/String;", false),
-        TypeOp(CHECKCAST, "java/lang/String"), Op(ARETURN)))
+        Op(ARETURN)))
   }
 }

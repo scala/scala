@@ -1326,9 +1326,9 @@ class InlinerTest extends ClearAfterClass {
     // value class instantiation-extraction should be optimized by boxing elim
     assertEquals(getSingleMethod(c, "t3").instructions.summary, List(
       NEW, DUP, ICONST_1, "<init>", ASTORE,
-      NEW, DUP, ALOAD, CHECKCAST, "x",
+      NEW, DUP, ALOAD, "x",
       "C$$$anonfun$4",
-      "<init>", CHECKCAST,
+      "<init>",
       "x", IRETURN))
 
     assertEquals(getSingleMethod(c, "t4").instructions.summary, List(
@@ -1432,9 +1432,41 @@ class InlinerTest extends ClearAfterClass {
     val List(c) = compile(code)
     assertSameCode(getSingleMethod(c, "t1").instructions.dropNonOp, List(Op(ICONST_3), Op(ICONST_4), Op(IADD), Op(IRETURN)))
     assertSameCode(getSingleMethod(c, "t2").instructions.dropNonOp, List(Op(ICONST_1), Op(ICONST_2), Op(IADD), Op(IRETURN)))
-    // tuple not yet eliminated due to null checks, casts
+    // tuple not yet eliminated due to null checks
     assert(getSingleMethod(c, "t3").instructions.exists(_.opcode == IFNONNULL))
-    assert(getSingleMethod(c, "t4").instructions.exists(_.opcode == CHECKCAST))
+    assert(getSingleMethod(c, "t4").instructions.exists(_.opcode == IFNULL))
     assert(getSingleMethod(c, "t5").instructions.exists(_.opcode == IFNULL))
+  }
+
+  @Test
+  def redundantCasts(): Unit = {
+
+    // we go through the hoop of inlining the casts because erasure eliminates `asInstanceOf` calls
+    // that are statically known to succeed. For example the following cast is removed by erasure:
+    //   `(if (b) c else d).asInstanceOf[C]`
+
+    val code =
+      """class C {
+        |  @inline final def asO(a: Any) = a.asInstanceOf[Object]
+        |  @inline final def asC(a: Any) = a.asInstanceOf[C]
+        |  @inline final def asD(a: Any) = a.asInstanceOf[D]
+        |
+        |  def t1(c: C) = asC(c) // eliminated
+        |  def t2(c: C) = asO(c) // eliminated
+        |  def t3(c: Object) = asC(c) // not elimianted
+        |  def t4(c: C, d: D, b: Boolean) = asC(if (b) c else d) // not eliminated: lub of two non-equal reference types approximated with Object
+        |  def t5(c: C, d: D, b: Boolean) = asO(if (b) c else d)
+        |  def t6(c: C, cs: Array[C], b: Boolean) = asO(if (b) c else cs)
+        |}
+        |class D extends C
+      """.stripMargin
+    val List(c, _) = compile(code)
+    def casts(m: String) = getSingleMethod(c, m).instructions collect { case TypeOp(CHECKCAST, tp) => tp }
+    assertSameCode(getSingleMethod(c, "t1").instructions.dropNonOp, List(VarOp(ALOAD, 1), Op(ARETURN)))
+    assertSameCode(getSingleMethod(c, "t2").instructions.dropNonOp, List(VarOp(ALOAD, 1), Op(ARETURN)))
+    assertSameCode(getSingleMethod(c, "t3").instructions.dropNonOp, List(VarOp(ALOAD, 1), TypeOp(CHECKCAST, "C"), Op(ARETURN)))
+    assertEquals(casts("t4"), List("C"))
+    assertEquals(casts("t5"), Nil)
+    assertEquals(casts("t6"), Nil)
   }
 }

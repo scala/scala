@@ -57,6 +57,8 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
 
   class ProdConsAnalyzer(val methodNode: MethodNode, classInternalName: InternalName) extends AsmAnalyzer(methodNode, classInternalName, new Analyzer(new InitialProducerSourceInterpreter)) with ProdConsAnalyzerImpl
 
+  class NonLubbingTypeFlowAnalyzer(val methodNode: MethodNode, classInternalName: InternalName) extends AsmAnalyzer(methodNode, classInternalName, new Analyzer(new NonLubbingTypeFlowInterpreter))
+
   /**
    * Add:
    * private static java.util.Map $deserializeLambdaCache$ = null

@@ -46,6 +46,8 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *   + enables downstream:
  *     - copy propagation (new locals are introduced, may be aliases of existing)
  *     - stale stores (multi-value boxes where not all values are used)
+ *     - redundant casts (`("a", "b")._1`: the generic `_1` method returns `Object`, a cast
+ *       to String is added. The cast is redundant after eliminating the tuple.)
  *     - empty local variable descriptors (local variables that were holding the box may become unused)
  *
  * copy propagation (replaces LOAD n to the LOAD m for the smallest m that is an alias of n)
@@ -59,6 +61,12 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  * stale stores (replace STORE by POP)
  *   + enables downstream:
  *     - push-pop (the new pop may be the single consumer for an instruction)
+ *
+ * redundant casts: eliminates casts that are statically known to succeed (uses type propagation)
+ *   + enables UPSTREAM:
+ *     - box-unbox elimination (a removed checkcast may be a box consumer)
+ *   + enables downstream:
+ *     - push-pop for closure allocation elimination (every indyLambda is followed by a checkcast, see SI-9540)
  *
  * push-pop (when a POP is the only consumer of a value, remove the POP and its producer)
  *   + enables UPSTREAM:
@@ -120,6 +128,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 class LocalOpt[BT <: BTypes](val btypes: BT) {
   import LocalOptImpls._
   import btypes._
+  import coreBTypes._
   import backendUtils._
 
   val boxUnbox = new BoxUnbox(btypes)
@@ -242,8 +251,12 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
       val runStaleStores = compilerSettings.YoptCopyPropagation && (requestStaleStores || codeRemoved || boxUnboxChanged || copyPropChanged)
       val storesRemoved = runStaleStores && eliminateStaleStores(method, ownerClassName)
 
+      // REDUNDANT CASTS
+      val runRedundantCasts = compilerSettings.YoptRedundantCasts && (firstIteration || boxUnboxChanged)
+      val castRemoved = runRedundantCasts && eliminateRedundantCasts(method, ownerClassName)
+
       // PUSH-POP
-      val runPushPop = compilerSettings.YoptCopyPropagation && (firstIteration || storesRemoved)
+      val runPushPop = compilerSettings.YoptCopyPropagation && (firstIteration || storesRemoved || castRemoved)
       val pushPopRemoved = runPushPop && eliminatePushPop(method, ownerClassName)
 
       // STORE-LOAD PAIRS
@@ -262,7 +275,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
 
       // See doc comment in the beginning of this file (optimizations marked UPSTREAM)
       val runDCEAgain = liveHandlerRemoved || jumpsChanged
-      val runBoxUnboxAgain = boxUnboxChanged || pushPopRemoved || liveHandlerRemoved
+      val runBoxUnboxAgain = boxUnboxChanged || castRemoved || pushPopRemoved || liveHandlerRemoved
       val runStaleStoresAgain = pushPopRemoved
       val runStoreLoadAgain = jumpsChanged
       val runAgain = runDCEAgain || runBoxUnboxAgain || pushPopRemoved || runStaleStoresAgain || runStoreLoadAgain
@@ -282,7 +295,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
         storeLoadRemoved ||
         handlersRemoved
 
-      val codeChanged = codeRemoved || boxUnboxChanged || copyPropChanged || storesRemoved || pushPopRemoved || storeLoadRemoved || handlersRemoved || jumpsChanged
+      val codeChanged = codeRemoved || boxUnboxChanged || castRemoved || copyPropChanged || storesRemoved || pushPopRemoved || storeLoadRemoved || handlersRemoved || jumpsChanged
       (codeChanged, requireEliminateUnusedLocals)
     }
 
@@ -716,36 +729,6 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
               case _ => popAfterProd()
             }
 
-          case CHECKCAST =>
-            // Special case for `IndyLambda JFunctionN; CHECKCAST FuncionN`. This sequence is emitted
-            // for all closure instantiations, see https://issues.scala-lang.org/browse/SI-9540
-            val castType = prod.asInstanceOf[TypeInsnNode].desc
-            if (isScalaFunctionType(castType)) {
-
-              // the `FunctionN` part of an internal name (e.g. `scala/runtime/java8/JFunction1$mcDI$sp`)
-              def funPart(funType: String): String = {
-                var end = funType.indexOf('$')
-                if (end == -1) end = funType.length
-                funType.substring(funType.lastIndexOf('/') + 1, end)
-              }
-
-              // true if the cast will always succeed
-              def castOk(indy: InvokeDynamicInsnNode): Boolean = {
-                val generatedFunctionType = Type.getReturnType(indy.desc).getInternalName
-                isrJFunctionType(generatedFunctionType) && funPart(generatedFunctionType) == "J" + funPart(castType)
-              }
-
-              val castProd = producersIfSingleConsumer(prod, prodCons.frameAt(prod).stackTop)
-              if (castProd.size == 1) castProd.head match {
-                case callGraph.LambdaMetaFactoryCall(indy, _, _, _) if castOk(indy) =>
-                  toRemove += prod        // remove the cast
-                  handleClosureInst(indy) // remove the indyLambda
-                case _ => popAfterProd()
-              } else
-                popAfterProd()
-            } else
-              popAfterProd()
-
           case NEW =>
             if (isNewForSideEffectFreeConstructor(prod)) toRemove += prod
             else popAfterProd()
@@ -845,6 +828,46 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
 
   case class ProducedValue(producer: AbstractInsnNode, size: Int) {
     override def toString = s"<${AsmUtils textify producer}>"
+  }
+
+  /**
+   * Eliminate `CHECKCAST` instructions that are statically known to succeed. This is safe if the
+   * tested object is null: `null.asInstanceOf` always succeeds.
+   *
+   * The type of the tested object is determined using a NonLubbingTypeFlowAnalyzer. Note that this
+   * analysis collapses LUBs of non-equal references types to Object for simplicity. Example:
+   * given `B <: A <: Object`, the cast in `(if (..) new B else new A).asInstanceOf[A]` would not
+   * be eliminated.
+   *
+   * Note: we cannot replace `INSTANCEOF` tests by only looking at the types, `null.isInstanceOf`
+   * always returns false, so we'd also need nullness information.
+   */
+  def eliminateRedundantCasts(method: MethodNode, owner: InternalName): Boolean = {
+    AsmAnalyzer.sizeOKForBasicValue(method) && {
+      def isSubType(aRefDesc: String, bClass: InternalName): Boolean = aRefDesc == bClass || bClass == ObjectRef.internalName || {
+        (bTypeForDescriptorOrInternalNameFromClassfile(aRefDesc) conformsTo classBTypeFromParsedClassfile(bClass)).getOrElse(false)
+      }
+
+      lazy val typeAnalyzer = new NonLubbingTypeFlowAnalyzer(method, owner)
+
+      // cannot remove instructions while iterating, it gets the analysis out of synch (indexed by instructions)
+      val toRemove = mutable.Set.empty[TypeInsnNode]
+
+      val it = method.instructions.iterator()
+      while (it.hasNext) it.next() match {
+        case ti: TypeInsnNode if ti.getOpcode == CHECKCAST =>
+          val frame = typeAnalyzer.frameAt(ti)
+          val valueTp = frame.getValue(frame.stackTop)
+          if (valueTp.isReference && isSubType(valueTp.getType.getDescriptor, ti.desc)) {
+            toRemove += ti
+          }
+
+        case _ =>
+      }
+
+      toRemove foreach method.instructions.remove
+      toRemove.nonEmpty
+    }
   }
 
   /**
