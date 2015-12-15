@@ -845,10 +845,14 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
             if (isNewForSideEffectFreeConstructor(prod)) toRemove += prod
             else popAfterProd()
 
-          case LDC =>
-            // don't remove class literals: keep the potential NoClassDefFoundError
-            if (prod.asInstanceOf[LdcInsnNode].cst.isInstanceOf[Type]) popAfterProd()
-            else toRemove += prod
+          case LDC => prod.asInstanceOf[LdcInsnNode].cst match {
+            case _: java.lang.Integer | _: java.lang.Float | _: java.lang.Long | _: java.lang.Double | _: String =>
+              toRemove += prod
+
+            case _ =>
+              // don't remove class literals, method types, method handles: keep a potential NoClassDefFoundError
+              popAfterProd()
+          }
 
           case NEWARRAY | ANEWARRAY =>
             toRemove += prod
