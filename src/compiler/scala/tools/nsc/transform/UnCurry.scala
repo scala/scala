@@ -538,7 +538,7 @@ abstract class UnCurry extends InfoTransform
       result modifyType uncurry
     }
 
-    def postTransform(tree0: Tree): Tree = exitingUncurry {
+    def postTransform(tree: Tree): Tree = exitingUncurry {
       def isThrowable(pat: Tree): Boolean = pat match {
         case Typed(Ident(nme.WILDCARD), tpt) =>
           tpt.tpe =:= ThrowableTpe
@@ -548,13 +548,6 @@ abstract class UnCurry extends InfoTransform
           false
       }
 
-      // tree could be an Ident/Select/Apply -- missing any other cases?
-      def constToLiteral(tree: Tree): Tree = tree.tpe match {
-        case ConstantType(c) => Literal(c) setType tree.tpe setPos tree.pos // TODO: carry over anything else?
-        case _ => tree
-      }
-
-      val tree = constToLiteral(tree0)
       tree match {
         /* Some uncurry post transformations add members to templates.
          *
@@ -591,6 +584,11 @@ abstract class UnCurry extends InfoTransform
             }
           )
           addJavaVarargsForwarders(dd, flatdd)
+
+        case lit: Literal => lit
+        case const: TermTree if const.tpe.isInstanceOf[ConstantType] =>
+          val c = const.tpe.asInstanceOf[ConstantType].value
+          Literal(c) setType const.tpe setPos const.pos // TODO: carry over anything else?
 
         case Apply(Apply(fn, args), args1) =>  treeCopy.Apply(tree, fn, args ::: args1)
 
