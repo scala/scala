@@ -156,7 +156,7 @@ override def companion: GenericCompanion[Vector] = Vector
   override def take(n: Int): Vector[A] = {
     if (n <= 0)
       Vector.empty
-    else if (startIndex + n < endIndex)
+    else if (startIndex < endIndex - n)
       dropBack0(startIndex + n)
     else
       this
@@ -165,7 +165,7 @@ override def companion: GenericCompanion[Vector] = Vector
   override def drop(n: Int): Vector[A] = {
     if (n <= 0)
       this
-    else if (startIndex + n < endIndex)
+    else if (startIndex < endIndex - n)
       dropFront0(startIndex + n)
     else
       Vector.empty
