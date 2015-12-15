@@ -534,21 +534,6 @@ abstract class UnCurry extends InfoTransform
     }
 
     def postTransform(tree: Tree): Tree = exitingUncurry {
-      def applyUnary(): Tree = {
-        // TODO_NMT: verify that the inner tree of a type-apply also gets parens if the
-        // whole tree is a polymorphic nullary method application
-        def removeNullary() = tree.tpe match {
-          case MethodType(_, _)           => tree
-          case tp                         => tree setType MethodType(Nil, tp.resultType)
-        }
-        if (tree.symbol.isMethod && !tree.tpe.isInstanceOf[PolyType])
-          gen.mkApplyIfNeeded(removeNullary())
-        else if (tree.isType)
-          TypeTree(tree.tpe) setPos tree.pos
-        else
-          tree
-      }
-
       def isThrowable(pat: Tree): Boolean = pat match {
         case Typed(Ident(nme.WILDCARD), tpt) =>
           tpt.tpe =:= ThrowableTpe
@@ -595,26 +580,25 @@ abstract class UnCurry extends InfoTransform
           )
           addJavaVarargsForwarders(dd, flatdd)
 
-        case tree: Try =>
-          if (tree.catches exists (cd => !treeInfo.isCatchCase(cd)))
-            devWarning("VPM BUG - illegal try/catch " + tree.catches)
-          tree
+        case Apply(Apply(fn, args), args1) =>  treeCopy.Apply(tree, fn, args ::: args1)
 
-        case Apply(Apply(fn, args), args1) =>
-          treeCopy.Apply(tree, fn, args ::: args1)
+        case _: TypeTree | _: Try    => tree
+        // if tree represents a type, but it's not yet a TypeTree (excluded by case above)
+        case tpTree if tpTree.isType => TypeTree(tpTree.tpe) setPos tpTree.pos
 
-        case Ident(name) =>
-          assert(name != tpnme.WILDCARD_STAR, tree)
-          applyUnary()
-        case Select(_, _) | TypeApply(_, _) =>
-          applyUnary()
+        case _: Ident | _: Select | _: TypeApply if tree.symbol.isMethod && !tree.tpe.isInstanceOf[PolyType] =>
+          // TODO_NMT: verify that the inner tree of a type-apply also gets parens if the
+          // whole tree is a polymorphic nullary method application
+          gen.mkApplyIfNeeded(tree.tpe match {
+            case MethodType(_, _) => tree
+            case tp               => tree setType MethodType(Nil, tp.resultType)
+          })
+
         case ret @ Return(expr) if isNonLocalReturn(ret) =>
-          log("non-local return from %s to %s".format(currentOwner.enclMethod, ret.symbol))
+          log(s"non-local return from ${currentOwner.enclMethod} to ${ret.symbol}")
           atPos(ret.pos)(nonLocalReturnThrow(expr, ret.symbol))
-        case TypeTree() =>
-          tree
-        case _ =>
-          if (tree.isType) TypeTree(tree.tpe) setPos tree.pos else tree
+
+        case tree => tree
       }
     }
 
