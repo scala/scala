@@ -129,29 +129,33 @@ trait TypeAdaptingTransformer {
     }
 
     /** Generate a synthetic cast operation from tree.tpe to pt.
-     *  @pre pt eq pt.normalize
+      *
+      *  @pre pt eq pt.normalize
      */
     def cast(tree: Tree, pt: Type): Tree = {
-      if ((tree.tpe ne null) && !(tree.tpe =:= ObjectTpe)) {
+      val treeTp = tree.tpe
+      if ((treeTp ne null) && !(treeTp =:= ObjectTpe)) {
         def word = (
-          if (tree.tpe <:< pt) "upcast"
-          else if (pt <:< tree.tpe) "downcast"
-          else if (pt weak_<:< tree.tpe) "coerce"
-          else if (tree.tpe weak_<:< pt) "widen"
+          if (treeTp <:< pt) "upcast"
+          else if (pt <:< treeTp) "downcast"
+          else if (pt weak_<:< treeTp) "coerce"
+          else if (treeTp weak_<:< pt) "widen"
           else "cast"
         )
-        log(s"erasure ${word}s from ${tree.tpe} to $pt")
+        log(s"erasure ${word}s from ${treeTp} to $pt")
       }
       if (pt =:= UnitTpe) {
         // See SI-4731 for one example of how this occurs.
         log("Attempted to cast to Unit: " + tree)
         tree.duplicate setType pt
-      } else if (tree.tpe != null && tree.tpe.typeSymbol == ArrayClass && pt.typeSymbol == ArrayClass) {
+      } else {
         // See SI-2386 for one example of when this might be necessary.
-        val needsExtraCast = isPrimitiveValueType(tree.tpe.typeArgs.head) && !isPrimitiveValueType(pt.typeArgs.head)
-        val tree1 = if (needsExtraCast) gen.mkRuntimeCall(nme.toObjectArray, List(tree)) else tree
-        gen.mkAttributedCast(tree1, pt)
-      } else gen.mkAttributedCast(tree, pt)
+        val needsToObjArray =
+          (treeTp ne null) && pt.typeSymbol == ArrayClass && treeTp.typeSymbol == ArrayClass &&
+          isPrimitiveValueType(treeTp.typeArgs.head) && !isPrimitiveValueType(pt.typeArgs.head)
+
+        gen.mkAttributedCast(if (needsToObjArray) gen.mkRuntimeCall(nme.toObjectArray, List(tree)) else tree, pt)
+      }
     }
 
     /** Adapt `tree` to expected type `pt`.
