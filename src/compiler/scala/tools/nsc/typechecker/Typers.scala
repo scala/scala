@@ -2421,7 +2421,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
 //    body1 = checkNoEscaping.locals(context.scope, pt, body1)
-      treeCopy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
+      treeCopy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe.deconst
     }
 
     def typedCases(cases: List[CaseDef], pattp: Type, pt: Type): List[CaseDef] =
