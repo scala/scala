@@ -26,6 +26,9 @@
 /build.properties
 /buildcharacter.properties
 
+# might get generated when testing Jenkins scripts locally
+/jenkins.properties
+
 # target directories for ant build
 /build/
 /dists/
