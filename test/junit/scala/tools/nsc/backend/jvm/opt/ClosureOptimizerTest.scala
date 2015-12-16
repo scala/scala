@@ -87,4 +87,23 @@ class ClosureOptimizerTest extends ClearAfterClass {
         TypeOp(CHECKCAST, "java/lang/String"), Invoke(INVOKESTATIC, "C", "C$$$anonfun$1", "(Ljava/lang/String;)Ljava/lang/String;", false),
         Op(ARETURN)))
   }
+
+  @Test
+  def closureOptWithUnreachableCode(): Unit = {
+    // this example used to crash the ProdCons analysis in the closure optimizer - ProdCons
+    // expects no unreachable code.
+    val code =
+      """class C {
+        |  @inline final def m = throw new Error("")
+        |  def t = {
+        |    val f = (x: Int) => x + 1
+        |    m
+        |    f(10) // unreachable after inlining m
+        |  }
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(compiler)(code)
+    assertEquals(getSingleMethod(c, "t").instructions.summary,
+      List(NEW, DUP, LDC, "<init>", ATHROW))
+  }
 }

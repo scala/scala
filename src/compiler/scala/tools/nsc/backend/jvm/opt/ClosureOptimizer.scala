@@ -8,7 +8,7 @@ package backend.jvm
 package opt
 
 import scala.annotation.switch
-import scala.collection.immutable
+import scala.collection.{mutable, immutable}
 import scala.collection.immutable.IntMap
 import scala.reflect.internal.util.NoPosition
 import scala.tools.asm.{Handle, Type, Opcodes}
@@ -73,37 +73,58 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
       }
     }
 
-    // For each closure instantiation, a list of callsites of the closure that can be re-written
-    // If a callsite cannot be rewritten, for example because the lambda body method is not accessible,
-    // a warning is returned instead.
-    val callsitesToRewrite: List[(ClosureInstantiation, List[Either[RewriteClosureApplyToClosureBodyFailed, (MethodInsnNode, Int)]])] = {
-      closureInstantiations.iterator.flatMap({
-        case (methodNode, closureInits) =>
-          if (!AsmAnalyzer.sizeOKForSourceValue(methodNode)) Nil else {
-            // A lazy val to ensure the analysis only runs if necessary (the value is passed by name to `closureCallsites`)
-            // We don't need to worry about the method being too large for running an analysis: large
-            // methods are not added to the call graph / closureInstantiations map.
-            lazy val prodCons = new ProdConsAnalyzer(methodNode, closureInits.valuesIterator.next().ownerClass.internalName)
-            // sorting for bytecode stability (e.g. indices of local vars created during the rewrite)
-            val sortedInits = immutable.TreeSet.empty ++ closureInits.values
-            sortedInits.iterator.map(init => (init, closureCallsites(init, prodCons))).filter(_._2.nonEmpty)
-          }
-      }).toList // mapping to a list (not a map) to keep the sorting
+    // Use collections that keep insertion order, ensures order of closure rewrites (bytecode stability)
+    val toRewrite = mutable.LinkedHashMap.empty[ClosureInstantiation, mutable.ArrayBuffer[(MethodInsnNode, Int)]]
+    def addRewrite(init: ClosureInstantiation, invocation: MethodInsnNode, stackHeight: Int) = {
+      val calls = toRewrite.getOrElseUpdate(init, mutable.ArrayBuffer.empty[(MethodInsnNode, Int)])
+      calls += ((invocation, stackHeight))
     }
 
-    // Rewrite all closure callsites (or issue inliner warnings for those that cannot be rewritten)
-    for ((closureInit, callsites) <- callsitesToRewrite) {
-      // Local variables that hold the captured values and the closure invocation arguments.
-      // They are lazy vals to ensure that locals for captured values are only allocated if there's
-      // actually a callsite to rewrite (an not only warnings to be issued).
-      lazy val (localsForCapturedValues, argumentLocalsList) = localsForClosureRewrite(closureInit)
-      for (callsite <- callsites) callsite match {
-        case Left(warning) =>
-          backendReporting.inlinerWarning(warning.pos, warning.toString)
+    // For each closure instantiation find callsites of the closure and add them to the toRewrite
+    // buffer (cannot change a method's bytecode while still looking for further invocations to
+    // rewrite, the frame indices of the ProdCons analysis would get out of date). If a callsite
+    // cannot be rewritten, for example because the lambda body method is not accessible, issue a
+    // warning. The `toList` in the next line prevents modifying closureInstantiations while
+    // iterating it: minimalRemoveUnreachableCode (called in the loop) removes elements.
+    for (method <- closureInstantiations.keysIterator.toList if AsmAnalyzer.sizeOKForBasicValue(method)) closureInstantiations.get(method) match {
+      case Some(closureInitsBeforeDCE) if closureInitsBeforeDCE.nonEmpty =>
+        val ownerClass = closureInitsBeforeDCE.head._2.ownerClass.internalName
 
-        case Right((invocation, stackHeight)) =>
-          rewriteClosureApplyInvocation(closureInit, invocation, stackHeight, localsForCapturedValues, argumentLocalsList)
-      }
+        // Advanced ProdCons queries (initialProducersForValueAt) expect no unreachable code.
+        localOpt.minimalRemoveUnreachableCode(method, ownerClass)
+
+        if (AsmAnalyzer.sizeOKForSourceValue(method)) closureInstantiations.get(method) match {
+          case Some(closureInits) =>
+            // A lazy val to ensure the analysis only runs if necessary (the value is passed by name to `closureCallsites`)
+            lazy val prodCons = new ProdConsAnalyzer(method, ownerClass)
+
+            // sorting for bytecode stability (e.g. indices of local vars created during the rewrite)
+            val sortedInits = immutable.TreeSet.empty ++ closureInits.values
+
+            for (init <- sortedInits) {
+              val callsites = closureCallsites(init, prodCons)
+              if (callsites.nonEmpty) {
+                callsites foreach {
+                  case Left(warning) =>
+                    backendReporting.inlinerWarning(warning.pos, warning.toString)
+
+                  case Right((invocation, stackHeight)) =>
+                    addRewrite(init, invocation, stackHeight)
+                }
+              }
+            }
+
+          case _ =>
+        }
+
+      case _ =>
+    }
+
+    toRewrite foreach {
+      case (closureInit, invocations) =>
+        // Local variables that hold the captured values and the closure invocation arguments.
+        val (localsForCapturedValues, argumentLocalsList) = localsForClosureRewrite(closureInit)
+        for ((invocation, stackHeight) <- invocations) rewriteClosureApplyInvocation(closureInit, invocation, stackHeight, localsForCapturedValues, argumentLocalsList)
     }
   }
 
