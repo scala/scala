@@ -176,14 +176,28 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
     }
   private def reference(sym: Symbol): xsbti.api.ParameterRef = new xsbti.api.ParameterRef(tparamID(sym))
 
-  private def annotations(in: Symbol, as: List[AnnotationInfo]): Array[xsbti.api.Annotation] = as.toArray[AnnotationInfo].map(annotation(in, _))
-  private def annotation(in: Symbol, a: AnnotationInfo) =
-    new xsbti.api.Annotation(
-      processType(in, a.atp),
-      if (a.assocs.isEmpty) Array(new xsbti.api.AnnotationArgument("", a.args.mkString("(", ",", ")"))) // what else to do with a Tree?
-      else a.assocs.map { case (name, value) => new xsbti.api.AnnotationArgument(name.toString, value.toString) }.toArray[xsbti.api.AnnotationArgument]
-    )
-  private def annotated(in: Symbol, as: List[AnnotationInfo], tpe: Type) = new xsbti.api.Annotated(processType(in, tpe), annotations(in, as))
+  // The compiler only pickles static annotations, so only include these in the API.
+  // This way, the API is not sensitive to whether we compiled from source or loaded from classfile.
+  // (When looking at the sources we see all annotations, but when loading from classes we only see the pickled (static) ones.)
+  private def mkAnnotations(in: Symbol, as: List[AnnotationInfo]): Array[xsbti.api.Annotation] =
+    staticAnnotations(as).toArray.map { a =>
+      new xsbti.api.Annotation(
+        processType(in, a.atp),
+        if (a.assocs.isEmpty) Array(new xsbti.api.AnnotationArgument("", a.args.mkString("(", ",", ")"))) // what else to do with a Tree?
+        else a.assocs.map { case (name, value) => new xsbti.api.AnnotationArgument(name.toString, value.toString) }.toArray[xsbti.api.AnnotationArgument]
+      )
+    }
+
+  private def annotations(in: Symbol, s: Symbol): Array[xsbti.api.Annotation] =
+    atPhase(currentRun.typerPhase) {
+      val base = if (s.hasFlag(Flags.ACCESSOR)) s.accessed else NoSymbol
+      val b = if (base == NoSymbol) s else base
+      // annotations from bean methods are not handled because:
+      //  a) they are recorded as normal source methods anyway
+      //  b) there is no way to distinguish them from user-defined methods
+      val associated = List(b, b.getter(b.enclClass), b.setter(b.enclClass)).filter(_ != NoSymbol)
+      associated.flatMap(ss => mkAnnotations(in, ss.annotations)).distinct.toArray
+    }
 
   private def viewer(s: Symbol) = (if (s.isModule) s.moduleClass else s).thisType
   private def printMember(label: String, in: Symbol, t: Type) = println(label + " in " + in + " : " + t + " (debug: " + debugString(t) + " )")
@@ -514,7 +528,11 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
             new xsbti.api.Parameterized(base, types(in, args))
         case SuperType(thistpe: Type, supertpe: Type) =>
           warning("sbt-api: Super type (not implemented): this=" + thistpe + ", super=" + supertpe); Constants.emptyType
-        case at: AnnotatedType                => annotatedType(in, at)
+        case at: AnnotatedType =>
+          at.annotations match {
+            case Nil    => processType(in, at.underlying)
+            case annots => new xsbti.api.Annotated(processType(in, at.underlying), mkAnnotations(in, annots))
+          }
         case rt: CompoundType                 => structure(rt, rt.typeSymbol)
         case t: ExistentialType               => makeExistentialType(in, t)
         case NoType                           => Constants.emptyType // this can happen when there is an error that will be reported by a later phase
@@ -633,20 +651,10 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
       n2.toString.trim
     }
 
-  private def annotations(in: Symbol, s: Symbol): Array[xsbti.api.Annotation] =
-    atPhase(currentRun.typerPhase) {
-      val base = if (s.hasFlag(Flags.ACCESSOR)) s.accessed else NoSymbol
-      val b = if (base == NoSymbol) s else base
-      // annotations from bean methods are not handled because:
-      //  a) they are recorded as normal source methods anyway
-      //  b) there is no way to distinguish them from user-defined methods
-      val associated = List(b, b.getter(b.enclClass), b.setter(b.enclClass)).filter(_ != NoSymbol)
-      associated.flatMap(ss => annotations(in, ss.annotations.filter(_.isStatic))).distinct.toArray;
-    }
-  private def annotatedType(in: Symbol, at: AnnotatedType): xsbti.api.Type =
-    {
-      val annots = at.annotations
-      if (annots.isEmpty) processType(in, at.underlying) else annotated(in, annots, at.underlying)
-    }
-
+  private def staticAnnotations(annotations: List[AnnotationInfo]): List[AnnotationInfo] = {
+    // compat stub for 2.8/2.9
+    class IsStatic(ann: AnnotationInfo) { def isStatic: Boolean = ann.atp.typeSymbol isNonBottomSubClass definitions.StaticAnnotationClass }
+    implicit def compat(ann: AnnotationInfo): IsStatic = new IsStatic(ann)
+    annotations.filter(_.isStatic)
+  }
 }
