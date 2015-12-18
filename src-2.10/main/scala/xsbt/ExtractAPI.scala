@@ -10,7 +10,7 @@ import scala.collection.mutable.{ HashMap, HashSet, ListBuffer }
 import xsbti.api.{ ClassLike, DefinitionType, PathComponent, SimpleType }
 
 /**
- * Extracts API representation out of Symbols and Types.
+ * Extracts full (including private members) API representation out of Symbols and Types.
  *
  * Each compilation unit should be processed by a fresh instance of this class.
  *
@@ -18,6 +18,12 @@ import xsbti.api.{ ClassLike, DefinitionType, PathComponent, SimpleType }
  * it has a call to `addInheritedDependencies` method defined in CallbackGlobal. In the future
  * we should refactor this code so inherited dependencies are just accumulated in a buffer and
  * exposed to a client that can pass them to an instance of CallbackGlobal it holds.
+ *
+ * NOTE: This class extract *full* API representation. In most of other places in the incremental compiler,
+ * only non-private (accessible from other compilation units) members are relevant. Other parts of the
+ * incremental compiler filter out private definitions before processing API structures. Check SameAPI for
+ * an example.
+ *
  */
 class ExtractAPI[GlobalType <: CallbackGlobal](
   val global: GlobalType,
