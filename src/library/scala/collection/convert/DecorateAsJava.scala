@@ -16,7 +16,7 @@ import WrapAsJava._
 import scala.language.implicitConversions
 
 
-/** A collection of decorators that allow to convert between
+/** A collection of decorators that allow converting between
  *  Scala and Java collections using `asScala` and `asJava` methods.
  *
  *  The following conversions are supported via `asJava`, `asScala`
@@ -38,8 +38,8 @@ import scala.language.implicitConversions
  *    val sl2 : scala.collection.mutable.Buffer[Int] = jl.asScala
  *    assert(sl eq sl2)
  *  }}}
- *  The following conversions also are supported, but the
- *  direction Scala to Java is done my a more specifically named method:
+ *  The following conversions are also supported, but the
+ *  direction from Scala to Java is done by the more specifically named methods:
  *  `asJavaCollection`, `asJavaEnumeration`, `asJavaDictionary`.
  *
  *  - `scala.collection.Iterable` <=> `java.util.Collection`
@@ -53,10 +53,12 @@ import scala.language.implicitConversions
  *  - `scala.collection.Set` => `java.util.Set`
  *  - `scala.collection.Map` => `java.util.Map`
  *
- *  @author Martin Odersky
+ *  The following one way conversion is provided via `asScala`:
+ *
+ *  - `java.util.Properties` => `scala.collection.mutable.Map`
+ *
  *  @since  2.8.1
  */
-
 trait DecorateAsJava {
   /**
    * Adds an `asJava` method that implicitly converts a Scala `Iterator` to a
