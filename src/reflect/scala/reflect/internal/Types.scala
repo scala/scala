@@ -3940,7 +3940,8 @@ trait Types
     def maybeCreateDummyClone(pre: Type, sym: Symbol): Type = pre match {
       case SingleType(pre1, sym1) =>
         if (sym1.isModule && sym1.isStatic) {
-          NoType
+          if (sym.owner == sym1 || sym.isJavaDefined || sym.owner.sourceModule.isStaticModule) NoType
+          else pre
         } else if (sym1.isModule && sym.owner == sym1.moduleClass) {
           val pre2 = maybeCreateDummyClone(pre1, sym1)
           if (pre2 eq NoType) pre2
