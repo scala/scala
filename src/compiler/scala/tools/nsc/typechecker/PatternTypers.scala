@@ -79,7 +79,7 @@ trait PatternTypers {
       // do not update the symbol if the tree's symbol's type does not define an unapply member
       // (e.g. since it's some method that returns an object with an unapply member)
       val fun         = inPlaceAdHocOverloadingResolution(fun0)(hasUnapplyMember)
-      val caseClass   = fun.tpe.typeSymbol.linkedClassOfClass
+      val caseClass   = companionSymbolOf(fun.tpe.typeSymbol.sourceModule, context)
       val member      = unapplyMember(fun.tpe)
       def resultType  = (fun.tpe memberType member).finalResultType
       def isEmptyType = resultOfMatchingMethod(resultType, nme.isEmpty)()
