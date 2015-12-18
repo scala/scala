@@ -38,10 +38,18 @@ package <empty> {
       <synthetic> <stable> <artifact> def $outer(): T = MethodLocalObject$2.this.$outer;
       <synthetic> <stable> <artifact> def $outer(): T = MethodLocalObject$2.this.$outer
     };
-    final <stable> private[this] def MethodLocalObject$1(barParam$1: String, MethodLocalObject$module$1: runtime.VolatileObjectRef): T#MethodLocalObject$2.type = {
-      MethodLocalObject$module$1.elem = new T#MethodLocalObject$2.type(T.this, barParam$1);
+    final <stable> private[this] def MethodLocalObject$lzycompute$1(barParam$1: String, MethodLocalObject$module$1: runtime.VolatileObjectRef): T#MethodLocalObject$2.type = {
+      T.this.synchronized({
+        if (MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type]().eq(null))
+          MethodLocalObject$module$1.elem = new T#MethodLocalObject$2.type(T.this, barParam$1);
+        scala.runtime.BoxedUnit.UNIT
+      });
       MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type]()
     };
+    final <stable> private[this] def MethodLocalObject$1(barParam$1: String, MethodLocalObject$module$1: runtime.VolatileObjectRef): T#MethodLocalObject$2.type = if (MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type]().eq(null))
+      T.this.MethodLocalObject$lzycompute$1(barParam$1, MethodLocalObject$module$1)
+    else
+      MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type]();
     abstract trait MethodLocalTrait$1$class extends Object with T#MethodLocalTrait$1 {
       def /*MethodLocalTrait$1$class*/$init$(barParam$1: String): Unit = {
         ()

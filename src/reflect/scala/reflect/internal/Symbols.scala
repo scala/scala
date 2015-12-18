@@ -323,7 +323,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def newModuleVarSymbol(accessor: Symbol): TermSymbol = {
       val newName  = nme.moduleVarName(accessor.name.toTermName)
       val newFlags = MODULEVAR | ( if (this.isClass) PrivateLocal | SYNTHETIC else 0 )
-      val newInfo  = accessor.tpe.finalResultType
+      val newInfo  = thisType.memberType(accessor).finalResultType
       val mval     = newVariable(newName, accessor.pos.focus, newFlags.toLong) addAnnotation VolatileAttr
 
       if (this.isClass)

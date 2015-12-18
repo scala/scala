@@ -123,7 +123,7 @@ trait Erasure {
       case tref @ TypeRef(pre, sym, args) =>
         if (sym == ArrayClass)
           if (unboundedGenericArrayLevel(tp) == 1) ObjectTpe
-          else if (args.head.typeSymbol.isBottomClass) arrayType(ObjectTpe)
+          else if (args.head.typeSymbol.isBottomClass)  arrayType(ObjectTpe)
           else typeRef(apply(pre), sym, args map applyInArray)
         else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass) ObjectTpe
         else if (sym == UnitClass) BoxedUnitTpe

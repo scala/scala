@@ -55,9 +55,28 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
     private val lazyVals = perRunCaches.newMap[Symbol, Int]() withDefaultValue 0
 
     import symtab.Flags._
+    private def flattenThickets(stats: List[Tree]): List[Tree] = stats.flatMap(_ match {
+      case b @ Block(List(d1@DefDef(_, n1, _, _, _, _)), d2@DefDef(_, n2, _, _, _, _)) if b.tpe == null && n1.endsWith(nme.LAZY_SLOW_SUFFIX) =>
+        List(d1, d2)
+      case stat =>
+        List(stat)
+    })
 
     /** Perform the following transformations:
      *  - for a lazy accessor inside a method, make it check the initialization bitmap
+     *  - implement double checked locking of member modules for non-trait owners (trait just have the abstract accessor)
+     *     ```
+     *     // typer
+     *     class C { object x }
+     *     // refchecks
+     *     class C { var x$module; def x() = { x$module = new x; x$module }
+     *     // lazyvals
+     *     class C {
+     *       var x$module                                                                               // module var
+     *       def x() = { if (x$module == null) x$lzycompute() else x$module                             // fast path
+     *       def x$lzycompute() = { synchronized { if (x$module == null) x$module = new x }; x$module } // slow path
+     *     }
+     *     ```
      *  - for all methods, add enough int vars to allow one flag per lazy local value
      *  - blocks in template bodies behave almost like methods. A single bitmaps section is
      *      added in the first block, for all lazy values defined in such blocks.
@@ -73,20 +92,14 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
         case Block(_, _) =>
           val block1 = super.transform(tree)
           val Block(stats, expr) = block1
-          val stats1 = stats.flatMap(_ match {
-            case Block(List(d1@DefDef(_, n1, _, _, _, _)), d2@DefDef(_, n2, _, _, _, _)) if (nme.newLazyValSlowComputeName(n2) == n1) =>
-              List(d1, d2)
-            case stat =>
-              List(stat)
-          })
-          treeCopy.Block(block1, stats1, expr)
+          treeCopy.Block(block1, flattenThickets(stats), expr)
 
         case DefDef(_, _, _, _, _, rhs) => atOwner(tree.symbol) {
           val (res, slowPathDef) = if (!sym.owner.isClass && sym.isLazy) {
             val enclosingClassOrDummyOrMethod = {
               val enclMethod = sym.enclMethod
 
-              if (enclMethod != NoSymbol ) {
+              if (enclMethod != NoSymbol) {
                 val enclClass = sym.enclClass
                 if (enclClass != NoSymbol && enclMethod == enclClass.enclMethod)
                   enclClass
@@ -101,11 +114,26 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
             val (rhs1, sDef) = mkLazyDef(enclosingClassOrDummyOrMethod, transform(rhs), idx, sym)
             sym.resetFlag((if (lazyUnit(sym)) 0 else LAZY) | ACCESSOR)
             (rhs1, sDef)
-          } else
+          } else if (sym.hasAllFlags(MODULE | METHOD) && !sym.owner.isTrait) {
+            rhs match {
+              case b @ Block((assign @ Assign(moduleRef, _)) :: Nil, expr) =>
+                def cond = Apply(Select(moduleRef, Object_eq), List(Literal(Constant(null))))
+                val (fastPath, slowPath) = mkFastPathBody(sym.owner.enclClass, moduleRef.symbol, cond, transform(assign) :: Nil, Nil, transform(expr))
+                (localTyper.typedPos(tree.pos)(fastPath), localTyper.typedPos(tree.pos)(slowPath))
+              case rhs =>
+                global.reporter.error(tree.pos, "Unexpected tree on the RHS of a module accessor: " + rhs)
+                (rhs, EmptyTree)
+            }
+          } else {
             (transform(rhs), EmptyTree)
+          }
 
           val ddef1 = deriveDefDef(tree)(_ => if (LocalLazyValFinder.find(res)) typed(addBitmapDefs(sym, res)) else res)
-          if (slowPathDef != EmptyTree) Block(slowPathDef, ddef1) else ddef1
+          if (slowPathDef != EmptyTree) {
+            // The contents of this block are flattened into the enclosing statement sequence, see flattenThickets
+            // This is a poor man's version of dotty's Thicket: https://github.com/lampepfl/dotty/blob/d5280358d1/src/dotty/tools/dotc/ast/Trees.scala#L707
+            Block(slowPathDef, ddef1)
+          } else ddef1
         }
 
         case Template(_, _, body) => atOwner(currentOwner) {
@@ -130,7 +158,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
                 })
                 toAdd0
             } else List()
-          deriveTemplate(tree)(_ => innerClassBitmaps ++ stats)
+          deriveTemplate(tree)(_ => innerClassBitmaps ++ flattenThickets(stats))
         }
 
         case ValDef(_, _, _, _) if !sym.owner.isModule && !sym.owner.isClass =>
@@ -201,7 +229,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
     }
 
 
-    def mkFastPathBody(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
+    def mkFastPathBody(clazz: Symbol, lzyVal: Symbol, cond: => Tree, syncBody: List[Tree],
                        stats: List[Tree], retVal: Tree): (Tree, Tree) = {
       val slowPathDef: Tree = mkSlowPathDef(clazz, lzyVal, cond, syncBody, stats, retVal)
       (If(cond, Apply(Ident(slowPathDef.symbol), Nil), retVal), slowPathDef)
@@ -256,7 +284,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
           (mkBlock(rhs),         UNIT)
       }
 
-      val cond = (bitmapRef GEN_& (mask, bitmapKind)) GEN_== (ZERO, bitmapKind)
+      def cond = (bitmapRef GEN_& (mask, bitmapKind)) GEN_== (ZERO, bitmapKind)
       val lazyDefs = mkFastPathBody(methOrClass.enclClass, lazyVal, cond, List(block), Nil, res)
       (atPos(tree.pos)(localTyper.typed {lazyDefs._1 }), atPos(tree.pos)(localTyper.typed {lazyDefs._2 }))
     }

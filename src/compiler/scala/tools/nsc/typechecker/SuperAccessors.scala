@@ -387,7 +387,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val savedValid = validCurrentOwner
       if (owner.isClass) validCurrentOwner = true
       val savedLocalTyper = localTyper
-      localTyper = localTyper.atOwner(tree, if (owner.isModule) owner.moduleClass else owner)
+      localTyper = localTyper.atOwner(tree, if (owner.isModuleNotMethod) owner.moduleClass else owner)
       typers = typers updated (owner, localTyper)
       val result = super.atOwner(tree, owner)(trans)
       localTyper = savedLocalTyper
