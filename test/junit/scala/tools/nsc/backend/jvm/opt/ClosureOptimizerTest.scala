@@ -49,7 +49,7 @@ class ClosureOptimizerTest extends ClearAfterClass {
       """.stripMargin
 
     val List(c) = compileClasses(compiler)(code)
-    val t = c.methods.asScala.toList.find(_.name == "t").get
+    val t = findAsmMethod(c, "t")
     val List(bodyCall) = findInstr(t, "INVOKESTATIC C.C$$$anonfun$1 ()Lscala/runtime/Nothing$")
     assert(bodyCall.getNext.getOpcode == ATHROW)
   }
@@ -65,7 +65,7 @@ class ClosureOptimizerTest extends ClearAfterClass {
       """.stripMargin
 
     val List(c) = compileClasses(compiler)(code)
-    val t = c.methods.asScala.toList.find(_.name == "t").get
+    val t = findAsmMethod(c, "t")
     val List(bodyCall) = findInstr(t, "INVOKESTATIC C.C$$$anonfun$1 ()Lscala/runtime/Null$")
     assert(bodyCall.getNext.getOpcode == POP)
     assert(bodyCall.getNext.getNext.getOpcode == ACONST_NULL)
