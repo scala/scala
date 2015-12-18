@@ -461,7 +461,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
             // When re-writing the closure callsite to the implMethod, we have to insert a cast.
             //
             // The check below ensures that
-            //   (1) the implMethod type has the expected singature (captured types plus argument types
+            //   (1) the implMethod type has the expected signature (captured types plus argument types
             //       from instantiatedMethodType)
             //   (2) the receiver of the implMethod matches the first captured type
             //   (3) all parameters that are not the same in samMethodType and instantiatedMethodType

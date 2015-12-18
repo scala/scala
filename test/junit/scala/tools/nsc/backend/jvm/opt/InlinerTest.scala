@@ -23,8 +23,9 @@ import scala.collection.convert.decorateAsScala._
 import scala.tools.testing.ClearAfterClass
 
 object InlinerTest extends ClearAfterClass.Clearable {
-  val args = "-Ybackend:GenBCode -Yopt:l:classpath -Yopt-warnings"
+  val args = "-Yopt:l:classpath -Yopt-warnings"
   var compiler = newCompiler(extraArgs = args)
+  var inlineOnlyCompiler = newCompiler(extraArgs = "-Yopt:inline-project")
 
   // allows inspecting the caches after a compilation run
   def notPerRun: List[Clearable] = List(
@@ -34,7 +35,7 @@ object InlinerTest extends ClearAfterClass.Clearable {
     compiler.genBCode.bTypes.callGraph.callsites)
   notPerRun foreach compiler.perRunCaches.unrecordCache
 
-  def clear(): Unit = { compiler = null }
+  def clear(): Unit = { compiler = null; inlineOnlyCompiler = null }
 
   implicit class listStringLines[T](val l: List[T]) extends AnyVal {
     def stringLines = l.mkString("\n")
@@ -64,6 +65,8 @@ class InlinerTest extends ClearAfterClass {
   import compiler.genBCode.bTypes._
   import compiler.genBCode.bTypes.backendUtils._
   import inlinerHeuristics._
+
+  val inlineOnlyCompiler = InlinerTest.inlineOnlyCompiler
 
   def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
     InlinerTest.notPerRun.foreach(_.clear())
@@ -148,15 +151,22 @@ class InlinerTest extends ClearAfterClass {
     // See also discussion around ATHROW in BCodeBodyBuilder
 
     val g = inlineTest(code)
-    val expectedInlined = List(
-      VarOp(ALOAD, 0), VarOp(ASTORE, 1), // store this
-      Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"), Invoke(INVOKEVIRTUAL, "scala/Predef$", "$qmark$qmark$qmark", "()Lscala/runtime/Nothing$;", false)) // inlined call to ???
 
-    assertSameCode(convertMethod(g).instructions.dropNonOp.take(4), expectedInlined)
+    val invokeQQQ = List(
+      Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"),
+      Invoke(INVOKEVIRTUAL, "scala/Predef$", "$qmark$qmark$qmark", "()Lscala/runtime/Nothing$;", false))
+
+    val gBeforeLocalOpt = VarOp(ALOAD, 0) :: VarOp(ASTORE, 1) :: invokeQQQ ::: List(
+      VarOp(ASTORE, 2),
+      Jump(GOTO, Label(11)),
+      Label(11),
+      VarOp(ALOAD, 2),
+      Op(ATHROW))
+
+    assertSameCode(convertMethod(g).instructions.dropNonOp, gBeforeLocalOpt)
 
     compiler.genBCode.bTypes.localOpt.methodOptimizations(g, "C")
-    assertSameCode(convertMethod(g).instructions.dropNonOp,
-      expectedInlined ++ List(VarOp(ASTORE, 2), VarOp(ALOAD, 2), Op(ATHROW)))
+    assertSameCode(convertMethod(g).instructions.dropNonOp, invokeQQQ :+ Op(ATHROW))
   }
 
   @Test
@@ -396,7 +406,8 @@ class InlinerTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val List(c) = compile(code)
+    // use a compiler without local optimizations (cleanups)
+    val List(c) = compileClasses(inlineOnlyCompiler)(code)
     val ms @ List(f1, f2, g1, g2) = c.methods.asScala.filter(_.name.length == 2).toList
 
     // stack height at callsite of f1 is 1, so max of g1 after inlining is max of f1 + 1
@@ -959,7 +970,7 @@ class InlinerTest extends ClearAfterClass {
     val List(c) = compile(code)
     val t = getSingleMethod(c, "t").instructions
     assertNoInvoke(t)
-    assert(2 == t.collect({case Ldc(_, "hai!") => }).size)     // twice the body of f
+    assert(1 == t.collect({case Ldc(_, "hai!") => }).size)     // push-pop eliminates the first LDC("hai!")
     assert(1 == t.collect({case Jump(IFNONNULL, _) => }).size) // one single null check
   }
 
@@ -985,17 +996,17 @@ class InlinerTest extends ClearAfterClass {
     val List(c, _, _) = compile(code)
 
     val t1 = getSingleMethod(c, "t1")
-    assert(t1.instructions exists {
-      case _: InvokeDynamic => true
-      case _ => false
+    assert(t1.instructions forall { // indy is eliminated by push-pop
+      case _: InvokeDynamic => false
+      case _ => true
     })
     // the indy call is inlined into t, and the closure elimination rewrites the closure invocation to the body method
     assertInvoke(t1, "C", "C$$$anonfun$2")
 
     val t2 = getSingleMethod(c, "t2")
-    assert(t2.instructions exists {
-      case _: InvokeDynamic => true
-      case _ => false
+    assert(t2.instructions forall { // indy is eliminated by push-pop
+      case _: InvokeDynamic => false
+      case _ => true
     })
     assertInvoke(t2, "M$", "M$$$anonfun$1")
   }
@@ -1214,5 +1225,195 @@ class InlinerTest extends ClearAfterClass {
     val List(c, d) = compile(code)
     assertNoInvoke(getSingleMethod(c, "g"))
     assertNoInvoke(getSingleMethod(d, "t"))
+  }
+
+  @Test
+  def optimizeSpecializedClosures(): Unit = {
+    val code =
+      """class ValKl(val x: Int) extends AnyVal
+        |
+        |class C {
+        |  def t1 = {
+        |    // IndyLambda: SAM type is JFunction1$mcII$sp, SAM is apply$mcII$sp(I)I, body method is $anonfun(I)I
+        |    val f = (x: Int) => x + 1
+        |    // invocation of apply$mcII$sp(I)I, matches the SAM in IndyLambda. no boxing / unboxing needed.
+        |    f(10)
+        |    // opt: re-write the invocation to the body method
+        |  }
+        |
+        |  @inline final def m1a(f: Long => Int) = f(1l)
+        |  def t1a = m1a(l => l.toInt) // after inlining m1a, we have the same situation as in t1
+        |
+        |  def t2 = {
+        |    // there is no specialized variant of Function2 for this combination of types, so the IndyLambda has to create a generic Function2.
+        |    // IndyLambda: SAM type is JFunction2, SAM is apply(ObjectObject)Object, body method is $anonfun$adapted(ObjectObject)Object
+        |    val f = (b: Byte, i: Int) => i + b
+        |    // invocation of apply(ObjectOjbect)Object, matches SAM in IndyLambda. arguments are boxed, result unboxed.
+        |    f(1, 2)
+        |    // opt: re-wrtie to $anonfun$adapted
+        |    // inline that call, then we get box-unbox pairs (can be eliminated) and a call to $anonfun(BI)I
+        |  }
+        |
+        |  def t3 = {
+        |    // similar to t2: for functions with value class parameters, IndyLambda always uses the generic Function version.
+        |    // IndyLambda: SAM type is JFunction1, SAM is apply(Object)Object, body method is $anonfun$adapted(Object)Object
+        |    val f = (a: ValKl) => a
+        |    // invocation of apply(Object)Object, ValKl instance is created, result extracted
+        |    f(new ValKl(1))
+        |    // opt: re-write to $anonfun$adapted.
+        |    // inline that call, then we get value class instantiation-extraction pairs and a call to $anonfun(I)I
+        |  }
+        |
+        |  def t4 = {
+        |    // IndyLambda: SAM type is JFunction1$mcII$sp, SAM is apply$mcII$sp(I)I, body method is $anonfun(I)I
+        |    val f: Int => Any = (x: Int) => 1
+        |    // invocation of apply(Object)Object, argument is boxed. method name and type doesn't match IndyLambda.
+        |    f(10)
+        |    // opt: rewriting to the body method requires inserting an unbox operation for the argument, and a box operation for the result
+        |    // that produces a box-unbox pair and a call to $anonfun(I)I
+        |  }
+        |
+        |
+        |  @inline final def m4a[T, U, V](f: (T, U) => V, x: T, y: U) = f(x, y) // invocation to generic apply(ObjectObject)Object
+        |  def t4a = m4a((x: Int, y: Double) => 1l + x + y.toLong, 1, 2d) // IndyLambda uses specilized JFunction2$mcJID$sp. after inlining m4a, similar to t4.
+        |
+        |  def t5 = {
+        |    // no specialization for the comibnation of primitives
+        |    // IndyLambda: SAM type is JFunction2, SAM is generic apply, body method is $anonfun$adapted
+        |    val f: (Int, Byte) => Any = (x: Int, b: Byte) => 1
+        |    // invocation of generic apply.
+        |    f(10, 3)
+        |    // opt: re-write to $anonfun$adapted, inline that method. generates box-unbox pairs and a call to $anonfun(IB)I
+        |  }
+        |
+        |  def t5a = m4a((x: Int, y: Byte) => 1, 12, 31.toByte) // similar to t5 after inlining m4a
+        |
+        |  // m6$mIVc$sp invokes apply$mcVI$sp
+        |  @inline final def m6[@specialized(Int) T, @specialized(Unit) U](f: T => U, x: T): Unit = f(x)
+        |  // IndyLambda: JFunction1$mcVI$sp, SAM is apply$mcVI$sp, body method $anonfun(I)V
+        |  // invokes m6$mIVc$sp (Lscala/Function1;I)V
+        |  def t6 = m6((x: Int) => (), 10)
+        |  // opt: after inlining m6, the closure method invocation (apply$mcVI$sp) matches the IndyLambda, the call can be rewritten, no boxing
+        |
+        |  // m7 invokes apply
+        |  @inline final def m7[@specialized(Boolean) T, @specialized(Int) U](f: T => U, x: T): Unit = f(x)
+        |  // IndyLambda: JFunction1, SAM is apply(Object)Object, body method is $anonfun$adapted(Obj)Obj
+        |  // `true` is boxed before passing to m7
+        |  def t7 = m7((x: Boolean) => (), true)
+        |  // opt: after inlining m7, the apply call is re-written to $anonfun$adapted, which is then inlined.
+        |  // we get a box-unbox pair and a call to $anonfun(Z)V
+        |
+        |
+        |  // invokes the generic apply(ObjObj)Obj
+        |  @inline final def m8[T, U, V](f: (T, U) => V, x: T, y: U) = f(x, y)
+        |  // IndyLambda: JFunction2$mcJID$sp, SAM is apply$mcJID$sp, body method $anonfun(ID)J
+        |  // boxes the int and double arguments and calls m8, unboxToLong the result
+        |  def t8 = m8((x: Int, y: Double) => 1l + x + y.toLong, 1, 2d)
+        |  // opt: after inlining m8, rewrite to the body method $anonfun(ID)J, which requires inserting unbox operations for the params, box for the result
+        |  // the box-unbox pairs can then be optimized away
+        |
+        |  // m9$mVc$sp invokes apply$mcVI$sp
+        |  @inline final def m9[@specialized(Unit) U](f: Int => U): Unit = f(1)
+        |  // IndyLambda: JFunction1, SAM is apply(Obj)Obj, body method $anonfun$adapted(Ojb)Obj
+        |  // invocation of m9$mVc$sp
+        |  def t9 = m9(println)
+        |  // opt: after inlining m9, rewrite to $anonfun$adapted(Ojb)Obj, which requires inserting a box operation for the parameter.
+        |  // then we inline $adapted, which has signature (Obj)V. the `BoxedUnit.UNIT` from the body of $anonfun$adapted is eliminated by push-pop
+        |
+        |  def t9a = (1 to 10) foreach println // similar to t9
+        |
+        |  def intCons(i: Int): Unit = ()
+        |  // IndyLambda: JFunction1$mcVI$sp, SAM is apply$mcVI$sp, body method $anonfun(I)V
+        |  def t10 = m9(intCons)
+        |  // after inlining m9, rewrite the apply$mcVI$sp call to the body method, no adaptations required
+        |
+        |  def t10a = (1 to 10) foreach intCons // similar to t10
+        |}
+      """.stripMargin
+    val List(c, _, _) = compile(code)
+
+    def instructionSummary(m: Method): List[Any] = m.instructions.dropNonOp map {
+      case i: Invoke => i.name
+      case i => i.opcode
+    }
+
+    assertEquals(instructionSummary(getSingleMethod(c, "t1")),
+      List(BIPUSH, "C$$$anonfun$1", IRETURN))
+
+    assertEquals(instructionSummary(getSingleMethod(c, "t1a")),
+      List(LCONST_1, "C$$$anonfun$2", IRETURN))
+
+    assertEquals(instructionSummary(getSingleMethod(c, "t2")), List(
+      ICONST_1, "boxToByte",
+      ICONST_2, "boxToInteger", ASTORE,
+      "unboxToByte",
+      ALOAD, "unboxToInt",
+      "C$$$anonfun$3",
+      "boxToInteger", "unboxToInt", IRETURN))
+
+    // val a = new ValKl(n); new ValKl(anonfun(a.x)).x
+    // value class instantiation-extraction should be optimized by boxing elim
+    assertEquals(instructionSummary(getSingleMethod(c, "t3")), List(
+      NEW, DUP, ICONST_1, "<init>", ASTORE,
+      NEW, DUP, ALOAD, CHECKCAST, "x",
+      "C$$$anonfun$4",
+      "<init>", CHECKCAST,
+      "x", IRETURN))
+
+    assertEquals(instructionSummary(getSingleMethod(c, "t4")), List(
+      BIPUSH, "boxToInteger", "unboxToInt",
+      "C$$$anonfun$5",
+      "boxToInteger", ARETURN))
+
+    assertEquals(instructionSummary(getSingleMethod(c, "t4a")), List(
+      ICONST_1, "boxToInteger",
+      LDC, "boxToDouble", "unboxToDouble", DSTORE,
+      "unboxToInt", DLOAD, "C$$$anonfun$6",
+      "boxToLong", "unboxToLong", LRETURN))
+
+    assertEquals(instructionSummary(getSingleMethod(c, "t5")), List(
+      BIPUSH, "boxToInteger",
+      ICONST_3, "boxToByte", ASTORE,
+      "unboxToInt", ALOAD,
+      "unboxToByte",
+      "C$$$anonfun$7",
+      "boxToInteger", ARETURN))
+
+    assertEquals(instructionSummary(getSingleMethod(c, "t5a")), List(
+      BIPUSH, "boxToInteger",
+      BIPUSH, I2B, "boxToByte", ASTORE,
+      "unboxToInt", ALOAD,
+      "unboxToByte",
+      "C$$$anonfun$8",
+      "boxToInteger", "unboxToInt", IRETURN))
+
+    assertEquals(instructionSummary(getSingleMethod(c, "t6")), List(
+      BIPUSH, "C$$$anonfun$9", RETURN))
+
+    assertEquals(instructionSummary(getSingleMethod(c, "t7")), List(
+      ICONST_1, "boxToBoolean", "unboxToBoolean",
+      "C$$$anonfun$10", RETURN))
+
+    assertEquals(instructionSummary(getSingleMethod(c, "t8")), List(
+      ICONST_1, "boxToInteger",
+      LDC, "boxToDouble", "unboxToDouble", DSTORE,
+      "unboxToInt", DLOAD, "C$$$anonfun$11",
+      "boxToLong", "unboxToLong", LRETURN))
+
+    assertEquals(instructionSummary(getSingleMethod(c, "t9")), List(
+      ICONST_1, "boxToInteger", "C$$$anonfun$12", RETURN))
+
+    // t9a inlines Range.foreach, which is quite a bit of code, so just testing the core
+    assertInvoke(getSingleMethod(c, "t9a"), "C", "C$$$anonfun$13")
+    assert(instructionSummary(getSingleMethod(c, "t9a")).contains("boxToInteger"))
+
+    assertEquals(instructionSummary(getSingleMethod(c, "t10")), List(
+      ICONST_1, ISTORE,
+      ALOAD, ILOAD,
+      "C$$$anonfun$14", RETURN))
+
+    // t10a inlines Range.foreach
+    assertInvoke(getSingleMethod(c, "t10a"), "C", "C$$$anonfun$15")
+    assert(!instructionSummary(getSingleMethod(c, "t10a")).contains("boxToInteger"))
   }
 }
