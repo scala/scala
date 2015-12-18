@@ -3,10 +3,7 @@ package quasiquotes
 
 import scala.tools.nsc.ast.parser.{Parsers => ScalaParser}
 import scala.tools.nsc.ast.parser.Tokens._
-import scala.compat.Platform.EOL
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile, FreshNameCreator}
-import scala.collection.mutable.ListBuffer
-import scala.util.Try
 
 /** Builds upon the vanilla Scala parser and teams up together with Placeholders.scala to emulate holes.
  *  A principled solution to splicing into Scala syntax would be a parser that natively supports holes.

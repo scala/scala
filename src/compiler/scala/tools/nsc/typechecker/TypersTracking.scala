@@ -6,9 +6,6 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.mutable
-import scala.reflect.internal.util.{ BatchSourceFile, Statistics }
-import mutable.ListBuffer
 import Mode._
 
 trait TypersTracking {

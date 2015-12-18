@@ -8,13 +8,9 @@
 
 package scala.tools.ant
 
-import java.io.{BufferedOutputStream, File, FileInputStream,
-       FileOutputStream, PipedInputStream, PipedOutputStream}
-import java.util.jar.{JarFile, JarInputStream, JarOutputStream, Pack200}
+import java.io.{BufferedOutputStream, File, FileOutputStream}
+import java.util.jar.{JarFile, JarOutputStream, Pack200}
 import java.util.jar.Pack200.Packer._
-
-import org.apache.tools.ant.{BuildException, DirectoryScanner}
-import org.apache.tools.ant.types.FileSet
 
 /** An [[http://ant.apache.org Ant]] task that applies the pack200 encoding
  *  to a JAR file.

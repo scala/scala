@@ -11,7 +11,7 @@ package collection
 
 import generic._
 import mutable.{ Builder, MapBuilder }
-import scala.annotation.{migration, bridge}
+import scala.annotation.migration
 import parallel.ParMap
 
 /** A template trait for maps, which associate keys with values.
@@ -331,8 +331,8 @@ self =>
       foreach(vb += _)
       vb.result
     }
-  }  
-  
+  }
+
   override def toBuffer[C >: (A, B)]: mutable.Buffer[C] = {
     val result = new mutable.ArrayBuffer[C](size)
     // Faster to let the map iterate itself than to defer through copyToBuffer

@@ -6,9 +6,8 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.annotation.tailrec
-import scala.collection.immutable.{IndexedSeq, Iterable}
 import scala.language.postfixOps
+
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
 
@@ -707,9 +706,8 @@ trait MatchAnalysis extends MatchApproximation {
 
         val (equal, notEqual) = varAssignment.getOrElse(variable, Nil -> Nil)
 
-        def addVarAssignment(equalTo: List[Const], notEqualTo: List[Const]) = {
-          Map(variable ->(equal ++ equalTo, notEqual ++ notEqualTo))
-        }
+        def addVarAssignment(equalTo: List[Const], notEqualTo: List[Const]) =
+          Map(variable ->((equal ++ equalTo, notEqual ++ notEqualTo)))
 
         // this assignment is needed in case that
         // there exists already an assign

@@ -11,7 +11,6 @@ package collection.parallel
 
 import scala.collection.Map
 import scala.collection.GenMap
-import scala.collection.mutable.Builder
 import scala.collection.generic.ParMapFactory
 import scala.collection.generic.GenericParMapTemplate
 import scala.collection.generic.GenericParMapCompanion

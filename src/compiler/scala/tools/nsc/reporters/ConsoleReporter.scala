@@ -7,7 +7,7 @@ package scala
 package tools.nsc
 package reporters
 
-import java.io.{ BufferedReader, IOException, PrintWriter }
+import java.io.{ BufferedReader, PrintWriter }
 import scala.reflect.internal.util._
 import StringOps._
 

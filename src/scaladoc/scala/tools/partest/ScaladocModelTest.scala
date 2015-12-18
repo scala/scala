@@ -5,7 +5,6 @@
 
 package scala.tools.partest
 
-import scala.tools.nsc
 import scala.tools.nsc._
 import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.doc.{ DocFactory, Universe }

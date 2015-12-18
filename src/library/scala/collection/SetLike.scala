@@ -11,7 +11,7 @@ package collection
 
 import generic._
 import mutable.{ Builder, SetBuilder }
-import scala.annotation.{migration, bridge}
+import scala.annotation.migration
 import parallel.ParSet
 
 /** A template trait for sets.
@@ -86,7 +86,7 @@ self =>
       vb.result
     }
   }
-  
+
   override def toBuffer[A1 >: A]: mutable.Buffer[A1] = {
     val result = new mutable.ArrayBuffer[A1](size)
     // Faster to let the map iterate itself than to defer through copyToBuffer

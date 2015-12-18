@@ -9,8 +9,6 @@
 package scala
 package runtime
 
-import java.util.Arrays.copyOfRange
-
 @deprecated("Use Predef.SeqCharSequence", "2.11.0")
 final class SeqCharSequence(val xs: scala.collection.IndexedSeq[Char]) extends CharSequence {
   def length: Int                                     = xs.length

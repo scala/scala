@@ -11,7 +11,7 @@ package collection
 
 import generic._
 import mutable.{ Builder }
-import scala.annotation.{tailrec, migration, bridge}
+import scala.annotation.migration
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
 import parallel.ParIterable
 import scala.language.higherKinds

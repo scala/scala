@@ -15,7 +15,7 @@ import base.comment._
 
 import model._
 import model.diagram._
-import scala.xml.{Elem, NodeSeq, Text, UnprefixedAttribute}
+import scala.xml.{NodeSeq, Text, UnprefixedAttribute}
 import scala.language.postfixOps
 import scala.collection.mutable. { Set, HashSet }
 

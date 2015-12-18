@@ -1,14 +1,14 @@
 package scala.tools.nsc
 package transform
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 
 abstract class LazyVals extends Transform with TypingTransformers with ast.TreeDSL {
   // inherits abstract value `global` and class `Phase` from Transform
 
   import global._                  // the global environment
   import definitions._             // standard classes and methods
-  import typer.{typed, atOwner}    // methods to type trees
+  import typer.typed               // methods to type trees
   import CODE._
 
   val phaseName: String = "lazyvals"

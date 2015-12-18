@@ -9,16 +9,14 @@
 package scala
 package runtime
 
-import scala.collection.{ Seq, IndexedSeq, TraversableView, AbstractIterator, GenIterable }
+import scala.collection.{ TraversableView, AbstractIterator, GenIterable }
 import scala.collection.mutable.WrappedArray
-import scala.collection.immutable.{ StringLike, NumericRange, List, Stream, Nil, :: }
+import scala.collection.immutable.{ StringLike, NumericRange }
 import scala.collection.generic.{ Sorted, IsTraversableLike }
 import scala.reflect.{ ClassTag, classTag }
-import scala.util.control.ControlThrowable
 import java.lang.{ Class => jClass }
 
-import java.lang.Double.doubleToLongBits
-import java.lang.reflect.{ Modifier, Method => JMethod }
+import java.lang.reflect.{ Method => JMethod }
 
 /** The object ScalaRunTime provides support methods required by
  *  the scala runtime.  All these methods should be considered

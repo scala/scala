@@ -7,7 +7,6 @@ package scala.tools.nsc
 package typechecker
 
 import scala.collection.mutable
-import scala.annotation.tailrec
 import symtab.Flags._
 import scala.language.postfixOps
 import scala.reflect.internal.util.ListOfNil

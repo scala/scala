@@ -4,7 +4,7 @@ import scala.tools.nsc.util.JavaClassPath
 import scala.collection.JavaConverters._
 import scala.tools.asm.{ClassWriter, ClassReader}
 import scala.tools.asm.tree._
-import java.io.{FileOutputStream, FileInputStream, File => JFile, InputStream}
+import java.io.{File => JFile, InputStream}
 import AsmNode._
 
 /**

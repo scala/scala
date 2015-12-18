@@ -9,7 +9,7 @@
 package scala
 package collection
 
-import mutable.{ Buffer, Builder, ListBuffer, ArrayBuffer }
+import mutable.{ Buffer, Builder, ArrayBuffer }
 import generic.CanBuildFrom
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
 import scala.language.{implicitConversions, higherKinds}

@@ -14,7 +14,7 @@ package immutable
 
 import generic._
 import BitSetLike.{LogWL, updateArray}
-import mutable.{ Builder, SetBuilder }
+import mutable.Builder
 
 /** A class for immutable bitsets.
  *  $bitsetinfo

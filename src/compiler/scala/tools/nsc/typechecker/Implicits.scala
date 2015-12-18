@@ -13,7 +13,7 @@ package tools.nsc
 package typechecker
 
 import scala.annotation.tailrec
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 import mutable.{ LinkedHashMap, ListBuffer }
 import scala.util.matching.Regex
 import symtab.Flags._

@@ -11,7 +11,7 @@ package collection
 package immutable
 
 import generic._
-import mutable.{Builder, StringBuilder, LazyBuilder, ListBuffer}
+import mutable.{Builder, StringBuilder, LazyBuilder}
 import scala.annotation.tailrec
 import Stream.cons
 import scala.language.implicitConversions
@@ -203,11 +203,9 @@ abstract class Stream[+A] extends AbstractSeq[A]
                              with LinearSeq[A]
                              with GenericTraversableTemplate[A, Stream]
                              with LinearSeqOptimized[A, Stream[A]]
-                             with Serializable {
-self =>
-  override def companion: GenericCompanion[Stream] = Stream
+                             with Serializable { self =>
 
-  import scala.collection.{Traversable, Iterable, Seq, IndexedSeq}
+  override def companion: GenericCompanion[Stream] = Stream
 
   /** Indicates whether or not the `Stream` is empty.
    *
@@ -1091,14 +1089,12 @@ object Stream extends SeqFactory[Stream] {
   /** Creates a new builder for a stream */
   def newBuilder[A]: Builder[A, Stream[A]] = new StreamBuilder[A]
 
-  import scala.collection.{Iterable, Seq, IndexedSeq}
-
   /** A builder for streams
    *  @note This builder is lazy only in the sense that it does not go downs the spine
    *        of traversables that are added as a whole. If more laziness can be achieved,
    *        this builder should be bypassed.
    */
-  class StreamBuilder[A] extends scala.collection.mutable.LazyBuilder[A, Stream[A]] {
+  class StreamBuilder[A] extends LazyBuilder[A, Stream[A]] {
     def result: Stream[A] = parts.toStream flatMap (_.toStream)
   }
 

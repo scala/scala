@@ -12,7 +12,6 @@ package scala
 package collection
 
 import generic._
-import mutable.Buffer
 
 // Methods could be printed by  cat IterableLike.scala | egrep '^  (override )?def'
 

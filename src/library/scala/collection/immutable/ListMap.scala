@@ -13,7 +13,7 @@ package collection
 package immutable
 
 import generic._
-import scala.annotation.{tailrec, bridge}
+import scala.annotation.tailrec
 
 /** $factoryInfo
  *  @since 1
@@ -30,7 +30,7 @@ object ListMap extends ImmutableMapFactory[ListMap] {
   def empty[A, B]: ListMap[A, B] = EmptyListMap.asInstanceOf[ListMap[A, B]]
 
   @SerialVersionUID(-8256686706655863282L)
-  private object EmptyListMap extends ListMap[Any, Nothing] { 
+  private object EmptyListMap extends ListMap[Any, Nothing] {
     override def apply(key: Any) = throw new NoSuchElementException("key not found: " + key)
     override def contains(key: Any) = false
   }
@@ -179,16 +179,16 @@ extends AbstractMap[A, B]
     @tailrec private def get0(cur: ListMap[A, B1], k: A): Option[B1] =
       if (k == cur.key) Some(cur.value)
       else if (cur.next.nonEmpty) get0(cur.next, k) else None
-      
-      
+
+
     override def contains(key: A): Boolean = contains0(this, key)
-    
+
     @tailrec private def contains0(cur: ListMap[A, B1], k: A): Boolean =
       if (k == cur.key) true
       else if (cur.next.nonEmpty) contains0(cur.next, k)
       else false
 
-      
+
     /** This method allows one to create a new map with an additional mapping
      *  from `key` to `value`. If the map contains already a mapping for `key`,
      *  it will be overridden by this function.
@@ -198,7 +198,7 @@ extends AbstractMap[A, B]
       new m.Node[B2](k, v)
     }
 
-    
+
     /** Creates a new mapping without the given `key`.
      *  If the map does not contain a mapping for the given key, the
      *  method returns the same map.

@@ -5,12 +5,12 @@
 package scala.tools.nsc
 package interactive
 
-import java.io.{ PrintWriter, StringWriter, FileReader, FileWriter }
+import java.io.{ FileReader, FileWriter }
 import scala.collection.mutable
-import mutable.{LinkedHashMap, SynchronizedMap, HashSet, SynchronizedSet}
+import mutable.{LinkedHashMap, HashSet, SynchronizedSet}
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.AbstractFile
-import scala.reflect.internal.util.{ SourceFile, BatchSourceFile, Position, NoPosition }
+import scala.reflect.internal.util.SourceFile
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.typechecker.Analyzer

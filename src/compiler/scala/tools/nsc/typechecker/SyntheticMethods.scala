@@ -6,10 +6,12 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.{ mutable, immutable }
-import symtab.Flags._
-import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
+
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
+
+import symtab.Flags._
 
 /** Synthetic method implementations for case classes and case objects.
  *

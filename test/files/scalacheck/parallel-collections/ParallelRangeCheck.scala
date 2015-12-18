@@ -27,7 +27,7 @@ class ParallelRangeCheck(val tasksupport: TaskSupport) extends ParallelSeqCheck[
 
   def isCheckingViews = false
 
-  def ofSize(vals: Seq[Gen[Int]], sz: Int) = unsupported
+  def ofSize(vals: Seq[Gen[Int]], sz: Int) = throw new UnsupportedOperationException
 
   override def instances(vals: Seq[Gen[Int]]): Gen[Seq[Int]] = sized { start =>
     sized { end =>

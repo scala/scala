@@ -10,13 +10,11 @@ package scala.tools.ant
 
 import java.io.{File, PrintWriter, BufferedWriter, FileWriter}
 
-import org.apache.tools.ant.{ BuildException, Project, AntClassLoader }
+import org.apache.tools.ant.{ Project, AntClassLoader}
 import org.apache.tools.ant.taskdefs.Java
 import org.apache.tools.ant.types.{Path, Reference}
-import org.apache.tools.ant.util.{FileUtils, GlobPatternMapper,
-                                  SourceFileScanner, facade}
-import org.apache.tools.ant.util.facade.{FacadeTaskHelper,
-                                  ImplementationSpecificArgument}
+import org.apache.tools.ant.util.{FileUtils, GlobPatternMapper, SourceFileScanner}
+import org.apache.tools.ant.util.facade.{FacadeTaskHelper, ImplementationSpecificArgument}
 
 import scala.tools.nsc.{Global, Settings, CompilerCommand}
 import scala.tools.nsc.io.{Path => SPath}
