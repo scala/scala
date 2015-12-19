@@ -20,7 +20,7 @@ import ScalaCompilerForUnitTesting.ExtractedSourceDependencies
  * Provides common functionality needed for unit tests that require compiling
  * source code using Scala compiler.
  */
-class ScalaCompilerForUnitTesting(nameHashing: Boolean = false) {
+class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
 
   /**
    * Compiles given source code using Scala compiler and returns API representation
@@ -34,6 +34,11 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = false) {
   def extractUsedNamesFromSrc(src: String): Set[String] = {
     val (Seq(tempSrcFile), analysisCallback) = compileSrcs(src)
     analysisCallback.usedNames(tempSrcFile)
+  }
+
+  def extractDeclaredClassesFromSrc(src: String): Set[String] = {
+    val (Seq(tempSrcFile), analysisCallback) = compileSrcs(src)
+    analysisCallback.declaredClasses(tempSrcFile).toSet
   }
 
   /**
