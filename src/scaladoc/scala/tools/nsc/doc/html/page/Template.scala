@@ -100,16 +100,18 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         <p id="owner">{ templatesToHtml(tpl.inTemplate.toRoot.reverse.tail, scala.xml.Text(".")) }</p>
     }
 
-    <body class={ if (tpl.isType) "type" else "value" }>
+    <body class={ tpl.kind + (if (tpl.isType) " type" else " value") }>
       <div id="definition">
         {
           val (src, alt) = docEntityKindToBigImage(tpl)
 
+          val identifier = alt.toString.substring(0,2).toLowerCase
+
           tpl.companion match {
             case Some(companion) if (companion.visibility.isPublic && companion.inSource != None) =>
-              <a href={relativeLinkTo(companion)} title={docEntityKindToCompanionTitle(tpl)}><img alt={alt} src={ relativeLinkTo(List(src, "lib")) }/></a>
+              <a href={relativeLinkTo(companion)} title={docEntityKindToCompanionTitle(tpl)}><div class={s"big-circle companion $identifier"}>{ identifier.substring(0,1) }</div></a>
             case _ =>
-              <img alt={alt} src={ relativeLinkTo(List(src, "lib")) }/>
+              <div class={ "big-circle " + alt.toString.toLowerCase }>{ identifier.substring(0,1) }</div>
         }}
         { owner }
         <h1>{ displayName }</h1>{
@@ -121,70 +123,73 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       { memberToCommentHtml(tpl, tpl.inTemplate, isSelf = true) }
 
       <div id="mbrsel">
-        <div id='textfilter'><span class='pre'/><span class='input'><input id='mbrsel-input' type='text' accesskey='/'/></span><span class='post'/></div>
-        { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty && (!universe.settings.docGroups.value || (tpl.members.map(_.group).distinct.length == 1)))
-            NodeSeq.Empty
-          else
-            <div id="order">
-              <span class="filtertype">Ordering</span>
+        <div class='toggle'></div>
+        <div id='textfilter'><span class='input'><input id='mbrsel-input' placeholder='Filter members' type='text' accesskey='/'/></span><span class='clear'>✖</span></div>
+          <div id='filterby'>
+          { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty && (!universe.settings.docGroups.value || (tpl.members.map(_.group).distinct.length == 1)))
+              NodeSeq.Empty
+            else
+              <div id="order">
+                <span class="filtertype">Ordering</span>
+                <ol>
+                  {
+                    if (!universe.settings.docGroups.value || (tpl.members.map(_.group).distinct.length == 1))
+                      NodeSeq.Empty
+                    else
+                      <li class="group out"><span>Grouped</span></li>
+                  }
+                  <li class="alpha in"><span>Alphabetic</span></li>
+                  {
+                    if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty)
+                      NodeSeq.Empty
+                    else
+                      <li class="inherit out"><span>By inheritance</span></li>
+                  }
+                </ol>
+              </div>
+          }
+          { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty) NodeSeq.Empty else
+            {
+              if (!tpl.linearizationTemplates.isEmpty)
+                <div class="ancestors">
+                  <span class="filtertype">Inherited<br/>
+                  </span>
+                  <ol id="linearization">
+                    { (tpl :: tpl.linearizationTemplates).map(wte => <li class="in" name={ wte.qualifiedName }><span>{ wte.name }</span></li>) }
+                  </ol>
+                </div>
+              else NodeSeq.Empty
+            } ++ {
+              if (!tpl.conversions.isEmpty)
+                <div class="ancestors">
+                  <span class="filtertype">Implicitly<br/>
+                  </span>
+                  <ol id="implicits"> {
+                    tpl.conversions.map { conv =>
+                      val name = conv.conversionQualifiedName
+                      val hide = universe.settings.hiddenImplicits(name)
+                      <li class="in" name={ name } data-hidden={ hide.toString }><span>{ "by " + conv.conversionShortName }</span></li>
+                    }
+                  }
+                  </ol>
+                </div>
+              else NodeSeq.Empty
+            } ++
+            <div class="ancestors">
+              <span class="filtertype"></span>
               <ol>
-                {
-                  if (!universe.settings.docGroups.value || (tpl.members.map(_.group).distinct.length == 1))
-                    NodeSeq.Empty
-                  else
-                    <li class="group out"><span>Grouped</span></li>
-                }
-                <li class="alpha in"><span>Alphabetic</span></li>
-                {
-                  if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty)
-                    NodeSeq.Empty
-                  else
-                    <li class="inherit out"><span>By inheritance</span></li>
-                }
+                <li class="hideall out"><span>Hide All</span></li>
+                <li class="showall in"><span>Show all</span></li>
               </ol>
             </div>
-        }
-        { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty) NodeSeq.Empty else
+          }
           {
-            if (!tpl.linearizationTemplates.isEmpty)
-              <div class="ancestors">
-                <span class="filtertype">Inherited<br/>
-                </span>
-                <ol id="linearization">
-                  { (tpl :: tpl.linearizationTemplates).map(wte => <li class="in" name={ wte.qualifiedName }><span>{ wte.name }</span></li>) }
-                </ol>
-              </div>
-            else NodeSeq.Empty
-          } ++ {
-            if (!tpl.conversions.isEmpty)
-              <div class="ancestors">
-                <span class="filtertype">Implicitly<br/>
-                </span>
-                <ol id="implicits"> {
-                  tpl.conversions.map { conv =>
-                    val name = conv.conversionQualifiedName
-                    val hide = universe.settings.hiddenImplicits(name)
-                    <li class="in" name={ name } data-hidden={ hide.toString }><span>{ "by " + conv.conversionShortName }</span></li>
-                  }
-                }
-                </ol>
-              </div>
-            else NodeSeq.Empty
-          } ++
-          <div class="ancestors">
-            <span class="filtertype"></span>
-            <ol>
-              <li class="hideall out"><span>Hide All</span></li>
-              <li class="showall in"><span>Show all</span></li>
-            </ol>
-          </div>
-        }
-        {
-          <div id="visbl">
-            <span class="filtertype">Visibility</span>
-            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
-          </div>
-        }
+            <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+            </div>
+          }
+        </div>
       </div>
 
       <div id="template">

@@ -242,7 +242,7 @@ abstract class HtmlPage extends Page { thisPage =>
   def permalink(template: Entity, isSelf: Boolean = true): Elem =
     <span class="permalink">
       <a href={ memberToUrl(template, isSelf) } title="Permalink" target="_top">
-        <img src={ relativeLinkTo(List("permalink.png", "lib")) } alt="Permalink" />
+        <img src={ relativeLinkTo(List("permalink.svg", "lib")) } alt="Permalink" />
       </a>
     </span>
 

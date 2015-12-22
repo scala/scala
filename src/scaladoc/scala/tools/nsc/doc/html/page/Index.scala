@@ -34,12 +34,6 @@ class Index(universe: doc.Universe, val index: doc.Index) extends HtmlPage {
 
   val body =
     <body>
-      <div id="library">
-        <img class='class icon' alt='class icon' src={ relativeLinkTo{List("class.png", "lib")} }/>
-        <img class='trait icon' alt='trait icon' src={ relativeLinkTo{List("trait.png", "lib")} }/>
-        <img class='object icon' alt='trait icon' src={ relativeLinkTo{List("object.png", "lib")} }/>
-        <img class='package icon' alt='trait icon' src={ relativeLinkTo{List("package.png", "lib")} }/>
-      </div>
       { browser }
       <div id="content" class="ui-layout-center">
         <iframe id="template" name="template" src={ relativeLinkTo{List("package.html")} }/>
