@@ -41,8 +41,8 @@ class DependencySpecification extends Specification {
     inheritance('A) === Set.empty
     memberRef('B) === Set.empty
     inheritance('B) === Set.empty
-    memberRef('C) === Set('A)
-    inheritance('C) === Set('A)
+    memberRef(Symbol("C.Inner1")) === Set('A)
+    inheritance(Symbol("C.Inner1")) === Set('A)
     memberRef('D) === Set('B)
     inheritance('D) === Set('B)
   }

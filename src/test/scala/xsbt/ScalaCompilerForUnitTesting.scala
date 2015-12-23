@@ -70,7 +70,6 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
     val rawGroupedSrcs = srcs.map(_.values.toList)
     val symbols = srcs.flatMap(_.keys)
     val (tempSrcFiles, testCallback) = compileSrcs(rawGroupedSrcs)
-    val fileToSymbol = (tempSrcFiles zip symbols).toMap
 
     val memberRefFileDeps = testCallback.sourceDependencies collect {
       // false indicates that those dependencies are not introduced by inheritance
@@ -80,7 +79,7 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
       // true indicates that those dependencies are introduced by inheritance
       case (target, src, DependencyByInheritance) => (src, target)
     }
-    def toSymbols(src: File, target: File): (Symbol, Symbol) = (fileToSymbol(src), fileToSymbol(target))
+    def toSymbols(src: String, target: String): (Symbol, Symbol) = (Symbol(src), Symbol(target))
     val memberRefDeps = memberRefFileDeps map { case (src, target) => toSymbols(src, target) }
     val inheritanceDeps = inheritanceFileDeps map { case (src, target) => toSymbols(src, target) }
     def pairsToMultiMap[A, B](pairs: Seq[(A, B)]): Map[A, Set[B]] = {
