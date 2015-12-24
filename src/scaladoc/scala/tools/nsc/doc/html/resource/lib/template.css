@@ -63,22 +63,21 @@ input { border-width: 0px; }
 }
 
 /* Page */
-
 body {
+  overflow-x: hidden;
   font-family: Arial, sans-serif;
   background-color: #f0f3f6;
-  font-size: 10pt;
 }
 
 html {
     box-sizing: border-box;
 }
+
 *, *:before, *:after {
     box-sizing: inherit;
 }
 
 #footer {
-  font-size: 9pt;
   text-align: center;
   color: #858484;
   bottom: 0;
@@ -108,15 +107,10 @@ body.trait > div#definition {
 }
 
 #definition {
-  display: block-inline;
+  display: block;
   padding: 5px 0px;
-  height: 61px;
-}
-
-#definition > img {
-  float: left;
-  padding-right: 6px;
-  padding-left: 5px;
+  height: 5.5em;
+  padding: 0;
 }
 
 #definition > a > img {
@@ -131,22 +125,21 @@ body.trait > div#definition {
 
 #definition > h1 {
   color: white;
-  font-size: 24pt;
   display: inline-block;
   overflow: hidden;
   margin-top: 10px;
+  font-size: 2.0em;
 }
 
 #definition h1 > a {
   color: #fff;
-  font-size: 24pt;
   text-decoration: none;
 }
 
 #definition #owner {
   color: #ffffff;
-  margin-top: 0.9em;
-  font-size: 10pt;
+  padding-top: 1.3em;
+  font-size: 0.8em;
   overflow: hidden;
 }
 
@@ -161,11 +154,11 @@ body.trait > div#definition {
 #signature {
   background-color:#c2d2dc;
   min-height: 18px;
-  font-size: 11.5pt;
+  font-size: 0.9em;
   padding: 8px;
-  box-shadow: 0 0 8px rgba(0,0,0,0.5);
+  box-shadow: 0 0 0.35em 0.05em rgba(0,0,0,0.5);
   position: fixed;
-  top: 5.3em;
+  top: 6.1em;
   left: 0;
   width: 100%;
   z-index: 9998;
@@ -231,7 +224,6 @@ body.trait > div#definition {
   left: 0;
   width: 100%;
   z-index: 9999;
-  height: 6.1em;
 }
 
 .type #definition {
@@ -239,9 +231,9 @@ body.trait > div#definition {
   position: fixed;
   top: 0;
   left: 0;
+  min-height: 5.5em;
   width: 100%;
   z-index: 9999;
-  height: 6.1em;
 }
 
 .abstract.type #definition {
@@ -254,7 +246,6 @@ body.trait > div#definition {
   width: 5.7em;
   float: left;
   color: transparent;
-  margin: .2em .5em;
 }
 
 .big-circle:hover {
@@ -294,7 +285,7 @@ body.abstract.type div.big-circle {
 }
 
 #template {
-  margin: 0.4em 0.74em 2em 0.74em;
+  margin: 0.9em 0.75em 2em 0.75em;
   border-radius: 0.2em;
   background-color: #fff;
   -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.1);
@@ -309,7 +300,7 @@ body.abstract.type div.big-circle {
 h3 {
   color: white;
   padding: 5px 10px;
-  font-size: 12pt;
+  font-size: 1em;
   font-weight: bold;
 }
 
@@ -317,6 +308,7 @@ dl.attributes > dt {
   display: block;
   float: left;
   font-style: italic;
+  font-weight: bold;
 }
 
 dl.attributes > dt.implicit {
@@ -335,6 +327,7 @@ dl.attributes > dd {
   color: #2C475C;
   height: 2em;
   padding: 1em 1em 2em;
+  font-size: 1.2em;
 }
 
 .values ol li:last-child {
@@ -354,7 +347,6 @@ dl.attributes > dd {
 #inheritedMembers > div.parent > h3 {
   height: 17px;
   font-style: italic;
-  font-size: 12pt;
 }
 
 #inheritedMembers > div.parent > h3 * {
@@ -364,7 +356,6 @@ dl.attributes > dd {
 #inheritedMembers > div.conversion > h3 {
   height: 2em;
   padding: 1em;
-  font-size: 12pt;
   font-style: italic;
   color: #2C475C;
 }
@@ -415,8 +406,8 @@ div.members > ol > li:last-child {
 }
 
 .signature {
-  font-family: monospace;
-  font-size: 10pt;
+  font-family: "Source Code Pro";
+  font-size: 0.8rem;
   line-height: 18px;
   clear: both;
   display: block;
@@ -505,7 +496,7 @@ div.members > ol > li:last-child {
 }
 
 .full-signature-usecase h4 span {
-  font-size: 10pt;
+  font-size: 0.9em;
 }
 
 .full-signature-usecase > #signature {
@@ -611,22 +602,6 @@ div.members > ol > li:last-child {
   font-weight: bold;
 }
 
-.cmt h3 {
-  font-size: 14pt;
-}
-
-.cmt h4 {
-  font-size: 13pt;
-}
-
-.cmt h5 {
-  font-size: 12pt;
-}
-
-.cmt h6 {
-  font-size: 11pt;
-}
-
 .cmt pre {
   padding: 0.5em;
   border: 0px solid #ddd;
@@ -635,6 +610,7 @@ div.members > ol > li:last-child {
   display: block;
   font-family: "Source Code Pro";
   border-radius: 0.2em;
+  overflow-x: auto;
 }
 
 .cmt pre span.ano {
@@ -739,8 +715,7 @@ p.comment {
 }
 
 div.fullcommenttop {
-  padding: 10px 10px;
-  margin-top: 9em;
+  padding: 1em 0.8em;
 }
 
 div.fullcomment {
@@ -756,6 +731,7 @@ div.fullcomment {
 #template .shortcomment {
   margin: 5px 0 0 14.7em;
   padding: 0;
+  font-family: "Open Sans";
 }
 
 div.fullcomment .block {
@@ -764,6 +740,7 @@ div.fullcomment .block {
   margin-top: 5px;
   overflow: hidden;
   margin-right: 0.5em;
+  font-family: "Open Sans";
 }
 
 div.fullcommenttop .block {
@@ -773,6 +750,13 @@ div.fullcommenttop .block {
   background-color: #fff;
   -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.1);
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+div#comment,
+div#mbrsel,
+div#template,
+div#footer {
+  font-size: 0.8em;
 }
 
 #comment {
@@ -797,6 +781,7 @@ div.fullcomment .block > h5 {
 }
 
 div.fullcomment .comment {
+  font-family: "Open Sans";
   margin: 5px 0 10px;
 }
 
@@ -871,7 +856,6 @@ div.fullcomment dl.paramcmts > dd {
 }
 
 #mbrsel {
-  font-size: 9.5pt;
   display: block;
   padding: 1em 1em 0.5em;
   margin: 0.8em;
@@ -991,7 +975,7 @@ div.fullcomment dl.paramcmts > dd {
 }
 
 #mbrsel > div#filterby > div > ol > li {
-  line-height: 16pt;
+  line-height: 1.5em;
   display: inline-block;
   cursor: pointer;
   -webkit-touch-callout: none;
@@ -1060,4 +1044,145 @@ div.fullcomment dl.paramcmts > dd {
 .badge-red {
   background-color: #b94a48;
   margin-right: 0.8em !important;
+}
+
+/* Media query rules for smaller viewport */
+@media only screen /* Large screen with a small window */
+and (max-width: 560px)
+,
+screen /* HiDPI device like Nexus 5 */
+and (max-device-width: 360px)
+and (max-device-height: 640px)
+and (-webkit-device-pixel-ratio: 3)
+,
+screen /* Most mobile devices  */
+and (max-device-width: 480px)
+and (orientation: portrait)
+,
+only screen /* iPhone 6 */
+and (max-device-width: 667px)
+and (-webkit-device-pixel-ratio: 2)
+{
+  body,
+  body > h4#signature {
+    min-width: 300px;
+  }
+
+  .signature .modifier_kind {
+    width: 10em;
+  }
+
+  .signature > .symbol {
+    padding-left: 10.7em;
+  }
+
+  #template .shortcomment {
+    margin-left: 10.7em;
+  }
+
+  #template div.fullcommenttop, #template div.fullcomment {
+    margin-left: 10.7em;
+  }
+
+  #definition {
+    min-width: 300px;
+    height: 6em;
+  }
+
+  #definition .morelinks {
+    text-align: left;
+    left: 7.2em;
+    font-size: 0.8em;
+    top: auto;
+    bottom: 0.5em;
+  }
+
+  #signature {
+    top: 6.7em;
+  }
+
+  .big-circle {
+    margin-top: 0.6em;
+  }
+}
+
+/* Media query rules specifically for mobile devices */
+@media
+screen /* HiDPI device like Nexus 5 */
+and (max-device-width: 360px)
+and (max-device-height: 640px)
+and (-webkit-device-pixel-ratio: 3)
+,
+screen /* Most mobile devices  */
+and (max-device-width: 480px)
+and (orientation: portrait)
+,
+only screen /* iPhone 6 */
+and (max-device-width: 667px)
+and (-webkit-device-pixel-ratio: 2)
+{
+  #definition {
+    position: absolute !important;
+    min-height: 0 !important;
+    height: 4em !important;
+  }
+
+  #signature {
+    position: absolute !important;
+    font-size: 0.7em;
+    top: 5.7em;
+  }
+
+  #definition > h1 {
+    font-size: 1.3em;
+  }
+
+  #definition .morelinks {
+    display: none;
+  }
+
+  #definition #owner {
+    padding-top: 0.7em;
+  }
+
+  div.fullcommenttop {
+    margin-top: 11.6em;
+  }
+
+  #template .shortcomment {
+    margin-left: 1em;
+  }
+
+  div.fullcomment dl.attributes > dt {
+    margin: 0.5em 0;
+    clear: both;
+  }
+
+  div.fullcomment dl.attributes > dd {
+    padding-left: 0;
+    clear: both;
+  }
+
+  #template div.fullcommenttop, #template div.fullcomment {
+    margin-left: 1em;
+  }
+
+  .big-circle {
+    width: 3em;
+    height: 3em;
+    background-size: 3em !important;
+    margin: 0.5em;
+  }
+
+  div#template {
+    margin-bottom: 0.5em;
+  }
+
+  div#footer {
+    font-size: 0.5em;
+  }
+
+  .shortcomment > span.badge {
+    display: none;
+  }
 }

@@ -47,6 +47,8 @@ abstract class HtmlPage extends Page { thisPage =>
     val html =
       <html>
         <head>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+          <meta name="viewport" content="width=device-width, initial-scale=1"/>
           <title>{ title }</title>
           <meta name="description" content={ description }/>
           <meta name="keywords" content={ keywords }/>
@@ -269,7 +271,8 @@ abstract class HtmlPage extends Page { thisPage =>
           <div>
             Related Docs:
             <a href={relativeLinkTo(tpl.companion.get)} title={docEntityKindToCompanionTitle(tpl)}>{objClassTrait}</a>
-            | {templateToHtml(tpl.inTemplate, s"package ${tpl.inTemplate.name}")}
+            <span class="divider">|</span>
+            {templateToHtml(tpl.inTemplate, s"package ${tpl.inTemplate.name}")}
           </div>
         case None =>
           <div>Related Doc:
