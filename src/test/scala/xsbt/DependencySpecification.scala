@@ -45,7 +45,7 @@ class DependencySpecification extends Specification {
     inheritance(Symbol("C.Inner1")) === Set('A)
     memberRef('D) === Set('B)
     inheritance('D) === Set('B)
-  }
+  }.pendingUntilFixed("Extraction of dependencies from local classes requires special handling in ExtractDependenciesTraverser")
 
   "Extracted source dependencies with trait as first parent" in {
     val sourceDependencies = extractSourceDependenciesTraitAsFirstPatent
