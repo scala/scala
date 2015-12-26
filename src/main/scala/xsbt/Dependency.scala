@@ -86,8 +86,10 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
     private val _inheritanceDependencies = collection.mutable.HashSet.empty[ClassDependency]
     private def addClassDependency(deps: collection.mutable.HashSet[ClassDependency], dep: Symbol): Unit = {
       val fromClass = currentOwner.enclClass
+      val depClass = dep.enclClass
       if (fromClass != NoSymbol && !fromClass.isPackage) {
-        deps += ClassDependency(fromClass, dep.enclClass)
+        if (!depClass.isAnonOrRefinementClass)
+          deps += ClassDependency(fromClass, depClass)
       } else {
         debugwarn(s"No enclosing class. Discarding dependency on $dep (currentOwner = $currentOwner).")
       }

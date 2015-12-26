@@ -78,6 +78,22 @@ class DependencySpecification extends Specification {
     inheritance('C) === Set.empty
   }
 
+  "Extracted class dependencies from refinement" in {
+    val srcFoo = "object Outer {\n  class Inner { type Xyz }\n\n  type TypeInner = Inner { type Xyz = Int }\n}"
+    val srcBar = "object Bar {\n  def bar: Outer.TypeInner = null\n}"
+
+    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val sourceDependencies =
+      compilerForTesting.extractDependenciesFromSrcs('Foo -> srcFoo, 'Bar -> srcBar)
+
+    val memberRef = sourceDependencies.memberRef
+    val inheritance = sourceDependencies.inheritance
+    memberRef('Foo) === Set.empty
+    inheritance('Foo) === Set.empty
+    memberRef('Bar$) === Set('Outer)
+    inheritance('Bar) === Set.empty
+  }
+
   private def extractSourceDependenciesPublic: ExtractedSourceDependencies = {
     val srcA = "class A"
     val srcB = "class B extends D[A]"
