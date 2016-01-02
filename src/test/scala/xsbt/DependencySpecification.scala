@@ -94,6 +94,25 @@ class DependencySpecification extends Specification {
     inheritance("Bar$") === Set.empty
   }
 
+  "Class dependency on object" in {
+    val srcA =
+      """object A {
+        |   def foo = { B; () }
+        |}""".stripMargin
+    val srcB = "object B"
+
+    val   compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val sourceDependencies =
+      compilerForTesting.extractDependenciesFromSrcs(srcA, srcB)
+
+    val memberRef = sourceDependencies.memberRef
+    val inheritance = sourceDependencies.inheritance
+    memberRef("A$") === Set("B$")
+    inheritance("A") === Set.empty
+    memberRef("B") === Set.empty
+    inheritance("B") === Set.empty
+  }
+
   private def extractSourceDependenciesPublic: ExtractedSourceDependencies = {
     val srcA = "class A"
     val srcB = "class B extends D[A]"

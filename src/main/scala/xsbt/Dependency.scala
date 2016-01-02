@@ -84,9 +84,11 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
   private class ExtractDependenciesTraverser extends Traverser {
     private val _memberRefDependencies = collection.mutable.HashSet.empty[ClassDependency]
     private val _inheritanceDependencies = collection.mutable.HashSet.empty[ClassDependency]
+    private def enclOrModuleClass(s: Symbol): Symbol =
+      if (s.isModule) s.moduleClass else s.enclClass
     private def addClassDependency(deps: collection.mutable.HashSet[ClassDependency], dep: Symbol): Unit = {
-      val fromClass = currentOwner.enclClass
-      val depClass = dep.enclClass
+      val fromClass = enclOrModuleClass(currentOwner)
+      val depClass = enclOrModuleClass(dep)
       if (fromClass != NoSymbol && !fromClass.isPackage) {
         if (!depClass.isAnonOrRefinementClass)
           deps += ClassDependency(fromClass, depClass)
