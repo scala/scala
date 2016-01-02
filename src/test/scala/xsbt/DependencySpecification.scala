@@ -16,53 +16,53 @@ class DependencySpecification extends Specification {
     val sourceDependencies = extractSourceDependenciesPublic
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
-    memberRef('A) === Set.empty
-    inheritance('A) === Set.empty
-    memberRef('B) === Set('A, 'D)
-    inheritance('B) === Set('D)
-    memberRef('C) === Set('A)
-    inheritance('C) === Set.empty
-    memberRef('D) === Set.empty
-    inheritance('D) === Set.empty
-    memberRef('E) === Set.empty
-    inheritance('E) === Set.empty
-    memberRef('F) === Set('A, 'B, 'C, 'D, 'E)
-    inheritance('F) === Set('A, 'E)
-    memberRef('H) === Set('B, 'E, 'G)
+    memberRef("A") === Set.empty
+    inheritance("A") === Set.empty
+    memberRef("B") === Set("A", "D")
+    inheritance("B") === Set("D")
+    memberRef("C") === Set("A")
+    inheritance("C") === Set.empty
+    memberRef("D") === Set.empty
+    inheritance("D") === Set.empty
+    memberRef("E") === Set.empty
+    inheritance("E") === Set.empty
+    memberRef("F") === Set("A", "B", "D", "E", "G")
+    inheritance("F") === Set("A", "E")
+    memberRef("H") === Set("B", "E", "G$")
     // aliases and applied type constructors are expanded so we have inheritance dependency on B
-    inheritance('H) === Set('B, 'E)
+    inheritance("H") === Set("B", "E")
   }
 
   "Extracted source dependencies from private members" in {
     val sourceDependencies = extractSourceDependenciesPrivate
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
-    memberRef('A) === Set.empty
-    inheritance('A) === Set.empty
-    memberRef('B) === Set.empty
-    inheritance('B) === Set.empty
-    memberRef(Symbol("C.Inner1")) === Set('A)
-    inheritance(Symbol("C.Inner1")) === Set('A)
-    memberRef('D) === Set('B)
-    inheritance('D) === Set('B)
+    memberRef("A") === Set.empty
+    inheritance("A") === Set.empty
+    memberRef("B") === Set.empty
+    inheritance("B") === Set.empty
+    memberRef("C.Inner1") === Set("A")
+    inheritance("C.Inner1") === Set("A")
+    memberRef("D") === Set("B")
+    inheritance("D") === Set("B")
   }.pendingUntilFixed("Extraction of dependencies from local classes requires special handling in ExtractDependenciesTraverser")
 
   "Extracted source dependencies with trait as first parent" in {
     val sourceDependencies = extractSourceDependenciesTraitAsFirstPatent
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
-    memberRef('A) === Set.empty
-    inheritance('A) === Set.empty
-    memberRef('B) === Set('A)
-    inheritance('B) === Set('A)
+    memberRef("A") === Set.empty
+    inheritance("A") === Set.empty
+    memberRef("B") === Set("A")
+    inheritance("B") === Set("A")
     // verify that memberRef captures the oddity described in documentation of `Relations.inheritance`
     // we are mainly interested whether dependency on A is captured in `memberRef` relation so
     // the invariant that says that memberRef is superset of inheritance relation is preserved
-    memberRef('C) === Set('A, 'B)
-    inheritance('C) === Set('A, 'B)
+    memberRef("C") === Set("A", "B")
+    inheritance("C") === Set("A", "B")
     // same as above but indirect (C -> B -> A), note that only A is visible here
-    memberRef('D) === Set('A, 'C)
-    inheritance('D) === Set('A, 'C)
+    memberRef("D") === Set("A", "C")
+    inheritance("D") === Set("A", "C")
   }
 
   "Extracted source dependencies from macro arguments" in {
@@ -70,12 +70,12 @@ class DependencySpecification extends Specification {
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
 
-    memberRef('A) === Set('B, 'C)
-    inheritance('A) === Set.empty
-    memberRef('B) === Set.empty
-    inheritance('B) === Set.empty
-    memberRef('C) === Set.empty
-    inheritance('C) === Set.empty
+    memberRef("A") === Set("B$", "C$")
+    inheritance("A") === Set.empty
+    memberRef("B") === Set.empty
+    inheritance("B") === Set.empty
+    memberRef("C") === Set.empty
+    inheritance("C") === Set.empty
   }
 
   "Extracted class dependencies from refinement" in {
@@ -84,14 +84,14 @@ class DependencySpecification extends Specification {
 
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val sourceDependencies =
-      compilerForTesting.extractDependenciesFromSrcs('Foo -> srcFoo, 'Bar -> srcBar)
+      compilerForTesting.extractDependenciesFromSrcs(srcFoo, srcBar)
 
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
-    memberRef('Foo) === Set.empty
-    inheritance('Foo) === Set.empty
-    memberRef('Bar$) === Set('Outer)
-    inheritance('Bar) === Set.empty
+    memberRef("Outer$") === Set.empty
+    inheritance("Outer$") === Set.empty
+    memberRef("Bar$") === Set("Outer$")
+    inheritance("Bar$") === Set.empty
   }
 
   private def extractSourceDependenciesPublic: ExtractedSourceDependencies = {
@@ -110,8 +110,8 @@ class DependencySpecification extends Specification {
     val srcH = "trait H extends G.T[Int] with (E[Int] @unchecked)"
 
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
-    val sourceDependencies = compilerForTesting.extractDependenciesFromSrcs('A -> srcA, 'B -> srcB, 'C -> srcC,
-      'D -> srcD, 'E -> srcE, 'F -> srcF, 'G -> srcG, 'H -> srcH)
+    val sourceDependencies = compilerForTesting.extractDependenciesFromSrcs(srcA, srcB, srcC, srcD, srcE, srcF, srcG,
+      srcH)
     sourceDependencies
   }
 
@@ -123,7 +123,7 @@ class DependencySpecification extends Specification {
 
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val sourceDependencies =
-      compilerForTesting.extractDependenciesFromSrcs('A -> srcA, 'B -> srcB, 'C -> srcC, 'D -> srcD)
+      compilerForTesting.extractDependenciesFromSrcs(srcA, srcB, srcC, srcD)
     sourceDependencies
   }
 
@@ -135,7 +135,7 @@ class DependencySpecification extends Specification {
 
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val sourceDependencies =
-      compilerForTesting.extractDependenciesFromSrcs('A -> srcA, 'B -> srcB, 'C -> srcC, 'D -> srcD)
+      compilerForTesting.extractDependenciesFromSrcs(srcA, srcB, srcC, srcD)
     sourceDependencies
   }
 
@@ -156,7 +156,7 @@ class DependencySpecification extends Specification {
 
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val sourceDependencies =
-      compilerForTesting.extractDependenciesFromSrcs(List(Map('B -> srcB, 'C -> srcC), Map('A -> srcA)))
+      compilerForTesting.extractDependenciesFromSrcs(List(List(srcB, srcC), List(srcA)))
     sourceDependencies
   }
 }

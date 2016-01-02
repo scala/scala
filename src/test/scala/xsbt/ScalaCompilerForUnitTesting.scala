@@ -66,22 +66,17 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
    * Symbols are used to express extracted dependencies between source code snippets. This way we have
    * file system-independent way of testing dependencies between source code "files".
    */
-  def extractDependenciesFromSrcs(srcs: List[Map[Symbol, String]]): ExtractedSourceDependencies = {
-    val rawGroupedSrcs = srcs.map(_.values.toList)
-    val symbols = srcs.flatMap(_.keys)
-    val (tempSrcFiles, testCallback) = compileSrcs(rawGroupedSrcs)
+  def extractDependenciesFromSrcs(srcs: List[List[String]]): ExtractedSourceDependencies = {
+    val (_, testCallback) = compileSrcs(srcs)
 
-    val memberRefFileDeps = testCallback.sourceDependencies collect {
+    val memberRefDeps = testCallback.sourceDependencies collect {
       // false indicates that those dependencies are not introduced by inheritance
       case (target, src, DependencyByMemberRef) => (src, target)
     }
-    val inheritanceFileDeps = testCallback.sourceDependencies collect {
+    val inheritanceDeps = testCallback.sourceDependencies collect {
       // true indicates that those dependencies are introduced by inheritance
       case (target, src, DependencyByInheritance) => (src, target)
     }
-    def toSymbols(src: String, target: String): (Symbol, Symbol) = (Symbol(src), Symbol(target))
-    val memberRefDeps = memberRefFileDeps map { case (src, target) => toSymbols(src, target) }
-    val inheritanceDeps = inheritanceFileDeps map { case (src, target) => toSymbols(src, target) }
     def pairsToMultiMap[A, B](pairs: Seq[(A, B)]): Map[A, Set[B]] = {
       import scala.collection.mutable.{ HashMap, MultiMap }
       val emptyMultiMap = new HashMap[A, scala.collection.mutable.Set[B]] with MultiMap[A, B]
@@ -96,11 +91,8 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
     ExtractedSourceDependencies(pairsToMultiMap(memberRefDeps), pairsToMultiMap(inheritanceDeps))
   }
 
-  def extractDependenciesFromSrcs(srcs: (Symbol, String)*): ExtractedSourceDependencies = {
-    val symbols = srcs.map(_._1)
-    assert(symbols.distinct.size == symbols.size,
-      s"Duplicate symbols for srcs detected: $symbols")
-    extractDependenciesFromSrcs(List(srcs.toMap))
+  def extractDependenciesFromSrcs(srcs: String*): ExtractedSourceDependencies = {
+    extractDependenciesFromSrcs(List(srcs.toList))
   }
 
   /**
@@ -182,5 +174,5 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
 }
 
 object ScalaCompilerForUnitTesting {
-  case class ExtractedSourceDependencies(memberRef: Map[Symbol, Set[Symbol]], inheritance: Map[Symbol, Set[Symbol]])
+  case class ExtractedSourceDependencies(memberRef: Map[String, Set[String]], inheritance: Map[String, Set[String]])
 }
