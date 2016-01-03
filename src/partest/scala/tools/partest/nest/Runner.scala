@@ -108,7 +108,9 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
       "-d",
       outDir.getAbsolutePath,
       "-classpath",
-      joinPaths(outDir :: testClassPath)
+      joinPaths(outDir :: testClassPath),
+      "-J-Duser.language=en",
+      "-J-Duser.country=US"
     ) ++ files.map(_.getAbsolutePath)
 
     pushTranscript(args mkString " ")
