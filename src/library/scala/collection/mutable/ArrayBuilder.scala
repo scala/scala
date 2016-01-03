@@ -100,6 +100,7 @@ object ArrayBuilder {
 
     def clear() {
       size = 0
+      resize(0)
     }
 
     def result() = {
@@ -165,6 +166,7 @@ object ArrayBuilder {
 
     def clear() {
       size = 0
+      resize(0)
     }
 
     def result() = {
@@ -230,6 +232,7 @@ object ArrayBuilder {
 
     def clear() {
       size = 0
+      resize(0)
     }
 
     def result() = {
@@ -295,6 +298,7 @@ object ArrayBuilder {
 
     def clear() {
       size = 0
+      resize(0)
     }
 
     def result() = {
@@ -360,6 +364,7 @@ object ArrayBuilder {
 
     def clear() {
       size = 0
+      resize(0)
     }
 
     def result() = {
@@ -425,6 +430,7 @@ object ArrayBuilder {
 
     def clear() {
       size = 0
+      resize(0)
     }
 
     def result() = {
@@ -490,6 +496,7 @@ object ArrayBuilder {
 
     def clear() {
       size = 0
+      resize(0)
     }
 
     def result() = {
@@ -555,6 +562,7 @@ object ArrayBuilder {
 
     def clear() {
       size = 0
+      resize(0)
     }
 
     def result() = {
@@ -619,6 +627,7 @@ object ArrayBuilder {
 
     def clear() {
       size = 0
+      resize(0)
     }
 
     def result() = {
@@ -684,6 +693,7 @@ object ArrayBuilder {
 
     def clear() {
       size = 0
+      resize(0)
     }
 
     def result() = {
