@@ -42,8 +42,10 @@ trait TraversableForwarder[+A] extends Traversable[A] {
   override def count(p: A => Boolean): Int = underlying count p
   override def find(p: A => Boolean): Option[A] = underlying find p
   override def foldLeft[B](z: B)(op: (B, A) => B): B = underlying.foldLeft(z)(op)
+  @deprecated("Use foldLeft instead", "2.12")
   override def /: [B](z: B)(op: (B, A) => B): B = underlying./:(z)(op)
   override def foldRight[B](z: B)(op: (A, B) => B): B = underlying.foldRight(z)(op)
+  @deprecated("Use foldRight instead", "2.12")
   override def :\ [B](z: B)(op: (A, B) => B): B = underlying.:\(z)(op)
   override def reduceLeft[B >: A](op: (B, A) => B): B = underlying.reduceLeft(op)
   override def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] = underlying.reduceLeftOption(op)
