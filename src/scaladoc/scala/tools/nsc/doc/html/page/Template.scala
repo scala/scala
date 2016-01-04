@@ -13,11 +13,9 @@ package page
 import base._
 import base.comment._
 
-import model._
-import model.diagram._
+import scala.collection.mutable
 import scala.xml.{NodeSeq, Text, UnprefixedAttribute}
 import scala.language.postfixOps
-import scala.collection.mutable. { Set, HashSet }
 
 import model._
 import model.diagram._
@@ -659,7 +657,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
 
     val subclasses = mbr match {
       case dtpl: DocTemplateEntity if isSelf && !isReduced =>
-        val subs: Set[DocTemplateEntity] = HashSet.empty
+        val subs = mutable.HashSet.empty[DocTemplateEntity]
         def transitive(dtpl: DocTemplateEntity) {
           for (sub <- dtpl.directSubClasses if !(subs contains sub)) {
             subs add sub
@@ -671,7 +669,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
           <div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
             <div class="subClasses hiddenContent">{
-              templatesToHtml(subs.toList.sortBy(_.name), scala.xml.Text(", "))
+              templatesToHtml(subs.toList.sorted(Entity.EntityOrdering), scala.xml.Text(", "))
             }</div>
           </div>
         else NodeSeq.Empty
