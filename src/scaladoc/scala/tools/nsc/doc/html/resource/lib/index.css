@@ -23,7 +23,6 @@
 
 * {
   color: inherit;
-  font-size: 10pt;
   text-decoration: none;
   font-family: "Lato", Arial, sans-serif;
   border-width: 0px;
@@ -43,10 +42,11 @@ a:hover {
 }
 
 html {
-    box-sizing: border-box;
+  background-color: #364550;
+  box-sizing: border-box;
 }
 *, *:before, *:after {
-    box-sizing: inherit;
+  box-sizing: inherit;
 }
 
 textarea, input { outline: none; }
@@ -56,7 +56,7 @@ textarea, input { outline: none; }
 }
 
 #browser {
-  width: 20em;
+  width: 16.75em;
   top: 0px;
   left: 0;
   bottom: 0px;
@@ -66,7 +66,7 @@ textarea, input { outline: none; }
 }
 
 #browser.full-screen {
-  left: -18em;
+  left: -15em;
 }
 
 #filter {
@@ -80,7 +80,7 @@ textarea, input { outline: none; }
   border-left:0;
   border-right:0;
   z-index: 99;
-  min-height: 6.1em;
+  min-height: 5.5em;
 }
 
 #filter.scrolled {
@@ -110,16 +110,33 @@ textarea, input { outline: none; }
 
 #filter > span.toggle-sidebar {
   position: absolute;
-  top: 0.66em;
-  right: 0.4em;
-  font-size: 1.2em;
+  top: 0.8em;
+  right: 0.2em;
   color: #fff;
   z-index: 99;
+  width: 1.5em;
+  height: 1.5em;
 }
 
 #filter > span.toggle-sidebar:hover {
   cursor: pointer;
-  color: #c2c2c2;
+}
+
+/* Pseudo element replacing UTF8-symbol "Trigram From Heaven" */
+#filter > span.toggle-sidebar:before {
+  position: absolute;
+  top: -0.45em;
+  left: 0.45em;
+  content: "";
+  display: block;
+  width: 0.7em;
+  -webkit-box-shadow: 0 0.8em 0 1px #fff, 0 1.1em 0 1px #fff, 0 1.4em 0 1px #fff;
+  box-shadow: 0 0.8em 0 1px #fff, 0 1.1em 0 1px #fff, 0 1.4em 0 1px #fff;
+}
+
+#filter > span.toggle-sidebar:hover:before {
+  -webkit-box-shadow: 0 0.8em 0 1px #c2c2c2, 0 1.1em 0 1px #c2c2c2, 0 1.4em 0 1px #c2c2c2;
+  box-shadow: 0 0.8em 0 1px #c2c2c2, 0 1.1em 0 1px #c2c2c2, 0 1.4em 0 1px #c2c2c2;
 }
 
 #textfilter > .pre {
@@ -136,7 +153,7 @@ textarea, input { outline: none; }
   display: block;
   height: 20px;
   margin-top: 0.5em;
-  margin-bottom: 1em;
+  margin-bottom: 0.8em;
 }
 
 #textfilter > .input {
@@ -144,7 +161,7 @@ textarea, input { outline: none; }
   position: absolute;
   top: 0;
   left: 0;
-  padding: 0.2em 2em 0.2em 0.5em;
+  padding: 0.2em 1.8em 0.2em 0.5em;
   width: 100%;
 }
 
@@ -180,6 +197,7 @@ textarea, input { outline: none; }
 
 #textfilter > .input > input {
   font-family: "Open Sans";
+  font-size: 0.85em;
   height: 2em;
   padding: 0 0.5em;
   color: #fff;
@@ -195,8 +213,9 @@ textarea, input { outline: none; }
 #textfilter > .clear {
   display: none;
   position: absolute;
-  top: 0.58em;
-  right: 1.7em;
+  font-size: 0.9em;
+  top: 0.53em;
+  right: 1.8em;
   height: 23px;
   width: 21px;
   color: rgba(255, 255, 255, 0.4);
@@ -208,21 +227,23 @@ textarea, input { outline: none; }
 }
 
 #focusfilter {
+  font-size: 0.9em;
   position: relative;
   text-align: center;
   display: block;
   padding: 0.6em;
   background-color: #f16665;
   color: #fff;
+  margin-top: 0.65em;
 }
 
 #focusfilter .focuscoll {
   font-weight: bold;
 }
 
-#focusfilter img {
-  bottom: -2px;
-  position: relative;
+#focusfilter a.focusremove {
+  margin-left: 0.2em;
+  font-size: 0.9em;
 }
 
 #kindfilter-container {
@@ -231,7 +252,7 @@ textarea, input { outline: none; }
   z-index: 99;
   bottom: 0.5em;
   left: 0;
-  width: 20em;
+  width: 16.75em;
 }
 
 #kindfilter {
@@ -248,6 +269,7 @@ textarea, input { outline: none; }
   -ms-user-select: none;
   user-select: none;
   color: #fff;
+  font-size: 0.8em;
 }
 
 #kindfilter:hover {
@@ -258,7 +280,6 @@ textarea, input { outline: none; }
 #letters {
   position: relative;
   text-align: center;
-  padding-bottom: 5px;
   border: 0;
   margin-top: 0em;
   color: #fff;
@@ -266,7 +287,7 @@ textarea, input { outline: none; }
 
 #letters > a, #letters > span {
   color: #fff;
-  font-size: 8pt;
+  font-size: 0.67em;
   padding-right: 2px;
 }
 
@@ -280,19 +301,20 @@ textarea, input { outline: none; }
 }
 
 #tpl {
-  display: block;
+  font-size: 0.8em;
   overflow: auto;
   right: 0;
   left: 0;
   bottom: 0;
-  top: 6.1em !important;
+  top: 6.9em !important;
   position: absolute;
   display: block;
   background-color: #364550;
+  padding-top: 0.3em;
 }
 
 #tpl.packfocused {
-  top: 8.2em !important;
+  top: 9.5em !important;
 }
 
 #tpl .packfocus,
@@ -340,15 +362,15 @@ textarea, input { outline: none; }
 #tpl .packages a.tplshow > .type-circle {
   float: left;
   border: 1px solid rgba(255, 255, 255, 0.4);
-  background-color: black; /* placeholder only */
-  height: 1.3em;
-  width: 1.3em;
-  border-radius: 1.3em;
+  height: 0.8rem;
+  width: 0.8rem;
+  border-radius: 0.8rem;
   color: #efefef;
   margin-top: 0.16em;
+  margin-right: 0.1em;
   position: relative;
   font-size: 0.8em;
-  line-height: 0.85;
+  line-height: 0.9;
   font-family: Arial, sans-serif;
   text-align: center;
   display: table-cell;
@@ -400,7 +422,7 @@ textarea, input { outline: none; }
 }
 
 #tpl .templates div.placeholder {
-  padding-right: 13px;
+  padding-right: 14px;
   width: 11px;
   display: inline-block;
 }
@@ -410,22 +432,20 @@ textarea, input { outline: none; }
 }
 
 #content {
-  border-left-width: 1px;
-  border-left-color: black;
-  border-left-style: white;
   right: 0px;
-  left: 20em;
+  left: 16.75em;
   bottom: 0px;
   top: 0px;
   position: fixed;
   display: block;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   background-color: #fff;
   z-index: 100;
 }
 
 #content.full-screen {
-  left: 2em;
+  left: 1.7em;
 }
 
 #content.hide-filter {

@@ -14,6 +14,17 @@ var title = $(document).attr('title');
 var lastFragment = "";
 
 $(document).ready(function() {
+    /* check if browser is mobile, if so hide class nav */
+    if( /Android|webOS|Mobi|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
+        $("#browser").toggleClass("full-screen");
+        $("#content").toggleClass("full-screen");
+        $("#letters").toggle();
+        setTimeout(function() {
+            $(".packages").hide();
+            $("#kindfilter").hide();
+        }, 4000);
+    }
+
     $('iframe').bind("load", function(){
         try {
             var subtitle = $(this).contents().find('title').text();
@@ -354,9 +365,8 @@ function keyboardScrolldownLeftPane() {
 /* Configures the text filter  */
 function configureTextFilter() {
     scheduler.add("init", function() {
-        $("#filter").prepend("<span class='toggle-sidebar'>☰</span>");
+        $("#filter").prepend("<span class='toggle-sidebar'></span>");
         $("#textfilter").append("<span class='input'><input placeholder='Filter' id='index-input' type='text' accesskey='/'/></span><span class='clear'>✖</span>");
-        $("#content").append("<span class='toggle-sidebar'>☰</span>");
         var input = $("#textfilter input");
         resizeFilterBlock();
         input.bind('keyup', function(event) {

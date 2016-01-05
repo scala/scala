@@ -1,7 +1,7 @@
 // © 2009–2010 EPFL/LAMP
 // code by Gilles Dubochet with contributions by Pedro Furlanetto, Marcin Kubala and Felix Mulder
 
-$(document).ready(function(){
+$(document).ready(function() {
 
     $("#template > div > div > ol > li > span > a").click(function(e) {
         $("#template > div > div > ol > li").removeClass("selected");
@@ -9,6 +9,32 @@ $(document).ready(function(){
         var defHeight = $("#definition").height() + $("#signature").height() + 50;
         $('html,body').animate({scrollTop: $(this).offset().top - defHeight}, 500);
     });
+
+    /* Handle dynamic size of signature and offset the fullcommenttop div
+     * appropriately
+     *
+     * Some mobile devices render quite slowly, delay the margin-top
+     * calculation if mobile
+     */
+    if(/Android|webOS|Mobi|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        setTimeout(function() {
+            $("div.fullcommenttop").css({
+                "margin-top": $("#definition").height() + $("#signature").height() + 15
+            });
+        }, 1000);
+    } else {
+        $("div.fullcommenttop").css({
+            "margin-top": $("#definition").height() + $("#signature").height() + 15
+        });
+    }
+
+    /* When the window is resized, adjust the fullcommenttop div's offset */
+    $(window).resize(function() {
+        $("div.fullcommenttop").css({
+            "margin-top": $("#definition").height() + $("#signature").height() + 15
+        });
+    });
+
 
     var controls = {
         visibility: {
