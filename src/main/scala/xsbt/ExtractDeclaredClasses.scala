@@ -2,7 +2,7 @@ package xsbt
 
 import scala.tools.nsc._
 
-class ExtractDeclaredClasses[GlobalType <: CallbackGlobal](val global: GlobalType) extends Compat {
+class ExtractDeclaredClasses[GlobalType <: CallbackGlobal](val global: GlobalType) extends LocateClassFile {
 	import global._
 
 	def extract(unit: CompilationUnit): Set[String] = {
@@ -32,12 +32,7 @@ class ExtractDeclaredClasses[GlobalType <: CallbackGlobal](val global: GlobalTyp
 			case _ => ()
 		}
 
-		private def fullName(s: Symbol): String = {
-			val separator = '.'
-			if (s.isRoot || s.isRootPackage || s == NoSymbol) s.name.toString
-			else if (s.owner.isEffectiveRoot) s.name.toString + moduleSuffix(s)
-			else fullName(s.owner.enclClass) + separator + s.name.toString + moduleSuffix(s)
-		}
+  private def fullName(s: Symbol): String = className(s, '.', false)
 	}
 
 }
