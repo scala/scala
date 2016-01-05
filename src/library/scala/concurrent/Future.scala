@@ -243,7 +243,17 @@ trait Future[+T] extends Awaitable[T] {
    *  this future. If this future is completed with an exception then the new
    *  future will also contain this exception.
    *
-   *  $forComprehensionExamples
+   *  Example:
+   *
+   *  {{{
+   *  val f = Future { "The future" }
+   *  val g = f map { x: String => x + " is now!" }
+   *  }}}
+   *
+   *  Note that a for comprehension involving a `Future` 
+   *  may expand to include a call to `map` and or `flatMap` 
+   *  and `withFilter`.  See [[scala.concurrent.Future#flatMap]] for an example of such a comprehension.
+   *
    *
    *  @tparam S  the type of the returned `Future`
    *  @param f   the function which will be applied to the successful result of this `Future`
