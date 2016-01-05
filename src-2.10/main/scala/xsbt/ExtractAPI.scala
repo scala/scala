@@ -341,14 +341,19 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
 
   private def removeConstructors(ds: List[Symbol]): List[Symbol] = ds filter { !_.isConstructor }
 
-  private def mkStructure(info: Type, s: Symbol, inherit: Boolean): xsbti.api.Structure =
-    {
-      val (declared, inherited) = info.members.reverse.partition(_.owner == s)
-      val baseTypes = info.baseClasses.tail.map(info.baseType)
-      val ds = if (s.isModuleClass) removeConstructors(declared) else declared
-      val is = if (inherit) removeConstructors(inherited) else Nil
-      mkStructure(s, baseTypes, ds, is)
-    }
+  private def mkStructure(info: Type, s: Symbol, inherit: Boolean): xsbti.api.Structure = {
+    val (declared, inherited) = info.members.reverse.partition(_.owner == s)
+    // Note that the ordering of classes in `baseClasses` is important.
+    // It would be easier to just say `val baseTypes = baseTypeSeq`, but that does not seem
+    // to take linearization into account.
+    // Also, we take info.parents when we're not interested in the full linearization,
+    // which side steps issues with baseType when f-bounded existential types and refined types mix
+    // (and we get cyclic types which cause a stack overflow in showAPI)
+    val baseTypes = if (inherit) info.baseClasses.tail.map(info.baseType) else info.parents
+    val ds = if (s.isModuleClass) removeConstructors(declared) else declared
+    val is = if (inherit) removeConstructors(inherited) else Nil
+    mkStructure(s, baseTypes, ds, is)
+  }
 
   // If true, this template is publicly visible and should be processed as a public inheritance dependency.
   // Local classes and local refinements will never be traversed by the api phase, so we don't need to check for that.
