@@ -36,12 +36,20 @@ abstract class LocateClassFile extends Compat {
   private def flatname(s: Symbol, separator: Char) =
     atPhase(currentRun.flattenPhase.next) { s fullName separator }
 
+  private def pickledName(s: Symbol): String =
+    atPhase(currentRun.picklerPhase) { s.fullName }
+
   protected def isTopLevelModule(sym: Symbol): Boolean =
     atPhase(currentRun.picklerPhase.next) {
       sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass
     }
-  protected def className(s: Symbol, sep: Char, dollarRequired: Boolean): String =
+
+  protected def className(s: Symbol, dollarRequired: Boolean): String =
+    pickledName(s) + (if (dollarRequired) "$" else "")
+
+  protected def flatclassName(s: Symbol, sep: Char, dollarRequired: Boolean): String =
     flatname(s, sep) + (if (dollarRequired) "$" else "")
+
   protected def fileForClass(outputDirectory: File, s: Symbol, separatorRequired: Boolean): File =
-    new File(outputDirectory, className(s, File.separatorChar, separatorRequired) + ".class")
+    new File(outputDirectory, flatclassName(s, File.separatorChar, separatorRequired) + ".class")
 }

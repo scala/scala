@@ -24,7 +24,7 @@ class ExtractDeclaredClassesTest extends Specification {
 			|""".stripMargin
     val compilerForTesting = new ScalaCompilerForUnitTesting
     val declaredClasses = compilerForTesting.extractDeclaredClassesFromSrc(src)
-    val expectedClasses = Set("A", "B$")
+    val expectedClasses = Set("A", "B")
     declaredClasses === expectedClasses
   }
 
@@ -36,7 +36,7 @@ class ExtractDeclaredClassesTest extends Specification {
 			|""".stripMargin
     val compilerForTesting = new ScalaCompilerForUnitTesting
     val declaredClasses = compilerForTesting.extractDeclaredClassesFromSrc(src)
-    val expectedClasses = Set("a.A", "a.B$")
+    val expectedClasses = Set("a.A", "a.B")
     declaredClasses === expectedClasses
   }
 
@@ -47,7 +47,7 @@ class ExtractDeclaredClassesTest extends Specification {
 			|""".stripMargin
     val compilerForTesting = new ScalaCompilerForUnitTesting
     val declaredClasses = compilerForTesting.extractDeclaredClassesFromSrc(src)
-    val expectedClasses = Set("A", "A.AA", "A.AAO$", "B$", "B$.BB", "B$.BBO$")
+    val expectedClasses = Set("A", "A.AA", "A.AAO", "B", "B.BB", "B.BBO")
     declaredClasses === expectedClasses
   }
 
@@ -79,7 +79,7 @@ class ExtractDeclaredClassesTest extends Specification {
 			|""".stripMargin
     val compilerForTesting = new ScalaCompilerForUnitTesting
     val declaredClasses = compilerForTesting.extractDeclaredClassesFromSrc(src)
-    val expectedClasses = Set("A", "A$")
+    val expectedClasses = Set("A")
     declaredClasses === expectedClasses
   }
 
@@ -92,7 +92,7 @@ class ExtractDeclaredClassesTest extends Specification {
 			|""".stripMargin
     val compilerForTesting = new ScalaCompilerForUnitTesting
     val declaredClasses = compilerForTesting.extractDeclaredClassesFromSrc(src)
-    val expectedClasses = Set("A", "A.B", "A.C$")
+    val expectedClasses = Set("A", "A.B", "A.C")
     declaredClasses === expectedClasses
   }
 

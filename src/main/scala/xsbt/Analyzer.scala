@@ -30,7 +30,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
           val sym = iclass.symbol
           def addGenerated(separatorRequired: Boolean): Unit = {
             for (classFile <- outputDirs map (fileForClass(_, sym, separatorRequired)) find (_.exists))
-              callback.generatedClass(sourceFile, classFile, className(sym, '.', separatorRequired))
+              callback.generatedClass(sourceFile, classFile, className(sym, separatorRequired))
           }
           if (sym.isModuleClass && !sym.isImplClass) {
             if (isTopLevelModule(sym) && sym.companionClass == NoSymbol)
