@@ -123,3 +123,33 @@ trait Nested {
     println(new Warn { })
   }
 }
+
+// test unusage of imports from other compilation units after implicit search
+trait Outsiders {
+  {
+    //implicit search should not disable warning
+    import Sample._
+    import Sample.Implicits._   // warn
+    f(42)                       // error
+  }
+  {
+    import Sample._
+    import Sample.Implicits._   // nowarn
+    g(42)                       // ok
+  }
+  {
+    import Sample._
+    import Sample.Implicits.`int to Y`  // nowarn
+    import Sample.Implicits.useless     // warn
+    g(42)                       // ok
+  }
+  {
+    import java.io.File                 // warn
+    import scala.concurrent.Future      // warn
+    import scala.concurrent.ExecutionContext.Implicits.global // warn
+    import p1.A                         // warn
+    import p1.B                         // no warn
+    println("abc".bippy)
+    //Future("abc".bippy)
+  }
+}

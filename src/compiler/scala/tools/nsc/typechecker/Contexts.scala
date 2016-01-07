@@ -806,6 +806,12 @@ trait Contexts { self: Analyzer =>
         (e ne null) && (e.owner == scope) && (!settings.isScala212 || e.sym.exists)
       })
 
+    private def withQualifyingImplicitAlternatives(imp: ImportInfo, name: Name, pre: Type)(f: Symbol => Unit) =
+      for {
+        sym <- importedAccessibleSymbol(imp, name, requireExplicit = false, record = false).alternatives
+        if isQualifyingImplicit(name, sym, pre, imported = true)
+      } f(sym)
+
     private def collectImplicits(syms: Scope, pre: Type, imported: Boolean = false): List[ImplicitInfo] =
       for (sym <- syms.toList if isQualifyingImplicit(sym.name, sym, pre, imported)) yield
         new ImplicitInfo(sym.name, pre, sym)
@@ -832,9 +838,9 @@ trait Contexts { self: Analyzer =>
         case ImportSelector(from, _, to, _) :: sels1 =>
           var impls = collect(sels1) filter (info => info.name != from)
           if (to != nme.WILDCARD) {
-            for (sym <- importedAccessibleSymbol(imp, to).alternatives)
-              if (isQualifyingImplicit(to, sym, pre, imported = true))
-                impls = new ImplicitInfo(to, pre, sym) :: impls
+            withQualifyingImplicitAlternatives(imp, to, pre) { sym =>
+              impls = new ImplicitInfo(to, pre, sym) :: impls
+            }
           }
           impls
       }
@@ -958,11 +964,8 @@ trait Contexts { self: Analyzer =>
     /** The symbol with name `name` imported via the import in `imp`,
      *  if any such symbol is accessible from this context.
      */
-    def importedAccessibleSymbol(imp: ImportInfo, name: Name): Symbol =
-      importedAccessibleSymbol(imp, name, requireExplicit = false)
-
-    private def importedAccessibleSymbol(imp: ImportInfo, name: Name, requireExplicit: Boolean): Symbol =
-      imp.importedSymbol(name, requireExplicit) filter (s => isAccessible(s, imp.qual.tpe, superAccess = false))
+    private def importedAccessibleSymbol(imp: ImportInfo, name: Name, requireExplicit: Boolean, record: Boolean): Symbol =
+      imp.importedSymbol(name, requireExplicit, record) filter (s => isAccessible(s, imp.qual.tpe, superAccess = false))
 
     /** Is `sym` defined in package object of package `pkg`?
      *  Since sym may be defined in some parent of the package object,
@@ -1108,7 +1111,7 @@ trait Contexts { self: Analyzer =>
       def imp2Explicit   = imp2 isExplicitImport name
 
       def lookupImport(imp: ImportInfo, requireExplicit: Boolean) =
-        importedAccessibleSymbol(imp, name, requireExplicit) filter qualifies
+        importedAccessibleSymbol(imp, name, requireExplicit, record = true) filter qualifies
 
       // Java: A single-type-import declaration d in a compilation unit c of package p
       // that imports a type named n shadows, throughout c, the declarations of:
@@ -1422,7 +1425,7 @@ trait Contexts { self: Analyzer =>
 
     /** The symbol with name `name` imported from import clause `tree`.
      */
-    def importedSymbol(name: Name): Symbol = importedSymbol(name, requireExplicit = false)
+    def importedSymbol(name: Name): Symbol = importedSymbol(name, requireExplicit = false, record = true)
 
     private def recordUsage(sel: ImportSelector, result: Symbol) {
       def posstr = pos.source.file.name + ":" + posOf(sel).line
@@ -1432,7 +1435,7 @@ trait Contexts { self: Analyzer =>
     }
 
     /** If requireExplicit is true, wildcard imports are not considered. */
-    def importedSymbol(name: Name, requireExplicit: Boolean): Symbol = {
+    def importedSymbol(name: Name, requireExplicit: Boolean, record: Boolean): Symbol = {
       var result: Symbol = NoSymbol
       var renamed = false
       var selectors = tree.selectors
@@ -1449,7 +1452,7 @@ trait Contexts { self: Analyzer =>
         if (result == NoSymbol)
           selectors = selectors.tail
       }
-      if (settings.warnUnusedImport && selectors.nonEmpty && result != NoSymbol && pos != NoPosition)
+      if (record && settings.warnUnusedImport && selectors.nonEmpty && result != NoSymbol && pos != NoPosition)
         recordUsage(current, result)
 
       // Harden against the fallout from bugs like SI-6745
