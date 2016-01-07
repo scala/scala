@@ -800,16 +800,10 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val superclazz =
         AppliedTypeTree(javaLangDot(tpnme.Enum), List(enumType))
       val finalFlag = if (enumIsFinal) Flags.FINAL else 0l
-      val abstractFlag = {
-        // javac adds `ACC_ABSTRACT` to enum classes with deferred members
-        val hasAbstractMember = body exists {
-          case d: DefDef => d.mods.isDeferred
-          case _         => false
-        }
-        if (hasAbstractMember) Flags.ABSTRACT else 0l
-      }
       addCompanionObject(consts ::: statics ::: predefs, atPos(pos) {
-        ClassDef(mods | Flags.JAVA_ENUM | finalFlag | abstractFlag, name, List(),
+        // Marking the enum class SEALED | ABSTRACT enables exhaustiveness checking. See also ClassfileParser.
+        // This is a bit of a hack and requires excluding the ABSTRACT flag in the backend, see method javaClassfileFlags.
+        ClassDef(mods | Flags.JAVA_ENUM | Flags.SEALED | Flags.ABSTRACT | finalFlag, name, List(),
                  makeTemplate(superclazz :: interfaces, body))
       })
     }
