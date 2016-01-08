@@ -24,7 +24,7 @@ class DependencySpecification extends UnitSpec {
     assert(inheritance('D) === Set.empty)
     assert(memberRef('E) === Set.empty)
     assert(inheritance('E) === Set.empty)
-    assert(memberRef('F) === Set('A, 'B, 'C, 'D, 'E, 'G))
+    assert(memberRef('F) === Set('A, 'B, 'D, 'E, 'G))
     assert(inheritance('F) === Set('A, 'E))
     assert(memberRef('H) === Set('B, 'E, 'G))
     // aliases and applied type constructors are expanded so we have inheritance dependency on B
