@@ -1,13 +1,12 @@
 package xsbt
 
 import org.junit.runner.RunWith
+import xsbti.TestCallback.ExtractedClassDependencies
 import xsbti.api.ClassLike
 import xsbti.api.Def
 import xsbt.api.SameAPI
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
-
-import ScalaCompilerForUnitTesting.ExtractedSourceDependencies
 
 @RunWith(classOf[JUnitRunner])
 class DependencySpecification extends Specification {
@@ -28,7 +27,7 @@ class DependencySpecification extends Specification {
     inheritance("E") === Set.empty
     memberRef("F") === Set("A", "B", "D", "E", "G")
     inheritance("F") === Set("A", "E")
-    memberRef("H") === Set("B", "E", "G$")
+    memberRef("H") === Set("B", "E", "G")
     // aliases and applied type constructors are expanded so we have inheritance dependency on B
     inheritance("H") === Set("B", "E")
   }
@@ -70,7 +69,7 @@ class DependencySpecification extends Specification {
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
 
-    memberRef("A") === Set("B$", "C$")
+    memberRef("A") === Set("B", "C")
     inheritance("A") === Set.empty
     memberRef("B") === Set.empty
     inheritance("B") === Set.empty
@@ -88,10 +87,10 @@ class DependencySpecification extends Specification {
 
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
-    memberRef("Outer$") === Set.empty
-    inheritance("Outer$") === Set.empty
-    memberRef("Bar$") === Set("Outer$")
-    inheritance("Bar$") === Set.empty
+    memberRef("Outer") === Set.empty
+    inheritance("Outer") === Set.empty
+    memberRef("Bar") === Set("Outer")
+    inheritance("Bar") === Set.empty
   }
 
   "Class dependency on object" in {
@@ -101,19 +100,19 @@ class DependencySpecification extends Specification {
         |}""".stripMargin
     val srcB = "object B"
 
-    val   compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val sourceDependencies =
       compilerForTesting.extractDependenciesFromSrcs(srcA, srcB)
 
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
-    memberRef("A$") === Set("B$")
+    memberRef("A") === Set("B")
     inheritance("A") === Set.empty
     memberRef("B") === Set.empty
     inheritance("B") === Set.empty
   }
 
-  private def extractSourceDependenciesPublic: ExtractedSourceDependencies = {
+  private def extractSourceDependenciesPublic: ExtractedClassDependencies = {
     val srcA = "class A"
     val srcB = "class B extends D[A]"
     val srcC = """|class C {
@@ -134,7 +133,7 @@ class DependencySpecification extends Specification {
     sourceDependencies
   }
 
-  private def extractSourceDependenciesPrivate: ExtractedSourceDependencies = {
+  private def extractSourceDependenciesPrivate: ExtractedClassDependencies = {
     val srcA = "class A"
     val srcB = "class B"
     val srcC = "class C { private class Inner1 extends A }"
@@ -146,7 +145,7 @@ class DependencySpecification extends Specification {
     sourceDependencies
   }
 
-  private def extractSourceDependenciesTraitAsFirstPatent: ExtractedSourceDependencies = {
+  private def extractSourceDependenciesTraitAsFirstPatent: ExtractedClassDependencies = {
     val srcA = "class A"
     val srcB = "trait B extends A"
     val srcC = "trait C extends B"
@@ -158,7 +157,7 @@ class DependencySpecification extends Specification {
     sourceDependencies
   }
 
-  private def extractSourceDependenciesFromMacroArgument: ExtractedSourceDependencies = {
+  private def extractSourceDependenciesFromMacroArgument: ExtractedClassDependencies = {
     val srcA = "class A { println(B.printTree(C.foo)) }"
     val srcB = """
 			|import scala.language.experimental.macros

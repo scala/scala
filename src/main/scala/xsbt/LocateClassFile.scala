@@ -21,8 +21,8 @@ abstract class LocateClassFile extends Compat {
     // catch package objects (that do not have this flag set)
     if (sym hasFlag scala.tools.nsc.symtab.Flags.PACKAGE) None else {
       import scala.tools.nsc.symtab.Flags
-      val name = flatname(sym, classSeparator) + moduleSuffix(sym)
-      findClass(name).map { case (file, inOut) => (file, name, inOut) } orElse {
+      val binaryClassName = flatname(sym, classSeparator) + moduleSuffix(sym)
+      findClass(binaryClassName).map { case (file, inOut) => (file, binaryClassName, inOut) } orElse {
         if (isTopLevelModule(sym)) {
           val linked = sym.companionClass
           if (linked == NoSymbol)

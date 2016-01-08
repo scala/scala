@@ -56,25 +56,26 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
          * that is coming from either source code (not necessarily compiled in this compilation
          * run) or from class file and calls respective callback method.
          */
-        def processDependency(context: DependencyContext)(dep: ClassDependency) = {
-          val sourceClassName = className(dep.from, dollarRequired = false)
-          def binaryDependency(file: File, className: String) =
-            callback.binaryDependency(file, className, sourceClassName, sourceFile, context)
+        def processDependency(context: DependencyContext)(dep: ClassDependency): Unit = {
+          val fromClassName = className(dep.from, dollarRequired = false)
+          def binaryDependency(file: File, onBinaryClassName: String) =
+            callback.binaryDependency(file, onBinaryClassName, fromClassName, sourceFile, context)
           val onSource = dep.to.sourceFile
           if (onSource == null) {
             classFile(dep.to) match {
-              case Some((f, className, inOutDir)) =>
+              case Some((f, binaryClassName, inOutDir)) =>
                 if (inOutDir && dep.to.isJavaDefined) registerTopLevelSym(dep.to)
                 f match {
-                  case ze: ZipArchive#Entry => for (zip <- ze.underlyingSource; zipFile <- Option(zip.file)) binaryDependency(zipFile, className)
-                  case pf: PlainFile        => binaryDependency(pf.file, className)
-                  case _                    => ()
+                  case ze: ZipArchive#Entry =>
+                    for (zip <- ze.underlyingSource; zipFile <- Option(zip.file)) binaryDependency(zipFile, binaryClassName)
+                  case pf: PlainFile => binaryDependency(pf.file, binaryClassName)
+                  case _             => ()
                 }
               case None => ()
             }
           } else if (onSource.file != sourceFile) {
             val onClassName = className(dep.to, dollarRequired = false)
-            callback.classDependency(onClassName, sourceClassName, context)
+            callback.classDependency(onClassName, fromClassName, context)
           }
         }
       }

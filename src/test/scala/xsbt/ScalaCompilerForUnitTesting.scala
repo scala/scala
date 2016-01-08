@@ -1,5 +1,6 @@
 package xsbt
 
+import xsbti.TestCallback.ExtractedClassDependencies
 import xsbti.compile.SingleOutput
 import java.io.File
 import _root_.scala.tools.nsc.reporters.ConsoleReporter
@@ -13,8 +14,6 @@ import xsbti.api.Def
 import xsbt.api.SameAPI
 import sbt.ConsoleLogger
 import xsbti.DependencyContext._
-
-import ScalaCompilerForUnitTesting.ExtractedSourceDependencies
 
 /**
  * Provides common functionality needed for unit tests that require compiling
@@ -66,32 +65,20 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
    * Symbols are used to express extracted dependencies between source code snippets. This way we have
    * file system-independent way of testing dependencies between source code "files".
    */
-  def extractDependenciesFromSrcs(srcs: List[List[String]]): ExtractedSourceDependencies = {
+  def extractDependenciesFromSrcs(srcs: List[List[String]]): ExtractedClassDependencies = {
     val (_, testCallback) = compileSrcs(srcs)
 
-    val memberRefDeps = testCallback.sourceDependencies collect {
-      // false indicates that those dependencies are not introduced by inheritance
+    val memberRefDeps = testCallback.classDependencies collect {
       case (target, src, DependencyByMemberRef) => (src, target)
     }
-    val inheritanceDeps = testCallback.sourceDependencies collect {
-      // true indicates that those dependencies are introduced by inheritance
+    val inheritanceDeps = testCallback.classDependencies collect {
       case (target, src, DependencyByInheritance) => (src, target)
     }
-    def pairsToMultiMap[A, B](pairs: Seq[(A, B)]): Map[A, Set[B]] = {
-      import scala.collection.mutable.{ HashMap, MultiMap }
-      val emptyMultiMap = new HashMap[A, scala.collection.mutable.Set[B]] with MultiMap[A, B]
-      val multiMap = pairs.foldLeft(emptyMultiMap) {
-        case (acc, (key, value)) =>
-          acc.addBinding(key, value)
-      }
-      // convert all collections to immutable variants
-      multiMap.toMap.mapValues(_.toSet).withDefaultValue(Set.empty)
-    }
 
-    ExtractedSourceDependencies(pairsToMultiMap(memberRefDeps), pairsToMultiMap(inheritanceDeps))
+    ExtractedClassDependencies.fromPairs(memberRefDeps, inheritanceDeps)
   }
 
-  def extractDependenciesFromSrcs(srcs: String*): ExtractedSourceDependencies = {
+  def extractDependenciesFromSrcs(srcs: String*): ExtractedClassDependencies = {
     extractDependenciesFromSrcs(List(srcs.toList))
   }
 
@@ -173,6 +160,3 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
 
 }
 
-object ScalaCompilerForUnitTesting {
-  case class ExtractedSourceDependencies(memberRef: Map[String, Set[String]], inheritance: Map[String, Set[String]])
-}

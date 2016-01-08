@@ -29,8 +29,11 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
         for (iclass <- unit.icode) {
           val sym = iclass.symbol
           def addGenerated(separatorRequired: Boolean): Unit = {
-            for (classFile <- outputDirs map (fileForClass(_, sym, separatorRequired)) find (_.exists))
-              callback.generatedClass(sourceFile, classFile, className(sym, separatorRequired))
+            for (classFile <- outputDirs map (fileForClass(_, sym, separatorRequired)) find (_.exists)) {
+              val srcClassName = className(sym, separatorRequired)
+              val binaryClassName = flatclassName(sym, '.', separatorRequired)
+              callback.generatedNonLocalClass(sourceFile, classFile, binaryClassName, srcClassName)
+            }
           }
           if (sym.isModuleClass && !sym.isImplClass) {
             if (isTopLevelModule(sym) && sym.companionClass == NoSymbol)
