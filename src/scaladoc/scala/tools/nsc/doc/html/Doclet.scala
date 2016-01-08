@@ -3,7 +3,8 @@
  * @author  David Bernard, Manohar Jonnalagedda
  */
 
-package scala.tools.nsc.doc
+package scala.tools.nsc
+package doc
 package html
 
 import doclet._
@@ -13,7 +14,7 @@ import doclet._
 class Doclet extends Generator with Universer with Indexer {
 
   def generateImpl() {
-    new html.HtmlFactory(universe, index).generate()
+    new html.HtmlFactory(universe, index, new ScalaDocReporter(universe.settings)).generate()
   }
 
 }

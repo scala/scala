@@ -12,7 +12,9 @@ package page
 
 import doc.model._
 
-class ReferenceIndex(letter: Char, index: doc.Index, universe: Universe) extends HtmlPage {
+class ReferenceIndex(letter: Char, index: doc.Index, universe: Universe, rep: ScalaDocReporter) extends HtmlPage {
+
+  def reporter = rep
 
   def path = List("index-"+letter+".html", "index")
 

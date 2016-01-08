@@ -1,6 +1,7 @@
 import org.scalacheck._
 import org.scalacheck.Prop._
 
+import scala.tools.nsc.ScalaDocReporter
 import scala.tools.nsc.doc
 import scala.tools.nsc.doc.html.page.Index
 import java.net.{URLClassLoader, URLDecoder}
@@ -47,7 +48,8 @@ object Test extends Properties("Index") {
 
     maybeUniverse match {
       case Some(universe) => {
-        val index = new Index(universe, indexModelFactory.makeIndex(universe))
+        val reporter = new ScalaDocReporter(universe.settings)
+        val index = new Index(universe, indexModelFactory.makeIndex(universe), reporter)
         return Some(index)
       }
       case _ => return None
@@ -67,14 +69,6 @@ object Test extends Properties("Index") {
     createIndex("src/scaladoc/scala/tools/nsc/doc/html/page/Index.scala") match {
       case Some(index) =>
         index.title == ""
-
-      case None => false
-    }
-  }
-  property("browser contains a script element") = {
-    createIndex("src/scaladoc/scala/tools/nsc/doc/html/page/Index.scala") match {
-      case Some(index) =>
-        (index.browser \ "script").size == 1
 
       case None => false
     }
