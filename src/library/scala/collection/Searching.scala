@@ -36,12 +36,12 @@ object Searching {
 
   class SearchImpl[A, Repr](val coll: SeqLike[A, Repr]) {
     /** Search the sorted sequence for a specific element. If the sequence is an
-      * `IndexedSeq`, a binary search is used. Otherwise, a linear search is used.
+      * `IndexedSeqLike`, a binary search is used. Otherwise, a linear search is used.
       *
       * The sequence should be sorted with the same `Ordering` before calling; otherwise,
       * the results are undefined.
       *
-      * @see [[scala.collection.IndexedSeq]]
+      * @see [[scala.collection.IndexedSeqLike]]
       * @see [[scala.math.Ordering]]
       * @see [[scala.collection.SeqLike]], method `sorted`
       *
@@ -54,18 +54,18 @@ object Searching {
       */
     final def search[B >: A](elem: B)(implicit ord: Ordering[B]): SearchResult =
       coll match {
-        case _: IndexedSeq[A] => binarySearch(elem, 0, coll.length)(ord)
+        case _: IndexedSeqLike[A, Repr] => binarySearch(elem, 0, coll.length)(ord)
         case _ => linearSearch(coll.view, elem, 0)(ord)
       }
 
     /** Search within an interval in the sorted sequence for a specific element. If the
-      * sequence is an IndexedSeq, a binary search is used. Otherwise, a linear search
+      * sequence is an `IndexedSeqLike`, a binary search is used. Otherwise, a linear search
       * is used.
       *
       * The sequence should be sorted with the same `Ordering` before calling; otherwise,
       * the results are undefined.
       *
-      * @see [[scala.collection.IndexedSeq]]
+      * @see [[scala.collection.IndexedSeqLike]]
       * @see [[scala.math.Ordering]]
       * @see [[scala.collection.SeqLike]], method `sorted`
       *
@@ -81,7 +81,7 @@ object Searching {
     final def search[B >: A](elem: B, from: Int, to: Int)
     (implicit ord: Ordering[B]): SearchResult =
       coll match {
-        case _: IndexedSeq[A] => binarySearch(elem, from, to)(ord)
+        case _: IndexedSeqLike[A, Repr] => binarySearch(elem, from, to)(ord)
         case _ => linearSearch(coll.view(from, to), elem, from)(ord)
       }
 
