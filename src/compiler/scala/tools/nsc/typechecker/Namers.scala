@@ -1592,11 +1592,7 @@ trait Namers extends MethodSynthesis {
       import SymValidateErrors._
       def fail(kind: SymValidateErrors.Value) = SymbolValidationError(sym, kind)
 
-      def checkWithDeferred(flag: Int) {
-        if (sym hasFlag flag)
-          AbstractMemberWithModiferError(sym, flag)
-      }
-      def checkNoConflict(flag1: Int, flag2: Int) {
+      def checkNoConflict(flag1: Int, flag2: Int) = {
         if (sym hasAllFlags flag1.toLong | flag2)
           IllegalModifierCombination(sym, flag1, flag2)
       }
@@ -1635,6 +1631,10 @@ trait Namers extends MethodSynthesis {
         checkNoConflict(ABSTRACT, FINAL)
 
       if (sym.isDeferred) {
+        def checkWithDeferred(flag: Int) = {
+          if (sym hasFlag flag)
+            AbstractMemberWithModiferError(sym, flag)
+        }
         // Is this symbol type always allowed the deferred flag?
         def symbolAllowsDeferred = (
              sym.isValueParameter
@@ -1650,11 +1650,12 @@ trait Namers extends MethodSynthesis {
         )
         if (sym hasAnnotation NativeAttr)
           sym resetFlag DEFERRED
-        else if (!symbolAllowsDeferred && ownerRequiresConcrete)
-          fail(AbstractVar)
+        else {
+          if (!symbolAllowsDeferred && ownerRequiresConcrete) fail(AbstractVar)
 
-        checkWithDeferred(PRIVATE)
-        checkWithDeferred(FINAL)
+          checkWithDeferred(PRIVATE)
+          checkWithDeferred(FINAL)
+        }
       }
 
       checkNoConflict(FINAL, SEALED)
