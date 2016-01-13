@@ -224,11 +224,10 @@ class StringContextTest {
 
       // literals and arg indexes
       f"%%" -> "%",
-      f" mind%n------%nmatter%n" ->
+      f" mind%n------%nmatter" ->
        """| mind
           |------
-          |matter
-          |""".stripMargin,
+          |matter""".stripMargin.lines.mkString(compat.Platform.EOL),
       f"${i}%d %<d ${9}%d"   -> "42 42 9",
       f"${7}%d %<d ${9}%d"   -> "7 7 9",
       f"${7}%d %2$$d ${9}%d" -> "7 9 9",
