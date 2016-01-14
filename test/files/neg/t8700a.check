@@ -1,0 +1,11 @@
+Bar.scala:2: warning: match may not be exhaustive.
+It would fail on the following input: B
+  def bar1(foo: Foo) = foo match {
+                       ^
+Bar.scala:6: warning: match may not be exhaustive.
+It would fail on the following input: B
+  def bar2(foo: Baz) = foo match {
+                       ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found

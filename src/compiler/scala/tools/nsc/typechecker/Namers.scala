@@ -653,8 +653,10 @@ trait Namers extends MethodSynthesis {
       if (isScala && deriveAccessors(tree)) enterGetterSetter(tree)
       else assignAndEnterFinishedSymbol(tree)
 
-      if (isEnumConstant(tree))
+      if (isEnumConstant(tree)) {
         tree.symbol setInfo ConstantType(Constant(tree.symbol))
+        tree.symbol.owner.linkedClassOfClass addChild tree.symbol
+      }
     }
 
     def enterLazyVal(tree: ValDef, lazyAccessor: Symbol): TermSymbol = {
@@ -1657,7 +1659,8 @@ trait Namers extends MethodSynthesis {
         checkWithDeferred(FINAL)
       }
 
-      checkNoConflict(FINAL, SEALED)
+      if (!sym.isJavaEnum)
+        checkNoConflict(FINAL, SEALED)
       checkNoConflict(PRIVATE, PROTECTED)
       // checkNoConflict(PRIVATE, OVERRIDE) // this one leads to bad error messages like #4174, so catch in refchecks
       // checkNoConflict(PRIVATE, FINAL)    // can't do this because FINAL also means compile-time constant

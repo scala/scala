@@ -671,7 +671,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     // Primitives are "abstract final" to prohibit instantiation
     // without having to provide any implementations, but that is an
     // illegal combination of modifiers at the bytecode level so
-    // suppress final if abstract if present.
+    // suppress final if abstract is present.
     import asm.Opcodes._
     GenBCode.mkFlags(
       if (privateFlag) ACC_PRIVATE else ACC_PUBLIC,
