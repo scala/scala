@@ -13,7 +13,7 @@ package immutable
 import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.Platform
 import scala.collection.generic._
-import scala.collection.mutable.Builder
+import scala.collection.mutable.{Builder, ReusableBuilder}
 import scala.collection.parallel.immutable.ParVector
 
 /** Companion object to the Vector class
@@ -704,8 +704,8 @@ extends AbstractIterator[A]
   }
 }
 
-
-final class VectorBuilder[A]() extends Builder[A,Vector[A]] with VectorPointer[A @uncheckedVariance] {
+/** A class to build instances of `Vector`.  This builder is reusable. */
+final class VectorBuilder[A]() extends ReusableBuilder[A,Vector[A]] with VectorPointer[A @uncheckedVariance] {
 
   // possible alternative: start with display0 = null, blockIndex = -32, lo = 32
   // to avoid allocating initial array if the result will be empty anyways

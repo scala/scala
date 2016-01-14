@@ -519,7 +519,11 @@ object LongMap {
       def apply(): LongMapBuilder[U] = new LongMapBuilder[U]
     }
 
-  final class LongMapBuilder[V] extends Builder[(Long, V), LongMap[V]] {
+  /** A builder for instances of `LongMap`.
+   *
+   *  This builder can be reused to create multiple instances.
+   */
+  final class LongMapBuilder[V] extends ReusableBuilder[(Long, V), LongMap[V]] {
     private[collection] var elems: LongMap[V] = new LongMap[V]
     def +=(entry: (Long, V)): this.type = {
       elems += entry

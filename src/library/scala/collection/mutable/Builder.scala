@@ -18,6 +18,14 @@ import generic._
  *  elements to the builder with `+=` and then converting to the required
  *  collection type with `result`.
  *
+ *  One cannot assume that a single `Builder` can build more than one
+ *  instance of the desired collection.  Particular subclasses may allow
+ *  such behavior.  Otherwise, `result` should be treated as a terminal
+ *  operation: after it is called, no further methods should be called on
+ *  the builder.  Extend the [[collection.mutable.ReusableBuilder]] trait
+ *  instead of `Builder` for builders that may be reused to build multiple
+ *  instances.
+ *
  *  @tparam  Elem  the type of elements that get added to the builder.
  *  @tparam  To    the type of collection that it produced.
  *
@@ -36,8 +44,10 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
    */
   def clear()
 
-  /** Produces a collection from the added elements.
-   *  The builder's contents are undefined after this operation.
+  /** Produces a collection from the added elements.  This is a terminal operation:
+   *  the builder's contents are undefined after this operation, and no further
+   *  methods should be called.
+   *  
    *  @return a collection containing the elements added to this builder.
    */
   def result(): To
@@ -112,6 +122,8 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
    *  @tparam NewTo the type of collection returned by `f`.
    *  @return a new builder which is the same as the current builder except
    *          that a transformation function is applied to this builder's result.
+   *
+   *  @note The original builder should no longer be used after `mapResult` is called.
    */
   def mapResult[NewTo](f: To => NewTo): Builder[Elem, NewTo] =
     new Builder[Elem, NewTo] with Proxy {
