@@ -9,12 +9,15 @@
 package scala
 package collection
 
-import generic._
-import mutable.{ Builder }
+import scala.language.higherKinds
+
 import scala.annotation.migration
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
+
+import generic._
+import mutable.Builder
+import immutable.LazyList
 import parallel.ParIterable
-import scala.language.higherKinds
 
 /** A template trait for traversable collections of type `Traversable[A]`.
  *
@@ -592,8 +595,10 @@ trait TraversableLike[+A, +Repr] extends Any
   @deprecatedOverriding("Enforce contract of toTraversable that if it is Traversable it returns itself.", "2.11.0")
   def toTraversable: Traversable[A] = thisCollection
 
-  def toIterator: Iterator[A] = toStream.iterator
-  def toStream: Stream[A] = toBuffer.toStream
+  def toIterator: Iterator[A] = toLazyList.iterator
+  def toLazyList: LazyList[A] = toStream
+  @deprecated("Use toLazyList instead", "2.12")
+  def toStream: LazyList[A] = toBuffer.toStream
   // Override to provide size hint.
   override def to[Col[_]](implicit cbf: CanBuildFrom[Nothing, A, Col[A @uV]]): Col[A @uV] = {
     val b = cbf()

@@ -10,7 +10,7 @@ package scala
 package collection
 
 import generic._
-import immutable.Stream
+import immutable.LazyList
 
 /** A template trait for iterable collections of type `Iterable[A]`.
  *  $iterableInfo
@@ -297,7 +297,9 @@ self =>
     !these.hasNext && !those.hasNext
   }
 
-  override /*TraversableLike*/ def toStream: Stream[A] = iterator.toStream
+  override /*TraversableLike*/ def toLazyList: LazyList[A] = iterator.toStream
+  @deprecated("Use toLazyList instead", "2.12")
+  override /*TraversableLike*/ def toStream: LazyList[A] = iterator.toStream
 
   /** Method called from equality methods, so that user-defined subclasses can
    *  refuse to be equal to other collections of the same kind.

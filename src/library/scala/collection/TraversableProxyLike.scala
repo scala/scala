@@ -13,6 +13,7 @@ package collection
 
 import generic._
 import mutable.{Buffer, StringBuilder}
+import immutable.LazyList
 import scala.reflect.ClassTag
 
 // Methods could be printed by  cat TraversableLike.scala | egrep '^  (override )?def'
@@ -82,7 +83,9 @@ trait TraversableProxyLike[+A, +Repr <: TraversableLike[A, Repr] with Traversabl
   override def toSeq: Seq[A] = self.toSeq
   override def toIndexedSeq: immutable.IndexedSeq[A] = self.toIndexedSeq
   override def toBuffer[B >: A] = self.toBuffer
-  override def toStream: Stream[A] = self.toStream
+  override def toLazyList: LazyList[A] = self.toStream
+  @deprecated("Use toLazyList instead", "2.12")
+  override def toStream: LazyList[A] = self.toStream
   override def toSet[B >: A]: immutable.Set[B] = self.toSet
   override def toMap[T, U](implicit ev: A <:< (T, U)): immutable.Map[T, U] = self.toMap(ev)
   override def toTraversable: Traversable[A] = self.toTraversable

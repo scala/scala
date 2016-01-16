@@ -64,9 +64,12 @@ package object scala {
   val +: = scala.collection.+:
   val :+ = scala.collection.:+
 
+  @deprecated("Stream has been renamed to LazyList", "2.12")
   type Stream[+A] = scala.collection.immutable.Stream[A]
+  @deprecated("Stream has been renamed to LazyList", "2.12")
   val Stream = scala.collection.immutable.Stream
-  val #:: = scala.collection.immutable.Stream.#::
+  @deprecated("Import LazyList explicitly", "2.12")
+  val #:: = scala.collection.immutable.LazyList.#::
 
   type Vector[+A] = scala.collection.immutable.Vector[A]
   val Vector = scala.collection.immutable.Vector
