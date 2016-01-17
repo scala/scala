@@ -578,7 +578,6 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
         s.fullName
     }
 
-
   /* Representation for the self type of a class symbol `s`, or `emptyType` for an *unascribed* self variable (or no self variable at all).
      Only the self variable's explicitly ascribed type is relevant for incremental compilation. */
   private def selfType(in: Symbol, s: Symbol): xsbti.api.Type =
@@ -604,7 +603,8 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
 
     new xsbti.api.ClassLike(
       defType, lzy(selfType(in, sym)), lzy(structureWithInherited(viewer(in).memberInfo(sym), sym)), emptyStringArray, typeParameters(in, sym), // look at class symbol
-      c.fullName, getAccess(c), getModifiers(c), annotations(in, c)) // use original symbol (which is a term symbol when `c.isModule`) for `name` and other non-classy stuff
+      c.fullName, getAccess(c), getModifiers(c), annotations(in, c) // use original symbol (which is a term symbol when `c.isModule`) for `name` and other non-classy stuff
+    )
   }
 
   // TODO: could we restrict ourselves to classes, ignoring the term symbol for modules,
