@@ -815,7 +815,7 @@ trait Contexts { self: Analyzer =>
 
       val pre =
         if (qual.tpe.typeSymbol.isPackageClass)
-          // SI-6225 important if the imported symbol is inherited by the the package object.
+          // SI-6225 important if the imported symbol is inherited by the package object.
           singleType(qual.tpe, qual.tpe member nme.PACKAGE)
         else
           qual.tpe

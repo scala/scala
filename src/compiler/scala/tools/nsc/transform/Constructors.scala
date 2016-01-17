@@ -328,7 +328,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
         val delayedHook: DefDef = delayedEndpointDef(remainingConstrStats)
         defBuf += delayedHook
         val hookCallerClass = {
-          // transform to make the closure-class' default constructor assign the the outer instance to its param-accessor field.
+          // transform to make the closure-class' default constructor assign the outer instance to its param-accessor field.
           val drillDown = new ConstructorTransformer(unit)
           drillDown transform delayedInitClosure(delayedHook.symbol.asInstanceOf[MethodSymbol])
         }

@@ -248,7 +248,7 @@ abstract class ConstantOptimization extends SubComponent {
         new State(newVariables, stack.tail)
       }
       /**
-       * Load the specified local onto the top of the stack. An error the the local is uninitialized.
+       * Load the specified local onto the top of the stack. An error if the local is uninitialized.
        */
       def load(variable: Local): State = {
         val contents: Contents = locals.getOrElse(variable, sys.error(s"$variable is not initialized"))
