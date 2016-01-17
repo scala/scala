@@ -114,7 +114,7 @@ object BytecodeUtils {
   }
 
   def sameTargetExecutableInstruction(a: JumpInsnNode, b: JumpInsnNode): Boolean = {
-    // Compare next executable instead of the the labels. Identifies a, b as the same target:
+    // Compare next executable instead of the labels. Identifies a, b as the same target:
     //   LabelNode(a)
     //   LabelNode(b)
     //   Instr

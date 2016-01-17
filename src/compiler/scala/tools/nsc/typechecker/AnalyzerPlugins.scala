@@ -65,7 +65,7 @@ trait AnalyzerPlugins { self: Analyzer =>
      * The hooks into `typeSig` allow analyzer plugins to add annotations to (or change the types
      * of) definition symbols. This cannot not be achieved by using `pluginsTyped`: this method
      * is only called during type checking, so changing the type of a symbol at this point is too
-     * late: references to the symbol might already be typed and therefore obtain the the original
+     * late: references to the symbol might already be typed and therefore obtain the original
      * type assigned during naming.
      *
      * @param defTree is the definition for which the type was computed. The different cases are

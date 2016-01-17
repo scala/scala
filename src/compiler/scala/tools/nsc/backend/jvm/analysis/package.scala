@@ -191,7 +191,7 @@ package scala.tools.nsc.backend.jvm
  * I measured nullness analysis (which tracks aliases) and a SimpleValue analysis. Nullness runs
  * roughly 5x slower (because of alias tracking) at every problem size - this factor doesn't change.
  *
- * The numbers below are for nullness. Note that the the last column is constant, i.e., the running
+ * The numbers below are for nullness. Note that the last column is constant, i.e., the running
  * time is proportional to #ins * #loc^2. Therefore we use this factor when limiting the maximal
  * method size for running an analysis.
  *
