@@ -542,7 +542,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
          *
          * (0) A or B must be in the domain to draw any conclusions.
          *
-         *     For example, knowing the the scrutinee is *not* true does not
+         *     For example, knowing the scrutinee is *not* true does not
          *     statically exclude it from being `X`, because that is an opaque
          *     Boolean.
          *

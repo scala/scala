@@ -56,7 +56,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     new FreeTypeSymbol(name, origin) initFlags flags
 
   /**
-   * This map stores the original owner the the first time the owner of a symbol is re-assigned.
+   * This map stores the original owner the first time the owner of a symbol is re-assigned.
    * The original owner of a symbol is needed in some places in the backend. Ideally, owners should
    * be versioned like the type history.
    */
