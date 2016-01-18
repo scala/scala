@@ -50,7 +50,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
           unit.depends foreach processDependency(context = DependencyByMemberRef)
           inheritedDependencies.getOrElse(sourceFile, Nil: Iterable[Symbol]) foreach processDependency(context = DependencyByInheritance)
         }
-        /**
+        /*
          * Handles dependency on given symbol by trying to figure out if represents a term
          * that is coming from either source code (not necessarily compiled in this compilation
          * run) or from class file and calls respective callback method.
