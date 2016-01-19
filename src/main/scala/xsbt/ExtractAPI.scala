@@ -184,12 +184,9 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
 
   private def defDef(in: Symbol, s: Symbol): List[xsbti.api.Def] =
     {
-      import MirrorHelper._
 
-      val hasValueClassAsParameter: Boolean = {
-        import MirrorHelper._
+      val hasValueClassAsParameter: Boolean =
         s.asMethod.paramss.flatten map (_.info) exists (t => isAnyValSubtype(t.typeSymbol))
-      }
 
       // Note: We only inspect the "outermost type" (i.e. no recursion) because we don't need to
       // inspect after erasure a function that would, for instance, return a function that returns
@@ -197,10 +194,10 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
       val hasValueClassAsReturnType: Boolean = {
         val tpe = viewer(in).memberInfo(s)
         tpe match {
-          case PolyType(_, base) => isAnyValSubtype(base.typeSymbol)
-          case MethodType(_, resultType) => isAnyValSubtype(resultType.typeSymbol)
-          case Nullary(resultType) => isAnyValSubtype(resultType.typeSymbol)
-          case resultType => isAnyValSubtype(resultType.typeSymbol)
+          case PolyType(_, base)             => isAnyValSubtype(base.typeSymbol)
+          case MethodType(_, resultType)     => isAnyValSubtype(resultType.typeSymbol)
+          case NullaryMethodType(resultType) => isAnyValSubtype(resultType.typeSymbol)
+          case resultType                    => isAnyValSubtype(resultType.typeSymbol)
         }
       }
 
@@ -230,7 +227,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
               // of def foo.
               val beforeErasure =
                 build(resultType, typeParams, parameterList(params) :: valueParameters)
-              val afterErasure  =
+              val afterErasure =
                 if (inspectPostErasure)
                   build(resultType, typeParams, global exitingPostErasure (parameterList(mType.params) :: valueParameters))
                 else
@@ -248,7 +245,8 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
                   simpleName(s),
                   getAccess(s),
                   getModifiers(s),
-                  annotations(in, s))
+                  annotations(in, s)
+                )
 
               // The return type of a method may change before and after erasure. Consider the
               // following method:
@@ -598,5 +596,8 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
       val annots = at.annotations
       if (annots.isEmpty) processType(in, at.underlying) else annotated(in, annots, at.underlying)
     }
+
+  private lazy val AnyValClass = global.rootMirror.getClassIfDefined("scala.AnyVal")
+  private def isAnyValSubtype(sym: Symbol): Boolean = sym.isNonBottomSubClass(AnyValClass)
 
 }
