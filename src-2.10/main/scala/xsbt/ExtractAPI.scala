@@ -236,7 +236,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
                   Nil
 
               beforeErasure ++ afterErasure
-            case NullaryMethodType(resultType) =>
+            case Nullary(resultType) =>
               build(resultType, typeParams, valueParameters)
             case returnType =>
               def makeDef(retTpe: xsbti.api.Type): xsbti.api.Def =
