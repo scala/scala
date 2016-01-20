@@ -1055,6 +1055,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (hasUndets)
             return instantiate(tree, mode, pt)
 
+          // we know `!(tree.tpe <:< pt)`, try to remedy if there's a sam for pt
+          val sam = if (tree.isInstanceOf[Function] && !isFunctionType(pt)) samOf(pt) else NoSymbol
+          if (sam.exists && sameLength(sam.info.params, tree.asInstanceOf[Function].vparams)) {
+            // Use synthesizeSAMFunction to expand `(p1: T1, ..., pN: TN) => body`
+            // to an instance of the corresponding anonymous subclass of `pt`.
+            val samTree = synthesizeSAMFunction(sam, tree.asInstanceOf[Function], pt, mode)
+            if (samTree ne EmptyTree) return samTree
+          }
+
           if (context.implicitsEnabled && !pt.isError && !tree.isErrorTyped) {
             // (14); the condition prevents chains of views
             debuglog("inferring view from " + tree.tpe + " to " + pt)
@@ -2713,184 +2722,161 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
     }
 
-    /** Synthesize and type check the implementation of a type with a Single Abstract Method
-     *
-     *  `{ (p1: T1, ..., pN: TN) => body } : S`
-     *
-     *  expands to (where `S` is the expected type that defines a single abstract method named `apply`)
-     *
-     *  `{
-     *    def apply$body(p1: T1, ..., pN: TN): T = body
-     *    new S {
-     *     def apply(p1: T1', ..., pN: TN'): T' = apply$body(p1,..., pN)
-     *    }
-     *  }`
-     *
-     * If 'T' is not fully defined, it is inferred by type checking
-     * `apply$body` without a result type before type checking the block.
-     * The method's inferred result type is used instead of `T`. [See test/files/pos/sammy_poly.scala]
-     *
-     * The `apply` method is identified by the argument `sam`; `S` corresponds to the argument `samClassTp`,
-     * and `resPt` is derived from `samClassTp` -- it may be fully defined, or not...
-     * If it is not fully defined, we derive `samClassTpFullyDefined` by inferring any unknown type parameters.
-     *
-     * The types T1' ... TN' and T' are derived from the method signature of the sam method,
-     * as seen from the fully defined `samClassTpFullyDefined`.
-     *
-     * The function's body is put in a method outside of the class definition to enforce scoping.
-     * S's members should not be in scope in `body`.
-     *
-     * The restriction on implicit arguments (neither S's constructor, nor sam may take an implicit argument list),
-     * is largely to keep the implementation of type inference (the computation of `samClassTpFullyDefined`) simple.
-     *
-     * NOTE: it would be nicer to not have to type check `apply$body` separately when `T` is not fully defined.
-     * However T must be fully defined before we type the instantiation, as it'll end up as a parent type,
-     * which must be fully defined. Would be nice to have some kind of mechanism to insert type vars in a block of code,
-     * and have the instantiation of the first occurrence propagate to the rest of the block.
-     *
-     * TODO: by-name params
-     *  scala> trait LazySink { def accept(a: => Any): Unit }
-     *  defined trait LazySink
-     *
-     *  scala> val f: LazySink = (a) => (a, a)
-     *  f: LazySink = $anonfun$1@1fb26910
-     *
-     *  scala> f(println("!"))
-     *  <console>:10: error: LazySink does not take parameters
-     *                f(println("!"))
-     *                 ^
-     *
-     *  scala> f.accept(println("!"))
-     *  !
-     *  !
-     */
-    def synthesizeSAMFunction(sam: Symbol, fun: Function, resPt: Type, samClassTp: Type, mode: Mode): Tree = {
-      // assert(fun.vparams forall (vp => isFullyDefined(vp.tpt.tpe))) -- by construction, as we take them from sam's info
-      val sampos = fun.pos
+    /** Synthesize and type check the implementation of a type with a Single Abstract Method.
+      *
+      * Based on a type checked Function node `{ (p1: T1, ..., pN: TN) => body } : S`
+      * where `S` is the expected type that defines a single abstract method (call it `apply` for the example),
+      * that has signature `(p1: T1', ..., pN: TN'): T'`, synthesize the instantiation of the following anonymous class
+      *
+      * ```
+      *   new S {
+      *    <static> def apply$body(p1: T1, ..., pN: TN): T = body
+      *    def apply(p1: T1', ..., pN: TN'): T' = apply$body(p1,..., pN)
+      *   }
+      * ```
+      *
+      * The `apply` method is identified by the argument `sam`; `S` corresponds to the argument `pt`,
+      * If `pt` is not fully defined, we derive `samClassTpFullyDefined` by inferring any unknown type parameters.
+      *
+      * The types T1' ... TN' and T' are derived from the method signature of the sam method,
+      * as seen from the fully defined `samClassTpFullyDefined`.
+      *
+      * The function's body is put in a static method in the class definition to enforce scoping.
+      * S's members should not be in scope in `body`. (Putting it in the block outside the class runs into implementation problems described below)
+      *
+      * The restriction on implicit arguments (neither S's constructor, nor sam may take an implicit argument list),
+      * is largely to keep the implementation of type inference (the computation of `samClassTpFullyDefined`) simple.
+      *
+      */
+    def synthesizeSAMFunction(sam: Symbol, fun: Function, pt: Type, mode: Mode): Tree = {
+      // `fun` has a FunctionType, but the expected type `pt` is some SAM type -- let's remedy that
+      // `fun` is fully attributed, so we'll have to wrangle some symbols into shape (owner change, vparam syms)
+      // I tried very hard to leave `fun` untyped and rework everything into the right shape and type check once,
+      // but couldn't make it work due to retyping that happens down the line
+      // (implicit conversion retries/retypechecking, CBN transform, super call arg context nesting weirdness)
+      val sampos = fun.pos.focus
 
-      // if the expected sam type is fully defined, use it for the method's result type
-      // otherwise, NoType, so that type inference will determine the method's result type
-      // resPt is syntactically contained in samClassTp, so if the latter is fully defined, so is the former
-      // ultimately, we want to fully define samClassTp as it is used as the superclass of our anonymous class
-      val samDefTp = if (isFullyDefined(resPt)) resPt else NoType
-      val bodyName = newTermName(sam.name + "$body")
-
-      // `def '${sam.name}\$body'($p1: $T1, ..., $pN: $TN): $resPt = $body`
-      val samBodyDef =
-        DefDef(NoMods,
-          bodyName,
-          Nil,
-          List(fun.vparams.map(_.duplicate)), // must duplicate as we're also using them for `samDef`
-          TypeTree(samDefTp) setPos sampos.focus,
-          fun.body)
-
-      // If we need to enter the sym for the body def before type checking the block,
-      // we'll create a nested context, as explained below.
-      var nestedTyper = this
 
       // Type check body def before classdef to fully determine samClassTp (if necessary).
       // As `samClassTp` determines a parent type for the class,
       // we can't type check `block` in one go unless `samClassTp` is fully defined.
-      val samClassTpFullyDefined =
-        if (isFullyDefined(samClassTp)) samClassTp
+      val ptFullyDefined =
+        if (isFullyDefined(pt) && !isNonRefinementClassType(unwrapToClass(pt))) pt
         else try {
-          // This creates a symbol for samBodyDef with a type completer that'll be triggered immediately below.
-          // The symbol is entered in the same scope used for the block below, and won't thus be reentered later.
-          // It has to be a new scope, though, or we'll "get ambiguous reference to overloaded definition" [pos/sammy_twice.scala]
-          // makeSilent: [pos/nonlocal-unchecked.scala -- when translation all functions to sams]
-          val nestedCtx = enterSym(context.makeNewScope(context.tree, context.owner).makeSilent(), samBodyDef)
-          nestedTyper = newTyper(nestedCtx)
-
-          // NOTE: this `samBodyDef.symbol.info` runs the type completer set up by the enterSym above
-          val actualSamType = samBodyDef.symbol.info
+          val samClassSym = pt.typeSymbol
 
           // we're trying to fully define the type arguments for this type constructor
-          val samTyCon  = samClassTp.typeSymbol.typeConstructor
+          val samTyCon  = samClassSym.typeConstructor
 
           // the unknowns
-          val tparams   = samClassTp.typeSymbol.typeParams
+          val tparams   = samClassSym.typeParams
           // ... as typevars
           val tvars     = tparams map freshVar
 
-          // 1. Recover partial information:
-          //   - derive a type from samClassTp that has the corresponding tparams for type arguments that aren't fully defined
-          //   - constrain typevars to be equal to type args that are fully defined
-          val samClassTpMoreDefined = appliedType(samTyCon,
-            (samClassTp.typeArgs, tparams, tvars).zipped map {
-              case (a, _, tv) if isFullyDefined(a) => tv =:= a; a
-              case (_, p, _)                       => p.typeConstructor
-            })
+          val ptVars = appliedType(samTyCon, tvars)
 
-          // the method type we're expecting the synthesized sam to have, based on the expected sam type,
-          // where fully defined type args to samClassTp have been preserved,
-          // with the unknown args replaced by their corresponding type param
-          val expectedSamType = samClassTpMoreDefined.memberInfo(sam)
+          // carry over info from pt
+          ptVars <:< pt
 
-          // 2. make sure the body def's actual type (formals and result) conforms to
-          //    sam's expected type (in terms of the typevars that represent the sam's class's type params)
-          actualSamType <:< expectedSamType.substituteTypes(tparams, tvars)
+          val samInfoWithTVars = ptVars.memberInfo(sam)
+
+          // use function type subtyping, not method type subtyping (the latter is invariant in argument types)
+          fun.tpe <:< functionType(samInfoWithTVars.paramTypes, samInfoWithTVars.finalResultType)
+
+          val variances = tparams map varianceInType(sam.info)
 
           // solve constraints tracked by tvars
-          val targs = solvedTypes(tvars, tparams, tparams map varianceInType(sam.info), upper = false, lubDepth(sam.info :: Nil))
+          val targs = solvedTypes(tvars, tparams, variances, upper = false, lubDepth(sam.info :: Nil))
 
-          debuglog(s"sam infer: $samClassTp --> ${appliedType(samTyCon, targs)} by $actualSamType <:< $expectedSamType --> $targs for $tparams")
+          debuglog(s"sam infer: $pt --> ${appliedType(samTyCon, targs)} by ${fun.tpe} <:< $samInfoWithTVars --> $targs for $tparams")
 
           // a fully defined samClassTp
           appliedType(samTyCon, targs)
         } catch {
-          case _: NoInstance | _: TypeError =>
-            devWarning(sampos, s"Could not define type $samClassTp using ${samBodyDef.symbol.rawInfo} <:< ${samClassTp memberInfo sam} (for $sam)")
-            samClassTp
+          case e@(_: NoInstance | _: TypeError) => // TODO: we get here whenever pt contains a wildcardtype???
+            debuglog(s"Could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)\n$e")
+            return EmptyTree
         }
 
+      debuglog(s"sam fully defined expected type: $ptFullyDefined from $pt for ${fun.tpe}")
+
+      val samFunTp = {
+        val samDefinedTp = ptFullyDefined memberInfo sam
+        functionType(samDefinedTp.paramTypes, samDefinedTp.finalResultType)
+      }
+      if (!(fun.tpe <:< samFunTp)) return EmptyTree
+
+
+      // TODO: defer the remainder of this synthesis to the back-end, and use invokedynamic/LMF instead
+      // can we carry a Function node down the pipeline if it has type `ptFullyDefined`, which is not a `FunctionN`?
+      val bodyName = (sam.name append nme.SAM_BODY_SUFFIX).toTermName
+
+      // drop symbol info
+      val samBodyDefParams = fun.vparams.map { vd => ValDef(vd.mods, vd.name, vd.tpt, vd.rhs) }
+
+      // `def '${sam.name}\$body'($p1: $T1, ..., $pN: $TN): $resPt = $body`
+      //
+      // TODO: make this behave like a static method during type checking to enforce scoping:
+      // the sam class's self reference should not be in scope here.
+      // To survive retyping, we must package samBodyDef as a member of the sam's class, however.
+      // Scoping is not a problem (regardless of whether STATIC works), as the body has already been type checked in typedFunction.
+      //
+      // (Lifting samBodyDef into the surrounding block cause several problems:
+      // when the tree is in a ctor arg / implicitly converted in multiple tries --> lambda lift crash "Could not find proxy...")
+      //
+      // the rhs is already typed, so it doesn't matter it uses the wrong parameter symbols (must wait until block is typed before we can fix them)
+      val samBodyDef =
+        DefDef(NoMods, // TODO: Modifiers(STATIC) when the backend supports it (currently it causes VerifyErrors)
+          bodyName,
+          Nil,
+          List(samBodyDefParams),
+          TypeTree(fun.body.tpe) setPos sampos,
+          fun.body)
+
       // what's the signature of the method that we should actually be overriding?
-      val samMethTp = samClassTpFullyDefined memberInfo sam
-      // Before the mutation, `tp <:< vpar.tpt.tpe` should hold.
-      // TODO: error message when this is not the case, as the expansion won't type check
-      //  - Ti' <:< Ti and T <: T' must hold for the samDef body to type check
-      val funArgTps = foreach2(samMethTp.paramTypes, fun.vparams)((tp, vpar) => vpar.tpt setType tp)
+      val samMethType = ptFullyDefined memberInfo sam
+
+      // drop symbol info, use type info from sam so we implement the right method
+      val samDefParams = map2(fun.vparams, samMethType.paramTypes) { (vd, tp) => ValDef(vd.mods, vd.name, TypeTree(tp), vd.rhs) }
 
       // `final override def ${sam.name}($p1: $T1', ..., $pN: $TN'): ${samMethTp.finalResultType} = ${sam.name}\$body'($p1, ..., $pN)`
       val samDef =
         DefDef(Modifiers(FINAL | OVERRIDE | SYNTHETIC),
           sam.name.toTermName,
           Nil,
-          List(fun.vparams),
-          TypeTree(samMethTp.finalResultType) setPos sampos.focus,
-          Apply(Ident(bodyName), fun.vparams map gen.paramToArg)
+          List(samDefParams),
+          TypeTree(samMethType.finalResultType) setPos sampos,
+          Apply(Ident(bodyName), fun.vparams.map(gen.paramToArg))
         )
 
-      val serializableParentAddendum =
-        if (typeIsSubTypeOfSerializable(samClassTp)) Nil
-        else List(TypeTree(SerializableTpe))
-
+      val samSubclassName = tpnme.ANON_FUN_NAME
       val classDef =
-        ClassDef(Modifiers(FINAL), tpnme.ANON_FUN_NAME, tparams = Nil,
+        ClassDef(Modifiers(FINAL), samSubclassName, tparams = Nil,
           gen.mkTemplate(
-            parents    = TypeTree(samClassTpFullyDefined) :: serializableParentAddendum,
+            parents    = TypeTree(ptFullyDefined) :: (if (typeIsSubTypeOfSerializable(pt)) Nil else List(TypeTree(SerializableTpe))),
             self       = noSelfType,
             constrMods = NoMods,
             vparamss   = ListOfNil,
-            body       = List(samDef),
-            superPos   = sampos.focus
+            body       = List(samBodyDef, samDef),
+            superPos   = sampos
           )
         )
 
       // type checking the whole block, so that everything is packaged together nicely
       // and we don't have to create any symbols by hand
       val block =
-        nestedTyper.typedPos(sampos, mode, samClassTpFullyDefined) {
-          Block(
-            samBodyDef,
-            classDef,
-            Apply(Select(New(Ident(tpnme.ANON_FUN_NAME)), nme.CONSTRUCTOR), Nil)
-          )
+        typedPos(sampos, mode, pt) {
+          Block(classDef, Apply(Select(New(Ident(samSubclassName)), nme.CONSTRUCTOR), Nil))
         }
+
+      // fix owner for parts of the function we reused now that samBodyDef has a symbol
+      samBodyDef.rhs.changeOwner((fun.symbol, samBodyDef.symbol))
+      samBodyDef.rhs.substituteSymbols(fun.vparams.map(_.symbol), samBodyDef.vparamss.head.map(_.symbol))
 
       // TODO: improve error reporting -- when we're in silent mode (from `silent(_.doTypedApply(tree, fun, args, mode, pt)) orElse onError`)
       // the errors in the function don't get out...
       if (block exists (_.isErroneous))
-        context.error(fun.pos, s"Could not derive subclass of $samClassTp\n (with SAM `def $sam$samMethTp`)\n based on: $fun.")
+        context.error(fun.pos, s"Could not derive subclass of $pt\n (with SAM `${sam.defStringSeenAs(ptFullyDefined)}`)\n based on: $fun.")
 
       classDef.symbol addAnnotation SerialVersionUIDAnnotation
       block
@@ -2908,11 +2894,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (numVparams > definitions.MaxFunctionArity) NoSymbol
         else FunctionClass(numVparams)
 
+      val ptSym = pt.typeSymbol
+
       /* The Single Abstract Member of pt, unless pt is the built-in function type of the expected arity,
        * as `(a => a): Int => Int` should not (yet) get the sam treatment.
        */
       val sam =
-        if (pt.typeSymbol == FunctionSymbol) NoSymbol
+        if (ptSym == NoSymbol || ptSym == FunctionSymbol || ptSym == PartialFunctionClass) NoSymbol
         else samOf(pt)
 
       /* The SAM case comes first so that this works:
@@ -2921,78 +2909,87 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        *
        * Note that the arity of the sam must correspond to the arity of the function.
        */
-      val samViable = sam.exists && sameLength(sam.info.params, fun.vparams)
-      val ptNorm = if (samViable) samToFunctionType(pt, sam) else pt
+      val ptNorm =
+        if (sam.exists && sameLength(sam.info.params, fun.vparams)) samToFunctionType(pt, sam)
+        else pt
       val (argpts, respt) =
         ptNorm baseType FunctionSymbol match {
           case TypeRef(_, FunctionSymbol, args :+ res) => (args, res)
-          case _                                       => (fun.vparams map (_ => if (pt == ErrorType) ErrorType else NoType), WildcardType)
+          case _                                       => (fun.vparams map (if (pt == ErrorType) (_ => ErrorType) else (_ => NoType)), WildcardType)
         }
 
-      if (!FunctionSymbol.exists)
-        MaxFunctionArityError(fun)
-      else if (argpts.lengthCompare(numVparams) != 0)
-        WrongNumberOfParametersError(fun, argpts)
+
+      // if the function is `(a1: T1, ..., aN: TN) => fun(a1,..., aN)`, where Ti are not all fully defined,
+      // type `fun` directly
+      def typeUnEtaExpanded: Type = fun match {
+        case etaExpansion(_, fn, _) =>
+          silent(_.typed(fn, mode.forFunMode, pt)) filter (_ => context.undetparams.isEmpty) map { fn1 =>
+            // if context.undetparams is not empty, the function was polymorphic,
+            // so we need the missing arguments to infer its type. See #871
+            //println("typing eta "+fun+":"+fn1.tpe+"/"+context.undetparams)
+            val ftpe = normalize(fn1.tpe) baseType FunctionClass(numVparams)
+            if (isFunctionType(ftpe) && isFullyDefined(ftpe)) ftpe
+            else NoType
+          } orElse { _ => NoType }
+        case _ => NoType
+      }
+
+      if (!FunctionSymbol.exists) MaxFunctionArityError(fun)
+      else if (argpts.lengthCompare(numVparams) != 0) WrongNumberOfParametersError(fun, argpts)
       else {
-        var issuedMissingParameterTypeError = false
+        val paramsMissingType = mutable.ArrayBuffer.empty[ValDef] //.sizeHint(numVparams) probably useless, since initial size is 16 and max fun arity is 22
+        // first, try to define param types from expected function's arg types if needed
         foreach2(fun.vparams, argpts) { (vparam, argpt) =>
-          if (vparam.tpt.isEmpty) {
-            val vparamType =
-              if (isFullyDefined(argpt)) argpt
-              else {
-                fun match {
-                  case etaExpansion(vparams, fn, args) =>
-                    silent(_.typed(fn, mode.forFunMode, pt)) filter (_ => context.undetparams.isEmpty) map { fn1 =>
-                        // if context.undetparams is not empty, the function was polymorphic,
-                        // so we need the missing arguments to infer its type. See #871
-                        //println("typing eta "+fun+":"+fn1.tpe+"/"+context.undetparams)
-                        val ftpe = normalize(fn1.tpe) baseType FunctionClass(numVparams)
-                        if (isFunctionType(ftpe) && isFullyDefined(ftpe))
-                          return typedFunction(fun, mode, ftpe)
-                    }
-                  case _ =>
-                }
-                MissingParameterTypeError(fun, vparam, pt, withTupleAddendum = !issuedMissingParameterTypeError)
-                issuedMissingParameterTypeError = true
-                ErrorType
-              }
-            vparam.tpt.setType(vparamType)
+          if (vparam.tpt isEmpty) {
+            if (isFullyDefined(argpt)) vparam.tpt setType argpt
+            else paramsMissingType += vparam
+
             if (!vparam.tpt.pos.isDefined) vparam.tpt setPos vparam.pos.focus
           }
         }
 
-        fun.body match {
-          // translate `x => x match { <cases> }` : PartialFunction to
-          // `new PartialFunction { def applyOrElse(x, default) = x match { <cases> } def isDefinedAt(x) = ... }`
-          case Match(sel, cases) if (sel ne EmptyTree) && (pt.typeSymbol == PartialFunctionClass) =>
-            // go to outer context -- must discard the context that was created for the Function since we're discarding the function
-            // thus, its symbol, which serves as the current context.owner, is not the right owner
-            // you won't know you're using the wrong owner until lambda lift crashes (unless you know better than to use the wrong owner)
-            val outerTyper = newTyper(context.outer)
-            val p = fun.vparams.head
-            if (p.tpt.tpe == null) p.tpt setType outerTyper.typedType(p.tpt).tpe
+        // if we had missing param types, see if we can undo eta-expansion and recover type info
+        val expectedFunTypeBeforeEtaExpansion =
+          if (paramsMissingType.isEmpty) NoType
+          else typeUnEtaExpanded
 
-            outerTyper.synthesizePartialFunction(p.name, p.pos, paramSynthetic = false, fun.body, mode, pt)
+        if (expectedFunTypeBeforeEtaExpansion ne NoType) typedFunction(fun, mode, expectedFunTypeBeforeEtaExpansion)
+        else {
+          // we ran out of things to try, missing parameter types are an irrevocable error
+          var issuedMissingParameterTypeError = false
+          paramsMissingType.foreach { vparam =>
+            vparam.tpt setType ErrorType
+            MissingParameterTypeError(fun, vparam, pt, withTupleAddendum = !issuedMissingParameterTypeError)
+            issuedMissingParameterTypeError = true
+          }
 
-          // Use synthesizeSAMFunction to expand `(p1: T1, ..., pN: TN) => body`
-          // to an instance of the corresponding anonymous subclass of `pt`.
-          case _ if samViable =>
-            newTyper(context.outer).synthesizeSAMFunction(sam, fun, respt, pt, mode)
+          fun.body match {
+            // translate `x => x match { <cases> }` : PartialFunction to
+            // `new PartialFunction { def applyOrElse(x, default) = x match { <cases> } def isDefinedAt(x) = ... }`
+            case Match(sel, cases) if (sel ne EmptyTree) && (pt.typeSymbol == PartialFunctionClass) =>
+              // go to outer context -- must discard the context that was created for the Function since we're discarding the function
+              // thus, its symbol, which serves as the current context.owner, is not the right owner
+              // you won't know you're using the wrong owner until lambda lift crashes (unless you know better than to use the wrong owner)
+              val outerTyper = newTyper(context.outer)
+              val p = fun.vparams.head
+              if (p.tpt.tpe == null) p.tpt setType outerTyper.typedType(p.tpt).tpe
 
-          // regular Function
-          case _ =>
-            val vparamSyms = fun.vparams map { vparam =>
-              enterSym(context, vparam)
-              if (context.retyping) context.scope enter vparam.symbol
-              vparam.symbol
-            }
-            val vparams = fun.vparams mapConserve typedValDef
-            val formals = vparamSyms map (_.tpe)
-            val body1 = typed(fun.body, respt)
-            val restpe = packedType(body1, fun.symbol).deconst.resultType
-            val funtpe  = phasedAppliedType(FunctionSymbol, formals :+ restpe)
+              outerTyper.synthesizePartialFunction(p.name, p.pos, paramSynthetic = false, fun.body, mode, pt)
 
-            treeCopy.Function(fun, vparams, body1) setType funtpe
+            case _ =>
+              val vparamSyms = fun.vparams map { vparam =>
+                enterSym(context, vparam)
+                if (context.retyping) context.scope enter vparam.symbol
+                vparam.symbol
+              }
+              val vparams = fun.vparams mapConserve typedValDef
+              val formals = vparamSyms map (_.tpe)
+              val body1 = typed(fun.body, respt)
+              val restpe = packedType(body1, fun.symbol).deconst.resultType
+              val funtpe = phasedAppliedType(FunctionSymbol, formals :+ restpe)
+
+              treeCopy.Function(fun, vparams, body1) setType funtpe
+          }
         }
       }
     }
@@ -4303,7 +4300,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (pt.typeSymbol == PartialFunctionClass)
             synthesizePartialFunction(newTermName(context.unit.fresh.newName("x")), tree.pos, paramSynthetic = true, tree, mode, pt)
           else {
-            val arity = if (isFunctionType(pt)) pt.dealiasWiden.typeArgs.length - 1 else 1
+            val arity = functionArityFromType(pt) match { case -1 => 1 case arity => arity } // SI-8429: consider sam and function type equally in determining function arity
+
             val params = for (i <- List.range(0, arity)) yield
               atPos(tree.pos.focusStart) {
                 ValDef(Modifiers(PARAM | SYNTHETIC),

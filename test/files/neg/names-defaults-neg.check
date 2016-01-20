@@ -130,7 +130,7 @@ names-defaults-neg.scala:102: error: unknown parameter name: m
 names-defaults-neg.scala:135: error: reference to var2 is ambiguous; it is both a method parameter and a variable in scope.
   delay(var2 = 40)
              ^
-names-defaults-neg.scala:138: error: missing parameter type for expanded function ((x$1) => a = x$1)
+names-defaults-neg.scala:138: error: missing parameter type for expanded function ((x$1: <error>) => a = x$1)
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                          ^
 names-defaults-neg.scala:138: error: not found: value a
@@ -142,10 +142,10 @@ names-defaults-neg.scala:138: error: not found: value get
 names-defaults-neg.scala:139: error: parameter 'a' is already specified at parameter position 1
   val taf3 = testAnnFun(b = _: String, a = get(8))
                                          ^
-names-defaults-neg.scala:140: error: missing parameter type for expanded function ((x$3) => testAnnFun(x$3, ((x$4) => b = x$4)))
+names-defaults-neg.scala:140: error: missing parameter type for expanded function ((x$3: <error>) => testAnnFun(x$3, ((x$4) => b = x$4)))
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                ^
-names-defaults-neg.scala:140: error: missing parameter type for expanded function ((x$4) => b = x$4)
+names-defaults-neg.scala:140: error: missing parameter type for expanded function ((x$4: <error>) => b = x$4)
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                       ^
 names-defaults-neg.scala:140: error: not found: value b
