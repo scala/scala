@@ -1387,7 +1387,7 @@ If none of the previous conversions applies, and $e$'s type
 does not conform to the expected type $\mathit{pt}$, it is attempted to convert
 $e$ to the expected type with a [view](07-implicits.html#views).
 
-###### Dynamic Member Selection
+###### Selection on `Dynamic`
 If none of the previous conversions applies, and $e$ is a prefix
 of a selection $e.x$, and $e$'s type conforms to class `scala.Dynamic`,
 then the selection is rewritten according to the rules for
