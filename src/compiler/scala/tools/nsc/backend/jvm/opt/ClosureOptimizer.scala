@@ -218,7 +218,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
         receiverProducers.size == 1 && receiverProducers.head == indy
       }
 
-      def isSpecializedVersion(specName: String, nonSpecName: String) = specName.startsWith(nonSpecName) && specName.substring(nonSpecName.length).matches(specializationSuffix)
+      def isSpecializedVersion(specName: String, nonSpecName: String) = specName.startsWith(nonSpecName) && specializationSuffix.pattern.matcher(specName.substring(nonSpecName.length)).matches
 
       def sameOrSpecializedType(specTp: Type, nonSpecTp: Type) = {
         specTp == nonSpecTp || {
@@ -517,5 +517,5 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
 
 object ClosureOptimizer {
   val primitives = "BSIJCFDZV"
-  val specializationSuffix = s"(\\$$mc[$primitives]+\\$$sp)"
+  val specializationSuffix = s"(\\$$mc[$primitives]+\\$$sp)".r
 }

@@ -147,10 +147,10 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
 
   def getBoxedUnit: FieldInsnNode = new FieldInsnNode(Opcodes.GETSTATIC, coreBTypes.srBoxedUnitRef.internalName, "UNIT", coreBTypes.srBoxedUnitRef.descriptor)
 
-  private val anonfunAdaptedName = """.*\$anonfun\$\d+\$adapted"""
+  private val anonfunAdaptedName = """.*\$anonfun\$\d+\$adapted""".r
   def hasAdaptedImplMethod(closureInit: ClosureInstantiation): Boolean = {
     BytecodeUtils.isrJFunctionType(Type.getReturnType(closureInit.lambdaMetaFactoryCall.indy.desc).getInternalName) &&
-    closureInit.lambdaMetaFactoryCall.implMethod.getName.matches(anonfunAdaptedName)
+    anonfunAdaptedName.pattern.matcher(closureInit.lambdaMetaFactoryCall.implMethod.getName).matches
   }
 
   /**

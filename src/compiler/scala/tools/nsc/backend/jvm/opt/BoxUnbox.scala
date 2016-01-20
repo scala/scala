@@ -763,9 +763,14 @@ class BoxUnbox[BT <: BTypes](val btypes: BT) {
       }
     }
 
-    private def isSpecializedTupleClass(tupleClass: InternalName) = tupleClass matches "scala/Tuple[12]\\$mc[IJDCZ]{1,2}\\$sp"
-    private def isSpecializedTupleGetter(mi: MethodInsnNode) = mi.name matches "_[12]\\$mc[IJDCZ]\\$sp"
-    private def isTupleGetter(mi: MethodInsnNode) = mi.name matches "_\\d\\d?"
+    private val specializedTupleClassR = "scala/Tuple[12]\\$mc[IJDCZ]{1,2}\\$sp".r
+    private def isSpecializedTupleClass(tupleClass: InternalName) = specializedTupleClassR.pattern.matcher(tupleClass).matches
+
+    private val specializedTupleGetterR = "_[12]\\$mc[IJDCZ]\\$sp".r
+    private def isSpecializedTupleGetter(mi: MethodInsnNode) = specializedTupleGetterR.pattern.matcher(mi.name)matches
+
+    private val tupleGetterR = "_\\d\\d?".r
+    private def isTupleGetter(mi: MethodInsnNode) = tupleGetterR.pattern.matcher(mi.name).matches
 
     def checkTupleExtraction(insn: AbstractInsnNode, kind: Tuple, prodCons: ProdConsAnalyzer): Option[BoxConsumer] = {
       val expectedTupleClass = kind.tupleClass
