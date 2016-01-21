@@ -654,7 +654,8 @@ or `scala.PartialFunction[$S_1$, $R$]`, where the
 argument type(s) $S_1 , \ldots , S_k$ must be fully determined, but the result type
 $R$ may be undetermined.
 
-If the expected type is `scala.Function$k$[$S_1 , \ldots , S_k$, $R$]`,
+If the expected type is [SAM-convertible](06-expressions.html#sam-conversion)
+to `scala.Function$k$[$S_1 , \ldots , S_k$, $R$]`,
 the expression is taken to be equivalent to the anonymous function:
 
 ```scala
