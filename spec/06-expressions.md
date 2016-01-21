@@ -1289,11 +1289,9 @@ include at least the expressions of the following forms:
 - A string literal
 - A class constructed with [`Predef.classOf`](12-the-scala-standard-library.html#the-predef-object)
 - An element of an enumeration from the underlying platform
-- A literal array, of the form
-  `Array$(c_1 , \ldots , c_n)$`,
+- A literal array, of the form `Array$(c_1 , \ldots , c_n)$`,
   where all of the $c_i$'s are themselves constant expressions
-- An identifier defined by a
-  [constant value definition](04-basic-declarations-and-definitions.html#value-declarations-and-definitions).
+- An identifier defined by a [constant value definition](04-basic-declarations-and-definitions.html#value-declarations-and-definitions).
 
 ## Statements
 
@@ -1434,21 +1432,21 @@ a type that is defined as follows:
 - For all other expressions: `Nothing`.
 
 Let $\mathscr{B}$ be the set of alternatives in $\mathscr{A}$ that are
-[_applicable_](#function-applications)
-to expressions $(e_1 , \ldots , e_n)$ of types
-$(\mathit{shape}(e_1) , \ldots , \mathit{shape}(e_n))$.
-If there is precisely one
-alternative in $\mathscr{B}$, that alternative is chosen.
+[_applicable_](#function-applications) to expressions $(e_1 , \ldots , e_n)$
+of types $(\mathit{shape}(e_1) , \ldots , \mathit{shape}(e_n))$.
+If there is precisely one alternative in $\mathscr{B}$, that alternative is chosen.
 
 Otherwise, let $S_1 , \ldots , S_m$ be the vector of types obtained by
 typing each argument with an undefined expected type.  For every
 member $m$ in $\mathscr{B}$ one determines whether it is
-applicable to expressions ($e_1 , \ldots , e_m$) of types $S_1
-, \ldots , S_m$.
+applicable to expressions ($e_1 , \ldots , e_m$) of types $S_1, \ldots , S_m$.
+
 It is an error if none of the members in $\mathscr{B}$ is applicable. If there is one
 single applicable alternative, that alternative is chosen. Otherwise, let $\mathscr{CC}$
 be the set of applicable alternatives which don't employ any default argument
-in the application to $e_1 , \ldots , e_m$. It is again an error if $\mathscr{CC}$ is empty.
+in the application to $e_1 , \ldots , e_m$.
+
+It is again an error if $\mathscr{CC}$ is empty.
 Otherwise, one chooses the _most specific_ alternative among the alternatives
 in $\mathscr{CC}$, according to the following definition of being "as specific as", and
 "more specific than":
@@ -1464,21 +1462,17 @@ question: given
  so the method is not more specific than the value.
 -->
 
-- A parameterized method $m$ of type `($p_1:T_1, \ldots , p_n:T_n$)$U$` is _as specific as_ some other
-  member $m'$ of type $S$ if $m'$ is applicable to arguments
-  `($p_1 , \ldots , p_n\,$)` of
-  types $T_1 , \ldots , T_n$.
-- A polymorphic method of type
-  `[$a_1$ >: $L_1$ <: $U_1 , \ldots , a_n$ >: $L_n$ <: $U_n$]$T$` is
-  as specific as some other member of type $S$ if $T$ is as
-  specific as $S$ under the assumption that for
-  $i = 1 , \ldots , n$ each $a_i$ is an abstract type name
+- A parameterized method $m$ of type `($p_1:T_1, \ldots , p_n:T_n$)$U$` is
+  _as specific as_ some other member $m'$ of type $S$ if $m'$ is applicable
+  to arguments `($p_1 , \ldots , p_n$)` of types $T_1 , \ldots , T_n$.
+- A polymorphic method of type `[$a_1$ >: $L_1$ <: $U_1 , \ldots , a_n$ >: $L_n$ <: $U_n$]$T$` is
+  as specific as some other member of type $S$ if $T$ is as specific as $S$
+  under the assumption that for $i = 1 , \ldots , n$ each $a_i$ is an abstract type name
   bounded from below by $L_i$ and from above by $U_i$.
-- A member of any other type is always as specific as a parameterized method
-  or a polymorphic method.
-- Given two members of types $T$ and $U$ which are
-  neither parameterized nor polymorphic method types, the member of type $T$ is as specific as
-  the member of type $U$ if the existential dual of $T$ conforms to the existential dual of $U$.
+- A member of any other type is always as specific as a parameterized method or a polymorphic method.
+- Given two members of types $T$ and $U$ which are neither parameterized nor polymorphic method types,
+  the member of type $T$ is as specific as the member of type $U$ if
+  the existential dual of $T$ conforms to the existential dual of $U$.
   Here, the existential dual of a polymorphic type
   `[$a_1$ >: $L_1$ <: $U_1 , \ldots , a_n$ >: $L_n$ <: $U_n$]$T$` is
   `$T$ forSome { type $a_1$ >: $L_1$ <: $U_1$ $, \ldots ,$ type $a_n$ >: $L_n$ <: $U_n$}`.
@@ -1488,8 +1482,7 @@ The _relative weight_ of an alternative $A$ over an alternative $B$ is a
 number from 0 to 2, defined as the sum of
 
 - 1 if $A$ is as specific as $B$, 0 otherwise, and
-- 1 if $A$ is defined in a class or object which is derived
-  from the class or object defining $B$, 0 otherwise.
+- 1 if $A$ is defined in a class or object which is derived from the class or object defining $B$, 0 otherwise.
 
 A class or object $C$ is _derived_ from a class or object $D$ if one of
 the following holds:
@@ -1512,15 +1505,13 @@ arguments in $\mathit{targs}$ are chosen. It is an error if no such alternative 
 If there are several such alternatives, overloading resolution is
 applied again to the whole expression `$e$[$\mathit{targs}\,$]`.
 
-Assume finally that $e$ does not appear as a function in either
-an application or a type application. If an expected type is given,
-let $\mathscr{B}$ be the set of those alternatives in $\mathscr{A}$ which are
-[compatible](#implicit-conversions) to it. Otherwise, let $\mathscr{B}$ be the same
-as $\mathscr{A}$.
-We choose in this case the most specific alternative among all
-alternatives in $\mathscr{B}$. It is an error if there is no
-alternative in $\mathscr{B}$ which is more specific than all other
-alternatives in $\mathscr{B}$.
+Assume finally that $e$ does not appear as a function in either an application or a type application.
+If an expected type is given, let $\mathscr{B}$ be the set of those alternatives
+in $\mathscr{A}$ which are [compatible](03-types.html#compatibility) to it.
+Otherwise, let $\mathscr{B}$ be the same as $\mathscr{A}$.
+In this last case we choose the most specific alternative among all alternatives in $\mathscr{B}$.
+It is an error if there is no alternative in $\mathscr{B}$ which is
+more specific than all other alternatives in $\mathscr{B}$.
 
 ###### Example
 Consider the following definitions:
@@ -1547,9 +1538,8 @@ no most specific applicable signature exists.
 ### Local Type Inference
 
 Local type inference infers type arguments to be passed to expressions
-of polymorphic type. Say $e$ is of type [$a_1$ >: $L_1$ <: $U_1
-, \ldots , a_n$ >: $L_n$ <: $U_n$]$T$ and no explicit type parameters
-are given.
+of polymorphic type. Say $e$ is of type [$a_1$ >: $L_1$ <: $U_1, \ldots , a_n$ >: $L_n$ <: $U_n$]$T$
+and no explicit type parameters are given.
 
 Local type inference converts this expression to a type
 application `$e$[$T_1 , \ldots , T_n$]`. The choice of the
