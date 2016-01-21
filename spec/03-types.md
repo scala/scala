@@ -789,16 +789,11 @@ We define the following relations between types.
 
 ### Equivalence
 
-Equivalence $(\equiv)$ between types is the smallest congruence [^congruence] such that
-the following holds:
+Equivalence $(\equiv)$ between types is the smallest congruence [^congruence] such that the following holds:
 
-- If $t$ is defined by a type alias `type $t$ = $T$`, then $t$ is
-  equivalent to $T$.
-- If a path $p$ has a singleton type `$q$.type`, then
-  `$p$.type $\equiv q$.type`.
-- If $O$ is defined by an object definition, and $p$ is a path
-  consisting only of package or object selectors and ending in $O$, then
-  `$O$.this.type $\equiv p$.type`.
+- If $t$ is defined by a type alias `type $t$ = $T$`, then $t$ is equivalent to $T$.
+- If a path $p$ has a singleton type `$q$.type`, then `$p$.type $\equiv q$.type`.
+- If $O$ is defined by an object definition, and $p$ is a path consisting only of package or object selectors and ending in $O$, then `$O$.this.type $\equiv p$.type`.
 - Two [compound types](#compound-types) are equivalent if the sequences
   of their component are pairwise equivalent, and occur in the same order, and
   their refinements are equivalent. Two refinements are equivalent if they
@@ -829,14 +824,11 @@ the following holds:
 
 ### Conformance
 
-The conformance relation $(<:)$ is the smallest
-transitive relation that satisfies the following conditions.
+The conformance relation $(<:)$ is the smallest transitive relation that satisfies the following conditions.
 
 - Conformance includes equivalence. If $T \equiv U$ then $T <: U$.
 - For every value type $T$, `scala.Nothing <: $T$ <: scala.Any`.
-- For every type constructor $T$ (with any number of type parameters),
-  `scala.Nothing <: $T$ <: scala.Any`.
-
+- For every type constructor $T$ (with any number of type parameters), `scala.Nothing <: $T$ <: scala.Any`.
 - For every class type $T$ such that `$T$ <: scala.AnyRef` one has `scala.Null <: $T$`.
 - A type variable or abstract type $t$ conforms to its upper bound and
   its lower bound conforms to $t$.
@@ -948,11 +940,9 @@ free to pick any one of them.
 
 ### Weak Conformance
 
-In some situations Scala uses a more general conformance relation. A
-type $S$ _weakly conforms_
-to a type $T$, written $S <:_w
-T$, if $S <: T$ or both $S$ and $T$ are primitive number types
-and $S$ precedes $T$ in the following ordering.
+In some situations Scala uses a more general conformance relation.
+A type $S$ _weakly conforms_ to a type $T$, written $S <:_w T$,
+if $S <: T$ or both $S$ and $T$ are primitive number types and $S$ precedes $T$ in the following ordering.
 
 ```scala
 Byte  $<:_w$ Short
