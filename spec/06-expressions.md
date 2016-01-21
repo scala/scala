@@ -81,10 +81,9 @@ evaluation is immediate.
 
 ## The _Null_ Value
 
-The `null` value is of type `scala.Null`, and is thus
-compatible with every reference type.  It denotes a reference value
-which refers to a special “`null`” object. This object
-implements methods in class `scala.AnyRef` as follows:
+The `null` value is of type `scala.Null`, and thus conforms to every reference type.
+It denotes a reference value which refers to a special `null` object.
+This object implements methods in class `scala.AnyRef` as follows:
 
 - `eq($x\,$)` and `==($x\,$)` return `true` iff the
   argument $x$ is also the "null" object.
@@ -1334,10 +1333,6 @@ statements in the order they are written.
 Implicit conversions can be applied to expressions whose type does not
 match their expected type, to qualifiers in selections, and to unapplied methods. The
 available implicit conversions are given in the next two sub-sections.
-
-We say, a type $T$ is _compatible_ to a type $U$ if $T$ weakly conforms
-to $U$ after applying [eta-expansion](#eta-expansion) and
-[view applications](07-implicits.html#views).
 
 ### Value Conversions
 

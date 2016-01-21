@@ -778,12 +778,14 @@ These notions are defined mutually recursively as follows.
 
 ## Relations between types
 
-We define two relations between types.
+We define the following relations between types.
 
-|Name             | Symbolically   |Interpretation                                   |
-|-----------------|----------------|-------------------------------------------------|
-|Equivalence      |$T \equiv U$    |$T$ and $U$ are interchangeable in all contexts. |
-|Conformance      |$T <: U$        |Type $T$ conforms to type $U$.                   |
+| Name             | Symbolically   | Interpretation                                     |
+|------------------|----------------|----------------------------------------------------|
+| Equivalence      | $T \equiv U$   | $T$ and $U$ are interchangeable in all contexts.   |
+| Conformance      | $T <: U$       | Type $T$ conforms to ("is a subtype of") type $U$. |
+| Weak Conformance | $T <:_w U$     | Augments conformance for primitive numeric types.  |
+| Compatibility    |                | Type $T$ conforms to type $U$ after conversions.   |
 
 ### Equivalence
 
@@ -912,15 +914,12 @@ type $C'$, if one of the following holds.
   type declaration `type t[$T_1$ , … , $T_n$] >: L <: U` if
   $L <: t <: U$.
 
-The $(<:)$ relation forms pre-order between types,
-i.e. it is transitive and reflexive. _least upper bounds_ and
-_greatest lower bounds_ of a set of types
-are understood to be relative to that order.
 
-###### Note
-The least upper bound or greatest lower bound
-of a set of types does not always exist. For instance, consider
-the class definitions
+#### Least upper bounds and greatest lower bounds
+The $(<:)$ relation forms pre-order between types, i.e. it is transitive and reflexive.
+This allows us to define _least upper bounds_ and _greatest lower bounds_ of a set of types in terms of that order.
+The least upper bound or greatest lower bound of a set of types does not always exist.
+For instance, consider the class definitions:
 
 ```scala
 class A[+T] {}
@@ -964,8 +963,12 @@ Long  $<:_w$ Float
 Float $<:_w$ Double
 ```
 
-A _weak least upper bound_ is a least upper bound with respect to
-weak conformance.
+A _weak least upper bound_ is a least upper bound with respect to weak conformance.
+
+### Compatibility
+A type $T$ is _compatible_ to a type $U$ if $T$ [weakly conforms](#weak-conformance) to $U$
+after applying [eta-expansion](06-expressions.html#eta-expansion) and [view applications](07-implicits.html#views).
+
 
 ## Volatile Types
 
