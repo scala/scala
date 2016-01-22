@@ -238,38 +238,21 @@ ArgumentExprs ::=  `(' [Exprs] `)'
 Exprs         ::=  Expr {`,' Expr}
 ```
 
-An application `$f$($e_1 , \ldots , e_m$)` applies the
-function $f$ to the argument expressions $e_1 , \ldots , e_m$. If $f$
-has a method type `($p_1$:$T_1 , \ldots , p_n$:$T_n$)$U$`, the type of
-each argument expression $e_i$ is typed with the
-corresponding parameter type $T_i$ as expected type. Let $S_i$ be type
-type of argument $e_i$ $(i = 1 , \ldots , m)$. If $f$ is a polymorphic method,
-[local type inference](#local-type-inference) is used to determine
-type arguments for $f$. If $f$ has some value type, the application is taken to
-be equivalent to `$f$.apply($e_1 , \ldots , e_m$)`,
-i.e. the application of an `apply` method defined by $f$.
+An application `$f(e_1 , \ldots , e_m)$` applies the function `$f$` to the argument expressions `$e_1, \ldots , e_m$`. For this expression to be well-typed, the function must be *applicable* to its arguments, which is defined next by case analysis on $f$'s type.
 
-The function $f$ must be _applicable_ to its arguments $e_1
-, \ldots , e_n$ of types $S_1 , \ldots , S_n$.
+If $f$ has a method type `($p_1$:$T_1 , \ldots , p_n$:$T_n$)$U$`, each argument expression $e_i$ is typed with the corresponding parameter type $T_i$ as expected type. Let $S_i$ be the type of argument $e_i$ $(i = 1 , \ldots , m)$. The function $f$ must be _applicable_ to its arguments $e_1, \ldots , e_n$ of types $S_1 , \ldots , S_n$. We say that an argument expression $e_i$ is a _named_ argument if it has the form `$x_i=e'_i$` and `$x_i$` is one of the parameter names `$p_1, \ldots, p_n$`.
 
-If $f$ has a method type $(p_1:T_1 , \ldots , p_n:T_n)U$
-we say that an argument expression $e_i$ is a _named_ argument if
-it has the form $x_i=e'_i$ and $x_i$ is one of the parameter names
-$p_1 , \ldots , p_n$. The function $f$ is applicable if all of the following conditions
-hold:
+Once the types $S_i$ have been determined, the function $f$ of the above method type is said to be applicable if all of the following conditions hold:
+  - for every named argument $p_j=e_i'$ the type $S_i$ is [compatible](03-types.html#compatibility) with the parameter type $T_j$;
+  - for every positional argument $e_i$ the type $S_i$ is [compatible](03-types.html#compatibility) with $T_i$;
+  - if the expected type is defined, the result type $U$ is [compatible](03-types.html#compatibility) to it.
 
-- For every named argument $x_i=e_i'$ the type $S_i$
-  is compatible with the parameter type $T_j$ whose name $p_j$ matches $x_i$.
-- For every positional argument $e_i$ the type $S_i$
-is compatible with $T_i$.
-- If the expected type is defined, the result type $U$ is
-  compatible to it.
+If $f$ is a polymorphic method, [local type inference](#local-type-inference) is used to instantiate $f$'s type parameters.
+The polymorphic method is applicable if type inference can determine type arguments so that the instantiated method is applicable.
 
-If $f$ is a polymorphic method it is applicable if
-[local type inference](#local-type-inference) can
-determine type arguments so that the instantiated method is applicable. If
-$f$ has some value type it is applicable if it has a method member named
-`apply` which is applicable.
+If $f$ has some value type, the application is taken to be equivalent to `$f$.apply($e_1 , \ldots , e_m$)`,
+i.e. the application of an `apply` method defined by $f$. The value `$f$` is applicable to the given arguments if `$f$.apply` is applicable.
+
 
 Evaluation of `$f$($e_1 , \ldots , e_n$)` usually entails evaluation of
 $f$ and $e_1 , \ldots , e_n$ in that order. Each argument expression
@@ -1140,11 +1123,9 @@ re-thrown.
 
 Let $\mathit{pt}$ be the expected type of the try expression.  The block
 $b$ is expected to conform to $\mathit{pt}$.  The handler $h$
-is expected conform to type
-`scala.PartialFunction[scala.Throwable, $\mathit{pt}\,$]`.  The
-type of the try expression is the [weak least upper bound](03-types.html#weak-conformance)
-of the type of $b$
-and the result type of $h$.
+is expected conform to type `scala.PartialFunction[scala.Throwable, $\mathit{pt}\,$]`.
+The type of the try expression is the [weak least upper bound](03-types.html#weak-conformance)
+of the type of $b$ and the result type of $h$.
 
 A try expression `try { $b$ } finally $e$` evaluates the block
 $b$.  If evaluation of $b$ does not cause an exception to be
@@ -1177,26 +1158,26 @@ Bindings        ::=  `(' Binding {`,' Binding} `)'
 Binding         ::=  (id | `_') [`:' Type]
 ```
 
-The anonymous function `($x_1$: $T_1 , \ldots , x_n$: $T_n$) => e`
-maps parameters $x_i$ of types $T_i$ to a result given
-by expression $e$. The scope of each formal parameter
-$x_i$ is $e$. Formal parameters must have pairwise distinct names.
+The anonymous function of arity $n$, `($x_1$: $T_1 , \ldots , x_n$: $T_n$) => e` maps parameters $x_i$ of types $T_i$ to a result given by expression $e$. The scope of each formal parameter $x_i$ is $e$. Formal parameters must have pairwise distinct names.
 
-If the expected type of the anonymous function is of the form
-`scala.Function$n$[$S_1 , \ldots , S_n$, $R\,$]`, the
-expected type of $e$ is $R$ and the type $T_i$ of any of the
-parameters $x_i$ can be omitted, in which
-case`$T_i$ = $S_i$` is assumed.
-If the expected type of the anonymous function is
-some other type, all formal parameter types must be explicitly given,
-and the expected type of $e$ is undefined. The type of the anonymous
-function
-is`scala.Function$n$[$S_1 , \ldots , S_n$, $T\,$]`,
-where $T$ is the [packed type](#expression-typing)
-of $e$. $T$ must be equivalent to a
-type which does not refer to any of the formal parameters $x_i$.
+In the case of a single untyped formal parameter, `($x\,$) => $e$` can be abbreviated to `$x$ => $e$`. If an anonymous function `($x$: $T\,$) => $e$` with a single typed parameter appears as the result expression of a block, it can be abbreviated to `$x$: $T$ => e`.
 
-The anonymous function is evaluated as the instance creation expression
+A formal parameter may also be a wildcard represented by an underscore `_`. In that case, a fresh name for the parameter is chosen arbitrarily.
+
+A named parameter of an anonymous function may be optionally preceded by an `implicit` modifier. In that case the parameter is labeled [`implicit`](07-implicits.html#implicit-parameters-and-views); however the parameter section itself does not count as an [implicit parameter section](07-implicits.html#implicit-parameters). Hence, arguments to anonymous functions always have to be given explicitly.
+
+### Translation
+If the expected type of the anonymous function is of the shape `scala.Function$n$[$S_1 , \ldots , S_n$, $R\,$]`, or can be [SAM-converted](#sam-conversion) to such a function type, the type `$T_i$` of a parameter `$x_i$` can be omitted, as far as `$S_i$` is defined in the expected type, and `$T_i$ = $S_i$` is assumed. Furthermore, the expected type when type checking $e$ is $R$.
+
+If there is no expected type for the function literal, all formal parameter types `$T_i$` must be specified explicitly, and the expected type of $e$ is undefined. The type of the anonymous function is `scala.Function$n$[$T_1 , \ldots , T_n$, $R\,$]`, where $R$ is the [packed type](#expression-typing) of $e$. $R$ must be equivalent to a type which does not refer to any of the formal parameters $x_i$.
+
+The eventual run-time value of an anonymous function is determined by the expected type:
+  - a subclass of one of the builtin function types, `scala.Function$n$[$S_1 , \ldots , S_n$, $R\,$]` (with $S_i$ and $R$ fully defined),
+  - `PartialFunction[$T$, $U$]`, if the function literal is of the shape `x => x match { $\ldots$ }`
+  - a [single-abstract-method (SAM) type](#sam-conversion);
+  - some other type.
+
+The standard anonymous function is evaluated as the following instance creation expression:
 
 ```scala
 new scala.Function$n$[$T_1 , \ldots , T_n$, $T$] {
@@ -1204,22 +1185,11 @@ new scala.Function$n$[$T_1 , \ldots , T_n$, $T$] {
 }
 ```
 
-In the case of a single untyped formal parameter,
-`($x\,$) => $e$`
-can be abbreviated to `$x$ => $e$`. If an
-anonymous function `($x$: $T\,$) => $e$` with a single
-typed parameter appears as the result expression of a block, it can be
-abbreviated to `$x$: $T$ => e`.
+<!--
 
-A formal parameter may also be a wildcard represented by an underscore `_`.
-In that case, a fresh name for the parameter is chosen arbitrarily.
+TODO: The shape of a PartialFunction
 
-A named parameter of an anonymous function may be optionally preceded
-by an `implicit` modifier. In that case the parameter is
-labeled [`implicit`](07-implicits.html#implicit-parameters-and-views); however the
-parameter section itself does not count as an implicit parameter
-section in the sense defined [here](07-implicits.html#implicit-parameters). Hence, arguments to
-anonymous functions always have to be given explicitly.
+-->
 
 ###### Example
 Examples of anonymous functions:
@@ -1386,6 +1356,33 @@ of a selection $e.x$, and $e$'s type conforms to class `scala.Dynamic`,
 then the selection is rewritten according to the rules for
 [dynamic member selection](#dynamic-member-selection).
 
+###### SAM conversion
+A function literal `{ (p1: T1, ..., pN: TN) => body }` with an expected type `$S$`
+that is not one of the built-in `FunctionN` classes is converted to an instance
+creation of an anonymous subclass of `$S$`, as long as the type `$S$`
+can be *SAM-converted* to the function literal's function type `(T1, ..., TN) => T`.
+
+A type `S` that declares a Single Abstract Method with signature `(p1: T1', ..., pN: TN'): T'`
+is said to be SAM-convertible with the function type `(T1', ..., TN') => T'` if the following conditions are met.
+The method must have a single argument list (thus, implicit argument lists are not allowed), and this type can have no other deferred members.
+The class `S` itself must have an accessible, no-argument, constructor (again, barring an implicit argument list).
+
+Assuming this single abstract method is called `sam` for convenience,
+we synthesize the instantiation of the following anonymous subclass of `S`:
+
+```
+new S' {
+ <static> def sam$body(p1: T1, ..., pN: TN): T = body
+ def sam(p1: T1', ..., pN: TN'): T' = sam$body(p1,..., pN)
+}
+```
+
+If `S` is not fully defined, we define it as `S'` by inferring any unknown type parameters of the `sam` method,
+taking into account the (by now fully-defined) type `(T1, ..., TN) => T` of the function literal.
+
+The types `T1' ... TN' and `T'` are derived from the method signature of the `sam` method, as seen from the fully defined `S'`.
+The self reference of class `S` is not in scope in the function's `body`. (TODO: the `sam$body` method should be translated as a `static` method)
+
 ### Method Conversions
 
 The following four implicit conversions can be applied to methods
@@ -1419,27 +1416,24 @@ a function. Let $\mathscr{A}$ be the set of members referenced by $e$.
 Assume first that $e$ appears as a function in an application, as in
 `$e$($e_1 , \ldots , e_m$)`.
 
-One first determines the set of functions that is potentially
-applicable based on the _shape_ of the arguments.
+One first determines the set of functions that is potentially [applicable](#function-applications)
+based on the _shape_ of the arguments.
 
-The shape of an argument expression $e$, written  $\mathit{shape}(e)$, is
+The *shape* of an argument expression $e$, written  $\mathit{shape}(e)$, is
 a type that is defined as follows:
+  - For a function expression `($p_1$: $T_1 , \ldots , p_n$: $T_n$) => $b$: (Any $, \ldots ,$ Any) => $\mathit{shape}(b)$`,
+    where `Any` occurs $n$ times in the argument type.
+  - For a named argument `$n$ = $e$`: $\mathit{shape}(e)$.
+  - For all other expressions: `Nothing`.
 
-- For a function expression `($p_1$: $T_1 , \ldots , p_n$: $T_n$) => $b$`:
-  `(Any $, \ldots ,$ Any) => $\mathit{shape}(b)$`, where `Any` occurs $n$ times
-  in the argument type.
-- For a named argument `$n$ = $e$`: $\mathit{shape}(e)$.
-- For all other expressions: `Nothing`.
-
-Let $\mathscr{B}$ be the set of alternatives in $\mathscr{A}$ that are
-[_applicable_](#function-applications) to expressions $(e_1 , \ldots , e_n)$
-of types $(\mathit{shape}(e_1) , \ldots , \mathit{shape}(e_n))$.
+Let $\mathscr{B}$ be the set of alternatives in $\mathscr{A}$ that are [_applicable_](#function-applications)
+to expressions $(e_1 , \ldots , e_n)$ of types $(\mathit{shape}(e_1) , \ldots , \mathit{shape}(e_n))$.
 If there is precisely one alternative in $\mathscr{B}$, that alternative is chosen.
 
 Otherwise, let $S_1 , \ldots , S_m$ be the vector of types obtained by
 typing each argument with an undefined expected type.  For every
-member $m$ in $\mathscr{B}$ one determines whether it is
-applicable to expressions ($e_1 , \ldots , e_m$) of types $S_1, \ldots , S_m$.
+member $m$ in $\mathscr{B}$ one determines whether it is applicable
+to expressions ($e_1 , \ldots , e_m$) of types $S_1, \ldots , S_m$.
 
 It is an error if none of the members in $\mathscr{B}$ is applicable. If there is one
 single applicable alternative, that alternative is chosen. Otherwise, let $\mathscr{CC}$
@@ -1463,7 +1457,7 @@ question: given
 -->
 
 - A parameterized method $m$ of type `($p_1:T_1, \ldots , p_n:T_n$)$U$` is
-  _as specific as_ some other member $m'$ of type $S$ if $m'$ is applicable
+  _as specific as_ some other member $m'$ of type $S$ if $m'$ is [applicable](#function-applications)
   to arguments `($p_1 , \ldots , p_n$)` of types $T_1 , \ldots , T_n$.
 - A polymorphic method of type `[$a_1$ >: $L_1$ <: $U_1 , \ldots , a_n$ >: $L_n$ <: $U_n$]$T$` is
   as specific as some other member of type $S$ if $T$ is as specific as $S$

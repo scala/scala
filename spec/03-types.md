@@ -956,16 +956,46 @@ Float $<:_w$ Double
 A _weak least upper bound_ is a least upper bound with respect to weak conformance.
 
 ### Compatibility
-A type $T$ is _compatible_ to a type $U$ if $T$ [weakly conforms](#weak-conformance) to $U$
-after applying [eta-expansion](06-expressions.html#eta-expansion) and [view applications](07-implicits.html#views).
+A type $T$ is _compatible_ to a type $U$ if $T$ (or its corresponding function type) [weakly conforms](#weak-conformance) to $U$
+after applying [eta-expansion](06-expressions.html#eta-expansion). If $T$ is a method type, it's converted to the corresponding function type. If the types do not weakly conform, the following alternatives are checked in order:
+  - [view application](07-implicits.html#views): there's an implicit view from $T$ to $U$;
+  - dropping by-name modifiers: if $U$ is of the shape `$=> U'$` (and $T$ is not), `$T <:_w U'$`;
+  - SAM conversion: if $T$ corresponds to a function type, and $U$ declares a single abstract method whose type [corresponds](06-expressions.html#sam-conversion) to the function type $U'$, `$T <:_w U'$`.
 
+<!--- TODO: include other implicit conversions in addition to view application?
+
+  trait Proc { def go(x: Any): Unit }
+
+  def foo(x: Any => Unit): Unit = ???
+  def foo(x: Proc): Unit = ???
+
+  foo((x: Any) => 1) // works when you drop either foo overload since value discarding is applied
+
+-->
+
+#### Examples
+
+##### Function compatibility via SAM conversion
+
+Given the definitions
+
+```
+def foo(x: Int => String): Unit
+def foo(x: ToString): Unit
+
+trait ToString { def convert(x: Int): String }
+```
+
+The application `foo(_.toString)` [resolves](06-expressions.html#overloading-resolution) to the first overload,
+as it's more specific:
+  - `Int => String` is compatible to `ToString` -- when expecting a value of type `ToString`, you may pass a function literal from `Int` to `String`, as it will be SAM-converted to said function;
+  - `ToString` is not compatible to `Int => String` -- when expecting a function from `Int` to `String`, you may not pass a `ToString`.
 
 ## Volatile Types
 
-Type volatility approximates the possibility that a type parameter or abstract
-type instance
-of a type does not have any non-null values.  A value member of a volatile type
-cannot appear in a [path](#paths).
+Type volatility approximates the possibility that a type parameter or
+abstract type instance of a type does not have any non-null values.
+A value member of a volatile type cannot appear in a [path](#paths).
 
 A type is _volatile_ if it falls into one of four categories:
 
