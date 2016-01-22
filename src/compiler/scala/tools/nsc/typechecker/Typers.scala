@@ -2741,21 +2741,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      * which must be fully defined. Would be nice to have some kind of mechanism to insert type vars in a block of code,
      * and have the instantiation of the first occurrence propagate to the rest of the block.
      *
-     * TODO: by-name params
-     *  scala> trait LazySink { def accept(a: => Any): Unit }
-     *  defined trait LazySink
-     *
-     *  scala> val f: LazySink = (a) => (a, a)
-     *  f: LazySink = $anonfun$1@1fb26910
-     *
-     *  scala> f(println("!"))
-     *  <console>:10: error: LazySink does not take parameters
-     *                f(println("!"))
-     *                 ^
-     *
-     *  scala> f.accept(println("!"))
-     *  !
-     *  !
      */
     def synthesizeSAMFunction(sam: Symbol, fun: Function, resPt: Type, samClassTp: Type, mode: Mode): Tree = {
       // assert(fun.vparams forall (vp => isFullyDefined(vp.tpt.tpe))) -- by construction, as we take them from sam's info
