@@ -103,7 +103,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
 
       val analyzer = {
         if (compilerSettings.YoptNullnessTracking && AsmAnalyzer.sizeOKForNullness(methodNode)) {
-          Some(new AsmAnalyzer(methodNode, definingClass.internalName, new NullnessAnalyzer))
+          Some(new AsmAnalyzer(methodNode, definingClass.internalName, new NullnessAnalyzer(btypes)))
         } else if (AsmAnalyzer.sizeOKForBasicValue(methodNode)) {
           Some(new AsmAnalyzer(methodNode, definingClass.internalName))
         } else None

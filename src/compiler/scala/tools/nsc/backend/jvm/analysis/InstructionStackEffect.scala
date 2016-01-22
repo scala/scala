@@ -335,5 +335,4 @@ object InstructionStackEffect {
            IFNONNULL => t(1, 0)
     }
   }
-
 }

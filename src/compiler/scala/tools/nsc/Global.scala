@@ -1353,7 +1353,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val inlineExceptionHandlersPhase = phaseNamed("inlinehandlers")
     val closelimPhase                = phaseNamed("closelim")
     val dcePhase                     = phaseNamed("dce")
-    // val jvmPhase                     = phaseNamed("jvm")
+    val jvmPhase                     = phaseNamed("jvm")
 
     def runIsAt(ph: Phase)   = globalPhase.id == ph.id
     def runIsAtOptimiz       = {

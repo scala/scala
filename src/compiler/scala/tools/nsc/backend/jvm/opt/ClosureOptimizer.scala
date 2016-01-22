@@ -254,18 +254,6 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     Type.VOID <= sort && sort <= Type.DOUBLE
   }
 
-  private def unboxOp(primitiveType: Type): MethodInsnNode = {
-    val bType = bTypeForDescriptorOrInternalNameFromClassfile(primitiveType.getDescriptor)
-    val MethodNameAndType(name, methodBType) = asmUnboxTo(bType)
-    new MethodInsnNode(INVOKESTATIC, srBoxesRunTimeRef.internalName, name, methodBType.descriptor, /*itf =*/ false)
-  }
-
-  private def boxOp(primitiveType: Type): MethodInsnNode = {
-    val bType = bTypeForDescriptorOrInternalNameFromClassfile(primitiveType.getDescriptor)
-    val MethodNameAndType(name, methodBType) = asmBoxTo(bType)
-    new MethodInsnNode(INVOKESTATIC, srBoxesRunTimeRef.internalName, name, methodBType.descriptor, /*itf =*/ false)
-  }
-
   /**
    * The argument types of the lambda body method may differ in two ways from the argument types of
    * the closure member method that is invoked (and replaced by a call to the body).
@@ -291,9 +279,9 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
         if (invokeArgTypes(i) == implMethodArgTypes(i)) {
           res(i) = None
         } else if (isPrimitiveType(implMethodArgTypes(i)) && invokeArgTypes(i).getDescriptor == ObjectRef.descriptor) {
-          res(i) = Some(unboxOp(implMethodArgTypes(i)))
+          res(i) = Some(getScalaUnbox(implMethodArgTypes(i)))
         } else if (isPrimitiveType(invokeArgTypes(i)) && implMethodArgTypes(i).getDescriptor == ObjectRef.descriptor) {
-          res(i) = Some(boxOp(invokeArgTypes(i)))
+          res(i) = Some(getScalaBox(invokeArgTypes(i)))
         } else {
           assert(!isPrimitiveType(invokeArgTypes(i)), invokeArgTypes(i))
           assert(!isPrimitiveType(implMethodArgTypes(i)), implMethodArgTypes(i))
@@ -354,12 +342,12 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     if (isPrimitiveType(invocationReturnType) && bodyReturnType.getDescriptor == ObjectRef.descriptor) {
       val op =
         if (invocationReturnType.getSort == Type.VOID) getPop(1)
-        else unboxOp(invocationReturnType)
+        else getScalaUnbox(invocationReturnType)
       ownerMethod.instructions.insertBefore(invocation, op)
     } else if (isPrimitiveType(bodyReturnType) && invocationReturnType.getDescriptor == ObjectRef.descriptor) {
       val op =
         if (bodyReturnType.getSort == Type.VOID) getBoxedUnit
-        else boxOp(bodyReturnType)
+        else getScalaBox(bodyReturnType)
       ownerMethod.instructions.insertBefore(invocation, op)
     } else {
       // see comment of that method
