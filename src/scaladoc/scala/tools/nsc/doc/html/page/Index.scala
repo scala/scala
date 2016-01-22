@@ -26,8 +26,6 @@ class Index(universe: doc.Universe, val index: doc.Index) extends HtmlPage {
     <xml:group>
       <link href={ relativeLinkTo{List("index.css", "lib")} }  media="screen" type="text/css" rel="stylesheet"/>
       <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} }></script>
-      <script type="text/javascript" src={ relativeLinkTo{List("jquery-ui.js", "lib")} }></script>
-      <script type="text/javascript" src={ relativeLinkTo{List("jquery.layout.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("index.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("scheduler.js", "lib")} }></script>
     </xml:group>
