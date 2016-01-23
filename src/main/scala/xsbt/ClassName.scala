@@ -8,14 +8,14 @@ trait ClassName extends Compat {
   import global._
 
   /**
-    * Creates a flat (binary) name for a class symbol `s`.
-    */
+   * Creates a flat (binary) name for a class symbol `s`.
+   */
   protected def flatname(s: Symbol, separator: Char): String =
     atPhase(currentRun.flattenPhase.next) { s fullName separator }
 
   /**
-    * Create a (source) name for a class symbol `s`.
-    */
+   * Create a (source) name for a class symbol `s`.
+   */
   protected def className(s: Symbol): String = pickledName(s)
 
   private def pickledName(s: Symbol): String =
