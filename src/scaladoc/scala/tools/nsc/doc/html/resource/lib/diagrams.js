@@ -1,6 +1,6 @@
 /**
  * JavaScript functions enhancing the SVG diagrams.
- * 
+ *
  * @author Damien Obrist
  */
 
@@ -31,7 +31,7 @@ $(document).ready(function()
 		// store unscaled clone of SVG element
 		$(this).data("svg", $(this).get(0).childNodes[0].cloneNode(true));
 	});
-	
+
 	// make diagram visible, hide container
 	$(".diagram").css("display", "none");
 	$(".diagram svg").css({
@@ -159,7 +159,7 @@ diagrams.initHighlighting = function()
 			toggleClass($(this));
 		});
 	});
-	
+
 	// implicit outgoing nodes
 
 	hover($("svg .node.implicit-outgoing"), function(evt){
@@ -185,7 +185,7 @@ diagrams.initHighlighting = function()
 diagrams.resize = function()
 {
 	// available width
-	var availableWidth = $("body").width() - 20;
+	var availableWidth = $("body").width() - 100;
 
 	$(".diagram-container").each(function() {
 		// unregister click event on whole div
@@ -258,7 +258,7 @@ diagrams.popup = function(diagram)
 		var svgIE = jQuery.browser.msie ? $("<div />").append(diagram.data("svg")).html() : "";
 		var html = '' +
 		'<?xml version="1.0" encoding="UTF-8"?>\n' +
-		'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n' + 
+		'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n' +
 		'<html>\n' +
 		'	<head>\n' +
 		'		<title>' + title + '</title>\n' +
@@ -321,4 +321,3 @@ diagrams.removeClass = function(svgElem, oldClass) {
 	classes = $.grep(classes.split(/\s+/), function(n, i) { return n != oldClass; }).join(' ');
 	svgElem.attr("class", classes);
 };
-

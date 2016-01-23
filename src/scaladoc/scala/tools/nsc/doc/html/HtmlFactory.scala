@@ -48,9 +48,7 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     "source-code-pro-v6-latin-regular.woff",
 
     "index.js",
-    "jquery-ui.js",
     "jquery.js",
-    "jquery.layout.js",
     "scheduler.js",
     "diagrams.js",
     "template.js",
@@ -66,12 +64,6 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     "object_diagram.png",
     "trait_diagram.png",
     "type_diagram.png",
-    "class_to_object_big.png",
-    "object_to_class_big.png",
-    "trait_to_object_big.png",
-    "object_to_trait_big.png",
-    "type_to_object_big.png",
-    "object_to_type_big.png",
 
     "ownderbg2.gif",
     "ownerbg.gif",

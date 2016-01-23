@@ -40,7 +40,6 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       <link href={ relativeLinkTo{List("template.css", "lib")} } media="screen" type="text/css" rel="stylesheet"/>
       <link href={ relativeLinkTo{List("diagrams.css", "lib")} } media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
       <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} } id="jquery-js"></script>
-      <script type="text/javascript" src={ relativeLinkTo{List("jquery-ui.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("template.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("tools.tooltip.js", "lib")} }></script>
       { if (universe.settings.docDiagrams.value) {
@@ -287,8 +286,6 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         else
           <div id="footer"> { tpl.universe.settings.docfooter.value } </div>
       }
-
-
     </body>
   }
 
