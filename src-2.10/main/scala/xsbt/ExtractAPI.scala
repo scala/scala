@@ -210,20 +210,14 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
         s.asMethod.paramss.flatten map (_.info) exists (t => isAnyValSubtype(t.typeSymbol))
       }
 
-      // Note: We only inspect the "outermost type" (i.e. no recursion) because we don't need to
-      // inspect after erasure a function that would, for instance, return a function that returns
-      // a subtype of AnyVal.
-      val hasValueClassAsReturnType: Boolean = {
-        val tpe = viewer(in).memberInfo(s)
-        tpe match {
-          case PolyType(_, base)         => isAnyValSubtype(base.typeSymbol)
-          case MethodType(_, resultType) => isAnyValSubtype(resultType.typeSymbol)
-          case Nullary(resultType)       => isAnyValSubtype(resultType.typeSymbol)
-          case resultType                => isAnyValSubtype(resultType.typeSymbol)
-        }
+      def hasValueClassAsReturnType(tpe: Type): Boolean = tpe match {
+        case PolyType(_, base) => hasValueClassAsReturnType(base)
+        case MethodType(_, resultType) => hasValueClassAsReturnType(resultType)
+        case Nullary(resultType) => hasValueClassAsReturnType(resultType)
+        case resultType => isAnyValSubtype(resultType.typeSymbol)
       }
 
-      val inspectPostErasure = hasValueClassAsParameter || hasValueClassAsReturnType
+      val inspectPostErasure = hasValueClassAsParameter || hasValueClassAsReturnType(viewer(in).memberInfo(s))
 
       def build(t: Type, typeParams: Array[xsbti.api.TypeParameter], valueParameters: List[xsbti.api.ParameterList]): List[xsbti.api.Def] =
         {
