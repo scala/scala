@@ -382,10 +382,6 @@ class CopyProp[BT <: BTypes](val btypes: BT) {
               popAfterProd()
           }
 
-          case NEWARRAY | ANEWARRAY =>
-            toRemove += prod
-            handleInputs(prod, 1)
-
           case MULTIANEWARRAY =>
             toRemove += prod
             handleInputs(prod, prod.asInstanceOf[MultiANewArrayInsnNode].dims)

@@ -161,7 +161,7 @@ class MethodLevelOptsTest extends ClearAfterClass {
         |    val b = (a, y)                            // Tuple2
         |    val c = (new Object, "krik", new String)  // unused java/lang/Object, java/lang/String allocation and string constant is also eliminated
         |    val d = new java.lang.Integer(x)
-        |    val e = new String(new Array[Char](23))
+        |    val e = new String(new Array[Char](23))   // array allocation not eliminated, as it may throw (negative size, SI-8601)
         |    val f = new scala.runtime.IntRef(11)
         |    x + y
         |  }
@@ -169,7 +169,7 @@ class MethodLevelOptsTest extends ClearAfterClass {
       """.stripMargin
     val List(c) = compileClasses(methodOptCompiler)(code)
     assertEquals(getSingleMethod(c, "t").instructions.dropNonOp,
-      List(VarOp(ILOAD, 1), VarOp(ILOAD, 2), Op(IADD), Op(IRETURN)))
+      List(IntOp(BIPUSH, 23), IntOp(NEWARRAY, 5), Op(POP), VarOp(ILOAD, 1), VarOp(ILOAD, 2), Op(IADD), Op(IRETURN)))
   }
 
   @Test
