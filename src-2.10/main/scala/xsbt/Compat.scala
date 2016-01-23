@@ -107,8 +107,8 @@ abstract class Compat {
     }
     lazy val AnyValClass = global.rootMirror.getClassIfDefined("scala.AnyVal")
 
-    def isAnyValSubtype(sym: Symbol): Boolean = sym.isNonBottomSubClass(AnyValClass)
-
+    def isDerivedValueClass(sym: Symbol): Boolean =
+      sym.isNonBottomSubClass(AnyValClass) && !definitions.ScalaValueClasses.contains(sym)
   }
 
   object MacroExpansionOf {
