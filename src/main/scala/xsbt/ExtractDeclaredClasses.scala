@@ -32,7 +32,7 @@ class ExtractDeclaredClasses[GlobalType <: CallbackGlobal](val global: GlobalTyp
 			case _ => ()
 		}
 
-  private def fullName(s: Symbol): String = className(s, false)
+  private def fullName(s: Symbol): String = className(s)
 	}
 
 }

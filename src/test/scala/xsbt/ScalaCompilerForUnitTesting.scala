@@ -40,6 +40,11 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
     analysisCallback.declaredClasses(tempSrcFile).toSet
   }
 
+  def extractBinaryClassNamesFromSrc(src: String): Set[(String, String)] = {
+    val (Seq(tempSrcFile), analysisCallback) = compileSrcs(src)
+    analysisCallback.classNames(tempSrcFile).toSet
+  }
+
   /**
    * Extract used names from src provided as the second argument.
    *
