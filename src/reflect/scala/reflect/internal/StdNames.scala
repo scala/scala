@@ -7,11 +7,11 @@ package scala
 package reflect
 package internal
 
+import scala.language.implicitConversions
+
 import java.security.MessageDigest
-import java.util.UUID.randomUUID
 import Chars.isOperatorPart
 import scala.annotation.switch
-import scala.language.implicitConversions
 import scala.collection.immutable
 import scala.io.Codec
 
@@ -876,7 +876,7 @@ trait StdNames {
     val toCharacter: NameType = "toCharacter"
     val toInteger: NameType   = "toInteger"
 
-    def newLazyValSlowComputeName(lzyValName: Name) = lzyValName append LAZY_SLOW_SUFFIX
+    def newLazyValSlowComputeName(lzyValName: Name) = (lzyValName stripSuffix MODULE_VAR_SUFFIX append LAZY_SLOW_SUFFIX).toTermName
 
     // ASCII names for operators
     val ADD       = encode("+")

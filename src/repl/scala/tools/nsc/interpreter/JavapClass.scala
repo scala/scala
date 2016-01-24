@@ -6,23 +6,23 @@ package scala
 package tools.nsc
 package interpreter
 
+import scala.language.reflectiveCalls
+
 import java.lang.{ Iterable => JIterable }
-import scala.tools.nsc.util.ScalaClassLoader
+import scala.reflect.internal.util.ScalaClassLoader
 import java.io.{ ByteArrayInputStream, CharArrayWriter, FileNotFoundException, PrintWriter, StringWriter, Writer }
 import java.util.{ Locale }
 import java.util.concurrent.ConcurrentLinkedQueue
-import javax.tools.{ Diagnostic, DiagnosticCollector, DiagnosticListener,
+import javax.tools.{ Diagnostic, DiagnosticListener,
                      ForwardingJavaFileManager, JavaFileManager, JavaFileObject,
                      SimpleJavaFileObject, StandardLocation }
-import scala.reflect.io.{ AbstractFile, Directory, File, Path }
+import scala.reflect.io.File
 import scala.io.Source
 import scala.util.{ Try, Success, Failure }
 import scala.util.Properties.{ lineSeparator => EOL }
-import scala.util.matching.Regex
 import scala.collection.JavaConverters._
 import scala.collection.generic.Clearable
 import java.net.URL
-import scala.language.reflectiveCalls
 import Javap.{ JpResult, JpError, Showable, helper, toolArgs, DefaultOptions }
 
 /** Javap command implementation.
@@ -214,7 +214,6 @@ class JavapClass(
     ) orFailed null
 
     class JavaReporter extends DiagnosticListener[JavaFileObject] with Clearable {
-      import scala.collection.mutable.{ ArrayBuffer, SynchronizedBuffer }
       type D = Diagnostic[_ <: JavaFileObject]
       val diagnostics = new ConcurrentLinkedQueue[D]
       override def report(d: Diagnostic[_ <: JavaFileObject]) {
@@ -342,8 +341,6 @@ class JavapClass(
 }
 
 object JavapClass {
-  import scala.tools.asm.ClassReader
-  import scala.tools.asm.tree.{ ClassNode, MethodNode }
 
   def apply(
     loader: ScalaClassLoader = ScalaClassLoader.appLoader,

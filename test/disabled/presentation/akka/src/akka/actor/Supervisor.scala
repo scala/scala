@@ -95,7 +95,7 @@ case class SupervisorFactory(val config: SupervisorConfig) {
  * wire the children together using 'link', 'spawnLink' etc. and set the 'trapExit' flag in the
  * children that should trap error signals and trigger restart.
  * <p/>
- * See the ScalaDoc for the SupervisorFactory for an example on how to declaratively wire up children.
+ * See the Scaladoc for the SupervisorFactory for an example on how to declaratively wire up children.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */

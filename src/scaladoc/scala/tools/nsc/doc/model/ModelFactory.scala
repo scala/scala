@@ -9,11 +9,9 @@ import base.comment._
 import diagram._
 
 import scala.collection._
-import scala.tools.nsc.doc.html.HtmlPage
 import scala.tools.nsc.doc.html.page.diagram.{DotRunner}
 import scala.util.matching.Regex
 import scala.reflect.macros.internal.macroImpl
-import scala.xml.NodeSeq
 import symtab.Flags
 
 import io._
@@ -30,8 +28,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
                with MemberLookup =>
 
   import global._
-  import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass, ListClass }
-  import rootMirror.{ RootPackage, RootClass, EmptyPackage }
+  import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
+  import rootMirror.{ RootPackage, EmptyPackage }
 
   // Defaults for member grouping, that may be overridden by the template
   val defaultGroup = "Ungrouped"

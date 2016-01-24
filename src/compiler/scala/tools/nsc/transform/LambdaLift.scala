@@ -8,7 +8,7 @@ package transform
 
 import symtab._
 import Flags._
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 import scala.collection.mutable.{ LinkedHashMap, LinkedHashSet, TreeSet }
 
 abstract class LambdaLift extends InfoTransform {
@@ -143,7 +143,7 @@ abstract class LambdaLift extends InfoTransform {
      *  }
      */
     private def markFree(sym: Symbol, enclosure: Symbol): Boolean = {
-      debuglog("mark free: " + sym.fullLocationString + " marked free in " + enclosure)
+//      println(s"mark free: ${sym.fullLocationString} marked free in $enclosure")
       (enclosure == sym.owner.logicallyEnclosingMember) || {
         debuglog("%s != %s".format(enclosure, sym.owner.logicallyEnclosingMember))
         if (enclosure.isPackageClass || !markFree(sym, enclosure.skipConstructor.owner.logicallyEnclosingMember)) false
@@ -153,7 +153,7 @@ abstract class LambdaLift extends InfoTransform {
             ss += sym
             renamable += sym
             changedFreeVars = true
-            debuglog("" + sym + " is free in " + enclosure)
+            debuglog(s"$sym is free in $enclosure")
             if (sym.isVariable) sym setFlag CAPTURED
           }
           !enclosure.isClass
@@ -162,7 +162,7 @@ abstract class LambdaLift extends InfoTransform {
     }
 
     private def markCalled(sym: Symbol, owner: Symbol) {
-      debuglog("mark called: " + sym + " of " + sym.owner + " is called by " + owner)
+//      println(s"mark called: $sym of ${sym.owner} is called by $owner")
       symSet(called, owner) += sym
       if (sym.enclClass != owner.enclClass) calledFromInner += sym
     }
@@ -170,7 +170,7 @@ abstract class LambdaLift extends InfoTransform {
     /** The traverse function */
     private val freeVarTraverser = new Traverser {
       override def traverse(tree: Tree) {
-       try { //debug
+//       try { //debug
         val sym = tree.symbol
         tree match {
           case ClassDef(_, _, _, _) =>
@@ -217,11 +217,11 @@ abstract class LambdaLift extends InfoTransform {
           case _ =>
         }
         super.traverse(tree)
-       } catch {//debug
-         case ex: Throwable =>
-           Console.println(s"$ex while traversing $tree")
-           throw ex
-       }
+//       } catch {//debug
+//         case ex: Throwable =>
+//           Console.println(s"$ex while traversing $tree")
+//           throw ex
+//       }
       }
     }
 
@@ -235,7 +235,7 @@ abstract class LambdaLift extends InfoTransform {
 
       do {
         changedFreeVars = false
-        for (caller <- called.keys ; callee <- called(caller) ; fvs <- free get callee ; fv <- fvs)
+        for ((caller, callees) <- called ; callee <- callees ; fvs <- free get callee ; fv <- fvs)
           markFree(fv, caller)
       } while (changedFreeVars)
 
@@ -303,11 +303,14 @@ abstract class LambdaLift extends InfoTransform {
 
       afterOwnPhase {
         for ((owner, freeValues) <- free.toList) {
-          val newFlags = SYNTHETIC | ( if (owner.isClass) PARAMACCESSOR | PrivateLocal else PARAM )
-          debuglog("free var proxy: %s, %s".format(owner.fullLocationString, freeValues.toList.mkString(", ")))
+          val newFlags = SYNTHETIC | (
+            if (owner.isClass) PARAMACCESSOR | PrivateLocal
+            else PARAM)
+
           proxies(owner) =
             for (fv <- freeValues.toList) yield {
               val proxyName = proxyNames.getOrElse(fv, fv.name)
+              debuglog(s"new proxy ${proxyName} in ${owner.fullLocationString}")
               val proxy = owner.newValue(proxyName.toTermName, owner.pos, newFlags.toLong) setInfo fv.info
               if (owner.isClass) owner.info.decls enter proxy
               proxy
@@ -337,31 +340,31 @@ abstract class LambdaLift extends InfoTransform {
 
     private def memberRef(sym: Symbol): Tree = {
       val clazz = sym.owner.enclClass
-      //Console.println("memberRef from "+currentClass+" to "+sym+" in "+clazz)
-      def prematureSelfReference() {
+      // println(s"memberRef from $currentClass to $sym in $clazz (currentClass=$currentClass)")
+      def prematureSelfReference(): Tree = {
         val what =
           if (clazz.isStaticOwner) clazz.fullLocationString
           else s"the unconstructed `this` of ${clazz.fullLocationString}"
         val msg = s"Implementation restriction: access of ${sym.fullLocationString} from ${currentClass.fullLocationString}, would require illegal premature access to $what"
         reporter.error(curTree.pos, msg)
+        EmptyTree
       }
-      val qual =
+      def qual =
         if (clazz == currentClass) gen.mkAttributedThis(clazz)
         else {
           sym resetFlag (LOCAL | PRIVATE)
-          if (isUnderConstruction(clazz)) {
-            prematureSelfReference()
-            EmptyTree
-          }
+          if (isUnderConstruction(clazz)) prematureSelfReference()
           else if (clazz.isStaticOwner) gen.mkAttributedQualifier(clazz.thisType)
-          else {
-            outerValue match {
-              case EmptyTree => prematureSelfReference(); return EmptyTree
-              case o         => outerPath(o, currentClass.outerClass, clazz)
-            }
+          else outerValue match {
+            case EmptyTree => prematureSelfReference()
+            case o         => outerPath(o, currentClass.outerClass, clazz)
           }
         }
-      Select(qual, sym) setType sym.tpe
+
+      qual match {
+        case EmptyTree => EmptyTree
+        case qual      => Select(qual, sym) setType sym.tpe
+      }
     }
 
     private def proxyRef(sym: Symbol) = {
@@ -369,41 +372,45 @@ abstract class LambdaLift extends InfoTransform {
       if (psym.isLocalToBlock) gen.mkAttributedIdent(psym) else memberRef(psym)
     }
 
-    private def addFreeArgs(pos: Position, sym: Symbol, args: List[Tree]) = {
-      free get sym match {
-        case Some(fvs) => addFree(sym, free = fvs.toList map (fv => atPos(pos)(proxyRef(fv))), original = args)
-        case _         => args
+    def freeArgsOrNil(sym: Symbol) = free.getOrElse(sym, Nil).toList
+
+    private def freeArgs(sym: Symbol): List[Symbol] =
+      freeArgsOrNil(sym)
+
+    private def addFreeArgs(pos: Position, sym: Symbol, args: List[Tree]) =
+      freeArgs(sym) match {
+        case Nil => args
+        case fvs => addFree(sym, free = fvs map (fv => atPos(pos)(proxyRef(fv))), original = args)
       }
-    }
 
-    private def addFreeParams(tree: Tree, sym: Symbol): Tree = proxies.get(sym) match {
-      case Some(ps) =>
-        val freeParams = ps map (p => ValDef(p) setPos tree.pos setType NoType)
-        tree match {
-          case DefDef(_, _, _, vparams :: _, _, _) =>
-            val addParams = cloneSymbols(ps).map(_.setFlag(PARAM))
-            sym.updateInfo(
-              lifted(MethodType(addFree(sym, free = addParams, original = sym.info.params), sym.info.resultType)))
+    def proxiesOrNil(sym: Symbol) = proxies.getOrElse(sym, Nil)
 
-            copyDefDef(tree)(vparamss = List(addFree(sym, free = freeParams, original = vparams)))
-          case ClassDef(_, _, _, _) =>
-            // SI-6231
-            // Disabled attempt to to add getters to freeParams
-            // this does not work yet. Problem is that local symbols need local names
-            // and references to local symbols need to be transformed into
-            // method calls to setters.
-            // def paramGetter(param: Symbol): Tree = {
-            //   val getter = param.newGetter setFlag TRANS_FLAG resetFlag PARAMACCESSOR // mark because we have to add them to interface
-            //   sym.info.decls.enter(getter)
-            //   val rhs = Select(gen.mkAttributedThis(sym), param) setType param.tpe
-            //   DefDef(getter, rhs) setPos tree.pos setType NoType
-            // }
-            // val newDefs = if (sym.isTrait) freeParams ::: (ps map paramGetter) else freeParams
-            deriveClassDef(tree)(impl => deriveTemplate(impl)(_ ::: freeParams))
-        }
-      case None =>
-        tree
-    }
+    private def freeParams(sym: Symbol): List[Symbol] =
+      proxiesOrNil(sym)
+
+    private def addFreeParams(tree: Tree, sym: Symbol): Tree =
+      tree match {
+        case DefDef(_, _, _, vparams :: _, _, _) =>
+          val ps = freeParams(sym)
+
+          if (ps.isEmpty) tree
+          else {
+            val paramSyms = cloneSymbols(ps).map(_.setFlag(PARAM))
+            val paramDefs = ps map (p => ValDef(p) setPos tree.pos setType NoType)
+
+            sym.updateInfo(lifted(MethodType(addFree(sym, free = paramSyms, original = sym.info.params), sym.info.resultType)))
+            copyDefDef(tree)(vparamss = List(addFree(sym, free = paramDefs, original = vparams)))
+          }
+
+        case ClassDef(_, _, _, _) =>
+          val freeParamDefs = freeParams(sym) map (p => ValDef(p) setPos tree.pos setType NoType)
+
+          if (freeParamDefs.isEmpty) tree
+          else deriveClassDef(tree)(impl => deriveTemplate(impl)(_ ::: freeParamDefs))
+
+        case _ => tree
+      }
+
 
 /*  SI-6231: Something like this will be necessary to eliminate the implementation
  *  restriction from paramGetter above:
@@ -446,7 +453,7 @@ abstract class LambdaLift extends InfoTransform {
            // See neg/t1909-object.scala
            def msg = s"SI-1909 Unable to STATICally lift $sym, which is defined in the self- or super-constructor call of ${sym.owner.owner}. A VerifyError is likely."
            devWarning(tree.pos, msg)
-          } else sym setFlag STATIC
+         } else sym setFlag STATIC
       }
 
       sym.owner = sym.owner.enclClass
@@ -463,12 +470,11 @@ abstract class LambdaLift extends InfoTransform {
     private def postTransform(tree: Tree, isBoxedRef: Boolean = false): Tree = {
       val sym = tree.symbol
       tree match {
-        case ClassDef(_, _, _, _) =>
-          val tree1 = addFreeParams(tree, sym)
-          if (sym.isLocalToBlock) liftDef(tree1) else tree1
-        case DefDef(_, _, _, _, _, _) =>
-          val tree1 = addFreeParams(tree, sym)
-          if (sym.isLocalToBlock) liftDef(tree1) else tree1
+        case _: ClassDef | _: DefDef =>
+          val withFreeParams = addFreeParams(tree, sym)
+          if (sym.isLocalToBlock) liftDef(withFreeParams)
+          else withFreeParams
+
         case ValDef(mods, name, tpt, rhs) =>
           if (sym.isCapturedVariable) {
             val tpt1 = TypeTree(sym.tpe) setPos tpt.pos

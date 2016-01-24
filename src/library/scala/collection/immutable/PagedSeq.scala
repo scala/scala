@@ -13,7 +13,6 @@ package collection
 package immutable
 
 import java.io.{File, FileReader, Reader}
-import scala.util.matching.Regex
 import scala.reflect.ClassTag
 
 /** The `PagedSeq` object defines a lazy implementations of
@@ -23,6 +22,7 @@ import scala.reflect.ClassTag
  * `fromIterator` and `fromIterable` provide generalised instances of `PagedSeq`
  *  @since 2.7
  */
+@deprecated("This object will be moved to the scala-parser-combinators module", "2.11.8")
 object PagedSeq {
   final val UndeterminedEnd = Int.MaxValue
 
@@ -126,7 +126,7 @@ import PagedSeq._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@deprecatedInheritance("The implementation details of paged sequences make inheriting from them unwise.", "2.11.0")
+@deprecated("This class will be moved to the scala-parser-combinators module", "2.11.8")
 class PagedSeq[T: ClassTag] protected(
   more: (Array[T], Int, Int) => Int,
   first1: Page[T],

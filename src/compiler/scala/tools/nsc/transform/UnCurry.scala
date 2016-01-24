@@ -7,9 +7,10 @@ package scala
 package tools.nsc
 package transform
 
-import symtab.Flags._
-import scala.collection.{ mutable, immutable }
 import scala.language.postfixOps
+
+import symtab.Flags._
+import scala.collection.mutable
 import scala.reflect.internal.util.ListOfNil
 
 /*<export> */
@@ -696,7 +697,7 @@ abstract class UnCurry extends InfoTransform
               // declared type and assign this to a synthetic val. Later, we'll patch
               // the method body to refer to this, rather than the parameter.
               val tempVal: ValDef = {
-                // SI-9442: using the "uncurry-erased" type (the one after the uncurry phase) can lead to incorrect 
+                // SI-9442: using the "uncurry-erased" type (the one after the uncurry phase) can lead to incorrect
                 // tree transformations. For example, compiling:
                 // ```
                 //   def foo(c: Ctx)(l: c.Tree): Unit = {
@@ -725,7 +726,7 @@ abstract class UnCurry extends InfoTransform
                 //    to redo this desugaring manually here
                 // 2. the type needs to be normalized, since `gen.mkCast` checks this (no HK here, just aliases have
                 //    to be expanded before handing the type to `gen.mkAttributedCast`, which calls `gen.mkCast`)
-                val info0 = 
+                val info0 =
                   enteringUncurry(p.symbol.info) match {
                     case DesugaredParameterType(desugaredTpe) =>
                       desugaredTpe

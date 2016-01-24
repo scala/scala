@@ -1,9 +1,9 @@
 package scala.tools.nsc.interactive
 
+import scala.language.implicitConversions
+
 import Lexer._
 import java.io.Writer
-import scala.language.implicitConversions
-import scala.reflect.ClassTag
 
 /** An abstract class for writing and reading Scala objects to and
  *  from a legible representation. The representation follows the following grammar:

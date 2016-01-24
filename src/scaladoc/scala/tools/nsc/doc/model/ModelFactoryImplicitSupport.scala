@@ -11,7 +11,6 @@ package doc
 package model
 
 import scala.collection._
-import symtab.Flags
 
 /**
  * This trait finds implicit conversions for a class in the default scope and creates scaladoc entries for each of them.

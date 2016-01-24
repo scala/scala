@@ -1,4 +1,9 @@
-sealed-final-neg.scala:41: error: expected class or object definition
-"Due to SI-6142 this emits no warnings, so we'll just break it until that's fixed."
-^
+sealed-final-neg.scala:17: warning: neg1/Foo::bar(I)I is annotated @inline but cannot be inlined: the method is not final and may be overridden.
+    def f = Foo.mkFoo() bar 10
+                        ^
+sealed-final-neg.scala:37: warning: neg2/Foo::bar(I)I is annotated @inline but cannot be inlined: the method is not final and may be overridden.
+    def f = Foo.mkFoo() bar 10
+                        ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
 one error found

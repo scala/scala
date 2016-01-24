@@ -7,8 +7,6 @@ package scala
 package reflect
 package api
 
-import java.lang.{ Class => jClass }
-import scala.language.implicitConversions
 import java.io.ObjectStreamException
 
 /**

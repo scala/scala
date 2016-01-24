@@ -64,9 +64,10 @@ object ArrayStack extends SeqFactory[ArrayStack] {
 class ArrayStack[T] private(private var table : Array[AnyRef],
                             private var index : Int)
 extends AbstractSeq[T]
-   with Seq[T]
-   with SeqLike[T, ArrayStack[T]]
+   with IndexedSeq[T]
+   with IndexedSeqLike[T, ArrayStack[T]]
    with GenericTraversableTemplate[T, ArrayStack]
+   with IndexedSeqOptimized[T, ArrayStack[T]]
    with Cloneable[ArrayStack[T]]
    with Builder[T, ArrayStack[T]]
    with Serializable
@@ -224,7 +225,7 @@ extends AbstractSeq[T]
   /** Creates and iterator over the stack in LIFO order.
    *  @return an iterator over the elements of the stack.
    */
-  def iterator: Iterator[T] = new AbstractIterator[T] {
+  override def iterator: Iterator[T] = new AbstractIterator[T] {
     var currentIndex = index
     def hasNext = currentIndex > 0
     def next() = {
@@ -233,7 +234,7 @@ extends AbstractSeq[T]
     }
   }
 
-  override def foreach[U](f: T =>  U) {
+  override def foreach[U](f: T => U) {
     var currentIndex = index
     while (currentIndex > 0) {
       currentIndex -= 1

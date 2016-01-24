@@ -5,12 +5,12 @@
 package scala.tools.nsc
 package interactive
 
-import java.io.{ PrintWriter, StringWriter, FileReader, FileWriter }
+import java.io.{ FileReader, FileWriter }
 import scala.collection.mutable
-import mutable.{LinkedHashMap, SynchronizedMap, HashSet, SynchronizedSet}
+import mutable.{LinkedHashMap, HashSet, SynchronizedSet}
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.AbstractFile
-import scala.reflect.internal.util.{ SourceFile, BatchSourceFile, Position, NoPosition }
+import scala.reflect.internal.util.SourceFile
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.typechecker.Analyzer
@@ -82,7 +82,7 @@ trait InteractiveAnalyzer extends Analyzer {
         val existingDerivedSym = owningInfo.decl(sym.name.toTermName).filter(sym => sym.isSynthetic && sym.isMethod)
         existingDerivedSym.alternatives foreach (owningInfo.decls.unlink)
         val defTree = tree match {
-          case dd: DocDef => dd.definition // See SI-9011, Scala IDE's presentation compiler incorporates ScalaDocGlobal with InterativeGlobal, so we have to unwrap DocDefs.
+          case dd: DocDef => dd.definition // See SI-9011, Scala IDE's presentation compiler incorporates ScaladocGlobal with InteractiveGlobal, so we have to unwrap DocDefs.
           case _ => tree
         }
         enterImplicitWrapper(defTree.asInstanceOf[ClassDef])

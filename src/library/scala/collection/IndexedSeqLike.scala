@@ -9,9 +9,6 @@
 package scala
 package collection
 
-import mutable.ArrayBuffer
-import scala.annotation.tailrec
-
 /** A template trait for indexed sequences of type `IndexedSeq[A]`.
  *
  *  $indexedSeqInfo

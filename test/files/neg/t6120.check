@@ -2,7 +2,7 @@ t6120.scala:5: warning: postfix operator bippy should be enabled
 by making the implicit value scala.language.postfixOps visible.
 This can be achieved by adding the import clause 'import scala.language.postfixOps'
 or by setting the compiler option -language:postfixOps.
-See the Scala docs for value scala.language.postfixOps for a discussion
+See the Scaladoc for value scala.language.postfixOps for a discussion
 why the feature should be explicitly enabled.
   def f = null == null bippy
                        ^

@@ -62,9 +62,15 @@ object Entity {
     case x: MemberEntity  => x.deprecation.isDefined
     case _                => false
   }
+
+  private def isObject(x: Entity) = x match {
+    case x: TemplateEntity  => x.isObject
+    case _                  => false
+  }
+
   /** Ordering deprecated things last. */
   implicit lazy val EntityOrdering: Ordering[Entity] =
-    Ordering[(Boolean, String)] on (x => (isDeprecated(x), x.name))
+    Ordering[(Boolean, String, Boolean)] on (x => (isDeprecated(x), x.qualifiedName, isObject(x)))
 }
 
 /** A template, which is either a class, trait, object or package. Depending on whether documentation is available

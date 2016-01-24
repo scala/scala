@@ -8,8 +8,9 @@ package reflect
 package internal
 
 import scala.language.postfixOps
-import scala.annotation.{ switch, meta }
-import scala.collection.{ mutable, immutable }
+
+import scala.annotation.meta
+import scala.collection.mutable
 import Flags._
 import scala.reflect.api.{Universe => ApiUniverse}
 
@@ -522,7 +523,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaSignatureAnnotation = requiredClass[scala.reflect.ScalaSignature]
     lazy val ScalaLongSignatureAnnotation = requiredClass[scala.reflect.ScalaLongSignature]
 
-    lazy val LambdaMetaFactory = getClassIfDefined("java.lang.invoke.LambdaMetafactory")
     lazy val MethodHandle = getClassIfDefined("java.lang.invoke.MethodHandle")
 
     // Option classes
@@ -1402,8 +1402,8 @@ trait Definitions extends api.StandardDefinitions {
       if (isInitialized) return
       ObjectClass.initialize
       ScalaPackageClass.initialize
-      val forced1 = symbolsNotPresentInBytecode
-      val forced2 = NoSymbol
+      symbolsNotPresentInBytecode
+      NoSymbol
       isInitialized = true
     } //init
 

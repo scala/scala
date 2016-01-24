@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package ast.parser
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 import symtab.Flags.MUTABLE
 import scala.reflect.internal.util.ListOfNil
 import scala.reflect.internal.util.StringOps.splitWhere

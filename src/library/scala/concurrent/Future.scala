@@ -10,15 +10,12 @@ package scala.concurrent
 
 import scala.language.higherKinds
 
-import java.util.concurrent.{ CountDownLatch, TimeUnit, Callable }
-import java.util.concurrent.TimeUnit.{ NANOSECONDS => NANOS, MILLISECONDS ⇒ MILLIS }
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.util.control.NonFatal
 import scala.util.{Try, Success, Failure}
 import scala.concurrent.duration._
-import scala.annotation.tailrec
-import scala.collection.mutable.Builder
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
 
@@ -215,7 +212,7 @@ trait Future[+T] extends Awaitable[T] {
    *  @param  f  function that transforms a failure of the receiver into a failure of the returned future
    *  @return    a `Future` that will be completed with the transformed value
    */
-  def transform[S](s: T => S, f: Throwable => Throwable)(implicit executor: ExecutionContext): Future[S] = 
+  def transform[S](s: T => S, f: Throwable => Throwable)(implicit executor: ExecutionContext): Future[S] =
     transform {
       case Success(r) => Try(s(r))
       case Failure(t) => Try(throw f(t)) // will throw fatal errors!
@@ -348,7 +345,7 @@ trait Future[+T] extends Awaitable[T] {
    *  @param pf    the `PartialFunction` to apply if this `Future` fails
    *  @return      a `Future` with the successful value of this `Future` or the result of the `PartialFunction`
    */
-  def recover[U >: T](pf: PartialFunction[Throwable, U])(implicit executor: ExecutionContext): Future[U] = 
+  def recover[U >: T](pf: PartialFunction[Throwable, U])(implicit executor: ExecutionContext): Future[U] =
     transform { _ recover pf }
 
   /** Creates a new future that will handle any matching throwable that this
@@ -429,7 +426,7 @@ trait Future[+T] extends Awaitable[T] {
    *  @return       a `Future` with the successful result of this or that `Future` or the failure of this `Future` if both fail
    */
   def fallbackTo[U >: T](that: Future[U]): Future[U] =
-    if (this eq that) this 
+    if (this eq that) this
     else {
       implicit val ec = internalExecutor
       recoverWith { case _ => that } recoverWith { case _ => this }
@@ -532,7 +529,7 @@ object Future {
       ready(atMost)
       throw new TimeoutException(s"Future timed out after [$atMost]")
     }
-    
+
     override def onSuccess[U](pf: PartialFunction[Nothing, U])(implicit executor: ExecutionContext): Unit = ()
     override def onFailure[U](pf: PartialFunction[Throwable, U])(implicit executor: ExecutionContext): Unit = ()
     override def onComplete[U](f: Try[Nothing] => U)(implicit executor: ExecutionContext): Unit = ()
@@ -597,7 +594,7 @@ object Future {
   *  @return          the `Future` holding the result of the computation
   */
   def apply[T](body: =>T)(implicit @deprecatedName('execctx) executor: ExecutionContext): Future[T] =
-    unit.map(_ => body)    
+    unit.map(_ => body)
 
   /** Simple version of `Future.traverse`. Asynchronously and non-blockingly transforms a `TraversableOnce[Future[A]]`
    *  into a `Future[TraversableOnce[A]]`. Useful for reducing many `Future`s into a single `Future`.

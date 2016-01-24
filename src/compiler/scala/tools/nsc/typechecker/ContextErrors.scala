@@ -7,7 +7,6 @@ package scala.tools.nsc
 package typechecker
 
 import scala.reflect.internal.util.StringOps.{ countElementsAsString, countAsString }
-import symtab.Flags.IS_ERROR
 import scala.compat.Platform.EOL
 import scala.reflect.runtime.ReflectionUtils
 import scala.reflect.macros.runtime.AbortMacroException
@@ -1190,7 +1189,7 @@ trait ContextErrors {
 
       def IllegalDependentMethTpeError(sym: Symbol)(context: Context) = {
         val errorAddendum =
-          ": parameter appears in the type of another parameter in the same section or an earlier one"
+          ": parameter may only be referenced in a subsequent parameter section"
         issueSymbolTypeError(sym,  "illegal dependent method type" + errorAddendum)(context)
       }
 

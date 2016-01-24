@@ -7,7 +7,7 @@ package scala.tools.nsc
 package typechecker
 
 import scala.tools.nsc.symtab.Flags
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 
 /** Duplicate trees and re-type check them, taking care to replace
  *  and create fresh symbols for new local definitions.

@@ -106,6 +106,9 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
   lazy val jliSerializedLambdaRef    : ClassBType = classBTypeFromSymbol(requiredClass[java.lang.invoke.SerializedLambda])
   lazy val jliMethodHandlesRef       : ClassBType = classBTypeFromSymbol(requiredClass[java.lang.invoke.MethodHandles])
   lazy val jliMethodHandlesLookupRef : ClassBType = classBTypeFromSymbol(exitingPickler(getRequiredClass("java.lang.invoke.MethodHandles.Lookup"))) // didn't find a reliable non-stringly-typed way that works for inner classes in the backend
+  lazy val jliMethodTypeRef          : ClassBType = classBTypeFromSymbol(requiredClass[java.lang.invoke.MethodType])
+  lazy val jliCallSiteRef            : ClassBType = classBTypeFromSymbol(requiredClass[java.lang.invoke.CallSite])
+  lazy val jliLambdaMetafactoryRef   : ClassBType = classBTypeFromSymbol(requiredClass[java.lang.invoke.LambdaMetafactory])
   lazy val srLambdaDeserializerRef   : ClassBType = classBTypeFromSymbol(requiredModule[scala.runtime.LambdaDeserializer.type].moduleClass)
   lazy val srBoxesRunTimeRef         : ClassBType = classBTypeFromSymbol(requiredClass[scala.runtime.BoxesRunTime])
   lazy val srBoxedUnitRef            : ClassBType = classBTypeFromSymbol(requiredClass[scala.runtime.BoxedUnit])
@@ -350,6 +353,9 @@ final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: 
   def jliSerializedLambdaRef    : ClassBType = _coreBTypes.jliSerializedLambdaRef
   def jliMethodHandlesRef       : ClassBType = _coreBTypes.jliMethodHandlesRef
   def jliMethodHandlesLookupRef : ClassBType = _coreBTypes.jliMethodHandlesLookupRef
+  def jliMethodTypeRef          : ClassBType = _coreBTypes.jliMethodTypeRef
+  def jliCallSiteRef            : ClassBType = _coreBTypes.jliCallSiteRef
+  def jliLambdaMetafactoryRef   : ClassBType = _coreBTypes.jliLambdaMetafactoryRef
   def srLambdaDeserializerRef   : ClassBType = _coreBTypes.srLambdaDeserializerRef
   def srBoxesRunTimeRef         : ClassBType = _coreBTypes.srBoxesRunTimeRef
   def srBoxedUnitRef            : ClassBType = _coreBTypes.srBoxedUnitRef

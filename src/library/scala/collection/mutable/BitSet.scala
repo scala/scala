@@ -13,7 +13,7 @@ package collection
 package mutable
 
 import generic._
-import BitSetLike.{LogWL, MaxSize, updateArray}
+import BitSetLike.{LogWL, MaxSize}
 
 /** A class for mutable bitsets.
  *
@@ -56,7 +56,7 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
 
   @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def nwords = elems.length
-  
+
   @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def word(idx: Int): Long =
     if (idx < nwords) elems(idx) else 0L
@@ -100,7 +100,7 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
 
   @deprecatedOverriding("Override add to prevent += and add from exhibiting different behavior.", "2.11.0")
   def += (elem: Int): this.type = { add(elem); this }
-  
+
   @deprecatedOverriding("Override add to prevent += and add from exhibiting different behavior.", "2.11.0")
   def -= (elem: Int): this.type = { remove(elem); this }
 

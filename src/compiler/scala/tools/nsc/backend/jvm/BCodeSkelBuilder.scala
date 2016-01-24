@@ -25,7 +25,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
   import global._
   import bTypes._
   import coreBTypes._
-  import bCodeAsmCommon._
 
   /*
    * There's a dedicated PlainClassBuilder for each CompilationUnit,
@@ -82,8 +81,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     def log(msg: => AnyRef) {
       global synchronized { global.log(msg) }
     }
-
-    override def getCurrentCUnit(): CompilationUnit = { cunit }
 
     /* ---------------- helper utils for generating classes and fields ---------------- */
 

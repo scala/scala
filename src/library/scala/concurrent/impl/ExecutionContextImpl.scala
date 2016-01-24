@@ -8,13 +8,10 @@
 
 package scala.concurrent.impl
 
-
-
-import java.util.concurrent.{ ForkJoinPool, ForkJoinWorkerThread, ForkJoinTask, LinkedBlockingQueue, Callable, Executor, ExecutorService, Executors, ThreadFactory, TimeUnit, ThreadPoolExecutor }
+import java.util.concurrent.{ ForkJoinPool, ForkJoinWorkerThread, ForkJoinTask, Callable, Executor, ExecutorService, ThreadFactory, TimeUnit }
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.Collection
-import scala.concurrent.{ BlockContext, ExecutionContext, Awaitable, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService }
-import scala.util.control.NonFatal
+import scala.concurrent.{ BlockContext, ExecutionContext, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService }
 import scala.annotation.tailrec
 
 
@@ -57,7 +54,7 @@ private[concurrent] object ExecutionContextImpl {
     }
 
     // As per ThreadFactory contract newThread should return `null` if cannot create new thread.
-    def newThread(runnable: Runnable): Thread = 
+    def newThread(runnable: Runnable): Thread =
       if (reserveThread())
         wire(new Thread(new Runnable {
           // We have to decrement the current thread count when the thread exits
@@ -80,7 +77,7 @@ private[concurrent] object ExecutionContextImpl {
                   } finally {
                     isdone = true
                   }
-                
+
                 true
               }
               override def isReleasable = isdone
@@ -123,33 +120,17 @@ private[concurrent] object ExecutionContextImpl {
                                                                       prefix = "scala-execution-context-global",
                                                                       uncaught = uncaughtExceptionHandler)
 
-    try {
-      new ForkJoinPool(desiredParallelism, threadFactory, uncaughtExceptionHandler, true) {
-        override def execute(runnable: Runnable): Unit = {
-            val fjt: ForkJoinTask[_] = runnable match {
-              case t: ForkJoinTask[_] => t
-              case r                  => new ExecutionContextImpl.AdaptedForkJoinTask(r)
-            }
-            Thread.currentThread match {
-              case fjw: ForkJoinWorkerThread if fjw.getPool eq this => fjt.fork()
-              case _                                                => super.execute(fjt)
-            }
+    new ForkJoinPool(desiredParallelism, threadFactory, uncaughtExceptionHandler, true) {
+      override def execute(runnable: Runnable): Unit = {
+        val fjt: ForkJoinTask[_] = runnable match {
+          case t: ForkJoinTask[_] => t
+          case r                  => new ExecutionContextImpl.AdaptedForkJoinTask(r)
+        }
+        Thread.currentThread match {
+          case fjw: ForkJoinWorkerThread if fjw.getPool eq this => fjt.fork()
+          case _                                                => super.execute(fjt)
         }
       }
-    } catch {
-      case NonFatal(t) =>
-        System.err.println("Failed to create ForkJoinPool for the default ExecutionContext, falling back to ThreadPoolExecutor")
-        t.printStackTrace(System.err)
-        val exec = new ThreadPoolExecutor(
-          desiredParallelism,
-          desiredParallelism,
-          5L,
-          TimeUnit.MINUTES,
-          new LinkedBlockingQueue[Runnable],
-          threadFactory
-        )
-        exec.allowCoreThreadTimeOut(true)
-        exec
     }
   }
 

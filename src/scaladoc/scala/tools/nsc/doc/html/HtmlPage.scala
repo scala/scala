@@ -15,7 +15,7 @@ import model._
 
 import scala.xml.NodeSeq
 import scala.xml.Elem
-import scala.xml.dtd.{DocType, PublicID}
+import scala.xml.dtd.DocType
 import scala.collection._
 import java.io.Writer
 
@@ -47,6 +47,8 @@ abstract class HtmlPage extends Page { thisPage =>
     val html =
       <html>
         <head>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+          <meta name="viewport" content="width=device-width, initial-scale=1"/>
           <title>{ title }</title>
           <meta name="description" content={ description }/>
           <meta name="keywords" content={ keywords }/>
@@ -242,13 +244,13 @@ abstract class HtmlPage extends Page { thisPage =>
   def permalink(template: Entity, isSelf: Boolean = true): Elem =
     <span class="permalink">
       <a href={ memberToUrl(template, isSelf) } title="Permalink" target="_top">
-        <img src={ relativeLinkTo(List("permalink.png", "lib")) } alt="Permalink" />
+        <img src={ relativeLinkTo(List("permalink.svg", "lib")) } alt="Permalink" />
       </a>
     </span>
-	
-  def docEntityKindToCompanionTitle(ety: DocTemplateEntity, baseString: String = "See companion") = 
+
+  def docEntityKindToCompanionTitle(ety: DocTemplateEntity, baseString: String = "See companion") =
     ety.companion match{
-	  case Some(companion) => 
+          case Some(companion) =>
 	    s"$baseString${
 		if(companion.isObject) " object"
 		else if(companion.isTrait) " trait"
@@ -269,7 +271,8 @@ abstract class HtmlPage extends Page { thisPage =>
           <div>
             Related Docs:
             <a href={relativeLinkTo(tpl.companion.get)} title={docEntityKindToCompanionTitle(tpl)}>{objClassTrait}</a>
-            | {templateToHtml(tpl.inTemplate, s"package ${tpl.inTemplate.name}")}
+            <span class="divider">|</span>
+            {templateToHtml(tpl.inTemplate, s"package ${tpl.inTemplate.name}")}
           </div>
         case None =>
           <div>Related Doc:

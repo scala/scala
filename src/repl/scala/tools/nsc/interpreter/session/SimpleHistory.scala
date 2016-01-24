@@ -8,7 +8,6 @@ package interpreter
 package session
 
 import scala.collection.mutable.{ Buffer, ListBuffer }
-import scala.collection.JavaConverters._
 
 class SimpleHistory extends History {
   private var _index: Int = 0

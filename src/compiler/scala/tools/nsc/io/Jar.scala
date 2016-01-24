@@ -6,11 +6,12 @@
 package scala.tools.nsc
 package io
 
-import java.io.{ InputStream, OutputStream, IOException, FileNotFoundException, FileInputStream, DataOutputStream }
+import scala.language.postfixOps
+
+import java.io.{ InputStream, OutputStream, DataOutputStream }
 import java.util.jar._
 import scala.collection.JavaConverters._
 import Attributes.Name
-import scala.language.{ implicitConversions, postfixOps }
 
 // Attributes.Name instances:
 //

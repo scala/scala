@@ -10,7 +10,6 @@ import java.lang.{Class => jClass}
 import java.lang.reflect.{ Method, InvocationTargetException, UndeclaredThrowableException }
 import scala.reflect.internal.util.AbstractFileClassLoader
 import scala.reflect.io._
-import java.io.{File => JFile}
 
 /** A few java-reflection oriented utility functions useful during reflection bootstrapping.
  */
@@ -72,7 +71,7 @@ object ReflectionUtils {
     def singletonAccessor(clazz: Class[_]): Option[Method] =
       if (clazz == null) None
       else {
-        val declaredAccessor = clazz.getDeclaredMethods.filter(_.getName == accessorName).headOption
+        val declaredAccessor = clazz.getDeclaredMethods.find(_.getName == accessorName)
         declaredAccessor orElse singletonAccessor(clazz.getSuperclass)
       }
 
@@ -92,7 +91,7 @@ object ReflectionUtils {
   }
 
   class EnclosedIn[T](enclosure: jClass[_] => T) {
-    def unapply(jclazz: jClass[_]): Option[T] = if (enclosure(jclazz) != null) Some(enclosure(jclazz)) else None
+    def unapply(jclazz: jClass[_]): Option[T] = Option(enclosure(jclazz))
   }
 
   object EnclosedInMethod extends EnclosedIn(_.getEnclosingMethod)

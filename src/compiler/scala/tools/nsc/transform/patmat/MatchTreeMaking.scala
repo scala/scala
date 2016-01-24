@@ -6,10 +6,10 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.tools.nsc.symtab.Flags.{SYNTHETIC, ARTIFACT}
 import scala.language.postfixOps
+
+import scala.tools.nsc.symtab.Flags.{SYNTHETIC, ARTIFACT}
 import scala.collection.mutable
-import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
 
 /** Translate our IR (TreeMakers) into actual Scala Trees using the factory methods in MatchCodeGen.

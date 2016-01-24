@@ -270,7 +270,7 @@ TODO:
       </artifact:dependencies>
 
       <artifact:dependencies pathId="jarjar.classpath">
-        <dependency groupId="com.googlecode.jarjar" artifactId="jarjar" version="1.3"/>
+        <dependency groupId="org.pantsbuild" artifactId="jarjar" version="1.6.0"/>
       </artifact:dependencies>
 
       <!-- JUnit -->
@@ -996,10 +996,14 @@ TODO:
       <include name="**/*.png"/>
       <include name="**/*.gif"/>
       <include name="**/*.txt"/>
+      <include name="**/*.eot"/>
+      <include name="**/*.ttf"/>
+      <include name="**/*.woff"/>
+      <include name="**/*.svg"/>
     </patternset>
 
     <taskdef resource="scala/tools/ant/sabbus/antlib.xml" classpathref="starr.compiler.path"/>
-    <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpathref="jarjar.classpath" />
+    <taskdef name="jarjar" classname="org.pantsbuild.jarjar.JarJarTask" classpathref="jarjar.classpath" />
   </target>
 
 <!-- ===========================================================================
@@ -1537,7 +1541,7 @@ TODO:
     <mkdir dir="${bc-build.dir}"/>
     <!-- Pull down MIMA -->
     <artifact:dependencies pathId="mima.classpath">
-      <dependency groupId="com.typesafe" artifactId="mima-reporter_2.10" version="0.1.6"/>
+      <dependency groupId="com.typesafe" artifactId="mima-reporter_2.10" version="0.1.8"/>
     </artifact:dependencies>
     <artifact:dependencies pathId="old.bc.classpath">
       <dependency groupId="org.scala-lang" artifactId="scala-library" version="${bc-reference-version}"/>
@@ -1580,20 +1584,15 @@ TODO:
   <target name="docs.lib" depends="docs.start" unless="docs.skip">
     <staged-docs project="library">
       <include name="**/*.scala"/>
-      <exclude name="runtime/*$.scala"/>
-      <exclude name="runtime/ScalaRunTime.scala"/>
-      <exclude name="runtime/StringAdd.scala"/>
+      <exclude name="**/runtime/*$.scala"/>
+      <exclude name="**/runtime/ScalaRunTime.scala"/>
+      <exclude name="**/runtime/StringAdd.scala"/>
     </staged-docs>
   </target>
 
   <target name="docs.reflect" depends="docs.start" unless="docs.skip">
     <staged-docs project="reflect">
       <include name="**/*.scala"/>
-      <exclude name="reflect/Code.scala"/>
-      <exclude name="reflect/Print.scala"/>
-      <exclude name="reflect/Symbol.scala"/>
-      <exclude name="reflect/Tree.scala"/>
-      <exclude name="reflect/Type.scala"/>
     </staged-docs>
   </target>
 
@@ -1667,6 +1666,10 @@ TODO:
         <include name="**/*.css"/>
         <include name="**/*.gif"/>
         <include name="**/*.png"/>
+        <include name="**/*.eot"/>
+        <include name="**/*.ttf"/>
+        <include name="**/*.woff"/>
+        <include name="**/*.svg"/>
       </fileset>
     </copy>
   </target>

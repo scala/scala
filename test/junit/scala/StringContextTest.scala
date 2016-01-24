@@ -1,6 +1,8 @@
 
 package scala
 
+import java.text.DecimalFormat
+
 import language.implicitConversions
 
 import org.junit.Test
@@ -10,10 +12,32 @@ import org.junit.runners.JUnit4
 
 import scala.tools.testing.AssertUtil._
 
+object StringContextTestUtils {
+  private val decimalSeparator: Char = new DecimalFormat().getDecimalFormatSymbols().getDecimalSeparator()
+  private val numberPattern = """(\d+)\.(\d+.*)""".r
+
+  implicit class StringContextOps(val sc: StringContext) extends AnyVal {
+    // Use this String interpolator to avoid problems with a locale-dependent decimal mark.
+    def locally(numbers: String*): String = {
+      val numbersWithCorrectLocale = numbers.map(applyProperLocale)
+      sc.s(numbersWithCorrectLocale: _*)
+    }
+
+    // Handles cases like locally"3.14" - it's prettier than locally"${"3.14"}".
+    def locally(): String = sc.parts.map(applyProperLocale).mkString
+
+    private def applyProperLocale(number: String): String = {
+      val numberPattern(intPart, fractionalPartAndSuffix) = number
+      s"$intPart$decimalSeparator$fractionalPartAndSuffix"
+    }
+  }
+}
+
 @RunWith(classOf[JUnit4])
 class StringContextTest {
 
   import StringContext._
+  import StringContextTestUtils.StringContextOps
 
   @Test def noEscape() = {
     val s = "string"
@@ -67,25 +91,21 @@ class StringContextTest {
 
   @Test def fIf() = {
     val res = f"${if (true) 2.5 else 2.5}%.2f"
-    val expected = formatUsingCurrentLocale(2.50)
+    val expected = locally"2.50"
     assertEquals(expected, res)
   }
 
   @Test def fIfNot() = {
     val res = f"${if (false) 2.5 else 3.5}%.2f"
-    val expected = formatUsingCurrentLocale(3.50)
+    val expected = locally"3.50"
     assertEquals(expected, res)
   }
 
   @Test def fHeteroArgs() = {
     val res = f"${3.14}%.2f rounds to ${3}%d"
-    val expected = formatUsingCurrentLocale(3.14) + " rounds to 3"
+    val expected = locally"${"3.14"} rounds to 3"
     assertEquals(expected, res)
   }
-
-  // Use this method to avoid problems with a locale-dependent decimal mark.
-  // The string interpolation is not used here intentionally as this method is used to test string interpolation.
-  private def formatUsingCurrentLocale(number: Double, decimalPlaces: Int = 2) = ("%." + decimalPlaces + "f").format(number)
 
   @Test def `f interpolator baseline`(): Unit = {
 
@@ -203,17 +223,17 @@ class StringContextTest {
 
       // 'e' | 'E' | 'g' | 'G' | 'f' | 'a' | 'A' (category: floating point)
       // ------------------------------------------------------------------
-      f"${3.4f}%e" -> "3.400000e+00",
-      f"${3.4}%e"  -> "3.400000e+00",
-      f"${3.4f : java.lang.Float}%e" -> "3.400000e+00",
-      f"${3.4 : java.lang.Double}%e" -> "3.400000e+00",
+      f"${3.4f}%e" -> locally"3.400000e+00",
+      f"${3.4}%e"  -> locally"3.400000e+00",
+      f"${3.4f : java.lang.Float}%e" -> locally"3.400000e+00",
+      f"${3.4 : java.lang.Double}%e" -> locally"3.400000e+00",
 
-      f"${BigDecimal(3.4)}%e" -> "3.400000e+00",
+      f"${BigDecimal(3.4)}%e" -> locally"3.400000e+00",
 
-      f"${new java.math.BigDecimal(3.4)}%e" -> "3.400000e+00",
+      f"${new java.math.BigDecimal(3.4)}%e" -> locally"3.400000e+00",
 
-      f"${3}%e"  -> "3.000000e+00",
-      f"${3L}%e" -> "3.000000e+00",
+      f"${3}%e"  -> locally"3.000000e+00",
+      f"${3L}%e" -> locally"3.000000e+00",
 
       // 't' | 'T' (category: date/time)
       // -------------------------------
@@ -224,11 +244,10 @@ class StringContextTest {
 
       // literals and arg indexes
       f"%%" -> "%",
-      f" mind%n------%nmatter%n" ->
+      f" mind%n------%nmatter" ->
        """| mind
           |------
-          |matter
-          |""".stripMargin,
+          |matter""".stripMargin.lines.mkString(compat.Platform.EOL),
       f"${i}%d %<d ${9}%d"   -> "42 42 9",
       f"${7}%d %<d ${9}%d"   -> "7 7 9",
       f"${7}%d %2$$d ${9}%d" -> "7 9 9",
@@ -237,7 +256,7 @@ class StringContextTest {
 
       f"${5: Any}"      -> "5",
       f"${5}%s%<d"      -> "55",
-      f"${3.14}%s,%<f"  -> "3.14,3.140000",
+      f"${3.14}%s,%<f"  -> locally"3.14,${"3.140000"}",
 
       f"z" -> "z"
     )

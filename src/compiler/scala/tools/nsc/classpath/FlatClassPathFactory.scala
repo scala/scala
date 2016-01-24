@@ -5,7 +5,6 @@ package scala.tools.nsc.classpath
 
 import scala.tools.nsc.Settings
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.ClassPath
 import FileUtils.AbstractFileOps
 
 /**

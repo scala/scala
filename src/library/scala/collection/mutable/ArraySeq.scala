@@ -68,7 +68,7 @@ extends AbstractSeq[A]
     array(idx) = elem.asInstanceOf[AnyRef]
   }
 
-  override def foreach[U](f: A =>  U) {
+  override def foreach[U](f: A => U) {
     var i = 0
     while (i < length) {
       f(array(i).asInstanceOf[A])

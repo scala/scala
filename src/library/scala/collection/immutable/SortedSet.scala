@@ -13,7 +13,6 @@ package collection
 package immutable
 
 import generic._
-import mutable.Builder
 
 /** A subtrait of `collection.SortedSet` which represents sorted sets
  *  which cannot be mutated.

@@ -22,6 +22,14 @@ findScalaHome () {
 }
 
 # Use tput to detect color-capable terminal.
+# (note: I have found that on Cygwin, the script sometimes dies here.
+# it doesn't happen from the Cygwin prompt when ssh'ing in to
+# jenkins-worker-windows-publish, only when I make a Jenkins job
+# that runs this script.  I don't know why.  it may have to do with
+# which bash flags are set (-e? -x?) and with bash flags propagating
+# from one script to another? not sure. anyway, normally in a CI
+# context we run partest through ant, not through this script, so I'm
+# not investigating further for now.)
 term_colors=$(tput colors 2>/dev/null)
 if [[ $? == 0 ]] && [[ $term_colors -gt 2 ]]; then
   git_diff_options="--color=always --word-diff"

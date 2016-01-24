@@ -18,7 +18,7 @@ abstract class TreeInfo {
   val global: SymbolTable
 
   import global._
-  import definitions.{ isTupleSymbol, isVarArgsList, isCastSymbol, ThrowableClass, TupleClass, uncheckedStableClass, isBlackboxMacroBundleType, isWhiteboxContextType }
+  import definitions.{ isVarArgsList, isCastSymbol, ThrowableClass, uncheckedStableClass, isBlackboxMacroBundleType, isWhiteboxContextType }
 
   /* Does not seem to be used. Not sure what it does anyway.
   def isOwnerDefinition(tree: Tree): Boolean = tree match {

@@ -1,10 +1,15 @@
 Eclipse project files
 =====================
 
-The following points describe how to get Scala to run in Eclipse. Please also take a look at the [excellent tutorial on scala-ide.org](http://scala-ide.org/docs/tutorials/scalac-trunk/index.html).
+For important details on building, debugging and file encodings, please see [the excellent tutorial on scala-ide.org](http://scala-ide.org/docs/tutorials/scalac-trunk/index.html).
 
-0. Import all projects into a [very recent version of Scala IDE for Eclipse](http://scala-ide.org/download/nightly.html) by choosing `File/Import Existing Projects`
-and navigate to `scala/src/eclipse`. Check all projects and click ok.
+The following points describe how to build Scala using Eclipse.
+
+0. Download the [Scala IDE bundle](http://scala-ide.org/download/sdk.html). It comes preconfigured for optimal performance.
+
+0. Run `ant init` to download some necessary jars.
+
+0. Import the project (in `src/eclipse`) via `File` → `Import Existing Projects` and navigate to `scala/src/eclipse`. Check all projects and click ok.
 
 0. You need to define a `path variable` inside Eclipse. Define `SCALA_BASEDIR` in
 `Preferences/General/Workspace/Linked Resources`. The value should be the absolute

@@ -10,7 +10,7 @@ import scala.reflect.internal.util._
 import scala.reflect.internal.Chars._
 import Tokens._
 import scala.annotation.{ switch, tailrec }
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 import mutable.{ ListBuffer, ArrayBuffer }
 import scala.tools.nsc.ast.parser.xml.Utility.isNameStart
 import scala.language.postfixOps

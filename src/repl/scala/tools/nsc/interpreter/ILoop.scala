@@ -12,18 +12,17 @@ import Predef.{ println => _, _ }
 import interpreter.session._
 import StdReplTags._
 import scala.tools.asm.ClassReader
-import scala.util.Properties.{ jdkHome, javaVersion, versionString, javaVmName }
-import scala.tools.nsc.util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
+import scala.util.Properties.jdkHome
+import scala.tools.nsc.util.{ ClassPath, stringFromStream }
 import scala.reflect.classTag
 import scala.reflect.internal.util.{ BatchSourceFile, ScalaClassLoader }
 import ScalaClassLoader._
-import scala.reflect.io.{ File, Directory }
+import scala.reflect.io.File
 import scala.tools.util._
 import io.AbstractFile
-import scala.collection.generic.Clearable
-import scala.concurrent.{ ExecutionContext, Await, Future, future }
+import scala.concurrent.{ ExecutionContext, Await, Future }
 import ExecutionContext.Implicits._
-import java.io.{ BufferedReader, FileReader, StringReader }
+import java.io.BufferedReader
 
 import scala.util.{ Try, Success, Failure }
 
@@ -543,7 +542,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
             case i  => val n = s.take(i).toInt ; (n, s.drop(i+1).toInt - n)
           }
         }
-      import scala.collection.JavaConverters._
       val index = (start - 1) max 0
       val text = history.asStrings(index, index + len) mkString "\n"
       edit(text)
@@ -870,7 +868,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
       if (settings.debug) {
         val readerDiags = (readerClasses, readers).zipped map {
-          case (cls, Failure(e)) => s"  - $cls --> " + e.getStackTrace.mkString(e.toString+"\n\t", "\n\t","\n")
+          case (cls, Failure(e)) => s"  - $cls --> \n\t" + scala.tools.nsc.util.stackTraceString(e) + "\n"
           case (cls, Success(_)) => s"  - $cls OK"
         }
         Console.println(s"All InteractiveReaders tried: ${readerDiags.mkString("\n","\n","\n")}")
@@ -906,7 +904,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
     // sets in to some kind of reader depending on environmental cues
     in = in0.fold(chooseReader(settings))(r => SimpleReader(r, out, interactive = true))
-    globalFuture = future {
+    globalFuture = Future {
       intp.initializeSynchronous()
       loopPostInit()
       !intp.reporter.hasErrors

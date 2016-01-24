@@ -8,7 +8,7 @@ package reflect
 package internal
 
 import Flags._
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 import scala.reflect.macros.Attachments
 import util.Statistics
 
@@ -1468,8 +1468,10 @@ trait Trees extends api.Trees {
 
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
     final def change(sym: Symbol) = {
-      if (sym != NoSymbol && sym.owner == oldowner)
+      if (sym != NoSymbol && sym.owner == oldowner) {
         sym.owner = newowner
+        if (sym.isModule) sym.moduleClass.owner = newowner
+      }
     }
     override def traverse(tree: Tree) {
       tree match {

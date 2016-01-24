@@ -25,6 +25,19 @@ import java.io.{ObjectOutputStream, ObjectInputStream}
  *  This class is optimal for last-in-first-out (LIFO), stack-like access patterns. If you need another access
  *  pattern, for example, random access or FIFO, consider using a collection more suited to this than `List`.
  *
+ *  ==Performance==
+ *  '''Time:''' `List` has `O(1)` prepend and head/tail access. Most other operations are `O(n)` on the number of elements in the list.
+ *  This includes the index-based lookup of elements, `length`, `append` and `reverse`.
+ *
+ *  '''Space:''' `List` implements '''structural sharing''' of the tail list. This means that many operations are either
+ *  zero- or constant-memory cost.
+ *  {{{
+ *  val mainList = List(3, 2, 1)
+ *  val with4 =    4 :: mainList  // re-uses mainList, costs one :: instance
+ *  val with42 =   42 :: mainList // also re-uses mainList, cost one :: instance
+ *  val shorter =  mainList.tail  // costs nothing as it uses the same 2::1::Nil instances as mainList
+ *  }}}
+ *
  *  @example {{{
  *  // Make a list via the companion object factory
  *  val days = List("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
@@ -39,19 +52,6 @@ import java.io.{ObjectOutputStream, ObjectInputStream}
  *    case List() =>
  *      println("There don't seem to be any week days.")
  *  }
- *  }}}
- *
- *  ==Performance==
- *  '''Time:''' `List` has `O(1)` prepend and head/tail access. Most other operations are `O(n)` on the number of elements in the list.
- *  This includes the index-based lookup of elements, `length`, `append` and `reverse`.
- *
- *  '''Space:''' `List` implements '''structural sharing''' of the tail list. This means that many operations are either
- *  zero- or constant-memory cost.
- *  {{{
- *  val mainList = List(3, 2, 1)
- *  val with4 =    4 :: mainList  // re-uses mainList, costs one :: instance
- *  val with42 =   42 :: mainList // also re-uses mainList, cost one :: instance
- *  val shorter =  mainList.tail  // costs nothing as it uses the same 2::1::Nil instances as mainList
  *  }}}
  *
  *  @note The functional list is characterized by persistence and structural sharing, thus offering considerable
@@ -88,8 +88,6 @@ sealed abstract class List[+A] extends AbstractSeq[A]
                                   with LinearSeqOptimized[A, List[A]]
                                   with scala.Serializable {
   override def companion: GenericCompanion[List] = List
-
-  import scala.collection.{Iterable, Traversable, Seq, IndexedSeq}
 
   def isEmpty: Boolean
   def head: A
@@ -265,7 +263,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     }
     (b.toList, these)
   }
-  
+
   final override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     if (bf eq List.ReusableCBF) {
       if (this eq Nil) Nil.asInstanceOf[That] else {
@@ -283,7 +281,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     }
     else super.map(f)
   }
-  
+
   final override def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     if (bf eq List.ReusableCBF) {
       if (this eq Nil) Nil.asInstanceOf[That] else {
@@ -312,7 +310,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     }
     else super.collect(pf)
   }
-  
+
   final override def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     if (bf eq List.ReusableCBF) {
       if (this eq Nil) Nil.asInstanceOf[That] else {
@@ -452,7 +450,7 @@ object List extends SeqFactory[List] {
   override def empty[A]: List[A] = Nil
 
   override def apply[A](xs: A*): List[A] = xs.toList
-  
+
   private[collection] val partialNotApplied = new Function1[Any, Any] { def apply(x: Any): Any = this }
 
   @SerialVersionUID(1L)

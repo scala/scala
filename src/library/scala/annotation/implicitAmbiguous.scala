@@ -1,7 +1,5 @@
 package scala.annotation
 
-import scala.annotation.meta._
-
 /**
   * To customize the error message that's emitted when an implicit search finds
   * multiple ambiguous values, annotate at least one of the implicit values
@@ -31,4 +29,4 @@ import scala.annotation.meta._
   * @author Brian McKenna
   * @since 2.12.0
   */
-final class implicitAmbiguous(msg: String) extends scala.annotation.StaticAnnotation {}
+final class implicitAmbiguous(msg: String) extends scala.annotation.StaticAnnotation

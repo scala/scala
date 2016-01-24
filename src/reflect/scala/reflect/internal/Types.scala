@@ -7,7 +7,7 @@ package scala
 package reflect
 package internal
 
-import scala.collection.{ mutable, immutable, generic }
+import scala.collection.{ mutable, immutable }
 import scala.ref.WeakReference
 import mutable.ListBuffer
 import Flags._
@@ -2496,6 +2496,8 @@ trait Types
     override def isJava = true
   }
 
+  // TODO: rename so it's more appropriate for the type that is for a method without argument lists
+  // ("nullary" erroneously implies it has an argument list with zero arguments, it actually has zero argument lists)
   case class NullaryMethodType(override val resultType: Type) extends Type with NullaryMethodTypeApi {
     override def isTrivial = resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
     override def prefix: Type = resultType.prefix
@@ -3938,7 +3940,8 @@ trait Types
     def maybeCreateDummyClone(pre: Type, sym: Symbol): Type = pre match {
       case SingleType(pre1, sym1) =>
         if (sym1.isModule && sym1.isStatic) {
-          NoType
+          if (sym.owner == sym1 || sym.isJavaDefined || sym.owner.sourceModule.isStaticModule) NoType
+          else pre
         } else if (sym1.isModule && sym.owner == sym1.moduleClass) {
           val pre2 = maybeCreateDummyClone(pre1, sym1)
           if (pre2 eq NoType) pre2

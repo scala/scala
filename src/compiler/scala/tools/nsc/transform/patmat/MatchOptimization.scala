@@ -6,10 +6,10 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.tools.nsc.symtab.Flags.MUTABLE
 import scala.language.postfixOps
+
+import scala.tools.nsc.symtab.Flags.MUTABLE
 import scala.collection.mutable
-import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.Position
 
 /** Optimize and analyze matches based on their TreeMaker-representation.

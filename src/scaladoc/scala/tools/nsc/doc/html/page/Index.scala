@@ -26,20 +26,12 @@ class Index(universe: doc.Universe, val index: doc.Index) extends HtmlPage {
     <xml:group>
       <link href={ relativeLinkTo{List("index.css", "lib")} }  media="screen" type="text/css" rel="stylesheet"/>
       <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} }></script>
-      <script type="text/javascript" src={ relativeLinkTo{List("jquery-ui.js", "lib")} }></script>
-      <script type="text/javascript" src={ relativeLinkTo{List("jquery.layout.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("index.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("scheduler.js", "lib")} }></script>
     </xml:group>
 
   val body =
     <body>
-      <div id="library">
-        <img class='class icon' alt='class icon' src={ relativeLinkTo{List("class.png", "lib")} }/>
-        <img class='trait icon' alt='trait icon' src={ relativeLinkTo{List("trait.png", "lib")} }/>
-        <img class='object icon' alt='trait icon' src={ relativeLinkTo{List("object.png", "lib")} }/>
-        <img class='package icon' alt='trait icon' src={ relativeLinkTo{List("package.png", "lib")} }/>
-      </div>
       { browser }
       <div id="content" class="ui-layout-center">
         <iframe id="template" name="template" src={ relativeLinkTo{List("package.html")} }/>

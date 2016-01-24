@@ -14,7 +14,7 @@ package tools.nsc
 package typechecker
 
 import scala.collection.{mutable, immutable}
-import scala.reflect.internal.util.{ BatchSourceFile, Statistics, shortClassOfInstance, ListOfNil }
+import scala.reflect.internal.util.{ Statistics, ListOfNil }
 import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
@@ -110,7 +110,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with PatternTyper with TyperContextErrors {
     import context0.unit
-    import typeDebug.{ ptTree, ptBlock, ptLine, inGreen, inRed }
+    import typeDebug.ptTree
     import TyperErrorGen._
     val runDefinitions = currentRun.runDefinitions
     import runDefinitions._
@@ -862,7 +862,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case Block(_, tree1) => tree1.symbol
           case _               => tree.symbol
         }
-        if (!meth.isConstructor && (isFunctionType(pt) || samOf(pt).exists)) { // (4.2)
+        def shouldEtaExpandToSam: Boolean = {
+          // SI-9536 don't adapt parameterless method types to a to SAM's, fall through to empty application
+          // instead for backwards compatiblity with 2.11. See comments of that ticket and SI-7187
+          // for analogous trouble with non-SAM eta expansion. Suggestions there are: a) deprecate eta expansion to Function0,
+          // or b) switch the order of eta-expansion and empty application in this adaptation.
+          !mt.params.isEmpty && samOf(pt).exists
+        }
+        if (!meth.isConstructor && (isFunctionType(pt) || shouldEtaExpandToSam)) { // (4.2)
           debuglog(s"eta-expanding $tree: ${tree.tpe} to $pt")
           checkParamsConvertible(tree, tree.tpe)
           val tree0 = etaExpand(context.unit, tree, this)

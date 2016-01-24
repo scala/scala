@@ -9,7 +9,6 @@
 package scala
 package util
 
-import scala.collection.Seq
 import scala.util.control.NonFatal
 import scala.language.implicitConversions
 
@@ -218,12 +217,12 @@ final case class Failure[+T](exception: Throwable) extends Try[T] {
   override def isSuccess: Boolean = false
   override def get: T = throw exception
   override def getOrElse[U >: T](default: => U): U = default
-  override def orElse[U >: T](default: => Try[U]): Try[U] = 
+  override def orElse[U >: T](default: => Try[U]): Try[U] =
     try default catch { case NonFatal(e) => Failure(e) }
   override def flatMap[U](f: T => Try[U]): Try[U] = this.asInstanceOf[Try[U]]
   override def flatten[U](implicit ev: T <:< Try[U]): Try[U] = this.asInstanceOf[Try[U]]
   override def foreach[U](f: T => U): Unit = ()
-  override def transform[U](s: T => Try[U], f: Throwable => Try[U]): Try[U] = 
+  override def transform[U](s: T => Try[U], f: Throwable => Try[U]): Try[U] =
     try f(exception) catch { case NonFatal(e) => Failure(e) }
   override def map[U](f: T => U): Try[U] = this.asInstanceOf[Try[U]]
   override def collect[U](pf: PartialFunction[T, U]): Try[U] = this.asInstanceOf[Try[U]]

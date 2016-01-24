@@ -158,18 +158,6 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
   @migration("The behavior of `scanRight` has changed. The previous behavior can be reproduced with scanRight.reverse.", "2.9.0")
   def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
-  /** Applies a function `f` to all elements of this $coll.
-   *
-   *  @param  f   the function that is applied for its side-effect to every element.
-   *              The result of function `f` is discarded.
-   *
-   *  @tparam  U  the type parameter describing the result of function `f`.
-   *              This result will always be ignored. Typically `U` is `Unit`,
-   *              but this is not necessary.
-   *
-   *  @usecase def foreach(f: A => Unit): Unit
-   *    @inheritdoc
-   */
   def foreach[U](f: A => U): Unit
 
   /** Builds a new collection by applying a function to all elements of this $coll.
@@ -269,16 +257,16 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
    *    {{{
    *      scala> val a = List(1)
    *      a: List[Int] = List(1)
-   *      
+   *
    *      scala> val b = List(2)
    *      b: List[Int] = List(2)
-   *      
+   *
    *      scala> val c = a ++ b
    *      c: List[Int] = List(1, 2)
-   *      
+   *
    *      scala> val d = List('a')
    *      d: List[Char] = List(a)
-   *      
+   *
    *      scala> val e = c ++ d
    *      e: List[AnyVal] = List(1, 2, a)
    *    }}}

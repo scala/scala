@@ -11,7 +11,7 @@ import java.util.{Collection => JCollection, List => JList}
 
 import _root_.jline.{console => jconsole}
 import jline.console.ConsoleReader
-import jline.console.completer.{CompletionHandler, Completer, ArgumentCompleter}
+import jline.console.completer.{CompletionHandler, Completer}
 import jconsole.history.{History => JHistory}
 
 

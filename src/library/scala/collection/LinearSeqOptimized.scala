@@ -9,8 +9,6 @@
 package scala
 package collection
 
-import mutable.ListBuffer
-import immutable.List
 import scala.annotation.tailrec
 
 /** A template trait for linear sequences of type `LinearSeq[A]` which optimizes
@@ -67,7 +65,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
   }
 
   override /*IterableLike*/
-  def foreach[B](f: A => B) {
+  def foreach[U](f: A => U) {
     var these = this
     while (!these.isEmpty) {
       f(these.head)

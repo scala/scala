@@ -287,7 +287,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                 val result = (localTyper.typedPos(tree.pos) {
                   Select(Super(qual, tpnme.EMPTY) setPos qual.pos, sym.alias)
                 }).asInstanceOf[Select]
-                debuglog("alias replacement: " + tree + " ==> " + result); //debug
+                debuglog(s"alias replacement: $sym --> ${sym.alias} / $tree ==> $result"); //debug
                 localTyper.typed(gen.maybeMkAsInstanceOf(transformSuperSelect(result), sym.tpe, sym.alias.tpe, beforeRefChecks = true))
               } else {
                 /*
@@ -387,7 +387,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val savedValid = validCurrentOwner
       if (owner.isClass) validCurrentOwner = true
       val savedLocalTyper = localTyper
-      localTyper = localTyper.atOwner(tree, if (owner.isModule) owner.moduleClass else owner)
+      localTyper = localTyper.atOwner(tree, if (owner.isModuleNotMethod) owner.moduleClass else owner)
       typers = typers updated (owner, localTyper)
       val result = super.atOwner(tree, owner)(trans)
       localTyper = savedLocalTyper

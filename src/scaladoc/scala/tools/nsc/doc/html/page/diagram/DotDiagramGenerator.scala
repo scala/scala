@@ -10,7 +10,7 @@ package html
 package page
 package diagram
 
-import scala.xml.{NodeSeq, XML, PrefixedAttribute, Elem, MetaData, Null, UnprefixedAttribute}
+import scala.xml.{NodeSeq, PrefixedAttribute, Elem, Null, UnprefixedAttribute}
 import scala.collection.immutable._
 import model._
 import model.diagram._
@@ -246,15 +246,12 @@ class DotDiagramGenerator(settings: doc.Settings, dotRunner: DotRunner) extends 
 
     // HTML label
     var name = escape(node.name)
-    var img = ""
-    if(node.isTraitNode)
-      img = "trait_diagram.png"
-    else if(node.isClassNode)
-      img = "class_diagram.png"
-    else if(node.isObjectNode)
-      img = "object_diagram.png"
-    else if(node.isTypeNode)
-      img = "type_diagram.png"
+    var img =
+      if(node.isTraitNode) "trait_diagram.png"
+      else if(node.isClassNode) "class_diagram.png"
+      else if(node.isObjectNode) "object_diagram.png"
+      else if(node.isTypeNode) "type_diagram.png"
+      else ""
 
     if(!img.equals("")) {
       img = "<TD><IMG SCALE=\"TRUE\" SRC=\"" + settings.outdir.value + "/lib/" + img + "\" /></TD>"
@@ -439,22 +436,22 @@ class DotDiagramGenerator(settings: doc.Settings, dotRunner: DotRunner) extends 
   )
 
   private val nodeAttributes = Map(
-    "shape" -> "rectangle",
-    "style" -> "filled",
+    "shape" -> "rect",
+    "style" -> "filled,rounded",
     "penwidth" -> "1",
     "margin" -> "0.08,0.01",
     "width" -> "0.0",
     "height" -> "0.0",
-    "fontname" -> "Arial",
-    "fontsize" -> "10.00"
+    "fontname" -> "Source Code Pro",
+    "fontsize" -> "8.00"
   )
 
   private val edgeAttributes = Map(
     "color" -> "#d4d4d4",
-    "arrowsize" -> "0.5",
+    "arrowsize" -> "0.7",
     "fontcolor" -> "#aaaaaa",
-    "fontsize" -> "10.00",
-    "fontname" -> "Arial"
+    "fontsize" -> "9.00",
+    "fontname" -> "Source Code Pro"
   )
 
   private val defaultStyle = Map(
@@ -477,26 +474,26 @@ class DotDiagramGenerator(settings: doc.Settings, dotRunner: DotRunner) extends 
   )
 
   private val traitStyle = Map(
-    "color" -> "#37657D",
-    "fillcolor" -> "#498AAD",
+    "color" -> "#2E6D82",
+    "fillcolor" -> "#2E6D82",
     "fontcolor" -> "#ffffff"
   )
 
   private val classStyle = Map(
-    "color" -> "#115F3B",
-    "fillcolor" -> "#0A955B",
+    "color" -> "#418565",
+    "fillcolor" -> "#418565",
     "fontcolor" -> "#ffffff"
   )
 
   private val objectStyle = Map(
-    "color" -> "#102966",
-    "fillcolor" -> "#3556a7",
+    "color" -> "#103A51",
+    "fillcolor" -> "#103A51",
     "fontcolor" -> "#ffffff"
   )
 
   private val typeStyle = Map(
-    "color" -> "#115F3B",
-    "fillcolor" -> "#0A955B",
+    "color" -> "#2E6D82",
+    "fillcolor" -> "#2E6D82",
     "fontcolor" -> "#ffffff"
   )
 
