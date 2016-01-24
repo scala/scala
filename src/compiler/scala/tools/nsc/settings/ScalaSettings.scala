@@ -322,6 +322,8 @@ trait ScalaSettings extends AbsScalaSettings
   def YoptWarningNoInlineMissingBytecode            = YoptWarnings.contains(YoptWarningsChoices.noInlineMissingBytecode)
   def YoptWarningNoInlineMissingScalaInlineInfoAttr = YoptWarnings.contains(YoptWarningsChoices.noInlineMissingScalaInlineInfoAttr)
 
+  val YoptTrace = BooleanSetting("-YoptTrace", "trace optimizer progress")
+
   private def removalIn212 = "This flag is scheduled for removal in 2.12. If you have a case where you need this flag then please report a bug."
 
   object YstatisticsPhases extends MultiChoiceEnumeration { val parser, typer, patmat, erasure, cleanup, jvm = Value }

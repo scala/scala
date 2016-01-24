@@ -543,4 +543,20 @@ class MethodLevelOptsTest extends ClearAfterClass {
     assertSameCode(getSingleMethod(c, "t6").instructions.dropNonOp, List(Op(ACONST_NULL), Op(ARETURN)))
     assertSameCode(getSingleMethod(c, "t7").instructions.dropNonOp, List(Op(ICONST_0), Op(IRETURN)))
   }
+
+  @Test
+  def elimRedundantNullCheck(): Unit = {
+    val code =
+      """class C {
+        |  def t(x: Object) = {
+        |    val bool = x == null
+        |    if (x != null) 1 else 0
+        |  }
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(methodOptCompiler)(code)
+    assertSameCode(
+      getSingleMethod(c, "t").instructions.dropNonOp,
+      List(VarOp(ALOAD, 1), Jump(IFNULL, Label(6)), Op(ICONST_1), Op(IRETURN), Label(6), Op(ICONST_0), Op(IRETURN)))
+  }
 }
