@@ -266,7 +266,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
               val beforeErasure = makeDef(processType(in, dropConst(returnType)))
               val afterErasure =
                 if (inspectPostErasure) {
-                  val erasedReturn = dropConst(transformedType(viewer(in).memberInfo(s))) map {
+                  val erasedReturn = dropConst(global.transformedType(viewer(in).memberInfo(s))) map {
                     case MethodType(_, r) => r
                     case other            => other
                   }
@@ -277,7 +277,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
           }
         }
       def parameterS(erase: Boolean)(s: Symbol): xsbti.api.MethodParameter = {
-        val tp = if (erase) transformedType(s.info) else s.info
+        val tp = if (erase) global.transformedType(s.info) else s.info
         makeParameter(simpleName(s), tp, tp.typeSymbol, s)
       }
 
