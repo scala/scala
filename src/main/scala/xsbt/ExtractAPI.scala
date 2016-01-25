@@ -200,13 +200,13 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
     {
 
       val hasValueClassAsParameter: Boolean =
-        s.asMethod.paramss.flatten map (_.info) exists (t => isAnyValSubtype(t.typeSymbol))
+        s.asMethod.paramss.flatten map (_.info) exists (_.typeSymbol.isDerivedValueClass)
 
       def hasValueClassAsReturnType(tpe: Type): Boolean = tpe match {
-        case PolyType(_, base) => hasValueClassAsReturnType(base)
-        case MethodType(_, resultType) => hasValueClassAsReturnType(resultType)
-        case Nullary(resultType) => hasValueClassAsReturnType(resultType)
-        case resultType => isAnyValSubtype(resultType.typeSymbol)
+        case PolyType(_, base)             => hasValueClassAsReturnType(base)
+        case MethodType(_, resultType)     => hasValueClassAsReturnType(resultType)
+        case NullaryMethodType(resultType) => hasValueClassAsReturnType(resultType)
+        case resultType                    => resultType.typeSymbol.isDerivedValueClass
       }
 
       val inspectPostErasure = hasValueClassAsParameter || hasValueClassAsReturnType(viewer(in).memberInfo(s))
