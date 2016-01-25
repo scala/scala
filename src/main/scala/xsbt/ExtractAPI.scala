@@ -205,10 +205,10 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
 
       def build(t: Type, typeParams: Array[xsbti.api.TypeParameter], valueParameters: List[xsbti.api.ParameterList]): List[xsbti.api.Def] =
         {
-          def parameterList(syms: List[Symbol]): xsbti.api.ParameterList =
+          def parameterList(syms: List[Symbol], erase: Boolean = false): xsbti.api.ParameterList =
             {
               val isImplicitList = syms match { case head :: _ => isImplicit(head); case _ => false }
-              new xsbti.api.ParameterList(syms.map(parameterS).toArray, isImplicitList)
+              new xsbti.api.ParameterList(syms.map(parameterS(erase)).toArray, isImplicitList)
             }
           t match {
             case PolyType(typeParams0, base) =>
@@ -229,7 +229,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
                 build(resultType, typeParams, parameterList(params) :: valueParameters)
               val afterErasure =
                 if (inspectPostErasure)
-                  build(resultType, typeParams, global exitingPostErasure (parameterList(mType.params) :: valueParameters))
+                  build(resultType, typeParams, parameterList(mType.params, erase = true) :: valueParameters)
                 else
                   Nil
 
@@ -258,7 +258,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
               val beforeErasure = makeDef(processType(in, dropConst(returnType)))
               val afterErasure =
                 if (inspectPostErasure) {
-                  val erasedReturn = dropConst(global exitingPostErasure viewer(in).memberInfo(s)) map {
+                  val erasedReturn = dropConst(global.transformedType(viewer(in).memberInfo(s))) map {
                     case MethodType(_, r) => r
                     case other            => other
                   }
@@ -268,8 +268,10 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
               beforeErasure :: afterErasure
           }
         }
-      def parameterS(s: Symbol): xsbti.api.MethodParameter =
-        makeParameter(simpleName(s), s.info, s.info.typeSymbol, s)
+      def parameterS(erase: Boolean)(s: Symbol): xsbti.api.MethodParameter = {
+        val tp: global.Type = if (erase) global.transformedType(s.info) else s.info
+        makeParameter(simpleName(s), tp, tp.typeSymbol, s)
+      }
 
       // paramSym is only for 2.8 and is to determine if the parameter has a default
       def makeParameter(name: String, tpe: Type, ts: Symbol, paramSym: Symbol): xsbti.api.MethodParameter =
