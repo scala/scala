@@ -6,7 +6,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @RunWith(classOf[JUnit4])
-class SetTests {
+class SetTest {
   @Test
   def test_SI8346_toSet_soundness(): Unit = {
     val any2stringadd = "Disabled string conversions so as not to get confused!"
