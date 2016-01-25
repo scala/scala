@@ -230,7 +230,8 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
     // for local variables in dead blocks. Maybe that's a bug in the ASM framework.
 
     var currentTrace: String = null
-    def traceIfChanged(optName: String): Unit = if (compilerSettings.YoptTrace.value) {
+    val doTrace = compilerSettings.YoptTrace.isSetByUser && compilerSettings.YoptTrace.value == ownerClassName + "." + method.name
+    def traceIfChanged(optName: String): Unit = if (doTrace) {
       val after = AsmUtils.textify(method)
       if (currentTrace != after) {
         println(s"after $optName")
