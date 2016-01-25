@@ -423,6 +423,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.boxedClass
     definitions.refClass
     definitions.volatileRefClass
+    definitions.allRefClasses
     definitions.UnitClass
     definitions.ByteClass
     definitions.ShortClass

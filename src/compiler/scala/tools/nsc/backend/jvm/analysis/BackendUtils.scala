@@ -3,10 +3,13 @@ package backend.jvm
 package analysis
 
 import scala.annotation.switch
-import scala.tools.asm.{Opcodes, Handle, Type, Label}
+import scala.tools.asm.{Handle, Type, Label}
+import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis.{Frame, BasicInterpreter, Analyzer, Value}
+import GenBCode._
 import scala.tools.nsc.backend.jvm.BTypes._
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 import java.lang.invoke.LambdaMetafactory
 import scala.collection.mutable
@@ -23,6 +26,8 @@ import scala.collection.convert.decorateAsScala._
  */
 class BackendUtils[BT <: BTypes](val btypes: BT) {
   import btypes._
+  import btypes.coreBTypes._
+  import callGraph.ClosureInstantiation
 
   /**
    * A wrapper to make ASM's Analyzer a bit easier to use.
@@ -47,12 +52,15 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     private val basicValueSizeLimit  = 9000l * 1000l * 1000l
     private val sourceValueSizeLimit = 8000l * 950l  * 950l
 
+    def sizeOKForAliasing(method: MethodNode): Boolean = size(method) < nullnessSizeLimit
     def sizeOKForNullness(method: MethodNode): Boolean = size(method) < nullnessSizeLimit
     def sizeOKForBasicValue(method: MethodNode): Boolean = size(method) < basicValueSizeLimit
     def sizeOKForSourceValue(method: MethodNode): Boolean = size(method) < sourceValueSizeLimit
   }
 
   class ProdConsAnalyzer(val methodNode: MethodNode, classInternalName: InternalName) extends AsmAnalyzer(methodNode, classInternalName, new Analyzer(new InitialProducerSourceInterpreter)) with ProdConsAnalyzerImpl
+
+  class NonLubbingTypeFlowAnalyzer(val methodNode: MethodNode, classInternalName: InternalName) extends AsmAnalyzer(methodNode, classInternalName, new Analyzer(new NonLubbingTypeFlowInterpreter))
 
   /**
    * Add:
@@ -68,8 +76,6 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
    */
   def addLambdaDeserialize(classNode: ClassNode): Unit = {
     val cw = classNode
-    import scala.tools.asm.Opcodes._
-    import btypes.coreBTypes._
 
     // Make sure to reference the ClassBTypes of all types that are used in the code generated
     // here (e.g. java/util/Map) are initialized. Initializing a ClassBType adds it to the
@@ -139,6 +145,137 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     }
     (result, map, hasSerializableClosureInstantiation)
   }
+
+  def getBoxedUnit: FieldInsnNode = new FieldInsnNode(GETSTATIC, srBoxedUnitRef.internalName, "UNIT", srBoxedUnitRef.descriptor)
+
+  private val anonfunAdaptedName = """.*\$anonfun\$\d+\$adapted""".r
+  def hasAdaptedImplMethod(closureInit: ClosureInstantiation): Boolean = {
+    isrJFunctionType(Type.getReturnType(closureInit.lambdaMetaFactoryCall.indy.desc).getInternalName) &&
+    anonfunAdaptedName.pattern.matcher(closureInit.lambdaMetaFactoryCall.implMethod.getName).matches
+  }
+
+  private def primitiveAsmTypeToBType(primitiveType: Type): PrimitiveBType = (primitiveType.getSort: @switch) match {
+    case Type.BOOLEAN => BOOL
+    case Type.BYTE    => BYTE
+    case Type.CHAR    => CHAR
+    case Type.SHORT   => SHORT
+    case Type.INT     => INT
+    case Type.LONG    => LONG
+    case Type.FLOAT   => FLOAT
+    case Type.DOUBLE  => DOUBLE
+    case _            => null
+  }
+
+  def isScalaBox(insn: MethodInsnNode): Boolean = {
+    insn.owner == srBoxesRunTimeRef.internalName && {
+      val args = Type.getArgumentTypes(insn.desc)
+      args.length == 1 && (srBoxesRuntimeBoxToMethods.get(primitiveAsmTypeToBType(args(0))) match {
+        case Some(MethodNameAndType(name, tp)) => name == insn.name && tp.descriptor == insn.desc
+        case _ => false
+      })
+    }
+  }
+
+  def getScalaBox(primitiveType: Type): MethodInsnNode = {
+    val bType = primitiveAsmTypeToBType(primitiveType)
+    val MethodNameAndType(name, methodBType) = srBoxesRuntimeBoxToMethods(bType)
+    new MethodInsnNode(INVOKESTATIC, srBoxesRunTimeRef.internalName, name, methodBType.descriptor, /*itf =*/ false)
+  }
+
+  def isScalaUnbox(insn: MethodInsnNode): Boolean = {
+    insn.owner == srBoxesRunTimeRef.internalName && (srBoxesRuntimeUnboxToMethods.get(primitiveAsmTypeToBType(Type.getReturnType(insn.desc))) match {
+      case Some(MethodNameAndType(name, tp)) => name == insn.name && tp.descriptor == insn.desc
+      case _ => false
+    })
+  }
+
+  def getScalaUnbox(primitiveType: Type): MethodInsnNode = {
+    val bType = primitiveAsmTypeToBType(primitiveType)
+    val MethodNameAndType(name, methodBType) = srBoxesRuntimeUnboxToMethods(bType)
+    new MethodInsnNode(INVOKESTATIC, srBoxesRunTimeRef.internalName, name, methodBType.descriptor, /*itf =*/ false)
+  }
+
+  private def calleeInMap(insn: MethodInsnNode, map: Map[InternalName, MethodNameAndType]): Boolean = map.get(insn.owner) match {
+    case Some(MethodNameAndType(name, tp)) => insn.name == name && insn.desc == tp.descriptor
+    case _ => false
+  }
+
+  def isJavaBox(insn: MethodInsnNode): Boolean = calleeInMap(insn, javaBoxMethods)
+  def isJavaUnbox(insn: MethodInsnNode): Boolean = calleeInMap(insn, javaUnboxMethods)
+
+  def isPredefAutoBox(insn: MethodInsnNode): Boolean = {
+    insn.owner == PredefRef.internalName && (predefAutoBoxMethods.get(insn.name) match {
+      case Some(tp) => insn.desc == tp.descriptor
+      case _ => false
+    })
+  }
+
+  def isPredefAutoUnbox(insn: MethodInsnNode): Boolean = {
+    insn.owner == PredefRef.internalName && (predefAutoUnboxMethods.get(insn.name) match {
+      case Some(tp) => insn.desc == tp.descriptor
+      case _ => false
+    })
+  }
+
+  def isRefCreate(insn: MethodInsnNode): Boolean = calleeInMap(insn, srRefCreateMethods)
+  def isRefZero(insn: MethodInsnNode): Boolean = calleeInMap(insn, srRefZeroMethods)
+
+  def runtimeRefClassBoxedType(refClass: InternalName): Type = Type.getArgumentTypes(srRefCreateMethods(refClass).methodType.descriptor)(0)
+
+  def isSideEffectFreeCall(insn: MethodInsnNode): Boolean = {
+    isScalaBox(insn) || isScalaUnbox(insn) ||
+      isJavaBox(insn) || // not java unbox, it may NPE
+      isSideEffectFreeConstructorCall(insn)
+  }
+
+  def isNonNullMethodInvocation(mi: MethodInsnNode): Boolean = {
+    isJavaBox(mi) || isScalaBox(mi) || isPredefAutoBox(mi) || isRefCreate(mi) || isRefZero(mi)
+  }
+
+  def isModuleLoad(insn: AbstractInsnNode, moduleName: InternalName): Boolean = insn match {
+    case fi: FieldInsnNode => fi.getOpcode == GETSTATIC && fi.owner == moduleName && fi.name == "MODULE$" && fi.desc == ("L" + moduleName + ";")
+    case _ => false
+  }
+
+  def isPredefLoad(insn: AbstractInsnNode) = isModuleLoad(insn, PredefRef.internalName)
+
+  def isPrimitiveBoxConstructor(insn: MethodInsnNode): Boolean = calleeInMap(insn, primitiveBoxConstructors)
+  def isRuntimeRefConstructor(insn: MethodInsnNode): Boolean = calleeInMap(insn, srRefConstructors)
+  def isTupleConstructor(insn: MethodInsnNode): Boolean = calleeInMap(insn, tupleClassConstructors)
+
+  // unused objects created by these constructors are eliminated by pushPop
+  private lazy val sideEffectFreeConstructors: Set[(String, String)] = {
+    val ownerDesc = (p: (InternalName, MethodNameAndType)) => (p._1, p._2.methodType.descriptor)
+    primitiveBoxConstructors.map(ownerDesc).toSet ++
+      srRefConstructors.map(ownerDesc) ++
+      tupleClassConstructors.map(ownerDesc) ++ Set(
+        (ObjectRef.internalName, MethodBType(Nil, UNIT).descriptor),
+        (StringRef.internalName, MethodBType(Nil, UNIT).descriptor),
+        (StringRef.internalName, MethodBType(List(StringRef), UNIT).descriptor),
+        (StringRef.internalName, MethodBType(List(ArrayBType(CHAR)), UNIT).descriptor))
+  }
+
+  def isSideEffectFreeConstructorCall(insn: MethodInsnNode): Boolean = {
+    insn.name == INSTANCE_CONSTRUCTOR_NAME && sideEffectFreeConstructors((insn.owner, insn.desc))
+  }
+
+  private lazy val classesOfSideEffectFreeConstructors = sideEffectFreeConstructors.map(_._1)
+
+  def isNewForSideEffectFreeConstructor(insn: AbstractInsnNode) = {
+    insn.getOpcode == NEW && {
+      val ti = insn.asInstanceOf[TypeInsnNode]
+      classesOfSideEffectFreeConstructors.contains(ti.desc)
+    }
+  }
+
+  def isBoxedUnit(insn: AbstractInsnNode) = {
+    insn.getOpcode == GETSTATIC && {
+      val fi = insn.asInstanceOf[FieldInsnNode]
+      fi.owner == srBoxedUnitRef.internalName && fi.name == "UNIT" && fi.desc == srBoxedUnitRef.descriptor
+    }
+  }
+
+  def isrJFunctionType(internalName: InternalName): Boolean = srJFunctionRefs(internalName)
 
   /**
    * Visit the class node and collect all referenced nested classes.
@@ -274,15 +411,13 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
    * Analyzer: its implementation also skips over unreachable code in the same way.
    */
   def computeMaxLocalsMaxStack(method: MethodNode): Unit = {
-    import Opcodes._
-
     if (isAbstractMethod(method) || isNativeMethod(method)) {
       method.maxLocals = 0
       method.maxStack = 0
     } else if (!maxLocalsMaxStackComputed(method)) {
       val size = method.instructions.size
 
-      var maxLocals = (Type.getArgumentsAndReturnSizes(method.desc) >> 2) - (if (isStaticMethod(method)) 1 else 0)
+      var maxLocals = parametersSize(method)
       var maxStack = 0
 
       // queue of instruction indices where analysis should start

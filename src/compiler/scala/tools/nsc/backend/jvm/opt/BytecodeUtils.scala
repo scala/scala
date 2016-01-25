@@ -12,10 +12,13 @@ import scala.collection.mutable
 import scala.reflect.internal.util.Collections._
 import scala.tools.asm.commons.CodeSizeEvaluator
 import scala.tools.asm.tree.analysis._
-import scala.tools.asm.{MethodWriter, ClassWriter, Label, Opcodes, Type}
+import scala.tools.asm.{Label, Type}
+import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import GenBCode._
 import scala.collection.convert.decorateAsScala._
+import scala.tools.nsc.backend.jvm.BTypes.InternalName
+import scala.tools.nsc.backend.jvm.analysis.InstructionStackEffect
 
 object BytecodeUtils {
 
@@ -27,7 +30,7 @@ object BytecodeUtils {
 
   object Goto {
     def unapply(instruction: AbstractInsnNode): Option[JumpInsnNode] = {
-      if (instruction.getOpcode == Opcodes.GOTO) Some(instruction.asInstanceOf[JumpInsnNode])
+      if (instruction.getOpcode == GOTO) Some(instruction.asInstanceOf[JumpInsnNode])
       else None
     }
   }
@@ -47,8 +50,9 @@ object BytecodeUtils {
   }
 
   object VarInstruction {
-    def unapply(instruction: AbstractInsnNode): Option[VarInsnNode] = {
-      if (isVarInstruction(instruction)) Some(instruction.asInstanceOf[VarInsnNode])
+    def unapply(instruction: AbstractInsnNode): Option[(AbstractInsnNode, Int)] = {
+      if (isLoadStoreOrRet(instruction)) Some((instruction, instruction.asInstanceOf[VarInsnNode].`var`))
+      else if (instruction.getOpcode == IINC) Some((instruction, instruction.asInstanceOf[IincInsnNode].`var`))
       else None
     }
 
@@ -57,30 +61,32 @@ object BytecodeUtils {
   def isJumpNonJsr(instruction: AbstractInsnNode): Boolean = {
     val op = instruction.getOpcode
     // JSR is deprecated in classfile version 50, disallowed in 51. historically, it was used to implement finally.
-    op == Opcodes.GOTO || isConditionalJump(instruction)
+    op == GOTO || isConditionalJump(instruction)
   }
 
   def isConditionalJump(instruction: AbstractInsnNode): Boolean = {
     val op = instruction.getOpcode
-    (op >= Opcodes.IFEQ && op <= Opcodes.IF_ACMPNE) || op == Opcodes.IFNULL || op == Opcodes.IFNONNULL
+    (op >= IFEQ && op <= IF_ACMPNE) || op == IFNULL || op == IFNONNULL
   }
 
   def isReturn(instruction: AbstractInsnNode): Boolean = {
     val op = instruction.getOpcode
-    op >= Opcodes.IRETURN && op <= Opcodes.RETURN
+    op >= IRETURN && op <= RETURN
   }
 
   def isLoad(instruction: AbstractInsnNode): Boolean = {
     val op = instruction.getOpcode
-    op >= Opcodes.ILOAD  && op <= Opcodes.ALOAD
+    op >= ILOAD  && op <= ALOAD
   }
 
   def isStore(instruction: AbstractInsnNode): Boolean = {
     val op = instruction.getOpcode
-    op >= Opcodes.ISTORE && op <= Opcodes.ASTORE
+    op >= ISTORE && op <= ASTORE
   }
 
-  def isVarInstruction(instruction: AbstractInsnNode): Boolean = isLoad(instruction) || isStore(instruction)
+  def isLoadStoreOrRet(instruction: AbstractInsnNode): Boolean = isLoad(instruction) || isStore(instruction) || instruction.getOpcode == RET
+
+  def isLoadOrStore(instruction: AbstractInsnNode): Boolean = isLoad(instruction) || isStore(instruction)
 
   def isExecutable(instruction: AbstractInsnNode): Boolean = instruction.getOpcode >= 0
 
@@ -88,29 +94,34 @@ object BytecodeUtils {
     methodNode.name == INSTANCE_CONSTRUCTOR_NAME || methodNode.name == CLASS_CONSTRUCTOR_NAME
   }
 
-  def isStaticMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_STATIC) != 0
+  def isStaticMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_STATIC) != 0
 
-  def isAbstractMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_ABSTRACT) != 0
+  def isAbstractMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_ABSTRACT) != 0
 
-  def isSynchronizedMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_SYNCHRONIZED) != 0
+  def isSynchronizedMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_SYNCHRONIZED) != 0
 
-  def isNativeMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_NATIVE) != 0
+  def isNativeMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_NATIVE) != 0
 
   def hasCallerSensitiveAnnotation(methodNode: MethodNode) = methodNode.visibleAnnotations != null && methodNode.visibleAnnotations.asScala.exists(_.desc == "Lsun/reflect/CallerSensitive;")
 
-  def isFinalClass(classNode: ClassNode): Boolean = (classNode.access & Opcodes.ACC_FINAL) != 0
+  def isFinalClass(classNode: ClassNode): Boolean = (classNode.access & ACC_FINAL) != 0
 
-  def isFinalMethod(methodNode: MethodNode): Boolean = (methodNode.access & (Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC)) != 0
+  def isFinalMethod(methodNode: MethodNode): Boolean = (methodNode.access & (ACC_FINAL | ACC_PRIVATE | ACC_STATIC)) != 0
 
-  def isStrictfpMethod(methodNode: MethodNode): Boolean = (methodNode.access & Opcodes.ACC_STRICT) != 0
+  def isStrictfpMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_STRICT) != 0
 
   def isReference(t: Type) = t.getSort == Type.OBJECT || t.getSort == Type.ARRAY
 
-  def nextExecutableInstruction(instruction: AbstractInsnNode, alsoKeep: AbstractInsnNode => Boolean = Set()): Option[AbstractInsnNode] = {
-    var result = instruction
-    do { result = result.getNext }
-    while (result != null && !isExecutable(result) && !alsoKeep(result))
-    Option(result)
+  @tailrec def nextExecutableInstruction(insn: AbstractInsnNode, alsoKeep: AbstractInsnNode => Boolean = Set()): Option[AbstractInsnNode] = {
+    val next = insn.getNext
+    if (next == null || isExecutable(next) || alsoKeep(next)) Option(next)
+    else nextExecutableInstruction(next, alsoKeep)
+  }
+
+  @tailrec def nextExecutableInstructionOrLabel(insn: AbstractInsnNode): Option[AbstractInsnNode] = {
+    val next = insn.getNext
+    if (next == null || isExecutable(next) || next.isInstanceOf[LabelNode]) Option(next)
+    else nextExecutableInstructionOrLabel(next)
   }
 
   def sameTargetExecutableInstruction(a: JumpInsnNode, b: JumpInsnNode): Boolean = {
@@ -124,14 +135,14 @@ object BytecodeUtils {
   def removeJumpAndAdjustStack(method: MethodNode, jump: JumpInsnNode) {
     val instructions = method.instructions
     val op = jump.getOpcode
-    if ((op >= Opcodes.IFEQ && op <= Opcodes.IFGE) || op == Opcodes.IFNULL || op == Opcodes.IFNONNULL) {
+    if ((op >= IFEQ && op <= IFLE) || op == IFNULL || op == IFNONNULL) {
       instructions.insert(jump, getPop(1))
-    } else if ((op >= Opcodes.IF_ICMPEQ && op <= Opcodes.IF_ICMPLE) || op == Opcodes.IF_ACMPEQ || op == Opcodes.IF_ACMPNE) {
+    } else if ((op >= IF_ICMPEQ && op <= IF_ICMPLE) || op == IF_ACMPEQ || op == IF_ACMPNE) {
       instructions.insert(jump, getPop(1))
       instructions.insert(jump, getPop(1))
     } else {
       // we can't remove JSR: its execution does not only jump, it also adds a return address to the stack
-      assert(jump.getOpcode == Opcodes.GOTO)
+      assert(jump.getOpcode == GOTO)
     }
     instructions.remove(jump)
   }
@@ -148,42 +159,61 @@ object BytecodeUtils {
   }
 
   def negateJumpOpcode(jumpOpcode: Int): Int = (jumpOpcode: @switch) match {
-    case Opcodes.IFEQ      => Opcodes.IFNE
-    case Opcodes.IFNE      => Opcodes.IFEQ
+    case IFEQ      => IFNE
+    case IFNE      => IFEQ
 
-    case Opcodes.IFLT      => Opcodes.IFGE
-    case Opcodes.IFGE      => Opcodes.IFLT
+    case IFLT      => IFGE
+    case IFGE      => IFLT
 
-    case Opcodes.IFGT      => Opcodes.IFLE
-    case Opcodes.IFLE      => Opcodes.IFGT
+    case IFGT      => IFLE
+    case IFLE      => IFGT
 
-    case Opcodes.IF_ICMPEQ => Opcodes.IF_ICMPNE
-    case Opcodes.IF_ICMPNE => Opcodes.IF_ICMPEQ
+    case IF_ICMPEQ => IF_ICMPNE
+    case IF_ICMPNE => IF_ICMPEQ
 
-    case Opcodes.IF_ICMPLT => Opcodes.IF_ICMPGE
-    case Opcodes.IF_ICMPGE => Opcodes.IF_ICMPLT
+    case IF_ICMPLT => IF_ICMPGE
+    case IF_ICMPGE => IF_ICMPLT
 
-    case Opcodes.IF_ICMPGT => Opcodes.IF_ICMPLE
-    case Opcodes.IF_ICMPLE => Opcodes.IF_ICMPGT
+    case IF_ICMPGT => IF_ICMPLE
+    case IF_ICMPLE => IF_ICMPGT
 
-    case Opcodes.IF_ACMPEQ => Opcodes.IF_ACMPNE
-    case Opcodes.IF_ACMPNE => Opcodes.IF_ACMPEQ
+    case IF_ACMPEQ => IF_ACMPNE
+    case IF_ACMPNE => IF_ACMPEQ
 
-    case Opcodes.IFNULL    => Opcodes.IFNONNULL
-    case Opcodes.IFNONNULL => Opcodes.IFNULL
+    case IFNULL    => IFNONNULL
+    case IFNONNULL => IFNULL
   }
 
   def isSize2LoadOrStore(opcode: Int): Boolean = (opcode: @switch) match {
-    case Opcodes.LLOAD | Opcodes.DLOAD | Opcodes.LSTORE | Opcodes.DSTORE => true
+    case LLOAD | DLOAD | LSTORE | DSTORE => true
     case _ => false
   }
 
   def getPop(size: Int): InsnNode = {
-    val op = if (size == 1) Opcodes.POP else Opcodes.POP2
+    val op = if (size == 1) POP else POP2
     new InsnNode(op)
   }
 
-  def instructionResultSize(instruction: AbstractInsnNode) = InstructionResultSize(instruction)
+  def instructionResultSize(insn: AbstractInsnNode) = InstructionStackEffect.prod(InstructionStackEffect.forClassfile(insn))
+
+  def loadZeroForTypeSort(sort: Int) = (sort: @switch) match {
+    case Type.BOOLEAN |
+         Type.BYTE |
+         Type.CHAR |
+         Type.SHORT |
+         Type.INT => new InsnNode(ICONST_0)
+    case Type.LONG => new InsnNode(LCONST_0)
+    case Type.FLOAT => new InsnNode(FCONST_0)
+    case Type.DOUBLE => new InsnNode(DCONST_0)
+    case Type.OBJECT => new InsnNode(ACONST_NULL)
+  }
+
+  /**
+   * The number of local variable slots used for parameters and for the `this` reference.
+   */
+  def parametersSize(methodNode: MethodNode): Int = {
+    (Type.getArgumentsAndReturnSizes(methodNode.desc) >> 2) - (if (isStaticMethod(methodNode)) 1 else 0)
+  }
 
   def labelReferences(method: MethodNode): Map[LabelNode, Set[AnyRef]] = {
     val res = mutable.Map.empty[LabelNode, Set[AnyRef]]
@@ -311,10 +341,10 @@ object BytecodeUtils {
    */
   def fixLoadedNothingOrNullValue(loadedType: Type, loadInstr: AbstractInsnNode, methodNode: MethodNode, bTypes: BTypes): Unit = {
     if (loadedType == bTypes.coreBTypes.srNothingRef.toASMType) {
-      methodNode.instructions.insert(loadInstr, new InsnNode(Opcodes.ATHROW))
+      methodNode.instructions.insert(loadInstr, new InsnNode(ATHROW))
     } else if (loadedType == bTypes.coreBTypes.srNullRef.toASMType) {
-      methodNode.instructions.insert(loadInstr, new InsnNode(Opcodes.ACONST_NULL))
-      methodNode.instructions.insert(loadInstr, new InsnNode(Opcodes.POP))
+      methodNode.instructions.insert(loadInstr, new InsnNode(ACONST_NULL))
+      methodNode.instructions.insert(loadInstr, new InsnNode(POP))
     }
   }
 

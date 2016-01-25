@@ -1113,7 +1113,7 @@ abstract class BTypes {
    */
 
   /**
-   * Just a named pair, used in CoreBTypes.asmBoxTo/asmUnboxTo.
+   * Just a named pair, used in CoreBTypes.srBoxesRuntimeBoxToMethods/srBoxesRuntimeUnboxToMethods.
    */
   final case class MethodNameAndType(name: String, methodType: MethodBType)
 

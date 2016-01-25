@@ -94,6 +94,10 @@ trait Definitions extends api.StandardDefinitions {
     lazy val refClass         = classesMap(x => getRequiredClass("scala.runtime." + x + "Ref"))
     lazy val volatileRefClass = classesMap(x => getRequiredClass("scala.runtime.Volatile" + x + "Ref"))
 
+    lazy val allRefClasses: Set[Symbol] = {
+      refClass.values.toSet ++ volatileRefClass.values.toSet ++ Set(VolatileObjectRefClass, ObjectRefClass)
+    }
+
     def isNumericSubClass(sub: Symbol, sup: Symbol) = (
          (numericWeight contains sub)
       && (numericWeight contains sup)

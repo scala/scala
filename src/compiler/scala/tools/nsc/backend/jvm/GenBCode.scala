@@ -237,7 +237,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
         }
         if (settings.YoptInlinerEnabled)
           bTypes.inliner.runInliner()
-        if (settings.YoptClosureElimination)
+        if (settings.YoptClosureInvocations)
           closureOptimizer.rewriteClosureApplyInvocations()
       }
 

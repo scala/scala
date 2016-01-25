@@ -38,6 +38,11 @@ object ASMConverters {
     }
 
     def dropNonOp = dropLinesFrames.dropStaleLabels
+
+    def summary: List[Any] = dropNonOp map {
+      case i: Invoke => i.name
+      case i => i.opcode
+    }
   }
 
   sealed abstract class Instruction extends Product {

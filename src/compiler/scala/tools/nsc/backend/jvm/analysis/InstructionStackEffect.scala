@@ -27,7 +27,7 @@ object InstructionStackEffect {
    * This method requires the `frame` to be in the state **before** executing / interpreting the
    * `insn`.
    */
-  def forAsmAnalysis[V <: Value](insn: AbstractInsnNode, frame: Frame[V]): Int = computeConsProd(insn, frame = frame)
+  def forAsmAnalysis[V <: Value](insn: AbstractInsnNode, frame: Frame[V]): Int = computeConsProd(insn, forClassfile = false, conservative = false, frame = frame)
 
   /**
    * Returns the maximal possible growth of the stack when executing `insn`. The returned value
@@ -41,7 +41,7 @@ object InstructionStackEffect {
    * allows looking up the sizes of values on the stack.
    */
   def maxStackGrowth(insn: AbstractInsnNode): Int = {
-    val prodCons = computeConsProd(insn, conservative = true)
+    val prodCons = computeConsProd(insn, forClassfile = false, conservative = true)
     prod(prodCons) - cons(prodCons)
   }
 
@@ -50,7 +50,7 @@ object InstructionStackEffect {
    * (the `cons` / `prod` extract individual values).  The returned values are correct for writing
    * into a classfile (see doc on the `analysis` package object).
    */
-  def forClassfile(insn: AbstractInsnNode): Int = computeConsProd(insn, forClassfile = true)
+  def forClassfile(insn: AbstractInsnNode): Int = computeConsProd(insn, forClassfile = true, conservative = false)
 
   private def invokeConsProd(methodDesc: String, insn: AbstractInsnNode, forClassfile: Boolean): Int = {
     val consumesReceiver = insn.getOpcode != INVOKESTATIC && insn.getOpcode != INVOKEDYNAMIC
@@ -71,7 +71,7 @@ object InstructionStackEffect {
     d == "J" || d == "D"
   }
 
-  private def computeConsProd[V <: Value](insn: AbstractInsnNode, forClassfile: Boolean = false, conservative: Boolean = false, frame: Frame[V] = null): Int = {
+  private def computeConsProd[V <: Value](insn: AbstractInsnNode, forClassfile: Boolean, conservative: Boolean, frame: Frame[V] = null): Int = {
     // not used if `forClassfile || conservative`: in these cases, `frame` is allowed to be `null`
     def peekStack(n: Int): V = frame.peekStack(n)
 
@@ -335,5 +335,4 @@ object InstructionStackEffect {
            IFNONNULL => t(1, 0)
     }
   }
-
 }

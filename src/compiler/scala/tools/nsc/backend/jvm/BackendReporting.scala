@@ -287,7 +287,7 @@ object BackendReporting {
         s"Failed to get the type of a method of class symbol $classFullName due to SI-9111."
 
       case ClassNotFoundWhenBuildingInlineInfoFromSymbol(missingClass) =>
-        s"Failed to build the inline information: $missingClass."
+        s"Failed to build the inline information: $missingClass"
 
       case UnknownScalaInlineInfoVersion(internalName, version) =>
         s"Cannot read ScalaInlineInfo version $version in classfile $internalName. Use a more recent compiler."

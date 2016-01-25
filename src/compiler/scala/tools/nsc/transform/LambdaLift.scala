@@ -31,11 +31,6 @@ abstract class LambdaLift extends InfoTransform {
     }
   }
 
-  /** scala.runtime.*Ref classes */
-  private lazy val allRefClasses: Set[Symbol] = {
-    refClass.values.toSet ++ volatileRefClass.values.toSet ++ Set(VolatileObjectRefClass, ObjectRefClass)
-  }
-
   /** Each scala.runtime.*Ref class has a static method `create(value)` that simply instantiates the Ref to carry that value. */
   private lazy val refCreateMethod: Map[Symbol, Symbol] = {
     mapFrom(allRefClasses.toList)(x => getMemberMethod(x.companionModule, nme.create))

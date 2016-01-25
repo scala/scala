@@ -106,7 +106,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     assert(classSym != NoSymbol, "Cannot create ClassBType from NoSymbol")
     assert(classSym.isClass, s"Cannot create ClassBType from non-class symbol $classSym")
     assertClassNotArrayNotPrimitive(classSym)
-    assert(!primitiveTypeMap.contains(classSym) || isCompilingPrimitive, s"Cannot create ClassBType for primitive class symbol $classSym")
+    assert(!primitiveTypeToBType.contains(classSym) || isCompilingPrimitive, s"Cannot create ClassBType for primitive class symbol $classSym")
     if (classSym == NothingClass) srNothingRef
     else if (classSym == NullClass) srNullRef
     else {
@@ -152,7 +152,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     def primitiveOrClassToBType(sym: Symbol): BType = {
       assertClassNotArray(sym)
       assert(!sym.isImplClass, sym)
-      primitiveTypeMap.getOrElse(sym, classBTypeFromSymbol(sym))
+      primitiveTypeToBType.getOrElse(sym, classBTypeFromSymbol(sym))
     }
 
     /**
@@ -214,7 +214,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
   def assertClassNotArrayNotPrimitive(sym: Symbol): Unit = {
     assertClassNotArray(sym)
-    assert(!primitiveTypeMap.contains(sym) || isCompilingPrimitive, sym)
+    assert(!primitiveTypeToBType.contains(sym) || isCompilingPrimitive, sym)
   }
 
   def implementedInterfaces(classSym: Symbol): List[Symbol] = {
@@ -331,7 +331,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
         superClassSym == ObjectClass
       else
         // A ClassBType for a primitive class (scala.Boolean et al) is only created when compiling these classes.
-        ((superClassSym != NoSymbol) && !superClassSym.isInterface) || (isCompilingPrimitive && primitiveTypeMap.contains(classSym)),
+        ((superClassSym != NoSymbol) && !superClassSym.isInterface) || (isCompilingPrimitive && primitiveTypeToBType.contains(classSym)),
       s"Bad superClass for $classSym: $superClassSym"
     )
     val superClass = if (superClassSym == NoSymbol) None

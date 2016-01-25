@@ -640,7 +640,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         case Apply(fun @ _, List(expr)) if currentRun.runDefinitions.isBox(fun.symbol) =>
           val nativeKind = tpeTK(expr)
           genLoad(expr, nativeKind)
-          val MethodNameAndType(mname, methodType) = asmBoxTo(nativeKind)
+          val MethodNameAndType(mname, methodType) = srBoxesRuntimeBoxToMethods(nativeKind)
           bc.invokestatic(srBoxesRunTimeRef.internalName, mname, methodType.descriptor, app.pos)
           generatedType = boxResultType(fun.symbol) // was typeToBType(fun.symbol.tpe.resultType)
 
@@ -648,7 +648,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           genLoad(expr)
           val boxType = unboxResultType(fun.symbol) // was typeToBType(fun.symbol.owner.linkedClassOfClass.tpe)
           generatedType = boxType
-          val MethodNameAndType(mname, methodType) = asmUnboxTo(boxType)
+          val MethodNameAndType(mname, methodType) = srBoxesRuntimeUnboxToMethods(boxType)
           bc.invokestatic(srBoxesRunTimeRef.internalName, mname, methodType.descriptor, app.pos)
 
         case app @ Apply(fun, args) =>

@@ -142,12 +142,12 @@ object AsmUtils {
    * Run ASM's CheckClassAdapter over a class. Returns None if no problem is found, otherwise
    * Some(msg) with the verifier's error message.
    */
-  def checkClass(classNode: ClassNode): Option[String] = {
+  def checkClass(classNode: ClassNode, dumpNonErroneous: Boolean = false): Option[String] = {
     val cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
     classNode.accept(cw)
     val sw = new StringWriter()
     val pw = new PrintWriter(sw)
-    CheckClassAdapter.verify(new ClassReader(cw.toByteArray), false, pw)
+    CheckClassAdapter.verify(new ClassReader(cw.toByteArray), dumpNonErroneous, pw)
     val res = sw.toString
     if (res.isEmpty) None else Some(res)
   }

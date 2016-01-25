@@ -222,52 +222,65 @@ trait ScalaSettings extends AbsScalaSettings
   val Ydelambdafy        = ChoiceSetting  ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "method")
 
   object YoptChoices extends MultiChoiceEnumeration {
-    val unreachableCode         = Choice("unreachable-code",          "Eliminate unreachable code, exception handlers protecting no instructions, debug information of eliminated variables.")
+    val unreachableCode         = Choice("unreachable-code",          "Eliminate unreachable code, exception handlers guarding no instructions, redundant metadata (debug information, line numbers).")
     val simplifyJumps           = Choice("simplify-jumps",            "Simplify branching instructions, eliminate unnecessary ones.")
-    val emptyLineNumbers        = Choice("empty-line-numbers",        "Eliminate unnecessary line number information.")
-    val emptyLabels             = Choice("empty-labels",              "Eliminate and collapse redundant labels in the bytecode.")
     val compactLocals           = Choice("compact-locals",            "Eliminate empty slots in the sequence of local variables.")
+    val copyPropagation         = Choice("copy-propagation",          "Eliminate redundant local variables and unused values (including closures). Enables unreachable-code.")
+    val redundantCasts          = Choice("redundant-casts",           "Eliminate redundant casts using a type propagation analysis.")
+    val boxUnbox                = Choice("box-unbox",                 "Eliminate box-unbox pairs within the same method (also tuples, xRefs, value class instances). Enables unreachable-code.")
     val nullnessTracking        = Choice("nullness-tracking",         "Track nullness / non-nullness of local variables and apply optimizations.")
-    val closureElimination      = Choice("closure-elimination" ,      "Rewrite closure invocations to the implementation method and eliminate closures.")
-    val inlineProject           = Choice("inline-project",            "Inline only methods defined in the files being compiled.")
-    val inlineGlobal            = Choice("inline-global",             "Inline methods from any source, including classfiles on the compile classpath.")
+    val closureInvocations      = Choice("closure-invocations" ,      "Rewrite closure invocations to the implementation method.")
+    val inlineProject           = Choice("inline-project",            "Inline only methods defined in the files being compiled. Enables unreachable-code.")
+    val inlineGlobal            = Choice("inline-global",             "Inline methods from any source, including classfiles on the compile classpath. Enables unreachable-code.")
 
-    val lNone           = Choice("l:none",      "Don't enable any optimizations.")
+    // note: unlike the other optimizer levels, "l:none" appears up in the `Yopt.value` set because it's not an expanding option (expandsTo is empty)
+    val lNone           = Choice("l:none",      "Disable optimizations. Takes precedence: `-Yopt:l:none,+box-unbox` / `-Yopt:l:none -Yopt:box-unbox` don't enable box-unbox.")
 
     private val defaultChoices = List(unreachableCode)
-    val lDefault        = Choice("l:default",   "Enable default optimizations: "+ defaultChoices.mkString(","),                                    expandsTo = defaultChoices)
+    val lDefault        = Choice("l:default",   "Enable default optimizations: "+ defaultChoices.mkString("", ",", "."),                                    expandsTo = defaultChoices)
 
-    private val methodChoices = List(unreachableCode, simplifyJumps, emptyLineNumbers, emptyLabels, compactLocals, nullnessTracking, closureElimination)
-    val lMethod         = Choice("l:method",    "Enable intra-method optimizations: "+ methodChoices.mkString(","),                                expandsTo = methodChoices)
+    private val methodChoices = List(unreachableCode, simplifyJumps, compactLocals, copyPropagation, redundantCasts, boxUnbox, nullnessTracking, closureInvocations)
+    val lMethod         = Choice("l:method",    "Enable intra-method optimizations: "+ methodChoices.mkString("", ",", "."),                                expandsTo = methodChoices)
 
     private val projectChoices = List(lMethod, inlineProject)
-    val lProject        = Choice("l:project",   "Enable cross-method optimizations within the current project: "+ projectChoices.mkString(","),    expandsTo = projectChoices)
+    val lProject        = Choice("l:project",   "Enable cross-method optimizations within the current project: "+ projectChoices.mkString("", ",", "."),    expandsTo = projectChoices)
 
     private val classpathChoices = List(lProject, inlineGlobal)
-    val lClasspath      = Choice("l:classpath", "Enable cross-method optimizations across the entire classpath: "+ classpathChoices.mkString(","), expandsTo = classpathChoices)
+    val lClasspath      = Choice("l:classpath", "Enable cross-method optimizations across the entire classpath: "+ classpathChoices.mkString("", ",", "."), expandsTo = classpathChoices)
   }
 
+  // We don't use the `default` parameter of `MultiChoiceSetting`: it specifies the default values
+  // when `-Yopt` is passed without explicit choices. When `-Yopt` is not explicitly specified, the
+  // set `Yopt.value` is empty.
   val Yopt = MultiChoiceSetting(
     name = "-Yopt",
     helpArg = "optimization",
     descr = "Enable optimizations",
     domain = YoptChoices)
 
-  def YoptNone                    = Yopt.isSetByUser && Yopt.value.isEmpty
-  def YoptUnreachableCode         = !Yopt.isSetByUser || Yopt.contains(YoptChoices.unreachableCode)
-  def YoptSimplifyJumps           = Yopt.contains(YoptChoices.simplifyJumps)
-  def YoptEmptyLineNumbers        = Yopt.contains(YoptChoices.emptyLineNumbers)
-  def YoptEmptyLabels             = Yopt.contains(YoptChoices.emptyLabels)
-  def YoptCompactLocals           = Yopt.contains(YoptChoices.compactLocals)
-  def YoptNullnessTracking        = Yopt.contains(YoptChoices.nullnessTracking)
-  def YoptClosureElimination      = Yopt.contains(YoptChoices.closureElimination)
+  private def optEnabled(choice: YoptChoices.Choice) = {
+    !Yopt.contains(YoptChoices.lNone) && {
+      Yopt.contains(choice) ||
+      !Yopt.isSetByUser && YoptChoices.lDefault.expandsTo.contains(choice)
+    }
+  }
 
-  def YoptInlineProject           = Yopt.contains(YoptChoices.inlineProject)
-  def YoptInlineGlobal            = Yopt.contains(YoptChoices.inlineGlobal)
+  def YoptNone                    = Yopt.contains(YoptChoices.lNone)
+  def YoptUnreachableCode         = optEnabled(YoptChoices.unreachableCode)
+  def YoptSimplifyJumps           = optEnabled(YoptChoices.simplifyJumps)
+  def YoptCompactLocals           = optEnabled(YoptChoices.compactLocals)
+  def YoptCopyPropagation         = optEnabled(YoptChoices.copyPropagation)
+  def YoptRedundantCasts          = optEnabled(YoptChoices.redundantCasts)
+  def YoptBoxUnbox                = optEnabled(YoptChoices.boxUnbox)
+  def YoptNullnessTracking        = optEnabled(YoptChoices.nullnessTracking)
+  def YoptClosureInvocations      = optEnabled(YoptChoices.closureInvocations)
+
+  def YoptInlineProject           = optEnabled(YoptChoices.inlineProject)
+  def YoptInlineGlobal            = optEnabled(YoptChoices.inlineGlobal)
   def YoptInlinerEnabled          = YoptInlineProject || YoptInlineGlobal
 
-  def YoptBuildCallGraph          = YoptInlinerEnabled || YoptClosureElimination
-  def YoptAddToBytecodeRepository = YoptBuildCallGraph || YoptInlinerEnabled || YoptClosureElimination
+  def YoptBuildCallGraph          = YoptInlinerEnabled || YoptClosureInvocations
+  def YoptAddToBytecodeRepository = YoptBuildCallGraph || YoptInlinerEnabled || YoptClosureInvocations
 
   val YoptInlineHeuristics = ChoiceSetting(
     name = "-Yopt-inline-heuristics",
@@ -305,6 +318,8 @@ trait ScalaSettings extends AbsScalaSettings
   def YoptWarningNoInlineMixed                      = YoptWarnings.contains(YoptWarningsChoices.noInlineMixed)
   def YoptWarningNoInlineMissingBytecode            = YoptWarnings.contains(YoptWarningsChoices.noInlineMissingBytecode)
   def YoptWarningNoInlineMissingScalaInlineInfoAttr = YoptWarnings.contains(YoptWarningsChoices.noInlineMissingScalaInlineInfoAttr)
+
+  val YoptTrace = StringSetting("-YoptTrace", "package/Class.method", "Trace the optimizer progress for a specific method.", "")
 
   private def removalIn212 = "This flag is scheduled for removal in 2.12. If you have a case where you need this flag then please report a bug."
 
