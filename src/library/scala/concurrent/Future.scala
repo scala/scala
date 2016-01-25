@@ -43,6 +43,8 @@ import scala.reflect.ClassTag
  *
  *  @author  Philipp Haller, Heather Miller, Aleksandar Prokopec, Viktor Klang
  *
+ *  @see [[http://docs.scala-lang.org/overviews/core/futures.html Futures and Promises]]
+ *
  *  @define multipleCallbacks
  *  Multiple callbacks may be registered; there is no guarantee that they will be
  *  executed in a particular order.
