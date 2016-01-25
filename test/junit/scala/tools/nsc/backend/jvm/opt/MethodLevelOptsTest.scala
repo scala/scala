@@ -15,9 +15,10 @@ import CodeGenTools._
 import scala.tools.partest.ASMConverters
 import ASMConverters._
 import scala.tools.testing.ClearAfterClass
+import scala.collection.convert.decorateAsScala._
 
 object MethodLevelOptsTest extends ClearAfterClass.Clearable {
-  var methodOptCompiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:method")
+  var methodOptCompiler = newCompiler(extraArgs = "-Yopt:l:method")
   def clear(): Unit = { methodOptCompiler = null }
 }
 
@@ -558,5 +559,95 @@ class MethodLevelOptsTest extends ClearAfterClass {
     assertSameCode(
       getSingleMethod(c, "t").instructions.dropNonOp,
       List(VarOp(ALOAD, 1), Jump(IFNULL, Label(6)), Op(ICONST_1), Op(IRETURN), Label(6), Op(ICONST_0), Op(IRETURN)))
+  }
+
+  @Test
+  def t5313(): Unit = {
+    val code =
+      """class C {
+        |  def randomBoolean = scala.util.Random.nextInt % 2 == 0
+        |
+        |  // 3 stores to kept1 (slot 1), 1 store to result (slot 2)
+        |  def t1 = {
+        |    var kept1 = new Object
+        |    val result = new java.lang.ref.WeakReference(kept1)
+        |    kept1 = null // we can't eliminate this assignment because result can observe
+        |                 // when the object has no more references. See SI-5313
+        |    kept1 = new Object // could eliminate this one with a more elaborate analysis (we know it contains null)
+        |                       // however, such is not implemented: if a var is live, then stores are kept.
+        |    result
+        |  }
+        |
+        |  // only two variables are live: kept2 and kept3. they end up on slots 1 and 2.
+        |  // kept2 has 2 stores, kept3 has 1 store.
+        |  def t2 = {
+        |    var erased2 = null    // we can eliminate this store because it's never used
+        |    val erased3 = erased2 // and this
+        |    var erased4 = erased2 // and this
+        |    val erased5 = erased4 // and this
+        |    var kept2: Object = new Object // ultimately can't be eliminated
+        |    while(randomBoolean) {
+        |      val kept3 = kept2
+        |      kept2 = null // this can't, because it clobbers kept2, which is used
+        |      erased4 = null // safe to eliminate
+        |      println(kept3)
+        |    }
+        |    0
+        |  }
+        |
+        |  def t3 = {
+        |    var kept4 = new Object // have to keep, it's used
+        |    try
+        |      println(kept4)
+        |    catch {
+        |      case _ : Throwable => kept4 = null // have to keep, it clobbers kept4 which is used
+        |    }
+        |    0
+        |  }
+        |
+        |  def t4 = {
+        |    var kept5 = new Object
+        |    print(kept5)
+        |    kept5 = null // can't eliminate it's a clobber and it's used
+        |    print(kept5)
+        |    kept5 = null // eliminated by nullness analysis (store null to a local that is known to be null)
+        |    0
+        |  }
+        |
+        |  def t5 = {
+        |    while(randomBoolean) {
+        |      var kept6: AnyRef = null // not used, but have to keep because it clobbers the next used store
+        |                               // on the back edge of the loop
+        |      kept6 = new Object // used
+        |      println(kept6)
+        |    }
+        |    0
+        |  }
+        |}
+      """.stripMargin
+
+    val List(c) = compileClasses(methodOptCompiler)(code)
+    def locals(m: String) = findAsmMethod(c, m).localVariables.asScala.toList.map(l => (l.name, l.index)).sortBy(_._2)
+    def stores(m: String) = getSingleMethod(c, m).instructions.filter(_.opcode == ASTORE)
+
+    assertEquals(locals("t1"), List(("this",0), ("kept1",1), ("result",2)))
+    assert(stores("t1") == List(VarOp(ASTORE, 1), VarOp(ASTORE, 2), VarOp(ASTORE, 1), VarOp(ASTORE, 1)),
+      textify(findAsmMethod(c, "t1")))
+
+    assertEquals(locals("t2"), List(("this",0), ("kept2",1), ("kept3",2)))
+    assert(stores("t2") == List(VarOp(ASTORE, 1), VarOp(ASTORE, 2), VarOp(ASTORE, 1)),
+      textify(findAsmMethod(c, "t2")))
+
+    assertEquals(locals("t3"), List(("this",0), ("kept4",1)))
+    assert(stores("t3") == List(VarOp(ASTORE, 1), VarOp(ASTORE, 1)),
+      textify(findAsmMethod(c, "t3")))
+
+    assertEquals(locals("t4"), List(("this",0), ("kept5",1)))
+    assert(stores("t4") == List(VarOp(ASTORE, 1), VarOp(ASTORE, 1)),
+      textify(findAsmMethod(c, "t4")))
+
+    assertEquals(locals("t5"), List(("this",0), ("kept6",1)))
+    assert(stores("t5") == List(VarOp(ASTORE, 1), VarOp(ASTORE, 1)),
+      textify(findAsmMethod(c, "t5")))
   }
 }
