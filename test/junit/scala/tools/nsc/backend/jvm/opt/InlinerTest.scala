@@ -1468,4 +1468,32 @@ class InlinerTest extends ClearAfterClass {
     assertEquals(casts("t5"), Nil)
     assertEquals(casts("t6"), Nil)
   }
+
+  @Test
+  def inlineFromSealed(): Unit = {
+    val code =
+      """sealed abstract class Foo {
+        |  @inline def bar(x: Int) = x + 1
+        |}
+        |object Foo {
+        |  def mkFoo(): Foo = new Baz2
+        |}
+        |
+        |object Baz1 extends Foo
+        |final class Baz2 extends Foo
+        |
+        |object Test {
+        |  def f = Foo.mkFoo() bar 10
+        |}
+      """.stripMargin
+
+    val cls = compile(code)
+    val test = cls.find(_.name == "Test$").get
+    assertEquals(
+      getSingleMethod(test, "f").instructions.summary,
+      List(GETSTATIC, "mkFoo",
+        BIPUSH, ISTORE,
+        IFNONNULL, ACONST_NULL, ATHROW, -1 /*label*/,
+        ILOAD, ICONST_1, IADD, IRETURN))
+  }
 }

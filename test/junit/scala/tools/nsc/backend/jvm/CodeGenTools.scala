@@ -48,7 +48,7 @@ object CodeGenTools {
     resetOutput(compiler)
     compiler
   }
-  
+
   def newCompilerWithoutVirtualOutdir(defaultArgs: String = "-usejavacp", extraArgs: String = ""): Global = {
     val settings = new Settings()
     val args = (CommandLineParser tokenize defaultArgs) ++ (CommandLineParser tokenize extraArgs)
