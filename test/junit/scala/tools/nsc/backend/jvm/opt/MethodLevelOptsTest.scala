@@ -8,6 +8,7 @@ import org.junit.Test
 import scala.tools.asm.Opcodes._
 import org.junit.Assert._
 
+import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.AsmUtils._
 import scala.tools.testing.AssertUtil._
 
@@ -29,6 +30,8 @@ class MethodLevelOptsTest extends ClearAfterClass {
   val methodOptCompiler = MethodLevelOptsTest.methodOptCompiler
 
   def wrapInDefault(code: Instruction*) = List(Label(0), LineNumber(1, Label(0))) ::: code.toList ::: List(Label(1))
+
+  def locals(c: ClassNode, m: String) = findAsmMethod(c, m).localVariables.asScala.toList.map(l => (l.name, l.index)).sortBy(_._2)
 
   @Test
   def eliminateEmptyTry(): Unit = {
@@ -627,27 +630,91 @@ class MethodLevelOptsTest extends ClearAfterClass {
       """.stripMargin
 
     val List(c) = compileClasses(methodOptCompiler)(code)
-    def locals(m: String) = findAsmMethod(c, m).localVariables.asScala.toList.map(l => (l.name, l.index)).sortBy(_._2)
     def stores(m: String) = getSingleMethod(c, m).instructions.filter(_.opcode == ASTORE)
 
-    assertEquals(locals("t1"), List(("this",0), ("kept1",1), ("result",2)))
+    assertEquals(locals(c, "t1"), List(("this",0), ("kept1",1), ("result",2)))
     assert(stores("t1") == List(VarOp(ASTORE, 1), VarOp(ASTORE, 2), VarOp(ASTORE, 1), VarOp(ASTORE, 1)),
       textify(findAsmMethod(c, "t1")))
 
-    assertEquals(locals("t2"), List(("this",0), ("kept2",1), ("kept3",2)))
+    assertEquals(locals(c, "t2"), List(("this",0), ("kept2",1), ("kept3",2)))
     assert(stores("t2") == List(VarOp(ASTORE, 1), VarOp(ASTORE, 2), VarOp(ASTORE, 1)),
       textify(findAsmMethod(c, "t2")))
 
-    assertEquals(locals("t3"), List(("this",0), ("kept4",1)))
+    assertEquals(locals(c, "t3"), List(("this",0), ("kept4",1)))
     assert(stores("t3") == List(VarOp(ASTORE, 1), VarOp(ASTORE, 1)),
       textify(findAsmMethod(c, "t3")))
 
-    assertEquals(locals("t4"), List(("this",0), ("kept5",1)))
+    assertEquals(locals(c, "t4"), List(("this",0), ("kept5",1)))
     assert(stores("t4") == List(VarOp(ASTORE, 1), VarOp(ASTORE, 1)),
       textify(findAsmMethod(c, "t4")))
 
-    assertEquals(locals("t5"), List(("this",0), ("kept6",1)))
+    assertEquals(locals(c, "t5"), List(("this",0), ("kept6",1)))
     assert(stores("t5") == List(VarOp(ASTORE, 1), VarOp(ASTORE, 1)),
       textify(findAsmMethod(c, "t5")))
+  }
+
+  @Test
+  def testCpp(): Unit = {
+    // copied from an old test (run/test-cpp.scala)
+    val code =
+      """class C {
+        |  import scala.util.Random._
+        |
+        |  def t1(x: Int) = {
+        |    val y = x
+        |    println(y)
+        |  }
+        |
+        |  def t2 = {
+        |    val x = 2
+        |    val y = x
+        |    println(y)
+        |  }
+        |
+        |  def t3 = {
+        |    val x = this
+        |    val y = x
+        |    println(y)
+        |  }
+        |
+        |  def f = nextInt
+        |
+        |  def t4 = {
+        |    val x = f
+        |    val y = x
+        |    println(y)
+        |  }
+        |
+        |  def t5 = {
+        |    var x = nextInt
+        |    var y = x
+        |    println(y)
+        |
+        |    y = nextInt
+        |    x = y
+        |    println(x)
+        |  }
+        |}
+      """.stripMargin
+
+    val List(c) = compileClasses(methodOptCompiler)(code)
+    assertEquals(locals(c, "t1"), List(("this", 0), ("x", 1)))
+
+    assertEquals(locals(c, "t2"), List(("this", 0), ("x", 1)))
+    // we don't have constant propagation (yet).
+    // the local var can't be optimized as a store;laod sequence, there's a GETSTATIC between the two
+    assertEquals(
+      textify(findAsmMethod(c, "t2")),
+      getSingleMethod(c, "t2").instructions.dropNonOp.map(_.opcode),
+      List(
+        ICONST_2, ISTORE,
+        GETSTATIC,           // Predef.MODULE$
+        ILOAD, INVOKESTATIC, // boxToInteger
+        INVOKEVIRTUAL,       // println
+        RETURN))
+
+    assertEquals(locals(c, "t3"), List(("this", 0)))
+    assertEquals(locals(c, "t4"), List(("this", 0), ("x", 1)))
+    assertEquals(locals(c, "t5"), List(("this", 0), ("x", 1)))
   }
 }
