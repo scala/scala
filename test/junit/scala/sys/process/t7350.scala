@@ -1,4 +1,3 @@
-
 package scala.sys.process
 
 import org.junit.runner.RunWith

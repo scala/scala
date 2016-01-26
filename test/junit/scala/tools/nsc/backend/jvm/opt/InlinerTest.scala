@@ -1468,4 +1468,52 @@ class InlinerTest extends ClearAfterClass {
     assertEquals(casts("t5"), Nil)
     assertEquals(casts("t6"), Nil)
   }
+
+  @Test
+  def inlineFromSealed(): Unit = {
+    val code =
+      """sealed abstract class Foo {
+        |  @inline def bar(x: Int) = x + 1
+        |}
+        |object Foo {
+        |  def mkFoo(): Foo = new Baz2
+        |}
+        |
+        |object Baz1 extends Foo
+        |final class Baz2 extends Foo
+        |
+        |object Test {
+        |  def f = Foo.mkFoo() bar 10
+        |}
+      """.stripMargin
+
+    val cls = compile(code)
+    val test = cls.find(_.name == "Test$").get
+    assertEquals(
+      getSingleMethod(test, "f").instructions.summary,
+      List(GETSTATIC, "mkFoo",
+        BIPUSH, ISTORE,
+        IFNONNULL, ACONST_NULL, ATHROW, -1 /*label*/,
+        ILOAD, ICONST_1, IADD, IRETURN))
+  }
+
+  @Test // a test taken from the test suite for the 2.11 inliner
+  def oldInlineHigherOrderTest(): Unit = {
+    val code =
+      """class C {
+        |  private var debug = false
+        |  @inline private def ifelse[T](cond: => Boolean, ifPart: => T, elsePart: => T): T = if (cond) ifPart else elsePart
+        |  final def t = ifelse(debug, 1, 2)
+        |}
+      """.stripMargin
+    val List(c) = compile(code)
+    val t = getSingleMethod(c, "t")
+
+    // box-unbox will clean it up
+    assertEquals(getSingleMethod(c, "t").instructions.summary,
+      List(
+        ALOAD, "C$$$anonfun$1", IFEQ /*A*/,
+        "C$$$anonfun$2", IRETURN,
+        -1 /*A*/, "C$$$anonfun$3", IRETURN))
+  }
 }

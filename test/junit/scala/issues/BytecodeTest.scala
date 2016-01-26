@@ -11,15 +11,15 @@ import scala.collection.JavaConverters._
 import scala.tools.partest.ASMConverters._
 import scala.tools.testing.ClearAfterClass
 
-object BytecodeTests extends ClearAfterClass.Clearable {
+object BytecodeTest extends ClearAfterClass.Clearable {
   var compiler = newCompiler()
   def clear(): Unit = { compiler = null }
 }
 
 @RunWith(classOf[JUnit4])
-class BytecodeTests extends ClearAfterClass {
-  ClearAfterClass.stateToClear = BytecodeTests
-  val compiler = BytecodeTests.compiler
+class BytecodeTest extends ClearAfterClass {
+  ClearAfterClass.stateToClear = BytecodeTest
+  val compiler = BytecodeTest.compiler
 
   @Test
   def t8731(): Unit = {
@@ -107,7 +107,6 @@ class BytecodeTests extends ClearAfterClass {
 
     import Opcodes._
     val expected = List(
-      LineNumber(3, Label(0)),
       LineNumber(4, Label(0)),
       LineNumber(5, Label(5)),
       Jump(IFNE, Label(11)),
