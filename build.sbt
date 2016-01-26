@@ -767,9 +767,10 @@ lazy val mkBinImpl: Def.Initialize[Task[Seq[File]]] = Def.task {
       scalaTool.writeScript(file, "windows", rootDir, outDir)
     )
     res.foreach { f =>
-      //TODO 2.12: Use Files.setPosixFilePermissions() (Java 7+) instead of calling out to chmod
-      if(Process(List("chmod", "ugo+rx", f.getAbsolutePath())).! > 0)
-        throw new IOException("chmod failed")
+      if(!f.getAbsoluteFile.setExecutable(true, /* ownerOnly: */ false))
+        throw new IOException("setExecutable failed")
+      if(!f.getAbsoluteFile.setReadable(true, /* ownerOnly: */ false))
+        throw new IOException("setReadable failed")
     }
     res
   }
