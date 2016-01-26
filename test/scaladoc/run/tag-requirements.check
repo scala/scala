@@ -1,0 +1,16 @@
+newSource:3: warning: Only one '@version' tag is allowed
+        /**
+        ^
+newSource:9: warning: Tag '@param' must be followed by a symbol name
+          /**
+          ^
+newSource:9: warning: Tag '@param' is not recognised
+          /**
+          ^
+newSource:14: warning: Only one '@param' tag for symbol b is allowed
+          /**
+          ^
+newSource:20: warning: Tag '@unrecognised' is not recognised
+          /**
+          ^
+Done.
