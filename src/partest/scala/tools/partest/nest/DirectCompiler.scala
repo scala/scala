@@ -6,6 +6,7 @@
 package scala.tools.partest
 package nest
 
+import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.{ Global, Settings, CompilerCommand, FatalError }
 import scala.tools.nsc.reporters.{ Reporter, ConsoleReporter }
 import scala.tools.nsc.util.{ FakePos, stackTraceString }
@@ -19,8 +20,6 @@ class ExtConsoleReporter(settings: Settings, val writer: PrintWriter) extends Co
 }
 
 class TestSettings(cp: String, error: String => Unit) extends Settings(error) {
-  def this(cp: String) = this(cp, _ => ())
-
   nowarnings.value  = false
   encoding.value    = "UTF-8"
   classpath.value   = cp
@@ -82,7 +81,9 @@ class DirectCompiler(val runner: Runner) {
 
     val classPath: List[Path] = specializedOverride ++ codeLib ++ fileManager.testClassPath ++ List[Path](outDir)
 
-    val testSettings = new TestSettings(FileManager.joinPaths(classPath))
+    val parseArgErrors = ListBuffer.empty[String]
+
+    val testSettings = new TestSettings(FileManager.joinPaths(classPath), s => parseArgErrors += s)
     val logWriter    = new FileWriter(logFile)
     val srcDir       = if (testFile.isDirectory) testFile else Path(testFile).parent.jfile
     val opts         = updatePluginPath(opts0, AbstractFile getDirectory outDir, AbstractFile getDirectory srcDir)
@@ -93,9 +94,15 @@ class DirectCompiler(val runner: Runner) {
 
     testSettings.outputDirs setSingleOutput outDir.getPath
 
+    def reportError(s: String): Unit = reporter.error(null, s)
+
+    parseArgErrors.toList foreach reportError
+
     // check that option processing succeeded
-    if (opts0.nonEmpty && !command.ok)
-      reporter.error(null, opts0.mkString("bad options: ", space, ""))
+    if (opts0.nonEmpty) {
+      if (!command.ok) reportError(opts0.mkString("bad options: ", space, ""))
+      if (command.files.nonEmpty) reportError(command.files.mkString("flags file may only contain compiler options, found: ", space, ""))
+    }
 
     def ids = sources.map(_.testIdent) mkString space
     vlog(s"% scalac $ids")
@@ -115,7 +122,7 @@ class DirectCompiler(val runner: Runner) {
       }
 
     try     { execCompile() }
-    catch   { case t: Throwable => reporter.error(null, t.getMessage) ; runner.genCrash(t) }
+    catch   { case t: Throwable => reportError(t.getMessage) ; runner.genCrash(t) }
     finally { logWriter.close() }
   }
 }
