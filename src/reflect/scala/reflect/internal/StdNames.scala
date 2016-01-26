@@ -291,6 +291,7 @@ trait StdNames {
     final val DeprecatedATTR: NameType             = "Deprecated"
     final val ExceptionsATTR: NameType             = "Exceptions"
     final val InnerClassesATTR: NameType           = "InnerClasses"
+    final val MethodParametersATTR: NameType       = "MethodParameters"
     final val RuntimeAnnotationATTR: NameType      = "RuntimeVisibleAnnotations"   // RetentionPolicy.RUNTIME
     final val ScalaATTR: NameType                  = "Scala"
     final val ScalaSignatureATTR: NameType         = "ScalaSig"
