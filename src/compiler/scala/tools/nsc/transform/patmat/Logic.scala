@@ -691,7 +691,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
           // if X is mutable.
           freshExistentialSubtype(t.tpe)
         }
-        else trees find (a => a.correspondsStructure(t)(sameValue)) match {
+        else trees find (a => equivalentTree(a, t)) match {
           case Some(orig) =>
             debug.patmat("unique tp for tree: " + ((orig, orig.tpe)))
             orig.tpe
