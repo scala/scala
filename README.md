@@ -3,7 +3,7 @@ This is the official repository for the [Scala Programming Language](http://www.
 
 # How to contribute
 
-To contribute to the Scala Standard Library, Scala Compiler and Scala Language Specification, please send us a [pull request](https://help.github.com/articles/using-pull-requests/#fork--pull) from your fork of this repository! We do have to ask you to sign the [Scala CLA](http://typesafe.com/contribute/cla/scala) before we can merge any of your work into our code base, to protect its open source nature.
+To contribute to the Scala Standard Library, Scala Compiler and Scala Language Specification, please send us a [pull request](https://help.github.com/articles/using-pull-requests/#fork--pull) from your fork of this repository! We do have to ask you to sign the [Scala CLA](http://www.typesafe.com/contribute/cla/scala) before we can merge any of your work into our code base, to protect its open source nature.
 
 For more information on building and developing the core of Scala, read on!
 
