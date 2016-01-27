@@ -177,6 +177,8 @@ trait TreeAndTypeAnalysis extends Debugging {
               filterChildren(subclasses)
             })
           }
+        case sym if sym.isCase if settings.isScala212 =>
+          List(List(tp))
 
         case sym =>
           debug.patmat("enum unsealed "+ ((tp, sym, sym.isSealed, isPrimitiveValueClass(sym))))

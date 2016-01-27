@@ -7,7 +7,7 @@ class SameBytecode {
   case class Foo(x: Any, y: String)
 
   def a =
-    Foo(1, "a") match {
+    (Foo(1, "a"): @unchecked) match {
       case Foo(_: String, y) => y
     }
 
