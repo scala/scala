@@ -539,7 +539,7 @@ object Test {
     case class Operator(x: Int);
     val EQ = new Operator(2);
 
-    def analyze(x: Tuple2[Operator, Int]) = x match {
+    def analyze(x: Tuple2[Operator, Int]) = (x: @unchecked) match {
       case (EQ, 0) => "0"
       case (EQ, 1) => "1"
       case (EQ, 2) => "2"
@@ -603,7 +603,7 @@ object Test {
 
   object Bug1093 {
     def run() {
-      assert(Some(3) match {
+      assert((Some(3): @unchecked) match {
         case Some(1 | 2) => false
         case Some(3) => true
       })
