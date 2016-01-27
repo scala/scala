@@ -48,8 +48,31 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
 
           dependencyExtractor.memberRefDependencies foreach processDependency(context = DependencyByMemberRef)
           dependencyExtractor.inheritanceDependencies foreach processDependency(context = DependencyByInheritance)
+          processTopLevelImportDependencies(dependencyExtractor.topLevelImportDependencies)
         } else {
           throw new UnsupportedOperationException("Turning off name hashing is not supported in class-based dependency trackging.")
+        }
+        /**
+         * Registers top level import dependencies as coming from a first top level class/trait/object declared
+         * in the compilation unit.
+         * If there's no top level template (class/trait/object def) declared in the compilation unit but `deps`
+         * is non-empty, a warning is issued.
+         */
+        def processTopLevelImportDependencies(deps: Iterator[Symbol]): Unit = if (deps.nonEmpty) {
+          val classOrModuleDef = firstClassOrModuleDef(unit.body)
+          classOrModuleDef match {
+            case Some(classOrModuleDef) =>
+              val sym = classOrModuleDef.symbol
+              val firstClassSymbol = if (sym.isModule) sym.moduleClass else sym
+              deps foreach { dep =>
+                processDependency(context = DependencyByMemberRef)(ClassDependency(firstClassSymbol, dep))
+              }
+            case None =>
+              unit.warning(NoPosition,
+                """|Found top level imports but no class, trait or object is defined in the compilation unit.
+                   |The incremental compiler cannot record the dependency information in such case.
+                   |Some errors like unused import referring to a non-existent class might not be reported.""".stripMargin)
+          }
         }
         /**
          * Handles dependency on given symbol by trying to figure out if represents a term
@@ -85,26 +108,42 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
   private case class ClassDependency(from: Symbol, to: Symbol)
 
   private class ExtractDependenciesTraverser extends Traverser {
+    // are we traversing an Import node at the moment?
+    private var inImportNode = false
     private val _memberRefDependencies = collection.mutable.HashSet.empty[ClassDependency]
     private val _inheritanceDependencies = collection.mutable.HashSet.empty[ClassDependency]
+    private val _topLevelImportDependencies = collection.mutable.HashSet.empty[Symbol]
     private def enclOrModuleClass(s: Symbol): Symbol =
       if (s.isModule) s.moduleClass else s.enclClass
     private def addClassDependency(deps: collection.mutable.HashSet[ClassDependency], dep: Symbol): Unit = {
       val fromClass = enclOrModuleClass(currentOwner)
+      assert(!(fromClass == NoSymbol || fromClass.isPackage))
       val depClass = enclOrModuleClass(dep)
-      if (fromClass != NoSymbol && !fromClass.isPackage) {
-        if (!depClass.isAnonOrRefinementClass)
-          deps += ClassDependency(fromClass, depClass)
+      if (!depClass.isAnonOrRefinementClass)
+        deps += ClassDependency(fromClass, depClass)
+    }
+
+    def addTopLevelImportDependency(dep: global.Symbol) = {
+      val depClass = enclOrModuleClass(dep)
+      if (!dep.isPackage)
+        _topLevelImportDependencies += depClass
+    }
+
+    private def addDependency(dep: Symbol): Unit = {
+      val from = enclOrModuleClass(currentOwner)
+      if (from == NoSymbol || from.isPackage) {
+        if (inImportNode) addTopLevelImportDependency(dep)
+        else
+          debugwarn(s"No enclosing class. Discarding dependency on $dep (currentOwner = $currentOwner).")
       } else {
-        debugwarn(s"No enclosing class. Discarding dependency on $dep (currentOwner = $currentOwner).")
+        addClassDependency(_memberRefDependencies, dep)
       }
     }
-    private def addDependency(dep: Symbol): Unit =
-      addClassDependency(_memberRefDependencies, dep)
     private def addInheritanceDependency(dep: Symbol): Unit =
       addClassDependency(_inheritanceDependencies, dep)
     def memberRefDependencies: Iterator[ClassDependency] = _memberRefDependencies.iterator
     def inheritanceDependencies: Iterator[ClassDependency] = _inheritanceDependencies.iterator
+    def topLevelImportDependencies: Iterator[Symbol] = _topLevelImportDependencies.iterator
 
     /*
      * Some macros appear to contain themselves as original tree.
@@ -173,6 +212,33 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
 
   private final class ExtractDependenciesByInheritanceTraverser extends ExtractDependenciesTraverser {
     override def traverse(tree: Tree): Unit = tree match {
+        inImportNode = true
+        traverse(expr)
+        selectors.foreach {
+          case ImportSelector(nme.WILDCARD, _, null, _) =>
+          // in case of wildcard import we do not rely on any particular name being defined
+          // on `expr`; all symbols that are being used will get caught through selections
+          case ImportSelector(name: Name, _, _, _) =>
+            def lookupImported(name: Name) = expr.symbol.info.member(name)
+            // importing a name means importing both a term and a type (if they exist)
+            addDependency(lookupImported(name.toTermName))
+            addDependency(lookupImported(name.toTypeName))
+        }
+        inImportNode = false
+      /*
+       * Idents are used in number of situations:
+       *  - to refer to local variable
+       *  - to refer to a top-level package (other packages are nested selections)
+       *  - to refer to a term defined in the same package as an enclosing class;
+       *    this looks fishy, see this thread:
+       *    https://groups.google.com/d/topic/scala-internals/Ms9WUAtokLo/discussion
+       */
+      case id: Ident => addDependency(id.symbol)
+      case sel @ Select(qual, _) =>
+        traverse(qual); addDependency(sel.symbol)
+      case sel @ SelectFromTypeTree(qual, _) =>
+        traverse(qual); addDependency(sel.symbol)
+
       case Template(parents, self, body) =>
         // we are using typeSymbol and not typeSymbolDirect because we want
         // type aliases to be expanded
@@ -184,11 +250,28 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
     }
   }
 
-  private def extractDependenciesByInheritance(unit: CompilationUnit): collection.immutable.Set[Symbol] = {
-    val traverser = new ExtractDependenciesByInheritanceTraverser
-    traverser.traverse(unit.body)
-    val dependencies = traverser.dependencies
-    dependencies.map(enclosingTopLevelClass)
+  def firstClassOrModuleDef(tree: Tree): Option[Tree] = {
+    tree foreach {
+      case t @ ((_: ClassDef) | (_: ModuleDef)) => return Some(t)
+      case _                                    => ()
+    }
+    None
+  }
+
+  /**
+   * Traverses given type and collects result of applying a partial function `pf`.
+   *
+   * NOTE: This class exists in Scala 2.10 as CollectTypeCollector but does not in earlier
+   * versions (like 2.9) of Scala compiler that incremental cmpiler supports so we had to
+   * reimplement that class here.
+   */
+  private final class CollectTypeTraverser[T](pf: PartialFunction[Type, T]) extends TypeTraverser {
+    var collected: List[T] = Nil
+    def traverse(tpe: Type): Unit = {
+      if (pf.isDefinedAt(tpe))
+        collected = pf(tpe) :: collected
+      mapOver(tpe)
+    }
   }
 
   /**

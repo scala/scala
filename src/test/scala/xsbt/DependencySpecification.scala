@@ -112,6 +112,42 @@ class DependencySpecification extends Specification {
     inheritance("B") === Set.empty
   }
 
+  "Top level import dependencies" in {
+    val srcA =
+      """
+        |package abc
+        |object A {
+        |  class Inner
+        |}
+        |class A2""".stripMargin
+    val srcB = "import abc.A; import abc.A.Inner; class B"
+    val srcC = "import abc.{A, A2}; class C"
+    val srcD = "import abc.{A2 => Foo}; class D"
+    val srcE = "import abc.A._; class E"
+    val srcF = "import abc._; class F"
+    val srcG =
+      """|package foo {
+         |  package bar {
+         |    import abc.A
+         |    class G
+         |  }
+         |}
+      """.stripMargin
+    val srcH = "class H { import abc.A }"
+
+    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val deps = compilerForTesting.extractDependenciesFromSrcs(srcA, srcB, srcC, srcD, srcE, srcF, srcG, srcH).memberRef
+
+    deps("A") === Set.empty
+    deps("B") === Set("abc.A", "abc.A.Inner")
+    deps("C") === Set("abc.A", "abc.A2")
+    deps("D") === Set("abc.A2")
+    deps("E") === Set("abc.A")
+    deps("F") === Set.empty
+    deps("foo.bar.G") === Set("abc.A")
+    deps("H") === Set("abc.A")
+  }
+
   private def extractSourceDependenciesPublic: ExtractedClassDependencies = {
     val srcA = "class A"
     val srcB = "class B extends D[A]"
