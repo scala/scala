@@ -27,6 +27,22 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
   import backendUtils._
   import ClosureOptimizer._
 
+  private object closureInitOrdering extends Ordering[ClosureInstantiation] {
+    override def compare(x: ClosureInstantiation, y: ClosureInstantiation): Int = {
+      val cls = x.ownerClass.internalName compareTo y.ownerClass.internalName
+      if (cls != 0) return cls
+
+      val mName = x.ownerMethod.name compareTo y.ownerMethod.name
+      if (mName != 0) return mName
+
+      val mDesc = x.ownerMethod.desc compareTo y.ownerMethod.desc
+      if (mDesc != 0) return mDesc
+
+      def pos(inst: ClosureInstantiation) = inst.ownerMethod.instructions.indexOf(inst.lambdaMetaFactoryCall.indy)
+      pos(x) - pos(y)
+    }
+  }
+
   /**
    * If a closure is allocated and invoked within the same method, re-write the invocation to the
    * closure body method.
@@ -57,27 +73,12 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
    *   [invoke the closure body method]
    */
   def rewriteClosureApplyInvocations(): Unit = {
-    implicit object closureInitOrdering extends Ordering[ClosureInstantiation] {
-      override def compare(x: ClosureInstantiation, y: ClosureInstantiation): Int = {
-        val cls = x.ownerClass.internalName compareTo y.ownerClass.internalName
-        if (cls != 0) return cls
 
-        val mName = x.ownerMethod.name compareTo y.ownerMethod.name
-        if (mName != 0) return mName
-
-        val mDesc = x.ownerMethod.desc compareTo y.ownerMethod.desc
-        if (mDesc != 0) return mDesc
-
-        def pos(inst: ClosureInstantiation) = inst.ownerMethod.instructions.indexOf(inst.lambdaMetaFactoryCall.indy)
-        pos(x) - pos(y)
-      }
-    }
-
-    // Use collections that keep insertion order, ensures order of closure rewrites (bytecode stability)
-    val toRewrite = mutable.LinkedHashMap.empty[ClosureInstantiation, mutable.ArrayBuffer[(MethodInsnNode, Int)]]
-    def addRewrite(init: ClosureInstantiation, invocation: MethodInsnNode, stackHeight: Int) = {
-      val calls = toRewrite.getOrElseUpdate(init, mutable.ArrayBuffer.empty[(MethodInsnNode, Int)])
-      calls += ((invocation, stackHeight))
+    // sort all closure invocations to rewrite to ensure bytecode stability
+    val toRewrite = new java.util.TreeMap[ClosureInstantiation, mutable.ArrayBuffer[(MethodInsnNode, Int)]](closureInitOrdering)
+    def addRewrite(init: ClosureInstantiation, invocation: MethodInsnNode, stackHeight: Int): Unit = {
+      if (!toRewrite.containsKey(init)) toRewrite.put(init, mutable.ArrayBuffer.empty[(MethodInsnNode, Int)])
+      toRewrite.get(init) += ((invocation, stackHeight))
     }
 
     // For each closure instantiation find callsites of the closure and add them to the toRewrite
@@ -98,20 +99,12 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
             // A lazy val to ensure the analysis only runs if necessary (the value is passed by name to `closureCallsites`)
             lazy val prodCons = new ProdConsAnalyzer(method, ownerClass)
 
-            // sorting for bytecode stability (e.g. indices of local vars created during the rewrite)
-            val sortedInits = immutable.TreeSet.empty ++ closureInits.values
+            for (init <- closureInits.valuesIterator) closureCallsites(init, prodCons) foreach {
+              case Left(warning) =>
+                backendReporting.inlinerWarning(warning.pos, warning.toString)
 
-            for (init <- sortedInits) {
-              val callsites = closureCallsites(init, prodCons)
-              if (callsites.nonEmpty) {
-                callsites foreach {
-                  case Left(warning) =>
-                    backendReporting.inlinerWarning(warning.pos, warning.toString)
-
-                  case Right((invocation, stackHeight)) =>
-                    addRewrite(init, invocation, stackHeight)
-                }
-              }
+              case Right((invocation, stackHeight)) =>
+                addRewrite(init, invocation, stackHeight)
             }
 
           case _ =>
@@ -120,11 +113,13 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
       case _ =>
     }
 
-    toRewrite foreach {
-      case (closureInit, invocations) =>
-        // Local variables that hold the captured values and the closure invocation arguments.
-        val (localsForCapturedValues, argumentLocalsList) = localsForClosureRewrite(closureInit)
-        for ((invocation, stackHeight) <- invocations) rewriteClosureApplyInvocation(closureInit, invocation, stackHeight, localsForCapturedValues, argumentLocalsList)
+    for (entry <- toRewrite.entrySet.iterator().asScala) {
+      val closureInit = entry.getKey
+      val invocations = entry.getValue
+      // Local variables that hold the captured values and the closure invocation arguments.
+      val (localsForCapturedValues, argumentLocalsList) = localsForClosureRewrite(closureInit)
+      for ((invocation, stackHeight) <- invocations)
+        rewriteClosureApplyInvocation(closureInit, invocation, stackHeight, localsForCapturedValues, argumentLocalsList)
     }
   }
 
