@@ -26,4 +26,14 @@ class ClassTagTest {
   @Test def checkDouble  = assertTrue(checkNotInt[Double] (0.toDouble))
   @Test def checkBoolean = assertTrue(checkNotInt[Boolean](false))
   @Test def checkUnit    = assertTrue(checkNotInt[Unit]   ({}))
+
+  @Test def t9534: Unit = {
+    val ct = implicitly[scala.reflect.ClassTag[Unit]]
+    val a1 = ct.newArray(1)
+    a1(0) = ()
+    val a2 = ct.wrap.newArray(1)
+    a2(0) = a1
+    val a3 = ct.newArray2(1)
+    a3(0) = a1
+  }
 }
