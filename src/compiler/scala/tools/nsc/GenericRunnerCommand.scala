@@ -87,7 +87,10 @@ self-contained compilation units (classes and objects) and exactly one
 runnable main method.  In that case the file will be compiled and the
 main method invoked.  This provides a bridge between scripts and standard
 scala source.
-  """) + "\n"
+
+When running a script or using -e, an already running compilation daemon
+(fsc) is used, or a new one started on demand.  The -nc option can be
+used to prevent this.%n""")
 }
 
 object GenericRunnerCommand {
