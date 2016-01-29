@@ -121,7 +121,7 @@ class PatmatBytecodeTest extends ClearAfterClass {
     val code =
       """case class Foo(x: Any, y: String)
         |class C {
-        |  def a = Foo(1, "a") match {
+        |  def a = (Foo(1, "a"): @unchecked) match {
         |    case Foo(_: String, y) => y
         |  }
         |}
