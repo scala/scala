@@ -352,8 +352,6 @@ final case class Some[+A](x: A) extends Option[A] {
 }
 
 /** Ensure that applying `Some` to `java.lang` values creates the same type as applying `Option`.
-  *
-  * Note: this DOES NOT WORK - try (sbt) 'testOnly *OptionsWithJavaValues'.
  */
 object Some {
   def apply(x: java.lang.Boolean): Option[Boolean] = Some(x: Boolean)

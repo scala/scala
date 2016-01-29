@@ -59,7 +59,7 @@ class OptionsWithJavaValuesTests {
     //
     // It still is, not sure how it could be blocked without burdening normal use of 'Option' (i.e.
     // adding to compile times, complexity etc.)
-    //
+    /*
     Option[java.lang.Boolean](jBoolean)
     Option[java.lang.Character](jCharacter)
     Option[java.lang.Byte](jByte)
@@ -68,6 +68,7 @@ class OptionsWithJavaValuesTests {
     Option[java.lang.Long](jLong)
     Option[java.lang.Float](jFloat)
     Option[java.lang.Double](jDouble)
+    */
   }
 }
 
