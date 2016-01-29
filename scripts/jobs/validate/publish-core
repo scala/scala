@@ -15,17 +15,8 @@ case $prDryRun in
     mkdir -p build/pack ; mkdir -p dists/maven/latest
     ;;
   *)
-    sha=$(git rev-parse HEAD) # TODO: warn if $repo_ref != $sha (we shouldn't do PR validation using symbolic gitrefs)
-    echo "sha/repo_ref == $sha/$repo_ref ?"
-
-    parseScalaProperties build.number
-
-    ./pull-binary-libs.sh
-    # "noyoudont" is there juuuust in case
-    antDeployArgs="-Dmaven.version.suffix=\"-${sha:0:7}-SNAPSHOT\" -Dremote.snapshot.repository=$prRepoUrl -Drepository.credentials.id=pr-scala -Dremote.release.repository=noyoudont"
-
     echo ">>> Getting Scala version number."
-    ant -q $antDeployArgs init
+    $SBT_CMD "setupPublishCore $prRepoUrl" generateBuildCharacterPropertiesFile
     parseScalaProperties buildcharacter.properties # produce maven_version_number
 
     echo ">>> Checking availability of Scala ${maven_version_number} in $prRepoUrl."
@@ -36,7 +27,7 @@ case $prDryRun in
     if $libraryAvailable && $reflectAvailable && $compilerAvailable; then
       echo "Scala core already built!"
     else
-      ant $antDeployArgs $antBuildArgs publish-opt-nodocs
+      $SBT_CMD "setupPublishCore $prRepoUrl" $antBuildArgs publish
     fi
 
     mv buildcharacter.properties jenkins.properties # parsed by the jenkins job
