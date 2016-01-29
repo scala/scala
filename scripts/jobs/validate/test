@@ -1,17 +1,45 @@
 #!/bin/bash -e
 
+baseDir=${WORKSPACE-`pwd`}
+scriptsDir="$baseDir/scripts"
+. $scriptsDir/common
+
 case $prDryRun in
+
   yep)
     echo "DRY RUN"
     ;;
+
   *)
-    ./pull-binary-libs.sh
 
     # build quick using STARR built upstream, as specified by scalaVersion
     # (in that sense it's locker, since it was built with starr by that upstream job)
-    ant -Dstarr.version=$scalaVersion \
-       -Dscalac.args.optimise=-optimise \
-       -Dlocker.skip=1 -Dextra.repo.url=$prRepoUrl \
-       $testExtraArgs ${testTarget-test.core docs.done}
+    $SBT_CMD \
+       -Dstarr.version=$scalaVersion \
+       -Dextra.repo.url=$prRepoUrl \
+       $testExtraArgs \
+       ${testTarget-test}
+
+    # multiple invocations prevents PermGen exhaustion.
+    # we could go through sbt for this, and perhaps should in the future,
+    # in order to shake out any problems with sbt-partest-interface.
+    # for now, let's just take the most battle-tested path.
+    test/partest pos
+    test/partest neg
+    test/partest run
+    test/partest jvm
+    test/partest res
+    test/partest scalap
+    test/partest specialized
+    test/partest scalacheck
+    test/partest instrumented
+    test/partest presentation
+
+    $SBT_CMD \
+       -Dstarr.version=$scalaVersion \
+       -Dextra.repo.url=$prRepoUrl \
+       $testExtraArgs \
+       doc
     ;;
+
 esac
