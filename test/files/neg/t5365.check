@@ -1,0 +1,15 @@
+t5365.scala:2: warning: match may not be exhaustive.
+It would fail on the following input: None
+  def nonExhautiveIfWeAssumeGuardsTrueOrFalse(x: Option[Int]): Int = x match {
+                                                                     ^
+t5365.scala:17: warning: match may not be exhaustive.
+It would fail on the following input: None
+  def extractor(x: Option[Int]) = x match {
+                                  ^
+t5365.scala:20: warning: match may not be exhaustive.
+It would fail on the following input: None
+  def repeatedExtractor(x: Option[Int]) = x match {
+                                          ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found
