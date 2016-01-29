@@ -624,7 +624,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
             <dt>To do</dt>
             <dd>{
               val todoXml: List[NodeSeq] = (for(todo <- comment.todo ) yield <span class="cmt">{bodyToHtml(todo)}</span> )
-              todoXml.reduceLeft(_ ++ Text(", ") ++ _)
+              todoXml.reduceLeft(_ ++ _)
             }</dd>
           }
 

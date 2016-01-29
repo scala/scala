@@ -819,4 +819,11 @@ object Test extends Properties("HtmlFactory") {
     }
 
   }
+
+  property("SI-9599 Multiple @todo formatted with comma on separate line") = {
+    createTemplates("SI-9599.scala")("X.html") match {
+      case node: scala.xml.Node => node.text.contains("todo3todo2todo1")
+      case _ => false
+    }
+  }
 }
