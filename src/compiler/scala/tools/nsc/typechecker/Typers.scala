@@ -5421,6 +5421,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (!isPastTyper)
           signalDone(context.asInstanceOf[analyzer.Context], tree, result)
 
+        if (mode.inPatternMode && !mode.inPolyMode && result.isType)
+          PatternMustBeValue(result, pt)
+
         result
       }
 
@@ -5510,10 +5513,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // as a compromise, context.enrichmentEnabled tells adaptToMember to go ahead and enrich,
       // but arbitrary conversions (in adapt) are disabled
       // TODO: can we achieve the pattern matching bit of the string interpolation SIP without this?
-      typingInPattern(context.withImplicitsDisabledAllowEnrichment(typed(tree, PATTERNmode, pt))) match {
-        case tpt if tpt.isType => PatternMustBeValue(tpt, pt); tpt
-        case pat               => pat
-      }
+      typingInPattern(context.withImplicitsDisabledAllowEnrichment(typed(tree, PATTERNmode, pt)))
     }
 
     /** Types a (fully parameterized) type tree */
