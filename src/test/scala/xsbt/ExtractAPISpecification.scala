@@ -14,6 +14,27 @@ class ExtractAPISpecification extends Specification {
     "have stable names" in { stableExistentialNames }
   }
 
+  "Children of a sealed class" in {
+    def compileAndGetFooClassApi(src: String): ClassLike = {
+      val compilerForTesting = new ScalaCompilerForUnitTesting
+      val sourceApi = compilerForTesting.extractApiFromSrc(src)
+      val FooApi = sourceApi.definitions().find(_.name() == "Foo").get.asInstanceOf[ClassLike]
+      FooApi
+    }
+    val src1 =
+      """|sealed abstract class Foo
+         |case class C1(x: Int) extends Foo
+         |""".stripMargin
+    val fooClassApi1 = compileAndGetFooClassApi(src1)
+    val src2 =
+      """|sealed abstract class Foo
+         |case class C1(x: Int) extends Foo
+         |case class C2(x: Int) extends Foo
+         |""".stripMargin
+    val fooClassApi2 = compileAndGetFooClassApi(src2)
+    SameAPI(fooClassApi1, fooClassApi2) !=== true
+  }
+
   def stableExistentialNames: Boolean = {
     def compileAndGetFooMethodApi(src: String): Def = {
       val compilerForTesting = new ScalaCompilerForUnitTesting
