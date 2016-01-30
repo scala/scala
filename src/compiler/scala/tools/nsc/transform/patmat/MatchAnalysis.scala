@@ -351,7 +351,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
               object condStrategy extends TypeTestTreeMaker.TypeTestCondStrategy {
                 type Result                                           = Prop
                 def and(a: Result, b: Result)                         = And(a, b)
-                def outerTest(testedBinder: Symbol, expectedTp: Type) = True // TODO OuterEqProp(testedBinder, expectedType)
+                def withOuterTest(testedBinder: Symbol, expectedTp: Type) = True // TODO OuterEqProp(testedBinder, expectedType)
                 def typeTest(b: Symbol, pt: Type) = { // a type test implies the tested path is non-null (null.isInstanceOf[T] is false for all T)
                   val p = binderToUniqueTree(b);                        And(uniqueNonNullProp(p), uniqueTypeProp(p, uniqueTp(pt)))
                 }

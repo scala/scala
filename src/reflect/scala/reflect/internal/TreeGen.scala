@@ -117,6 +117,30 @@ abstract class TreeGen {
     case _                       => qual
   }
 
+
+
+  //          val selType = testedBinder.info
+  //
+  //          // See the test for SI-7214 for motivation for dealias. Later `treeCondStrategy#outerTest`
+  //          // generates an outer test based on `patType.prefix` with automatically dealises.
+  //          // Prefixes can have all kinds of shapes SI-9110
+  //          val patPre = expectedTp.dealiasWiden.prefix
+  //          val selPre = selType.dealiasWiden.prefix
+  //
+  //          // Optimization: which prefixes can we disqualify from the need for an outer reference check?
+  //          //   - classes in static owners do not get outer pointers
+  //          //   - if the prefixes are statically known to be equal, the type system ensures an outer test is redundant
+  //          !((patPre eq NoPrefix) || (selPre eq NoPrefix)
+  //            || patPre.typeSymbol.isPackageClass
+  //            || selPre =:= patPre)
+
+  def mkAttributedQualifierIfPossible(prefix: Type): Option[Tree] = prefix match {
+    case NoType | NoPrefix | ErrorType => None
+    case TypeRef(_, sym, _) if sym.isModule || sym.isClass || sym.isType => None
+    case pre => Some(mkAttributedQualifier(prefix))
+  }
+
+
   /** Builds a reference to given symbol with given stable prefix. */
   def mkAttributedRef(pre: Type, sym: Symbol): RefTree = {
     val qual = mkAttributedQualifier(pre)
