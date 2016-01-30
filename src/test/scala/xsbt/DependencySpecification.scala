@@ -32,10 +32,11 @@ class DependencySpecification extends Specification {
     inheritance("H") === Set("B", "E")
   }
 
-  "Extracted source dependencies from private members" in {
-    val sourceDependencies = extractSourceDependenciesPrivate
+  "Extracted source dependencies from local members" in {
+    val sourceDependencies = extractSourceDependenciesLocal
     val memberRef = sourceDependencies.memberRef
     val inheritance = sourceDependencies.inheritance
+    val localInheritance = sourceDependencies.localInheritance
     memberRef("A") === Set.empty
     inheritance("A") === Set.empty
     memberRef("B") === Set.empty
@@ -43,8 +44,12 @@ class DependencySpecification extends Specification {
     memberRef("C.Inner1") === Set("A")
     inheritance("C.Inner1") === Set("A")
     memberRef("D") === Set("B")
-    inheritance("D") === Set("B")
-  }.pendingUntilFixed("Extraction of dependencies from local classes requires special handling in ExtractDependenciesTraverser")
+    inheritance("D") === Set.empty
+    localInheritance("D") === Set("B")
+    memberRef("E") === Set("B")
+    inheritance("E") === Set.empty
+    localInheritance("E") === Set("B")
+  }
 
   "Extracted source dependencies with trait as first parent" in {
     val sourceDependencies = extractSourceDependenciesTraitAsFirstPatent
@@ -169,15 +174,16 @@ class DependencySpecification extends Specification {
     sourceDependencies
   }
 
-  private def extractSourceDependenciesPrivate: ExtractedClassDependencies = {
+  private def extractSourceDependenciesLocal: ExtractedClassDependencies = {
     val srcA = "class A"
     val srcB = "class B"
     val srcC = "class C { private class Inner1 extends A }"
     val srcD = "class D { def foo: Unit = { class Inner2 extends B } }"
+    val srcE = "class E { def foo: Unit = { new B {} } }"
 
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val sourceDependencies =
-      compilerForTesting.extractDependenciesFromSrcs(srcA, srcB, srcC, srcD)
+      compilerForTesting.extractDependenciesFromSrcs(srcA, srcB, srcC, srcD, srcE)
     sourceDependencies
   }
 

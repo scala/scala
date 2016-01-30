@@ -48,6 +48,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
 
           dependencyExtractor.memberRefDependencies foreach processDependency(context = DependencyByMemberRef)
           dependencyExtractor.inheritanceDependencies foreach processDependency(context = DependencyByInheritance)
+          dependencyExtractor.localInheritanceDependencies foreach processDependency(context = LocalDependencyByInheritance)
           processTopLevelImportDependencies(dependencyExtractor.topLevelImportDependencies)
         } else {
           throw new UnsupportedOperationException("Turning off name hashing is not supported in class-based dependency trackging.")
@@ -110,16 +111,37 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
   private class ExtractDependenciesTraverser extends Traverser {
     // are we traversing an Import node at the moment?
     private var inImportNode = false
+    private val localToNonLocalClass = new LocalToNonLocalClass
+
     private val _memberRefDependencies = collection.mutable.HashSet.empty[ClassDependency]
     private val _inheritanceDependencies = collection.mutable.HashSet.empty[ClassDependency]
+    private val _localInheritanceDependencies = collection.mutable.HashSet.empty[ClassDependency]
     private val _topLevelImportDependencies = collection.mutable.HashSet.empty[Symbol]
     private def enclOrModuleClass(s: Symbol): Symbol =
       if (s.isModule) s.moduleClass else s.enclClass
-    private def addClassDependency(deps: collection.mutable.HashSet[ClassDependency], dep: Symbol): Unit = {
+
+    /**
+     * Resolves dependency source by getting the enclosing class for `currentOwner`
+     * and then looking up the most inner enclosing class that is non local.
+     * The second returned value indicates if the enclosing class for `currentOwner`
+     * is a local class.
+     */
+    private def resolveDependencySource: (Symbol, Boolean) = {
       val fromClass = enclOrModuleClass(currentOwner)
-      assert(!(fromClass == NoSymbol || fromClass.isPackage))
+      if (fromClass == NoSymbol || fromClass.isPackage)
+        (fromClass, false)
+      else {
+        val fromNonLocalClass = localToNonLocalClass(fromClass)
+        assert(!(fromClass == NoSymbol || fromClass.isPackage))
+        (fromNonLocalClass, fromClass != fromNonLocalClass)
+      }
+    }
+    private def addClassDependency(deps: collection.mutable.HashSet[ClassDependency], fromClass: Symbol,
+      dep: Symbol): Unit = {
+      assert(fromClass.isClass,
+        s"The ${fromClass.fullName} defined at ${fromClass.fullLocationString} is not a class symbol.")
       val depClass = enclOrModuleClass(dep)
-      if (!depClass.isAnonOrRefinementClass)
+      if (fromClass.associatedFile != depClass.associatedFile)
         deps += ClassDependency(fromClass, depClass)
     }
 
@@ -130,20 +152,26 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
     }
 
     private def addDependency(dep: Symbol): Unit = {
-      val from = enclOrModuleClass(currentOwner)
-      if (from == NoSymbol || from.isPackage) {
+      val (fromClass, _) = resolveDependencySource
+      if (fromClass == NoSymbol || fromClass.isPackage) {
         if (inImportNode) addTopLevelImportDependency(dep)
         else
           debugwarn(s"No enclosing class. Discarding dependency on $dep (currentOwner = $currentOwner).")
       } else {
-        addClassDependency(_memberRefDependencies, dep)
+        addClassDependency(_memberRefDependencies, fromClass, dep)
       }
     }
-    private def addInheritanceDependency(dep: Symbol): Unit =
-      addClassDependency(_inheritanceDependencies, dep)
+    private def addInheritanceDependency(dep: Symbol): Unit = {
+      val (fromClass, isLocal) = resolveDependencySource
+      if (isLocal)
+        addClassDependency(_localInheritanceDependencies, fromClass, dep)
+      else
+        addClassDependency(_inheritanceDependencies, fromClass, dep)
+    }
     def memberRefDependencies: Iterator[ClassDependency] = _memberRefDependencies.iterator
     def inheritanceDependencies: Iterator[ClassDependency] = _inheritanceDependencies.iterator
     def topLevelImportDependencies: Iterator[Symbol] = _topLevelImportDependencies.iterator
+    def localInheritanceDependencies: Iterator[ClassDependency] = _localInheritanceDependencies.iterator
 
     /*
      * Some macros appear to contain themselves as original tree.
@@ -281,5 +309,42 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
   private def enclosingTopLevelClass(sym: Symbol): Symbol =
     // for Scala 2.8 and 2.9 this method is provided through SymbolCompat
     sym.enclosingTopLevelClass
+
+  /**
+   * A memoized function that maps a local class to its inner most non local class
+   * owner. It's intended to be used for a single compilation unit.
+   *
+   * Let's consider an example of an owner chain:
+   *
+   *   pkg1 <- pkg2 <- class A <- object B <- class C <- def foo <- class Foo <- class Bar
+   *
+   * For an object, we work with its `moduleClass` so we can refer to everything as classes.
+   *
+   * Classes A, B, C are non local so they are mapped to themselves. Classes Foo and Bar are local because
+   * they are defined within method `foo`.
+   *
+   * Let's define non local class more precisely. A non local class is a class that is owned by either a package
+   * or another non local class. This gives rise to a recursive definition of non local class that is used for
+   * implementation of the mapping.
+   *
+   * Thanks to memoization, the amortized cost of a lookup is O(1). We amortize over lookups for all class symbols
+   * defined in a compilation unit.
+   */
+  private class LocalToNonLocalClass extends (Symbol => Symbol) {
+    import collection.mutable.Map
+    private val cache: Map[Symbol, Symbol] = Map.empty
+    override def apply(s: Symbol): Symbol = cache.getOrElseUpdate(s, lookupNonLocal(s))
+    private def lookupNonLocal(s: Symbol): Symbol = {
+      val cls = if (s.isModule) s.moduleClass else s
+      if (cls.owner.isPackageClass) cls
+      else if (cls.owner.isClass) {
+        val nonLocalForOwner = apply(cls.owner)
+        // the cls is owned by a non local class so cls is non local
+        if (nonLocalForOwner == cls.owner) cls
+        // otherwise the inner most non local class is the same as for its owner
+        else nonLocalForOwner
+      } else apply(cls.owner.enclClass)
+    }
+  }
 
 }

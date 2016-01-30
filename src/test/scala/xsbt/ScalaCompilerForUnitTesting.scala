@@ -79,8 +79,10 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
     val inheritanceDeps = testCallback.classDependencies collect {
       case (target, src, DependencyByInheritance) => (src, target)
     }
-
-    ExtractedClassDependencies.fromPairs(memberRefDeps, inheritanceDeps)
+    val localInheritanceDeps = testCallback.classDependencies collect {
+      case (target, src, LocalDependencyByInheritance) => (src, target)
+    }
+    ExtractedClassDependencies.fromPairs(memberRefDeps, inheritanceDeps, localInheritanceDeps)
   }
 
   def extractDependenciesFromSrcs(srcs: String*): ExtractedClassDependencies = {
