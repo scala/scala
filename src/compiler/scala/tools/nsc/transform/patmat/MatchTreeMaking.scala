@@ -101,7 +101,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
     case class SubstOnlyTreeMaker(prevBinder: Symbol, nextBinder: Symbol) extends TreeMaker {
       val pos = NoPosition
 
-      val localSubstitution = Substitution(prevBinder, CODE.REF(nextBinder))
+      val localSubstitution = Substitution(prevBinder, gen.mkAttributedStableRef(nextBinder))
       def chainBefore(next: Tree)(casegen: Casegen): Tree = substitution(next)
       override def toString = "S"+ localSubstitution
     }
@@ -118,7 +118,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       val res: Tree
 
       lazy val nextBinder = freshSym(pos, nextBinderTp)
-      lazy val localSubstitution = Substitution(List(prevBinder), List(CODE.REF(nextBinder)))
+      lazy val localSubstitution = Substitution(List(prevBinder), List(gen.mkAttributedStableRef(nextBinder)))
 
       def chainBefore(next: Tree)(casegen: Casegen): Tree =
         atPos(pos)(casegen.flatMapCond(cond, res, nextBinder, substitution(next)))
@@ -485,7 +485,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       // NOTE: generate `patTree == patBinder`, since the extractor must be in control of the equals method (also, patBinder may be null)
       // equals need not be well-behaved, so don't intersect with pattern's (stabilized) type (unlike MaybeBoundTyped's accumType, where it's required)
       val cond = codegen._equals(patTree, prevBinder)
-      val res  = CODE.REF(prevBinder)
+      val res  = gen.mkAttributedStableRef(prevBinder)
       override def toString = "ET"+((prevBinder.name, patTree))
     }
 
