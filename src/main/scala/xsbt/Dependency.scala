@@ -3,14 +3,13 @@
  */
 package xsbt
 
-import scala.collection.mutable.ArrayBuffer
-import scala.tools.nsc.{ io, symtab, Phase }
-import io.{ AbstractFile, PlainFile, ZipArchive }
-import symtab.Flags
+import java.io.File
+
 import xsbti.DependencyContext
 import xsbti.DependencyContext._
 
-import java.io.File
+import scala.tools.nsc.io.{ PlainFile, ZipArchive }
+import scala.tools.nsc.Phase
 
 object Dependency {
   def name = "xsbt-dependency"
@@ -109,14 +108,15 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
   private case class ClassDependency(from: Symbol, to: Symbol)
 
   private class ExtractDependenciesTraverser extends Traverser {
+    import scala.collection.mutable.HashSet
     // are we traversing an Import node at the moment?
     private var inImportNode = false
     private val localToNonLocalClass = new LocalToNonLocalClass
 
-    private val _memberRefDependencies = collection.mutable.HashSet.empty[ClassDependency]
-    private val _inheritanceDependencies = collection.mutable.HashSet.empty[ClassDependency]
-    private val _localInheritanceDependencies = collection.mutable.HashSet.empty[ClassDependency]
-    private val _topLevelImportDependencies = collection.mutable.HashSet.empty[Symbol]
+    private val _memberRefDependencies = HashSet.empty[ClassDependency]
+    private val _inheritanceDependencies = HashSet.empty[ClassDependency]
+    private val _localInheritanceDependencies = HashSet.empty[ClassDependency]
+    private val _topLevelImportDependencies = HashSet.empty[Symbol]
     private def enclOrModuleClass(s: Symbol): Symbol =
       if (s.isModule) s.moduleClass else s.enclClass
 
@@ -136,8 +136,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
         (fromNonLocalClass, fromClass != fromNonLocalClass)
       }
     }
-    private def addClassDependency(deps: collection.mutable.HashSet[ClassDependency], fromClass: Symbol,
-      dep: Symbol): Unit = {
+    private def addClassDependency(deps: HashSet[ClassDependency], fromClass: Symbol, dep: Symbol): Unit = {
       assert(fromClass.isClass,
         s"The ${fromClass.fullName} defined at ${fromClass.fullLocationString} is not a class symbol.")
       val depClass = enclOrModuleClass(dep)
