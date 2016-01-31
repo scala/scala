@@ -419,17 +419,10 @@ trait Iterator[+A] extends TraversableOnce[A] {
    */
   def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] = new Iterator.JoinIterator(self, that)
 
-  /** Creates a new iterator by applying a function to all values produced by this iterator
-   *  and concatenating the results.
-   *
-   *  @param f the function to apply on each element.
-   *  @return  the iterator resulting from applying the given iterator-valued function
-   *           `f` to each value produced by this iterator and concatenating the results.
-   *  @note    Reuse: $consumesAndProducesIterator
-   */
-  def flatMap[B](f: A => GenTraversableOnce[B]): Iterator[B] = new AbstractIterator[B] {
+  private[this] class flatMapIterator[B](f: (A, Option[Int]) => GenTraversableOnce[B]) extends AbstractIterator[B] {
+    private var l = 0
     private var cur: Iterator[B] = empty
-    private def nextCur() { cur = f(self.next()).toIterator }
+    private def nextCur() { cur = f(self.next(), Some(l)).toIterator; l += 1 }
     def hasNext: Boolean = {
       // Equivalent to cur.hasNext || self.hasNext && { nextCur(); hasNext }
       // but slightly shorter bytecode (better JVM inlining!)
@@ -441,6 +434,19 @@ trait Iterator[+A] extends TraversableOnce[A] {
     }
     def next(): B = (if (hasNext) cur else empty).next()
   }
+
+  /** Creates a new iterator by applying a function to all values produced by this iterator
+   *  and concatenating the results.
+   *
+   *  @param f the function to apply on each element.
+   *  @return  the iterator resulting from applying the given iterator-valued function
+   *           `f` to each value produced by this iterator and concatenating the results.
+   *  @note    Reuse: $consumesAndProducesIterator
+   */
+  def flatMap[B](f: A => GenTraversableOnce[B]): Iterator[B] = new flatMapIterator[B]((x, _) => f(x))
+
+  //TODO pfperez: Add documentation
+  def sizedFlatMap[B](f: (A, Option[Int]) => GenTraversableOnce[B]): Iterator[B] = new flatMapIterator[B](f)
 
   /** Returns an iterator over all the elements of this iterator that satisfy the predicate `p`.
    *  The order of the elements is preserved.
