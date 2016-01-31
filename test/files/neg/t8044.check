@@ -1,0 +1,4 @@
+t8044.scala:3: error: not found: value _
+  def f = 42 match { case `_` : Int => `_` }   // doesn't leak quoted underscore
+                                       ^
+one error found

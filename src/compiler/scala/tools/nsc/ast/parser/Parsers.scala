@@ -1901,19 +1901,20 @@ self =>
       }
 
       /** {{{
-       *  Pattern1    ::= varid `:' TypePat
+       *  Pattern1    ::= boundvarid `:' TypePat
        *                |  `_' `:' TypePat
        *                |  Pattern2
-       *  SeqPattern1 ::= varid `:' TypePat
+       *  SeqPattern1 ::= boundvarid `:' TypePat
        *                |  `_' `:' TypePat
        *                |  [SeqPattern2]
        *  }}}
        */
       def pattern1(): Tree = pattern2() match {
         case p @ Ident(name) if in.token == COLON =>
-          if (treeInfo.isVarPattern(p))
+          if (nme.isVariableName(name)) {
+            p.removeAttachment[BackquotedIdentifierAttachment.type]
             atPos(p.pos.start, in.skipToken())(Typed(p, compoundType()))
-          else {
+          } else {
             syntaxError(in.offset, "Pattern variables must start with a lower-case letter. (SLS 8.1.1.)")
             p
           }
@@ -1921,9 +1922,9 @@ self =>
       }
 
       /** {{{
-       *  Pattern2    ::=  varid [ @ Pattern3 ]
+       *  Pattern2    ::=  boundvarid [ @ Pattern3 ]
        *                |   Pattern3
-       *  SeqPattern2 ::=  varid [ @ SeqPattern3 ]
+       *  SeqPattern2 ::=  boundvarid [ @ SeqPattern3 ]
        *                |   SeqPattern3
        *  }}}
        */
@@ -1935,7 +1936,7 @@ self =>
           case Ident(nme.WILDCARD) =>
             in.nextToken()
             pattern3()
-          case Ident(name) if treeInfo.isVarPattern(p) =>
+          case Ident(name) if nme.isVariableName(name) =>
             in.nextToken()
             atPos(p.pos.start) { Bind(name, pattern3()) }
           case _ => p
