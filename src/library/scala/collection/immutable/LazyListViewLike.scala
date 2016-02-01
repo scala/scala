@@ -4,18 +4,18 @@ package immutable
 
 import generic._
 
-trait StreamViewLike[+A,
+trait LazyListViewLike[+A,
 		     +Coll,
-		     +This <: StreamView[A, Coll] with StreamViewLike[A, Coll, This]]
+		     +This <: LazyListView[A, Coll] with LazyListViewLike[A, Coll, This]]
 extends SeqView[A, Coll]
    with SeqViewLike[A, Coll, This]
 { self =>
 
   override def force[B >: A, That](implicit bf: CanBuildFrom[Coll, B, That]) = {
-    self.iterator.toStream.asInstanceOf[That]
+    self.iterator.toLazyList.asInstanceOf[That]
   }
 
-  trait Transformed[+B] extends StreamView[B, Coll] with super.Transformed[B] {
+  trait Transformed[+B] extends LazyListView[B, Coll] with super.Transformed[B] {
     override def toString = viewToString
   }
 
@@ -69,5 +69,5 @@ extends SeqView[A, Coll]
     new { val from = _from; val patch = _patch; val replaced = _replaced } with AbstractTransformed[B] with Patched[B]
   }
 
-  override def stringPrefix = "StreamView"
+  override def stringPrefix = "LazyListView"
 }

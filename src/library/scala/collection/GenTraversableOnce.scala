@@ -14,6 +14,8 @@ import scala.collection.generic.CanBuildFrom
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
 import scala.language.higherKinds
 
+import scala.collection.immutable.LazyList
+
 /** A template trait for all traversable-once objects which may be
  *  traversed in parallel.
  *
@@ -556,10 +558,16 @@ trait GenTraversableOnce[+A] extends Any {
    */
   def toIndexedSeq: immutable.IndexedSeq[A]
 
-  /** Converts this $coll to a stream.
-   *  @return a stream containing all elements of this $coll.
+  /** Converts this $coll to a lazy list.
+   *  @return a lazy list containing all elements of this $coll.
    */
-  def toStream: Stream[A]
+  def toLazyList: LazyList[A]
+
+  /** Converts this $coll to a lazy list.
+   *  @return a lazy list containing all elements of this $coll.
+   */
+  @deprecated("Use toLazyList instead", "2.12")
+  def toStream: LazyList[A]
 
   /** Returns an Iterator over the elements in this $coll.  Will return
    *  the same Iterator if this instance is already an Iterator.

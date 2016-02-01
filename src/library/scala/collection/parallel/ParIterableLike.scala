@@ -13,6 +13,7 @@ import scala.language.{ higherKinds, implicitConversions }
 
 import scala.collection.mutable.Builder
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.immutable.LazyList
 import scala.collection.IterableLike
 import scala.collection.Parallel
 import scala.collection.Parallelizable
@@ -855,7 +856,9 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   override def toIndexedSeq: scala.collection.immutable.IndexedSeq[T] = seq.toIndexedSeq
 
-  override def toStream: Stream[T] = seq.toStream
+  override def toLazyList: LazyList[T] = seq.toStream
+  @deprecated("Use toLazyList instead", "2.12")
+  override def toStream: LazyList[T] = seq.toStream
 
   override def toIterator: Iterator[T] = splitter
 

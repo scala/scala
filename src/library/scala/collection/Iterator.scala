@@ -11,7 +11,7 @@ package collection
 
 import mutable.ArrayBuffer
 import scala.annotation.migration
-import immutable.Stream
+import immutable.LazyList
 
 /** The `Iterator` object provides various functions for creating specialized iterators.
  *
@@ -1350,9 +1350,11 @@ trait Iterator[+A] extends TraversableOnce[A] {
 
   def toTraversable: Traversable[A] = toStream
   def toIterator: Iterator[A] = self
-  def toStream: Stream[A] =
-    if (self.hasNext) Stream.cons(self.next(), self.toStream)
-    else Stream.empty[A]
+  def toLazyList: LazyList[A] = toStream
+  @deprecated("Use toLazyList instead", "2.12")
+  def toStream: LazyList[A] =
+    if (self.hasNext) LazyList.cons(self.next(), self.toStream)
+    else LazyList.empty[A]
 
 
   /** Converts this iterator to a string.

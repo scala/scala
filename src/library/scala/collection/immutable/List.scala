@@ -393,9 +393,11 @@ sealed abstract class List[+A] extends AbstractSeq[A]
 
   override def stringPrefix = "List"
 
-  override def toStream : Stream[A] =
-    if (isEmpty) Stream.Empty
-    else new Stream.Cons(head, tail.toStream)
+  override def toLazyList: LazyList[A] = toStream
+  @deprecated("Use toLazyList instead", "2.12")
+  override def toStream: LazyList[A] =
+    if (isEmpty) LazyList.Empty
+    else new LazyList.Cons(head, tail.toStream)
 
   // Create a proxy for Java serialization that allows us to avoid mutation
   // during de-serialization.  This is the Serialization Proxy Pattern.
