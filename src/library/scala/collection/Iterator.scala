@@ -419,7 +419,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    */
   def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] = new Iterator.JoinIterator(self, that)
 
-  private[this] class flatMapIterator[B](f: (A, Option[Int]) => GenTraversableOnce[B]) extends AbstractIterator[B] {
+  private[this] class FlatMapIterator[B](f: (A, Option[Int]) => GenTraversableOnce[B]) extends AbstractIterator[B] {
     private var l = 0
     private var cur: Iterator[B] = empty
     private def nextCur() { cur = f(self.next(), Some(l)).toIterator; l += 1 }
@@ -443,10 +443,10 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *           `f` to each value produced by this iterator and concatenating the results.
    *  @note    Reuse: $consumesAndProducesIterator
    */
-  def flatMap[B](f: A => GenTraversableOnce[B]): Iterator[B] = new flatMapIterator[B]((x, _) => f(x))
+  def flatMap[B](f: A => GenTraversableOnce[B]): Iterator[B] = new FlatMapIterator[B]((x, _) => f(x))
 
   //TODO pfperez: Add documentation
-  def sizedFlatMap[B](f: (A, Option[Int]) => GenTraversableOnce[B]): Iterator[B] = new flatMapIterator[B](f)
+  def sizedFlatMap[B](f: (A, Option[Int]) => GenTraversableOnce[B]): Iterator[B] = new FlatMapIterator[B](f)
 
   /** Returns an iterator over all the elements of this iterator that satisfy the predicate `p`.
    *  The order of the elements is preserved.
