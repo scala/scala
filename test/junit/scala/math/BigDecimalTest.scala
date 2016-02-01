@@ -260,4 +260,9 @@ class BigDecimalTest {
     testPrecision()
     testRounded()
   }
+
+  @Test
+  def testIsComparable() {
+    assert(BigDecimal(0.1).isInstanceOf[java.lang.Comparable[_]])
+  }
 }
