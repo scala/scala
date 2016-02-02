@@ -1,6 +1,7 @@
 package scala.reflect.io
 
-import java.io.{IOException, File => JFile}
+import java.io.{File => JFile, FileOutputStream, IOException}
+import java.util.zip.{ZipEntry, ZipOutputStream}
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,5 +34,21 @@ class ZipArchiveTest {
       case x: IOException =>
         assertTrue(x.getMessage, x.getMessage.contains(f.getPath))
     }
+  }
+
+  @Test
+  def closeFile: Unit = {
+    val f = JFile.createTempFile("test", ".zip")
+    val zf = new ZipOutputStream(new FileOutputStream(f))
+    zf.putNextEntry(new ZipEntry("data"))
+    zf.close()
+
+    val fza = new FileZipArchive(f)
+
+    fza.iterator
+
+    assertTrue(f.canWrite)
+
+    f.delete
   }
 }
