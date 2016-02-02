@@ -138,17 +138,6 @@ trait TraversableLike[+A, +Repr] extends Any
     result
   }
 
-  /** Tests whether this $coll is known to have a finite size.
-   *  All strict collections are known to have finite size. For a non-strict
-   *  collection such as `Stream`, the predicate returns `'''true'''` if all
-   *  elements have been computed. It returns `'''false'''` if the stream is
-   *  not yet evaluated to the end.
-   *
-   *  Note: many collection methods will not work on collections of infinite sizes.
-   *
-   *  @return  `'''true'''` if this collection is known to have finite size,
-   *           `'''false'''` otherwise.
-   */
   def hasDefiniteSize = true
 
   def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
