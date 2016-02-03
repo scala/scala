@@ -1,0 +1,331 @@
+package scala.issues
+
+import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
+import org.junit.Test
+import scala.tools.asm.Opcodes._
+import org.junit.Assert._
+
+import scala.tools.nsc.backend.jvm.{AsmUtils, CodeGenTools}
+
+import CodeGenTools._
+import scala.tools.partest.ASMConverters
+import ASMConverters._
+import AsmUtils._
+
+import scala.tools.testing.ClearAfterClass
+
+object OptimizedBytecodeTest extends ClearAfterClass.Clearable {
+  val args = "-Yopt:l:classpath -Yopt-warnings"
+  var compiler = newCompiler(extraArgs = args)
+  def clear(): Unit = { compiler = null }
+}
+
+@RunWith(classOf[JUnit4])
+class OptimizedBytecodeTest extends ClearAfterClass {
+  ClearAfterClass.stateToClear = OptimizedBytecodeTest
+
+  val compiler = OptimizedBytecodeTest.compiler
+
+  @Test
+  def t2171(): Unit = {
+    val code =
+      """class C {
+        |  final def m(msg: => String) = try 0 catch { case ex: Throwable => println(msg) }
+        |  def t(): Unit = while (true) m("...")
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(compiler)(code)
+    assertSameCode(getSingleMethod(c, "t").instructions.dropNonOp, List(Label(0), Jump(GOTO, Label(0))))
+  }
+
+  @Test
+  def t3430(): Unit = {
+    val code =
+      """class C {
+        |  final def m(f: String => Boolean) = f("a")
+        |  def t(): Boolean =
+        |    m { s1 =>
+        |      m { s2 =>
+        |        while (true) { }
+        |        true
+        |      }
+        |    }
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(compiler)(code)
+
+    assertEquals(
+      getSingleMethod(c, "t").instructions.summary,
+      List(LDC, ASTORE, ALOAD /*0*/, ALOAD /*1*/, "C$$$anonfun$1", IRETURN))
+
+    assertEquals(
+      getSingleMethod(c, "C$$$anonfun$1").instructions.summary,
+      List(LDC, "C$$$anonfun$2", IRETURN))
+
+    assertEquals(
+      getSingleMethod(c, "C$$$anonfun$2").instructions.summary,
+      List(-1 /*A*/, GOTO /*A*/))
+  }
+
+  @Test
+  def t3252(): Unit = {
+    val code =
+      """class C {
+        |  def t(x: Boolean): Thread = {
+        |    g {
+        |      x match {
+        |        case false => Tat.h { }
+        |      }
+        |    }
+        |  }
+        |
+        |  private def g[T](block: => T) = ???
+        |}
+        |object Tat {
+        |  def h(block: => Unit): Nothing = ???
+        |}
+      """.stripMargin
+    val List(c, t, tMod) = compileClasses(compiler)(code, allowMessage = _.msg.contains("not be exhaustive"))
+    assertEquals(
+      getSingleMethod(c, "t").instructions.summary,
+      List(GETSTATIC, "$qmark$qmark$qmark", ATHROW))
+  }
+
+  @Test
+  def t6157(): Unit = {
+    val code =
+      """class C {
+        |  def t = println(ErrorHandler.defaultIfIOException("String")("String"))
+        |}
+        |object ErrorHandler {
+        |  import java.io.IOException
+        |  @inline
+        |  def defaultIfIOException[T](default: => T)(closure: => T): T = try closure catch {
+        |    case e: IOException => default
+        |  }
+        |}
+      """.stripMargin
+
+    val msg =
+      """ErrorHandler$::defaultIfIOException(Lscala/Function0;Lscala/Function0;)Ljava/lang/Object; is annotated @inline but could not be inlined:
+        |The operand stack at the callsite in C::t()V contains more values than the
+        |arguments expected by the callee ErrorHandler$::defaultIfIOException(Lscala/Function0;Lscala/Function0;)Ljava/lang/Object;. These values would be discarded
+        |when entering an exception handler declared in the inlined method.""".stripMargin
+
+    compileClasses(compiler)(code, allowMessage = _.msg == msg)
+  }
+
+  @Test
+  def t6547(): Unit = { // "pos" test -- check that it compiles
+    val code =
+      """trait ConfigurableDefault[@specialized V] {
+        |  def fillArray(arr: Array[V], v: V) = (arr: Any) match {
+        |    case x: Array[Int]  => null
+        |    case x: Array[Long] => v.asInstanceOf[Long]
+        |  }
+        |}
+      """.stripMargin
+    compileClasses(compiler)(code)
+  }
+
+  @Test
+  def t8062(): Unit = {
+    val c1 =
+      """package warmup
+        |object Warmup { def filter[A](p: Any => Boolean): Any = filter[Any](p) }
+      """.stripMargin
+    val c2 = "class C { def t = warmup.Warmup.filter[Any](x => false) }"
+    val List(c, _, _) = compileClassesSeparately(List(c1, c2), extraArgs = OptimizedBytecodeTest.args)
+    assertInvoke(getSingleMethod(c, "t"), "warmup/Warmup$", "filter")
+  }
+
+  @Test
+  def t8306(): Unit = { // "pos" test
+    val code =
+      """class C {
+        |  def foo: Int = 123
+        |  lazy val extension: Int = foo match {
+        |    case idx if idx != -1 => 15
+        |    case _ => 17
+        |  }
+        |}
+      """.stripMargin
+    compileClasses(compiler)(code)
+  }
+
+  @Test
+  def t8359(): Unit = { // "pos" test
+    // This is a minimization of code that crashed the compiler during bootstrapping
+    // in the first iteration of https://github.com/scala/scala/pull/4373, the PR
+    // that adjusted the order of free and declared params in LambdaLift.
+
+    // Was:
+    //  java.lang.AssertionError: assertion failed:
+    //  Record Record(<$anon: Function1>,Map(value a$1 -> Deref(LocalVar(value b)))) does not contain a field value b$1
+    // at scala.tools.nsc.Global.assert(Global.scala:262)
+    // at scala.tools.nsc.backend.icode.analysis.CopyPropagation$copyLattice$State.getFieldNonRecordValue(CopyPropagation.scala:113)
+    // at scala.tools.nsc.backend.icode.analysis.CopyPropagation$copyLattice$State.getFieldNonRecordValue(CopyPropagation.scala:122)
+    // at scala.tools.nsc.backend.opt.ClosureElimination$ClosureElim$$anonfun$analyzeMethod$1$$anonfun$apply$2.replaceFieldAccess$1(ClosureElimination.scala:124)
+    val code =
+      """package test
+        |class Typer {
+        |  def bar(a: Boolean, b: Boolean): Unit = {
+        |    @inline
+        |    def baz(): Unit = {
+        |      ((_: Any) => (Typer.this, a, b)).apply("")
+        |    }
+        |    ((_: Any) => baz()).apply("")
+        |  }
+        |}
+      """.stripMargin
+    compileClasses(compiler)(code)
+  }
+
+  @Test
+  def t9123(): Unit = { // "pos" test
+    val code =
+      """trait Setting {
+        |  type T
+        |  def value: T
+        |}
+        |object Test {
+        |  def test(x: Some[Setting]) = x match {
+        |    case Some(dep) => Some(dep.value) map (_ => true)
+        |  }
+        |}
+      """.stripMargin
+    compileClasses(compiler)(code)
+  }
+
+  @Test
+  def traitForceInfo(): Unit = {
+    // This did NOT crash unless it's in the interactive package.
+    // error: java.lang.AssertionError: assertion failed: trait Contexts.NoContext$ linkedModule: <none>List()
+    //  at scala.Predef$.assert(Predef.scala:160)
+    //  at scala.tools.nsc.symtab.classfile.ClassfileParser$innerClasses$.innerSymbol$1(ClassfileParser.scala:1211)
+    //  at scala.tools.nsc.symtab.classfile.ClassfileParser$innerClasses$.classSymbol(ClassfileParser.scala:1223)
+    //  at scala.tools.nsc.symtab.classfile.ClassfileParser.classNameToSymbol(ClassfileParser.scala:489)
+    //  at scala.tools.nsc.symtab.classfile.ClassfileParser.sig2type$1(ClassfileParser.scala:757)
+    //  at scala.tools.nsc.symtab.classfile.ClassfileParser.sig2type$1(ClassfileParser.scala:789)
+    val code =
+      """package scala.tools.nsc
+        |package interactive
+        |
+        |trait MyContextTrees {
+        |  val self: Global
+        |  val NoContext = self.analyzer.NoContext
+        |}
+      """.stripMargin
+    compileClasses(compiler)(code)
+  }
+
+  @Test
+  def t9160(): Unit = {
+    val code =
+      """class C {
+        |  def getInt: Int = 0
+        |  def t(trees: Object): Int = {
+        |    trees match {
+        |      case Some(elems) =>
+        |      case tree => getInt
+        |    }
+        |    55
+        |  }
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(compiler)(code)
+    assertEquals(
+      getSingleMethod(c, "t").instructions.summary,
+      List(
+        ALOAD /*1*/, INSTANCEOF /*Some*/, IFNE /*A*/,
+        ALOAD /*0*/, "getInt", POP,
+        -1 /*A*/, BIPUSH, IRETURN))
+  }
+
+  @Test
+  def t8796(): Unit = {
+    val code =
+      """final class C {
+        |  def pr(): Unit = ()
+        |  def t(index: Int): Unit = index match {
+        |    case 0 => pr()
+        |    case 1 => pr()
+        |    case _ => t(index - 2)
+        |  }
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(compiler)(code)
+    assertEquals(
+      getSingleMethod(c, "t").instructions.summary,
+      List(
+        -1 /*A*/, ILOAD /*1*/, TABLESWITCH,
+        -1, ALOAD, "pr", RETURN,
+        -1, ALOAD, "pr", RETURN,
+        -1, ILOAD, ICONST_2, ISUB, ISTORE, GOTO /*A*/))
+  }
+
+  @Test
+  def t8524(): Unit = {
+    val c1 =
+      """package library
+        |object Library {
+        |  @inline def pleaseInlineMe() = 1
+        |  object Nested { @inline def pleaseInlineMe() = 2 }
+        |}
+      """.stripMargin
+
+    val c2 =
+      """class C {
+        |  def t = library.Library.pleaseInlineMe() + library.Library.Nested.pleaseInlineMe()
+        |}
+      """.stripMargin
+
+    val cls = compileClassesSeparately(List(c1, c2), extraArgs = OptimizedBytecodeTest.args)
+    val c = cls.find(_.name == "C").get
+    assertEquals(
+      getSingleMethod(c, "t").instructions.summary,
+      List(
+        GETSTATIC, IFNONNULL, ACONST_NULL, ATHROW, // module load and null checks not yet eliminated
+        -1, ICONST_1, GETSTATIC, IFNONNULL, ACONST_NULL, ATHROW,
+        -1, ICONST_2, IADD, IRETURN))
+  }
+
+  @Test
+  def privateInline(): Unit = {
+    val code =
+      """final class C {
+        |  private var x1 = false
+        |  var x2 = false
+        |
+        |  @inline private def wrapper1[T](body: => T): T = {
+        |    val saved = x1
+        |    x1 = true
+        |    try body
+        |    finally x1 = saved
+        |  }
+        |
+        |  @inline private def wrapper2[T](body: => T): T = {
+        |    val saved = x2
+        |    x2 = true
+        |    try body
+        |    finally x2 = saved
+        |  }
+        |   // inlined
+        |  def f1a() = wrapper1(5)
+        |  // not inlined: even after inlining `identity`, the Predef module is already on the stack for the
+        |  // subsequent null check (the receiver of an inlined method, in this case Predef, is checked for
+        |  // nullness, to ensure an NPE is thrown)
+        |  def f1b() = identity(wrapper1(5))
+        |
+        |  def f2a() = wrapper2(5)            // inlined
+        |  def f2b() = identity(wrapper2(5))  // not inlined
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(compiler)(code, allowMessage = _.msg.contains("exception handler declared in the inlined method"))
+    assertInvoke(getSingleMethod(c, "f1a"), "C", "C$$$anonfun$1")
+    assertInvoke(getSingleMethod(c, "f1b"), "C", "wrapper1")
+    assertInvoke(getSingleMethod(c, "f2a"), "C", "C$$$anonfun$3")
+    assertInvoke(getSingleMethod(c, "f2b"), "C", "wrapper2")
+  }
+}
