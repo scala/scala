@@ -48,7 +48,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     groupNames0:     Map[String,Body] = Map.empty,
     groupPrio0:      Map[String,Body] = Map.empty
   ) : Comment = new Comment{
-    val body           = if(body0 isDefined) body0.get else Body(Seq.empty)
+    val body           = body0 getOrElse Body(Seq.empty)
     val authors        = authors0
     val see            = see0
     val result         = result0
@@ -83,13 +83,9 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     }
     val groupNames     = groupNames0 flatMap {
       case (group, body) =>
-        try {
-          body match {
-            case Body(List(Paragraph(Chain(List(Summary(Text(name))))))) if (!name.trim.contains("\n")) => List(group -> (name.trim))
-            case _                                                       => List()
-          }
-        } catch {
-          case _: java.lang.NumberFormatException => List()
+        body match {
+          case Body(List(Paragraph(Chain(List(Summary(Text(name))))))) if (!name.trim.contains("\n")) => List(group -> (name.trim))
+          case _                                                       => List()
         }
     }
 
@@ -165,11 +161,11 @@ trait CommentFactoryBase { this: MemberLookupBase =>
   private val SymbolTagRegex =
     new Regex("""\s*@(param|tparam|throws|groupdesc|groupname|groupprio)\s+(\S*)\s*(.*)""")
 
-  /** The start of a scaladoc code block */
+  /** The start of a Scaladoc code block */
   private val CodeBlockStartRegex =
     new Regex("""(.*?)((?:\{\{\{)|(?:\u000E<pre(?: [^>]*)?>\u000E))(.*)""")
 
-  /** The end of a scaladoc code block */
+  /** The end of a Scaladoc code block */
   private val CodeBlockEndRegex =
     new Regex("""(.*?)((?:\}\}\})|(?:\u000E</pre>\u000E))(.*)""")
 
@@ -183,6 +179,8 @@ trait CommentFactoryBase { this: MemberLookupBase =>
   private final case class SimpleTagKey(name: String) extends TagKey
   private final case class SymbolTagKey(name: String, symbol: String) extends TagKey
 
+  private val TrailingWhitespaceRegex = """\s+$""".r
+
   /** Parses a raw comment string into a `Comment` object.
     * @param comment The expanded comment string (including start and end markers) to be parsed.
     * @param src     The raw comment source string.
@@ -192,8 +190,8 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       * start and end markers, line start markers  and unnecessary whitespace. */
     def clean(comment: String): List[String] = {
       def cleanLine(line: String): String = {
-        //replaceAll removes trailing whitespaces
-        line.replaceAll("""\s+$""", "") match {
+        // Remove trailing whitespaces
+        TrailingWhitespaceRegex.replaceAllIn(line, "") match {
           case CleanCommentLine(ctl) => ctl
           case tl => tl
         }
@@ -321,7 +319,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         def oneTag(key: SimpleTagKey, filterEmpty: Boolean = true): Option[Body] =
           ((bodyTags remove key): @unchecked) match {
             case Some(r :: rs) if !(filterEmpty && r.blocks.isEmpty) =>
-              if (!rs.isEmpty) reporter.warning(pos, "Only one '@" + key.name + "' tag is allowed")
+              if (!rs.isEmpty) reporter.warning(pos, s"Only one '@${key.name}' tag is allowed")
               Some(r)
             case _ => None
           }
@@ -334,7 +332,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
             bodyTags.keys.toSeq flatMap {
               case stk: SymbolTagKey if (stk.name == key.name) => Some(stk)
               case stk: SimpleTagKey if (stk.name == key.name) =>
-                reporter.warning(pos, "Tag '@" + stk.name + "' must be followed by a symbol name")
+                reporter.warning(pos, s"Tag '@${stk.name}' must be followed by a symbol name")
                 None
               case _ => None
             }
@@ -342,7 +340,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
             for (key <- keys) yield {
               val bs = (bodyTags remove key).get
               if (bs.length > 1)
-                reporter.warning(pos, "Only one '@" + key.name + "' tag for symbol " + key.symbol + " is allowed")
+                reporter.warning(pos, s"Only one '@${key.name}' tag for symbol ${key.symbol} is allowed")
               (key.symbol, bs.head)
             }
           Map.empty[String, Body] ++ (if (filterEmpty) pairs.filterNot(_._2.blocks.isEmpty) else pairs)
@@ -389,7 +387,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         )
 
         for ((key, _) <- bodyTags)
-          reporter.warning(pos, "Tag '@" + key.name + "' is not recognised")
+          reporter.warning(pos, s"Tag '@${key.name}' is not recognised")
 
         com
 
@@ -424,7 +422,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
     /* BLOCKS */
 
-    /** {{{ block ::= code | title | hrule | para }}} */
+    /** {{{ block ::= code | title | hrule | listBlock | para }}} */
     def block(): Block = {
       if (checkSkipInitWhitespace("{{{"))
         code()
@@ -459,7 +457,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       *      nLine ::= nSpc listStyle para '\n'
       * }}}
       * Where n and m stand for the number of spaces. When `m > n`, a new list is nested. */
-    def listBlock: Block = {
+    def listBlock(): Block = {
 
       /** Consumes one list item block and returns it, or None if the block is
         * not a list or a different list. */

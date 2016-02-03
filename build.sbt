@@ -53,7 +53,7 @@
  *     https://groups.google.com/d/topic/scala-internals/gp5JsM1E0Fo/discussion
  */
 
-import VersionUtil.{versionProps, versionNumber, generatePropertiesFileSettings, versionProperties, versionPropertiesSettings}
+import VersionUtil._
 
 val bootstrapScalaVersion = versionProps("starr.version")
 
@@ -94,13 +94,27 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
       (f, to)
     }
     IO.copy(mappings)
-  }
+  },
+  credentials ++= {
+    val file = Path.userHome / ".credentials"
+    if (file.exists) List(Credentials(file))
+    else Nil
+  },
+  publishMavenStyle := true
 )
 
-lazy val commonSettings = clearSourceAndResourceDirectories ++ versionPropertiesSettings ++ publishSettings ++ Seq[Setting[_]](
+// Set the version number: The ANT build uses the file "build.number" to get the base version. Overriding versions or
+// suffixes for certain builds is done by directly setting variables from the shell scripts. For example, in
+// publish-core this requires computing the commit SHA first and then passing it to ANT. In the sbt build we use
+// the two settings `baseVersion` and `baseVersionSuffix` to compute all versions (canonical, Maven, OSGi). See
+// VersionUtil.versionPropertiesImpl for details. The standard sbt `version` setting should not be set directly. It
+// is the same as the Maven version and derived automatically from `baseVersion` and `baseVersionSuffix`.
+globalVersionSettings
+baseVersion in Global := "2.12.0"
+baseVersionSuffix in Global := "SNAPSHOT"
+
+lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings ++ Seq[Setting[_]](
   organization := "org.scala-lang",
-  // The ANT build uses the file "build.number" and the property "build.release" to compute the version
-  version := "2.12.0-SNAPSHOT",
   scalaVersion := bootstrapScalaVersion,
   // we don't cross build Scala itself
   crossPaths := false,
@@ -620,7 +634,13 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
 
 lazy val root = (project in file("."))
   .settings(disableDocs: _*)
-  .settings(publishArtifact := false)
+  .settings(generateBuildCharacterFileSettings: _*)
+  .settings(
+    publishArtifact := false,
+    publish := {},
+    publishLocal := {},
+    commands ++= ScriptCommands.all
+  )
   .aggregate(library, reflect, compiler, interactive, repl, replJline, replJlineEmbedded,
     scaladoc, scalap, partestExtras, junit, libraryAll, scalaDist).settings(
     sources in Compile := Seq.empty,
@@ -715,9 +735,10 @@ lazy val mkBinImpl: Def.Initialize[Task[Seq[File]]] = Def.task {
       scalaTool.writeScript(file, "windows", rootDir, outDir)
     )
     res.foreach { f =>
-      //TODO 2.12: Use Files.setPosixFilePermissions() (Java 7+) instead of calling out to chmod
-      if(Process(List("chmod", "ugo+rx", f.getAbsolutePath())).! > 0)
-        throw new IOException("chmod failed")
+      if(!f.getAbsoluteFile.setExecutable(true, /* ownerOnly: */ false))
+        throw new IOException("setExecutable failed")
+      if(!f.getAbsoluteFile.setReadable(true, /* ownerOnly: */ false))
+        throw new IOException("setReadable failed")
     }
     res
   }

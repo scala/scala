@@ -5,19 +5,27 @@ import java.io.FileInputStream
 import scala.collection.JavaConverters._
 
 object VersionUtil {
+  lazy val baseVersion = settingKey[String]("The base version number from which all others are derived")
+  lazy val baseVersionSuffix = settingKey[String]("Identifies the kind of version to build")
   lazy val copyrightString = settingKey[String]("Copyright string.")
   lazy val versionProperties = settingKey[Versions]("Version properties.")
   lazy val generateVersionPropertiesFile = taskKey[File]("Generating version properties file.")
+  lazy val generateBuildCharacterPropertiesFile = taskKey[File]("Generating buildcharacter.properties file.")
 
-  lazy val versionPropertiesSettings = Seq[Setting[_]](
-    versionProperties := versionPropertiesImpl.value
+  lazy val globalVersionSettings = Seq[Setting[_]](
+    // Set the version properties globally (they are the same for all projects)
+    versionProperties in Global := versionPropertiesImpl.value,
+    version in Global := versionProperties.value.mavenVersion
   )
 
   lazy val generatePropertiesFileSettings = Seq[Setting[_]](
     copyrightString := "Copyright 2002-2015, LAMP/EPFL",
     resourceGenerators in Compile += generateVersionPropertiesFile.map(file => Seq(file)).taskValue,
-    versionProperties := versionPropertiesImpl.value,
     generateVersionPropertiesFile := generateVersionPropertiesFileImpl.value
+  )
+
+  lazy val generateBuildCharacterFileSettings = Seq[Setting[_]](
+    generateBuildCharacterPropertiesFile := generateBuildCharacterPropertiesFileImpl.value
   )
 
   case class Versions(canonicalVersion: String, mavenVersion: String, osgiVersion: String, commitSha: String, commitDate: String, isRelease: Boolean) {
@@ -28,30 +36,36 @@ object VersionUtil {
 
     override def toString = s"Canonical: $canonicalVersion, Maven: $mavenVersion, OSGi: $osgiVersion, github: $githubTree"
 
-    def toProperties: Properties = {
-      val props = new Properties
-      props.put("version.number", canonicalVersion)
-      props.put("maven.version.number", mavenVersion)
-      props.put("osgi.version.number", osgiVersion)
-      props
-    }
+    def toMap: Map[String, String] = Map(
+      "version.number" -> canonicalVersion,
+      "maven.version.number" -> mavenVersion,
+      "osgi.version.number" -> osgiVersion
+    )
   }
 
-  lazy val versionPropertiesImpl: Def.Initialize[Versions] = Def.setting {
-    /** Regexp that splits version number split into two parts: version and suffix.
-      * Examples of how the split is performed:
-      *
-      *  "2.11.5": ("2.11.5", null)
-      *  "2.11.5-acda7a": ("2.11.5", "-acda7a")
-      *  "2.11.5-SNAPSHOT": ("2.11.5", "-SNAPSHOT") */
-    val versionSplitted = """([\w+\.]+)(-[\w+\.]+)??""".r
+  /** Compute the canonical, Maven and OSGi version number from `baseVersion` and `baseVersionSuffix`.
+    * Examples of the generated versions:
+    *
+    * ("2.11.8", "SNAPSHOT"    ) -> ("2.11.8-20151215-133023-7559aed3c5", "2.11.8-SNAPSHOT",            "2.11.8.v20151215-133023-7559aed3c5")
+    * ("2.11.8", "SHA-SNAPSHOT") -> ("2.11.8-20151215-133023-7559aed3c5", "2.11.8-7559aed3c5-SNAPSHOT", "2.11.8.v20151215-133023-7559aed3c5")
+    * ("2.11.8", ""            ) -> ("2.11.8",                            "2.11.8",                     "2.11.8.v20151215-133023-VFINAL-7559aed3c5")
+    * ("2.11.8", "M3"          ) -> ("2.11.8-M3",                         "2.11.8-M3",                  "2.11.8.v20151215-133023-M3-7559aed3c5")
+    * ("2.11.8", "RC4"         ) -> ("2.11.8-RC4",                        "2.11.8-RC4",                 "2.11.8.v20151215-133023-RC4-7559aed3c5")
+    * ("2.11.8-RC4", "SPLIT"   ) -> ("2.11.8-RC4",                        "2.11.8-RC4",                 "2.11.8.v20151215-133023-RC4-7559aed3c5")
+    *
+    * A `baseVersionSuffix` of "SNAPSHOT" is the default, which is used for local snapshot builds. The PR validation
+    * job uses "SHA-SNAPSHOT". An empty suffix is used for releases. All other suffix values are treated as RC /
+    * milestone builds. The special suffix value "SPLIT" is used to split the real suffix off from `baseVersion`
+    * instead and then apply the usual logic. */
+  private lazy val versionPropertiesImpl: Def.Initialize[Versions] = Def.setting {
 
-    val versionSplitted(ver, suffixOrNull) = version.value
-
-    val osgiSuffix = suffixOrNull match {
-      case null => "-VFINAL"
-      case "-SNAPSHOT" => ""
-      case suffixStr => suffixStr
+    val (base, suffix) = {
+      val (b, s) = (baseVersion.value, baseVersionSuffix.value)
+      if(s == "SPLIT") {
+        val split = """([\w+\.]+)(-[\w+\.]+)??""".r
+        val split(b2, sOrNull) = b
+        (b2, Option(sOrNull).map(_.drop(1)).getOrElse(""))
+      } else (b, s)
     }
 
     def executeTool(tool: String) = {
@@ -62,24 +76,31 @@ object VersionUtil {
       Process(cmd).lines.head
     }
 
-    val commitDate = executeTool("get-scala-commit-date")
-    val commitSha = executeTool("get-scala-commit-sha")
+    val date = executeTool("get-scala-commit-date")
+    val sha = executeTool("get-scala-commit-sha").substring(0, 7) // The script produces 10 digits at the moment
 
-    Versions(
-      canonicalVersion = s"$ver-$commitDate-$commitSha",
-      mavenVersion = s"${version.value}",
-      osgiVersion = s"$ver.v$commitDate$osgiSuffix-$commitSha",
-      commitSha = commitSha,
-      commitDate = commitDate,
-      isRelease = !osgiSuffix.isEmpty
-    )
+    val (canonicalV, mavenV, osgiV, release) = suffix match {
+      case "SNAPSHOT"     => (s"$base-$date-$sha", s"$base-SNAPSHOT",      s"$base.v$date-$sha",         false)
+      case "SHA-SNAPSHOT" => (s"$base-$date-$sha", s"$base-$sha-SNAPSHOT", s"$base.v$date-$sha",         false)
+      case ""             => (s"$base",            s"$base",               s"$base.v$date-VFINAL-$sha",  true)
+      case suffix         => (s"$base-$suffix",    s"$base-$suffix",       s"$base.v$date-$suffix-$sha", true)
+    }
+
+    Versions(canonicalV, mavenV, osgiV, sha, date, release)
   }
 
-  lazy val generateVersionPropertiesFileImpl: Def.Initialize[Task[File]] = Def.task {
-    val props = versionProperties.value.toProperties
-    val propFile = (resourceManaged in Compile).value / s"${thisProject.value.id}.properties"
-    props.put("copyright.string", copyrightString.value)
+  private lazy val generateVersionPropertiesFileImpl: Def.Initialize[Task[File]] = Def.task {
+    writeProps(versionProperties.value.toMap + ("copyright.string" -> copyrightString.value),
+      (resourceManaged in Compile).value / s"${thisProject.value.id}.properties")
+  }
 
+  private lazy val generateBuildCharacterPropertiesFileImpl: Def.Initialize[Task[File]] = Def.task {
+    writeProps(versionProperties.value.toMap, (baseDirectory in ThisBuild).value / "buildcharacter.properties")
+  }
+
+  private def writeProps(m: Map[String, String], propFile: File): File = {
+    val props = new Properties
+    m.foreach { case (k, v) => props.put(k, v) }
     // unfortunately, this will write properties in arbitrary order
     // this makes it harder to test for stability of generated artifacts
     // consider using https://github.com/etiennestuder/java-ordered-properties

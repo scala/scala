@@ -157,6 +157,9 @@ object ManifestFactory {
     override def newArray(len: Int): Array[Unit] = new Array[Unit](len)
     override def newWrappedArray(len: Int): WrappedArray[Unit] = new WrappedArray.ofUnit(new Array[Unit](len))
     override def newArrayBuilder(): ArrayBuilder[Unit] = new ArrayBuilder.ofUnit()
+    override protected def arrayClass[T](tp: Class[_]): Class[Array[T]] =
+      if (tp eq runtimeClass) classOf[Array[scala.runtime.BoxedUnit]].asInstanceOf[Class[Array[T]]]
+      else super.arrayClass(tp)
     private def readResolve(): Any = Manifest.Unit
   }
 
