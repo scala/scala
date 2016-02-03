@@ -1,8 +1,16 @@
-#!/bin/bash -e
+#!/bin/bash -e -v -x
 
 baseDir=${WORKSPACE-`pwd`}
 scriptsDir="$baseDir/scripts"
 . $scriptsDir/common
+
+function runsbt() {
+  $SBT_CMD \
+     -Dstarr.version=$scalaVersion \
+     -Dextra.repo.url=$prRepoUrl \
+     $testExtraArgs \
+     "$@"
+}
 
 case $prDryRun in
 
@@ -13,33 +21,26 @@ case $prDryRun in
   *)
 
     # build quick using STARR built upstream, as specified by scalaVersion
-    # (in that sense it's locker, since it was built with starr by that upstream job)
-    $SBT_CMD \
-       -Dstarr.version=$scalaVersion \
-       -Dextra.repo.url=$prRepoUrl \
-       $testExtraArgs \
-       ${testTarget-test}
+    # (in that sense it's locker, since it was built with starr by that upstream job);
+    # and run JUnit tests
+    # runsbt ${testTarget-test}
 
-    # multiple invocations prevents PermGen exhaustion.
-    # we could go through sbt for this, and perhaps should in the future,
-    # in order to shake out any problems with sbt-partest-interface.
-    # for now, let's just take the most battle-tested path.
-    test/partest pos
-    test/partest neg
-    test/partest run
-    test/partest jvm
-    test/partest res
-    test/partest scalap
-    test/partest specialized
-    test/partest scalacheck
-    test/partest instrumented
-    test/partest presentation
+    # multiple invocations to conserve PermGen
+    runsbt "test/it:testOnly -- run"
+    runsbt "test/it:testOnly -- pos"
+    runsbt "test/it:testOnly -- neg"
+    runsbt "test/it:testOnly -- run"
+    runsbt "test/it:testOnly -- jvm"
+    runsbt "test/it:testOnly -- res"
+    runsbt "test/it:testOnly -- scalap"
+    runsbt "test/it:testOnly -- specialized"
+    runsbt "test/it:testOnly -- scalacheck"
+    runsbt "test/it:testOnly -- instrumented"
+    runsbt "test/it:testOnly -- presentation"
 
-    $SBT_CMD \
-       -Dstarr.version=$scalaVersion \
-       -Dextra.repo.url=$prRepoUrl \
-       $testExtraArgs \
-       doc
+    # make sure Scaladoc doesn't outright fail, at least
+    runsbt doc
+
     ;;
 
 esac
