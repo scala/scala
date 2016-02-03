@@ -1,0 +1,4 @@
+error: bad option: '-badCompilerFlag'
+error: bad options: -badCompilerFlag notAFlag -Yopt:badChoice
+error: flags file may only contain compiler options, found: -badCompilerFlag notAFlag -Yopt:badChoice
+three errors found
