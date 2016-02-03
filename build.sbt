@@ -64,7 +64,7 @@ val scalaParserCombinatorsDep = withoutScalaLang("org.scala-lang.modules" %% "sc
 val scalaSwingDep = withoutScalaLang("org.scala-lang.modules" %% "scala-swing" % versionNumber("scala-swing"))
 val scalaXmlDep = withoutScalaLang("org.scala-lang.modules" %% "scala-xml" % versionNumber("scala-xml"))
 val partestDep = withoutScalaLang("org.scala-lang.modules" %% "scala-partest" % versionNumber("partest"))
-val partestInterfaceDep = withoutScalaLang("org.scala-lang.modules" %% "scala-partest-interface" % "0.5.0")
+val partestInterfaceDep = withoutScalaLang("org.scala-lang.modules" %% "scala-partest-interface" % "0.7.0")
 val junitDep = "junit" % "junit" % "4.11"
 val junitIntefaceDep = "com.novocode" % "junit-interface" % "0.11" % "test"
 val asmDep = "org.scala-lang.modules" % "scala-asm" % versionProps("scala-asm.version")
@@ -524,8 +524,8 @@ lazy val test = project
   .settings(
     publishArtifact := false,
     libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep, partestInterfaceDep, scalacheckDep),
-    unmanagedBase in Test := baseDirectory.value / "files" / "lib",
-    unmanagedJars in Test <+= (unmanagedBase) (j => Attributed.blank(j)) map(identity),
+    unmanagedBase in IntegrationTest := baseDirectory.value / "files" / "lib",
+    unmanagedJars in IntegrationTest <+= (unmanagedBase) (j => Attributed.blank(j)) map(identity),
     // no main sources
     sources in Compile := Seq.empty,
     // test sources are compiled in partest run, not here
@@ -534,6 +534,7 @@ lazy val test = project
     javaOptions in IntegrationTest += "-Xmx1G",
     testFrameworks += new TestFramework("scala.tools.partest.Framework"),
     testOptions in IntegrationTest += Tests.Setup( () => root.base.getAbsolutePath + "/pull-binary-libs.sh" ! ),
+    testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M -XX:MaxPermSize=128M"),
     definedTests in IntegrationTest += (
       new sbt.TestDefinition(
         "partest",
@@ -637,8 +638,14 @@ lazy val dist = (project in file("dist"))
   .settings(
     libraryDependencies ++= Seq(scalaSwingDep, jlineDep),
     mkBin := mkBinImpl.value,
-    mkQuick <<= Def.task {} dependsOn ((distDependencies.map(products in Runtime in _) :+ mkBin): _*),
-    mkPack <<= Def.task {} dependsOn (packageBin in Compile, mkBin),
+    mkQuick <<= Def.task {
+      val cp = (fullClasspath in IntegrationTest in LocalProject("test")).value
+      val propsFile = (buildDirectory in ThisBuild).value / "quick" / "partest.properties"
+      val props = new java.util.Properties()
+      props.setProperty("partest.classpath", cp.map(_.data.getAbsolutePath).mkString(sys.props("path.separator")))
+      IO.write(props, null, propsFile)
+    } dependsOn ((distDependencies.map(products in Runtime in _) :+ mkBin): _*),
+    mkPack <<= Def.task {} dependsOn (packagedArtifact in (Compile, packageBin), mkBin),
     target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id,
     packageBin in Compile := {
       val extraDeps = Set(scalaSwingDep, scalaParserCombinatorsDep, scalaXmlDep)
@@ -655,7 +662,7 @@ lazy val dist = (project in file("dist"))
     },
     cleanFiles += (buildDirectory in ThisBuild).value / "quick",
     cleanFiles += (buildDirectory in ThisBuild).value / "pack",
-    packageBin in Compile <<= (packageBin in Compile).dependsOn(distDependencies.map(packageBin in Compile in _): _*)
+    packagedArtifact in (Compile, packageBin) <<= (packagedArtifact in (Compile, packageBin)).dependsOn(distDependencies.map(packagedArtifact in (Compile, packageBin) in _): _*)
   )
   .dependsOn(distDependencies.map(p => p: ClasspathDep[ProjectReference]): _*)
 
