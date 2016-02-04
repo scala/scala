@@ -295,10 +295,12 @@ trait Infer extends Checkable {
         && !isByNameParamType(tp)
         && isCompatible(tp, dropByName(pt))
       )
-      def isCompatibleSam(tp: Type, pt: Type): Boolean = {
-        val samFun = typer.samToFunctionType(pt)
-        (samFun ne NoType) && isCompatible(tp, samFun)
-      }
+      def isCompatibleSam(tp: Type, pt: Type): Boolean =
+        (definitions.isFunctionType(tp) || tp.isInstanceOf[MethodType] || tp.isInstanceOf[PolyType]) &&  {
+          val samFun = typer.samToFunctionType(pt)
+          // TODO: OPT -- compare arity when tp is a function type?
+          (samFun ne NoType) && isCompatible(tp, samFun)
+        }
 
       val tp1 = normalize(tp)
 
