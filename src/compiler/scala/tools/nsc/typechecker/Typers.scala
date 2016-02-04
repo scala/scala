@@ -2780,19 +2780,23 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // solve constraints tracked by tvars
           val targs = solvedTypes(tvars, tparams, variances, upper = false, lubDepth(sam.info :: Nil))
 
-          debuglog(s"sam infer: $pt --> ${appliedType(samTyCon, targs)} by ${fun.tpe} <:< $samInfoWithTVars --> $targs for $tparams")
+          println(s"sam infer: $pt --> ${appliedType(samTyCon, targs)} by ${fun.tpe} <:< $samInfoWithTVars --> $targs for $tparams")
 
           // a fully defined samClassTp
           appliedType(samTyCon, targs)
         } catch {
-          case _: NoInstance | _: TypeError =>
-            devWarning(sampos, s"Could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)")
+          case _: NoInstance | _: TypeError => // TODO: we get here whenever pt contains a wildcardtype???
+            println(sampos, s"Could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)")
             pt
         }
 
-      debuglog(s"sam fully defined expected type: $ptFullyDefined from $pt for ${fun.tpe}")
+      println(s"sam fully defined expected type: $ptFullyDefined from $pt for ${fun.tpe}")
 
-      if (!(fun.tpe <:< ptFullyDefined)) return EmptyTree
+      val samFunTp = {
+        val samDefinedTp = ptFullyDefined memberInfo sam
+        functionType(samDefinedTp.paramTypes, samDefinedTp.finalResultType)
+      }
+      if (!(fun.tpe <:< samFunTp)) return EmptyTree
 
 
       // TODO: defer the remainder of this synthesis to the back-end, and use invokedynamic/LMF instead
