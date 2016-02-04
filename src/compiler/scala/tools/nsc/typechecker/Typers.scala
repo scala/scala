@@ -1049,7 +1049,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             return instantiate(tree, mode, pt)
 
           // we know `!(tree.tpe <:< pt)`, try to remedy if there's a sam for pt
-          val sam = if (tree.isInstanceOf[Function]) samOf(pt) else NoSymbol
+          val sam = if (tree.isInstanceOf[Function] && !isFunctionType(pt)) samOf(pt) else NoSymbol
           if (sam.exists && sameLength(sam.info.params, tree.asInstanceOf[Function].vparams)) {
             // Use synthesizeSAMFunction to expand `(p1: T1, ..., pN: TN) => body`
             // to an instance of the corresponding anonymous subclass of `pt`.
