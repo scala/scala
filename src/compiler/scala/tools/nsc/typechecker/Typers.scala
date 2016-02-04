@@ -5276,7 +5276,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (fun.symbol == NoSymbol)
           fun.symbol = context.owner.newAnonymousFunctionValue(fun.pos)
 
-        typerWithLocalContext(context.makeNewScope(fun, fun.symbol))(_.typedFunction(fun, mode, pt))
+        lazy val sam = samOf(pt)
+        typerWithLocalContext(context.makeNewScope(fun, fun.symbol))(_.typedFunction(fun, mode, pt)) match {
+          case fun: Function if !isPastTyper && !(fun.tpe <:< pt) && sam.exists && sameLength(sam.info.params, fun.vparams) && fun.vparams.length > 0 =>
+          // Use synthesizeSAMFunction to expand `(p1: T1, ..., pN: TN) => body`
+          // to an instance of the corresponding anonymous subclass of `pt`.
+           synthesizeSAMFunction(sam, fun, pt, mode)
+          case fun => fun
+        }
       }
 
       // Trees only allowed during pattern mode.
