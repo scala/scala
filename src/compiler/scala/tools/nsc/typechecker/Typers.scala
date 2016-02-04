@@ -1053,7 +1053,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (sam.exists && sameLength(sam.info.params, tree.asInstanceOf[Function].vparams)) {
             // Use synthesizeSAMFunction to expand `(p1: T1, ..., pN: TN) => body`
             // to an instance of the corresponding anonymous subclass of `pt`.
-            return synthesizeSAMFunction(sam, tree.asInstanceOf[Function], pt, mode)
+            val samTree = synthesizeSAMFunction(sam, tree.asInstanceOf[Function], pt, mode)
+            if (samTree ne EmptyTree) return samTree
           }
 
           if (context.implicitsEnabled && !pt.isError && !tree.isErrorTyped) {
@@ -2788,6 +2789,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             devWarning(sampos, s"Could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)")
             pt
         }
+
+      debuglog(s"sam fully defined expected type: $ptFullyDefined from $pt for ${fun.tpe}")
+
+      if (!(fun.tpe <:< ptFullyDefined)) return EmptyTree
+
 
       // TODO: defer the remainder of this synthesis to the back-end, and use invokedynamic/LMF instead
       // can we carry a Function node down the pipeline if it has type `ptFullyDefined`, which is not a `FunctionN`?
