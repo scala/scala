@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+#
+# Script to compare the scaladoc of the current commit with the scaladoc
+# of the parent commit. No arguments.
+#
+
+set -e
+
+# opendiff for Mac OS X, meld for Ubuntu then default to other commands.
+displaydiff() {
+  case "$(uname -s)" in
+
+    Darwin)
+      if hash opendiff 2>/dev/null; then
+        echo opendiff "$@"
+        opendiff "$@"
+      else
+        echo diff "$@"
+        diff -y "$@" | less -N
+      fi
+    ;;
+
+    *)
+      if hash meld 2>/dev/null; then
+        echo meld "$@"
+        meld "$@"
+      elif hash gvimdiff 2>/dev/null; then
+        echo gvimdiff "$@"
+        gvimdiff "$@"
+      else
+        echo diff "$@"
+        diff -y "$@" | less -N
+      fi
+    ;;
+  esac
+}
+
+oldsha=$(git rev-parse --short HEAD^)
+
+# Use branch name defaulting to SHA1 when not available for example when in
+# detached HEAD state.
+sha=$(git symbolic-ref -q --short HEAD || git rev-parse --short HEAD)
+
+echo "parent commit sha  : $oldsha"
+echo "current commit sha : $sha"
+
+# create scaladoc for parent commit if not done already
+if [ ! -f "build/scaladoc-output-$oldsha.txt" ]
+then
+  echo "making scaladoc for parent commit ($oldsha)"
+  git checkout -q $oldsha
+  ant docs.lib -Dscaladoc.raw.output='yes' > build/scaladoc-output-$oldsha.txt
+  rm -rf build/scaladoc-${oldsha}
+  mv build/scaladoc build/scaladoc-${oldsha}
+  git checkout -q $sha
+fi
+
+# create scaladoc for current commit
+echo "making scaladoc for current commit ($sha)"
+ant docs.lib -Dscaladoc.raw.output='yes' > build/scaladoc-output-$sha.txt
+rm -rf build/scaladoc-${sha}
+mv build/scaladoc build/scaladoc-${sha}
+
+# Allow script to continue when diff results in -1
+set +e
+
+displaydiff build/scaladoc-output-$oldsha.txt build/scaladoc-output-$sha.txt
+
+# Adapted from tools/scaladoc-compare
+echo "Comparing versions with diff: build/scaladoc-${sha}/ build/scaladoc-$oldsha/"
+NEW_PATH=build/scaladoc-${sha}/
+OLD_PATH=build/scaladoc-$oldsha/
+
+
+NEWFILES=$(find $NEW_PATH -name '*.html.raw')
+if [ "$NEWFILES" == "" ]
+then
+  echo "No .html.raw files found in $NEW_PATH!"
+  exit 1
+fi
+
+for NEW_FILE in $NEWFILES
+do
+  OLD_FILE=${NEW_FILE/$NEW_PATH/$OLD_PATH}
+  if [ -f $OLD_FILE ]
+  then
+    DIFF=$(diff -q -w $NEW_FILE $OLD_FILE 2>&1)
+    if [ "$DIFF" != "" ]
+    then
+      displaydiff $OLD_FILE $NEW_FILE > /dev/null
+
+      echo "next [y\N]? "
+      read -n 1 -s input
+      if [ "$input" == "N" ]; then exit 0; fi
+    fi
+  else
+    echo
+    echo "New file:                 : $NEW_FILE"
+    echo "No corresponding old file : $OLD_FILE"
+
+    echo "next [y\N]? "
+    read -n 1 -s input
+    if [ "$input" == "N" ]; then exit 0; fi
+  fi
+done
+
+OLDFILES=$(find $OLD_PATH -name '*.html.raw')
+for OLD_FILE in $OLDFILES
+do
+  NEW_FILE=${OLD_FILE/$OLD_PATH/$NEW_PATH}
+  if [ ! -f $NEW_FILE ]
+  then
+    echo
+    echo "Old file:                 : $OLD_FILE"
+    echo "No corresponding new file : $NEW_FILE"
+  fi
+done

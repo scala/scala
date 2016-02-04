@@ -118,6 +118,12 @@ object Test extends InteractiveTest {
       }
     }
 
+    // The remainder of this test has been found to fail intermittently on Windows
+    // only.  The problem is difficult to isolate and reproduce; see
+    // https://github.com/scala/scala-dev/issues/72 for details.
+    // So if we're on Windows, let's just bail out here.
+    if (scala.util.Properties.isWin) return
+
     // Check inter-classes documentation one-time retrieved ok.
     val baseSource = findSource("Base.scala")
     val derivedSource = findSource("Derived.scala")

@@ -140,7 +140,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
                     if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty)
                       NodeSeq.Empty
                     else
-                      <li class="inherit out"><span>By inheritance</span></li>
+                      <li class="inherit out"><span>By Inheritance</span></li>
                   }
                 </ol>
               </div>
@@ -176,7 +176,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
               <span class="filtertype"></span>
               <ol>
                 <li class="hideall out"><span>Hide All</span></li>
-                <li class="showall in"><span>Show all</span></li>
+                <li class="showall in"><span>Show All</span></li>
               </ol>
             </div>
           }
