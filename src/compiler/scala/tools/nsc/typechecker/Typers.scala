@@ -2768,7 +2768,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val ptVars = appliedType(samTyCon, tvars)
 
           // carry over info from pt
-          ptVars =:= pt
+          ptVars <:< pt
 
           val samInfoWithTVars = ptVars.memberInfo(sam)
 
@@ -2780,17 +2780,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // solve constraints tracked by tvars
           val targs = solvedTypes(tvars, tparams, variances, upper = false, lubDepth(sam.info :: Nil))
 
-          println(s"sam infer: $pt --> ${appliedType(samTyCon, targs)} by ${fun.tpe} <:< $samInfoWithTVars --> $targs for $tparams")
+          debuglog(s"sam infer: $pt --> ${appliedType(samTyCon, targs)} by ${fun.tpe} <:< $samInfoWithTVars --> $targs for $tparams")
 
           // a fully defined samClassTp
           appliedType(samTyCon, targs)
         } catch {
-          case _: NoInstance | _: TypeError => // TODO: we get here whenever pt contains a wildcardtype???
-            println(sampos, s"Could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)")
-            pt
+          case e@(_: NoInstance | _: TypeError) => // TODO: we get here whenever pt contains a wildcardtype???
+            debuglog(s"Could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)\n$e")
+            return EmptyTree
         }
 
-      println(s"sam fully defined expected type: $ptFullyDefined from $pt for ${fun.tpe}")
+      debuglog(s"sam fully defined expected type: $ptFullyDefined from $pt for ${fun.tpe}")
 
       val samFunTp = {
         val samDefinedTp = ptFullyDefined memberInfo sam
