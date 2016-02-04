@@ -2752,7 +2752,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // As `samClassTp` determines a parent type for the class,
       // we can't type check `block` in one go unless `samClassTp` is fully defined.
       val ptFullyDefined =
-        if (isFullyDefined(pt)) pt
+        if (isFullyDefined(pt) && !isNonRefinementClassType(unwrapToClass(pt))) pt
         else try {
           val samClassSym = pt.typeSymbol
 
