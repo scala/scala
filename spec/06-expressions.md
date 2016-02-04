@@ -1390,6 +1390,9 @@ of a selection $e.x$, and $e$'s type conforms to class `scala.Dynamic`,
 then the selection is rewritten according to the rules for
 [dynamic member selection](#dynamic-member-selection).
 
+###### SAM conversion
+TODO
+
 ### Method Conversions
 
 The following four implicit conversions can be applied to methods
