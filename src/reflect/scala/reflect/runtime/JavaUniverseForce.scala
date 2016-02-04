@@ -266,7 +266,9 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.IterableClass
     definitions.ListClass
     definitions.SeqClass
-    definitions.StringBuilderClass
+    definitions.JavaStringBuilderClass
+    definitions.JavaStringBufferClass
+    definitions.JavaCharSequenceClass
     definitions.TraversableClass
     definitions.ListModule
     definitions.NilModule

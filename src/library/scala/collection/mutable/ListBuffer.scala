@@ -46,7 +46,7 @@ final class ListBuffer[A]
          with Buffer[A]
          with GenericTraversableTemplate[A, ListBuffer]
          with BufferLike[A, ListBuffer[A]]
-         with Builder[A, List[A]]
+         with ReusableBuilder[A, List[A]]
          with SeqForwarder[A]
          with Serializable
 {
@@ -297,6 +297,10 @@ final class ListBuffer[A]
 
 // Implementation of abstract method in Builder
 
+  /** Returns the accumulated `List`.
+   *
+   *  This method may be called multiple times to obtain snapshots of the list in different stages of construction.
+   */
   def result: List[A] = toList
 
   /** Converts this buffer to a list. Takes constant time. The buffer is

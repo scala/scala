@@ -21,7 +21,7 @@ class BoxUnbox[BT <: BTypes](val btypes: BT) {
   import backendUtils._
 
   /**
-   * Eliminate box-unbox paris within `method`. Such appear commonly after closure elimination:
+   * Eliminate box-unbox pairs within `method`. Such appear commonly after closure elimination:
    *
    *   def t2 = {
    *     val f = (b: Byte, i: Int) => i + b // no specialized variant for this function type
@@ -767,7 +767,7 @@ class BoxUnbox[BT <: BTypes](val btypes: BT) {
     private def isSpecializedTupleClass(tupleClass: InternalName) = specializedTupleClassR.pattern.matcher(tupleClass).matches
 
     private val specializedTupleGetterR = "_[12]\\$mc[IJDCZ]\\$sp".r
-    private def isSpecializedTupleGetter(mi: MethodInsnNode) = specializedTupleGetterR.pattern.matcher(mi.name)matches
+    private def isSpecializedTupleGetter(mi: MethodInsnNode) = specializedTupleGetterR.pattern.matcher(mi.name).matches
 
     private val tupleGetterR = "_\\d\\d?".r
     private def isTupleGetter(mi: MethodInsnNode) = tupleGetterR.pattern.matcher(mi.name).matches
