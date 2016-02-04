@@ -5098,7 +5098,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case Typed(expr, tpt) =>
             val tpt1  = typedType(tpt, mode)                           // type the ascribed type first
             val expr1 = typed(expr, mode.onlySticky, tpt1.tpe.deconst) // then type the expression with tpt1 as the expected type
-            treeCopy.Typed(tree, expr1, tpt1) setType tpt1.tpe
+            // The fallback to `expr1.tpe` in `fullyDefinedTpt` allows us to start with e.g., `Typed(expr, Type(List[?]))`
+            // when synthesizing a method under a partially known expected type (e.g., in synthesizeSAMFunction).
+            // The result should be a fully-defined type for the type ascription, even if we started with a partial one.
+            val fullyDefinedTpt = if (isFullyDefined(tpt1.tpe)) tpt1.tpe else expr1.tpe
+            treeCopy.Typed(tree, expr1, tpt1) setType fullyDefinedTpt
         }
       }
 
