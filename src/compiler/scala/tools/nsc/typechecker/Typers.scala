@@ -2908,6 +2908,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        *   (a => a): MyFun
        *
        * Note that the arity of the sam must correspond to the arity of the function.
+       * TODO: handle vararg sams?
        */
       val ptNorm =
         if (sam.exists && sameLength(sam.info.params, fun.vparams)) samToFunctionType(pt, sam)
@@ -4407,6 +4408,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         tp
       }
 
+      def expectingFunctionMatchingFormals(formals: List[Symbol]) =
+        isFunctionType(pt) || {
+          val sam = samOf(pt)
+          // TODO: handle vararg sam here and in typedFunction
+          sam.exists && sameLength(sam.info.params, formals)
+        }
+
       def typedEta(expr1: Tree): Tree = expr1.tpe match {
         case TypeRef(_, ByNameParamClass, _) =>
           val expr2 = Function(List(), expr1) setPos expr1.pos
@@ -4417,10 +4425,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           new ChangeOwnerTraverser(context.owner, expr2.symbol).traverse(expr2)
           typed1(expr2, mode, pt)
         case PolyType(_, MethodType(formals, _)) =>
-          if (isFunctionType(pt)) expr1
+          if (expectingFunctionMatchingFormals(formals)) expr1
           else adapt(expr1, mode, functionTypeWildcard(expr1, formals.length))
         case MethodType(formals, _) =>
-          if (isFunctionType(pt)) expr1
+          if (expectingFunctionMatchingFormals(formals)) expr1
           else adapt(expr1, mode, functionTypeWildcard(expr1, formals.length))
         case ErrorType =>
           expr1
