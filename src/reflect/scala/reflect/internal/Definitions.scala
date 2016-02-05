@@ -686,6 +686,11 @@ trait Definitions extends api.StandardDefinitions {
       }
     }
 
+    // the SAM's parameters and the Function's formals must have the same length
+    // (varargs etc don't come into play, as we're comparing signatures, not checking an application)
+    def samMatchesFunctionBasedOnArity(sam: Symbol, formals: List[Any]): Boolean =
+      sam.exists && sameLength(sam.info.params, formals)
+
     def isTupleType(tp: Type)          = isTupleTypeDirect(tp.dealiasWiden)
     def tupleComponents(tp: Type)      = tp.dealiasWiden.typeArgs
 

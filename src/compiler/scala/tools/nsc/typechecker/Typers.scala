@@ -1055,9 +1055,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (hasUndets)
             return instantiate(tree, mode, pt)
 
-          // we know `!(tree.tpe <:< pt)`, try to remedy if there's a sam for pt
+          // we know `!(tree.tpe <:< pt)`; try to remedy if there's a sam for pt
           val sam = if (tree.isInstanceOf[Function] && !isFunctionType(pt)) samOf(pt) else NoSymbol
-          if (sam.exists && sameLength(sam.info.params, tree.asInstanceOf[Function].vparams)) {
+          if (sam.exists && samMatchesFunctionBasedOnArity(sam, tree.asInstanceOf[Function].vparams)) {
             // Use synthesizeSAMFunction to expand `(p1: T1, ..., pN: TN) => body`
             // to an instance of the corresponding anonymous subclass of `pt`.
             val samTree = synthesizeSAMFunction(sam, tree.asInstanceOf[Function], pt, mode)
@@ -2800,10 +2800,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       debuglog(s"sam fully defined expected type: $ptFullyDefined from $pt for ${fun.tpe}")
 
-      val samFunTp = {
-        val samDefinedTp = ptFullyDefined memberInfo sam
-        functionType(samDefinedTp.paramTypes, samDefinedTp.finalResultType)
-      }
+      // what's the signature of the method that we should actually be overriding?
+      val samMethType = ptFullyDefined memberInfo sam
+      val samFunTp    = functionType(samMethType.paramTypes, samMethType.finalResultType)
+
+      // TODO: should we preemptively check that ptFullyDefined is a valid class type?
+      // (to avoid running into type errors when type checking the instantiation below)
       if (!(fun.tpe <:< samFunTp)) return EmptyTree
 
 
@@ -2832,9 +2834,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           List(samBodyDefParams),
           TypeTree(fun.body.tpe) setPos sampos,
           fun.body)
-
-      // what's the signature of the method that we should actually be overriding?
-      val samMethType = ptFullyDefined memberInfo sam
 
       // drop symbol info, use type info from sam so we implement the right method
       val samDefParams = map2(fun.vparams, samMethType.paramTypes) { (vd, tp) => ValDef(vd.mods, vd.name, TypeTree(tp), vd.rhs) }
@@ -2911,7 +2910,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        * TODO: handle vararg sams?
        */
       val ptNorm =
-        if (sam.exists && sameLength(sam.info.params, fun.vparams)) samToFunctionType(pt, sam)
+        if (samMatchesFunctionBasedOnArity(sam, fun.vparams)) samToFunctionType(pt, sam)
         else pt
       val (argpts, respt) =
         ptNorm baseType FunctionSymbol match {
@@ -4402,18 +4401,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           treeCopy.New(tree, tpt1).setType(tp)
       }
 
-      def functionTypeWildcard(tree: Tree, arity: Int): Type = {
-        val tp = functionType(List.fill(arity)(WildcardType), WildcardType)
-        if (tp == NoType) MaxFunctionArityError(tree)
-        tp
+      def functionTypeWildcard(arity: Int): Type =
+        functionType(List.fill(arity)(WildcardType), WildcardType)
+
+      def checkArity(tree: Tree)(tp: Type): tp.type = tp match {
+        case NoType => MaxFunctionArityError(tree); tp
+        case _ => tp
       }
 
       def expectingFunctionMatchingFormals(formals: List[Symbol]) =
-        isFunctionType(pt) || {
-          val sam = samOf(pt)
-          // TODO: handle vararg sam here and in typedFunction
-          sam.exists && sameLength(sam.info.params, formals)
-        }
+        isFunctionType(pt) || samMatchesFunctionBasedOnArity(samOf(pt), formals)
 
       def typedEta(expr1: Tree): Tree = expr1.tpe match {
         case TypeRef(_, ByNameParamClass, _) =>
@@ -4426,10 +4423,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           typed1(expr2, mode, pt)
         case PolyType(_, MethodType(formals, _)) =>
           if (expectingFunctionMatchingFormals(formals)) expr1
-          else adapt(expr1, mode, functionTypeWildcard(expr1, formals.length))
+          else adapt(expr1, mode, checkArity(expr1)(functionTypeWildcard(formals.length)))
         case MethodType(formals, _) =>
           if (expectingFunctionMatchingFormals(formals)) expr1
-          else adapt(expr1, mode, functionTypeWildcard(expr1, formals.length))
+          else adapt(expr1, mode, checkArity(expr1)(functionTypeWildcard(formals.length)))
         case ErrorType =>
           expr1
         case _ =>

@@ -278,26 +278,44 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
    * @param additionalFlags flags to be put on the method in addition to FINAL
    */
   def mkMethodFromFunction(localTyper: analyzer.Typer)
-                          (fun: Function, owner: Symbol, name: TermName, additionalFlags: FlagSet = NoFlags) = {
-    val funParams = fun.vparams map (_.symbol)
-    val formals :+ restpe = fun.tpe.typeArgs
+                          (owner: Symbol, fun: Function, name: TermName = nme.apply, additionalFlags: FlagSet = NoFlags) = {
+    val funParamSyms = fun.vparams.map(_.symbol)
 
     val methSym = owner.newMethod(name, fun.pos, FINAL | additionalFlags)
+    val methParamSyms = funParamSyms.map { param => methSym.newSyntheticValueParam(param.tpe, param.name.toTermName) }
 
-    val paramSyms = map2(formals, fun.vparams) {
-      (tp, vparam) => methSym.newSyntheticValueParam(tp, vparam.name)
-    }
-
-    methSym setInfo MethodType(paramSyms, restpe.deconst)
-
-    fun.body.substituteSymbols(funParams, paramSyms)
-    fun.body changeOwner (fun.symbol -> methSym)
-
-    val methDef = DefDef(methSym, fun.body)
+    val body = fun.body
+    body substituteSymbols (funParamSyms, methParamSyms)
+    body changeOwner ((fun.symbol, methSym))
 
     // Have to repack the type to avoid mismatches when existentials
     // appear in the result - see SI-4869.
-    methDef.tpt setType localTyper.packedType(fun.body, methSym).deconst
-    methDef
+    val resTp = localTyper.packedType(body, methSym).deconst
+    methSym setInfo MethodType(methParamSyms, fun.tpe.typeArgs.last.deconst) // TODO: use `resTp` -- preserving wrong status quo because refactoring-only
+
+    newDefDef(methSym, body)(tpt = TypeTree(resTp))
+  }
+
+  def functionClassType(fun: Function): Type =
+    abstractFunctionType(fun.vparams.map(_.symbol.tpe), fun.tpe.typeArgs.last.deconst) // TODO: use `fun.body.tpe.deconst` -- preserving wrong status quo because refactoring-only
+
+  def expandFunction(localTyper: analyzer.Typer)(fun: Function, inConstructorFlag: Long): Tree = {
+    val parents = addSerializable(functionClassType(fun))
+    val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation SerialVersionUIDAnnotation
+
+    // The original owner is used in the backend for the EnclosingMethod attribute. If fun is
+    // nested in a value-class method, its owner was already changed to the extension method.
+    // Saving the original owner allows getting the source structure from the class symbol.
+    defineOriginalOwner(anonClass, fun.symbol.originalOwner)
+    anonClass setInfo ClassInfoType(parents, newScope, anonClass)
+
+    val applyMethodDef = mkMethodFromFunction(localTyper)(anonClass, fun)
+    anonClass.info.decls enter applyMethodDef.symbol
+
+    localTyper.typedPos(fun.pos) {
+      Block(
+        ClassDef(anonClass, NoMods, ListOfNil, List(applyMethodDef), fun.pos),
+        Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
+    }
   }
 }
