@@ -88,17 +88,19 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     if (sym.hasAccessBoundary) "" + sym.privateWithin.name else ""
   )
 
-  def overridesTypeInPrefix(tp1: Type, tp2: Type, prefix: Type): Boolean = (tp1.dealiasWiden, tp2.dealiasWiden) match {
+  def overridesTypeInPrefix(tp1: Type, tp2: Type, prefix: Type, isModuleOverride: Boolean): Boolean = (tp1.dealiasWiden, tp2.dealiasWiden) match {
     case (MethodType(List(), rtp1), NullaryMethodType(rtp2)) =>
       rtp1 <:< rtp2
     case (NullaryMethodType(rtp1), MethodType(List(), rtp2)) =>
       rtp1 <:< rtp2
     case (TypeRef(_, sym, _),  _) if sym.isModuleClass =>
-      overridesTypeInPrefix(NullaryMethodType(tp1), tp2, prefix)
+      overridesTypeInPrefix(NullaryMethodType(tp1), tp2, prefix, isModuleOverride)
     case _ =>
       def classBoundAsSeen(tp: Type) = tp.typeSymbol.classBound.asSeenFrom(prefix, tp.typeSymbol.owner)
-
-      (tp1 <:< tp2) || (  // object override check
+      (tp1 <:< tp2) || isModuleOverride && (
+        // Object override check. This requires that both the overridden and the overriding member are object
+        // definitions. The overriding module type is allowed to replace the original one with the same name
+        // as long as it conform to the original non-singleton type.
         tp1.typeSymbol.isModuleClass && tp2.typeSymbol.isModuleClass && {
           val cb1 = classBoundAsSeen(tp1)
           val cb2 = classBoundAsSeen(tp2)
@@ -520,7 +522,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         }
         def checkOverrideTerm() {
           other.cookJavaRawInfo() // #2454
-          if (!overridesTypeInPrefix(lowType, highType, rootType)) { // 8
+          if (!overridesTypeInPrefix(lowType, highType, rootType, low.isModuleOrModuleClass && high.isModuleOrModuleClass)) { // 8
             overrideTypeError()
             explainTypes(lowType, highType)
           }
