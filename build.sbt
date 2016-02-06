@@ -836,4 +836,8 @@ addCommandAlias("scalac",   "compiler/compile:runMain            scala.tools.nsc
 addCommandAlias("scala",    "repl-jline-embedded/compile:runMain scala.tools.nsc.MainGenericRunner -usejavacp")
 addCommandAlias("scaladoc", "scaladoc/compile:runMain            scala.tools.nsc.ScalaDoc -usejavacp")
 addCommandAlias("scalap",   "scalap/compile:runMain              scala.tools.scalap.Main -usejavacp")
-addCommandAlias("partest",  "test/it:testOnly --")
+
+// Add tab completion to partest
+commands += Command("partest")(_ => PartestUtil.partestParser((baseDirectory in ThisBuild).value, (baseDirectory in ThisBuild).value / "test")) { (state, parsed) =>
+  ("test/it:testOnly -- " + parsed):: state
+}
