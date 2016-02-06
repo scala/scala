@@ -1,7 +1,20 @@
 // © 2009–2010 EPFL/LAMP
 // code by Gilles Dubochet with contributions by Pedro Furlanetto, Marcin Kubala and Felix Mulder
 
+var $panzoom = undefined;
 $(document).ready(function() {
+    // Add zoom functionality to type inheritance diagram
+    $panzoom = $("#inheritance-diagram").panzoom({
+        increment: 0.1,
+        minScale: 1,
+        maxScale: 3,
+        transition: true,
+        duration: 200,
+        contain: 'invert',
+        easing: "ease-in-out",
+        $zoomIn: $('#diagram-zoom-in'),
+        $zoomOut: $('#diagram-zoom-out'),
+    });
 
     $("#template > div > div > ol > li > span > a").click(function(e) {
         $("#template > div > div > ol > li").removeClass("selected");
@@ -275,12 +288,7 @@ $(document).ready(function() {
     function toggleShowContentFct(e){
       e.toggleClass("open");
       var content = $(".hiddenContent", e.parent().get(0));
-      if (content.is(':visible')) {
-        content.slideUp(100);
-      }
-      else {
-        content.slideDown(100);
-      }
+      (content.is(':visible') ? content.slideUp : content.slideDown)(100);
     };
 
     $(".toggle:not(.diagram-link)").click(function() {
