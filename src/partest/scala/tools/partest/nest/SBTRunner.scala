@@ -36,7 +36,7 @@ class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, log
   }
 
   override val suiteRunner = new SuiteRunner(
-    testSourcePath = Option(srcDir) getOrElse PartestDefaults.sourcePath,
+    testSourcePath = optSourcePath orElse Option(srcDir) getOrElse PartestDefaults.sourcePath,
     new FileManager(testClassLoader = testClassLoader),
     updateCheck = optUpdateCheck,
     failed  = optFailed,
