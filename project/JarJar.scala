@@ -35,12 +35,12 @@ object JarJar {
   }
 
   case class JarEntryInput(jarFile: JarFile, entry: JarEntry) extends Entry {
-    def name = entry.getName
+    def name = entry.getName.replace('\\', '/')
     def time = entry.getTime
     def data = sbt.IO.readBytes(jarFile.getInputStream(entry))
   }
   case class FileInput(base: File, file: File) extends Entry {
-    def name = file.relativeTo(base).get.getPath
+    def name = file.relativeTo(base).get.getPath.replace('\\', '/')
     def time = file.lastModified
     def data = sbt.IO.readBytes(file)
   }

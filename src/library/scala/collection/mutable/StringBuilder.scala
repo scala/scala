@@ -33,7 +33,7 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
          with java.lang.CharSequence
          with IndexedSeq[Char]
          with StringLike[StringBuilder]
-         with Builder[Char, String]
+         with ReusableBuilder[Char, String]
          with Serializable {
 
   override protected[this] def thisCollection: StringBuilder = this
@@ -435,7 +435,11 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
    */
   override def mkString = toString
 
-  /** Returns the result of this Builder (a String)
+  /** Returns the result of this Builder (a String).
+   *
+   *  If this method is called multiple times, each call will result in a snapshot of the buffer at that point in time.
+   *  In particular, a `StringBuilder` can be used to build multiple independent strings by emptying the buffer with `clear`
+   *  after each call to `result`.
    *
    *  @return  the string assembled by this StringBuilder
    */

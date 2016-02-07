@@ -1,1 +1,1 @@
--Yopt:l:classpath
+-Yopt:l:classpath -Yopt-warnings

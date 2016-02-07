@@ -771,154 +771,173 @@ object LocalOptImpls {
     // A set of all exception handlers that guard the current instruction, required for simplifyGotoReturn
     var activeHandlers = Set.empty[TryCatchBlockNode]
 
-    // Instructions that need to be removed. simplifyBranchOverGoto returns an instruction to be
-    // removed. It cannot remove it itself because the instruction may be the successor of the current
-    // instruction of the iterator, which is not supported in ASM.
-    var instructionsToRemove = Set.empty[AbstractInsnNode]
+    val jumpInsns = mutable.LinkedHashMap.empty[JumpInsnNode, Boolean]
 
-    val iterator = method.instructions.iterator()
-    while (iterator.hasNext) {
-      val instruction = iterator.next()
+    for (insn <- method.instructions.iterator().asScala) insn match {
+      case l: LabelNode =>
+        activeHandlers ++= allHandlers.filter(_.start == l)
+        activeHandlers = activeHandlers.filter(_.end != l)
 
-      instruction match {
-        case l: LabelNode =>
-          activeHandlers ++= allHandlers.filter(_.start == l)
-          activeHandlers = activeHandlers.filter(_.end != l)
-        case _ =>
+      case ji: JumpInsnNode =>
+        jumpInsns(ji) = activeHandlers.nonEmpty
+
+      case _ =>
+    }
+
+    var _jumpTargets: Set[AbstractInsnNode] = null
+    def jumpTargets = {
+      if (_jumpTargets == null) {
+        _jumpTargets = jumpInsns.keysIterator.map(_.label).toSet
       }
+      _jumpTargets
+    }
 
-      if (instructionsToRemove(instruction)) {
-        iterator.remove()
-        instructionsToRemove -= instruction
-      } else if (isJumpNonJsr(instruction)) { // fast path - all of the below only treat jumps
-        var jumpRemoved = simplifyThenElseSameTarget(method, instruction)
+    def removeJumpFromMap(jump: JumpInsnNode) = {
+      jumpInsns.remove(jump)
+      _jumpTargets = null
+    }
+
+    def replaceJumpByPop(jump: JumpInsnNode) = {
+      removeJumpAndAdjustStack(method, jump)
+      removeJumpFromMap(jump)
+    }
+
+    /**
+     * Removes a conditional jump if it is followed by a GOTO to the same destination.
+     *
+     *      CondJump l;  [nops];  GOTO l;  [...]
+     *      POP*;        [nops];  GOTO l;  [...]
+     *
+     * Introduces 1 or 2 POP instructions, depending on the number of values consumed by the CondJump.
+     */
+    def simplifyThenElseSameTarget(insn: AbstractInsnNode): Boolean = insn match {
+      case ConditionalJump(jump) =>
+        nextExecutableInstruction(insn) match {
+          case Some(Goto(elseJump)) if sameTargetExecutableInstruction(jump, elseJump) =>
+            replaceJumpByPop(jump)
+            true
+
+          case _ => false
+        }
+
+      case _ => false
+    }
+
+    /**
+     * Replace jumps to a sequence of GOTO instructions by a jump to the final destination.
+     *
+     *      Jump l;  [any ops];  l: GOTO m;  [any ops];  m: GOTO n;  [any ops];   n: NotGOTO; [...]
+     *   => Jump n;  [rest unchanged]
+     *
+     * If there's a loop of GOTOs, the initial jump is replaced by one of the labels in the loop.
+     */
+    def collapseJumpChains(insn: AbstractInsnNode): Boolean = insn match {
+      case JumpNonJsr(jump) =>
+        val target = finalJumpTarget(jump)
+        if (jump.label == target) false else {
+          jump.label = target
+          _jumpTargets = null
+          true
+        }
+
+      case _ => false
+    }
+
+    /**
+     * Eliminates unnecessary jump instructions
+     *
+     *      Jump l;  [nops];  l: [...]
+     *   => POP*;    [nops];  l: [...]
+     *
+     * Introduces 0, 1 or 2 POP instructions, depending on the number of values consumed by the Jump.
+     */
+    def removeJumpToSuccessor(insn: AbstractInsnNode): Boolean = insn match {
+      case JumpNonJsr(jump) if nextExecutableInstruction(jump, alsoKeep = Set(jump.label)) contains jump.label =>
+        replaceJumpByPop(jump)
+        true
+
+      case _ => false
+    }
+
+    /**
+     * If the "else" part of a conditional branch is a simple GOTO, negates the conditional branch
+     * and eliminates the GOTO.
+     *
+     *      CondJump l;         [nops, no jump targets];  GOTO m;  [nops];  l: [...]
+     *   => NegatedCondJump m;  [nops, no jump targets];           [nops];  l: [...]
+     *
+     * Note that no jump targets are allowed in the first [nops] section. Otherwise, there could
+     * be some other jump to the GOTO, and eliminating it would change behavior.
+     */
+    def simplifyBranchOverGoto(insn: AbstractInsnNode, inTryBlock: Boolean): Boolean = insn match {
+      case ConditionalJump(jump) =>
+        // don't skip over jump targets, see doc comment
+        nextExecutableInstruction(jump, alsoKeep = jumpTargets) match {
+          case Some(Goto(goto)) =>
+            if (nextExecutableInstruction(goto, alsoKeep = Set(jump.label)) contains jump.label) {
+              val newJump = new JumpInsnNode(negateJumpOpcode(jump.getOpcode), goto.label)
+              method.instructions.set(jump, newJump)
+              removeJumpFromMap(jump)
+              jumpInsns(newJump) = inTryBlock
+              replaceJumpByPop(goto)
+              true
+            } else false
+
+          case _ => false
+        }
+      case _ => false
+    }
+
+    /**
+     * Inlines xRETURN and ATHROW
+     *
+     *      GOTO l;            [any ops];  l: xRETURN/ATHROW
+     *   => xRETURN/ATHROW;    [any ops];  l: xRETURN/ATHROW
+     *
+     * inlining is only done if the GOTO instruction is not part of a try block, otherwise the
+     * rewrite might change the behavior. For xRETURN, the reason is that return instructions may throw
+     * an IllegalMonitorStateException, as described here:
+     *   http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.return
+     */
+    def simplifyGotoReturn(instruction: AbstractInsnNode, inTryBlock: Boolean): Boolean = !inTryBlock && (instruction match {
+      case Goto(jump) =>
+        nextExecutableInstruction(jump.label) match {
+          case Some(target) =>
+            if (isReturn(target) || target.getOpcode == ATHROW) {
+              method.instructions.set(jump, target.clone(null))
+              removeJumpFromMap(jump)
+              true
+            } else false
+
+          case _ => false
+        }
+      case _ => false
+    })
+
+    def run(): Boolean = {
+      var changed = false
+
+      // `.toList` because we're modifying the map while iterating over it
+      for ((jumpInsn, inTryBlock) <- jumpInsns.toList if jumpInsns.contains(jumpInsn) && isJumpNonJsr(jumpInsn)) {
+        var jumpRemoved = simplifyThenElseSameTarget(jumpInsn)
 
         if (!jumpRemoved) {
-          changed = collapseJumpChains(instruction) || changed
-          jumpRemoved = removeJumpToSuccessor(method, instruction)
+          changed = collapseJumpChains(jumpInsn) || changed
+          jumpRemoved = removeJumpToSuccessor(jumpInsn)
 
           if (!jumpRemoved) {
-            val staleGoto = simplifyBranchOverGoto(method, instruction)
-            instructionsToRemove ++= staleGoto
-            changed ||= staleGoto.nonEmpty
-            changed = simplifyGotoReturn(method, instruction, inTryBlock = activeHandlers.nonEmpty) || changed
+            changed = simplifyBranchOverGoto(jumpInsn, inTryBlock) || changed
+            changed = simplifyGotoReturn(jumpInsn, inTryBlock) || changed
           }
         }
+
         changed ||= jumpRemoved
       }
+
+      if (changed) run()
+      changed
     }
-    assert(instructionsToRemove.isEmpty, "some optimization required removing a previously traversed instruction. add `instructionsToRemove.foreach(method.instructions.remove)`")
-    changed
+
+    run()
   }
-
-  /**
-   * Removes a conditional jump if it is followed by a GOTO to the same destination.
-   *
-   *      CondJump l;  [nops];  GOTO l;  [...]
-   *      POP*;        [nops];  GOTO l;  [...]
-   *
-   * Introduces 1 or 2 POP instructions, depending on the number of values consumed by the CondJump.
-   */
-  private def simplifyThenElseSameTarget(method: MethodNode, instruction: AbstractInsnNode): Boolean = instruction match {
-    case ConditionalJump(jump) =>
-      nextExecutableInstruction(instruction) match {
-        case Some(Goto(elseJump)) if sameTargetExecutableInstruction(jump, elseJump) =>
-          removeJumpAndAdjustStack(method, jump)
-          true
-
-        case _ => false
-      }
-    case _ => false
-  }
-
-  /**
-   * Replace jumps to a sequence of GOTO instructions by a jump to the final destination.
-   *
-   *      Jump l;  [any ops];  l: GOTO m;  [any ops];  m: GOTO n;  [any ops];   n: NotGOTO; [...]
-   *   => Jump n;  [rest unchanged]
-   *
-   * If there's a loop of GOTOs, the initial jump is replaced by one of the labels in the loop.
-   */
-  private def collapseJumpChains(instruction: AbstractInsnNode): Boolean = instruction match {
-    case JumpNonJsr(jump) =>
-      val target = finalJumpTarget(jump)
-      if (jump.label == target) false else {
-        jump.label = target
-        true
-      }
-
-    case _ => false
-  }
-
-  /**
-   * Eliminates unnecessary jump instructions
-   *
-   *      Jump l;  [nops];  l: [...]
-   *   => POP*;    [nops];  l: [...]
-   *
-   * Introduces 0, 1 or 2 POP instructions, depending on the number of values consumed by the Jump.
-   */
-  private def removeJumpToSuccessor(method: MethodNode, instruction: AbstractInsnNode) = instruction match {
-    case JumpNonJsr(jump) if nextExecutableInstruction(jump, alsoKeep = Set(jump.label)) == Some(jump.label) =>
-      removeJumpAndAdjustStack(method, jump)
-      true
-    case _ => false
-  }
-
-  /**
-   * If the "else" part of a conditional branch is a simple GOTO, negates the conditional branch
-   * and eliminates the GOTO.
-   *
-   *      CondJump l;         [nops, no labels];  GOTO m;  [nops];  l: [...]
-   *   => NegatedCondJump m;  [nops, no labels];           [nops];  l: [...]
-   *
-   * Note that no label definitions are allowed in the first [nops] section. Otherwise, there could
-   * be some other jump to the GOTO, and eliminating it would change behavior.
-   *
-   * For technical reasons, we cannot remove the GOTO here (*).Instead this method returns an Option
-   * containing the GOTO that needs to be eliminated.
-   *
-   * (*) The ASM instruction iterator (used in the caller [[simplifyJumps]]) has an undefined
-   *     behavior if the successor of the current instruction is removed, which may be the case here
-   */
-  private def simplifyBranchOverGoto(method: MethodNode, instruction: AbstractInsnNode): Option[JumpInsnNode] = instruction match {
-    case ConditionalJump(jump) =>
-      // don't skip over labels, see doc comment
-      nextExecutableInstructionOrLabel(jump) match {
-        case Some(Goto(goto)) =>
-          if (nextExecutableInstruction(goto, alsoKeep = Set(jump.label)) == Some(jump.label)) {
-            val newJump = new JumpInsnNode(negateJumpOpcode(jump.getOpcode), goto.label)
-            method.instructions.set(jump, newJump)
-            Some(goto)
-          } else None
-
-        case _ => None
-      }
-    case _ => None
-  }
-
-  /**
-   * Inlines xRETURN and ATHROW
-   *
-   *      GOTO l;            [any ops];  l: xRETURN/ATHROW
-   *   => xRETURN/ATHROW;    [any ops];  l: xRETURN/ATHROW
-   *
-   * inlining is only done if the GOTO instruction is not part of a try block, otherwise the
-   * rewrite might change the behavior. For xRETURN, the reason is that return instructions may throw
-   * an IllegalMonitorStateException, as described here:
-   *   http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.return
-   */
-  private def simplifyGotoReturn(method: MethodNode, instruction: AbstractInsnNode, inTryBlock: Boolean): Boolean = !inTryBlock && (instruction match {
-    case Goto(jump) =>
-      nextExecutableInstruction(jump.label) match {
-        case Some(target) =>
-          if (isReturn(target) || target.getOpcode == ATHROW) {
-            method.instructions.set(jump, target.clone(null))
-            true
-          } else false
-
-        case _ => false
-      }
-    case _ => false
-  })
 }

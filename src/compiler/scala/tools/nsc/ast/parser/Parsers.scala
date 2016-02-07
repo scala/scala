@@ -774,7 +774,58 @@ self =>
     @inline final def caseSeparated[T](part: => T): List[T] = tokenSeparated(CASE, sepFirst = true, part)
     def readAnnots(part: => Tree): List[Tree] = tokenSeparated(AT, sepFirst = true, part)
 
-/* --------- OPERAND/OPERATOR STACK --------------------------------------- */
+    /** Create a tuple type Tree. If the arity is not supported, a syntax error is emitted. */
+    def makeSafeTupleType(elems: List[Tree], offset: Offset) = {
+      if (checkTupleSize(elems, offset)) makeTupleType(elems)
+      else makeTupleType(Nil) // create a dummy node; makeTupleType(elems) would fail
+    }
+
+    /** Create a tuple term Tree. If the arity is not supported, a syntax error is emitted. */
+    def makeSafeTupleTerm(elems: List[Tree], offset: Offset) = {
+      checkTupleSize(elems, offset)
+      makeTupleTerm(elems)
+    }
+
+    private[this] def checkTupleSize(elems: List[Tree], offset: Offset): Boolean =
+      if (elems.lengthCompare(definitions.MaxTupleArity) > 0) {
+        syntaxError(offset, "too many elements for tuple: "+elems.length+", allowed: "+definitions.MaxTupleArity, skipIt = false)
+        false
+      } else true
+
+    /** Strip the artifitial `Parens` node to create a tuple term Tree. */
+    def stripParens(t: Tree) = t match {
+      case Parens(ts) => atPos(t.pos) { makeSafeTupleTerm(ts, t.pos.point) }
+      case _ => t
+    }
+
+    /** Create tree representing (unencoded) binary operation expression or pattern. */
+    def makeBinop(isExpr: Boolean, left: Tree, op: TermName, right: Tree, opPos: Position, targs: List[Tree] = Nil): Tree = {
+      require(isExpr || targs.isEmpty || targs.exists(_.isErroneous), s"Incompatible args to makeBinop: !isExpr but targs=$targs")
+
+      def mkSelection(t: Tree) = {
+        def sel = atPos(opPos union t.pos)(Select(stripParens(t), op.encode))
+        if (targs.isEmpty) sel else atPos(left.pos)(TypeApply(sel, targs))
+      }
+      def mkNamed(args: List[Tree]) = if (isExpr) args map treeInfo.assignmentToMaybeNamedArg else args
+      val arguments = right match {
+        case Parens(args) => mkNamed(args)
+        case _            => List(right)
+      }
+      if (isExpr) {
+        if (treeInfo.isLeftAssoc(op)) {
+          Apply(mkSelection(left), arguments)
+        } else {
+          val x = freshTermName()
+          Block(
+            List(ValDef(Modifiers(symtab.Flags.SYNTHETIC | symtab.Flags.ARTIFACT), x, TypeTree(), stripParens(left))),
+            Apply(mkSelection(right), List(Ident(x))))
+        }
+      } else {
+        Apply(Ident(op.encode), stripParens(left) :: arguments)
+      }
+    }
+
+    /* --------- OPERAND/OPERATOR STACK --------------------------------------- */
 
     /** Modes for infix types. */
     object InfixMode extends Enumeration {
@@ -878,7 +929,7 @@ self =>
             atPos(start, in.skipToken()) { makeFunctionTypeTree(ts, typ()) }
           else {
             ts foreach checkNotByNameOrVarargs
-            val tuple = atPos(start) { makeTupleType(ts) }
+            val tuple = atPos(start) { makeSafeTupleType(ts, start) }
             infixTypeRest(
               compoundTypeRest(
                 annotTypeRest(
@@ -945,7 +996,7 @@ self =>
       def simpleType(): Tree = {
         val start = in.offset
         simpleTypeRest(in.token match {
-          case LPAREN   => atPos(start)(makeTupleType(inParens(types())))
+          case LPAREN   => atPos(start)(makeSafeTupleType(inParens(types()), start))
           case USCORE   => wildcardType(in.skipToken())
           case _        =>
             path(thisOK = false, typeOK = true) match {

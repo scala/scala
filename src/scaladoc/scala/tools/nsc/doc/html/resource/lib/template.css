@@ -769,6 +769,10 @@ div#footer {
   box-shadow: none;
 }
 
+#comment > dl > div > ol {
+  list-style-type: none;
+}
+
 div.fullcomment div.block ol li p,
 div.fullcomment div.block ol li {
   display:inline

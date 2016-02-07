@@ -238,7 +238,7 @@ class FutureTests extends MinimalScalaTest {
     "support pattern matching within a for-comprehension" in {
       case class Req[T](req: T)
       case class Res[T](res: T)
-      def async[T](req: Req[T]) = req match {
+      def async[T](req: Req[T]) = (req: @unchecked) match {
         case Req(s: String) => Future { Res(s.length) }
         case Req(i: Int)    => Future { Res((i * 2).toString) }
       }

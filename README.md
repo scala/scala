@@ -3,7 +3,7 @@ This is the official repository for the [Scala Programming Language](http://www.
 
 # How to contribute
 
-To contribute to the Scala Standard Library, Scala Compiler and Scala Language Specification, please send us a [pull request](https://help.github.com/articles/using-pull-requests/#fork--pull) from your fork of this repository! We do have to ask you to sign the [Scala CLA](http://typesafe.com/contribute/cla/scala) before we can merge any of your work into our code base, to protect its open source nature.
+To contribute to the Scala Standard Library, Scala Compiler and Scala Language Specification, please send us a [pull request](https://help.github.com/articles/using-pull-requests/#fork--pull) from your fork of this repository! We do have to ask you to sign the [Scala CLA](http://www.typesafe.com/contribute/cla/scala) before we can merge any of your work into our code base, to protect its open source nature.
 
 For more information on building and developing the core of Scala, read on!
 
@@ -23,7 +23,7 @@ If you need some help with your PR at any time, please feel free to @-mention an
                                                                                                   | username                                                       | talk to me about...                               |
 --------------------------------------------------------------------------------------------------|----------------------------------------------------------------|---------------------------------------------------|
  <img src="https://avatars.githubusercontent.com/adriaanm"     height="50px" title="Adriaan Moors"/>        | [`@adriaanm`](https://github.com/adriaanm)           | type checker, pattern matcher, infrastructure, language spec |
- <img src="https://avatars.githubusercontent.com/SethTisue"    height="50px" title="Seth Tisue"/>           | [`@SethTisue`](https://github.com/SethTisue)         | back-end, library, the welcome-to-Scala experience, build |
+ <img src="https://avatars.githubusercontent.com/SethTisue"    height="50px" title="Seth Tisue"/>           | [`@SethTisue`](https://github.com/SethTisue)         | build, developer docs, community build, Jenkins, library, the welcome-to-Scala experience |
  <img src="https://avatars.githubusercontent.com/retronym"     height="50px" title="Jason Zaugg"/>          | [`@retronym`](https://github.com/retronym)           | compiler performance, weird compiler bugs, Java 8 lambdas, REPL |
  <img src="https://avatars.githubusercontent.com/Ichoran"      height="50px" title="Rex Kerr"/>             | [`@Ichoran`](https://github.com/Ichoran)             | collections library, performance              |
  <img src="https://avatars.githubusercontent.com/lrytz"        height="50px" title="Lukas Rytz"/>           | [`@lrytz`](https://github.com/lrytz)                 | optimizer, named & default arguments              |

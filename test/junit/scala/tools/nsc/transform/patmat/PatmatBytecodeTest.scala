@@ -134,4 +134,29 @@ class PatmatBytecodeTest extends ClearAfterClass {
         NEW, DUP, ALOAD /*1*/, "<init>", ATHROW,
         /*R*/ -1, ALOAD /*2*/, ARETURN))
   }
+
+  @Test
+  def t6941(): Unit = {
+    val code =
+      """class C {
+        |  def a(xs: List[Int]) = xs match {
+        |    case x :: _ => x
+        |  }
+        |  def b(xs: List[Int]) = xs match {
+        |    case xs: ::[Int] => xs.head
+        |  }
+        |}
+      """.stripMargin
+    val c = compileClasses(optCompiler)(code, allowMessage = _.msg.contains("may not be exhaustive")).head
+
+    val expected = List(
+      ALOAD /*1*/ , INSTANCEOF /*::*/ , IFEQ /*A*/ ,
+      ALOAD, CHECKCAST /*::*/ , "head", "unboxToInt",
+      ISTORE, GOTO /*B*/ ,
+      -1 /*A*/ , NEW /*MatchError*/ , DUP, ALOAD /*1*/ , "<init>", ATHROW,
+      -1 /*B*/ , ILOAD, IRETURN)
+
+    assertEquals(textify(findAsmMethod(c, "a")), getSingleMethod(c, "a").instructions.summary, expected)
+    assertEquals(textify(findAsmMethod(c, "b")), getSingleMethod(c, "b").instructions.summary, expected)
+  }
 }

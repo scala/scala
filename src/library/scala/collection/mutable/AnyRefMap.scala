@@ -427,7 +427,11 @@ object AnyRefMap {
       def apply(): AnyRefMapBuilder[J, U] = new AnyRefMapBuilder[J, U]
     }
 
-  final class AnyRefMapBuilder[K <: AnyRef, V] extends Builder[(K, V), AnyRefMap[K, V]] {
+  /** A builder for instances of `AnyRefMap`.
+   *
+   *  This builder can be reused to create multiple instances.
+   */
+  final class AnyRefMapBuilder[K <: AnyRef, V] extends ReusableBuilder[(K, V), AnyRefMap[K, V]] {
     private[collection] var elems: AnyRefMap[K, V] = new AnyRefMap[K, V]
     def +=(entry: (K, V)): this.type = {
       elems += entry
