@@ -223,10 +223,6 @@ abstract class LambdaLift extends InfoTransform {
         debuglog("renaming in %s: %s => %s".format(sym.owner.fullLocationString, originalName, sym.name))
       }
 
-      // make sure that the name doesn't make the symbol accidentally `isAnonymousClass` (et.al) by
-      // introducing `$anon` in its name.
-      def nonAnon(s: String) = nme.ensureNonAnon(s)
-
       def newName(sym: Symbol): Name = {
         val originalName = sym.name
         def freshen(prefix: String): Name =
@@ -235,7 +231,7 @@ abstract class LambdaLift extends InfoTransform {
 
         val join = nme.NAME_JOIN_STRING
         if (sym.isAnonymousFunction && sym.owner.isMethod) {
-          freshen(sym.name + join + nonAnon(sym.owner.name.toString) + join)
+          freshen(sym.name + join + nme.ensureNonAnon(sym.owner.name.toString) + join)
         } else {
           val name = freshen(sym.name + join)
           // SI-5652 If the lifted symbol is accessed from an inner class, it will be made public. (where?)
@@ -243,7 +239,7 @@ abstract class LambdaLift extends InfoTransform {
           //         package - subclass might have the same name), avoids a VerifyError in the case
           //         that a sub-class happens to lifts out a method with the *same* name.
           if (originalName.isTermName && calledFromInner(sym))
-            newTermNameCached(nonAnon(sym.enclClass.fullName('$')) + nme.EXPAND_SEPARATOR_STRING + name)
+            newTermNameCached(nme.ensureNonAnon(sym.enclClass.fullName('$')) + nme.EXPAND_SEPARATOR_STRING + name)
           else
             name
         }

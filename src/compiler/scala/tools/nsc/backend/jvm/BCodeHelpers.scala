@@ -61,6 +61,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     assert(classSym.isClass, s"not a class: $classSym")
     val r = exitingPickler(classSym.isAnonymousClass) || !classSym.originalOwner.isClass
     if (r) {
+      // lambda lift renames symbols and may accidentally introduce `$lambda` into a class name, making `isDelambdafyFunction` true.
+      // we prevent this, see `nonAnon` in LambdaLift.
       // phase travel necessary: after flatten, the name includes the name of outer classes.
       // if some outer name contains $lambda, a non-lambda class is considered lambda.
       assert(exitingPickler(!classSym.isDelambdafyFunction), classSym.name)

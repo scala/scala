@@ -793,10 +793,6 @@ trait Definitions extends api.StandardDefinitions {
 
     private[this] var volatileRecursions: Int = 0
     private[this] val pendingVolatiles = mutable.HashSet[Symbol]()
-    def abstractFunctionForFunctionType(tp: Type) = {
-      assert(isFunctionType(tp), tp)
-      abstractFunctionType(tp.typeArgs.init, tp.typeArgs.last)
-    }
     def functionNBaseType(tp: Type): Type = tp.baseClasses find isFunctionSymbol match {
       case Some(sym) => tp baseType unspecializedSymbol(sym)
       case _         => tp

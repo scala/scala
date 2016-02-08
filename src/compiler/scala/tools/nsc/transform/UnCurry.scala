@@ -72,13 +72,8 @@ abstract class UnCurry extends InfoTransform
     private val noApply           = mutable.HashSet[Tree]()
     private val newMembers        = mutable.Map[Symbol, mutable.Buffer[Tree]]()
 
-    private lazy val forceSpecializationInfoTransformOfFunctionN: Unit = {
-      if (currentRun.specializePhase != NoPhase) { // be robust in case of -Ystop-after:uncurry
-        exitingSpecialize {
-          FunctionClass.seq.foreach(cls => cls.info)
-        }
-      }
-    }
+    // Expand `Function`s in constructors to class instance creation (SI-6666, SI-8363)
+    private def mustExpandFunction = inlineFunctionExpansion || (inConstructorFlag != 0)
 
     /** Add a new synthetic member for `currentOwner` */
     private def addNewMember(t: Tree): Unit =
@@ -230,15 +225,10 @@ abstract class UnCurry extends InfoTransform
           def mkMethod(owner: Symbol, name: TermName, additionalFlags: FlagSet = NoFlags): DefDef =
             gen.mkMethodFromFunction(localTyper)(fun, owner, name, additionalFlags)
 
-          def isSpecialized = {
-            forceSpecializationInfoTransformOfFunctionN
-            val specialized = specializeTypes.specializedType(fun.tpe)
-            !(specialized =:= fun.tpe)
-          }
-
-          def canUseDelamdafyMethod = inConstructorFlag == 0 // Avoiding synthesizing code prone to SI-6666, SI-8363 by using old-style lambda translation
-          if (inlineFunctionExpansion || !canUseDelamdafyMethod) {
-            val parents = addSerializable(abstractFunctionForFunctionType(fun.tpe))
+          if (mustExpandFunction) {
+            assert(isFunctionType(fun.tpe), s"Not a FunctionN? $fun: ${fun.tpe}")
+            val funTpArgs = fun.tpe.typeArgs
+            val parents = addSerializable(abstractFunctionType(funTpArgs.init, funTpArgs.last))
             val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation SerialVersionUIDAnnotation
             // The original owner is used in the backend for the EnclosingMethod attribute. If fun is
             // nested in a value-class method, its owner was already changed to the extension method.
@@ -266,7 +256,6 @@ abstract class UnCurry extends InfoTransform
           }
         }
     }
-
 
     def transformArgs(pos: Position, fun: Symbol, args: List[Tree], formals: List[Type]) = {
       val isJava = fun.isJavaDefined
