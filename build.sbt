@@ -831,13 +831,24 @@ def generateServiceProviderResources(services: (String, String)*): Setting[_] =
 
 buildDirectory in ThisBuild := (baseDirectory in ThisBuild).value / "build-sbt"
 
-// TODO custom argument parsers for these to autocomplete compiler options and paths
-addCommandAlias("scalac",   "compiler/compile:runMain            scala.tools.nsc.Main -usejavacp")
-addCommandAlias("scala",    "repl-jline-embedded/compile:runMain scala.tools.nsc.MainGenericRunner -usejavacp")
-addCommandAlias("scaladoc", "scaladoc/compile:runMain            scala.tools.nsc.ScalaDoc -usejavacp")
-addCommandAlias("scalap",   "scalap/compile:runMain              scala.tools.scalap.Main -usejavacp")
-
 // Add tab completion to partest
 commands += Command("partest")(_ => PartestUtil.partestParser((baseDirectory in ThisBuild).value, (baseDirectory in ThisBuild).value / "test")) { (state, parsed) =>
-  ("test/it:testOnly -- " + parsed):: state
+  ("test/it:testOnly -- " + parsed) :: state
 }
+
+// Add tab completion to scalac et al.
+commands ++= {
+  val commands =
+  List(("scalac",   "compiler", "scala.tools.nsc.Main"),
+       ("scala",    "repl-jline-embedded", "scala.tools.nsc.MainGenericRunner"),
+       ("scaladoc", "scaladoc", "scala.tools.nsc.ScalaDoc"))
+
+  commands.map {
+    case (entryPoint, projectRef, mainClassName) =>
+      Command(entryPoint)(_ => ScalaOptionParser.scalaParser(entryPoint, (baseDirectory in ThisBuild).value)) { (state, parsedOptions) =>
+        (projectRef + "/runMain " + mainClassName + " -usejavacp " + parsedOptions) :: state
+      }
+  }
+}
+
+addCommandAlias("scalap",   "scalap/compile:runMain              scala.tools.scalap.Main -usejavacp")
