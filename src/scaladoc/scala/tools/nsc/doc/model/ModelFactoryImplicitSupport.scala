@@ -98,10 +98,15 @@ trait ModelFactoryImplicitSupport {
       // also keep empty conversions, so they appear in diagrams
       // conversions = conversions.filter(!_.members.isEmpty)
 
-      // Filter out specialized conversions from array
-      if (sym == ArrayClass)
-        conversions = conversions.filterNot((conv: ImplicitConversionImpl) =>
-          hardcoded.arraySkipConversions.contains(conv.conversionQualifiedName))
+      val hiddenConversions: Seq[String] = thisFactory
+        .comment(sym, inTpl.linkTarget, inTpl)
+        .map(_.hideImplicitConversions)
+        .getOrElse(Nil)
+
+      conversions = conversions filterNot { conv: ImplicitConversionImpl =>
+        hiddenConversions.contains(conv.conversionShortName) ||
+        hiddenConversions.contains(conv.conversionQualifiedName)
+      }
 
       // Filter out non-sensical conversions from value types
       if (isPrimitiveValueType(sym.tpe_*))
