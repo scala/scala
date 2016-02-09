@@ -261,43 +261,59 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     mkNew(Nil, noSelfType, stats1, NoPosition, NoPosition)
   }
 
-  /**
-   * Create a method based on a Function
-   *
-   * Used both to under `-Ydelambdafy:method` create a lifted function and
-   * under `-Ydelambdafy:inline` to create the apply method on the anonymous
-   * class.
-   *
-   * It creates a method definition with value params cloned from the
-   * original lambda. Then it calls a supplied function to create
-   * the body and types the result. Finally
-   * everything is wrapped up in a DefDef
-   *
-   * @param owner The owner for the new method
-   * @param name name for the new method
-   * @param additionalFlags flags to be put on the method in addition to FINAL
-   */
-  def mkMethodFromFunction(localTyper: analyzer.Typer)
-                          (owner: Symbol, fun: Function, name: TermName = nme.apply, additionalFlags: FlagSet = NoFlags) = {
-    val funParamSyms = fun.vparams.map(_.symbol)
 
-    val methSym = owner.newMethod(name, fun.pos, FINAL | additionalFlags)
-    val methParamSyms = funParamSyms.map { param => methSym.newSyntheticValueParam(param.tpe, param.name.toTermName) }
-
-    val body = fun.body
-    body substituteSymbols (funParamSyms, methParamSyms)
-    body changeOwner ((fun.symbol, methSym))
-
-    // Have to repack the type to avoid mismatches when existentials
-    // appear in the result - see SI-4869.
-    val resTp = localTyper.packedType(body, methSym).deconst
-    methSym setInfo MethodType(methParamSyms, fun.tpe.typeArgs.last.deconst) // TODO: use `resTp` -- preserving wrong status quo because refactoring-only
-
-    newDefDef(methSym, body)(tpt = TypeTree(resTp))
+  // Construct a method to implement `fun`'s single abstract method (`apply`, when `fun.tpe` is a built-in function type)
+  def mkMethodFromFunction(localTyper: analyzer.Typer)(owner: Symbol, fun: Function) = {
+    // TODO: treat FunctionN like any other SAM -- drop `&& !isFunctionType(fun.tpe)`
+    val sam = if (!isFunctionType(fun.tpe)) samOf(fun.tpe) else NoSymbol
+    if (!sam.exists) mkMethodForFunctionBody(localTyper)(owner, fun, nme.apply)()
+    else {
+      val samMethType = fun.tpe memberInfo sam
+      mkMethodForFunctionBody(localTyper)(owner, fun, sam.name.toTermName)(methParamProtos = samMethType.params, resTp = samMethType.resultType)
+    }
   }
 
+  // used to create the lifted method that holds a function's body
+  def mkLiftedFunctionBodyMethod(localTyper: analyzer.Typer)(owner: Symbol, fun: Function) =
+    mkMethodForFunctionBody(localTyper)(owner, fun, nme.ANON_FUN_NAME)(additionalFlags = ARTIFACT)
+
+
+  /**
+    * Lift a Function's body to a method. For use during Uncurry, where Function nodes have type FunctionN[T1, ..., Tn, R]
+    *
+    * It creates a method definition with value params derived from the original lambda
+    * or `methParamProtos` (used to create the correct override for sam methods).
+    *
+    * Replace the `fun.vparams` symbols by the newly created method params,
+    * changes owner of `fun.body` from `fun.symbol` to resulting method's symbol.
+    *
+    * @param owner The owner for the new method
+    * @param fun  the function to take the body from
+    * @param name name for the new method
+    * @param additionalFlags flags to be put on the method in addition to FINAL
+    */
+  private def mkMethodForFunctionBody(localTyper: analyzer.Typer)
+                                     (owner: Symbol, fun: Function, name: TermName)
+                                     (methParamProtos: List[Symbol] = fun.vparams.map(_.symbol),
+                                      resTp: Type = functionResultType(fun.tpe),
+                                      additionalFlags: FlagSet = NoFlags): DefDef = {
+    val methSym = owner.newMethod(name, fun.pos, FINAL | additionalFlags)
+    // for sams, methParamProtos is the parameter symbols for the sam's method, so that we generate the correct override (based on parmeter types)
+    val methParamSyms = methParamProtos.map { param => methSym.newSyntheticValueParam(param.tpe, param.name.toTermName) }
+    methSym setInfo MethodType(methParamSyms, resTp)
+
+    // we must rewire reference to the function's param symbols -- and not methParamProtos -- to methParamSyms
+    val useMethodParams = new TreeSymSubstituter(fun.vparams.map(_.symbol), methParamSyms)
+    // we're now owned by the method that holds the body, and not the function
+    val moveToMethod = new ChangeOwnerTraverser(fun.symbol, methSym)
+
+    newDefDef(methSym, moveToMethod(useMethodParams(fun.body)))(tpt = TypeTree(resTp))
+  }
+
+  // TODO: the rewrite to AbstractFunction is superfluous once we compile FunctionN to a SAM type (aka functional interface)
   def functionClassType(fun: Function): Type =
-    abstractFunctionType(fun.vparams.map(_.symbol.tpe), fun.tpe.typeArgs.last.deconst) // TODO: use `fun.body.tpe.deconst` -- preserving wrong status quo because refactoring-only
+    if (isFunctionType(fun.tpe)) abstractFunctionType(fun.vparams.map(_.symbol.tpe), fun.body.tpe.deconst)
+    else fun.tpe
 
   def expandFunction(localTyper: analyzer.Typer)(fun: Function, inConstructorFlag: Long): Tree = {
     val parents = addObjectParent(addSerializable(functionClassType(fun)))

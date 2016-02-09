@@ -478,8 +478,7 @@ trait Contexts { self: Analyzer =>
       c(ConstructorSuffix) = !isTemplateOrPackage && c(ConstructorSuffix)
 
       // SI-8245 `isLazy` need to skip lazy getters to ensure `return` binds to the right place
-      // similarly for the synthetic method that holds as a SAM's body (as synthesized by `synthesizeSAMFunction`)
-      c.enclMethod         = if (isDefDef && !(owner.isLazy || owner.name.endsWith(nme.SAM_BODY_SUFFIX))) c else enclMethod
+      c.enclMethod         = if (isDefDef && !owner.isLazy) c else enclMethod
 
       if (tree != outer.tree)
         c(TypeConstructorAllowed) = false

@@ -31,6 +31,17 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
   final case class LambdaMetaFactoryCapable(target: Symbol, arity: Int, functionalInterface: Symbol)
 
+  /**
+    * Get the symbol of the target lifted lambda body method from a function. I.e. if
+    * the function is {args => anonfun(args)} then this method returns anonfun's symbol
+    */
+  private def targetMethod(fun: Function): Symbol = fun match {
+    case Function(_, Apply(target, _)) => target.symbol
+    case _ =>
+      // any other shape of Function is unexpected at this point
+      abort(s"could not understand function with tree $fun")
+  }
+
   override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = {
     if (settings.Ydelambdafy.value == "method") new Phase(prev)
     else new SkipPhase(prev)
@@ -43,34 +54,199 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new DelambdafyTransformer(unit)
 
-  class DelambdafyTransformer(unit: CompilationUnit) extends TypingTransformer(unit) with TypeAdapter {
-    private val lambdaClassDefs = new mutable.LinkedHashMap[Symbol, List[Tree]] withDefaultValue Nil
-
-    val typer = localTyper
-
+  class DelambdafyTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     // we need to know which methods refer to the 'this' reference so that we can determine which lambdas need access to it
     // TODO: this looks expensive, so I made it a lazy val. Can we make it more pay-as-you-go / optimize for common shapes?
-    lazy val thisReferringMethods: Set[Symbol] = {
-      val thisReferringMethodsTraverser = new ThisReferringMethodsTraverser()
-      thisReferringMethodsTraverser traverse unit.body
-      val methodReferringMap = thisReferringMethodsTraverser.liftedMethodReferences
-      val referrers = thisReferringMethodsTraverser.thisReferringMethods
-      // recursively find methods that refer to 'this' directly or indirectly via references to other methods
-      // for each method found add it to the referrers set
-      def refersToThis(symbol: Symbol): Boolean = {
-        if (referrers contains symbol) true
-        else if (methodReferringMap(symbol) exists refersToThis) {
-          // add it early to memoize
-          debuglog(s"$symbol indirectly refers to 'this'")
-          referrers += symbol
-          true
-        } else false
+    private[this] lazy val methodReferencesThis: Set[Symbol] =
+      (new ThisReferringMethodsTraverser).methodReferencesThisIn(unit.body)
+
+    private def mkLambdaMetaFactoryCall(fun: Function, target: Symbol, functionalInterface: Symbol, isSpecialized: Boolean): Tree = {
+      val pos = fun.pos
+      val allCapturedArgRefs = {
+        // find which variables are free in the lambda because those are captures that need to be
+        // passed into the constructor of the anonymous function class
+        val captureArgs = FreeVarTraverser.freeVarsOf(fun).iterator.map(capture =>
+          gen.mkAttributedRef(capture) setPos pos
+        ).toList
+
+        if (target hasFlag STATIC) captureArgs  // no `this` reference needed
+        else (gen.mkAttributedThis(fun.symbol.enclClass) setPos pos) :: captureArgs
       }
-      methodReferringMap.keys foreach refersToThis
-      referrers
+
+      // Create a symbol representing a fictional lambda factory method that accepts the captured
+      // arguments and returns the SAM type.
+      val msym = {
+        val meth = currentOwner.newMethod(nme.ANON_FUN_NAME, pos, ARTIFACT)
+        val capturedParams = meth.newSyntheticValueParams(allCapturedArgRefs.map(_.tpe))
+        meth.setInfo(MethodType(capturedParams, fun.tpe))
+      }
+
+      // We then apply this symbol to the captures.
+      val apply = localTyper.typedPos(pos)(Apply(Ident(msym), allCapturedArgRefs))
+
+      // no need for adaptation when the implemented sam is of a specialized built-in function type
+      val lambdaTarget = if (isSpecialized) target else createBoxingBridgeMethodIfNeeded(fun, target, functionalInterface)
+
+      // The backend needs to know the target of the lambda and the functional interface in order
+      // to emit the invokedynamic instruction. We pass this information as tree attachment.
+      //
+      // see https://docs.oracle.com/javase/8/docs/api/java/lang/invoke/LambdaMetafactory.html
+      //   instantiatedMethodType is derived from lambdaTarget's signature
+      //   samMethodType is derived from samOf(functionalInterface)'s signature
+      apply.updateAttachment(LambdaMetaFactoryCapable(lambdaTarget, fun.vparams.length, functionalInterface))
+
+      apply
     }
 
+
     private val boxingBridgeMethods = mutable.ArrayBuffer[Tree]()
+
+    private def reboxValueClass(tp: Type) = tp match {
+      case ErasedValueType(valueClazz, _) => TypeRef(NoPrefix, valueClazz, Nil)
+      case _ => tp
+    }
+
+    private def valueTypeToObject(tpe: Type): Type =
+      if (isPrimitiveValueClass(tpe.typeSymbol) || enteringErasure(tpe.typeSymbol.isDerivedValueClass)) ObjectTpe
+      else tpe
+
+    // exclude primitives and value classses, which need special boxing
+    private def isReferenceType(tp: Type) = !tp.isInstanceOf[ErasedValueType] && {
+      val sym = tp.typeSymbol
+      !(isPrimitiveValueClass(sym) || sym.isDerivedValueClass)
+    }
+
+    // determine which lambda target to use with java's LMF -- create a new one if scala-specific boxing is required
+    def createBoxingBridgeMethodIfNeeded(fun: Function, target: Symbol, functionalInterface: Symbol): Symbol = {
+      val oldClass = fun.symbol.enclClass
+      val pos = fun.pos
+
+      // At erasure, there won't be any captured arguments (they are added in constructors)
+      val functionParamTypes = exitingErasure(target.info.paramTypes)
+      val functionResultType = exitingErasure(target.info.resultType)
+
+      val sam = samOf(functionalInterface.tpe) orElse functionalInterface.info.member(nme.apply)
+      val samParamTypes = exitingErasure(sam.info.paramTypes)
+      val samResultType = exitingErasure(sam.info.resultType)
+
+      /** How to satisfy the linking invariants of https://docs.oracle.com/javase/8/docs/api/java/lang/invoke/LambdaMetafactory.html
+        *
+        * Given samMethodType: (U1..Un)Ru and function type T1,..., Tn => Rt (the target method created by uncurry)
+        *
+        * Do we need a bridge, or can we use the original lambda target for implMethod: (<captured args> A1..An)Ra
+        * (We can ignore capture here.)
+        *
+        * If, for i=1..N:
+        *  Ai =:= Ui || (Ai <:< Ui <:< AnyRef)
+        *  Ru =:= void || (Ra =:= Ru || (Ra <:< AnyRef, Ru <:< AnyRef))
+        *
+        * We can use the target method as-is -- if not, we create a bridging one that uses the types closest
+        * to the target method that still meet the above requirements.
+        */
+      val resTpOk = (
+           samResultType =:= UnitTpe
+        || functionResultType =:= samResultType
+        || (isReferenceType(samResultType) && isReferenceType(functionResultType))) // yes, this is what the spec says -- no further correspondance required
+      if (resTpOk && (samParamTypes corresponds functionParamTypes){ (samParamTp, funParamTp) =>
+          funParamTp =:= samParamTp || (isReferenceType(funParamTp) && isReferenceType(samParamTp) && funParamTp <:< samParamTp) }) target
+      else {
+        // We have to construct a new lambda target that bridges to the one created by uncurry.
+        // The bridge must satisfy the above invariants, while also minimizing adaptation on our end.
+        // LMF will insert runtime casts according to the spec at the above link.
+
+        // we use the more precise type between samParamTp and funParamTp to minimize boxing in the bridge method
+        // we are constructing a method whose signature matches the sam's signature (because the original target did not)
+        // whenever a type in the sam's signature is (erases to) a primitive type, we must pick the sam's version,
+        // as we don't implement the logic regarding widening that's performed by LMF -- we require =:= for primitives
+        //
+        // We use the sam's type for the check whether we're dealin with a reference type, as it could be a generic type,
+        // which means the function's parameter -- even if it expects a value class -- will need to be
+        // boxed on the generic call to the sam method.
+
+        val bridgeParamTypes = map2(samParamTypes, functionParamTypes){ (samParamTp, funParamTp) =>
+          if (isReferenceType(samParamTp) && funParamTp <:< samParamTp) funParamTp
+          else samParamTp
+        }
+
+        val bridgeResultType =
+          if (resTpOk && isReferenceType(samResultType) && functionResultType <:< samResultType) functionResultType
+          else samResultType
+
+        val typeAdapter = new TypeAdapter { val typer = localTyper }
+        import typeAdapter.{box, unbox, cast, adaptToType, unboxValueClass}
+
+        val targetParams = target.paramss.head
+        val numCaptures  = targetParams.length - functionParamTypes.length
+        val (targetCapturedParams, targetFunctionParams) = targetParams.splitAt(numCaptures)
+
+        val methSym = oldClass.newMethod(target.name.append("$adapted").toTermName, target.pos, target.flags | FINAL | ARTIFACT)
+        val bridgeCapturedParams = targetCapturedParams.map(param => methSym.newSyntheticValueParam(param.tpe, param.name.toTermName))
+        val bridgeFunctionParams =
+          map2(targetFunctionParams, bridgeParamTypes)((param, tp) => methSym.newSyntheticValueParam(tp, param.name.toTermName))
+
+        val bridgeParams = bridgeCapturedParams ::: bridgeFunctionParams
+
+        methSym setInfo MethodType(bridgeParams, bridgeResultType)
+        oldClass.info.decls enter methSym
+
+        val forwarderCall = localTyper.typedPos(pos) {
+          val capturedArgRefs = bridgeCapturedParams map gen.mkAttributedRef
+          val functionArgRefs =
+            map3(bridgeFunctionParams, functionParamTypes, targetParams.drop(numCaptures)) { (bridgeParam, functionParamTp, targetParam) =>
+              val bridgeParamRef = gen.mkAttributedRef(bridgeParam)
+              val targetParamTp  = targetParam.tpe
+
+              // TODO: can we simplify this to something like `adaptToType(adaptToType(bridgeParamRef, functionParamTp), targetParamTp)`?
+              val unboxed =
+                functionParamTp match {
+                  case ErasedValueType(clazz, underlying) =>
+                    // when the original function expected an argument of value class type,
+                    // the original target will expect the unboxed underlying value,
+                    // whereas the bridge will receive the boxed value (since the sam's argument type did not match and we had to adapt)
+                    localTyper.typed(unboxValueClass(bridgeParamRef, clazz, underlying), targetParamTp)
+                  case _ => bridgeParamRef
+                }
+
+              adaptToType(unboxed, targetParamTp)
+            }
+
+          gen.mkMethodCall(Select(gen.mkAttributedThis(oldClass), target), capturedArgRefs ::: functionArgRefs)
+        }
+
+        val bridge = postErasure.newTransformer(unit).transform(DefDef(methSym, List(bridgeParams.map(ValDef(_))),
+          adaptToType(forwarderCall setType functionResultType, bridgeResultType))).asInstanceOf[DefDef]
+
+        boxingBridgeMethods += bridge
+        bridge.symbol
+      }
+    }
+
+    private def transformFunction(originalFunction: Function): Tree = {
+      val target = targetMethod(originalFunction)
+      target.makeNotPrivate(target.owner)
+
+      // must be done before calling createBoxingBridgeMethod and mkLambdaMetaFactoryCall
+      if (!(target hasFlag STATIC) && !methodReferencesThis(target)) target setFlag STATIC
+
+      val funSym = originalFunction.tpe.typeSymbolDirect
+      // The functional interface that can be used to adapt the lambda target method `target` to the given function type.
+      val (functionalInterface, isSpecialized) =
+        if (!isFunctionSymbol(funSym)) (funSym, false)
+        else {
+          val specializedName =
+            specializeTypes.specializedFunctionName(funSym,
+              exitingErasure(target.info.paramTypes).map(reboxValueClass) :+ reboxValueClass(exitingErasure(target.info.resultType))).toTypeName
+
+          val isSpecialized = specializedName != funSym.name
+          val functionalInterface =
+            if (isSpecialized) currentRun.runDefinitions.Scala_Java8_CompatPackage.info.decl(specializedName.prepend("J"))
+            else currentRun.runDefinitions.Scala_Java8_CompatPackage_JFunction(originalFunction.vparams.length)
+
+          (functionalInterface, isSpecialized)
+        }
+
+      mkLambdaMetaFactoryCall(originalFunction, target, functionalInterface, isSpecialized)
+    }
 
     // here's the main entry point of the transform
     override def transform(tree: Tree): Tree = tree match {
@@ -84,164 +260,8 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         } finally boxingBridgeMethods.clear()
       case _ => super.transform(tree)
     }
-
-    // this entry point is aimed at the statements in the compilation unit.
-    // after working on the entire compilation until we'll have a set of
-    // new class definitions to add to the top level
-    override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
-      // Need to remove from the lambdaClassDefs map: there may be multiple PackageDef for the same
-      // package when defining a package object. We only add the lambda class to one. See SI-9097.
-      super.transformStats(stats, exprOwner) ++ lambdaClassDefs.remove(exprOwner).getOrElse(Nil)
-    }
-
-    def createBoxingBridgeMethod(oldClass: Symbol, target: Symbol, functionParamTypes: List[Type], functionResultType: Type, pos: Position): Symbol = {
-      // Note: we bail out of this method and return EmptyTree if we find there is no adaptation required.
-      // If we need to improve performance, we could check the types first before creating the
-      // method and parameter symbols.
-      val methSym = oldClass.newMethod(target.name.append("$adapted").toTermName, target.pos, target.flags | FINAL | ARTIFACT)
-      var neededAdaptation = false
-      def boxedType(tpe: Type): Type = {
-        if (isPrimitiveValueClass(tpe.typeSymbol)) {neededAdaptation = true; ObjectTpe}
-        else if (enteringErasure(tpe.typeSymbol.isDerivedValueClass)) {neededAdaptation = true; ObjectTpe}
-        else tpe
-      }
-      val targetParams: List[Symbol] = target.paramss.head
-      val numCaptures = targetParams.length - functionParamTypes.length
-      val (targetCaptureParams, targetFunctionParams) = targetParams.splitAt(numCaptures)
-      val bridgeParams: List[Symbol] =
-        targetCaptureParams.map(param => methSym.newSyntheticValueParam(param.tpe, param.name.toTermName)) :::
-        map2(targetFunctionParams, functionParamTypes)((param, tp) => methSym.newSyntheticValueParam(boxedType(tp), param.name.toTermName))
-
-      val bridgeResultType: Type = {
-        if (target.info.resultType == UnitTpe && functionResultType != UnitTpe) {
-          neededAdaptation = true
-          ObjectTpe
-        } else
-          boxedType(functionResultType)
-      }
-      val methodType = MethodType(bridgeParams, bridgeResultType)
-      methSym setInfo methodType
-      if (!neededAdaptation) target
-      else {
-        val bridgeParamTrees = bridgeParams.map(ValDef(_))
-
-        oldClass.info.decls enter methSym
-
-        val body = localTyper.typedPos(pos) {
-          val newTarget = Select(gen.mkAttributedThis(oldClass), target)
-          val args: List[Tree] = mapWithIndex(bridgeParams) { (param, i) =>
-            if (i < numCaptures) {
-              gen.mkAttributedRef(param)
-            } else {
-              val functionParam = functionParamTypes(i - numCaptures)
-              val targetParam = targetParams(i)
-              if (enteringErasure(functionParam.typeSymbol.isDerivedValueClass)) {
-                val casted = cast(gen.mkAttributedRef(param), functionParam)
-                val unboxed = unbox(casted, ErasedValueType(functionParam.typeSymbol, targetParam.tpe)).modifyType(postErasure.elimErasedValueType)
-                unboxed
-              } else adaptToType(gen.mkAttributedRef(param), targetParam.tpe)
-            }
-          }
-          gen.mkMethodCall(newTarget, args)
-        }
-        val body1 = if (enteringErasure(functionResultType.typeSymbol.isDerivedValueClass))
-          adaptToType(box(body.setType(ErasedValueType(functionResultType.typeSymbol, body.tpe))), bridgeResultType)
-        else adaptToType(body, bridgeResultType)
-        val methDef0 = DefDef(methSym, List(bridgeParamTrees), body1)
-        val bridge = postErasure.newTransformer(unit).transform(methDef0).asInstanceOf[DefDef]
-        boxingBridgeMethods += bridge
-        bridge.symbol
-      }
-    }
-
-    // turns a lambda into a new class def, a New expression instantiating that class
-    private def transformFunction(originalFunction: Function): Tree = {
-      val oldClass = originalFunction.symbol.enclClass
-      val arity = originalFunction.vparams.length
-
-      val target = targetMethod(originalFunction)
-      target.makeNotPrivate(target.owner)
-
-      if (!thisReferringMethods.contains(target))
-        target setFlag STATIC
-
-      val isStatic = target.hasFlag(STATIC)
-
-      // Reconstruct the type of the function entering erasure.
-      // We do this by taking the type after erasure, and re-boxing `ErasedValueType`.
-      //
-      // Unfortunately, the more obvious `enteringErasure(target.info)` doesn't work
-      // as we would like, value classes in parameter position show up as the unboxed types.
-      val (functionParamTypes, functionResultType) = exitingErasure {
-        def boxed(tp: Type) = tp match {
-          case ErasedValueType(valueClazz, _) => TypeRef(NoPrefix, valueClazz, Nil)
-          case _ => tp
-        }
-        // We don't need to deeply map `boxedValueClassType` over the infos as `ErasedValueType`
-        // will only appear directly as a parameter type in a method signature, as shown
-        // https://gist.github.com/retronym/ba81dbd462282c504ff8
-        val info = target.info
-        val boxedParamTypes = info.paramTypes.takeRight(arity).map(boxed)
-        (boxedParamTypes, boxed(info.resultType))
-      }
-
-      val functionType = definitions.functionType(functionParamTypes, functionResultType)
-      val funSym = functionType.typeSymbol
-      val specializedName = specializeTypes.specializedFunctionName(funSym, functionType.typeArgs).toTypeName
-      val isSpecialized = specializedName != funSym.name
-
-      // The functional interface that can be used to adapt the lambda target method `target` to the
-      // given function type. Returns `NoSymbol` if the compiler settings are unsuitable.
-      val functionalInterface =
-        if (isSpecialized) currentRun.runDefinitions.Scala_Java8_CompatPackage.info.decl(specializedName.prepend("J"))
-        else currentRun.runDefinitions.Scala_Java8_CompatPackage_JFunction(arity)
-
-      assert(functionalInterface.exists)
-
-      val lambdaTarget =
-        if (isSpecialized) target
-        else createBoxingBridgeMethod(oldClass, target, functionParamTypes, functionResultType, originalFunction.pos)
-
-      // We then apply this symbol to the captures.
-      val apply = {
-        val allCaptureArgs: List[Tree] = {
-          // find which variables are free in the lambda because those are captures that need to be
-          // passed into the constructor of the anonymous function class
-          val captures = FreeVarTraverser.freeVarsOf(originalFunction)
-          val thisArg = if (isStatic) Nil else (gen.mkAttributedThis(oldClass) setPos originalFunction.pos) :: Nil
-          val captureArgs = captures.iterator.map(capture => gen.mkAttributedRef(capture) setPos originalFunction.pos).toList
-          thisArg ::: captureArgs
-        }
-
-        // Create a symbol representing a fictional lambda factory method that accepts the captured
-        // arguments and returns a Function.
-        val msym = {
-          val meth = currentOwner.newMethod(nme.ANON_FUN_NAME, originalFunction.pos, ARTIFACT)
-          val capturedParams = meth.newSyntheticValueParams(allCaptureArgs.map(_.tpe))
-          meth.setInfo(MethodType(capturedParams, functionType))
-        }
-
-        localTyper.typedPos(originalFunction.pos)(Apply(Ident(msym), allCaptureArgs)).asInstanceOf[Apply]
-      }
-
-      // The backend needs to know the target of the lambda and the functional interface in order
-      // to emit the invokedynamic instruction. We pass this information as tree attachment.
-      apply.updateAttachment(LambdaMetaFactoryCapable(lambdaTarget, arity, functionalInterface))
-
-      apply
-    }
   } // DelambdafyTransformer
 
-  /**
-    * Get the symbol of the target lifted lambda body method from a function. I.e. if
-    * the function is {args => anonfun(args)} then this method returns anonfun's symbol
-    */
-  private def targetMethod(fun: Function): Symbol = fun match {
-    case Function(_, Apply(target, _)) => target.symbol
-    case _ =>
-      // any other shape of Function is unexpected at this point
-      abort(s"could not understand function with tree $fun")
-  }
 
   // A traverser that finds symbols used but not defined in the given Tree
   // TODO freeVarTraverser in LambdaLift does a very similar task. With some
@@ -276,12 +296,33 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   }
 
   // finds all methods that reference 'this'
-  class ThisReferringMethodsTraverser() extends Traverser {
-    private var currentMethod: Symbol = NoSymbol
+  class ThisReferringMethodsTraverser extends Traverser {
     // the set of methods that refer to this
-    val thisReferringMethods = mutable.Set[Symbol]()
+    private val thisReferringMethods = mutable.Set[Symbol]()
+
     // the set of lifted lambda body methods that each method refers to
-    val liftedMethodReferences = mutable.Map[Symbol, Set[Symbol]]().withDefault(_ => mutable.Set())
+    private val liftedMethodReferences = mutable.Map[Symbol, Set[Symbol]]().withDefault(_ => mutable.Set())
+
+    def methodReferencesThisIn(tree: Tree) = {
+      traverse(tree)
+      liftedMethodReferences.keys foreach refersToThis
+
+      thisReferringMethods
+    }
+
+    // recursively find methods that refer to 'this' directly or indirectly via references to other methods
+    // for each method found add it to the referrers set
+    private def refersToThis(symbol: Symbol): Boolean =
+      (thisReferringMethods contains symbol) ||
+        (liftedMethodReferences(symbol) exists refersToThis) && {
+          // add it early to memoize
+          debuglog(s"$symbol indirectly refers to 'this'")
+          thisReferringMethods += symbol
+          true
+        }
+
+    private var currentMethod: Symbol = NoSymbol
+
     override def traverse(tree: Tree) = tree match {
       case DefDef(_, _, _, _, _, _) =>
         // we don't expect defs within defs. At this phase trees should be very flat

@@ -194,7 +194,7 @@ abstract class UnCurry extends InfoTransform
       else if (mustExpandFunction) gen.expandFunction(localTyper)(fun, inConstructorFlag)
       else {
         // method definition with the same arguments, return type, and body as the original lambda
-        val liftedMethod = gen.mkMethodFromFunction(localTyper)(fun.symbol.owner, fun, nme.ANON_FUN_NAME, ARTIFACT)
+        val liftedMethod = gen.mkLiftedFunctionBodyMethod(localTyper)(fun.symbol.owner, fun)
 
         // new function whose body is just a call to the lifted method
         val newFun = deriveFunction(fun)(_ => localTyper.typedPos(fun.pos)(

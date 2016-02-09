@@ -348,7 +348,6 @@ trait StdNames {
     val REIFY_FREE_THIS_SUFFIX: NameType   = "$this"
     val REIFY_FREE_VALUE_SUFFIX: NameType  = "$value"
     val REIFY_SYMDEF_PREFIX: NameType      = "symdef$"
-    val SAM_BODY_SUFFIX: NameType          = "$body"
     val QUASIQUOTE_CASE: NameType          = "$quasiquote$case$"
     val QUASIQUOTE_EARLY_DEF: NameType     = "$quasiquote$early$def$"
     val QUASIQUOTE_FILE: String            = "<quasiquote>"
