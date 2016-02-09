@@ -160,7 +160,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   import global._
   import definitions.{ ObjectClass, termMember, dropNullaryMethod}
 
-  lazy val runtimeMirror = ru.runtimeMirror(classLoader)
+  def runtimeMirror = ru.runtimeMirror(classLoader)
 
   private def noFatal(body: => Symbol): Symbol = try body catch { case _: FatalError => NoSymbol }
 
@@ -358,7 +358,9 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     })
 
   // Set the current Java "context" class loader to this interpreter's class loader
-  def setContextClassLoader() = classLoader.setAsContext()
+  @deprecated("The thread context classloader is now set and restored around execution of REPL line, this method is now a no-op.", since = "2.12.0")
+  // Called from sbt-interface/0.12.4/src/ConsoleInterface.scala:39
+  def setContextClassLoader() = ()
 
   def allDefinedNames: List[Name]  = exitingTyper(replScope.toList.map(_.name).sorted)
   def unqualifiedIds: List[String] = allDefinedNames map (_.decode) sorted

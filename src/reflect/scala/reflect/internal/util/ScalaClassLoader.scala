@@ -32,7 +32,6 @@ trait ScalaClassLoader extends JClassLoader {
     try { setContext(this) ; action }
     finally setContext(saved)
   }
-  def setAsContext() { setContext(this) }
 
   /** Load and link a class with this classloader */
   def tryToLoadClass[T <: AnyRef](path: String): Option[Class[T]] = tryClass(path, initialize = false)
