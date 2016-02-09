@@ -316,41 +316,6 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
       "scala.Predef.Ensuring",
       "scala.collection.TraversableOnce.alternateImplicit")
 
-    /** There's a reason all these are specialized by hand but documenting each of them is beyond the point */
-    val arraySkipConversions = List(
-      "scala.Predef.refArrayOps",
-      "scala.Predef.intArrayOps",
-      "scala.Predef.doubleArrayOps",
-      "scala.Predef.longArrayOps",
-      "scala.Predef.floatArrayOps",
-      "scala.Predef.charArrayOps",
-      "scala.Predef.byteArrayOps",
-      "scala.Predef.shortArrayOps",
-      "scala.Predef.booleanArrayOps",
-      "scala.Predef.unitArrayOps",
-      //TODO: remove after implementing SI-9620
-      "scala.Predef._booleanArrayOps",
-      "scala.Predef._byteArrayOps",
-      "scala.Predef._charArrayOps",
-      "scala.Predef._doubleArrayOps",
-      "scala.Predef._floatArrayOps",
-      "scala.Predef._intArrayOps",
-      "scala.Predef._longArrayOps",
-      "scala.Predef._refArrayOps",
-      "scala.Predef._shortArrayOps",
-      "scala.Predef._unitArrayOps",
-      "scala.LowPriorityImplicits.wrapRefArray",
-      "scala.LowPriorityImplicits.wrapIntArray",
-      "scala.LowPriorityImplicits.wrapDoubleArray",
-      "scala.LowPriorityImplicits.wrapLongArray",
-      "scala.LowPriorityImplicits.wrapFloatArray",
-      "scala.LowPriorityImplicits.wrapCharArray",
-      "scala.LowPriorityImplicits.wrapByteArray",
-      "scala.LowPriorityImplicits.wrapShortArray",
-      "scala.LowPriorityImplicits.wrapBooleanArray",
-      "scala.LowPriorityImplicits.wrapUnitArray",
-      "scala.LowPriorityImplicits.genericWrapArray")
-
     // included as names as here we don't have access to a Global with Definitions :(
     def valueClassList = List("unit", "boolean", "byte", "short", "char", "int", "long", "float", "double")
     def valueClassFilterPrefixes = List("scala.LowPriorityImplicits", "scala.Predef")

@@ -26,28 +26,29 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
   /* Creates comments with necessary arguments */
   def createComment (
-    body0:           Option[Body]     = None,
-    authors0:        List[Body]       = List.empty,
-    see0:            List[Body]       = List.empty,
-    result0:         Option[Body]     = None,
-    throws0:         Map[String,Body] = Map.empty,
-    valueParams0:    Map[String,Body] = Map.empty,
-    typeParams0:     Map[String,Body] = Map.empty,
-    version0:        Option[Body]     = None,
-    since0:          Option[Body]     = None,
-    todo0:           List[Body]       = List.empty,
-    deprecated0:     Option[Body]     = None,
-    note0:           List[Body]       = List.empty,
-    example0:        List[Body]       = List.empty,
-    constructor0:    Option[Body]     = None,
-    source0:         Option[String]   = None,
-    inheritDiagram0: List[String]     = List.empty,
-    contentDiagram0: List[String]     = List.empty,
-    group0:          Option[Body]     = None,
-    groupDesc0:      Map[String,Body] = Map.empty,
-    groupNames0:     Map[String,Body] = Map.empty,
-    groupPrio0:      Map[String,Body] = Map.empty
-  ) : Comment = new Comment{
+    body0:                    Option[Body]     = None,
+    authors0:                 List[Body]       = List.empty,
+    see0:                     List[Body]       = List.empty,
+    result0:                  Option[Body]     = None,
+    throws0:                  Map[String,Body] = Map.empty,
+    valueParams0:             Map[String,Body] = Map.empty,
+    typeParams0:              Map[String,Body] = Map.empty,
+    version0:                 Option[Body]     = None,
+    since0:                   Option[Body]     = None,
+    todo0:                    List[Body]       = List.empty,
+    deprecated0:              Option[Body]     = None,
+    note0:                    List[Body]       = List.empty,
+    example0:                 List[Body]       = List.empty,
+    constructor0:             Option[Body]     = None,
+    source0:                  Option[String]   = None,
+    inheritDiagram0:          List[String]     = List.empty,
+    contentDiagram0:          List[String]     = List.empty,
+    group0:                   Option[Body]     = None,
+    groupDesc0:               Map[String,Body] = Map.empty,
+    groupNames0:              Map[String,Body] = Map.empty,
+    groupPrio0:               Map[String,Body] = Map.empty,
+    hideImplicitConversions0: List[Body]       = List.empty
+  ): Comment = new Comment {
     val body           = body0 getOrElse Body(Seq.empty)
     val authors        = authors0
     val see            = see0
@@ -89,7 +90,13 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         }
     }
 
+    override val hideImplicitConversions: List[String] =
+      hideImplicitConversions0 flatMap {
+        case Body(List(Paragraph(Chain(List(Summary(Text(e))))))) if (!e.trim.contains("\n")) => List(e)
+        case _ => List()
+      }
   }
+
 
   private val endOfText = '\u0003'
   private val endOfLine = '\u000A'
@@ -244,7 +251,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
             parse0(docBody append endOfLine append marker, tags, lastTagKey, ls, inCodeBlock = true)
         }
 
-      case CodeBlockEndRegex(before, marker, after) :: ls =>
+      case CodeBlockEndRegex(before, marker, after) :: ls => {
         if (!before.trim.isEmpty && !after.trim.isEmpty)
           parse0(docBody, tags, lastTagKey, before :: marker :: after :: ls, inCodeBlock = true)
         if (!before.trim.isEmpty)
@@ -262,23 +269,27 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           case None =>
             parse0(docBody append endOfLine append marker, tags, lastTagKey, ls, inCodeBlock = false)
         }
+      }
 
-      case SymbolTagRegex(name, sym, body) :: ls if (!inCodeBlock) =>
+      case SymbolTagRegex(name, sym, body) :: ls if (!inCodeBlock) => {
         val key = SymbolTagKey(name, sym)
         val value = body :: tags.getOrElse(key, Nil)
         parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
+      }
 
-      case SimpleTagRegex(name, body) :: ls if (!inCodeBlock) =>
+      case SimpleTagRegex(name, body) :: ls if (!inCodeBlock) => {
         val key = SimpleTagKey(name)
         val value = body :: tags.getOrElse(key, Nil)
         parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
+      }
 
-      case SingleTagRegex(name) :: ls if (!inCodeBlock) =>
+      case SingleTagRegex(name) :: ls if (!inCodeBlock) => {
         val key = SimpleTagKey(name)
         val value = "" :: tags.getOrElse(key, Nil)
         parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
+      }
 
-      case line :: ls if (lastTagKey.isDefined) =>
+      case line :: ls if (lastTagKey.isDefined) => {
         val newtags = if (!line.isEmpty) {
           val key = lastTagKey.get
           val value =
@@ -289,13 +300,15 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           tags + (key -> value)
         } else tags
         parse0(docBody, newtags, lastTagKey, ls, inCodeBlock)
+      }
 
-      case line :: ls =>
+      case line :: ls => {
         if (docBody.length > 0) docBody append endOfLine
         docBody append line
         parse0(docBody, tags, lastTagKey, ls, inCodeBlock)
+      }
 
-      case Nil =>
+      case Nil => {
         // Take the {inheritance, content} diagram keys aside, as it doesn't need any parsing
         val inheritDiagramTag = SimpleTagKey("inheritanceDiagram")
         val contentDiagramTag = SimpleTagKey("contentDiagram")
@@ -383,14 +396,15 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           group0          = oneTag(SimpleTagKey("group")),
           groupDesc0      = allSymsOneTag(SimpleTagKey("groupdesc")),
           groupNames0     = allSymsOneTag(SimpleTagKey("groupname")),
-          groupPrio0      = allSymsOneTag(SimpleTagKey("groupprio"))
+          groupPrio0      = allSymsOneTag(SimpleTagKey("groupprio")),
+          hideImplicitConversions0 = allTags(SimpleTagKey("hideImplicitConversion"))
         )
 
         for ((key, _) <- bodyTags)
           reporter.warning(pos, s"Tag '@${key.name}' is not recognised")
 
         com
-
+      }
     }
 
     parse0(new StringBuilder(comment.size), Map.empty, None, clean(comment), inCodeBlock = false)

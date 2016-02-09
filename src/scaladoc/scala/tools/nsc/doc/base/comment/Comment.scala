@@ -123,6 +123,9 @@ abstract class Comment {
   /** Member group priorities */
   def groupPrio: Map[String,Int]
 
+  /** A list of implicit conversions to hide */
+  def hideImplicitConversions: List[String]
+
   override def toString =
     body.toString + "\n" +
     (authors map ("@author " + _.toString)).mkString("\n") +

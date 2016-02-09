@@ -486,6 +486,37 @@ object Array extends FallbackArrayBuilding {
  *  @see [[http://www.scala-lang.org/files/archive/spec/2.11/ Scala Language Specification]], for in-depth information on the transformations the Scala compiler makes on Arrays (Sections 6.6 and 6.15 respectively.)
  *  @see [[http://docs.scala-lang.org/sips/completed/scala-2-8-arrays.html "Scala 2.8 Arrays"]] the Scala Improvement Document detailing arrays since Scala 2.8.
  *  @see [[http://docs.scala-lang.org/overviews/collections/arrays.html "The Scala 2.8 Collections' API"]] section on `Array` by Martin Odersky for more information.
+ *  @hideImplicitConversion scala.Predef.booleanArrayOps
+ *  @hideImplicitConversion scala.Predef.byteArrayOps
+ *  @hideImplicitConversion scala.Predef.charArrayOps
+ *  @hideImplicitConversion scala.Predef.doubleArrayOps
+ *  @hideImplicitConversion scala.Predef.floatArrayOps
+ *  @hideImplicitConversion scala.Predef.intArrayOps
+ *  @hideImplicitConversion scala.Predef.longArrayOps
+ *  @hideImplicitConversion scala.Predef.refArrayOps
+ *  @hideImplicitConversion scala.Predef.shortArrayOps
+ *  @hideImplicitConversion scala.Predef.unitArrayOps
+ *  @hideImplicitConversion scala.Predef._booleanArrayOps
+ *  @hideImplicitConversion scala.Predef._byteArrayOps
+ *  @hideImplicitConversion scala.Predef._charArrayOps
+ *  @hideImplicitConversion scala.Predef._doubleArrayOps
+ *  @hideImplicitConversion scala.Predef._floatArrayOps
+ *  @hideImplicitConversion scala.Predef._intArrayOps
+ *  @hideImplicitConversion scala.Predef._longArrayOps
+ *  @hideImplicitConversion scala.Predef._refArrayOps
+ *  @hideImplicitConversion scala.Predef._shortArrayOps
+ *  @hideImplicitConversion scala.Predef._unitArrayOps
+ *  @hideImplicitConversion scala.LowPriorityImplicits.wrapRefArray
+ *  @hideImplicitConversion scala.LowPriorityImplicits.wrapIntArray
+ *  @hideImplicitConversion scala.LowPriorityImplicits.wrapDoubleArray
+ *  @hideImplicitConversion scala.LowPriorityImplicits.wrapLongArray
+ *  @hideImplicitConversion scala.LowPriorityImplicits.wrapFloatArray
+ *  @hideImplicitConversion scala.LowPriorityImplicits.wrapCharArray
+ *  @hideImplicitConversion scala.LowPriorityImplicits.wrapByteArray
+ *  @hideImplicitConversion scala.LowPriorityImplicits.wrapShortArray
+ *  @hideImplicitConversion scala.LowPriorityImplicits.wrapBooleanArray
+ *  @hideImplicitConversion scala.LowPriorityImplicits.wrapUnitArray
+ *  @hideImplicitConversion scala.LowPriorityImplicits.genericWrapArray
  *  @define coll array
  *  @define Coll `Array`
  *  @define orderDependent
