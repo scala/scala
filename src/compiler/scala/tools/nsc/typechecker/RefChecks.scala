@@ -1154,11 +1154,13 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     def toConstructor(pos: Position, tpe: Type): Tree = {
       val rtpe = tpe.finalResultType
       assert(rtpe.typeSymbol hasFlag CASE, tpe)
-      localTyper.typedOperator {
+      val tree = localTyper.typedOperator {
         atPos(pos) {
           Select(New(TypeTree(rtpe)), rtpe.typeSymbol.primaryConstructor)
         }
       }
+      checkUndesiredProperties(rtpe.typeSymbol, tree.pos)
+      tree
     }
 
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
@@ -1529,11 +1531,20 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         !tree.tpe.resultType.typeSymbol.primaryConstructor.isLessAccessibleThan(tree.symbol)
 
       if (doTransform) {
+        def loop(t: Tree): Unit = t match {
+          case Ident(_) =>
+            checkUndesiredProperties(t.symbol, t.pos)
+          case Select(qual, _) =>
+            checkUndesiredProperties(t.symbol, t.pos)
+            loop(qual)
+          case _ =>
+        }
         tree foreach {
           case i@Ident(_) =>
             enterReference(i.pos, i.symbol) // SI-5390 need to `enterReference` for `a` in `a.B()`
           case _ =>
         }
+        loop(tree)
         toConstructor(tree.pos, tree.tpe)
       }
       else {
