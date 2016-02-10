@@ -13,9 +13,15 @@ compile-time-only-a.scala:36: error: C2
 compile-time-only-a.scala:38: error: C3
   new C3(2)
       ^
+compile-time-only-a.scala:39: error: C3
+  C3(2)
+  ^
 compile-time-only-a.scala:41: error: C4
   new C4(2)
       ^
+compile-time-only-a.scala:42: error: C4
+  C4(2)
+  ^
 compile-time-only-a.scala:45: error: C5
   2.ext
   ^
@@ -73,4 +79,4 @@ compile-time-only-a.scala:75: error: placebo
 compile-time-only-a.scala:75: error: placebo
   @placebo def x = (2: @placebo)
                         ^
-25 errors found
+27 errors found
