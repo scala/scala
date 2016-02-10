@@ -462,7 +462,7 @@ trait Types
      *  the empty list for all other types */
     def boundSyms: immutable.Set[Symbol] = emptySymbolSet
 
-    /** Replace formal type parameter symbols with actual type arguments.
+    /** Replace formal type parameter symbols with actual type arguments. ErrorType on arity mismatch.
      *
      * Amounts to substitution except for higher-kinded types. (See overridden method in TypeRef) -- @M
      */
@@ -1867,53 +1867,13 @@ trait Types
     override def isHigherKinded = false
     override def typeParams = Nil
 
-    override def transform(tp: Type): Type = {
-      // This situation arises when a typevar is encountered for which
-      // too little information is known to determine its kind, and
-      // it later turns out not to have kind *. See SI-4070.  Only
-      // logging it for now.
-      val tparams = sym.typeParams
-      if (tparams.size != args.size)
-        devWarning(s"$this.transform($tp), but tparams.isEmpty and args=$args")
-      def asSeenFromInstantiated(tp: Type) =
-        asSeenFromOwner(tp).instantiateTypeParams(tparams, args)
-      // If we're called with a poly type, and we were to run the `asSeenFrom`, over the entire
-      // type, we can end up with new symbols for the type parameters (clones from TypeMap).
-      // The subsequent substitution of type arguments would fail. This problem showed up during
-      // the fix for SI-8046, however the solution taken there wasn't quite right, and led to
-      // SI-8170.
-      //
-      // Now, we detect the PolyType before both the ASF *and* the substitution, and just operate
-      // on the result type.
-      //
-      // TODO: Revisit this and explore the questions raised:
-      //
-      //  AM: I like this better than the old code, but is there any way the tparams would need the ASF treatment as well?
-      //  JZ: I think its largely irrelevant, as they are no longer referred to in the result type.
-      //      In fact, you can get away with returning a type of kind * here and the sky doesn't fall:
-      //        `case PolyType(`tparams`, result) => asSeenFromInstantiated(result)`
-      //      But I thought it was better to retain the kind.
-      //  AM: I've been experimenting with apply-type-args-then-ASF, but running into cycles.
-      //      In general, it seems iffy the tparams can never occur in the result
-      //      then we might as well represent the type as a no-arg typeref.
-      //  AM: I've also been trying to track down uses of transform (pretty generic name for something that
-      //      does not seem that widely applicable).
-      //      It's kind of a helper for computing baseType (since it tries to propagate our type args to some
-      //      other type, which has to be related to this type for that to make sense).
-      //
-      tp match {
-        case PolyType(`tparams`, result) => PolyType(tparams, asSeenFromInstantiated(result))
-        case _                           => asSeenFromInstantiated(tp)
-      }
-    }
-
     // note: does not go through typeRef. There's no need to because
     // neither `pre` nor `sym` changes.  And there's a performance
     // advantage to call TypeRef directly.
     override def typeConstructor = TypeRef(pre, sym, Nil)
   }
 
-  class ModuleTypeRef(pre0: Type, sym0: Symbol) extends NoArgsTypeRef(pre0, sym0) with ClassTypeRef {
+  class ModuleTypeRef(pre0: Type, sym0: Symbol) extends NoArgsTypeRef(pre0, sym0) {
     require(sym.isModuleClass, sym)
     private[this] var narrowedCache: Type = _
     override def narrow = {
@@ -1935,7 +1895,7 @@ trait Types
     require(sym.isPackageClass, sym)
     override protected def finishPrefix(rest: String) = packagePrefix + rest
   }
-  class RefinementTypeRef(pre0: Type, sym0: Symbol) extends NoArgsTypeRef(pre0, sym0) with ClassTypeRef {
+  class RefinementTypeRef(pre0: Type, sym0: Symbol) extends NoArgsTypeRef(pre0, sym0) {
     require(sym.isRefinementClass, sym)
 
     // I think this is okay, but see #1241 (r12414), #2208, and typedTypeConstructor in Typers
@@ -1951,7 +1911,6 @@ trait Types
     // represented as existential types.
     override def isHigherKinded = (typeParams ne Nil)
     override def typeParams     = if (isDefinitionsInitialized) sym.typeParams else sym.unsafeTypeParams
-    private def isRaw           = !phase.erasedTypes && isRawIfWithoutArgs(sym)
 
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
       if (isHigherKinded) {
@@ -1964,17 +1923,6 @@ trait Types
       else
         super.instantiateTypeParams(formals, actuals)
 
-    override def transform(tp: Type): Type = {
-      val res = asSeenFromOwner(tp)
-      if (isHigherKinded && !isRaw)
-        res.instantiateTypeParams(typeParams, dummyArgs)
-      else
-        res
-    }
-
-    override def transformInfo(tp: Type): Type =
-      appliedType(asSeenFromOwner(tp), dummyArgs)
-
     override def narrow =
       if (sym.isModuleClass) singleType(pre, sym.sourceModule)
       else super.narrow
@@ -1984,15 +1932,6 @@ trait Types
 
     override protected def normalizeImpl: Type =
       if (isHigherKinded) etaExpand else super.normalizeImpl
-  }
-
-  trait ClassTypeRef extends TypeRef {
-    // !!! There are scaladoc-created symbols arriving which violate this require.
-    // require(sym.isClass, sym)
-
-    override def baseType(clazz: Symbol): Type =
-      if (sym == clazz) this
-      else transform(sym.info.baseType(clazz))
   }
 
   trait NonClassTypeRef extends TypeRef {
@@ -2011,32 +1950,11 @@ trait Types
 
     private[Types] def relativeInfo = /*trace(s"relativeInfo(${safeToString}})")*/{
       if (relativeInfoPeriod != currentPeriod) {
-        val memberInfo = pre.memberInfo(sym)
-        relativeInfoCache = transformInfo(memberInfo)
+        relativeInfoCache = memberInfoInstantiated
         relativeInfoPeriod = currentPeriod
       }
       relativeInfoCache
     }
-
-    override def baseType(clazz: Symbol): Type =
-      if (sym == clazz) this else baseTypeOfNonClassTypeRef(this, clazz)
-  }
-
-  protected def baseTypeOfNonClassTypeRef(tpe: NonClassTypeRef, clazz: Symbol) = try {
-    basetypeRecursions += 1
-    if (basetypeRecursions < LogPendingBaseTypesThreshold)
-      tpe.relativeInfo.baseType(clazz)
-    else if (pendingBaseTypes contains tpe)
-      if (clazz == AnyClass) clazz.tpe else NoType
-    else
-      try {
-        pendingBaseTypes += tpe
-        tpe.relativeInfo.baseType(clazz)
-      } finally {
-        pendingBaseTypes -= tpe
-      }
-  } finally {
-    basetypeRecursions -= 1
   }
 
   trait AliasTypeRef extends NonClassTypeRef {
@@ -2130,7 +2048,7 @@ trait Types
       val symInfo = sym.info
       if (thisInfoCache == null || (symInfo ne symInfoCache)) {
         symInfoCache = symInfo
-        thisInfoCache = transformInfo(symInfo) match {
+        thisInfoCache = memberInfoInstantiated match {
           // If a subtyping cycle is not detected here, we'll likely enter an infinite
           // loop before a sensible error can be issued.  SI-5093 is one example.
           case x: SubType if x.supertype eq this =>
@@ -2193,7 +2111,70 @@ trait Types
     // formal type parameters with actual ones. If tp is higher kinded,
     // the "actual" type arguments are types that simply reference the
     // corresponding type parameters (unbound type variables)
-    def transform(tp: Type): Type
+    final def transform(tp: Type): Type =
+      if (args.isEmpty) {
+        if (isHigherKinded && (phase.erasedTypes || !isRawIfWithoutArgs(sym)))
+          tp.asSeenFrom(pre, sym.owner).instantiateTypeParams(typeParams, dummyArgs)
+        else
+          tp.asSeenFrom(pre, sym.owner)
+      } else {
+        // This situation arises when a typevar is encountered for which
+        // too little information is known to determine its kind, and
+        // it later turns out not to have kind *. See SI-4070.  Only
+        // logging it for now.
+        val tparams = sym.typeParams
+        if (!sameLength(tparams, args)) devWarning(s"$this.transform($tp), but tparams.isEmpty and args=$args")
+
+        // If we're called with a poly type, and we were to run the `asSeenFrom`, over the entire
+        // type, we can end up with new symbols for the type parameters (clones from TypeMap).
+        // The subsequent substitution of type arguments would fail. This problem showed up during
+        // the fix for SI-8046, however the solution taken there wasn't quite right, and led to
+        // SI-8170.
+        //
+        // Now, we detect the PolyType before both the ASF *and* the substitution, and just operate
+        // on the result type.
+        //
+        // TODO: Revisit this and explore the questions raised:
+        //
+        //  AM: I like this better than the old code, but is there any way the tparams would need the ASF treatment as well?
+        //  JZ: I think its largely irrelevant, as they are no longer referred to in the result type.
+        //      In fact, you can get away with returning a type of kind * here and the sky doesn't fall:
+        //        `case PolyType(`tparams`, result) => asSeenFromInstantiated(result)`
+        //      But I thought it was better to retain the kind.
+        //  AM: I've been experimenting with apply-type-args-then-ASF, but running into cycles.
+        //      In general, it seems iffy the tparams can never occur in the result
+        //      then we might as well represent the type as a no-arg typeref.
+        //  AM: I've also been trying to track down uses of transform (pretty generic name for something that
+        //      does not seem that widely applicable).
+        //      It's kind of a helper for computing baseType (since it tries to propagate our type args to some
+        //      other type, which has to be related to this type for that to make sense).
+        //
+        tp match {
+          case PolyType(`tparams`, result) => PolyType(tparams, result.asSeenFrom(pre, sym.owner).instantiateTypeParams(tparams, args))
+          case _ => tp.asSeenFrom(pre, sym.owner).instantiateTypeParams(tparams, args)
+        }
+      }
+
+    final override def baseType(clazz: Symbol): Type =
+      if (sym == clazz) this
+      else if (sym.isClass) transform(sym.info.baseType(clazz))
+      else baseTypeOfNonClassTypeRef(clazz)
+
+    //@M! use appliedType on the polytype that represents the bounds (or if aliastype, the rhs)
+    final protected def memberInfoInstantiated: Type =
+      appliedType(sym.info.asSeenFrom(pre, sym.owner), if (args.isEmpty) dummyArgs else args)
+
+    private def baseTypeOfNonClassTypeRef(clazz: Symbol) =
+      try {
+        basetypeRecursions += 1
+        if (basetypeRecursions >= LogPendingBaseTypesThreshold) baseTypeOfNonClassTypeRefLogged(clazz)
+        else memberInfoInstantiated.baseType(clazz)
+      } finally basetypeRecursions -= 1
+
+    private def baseTypeOfNonClassTypeRefLogged(clazz: Symbol) =
+      if (pendingBaseTypes add this) try memberInfoInstantiated.baseType(clazz) finally pendingBaseTypes -= this
+      else if (clazz == AnyClass) clazz.tpe
+      else NoType
 
     // eta-expand, subtyping relies on eta-expansion of higher-kinded types
     protected def normalizeImpl: Type = if (isHigherKinded) etaExpand else super.normalize
@@ -2226,13 +2207,9 @@ trait Types
     // (they are allowed to be rebound more liberally)
     def coevolveSym(pre1: Type): Symbol = sym
 
-    //@M! use appliedType on the polytype that represents the bounds (or if aliastype, the rhs)
-    def transformInfo(tp: Type): Type = appliedType(asSeenFromOwner(tp), args)
-
     def thisInfo                  = sym.info
     def initializedTypeParams     = sym.info.typeParams
     def typeParamsMatchArgs       = sameLength(initializedTypeParams, args)
-    def asSeenFromOwner(tp: Type) = tp.asSeenFrom(pre, sym.owner)
 
     override def baseClasses      = thisInfo.baseClasses
     override def baseTypeSeqDepth = baseTypeSeq.maxDepth
@@ -2363,10 +2340,10 @@ trait Types
   // No longer defined as anonymous classes in `object TypeRef` to avoid an unnecessary outer pointer.
   private final class AliasArgsTypeRef(pre: Type, sym: Symbol, args: List[Type]) extends ArgsTypeRef(pre, sym, args) with AliasTypeRef
   private final class AbstractArgsTypeRef(pre: Type, sym: Symbol, args: List[Type]) extends ArgsTypeRef(pre, sym, args) with AbstractTypeRef
-  private final class ClassArgsTypeRef(pre: Type, sym: Symbol, args: List[Type]) extends ArgsTypeRef(pre, sym, args) with ClassTypeRef
+  private final class ClassArgsTypeRef(pre: Type, sym: Symbol, args: List[Type]) extends ArgsTypeRef(pre, sym, args)
   private final class AliasNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym) with AliasTypeRef
   private final class AbstractNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym) with AbstractTypeRef
-  private final class ClassNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym) with ClassTypeRef
+  private final class ClassNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym)
 
   object TypeRef extends TypeRefExtractor {
     def apply(pre: Type, sym: Symbol, args: List[Type]): Type = unique({
