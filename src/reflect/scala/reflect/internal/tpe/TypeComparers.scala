@@ -463,7 +463,7 @@ trait TypeComparers {
         case SingletonClass                   => tp1.isStable || fourthTry
         case _: ClassSymbol                   => classOnRight
         case _: TypeSymbol if sym2.isDeferred => abstractTypeOnRight(tp2.bounds.lo) || fourthTry
-        case _: TypeSymbol                    => retry(tp1.normalize, tp2.normalize)
+        case _: TypeSymbol                    => retry(normalizePlus(tp1), normalizePlus(tp2))
         case _                                => fourthTry
       }
     }
@@ -517,7 +517,7 @@ trait TypeComparers {
      *   - handle typerefs, refined types, and singleton types.
      */
     def fourthTry = {
-      def retry(lhs: Type, rhs: Type)  = isSubType(lhs, rhs, depth)
+      def retry(lhs: Type, rhs: Type)  = ((tp1 ne lhs) || (tp2 ne rhs)) && isSubType(lhs, rhs, depth)
       def abstractTypeOnLeft(hi: Type) = isDifferentTypeConstructor(tp1, hi) && retry(hi, tp2)
 
       tp1 match {
@@ -526,22 +526,16 @@ trait TypeComparers {
             case TypeRef(_, sym2, _) => sym1 isBottomSubClass sym2
             case _                   => isSingleType(tp2) && retry(tp1, tp2.widen)
           }
-          def moduleOnLeft = tp2 match {
-            case SingleType(pre2, sym2) => equalSymsAndPrefixes(sym1.sourceModule, pre1, sym2, pre2)
-            case _                      => false
-          }
-          def classOnLeft = (
-            if (isRawType(tp1)) retry(rawToExistential(tp1), tp2)
-            else if (sym1.isModuleClass) moduleOnLeft
-            else sym1.isRefinementClass && retry(sym1.info, tp2)
-          )
+
           sym1 match {
-            case NothingClass                     => true
-            case NullClass                        => nullOnLeft
-            case _: ClassSymbol                   => classOnLeft
-            case _: TypeSymbol if sym1.isDeferred => abstractTypeOnLeft(tp1.bounds.hi)
-            case _: TypeSymbol                    => retry(tp1.normalize, tp2.normalize)
-            case _                                => false
+            case NothingClass                             => true
+            case NullClass                                => nullOnLeft
+            case _: ClassSymbol if isRawType(tp1)         => retry(normalizePlus(tp1), normalizePlus(tp2))
+            case _: ClassSymbol if sym1.isModuleClass     => retry(normalizePlus(tp1), normalizePlus(tp2))
+            case _: ClassSymbol if sym1.isRefinementClass => retry(sym1.info, tp2)
+            case _: TypeSymbol if sym1.isDeferred         => abstractTypeOnLeft(tp1.bounds.hi)
+            case _: TypeSymbol                            => retry(normalizePlus(tp1), normalizePlus(tp2))
+            case _                                        => false
           }
         case RefinedType(parents, _) => parents exists (retry(_, tp2))
         case _: SingletonType        => retry(tp1.underlying, tp2)
