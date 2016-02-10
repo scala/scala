@@ -47,7 +47,9 @@ abstract class AbstractRunner(argstr: String) extends {
     oempty(p, f, s) mkString ", "
   }
 
+  protected var partestCmd       = "test/partest"
   protected var summarizing      = false
+  protected var printSummary     = true
   private var elapsedMillis    = 0L
   private var expectedFailures = 0
   protected def isSuccess = failedTests.size == expectedFailures
@@ -70,18 +72,20 @@ abstract class AbstractRunner(argstr: String) extends {
         if (isPartestVerbose) {
           echo(bold(cyan("##### Transcripts from failed tests #####\n")))
           failed0 foreach { state =>
-            comment("partest " + state.testFile)
+            comment(partestCmd + " " + state.testFile)
             echo(state.transcriptString + "\n")
           }
         }
 
         def files_s = failed0.map(_.testFile).mkString(""" \""" + "\n  ")
         echo("# Failed test paths (this command will update checkfiles)")
-        echo("test/partest --update-check \\\n  " + files_s + "\n")
+        echo(partestCmd + " --update-check \\\n  " + files_s + "\n")
       }
 
-      echo(message)
-      levyJudgment()
+      if (printSummary) {
+        echo(message)
+        levyJudgment()
+      }
     }
   }
 

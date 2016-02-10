@@ -18,7 +18,8 @@ class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, log
     extends AbstractRunner(args.filter(a => !a.startsWith("-D")).mkString(" ")) {
 
   // no summary, SBT will do that for us
-  summarizing = true
+  printSummary = false
+  partestCmd   = "partest"
 
   val javaOpts = {
     val l = args.filter(_.startsWith("-Dpartest.java_opts=")).map(_.substring(20))
