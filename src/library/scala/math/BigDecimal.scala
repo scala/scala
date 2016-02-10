@@ -397,7 +397,7 @@ object BigDecimal {
  *  @version 1.1
  */
 final class BigDecimal(val bigDecimal: BigDec, val mc: MathContext)
-extends ScalaNumber with ScalaNumericConversions with Serializable {
+extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[BigDecimal] {
   def this(bigDecimal: BigDec) = this(bigDecimal, BigDecimal.defaultMathContext)
   import BigDecimal.RoundingMode._
   import BigDecimal.{decimal, binary, exact}
@@ -536,22 +536,6 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
   /** Compares this BigDecimal with the specified BigDecimal
    */
   def compare (that: BigDecimal): Int = this.bigDecimal compareTo that.bigDecimal
-
-  /** Less-than-or-equals comparison of BigDecimals
-   */
-  def <= (that: BigDecimal): Boolean = compare(that) <= 0
-
-  /** Greater-than-or-equals comparison of BigDecimals
-   */
-  def >= (that: BigDecimal): Boolean = compare(that) >= 0
-
-  /** Less-than of BigDecimals
-   */
-  def <  (that: BigDecimal): Boolean = compare(that) <  0
-
-  /** Greater-than comparison of BigDecimals
-   */
-  def >  (that: BigDecimal): Boolean = compare(that) > 0
 
   /** Addition of BigDecimals
    */
