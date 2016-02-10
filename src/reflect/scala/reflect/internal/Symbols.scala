@@ -1256,8 +1256,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** These should be moved somewhere like JavaPlatform.
      */
     def javaSimpleName: Name = addModuleSuffix(simpleName.dropLocal)
-    def javaBinaryName: Name = addModuleSuffix(fullNameInternal('/'))
-    def javaClassName: String  = addModuleSuffix(fullNameInternal('.')).toString
+    def javaBinaryName: Name = name.newName(javaBinaryNameString)
+    def javaBinaryNameString: String = fullName('/', moduleSuffix)
+    def javaClassName: String  = fullName('.', moduleSuffix)
 
     /** The encoded full path name of this symbol, where outer names and inner names
      *  are separated by `separator` characters.
@@ -1265,18 +1266,29 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  Never adds id.
      *  Drops package objects.
      */
-    final def fullName(separator: Char): String = fullNameAsName(separator).toString
+    final def fullName(separator: Char): String = fullName(separator, "")
 
-    /** Doesn't drop package objects, for those situations (e.g. classloading)
-     *  where the true path is needed.
-     */
-    private def fullNameInternal(separator: Char): Name = (
-      if (isRoot || isRootPackage || this == NoSymbol) name
-      else if (owner.isEffectiveRoot) name
-      else effectiveOwner.enclClass.fullNameAsName(separator) append (separator, name)
-    )
+    private def fullName(separator: Char, suffix: CharSequence): String = {
+      var b: java.lang.StringBuffer = null
+      def loop(size: Int, sym: Symbol): Unit = {
+        val symName = sym.name
+        val nSize = symName.length - (if (symName.endsWith(nme.LOCAL_SUFFIX_STRING)) 1 else 0)
+        if (sym.isRoot || sym.isRootPackage || sym == NoSymbol || sym.owner.isEffectiveRoot) {
+          val capacity = size + nSize
+          b = new java.lang.StringBuffer(capacity)
+          b.append(chrs, symName.start, nSize)
+        } else {
+          loop(size + nSize + 1, sym.effectiveOwner.enclClass)
+          b.append(separator)
+          b.append(chrs, symName.start, nSize)
+        }
+      }
+      loop(suffix.length(), this)
+      b.append(suffix)
+      b.toString
+    }
 
-    def fullNameAsName(separator: Char): Name = fullNameInternal(separator).dropLocal
+    def fullNameAsName(separator: Char): Name = name.newName(fullName(separator, ""))
 
     /** The encoded full path name of this symbol, where outer names and inner names
      *  are separated by periods.
