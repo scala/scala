@@ -65,6 +65,10 @@ object scala extends Command {
         "Do not use the " & MBold("fsc") & " offline compiler."),
 
       Definition(
+        CmdOption("nc"),
+        "Same as " & Mono("-nocompdaemon") & "."),
+
+      Definition(
         CmdOptionBound("D", "property=value"),
         "Set a Java system property.  If no value is specified, " &
         "then the property is set to the empty string."),
@@ -134,6 +138,11 @@ object scala extends Command {
     "Such a header must have each header boundary start at the beginning of a " &
     "line.  Headers can be used to make stand-alone script files, as shown " &
     "in the examples below.",
+
+    "When running a script or using " & Mono("-e") & ", an already running " &
+    "compilation daemon (fsc) is used, or a new one started on demand.  The " &
+    Mono("-nocompdaemon") & " or " & Mono("-nc") & " option can be used to " &
+    "prevent this.",
 
     "If " & Mono("scala") & " is run from an sbaz(1) directory, " &
     "then it will add to its classpath any jars installed in the " &
