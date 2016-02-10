@@ -1882,7 +1882,8 @@ trait Types
 
       narrowedCache
     }
-    private[Types] def invalidateModuleTypeRefCaches(): Unit = {
+    override private[Types] def invalidateTypeRefCaches(): Unit = {
+      super.invalidateTypeRefCaches()
       narrowedCache = null
     }
     override protected def finishPrefix(rest: String) = objectPrefix + rest
@@ -1900,7 +1901,7 @@ trait Types
 
     // I think this is okay, but see #1241 (r12414), #2208, and typedTypeConstructor in Typers
     override protected def normalizeImpl: Type = sym.info.normalize
-    override protected def finishPrefix(rest: String) = "" + thisInfo
+    override protected def finishPrefix(rest: String) = "" + sym.info
   }
 
   class NoArgsTypeRef(pre0: Type, sym0: Symbol) extends TypeRef(pre0, sym0, Nil) {
@@ -1937,35 +1938,70 @@ trait Types
   trait NonClassTypeRef extends TypeRef {
     require(sym.isNonClassType, sym)
 
-    /* Syncnote: These are pure caches for performance; no problem to evaluate these
-     * several times. Hence, no need to protected with synchronized in a multi-threaded
-     * usage scenario.
-     */
+    /** Syncnote: These are pure caches for performance; no problem to evaluate these
+      * several times. Hence, no need to protected with synchronized in a multi-threaded
+      * usage scenario.
+      */
     private var relativeInfoCache: Type = _
-    private var relativeInfoPeriod: Period = NoPeriod
-    private[Types] def invalidateNonClassTypeRefCaches(): Unit = {
+    private var relativeInfoCacheValidForPeriod: Period = NoPeriod
+    private var relativeInfoCacheValidForSymInfo: Type = _
+
+    override private[Types] def invalidateTypeRefCaches(): Unit = {
+      super.invalidateTypeRefCaches()
       relativeInfoCache = NoType
-      relativeInfoPeriod = NoPeriod
+      relativeInfoCacheValidForPeriod = NoPeriod
+      relativeInfoCacheValidForSymInfo = null
     }
 
-    private[Types] def relativeInfo = /*trace(s"relativeInfo(${safeToString}})")*/{
-      if (relativeInfoPeriod != currentPeriod) {
-        relativeInfoCache = memberInfoInstantiated
-        relativeInfoPeriod = currentPeriod
+    final override protected def relativeInfo = {
+      val symInfo = sym.info
+      if ((relativeInfoCache eq null) || (relativeInfoCacheValidForSymInfo ne symInfo) || (relativeInfoCacheValidForPeriod != currentPeriod)) {
+        relativeInfoCache = super.relativeInfo
+
+        if (this.isInstanceOf[AbstractTypeRef]) validateRelativeInfo()
+
+        relativeInfoCacheValidForSymInfo = symInfo
+        relativeInfoCacheValidForPeriod = currentPeriod
       }
       relativeInfoCache
     }
+
+    private def validateRelativeInfo(): Unit = relativeInfoCache match {
+      // If a subtyping cycle is not detected here, we'll likely enter an infinite
+      // loop before a sensible error can be issued.  SI-5093 is one example.
+      case x: SubType if x.supertype eq this =>
+        relativeInfoCache = null
+        throw new RecoverableCyclicReference(sym)
+      case _ =>
+    }
   }
+
 
   trait AliasTypeRef extends NonClassTypeRef {
     require(sym.isAliasType, sym)
 
     override def dealias    = if (typeParamsMatchArgs) betaReduce.dealias else super.dealias
     override def narrow     = normalize.narrow
-    override def thisInfo   = normalize
     override def prefix     = if (this ne normalize) normalize.prefix else pre
     override def termSymbol = if (this ne normalize) normalize.termSymbol else super.termSymbol
     override def typeSymbol = if (this ne normalize) normalize.typeSymbol else sym
+
+
+    // `baseClasses` is sensitive to type args when referencing type members
+    // consider `type foo[x] = x`, `typeOf[foo[String]].baseClasses` should be the same as `typeOf[String].baseClasses`,
+    // which would be lost by looking at `sym.info` without propagating args
+    // since classes cannot be overridden, the prefix can be ignored
+    //  (in fact, taking the prefix into account by replacing `normalize`
+    //   with `relativeInfo` breaks pos/t8177g.scala, which is probably a bug, but a tricky one...
+    override def baseClasses  = normalize.baseClasses
+
+    // similar reasoning holds here as for baseClasses
+    // as another example, consider the type alias `Foo` in `class O { o => type Foo = X { val bla: o.Bar }; type Bar }`
+    // o1.Foo and o2.Foo have different decls `val bla: o1.Bar` versus `val bla: o2.Bar`
+    // In principle, you should only call `sym.info.decls` when you know `sym.isClass`,
+    // and you should `relativize` the infos of the resulting members.
+    // The latter is certainly violated in multiple spots in the codebase (the members are usually transformed correctly, though).
+    override def decls: Scope = normalize.decls
 
     // beta-reduce, but don't do partial application -- cycles have been checked in typeRef
     override protected def normalizeImpl =
@@ -1989,7 +2025,7 @@ trait Types
     //
     // this crashes pos/depmet_implicit_tpbetareduce.scala
     // appliedType(sym.info, typeArgs).asSeenFrom(pre, sym.owner)
-    override def betaReduce = transform(sym.info.resultType)
+    override def betaReduce = relativize(sym.info.resultType)
 
     /** SI-3731, SI-8177: when prefix is changed to `newPre`, maintain consistency of prefix and sym
      *  (where the symbol refers to a declaration "embedded" in the prefix).
@@ -2039,31 +2075,12 @@ trait Types
   trait AbstractTypeRef extends NonClassTypeRef {
     require(sym.isAbstractType, sym)
 
-    /** Syncnote: Pure performance caches; no need to synchronize in multi-threaded environment
-     */
-    private var symInfoCache: Type = _
-    private var thisInfoCache: Type = _
+    override def baseClasses = relativeInfo.baseClasses
+    override def decls       = relativeInfo.decls
+    override def bounds      = relativeInfo.bounds
 
-    override def thisInfo   = {
-      val symInfo = sym.info
-      if (thisInfoCache == null || (symInfo ne symInfoCache)) {
-        symInfoCache = symInfo
-        thisInfoCache = memberInfoInstantiated match {
-          // If a subtyping cycle is not detected here, we'll likely enter an infinite
-          // loop before a sensible error can be issued.  SI-5093 is one example.
-          case x: SubType if x.supertype eq this =>
-            throw new RecoverableCyclicReference(sym)
-          case tp => tp
-        }
-      }
-      thisInfoCache
-    }
-    private[Types] def invalidateAbstractTypeRefCaches(): Unit = {
-      symInfoCache = null
-      thisInfoCache = null
-    }
-    override def bounds   = thisInfo.bounds
-    override protected[Types] def baseTypeSeqImpl: BaseTypeSeq = transform(bounds.hi).baseTypeSeq prepend this
+    override protected[Types] def baseTypeSeqImpl: BaseTypeSeq = bounds.hi.baseTypeSeq prepend this
+
     override def kind = "AbstractTypeRef"
   }
 
@@ -2107,23 +2124,32 @@ trait Types
         finalizeHash(h, 2)
     }
 
+    // interpret symbol's info in terms of the type's prefix and type args
+    protected def relativeInfo: Type = appliedType(sym.info.asSeenFrom(pre, sym.owner), argsOrDummies)
+
     // @M: propagate actual type params (args) to `tp`, by replacing
     // formal type parameters with actual ones. If tp is higher kinded,
     // the "actual" type arguments are types that simply reference the
     // corresponding type parameters (unbound type variables)
-    final def transform(tp: Type): Type =
-      if (args.isEmpty) {
-        if (isHigherKinded && (phase.erasedTypes || !isRawIfWithoutArgs(sym)))
-          tp.asSeenFrom(pre, sym.owner).instantiateTypeParams(typeParams, dummyArgs)
-        else
-          tp.asSeenFrom(pre, sym.owner)
-      } else {
-        // This situation arises when a typevar is encountered for which
+    //
+    // NOTE: for performance, as well as correctness, we do not attempt
+    // to reframe trivial types in terms of our prefix and args.
+    // asSeenFrom, by construction, is the identity for trivial types,
+    // and substitution cannot change them either (abstract types are non-trivial, specifically because they may need to be replaced)
+    // For correctness, the result for `tp == NoType` must be `NoType`,
+    // if we don't shield against this, and apply instantiateTypeParams to it,
+    // this would result in an ErrorType, which behaves differently during subtyping
+    // (and thus on recursion, subtyping would go from false -- since a NoType is involved --
+    //  to true, as ErrorType is always a sub/super type....)
+    final def relativize(tp: Type): Type =
+      if (tp.isTrivial) tp
+      else if (args.isEmpty && (phase.erasedTypes || !isHigherKinded || isRawIfWithoutArgs(sym))) tp.asSeenFrom(pre, sym.owner)
+      else {
+        // The type params and type args should always match in length,
+        // though a mismatch can arise when a typevar is encountered for which
         // too little information is known to determine its kind, and
-        // it later turns out not to have kind *. See SI-4070.  Only
-        // logging it for now.
-        val tparams = sym.typeParams
-        if (!sameLength(tparams, args)) devWarning(s"$this.transform($tp), but tparams.isEmpty and args=$args")
+        // it later turns out not to have kind *. See SI-4070.
+        val formals = sym.typeParams
 
         // If we're called with a poly type, and we were to run the `asSeenFrom`, over the entire
         // type, we can end up with new symbols for the type parameters (clones from TypeMap).
@@ -2149,31 +2175,39 @@ trait Types
         //      It's kind of a helper for computing baseType (since it tries to propagate our type args to some
         //      other type, which has to be related to this type for that to make sense).
         //
+        def seenFromOwnerInstantiated(tp: Type): Type =
+          tp.asSeenFrom(pre, sym.owner).instantiateTypeParams(formals, argsOrDummies)
+
         tp match {
-          case PolyType(`tparams`, result) => PolyType(tparams, result.asSeenFrom(pre, sym.owner).instantiateTypeParams(tparams, args))
-          case _ => tp.asSeenFrom(pre, sym.owner).instantiateTypeParams(tparams, args)
+          case PolyType(`formals`, result) => PolyType(formals, seenFromOwnerInstantiated(result))
+          case _ => seenFromOwnerInstantiated(tp)
         }
       }
 
+    private def argsOrDummies = if (args.isEmpty) dummyArgs else args
+
     final override def baseType(clazz: Symbol): Type =
-      if (sym == clazz) this
-      else if (sym.isClass) transform(sym.info.baseType(clazz))
+      if (clazz eq sym) this
+      // NOTE: this first goes to requested base type, *then* does asSeenFrom prefix & instantiates args
+      else if (sym.isClass) relativize(sym.info.baseType(clazz))
       else baseTypeOfNonClassTypeRef(clazz)
 
-    //@M! use appliedType on the polytype that represents the bounds (or if aliastype, the rhs)
-    final protected def memberInfoInstantiated: Type =
-      appliedType(sym.info.asSeenFrom(pre, sym.owner), if (args.isEmpty) dummyArgs else args)
-
+    // two differences with class type basetype:
+    // (1) first relativize the type, then go to the requested base type
+    // (2) cache for cycle robustness
     private def baseTypeOfNonClassTypeRef(clazz: Symbol) =
       try {
         basetypeRecursions += 1
         if (basetypeRecursions >= LogPendingBaseTypesThreshold) baseTypeOfNonClassTypeRefLogged(clazz)
-        else memberInfoInstantiated.baseType(clazz)
+        else relativeInfo.baseType(clazz)
       } finally basetypeRecursions -= 1
 
     private def baseTypeOfNonClassTypeRefLogged(clazz: Symbol) =
-      if (pendingBaseTypes add this) try memberInfoInstantiated.baseType(clazz) finally pendingBaseTypes -= this
-      else if (clazz == AnyClass) clazz.tpe
+      if (pendingBaseTypes add this) try relativeInfo.baseType(clazz) finally { pendingBaseTypes remove this }
+      // TODO: is this optimization for AnyClass worth it? (or is it playing last-ditch cycle defense?)
+      // NOTE: for correctness, it only applies for non-class types
+      // (e.g., a package class should not get AnyTpe as its supertype, ever)
+      else if (clazz eq AnyClass) AnyTpe
       else NoType
 
     // eta-expand, subtyping relies on eta-expansion of higher-kinded types
@@ -2207,17 +2241,16 @@ trait Types
     // (they are allowed to be rebound more liberally)
     def coevolveSym(pre1: Type): Symbol = sym
 
-    def thisInfo                  = sym.info
     def initializedTypeParams     = sym.info.typeParams
     def typeParamsMatchArgs       = sameLength(initializedTypeParams, args)
 
-    override def baseClasses      = thisInfo.baseClasses
+
     override def baseTypeSeqDepth = baseTypeSeq.maxDepth
     override def prefix           = pre
     override def termSymbol       = super.termSymbol
     override def termSymbolDirect = super.termSymbol
     override def typeArgs         = args
-    override def typeOfThis       = transform(sym.typeOfThis)
+    override def typeOfThis       = relativize(sym.typeOfThis)
     override def typeSymbol       = sym
     override def typeSymbolDirect = sym
 
@@ -2230,22 +2263,24 @@ trait Types
       }
     }
 
-    override def decls: Scope = {
-      sym.info match {
-        case TypeRef(_, sym1, _) =>
-          assert(sym1 != sym, this) // @MAT was != typeSymbol
-        case _ =>
-      }
-      thisInfo.decls
-    }
+    // Since type parameters cannot occur in super types, no need to relativize before looking at base *classes*.
+    // Similarly, our prefix can occur in super class types, but it cannot influence which classes those types resolve to.
+    // For example, `class Outer { outer => class Inner extends outer.Foo; class Foo }`
+    // `outer`'s value has no impact on which `Foo` is selected, since classes cannot be overridden.
+    // besides being faster, we can't use relativeInfo because it causes cycles
+    override def baseClasses      = sym.info.baseClasses
+
+    // in principle, we should use `relativeInfo.decls`, but I believe all uses of `decls` will correctly `relativize` the individual members
+    override def decls: Scope = sym.info.decls
+
     protected[Types] def baseTypeSeqImpl: BaseTypeSeq =
       if (sym.info.baseTypeSeq exists (_.typeSymbolDirect.isAbstractType))
         // SI-8046 base type sequence might have more elements in a subclass, we can't map it element wise.
-        transform(sym.info).baseTypeSeq
+        relativize(sym.info).baseTypeSeq
       else
         // Optimization: no abstract types, we can compute the BTS of this TypeRef as an element-wise map
         //               of the BTS of the referenced symbol.
-        sym.info.baseTypeSeq map transform
+        sym.info.baseTypeSeq map relativize
 
     override def baseTypeSeq: BaseTypeSeq = {
       val cache = baseTypeSeqCache
@@ -2276,9 +2311,10 @@ trait Types
     )
     protected def finishPrefix(rest: String) = (
       if (sym.isInitialized && sym.isAnonymousClass && !phase.erasedTypes)
-        parentsString(thisInfo.parents) + refinementString
+        parentsString(sym.info.parents) + refinementString
       else rest
-    )
+      )
+
     private def noArgsString = finishPrefix(preString + sym.nameString)
     private def tupleTypeString: String = args match {
       case Nil        => noArgsString
@@ -2368,7 +2404,7 @@ trait Types
     if (period != currentPeriod) {
       tpe.parentsPeriod = currentPeriod
       if (!isValidForBaseClasses(period)) {
-        tpe.parentsCache = tpe.thisInfo.parents map tpe.transform
+        tpe.parentsCache = tpe.sym.info.parents map tpe.relativize
       } else if (tpe.parentsCache == null) { // seems this can happen if things are corrupted enough, see #2641
         tpe.parentsCache = List(AnyTpe)
       }
@@ -4580,32 +4616,14 @@ trait Types
         invalidateCaches(tp, updatedSyms)
       }
 
-  def invalidateCaches(t: Type, updatedSyms: List[Symbol]) = {
+  def invalidateCaches(t: Type, updatedSyms: List[Symbol]) =
     t match {
-      case st: SingleType if updatedSyms.contains(st.sym) => st.invalidateSingleTypeCaches()
-      case  _ =>
-    }
-    t match {
-      case tr: NonClassTypeRef if updatedSyms.contains(tr.sym) => tr.invalidateNonClassTypeRefCaches()
-      case _ =>
-    }
-    t match {
-      case tr: AbstractTypeRef if updatedSyms.contains(tr.sym) => tr.invalidateAbstractTypeRefCaches()
-      case _ =>
-    }
-    t match {
-      case tr: TypeRef if updatedSyms.contains(tr.sym) => tr.invalidateTypeRefCaches()
-      case _ =>
-    }
-    t match {
-      case tr: ModuleTypeRef if updatedSyms.contains(tr.sym) => tr.invalidateModuleTypeRefCaches()
-      case _ =>
-    }
-    t match {
+      case st: SingleType   if updatedSyms.contains(st.sym) => st.invalidateSingleTypeCaches()
+      case tr: TypeRef      if updatedSyms.contains(tr.sym) => tr.invalidateTypeRefCaches()
       case ct: CompoundType if ct.baseClasses.exists(updatedSyms.contains) => ct.invalidatedCompoundTypeCaches()
       case _ =>
     }
-  }
+
 
   val shorthands = Set(
     "scala.collection.immutable.List",
