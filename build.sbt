@@ -322,6 +322,7 @@ lazy val library = configureAsSubproject(project)
   .settings(filterDocSources("*.scala" -- (regexFileFilter(".*/runtime/.*\\$\\.scala") ||
                                            regexFileFilter(".*/runtime/ScalaRunTime\\.scala") ||
                                            regexFileFilter(".*/runtime/StringAdd\\.scala"))): _*)
+  .settings(MiMa.settings: _*)
   .dependsOn(forkjoin)
 
 lazy val reflect = configureAsSubproject(project)
@@ -344,6 +345,7 @@ lazy val reflect = configureAsSubproject(project)
       "/project/packaging" -> <packaging>jar</packaging>
     )
   )
+  .settings(MiMa.settings: _*)
   .dependsOn(library)
 
 lazy val compiler = configureAsSubproject(project)

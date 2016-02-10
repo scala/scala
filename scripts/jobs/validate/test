@@ -38,8 +38,8 @@ case $prDryRun in
     runsbt "test/it:testOnly -- instrumented"
     runsbt "test/it:testOnly -- presentation"
 
-    # make sure Scaladoc doesn't outright fail, at least
-    runsbt doc
+    # Migration Manager; make sure Scaladoc doesn't bomb
+    runsbt mima doc
 
     ;;
 
