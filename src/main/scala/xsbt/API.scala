@@ -22,16 +22,19 @@ final class API(val global: CallbackGlobal) {
   @inline def debug(msg: => String) = if (settings.verbose.value) inform(msg)
 
   def newPhase(prev: Phase) = new ApiPhase(prev)
-  class ApiPhase(prev: Phase) extends Phase(prev) {
+  class ApiPhase(prev: Phase) extends GlobalPhase(prev) {
     override def description = "Extracts the public API from source files."
     def name = API.name
-    def run: Unit =
+    override def run(): Unit =
       {
         val start = System.currentTimeMillis
-        currentRun.units.foreach(processUnit)
+        super.run
         val stop = System.currentTimeMillis
         debug("API phase took : " + ((stop - start) / 1000.0) + " s")
       }
+
+    def apply(unit: global.CompilationUnit): Unit = processUnit(unit)
+
     def processUnit(unit: CompilationUnit) = if (!unit.isJava) processScalaUnit(unit)
     def processScalaUnit(unit: CompilationUnit): Unit = {
       val sourceFile = unit.source.file.file

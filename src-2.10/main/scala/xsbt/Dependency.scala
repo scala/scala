@@ -33,11 +33,11 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
   import global._
 
   def newPhase(prev: Phase): Phase = new DependencyPhase(prev)
-  private class DependencyPhase(prev: Phase) extends Phase(prev) {
+  private class DependencyPhase(prev: Phase) extends GlobalPhase(prev) {
     override def description = "Extracts dependency information"
     def name = Dependency.name
-    def run: Unit = {
-      for (unit <- currentRun.units if !unit.isJava) {
+    def apply(unit: CompilationUnit): Unit = {
+      if (!unit.isJava) {
         // build dependencies structure
         val sourceFile = unit.source.file.file
         if (global.callback.nameHashing) {
