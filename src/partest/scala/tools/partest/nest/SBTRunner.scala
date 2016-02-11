@@ -13,7 +13,6 @@ import _root_.sbt.testing._
 import java.net.URLClassLoader
 import TestState._
 
-// called reflectively from scala-partest-test-interface
 class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, loggers: Array[Logger],
     srcDir: String, testClassLoader: URLClassLoader, javaCmd: File, javacCmd: File, scalacArgs: Array[String], args: Array[String])
     extends AbstractRunner(args.filter(a => !a.startsWith("-D")).mkString(" ")) {
