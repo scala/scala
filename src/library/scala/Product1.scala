@@ -24,7 +24,7 @@ trait Product1[@specialized(Int, Long, Double) +T1] extends Any with Product {
   override def productArity = 1
 
   
-  /** Returns the n-th projection of this product if 0 < n <= productArity,
+  /** Returns the n-th projection of this product if 0 <= n < productArity,
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
    *  @param n number of the projection to be returned
