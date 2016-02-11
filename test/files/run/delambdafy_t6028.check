@@ -11,7 +11,7 @@ package <empty> {
     def foo(methodParam: String): Function0 = {
       val methodLocal: String = "";
       {
-        (() => T.this.$anonfun$1(methodParam, methodLocal)).$asInstanceOf[Function0]()
+        (() => T.this.$anonfun$1(methodParam, methodLocal))
       }
     };
     def bar(barParam: String): Object = {
@@ -21,7 +21,7 @@ package <empty> {
     def tryy(tryyParam: String): Function0 = {
       var tryyLocal: runtime.ObjectRef = scala.runtime.ObjectRef.create("");
       {
-        (() => T.this.$anonfun$2(tryyParam, tryyLocal)).$asInstanceOf[Function0]()
+        (() => T.this.$anonfun$2(tryyParam, tryyLocal))
       }
     };
     final <artifact> private[this] def $anonfun$1(methodParam$1: String, methodLocal$1: String): String = T.this.classParam.+(T.this.field()).+(methodParam$1).+(methodLocal$1);

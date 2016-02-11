@@ -128,6 +128,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def canTranslateEmptyListToNil    = true
     def missingSelectErrorTree(tree: Tree, qual: Tree, name: Name): Tree = tree
 
+    // when type checking during erasure, generate erased types in spots that aren't transformed by erasure
+    // (it erases in TypeTrees, but not in, e.g., the type a Function node)
+    def phasedAppliedType(sym: Symbol, args: List[Type]) = {
+      val tp = appliedType(sym, args)
+      if (phase.erasedTypes) erasure.specialScalaErasure(tp) else tp
+    }
+
     def typedDocDef(docDef: DocDef, mode: Mode, pt: Type): Tree =
       typed(docDef.definition, mode, pt)
 
@@ -2983,7 +2990,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val formals = vparamSyms map (_.tpe)
             val body1 = typed(fun.body, respt)
             val restpe = packedType(body1, fun.symbol).deconst.resultType
-            val funtpe  = appliedType(FunctionSymbol, formals :+ restpe: _*)
+            val funtpe  = phasedAppliedType(FunctionSymbol, formals :+ restpe)
 
             treeCopy.Function(fun, vparams, body1) setType funtpe
         }
@@ -3215,7 +3222,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // less expensive than including them in inferMethodAlternative (see below).
           def shapeType(arg: Tree): Type = arg match {
             case Function(vparams, body) =>
-              functionType(vparams map (_ => AnyTpe), shapeType(body))
+              functionType(vparams map (_ => AnyTpe), shapeType(body)) // TODO: should this be erased when retyping during erasure?
             case AssignOrNamedArg(Ident(name), rhs) =>
               NamedType(name, shapeType(rhs))
             case _ =>
