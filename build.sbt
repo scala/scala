@@ -196,7 +196,18 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
   },
   // Remove auto-generated manifest attributes
   packageOptions in Compile in packageBin := Seq.empty,
-  packageOptions in Compile in packageSrc := Seq.empty
+  packageOptions in Compile in packageSrc := Seq.empty,
+
+  // Lets us CTRL-C partest without exiting SBT entirely
+  cancelable in Global := true,
+  // When we fork subprocesses, use the base directory as the working directory.
+  // This enables `sbt> partest test/files/run/t1.scala` or `sbt> scalac sandbox/test.scala`
+  baseDirectory in Compile := (baseDirectory in ThisBuild).value,
+  baseDirectory in Test := (baseDirectory in ThisBuild).value,
+
+  // Don't log process output (e.g. of forked `compiler/runMain ...Main`), just pass it
+  // directly to stdout
+  outputStrategy in run := Some(StdoutOutput)
 )
 
 /** Extra post-processing for the published POM files. These are needed to create POMs that
@@ -409,7 +420,6 @@ lazy val repl = configureAsSubproject(project)
   .settings(
     connectInput in run := true,
     publishArtifact := false,
-    outputStrategy in run := Some(StdoutOutput),
     run <<= (run in Compile).partialInput(" -usejavacp") // Automatically add this so that `repl/run` works without additional arguments.
   )
   .dependsOn(compiler, interactive)
@@ -456,7 +466,8 @@ lazy val replJlineEmbedded = Project("repl-jline-embedded", file(".") / "target"
       val outdir = (classDirectory in Compile).value
       JarJar(inputs, outdir, config)
     }),
-    publishArtifact := false
+    publishArtifact := false,
+    connectInput in run := true
   )
   .dependsOn(replJline)
 
@@ -767,3 +778,25 @@ def generateServiceProviderResources(services: (String, String)*): Setting[_] =
   }.taskValue
 
 buildDirectory in ThisBuild := (baseDirectory in ThisBuild).value / "build-sbt"
+
+// Add tab completion to partest
+commands += Command("partest")(_ => PartestUtil.partestParser((baseDirectory in ThisBuild).value, (baseDirectory in ThisBuild).value / "test")) { (state, parsed) =>
+  ("test/it:testOnly -- " + parsed) :: state
+}
+
+// Add tab completion to scalac et al.
+commands ++= {
+  val commands =
+  List(("scalac",   "compiler", "scala.tools.nsc.Main"),
+       ("scala",    "repl-jline-embedded", "scala.tools.nsc.MainGenericRunner"),
+       ("scaladoc", "scaladoc", "scala.tools.nsc.ScalaDoc"))
+
+  commands.map {
+    case (entryPoint, projectRef, mainClassName) =>
+      Command(entryPoint)(_ => ScalaOptionParser.scalaParser(entryPoint, (baseDirectory in ThisBuild).value)) { (state, parsedOptions) =>
+        (projectRef + "/runMain " + mainClassName + " -usejavacp " + parsedOptions) :: state
+      }
+  }
+}
+
+addCommandAlias("scalap",   "scalap/compile:runMain              scala.tools.scalap.Main -usejavacp")
