@@ -9,15 +9,7 @@
 package scala.tools.partest
 package nest
 
-import sbt.testing.EventHandler
-import sbt.testing.Logger
-import sbt.testing.Event
-import sbt.testing.Fingerprint
-import sbt.testing.Selector
-import sbt.testing.Status
-import sbt.testing.OptionalThrowable
-import sbt.testing.SuiteSelector
-import sbt.testing.TestSelector
+import _root_.sbt.testing._
 import java.net.URLClassLoader
 import TestState._
 
