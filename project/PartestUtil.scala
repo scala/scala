@@ -87,6 +87,6 @@ object PartestUtil {
         opt + " " + path
     }
     val P = oneOf(knownUnaryOptions.map(x => token(x))) | SrcPath | TestPathParser | Grep
-    (Space ~> repsep(P, oneOrMore(Space))).map(_.mkString(" ")).?.map(_.getOrElse(""))
+    (Space ~> repsep(P, oneOrMore(Space))).map(_.mkString(" ")).?.map(_.getOrElse("")) <~ OptSpace
   }
 }

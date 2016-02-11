@@ -63,19 +63,20 @@ object ScalaOptionParser {
       ++ scaladocPathSettingNames.map(PathSetting)
       ++ scaladocMultiStringSettingNames.map(MultiStringSetting)
     )
-    val ScalaDocOpt = sourceFile | ScalaOpt | ScalaDocExtraSettings
+    val ScalaDocOpt = ScalacOpt | ScalaDocExtraSettings
 
-    entryPoint match {
+    val P = entryPoint match {
       case "scala" =>
         val runnable = token(StringBasicNotStartingWithDash, TokenCompletions.displayOnly("<script|class|object|jar>")).filter(!_.startsWith("-"), x => x)
         val runnableAndArgs = concat(runnable ~ Opt(concat(Space.string ~ repsep(token(StringBasic, TokenCompletions.displayOnly("<arg>")), Space).map(_.mkString(" ")))))
-        val options = repsep(ScalaOpt, Space).map(_.mkString(" "))
-        Opt(Space ~> EitherOr(options, runnableAndArgs))
+        val options = rep1sep(ScalaOpt, Space).map(_.mkString(" "))
+        Opt(Space ~> (options | concat(concat(options ~ Space.string) ~ runnableAndArgs) | runnableAndArgs))
       case "scaladoc" =>
         Opt(Space ~> Opt(repsep(ScalaDocOpt, Space).map(_.mkString(" "))))
       case "scalac" =>
         Opt(Space ~> repsep(ScalacOpt, Space).map(_.mkString(" ")))
     }
+    P <~ token(OptSpace)
   }
 
   // TODO retrieve this data programatically, ala https://github.com/scala/scala-tool-support/blob/master/bash-completion/src/main/scala/BashCompletion.scala
