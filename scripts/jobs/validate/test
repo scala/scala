@@ -38,6 +38,10 @@ case $prDryRun in
     runsbt "test/it:testOnly -- instrumented"
     runsbt "test/it:testOnly -- presentation"
 
+    # TODO before merge
+    #runsbt "test/it:testOnly -- --srcpath scaladoc --run"
+    #runsbt "test/it:testOnly -- --srcpath scaladoc --scalacheck"
+
     # Migration Manager; make sure Scaladoc doesn't bomb
     runsbt mima doc
 
