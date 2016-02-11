@@ -24,13 +24,14 @@ object MiMa {
         def runOnce(prev: java.io.File, curr: java.io.File, isForward: Boolean): Unit = {
           val direction = if (isForward) "forward" else "backward"
           log.info(s"Checking $direction binary compatibility")
+          log.debug(s"prev = $prev, curr = $curr")
           runMima(
             prev = if (isForward) curr else prev,
             curr = if (isForward) prev else curr,
             // TODO: it would be nicer if each subproject had its own whitelist, but for now
             // for compatibility with how Ant did things, there's just one at the root.
             // once Ant is gone we'd be free to split it up.
-            filter = baseDirectory.value / ".." / ".." / s"bincompat-$direction.whitelist.conf",
+            filter = (baseDirectory in ThisBuild).value / s"bincompat-$direction.whitelist.conf",
             log)
         }
         val artifact =
