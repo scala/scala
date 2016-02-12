@@ -20,6 +20,8 @@ class ExtConsoleReporter(settings: Settings, val writer: PrintWriter) extends Co
 }
 
 class TestSettings(cp: String, error: String => Unit) extends Settings(error) {
+  @deprecated("Use primary constructor", "1.0.12")
+  def this(cp: String) = this(cp, _ => ())
   nowarnings.value  = false
   encoding.value    = "UTF-8"
   classpath.value   = cp
