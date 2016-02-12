@@ -38,9 +38,10 @@ import scala.reflect.ClassTag
  *  `Traversables`, such as folds, conversions, and other operations which
  *  traverse some or all of the elements and return a derived value.
  *  Directly subclassing `TraversableOnce` is not recommended - instead,
- *  consider declaring an `Iterator` with a `next` and `hasNext` method,
- *  creating an `Iterator` with one of the methods on the `Iterator` object,
- *  or declaring a subclass of `Traversable`.
+ *  consider declaring an `Iterator` with a `next` and `hasNext` method or
+ *  creating an `Iterator` with one of the methods on the `Iterator` object.
+ *  Consider declaring a subclass of `Traversable` instead if the elements
+ *  can be traversed repeatedly.
  *
  *  @define coll traversable or iterator
  *  @define orderDependent
@@ -61,8 +62,8 @@ import scala.reflect.ClassTag
 trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   self =>
 
+  //TODO 2.12: Remove these methods. They are already defined in GenTraversableOnce
   /* Self-documenting abstract methods. */
-
   def foreach[U](f: A => U): Unit
   def isEmpty: Boolean
   def hasDefiniteSize: Boolean

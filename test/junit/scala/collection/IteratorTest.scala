@@ -164,4 +164,32 @@ class IteratorTest {
     assertEquals(1, y.next)
     assertFalse(x.hasNext)   // was true, after advancing underlying iterator
   }
+  // SI-9623
+  @Test def noExcessiveHasNextInJoinIterator: Unit = {
+    var counter = 0
+    val exp = List(1,2,3,1,2,3)
+    def it: Iterator[Int] = new Iterator[Int] {
+      val parent = List(1,2,3).iterator
+      def next(): Int = parent.next
+      def hasNext: Boolean = { counter += 1; parent.hasNext }
+    }
+    // Iterate separately
+    val res = new mutable.ArrayBuffer[Int]
+    it.foreach(res += _)
+    it.foreach(res += _)
+    assertSameElements(exp, res)
+    assertEquals(8, counter)
+    // JoinIterator
+    counter = 0
+    res.clear
+    (it ++ it).foreach(res += _)
+    assertSameElements(exp, res)
+    assertEquals(8, counter) // was 17
+    // ConcatIterator
+    counter = 0
+    res.clear
+    (Iterator.empty ++ it ++ it).foreach(res += _)
+    assertSameElements(exp, res)
+    assertEquals(8, counter) // was 14
+  }
 }

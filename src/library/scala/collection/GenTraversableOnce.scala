@@ -67,6 +67,23 @@ trait GenTraversableOnce[+A] extends Any {
     */
   def foreach[U](f: A => U): Unit
 
+  /** Tests whether this $coll is known to have a finite size.
+    *  All strict collections are known to have finite size. For a non-strict
+    *  collection such as `Stream`, the predicate returns `'''true'''` if all
+    *  elements have been computed. It returns `'''false'''` if the stream is
+    *  not yet evaluated to the end. Non-empty Iterators usually return
+    *  `'''false'''` even if they were created from a collection with a known
+    *  finite size.
+    *
+    *  Note: many collection methods will not work on collections of infinite sizes.
+    *  The typical failure mode is an infinite loop. These methods always attempt a
+    *  traversal without checking first that `hasDefiniteSize` returns `'''true'''`.
+    *  However, checking `hasDefiniteSize` can provide an assurance that size is
+    *  well-defined and non-termination is not a concern.
+    *
+    *  @return  `'''true'''` if this collection is known to have finite size,
+    *           `'''false'''` otherwise.
+    */
   def hasDefiniteSize: Boolean
 
   def seq: TraversableOnce[A]
@@ -80,6 +97,9 @@ trait GenTraversableOnce[+A] extends Any {
   def size: Int
 
   /** Tests whether the $coll is empty.
+   *
+   *  Note: Implementations in subclasses that are not repeatedly traversable must take
+   *  care not to consume any elements when `isEmpty` is called.
    *
    *  @return    `true` if the $coll contains no elements, `false` otherwise.
    */
