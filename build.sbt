@@ -68,7 +68,6 @@ val scalaParserCombinatorsDep = withoutScalaLang("org.scala-lang.modules" %% "sc
 val scalaSwingDep = withoutScalaLang("org.scala-lang.modules" %% "scala-swing" % versionNumber("scala-swing"))
 val scalaXmlDep = withoutScalaLang("org.scala-lang.modules" %% "scala-xml" % versionNumber("scala-xml"))
 val partestDep = withoutScalaLang("org.scala-lang.modules" %% "scala-partest" % versionNumber("partest"))
-val partestInterfaceDep = withoutScalaLang("org.scala-lang.modules" %% "scala-partest-interface" % "0.7.0")
 val junitDep = "junit" % "junit" % "4.11"
 val junitIntefaceDep = "com.novocode" % "junit-interface" % "0.11" % "test"
 val asmDep = "org.scala-lang.modules" % "scala-asm" % versionProps("scala-asm.version")
@@ -577,7 +576,7 @@ lazy val test = project
   .settings(Defaults.itSettings: _*)
   .settings(
     publishArtifact := false,
-    libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep, partestInterfaceDep, scalacheckDep),
+    libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep, scalacheckDep),
     unmanagedBase in IntegrationTest := baseDirectory.value / "files" / "lib",
     unmanagedJars in IntegrationTest <+= (unmanagedBase) (j => Attributed.blank(j)) map(identity),
     // no main sources
@@ -586,7 +585,7 @@ lazy val test = project
     sources in IntegrationTest := Seq.empty,
     fork in IntegrationTest := true,
     javaOptions in IntegrationTest += "-Xmx1G",
-    testFrameworks += new TestFramework("scala.tools.partest.Framework"),
+    testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
     testOptions in IntegrationTest += Tests.Setup( () => root.base.getAbsolutePath + "/pull-binary-libs.sh" ! ),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M -XX:MaxPermSize=128M"),
     definedTests in IntegrationTest += (
