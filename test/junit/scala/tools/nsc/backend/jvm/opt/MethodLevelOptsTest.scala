@@ -741,4 +741,19 @@ class MethodLevelOptsTest extends ClearAfterClass {
         GETSTATIC, LDC, "print",
         -1, GOTO))
   }
+
+  @Test
+  def booleanOrderingCompare(): Unit = {
+    val code =
+      """class C {
+        |  def compare(x: Boolean, y: Boolean) = (x, y) match {
+        |    case (false, true) => -1
+        |    case (true, false) => 1
+        |    case _ => 0
+        |  }
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(methodOptCompiler)(code)
+    assertNoInvoke(getSingleMethod(c, "compare"))
+  }
 }
