@@ -1,6 +1,8 @@
 package scala.tools.nsc
 package backend.jvm
 
+import scala.annotation.switch
+import scala.tools.asm
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 
 /**
@@ -111,8 +113,10 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
   lazy val jliMethodTypeRef          : ClassBType = classBTypeFromSymbol(requiredClass[java.lang.invoke.MethodType])
   lazy val jliCallSiteRef            : ClassBType = classBTypeFromSymbol(requiredClass[java.lang.invoke.CallSite])
   lazy val jliLambdaMetafactoryRef   : ClassBType = classBTypeFromSymbol(requiredClass[java.lang.invoke.LambdaMetafactory])
-  lazy val srLambdaDeserializerRef   : ClassBType = classBTypeFromSymbol(requiredModule[scala.runtime.LambdaDeserializer.type].moduleClass)
   lazy val srBoxesRunTimeRef         : ClassBType = classBTypeFromSymbol(requiredClass[scala.runtime.BoxesRunTime])
+  lazy val srSymbolLiteral           : ClassBType = classBTypeFromSymbol(requiredClass[scala.runtime.SymbolLiteral])
+  lazy val srStructuralCallSite      : ClassBType = classBTypeFromSymbol(requiredClass[scala.runtime.StructuralCallSite])
+  lazy val srLambdaDeserialize       : ClassBType = classBTypeFromSymbol(requiredClass[scala.runtime.LambdaDeserialize])
   lazy val srBoxedUnitRef            : ClassBType = classBTypeFromSymbol(requiredClass[scala.runtime.BoxedUnit])
 
   private def methodNameAndType(cls: Symbol, name: Name, static: Boolean = false, filterOverload: Symbol => Boolean = _ => true): MethodNameAndType = {
@@ -265,6 +269,30 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
       case _        => false
     })
   }
+
+  lazy val lambdaMetaFactoryBootstrapHandle =
+    new asm.Handle(asm.Opcodes.H_INVOKESTATIC,
+      coreBTypes.jliLambdaMetafactoryRef.internalName, sn.AltMetafactory.toString,
+      MethodBType(
+        List(
+          coreBTypes.jliMethodHandlesLookupRef,
+          coreBTypes.StringRef,
+          coreBTypes.jliMethodTypeRef,
+          ArrayBType(ObjectRef)),
+        coreBTypes.jliCallSiteRef
+      ).descriptor)
+
+  lazy val lambdaDeserializeBootstrapHandle =
+    new scala.tools.asm.Handle(scala.tools.asm.Opcodes.H_INVOKESTATIC,
+      coreBTypes.srLambdaDeserialize.internalName, sn.Bootstrap.toString,
+      MethodBType(
+        List(
+          coreBTypes.jliMethodHandlesLookupRef,
+          coreBTypes.StringRef,
+          coreBTypes.jliMethodTypeRef
+        ),
+        coreBTypes.jliCallSiteRef
+      ).descriptor)
 }
 
 /**
@@ -292,10 +320,10 @@ trait CoreBTypesProxyGlobalIndependent[BTS <: BTypes] {
   def jiSerializableRef         : ClassBType
   def juHashMapRef              : ClassBType
   def juMapRef                  : ClassBType
+  def jliCallSiteRef            : ClassBType
+  def jliMethodTypeRef          : ClassBType
   def jliSerializedLambdaRef    : ClassBType
-  def jliMethodHandlesRef       : ClassBType
   def jliMethodHandlesLookupRef : ClassBType
-  def srLambdaDeserializerRef   : ClassBType
   def srBoxesRunTimeRef         : ClassBType
   def srBoxedUnitRef            : ClassBType
 
@@ -316,6 +344,9 @@ trait CoreBTypesProxyGlobalIndependent[BTS <: BTypes] {
   def tupleClassConstructors   : Map[InternalName, MethodNameAndType]
 
   def srJFunctionRefs: Set[InternalName]
+
+  def lambdaMetaFactoryBootstrapHandle  : asm.Handle
+  def lambdaDeserializeBootstrapHandle  : asm.Handle
 }
 
 /**
@@ -360,7 +391,6 @@ final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: 
   def jliMethodTypeRef          : ClassBType = _coreBTypes.jliMethodTypeRef
   def jliCallSiteRef            : ClassBType = _coreBTypes.jliCallSiteRef
   def jliLambdaMetafactoryRef   : ClassBType = _coreBTypes.jliLambdaMetafactoryRef
-  def srLambdaDeserializerRef   : ClassBType = _coreBTypes.srLambdaDeserializerRef
   def srBoxesRunTimeRef         : ClassBType = _coreBTypes.srBoxesRunTimeRef
   def srBoxedUnitRef            : ClassBType = _coreBTypes.srBoxedUnitRef
 
@@ -382,6 +412,10 @@ final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: 
 
   def srJFunctionRefs: Set[InternalName] = _coreBTypes.srJFunctionRefs
 
+  def srSymbolLiteral           : ClassBType = _coreBTypes.srSymbolLiteral
+  def srStructuralCallSite      : ClassBType = _coreBTypes.srStructuralCallSite
+  def srLambdaDeserialize       : ClassBType = _coreBTypes.srLambdaDeserialize
+
   def typeOfArrayOp: Map[Int, BType] = _coreBTypes.typeOfArrayOp
 
   // Some symbols. These references should probably be moved to Definitions.
@@ -394,4 +428,7 @@ final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: 
   def BeanInfoAttr: Symbol = _coreBTypes.BeanInfoAttr
 
   def String_valueOf: Symbol = _coreBTypes.String_valueOf
+
+  def lambdaMetaFactoryBootstrapHandle = _coreBTypes.lambdaMetaFactoryBootstrapHandle
+  def lambdaDeserializeBootstrapHandle = _coreBTypes.lambdaDeserializeBootstrapHandle
 }

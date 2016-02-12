@@ -284,6 +284,9 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.MethodClass
     definitions.EmptyMethodCacheClass
     definitions.MethodCacheClass
+    definitions.StructuralCallSite
+    definitions.StructuralCallSite_dummy
+    definitions.SymbolLiteral
     definitions.ScalaXmlTopScope
     definitions.ScalaXmlPackage
     definitions.ReflectPackage
