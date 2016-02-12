@@ -3,7 +3,7 @@ package scala.issues
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
-import scala.tools.asm.Opcodes
+import scala.tools.asm.Opcodes._
 import scala.tools.nsc.backend.jvm.AsmUtils
 import scala.tools.nsc.backend.jvm.CodeGenTools._
 import org.junit.Assert._
@@ -105,12 +105,10 @@ class BytecodeTest extends ClearAfterClass {
     val unapplyLineNumbers = getSingleMethod(module, "unapply").instructions.filter(_.isInstanceOf[LineNumber])
     assert(unapplyLineNumbers == List(LineNumber(2, Label(0))), unapplyLineNumbers)
 
-    import Opcodes._
     val expected = List(
       LineNumber(4, Label(0)),
       LineNumber(5, Label(5)),
-      Jump(IFNE, Label(11)),
-      Jump(GOTO, Label(20)),
+      Jump(IFEQ, Label(20)),
 
       LineNumber(6, Label(11)),
       Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false),
@@ -132,5 +130,82 @@ class BytecodeTest extends ClearAfterClass {
       case _ => false
     }
     assertSameCode(mainIns, expected)
+  }
+
+  @Test
+  def bytecodeForBranches(): Unit = {
+    val code =
+      """class C {
+        |  def t1(b: Boolean) = if (b) 1 else 2
+        |  def t2(x: Int) = if (x == 393) 1 else 2
+        |  def t3(a: Array[String], b: AnyRef) = a != b && b == a
+        |  def t4(a: AnyRef) = a == null || null != a
+        |  def t5(a: AnyRef) = (a eq null) || (null ne a)
+        |  def t6(a: Int, b: Boolean) = if ((a == 10) && b || a != 1) 1 else 2
+        |  def t7(a: AnyRef, b: AnyRef) = a == b
+        |  def t8(a: AnyRef) = Nil == a || "" != a
+        |}
+      """.stripMargin
+
+    val List(c) = compileClasses(compiler)(code)
+
+    // t1: no unnecessary GOTOs
+    assertSameCode(getSingleMethod(c, "t1").instructions.dropNonOp, List(
+      VarOp(ILOAD, 1), Jump(IFEQ, Label(6)),
+      Op(ICONST_1), Jump(GOTO, Label(9)),
+      Label(6), Op(ICONST_2),
+      Label(9), Op(IRETURN)))
+
+    // t2: no unnecessary GOTOs
+    assertSameCode(getSingleMethod(c, "t2").instructions.dropNonOp, List(
+      VarOp(ILOAD, 1), IntOp(SIPUSH, 393), Jump(IF_ICMPNE, Label(7)),
+      Op(ICONST_1), Jump(GOTO, Label(10)),
+      Label(7), Op(ICONST_2),
+      Label(10), Op(IRETURN)))
+
+    // t3: Array == is translated to reference equality, AnyRef == to null checks and equals
+    assertSameCode(getSingleMethod(c, "t3").instructions.dropNonOp, List(
+      // Array ==
+      VarOp(ALOAD, 1), VarOp(ALOAD, 2), Jump(IF_ACMPEQ, Label(23)),
+      // AnyRef ==
+      VarOp(ALOAD, 2), VarOp(ALOAD, 1), VarOp(ASTORE, 3), Op(DUP), Jump(IFNONNULL, Label(14)),
+      Op(POP), VarOp(ALOAD, 3), Jump(IFNULL, Label(19)), Jump(GOTO, Label(23)),
+      Label(14), VarOp(ALOAD, 3), Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", false), Jump(IFEQ, Label(23)),
+      Label(19), Op(ICONST_1), Jump(GOTO, Label(26)),
+      Label(23), Op(ICONST_0),
+      Label(26), Op(IRETURN)))
+
+    val t4t5 = List(
+      VarOp(ALOAD, 1), Jump(IFNULL, Label(6)),
+      VarOp(ALOAD, 1), Jump(IFNULL, Label(10)),
+      Label(6), Op(ICONST_1), Jump(GOTO, Label(13)),
+      Label(10), Op(ICONST_0),
+      Label(13), Op(IRETURN))
+
+    // t4: one side is known null, so just a null check on the other
+    assertSameCode(getSingleMethod(c, "t4").instructions.dropNonOp, t4t5)
+
+    // t5: one side known null, so just a null check on the other
+    assertSameCode(getSingleMethod(c, "t5").instructions.dropNonOp, t4t5)
+
+    // t6: no unnecessary GOTOs
+    assertSameCode(getSingleMethod(c, "t6").instructions.dropNonOp, List(
+      VarOp(ILOAD, 1), IntOp(BIPUSH, 10), Jump(IF_ICMPNE, Label(7)),
+      VarOp(ILOAD, 2), Jump(IFNE, Label(12)),
+      Label(7), VarOp(ILOAD, 1), Op(ICONST_1), Jump(IF_ICMPEQ, Label(16)),
+      Label(12), Op(ICONST_1), Jump(GOTO, Label(19)),
+      Label(16), Op(ICONST_2),
+      Label(19), Op(IRETURN)))
+
+    // t7: universal equality
+    assertInvoke(getSingleMethod(c, "t7"), "scala/runtime/BoxesRunTime", "equals")
+
+    // t8: no null checks invoking equals on modules and constants
+    assertSameCode(getSingleMethod(c, "t8").instructions.dropNonOp, List(
+      Field(GETSTATIC, "scala/collection/immutable/Nil$", "MODULE$", "Lscala/collection/immutable/Nil$;"), VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", false), Jump(IFNE, Label(10)),
+      Ldc(LDC, ""), VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", false), Jump(IFNE, Label(14)),
+      Label(10), Op(ICONST_1), Jump(GOTO, Label(17)),
+      Label(14), Op(ICONST_0),
+      Label(17), Op(IRETURN)))
   }
 }

@@ -1355,6 +1355,15 @@ object BCodeHelpers {
   }
 
   class TestOp(val op: Int) extends AnyVal {
+    import TestOp._
+    def negate = this match {
+      case EQ => NE
+      case NE => EQ
+      case LT => GE
+      case GE => LT
+      case GT => LE
+      case LE => GT
+    }
     def opcodeIF = asm.Opcodes.IFEQ + op
     def opcodeIFICMP = asm.Opcodes.IF_ICMPEQ + op
   }
