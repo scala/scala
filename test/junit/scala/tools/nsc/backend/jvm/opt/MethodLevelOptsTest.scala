@@ -756,4 +756,24 @@ class MethodLevelOptsTest extends ClearAfterClass {
     val List(c) = compileClasses(methodOptCompiler)(code)
     assertNoInvoke(getSingleMethod(c, "compare"))
   }
+
+  @Test
+  def t8790(): Unit = {
+    val code =
+      """class C {
+        |  def t(x: Int, y: Int): String = (x, y) match {
+        |    case (7, 8) => "a"
+        |    case _ => "b"
+        |  }
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(methodOptCompiler)(code)
+
+    assertEquals(getSingleMethod(c, "t").instructions.summary, List(
+      BIPUSH, ILOAD, IF_ICMPNE,
+      BIPUSH, ILOAD, IF_ICMPNE,
+      LDC, ASTORE, GOTO,
+      -1, LDC, ASTORE,
+      -1, ALOAD, ARETURN))
+  }
 }
