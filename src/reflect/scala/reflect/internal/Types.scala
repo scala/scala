@@ -1986,6 +1986,7 @@ trait Types
     override def termSymbol = if (this ne normalize) normalize.termSymbol else super.termSymbol
     override def typeSymbol = if (this ne normalize) normalize.typeSymbol else sym
 
+    override protected[Types] def parentsImpl: List[Type] = normalize.parents map relativize
 
     // `baseClasses` is sensitive to type args when referencing type members
     // consider `type foo[x] = x`, `typeOf[foo[String]].baseClasses` should be the same as `typeOf[String].baseClasses`,
@@ -2080,6 +2081,7 @@ trait Types
     override def bounds      = relativeInfo.bounds
 
     override protected[Types] def baseTypeSeqImpl: BaseTypeSeq = bounds.hi.baseTypeSeq prepend this
+    override protected[Types] def parentsImpl: List[Type] = relativeInfo.parents
 
     override def kind = "AbstractTypeRef"
   }
@@ -2263,6 +2265,8 @@ trait Types
       }
     }
 
+    protected[Types] def parentsImpl: List[Type] = sym.info.parents map relativize
+
     // Since type parameters cannot occur in super types, no need to relativize before looking at base *classes*.
     // Similarly, our prefix can occur in super class types, but it cannot influence which classes those types resolve to.
     // For example, `class Outer { outer => class Inner extends outer.Foo; class Foo }`
@@ -2404,7 +2408,7 @@ trait Types
     if (period != currentPeriod) {
       tpe.parentsPeriod = currentPeriod
       if (!isValidForBaseClasses(period)) {
-        tpe.parentsCache = tpe.sym.info.parents map tpe.relativize
+        tpe.parentsCache = tpe.parentsImpl
       } else if (tpe.parentsCache == null) { // seems this can happen if things are corrupted enough, see #2641
         tpe.parentsCache = List(AnyTpe)
       }
