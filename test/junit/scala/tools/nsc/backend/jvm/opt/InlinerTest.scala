@@ -1515,4 +1515,13 @@ class InlinerTest extends ClearAfterClass {
         "C$$$anonfun$2", IRETURN,
         -1 /*A*/, "C$$$anonfun$3", IRETURN))
   }
+
+  @Test
+  def inlineProject(): Unit = {
+    val codeA = "final class A { @inline def f = 1 }"
+    val codeB = "class B { def t(a: A) = a.f }"
+    // tests that no warning is emitted
+    val List(a, b) = compileClassesSeparately(List(codeA, codeB), extraArgs = "-Yopt:l:project -Yopt-warnings")
+    assertInvoke(getSingleMethod(b, "t"), "A", "f")
+  }
 }

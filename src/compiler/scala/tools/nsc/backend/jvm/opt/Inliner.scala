@@ -83,7 +83,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    * True for statically resolved trait callsites that should be rewritten to the static implementation method.
    */
   def doRewriteTraitCallsite(callsite: Callsite) = callsite.callee match {
-    case Right(Callee(_, _, _, safeToRewrite, _, _, _, _)) => safeToRewrite
+    case Right(callee) => callee.safeToRewrite
     case _ => false
   }
 
@@ -101,7 +101,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     // If the callsite was eliminated by DCE, do nothing.
     if (!callGraph.containsCallsite(callsite)) return
 
-    val Right(Callee(callee, calleeDeclarationClass, _, _, annotatedInline, annotatedNoInline, samParamTypes, infoWarning)) = callsite.callee
+    val Right(Callee(callee, calleeDeclarationClass, _, _, canInlineFromSource, annotatedInline, annotatedNoInline, samParamTypes, infoWarning)) = callsite.callee
 
     val traitMethodArgumentTypes = asm.Type.getArgumentTypes(callee.desc)
 
@@ -159,6 +159,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
           calleeDeclarationClass = implClassBType,
           safeToInline           = true,
           safeToRewrite          = false,
+          canInlineFromSource    = canInlineFromSource,
           annotatedInline        = annotatedInline,
           annotatedNoInline      = annotatedNoInline,
           samParamTypes          = staticCallSamParamTypes,

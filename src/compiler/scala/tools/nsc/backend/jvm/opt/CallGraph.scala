@@ -132,12 +132,13 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
               (declarationClassNode, source) <- byteCodeRepository.classNodeAndSource(declarationClass): Either[OptimizerWarning, (ClassNode, Source)]
             } yield {
                 val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
-                val CallsiteInfo(safeToInline, safeToRewrite, annotatedInline, annotatedNoInline, samParamTypes, warning) = analyzeCallsite(method, declarationClassBType, call.owner, source)
+                val CallsiteInfo(safeToInline, safeToRewrite, canInlineFromSource, annotatedInline, annotatedNoInline, samParamTypes, warning) = analyzeCallsite(method, declarationClassBType, call.owner, source)
                 Callee(
                   callee = method,
                   calleeDeclarationClass = declarationClassBType,
                   safeToInline = safeToInline,
                   safeToRewrite = safeToRewrite,
+                  canInlineFromSource = canInlineFromSource,
                   annotatedInline = annotatedInline,
                   annotatedNoInline = annotatedNoInline,
                   samParamTypes = samParamTypes,
@@ -255,7 +256,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
   /**
    * Just a named tuple used as return type of `analyzeCallsite`.
    */
-  private case class CallsiteInfo(safeToInline: Boolean, safeToRewrite: Boolean,
+  private case class CallsiteInfo(safeToInline: Boolean, safeToRewrite: Boolean, canInlineFromSource: Boolean,
                                   annotatedInline: Boolean, annotatedNoInline: Boolean,
                                   samParamTypes: IntMap[ClassBType],
                                   warning: Option[CalleeInfoWarning])
@@ -316,20 +317,21 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
                 !BytecodeUtils.isConstructor(calleeMethodNode) &&
                 !BytecodeUtils.isNativeMethod(calleeMethodNode) &&
                 !BytecodeUtils.hasCallerSensitiveAnnotation(calleeMethodNode),
-            safeToRewrite     = canInlineFromSource && isRewritableTraitCall, // (2)
-            annotatedInline   = methodInlineInfo.annotatedInline,
-            annotatedNoInline = methodInlineInfo.annotatedNoInline,
-            samParamTypes     = samParamTypes(calleeMethodNode, receiverType),
-            warning           = warning)
+            safeToRewrite       = canInlineFromSource && isRewritableTraitCall, // (2)
+            canInlineFromSource = canInlineFromSource,
+            annotatedInline     = methodInlineInfo.annotatedInline,
+            annotatedNoInline   = methodInlineInfo.annotatedNoInline,
+            samParamTypes       = samParamTypes(calleeMethodNode, receiverType),
+            warning             = warning)
 
         case None =>
           val warning = MethodInlineInfoMissing(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, calleeDeclarationClassBType.info.orThrow.inlineInfo.warning)
-          CallsiteInfo(false, false, false, false, IntMap.empty, Some(warning))
+          CallsiteInfo(false, false, false, false, false, IntMap.empty, Some(warning))
       }
     } catch {
       case Invalid(noInfo: NoClassBTypeInfo) =>
         val warning = MethodInlineInfoError(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, noInfo)
-        CallsiteInfo(false, false, false, false, IntMap.empty, Some(warning))
+        CallsiteInfo(false, false, false, false, false, IntMap.empty, Some(warning))
     }
   }
 
@@ -393,7 +395,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    *                               gathering the information about this callee.
    */
   final case class Callee(callee: MethodNode, calleeDeclarationClass: ClassBType,
-                          safeToInline: Boolean, safeToRewrite: Boolean,
+                          safeToInline: Boolean, safeToRewrite: Boolean, canInlineFromSource: Boolean,
                           annotatedInline: Boolean, annotatedNoInline: Boolean,
                           samParamTypes: IntMap[ClassBType],
                           calleeInfoWarning: Option[CalleeInfoWarning]) {
