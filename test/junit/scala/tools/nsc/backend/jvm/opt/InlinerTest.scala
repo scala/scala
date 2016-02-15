@@ -1507,7 +1507,6 @@ class InlinerTest extends ClearAfterClass {
         |}
       """.stripMargin
     val List(c) = compile(code)
-    val t = getSingleMethod(c, "t")
 
     // box-unbox will clean it up
     assertEquals(getSingleMethod(c, "t").instructions.summary,
