@@ -193,7 +193,7 @@ private[hashing] class MurmurHash3 {
  * to remedy some weaknesses and improve performance. This represents the
  * latest and supposedly final version of the algorithm (revision 136).
  *
- * @see [[http://code.google.com/p/smhasher]]
+ * @see [[https://github.com/aappleby/smhasher]]
  */
 object MurmurHash3 extends MurmurHash3 {
   final val arraySeed       = 0x3c074a61
