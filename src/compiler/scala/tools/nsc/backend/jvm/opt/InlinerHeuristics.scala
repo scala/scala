@@ -41,7 +41,7 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
     compilingMethods.map(methodNode => {
       var requests = Set.empty[InlineRequest]
       callGraph.callsites(methodNode).valuesIterator foreach {
-        case callsite @ Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, _, calleeAnnotatedInline, _, _, callsiteWarning)), _, _, _, pos, _, _) =>
+        case callsite @ Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, _, canInlineFromSource, calleeAnnotatedInline, _, _, callsiteWarning)), _, _, _, pos, _, _) =>
           inlineRequest(callsite) match {
             case Some(Right(req)) => requests += req
             case Some(Left(w))    =>
@@ -52,7 +52,7 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
               }
 
             case None =>
-              if (calleeAnnotatedInline && !callsite.annotatedNoInline && bTypes.compilerSettings.YoptWarningEmitAtInlineFailed) {
+              if (canInlineFromSource && calleeAnnotatedInline && !callsite.annotatedNoInline && bTypes.compilerSettings.YoptWarningEmitAtInlineFailed) {
                 // if the callsite is annotated @inline, we report an inline warning even if the underlying
                 // reason is, for example, mixed compilation (which has a separate -Yopt-warning flag).
                 def initMsg = s"${BackendReporting.methodSignature(calleeDeclClass.internalName, callee)} is annotated @inline but cannot be inlined"

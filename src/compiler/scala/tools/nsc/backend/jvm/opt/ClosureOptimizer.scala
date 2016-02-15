@@ -358,11 +358,13 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     val callee = bodyMethod.map({
       case (bodyMethodNode, bodyMethodDeclClass) =>
         val bodyDeclClassType = classBTypeFromParsedClassfile(bodyMethodDeclClass)
+        val canInlineFromSource = compilerSettings.YoptInlineGlobal || bodyMethodIsBeingCompiled
         Callee(
           callee = bodyMethodNode,
           calleeDeclarationClass = bodyDeclClassType,
-          safeToInline = compilerSettings.YoptInlineGlobal || bodyMethodIsBeingCompiled,
+          safeToInline = canInlineFromSource,
           safeToRewrite = false, // the lambda body method is not a trait interface method
+          canInlineFromSource = canInlineFromSource,
           annotatedInline = false,
           annotatedNoInline = false,
           samParamTypes = callGraph.samParamTypes(bodyMethodNode, bodyDeclClassType),
