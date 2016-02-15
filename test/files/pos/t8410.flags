@@ -1,1 +1,1 @@
--Yopt:l:project -Xfatal-warnings -deprecation:false -Yinline-warnings:false
+-Yopt:l:project -Xfatal-warnings -deprecation:false -Yopt-warnings:none
