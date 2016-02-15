@@ -570,8 +570,6 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   // The functional interface that can be used to adapt the lambda target method `target` to the
   // given function type. Returns `NoSymbol` if the compiler settings are unsuitable.
   private def java8CompatFunctionalInterface(target: Symbol, functionType: Type): (Symbol, Boolean) = {
-    val canUseLambdaMetafactory = settings.isBCodeActive
-
     val sym = functionType.typeSymbol
     val pack = currentRun.runDefinitions.Scala_Java8_CompatPackage
     val name1 = specializeTypes.specializedFunctionName(sym, functionType.typeArgs)
@@ -583,6 +581,6 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     } else {
       pack.info.decl(name1.toTypeName.prepend("J"))
     }
-    (if (canUseLambdaMetafactory) functionalInterface else NoSymbol, isSpecialized)
+    (functionalInterface, isSpecialized)
   }
 }

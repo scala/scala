@@ -26,16 +26,16 @@ class SettingsTest {
     assertThrows[IllegalArgumentException](check("-Ytest-setting:rubbish"))
   }
 
-  @Test def userSettingsHavePrecedenceOverOptimize() {
+  @Test def userSettingsHavePrecedenceOverExperimental() {
     def check(args: String*): MutableSettings#BooleanSetting = {
       val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
       val (ok, residual) = s.processArguments(args.toList, processAll = true)
       assert(residual.isEmpty)
-      s.inline // among -optimize
+      s.YmethodInfer // among -Xexperimental
     }
-    assertTrue(check("-optimise").value)
-    assertFalse(check("-optimise", "-Yinline:false").value)
-    assertFalse(check("-Yinline:false", "-optimise").value)
+    assertTrue(check("-Xexperimental").value)
+    assertFalse(check("-Xexperimental", "-Yinfer-argument-types:false").value)
+    assertFalse(check("-Yinfer-argument-types:false", "-Xexperimental").value)
   }
 
   // for the given args, select the desired setting

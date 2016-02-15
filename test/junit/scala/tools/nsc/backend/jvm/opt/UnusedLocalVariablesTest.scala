@@ -15,7 +15,7 @@ import ASMConverters._
 import scala.tools.testing.ClearAfterClass
 
 object UnusedLocalVariablesTest extends ClearAfterClass.Clearable {
-  var dceCompiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:unreachable-code")
+  var dceCompiler = newCompiler(extraArgs = "-Yopt:unreachable-code")
   def clear(): Unit = { dceCompiler = null }
 }
 

@@ -52,7 +52,7 @@ object Delambdafy {
     val srcFile = makeSourceFile(codeForMultiOutput, "delambdafyTest.scala")
     val outDir = AbstractFile.getDirectory(TempDir.createTempDir())
     val outDirPath = outDir.canonicalPath
-    val extraArgs = "-Ybackend:GenBCode -Ydelambdafy:method"
+    val extraArgs = "-Ydelambdafy:method"
     val argsWithOutDir = extraArgs + s" -d $outDirPath -cp $outDirPath"
     val compiler = newCompilerWithoutVirtualOutdir(extraArgs = argsWithOutDir)
     compiler.settings.outputDirs.add(srcFile.file, outDir)
@@ -63,7 +63,7 @@ object Delambdafy {
     outDir.delete()
     classfiles
   }
-  
+
   @Test
   def shouldFindOutputFoldersForAllPromotedLambdasAsMethod(): Unit = {
     val actual = compileToMultipleOutputWithDelamdbafyMethod()

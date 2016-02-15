@@ -167,12 +167,6 @@ object PathResolver {
       |}""".asLines
   }
 
-  // used in PathResolver constructor
-  private object NoImplClassJavaContext extends JavaContext {
-    override def isValidName(name: String): Boolean =
-      !ReflectionUtils.scalacShouldntLoadClassfile(name)
-  }
-
   @deprecated("This method is no longer used be scalap and will be deleted", "2.11.5")
   def fromPathString(path: String, context: JavaContext = DefaultJavaContext): JavaClassPath = {
     val s = new Settings()
@@ -313,10 +307,7 @@ abstract class PathResolverBase[BaseClassPathType <: ClassFileLookup[AbstractFil
 class PathResolver(settings: Settings, context: JavaContext)
   extends PathResolverBase[ClassPath[AbstractFile], JavaClassPath](settings, context) {
 
-  def this(settings: Settings) =
-    this(settings,
-      if (settings.YnoLoadImplClass) PathResolver.NoImplClassJavaContext
-      else DefaultJavaContext)
+  def this(settings: Settings) = this(settings, DefaultJavaContext)
 
   override protected def computeResult(): JavaClassPath =
     new JavaClassPath(containers.toIndexedSeq, context)

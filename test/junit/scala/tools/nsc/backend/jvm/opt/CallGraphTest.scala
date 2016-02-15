@@ -25,7 +25,7 @@ import scala.collection.convert.decorateAsScala._
 import scala.tools.testing.ClearAfterClass
 
 object CallGraphTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:inline-global -Yopt-warnings")
+  var compiler = newCompiler(extraArgs = "-Yopt:inline-global -Yopt-warnings")
   def clear(): Unit = { compiler = null }
 
   // allows inspecting the caches after a compilation run

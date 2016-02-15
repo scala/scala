@@ -380,4 +380,11 @@ class OptimizedBytecodeTest extends ClearAfterClass {
     val List(c, f) = compileClasses(compiler)(code)
     assertInvoke(getSingleMethod(c, "crash"), "C", "map")
   }
+
+  @Test
+  def optimiseEnablesNewOpt(): Unit = {
+    val code = """class C { def t = (1 to 10) foreach println }"""
+    val List(c) = readAsmClasses(compile(newCompiler(extraArgs = "-optimise -deprecation"))(code, allowMessage = _.msg.contains("is deprecated")))
+    assertInvoke(getSingleMethod(c, "t"), "C", "C$$$anonfun$1") // range-foreach inlined from classpath
+  }
 }

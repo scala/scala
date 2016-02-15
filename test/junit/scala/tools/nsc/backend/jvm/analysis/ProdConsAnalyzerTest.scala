@@ -15,7 +15,7 @@ import CodeGenTools._
 import AsmUtils._
 
 object ProdConsAnalyzerTest extends ClearAfterClass.Clearable {
-  var noOptCompiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:none")
+  var noOptCompiler = newCompiler(extraArgs = "-Yopt:l:none")
 
   def clear(): Unit = {
     noOptCompiler = null
