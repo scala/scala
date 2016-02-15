@@ -15,7 +15,6 @@ import scala.language.postfixOps
  *      where the argument is the desired output directory
  *
  *  @author  Burak Emir, Stephane Micheloud, Geoffrey Washburn, Paul Phillips
- *  @version 1.1
  */
 object genprod extends App {
   val MAX_ARITY = 22
@@ -353,7 +352,7 @@ object ProductTwo extends Product(2)
 
 class Product(val i: Int) extends Group("Product") with Arity {
   val productElementComment = """
-  /** Returns the n-th projection of this product if 0 < n <= productArity,
+  /** Returns the n-th projection of this product if 0 <= n < productArity,
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
    *  @param n number of the projection to be returned
