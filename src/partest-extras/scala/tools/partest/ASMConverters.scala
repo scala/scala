@@ -43,6 +43,23 @@ object ASMConverters {
       case i: Invoke => i.name
       case i => i.opcode
     }
+
+    def summaryText: String = {
+      def comment(i: Instruction) = i match {
+        case j: Jump => s" /*${j.label.offset}*/"
+        case l: Label => s" /*${l.offset}*/"
+        case _ => ""
+      }
+      dropNonOp.map({
+        case i: Invoke => s""""${i.name}""""
+        case ins => opcodeToString(ins.opcode, ins.opcode) + comment(ins)
+      }).mkString("List(", ", ", ")")
+    }
+  }
+
+  def opcodeToString(op: Int, default: Any = "?"): String = {
+    import scala.tools.asm.util.Printer.OPCODES
+    if (OPCODES.isDefinedAt(op)) OPCODES(op) else default.toString
   }
 
   sealed abstract class Instruction extends Product {
@@ -50,12 +67,9 @@ object ASMConverters {
 
     // toString such that the first field, "opcode: Int", is printed textually.
     final override def toString() = {
-      import scala.tools.asm.util.Printer.OPCODES
-      def opString(op: Int) = if (OPCODES.isDefinedAt(op)) OPCODES(op) else "?"
       val printOpcode = opcode != -1
-
       productPrefix + (
-        if (printOpcode) Iterator(opString(opcode)) ++ productIterator.drop(1)
+        if (printOpcode) Iterator(opcodeToString(opcode)) ++ productIterator.drop(1)
         else productIterator
       ).mkString("(", ", ", ")")
     }

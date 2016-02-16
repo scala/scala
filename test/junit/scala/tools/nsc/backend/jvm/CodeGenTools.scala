@@ -164,8 +164,18 @@ object CodeGenTools {
     convertMethod(m)
   }
 
+  def assertSameCode(method: Method, expected: List[Instruction]): Unit = assertSameCode(method.instructions.dropNonOp, expected)
   def assertSameCode(actual: List[Instruction], expected: List[Instruction]): Unit = {
-    assertTrue(s"\nExpected: $expected\nActual  : $actual", actual === expected)
+    assert(actual === expected, s"\nExpected: $expected\nActual  : $actual")
+  }
+
+  def assertSameSummary(method: Method, expected: List[Any]): Unit = assertSameSummary(method.instructions, expected)
+  def assertSameSummary(actual: List[Instruction], expected: List[Any]): Unit = {
+    def expectedString = expected.map({
+      case s: String => s""""$s""""
+      case i: Int => opcodeToString(i, i)
+    }).mkString("List(", ", ", ")")
+    assert(actual.summary == expected, s"\nFound   : ${actual.summaryText}\nExpected: $expectedString")
   }
 
   def assertNoInvoke(m: Method): Unit = assertNoInvoke(m.instructions)
@@ -179,6 +189,21 @@ object CodeGenTools {
       case Invoke(_, `receiver`, `method`, _, _) => true
       case _ => false
     }, l.stringLines)
+  }
+
+  def assertDoesNotInvoke(m: Method, method: String): Unit = assertDoesNotInvoke(m.instructions, method)
+  def assertDoesNotInvoke(l: List[Instruction], method: String): Unit = {
+    assert(!l.exists {
+      case i: Invoke => i.name == method
+      case _ => false
+    }, l.stringLines)
+  }
+
+  def assertInvokedMethods(m: Method, expected: List[String]): Unit = assertInvokedMethods(m.instructions, expected)
+  def assertInvokedMethods(l: List[Instruction], expected: List[String]): Unit = {
+    def quote(l: List[String]) = l.map(s => s""""$s"""").mkString("List(", ", ", ")")
+    val actual = l collect { case i: Invoke => i.owner + "." + i.name }
+    assert(actual == expected, s"\nFound   : ${quote(actual)}\nExpected: ${quote(expected)}")
   }
 
   def getSingleMethod(classNode: ClassNode, name: String): Method =

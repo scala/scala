@@ -18,7 +18,7 @@ import scala.tools.testing.ClearAfterClass
 
 object PatmatBytecodeTest extends ClearAfterClass.Clearable {
   var compiler = newCompiler()
-  var optCompiler = newCompiler(extraArgs = "-Yopt:l:method")
+  var optCompiler = newCompiler(extraArgs = "-Yopt:l:project")
   def clear(): Unit = { compiler = null; optCompiler = null }
 }
 
@@ -96,10 +96,9 @@ class PatmatBytecodeTest extends ClearAfterClass {
       """.stripMargin
     val c = compileClasses(optCompiler)(code).head
 
-    assertEquals(textify(findAsmMethod(c, "a")), getSingleMethod(c, "a").instructions.summary,
-      List(
-        NEW, DUP, ICONST_1, LDC, "<init>",
-        "y", ARETURN))
+    assertSameSummary(getSingleMethod(c, "a"), List(
+      NEW, DUP, ICONST_1, LDC, "<init>",
+      "y", ARETURN))
   }
 
   @Test
@@ -127,12 +126,12 @@ class PatmatBytecodeTest extends ClearAfterClass {
         |}
       """.stripMargin
     val c = compileClasses(optCompiler)(code).head
-    assertEquals(textify(findAsmMethod(c, "a")), getSingleMethod(c, "a").instructions.summary,
-      List(NEW, DUP, ICONST_1, "boxToInteger", LDC, "<init>", ASTORE /*1*/,
-        ALOAD /*1*/, "y", ASTORE /*2*/,
-        ALOAD /*1*/, "x", INSTANCEOF, IFNE /*R*/,
-        NEW, DUP, ALOAD /*1*/, "<init>", ATHROW,
-        /*R*/ -1, ALOAD /*2*/, ARETURN))
+    assertSameSummary(getSingleMethod(c, "a"), List(
+      NEW, DUP, ICONST_1, "boxToInteger", LDC, "<init>", ASTORE /*1*/,
+      ALOAD /*1*/, "y", ASTORE /*2*/,
+      ALOAD /*1*/, "x", INSTANCEOF, IFNE /*R*/,
+      NEW, DUP, ALOAD /*1*/, "<init>", ATHROW,
+      /*R*/ -1, ALOAD /*2*/, ARETURN))
   }
 
   @Test
@@ -156,7 +155,41 @@ class PatmatBytecodeTest extends ClearAfterClass {
       -1 /*A*/ , NEW /*MatchError*/ , DUP, ALOAD /*1*/ , "<init>", ATHROW,
       -1 /*B*/ , ILOAD, IRETURN)
 
-    assertEquals(textify(findAsmMethod(c, "a")), getSingleMethod(c, "a").instructions.summary, expected)
-    assertEquals(textify(findAsmMethod(c, "b")), getSingleMethod(c, "b").instructions.summary, expected)
+    assertSameSummary(getSingleMethod(c, "a"), expected)
+    assertSameSummary(getSingleMethod(c, "b"), expected)
+  }
+
+  @Test
+  def valPatterns(): Unit = {
+    val code =
+      """case class C(a: Any, b: Int) {
+        |  def tplCall = ("hi", 3)
+        |  @inline final def tplInline = (true, 'z')
+        |
+        |  def t1 = { val (a, b) = (1, 2); a + b }
+        |  def t2 = { val (a, _) = (1, 3); a }
+        |  def t3 = { val (s, i) = tplCall; s.length + i }
+        |  def t4 = { val (_, i) = tplCall; i }
+        |  def t5 = { val (b, c) = tplInline; b || c == 'e' }
+        |  def t6 = { val (_, c) = tplInline; c }
+        |
+        |  def t7 = { val C(s: String, b) = this; s.length + b }
+        |  def t8 = { val C(_, b) = this; b }
+        |  def t9 = { val C(a, _) = C("hi", 23); a.toString }
+        |}
+      """.stripMargin
+    val List(c, cMod) = compileClasses(optCompiler)(code)
+    assertSameSummary(getSingleMethod(c, "t1"), List(ICONST_1, ICONST_2, IADD, IRETURN))
+    assertSameSummary(getSingleMethod(c, "t2"), List(ICONST_1, IRETURN))
+    assertInvokedMethods(getSingleMethod(c, "t3"), List("C.tplCall", "scala/Tuple2._1", "scala/Tuple2._2$mcI$sp", "scala/MatchError.<init>", "java/lang/String.length"))
+    assertInvokedMethods(getSingleMethod(c, "t4"), List("C.tplCall", "scala/Tuple2._2$mcI$sp", "scala/MatchError.<init>"))
+    assertNoInvoke(getSingleMethod(c, "t5"))
+    assertSameSummary(getSingleMethod(c, "t6"), List(BIPUSH, IRETURN))
+
+    // MatchError reachable because of the type pattern `s: String`
+    assertInvokedMethods(getSingleMethod(c, "t7"), List("C.a", "C.b", "scala/MatchError.<init>", "java/lang/String.length"))
+    assertSameSummary(getSingleMethod(c, "t8"), List(ALOAD, "b", IRETURN))
+    // C allocation not eliminated - constructor may have side-effects.
+    assertSameSummary(getSingleMethod(c, "t9"), List(NEW, DUP, LDC, BIPUSH, "<init>", "a", "toString", ARETURN))
   }
 }
