@@ -130,7 +130,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
       if (fromClass == NoSymbol || fromClass.isPackage)
         (fromClass, false)
       else {
-        val fromNonLocalClass = localToNonLocalClass(fromClass)
+        val fromNonLocalClass = localToNonLocalClass.resolveNonLocal(fromClass)
         assert(!(fromClass == NoSymbol || fromClass.isPackage))
         (fromNonLocalClass, fromClass != fromNonLocalClass)
       }
@@ -272,7 +272,28 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
         debuglog("Parent type symbols for " + tree.pos + ": " + parentTypeSymbols.map(_.fullName))
         parentTypeSymbols.foreach(addDependency)
         traverseTrees(body)
-      case tree => super.traverse(tree)
+
+      // In some cases (eg. macro annotations), `typeTree.tpe` may be null. See sbt/sbt#1593 and sbt/sbt#1655.
+      case typeTree: TypeTree if typeTree.tpe != null                         => symbolsInType(typeTree.tpe) foreach addDependency
+
+      case MacroExpansionOf(original) if inspectedOriginalTrees.add(original) => traverse(original)
+      case _: ClassDef | _: ModuleDef if tree.symbol != null && tree.symbol != NoSymbol =>
+        // make sure we cache lookups for all classes declared in the compilation unit; the recorded information
+        // will be used in Analyzer phase
+        val sym = if (tree.symbol.isModule) tree.symbol.moduleClass else tree.symbol
+        localToNonLocalClass.resolveNonLocal(sym)
+        super.traverse(tree)
+      case other => super.traverse(other)
+    }
+
+    private def symbolsInType(tp: Type): Set[Symbol] = {
+      val typeSymbolCollector =
+        new CollectTypeTraverser({
+          case tpe if (tpe != null) && !tpe.typeSymbolDirect.isPackage => tpe.typeSymbolDirect
+        })
+
+      typeSymbolCollector.traverse(tp)
+      typeSymbolCollector.collected.toSet
     }
   }
 
