@@ -150,6 +150,7 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
   cleanFiles += (classDirectory in Compile).value,
   cleanFiles += (target in Compile in doc).value,
   fork in run := true,
+  skipDoc := false,
   scalacOptions in Compile in doc ++= Seq(
     "-doc-footer", "epfl",
     "-diagrams",
@@ -196,6 +197,8 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
   // Remove auto-generated manifest attributes
   packageOptions in Compile in packageBin := Seq.empty,
   packageOptions in Compile in packageSrc := Seq.empty,
+
+  publishArtifact in packageDoc := !skipDoc.value,
 
   // Lets us CTRL-C partest without exiting SBT entirely
   cancelable in Global := true,
@@ -714,6 +717,7 @@ def configureAsSubproject(project: Project): Project = {
     .settings(generatePropertiesFileSettings: _*)
 }
 
+lazy val skipDoc = settingKey[Boolean]("Skip Scaladoc generation.")
 lazy val buildDirectory = settingKey[File]("The directory where all build products go. By default ./build")
 lazy val mkBin = taskKey[Seq[File]]("Generate shell script (bash or Windows batch).")
 lazy val mkQuick = taskKey[Unit]("Generate a full build, including scripts, in build-sbt/quick")
