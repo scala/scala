@@ -60,4 +60,23 @@ class ClassNameSpecification extends Specification {
     binaryClassNames === Set("A" -> "A")
   }
 
+  "Local classes not recorded" in {
+    val src = """
+      |class Container {
+      |  def foo = {
+      |    class C
+      |  }
+      |  def bar = {
+      |    // anonymous class
+      |    new T {}
+      |  }
+      |}
+      |
+      |trait T
+      |""".stripMargin
+    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val binaryClassNames = compilerForTesting.extractBinaryClassNamesFromSrc(src)
+    binaryClassNames === Set("Container" -> "Container", "T" -> "T")
+  }.pendingUntilFixed
+
 }
