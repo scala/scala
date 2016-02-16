@@ -77,6 +77,6 @@ class ClassNameSpecification extends Specification {
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val binaryClassNames = compilerForTesting.extractBinaryClassNamesFromSrc(src)
     binaryClassNames === Set("Container" -> "Container", "T" -> "T")
-  }.pendingUntilFixed
+  }
 
 }

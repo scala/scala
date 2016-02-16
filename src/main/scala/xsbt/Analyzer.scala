@@ -30,9 +30,15 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
           val sym = iclass.symbol
           def addGenerated(separatorRequired: Boolean): Unit = {
             for (classFile <- outputDirs map (fileForClass(_, sym, separatorRequired)) find (_.exists)) {
-              val srcClassName = className(sym)
-              val binaryClassName = flatclassName(sym, '.', separatorRequired)
-              callback.generatedNonLocalClass(sourceFile, classFile, binaryClassName, srcClassName)
+              assert(sym.isClass, s"${sym.fullName} is not a class")
+              val nonLocalClass = localToNonLocalClass(sym)
+              if (sym == nonLocalClass) {
+                val srcClassName = className(sym)
+                val binaryClassName = flatclassName(sym, '.', separatorRequired)
+                callback.generatedNonLocalClass(sourceFile, classFile, binaryClassName, srcClassName)
+              } else {
+                callback.generatedLocalClass(sourceFile, classFile)
+              }
             }
           }
           if (sym.isModuleClass && !sym.isImplClass) {

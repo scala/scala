@@ -46,6 +46,24 @@ sealed abstract class CallbackGlobal(settings: Settings, reporter: reporters.Rep
   def addInheritedDependencies(file: File, deps: Iterable[Symbol]): Unit = {
     inheritedDependencies.getOrElseUpdate(file, new mutable.HashSet) ++= deps
   }
+  // sbtDependency is exposed to `localToNonLocalClass` for sanity checking
+  // the lookup performed by the `localToNonLocalClass` can be done only if
+  // we're running at earlier phase, e.g. an sbtDependency phase
+  private[xsbt] val sbtDependency: SubComponent
+  /*
+   * A map from local classes to non-local class that contains it.
+   *
+   * This map is used by both Dependency and Analyzer phase so it has to be
+   * exposed here. The Analyzer phase uses the cached lookups performed by
+   * the Dependency phase. By the time Analyzer phase is run (close to backend
+   * phases), original owner chains are lost so Analyzer phase relies on
+   * information saved before.
+   *
+   * The LocalToNonLocalClass duplicates the tracking that Scala compiler does
+   * internally for backed purposes (generation of EnclosingClass attributes) but
+   * that internal mapping doesn't have a stable interface we could rely on.
+   */
+  private[xsbt] val localToNonLocalClass = new LocalToNonLocalClass[this.type](this)
 }
 class InterfaceCompileFailed(val arguments: Array[String], val problems: Array[Problem], override val toString: String) extends xsbti.CompileFailed
 
