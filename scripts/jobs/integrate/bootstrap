@@ -238,15 +238,6 @@ buildPartest() {
   fi
 }
 
-# buildPartestIface() {
-#   if [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-partest-interface" $PARTEST_IFACE_VER )
-#   then echo "Found scala-partest-interface $PARTEST_IFACE_VER; not building."
-#   else
-#     update scala scala-partest-interface "$PARTEST_IFACE_REF" && gfxd
-#     sbtBuild 'set version :="'$PARTEST_IFACE_VER'"' $clean "${buildTasks[@]}"
-#   fi
-# }
-
 buildSwing() {
   if [ "$SWING_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-swing" $SWING_VER )
   then echo "Found scala-swing $SWING_VER; not building."
@@ -277,7 +268,6 @@ buildModules() {
   buildSwing
   buildScalacheck
   buildPartest
-  # buildPartestIface
 }
 
 buildPublishedModules() {
@@ -287,7 +277,6 @@ buildPublishedModules() {
   buildParsers
   buildSwing
   buildPartest
-  # buildPartestIface
 }
 
 
@@ -400,7 +389,6 @@ deriveModuleVersions() {
               PARSERS_REF="v$PARSERS_VER"
                 SWING_REF="v$SWING_VER"
               PARTEST_REF="v$PARTEST_VER"
-      # PARTEST_IFACE_REF="v$PARTEST_IFACE_VER"
            SCALACHECK_REF="$SCALACHECK_VER" # no `v` in their tags
    else
     # use HEAD as default when no revision is specified on the command line
@@ -408,7 +396,6 @@ deriveModuleVersions() {
              PARSERS_REF=${PARSERS_REF-"HEAD"}
                SWING_REF=${SWING_REF-"HEAD"}
              PARTEST_REF=${PARTEST_REF-"HEAD"}
-     # PARTEST_IFACE_REF=${PARTEST_IFACE_REF-"HEAD"}
           SCALACHECK_REF=${SCALACHECK_REF-"HEAD"}
 
                  XML_VER=$(deriveVersion scala scala-xml "$XML_REF")
@@ -425,7 +412,6 @@ deriveModuleVersions() {
   echo "SWING            = $SWING_VER at $SWING_REF"
   echo "XML              = $XML_VER at $XML_REF"
 
-  # PARTEST_IFACE_VER=${PARTEST_IFACE_VER-$(deriveVersion scala scala-partest-interface "$PARTEST_IFACE_REF")}
 }
 
 createNetrcFile() {
