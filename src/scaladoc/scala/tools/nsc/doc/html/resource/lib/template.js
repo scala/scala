@@ -17,37 +17,15 @@ $(document).ready(function() {
     });
 
     $("#template > div > div > ol > li > span > a").click(function(e) {
-        $("#template > div > div > ol > li").removeClass("selected");
-        $(this).parent().parent().addClass("selected");
-        var defHeight = $("#definition").height() + $("#signature").height() + 50;
-        $('html,body').animate({scrollTop: $(this).offset().top - defHeight}, 500);
+        var href = $(this).attr("href");
+        if (href.indexOf("#") != -1) {
+            e.preventDefault();
+            location.hash = href.split("#").pop();
+            $("#template > div > div > ol > li").removeClass("selected");
+            var parent = $(this).parent().parent().addClass("selected");
+            $("#content-container").animate({scrollTop: $("#content-container").scrollTop() + $(this).offset().top - $("#search").height() - 22}, 500);
+        }
     });
-
-    /* Handle dynamic size of signature and offset the fullcommenttop div
-     * appropriately
-     *
-     * Some mobile devices render quite slowly, delay the margin-top
-     * calculation if mobile
-     */
-    if(/Android|webOS|Mobi|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        setTimeout(function() {
-            $("div.fullcommenttop").css({
-                "margin-top": $("#definition").height() + $("#signature").height() + 15
-            });
-        }, 1000);
-    } else {
-        $("div.fullcommenttop").css({
-            "margin-top": $("#definition").height() + $("#signature").height() + 15
-        });
-    }
-
-    /* When the window is resized, adjust the fullcommenttop div's offset */
-    $(window).resize(function() {
-        $("div.fullcommenttop").css({
-            "margin-top": $("#definition").height() + $("#signature").height() + 15
-        });
-    });
-
 
     var controls = {
         visibility: {
@@ -93,10 +71,8 @@ $(document).ready(function() {
         }
 
         filter();
-        window.scrollTo(0, 0);
-        var defHeight = $("#definition").height() + $("#signature").height() + 50;
         jqElemParent.addClass("selected");
-        $('html,body').animate({scrollTop: jqElemParent.offset().top - defHeight}, 1000);
+        $("#content-container").animate({scrollTop: jqElemParent.offset().top - $("#search").height() - 5 }, 1000);
     }
 
     var isHiddenClass = function (name) {
@@ -124,7 +100,7 @@ $(document).ready(function() {
     filter();
 
     // Member filter box
-    var input = $("#textfilter input");
+    var input = $("#memberfilter input");
     input.bind("keyup", function(event) {
 
         switch ( event.keyCode ) {
@@ -161,8 +137,8 @@ $(document).ready(function() {
     input.focus(function(event) {
         input.select();
     });
-    $("#textfilter > .clear").click(function() {
-        $("#textfilter input").attr("value", "");
+    $("#memberfilter > .clear").click(function() {
+        $("#memberfilter input").attr("value", "");
         filter();
     });
     $(document).keydown(function(event) {
@@ -262,7 +238,7 @@ $(document).ready(function() {
     /* Add toggle arrows */
     //var docAllSigs = $("#template li").has(".fullcomment").find(".signature");
     // trying to speed things up a little bit
-    var docAllSigs = $("#template li[fullComment=yes] .signature");
+    var docAllSigs = $("#template li[fullComment=yes] .modifier_kind");
 
     function commentToggleFct(signature){
         var parent = signature.parent();
@@ -271,12 +247,22 @@ $(document).ready(function() {
         var vis = $(":visible", fullComment);
         signature.toggleClass("closed").toggleClass("opened");
         if (vis.length > 0) {
-            shortComment.slideDown(100);
-            fullComment.slideUp(100);
+            if (!isMobile()) {
+                shortComment.slideDown(100);
+                fullComment.slideUp(100);
+            } else {
+                fullComment.hide();
+                shortComment.show();
+            }
         }
         else {
-            shortComment.slideUp(100);
-            fullComment.slideDown(100);
+            if (!isMobile()) {
+                shortComment.slideUp(100);
+                fullComment.slideDown(100);
+            } else {
+                shortComment.hide();
+                fullComment.show();
+            }
         }
     };
     docAllSigs.addClass("closed");
@@ -288,7 +274,13 @@ $(document).ready(function() {
     function toggleShowContentFct(e){
       e.toggleClass("open");
       var content = $(".hiddenContent", e.parent().get(0));
-      (content.is(':visible') ? content.slideUp : content.slideDown)(100);
+      if(content.is(':visible')) {
+          if (!isMobile()) content.slideUp(100);
+          else content.hide();
+      } else {
+          if (!isMobile()) content.slideDown(100);
+          else content.show();
+      }
     };
 
     $(".toggle:not(.diagram-link)").click(function() {
@@ -315,11 +307,11 @@ $(document).ready(function() {
     }
 
     $("#mbrsel-input").on("focus", function() {
-        $("#textfilter > .clear").show();
+        $("#memberfilter > .clear").show();
     });
 
     $("#mbrsel-input").on("blur", function() {
-        $("#textfilter > .clear").hide();
+        $("#memberfilter > .clear").hide();
     });
 });
 
@@ -447,7 +439,7 @@ function initInherit() {
 
 /* filter used to take boolean scrollToMember */
 function filter() {
-    var query = $.trim($("#textfilter input").val()).toLowerCase();
+    var query = $.trim($("#memberfilter input").val()).toLowerCase();
     query = query.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&").replace(/\s+/g, "|");
     var queryRegExp = new RegExp(query, "i");
     var privateMembersHidden = $("#visbl > ol > li.public").hasClass("in");
@@ -534,21 +526,24 @@ function filter() {
       });
 
       if (membersVisible)
-        members.show();
+          members.show();
       else
-        members.hide();
+          members.hide();
     };
 
     return false;
 };
 
-function windowTitle()
-{
+function windowTitle() {
     try {
         parent.document.title=document.title;
-    }
-    catch(e) {
+    } catch(e) {
       // Chrome doesn't allow settings the parent's title when
       // used on the local file system.
     }
 };
+
+/** Check if user agent is associated with a known mobile browser */
+function isMobile() {
+    return /Android|webOS|Mobi|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}

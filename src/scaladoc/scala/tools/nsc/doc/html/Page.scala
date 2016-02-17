@@ -78,7 +78,7 @@ abstract class Page {
     }
     val (file, pack) =
       tpl match {
-        case p: Package => ("package.html", p)
+        case p: Package => ("index.html", p)
         case _ => downInner(doName(tpl), tpl)
       }
     file :: downPacks(pack)

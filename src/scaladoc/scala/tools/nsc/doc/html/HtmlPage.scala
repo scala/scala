@@ -26,6 +26,9 @@ abstract class HtmlPage extends Page { thisPage =>
   /** The title of this page. */
   protected def title: String
 
+  /** ScalaDoc reporter for error handling */
+  protected def reporter: ScalaDocReporter
+
   /** The page description */
   protected def description: String =
     // unless overwritten, will display the title in a spaced format, keeping - and .
@@ -48,7 +51,7 @@ abstract class HtmlPage extends Page { thisPage =>
       <html>
         <head>
           <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-          <meta name="viewport" content="width=device-width, initial-scale=1"/>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
           <title>{ title }</title>
           <meta name="description" content={ description }/>
           <meta name="keywords" content={ keywords }/>
@@ -281,7 +284,7 @@ abstract class HtmlPage extends Page { thisPage =>
       }
     }</span>
 
-  def memberToUrl(template: Entity, isSelf: Boolean = true): String = {
+  private def memberToUrl(template: Entity, isSelf: Boolean = true): String = {
     val (signature: Option[String], containingTemplate: TemplateEntity) = template match {
       case dte: DocTemplateEntity if (!isSelf) => (Some(dte.signature), dte.inTemplate)
       case dte: DocTemplateEntity => (None, dte)
@@ -289,12 +292,8 @@ abstract class HtmlPage extends Page { thisPage =>
       case tpl => (None, tpl)
     }
 
-    def hashFromPath(templatePath: List[String]): String =
-      ((templatePath.head.replace(".html", "") :: templatePath.tail).reverse).mkString(".")
-
-    val containingTemplatePath = templateToPath(containingTemplate)
-    val url = "../" * (containingTemplatePath.size - 1) + "index.html"
-    val hash = hashFromPath(containingTemplatePath)
-    s"$url#$hash" + signature.map("@" + _).getOrElse("")
+    val templatePath = templateToPath(containingTemplate)
+    val url = "../" * (templatePath.size - 1) + templatePath.reverse.mkString("/")
+    url + signature.map("#" + _).getOrElse("")
   }
 }

@@ -16,7 +16,8 @@ import page.diagram._
 /** A class that can generate Scaladoc sites to some fixed root folder.
   * @author David Bernard
   * @author Gilles Dubochet */
-class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
+class HtmlFactory(val universe: doc.Universe, index: doc.Index, val reporter: ScalaDocReporter) {
+  import page.{IndexScript, EntityPage}
 
   /** The character encoding to be used for generated Scaladoc sites.
     * This value is currently always UTF-8. */
@@ -34,6 +35,9 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     "trait_comp.svg",
     "permalink.svg",
     "abstract_type.svg",
+    "lato-v11-latin-100.eot",
+    "lato-v11-latin-100.ttf",
+    "lato-v11-latin-100.woff",
     "lato-v11-latin-regular.eot",
     "lato-v11-latin-regular.ttf",
     "lato-v11-latin-regular.woff",
@@ -96,14 +100,15 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
 
     libResources foreach (s => copyResource("lib/" + s))
 
-    new page.Index(universe, index) writeFor this
-    new page.IndexScript(universe, index) writeFor this
+    IndexScript(universe, index) writeFor this
+
     if (index.hasDeprecatedMembers)
-      new page.DeprecatedIndex(universe, index) writeFor this
+      new page.DeprecatedIndex(universe, index, reporter) writeFor this
     try {
       writeTemplates(_ writeFor this)
+
       for (letter <- index.firstLetterIndex) {
-        new html.page.ReferenceIndex(letter._1, index, universe) writeFor this
+        new html.page.ReferenceIndex(letter._1, index, universe, reporter) writeFor this
       }
     } finally {
       DiagramStats.printStats(universe.settings)
@@ -117,7 +122,7 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     def writeTemplate(tpl: DocTemplateEntity) {
       if (!(written contains tpl)) {
         val diagramGenerator: DiagramGenerator = new DotDiagramGenerator(universe.settings, universe.dotRunner)
-        writeForThis(new page.Template(universe, diagramGenerator, tpl))
+        writeForThis(page.EntityPage(universe, diagramGenerator, tpl, reporter))
         written += tpl
         tpl.templates collect { case d: DocTemplateEntity => d } map writeTemplate
       }

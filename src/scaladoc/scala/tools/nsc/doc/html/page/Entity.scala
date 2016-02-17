@@ -1,6 +1,6 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2013 LAMP/EPFL
- * @author  David Bernard, Manohar Jonnalagedda
+ * Copyright 2007-2016 LAMP/EPFL
+ * @author David Bernard, Manohar Jonnalagedda, Felix Mulder
  */
 
 package scala
@@ -21,11 +21,13 @@ import model._
 import model.diagram._
 import diagram._
 
-class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemplateEntity, rep: ScalaDocReporter) extends HtmlPage {
+trait EntityPage extends HtmlPage {
+  def universe: doc.Universe
+  def generator: DiagramGenerator
+  def tpl: DocTemplateEntity
+  def reporter: ScalaDocReporter
 
-  def reporter = rep
-
-  val path = templateToPath(tpl)
+  override val path = templateToPath(tpl)
 
   def title = {
     val s = universe.settings
@@ -34,13 +36,17 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     ( if ((!s.doctitle.isDefault || !s.docversion.isDefault) && tpl.qualifiedName != "_root_") " - " + tpl.qualifiedName else "" )
   }
 
-  val headers =
+  def headers =
     <xml:group>
+      <link href={ relativeLinkTo{List("index.css", "lib")} }  media="screen" type="text/css" rel="stylesheet"/>
       <link href={ relativeLinkTo{List("template.css", "lib")} } media="screen" type="text/css" rel="stylesheet"/>
       <link href={ relativeLinkTo{List("diagrams.css", "lib")} } media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
-      <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} } id="jquery-js"></script>
+      <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("jquery.panzoom.min.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("jquery.mousewheel.min.js", "lib")} }></script>
+      <script type="text/javascript" src={ relativeLinkTo{List("index.js", "lib")} }></script>
+      <script type="text/javascript" src={ relativeLinkTo{List("index.js")} }></script>
+      <script type="text/javascript" src={ relativeLinkTo{List("scheduler.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("template.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("tools.tooltip.js", "lib")} }></script>
       { if (universe.settings.docDiagrams.value) {
@@ -48,17 +54,52 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       <script type="text/javascript" src={ relativeLinkTo{List("diagrams.js", "lib")} } id="diagrams-js"></script>
       } else NodeSeq.Empty }
       <script type="text/javascript">
-         if(top === self) {{
-            var url = '{ val p = templateToPath(tpl); "../" * (p.size - 1) + "index.html" }';
-            var hash = '{ val p = templateToPath(tpl); (p.tail.reverse ::: List(p.head.replace(".html", ""))).mkString(".") }';
-            var anchor = window.location.hash;
-            var anchor_opt = '';
-            if (anchor.length { scala.xml.Unparsed(">=") /* unless we use Unparsed, it gets escaped and crashes the script */ } 1)
-              anchor_opt = '@' + anchor.substring(1);
-            window.location.href = url + '#' + hash + anchor_opt;
-         }}
-   	  </script>
+        /* this variable can be used by the JS to determine the path to the root document */
+        var toRoot = '{ val p = templateToPath(tpl); "../" * (p.size - 1) }';
+      </script>
     </xml:group>
+
+  def body =
+    <body>
+      { search }
+      <div id="search-results">
+        <div id="results-content">
+          <div id="entity-results"></div>
+          <div id="member-results"></div>
+        </div>
+      </div>
+      <div id="content-container" style="-webkit-overflow-scrolling: touch;">
+        <div id="content">
+          { content }
+        </div>
+      </div>
+    </body>
+
+  def search =
+    <div id="search">
+        <span id="doc-title">
+          {universe.settings.doctitle.value}
+          <span id="doc-version">
+          {
+            val version = universe.settings.docversion.value
+
+            if (version.length > "XX.XX.XX-XXX".length) {
+              reporter.warning(null,
+                s"doc-version ($version) is too long to be displayed in the webview")
+              ""
+            } else version
+          }
+          </span>
+        </span>
+        <span class="close-results"><span class="left">&lt;</span> Back</span>
+        <div id="textfilter">
+          <span class="input">
+            <input autocapitalize="none" placeholder="Search" id="index-input" type="text" accesskey="/"/>
+            <i class="clear material-icons">&#xE14C;</i>
+            <i id="search-icon" class="material-icons">&#xE8B6;</i>
+          </span>
+        </div>
+    </div>
 
   val valueMembers =
     tpl.methods ++ tpl.values ++ tpl.templates.filter(x => x.isObject || x.isPackage) sorted
@@ -83,7 +124,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
   /* for body, there is a special case for AnyRef, otherwise AnyRef appears
    * like a package/object this problem should be fixed, this implementation
    * is just a patch. */
-  val body = {
+  val content = {
     val templateName = if (tpl.isRootPackage) "root package" else tpl.name
     val displayName = tpl.companion match {
       case Some(companion) if (companion.visibility.isPublic && companion.inSource != None) =>
@@ -122,7 +163,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
 
       <div id="mbrsel">
         <div class='toggle'></div>
-        <div id='textfilter'><span class='input'><input id='mbrsel-input' placeholder='Filter members' type='text' accesskey='/'/></span><span class='clear'>✖</span></div>
+        <div id='memberfilter'><span class='input'><input id='mbrsel-input' placeholder='Filter members' type='text' accesskey='/'/></span><span class='clear'>✖</span></div>
           <div id='filterby'>
           { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty && (!universe.settings.docGroups.value || (tpl.members.map(_.group).distinct.length == 1)))
               NodeSeq.Empty
@@ -414,7 +455,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
 
     val implicitInformation = mbr.byConversion match {
       case Some(conv) =>
-        <dt class="implicit">Implicit information</dt> ++
+        <dt class="implicit">Implicit</dt> ++
         {
           val targetType = typeToHtml(conv.targetType, hasLinks = true)
           val conversionMethod = conv.convertorMethod match {
@@ -843,11 +884,11 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       </xml:group>
     mbr match {
       case dte: DocTemplateEntity if !isSelf =>
-        <h4 class="signature">{ inside(hasLinks = true, nameLink = relativeLinkTo(dte)) }</h4> ++ permalink(dte, isSelf)
+        permalink(dte, isSelf) ++ { inside(hasLinks = true, nameLink = relativeLinkTo(dte)) }
       case _ if isSelf =>
         <h4 id="signature" class="signature">{ inside(hasLinks = true) }</h4>
       case _ =>
-        <h4 class="signature">{ inside(hasLinks = true) }</h4> ++ permalink(mbr)
+        permalink(mbr) ++ { inside(hasLinks = true) }
     }
 
   }
@@ -990,9 +1031,16 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
   }
 }
 
-object Template {
-  /* Vlad: Lesson learned the hard way: don't put any stateful code that references the model here,
-   * it won't be garbage collected and you'll end up filling the heap with garbage */
-
-  def lowerFirstLetter(s: String) = if (s.length >= 1) s.substring(0,1).toLowerCase() + s.substring(1) else s
+object EntityPage {
+  def apply(
+    uni: doc.Universe,
+    gen: DiagramGenerator,
+    docTpl: DocTemplateEntity,
+    rep: ScalaDocReporter
+  ): EntityPage = new EntityPage {
+    def universe = uni
+    def generator = gen
+    def tpl = docTpl
+    def reporter = rep
+  }
 }

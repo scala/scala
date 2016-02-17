@@ -29,39 +29,6 @@ a img { border: none; }
 
 input { border-width: 0px; }
 
-/* Fonts */
-@font-face {
-  font-family: 'Source Code Pro';
-  font-style: normal;
-  font-weight: 400;
-  src: url('source-code-pro-v6-latin-regular.eot');
-  src: local('Source Code Pro'), local('SourceCodePro-Regular'),
-  url('source-code-pro-v6-latin-regular.eot?#iefix') format('embedded-opentype'),
-  url('source-code-pro-v6-latin-regular.woff') format('woff'),
-  url('source-code-pro-v6-latin-regular.ttf') format('truetype');
-}
-@font-face {
-  font-family: 'Source Code Pro';
-  font-style: normal;
-  font-weight: 700;
-  src: url('source-code-pro-v6-latin-700.eot');
-  src: local('Source Code Pro Bold'), local('SourceCodePro-Bold'),
-  url('source-code-pro-v6-latin-700.eot?#iefix') format('embedded-opentype'),
-  url('source-code-pro-v6-latin-700.woff') format('woff'),
-  url('source-code-pro-v6-latin-700.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Open Sans';
-  font-style: normal;
-  font-weight: 400;
-  src: url('open-sans-v13-latin-regular.eot');
-  src: local('Open Sans'), local('OpenSans'),
-  url('open-sans-v13-latin-regular.eot?#iefix') format('embedded-opentype'),
-  url('open-sans-v13-latin-regular.woff') format('woff'),
-  url('open-sans-v13-latin-regular.ttf') format('truetype');
-}
-
 /* Page */
 body {
   overflow-x: hidden;
@@ -69,32 +36,24 @@ body {
   background-color: #f0f3f6;
 }
 
-html {
-    box-sizing: border-box;
-}
-
-*, *:before, *:after {
-    box-sizing: inherit;
-}
-
 #footer {
   text-align: center;
   color: #858484;
   bottom: 0;
-  width: 100%;
   height: 20px;
+  margin: 0 1em 0.5em;
 }
 
-a[href] {
+#content-container a[href] {
   text-decoration: underline;
   color: #315479;
 }
 
-a[href]:hover {
+#content-container a[href]:hover {
   text-decoration: none;
 }
 
-body.trait > div#definition {
+body.trait div#definition {
   background-color: #2e6d82;
 }
 
@@ -107,10 +66,13 @@ body.trait > div#definition {
 }
 
 #definition {
+  position: relative;
   display: block;
-  padding: 5px 0px;
-  height: 5.5em;
+  padding: 5px 0;
   padding: 0;
+  margin: 0.5em;
+  border-radius: 0.2em;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
 }
 
 #definition > a > img {
@@ -132,8 +94,8 @@ body.trait > div#definition {
 }
 
 #definition h1 > a {
-  color: #fff;
-  text-decoration: none;
+  color: #fff !important;
+  text-decoration: none !important;
 }
 
 #definition #owner {
@@ -156,13 +118,10 @@ body.trait > div#definition {
   min-height: 18px;
   font-size: 0.9em;
   padding: 8px;
-  box-shadow: 0 0 0.35em 0.05em rgba(0,0,0,0.5);
-  position: fixed;
-  top: 6.1em;
-  left: 0;
   width: 100%;
-  z-index: 9998;
   color: #103a51;
+  border-bottom-left-radius: 0.2em;
+  border-bottom-right-radius: 0.2em;
 }
 
 #signature > span.modifier_kind {
@@ -171,6 +130,7 @@ body.trait > div#definition {
   text-align: left;
   width: auto;
   position: static;
+  padding-left: 0;
 }
 
 #signature > span.symbol {
@@ -219,21 +179,10 @@ body.trait > div#definition {
 
 .value #definition {
   background-color: #103A51; /* blue */
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  z-index: 9999;
 }
 
 .type #definition {
   background-color: rgba(49, 101, 85, 1); /* green */
-  position: fixed;
-  top: 0;
-  left: 0;
-  min-height: 5.5em;
-  width: 100%;
-  z-index: 9999;
 }
 
 .abstract.type #definition {
@@ -285,12 +234,13 @@ body.abstract.type div.big-circle {
 }
 
 #template {
-  margin: 0.9em 0.75em 2em 0.75em;
+  margin: 0.9em 0.75em 0.75em;
   border-radius: 0.2em;
   background-color: #fff;
   -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.1);
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
   padding-bottom: 0.5em;
+  overflow: hidden;
 }
 
 #order {
@@ -369,19 +319,20 @@ dl.attributes > dd {
 /* Member cells */
 div.members > ol {
   background-color: white;
-  list-style: none
+  list-style: none;
+  padding: 0 10px;
 }
 
 div.members > ol > li {
-  display: block;
-  padding: 5px 0 6px;
-  margin: 0 10px;
+  display: table;
+  width: 100%;
   position: relative;
   background-color: #e1e7ed;
   border-radius: 0.2em;
   color: #103a51;
   padding: 5px 0 5px;
   margin-bottom: 0.4em;
+  min-height: 2.8em;
 }
 
 div.members > ol >li.selected,
@@ -413,17 +364,25 @@ div.members > ol > li:last-child {
   display: block;
 }
 
-.signature .modifier_kind {
-  position: absolute;
+.modifier_kind {
+  font-family: "Source Code Pro";
+  font-size: 0.8rem;
+  padding-right: 0.5em;
   text-align: right;
-  width: 14em;
+  display: table-cell;
+  white-space: nowrap;
+  width: 16em;
 }
 
-.signature > a > .symbol > .name {
+.symbol {
+  font-family: "Source Code Pro";
+}
+
+a > .symbol > .name {
   text-decoration: underline;
 }
 
-.signature > a:hover > .symbol > .name {
+a:hover > .symbol > .name {
   text-decoration: none;
 }
 
@@ -432,8 +391,7 @@ div.members > ol > li:last-child {
 }
 
 .signature > .symbol {
-  display: block;
-  padding-left: 14.7em;
+  display: inline;
 }
 
 .signature .name {
@@ -441,62 +399,68 @@ div.members > ol > li:last-child {
   font-weight: bold;
 }
 
-.signature .symbol > .implicit {
+span.symbol > span.name {
+  font-weight: bold;
+}
+
+.symbol > .implicit {
   display: inline-block;
   font-weight: bold;
   text-decoration: underline;
   color: darkgreen;
 }
 
-.signature .symbol .shadowed {
+.symbol .shadowed {
   color: darkseagreen;
 }
 
-.signature .symbol .params > .implicit {
+.symbol .params > .implicit {
   font-style: italic;
 }
 
-.signature .symbol .deprecated {
+.symbol .deprecated {
   text-decoration: line-through;
 }
 
-.signature .symbol .params .default {
+.symbol .params .default {
   font-style: italic;
 }
 
-#template .signature.closed {
+#template .closed {
   cursor: pointer;
 }
 
-#template .signature.closed:before {
+#template .closed:before {
     content: "▶";
     position: absolute;
     left: 1em;
-    top: 0.5em;
+    top: 0.35em;
 }
 
-#template .signature.opened {
+#template .opened {
   cursor: pointer;
 }
 
-#template .signature.opened:before {
+#template .opened:before {
   content: "▼";
   position: absolute;
   left: 1em;
-  top: 0.5em;
+  top: 0.35em;
   color: #2C475C;
 }
 
-#template .values .signature .name {
+#template .values .name {
+  font-weight: 600;
   color: darkblue;
 }
 
-#template .types .signature .name {
+#template .types .name {
+  font-weight: 600;
   color: darkgreen;
 }
 
 .full-signature-usecase h4 span {
-  font-size: 0.9em;
+  font-size: 0.8rem;
 }
 
 .full-signature-usecase > #signature {
@@ -505,19 +469,19 @@ div.members > ol > li:last-child {
   top: 0;
 }
 
-.full-signature-usecase > .signature.closed:before {
+.full-signature-usecase > .signature > .closed:before {
   content: "" !important;
 }
 
-.full-signature-usecase > .signature.opened:before {
+.full-signature-usecase > .signature > .opened:before {
   content: "" !important;
 }
 
-#template .full-signature-usecase > .signature.closed {
+#template .full-signature-usecase > .signature > .closed {
   background: none;
 }
 
-#template .full-signature-usecase > .signature.opened {
+#template .full-signature-usecase > .signature > .opened {
   background: none;
 }
 
@@ -531,8 +495,8 @@ div.members > ol > li:last-child {
 #definition .morelinks {
   text-align: right;
   position: absolute;
-  top: 40px;
-  right: 10px;
+  top: 2.95em;
+  right: 1em;
   width: 450px;
   font-family: 'Source Sans Pro', 'Helvetica Neue', Arial, sans-serif;
 }
@@ -725,11 +689,11 @@ div.fullcomment {
 #template div.fullcommenttop,
 #template div.fullcomment {
   display:none;
-  margin: 5px 0 0 14.7em;
+  margin: 0.5em 1em 0 0;
 }
 
 #template .shortcomment {
-  margin: 5px 0 0 14.7em;
+  margin: 5px 0 0 0;
   padding: 0;
   font-family: "Open Sans";
 }
@@ -739,7 +703,6 @@ div.fullcomment .block {
   border-top: 2px solid #fff;
   margin-top: 5px;
   overflow: hidden;
-  margin-right: 0.5em;
   font-family: "Open Sans";
 }
 
@@ -818,7 +781,7 @@ div.fullcomment dl.paramcmts > dd {
 
 /* Members filter tool */
 
-#textfilter {
+#memberfilter {
   position: relative;
   display: block;
   height: 2.7em;
@@ -826,7 +789,7 @@ div.fullcomment dl.paramcmts > dd {
   margin-left: 1.5em;
 }
 
-#textfilter > .input {
+#memberfilter > .input {
   display: block;
   position: absolute;
   top: 0;
@@ -835,7 +798,7 @@ div.fullcomment dl.paramcmts > dd {
   transition: 0.2s;
 }
 
-#textfilter > .input > input {
+#memberfilter > .input > input {
   color: #fff;
   width: 100%;
   border-radius: 0.2em;
@@ -844,7 +807,7 @@ div.fullcomment dl.paramcmts > dd {
   font-family: "Open Sans";
 }
 
-#textfilter > .clear {
+#memberfilter > .clear {
   display: none;
   position: absolute;
   top: 0.6em;
@@ -854,7 +817,7 @@ div.fullcomment dl.paramcmts > dd {
   color: rgba(255, 255, 255, 0.4);
 }
 
-#textfilter > .clear:hover {
+#memberfilter > .clear:hover {
   color: #fff;
   cursor: pointer;
 }
@@ -893,7 +856,7 @@ div.fullcomment dl.paramcmts > dd {
   opacity: 1;
 }
 
-#mbrsel:hover #textfilter > .input {
+#mbrsel:hover #memberfilter > .input {
   left: 0.7em;
 }
 
@@ -1072,24 +1035,16 @@ and (-webkit-device-pixel-ratio: 2)
     min-width: 300px;
   }
 
-  .signature .modifier_kind {
-    width: 10em;
+  #template .modifier_kind {
+    width: 1px;
+    padding-left: 2.5em;
   }
 
-  .signature > .symbol {
-    padding-left: 10.7em;
-  }
-
-  #template .shortcomment {
-    margin-left: 10.7em;
-  }
-
-  #template div.fullcommenttop, #template div.fullcomment {
-    margin-left: 10.7em;
+  span.modifier_kind > span.modifier {
+    display: none;
   }
 
   #definition {
-    min-width: 300px;
     height: 6em;
   }
 
@@ -1125,16 +1080,8 @@ only screen /* iPhone 6 */
 and (max-device-width: 667px)
 and (-webkit-device-pixel-ratio: 2)
 {
-  #definition {
-    position: absolute !important;
-    min-height: 0 !important;
-    height: 4em !important;
-  }
-
   #signature {
-    position: absolute !important;
     font-size: 0.7em;
-    top: 5.7em;
   }
 
   #definition > h1 {
@@ -1149,12 +1096,8 @@ and (-webkit-device-pixel-ratio: 2)
     padding-top: 0.7em;
   }
 
-  div.fullcommenttop {
-    margin-top: 11.6em;
-  }
-
-  #template .shortcomment {
-    margin-left: 1em;
+  #signature > span.modifier_kind {
+    width: auto;
   }
 
   div.fullcomment dl.attributes > dt {
@@ -1165,10 +1108,6 @@ and (-webkit-device-pixel-ratio: 2)
   div.fullcomment dl.attributes > dd {
     padding-left: 0;
     clear: both;
-  }
-
-  #template div.fullcommenttop, #template div.fullcomment {
-    margin-left: 1em;
   }
 
   .big-circle {

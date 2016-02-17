@@ -11,7 +11,9 @@ package page
 
 import doc.model._
 
-class DeprecatedIndex(universe: Universe, index: doc.Index) extends HtmlPage {
+class DeprecatedIndex(universe: Universe, index: doc.Index, rep: ScalaDocReporter) extends HtmlPage {
+
+  def reporter = rep
 
   def path = List("deprecated-list.html")
 

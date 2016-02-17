@@ -1,6 +1,7 @@
 import org.scalacheck._
 import org.scalacheck.Prop._
 
+import scala.tools.nsc.ScalaDocReporter
 import scala.tools.nsc.doc
 import scala.tools.nsc.doc.html.page.DeprecatedIndex
 import java.net.{URLClassLoader, URLDecoder}
@@ -32,7 +33,8 @@ object Test extends Properties("IndexScript") {
   def createDeprecatedScript(path: String) =
     docFactory.makeUniverse(Left(List(path))) match {
       case Some(universe) => {
-        val index = new DeprecatedIndex(universe, indexModelFactory.makeIndex(universe))
+        val reporter = new ScalaDocReporter(universe.settings)
+        val index = new DeprecatedIndex(universe, indexModelFactory.makeIndex(universe), reporter)
         Some(index)
       }
       case _ =>
