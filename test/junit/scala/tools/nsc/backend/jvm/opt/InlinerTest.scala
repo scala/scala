@@ -100,7 +100,7 @@ class InlinerTest extends ClearAfterClass {
     val g = inlineTest(code)
 
     val gConv = convertMethod(g)
-    assertSameCode(gConv.instructions.dropNonOp,
+    assertSameCode(gConv,
       List(
         VarOp(ALOAD, 0), VarOp(ASTORE, 1), // store this
         Op(ICONST_1), VarOp(ISTORE, 2), Jump(GOTO, Label(10)), // store return value
@@ -144,10 +144,10 @@ class InlinerTest extends ClearAfterClass {
       VarOp(ALOAD, 2),
       Op(ATHROW))
 
-    assertSameCode(convertMethod(g).instructions.dropNonOp, gBeforeLocalOpt)
+    assertSameCode(convertMethod(g), gBeforeLocalOpt)
 
     compiler.genBCode.bTypes.localOpt.methodOptimizations(g, "C")
-    assertSameCode(convertMethod(g).instructions.dropNonOp, invokeQQQ :+ Op(ATHROW))
+    assertSameCode(convertMethod(g), invokeQQQ :+ Op(ATHROW))
   }
 
   @Test
@@ -1313,60 +1313,40 @@ class InlinerTest extends ClearAfterClass {
       """.stripMargin
     val List(c, _, _) = compile(code)
 
-    assertEquals(getSingleMethod(c, "t1").instructions.summary,
-      List(BIPUSH, "C$$$anonfun$1", IRETURN))
-
-    assertEquals(getSingleMethod(c, "t1a").instructions.summary,
-      List(LCONST_1, "C$$$anonfun$2", IRETURN))
-
-    assertEquals(getSingleMethod(c, "t2").instructions.summary, List(
-      ICONST_1, ICONST_2, "C$$$anonfun$3",IRETURN))
+    assertSameSummary(getSingleMethod(c, "t1"), List(BIPUSH, "C$$$anonfun$1", IRETURN))
+    assertSameSummary(getSingleMethod(c, "t1a"), List(LCONST_1, "C$$$anonfun$2", IRETURN))
+    assertSameSummary(getSingleMethod(c, "t2"), List(ICONST_1, ICONST_2, "C$$$anonfun$3",IRETURN))
 
     // val a = new ValKl(n); new ValKl(anonfun(a.x)).x
     // value class instantiation-extraction should be optimized by boxing elim
-    assertEquals(getSingleMethod(c, "t3").instructions.summary, List(
+    assertSameSummary(getSingleMethod(c, "t3"), List(
       NEW, DUP, ICONST_1, "<init>", ASTORE,
       NEW, DUP, ALOAD, "x",
       "C$$$anonfun$4",
       "<init>",
       "x", IRETURN))
 
-    assertEquals(getSingleMethod(c, "t4").instructions.summary, List(
-      BIPUSH, "C$$$anonfun$5", "boxToInteger", ARETURN))
-
-    assertEquals(getSingleMethod(c, "t4a").instructions.summary, List(
-      ICONST_1, LDC, "C$$$anonfun$6", LRETURN))
-
-    assertEquals(getSingleMethod(c, "t5").instructions.summary, List(
-      BIPUSH, ICONST_3, "C$$$anonfun$7", "boxToInteger", ARETURN))
-
-    assertEquals(getSingleMethod(c, "t5a").instructions.summary, List(
-      BIPUSH, BIPUSH, I2B, "C$$$anonfun$8", IRETURN))
-
-    assertEquals(getSingleMethod(c, "t6").instructions.summary, List(
-      BIPUSH, "C$$$anonfun$9", RETURN))
-
-    assertEquals(getSingleMethod(c, "t7").instructions.summary, List(
-      ICONST_1, "C$$$anonfun$10", RETURN))
-
-    assertEquals(getSingleMethod(c, "t8").instructions.summary, List(
-      ICONST_1, LDC, "C$$$anonfun$11", LRETURN))
-
-    assertEquals(getSingleMethod(c, "t9").instructions.summary, List(
-      ICONST_1, "boxToInteger", "C$$$anonfun$12", RETURN))
+    assertSameSummary(getSingleMethod(c, "t4"), List(BIPUSH, "C$$$anonfun$5", "boxToInteger", ARETURN))
+    assertSameSummary(getSingleMethod(c, "t4a"), List(ICONST_1, LDC, "C$$$anonfun$6", LRETURN))
+    assertSameSummary(getSingleMethod(c, "t5"), List(BIPUSH, ICONST_3, "C$$$anonfun$7", "boxToInteger", ARETURN))
+    assertSameSummary(getSingleMethod(c, "t5a"), List(BIPUSH, BIPUSH, I2B, "C$$$anonfun$8", IRETURN))
+    assertSameSummary(getSingleMethod(c, "t6"), List(BIPUSH, "C$$$anonfun$9", RETURN))
+    assertSameSummary(getSingleMethod(c, "t7"), List(ICONST_1, "C$$$anonfun$10", RETURN))
+    assertSameSummary(getSingleMethod(c, "t8"), List(ICONST_1, LDC, "C$$$anonfun$11", LRETURN))
+    assertSameSummary(getSingleMethod(c, "t9"), List(ICONST_1, "boxToInteger", "C$$$anonfun$12", RETURN))
 
     // t9a inlines Range.foreach, which is quite a bit of code, so just testing the core
     assertInvoke(getSingleMethod(c, "t9a"), "C", "C$$$anonfun$13")
-    assert(getSingleMethod(c, "t9a").instructions.summary.contains("boxToInteger"))
+    assertInvoke(getSingleMethod(c, "t9a"), "scala/runtime/BoxesRunTime", "boxToInteger")
 
-    assertEquals(getSingleMethod(c, "t10").instructions.summary, List(
+    assertSameSummary(getSingleMethod(c, "t10"), List(
       ICONST_1, ISTORE,
       ALOAD, ILOAD,
       "C$$$anonfun$14", RETURN))
 
     // t10a inlines Range.foreach
     assertInvoke(getSingleMethod(c, "t10a"), "C", "C$$$anonfun$15")
-    assert(!getSingleMethod(c, "t10a").instructions.summary.contains("boxToInteger"))
+    assertDoesNotInvoke(getSingleMethod(c, "t10a"), "boxToInteger")
   }
 
   @Test
@@ -1389,7 +1369,7 @@ class InlinerTest extends ClearAfterClass {
         |}
       """.stripMargin
     val List(c) = compile(code)
-    assertSameCode(getSingleMethod(c, "t1").instructions.dropNonOp, List(Op(ICONST_0), Op(ICONST_1), Op(IADD), Op(IRETURN)))
+    assertSameCode(getSingleMethod(c, "t1"), List(Op(ICONST_0), Op(ICONST_1), Op(IADD), Op(IRETURN)))
     assertEquals(getSingleMethod(c, "t2").instructions collect { case i: Invoke => i.owner +"."+ i.name }, List(
       "scala/runtime/IntRef.create", "C.C$$$anonfun$1"))
   }
@@ -1430,9 +1410,9 @@ class InlinerTest extends ClearAfterClass {
         |}
       """.stripMargin
     val List(c) = compile(code)
-    assertSameCode(getSingleMethod(c, "t1").instructions.dropNonOp, List(Op(ICONST_3), Op(ICONST_4), Op(IADD), Op(IRETURN)))
-    assertSameCode(getSingleMethod(c, "t2").instructions.dropNonOp, List(Op(ICONST_1), Op(ICONST_2), Op(IADD), Op(IRETURN)))
-    assertSameCode(getSingleMethod(c, "t3").instructions.dropNonOp, List(Op(ICONST_1), Op(ICONST_3), Op(ISUB), Op(IRETURN)))
+    assertSameCode(getSingleMethod(c, "t1"), List(Op(ICONST_3), Op(ICONST_4), Op(IADD), Op(IRETURN)))
+    assertSameCode(getSingleMethod(c, "t2"), List(Op(ICONST_1), Op(ICONST_2), Op(IADD), Op(IRETURN)))
+    assertSameCode(getSingleMethod(c, "t3"), List(Op(ICONST_1), Op(ICONST_3), Op(ISUB), Op(IRETURN)))
     assertNoInvoke(getSingleMethod(c, "t4"))
     assertNoInvoke(getSingleMethod(c, "t5"))
   }
@@ -1461,9 +1441,9 @@ class InlinerTest extends ClearAfterClass {
       """.stripMargin
     val List(c, _) = compile(code)
     def casts(m: String) = getSingleMethod(c, m).instructions collect { case TypeOp(CHECKCAST, tp) => tp }
-    assertSameCode(getSingleMethod(c, "t1").instructions.dropNonOp, List(VarOp(ALOAD, 1), Op(ARETURN)))
-    assertSameCode(getSingleMethod(c, "t2").instructions.dropNonOp, List(VarOp(ALOAD, 1), Op(ARETURN)))
-    assertSameCode(getSingleMethod(c, "t3").instructions.dropNonOp, List(VarOp(ALOAD, 1), TypeOp(CHECKCAST, "C"), Op(ARETURN)))
+    assertSameCode(getSingleMethod(c, "t1"), List(VarOp(ALOAD, 1), Op(ARETURN)))
+    assertSameCode(getSingleMethod(c, "t2"), List(VarOp(ALOAD, 1), Op(ARETURN)))
+    assertSameCode(getSingleMethod(c, "t3"), List(VarOp(ALOAD, 1), TypeOp(CHECKCAST, "C"), Op(ARETURN)))
     assertEquals(casts("t4"), List("C"))
     assertEquals(casts("t5"), Nil)
     assertEquals(casts("t6"), Nil)
@@ -1489,12 +1469,11 @@ class InlinerTest extends ClearAfterClass {
 
     val cls = compile(code)
     val test = cls.find(_.name == "Test$").get
-    assertEquals(
-      getSingleMethod(test, "f").instructions.summary,
-      List(GETSTATIC, "mkFoo",
-        BIPUSH, ISTORE,
-        IFNONNULL, ACONST_NULL, ATHROW, -1 /*label*/,
-        ILOAD, ICONST_1, IADD, IRETURN))
+    assertSameSummary(getSingleMethod(test, "f"), List(
+      GETSTATIC, "mkFoo",
+      BIPUSH, ISTORE,
+      IFNONNULL, ACONST_NULL, ATHROW, -1 /*label*/,
+      ILOAD, ICONST_1, IADD, IRETURN))
   }
 
   @Test // a test taken from the test suite for the 2.11 inliner
@@ -1509,11 +1488,10 @@ class InlinerTest extends ClearAfterClass {
     val List(c) = compile(code)
 
     // box-unbox will clean it up
-    assertEquals(getSingleMethod(c, "t").instructions.summary,
-      List(
-        ALOAD, "C$$$anonfun$1", IFEQ /*A*/,
-        "C$$$anonfun$2", IRETURN,
-        -1 /*A*/, "C$$$anonfun$3", IRETURN))
+    assertSameSummary(getSingleMethod(c, "t"), List(
+      ALOAD, "C$$$anonfun$1", IFEQ /*A*/,
+      "C$$$anonfun$2", IRETURN,
+      -1 /*A*/, "C$$$anonfun$3", IRETURN))
   }
 
   @Test

@@ -150,21 +150,21 @@ class BytecodeTest extends ClearAfterClass {
     val List(c) = compileClasses(compiler)(code)
 
     // t1: no unnecessary GOTOs
-    assertSameCode(getSingleMethod(c, "t1").instructions.dropNonOp, List(
+    assertSameCode(getSingleMethod(c, "t1"), List(
       VarOp(ILOAD, 1), Jump(IFEQ, Label(6)),
       Op(ICONST_1), Jump(GOTO, Label(9)),
       Label(6), Op(ICONST_2),
       Label(9), Op(IRETURN)))
 
     // t2: no unnecessary GOTOs
-    assertSameCode(getSingleMethod(c, "t2").instructions.dropNonOp, List(
+    assertSameCode(getSingleMethod(c, "t2"), List(
       VarOp(ILOAD, 1), IntOp(SIPUSH, 393), Jump(IF_ICMPNE, Label(7)),
       Op(ICONST_1), Jump(GOTO, Label(10)),
       Label(7), Op(ICONST_2),
       Label(10), Op(IRETURN)))
 
     // t3: Array == is translated to reference equality, AnyRef == to null checks and equals
-    assertSameCode(getSingleMethod(c, "t3").instructions.dropNonOp, List(
+    assertSameCode(getSingleMethod(c, "t3"), List(
       // Array ==
       VarOp(ALOAD, 1), VarOp(ALOAD, 2), Jump(IF_ACMPEQ, Label(23)),
       // AnyRef ==
@@ -183,13 +183,13 @@ class BytecodeTest extends ClearAfterClass {
       Label(13), Op(IRETURN))
 
     // t4: one side is known null, so just a null check on the other
-    assertSameCode(getSingleMethod(c, "t4").instructions.dropNonOp, t4t5)
+    assertSameCode(getSingleMethod(c, "t4"), t4t5)
 
     // t5: one side known null, so just a null check on the other
-    assertSameCode(getSingleMethod(c, "t5").instructions.dropNonOp, t4t5)
+    assertSameCode(getSingleMethod(c, "t5"), t4t5)
 
     // t6: no unnecessary GOTOs
-    assertSameCode(getSingleMethod(c, "t6").instructions.dropNonOp, List(
+    assertSameCode(getSingleMethod(c, "t6"), List(
       VarOp(ILOAD, 1), IntOp(BIPUSH, 10), Jump(IF_ICMPNE, Label(7)),
       VarOp(ILOAD, 2), Jump(IFNE, Label(12)),
       Label(7), VarOp(ILOAD, 1), Op(ICONST_1), Jump(IF_ICMPEQ, Label(16)),
@@ -201,7 +201,7 @@ class BytecodeTest extends ClearAfterClass {
     assertInvoke(getSingleMethod(c, "t7"), "scala/runtime/BoxesRunTime", "equals")
 
     // t8: no null checks invoking equals on modules and constants
-    assertSameCode(getSingleMethod(c, "t8").instructions.dropNonOp, List(
+    assertSameCode(getSingleMethod(c, "t8"), List(
       Field(GETSTATIC, "scala/collection/immutable/Nil$", "MODULE$", "Lscala/collection/immutable/Nil$;"), VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", false), Jump(IFNE, Label(10)),
       Ldc(LDC, ""), VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", false), Jump(IFNE, Label(14)),
       Label(10), Op(ICONST_1), Jump(GOTO, Label(17)),
