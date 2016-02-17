@@ -2584,8 +2584,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         // the default uses applyOrElse's first parameter since the scrut's type has been widened
         val match_ = {
-          val defaultCase = methodBodyTyper.typedCase(
-            mkDefaultCase(methodBodyTyper.typed1(REF(default) APPLY (REF(x)), mode, B1.tpe).setType(B1.tpe)), argTp, B1.tpe)
+          val cdef = mkDefaultCase(methodBodyTyper.typed1(REF(default) APPLY (REF(x)), mode, B1.tpe).setType(B1.tpe))
+          val List(defaultCase) = methodBodyTyper.typedCases(List(cdef), argTp, B1.tpe)
           treeCopy.Match(match0, match0.selector, match0.cases :+ defaultCase)
         }
         match_ setType B1.tpe
