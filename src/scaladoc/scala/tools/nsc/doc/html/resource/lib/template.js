@@ -92,7 +92,8 @@ $(document).ready(function() {
         return isHidden(this);
     }).removeClass("in").addClass("out");
 
-    $("#mbrsel > div.toggle").click(function() {
+    $("#memberfilter > i.arrow").click(function() {
+        $(this).toggleClass("rotate");
         $("#filterby").toggle();
     });
 
@@ -311,7 +312,9 @@ $(document).ready(function() {
     });
 
     $("#mbrsel-input").on("blur", function() {
-        $("#memberfilter > .clear").hide();
+        setTimeout(function() {
+            $("#memberfilter > .clear").hide();
+        }, 10);
     });
 });
 
