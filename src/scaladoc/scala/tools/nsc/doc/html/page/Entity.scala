@@ -165,28 +165,24 @@ trait EntityPage extends HtmlPage {
         <div class='toggle'></div>
         <div id='memberfilter'><span class='input'><input id='mbrsel-input' placeholder='Filter members' type='text' accesskey='/'/></span><span class='clear'>✖</span></div>
           <div id='filterby'>
-          { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty && (!universe.settings.docGroups.value || (tpl.members.map(_.group).distinct.length == 1)))
-              NodeSeq.Empty
-            else
-              <div id="order">
-                <span class="filtertype">Ordering</span>
-                <ol>
-                  {
-                    if (!universe.settings.docGroups.value || (tpl.members.map(_.group).distinct.length == 1))
-                      NodeSeq.Empty
-                    else
-                      <li class="group out"><span>Grouped</span></li>
-                  }
-                  <li class="alpha in"><span>Alphabetic</span></li>
-                  {
-                    if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty)
-                      NodeSeq.Empty
-                    else
-                      <li class="inherit out"><span>By Inheritance</span></li>
-                  }
-                </ol>
-              </div>
-          }
+            <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                {
+                  if (!universe.settings.docGroups.value || (tpl.members.map(_.group).distinct.length == 1))
+                    NodeSeq.Empty
+                  else
+                    <li class="group out"><span>Grouped</span></li>
+                }
+                <li class="alpha in"><span>Alphabetic</span></li>
+                {
+                  if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty)
+                    NodeSeq.Empty
+                  else
+                    <li class="inherit out"><span>By Inheritance</span></li>
+                }
+              </ol>
+            </div>
           { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty) NodeSeq.Empty else
             {
               if (!tpl.linearizationTemplates.isEmpty)
