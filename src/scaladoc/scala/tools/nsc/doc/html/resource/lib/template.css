@@ -157,24 +157,39 @@ body.trait div#definition {
   user-select: none;
 }
 
-.toggleContainer .toggle:before {
-  cursor: pointer;
-  padding-left: 15px;
-  content: "▶";
+.toggleContainer .toggle > i {
   position: absolute;
-  left: -2.7em;
+  left: -1.5em;
   top: 0em;
+  font-size: 1.3em;
+  transition: 0.1s;
 }
 
-.toggleContainer .toggle.open:before {
-  content: "▼";
-  position: absolute;
-  left: -2.7em;
-  top: 0em;
+.toggleContainer .toggle.open > i {
+  transform: rotate(90deg);
 }
 
 .toggleContainer .hiddenContent {
   margin-top: 1.5em;
+}
+
+#memberfilter > i.arrow {
+  position: absolute;
+  top: 0.45em;
+  left: -0.9em;
+  color: #fff;
+  font-size: 1.3em;
+  opacity: 0;
+  transition: 0.1s;
+  cursor: pointer;
+}
+
+#memberfilter > i.arrow.rotate {
+  transform: rotate(90deg);
+}
+
+#memberfilter:hover > i.arrow {
+  opacity: 1;
 }
 
 .value #definition {
@@ -430,23 +445,20 @@ span.symbol > span.name {
   cursor: pointer;
 }
 
-#template .closed:before {
-    content: "▶";
-    position: absolute;
-    left: 1em;
-    top: 0.35em;
-}
-
 #template .opened {
   cursor: pointer;
 }
 
-#template .opened:before {
-  content: "▼";
+i.unfold-arrow {
+  font-size: 1em;
   position: absolute;
-  left: 1em;
-  top: 0.35em;
-  color: #2C475C;
+  top: 0.55em;
+  left: 0.7em;
+  transition: 0.1s;
+}
+
+#template .modifier_kind.opened > i.unfold-arrow {
+  transform: rotate(90deg);
 }
 
 #template .values .name {
@@ -469,12 +481,12 @@ span.symbol > span.name {
   top: 0;
 }
 
-.full-signature-usecase > .signature > .closed:before {
-  content: "" !important;
-}
-
-.full-signature-usecase > .signature > .opened:before {
-  content: "" !important;
+/* Hide unfold arrow where appropriate */
+#template li[fullComment=no] .modifier_kind > i.unfold-arrow,
+div#definition > h4#signature > span.modifier_kind > i.unfold-arrow,
+.full-signature-usecase > .signature > .closed > i.unfold-arrow,
+.full-signature-usecase > .signature > .opened > i.unfold-arrow {
+  display: none;
 }
 
 #template .full-signature-usecase > .signature > .closed {
@@ -810,11 +822,10 @@ div.fullcomment dl.paramcmts > dd {
 #memberfilter > .clear {
   display: none;
   position: absolute;
-  top: 0.6em;
-  right: -0.65em;
-  height: 23px;
-  width: 21px;
+  top: 0.55em;
   color: rgba(255, 255, 255, 0.4);
+  right: 0;
+  font-size: 1.2em;
 }
 
 #memberfilter > .clear:hover {
@@ -860,17 +871,16 @@ div.fullcomment dl.paramcmts > dd {
   left: 0.7em;
 }
 
-#mbrsel > div.toggle:before {
+#mbrsel > div.toggle > i {
   cursor: pointer;
-  content: "▶";
   position: absolute;
   left: 0;
   top: 0;
   color: #fff;
 }
 
-#mbrsel > div.toggle.open:before {
-  content: "▼";
+#mbrsel > div.toggle.open > i {
+  transform: rotate(90deg);
 }
 
 #mbrsel > div#filterby {

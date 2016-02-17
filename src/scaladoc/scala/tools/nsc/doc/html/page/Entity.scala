@@ -163,7 +163,13 @@ trait EntityPage extends HtmlPage {
 
       <div id="mbrsel">
         <div class='toggle'></div>
-        <div id='memberfilter'><span class='input'><input id='mbrsel-input' placeholder='Filter members' type='text' accesskey='/'/></span><span class='clear'>✖</span></div>
+        <div id='memberfilter'>
+          <i class="material-icons arrow">&#xE037;</i>
+          <span class='input'>
+            <input id='mbrsel-input' placeholder='Filter members' type='text' accesskey='/'/>
+          </span>
+          <i class="clear material-icons">&#xE14C;</i>
+        </div>
           <div id='filterby'>
             <div id="order">
               <span class="filtertype">Ordering</span>
@@ -540,7 +546,10 @@ trait EntityPage extends HtmlPage {
       mbr match {
         case nte: NonTemplateMemberEntity if nte.isUseCase =>
           <div class="full-signature-block toggleContainer">
-            <span class="toggle">Full Signature</span>
+            <span class="toggle">
+              <i class="material-icons">&#xE037;</i>
+              Full Signature
+            </span>
             <div class="hiddenContent full-signature-usecase">{ signature(nte.useCaseOf.get,isSelf = true) }</div>
           </div>
         case _ => NodeSeq.Empty
@@ -682,7 +691,10 @@ trait EntityPage extends HtmlPage {
     val linearization = mbr match {
       case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.linearizationTemplates.nonEmpty =>
         <div class="toggleContainer block">
-          <span class="toggle">Linear Supertypes</span>
+          <span class="toggle">
+            <i class="material-icons">&#xE037;</i>
+            Linear Supertypes
+          </span>
           <div class="superTypes hiddenContent">{
             typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = scala.xml.Text(", "))
           }</div>
@@ -702,7 +714,10 @@ trait EntityPage extends HtmlPage {
         transitive(dtpl)
         if (subs.nonEmpty)
           <div class="toggleContainer block">
-            <span class="toggle">Known Subclasses</span>
+            <span class="toggle">
+              <i class="material-icons">&#xE037;</i>
+              Known Subclasses
+            </span>
             <div class="subClasses hiddenContent">{
               templatesToHtml(subs.toList.sorted(Entity.EntityOrdering), scala.xml.Text(", "))
             }</div>
@@ -719,7 +734,10 @@ trait EntityPage extends HtmlPage {
             val diagramSvg = generator.generate(diagram.get, tpl, this)
             if (diagramSvg != NodeSeq.Empty) {
               <div class="toggleContainer block diagram-container" id={ id + "-container"}>
-                <span class="toggle diagram-link">{ description }</span>
+                <span class="toggle diagram-link">
+                  <i class="material-icons">&#xE037;</i>
+                  { description }
+                </span>
                 <div class="diagram" id={ id }>{ diagramSvg }</div>
                 <div id="diagram-controls" class="hiddenContent">
                   <button id="diagram-zoom-out" class="diagram-btn"><i class="material-icons">&#xE15B;</i></button>
@@ -773,6 +791,7 @@ trait EntityPage extends HtmlPage {
     def inside(hasLinks: Boolean, nameLink: String = ""): NodeSeq =
       <xml:group>
       <span class="modifier_kind">
+        <i class="material-icons unfold-arrow">&#xE037;</i>
         <span class="modifier">{ mbr.flags.map(flag => inlineToHtml(flag.text) ++ scala.xml.Text(" ")) }</span>
         <span class="kind">{ kindToString(mbr) }</span>
       </span>
