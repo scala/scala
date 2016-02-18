@@ -352,7 +352,7 @@ function searchMembers(entities, regExp, pack) {
         nameElem.className = "entity";
 
         var entityUrl = document.createElement("a");
-        entityUrl.title = name;
+        entityUrl.title = entity.shortDescription ? entity.shortDescription : name;
         entityUrl.href = toRoot + entity[entity.kind];
         entityUrl.appendChild(document.createTextNode(name));
 
@@ -484,7 +484,7 @@ function listItem(entity, regExp) {
     nameElem.className = "entity";
 
     var entityUrl = document.createElement("a");
-    entityUrl.title = name;
+    entityUrl.title = entity.shortDescription ? entity.shortDescription : name;
     entityUrl.href = toRoot + entity[entity.kind];
 
     entityUrl.appendChild(document.createTextNode(name));

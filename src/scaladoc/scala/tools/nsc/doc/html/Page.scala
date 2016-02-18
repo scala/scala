@@ -7,6 +7,7 @@ package scala
 package tools.nsc.doc.html
 
 import scala.tools.nsc.doc.model._
+import scala.tools.nsc.doc.base.comment
 import java.io.{FileOutputStream, File}
 import scala.reflect.NameTransformer
 import java.nio.channels.Channels
@@ -99,5 +100,17 @@ abstract class Page {
         List.fill(fss.length - 1)("..") ::: tss
     }
     relativize(thisPage.path.reverse, destPath.reverse).mkString("/")
+  }
+
+  protected def inlineToStr(inl: comment.Inline): String = inl match {
+    case comment.Chain(items) => items flatMap (inlineToStr(_)) mkString ""
+    case comment.Italic(in) => inlineToStr(in)
+    case comment.Bold(in) => inlineToStr(in)
+    case comment.Underline(in) => inlineToStr(in)
+    case comment.Monospace(in) => inlineToStr(in)
+    case comment.Text(text) => text
+    case comment.Summary(in) => inlineToStr(in)
+    case comment.EntityLink(comment.Text(text), _) => text
+    case _ => inl.toString
   }
 }
