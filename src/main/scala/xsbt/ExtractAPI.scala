@@ -466,7 +466,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](val global: GlobalType,
     val defType =
       if (sym.isTrait) DefinitionType.Trait
       else if (sym.isModuleClass) {
-        if (sym.isPackageClass) DefinitionType.PackageModule
+        if (sym.isPackageObjectClass) DefinitionType.PackageModule
         else DefinitionType.Module
       } else DefinitionType.ClassDef
     val childrenOfSealedClass = sort(sym.children.toArray).map(c => processType(c, c.tpe))

@@ -1,8 +1,7 @@
 package xsbt
 
 import org.junit.runner.RunWith
-import xsbti.api.ClassLike
-import xsbti.api.Def
+import xsbti.api.{DefinitionType, ClassLike, Def}
 import xsbt.api.SameAPI
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
@@ -33,6 +32,14 @@ class ExtractAPISpecification extends Specification {
          |""".stripMargin
     val fooClassApi2 = compileAndGetFooClassApi(src2)
     SameAPI(fooClassApi1, fooClassApi2) !=== true
+  }
+
+  "definition type of a package object" in {
+    val src = "package object foo".stripMargin
+    val compilerForTesting = new ScalaCompilerForUnitTesting
+    val apis = compilerForTesting.extractApisFromSrc(src)
+    val Seq(fooClassApi) = apis.toSeq
+    fooClassApi.definitionType === DefinitionType.PackageModule
   }
 
   def stableExistentialNames: Boolean = {
