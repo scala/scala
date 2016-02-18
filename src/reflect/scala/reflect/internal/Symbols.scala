@@ -3642,7 +3642,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     assert((prev eq null) || phaseId(validFrom) > phaseId(prev.validFrom), this)
     assert(validFrom != NoPeriod, this)
 
-    private def phaseString = "%s: %s".format(phaseOf(validFrom), info)
+    private def phaseString = {
+      val phase = phaseOf(validFrom)
+      s"$phase: ${exitingPhase(phase)(info.toString)}"
+    }
     override def toString = toList reverseMap (_.phaseString) mkString ", "
 
     def toList: List[TypeHistory] = this :: ( if (prev eq null) Nil else prev.toList )
