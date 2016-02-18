@@ -5,7 +5,6 @@ import xsbti.compile.SingleOutput
 import java.io.File
 import _root_.scala.tools.nsc.reporters.ConsoleReporter
 import xsbti._
-import xsbti.api.SourceAPI
 import sbt.IO.withTemporaryDirectory
 import xsbti.api.ClassLike
 
@@ -22,7 +21,7 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
    * Compiles given source code using Scala compiler and returns API representation
    * extracted by ExtractAPI class.
    */
-  def extractApiFromSrc(src: String): SourceAPI = {
+  def extractApisFromSrc(src: String): Set[ClassLike] = {
     val (Seq(tempSrcFile), analysisCallback) = compileSrcs(src)
     analysisCallback.apis(tempSrcFile)
   }

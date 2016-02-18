@@ -470,10 +470,11 @@ class ExtractAPI[GlobalType <: CallbackGlobal](val global: GlobalType,
         else DefinitionType.Module
       } else DefinitionType.ClassDef
     val childrenOfSealedClass = sort(sym.children.toArray).map(c => processType(c, c.tpe))
+    val topLevel = sym.owner.isPackageClass
 
     new xsbti.api.ClassLike(
       defType, lzy(selfType(in, sym)), lzy(structureWithInherited(viewer(in).memberInfo(sym), sym)), emptyStringArray,
-      childrenOfSealedClass, typeParameters(in, sym), // look at class symbol
+      childrenOfSealedClass, topLevel, typeParameters(in, sym), // look at class symbol
       className(c), getAccess(c), getModifiers(c), annotations(in, c)) // use original symbol (which is a term symbol when `c.isModule`) for `name` and other non-classy stuff
   }
 

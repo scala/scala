@@ -36,6 +36,7 @@ final class API(val global: CallbackGlobal) extends Compat {
     def processScalaUnit(unit: CompilationUnit): Unit = {
       val sourceFile = unit.source.file.file
       debug("Traversing " + sourceFile)
+      callback.startSource(sourceFile)
       val extractApi = new ExtractAPI[global.type](global, sourceFile)
       val traverser = new TopLevelHandler(extractApi)
       traverser.apply(unit.body)
@@ -50,15 +51,15 @@ final class API(val global: CallbackGlobal) extends Compat {
         declaredClasses foreach { (declaredClass: String) => callback.declaredClass(sourceFile, declaredClass) }
       }
       val packages = traverser.packages.toArray[String].map(p => new xsbti.api.Package(p))
-      val source = new xsbti.api.SourceAPI(packages, traverser.definitions.toArray[xsbti.api.Definition])
+      val classApis = traverser.definitions.toArray[xsbti.api.ClassLike]
       extractApi.forceStructures()
-      callback.api(sourceFile, source)
+      classApis.foreach(callback.api(sourceFile, _))
     }
   }
 
   private final class TopLevelHandler(extractApi: ExtractAPI[global.type]) extends TopLevelTraverser {
     val packages = new HashSet[String]
-    val definitions = new ListBuffer[xsbti.api.Definition]
+    val definitions = new ListBuffer[xsbti.api.ClassLike]
     def `class`(c: Symbol): Unit = {
       definitions += extractApi.classLike(c.owner, c)
     }
