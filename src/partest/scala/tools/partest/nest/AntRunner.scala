@@ -12,11 +12,12 @@ package nest
 import java.net.URLClassLoader
 
 // not using any Scala types to ease calling across different scala versions
-abstract class AntRunner(srcDir: String, testClassLoader: URLClassLoader, javaCmd: File, javacCmd: File, scalacArgs: Array[String], javaOpts: Option[Seq[String]]) extends SuiteRunner(
+abstract class AntRunner(srcDir: String, testClassLoader: URLClassLoader, javaCmd: File, javacCmd: File, scalacArgs: Array[String], javaOpts: Option[Seq[String]], nestUI: NestUI) extends SuiteRunner(
   testSourcePath = Option(srcDir) getOrElse PartestDefaults.sourcePath,
   new FileManager(testClassLoader = testClassLoader),
   updateCheck = false,
   failed  = false,
+  nestUI = nestUI,
   javaCmdPath = Option(javaCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd,
   javacCmdPath = Option(javacCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd,
   scalacExtraArgs = scalacArgs,

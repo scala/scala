@@ -118,9 +118,7 @@ class PartestTask extends Task with CompilationPathProperty with ScalaTask {
   }
 
   override def execute() {
-    if (debug || propOrFalse("partest.debug")) {
-      NestUI.setDebug()
-    }
+    val nestUI: NestUI = new NestUI(debug = debug || propOrFalse("partest.debug"))
 
     if (compilationPath.isEmpty) sys.error("Mandatory attribute 'compilationPath' is not set.")
 
@@ -130,7 +128,7 @@ class PartestTask extends Task with CompilationPathProperty with ScalaTask {
     })
 
     var failureCount = 0
-    val summary = new scala.tools.partest.nest.AntRunner(srcDir.getOrElse(null), new URLClassLoader(compilationPath.get.list.map(Path(_).toURL)), javacmd.getOrElse(null), javaccmd.getOrElse(null), scalacArgsFlat, javaOpts) {
+    val summary = new scala.tools.partest.nest.AntRunner(srcDir.getOrElse(null), new URLClassLoader(compilationPath.get.list.map(Path(_).toURL)), javacmd.getOrElse(null), javaccmd.getOrElse(null), scalacArgsFlat, javaOpts, nestUI) {
       def echo(msg: String): Unit = PartestTask.this.log(msg)
       def log(msg: String): Unit = PartestTask.this.log(msg)
 

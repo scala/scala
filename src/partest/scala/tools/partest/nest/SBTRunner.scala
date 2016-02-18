@@ -13,13 +13,14 @@ import _root_.sbt.testing._
 import java.net.URLClassLoader
 import TestState._
 
-class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, loggers: Array[Logger],
-    srcDir: String, testClassLoader: URLClassLoader, javaCmd: File, javacCmd: File, scalacArgs: Array[String], args: Array[String])
-    extends AbstractRunner(args.filter(a => !a.startsWith("-D")).mkString(" ")) {
+class SBTRunner(val config: RunnerSpec.Config,
+                partestFingerprint: Fingerprint, eventHandler: EventHandler, loggers: Array[Logger],
+                srcDir: String, testClassLoader: URLClassLoader, javaCmd: File, javacCmd: File,
+                scalacArgs: Array[String], args: Array[String]) extends AbstractRunner {
 
   // no summary, SBT will do that for us
-  printSummary = false
-  partestCmd   = "partest"
+  override protected val printSummary = false
+  override protected val partestCmd   = "partest"
 
   val defs = {
     val Def = "-D([^=]*)=(.*)".r
@@ -38,11 +39,12 @@ class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, log
     else l.mkString(" ")
   }
 
-  override val suiteRunner = new SuiteRunner(
-    testSourcePath = optSourcePath orElse Option(srcDir) getOrElse PartestDefaults.sourcePath,
+  val suiteRunner = new SuiteRunner(
+    testSourcePath = config.optSourcePath orElse Option(srcDir) getOrElse PartestDefaults.sourcePath,
     new FileManager(testClassLoader = testClassLoader),
-    updateCheck = optUpdateCheck,
-    failed  = optFailed,
+    updateCheck = config.optUpdateCheck,
+    failed  = config.optFailed,
+    nestUI = nestUI,
     javaCmdPath = Option(javaCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd,
     javacCmdPath = Option(javacCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd,
     scalacExtraArgs = scalacArgs,

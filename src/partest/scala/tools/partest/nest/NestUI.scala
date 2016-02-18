@@ -16,8 +16,6 @@ class Colors(enabled: => Boolean) {
   val green   = colored(GREEN)
   val blue    = colored(BLUE)
   val red     = colored(RED)
-  val red_b   = colored(RED_B)
-  val green_b = colored(GREEN_B)
   val cyan    = colored(CYAN)
   val magenta = colored(MAGENTA)
 
@@ -25,18 +23,18 @@ class Colors(enabled: => Boolean) {
     s => if (enabled) code + s + RESET else s
 }
 
-object NestUI {
-  private val testNum = new java.util.concurrent.atomic.AtomicInteger(1)
-  @volatile private var testNumberFmt = "%3d"
-  // @volatile private var testNumber = 1
-  private def testNumber = testNumberFmt format testNum.getAndIncrement()
+class NestUI(val verbose: Boolean = false, val debug: Boolean = false, val terse: Boolean = false,
+             val diffOnFail: Boolean = false, val logOnFail: Boolean = false,
+             val colorEnabled: Boolean = sys.props contains "partest.colors") {
+  private[this] val testNum = new java.util.concurrent.atomic.AtomicInteger(1)
+  @volatile private[this] var testNumberFmt = "%3d"
+  private[this] def testNumber = testNumberFmt format testNum.getAndIncrement()
   def resetTestNumber(max: Int = -1) {
     testNum set 1
     val width = if (max > 0) max.toString.length else 3
     testNumberFmt = s"%${width}d"
   }
 
-  var colorEnabled = sys.props contains "partest.colors"
   val color = new Colors(colorEnabled)
   import color._
 
@@ -44,14 +42,14 @@ object NestUI {
   val SOME = 1
   val MANY = 2
 
-  private var _outline = ""
-  private var _success = ""
-  private var _failure = ""
-  private var _warning = ""
-  private var _default = ""
+  private[this] var _outline = ""
+  private[this] var _success = ""
+  private[this] var _failure = ""
+  private[this] var _warning = ""
+  private[this] var _default = ""
 
-  private var dotCount = 0
-  private val DotWidth = 72
+  private[this] var dotCount = 0
+  private[this] val DotWidth = 72
 
   def leftFlush() {
     if (dotCount != 0) {
@@ -73,8 +71,8 @@ object NestUI {
     f"$word $testNumber - $testIdent%-40s$reasonString"
   }
 
-  def reportTest(state: TestState, info: TestInfo) =
-    if (isTerse && state.isOk) {
+  def reportTest(state: TestState, info: TestInfo): Unit = {
+    if (terse && state.isOk) {
       if (dotCount >= DotWidth) {
         outline("\n.")
         dotCount = 1
@@ -89,24 +87,25 @@ object NestUI {
           echo(bold(cyan(s"##### Log file '${info.logFile}' from failed test #####\n")))
           echo(info.logFile.fileContents)
         }
-        if (isDiffy) {
+        if (diffOnFail) {
           val differ = bold(red("% ")) + "diff "
           val diffed = state.transcript find (_ startsWith differ)
           diffed match {
             case Some(diff) => echo(diff)
-            case None if !isLogging && !isPartestVerbose => showLog()
+            case None if !logOnFail && !verbose => showLog()
             case _ => ()
           }
         }
-        if (isLogging) showLog()
+        if (logOnFail) showLog()
       }
     }
+  }
 
   def echo(message: String): Unit = synchronized {
     leftFlush()
     print(message + "\n")
   }
-  def chatty(msg: String) = if (isVerbose) echo(msg)
+  def chatty(msg: String): Unit = if (verbose) echo(msg)
 
   def echoSkipped(msg: String) = echo(yellow(msg))
   def echoPassed(msg: String)  = echo(bold(green(msg)))
@@ -158,39 +157,16 @@ object NestUI {
     sys.exit(1)
   }
 
-  var _verbose = false
-  var _debug = false
-  var _terse = false
-  var _diff  = false
-  var _logging = false
+  def verbose(msg: String): Unit =
+    if (verbose) System.err.println(msg)
 
-  def isVerbose = _verbose
-  def isDebug = _debug
-  def isTerse = _terse
-  def isDiffy = _diff
-  def isLogging = _logging
+  def debug(msg: String): Unit =
+    if (debug) System.err.println(msg)
 
-  def setVerbose() {
-    _verbose = true
+  def showAllJVMInfo(): Unit = {
+    vlog(vmArgString)
+    vlog(allPropertiesString)
   }
-  def setDebug() {
-    _debug = true
-  }
-  def setTerse() {
-    _terse = true
-  }
-  def setDiffOnFail() {
-    _diff = true
-  }
-  def setLogOnFail() {
-    _logging = true
-  }
-  def verbose(msg: String) {
-    if (isVerbose)
-      System.err.println(msg)
-  }
-  def debug(msg: String) {
-    if (isDebug)
-      System.err.println(msg)
-  }
+
+  def vlog(msg: => String) = if (verbose) System.err.println(msg)
 }

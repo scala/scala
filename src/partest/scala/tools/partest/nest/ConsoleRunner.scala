@@ -3,33 +3,24 @@
  * @author Philipp Haller
  */
 
-package scala.tools
-package partest
+package scala.tools.partest
 package nest
 
-class ConsoleRunner(argstr: String) extends AbstractRunner(argstr) {
-
-  override val suiteRunner = new SuiteRunner (
-    testSourcePath = optSourcePath getOrElse PartestDefaults.sourcePath,
+class ConsoleRunner(val config: RunnerSpec.Config) extends AbstractRunner {
+  val suiteRunner = new SuiteRunner (
+    testSourcePath = config.optSourcePath getOrElse PartestDefaults.sourcePath,
     fileManager = new FileManager(ClassPath split PathResolver.Environment.javaUserClassPath map (Path(_))), // the script sets up our classpath for us via ant
-    updateCheck = optUpdateCheck,
-    failed = optFailed)
-
-  // So we can ctrl-C a test run and still hear all
-  // the buffered failure info.
-  scala.sys addShutdownHook issueSummaryReport()
-
-  override def run(): Unit = {
-    super.run()
-    System exit ( if (isSuccess) 0 else 1 )
-  }
-
-  run()
+    updateCheck = config.optUpdateCheck,
+    failed = config.optFailed,
+    nestUI = nestUI)
 }
 
 object ConsoleRunner {
   def main(args: Array[String]): Unit = {
-    new ConsoleRunner(args mkString " ")
+    val r = new ConsoleRunner(RunnerSpec.forArgs(args))
+    // So we can ctrl-C a test run and still hear all
+    // the buffered failure info.
+    scala.sys addShutdownHook r.issueSummaryReport()
+    System.exit( if (r.run) 0 else 1 )
   }
 }
-

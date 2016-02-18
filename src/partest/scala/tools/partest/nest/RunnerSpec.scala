@@ -2,7 +2,7 @@ package scala.tools.partest.nest
 
 import language.postfixOps
 
-import scala.tools.cmd.{ CommandLine, Interpolation, Meta, Reference, Spec }
+import scala.tools.cmd.{ CommandLine, Interpolation, Meta, Reference, Spec, Instance }
 
 trait RunnerSpec extends Spec with Meta.StdOpts with Interpolation {
   def referenceSpec       = RunnerSpec
@@ -49,6 +49,10 @@ trait RunnerSpec extends Spec with Meta.StdOpts with Interpolation {
 }
 
 object RunnerSpec extends RunnerSpec with Reference {
+  trait Config extends RunnerSpec with Instance
+
   type ThisCommandLine = CommandLine
   def creator(args: List[String]): ThisCommandLine = new CommandLine(RunnerSpec, args)
+
+  def forArgs(args: Array[String]): Config = new { val parsed = creator(args.toList) } with Config
 }

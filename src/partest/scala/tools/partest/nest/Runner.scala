@@ -26,22 +26,6 @@ import TestState.{ Pass, Fail, Crash, Uninitialized, Updated }
 
 import FileManager.{ compareFiles, compareContents, joinPaths, withTempFile }
 
-class TestTranscript {
-  import NestUI.color._
-  private val buf = ListBuffer[String]()
-  private def pass(s: String) = bold(green("% ")) + s
-  private def fail(s: String) = bold(red("% ")) + s
-
-  def add(action: String): this.type = { buf += action ; this }
-  def append(text: String) { val s = buf.last ; buf.trimEnd(1) ; buf += (s + text) }
-
-  // Colorize prompts according to pass/fail
-  def fail: List[String] = buf.toList match {
-    case Nil  => Nil
-    case xs   => (xs.init map pass) :+ fail(xs.last)
-  }
-}
-
 trait TestInfo {
   /** pos/t1234 */
   def testIdent: String
@@ -70,7 +54,7 @@ trait TestInfo {
 }
 
 /** Run a single test. Rubber meets road. */
-class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo {
+class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestUI) extends TestInfo {
 
   import suiteRunner.{fileManager => fm, _}
   val fileManager = fm
@@ -108,7 +92,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo 
 
   def showCrashInfo(t: Throwable) {
     System.err.println(s"Crashed running test $testIdent: " + t)
-    if (!isPartestTerse)
+    if (!nestUI.terse)
       System.err.println(stackTraceString(t))
   }
   protected def crashHandler: PartialFunction[Throwable, TestState] = {
@@ -173,7 +157,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo 
     val argsFile  = testFile changeExtension "javaopts"
     val argString = file2String(argsFile)
     if (argString != "")
-      NestUI.verbose("Found javaopts file '%s', using options: '%s'".format(argsFile, argString))
+      nestUI.verbose("Found javaopts file '%s', using options: '%s'".format(argsFile, argString))
 
     val testFullPath = testFile.getAbsolutePath
 
@@ -185,7 +169,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo 
     //
     // debug: Found javaopts file 'files/shootout/message.scala-2.javaopts', using options: '-Xss32k'
     // debug: java -Xss32k -Xss2m -Xms256M -Xmx1024M -classpath [...]
-    val extras = if (isPartestDebug) List("-Dpartest.debug=true") else Nil
+    val extras = if (nestUI.debug) List("-Dpartest.debug=true") else Nil
     val propertyOptions = List(
       "-Dfile.encoding=UTF-8",
       "-Djava.library.path="+logFile.getParentFile.getAbsolutePath,
@@ -229,11 +213,11 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo 
       try p.exitValue
       catch {
         case e: InterruptedException =>
-          NestUI verbose s"Interrupted waiting for command to finish (${args mkString " "})"
+          nestUI.verbose(s"Interrupted waiting for command to finish (${args mkString " "})")
           p.destroy
           nonzero
         case t: Throwable =>
-          NestUI verbose s"Exception waiting for command to finish: $t (${args mkString " "})"
+          nestUI.verbose(s"Exception waiting for command to finish: $t (${args mkString " "})")
           p.destroy
           throw t
       }
@@ -265,7 +249,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo 
   }
 
   def fail(what: Any) = {
-    NestUI.verbose("scalac: compilation of "+what+" failed\n")
+    nestUI.verbose("scalac: compilation of "+what+" failed\n")
     false
   }
 
@@ -381,8 +365,8 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo 
     )
 
     logFile.mapInPlace(canonicalize)(lineFilter)
-    if (isPartestVerbose && elisions.nonEmpty) {
-      import NestUI.color._
+    if (nestUI.verbose && elisions.nonEmpty) {
+      import nestUI.color._
       val emdash = bold(yellow("--"))
       pushTranscript(s"filtering ${logFile.getName}$EOL${elisions mkString (emdash, EOL + emdash, EOL)}")
     }
@@ -400,7 +384,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo 
     pushTranscript(s"diff $logFile $checkFile")
     nextTestAction(updating) {
       case Some(true)  =>
-        NestUI.verbose("Updating checkfile " + checkFile)
+        nestUI.verbose("Updating checkfile " + checkFile)
         checkFile writeAll file2String(logFile)
         genUpdated()
       case Some(false) =>
@@ -549,7 +533,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo 
   // Apache Ant 1.6 or newer
   def ant(args: Seq[String], output: File): Boolean = {
     val antOptions =
-      if (NestUI._verbose) List("-verbose", "-noinput")
+      if (nestUI.verbose) List("-verbose", "-noinput")
       else List("-noinput")
     val cmd = javaCmdPath +: (
       suiteRunner.javaOpts.split(' ').map(_.trim).filter(_ != "") ++ Seq(
@@ -568,14 +552,14 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo 
     val succeeded = try {
       val binary = "-Dbinary="+ fileManager.distKind
       val args = Array(binary, "-logfile", logFile.getPath, "-file", testFile.getPath)
-      NestUI.verbose("ant "+args.mkString(" "))
+      nestUI.verbose("ant "+args.mkString(" "))
 
       pushTranscript(s"ant ${args.mkString(" ")}")
       nextTestActionExpectTrue("ant failed", ant(args, logFile)) && diffIsOk
     }
     catch { // *catch-all*
       case e: Exception =>
-        NestUI.warning("caught "+e)
+        nestUI.warning("caught "+e)
         false
     }
 
@@ -592,7 +576,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo 
   }
 
   def runScalacheckTest() = runTestCommon {
-    NestUI verbose f"compilation of $testFile succeeded%n"
+    nestUI.verbose(f"compilation of $testFile succeeded%n")
 
     val logWriter = new PrintStream(new FileOutputStream(logFile), true)
 
@@ -624,7 +608,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo 
       val claas       = "Test"
       val fingerprint = f.tests collectFirst { case x: SubclassFingerprint if x.isModule => x }
       val args        = toolArgs("scalacheck")
-      vlog(s"Run $testFile with args $args")
+      nestUI.vlog(s"Run $testFile with args $args")
       // set the context class loader for scaladoc/scalacheck tests (FIX ME)
       ScalaClassLoader(fileManager.testClassLoader).asContext {
         r.run(claas, fingerprint.get, handler, args.toArray)    // synchronous?
@@ -641,7 +625,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo 
     val prompt = "\nnsc> "
     val (swr, wr) = newTestWriters()
 
-    NestUI.verbose(s"$this running test $fileBase")
+    nestUI.verbose(s"$this running test $fileBase")
     val dir = parentFile
     val resFile = new File(dir, fileBase + ".res")
 
@@ -649,7 +633,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo 
     // $SCALAC -d "$os_dstbase".obj -Xresident -sourcepath . "$@"
     val sourcedir  = logFile.getParentFile.getAbsoluteFile
     val sourcepath = sourcedir.getAbsolutePath+File.separator
-    NestUI.verbose("sourcepath: "+sourcepath)
+    nestUI.verbose("sourcepath: "+sourcepath)
 
     val argList = List(
       "-d", outDir.getAbsoluteFile.getPath,
@@ -769,7 +753,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo 
   def cleanup() {
     if (lastState.isOk)
       logFile.delete()
-    if (!isPartestDebug)
+    if (!nestUI.debug)
       Directory(outDir).deleteRecursively()
   }
 
@@ -787,6 +771,7 @@ class SuiteRunner(
   val fileManager: FileManager,
   val updateCheck: Boolean,
   val failed: Boolean,
+  val nestUI: NestUI,
   val javaCmdPath: String = PartestDefaults.javaCmd,
   val javacCmdPath: String = PartestDefaults.javacCmd,
   val scalacExtraArgs: Seq[String] = Seq.empty,
@@ -824,7 +809,7 @@ class SuiteRunner(
   def onFinishTest(testFile: File, result: TestState): TestState = result
 
   def runTest(testFile: File): TestState = {
-    val runner = new Runner(testFile, this)
+    val runner = new Runner(testFile, this, nestUI)
 
     // when option "--failed" is provided execute test only if log
     // is present (which means it failed before)
@@ -837,7 +822,7 @@ class SuiteRunner(
           catch {
             case t: Throwable => throw new RuntimeException(s"Error running $testFile", t)
           }
-        NestUI.reportTest(state, runner)
+        nestUI.reportTest(state, runner)
         runner.cleanup()
         state
       }
@@ -845,7 +830,7 @@ class SuiteRunner(
   }
 
   def runTestsForFiles(kindFiles: Array[File], kind: String): Array[TestState] = {
-    NestUI.resetTestNumber(kindFiles.size)
+    nestUI.resetTestNumber(kindFiles.size)
 
     val pool              = Executors newFixedThreadPool numThreads
     val futures           = kindFiles map (f => pool submit callable(runTest(f.getAbsoluteFile)))
@@ -858,9 +843,9 @@ class SuiteRunner(
       case Failure(e) =>
         e match {
           case TimeoutException(d)      =>
-            NestUI warning "Thread pool timeout elapsed before all tests were complete!"
+            nestUI.warning("Thread pool timeout elapsed before all tests were complete!")
           case ie: InterruptedException =>
-            NestUI warning "Thread pool was interrupted"
+            nestUI.warning("Thread pool was interrupted")
             ie.printStackTrace()
         }
         pool.shutdownNow()     // little point in continuing
@@ -873,6 +858,24 @@ class SuiteRunner(
           }
         }
         results.flatten
+    }
+  }
+
+  class TestTranscript {
+    private val buf = ListBuffer[String]()
+
+    def add(action: String): this.type = { buf += action ; this }
+    def append(text: String) { val s = buf.last ; buf.trimEnd(1) ; buf += (s + text) }
+
+    // Colorize prompts according to pass/fail
+    def fail: List[String] = {
+      import nestUI.color._
+      def pass(s: String) = bold(green("% ")) + s
+      def fail(s: String) = bold(red("% ")) + s
+      buf.toList match {
+        case Nil  => Nil
+        case xs   => (xs.init map pass) :+ fail(xs.last)
+      }
     }
   }
 }

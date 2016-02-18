@@ -1,6 +1,6 @@
 package scala.tools.partest.sbt
 
-import scala.tools.partest.nest.SBTRunner
+import scala.tools.partest.nest.{SBTRunner, RunnerSpec}
 import _root_.sbt.testing._
 import java.net.URLClassLoader
 import java.io.File
@@ -34,7 +34,8 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
   def execute(eventHandler: EventHandler, loggers: Array[Logger]): Array[Task] = {
     val forkedCp    = scala.util.Properties.javaClassPath
     val classLoader = new URLClassLoader(forkedCp.split(java.io.File.pathSeparator).map(new File(_).toURI.toURL))
-    val runner      = new SBTRunner(taskDef.fingerprint(), eventHandler, loggers, "files", classLoader, null, null, Array.empty[String], args)
+    val config      = RunnerSpec.forArgs(args.filter(a => !a.startsWith("-D")))
+    val runner      = new SBTRunner(config, taskDef.fingerprint(), eventHandler, loggers, "files", classLoader, null, null, Array.empty[String], args)
 
     if (Runtime.getRuntime().maxMemory() / (1024*1024) < 800)
       loggers foreach (_.warn(s"""Low heap size detected (~ ${Runtime.getRuntime().maxMemory() / (1024*1024)}M). Please add the following to your build.sbt: javaOptions in Test += "-Xmx1G""""))

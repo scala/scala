@@ -7,7 +7,6 @@ package scala.tools
 import java.util.concurrent.{ Callable, ExecutorService }
 import scala.concurrent.duration.Duration
 import scala.sys.process.javaVmArguments
-import scala.tools.partest.nest.NestUI
 import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }
 
 package object partest {
@@ -181,15 +180,4 @@ package object partest {
     import scala.collection.JavaConversions._
     System.getProperties.toList.sorted map { case (k, v) => "%s -> %s\n".format(k, v) } mkString ""
   }
-
-  def showAllJVMInfo() {
-    vlog(vmArgString)
-    vlog(allPropertiesString)
-  }
-
-  def isPartestTerse   = NestUI.isTerse
-  def isPartestDebug   = NestUI.isDebug
-  def isPartestVerbose = NestUI.isVerbose
-
-  def vlog(msg: => String) = if (isPartestVerbose) System.err.println(msg)
 }

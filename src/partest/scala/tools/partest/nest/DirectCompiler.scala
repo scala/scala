@@ -107,7 +107,7 @@ class DirectCompiler(val runner: Runner) {
     }
 
     def ids = sources.map(_.testIdent) mkString space
-    vlog(s"% scalac $ids")
+    nestUI.vlog(s"% scalac $ids")
 
     def execCompile() =
       if (command.shouldStopWithInfo) {
