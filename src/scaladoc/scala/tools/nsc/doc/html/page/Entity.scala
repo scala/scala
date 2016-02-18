@@ -63,6 +63,9 @@ trait EntityPage extends HtmlPage {
     <body>
       { search }
       <div id="search-results">
+        <div id="search-progress">
+          <div id="progress-fill"></div>
+        </div>
         <div id="results-content">
           <div id="entity-results"></div>
           <div id="member-results"></div>

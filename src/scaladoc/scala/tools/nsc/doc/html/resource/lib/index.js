@@ -7,6 +7,20 @@ var title = $(document).attr('title');
 
 var lastFragment = "";
 
+var Index = {};
+(function (ns) {
+    ns.keyLength = 0;
+    ns.keys = function (obj) {
+        var result = [];
+        var key;
+        for (key in obj) {
+            result.push(key);
+            ns.keyLength++;
+        }
+        return result;
+    }
+})(Index);
+
 $(document).ready(function() {
     // Clicking #doc-title returns the user to the root package
     $("#doc-title").click(function() { document.location = toRoot + "index.html" });
@@ -29,48 +43,6 @@ $(document).ready(function() {
         }, 10);
     });
 });
-
-// Set the url fragment according to the src of the iframe "template".
-// iframe url = "scala/Either.html"  =>  url fragment = "#scala.Either"
-// iframe url = "scala/Either.html#isRight:Boolean"  =>  url fragment = "#scala.Either@isRight:Boolean"
-// iframe url = "scalaz/iteratee/package.html#>@>[E,A]=scalaz.iteratee.package.Iteratee[E,A]" => fragment = "#scalaz.iteratee.package@>@>[E,A]=scalaz.iteratee.package.Iteratee[E,A]"
-function setUrlFragmentFromFrameSrc() {
-  try {
-    var commonLength = location.pathname.lastIndexOf("/");
-    var frameLocation = frames["template"].location;
-    var relativePath = frameLocation.pathname.slice(commonLength + 1);
-
-    if(!relativePath || frameLocation.pathname.indexOf("/") < 0)
-      return;
-
-    // Add #, remove ".html" and replace "/" with "."
-    fragment = "#" + relativePath.replace(/\.html$/, "").replace(/\//g, ".");
-
-    // Add the frame's hash after an @
-    if(frameLocation.hash) fragment += ("@" + frameLocation.hash.slice(1));
-
-    // Use replace to not add history items
-    lastFragment = fragment;
-    location.replace(fragment);
-  }
-  catch(e) {
-    // Chrome doesn't allow reading the iframe's location when
-    // used on the local file system.
-  }
-}
-
-var Index = {};
-
-(function (ns) {
-    ns.keys = function (obj) {
-        var result = [];
-        var key;
-        for (key in obj) {
-            result.push(key);
-        }
-        return result;
-    }
-})(Index);
 
 /* Handles all key presses while scrolling around with keyboard shortcuts in search results */
 function handleKeyNavigation() {
@@ -308,6 +280,7 @@ function searchPackage(pack, regExp) {
 
         scheduler.add("search", function() {
             handleSearchedPackage(results, regExp);
+            setProgress();
         });
     });
 }
@@ -527,6 +500,7 @@ function listItem(entity, regExp) {
  */
 function searchAll() {
     scheduler.clear("search"); // clear previous search
+    maxJobs = 1; // clear previous max
     var searchStr = $("#textfilter input").attr("value").trim() || '';
 
     if (searchStr === '') {
@@ -581,4 +555,21 @@ function urlFriendlyEntity(entity) {
         entity = entity.replace(new RegExp(k, 'g'), corr[k]);
 
     return entity;
+}
+
+var maxJobs = 1;
+function setProgress() {
+    var running = scheduler.numberOfJobs("search");
+    maxJobs = Math.max(maxJobs, running);
+
+    var percent = 100 - (running / maxJobs * 100);
+    var bar = document.getElementById("progress-fill");
+    bar.style.height = "100%";
+    bar.style.width = percent + "%";
+
+    if (percent == 100) {
+        setTimeout(function() {
+            bar.style.height = 0;
+        }, 500);
+    }
 }

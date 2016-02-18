@@ -98,4 +98,11 @@ function Scheduler() {
             });
         }
     }
+
+    this.numberOfJobs = function(label) {
+        var index = scheduler.indexOf(label);
+        if (index == -1) throw("queue for label '" + label + "' non-existent");
+
+        return scheduler.queues[index].length;
+    }
 };
