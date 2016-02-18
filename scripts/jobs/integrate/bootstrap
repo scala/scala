@@ -87,6 +87,7 @@ moduleVersioning=${moduleVersioning-"versions.properties"}
 publishPrivateTask=${publishPrivateTask-"publish"}
 publishSonatypeTaskCore=${publishSonatypeTaskCore-"publish-signed"}
 publishSonatypeTaskModules=${publishSonatypeTaskModules-"publish-signed"}
+publishStarrPrivateTask=${publishStarrPrivateTask-$publishPrivateTask} # set to "init" to speed up testing of the script (if you already built STARR before)
 publishLockerPrivateTask=${publishLockerPrivateTask-$publishPrivateTask} # set to "init" to speed up testing of the script (if you already built locker before)
 
 forceRebuild=${forceRebuild-no}
@@ -208,12 +209,17 @@ sbtResolve() {
 # scala-xml depends on scala-library, so sbt tries to find the scala-library of the version that we are currently building,
 # which exists only in private-repo.
 
+docTask() {
+   if [ "$1" == "yes" ]; then echo doc; else echo set publishArtifact in packageDoc in Compile := false; fi
+}
+
 buildXML() {
   if [ "$XML_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-xml" $XML_VER )
   then echo "Found scala-xml $XML_VER; not building."
   else
     update scala scala-xml "$XML_REF" && gfxd
-    sbtBuild 'set version := "'$XML_VER'-DOC"' $clean doc  'set version := "'$XML_VER'"' test "${buildTasks[@]}"
+    doc="$(docTask $XML_BUILT)"
+    sbtBuild 'set version := "'$XML_VER'-DOC"' $clean "$doc" 'set version := "'$XML_VER'"' test "${buildTasks[@]}"
     XML_BUILT="yes" # ensure the module is built and published when buildXML is invoked for the second time, see comment above
   fi
 }
@@ -223,7 +229,8 @@ buildParsers() {
   then echo "Found scala-parser-combinators $PARSERS_VER; not building."
   else
     update scala scala-parser-combinators "$PARSERS_REF" && gfxd
-    sbtBuild 'set version := "'$PARSERS_VER'-DOC"' $clean doc 'set version := "'$PARSERS_VER'"' test "${buildTasks[@]}"
+    doc="$(docTask $PARSERS_BUILT)"
+    sbtBuild 'set version := "'$PARSERS_VER'-DOC"' $clean "$doc" 'set version := "'$PARSERS_VER'"' test "${buildTasks[@]}"
     PARSERS_BUILT="yes"
   fi
 }
@@ -233,7 +240,8 @@ buildPartest() {
   then echo "Found scala-partest $PARTEST_VER; not building."
   else
     update scala scala-partest "$PARTEST_REF" && gfxd
-    sbtBuild 'set version :="'$PARTEST_VER'"' 'set VersionKeys.scalaXmlVersion := "'$XML_VER'"' 'set VersionKeys.scalaCheckVersion := "'$SCALACHECK_VER'"' $clean test "${buildTasks[@]}"
+    doc="$(docTask $PARTEST_BUILT)"
+    sbtBuild 'set version :="'$PARTEST_VER'"' 'set VersionKeys.scalaXmlVersion := "'$XML_VER'"' 'set VersionKeys.scalaCheckVersion := "'$SCALACHECK_VER'"' $clean "$doc" test "${buildTasks[@]}"
     PARTEST_BUILT="yes"
   fi
 }
@@ -243,7 +251,8 @@ buildSwing() {
   then echo "Found scala-swing $SWING_VER; not building."
   else
     update scala scala-swing "$SWING_REF" && gfxd
-    sbtBuild 'set version := "'$SWING_VER'"' $clean test "${buildTasks[@]}"
+    doc="$(docTask $SWING_BUILT)"
+    sbtBuild 'set version := "'$SWING_VER'"' $clean "$doc" test "${buildTasks[@]}"
     SWING_BUILT="yes"
   fi
 }
@@ -254,7 +263,8 @@ buildScalacheck(){
   then echo "Found scalacheck $SCALACHECK_VER; not building."
   else
     update rickynils scalacheck $SCALACHECK_REF && gfxd
-    sbtBuild 'set version := "'$SCALACHECK_VER'"' 'set VersionKeys.scalaParserCombinatorsVersion := "'$PARSERS_VER'"' $clean publish # test times out NOTE: never published to sonatype
+    doc="$(docTask $SCALACHECK_BUILT)"
+    sbtBuild 'set version := "'$SCALACHECK_VER'"' 'set VersionKeys.scalaParserCombinatorsVersion := "'$PARSERS_VER'"' $clean "$doc" publish # test times out NOTE: never published to sonatype
     SCALACHECK_BUILT="yes"
   fi
 }
@@ -426,7 +436,7 @@ removeExistingBuilds() {
   local netrcFile="$HOME/.credentials-private-repo-netrc"
 
   local storageApiUrl=`echo $releaseTempRepoUrl | sed 's/\(scala-release-temp\)/api\/storage\/\1/'`
-  local scalaLangModules=`curl -s $storageApiUrl/org/scala-lang | jq -r '.children | .[] | "org/scala-lang" + .uri'`
+  local scalaLangModules=`curl -s $storageApiUrl/org/scala-lang | jq -r '.children | .[] | "org/scala-lang" + .uri' | grep -v actors-migration`
 
   for module in "org/scalacheck" $scalaLangModules; do
     local artifacts=`curl -s $storageApiUrl/$module | jq -r ".children | .[] | select(.uri | contains(\"$SCALA_VER\")) | .uri"`
@@ -462,6 +472,31 @@ bootstrap() {
 
   cd $WORKSPACE
 
+  #### (Optional) STARR.
+  if [ ! -z "$STARR_REF" ]; then
+      echo "### Building STARR"
+
+      STARR_DIR=./scala-starr
+      STARR_VER_SUFFIX="-$(git rev-parse --short $STARR_REF)-nightly"
+      STARR_VER=$SCALA_VER_BASE$STARR_VER_SUFFIX
+      rm -rf "$STARR_DIR"
+      (
+        git clone --reference $WORKSPACE/.git $WORKSPACE/.git $STARR_DIR
+        cd $STARR_DIR
+        git co $STARR_REF
+        ant -Dmaven.version.number=$STARR_VER\
+            -Dremote.snapshot.repository=NOPE\
+            -Dremote.release.repository=$releaseTempRepoUrl\
+            -Drepository.credentials.id=$releaseTempRepoCred\
+            -Dscalac.args.optimise=-Yopt:l:classpath\
+            -Ddocs.skip=1\
+            -Dlocker.skip=1\
+            $publishStarrPrivateTask >> $baseDir/logs/builds 2>&1
+      )
+  else
+    STARR_VER=$SCALA_VER
+  fi
+
   #### LOCKER
 
   echo "### Building locker"
@@ -471,15 +506,16 @@ bootstrap() {
   # must publish under $SCALA_VER so that the modules will depend on this (binary) version of Scala
   # publish more than just core: partest needs scalap
   # in sabbus lingo, the resulting Scala build will be used as starr to build the released Scala compiler
+  if [ ! -z "$STARR_VER" ]; then SET_STARR=-Dstarr.version=$STARR_VER; fi
   ant -Dmaven.version.number=$SCALA_VER\
       -Dremote.snapshot.repository=NOPE\
+      $SET_STARR\
       -Dremote.release.repository=$releaseTempRepoUrl\
       -Drepository.credentials.id=$releaseTempRepoCred\
       -Dscalac.args.optimise=-Yopt:l:classpath\
       -Ddocs.skip=1\
       -Dlocker.skip=1\
       $publishLockerPrivateTask >> $baseDir/logs/builds 2>&1
-
 
   echo "### Building modules using locker"
 
