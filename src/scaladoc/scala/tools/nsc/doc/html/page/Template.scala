@@ -939,17 +939,6 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     case _ => block.toString
   }
 
-  private def inlineToStr(inl: comment.Inline): String = inl match {
-    case comment.Chain(items) => items flatMap (inlineToStr(_)) mkString ""
-    case comment.Italic(in) => inlineToStr(in)
-    case comment.Bold(in) => inlineToStr(in)
-    case comment.Underline(in) => inlineToStr(in)
-    case comment.Monospace(in) => inlineToStr(in)
-    case comment.Text(text) => text
-    case comment.Summary(in) => inlineToStr(in)
-    case _ => inl.toString
-  }
-
   private def typeToHtmlWithStupidTypes(tpl: TemplateEntity, superTpl: TemplateEntity, superType: TypeEntity): NodeSeq =
     if (tpl.universe.settings.useStupidTypes.value)
       superTpl match {

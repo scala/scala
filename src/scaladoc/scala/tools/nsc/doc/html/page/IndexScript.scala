@@ -31,11 +31,12 @@ class IndexScript(universe: doc.Universe, index: doc.Index) extends Page {
         val merged = mergeByQualifiedName(templates)
 
         val ary = merged.keys.toList.sortBy(_.toLowerCase).map(key => {
-          val pairs = merged(key).flatMap { t =>
+          val pairs = merged(key).flatMap { t: DocTemplateEntity =>
             Seq(
               kindToString(t) -> relativeLinkTo(t),
               "kind" -> kindToString(t),
-              "members" -> membersToJSON(t.members.filter(!_.isShadowedOrAmbiguousImplicit)))
+              "members" -> membersToJSON(t.members.filter(!_.isShadowedOrAmbiguousImplicit)),
+              "shortDescription" -> shortDesc(t))
           }
 
           JSONObject(Map(pairs : _*) + ("name" -> key))
@@ -74,6 +75,11 @@ class IndexScript(universe: doc.Universe, index: doc.Index) extends Page {
         case t: DocTemplateEntity if !t.isPackage && !universe.settings.hardcoded.isExcluded(t.qualifiedName) => t
       }
     }) : _*)
+  }
+
+  /** Gets the short description i.e. the first sentence of the docstring */
+  def shortDesc(mbr: MemberEntity): String = mbr.comment.fold("") { c =>
+    inlineToStr(c.short).replaceAll("\n", "")
   }
 
   /** Returns the json representation of the supplied members */

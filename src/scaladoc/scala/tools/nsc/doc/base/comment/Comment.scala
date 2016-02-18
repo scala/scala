@@ -21,7 +21,7 @@ abstract class Comment {
   /** The main body of the comment that describes what the entity does and is.  */
   def body: Body
 
-  private def closeHtmlTags(inline: Inline) = {
+  private def closeHtmlTags(inline: Inline): Inline = {
     val stack = mutable.ListBuffer.empty[HtmlTag]
     def scan(i: Inline) {
       i match {
