@@ -316,6 +316,20 @@ textarea, input { outline: none; }
   z-index: 1;
 }
 
+div#search-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0.25em;
+}
+
+div#search-progress > div#progress-fill {
+  width: 0%;
+  background-color: #f16665;
+  transition: 0.1s;
+}
+
 #focusfilter .focuscoll {
   font-weight: bold;
 }
