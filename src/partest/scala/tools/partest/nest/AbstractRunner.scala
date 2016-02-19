@@ -17,19 +17,20 @@ abstract class AbstractRunner {
 
   val config: RunnerSpec.Config
 
-  val nestUI: NestUI = new NestUI(
+  lazy val nestUI: NestUI = new NestUI(
     verbose = config.optVerbose,
     debug = config.optDebug || propOrFalse("partest.debug"),
     terse = config.optTerse,
     diffOnFail = config.optShowDiff,
     logOnFail = config.optShowLog,
-    colorEnabled = sys.props contains "partest.colors"
+    colorEnabled = colorEnabled
   )
 
   val suiteRunner: SuiteRunner
 
   protected val printSummary         = true
   protected val partestCmd           = "test/partest"
+  protected val colorEnabled         = sys.props contains "partest.colors"
 
   private[this] var totalTests       = 0
   private[this] val passedTests      = mutable.ListBuffer[TestState]()

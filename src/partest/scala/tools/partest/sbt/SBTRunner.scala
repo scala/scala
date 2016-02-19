@@ -6,12 +6,15 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.tools.partest
-package nest
+package scala.tools.partest.sbt
+
+import java.net.URLClassLoader
 
 import _root_.sbt.testing._
-import java.net.URLClassLoader
-import TestState._
+
+import scala.tools.partest.TestState._
+import scala.tools.partest._
+import scala.tools.partest.nest.{AbstractRunner, FileManager, RunnerSpec, SuiteRunner}
 
 class SBTRunner(val config: RunnerSpec.Config,
                 partestFingerprint: Fingerprint, eventHandler: EventHandler, loggers: Array[Logger],
@@ -25,6 +28,18 @@ class SBTRunner(val config: RunnerSpec.Config,
   val defs = {
     val Def = "-D([^=]*)=(.*)".r
     args.collect { case Def(k, v) => (k, v) }
+  }
+
+  // Enable colors if there's an explicit override or all loggers support them
+  override protected val colorEnabled = {
+    val ptOverride = defs.collect { case ("partest.colors", v) => v.toBoolean }.lastOption
+    ptOverride.getOrElse {
+      val sbtOverride1 = sys.props.get("sbt.log.format").map(_.toBoolean)
+      val sbtOverride2 = sys.props.get("sbt.log.noformat").map(s => !s.toBoolean)
+      sbtOverride1.orElse(sbtOverride2).getOrElse {
+        loggers.forall(_.ansiCodesSupported())
+      }
+    }
   }
 
   val javaOpts = {

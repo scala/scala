@@ -1,6 +1,6 @@
 package scala.tools.partest.sbt
 
-import scala.tools.partest.nest.{SBTRunner, RunnerSpec}
+import scala.tools.partest.nest.RunnerSpec
 import _root_.sbt.testing._
 import java.net.URLClassLoader
 import java.io.File
