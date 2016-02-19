@@ -16,12 +16,12 @@ import convert._
  *
  *    The following conversions are supported:
  *{{{
- *    scala.collection.Iterable <=> java.lang.Iterable
- *    scala.collection.Iterable <=> java.util.Collection
- *    scala.collection.Iterator <=> java.util.{ Iterator, Enumeration }
+ *    scala.collection.Iterable       <=> java.lang.Iterable
+ *    scala.collection.Iterable       <=> java.util.Collection
+ *    scala.collection.Iterator       <=> java.util.{ Iterator, Enumeration }
  *    scala.collection.mutable.Buffer <=> java.util.List
- *    scala.collection.mutable.Set <=> java.util.Set
- *    scala.collection.mutable.Map <=> java.util.{ Map, Dictionary }
+ *    scala.collection.mutable.Set    <=> java.util.Set
+ *    scala.collection.mutable.Map    <=> java.util.{ Map, Dictionary }
  *    scala.collection.concurrent.Map <=> java.util.concurrent.ConcurrentMap
  *}}}
  *    In all cases, converting from a source type to a target type and back
