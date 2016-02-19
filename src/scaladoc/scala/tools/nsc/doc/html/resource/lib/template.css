@@ -133,6 +133,10 @@ body.trait div#definition {
   padding-left: 0;
 }
 
+span.symbol > a {
+  display: inline-block;
+}
+
 #signature > span.symbol {
   text-align: left;
   display: inline;

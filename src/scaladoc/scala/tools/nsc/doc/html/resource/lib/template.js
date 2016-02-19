@@ -27,6 +27,12 @@ $(document).ready(function() {
         }
     });
 
+    var oldWidth = $("div#subpackage-spacer").width() + 1 + "px";
+    $("div#packages > ul > li.current").click(function() {
+        $("div#subpackage-spacer").css({ "width": oldWidth });
+        $("li.current-entities").toggle();
+    });
+
     var controls = {
         visibility: {
             publicOnly: $("#visbl").find("> ol > li.public"),
