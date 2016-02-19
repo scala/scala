@@ -8,7 +8,7 @@ package nest
 
 import java.io.PrintWriter
 
-class Colors(enabled: => Boolean) {
+class Colors(enabled: Boolean) {
   import Console._
 
   val bold    = colored(BOLD)
@@ -38,15 +38,9 @@ class NestUI(val verbose: Boolean = false, val debug: Boolean = false, val terse
   val color = new Colors(colorEnabled)
   import color._
 
-  val NONE = 0
-  val SOME = 1
-  val MANY = 2
-
-  private[this] var _outline = ""
-  private[this] var _success = ""
-  private[this] var _failure = ""
-  private[this] var _warning = ""
-  private[this] var _default = ""
+  private[this] val (_outline, _success, _failure, _warning, _default) =
+    if (colorEnabled) (Console.BOLD, Console.BOLD + Console.GREEN, Console.BOLD + Console.RED, Console.BOLD + Console.YELLOW, Console.RESET)
+    else ("", "", "", "", "")
 
   private[this] var dotCount = 0
   private[this] val DotWidth = 72
@@ -112,22 +106,6 @@ class NestUI(val verbose: Boolean = false, val debug: Boolean = false, val terse
   def echoFailed(msg: String)  = echo(bold(red(msg)))
   def echoMixed(msg: String)   = echo(bold(yellow(msg)))
   def echoWarning(msg: String) = echo(bold(red(msg)))
-
-  def initialize(number: Int) = number match {
-    case MANY =>
-      _outline = Console.BOLD + Console.BLACK
-      _success = Console.BOLD + Console.GREEN
-      _failure = Console.BOLD +  Console.RED
-      _warning = Console.BOLD + Console.YELLOW
-      _default = Console.RESET
-    case SOME =>
-      _outline = Console.BOLD + Console.BLACK
-      _success = Console.RESET
-      _failure = Console.BOLD + Console.BLACK
-      _warning = Console.BOLD + Console.BLACK
-      _default = Console.RESET
-    case _ =>
-  }
 
   def outline(msg: String) = print(_outline + msg + _default)
   def outline(msg: String, wr: PrintWriter) = synchronized {
