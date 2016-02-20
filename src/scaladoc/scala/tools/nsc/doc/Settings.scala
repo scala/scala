@@ -14,6 +14,9 @@ import scala.language.postfixOps
   * @param printMsg A function that prints the string, without any extra boilerplate of error */
 class Settings(error: String => Unit, val printMsg: String => Unit = println(_)) extends scala.tools.nsc.Settings(error) {
 
+  // TODO 2.13 Remove
+  private def removalIn213 = "This flag is scheduled for removal in 2.13. If you have a case where you need this flag then please report a bug."
+
   /** A setting that defines in which format the documentation is output. ''Note:'' this setting is currently always
     * `html`. */
   val docformat = ChoiceSetting (
@@ -199,10 +202,11 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     ""
   )
 
+  // TODO 2.13 Remove
   val docExpandAllTypes = BooleanSetting (
     "-expand-all-types",
     "Expand all type aliases and abstract types into full template pages. (locally this can be done with the @template annotation)"
-  )
+  ) withDeprecationMessage(removalIn213)
 
   val docGroups = BooleanSetting (
     "-groups",
