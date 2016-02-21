@@ -1966,8 +1966,8 @@ self =>
           case _ => EmptyTree
         }
         def loop(top: Tree): Tree = reducePatternStack(base, top) match {
-          case next if isIdentExcept(raw.BAR) => pushOpInfo(next) ; loop(simplePattern(badPattern3))
-          case next                           => next
+          case next if isIdent && !isRawBar => pushOpInfo(next) ; loop(simplePattern(badPattern3))
+          case next                         => next
         }
         checkWildStar orElse stripParens(loop(top))
       }
