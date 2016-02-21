@@ -281,8 +281,6 @@ class ExtractAPI[GlobalType <: CallbackGlobal](val global: GlobalType,
       !(s.isPrivate && (s.privateWithin == NoSymbol || s.isLocal))
 
   private def mkStructure(s: Symbol, bases: List[Type], declared: List[Symbol], inherited: List[Symbol]): xsbti.api.Structure = {
-    if (isPublicStructure(s))
-      addInheritedDependencies(sourceFile, bases.map(_.dealias.typeSymbol))
     new xsbti.api.Structure(lzy(types(s, bases)), lzy(processDefinitions(s, declared)), lzy(processDefinitions(s, inherited)))
   }
   private def processDefinitions(in: Symbol, defs: List[Symbol]): Array[xsbti.api.Definition] =

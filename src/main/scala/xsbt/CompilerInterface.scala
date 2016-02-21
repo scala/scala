@@ -41,11 +41,6 @@ sealed abstract class CallbackGlobal(settings: Settings, reporter: reporters.Rep
       case multi: MultipleOutput => multi.outputGroups.toStream map (_.outputDirectory)
     }
   }
-  // Map source files to public inherited dependencies.  These dependencies are tracked as the symbol for the dealiased base class.
-  val inheritedDependencies = new mutable.HashMap[File, mutable.Set[Symbol]]
-  def addInheritedDependencies(file: File, deps: Iterable[Symbol]): Unit = {
-    inheritedDependencies.getOrElseUpdate(file, new mutable.HashSet) ++= deps
-  }
   // sbtDependency is exposed to `localToNonLocalClass` for sanity checking
   // the lookup performed by the `localToNonLocalClass` can be done only if
   // we're running at earlier phase, e.g. an sbtDependency phase

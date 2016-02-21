@@ -50,38 +50,26 @@ final class API(val global: CallbackGlobal) extends Compat {
         debug("The " + sourceFile + " contains the following declared classes " + declaredClasses)
         declaredClasses foreach { (declaredClass: String) => callback.declaredClass(sourceFile, declaredClass) }
       }
-      val packages = traverser.packages.toArray[String].map(p => new xsbti.api.Package(p))
       val classApis = traverser.definitions.toArray[xsbti.api.ClassLike]
       extractApi.forceStructures()
+
       classApis.foreach(callback.api(sourceFile, _))
     }
   }
 
   private final class TopLevelHandler(extractApi: ExtractAPI[global.type]) extends TopLevelTraverser {
-    val packages = new HashSet[String]
     val definitions = new ListBuffer[xsbti.api.ClassLike]
     def `class`(c: Symbol): Unit = {
       definitions += extractApi.classLike(c.owner, c)
-    }
-    /** Record packages declared in the source file*/
-    def `package`(p: Symbol): Unit = {
-      if ((p eq null) || p == NoSymbol || p.isRoot || p.isRootPackage || p.isEmptyPackageClass || p.isEmptyPackage)
-        ()
-      else {
-        packages += p.fullName
-        `package`(p.enclosingPackage)
-      }
     }
   }
 
   private abstract class TopLevelTraverser extends Traverser {
     def `class`(s: Symbol)
-    def `package`(s: Symbol)
     override def traverse(tree: Tree): Unit = {
       tree match {
         case (_: ClassDef | _: ModuleDef) if isTopLevel(tree.symbol) => `class`(tree.symbol)
-        case p: PackageDef =>
-          `package`(p.symbol)
+        case _: PackageDef =>
           super.traverse(tree)
         case _ =>
       }
