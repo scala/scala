@@ -433,7 +433,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
       val absOver = s.hasFlag(ABSOVERRIDE)
       val abs = s.hasFlag(ABSTRACT) || s.hasFlag(DEFERRED) || absOver
       val over = s.hasFlag(OVERRIDE) || absOver
-      new xsbti.api.Modifiers(abs, over, s.isFinal, s.hasFlag(SEALED), isImplicit(s), s.hasFlag(LAZY), s.hasFlag(MACRO))
+      new xsbti.api.Modifiers(abs, over, s.isFinal, s.hasFlag(SEALED), isImplicit(s), s.hasFlag(LAZY), s.hasFlag(MACRO), s.hasFlag(SUPERACCESSOR))
     }
 
   private def isImplicit(s: Symbol) = s.hasFlag(Flags.IMPLICIT)
