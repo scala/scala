@@ -47,9 +47,10 @@ abstract class Comment {
     Chain(List(inline) ++ stack.reverse)
   }
 
-  /** A shorter version of the body. Usually, this is the first sentence of the body. */
+  /** A shorter version of the body. Either from `@shortDescription` or the
+   *  first sentence of the body. */
   def short: Inline = {
-    body.summary match {
+    shortDescription orElse body.summary match {
       case Some(s) =>
         closeHtmlTags(s)
       case _ =>
@@ -125,6 +126,9 @@ abstract class Comment {
 
   /** A list of implicit conversions to hide */
   def hideImplicitConversions: List[String]
+
+  /** A short description used in the entity-view and search results */
+  def shortDescription: Option[Text]
 
   override def toString =
     body.toString + "\n" +

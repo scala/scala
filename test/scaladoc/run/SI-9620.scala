@@ -21,7 +21,6 @@ object Test extends ScaladocModelTest {
     }
   """
 
-  // no need for special settings
   def scaladocSettings = "-implicits"
 
   def testModel(rootPackage: Package) = {
