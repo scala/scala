@@ -182,6 +182,9 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  val namedYears = for (m <- namedDate findAllMatchIn dates) yield m group "year"
    *  }}}
    *
+   *  Group names supplied to the constructor are preferred to inline group names
+   *  when retrieving matched groups by name. Not all platforms support inline names.
+   *
    *  This constructor does not support options as flags, which must be
    *  supplied as inline flags in the pattern string: `(?idmsux-idmsux)`.
    *
@@ -578,6 +581,9 @@ object Regex {
    */
   trait MatchData {
 
+    /** Basically, wraps a platform Matcher. */
+    protected def matcher: Matcher
+
     /** The source from which the match originated */
     val source: CharSequence
 
@@ -650,16 +656,25 @@ object Regex {
 
     private lazy val nameToIndex: Map[String, Int] = Map[String, Int]() ++ ("" :: groupNames.toList).zipWithIndex
 
-    /** Returns the group with given name.
+    /** Returns the group with the given name.
+     *
+     *  Uses explicit group names when supplied; otherwise,
+     *  queries the underlying implementation for inline named groups.
+     *  Not all platforms support inline group names.
      *
      *  @param id The group name
      *  @return   The requested group
-     *  @throws   NoSuchElementException if the requested group name is not defined
+     *  @throws   IllegalArgumentException if the requested group name is not defined
      */
-    def group(id: String): String = nameToIndex.get(id) match {
-      case None => throw new NoSuchElementException("group name "+id+" not defined")
-      case Some(index) => group(index)
-    }
+    def group(id: String): String = (
+      if (groupNames.isEmpty)
+        matcher group id
+      else
+        nameToIndex.get(id) match {
+          case Some(index) => group(index)
+          case None        => matcher group id
+        }
+    )
 
     /** The matched string; equivalent to `matched.toString`. */
     override def toString = matched
@@ -667,7 +682,7 @@ object Regex {
 
   /** Provides information about a successful match. */
   class Match(val source: CharSequence,
-              private[matching] val matcher: Matcher,
+              protected[matching] val matcher: Matcher,
               val groupNames: Seq[String]) extends MatchData {
 
     /** The index of the first matched character. */
