@@ -47,7 +47,8 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     groupDesc0:               Map[String,Body] = Map.empty,
     groupNames0:              Map[String,Body] = Map.empty,
     groupPrio0:               Map[String,Body] = Map.empty,
-    hideImplicitConversions0: List[Body]       = List.empty
+    hideImplicitConversions0: List[Body]       = List.empty,
+    shortDescription0:        List[Body]       = List.empty
   ): Comment = new Comment {
     val body           = body0 getOrElse Body(Seq.empty)
     val authors        = authors0
@@ -90,9 +91,13 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         }
     }
 
+    override val shortDescription: Option[Text] = shortDescription0.lastOption collect {
+      case Body(List(Paragraph(Chain(List(Summary(Text(e))))))) if !e.trim.contains("\n") => Text(e)
+    }
+
     override val hideImplicitConversions: List[String] =
       hideImplicitConversions0 flatMap {
-        case Body(List(Paragraph(Chain(List(Summary(Text(e))))))) if (!e.trim.contains("\n")) => List(e)
+        case Body(List(Paragraph(Chain(List(Summary(Text(e))))))) if !e.trim.contains("\n") => List(e)
         case _ => List()
       }
   }
@@ -397,7 +402,8 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           groupDesc0      = allSymsOneTag(SimpleTagKey("groupdesc")),
           groupNames0     = allSymsOneTag(SimpleTagKey("groupname")),
           groupPrio0      = allSymsOneTag(SimpleTagKey("groupprio")),
-          hideImplicitConversions0 = allTags(SimpleTagKey("hideImplicitConversion"))
+          hideImplicitConversions0 = allTags(SimpleTagKey("hideImplicitConversion")),
+          shortDescription0 = allTags(SimpleTagKey("shortDescription"))
         )
 
         for ((key, _) <- bodyTags)
