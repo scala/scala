@@ -42,6 +42,50 @@ class ExtractAPISpecification extends Specification {
     fooClassApi.definitionType === DefinitionType.PackageModule
   }
 
+  "extract nested classes" in {
+    val src =
+      """class A {
+        |  class B
+        |}""".stripMargin
+    val compilerForTesting = new ScalaCompilerForUnitTesting
+    val apis = compilerForTesting.extractApisFromSrc(src).map(c => c.name -> c).toMap
+    apis.keys === Set("A", "A.B")
+  }
+
+  "local classes are not extracted" in {
+    val src =
+      """class A
+        |class B
+        |class C { private class Inner1 extends A }
+        |class D { def foo: Unit = { class Inner2 extends B } }
+        |class E { def foo: Unit = { new B {} } }""".stripMargin
+    val compilerForTesting = new ScalaCompilerForUnitTesting
+    val apis = compilerForTesting.extractApisFromSrc(src).map(c => c.name -> c).toMap
+    apis.keys === Set("A", "B", "C", "D", "E")
+  }
+
+  "flat extracted apis" in {
+    def compileAndGetFooClassApi(src: String): ClassLike = {
+      val compilerForTesting = new ScalaCompilerForUnitTesting
+      val apis = compilerForTesting.extractApisFromSrc(src)
+      val FooApi = apis.find(_.name() == "Foo").get
+      FooApi
+    }
+    val src1 =
+      """class Foo {
+        |  class A
+        |}""".stripMargin
+    val fooClassApi1 = compileAndGetFooClassApi(src1)
+    val src2 =
+      """class Foo {
+        |  class A {
+        |    def foo: Int = 123
+        |  }
+        |}""".stripMargin
+    val fooClassApi2 = compileAndGetFooClassApi(src2)
+    SameAPI(fooClassApi1, fooClassApi2) === true
+  }
+
   def stableExistentialNames: Boolean = {
     def compileAndGetFooMethodApi(src: String): Def = {
       val compilerForTesting = new ScalaCompilerForUnitTesting

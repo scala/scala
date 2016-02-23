@@ -10,7 +10,7 @@ import io.{ AbstractFile, PlainFile, ZipArchive }
 import plugins.{ Plugin, PluginComponent }
 import symtab.Flags
 import scala.collection.mutable.{ HashMap, HashSet, ListBuffer }
-import xsbti.api.{ ClassLike, DefinitionType, PathComponent, SimpleType }
+import xsbti.api._
 
 object API {
   val name = "xsbt-api"
@@ -50,17 +50,20 @@ final class API(val global: CallbackGlobal) extends Compat {
         debug("The " + sourceFile + " contains the following declared classes " + declaredClasses)
         declaredClasses foreach { (declaredClass: String) => callback.declaredClass(sourceFile, declaredClass) }
       }
-      val classApis = traverser.definitions.toArray[xsbti.api.ClassLike]
       extractApi.forceStructures()
+      val classApis = traverser.allNonLocalClasses
 
       classApis.foreach(callback.api(sourceFile, _))
     }
   }
 
   private final class TopLevelHandler(extractApi: ExtractAPI[global.type]) extends TopLevelTraverser {
-    val definitions = new ListBuffer[xsbti.api.ClassLike]
+    def allNonLocalClasses: Set[ClassLike] = {
+      extractApi.forceStructures()
+      extractApi.allExtractedNonLocalClasses
+    }
     def `class`(c: Symbol): Unit = {
-      definitions += extractApi.classLike(c.owner, c)
+      extractApi.extractAllClassesOf(c.owner, c)
     }
   }
 
