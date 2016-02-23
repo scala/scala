@@ -3,13 +3,8 @@
  */
 package xsbt
 
-import java.io.File
-import java.util.{ Arrays, Comparator }
-import scala.tools.nsc.{ io, plugins, symtab, Global, Phase }
-import io.{ AbstractFile, PlainFile, ZipArchive }
-import plugins.{ Plugin, PluginComponent }
-import symtab.Flags
-import scala.collection.mutable.{ HashMap, HashSet, ListBuffer }
+import scala.tools.nsc.Phase
+import scala.tools.nsc.symtab.Flags
 import xsbti.api._
 
 object API {
