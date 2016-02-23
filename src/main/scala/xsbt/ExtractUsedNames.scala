@@ -1,7 +1,5 @@
 package xsbt
 
-import scala.tools.nsc._
-
 /**
  * Extracts simple names used in given compilation unit.
  *
@@ -48,6 +46,12 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
   }
 
   private def extractByTreeWalk(tree: Tree): Set[String] = {
+    val traverser = new ExtractUsedNamesTraverser
+    traverser.traverse(tree)
+    traverser.namesBuffer.toSet
+  }
+
+  private class ExtractUsedNamesTraverser extends Traverser {
     val namesBuffer = collection.mutable.ListBuffer.empty[String]
 
     /*
@@ -57,54 +61,51 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
      *     https://github.com/sbt/sbt/issues/1237
      *     https://github.com/sbt/sbt/issues/1544
      */
-    val inspectedOriginalTrees = collection.mutable.Set.empty[Tree]
+    private val inspectedOriginalTrees = collection.mutable.Set.empty[Tree]
 
-    def addSymbol(symbol: Symbol): Unit = {
+    override def traverse(tree: Tree): Unit = tree match {
+      case MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
+        handleClassicTreeNode(tree)
+        handleMacroExpansion(original)
+        super.traverse(tree)
+      case _ =>
+        handleClassicTreeNode(tree)
+        super.traverse(tree)
+    }
+
+    private def addSymbol(symbol: Symbol): Unit = {
       val symbolNameAsString = symbol.name.decode.trim
       namesBuffer += symbolNameAsString
     }
 
-    def handleTreeNode(node: Tree): Unit = {
-      def handleMacroExpansion(original: Tree): Unit = {
-        original.foreach(handleTreeNode)
-      }
-
-      def handleClassicTreeNode(node: Tree): Unit = node match {
-        case _: DefTree | _: Template => ()
-        // turns out that Import node has a TermSymbol associated with it
-        // I (Grzegorz) tried to understand why it's there and what does it represent but
-        // that logic was introduced in 2005 without any justification I'll just ignore the
-        // import node altogether and just process the selectors in the import node
-        case Import(_, selectors: List[ImportSelector]) =>
-          def usedNameInImportSelector(name: Name): Unit =
-            if ((name != null) && (name != nme.WILDCARD)) namesBuffer += name.toString
-          selectors foreach { selector =>
-            usedNameInImportSelector(selector.name)
-            usedNameInImportSelector(selector.rename)
-          }
-        // TODO: figure out whether we should process the original tree or walk the type
-        // the argument for processing the original tree: we process what user wrote
-        // the argument for processing the type: we catch all transformations that typer applies
-        // to types but that might be a bad thing because it might expand aliases eagerly which
-        // not what we need
-        case t: TypeTree if t.original != null =>
-          t.original.foreach(handleTreeNode)
-        case t if t.hasSymbol && eligibleAsUsedName(t.symbol) =>
-          addSymbol(t.symbol)
-        case _ => ()
-      }
-
-      node match {
-        case MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
-          handleClassicTreeNode(node)
-          handleMacroExpansion(original)
-        case _ =>
-          handleClassicTreeNode(node)
-      }
+    private def handleMacroExpansion(original: Tree): Unit = {
+      original.foreach(traverse)
     }
 
-    tree.foreach(handleTreeNode)
-    namesBuffer.toSet
+    private def handleClassicTreeNode(tree: Tree): Unit = tree match {
+      case _: DefTree | _: Template => ()
+      // turns out that Import node has a TermSymbol associated with it
+      // I (Grzegorz) tried to understand why it's there and what does it represent but
+      // that logic was introduced in 2005 without any justification I'll just ignore the
+      // import node altogether and just process the selectors in the import node
+      case Import(_, selectors: List[ImportSelector]) =>
+        def usedNameInImportSelector(name: Name): Unit =
+          if ((name != null) && (name != nme.WILDCARD)) namesBuffer += name.toString
+        selectors foreach { selector =>
+          usedNameInImportSelector(selector.name)
+          usedNameInImportSelector(selector.rename)
+        }
+      // TODO: figure out whether we should process the original tree or walk the type
+      // the argument for processing the original tree: we process what user wrote
+      // the argument for processing the type: we catch all transformations that typer applies
+      // to types but that might be a bad thing because it might expand aliases eagerly which
+      // not what we need
+      case t: TypeTree if t.original != null =>
+        t.original.foreach(traverse)
+      case t if t.hasSymbol && eligibleAsUsedName(t.symbol) =>
+        addSymbol(t.symbol)
+      case _ =>
+    }
   }
 
   /**
