@@ -133,8 +133,8 @@ Here, `<milestone>` is the milestone targeted by the PR (e.g., 2.11.6), and `<sh
 ### Eclipse
 See `src/eclipse/README.md`.
 
-### IntelliJ 14
-See `src/intellij/README.md`.
+### IntelliJ 15
+See [src/intellij/README.md](src/intellij/README.md).
 
 ## Building with sbt (EXPERIMENTAL)
 
