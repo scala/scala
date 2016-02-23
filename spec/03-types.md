@@ -778,25 +778,22 @@ These notions are defined mutually recursively as follows.
 
 ## Relations between types
 
-We define two relations between types.
+We define the following relations between types.
 
-|Name             | Symbolically   |Interpretation                                   |
-|-----------------|----------------|-------------------------------------------------|
-|Equivalence      |$T \equiv U$    |$T$ and $U$ are interchangeable in all contexts. |
-|Conformance      |$T <: U$        |Type $T$ conforms to type $U$.                   |
+| Name             | Symbolically   | Interpretation                                     |
+|------------------|----------------|----------------------------------------------------|
+| Equivalence      | $T \equiv U$   | $T$ and $U$ are interchangeable in all contexts.   |
+| Conformance      | $T <: U$       | Type $T$ conforms to ("is a subtype of") type $U$. |
+| Weak Conformance | $T <:_w U$     | Augments conformance for primitive numeric types.  |
+| Compatibility    |                | Type $T$ conforms to type $U$ after conversions.   |
 
 ### Equivalence
 
-Equivalence $(\equiv)$ between types is the smallest congruence [^congruence] such that
-the following holds:
+Equivalence $(\equiv)$ between types is the smallest congruence [^congruence] such that the following holds:
 
-- If $t$ is defined by a type alias `type $t$ = $T$`, then $t$ is
-  equivalent to $T$.
-- If a path $p$ has a singleton type `$q$.type`, then
-  `$p$.type $\equiv q$.type`.
-- If $O$ is defined by an object definition, and $p$ is a path
-  consisting only of package or object selectors and ending in $O$, then
-  `$O$.this.type $\equiv p$.type`.
+- If $t$ is defined by a type alias `type $t$ = $T$`, then $t$ is equivalent to $T$.
+- If a path $p$ has a singleton type `$q$.type`, then `$p$.type $\equiv q$.type`.
+- If $O$ is defined by an object definition, and $p$ is a path consisting only of package or object selectors and ending in $O$, then `$O$.this.type $\equiv p$.type`.
 - Two [compound types](#compound-types) are equivalent if the sequences
   of their component are pairwise equivalent, and occur in the same order, and
   their refinements are equivalent. Two refinements are equivalent if they
@@ -827,14 +824,11 @@ the following holds:
 
 ### Conformance
 
-The conformance relation $(<:)$ is the smallest
-transitive relation that satisfies the following conditions.
+The conformance relation $(<:)$ is the smallest transitive relation that satisfies the following conditions.
 
 - Conformance includes equivalence. If $T \equiv U$ then $T <: U$.
 - For every value type $T$, `scala.Nothing <: $T$ <: scala.Any`.
-- For every type constructor $T$ (with any number of type parameters),
-  `scala.Nothing <: $T$ <: scala.Any`.
-
+- For every type constructor $T$ (with any number of type parameters), `scala.Nothing <: $T$ <: scala.Any`.
 - For every class type $T$ such that `$T$ <: scala.AnyRef` one has `scala.Null <: $T$`.
 - A type variable or abstract type $t$ conforms to its upper bound and
   its lower bound conforms to $t$.
@@ -912,15 +906,12 @@ type $C'$, if one of the following holds.
   type declaration `type t[$T_1$ , … , $T_n$] >: L <: U` if
   $L <: t <: U$.
 
-The $(<:)$ relation forms pre-order between types,
-i.e. it is transitive and reflexive. _least upper bounds_ and
-_greatest lower bounds_ of a set of types
-are understood to be relative to that order.
 
-###### Note
-The least upper bound or greatest lower bound
-of a set of types does not always exist. For instance, consider
-the class definitions
+#### Least upper bounds and greatest lower bounds
+The $(<:)$ relation forms pre-order between types, i.e. it is transitive and reflexive.
+This allows us to define _least upper bounds_ and _greatest lower bounds_ of a set of types in terms of that order.
+The least upper bound or greatest lower bound of a set of types does not always exist.
+For instance, consider the class definitions:
 
 ```scala
 class A[+T] {}
@@ -949,11 +940,9 @@ free to pick any one of them.
 
 ### Weak Conformance
 
-In some situations Scala uses a more general conformance relation. A
-type $S$ _weakly conforms_
-to a type $T$, written $S <:_w
-T$, if $S <: T$ or both $S$ and $T$ are primitive number types
-and $S$ precedes $T$ in the following ordering.
+In some situations Scala uses a more general conformance relation.
+A type $S$ _weakly conforms_ to a type $T$, written $S <:_w T$,
+if $S <: T$ or both $S$ and $T$ are primitive number types and $S$ precedes $T$ in the following ordering.
 
 ```scala
 Byte  $<:_w$ Short
@@ -964,15 +953,49 @@ Long  $<:_w$ Float
 Float $<:_w$ Double
 ```
 
-A _weak least upper bound_ is a least upper bound with respect to
-weak conformance.
+A _weak least upper bound_ is a least upper bound with respect to weak conformance.
+
+### Compatibility
+A type $T$ is _compatible_ to a type $U$ if $T$ (or its corresponding function type) [weakly conforms](#weak-conformance) to $U$
+after applying [eta-expansion](06-expressions.html#eta-expansion). If $T$ is a method type, it's converted to the corresponding function type. If the types do not weakly conform, the following alternatives are checked in order:
+  - [view application](07-implicits.html#views): there's an implicit view from $T$ to $U$;
+  - dropping by-name modifiers: if $U$ is of the shape `$=> U'$` (and $T$ is not), `$T <:_w U'$`;
+  - SAM conversion: if $T$ corresponds to a function type, and $U$ declares a single abstract method whose type [corresponds](06-expressions.html#sam-conversion) to the function type $U'$, `$T <:_w U'$`.
+
+<!--- TODO: include other implicit conversions in addition to view application?
+
+  trait Proc { def go(x: Any): Unit }
+
+  def foo(x: Any => Unit): Unit = ???
+  def foo(x: Proc): Unit = ???
+
+  foo((x: Any) => 1) // works when you drop either foo overload since value discarding is applied
+
+-->
+
+#### Examples
+
+##### Function compatibility via SAM conversion
+
+Given the definitions
+
+```
+def foo(x: Int => String): Unit
+def foo(x: ToString): Unit
+
+trait ToString { def convert(x: Int): String }
+```
+
+The application `foo(_.toString)` [resolves](06-expressions.html#overloading-resolution) to the first overload,
+as it's more specific:
+  - `Int => String` is compatible to `ToString` -- when expecting a value of type `ToString`, you may pass a function literal from `Int` to `String`, as it will be SAM-converted to said function;
+  - `ToString` is not compatible to `Int => String` -- when expecting a function from `Int` to `String`, you may not pass a `ToString`.
 
 ## Volatile Types
 
-Type volatility approximates the possibility that a type parameter or abstract
-type instance
-of a type does not have any non-null values.  A value member of a volatile type
-cannot appear in a [path](#paths).
+Type volatility approximates the possibility that a type parameter or
+abstract type instance of a type does not have any non-null values.
+A value member of a volatile type cannot appear in a [path](#paths).
 
 A type is _volatile_ if it falls into one of four categories:
 
