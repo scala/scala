@@ -535,6 +535,8 @@ TODO:
     <property name="scalac.args.quick"     value="${scalac.args.all}"/>
     <property name="scalac.args.strap"     value="${scalac.args.quick}"/>
 
+    <property name="partest.scalac_opts"   value=""/> <!-- set default value, otherwise the property name will be passed to partest if undefined -->
+
     <!-- This is the start time for the distribution -->
     <tstamp prefix="time">
       <format property="human" pattern="d MMMM yyyy, HH:mm:ss" locale="en,US"/>

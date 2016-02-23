@@ -238,15 +238,6 @@ buildPartest() {
   fi
 }
 
-# buildPartestIface() {
-#   if [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-partest-interface" $PARTEST_IFACE_VER )
-#   then echo "Found scala-partest-interface $PARTEST_IFACE_VER; not building."
-#   else
-#     update scala scala-partest-interface "$PARTEST_IFACE_REF" && gfxd
-#     sbtBuild 'set version :="'$PARTEST_IFACE_VER'"' $clean "${buildTasks[@]}"
-#   fi
-# }
-
 buildContinuations() {
   if [ "$CONT_PLUG_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.plugins"  "scala-continuations-plugin" $CONTINUATIONS_VER full )
   then echo "Found scala-continuations-plugin $CONTINUATIONS_VER; not building."
@@ -312,7 +303,6 @@ buildModules() {
   buildActorsMigration
   buildScalacheck
   buildPartest
-  # buildPartestIface
 }
 
 buildPublishedModules() {
@@ -324,7 +314,6 @@ buildPublishedModules() {
   buildSwing
   buildActorsMigration
   buildPartest
-  # buildPartestIface
 }
 
 
@@ -441,7 +430,6 @@ deriveModuleVersions() {
                 SWING_REF="v$SWING_VER"
      ACTORS_MIGRATION_REF="v$ACTORS_MIGRATION_VER"
               PARTEST_REF="v$PARTEST_VER"
-      # PARTEST_IFACE_REF="v$PARTEST_IFACE_VER"
            SCALACHECK_REF="$SCALACHECK_VER" # no `v` in their tags
    else
     # use HEAD as default when no revision is specified on the command line
@@ -451,7 +439,6 @@ deriveModuleVersions() {
                SWING_REF=${SWING_REF-"HEAD"}
     ACTORS_MIGRATION_REF=${ACTORS_MIGRATION_REF-"HEAD"}
              PARTEST_REF=${PARTEST_REF-"HEAD"}
-     # PARTEST_IFACE_REF=${PARTEST_IFACE_REF-"HEAD"}
           SCALACHECK_REF=${SCALACHECK_REF-"HEAD"}
 
                  XML_VER=$(deriveVersion scala scala-xml "$XML_REF")
@@ -472,7 +459,6 @@ deriveModuleVersions() {
   echo "SWING            = $SWING_VER at $SWING_REF"
   echo "XML              = $XML_VER at $XML_REF"
 
-  # PARTEST_IFACE_VER=${PARTEST_IFACE_VER-$(deriveVersion scala scala-partest-interface "$PARTEST_IFACE_REF")}
 }
 
 createNetrcFile() {
