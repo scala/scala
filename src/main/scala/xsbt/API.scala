@@ -42,9 +42,15 @@ final class API(val global: CallbackGlobal) extends Compat {
       traverser.apply(unit.body)
       if (global.callback.nameHashing) {
         val extractUsedNames = new ExtractUsedNames[global.type](global)
-        val names = extractUsedNames.extract(unit)
-        debug("The " + sourceFile + " contains the following used names " + names)
-        names foreach { (name: String) => callback.usedName(sourceFile, name) }
+        val allUsedNames = extractUsedNames.extract(unit)
+        def showUsedNames(className: String, names: Set[String]): String =
+          s"$className:\n\t${names.mkString(", ")}"
+        debug("The " + sourceFile + " contains the following used names:\n" +
+          allUsedNames.map((showUsedNames _).tupled).mkString("\n"))
+        allUsedNames foreach {
+          case (className: String, names: Set[String]) =>
+            names foreach { (name: String) => callback.usedName(className, name) }
+        }
         val extractDeclaredClasses = new ExtractDeclaredClasses[global.type](global)
         val declaredClasses = extractDeclaredClasses.extract(unit)
         debug("The " + sourceFile + " contains the following declared classes " + declaredClasses)

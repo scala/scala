@@ -27,7 +27,8 @@ class ExtractUsedNamesSpecification extends Specification {
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(src)
     val expectedNames = standardNames ++ Set("a", "A", "A2", "b")
-    usedNames === expectedNames
+    // names used at top level are attributed to the first class defined in a compilation unit
+    usedNames("a.A") === expectedNames
   }
 
   // test covers https://github.com/gkossakowski/sbt/issues/6
@@ -50,7 +51,7 @@ class ExtractUsedNamesSpecification extends Specification {
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(srcA, srcB)
     val expectedNames = standardNames ++ Set("a", "A", "B", "C", "D", "b", "X", "BB")
-    usedNames === expectedNames
+    usedNames("b.X") === expectedNames
   }
 
   // test for https://github.com/gkossakowski/sbt/issues/5
@@ -66,7 +67,7 @@ class ExtractUsedNamesSpecification extends Specification {
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(srcA, srcB)
     val expectedNames = standardNames ++ Set("A", "a", "B", "=")
-    usedNames === expectedNames
+    usedNames("B") === expectedNames
   }
 
   // test for https://github.com/gkossakowski/sbt/issues/3
@@ -75,7 +76,7 @@ class ExtractUsedNamesSpecification extends Specification {
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(src)
     val expectedNames = standardNames ++ Set("A", "foo", "Int")
-    usedNames === expectedNames
+    usedNames("A") === expectedNames
   }
 
   // pending test for https://issues.scala-lang.org/browse/SI-7173

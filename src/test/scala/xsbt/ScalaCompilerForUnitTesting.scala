@@ -26,9 +26,9 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
     analysisCallback.apis(tempSrcFile)
   }
 
-  def extractUsedNamesFromSrc(src: String): Set[String] = {
-    val (Seq(tempSrcFile), analysisCallback) = compileSrcs(src)
-    analysisCallback.usedNames(tempSrcFile)
+  def extractUsedNamesFromSrc(src: String): Map[String, Set[String]] = {
+    val (_, analysisCallback) = compileSrcs(src)
+    analysisCallback.usedNames.toMap
   }
 
   def extractDeclaredClassesFromSrc(src: String): Set[String] = {
@@ -48,10 +48,11 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
    * source is going to refer to. Both files are compiled in the same compiler
    * Run but only names used in the second src file are returned.
    */
-  def extractUsedNamesFromSrc(definitionSrc: String, actualSrc: String): Set[String] = {
+  def extractUsedNamesFromSrc(definitionSrc: String, actualSrc: String): Map[String, Set[String]] = {
     // we drop temp src file corresponding to the definition src file
     val (Seq(_, tempSrcFile), analysisCallback) = compileSrcs(definitionSrc, actualSrc)
-    analysisCallback.usedNames(tempSrcFile)
+    val classesInActualSrc = analysisCallback.classNames(tempSrcFile).map(_._1)
+    classesInActualSrc.map(className => className -> analysisCallback.usedNames(className)).toMap
   }
 
   /**

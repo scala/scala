@@ -1,7 +1,7 @@
 package xsbt
 
 import org.junit.runner.RunWith
-import xsbti.api.{DefinitionType, ClassLike, Def}
+import xsbti.api.{ DefinitionType, ClassLike, Def }
 import xsbt.api.SameAPI
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
