@@ -1,15 +1,11 @@
 package xsbt
 
 import org.junit.runner.RunWith
-import xsbti.api.ClassLike
-import xsbti.api.Def
-import xsbti.api.Package
-import xsbt.api.SameAPI
-import org.junit.runners.JUnit4
+import org.specs2.runner.JUnitRunner
 
 import org.specs2.mutable.Specification
 
-@RunWith(classOf[JUnit4])
+@RunWith(classOf[JUnitRunner])
 class ExtractUsedNamesSpecification extends Specification {
 
   /**
