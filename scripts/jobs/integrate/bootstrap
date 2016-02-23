@@ -493,8 +493,6 @@ bootstrap() {
             -Dlocker.skip=1\
             $publishStarrPrivateTask >> $baseDir/logs/builds 2>&1
       )
-  else
-    STARR_VER=$SCALA_VER
   fi
 
   #### LOCKER
