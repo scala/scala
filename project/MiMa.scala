@@ -62,13 +62,7 @@ object MiMa {
       ModuleInfo("dummy-test-project-for-resolving"),
       dependencies = Seq(m))
     val module = new ivy.Module(moduleSettings)
-    val report = IvyActions.update(
-      module,
-      new UpdateConfiguration(
-        retrieve = None,
-        missingOk = false,
-        logging = UpdateLogging.DownloadOnly),
-      s.log)
+    val report = Deprecated.Inner.ivyUpdate(ivy)(module, s)
     val optFile = (for {
       config <- report.configurations
       module <- config.modules
@@ -79,4 +73,22 @@ object MiMa {
     optFile getOrElse sys.error("Could not resolve previous artifact: " + m)
   }
 
+}
+
+// use the SI-7934 workaround to silence a deprecation warning on an sbt API
+// we have no choice but to call.  on the lack of any suitable alternative,
+// see https://gitter.im/sbt/sbt-dev?at=5616e2681b0e279854bd74a4 :
+// "it's my intention to eventually come up with a public API" says Eugene Y
+object Deprecated {
+  @deprecated("", "") class Inner {
+    def ivyUpdate(ivy: IvySbt)(module: ivy.Module, s: TaskStreams) =
+      IvyActions.update(
+        module,
+        new UpdateConfiguration(
+          retrieve = None,
+          missingOk = false,
+          logging = UpdateLogging.DownloadOnly),
+        s.log)
+  }
+  object Inner extends Inner
 }
