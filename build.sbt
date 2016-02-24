@@ -167,7 +167,7 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
   ),
   homepage := Some(url("http://www.scala-lang.org")),
   startYear := Some(2002),
-  licenses += ("BSD 3-Clause", url("http://www.scala-lang.org/license.html")),
+  licenses += (("BSD 3-Clause", url("http://www.scala-lang.org/license.html"))),
   apiURL := Some(url("http://www.scala-lang.org/api/" + versionProperties.value.mavenVersion + "/")),
   pomIncludeRepository := { _ => false },
   pomExtra := {
@@ -718,7 +718,7 @@ lazy val dist = (project in file("dist"))
         case (Some(m), f) if extraModules contains uniqueModule(m) => f
       }
       val jlineJAR = (dependencyClasspath in Compile).value.find(_.get(moduleID.key) == Some(jlineDep)).get.data
-      val mappings = extraJars.map(f => (f, targetDir / f.getName)) :+ (jlineJAR, targetDir / "jline.jar")
+      val mappings = extraJars.map(f => (f, targetDir / f.getName)) :+ ((jlineJAR, targetDir / "jline.jar"))
       IO.copy(mappings, overwrite = true)
       targetDir
     },
