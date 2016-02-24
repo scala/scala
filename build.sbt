@@ -589,7 +589,7 @@ lazy val test = project
     fork in IntegrationTest := true,
     javaOptions in IntegrationTest += "-Xmx1G",
     testFrameworks += new TestFramework("scala.tools.partest.Framework"),
-    testOptions in IntegrationTest += Tests.Setup( () => root.base.getAbsolutePath + "/pull-binary-libs.sh".! ),
+    testOptions in IntegrationTest += Tests.Setup( () => (root.base.getAbsolutePath + "/pull-binary-libs.sh").! ),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M -XX:MaxPermSize=128M"),
     definedTests in IntegrationTest += (
       new sbt.TestDefinition(
