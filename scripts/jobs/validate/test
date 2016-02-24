@@ -1,17 +1,50 @@
-#!/bin/bash -e
+#!/bin/bash -e -v -x
+
+baseDir=${WORKSPACE-`pwd`}
+scriptsDir="$baseDir/scripts"
+. $scriptsDir/common
+
+function runsbt() {
+  $SBT_CMD \
+     -Dstarr.version=$scalaVersion \
+     -Dextra.repo.url=$prRepoUrl \
+     $testExtraArgs \
+     "$@"
+}
 
 case $prDryRun in
+
   yep)
     echo "DRY RUN"
     ;;
+
   *)
-    ./pull-binary-libs.sh
 
     # build quick using STARR built upstream, as specified by scalaVersion
-    # (in that sense it's locker, since it was built with starr by that upstream job)
-    ant -Dstarr.version=$scalaVersion \
-       -Dscalac.args.optimise=-optimise \
-       -Dlocker.skip=1 -Dextra.repo.url=$prRepoUrl \
-       $testExtraArgs ${testTarget-test.core docs.done}
+    # (in that sense it's locker, since it was built with starr by that upstream job);
+    # and run JUnit tests
+    # runsbt ${testTarget-test}
+
+    # multiple invocations to conserve PermGen
+    runsbt "test/it:testOnly -- run"
+    runsbt "test/it:testOnly -- pos"
+    runsbt "test/it:testOnly -- neg"
+    runsbt "test/it:testOnly -- run"
+    runsbt "test/it:testOnly -- jvm"
+    runsbt "test/it:testOnly -- res"
+    runsbt "test/it:testOnly -- scalap"
+    runsbt "test/it:testOnly -- specialized"
+    runsbt "test/it:testOnly -- scalacheck"
+    runsbt "test/it:testOnly -- instrumented"
+    runsbt "test/it:testOnly -- presentation"
+
+    # TODO before merge
+    #runsbt "test/it:testOnly -- --srcpath scaladoc --run"
+    #runsbt "test/it:testOnly -- --srcpath scaladoc --scalacheck"
+
+    # Migration Manager; make sure Scaladoc doesn't bomb
+    runsbt mima doc
+
     ;;
+
 esac
