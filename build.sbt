@@ -185,8 +185,8 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
             <name>EPFL LAMP</name>
           </developer>
           <developer>
-            <id>Typesafe</id>
-            <name>Typesafe, Inc.</name>
+            <id>Lightbend</id>
+            <name>Lightbend, Inc.</name>
           </developer>
         </developers>
     apiURL.value match {
