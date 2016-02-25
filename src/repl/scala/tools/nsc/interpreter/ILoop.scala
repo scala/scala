@@ -175,10 +175,19 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     echo("\n" + msg)
     in.redrawLine()
   }
-  protected def echo(msg: String) = {
+  protected var mum = false
+  protected def echo(msg: String) = if (!mum) {
     out println msg
     out.flush()
   }
+  // turn off intp reporter and our echo
+  def mumly[A](op: =>A): A =
+    if (isReplDebug) op
+    else intp beSilentDuring {
+      val saved = mum
+      mum = true
+      try op finally mum = saved
+    }
 
   /** Search the history */
   def searchHistory(_cmdline: String) {
@@ -408,12 +417,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
    *  command() for each line of input, and stops when
    *  command() returns false.
    */
-  @tailrec final def loop(): LineResult = {
+  final def loop(): LineResult = loop(readOneLine())
+
+  @tailrec final def loop(line: String): LineResult = {
     import LineResults._
-    readOneLine() match {
-      case null => EOF
-      case line => if (try processLine(line) catch crashRecovery) loop() else ERR
-    }
+    if (line == null) EOF
+    else if (try processLine(line) catch crashRecovery) loop(readOneLine())
+    else ERR
   }
 
   /** interpret all lines from a specified file */
@@ -829,19 +839,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
   }
 
-  // runs :load `file` on any files passed via -i
-  def loadFiles(settings: Settings) = settings match {
-    case settings: GenericRunnerSettings =>
-      for (filename <- settings.loadfiles.value) {
-        val cmd = ":load " + filename
-        command(cmd)
-        addReplay(cmd)
-        echo("")
-      }
-    case _ =>
-  }
-
-  /** Tries to create a JLineReader, falling back to SimpleReader,
+  /** Tries to create a jline.InteractiveReader, falling back to SimpleReader,
    *  unless settings or properties are such that it should start with SimpleReader.
    *  The constructor of the InteractiveReader must take a Completion strategy,
    *  supplied as a `() => Completion`; the Completion object provides a concrete Completer.
@@ -885,49 +883,104 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
   }
 
-  private def loopPostInit() {
-    // Bind intp somewhere out of the regular namespace where
-    // we can get at it in generated code.
-    intp.quietBind(NamedParam[IMain]("$intp", intp)(tagOfIMain, classTag[IMain]))
-    // Auto-run code via some setting.
-    ( replProps.replAutorunCode.option
-        flatMap (f => io.File(f).safeSlurp())
-        foreach (intp quietRun _)
-    )
-    // classloader and power mode setup
-    intp.setContextClassLoader()
-    if (isReplPower) {
-      replProps.power setValue true
-      unleashAndSetPhase()
-      asyncMessage(power.banner)
-    }
-    // SI-7418 Now, and only now, can we enable TAB completion.
-    in.postInit()
-  }
-
-  // start an interpreter with the given settings
+  /** Start an interpreter with the given settings.
+   *  @return true if successful
+   */
   def process(settings: Settings): Boolean = savingContextLoader {
+
+    def newReader = in0.fold(chooseReader(settings))(r => SimpleReader(r, out, interactive = true))
+
+    /** Reader to use before interpreter is online. */
+    def preLoop = {
+      val sr = SplashReader(newReader) { r =>
+        in = r
+        in.postInit()
+      }
+      in = sr
+      SplashLoop(sr, prompt)
+    }
+
+    /* Actions to cram in parallel while collecting first user input at prompt.
+     * Run with output muted both from ILoop and from the intp reporter.
+     */
+    def loopPostInit(): Unit = mumly {
+      // Bind intp somewhere out of the regular namespace where
+      // we can get at it in generated code.
+      intp.quietBind(NamedParam[IMain]("$intp", intp)(tagOfIMain, classTag[IMain]))
+
+      // add a help function for anyone who types "help" instead of ":help". Easily shadowed.
+      //addHelp()
+
+      // Auto-run code via some setting.
+      ( replProps.replAutorunCode.option
+          flatMap (f => File(f).safeSlurp())
+          foreach (intp quietRun _)
+      )
+      // power mode setup
+      if (isReplPower) {
+        replProps.power setValue true
+        unleashAndSetPhase()
+        asyncMessage(power.banner)
+      }
+      loadInitFiles()
+      // SI-7418 Now, and only now, can we enable TAB completion.
+      in.postInit()
+    }
+    def loadInitFiles(): Unit = settings match {
+      case settings: GenericRunnerSettings =>
+        for (f <- settings.loadfiles.value) {
+          loadCommand(f)
+          addReplay(s":load $f")
+        }
+        for (f <- settings.pastefiles.value) {
+          pasteCommand(f)
+          addReplay(s":paste $f")
+        }
+      case _ =>
+    }
+    // TODO: wait until after startup to enable obnoxious settings
+    def withSuppressedSettings[A](body: =>A): A = {
+      body
+    }
+    def startup(): String = withSuppressedSettings {
+      // starting
+      printWelcome()
+
+      // let them start typing
+      val splash = preLoop
+      splash.start()
+
+      // while we go fire up the REPL
+      try {
+        createInterpreter()
+        intp.initializeSynchronous()
+        globalFuture = Future successful true
+        if (intp.reporter.hasErrors) {
+          echo("Interpreter encountered errors during initialization!")
+          null
+        } else {
+          loopPostInit()
+          val line = splash.line           // what they typed in while they were waiting
+          if (line == null) {              // they ^D
+            try out print Properties.shellInterruptedString
+            finally closeInterpreter()
+          }
+          line
+        }
+      } finally splash.stop()
+    }
     this.settings = settings
-    createInterpreter()
-
-    // sets in to some kind of reader depending on environmental cues
-    in = in0.fold(chooseReader(settings))(r => SimpleReader(r, out, interactive = true))
-    globalFuture = future {
-      intp.initializeSynchronous()
-      loopPostInit()
-      !intp.reporter.hasErrors
+    startup() match {
+      case null    => false
+      case line    =>
+        try loop(line) match {
+          case LineResults.EOF => out print Properties.shellInterruptedString
+          case _               =>
+        }
+        catch AbstractOrMissingHandler()
+        finally closeInterpreter()
+        true
     }
-    loadFiles(settings)
-    printWelcome()
-
-    try loop() match {
-      case LineResults.EOF => out print Properties.shellInterruptedString
-      case _               =>
-    }
-    catch AbstractOrMissingHandler()
-    finally closeInterpreter()
-
-    true
   }
 
   @deprecated("Use `process` instead", "2.9.0")
