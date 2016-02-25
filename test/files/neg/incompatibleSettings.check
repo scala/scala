@@ -1,6 +1,0 @@
-warning: Conflicting compiler settings were detected. Some settings will be ignored.
-Compiler settings for the 2.11 optimizer (-optimise) are incompatible with -Ybackend:GenBCode (which is the default in 2.12).
-The optimizer settings are ignored. See -Yopt:help for enabling the new optimizer in 2.12.
-error: No warnings can be incurred under -Xfatal-warnings.
-one warning found
-one error found

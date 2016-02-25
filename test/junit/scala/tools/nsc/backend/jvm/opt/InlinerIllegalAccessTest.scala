@@ -20,7 +20,7 @@ import scala.collection.convert.decorateAsScala._
 import scala.tools.testing.ClearAfterClass
 
 object InlinerIllegalAccessTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:none")
+  var compiler = newCompiler(extraArgs = "-Yopt:l:none")
   def clear(): Unit = { compiler = null }
 }
 

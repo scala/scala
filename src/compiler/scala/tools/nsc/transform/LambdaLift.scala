@@ -246,9 +246,8 @@ abstract class LambdaLift extends InfoTransform {
       }
 
       // make sure that the name doesn't make the symbol accidentally `isAnonymousClass` (et.al) by
-      // introducing `$anon` in its name. to be cautious, we don't make this change in the default
-      // backend under 2.11.x, so only in GenBCode.
-      def nonAnon(s: String) = if (settings.Ybackend.value == "GenBCode") nme.ensureNonAnon(s) else s
+      // introducing `$anon` in its name.
+      def nonAnon(s: String) = nme.ensureNonAnon(s)
 
       def newName(sym: Symbol): Name = {
         val originalName = sym.name

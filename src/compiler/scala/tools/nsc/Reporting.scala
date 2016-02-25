@@ -26,27 +26,30 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
   protected def PerRunReporting = new PerRunReporting
   class PerRunReporting extends PerRunReportingBase {
     /** Collects for certain classes of warnings during this run. */
-    private class ConditionalWarning(what: String, option: Settings#BooleanSetting)(reRunFlag: String = option.name) {
+    private class ConditionalWarning(what: String, doReport: () => Boolean, setting: Settings#Setting) {
+      def this(what: String, booleanSetting: Settings#BooleanSetting) {
+        this(what, () => booleanSetting, booleanSetting)
+      }
       val warnings = mutable.LinkedHashMap[Position, String]()
       def warn(pos: Position, msg: String) =
-        if (option) reporter.warning(pos, msg)
+        if (doReport()) reporter.warning(pos, msg)
         else if (!(warnings contains pos)) warnings += ((pos, msg))
       def summarize() =
-        if (warnings.nonEmpty && (option.isDefault || option)) {
+        if (warnings.nonEmpty && (setting.isDefault || doReport())) {
           val numWarnings  = warnings.size
           val warningVerb  = if (numWarnings == 1) "was" else "were"
           val warningCount = countElementsAsString(numWarnings, s"$what warning")
 
-          reporter.warning(NoPosition, s"there $warningVerb $warningCount; re-run with $reRunFlag for details")
+          reporter.warning(NoPosition, s"there $warningVerb $warningCount; re-run with ${setting.name} for details")
         }
     }
 
     // This change broke sbt; I gave it the thrilling name of uncheckedWarnings0 so
     // as to recover uncheckedWarnings for its ever-fragile compiler interface.
-    private val _deprecationWarnings    = new ConditionalWarning("deprecation", settings.deprecation)()
-    private val _uncheckedWarnings      = new ConditionalWarning("unchecked", settings.unchecked)()
-    private val _featureWarnings        = new ConditionalWarning("feature", settings.feature)()
-    private val _inlinerWarnings        = new ConditionalWarning("inliner", settings.YinlinerWarnings)(if (settings.isBCodeActive) settings.YoptWarnings.name else settings.YinlinerWarnings.name)
+    private val _deprecationWarnings    = new ConditionalWarning("deprecation", settings.deprecation)
+    private val _uncheckedWarnings      = new ConditionalWarning("unchecked", settings.unchecked)
+    private val _featureWarnings        = new ConditionalWarning("feature", settings.feature)
+    private val _inlinerWarnings        = new ConditionalWarning("inliner", () => !settings.YoptWarningsSummaryOnly, settings.YoptWarnings)
     private val _allConditionalWarnings = List(_deprecationWarnings, _uncheckedWarnings, _featureWarnings, _inlinerWarnings)
 
     // TODO: remove in favor of the overload that takes a Symbol, give that argument a default (NoSymbol)

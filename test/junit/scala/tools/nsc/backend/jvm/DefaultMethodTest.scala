@@ -11,7 +11,7 @@ import JavaConverters._
 import scala.tools.testing.ClearAfterClass
 
 object DefaultMethodTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode")
+  var compiler = newCompiler()
   def clear(): Unit = { compiler = null }
 }
 

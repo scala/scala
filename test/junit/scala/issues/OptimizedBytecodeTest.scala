@@ -313,4 +313,63 @@ class OptimizedBytecodeTest extends ClearAfterClass {
     assertInvoke(getSingleMethod(c, "f2a"), "C", "C$$$anonfun$3")
     assertInvoke(getSingleMethod(c, "f2b"), "C", "wrapper2")
   }
+
+  @Test
+  def t7060(): Unit = {
+    val code =
+      """class C {
+        |  @inline final def mbarray_apply_minibox(array: Any, tag: Byte): Long =
+        |    if (tag == 0) array.asInstanceOf[Array[Long]](0)
+        |    else array.asInstanceOf[Array[Byte]](0).toLong
+        |
+        |  def t = mbarray_apply_minibox(null, 0)
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(compiler)(code)
+    assertNoInvoke(getSingleMethod(c, "t"))
+  }
+
+  @Test
+  def t8315(): Unit = {
+    val code =
+      """class C {
+        |  def t(as: Listt): Unit = {
+        |    map(as, (_: Any) => return)
+        |  }
+        |  final def map(x: Listt, f: Any => Any): Any = {
+        |    if (x eq Nill) "" else f("")
+        |  }
+        |}
+        |object Nill extends Listt
+        |class Listt
+      """.stripMargin
+    val List(c, nil, nilMod, listt) = compileClasses(compiler)(code)
+    assertInvoke(getSingleMethod(c, "t"), "C", "C$$$anonfun$1")
+  }
+
+  @Test
+  def t8315b(): Unit = {
+    val code =
+      """class C {
+        |  def crash: Unit = {
+        |    val key = ""
+        |    try map(new F(key))
+        |    catch { case _: Throwable => }
+        |  }
+        |  final def map(f: F): Any = f.apply("")
+        |}
+        |final class F(key: String) {
+        |  final def apply(a: Any): Any = throw new RuntimeException(key)
+        |}
+      """.stripMargin
+    val List(c, f) = compileClasses(compiler)(code)
+    assertInvoke(getSingleMethod(c, "crash"), "C", "map")
+  }
+
+  @Test
+  def optimiseEnablesNewOpt(): Unit = {
+    val code = """class C { def t = (1 to 10) foreach println }"""
+    val List(c) = readAsmClasses(compile(newCompiler(extraArgs = "-optimise -deprecation"))(code, allowMessage = _.msg.contains("is deprecated")))
+    assertInvoke(getSingleMethod(c, "t"), "C", "C$$$anonfun$1") // range-foreach inlined from classpath
+  }
 }

@@ -28,7 +28,7 @@ import scala.collection.convert.decorateAsScala._
 import scala.tools.testing.ClearAfterClass
 
 object InlineWarningTest extends ClearAfterClass.Clearable {
-  val argsNoWarn = "-Ybackend:GenBCode -Yopt:l:classpath"
+  val argsNoWarn = "-Yopt:l:classpath"
   val args = argsNoWarn + " -Yopt-warnings"
   var compiler = newCompiler(extraArgs = args)
   var compilerWarnAll = newCompiler(extraArgs = argsNoWarn + " -Yopt-warnings:_")

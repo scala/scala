@@ -18,9 +18,9 @@ import scala.tools.testing.ClearAfterClass
 object UnreachableCodeTest extends ClearAfterClass.Clearable {
   // jvm-1.6 enables emitting stack map frames, which impacts the code generation wrt dead basic blocks,
   // see comment in BCodeBodyBuilder
-  var methodOptCompiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:method")
-  var dceCompiler       = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:unreachable-code")
-  var noOptCompiler     = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:none")
+  var methodOptCompiler = newCompiler(extraArgs = "-Yopt:l:method")
+  var dceCompiler       = newCompiler(extraArgs = "-Yopt:unreachable-code")
+  var noOptCompiler     = newCompiler(extraArgs = "-Yopt:l:none")
 
   def clear(): Unit = {
     methodOptCompiler = null

@@ -14,8 +14,8 @@ import ASMConverters._
 import scala.tools.testing.ClearAfterClass
 
 object EmptyExceptionHandlersTest extends ClearAfterClass.Clearable {
-  var noOptCompiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:none")
-  var dceCompiler   = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:unreachable-code")
+  var noOptCompiler = newCompiler(extraArgs = "-Yopt:l:none")
+  var dceCompiler   = newCompiler(extraArgs = "-Yopt:unreachable-code")
   def clear(): Unit = {
     noOptCompiler = null
     dceCompiler = null

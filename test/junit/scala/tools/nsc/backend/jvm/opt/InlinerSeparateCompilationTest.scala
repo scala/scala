@@ -16,7 +16,7 @@ import AsmUtils._
 import scala.collection.convert.decorateAsScala._
 
 object InlinerSeparateCompilationTest {
-  val args = "-Ybackend:GenBCode -Yopt:l:classpath"
+  val args = "-Yopt:l:classpath"
 }
 
 @RunWith(classOf[JUnit4])

@@ -1,6 +1,6 @@
 // See comment in BCodeBodyBuilder
 
-// -target:jvm-1.6 -Ybackend:GenBCode -Yopt:l:none
+// -target:jvm-1.6 -Yopt:l:none
 // target enables stack map frame generation
 
 class C {

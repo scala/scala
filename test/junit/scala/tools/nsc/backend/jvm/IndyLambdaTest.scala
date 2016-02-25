@@ -11,7 +11,7 @@ import scala.tools.testing.ClearAfterClass
 import scala.collection.JavaConverters._
 
 object IndyLambdaTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode")
+  var compiler = newCompiler()
 
   def clear(): Unit = {
     compiler = null

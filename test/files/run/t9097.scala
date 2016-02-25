@@ -6,7 +6,6 @@ object Test extends StoreReporterDirectTest {
   override def extraSettings: String = List(
     "-usejavacp",
     "-Xfatal-warnings",
-    "-Ybackend:GenBCode",
     "-Ydelambdafy:method",
     "-Xprint:delambdafy",
     s"-d ${testOutput.path}"

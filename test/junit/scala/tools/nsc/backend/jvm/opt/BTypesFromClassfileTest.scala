@@ -22,7 +22,7 @@ import scala.collection.convert.decorateAsScala._
 @RunWith(classOf[JUnit4])
 class BTypesFromClassfileTest {
   // inliner enabled -> inlineInfos are collected (and compared) in ClassBTypes
-  val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:inline-global")
+  val compiler = newCompiler(extraArgs = "-Yopt:inline-global")
 
   import compiler._
   import definitions._

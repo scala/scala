@@ -19,7 +19,7 @@ import BackendReporting._
 import scala.collection.convert.decorateAsScala._
 
 object InlineInfoTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:classpath")
+  var compiler = newCompiler(extraArgs = "-Yopt:l:classpath")
   def clear(): Unit = { compiler = null }
 
   def notPerRun: List[Clearable] = List(
