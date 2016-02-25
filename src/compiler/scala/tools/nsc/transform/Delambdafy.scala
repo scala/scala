@@ -127,9 +127,8 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
     // turns a lambda into a new class def, a New expression instantiating that class
     private def transformFunction(originalFunction: Function): TransformedFunction = {
-      val functionTpe = originalFunction.tpe
-      val targs = functionTpe.typeArgs
-      val formals :+ restpe = targs
+      val formals  = originalFunction.vparams.map(_.tpe)
+      val restpe   = originalFunction.body.tpe.deconst
       val oldClass = originalFunction.symbol.enclClass
 
       // find which variables are free in the lambda because those are captures that need to be

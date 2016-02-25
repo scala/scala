@@ -58,7 +58,7 @@ trait TypeComparers {
       false
 
   private def equalSymsAndPrefixes(sym1: Symbol, pre1: Type, sym2: Symbol, pre2: Type): Boolean = (
-    if (sym1 == sym2)
+    if (sym1 eq sym2)
       sym1.hasPackageFlag || sym1.owner.hasPackageFlag || phase.erasedTypes || pre1 =:= pre2
     else
       (sym1.name == sym2.name) && isUnifiable(pre1, pre2)
@@ -79,7 +79,7 @@ trait TypeComparers {
   def isDifferentTypeConstructor(tp1: Type, tp2: Type) = !isSameTypeConstructor(tp1, tp2)
 
   private def isSameTypeConstructor(tr1: TypeRef, tr2: TypeRef): Boolean = (
-       (tr1.sym == tr2.sym)
+       (tr1.sym eq tr2.sym)
     && !isDifferentType(tr1.pre, tr2.pre)
   )
   private def isSameTypeConstructor(tp1: Type, tp2: Type): Boolean = (
@@ -222,7 +222,7 @@ trait TypeComparers {
       case SingleType(pre1, sym1)     => tp2 match { case SingleType(pre2, sym2)     => equalSymsAndPrefixes(sym1, pre1, sym2, pre2)         ; case _ => false }
       case PolyType(ps1, res1)        => tp2 match { case PolyType(ps2, res2)        => equalTypeParamsAndResult(ps1, res1, ps2, res2)       ; case _ => false }
       case ExistentialType(qs1, res1) => tp2 match { case ExistentialType(qs2, res2) => equalTypeParamsAndResult(qs1, res1, qs2, res2)       ; case _ => false }
-      case ThisType(sym1)             => tp2 match { case ThisType(sym2)             => sym1 == sym2                                         ; case _ => false }
+      case ThisType(sym1)             => tp2 match { case ThisType(sym2)             => sym1 eq sym2                                         ; case _ => false }
       case ConstantType(c1)           => tp2 match { case ConstantType(c2)           => c1 == c2                                             ; case _ => false }
       case NullaryMethodType(res1)    => tp2 match { case NullaryMethodType(res2)    => res1 =:= res2                                        ; case _ => false }
       case TypeBounds(lo1, hi1)       => tp2 match { case TypeBounds(lo2, hi2)       => lo1 =:= lo2 && hi1 =:= hi2                           ; case _ => false }
@@ -344,7 +344,7 @@ trait TypeComparers {
   // in the same class, and the 'x' in the ThisType has in its override chain
   // the 'x' in the SuperType, then the types conform.
   private def isThisAndSuperSubtype(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
-    case (SingleType(ThisType(lpre), v1), SingleType(SuperType(ThisType(rpre), _), v2)) => (lpre == rpre) && (v1.overrideChain contains v2)
+    case (SingleType(ThisType(lpre), v1), SingleType(SuperType(ThisType(rpre), _), v2)) => (lpre eq rpre) && (v1.overrideChain contains v2)
     case _                                                                              => false
   }
 
@@ -361,8 +361,8 @@ trait TypeComparers {
         false
     }
 
-    (    tp1.typeSymbol == NothingClass       // @M Nothing is subtype of every well-kinded type
-      || tp2.typeSymbol == AnyClass           // @M Any is supertype of every well-kinded type (@PP: is it? What about continuations plugin?)
+    (    (tp1.typeSymbol eq NothingClass)       // @M Nothing is subtype of every well-kinded type
+      || (tp2.typeSymbol eq AnyClass)           // @M Any is supertype of every well-kinded type (@PP: is it? What about continuations plugin?)
       || isSub(tp1.normalize, tp2.normalize) && annotationsConform(tp1, tp2)  // @M! normalize reduces higher-kinded case to PolyType's
     )
   }
@@ -394,7 +394,7 @@ trait TypeComparers {
             val sym2 = tr2.sym
             val pre1 = tr1.pre
             val pre2 = tr2.pre
-            (((if (sym1 == sym2) phase.erasedTypes || sym1.owner.hasPackageFlag || isSubType(pre1, pre2, depth)
+            (((if (sym1 eq sym2) phase.erasedTypes || sym1.owner.hasPackageFlag || isSubType(pre1, pre2, depth)
             else (sym1.name == sym2.name && !sym1.isModuleClass && !sym2.isModuleClass &&
               (isUnifiable(pre1, pre2) ||
                 isSameSpecializedSkolem(sym1, sym2, pre1, pre2) ||
@@ -403,7 +403,9 @@ trait TypeComparers {
               ||
               sym2.isClass && {
                 val base = tr1 baseType sym2
-                (base ne tr1) && isSubType(base, tr2, depth)
+                // During bootstrap, `base eq NoType` occurs about 2.5 times as often as `base ne NoType`.
+                // The extra check seems like a worthwhile optimization (about 2.5M useless calls to isSubtype saved during that run).
+                (base ne tr1) && (base ne NoType) && isSubType(base, tr2, depth)
               }
               ||
               thirdTryRef(tr1, tr2))
