@@ -65,6 +65,10 @@ object scala extends Command {
         "Do not use the " & MBold("fsc") & " offline compiler."),
 
       Definition(
+        CmdOption("nc"),
+        "Same as " & Mono("-nocompdaemon") & "."),
+
+      Definition(
         CmdOptionBound("D", "property=value"),
         "Set a Java system property.  If no value is specified, " &
         "then the property is set to the empty string."),
@@ -135,6 +139,11 @@ object scala extends Command {
     "line.  Headers can be used to make stand-alone script files, as shown " &
     "in the examples below.",
 
+    "When running a script or using " & Mono("-e") & ", an already running " &
+    "compilation daemon (fsc) is used, or a new one started on demand.  The " &
+    Mono("-nocompdaemon") & " or " & Mono("-nc") & " option can be used to " &
+    "prevent this.",
+
     "If " & Mono("scala") & " is run from an sbaz(1) directory, " &
     "then it will add to its classpath any jars installed in the " &
     "lib directory of the sbaz directory.  Additionally, if no " &
@@ -175,11 +184,7 @@ object scala extends Command {
 
           "With Java 1.5 (or newer) one may for example configure the " &
           "memory usage of the JVM as follows: " &
-          Mono("JAVA_OPTS=\"-Xmx512M -Xms16M -Xss16M\""),
-
-          "With " & Link("GNU Java", "http://gcc.gnu.org/java/") & " one " &
-          "may configure the memory usage of the GIJ as follows: " &
-          Mono("JAVA_OPTS=\"--mx512m --ms16m\"")
+          Mono("JAVA_OPTS=\"-Xmx512M -Xms16M -Xss16M\"")
         ))))
 
   val examples = Section("EXAMPLES",

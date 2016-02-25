@@ -10,11 +10,11 @@ We are super happy about this, and are eager to make your experience contributin
 
 This is why we're collecting these notes on how to contribute, and we hope you'll share your experience to improve the process for the next contributor! (Feel free to send a PR for this note, send your thoughts to scala-internals, or tweet about it to @adriaanm.)
 
-By the way, the team at Typesafe is: @adriaanm, @lrytz, @retronym, and @SethTisue.
+By the way, the team at Lightbend (formerly Typesafe) is: @adriaanm, @lrytz, @retronym, @SethTisue, and @szeiger.
 
 ## What kind of PR are you submitting?
 
-Regardless of the nature of your Pull Request, we have to ask you to digitally sign the [Scala CLA](http://www.typesafe.com/contribute/cla/scala), to protect the OSS nature of the code base.
+Regardless of the nature of your Pull Request, we have to ask you to digitally sign the [Scala CLA](http://www.lightbend.com/contribute/cla/scala), to protect the OSS nature of the code base.
 
 You don't need to submit separate PRs for 2.11.x, 2.12.x, and 2.13.x. Any changes accepted on one of these branches will, in time, be merged into the later branches.
 
