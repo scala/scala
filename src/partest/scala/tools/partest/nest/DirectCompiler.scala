@@ -92,7 +92,7 @@ class DirectCompiler(val runner: Runner) {
     val command      = new CompilerCommand(opts.toList, testSettings)
     val global       = newGlobal(testSettings, logWriter)
     val reporter     = global.reporter.asInstanceOf[ExtConsoleReporter]
-    def errorCount   = reporter.ERROR.count
+    def errorCount   = reporter.errorCount
 
     testSettings.outputDirs setSingleOutput outDir.getPath
 
