@@ -16,15 +16,16 @@ $(document).ready(function() {
         $zoomOut: $('#diagram-zoom-out'),
     });
 
-    $("#template > div > div > ol > li > span > a").click(function(e) {
-        var href = $(this).attr("href");
+    $("#template > div > div > ol > li > span.permalink").click(function(e) {
+        e.preventDefault();
+        var href = $("a", this).attr("href");
         if (href.indexOf("#") != -1) {
-            e.preventDefault();
             location.hash = href.split("#").pop();
             $("#template > div > div > ol > li").removeClass("selected");
-            var parent = $(this).parent().parent().addClass("selected");
-            $("#content-container").animate({scrollTop: $("#content-container").scrollTop() + $(this).offset().top - $("#search").height() - 22}, 500);
+            var parent = $(this).parent().addClass("selected");
+            $("#content-container").animate({scrollTop: $("#content-container").scrollTop() + $(this).offset().top - $("#search").height() - 23}, 500);
         }
+        return false;
     });
 
     var oldWidth = $("div#subpackage-spacer").width() + 1 + "px";
@@ -214,19 +215,16 @@ $(document).ready(function() {
         filter();
     });
     $("#order > ol > li.alpha").click(function() {
-        if ($(this).hasClass("out")) {
+        if ($(this).hasClass("out"))
             orderAlpha();
-        }
     })
     $("#order > ol > li.inherit").click(function() {
-        if ($(this).hasClass("out")) {
+        if ($(this).hasClass("out"))
             orderInherit();
-        }
     });
     $("#order > ol > li.group").click(function() {
-        if ($(this).hasClass("out")) {
+        if ($(this).hasClass("out"))
             orderGroup();
-        }
     });
     $("#groupedMembers").hide();
 
@@ -243,9 +241,7 @@ $(document).ready(function() {
     });
 
     /* Add toggle arrows */
-    //var docAllSigs = $("#template li").has(".fullcomment").find(".signature");
-    // trying to speed things up a little bit
-    var docAllSigs = $("#template li[fullComment=yes] .modifier_kind");
+    $("#template li[fullComment=yes] .modifier_kind").addClass("closed");
 
     function commentToggleFct(signature){
         var parent = signature.parent();
@@ -272,15 +268,17 @@ $(document).ready(function() {
             }
         }
     };
-    docAllSigs.addClass("closed");
-    docAllSigs.click(function() {
-        commentToggleFct($(this));
+
+    $("#template li[fullComment=yes]").click(function() {
+        $("#template li.selected").removeClass("selected");
+        commentToggleFct($(".modifier_kind", this));
+        $(this).toggleClass("open");
     });
 
     /* Linear super types and known subclasses */
     function toggleShowContentFct(e){
       e.toggleClass("open");
-      var content = $(".hiddenContent", e.parent().get(0));
+      var content = $(".hiddenContent", e);
       if(content.is(':visible')) {
           if (!isMobile()) content.slideUp(100);
           else content.hide();
@@ -290,12 +288,9 @@ $(document).ready(function() {
       }
     };
 
-    $(".toggle:not(.diagram-link)").click(function() {
+    $(".toggleContainer:not(.diagram-container)").click(function() {
       toggleShowContentFct($(this));
     });
-
-    // Set parent window title
-    windowTitle();
 
     if ($("#order > ol > li.group").length == 1) { orderGroup(); };
 
@@ -308,9 +303,8 @@ $(document).ready(function() {
     // highlight and jump to selected member
     if (window.location.hash) {
         var jqElem = findElementByHash(window.location.hash);
-        if (jqElem.length > 0) {
+        if (jqElem.length > 0)
             exposeMember(jqElem);
-        }
     }
 
     $("#mbrsel-input").on("focus", function() {
@@ -541,15 +535,6 @@ function filter() {
     };
 
     return false;
-};
-
-function windowTitle() {
-    try {
-        parent.document.title=document.title;
-    } catch(e) {
-      // Chrome doesn't allow settings the parent's title when
-      // used on the local file system.
-    }
 };
 
 /** Check if user agent is associated with a known mobile browser */
