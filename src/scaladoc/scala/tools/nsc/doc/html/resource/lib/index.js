@@ -98,7 +98,7 @@ function handleKeyNavigation() {
 
         scroller.scrollDown = function($elem) {
             var yPos = $elem.offset().top; // offset relative to viewport
-            if ($container.height() < yPos) {
+            if ($container.height() < yPos || (yPos - $("#search").height()) < 0) {
                 $container.animate({
                     scrollTop: $container.scrollTop() + yPos - $("#search").height() - 10
                 }, 200);
@@ -132,6 +132,7 @@ function handleKeyNavigation() {
 
         var $old = items.next();
         $old.addClass("selected");
+        scroller.scrollDown($old);
 
         $(window).bind("keydown", function(e) {
             switch ( e.keyCode ) {

@@ -797,11 +797,6 @@ object Test extends Properties("HtmlFactory") {
         case _ => false
       }
 
-    property("SI-8144: Members' permalink - package") = check("some/index.html") { node =>
-      ("type link" |: node.assertTypeLink("../some/index.html")) &&
-      ("member: some.pack" |: node.assertValuesLink("some.pack", "../some/index.html#pack"))
-    }
-
     property("SI-8144: Members' permalink - inner package") = check("some/pack/index.html") { node =>
       ("type link" |: node.assertTypeLink("../../some/pack/index.html")) &&
         ("member: SomeType (object)" |: node.assertValuesLink("some.pack.SomeType", "../../some/pack/index.html#SomeType")) &&

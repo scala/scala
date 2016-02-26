@@ -393,7 +393,7 @@ div#search-progress > div#progress-fill {
   color: #bbb;
 }
 
-div#content-container {
+div#content-scroll-container {
   position: absolute;
   top: 0;
   right: 0;
@@ -404,12 +404,128 @@ div#content-container {
   overflow-y: auto;
 }
 
+div#content-container {
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
 div#content-container > div#content {
   -webkit-overflow-scrolling: touch;
   display: block;
   overflow-y: auto;
-  max-width: 1140px;
   margin: 5em auto 0;
+}
+
+div#content-container > div#subpackage-spacer {
+  float: right;
+  height: 100%;
+  margin: 0.5rem 0.5rem 0 0.5em;
+  font-size: 0.8em;
+}
+
+div#packages > h1 {
+  color: #103a51;
+}
+
+div#packages > ul {
+  list-style-type: none;
+}
+
+div#packages > ul > li {
+  position: relative;
+  margin: 0.5rem 0;
+  width: 100%;
+  border-radius: 0.2em;
+  min-height: 1.5em;
+  padding-left: 2em;
+}
+
+div#packages > ul > li.current:hover {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  cursor: pointer;
+}
+
+div#packages > ul > li > *:nth-child(1),
+div#packages > ul > li > *:nth-child(2) {
+  float: left;
+  display: inline;
+  height: 1em;
+  width: 1em;
+  margin: 2px 0 0;
+  cursor: pointer;
+}
+
+div#packages > ul > li > a.class {
+  background: url("class.svg") no-repeat center;
+  background-size: 0.9em;
+}
+
+div#packages > ul > li > a.trait {
+  background: url("trait.svg") no-repeat center;
+  background-size: 0.9em;
+}
+
+div#packages > ul > li > a.object {
+  background: url("object.svg") no-repeat center;
+  background-size: 0.9em;
+}
+
+div#packages > ul > li > a.abstract.type {
+  background: url("abstract_type.svg") no-repeat center;
+  background-size: 0.9em;
+}
+
+div#packages > ul > li > a {
+  text-decoration: none !important;
+  margin-left: 0.1em;
+}
+
+/* Indentation levels for packages */
+div#packages > ul > li.indented0  { padding-left: 0em; }
+div#packages > ul > li.indented1  { padding-left: 1em; }
+div#packages > ul > li.indented2  { padding-left: 2em; }
+div#packages > ul > li.indented3  { padding-left: 3em; }
+div#packages > ul > li.indented4  { padding-left: 4em; }
+div#packages > ul > li.indented5  { padding-left: 5em; }
+div#packages > ul > li.indented6  { padding-left: 6em; }
+div#packages > ul > li.indented7  { padding-left: 7em; }
+div#packages > ul > li.indented8  { padding-left: 8em; }
+div#packages > ul > li.indented9  { padding-left: 9em; }
+div#packages > ul > li.indented10 { padding-left: 10em; }
+div#packages > ul > li.current.indented0  { padding-left: -0.5em }
+div#packages > ul > li.current.indented1  { padding-left: 0.5em }
+div#packages > ul > li.current.indented2  { padding-left: 1.5em }
+div#packages > ul > li.current.indented3  { padding-left: 2.5em }
+div#packages > ul > li.current.indented4  { padding-left: 3.5em }
+div#packages > ul > li.current.indented5  { padding-left: 4.5em }
+div#packages > ul > li.current.indented6  { padding-left: 5.5em }
+div#packages > ul > li.current.indented7  { padding-left: 6.5em }
+div#packages > ul > li.current.indented8  { padding-left: 7.5em }
+div#packages > ul > li.current.indented9  { padding-left: 8.5em }
+div#packages > ul > li.current.indented10 { padding-left: 9.5em }
+
+div#packages > ul > li.current > span.symbol {
+  border-left: 0.25em solid #72D0EB;
+  padding-left: 0.25em;
+}
+
+div#packages > ul > li > span.symbol > a {
+  text-decoration: none;
+}
+
+div#packages > ul > li > span.symbol > span.name {
+  font-weight: normal;
+}
+
+div#packages > ul > li .fullcomment,
+div#packages > ul > li .modifier_kind,
+div#packages > ul > li .permalink,
+div#packages > ul > li .shortcomment {
+  display: none;
 }
 
 div#search-results {
@@ -710,6 +826,10 @@ only screen /* iPhone 6 */
 and (max-device-width: 667px)
 and (-webkit-device-pixel-ratio: 2)
 {
+  div#content-container > div#subpackage-spacer {
+      display: none;
+  }
+
   div#content-container > div#content {
     margin: 3.3em auto 0;
   }

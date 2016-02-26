@@ -71,9 +71,74 @@ trait EntityPage extends HtmlPage {
           <div id="member-results"></div>
         </div>
       </div>
-      <div id="content-container" style="-webkit-overflow-scrolling: touch;">
-        <div id="content">
-          { content }
+      <div id="content-scroll-container" style="-webkit-overflow-scrolling: touch;">
+        <div id="content-container" style="-webkit-overflow-scrolling: touch;">
+          <div id="subpackage-spacer">
+            <div id="packages">
+              <h1>Packages</h1>
+              <ul>
+                {
+                  def entityToUl(mbr: TemplateEntity with MemberEntity, indentation: Int): NodeSeq =
+                    <li class={"current-entities indented" + indentation}>
+                      {
+                        mbr match {
+                          case dtpl: DocTemplateEntity =>
+                            dtpl.companion.fold(<span class="separator"></span>) { c: DocTemplateEntity =>
+                              <a class="object" href={relativeLinkTo(c)} title={c.comment.fold("")(com => inlineToStr(com.short))}></a>
+                            }
+                          case _ => <span class="separator"></span>
+                        }
+                      }
+                      <a class={mbr.kind} href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => inlineToStr(com.short))}></a>
+                      <a href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => inlineToStr(com.short))}>
+                        {mbr.name}
+                      </a>
+                    </li>
+
+                  // Get path from root
+                  val rootToParentLis = tpl.toRoot
+                    .tail
+                    .reverse
+                    .zipWithIndex
+                    .map { case (pack, ind) =>
+                      memberToHtml(pack, tpl, indentation = ind, isParent = (pack eq tpl.toRoot.tail.head))
+                    }
+
+                  val parent = tpl.toRoot match {
+                    case _ :: parent :: _ if !parent.isRootPackage => Some(parent)
+                    case _ => None
+                  }
+
+                  val parentSub = parent.fold(Seq[TemplateEntity with MemberEntity](tpl)) { p =>
+                    p.templates.filter(_.isPackage).sortBy(_.name)
+                  }
+
+                  // If current entity is a package, take its containing entities - otherwise take parent's containing entities
+                  val currentPackageTpls =
+                    if (tpl.isPackage) tpl.templates
+                    else parent.fold(Seq.empty[TemplateEntity with MemberEntity])(p => p.templates)
+
+                  val (subsToTpl, subsAfterTpl) = parentSub.partition(_.name <= tpl.name)
+
+                  val subsToTplLis = subsToTpl.map(memberToHtml(_, tpl, indentation = rootToParentLis.length))
+                  val subsAfterTplLis = subsAfterTpl.map(memberToHtml(_, tpl, indentation = rootToParentLis.length))
+                  val currEntityLis = currentPackageTpls
+                    .filter(x => !x.isPackage && (x.isTrait || x.isClass || x.isAbstractType))
+                    .sortBy(_.name)
+                    .map(entityToUl(_, rootToParentLis.length + 1))
+                  val currSubLis = tpl.templates
+                    .filter(_.isPackage)
+                    .sortBy(_.name)
+                    .map(memberToHtml(_, tpl, indentation = rootToParentLis.length + 1))
+
+                  rootToParentLis ++ subsToTplLis ++ currEntityLis ++ currSubLis ++ subsAfterTplLis
+                }
+              </ul>
+            </div>
+          </div>
+          <div id="content">
+            { content }
+          </div>
         </div>
       </div>
     </body>
@@ -146,7 +211,6 @@ trait EntityPage extends HtmlPage {
       <div id="definition">
         {
           val (src, alt) = docEntityKindToBigImage(tpl)
-
           val identifier = alt.toString.substring(0,2).toLowerCase
 
           tpl.companion match {
@@ -154,7 +218,8 @@ trait EntityPage extends HtmlPage {
               <a href={relativeLinkTo(companion)} title={docEntityKindToCompanionTitle(tpl)}><div class={s"big-circle companion $identifier"}>{ identifier.substring(0,1) }</div></a>
             case _ =>
               <div class={ "big-circle " + alt.toString.toLowerCase }>{ identifier.substring(0,1) }</div>
-        }}
+          }
+        }
         { owner }
         <h1>{ displayName }</h1>{
           if (tpl.isPackage) NodeSeq.Empty else <h3>{companionAndPackage(tpl)}</h3>
@@ -262,7 +327,13 @@ trait EntityPage extends HtmlPage {
         { if (concValueMembers.isEmpty) NodeSeq.Empty else
             <div class="values members">
               <h3>{ if (absValueMembers.isEmpty) "Value Members" else "Concrete Value Members" }</h3>
-              <ol>{ concValueMembers map (memberToHtml(_, tpl)) }</ol>
+              <ol>
+                {
+                  concValueMembers
+                    .filter(_.kind != "package")
+                    .map(memberToHtml(_, tpl))
+                }
+              </ol>
             </div>
         }
 
@@ -336,7 +407,12 @@ trait EntityPage extends HtmlPage {
     </body>
   }
 
-  def memberToHtml(mbr: MemberEntity, inTpl: DocTemplateEntity): NodeSeq = {
+  def memberToHtml(
+    mbr:         MemberEntity,
+    inTpl:       DocTemplateEntity,
+    isParent:    Boolean = false,
+    indentation: Int = 0
+  ): NodeSeq = {
     // Sometimes it's same, do we need signatureCompat still?
     val sig = if (mbr.signature == mbr.signatureCompat) {
       <a id={ mbr.signature }/>
@@ -346,6 +422,7 @@ trait EntityPage extends HtmlPage {
 
     val memberComment = memberToCommentHtml(mbr, inTpl, isSelf = false)
     <li name={ mbr.definitionName } visbl={ if (mbr.visibility.isProtected) "prt" else "pub" }
+      class={ s"indented$indentation " + (if (mbr eq inTpl) "current" else "") }
       data-isabs={ mbr.isAbstract.toString }
       fullComment={ if(memberComment.filter(_.label=="div").isEmpty) "no" else "yes" }
       group={ mbr.group }>
@@ -828,7 +905,9 @@ trait EntityPage extends HtmlPage {
             }
           }
           if (!nameLink.isEmpty)
-            <a href={nameLink}>{nameHtml}</a>
+            <a title={mbr.comment.fold("")(c => inlineToStr(c.short))} href={nameLink}>
+              {nameHtml}
+            </a>
           else nameHtml
         }{
           def tparamsToHtml(mbr: Any): NodeSeq = mbr match {
