@@ -250,10 +250,7 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
       super.equals(other)
   }
 
-  override def toString() = {
-    val endStr = if (length > Range.MAX_PRINT) ", ... )" else ")"
-    take(Range.MAX_PRINT).mkString("NumericRange(", ", ", endStr)
-  }
+  override def toString = s"$start ${if (isInclusive) "to" else "until"} $end by $step"
 }
 
 /** A companion object for numeric ranges.

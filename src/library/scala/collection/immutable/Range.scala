@@ -401,18 +401,12 @@ extends scala.collection.AbstractSeq[Int]
    *  equals contract.
    */
 
-  override def toString() = {
-    val endStr =
-      if (numRangeElements > Range.MAX_PRINT || (!isEmpty && numRangeElements < 0)) ", ... )" else ")"
-    take(Range.MAX_PRINT).mkString("Range(", ", ", endStr)
-  }
+  override def toString = description
 }
 
 /** A companion object for the `Range` class.
  */
 object Range {
-  private[immutable] val MAX_PRINT = 512  // some arbitrary value
-
   /** Counts the number of range elements.
    *  @pre  step != 0
    *  If the size of the range exceeds Int.MaxValue, the
