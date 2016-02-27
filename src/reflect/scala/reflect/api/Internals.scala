@@ -939,7 +939,7 @@ trait Internals { self: Universe =>
 
   /** Marks underlying reference to id as boxed.
    *
-   *  <b>Precondition:<\b> id must refer to a captured variable
+   *  <b>Precondition:</b> id must refer to a captured variable
    *  A reference such marked will refer to the boxed entity, no dereferencing
    *  with `.elem` is done on it.
    *  This tree node can be emitted by macros such as reify that call referenceCapturedVariable.
