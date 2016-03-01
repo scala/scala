@@ -148,6 +148,8 @@ private[scala] trait PropertiesTrait {
   // the reason why we don't follow developer.apple.com/library/mac/#technotes/tn2002/tn2110.
   /** Returns `true` iff the underlying operating system is a version of Apple Mac OSX.  */
   def isMac                 = osName startsWith "Mac OS X"
+  /** Returns `true` iff the underlying operating system is a Linux distribution. */
+  def isLinux               = osName startsWith "Linux"
 
   /* Some runtime values. */
   private[scala] def isAvian = javaVmName contains "Avian"
