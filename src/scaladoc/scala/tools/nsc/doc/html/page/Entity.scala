@@ -120,18 +120,21 @@ trait EntityPage extends HtmlPage {
 
                   val (subsToTpl, subsAfterTpl) = parentSub.partition(_.name <= tpl.name)
 
-                  val subsToTplLis = subsToTpl.map(memberToHtml(_, tpl, indentation = rootToParentLis.length))
+                  val subsToTplLis    = subsToTpl.map(memberToHtml(_, tpl, indentation = rootToParentLis.length))
                   val subsAfterTplLis = subsAfterTpl.map(memberToHtml(_, tpl, indentation = rootToParentLis.length))
-                  val currEntityLis = currentPackageTpls
+                  val currEntityLis   = currentPackageTpls
                     .filter(x => !x.isPackage && (x.isTrait || x.isClass || x.isAbstractType))
                     .sortBy(_.name)
-                    .map(entityToUl(_, rootToParentLis.length + 1))
+                    .map(entityToUl(_, (if (tpl.isPackage) 0 else -1) + rootToParentLis.length))
                   val currSubLis = tpl.templates
                     .filter(_.isPackage)
                     .sortBy(_.name)
                     .map(memberToHtml(_, tpl, indentation = rootToParentLis.length + 1))
 
-                  rootToParentLis ++ subsToTplLis ++ currEntityLis ++ currSubLis ++ subsAfterTplLis
+                  if (subsToTpl.isEmpty && !tpl.isPackage) // current Entity is not a package, show packages before entity listing
+                    rootToParentLis ++ subsToTplLis ++ subsAfterTplLis ++ currSubLis  ++ currEntityLis
+                  else
+                    rootToParentLis ++ subsToTplLis ++ currSubLis  ++ currEntityLis ++ subsAfterTplLis
                 }
               </ul>
             </div>
@@ -221,11 +224,11 @@ trait EntityPage extends HtmlPage {
           }
         }
         { owner }
-        <h1>{ displayName }</h1>{
-          if (tpl.isPackage) NodeSeq.Empty else <h3>{companionAndPackage(tpl)}</h3>
-        }{ permalink(tpl) }
-        { signature(tpl, isSelf = true) }
+        <h1>{ displayName }{ permalink(tpl) }</h1>
+        { if (tpl.isPackage) NodeSeq.Empty else <h3>{companionAndPackage(tpl)}</h3> }
       </div>
+
+      { signature(tpl, isSelf = true) }
 
       { memberToCommentHtml(tpl, tpl.inTemplate, isSelf = true) }
 
@@ -234,7 +237,7 @@ trait EntityPage extends HtmlPage {
         <div id='memberfilter'>
           <i class="material-icons arrow">&#xE037;</i>
           <span class='input'>
-            <input id='mbrsel-input' placeholder='Filter members' type='text' accesskey='/'/>
+            <input id='mbrsel-input' placeholder='Filter all members' type='text' accesskey='/'/>
           </span>
           <i class="clear material-icons">&#xE14C;</i>
         </div>
@@ -772,7 +775,6 @@ trait EntityPage extends HtmlPage {
       case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.linearizationTemplates.nonEmpty =>
         <div class="toggleContainer block">
           <span class="toggle">
-            <i class="material-icons">&#xE037;</i>
             Linear Supertypes
           </span>
           <div class="superTypes hiddenContent">{
@@ -795,7 +797,6 @@ trait EntityPage extends HtmlPage {
         if (subs.nonEmpty)
           <div class="toggleContainer block">
             <span class="toggle">
-              <i class="material-icons">&#xE037;</i>
               Known Subclasses
             </span>
             <div class="subClasses hiddenContent">{
@@ -815,7 +816,6 @@ trait EntityPage extends HtmlPage {
             if (diagramSvg != NodeSeq.Empty) {
               <div class="toggleContainer block diagram-container" id={ id + "-container"}>
                 <span class="toggle diagram-link">
-                  <i class="material-icons">&#xE037;</i>
                   { description }
                 </span>
                 <div class="diagram" id={ id }>{ diagramSvg }</div>
@@ -871,7 +871,6 @@ trait EntityPage extends HtmlPage {
     def inside(hasLinks: Boolean, nameLink: String = ""): NodeSeq =
       <xml:group>
       <span class="modifier_kind">
-        <i class="material-icons unfold-arrow">&#xE037;</i>
         <span class="modifier">{ mbr.flags.map(flag => inlineToHtml(flag.text) ++ scala.xml.Text(" ")) }</span>
         <span class="kind">{ kindToString(mbr) }</span>
       </span>
@@ -969,7 +968,7 @@ trait EntityPage extends HtmlPage {
               else NodeSeq.Empty
 
             case alt: MemberEntity with AliasType =>
-              <span class="result"> = { typeToHtml(alt.alias, hasLinks) }</span>
+              <span class="result alias"> = { typeToHtml(alt.alias, hasLinks) }</span>
 
             case tpl: MemberTemplateEntity if !tpl.parentTypes.isEmpty =>
               <span class="result"> extends { typeToHtml(tpl.parentTypes.map(_._2), hasLinks) }</span>

@@ -246,8 +246,8 @@ abstract class HtmlPage extends Page { thisPage =>
 
   def permalink(template: Entity, isSelf: Boolean = true): Elem =
     <span class="permalink">
-      <a href={ memberToUrl(template, isSelf) } title="Permalink" target="_top">
-        <img src={ relativeLinkTo(List("permalink.svg", "lib")) } alt="Permalink" />
+      <a href={ memberToUrl(template, isSelf) } title="Permalink">
+        <i class="material-icons">&#xE157;</i>
       </a>
     </span>
 
@@ -263,7 +263,7 @@ abstract class HtmlPage extends Page { thisPage =>
 	  case None => baseString
 	}
 
-  def companionAndPackage(tpl: DocTemplateEntity): Elem =
+  def companionAndPackage(tpl: DocTemplateEntity): NodeSeq =
     <span class="morelinks">{
       tpl.companion match {
         case Some(companionTpl) =>
@@ -272,15 +272,9 @@ abstract class HtmlPage extends Page { thisPage =>
             else if (companionTpl.isTrait) s"trait ${companionTpl.name}"
             else s"class ${companionTpl.name}"
           <div>
-            Related Docs:
-            <a href={relativeLinkTo(tpl.companion.get)} title={docEntityKindToCompanionTitle(tpl)}>{objClassTrait}</a>
-            <span class="divider">|</span>
-            {templateToHtml(tpl.inTemplate, s"package ${tpl.inTemplate.name}")}
+            Companion <a href={relativeLinkTo(companionTpl)} title={docEntityKindToCompanionTitle(tpl)}>{objClassTrait}</a>
           </div>
-        case None =>
-          <div>Related Doc:
-            {templateToHtml(tpl.inTemplate, s"package ${tpl.inTemplate.name}")}
-          </div>
+        case None => NodeSeq.Empty
       }
     }</span>
 
