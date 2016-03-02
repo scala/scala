@@ -1503,9 +1503,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       }
     }
 
-    private def transformCaseApply(tree: Tree, ifNot: => Unit) = {
+    private def isSimpleCaseApply(tree: Tree): Boolean = {
       val sym = tree.symbol
-
       def isClassTypeAccessible(tree: Tree): Boolean = tree match {
         case TypeApply(fun, targs) =>
           isClassTypeAccessible(fun)
@@ -1513,31 +1512,26 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           ( // SI-4859 `CaseClass1().InnerCaseClass2()` must not be rewritten to `new InnerCaseClass2()`;
             //          {expr; Outer}.Inner() must not be rewritten to `new Outer.Inner()`.
             treeInfo.isQualifierSafeToElide(module) &&
-            // SI-5626 Classes in refinement types cannot be constructed with `new`. In this case,
-            // the companion class is actually not a ClassSymbol, but a reference to an abstract type.
-            module.symbol.companionClass.isClass
-          )
+              // SI-5626 Classes in refinement types cannot be constructed with `new`. In this case,
+              // the companion class is actually not a ClassSymbol, but a reference to an abstract type.
+              module.symbol.companionClass.isClass
+            )
       }
 
-      val doTransform =
-        sym.isSourceMethod &&
+      sym.isSourceMethod &&
         sym.isCase &&
         sym.name == nme.apply &&
         isClassTypeAccessible(tree) &&
         !tree.tpe.resultType.typeSymbol.primaryConstructor.isLessAccessibleThan(tree.symbol)
+    }
 
-      if (doTransform) {
-        tree foreach {
-          case i@Ident(_) =>
-            enterReference(i.pos, i.symbol) // SI-5390 need to `enterReference` for `a` in `a.B()`
-          case _ =>
-        }
-        toConstructor(tree.pos, tree.tpe)
+    private def transformCaseApply(tree: Tree) = {
+      tree foreach {
+        case i@Ident(_) =>
+          enterReference(i.pos, i.symbol) // SI-5390 need to `enterReference` for `a` in `a.B()`
+        case _ =>
       }
-      else {
-        ifNot
-        tree
-      }
+      toConstructor(tree.pos, tree.tpe)
     }
 
     private def transformApply(tree: Apply): Tree = tree match {
@@ -1577,12 +1571,15 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         // term should have been eliminated by super accessors
         assert(!(qual.symbol.isTrait && sym.isTerm && mix == tpnme.EMPTY), (qual.symbol, sym, mix))
 
-      transformCaseApply(tree,
+      if (isSimpleCaseApply(tree)) {
+        transformCaseApply(tree)
+      } else {
         qual match {
           case Super(_, mix)  => checkSuper(mix)
           case _              =>
         }
-      )
+        tree
+      }
     }
     private def transformIf(tree: If): Tree = {
       val If(cond, thenpart, elsepart) = tree
@@ -1706,7 +1703,10 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
           case TypeApply(fn, args) =>
             checkBounds(tree, NoPrefix, NoSymbol, fn.tpe.typeParams, args map (_.tpe))
-            transformCaseApply(tree, ())
+            if (isSimpleCaseApply(tree))
+              transformCaseApply(tree)
+            else
+              tree
 
           case x @ Apply(_, _)  =>
             transformApply(x)
@@ -1725,12 +1725,14 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
           case Ident(name) =>
             checkUndesiredProperties(sym, tree.pos)
-            transformCaseApply(tree,
-              if (name != nme.WILDCARD && name != tpnme.WILDCARD_STAR) {
-                assert(sym != NoSymbol, "transformCaseApply: name = " + name.debugString + " tree = " + tree + " / " + tree.getClass) //debug
-                enterReference(tree.pos, sym)
-              }
-            )
+            if (isSimpleCaseApply(tree)) {
+              abort("case factory methods are now always selected from prefix (since https://github.com/scala/scala/commit/76c06b4)")
+            }
+            if (name != nme.WILDCARD && name != tpnme.WILDCARD_STAR) {
+              assert(sym != NoSymbol, "transformCaseApply: name = " + name.debugString + " tree = " + tree + " / " + tree.getClass) //debug
+              enterReference(tree.pos, sym)
+            }
+            tree
 
           case x @ Select(_, _) =>
             transformSelect(x)
