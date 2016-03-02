@@ -1571,7 +1571,9 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         // term should have been eliminated by super accessors
         assert(!(qual.symbol.isTrait && sym.isTerm && mix == tpnme.EMPTY), (qual.symbol, sym, mix))
 
-      if (isSimpleCaseApply(tree)) {
+      // SI-9546 isHigherKinded excludes generic case classes which are instead considered when transforming
+      //         the enclosing `TypeApply`.
+      if (!tree.tpe.isHigherKinded && isSimpleCaseApply(tree)) {
         transformCaseApply(tree)
       } else {
         qual match {
@@ -1725,9 +1727,6 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
           case Ident(name) =>
             checkUndesiredProperties(sym, tree.pos)
-            if (isSimpleCaseApply(tree)) {
-              abort("case factory methods are now always selected from prefix (since https://github.com/scala/scala/commit/76c06b4)")
-            }
             if (name != nme.WILDCARD && name != tpnme.WILDCARD_STAR) {
               assert(sym != NoSymbol, "transformCaseApply: name = " + name.debugString + " tree = " + tree + " / " + tree.getClass) //debug
               enterReference(tree.pos, sym)
