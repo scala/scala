@@ -4,10 +4,10 @@
 var $panzoom = undefined;
 $(document).ready(function() {
     // Add zoom functionality to type inheritance diagram
-    $panzoom = $("#inheritance-diagram").panzoom({
+    $panzoom = $(".diagram-container > .diagram").panzoom({
         increment: 0.1,
         minScale: 1,
-        maxScale: 3,
+        maxScale: 7,
         transition: true,
         duration: 200,
         contain: 'invert',
