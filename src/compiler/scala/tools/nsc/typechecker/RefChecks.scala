@@ -1522,7 +1522,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         sym.isCase &&
         sym.name == nme.apply &&
         isClassTypeAccessible(tree) &&
-        !tree.tpe.resultType.typeSymbol.primaryConstructor.isLessAccessibleThan(tree.symbol)
+        !tree.tpe.finalResultType.typeSymbol.primaryConstructor.isLessAccessibleThan(tree.symbol)
     }
 
     private def transformCaseApply(tree: Tree) = {
@@ -1571,8 +1571,15 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         // term should have been eliminated by super accessors
         assert(!(qual.symbol.isTrait && sym.isTerm && mix == tpnme.EMPTY), (qual.symbol, sym, mix))
 
-      // SI-9546 isHigherKinded excludes generic case classes which are instead considered when transforming
-      //         the enclosing `TypeApply`.
+      // Rewrite eligible calls to monomorphic case companion apply methods to the equivalent constructor call.
+      //
+      // Note: for generic case classes the rewrite needs to be handled at the enclosing `TypeApply` to transform
+      // `TypeApply(Select(C, apply), targs)` to `Select(New(C[targs]), <init>)`. In case such a `TypeApply`
+      // was deemed ineligible for transformation (e.g. the case constructor was private), the refchecks transform
+      // will recurse to this point with `Select(C, apply)`, which will have a type `[T](...)C[T]`.
+      //
+      // We don't need to perform the check on the Select node, and `!isHigherKinded will guard against this
+      // redundant (and previously buggy, SI-9546) consideration.
       if (!tree.tpe.isHigherKinded && isSimpleCaseApply(tree)) {
         transformCaseApply(tree)
       } else {
