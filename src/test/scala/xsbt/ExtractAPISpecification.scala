@@ -56,12 +56,11 @@ class ExtractAPISpecification extends Specification {
     val src =
       """class A
         |class B
-        |class C { private class Inner1 extends A }
-        |class D { def foo: Unit = { class Inner2 extends B } }
-        |class E { def foo: Unit = { new B {} } }""".stripMargin
+        |class C { def foo: Unit = { class Inner2 extends B } }
+        |class D { def foo: Unit = { new B {} } }""".stripMargin
     val compilerForTesting = new ScalaCompilerForUnitTesting
     val apis = compilerForTesting.extractApisFromSrc(src).map(c => c.name -> c).toMap
-    apis.keys === Set("A", "B", "C", "D", "E")
+    apis.keys === Set("A", "B", "C", "D")
   }
 
   "flat extracted apis" in {
@@ -84,6 +83,16 @@ class ExtractAPISpecification extends Specification {
         |}""".stripMargin
     val fooClassApi2 = compileAndGetFooClassApi(src2)
     SameAPI(fooClassApi1, fooClassApi2) === true
+  }
+
+  "private classes" in {
+    val src =
+      """private class A
+        |class B { private class Inner1 extends A }
+        |""".stripMargin
+    val compilerForTesting = new ScalaCompilerForUnitTesting
+    val apis = compilerForTesting.extractApisFromSrc(src).map(c => c.name -> c).toMap
+    apis.keys === Set("A", "B", "B.Inner1")
   }
 
   def stableExistentialNames: Boolean = {
