@@ -19,14 +19,14 @@ import convert._
  *  Scala and Java collections using `asScala` and `asJava` methods.
  *
  *  The following conversions are supported via `asJava`, `asScala`
- *
- *  - `scala.collection.Iterable` <=> `java.lang.Iterable`
- *  - `scala.collection.Iterator` <=> `java.util.Iterator`
- *  - `scala.collection.mutable.Buffer` <=> `java.util.List`
- *  - `scala.collection.mutable.Set` <=> `java.util.Set`
- *  - `scala.collection.mutable.Map` <=> `java.util.Map`
- *  - `scala.collection.mutable.concurrent.Map` <=> `java.util.concurrent.ConcurrentMap`
- *
+ *{{{
+ *    scala.collection.Iterable               <=> java.lang.Iterable
+ *    scala.collection.Iterator               <=> java.util.Iterator
+ *    scala.collection.mutable.Buffer         <=> java.util.List
+ *    scala.collection.mutable.Set            <=> java.util.Set
+ *    scala.collection.mutable.Map            <=> java.util.Map
+ *    scala.collection.mutable.concurrent.Map <=> java.util.concurrent.ConcurrentMap
+ *}}}
  *  In all cases, converting from a source type to a target type and back
  *  again will return the original source object, e.g.
  *  {{{
@@ -40,22 +40,22 @@ import convert._
  *  The following conversions are also supported, but the
  *  direction from Scala to Java is done by the more specifically named methods:
  *  `asJavaCollection`, `asJavaEnumeration`, `asJavaDictionary`.
- *
- *  - `scala.collection.Iterable` <=> `java.util.Collection`
- *  - `scala.collection.Iterator` <=> `java.util.Enumeration`
- *  - `scala.collection.mutable.Map` <=> `java.util.Dictionary`
- *
+ *{{{
+ *    scala.collection.Iterable    <=> java.util.Collection
+ *    scala.collection.Iterator    <=> java.util.Enumeration
+ *    scala.collection.mutable.Map <=> java.util.Dictionary
+ *}}}
  *  In addition, the following one way conversions are provided via `asJava`:
- *
- *  - `scala.collection.Seq` => `java.util.List`
- *  - `scala.collection.mutable.Seq` => `java.util.List`
- *  - `scala.collection.Set` => `java.util.Set`
- *  - `scala.collection.Map` => `java.util.Map`
- *
+ *{{{
+ *    scala.collection.Seq         => java.util.List
+ *    scala.collection.mutable.Seq => java.util.List
+ *    scala.collection.Set         => java.util.Set
+ *    scala.collection.Map         => java.util.Map
+ *}}}
  *  The following one way conversion is provided via `asScala`:
- *
- *  - `java.util.Properties` => `scala.collection.mutable.Map`
- *
+ *{{{
+ *    java.util.Properties => scala.collection.mutable.Map
+ *}}}
  *  @since  2.8.1
  */
 object JavaConverters extends DecorateAsJava with DecorateAsScala
