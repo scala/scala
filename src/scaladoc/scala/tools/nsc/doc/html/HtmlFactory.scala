@@ -33,7 +33,6 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index, val reporter: Sc
     "class_comp.svg",
     "object_comp.svg",
     "trait_comp.svg",
-    "permalink.svg",
     "abstract_type.svg",
     "lato-v11-latin-100.eot",
     "lato-v11-latin-100.ttf",

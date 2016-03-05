@@ -60,8 +60,8 @@ $(document).ready(function()
 	diagrams.initHighlighting();
 
     $("button#diagram-fs").click(function() {
-        $("#inheritance-diagram-container").toggleClass("full-screen");
-        $("#inheritance-diagram-container > div.diagram").css({
+        $(".diagram-container").toggleClass("full-screen");
+        $(".diagram-container > div.diagram").css({
             height: $("svg").height() + "pt"
         });
 
@@ -155,7 +155,7 @@ diagrams.initHighlighting = function()
  */
 diagrams.resize = function() {
     // available width
-    var availableWidth = $("body").width() - 100;
+    var availableWidth = $(".diagram-container").width();
 
     $(".diagram-container").each(function() {
         // unregister click event on whole div
@@ -163,7 +163,7 @@ diagrams.resize = function() {
         var diagramWidth = $(".diagram", this).data("width");
         var diagramHeight = $(".diagram", this).data("height");
 
-        if(diagramWidth > availableWidth) {
+        if (diagramWidth > availableWidth) {
             // resize diagram
             var height = diagramHeight / diagramWidth * availableWidth;
             $(".diagram svg", this).width(availableWidth);
@@ -204,7 +204,7 @@ diagrams.toggle = function(container, dontAnimate)
 
         $("#diagram-controls", container).show();
 
-        $("#inheritance-diagram-container").on('mousewheel.focal', function(e) {
+        $(".diagram-container").on('mousewheel.focal', function(e) {
             e.preventDefault();
             var delta = e.delta || e.originalEvent.wheelDelta;
             var zoomOut = delta ? delta < 0 : e.originalEvent.deltaY > 0;

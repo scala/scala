@@ -53,10 +53,6 @@ body {
   text-decoration: none;
 }
 
-body.trait div#definition {
-  background-color: #2e6d82;
-}
-
 #types ol li > p {
   margin-top: 5px;
 }
@@ -71,8 +67,7 @@ body.trait div#definition {
   padding: 5px 0;
   padding: 0;
   margin: 0.5em;
-  border-radius: 0.2em;
-  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  min-height: 4.72em;
 }
 
 #definition > a > img {
@@ -86,7 +81,8 @@ body.trait div#definition {
 }
 
 #definition > h1 {
-  color: white;
+  float: left;
+  color: #103a51;
   display: inline-block;
   overflow: hidden;
   margin-top: 10px;
@@ -94,19 +90,28 @@ body.trait div#definition {
 }
 
 #definition h1 > a {
-  color: #fff !important;
+  color: #103a51 !important;
   text-decoration: none !important;
 }
 
+#template ol > li > span.permalink > a > i {
+  transform: rotate(-45deg);
+}
+
 #definition #owner {
-  color: #ffffff;
+  color: #103a51;
   padding-top: 1.3em;
   font-size: 0.8em;
   overflow: hidden;
 }
 
+#definition > h3 {
+  margin-top: 0.85em;
+  padding: 0;
+}
+
 #definition #owner > a {
-  color: #ffffff;
+  color: #103a51;
 }
 
 #definition #owner > a:hover {
@@ -114,14 +119,13 @@ body.trait div#definition {
 }
 
 #signature {
-  background-color:#c2d2dc;
+  background-color: #c2d2dc;
   min-height: 18px;
   font-size: 0.9em;
   padding: 8px;
-  width: 100%;
   color: #103a51;
-  border-bottom-left-radius: 0.2em;
-  border-bottom-right-radius: 0.2em;
+  border-radius: 0.2em;
+  margin: 0 0.5rem;
 }
 
 #signature > span.modifier_kind {
@@ -151,7 +155,7 @@ span.symbol > a {
 .toggleContainer .toggle {
   position: relative;
   color: #103a51;
-  margin-left: 2.3em;
+  margin-left: 0.3em;
   cursor: pointer;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -194,18 +198,6 @@ span.symbol > a {
 
 #memberfilter:hover > i.arrow {
   opacity: 1;
-}
-
-.value #definition {
-  background-color: #103A51; /* blue */
-}
-
-.type #definition {
-  background-color: rgba(49, 101, 85, 1); /* green */
-}
-
-.abstract.type #definition {
-  background-color: #447A90;
 }
 
 .big-circle {
@@ -254,12 +246,14 @@ body.abstract.type div.big-circle {
 
 #template {
   margin: 0.9em 0.75em 0.75em;
-  border-radius: 0.2em;
-  background-color: #fff;
-  -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
   padding-bottom: 0.5em;
-  overflow: hidden;
+}
+
+#template h3 {
+  color: #103a51;
+  height: 2em;
+  padding: 1em 1em 2em;
+  font-size: 1.2em;
 }
 
 #order {
@@ -267,7 +261,7 @@ body.abstract.type div.big-circle {
 }
 
 h3 {
-  color: white;
+  color: #103a51;
   padding: 5px 10px;
   font-size: 1em;
   font-weight: bold;
@@ -292,19 +286,8 @@ dl.attributes > dd {
   min-height: 15px;
 }
 
-#template .values > h3 {
-  color: #2C475C;
-  height: 2em;
-  padding: 1em 1em 2em;
-  font-size: 1.2em;
-}
-
 .values ol li:last-child {
   margin-bottom: 5px;
-}
-
-#template .types > h3 {
-  height: 18px;
 }
 
 #constructors > h3 {
@@ -337,26 +320,34 @@ dl.attributes > dd {
 
 /* Member cells */
 div.members > ol {
-  background-color: white;
   list-style: none;
-  padding: 0 10px;
 }
 
 div.members > ol > li {
   display: table;
   width: 100%;
   position: relative;
-  background-color: #e1e7ed;
+  background-color: #fff;
   border-radius: 0.2em;
   color: #103a51;
   padding: 5px 0 5px;
   margin-bottom: 0.4em;
-  min-height: 2.8em;
+  min-height: 3.7em;
+  border-left: 0 solid #72D0EB;
+  -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  transition: 0.1s;
 }
 
 div.members > ol >li.selected,
 div.members > ol > li:hover {
   background-color: #c2d2dc;
+}
+
+div.members > ol >li[fullComment=yes].selected,
+div.members > ol > li[fullComment=yes]:hover {
+  cursor: pointer;
+  border-left: 0.25em solid #72D0EB;
 }
 
 div.members > ol > li:last-child {
@@ -422,6 +413,16 @@ span.symbol > span.name {
   font-weight: bold;
 }
 
+#types > ol > li > span.symbol > span.result {
+  display: none;
+}
+
+#types > ol > li > span.symbol > span.result.alias,
+#types > ol > li:hover > span.symbol > span.result,
+#types > ol > li.open > span.symbol > span.result {
+  display: inline;
+}
+
 .symbol > .implicit {
   display: inline-block;
   font-weight: bold;
@@ -467,7 +468,7 @@ i.unfold-arrow {
 
 #template .values .name {
   font-weight: 600;
-  color: darkblue;
+  color: #315479;
 }
 
 #template .types .name {
@@ -510,31 +511,35 @@ div#definition > h4#signature > span.modifier_kind > i.unfold-arrow,
 
 #definition .morelinks {
   text-align: right;
-  position: absolute;
-  top: 2.95em;
-  right: 1em;
-  width: 450px;
   font-family: 'Source Sans Pro', 'Helvetica Neue', Arial, sans-serif;
 }
 
 #definition .morelinks a {
-  color: #EBEBEB;
+  color: #103a51;
 }
 
 #template .members li .permalink {
   position: absolute;
-  top: 5px;
-  right: 5px;
+  left: 0.25em;
+  top: 0.95em;
 }
 
 #definition .permalink {
-  position: absolute;
-  top: 10px;
-  right: 15px;
+  display: none;
+  color: black;
 }
 
 #definition .permalink a {
-  color: #EBEBEB;
+  color: #103a51;
+  transform: rotate(-45deg);
+}
+
+#definition > h1 > span > a > i {
+  font-size: 1.4rem;
+}
+
+#template ol > li > span.permalink > a > i {
+  color: #fff;
 }
 
 #template .members li .permalink,
@@ -723,12 +728,23 @@ div.fullcomment .block {
 }
 
 div.fullcommenttop .block {
+  position: relative;
   padding: 1em;
   margin: 0.5em 0;
   border-radius: 0.2em;
   background-color: #fff;
   -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.1);
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+div.fullcommenttop .toggleContainer {
+  border-left: 0 solid #72D0EB;
+  transition: 0.1s;
+  cursor: pointer;
+}
+
+div.fullcommenttop .toggleContainer:hover {
+  border-left: 0.25em solid #72D0EB;
 }
 
 div#comment,
@@ -843,12 +859,9 @@ div.fullcomment dl.paramcmts > dd {
   margin: 0.8em;
   border-radius: 0.2em;
   background-color: #364550;
-  -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
   position: relative;
-  margin-bottom: -1em;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
 }
 
 #mbrsel > div.toggle {
@@ -881,6 +894,12 @@ div.fullcomment dl.paramcmts > dd {
   left: 0;
   top: 0;
   color: #fff;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 #mbrsel > div.toggle.open > i {
@@ -1029,7 +1048,7 @@ div.fullcomment dl.paramcmts > dd {
 
 /* Media query rules for smaller viewport */
 @media only screen /* Large screen with a small window */
-and (max-width: 560px)
+and (max-width: 650px)
 ,
 screen /* HiDPI device like Nexus 5 */
 and (max-device-width: 360px)
@@ -1062,16 +1081,23 @@ and (-webkit-device-pixel-ratio: 2)
     height: 6em;
   }
 
-  #definition .morelinks {
-    text-align: left;
-    left: 7.2em;
-    font-size: 0.8em;
-    top: auto;
-    bottom: 0.5em;
+  #definition > h1 {
+    font-size: 1em;
+    margin-right: 0.3em;
   }
 
-  #signature {
-    top: 6.7em;
+  #definition > h3 {
+    float: left;
+    margin: 0.3em 0;
+  }
+
+  #definition > #owner {
+    padding-top: 2.6em;
+  }
+
+  #definition .morelinks {
+    text-align: left;
+    font-size: 0.8em;
   }
 
   .big-circle {

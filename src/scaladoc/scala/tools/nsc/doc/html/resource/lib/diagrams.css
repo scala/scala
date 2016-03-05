@@ -33,6 +33,10 @@
   display: none;
 }
 
+.diagram-container > span.toggle {
+  z-index: 9;
+}
+
 .diagram {
   overflow: hidden;
   padding-top:15px;
@@ -73,7 +77,7 @@
   z-index: 2;
 }
 
-#inheritance-diagram-container.full-screen {
+.diagram-container.full-screen {
   position: fixed !important;
   margin: 0;
   border-radius: 0;
@@ -85,11 +89,11 @@
   z-index: 10000;
 }
 
-#inheritance-diagram-container.full-screen > span.toggle {
+.diagram-container.full-screen > span.toggle {
   display: none;
 }
 
-#inheritance-diagram-container.full-screen > div.diagram {
+.diagram-container.full-screen > div.diagram {
   position: absolute;
   top: 0; right: 0; bottom: 0; left: 0;
   margin: auto;

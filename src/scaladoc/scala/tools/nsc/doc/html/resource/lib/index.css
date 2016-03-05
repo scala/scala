@@ -413,14 +413,16 @@ div#content-container > div#content {
   -webkit-overflow-scrolling: touch;
   display: block;
   overflow-y: auto;
-  margin: 5em auto 0;
+  max-width: 1140px;
+  margin: 4em auto 0;
 }
 
 div#content-container > div#subpackage-spacer {
   float: right;
   height: 100%;
-  margin: 0.5rem 0.5rem 0 0.5em;
+  margin: 1.1rem 0.5rem 0 0.5em;
   font-size: 0.8em;
+  min-width: 8rem;
 }
 
 div#packages > h1 {
@@ -440,6 +442,10 @@ div#packages > ul > li {
   padding-left: 2em;
 }
 
+div#packages > ul > li.current-entities {
+  margin: 0.3rem 0;
+}
+
 div#packages > ul > li.current:hover {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -449,39 +455,41 @@ div#packages > ul > li.current:hover {
   cursor: pointer;
 }
 
-div#packages > ul > li > *:nth-child(1),
-div#packages > ul > li > *:nth-child(2) {
+div#packages > ul > li.current-entities > *:nth-child(1),
+div#packages > ul > li.current-entities > *:nth-child(2) {
   float: left;
   display: inline;
-  height: 1em;
-  width: 1em;
-  margin: 2px 0 0;
+  height: 1rem;
+  width: 1rem;
+  margin: 1px 0 0 0;
   cursor: pointer;
 }
 
 div#packages > ul > li > a.class {
   background: url("class.svg") no-repeat center;
-  background-size: 0.9em;
+  background-size: 0.9rem;
 }
 
 div#packages > ul > li > a.trait {
   background: url("trait.svg") no-repeat center;
-  background-size: 0.9em;
+  background-size: 0.9rem;
 }
 
 div#packages > ul > li > a.object {
   background: url("object.svg") no-repeat center;
-  background-size: 0.9em;
+  background-size: 0.9rem;
 }
 
 div#packages > ul > li > a.abstract.type {
   background: url("abstract_type.svg") no-repeat center;
-  background-size: 0.9em;
+  background-size: 0.9rem;
 }
 
 div#packages > ul > li > a {
   text-decoration: none !important;
-  margin-left: 0.1em;
+  margin-left: 1px;
+  font-family: "Source Code Pro";
+  font-size: 0.9em;
 }
 
 /* Indentation levels for packages */
