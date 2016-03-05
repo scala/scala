@@ -54,7 +54,7 @@ class HashMap[A, +B] extends AbstractMap[A, B]
     get0(key, computeHash(key), 0)
 
   override def updated [B1 >: B] (key: A, value: B1): HashMap[A, B1] =
-    updated0(key, computeHash(key), 0, value, null, null)
+    updated0(key, computeHash(key), 0, value, (key -> value), null)
 
   override def + [B1 >: B] (kv: (A, B1)): HashMap[A, B1] =
     updated0(kv._1, computeHash(kv._1), 0, kv._2, kv, null)
