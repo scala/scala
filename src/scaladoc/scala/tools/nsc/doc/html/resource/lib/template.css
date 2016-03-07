@@ -40,7 +40,7 @@ body {
   text-align: center;
   color: #858484;
   bottom: 0;
-  height: 20px;
+  min-height: 20px;
   margin: 0 1em 0.5em;
 }
 
@@ -367,7 +367,7 @@ div.members > ol > li:last-child {
 }
 
 .signature {
-  font-family: "Source Code Pro";
+  font-family: "Source Code Pro", "Monaco", "Ubuntu Mono Regular", "Lucida Console", monospace;
   font-size: 0.8rem;
   line-height: 18px;
   clear: both;
@@ -375,7 +375,7 @@ div.members > ol > li:last-child {
 }
 
 .modifier_kind {
-  font-family: "Source Code Pro";
+  font-family: "Source Code Pro", "Monaco", "Ubuntu Mono Regular", "Lucida Console", monospace;
   font-size: 0.8rem;
   padding-right: 0.5em;
   text-align: right;
@@ -385,7 +385,7 @@ div.members > ol > li:last-child {
 }
 
 .symbol {
-  font-family: "Source Code Pro";
+  font-family: "Source Code Pro", "Monaco", "Ubuntu Mono Regular", "Lucida Console", monospace;
 }
 
 a > .symbol > .name {
@@ -511,7 +511,7 @@ div#definition > h4#signature > span.modifier_kind > i.unfold-arrow,
 
 #definition .morelinks {
   text-align: right;
-  font-family: 'Source Sans Pro', 'Helvetica Neue', Arial, sans-serif;
+  font-family: "Source Code Pro", "Monaco", "Ubuntu Mono Regular", "Lucida Console", monospace;
 }
 
 #definition .morelinks a {
@@ -593,7 +593,7 @@ div#definition > h4#signature > span.modifier_kind > i.unfold-arrow,
   background-color: #fff;
   margin: 5px 0;
   display: block;
-  font-family: "Source Code Pro";
+  font-family: "Source Code Pro", "Monaco", "Ubuntu Mono Regular", "Lucida Console", monospace;
   border-radius: 0.2em;
   overflow-x: auto;
 }

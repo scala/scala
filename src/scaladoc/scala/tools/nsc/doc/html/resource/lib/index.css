@@ -412,7 +412,7 @@ div#content-container {
 div#content-container > div#content {
   -webkit-overflow-scrolling: touch;
   display: block;
-  overflow-y: auto;
+  overflow-y: hidden;
   max-width: 1140px;
   margin: 4em auto 0;
 }
@@ -488,7 +488,7 @@ div#packages > ul > li > a.abstract.type {
 div#packages > ul > li > a {
   text-decoration: none !important;
   margin-left: 1px;
-  font-family: "Source Code Pro";
+  font-family: "Source Code Pro", "Monaco", "Ubuntu Mono Regular", "Lucida Console", monospace;
   font-size: 0.9em;
 }
 
@@ -678,7 +678,7 @@ div#results-content > div#member-results > ul.entities > li > ul.members > li > 
 div#results-content > div#entity-results > ul.entities > li > ul.members > li > span.kind,
 div#results-content > div#entity-results > ul.entities > li > ul.members > li > span.tail {
   margin-right: 0.6em;
-  font-family: "Source Code Pro";
+  font-family: "Source Code Pro", "Monaco", "Ubuntu Mono Regular", "Lucida Console", monospace;
 }
 
 div#results-content > div#member-results > ul.entities > li > ul.members > li > span.kind {
@@ -688,7 +688,7 @@ div#results-content > div#member-results > ul.entities > li > ul.members > li > 
 div#results-content > div#member-results > ul.entities > li > ul.members > li > a.label,
 div#results-content > div#entity-results > ul.entities > li > ul.members > li > a.label {
   color: #2C3D9B;
-  font-family: "Source Code Pro";
+  font-family: "Source Code Pro", "Monaco", "Ubuntu Mono Regular", "Lucida Console", monospace;
 }
 
 /** Scrollpane settings needed for jquery.scrollpane.min.js */

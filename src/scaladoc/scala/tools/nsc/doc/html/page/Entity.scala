@@ -173,7 +173,7 @@ trait EntityPage extends HtmlPage {
     </div>
 
   val valueMembers =
-    tpl.methods ++ tpl.values ++ tpl.templates.filter(x => x.isObject || x.isPackage) sorted
+    tpl.methods ++ tpl.values ++ tpl.templates.filter(x => x.isObject) sorted
 
   val (absValueMembers, nonAbsValueMembers) =
     valueMembers partition (_.isAbstract)
@@ -232,6 +232,7 @@ trait EntityPage extends HtmlPage {
 
       { memberToCommentHtml(tpl, tpl.inTemplate, isSelf = true) }
 
+      { if (valueMembers.filterNot(_.kind == "package").isEmpty) NodeSeq.Empty else
       <div id="mbrsel">
         <div class='toggle'></div>
         <div id='memberfilter'>
@@ -241,25 +242,25 @@ trait EntityPage extends HtmlPage {
           </span>
           <i class="clear material-icons">&#xE14C;</i>
         </div>
-          <div id='filterby'>
-            <div id="order">
-              <span class="filtertype">Ordering</span>
-              <ol>
-                {
-                  if (!universe.settings.docGroups.value || (tpl.members.map(_.group).distinct.length == 1))
-                    NodeSeq.Empty
-                  else
-                    <li class="group out"><span>Grouped</span></li>
-                }
-                <li class="alpha in"><span>Alphabetic</span></li>
-                {
-                  if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty)
-                    NodeSeq.Empty
-                  else
-                    <li class="inherit out"><span>By Inheritance</span></li>
-                }
-              </ol>
-            </div>
+        <div id='filterby'>
+          <div id="order">
+            <span class="filtertype">Ordering</span>
+            <ol>
+              {
+                if (!universe.settings.docGroups.value || (tpl.members.map(_.group).distinct.length == 1))
+                  NodeSeq.Empty
+                else
+                  <li class="group out"><span>Grouped</span></li>
+              }
+              <li class="alpha in"><span>Alphabetic</span></li>
+              {
+                if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty)
+                  NodeSeq.Empty
+                else
+                  <li class="inherit out"><span>By Inheritance</span></li>
+              }
+            </ol>
+          </div>
           { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty) NodeSeq.Empty else
             {
               if (!tpl.linearizationTemplates.isEmpty)
@@ -303,6 +304,7 @@ trait EntityPage extends HtmlPage {
           }
         </div>
       </div>
+      }
 
       <div id="template">
         <div id="allMembers">
@@ -333,7 +335,6 @@ trait EntityPage extends HtmlPage {
               <ol>
                 {
                   concValueMembers
-                    .filter(_.kind != "package")
                     .map(memberToHtml(_, tpl))
                 }
               </ol>
