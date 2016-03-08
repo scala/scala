@@ -89,18 +89,29 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
    * useful to compile macros, which cannot be used in the same compilation run that
    * defines them.
    *
+   * The `reuseCompilerInstance` parameter controls whether the same Scala compiler instance
+   * is reused between compiling source groups. Separate compiler instances can be used to
+   * test stability of API representation (with respect to pickling) or to test handling of
+   * binary dependencies.
+   *
    * The sequence of temporary files corresponding to passed snippets and analysis
    * callback is returned as a result.
    */
-  private def compileSrcs(groupedSrcs: List[List[String]]): (Seq[File], TestCallback) = {
+  private def compileSrcs(groupedSrcs: List[List[String]],
+    reuseCompilerInstance: Boolean): (Seq[File], TestCallback) = {
     withTemporaryDirectory { temp =>
       val analysisCallback = new TestCallback(nameHashing)
       val classesDir = new File(temp, "classes")
       classesDir.mkdir()
 
-      val compiler = prepareCompiler(classesDir, analysisCallback, classesDir.toString)
+      lazy val commonCompilerInstance = prepareCompiler(classesDir, analysisCallback, classesDir.toString)
 
       val files = for ((compilationUnit, unitId) <- groupedSrcs.zipWithIndex) yield {
+        // use a separate instance of the compiler for each group of sources to
+        // have an ability to test for bugs in instability between source and pickled
+        // representation of types
+        val compiler = if (reuseCompilerInstance) commonCompilerInstance else
+          prepareCompiler(classesDir, analysisCallback, classesDir.toString)
         val run = new compiler.Run
         val srcFiles = compilationUnit.toSeq.zipWithIndex map {
           case (src, i) =>
@@ -119,7 +130,7 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
   }
 
   private def compileSrcs(srcs: String*): (Seq[File], TestCallback) = {
-    compileSrcs(List(srcs.toList))
+    compileSrcs(List(srcs.toList), reuseCompilerInstance = true)
   }
 
   private def prepareSrcFile(baseDir: File, fileName: String, src: String): File = {
