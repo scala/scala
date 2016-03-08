@@ -25,16 +25,16 @@ class TryTests extends MinimalScalaTest {
     }
 
     "catch errors if the filter includes them" in {
-      val catchMyError: Try.ExceptionFilter = { case _: MyError => true }
+      val includeMyError: Try.ExceptionFilter = { case _: MyError => true }
 
-      Try[Int] { throw er}(Try.catchNonFatal) mustEqual Failure(er)
+      Try.withFilter(includeMyError) { throw er } mustEqual Failure(er)
     }
 
-    "not catch errors if the filter excludes them" in {
-      val dontCatchMyException: Try.ExceptionFilter = { case _: MyException => false }
+    "not catch exceptions if the filter excludes them" in {
+      val excludeMyException: Try.ExceptionFilter = { case _: MyException => false }
 
       intercept[MyException] {
-        Try[Int] { throw new MyException }(dontCatchMyException orElse Try.defaultFilter)
+        Try.withFilter[Int](excludeMyException orElse Try.defaultFilter) { throw new MyException }
       }
     }
   }

@@ -212,7 +212,7 @@ object Try {
    * method will ensure any non-fatal exception is caught and a
    * `Failure` object is returned.
    */
-  def apply[T](r: => T): Try[T] = apply(defaultFilter)(r)
+  def apply[T](r: => T): Try[T] = withFilter(defaultFilter)(r)
 
   /** Constructs a `Try` using the by-name parameter with a customised ExceptionFilter.
    * This method will ensure any filtered exception is caught and a
@@ -233,7 +233,7 @@ object Try {
    * Please note that the ordering of the composition is important when mixing exclusion and inclusion filters.
    * Usually best practice is to provide exclusions first and inclusions last.
    */
-  def apply[T](filter: ExceptionFilter)(r: => T): Try[T] =
+  def withFilter[T](filter: ExceptionFilter)(r: => T): Try[T] =
     try Success(r) catch {
       case ex if filter(ex) => Failure(ex)
     }
