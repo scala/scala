@@ -10,17 +10,11 @@ package scala
 package collection.parallel.mutable
 
 import scala.collection.mutable.ArraySeq
-import scala.collection.mutable.UnrolledBuffer
+import scala.collection.mutable.DoublingUnrolledBuffer
 import scala.collection.mutable.UnrolledBuffer.Unrolled
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.Task
 import scala.reflect.ClassTag
-
-// Todo -- revisit whether inheritance is the best way to achieve this functionality
-private[mutable] class DoublingUnrolledBuffer[T](implicit t: ClassTag[T]) extends UnrolledBuffer[T]()(t) {
-  override def calcNextLength(sz: Int) = if (sz < 10000) sz * 2 else sz
-  protected override def newUnrolled = new Unrolled[T](0, new Array[T](4), null, this)
-}
 
 
 /** An array combiner that uses doubling unrolled buffers to store elements. */

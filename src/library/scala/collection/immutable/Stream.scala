@@ -198,8 +198,7 @@ import scala.language.implicitConversions
  *  @define orderDependentFold
  *  @define willTerminateInf Note: lazily evaluated; will terminate for infinite-sized collections.
  */
-@deprecatedInheritance("This class will be sealed.", "2.11.0")
-abstract class Stream[+A] extends AbstractSeq[A]
+sealed abstract class Stream[+A] extends AbstractSeq[A]
                              with LinearSeq[A]
                              with GenericTraversableTemplate[A, Stream]
                              with LinearSeqOptimized[A, Stream[A]]
