@@ -567,10 +567,64 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
     def varDecl(pos: Position, mods: Modifiers, tpt: Tree, name: TermName): ValDef = {
       val tpt1 = optArrayBrackets(tpt)
-      if (in.token == EQUALS && !mods.isParameter) skipTo(COMMA, SEMI)
+
+      /** Tries to detect final static literals syntactically and returns a constant type replacement */
+      def optConstantTpe(): Tree = {
+        in.nextToken()
+
+        def constantTpe(lit: Any): Tree =
+          try TypeTree(ConstantType(Constant(lit)))
+          finally in.nextToken()
+
+        def byType(value: Long): Tree =
+          tpt.tpe match {
+            case ByteTpe => constantTpe(value.toByte)
+            case CharTpe => constantTpe(value.toChar)
+            case ShortTpe => constantTpe(value.toShort)
+            case IntTpe => constantTpe(value.toInt)
+            case LongTpe => constantTpe(value.toLong)
+            case _ => tpt1
+          }
+
+        if (mods.hasFlag(Flags.STATIC) && mods.isFinal) {
+          def lit(negate: Boolean): Tree =
+            if (in.lookaheadToken == SEMI)
+              in.token match {
+                case TRUE if tpt.tpe == BooleanTpe => constantTpe(!negate)
+                case FALSE if tpt.tpe == BooleanTpe => constantTpe(negate)
+                case CHARLIT => byType(in.name.charAt(0))
+                case INTLIT => byType(in.intVal(negate))
+                case LONGLIT if tpt.tpe == LongTpe => constantTpe(in.intVal(negate))
+                case FLOATLIT if tpt.tpe == FloatTpe => constantTpe(in.floatVal(negate).toFloat)
+                case DOUBLELIT if tpt.tpe == DoubleTpe => constantTpe(in.floatVal(negate))
+                case STRINGLIT =>
+                  tpt match {
+                    case Ident(TypeName("String")) => constantTpe(in.name.toString)
+                    case _ => tpt1
+                  }
+                case _ => tpt1
+              }
+            else tpt1
+
+          in.token match {
+            case MINUS | BANG =>
+              in.nextToken()
+              lit(negate = true)
+            case other => lit(negate = false)
+          }
+        } else tpt1
+      }
+
+      val tpt2: Tree =
+        if (in.token == EQUALS && !mods.isParameter) {
+          val res = optConstantTpe()
+          skipTo(COMMA, SEMI)
+          res
+        } else tpt1
+
       val mods1 = if (mods.isFinal) mods &~ Flags.FINAL else mods | Flags.MUTABLE
       atPos(pos) {
-        ValDef(mods1, name, tpt1, blankExpr)
+        ValDef(mods1, name, tpt2, blankExpr)
       }
     }
 
