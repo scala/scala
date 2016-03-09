@@ -38,8 +38,6 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
     && (!sym.hasFlag(DEFERRED | SUPERACCESSOR) || (sym hasFlag lateDEFERRED))
   )
 
-  def implClassPhase = currentRun.erasurePhase.next
-
   def transformMixinInfo(tp: Type): Type = tp match {
     case ClassInfoType(parents, decls, clazz) if clazz.isPackageClass || !clazz.isJavaDefined =>
 

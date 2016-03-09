@@ -80,12 +80,6 @@ object ReflectionUtils {
     accessor invoke outer
   }
 
-  def isTraitImplementation(fileName: String) = fileName endsWith "$class.class"
-
-  def scalacShouldntLoadClassfile(fileName: String) = isTraitImplementation(fileName)
-
-  def scalacShouldntLoadClass(name: scala.reflect.internal.SymbolTable#Name) = scalacShouldntLoadClassfile(name + ".class")
-
   object PrimitiveOrArray {
     def unapply(jclazz: jClass[_]) = jclazz.isPrimitive || jclazz.isArray
   }
