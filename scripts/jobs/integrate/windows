@@ -9,7 +9,7 @@ export ANT_OPTS="-Dfile.encoding=UTF-8 -server -XX:+AggressiveOpts -XX:+UseParNe
 PATH=/cygdrive/c/apache-ant-1.9.6/bin:$PATH
 
 ant \
-  -Dstarr.version=2.11.7 \
+  -Dstarr.version=2.11.8 \
   -Dscalac.args.optimise=-optimise \
   -Dlocker.skip=1 \
   test
