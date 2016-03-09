@@ -2773,7 +2773,15 @@ self =>
       val annots = annotations(skipNewLines = true)
       val pos    = caseAwareTokenOffset
       val mods   = modifiers() withAnnotations annots
-      tmplDef(pos, mods)
+      // We need to come up with a more principled way to communicate the ability for
+      // exhaustiveness checks to the pattern matcher instead of abusing various flag
+      // combinations that need to be undone again in a later phase.
+      // It should be possible to address both Java-defined and Scala-defined enums with a simple
+      // check for the JAVA_ENUM flag.
+      val mods1 =
+        if (mods.hasAnnotationNamed("enum")) mods | Flags.JAVA_ENUM | Flags.SEALED | Flags.FINAL
+        else mods
+      tmplDef(pos, mods1)
     }
 
     /** {{{
@@ -2828,9 +2836,8 @@ self =>
           val (constrMods, vparamss) =
             if (mods.isTrait) (Modifiers(Flags.TRAIT), List())
             else (accessModifierOpt(), paramClauses(name, classContextBounds, ofCaseClass = mods.isCase))
-          var mods1 = mods
-          val template = templateOpt(mods1, name, constrMods withAnnotations constrAnnots, vparamss, tstart)
-          val result = gen.mkClassDef(mods1, name, tparams, template)
+          val template = templateOpt(mods, name, constrMods withAnnotations constrAnnots, vparamss, tstart)
+          val result = gen.mkClassDef(mods, name, tparams, template)
           // Context bounds generate implicit parameters (part of the template) with types
           // from tparams: we need to ensure these don't overlap
           if (!classContextBounds.isEmpty)
@@ -2970,6 +2977,15 @@ self =>
           (List(), self, body)
         }
       )
+
+      val newParents =
+        if (mods.hasFlag(Flags.JAVA_ENUM)) {
+          val enumParent = AppliedTypeTree(Ident(definitions.JavaEnumClass.name), List(Ident(name)))
+          enumParent :: parents
+        } else {
+          parents
+        }
+
       def anyvalConstructor() = (
         // Not a well-formed constructor, has to be finished later - see note
         // regarding AnyVal constructor in AddInterfaces.
@@ -2977,14 +2993,14 @@ self =>
       )
       val parentPos = o2p(in.offset)
       val tstart1 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
-
+      val newConstrMods = constrMods | (mods & Flags.JAVA_ENUM).flags
       atPos(tstart1) {
         // Exclude only the 9 primitives plus AnyVal.
         if (inScalaRootPackage && ScalaValueClassNames.contains(name))
           Template(parents, self, anyvalConstructor :: body)
         else
-          gen.mkTemplate(gen.mkParents(mods, parents, parentPos),
-                         self, constrMods, vparamss, body, o2p(tstart))
+          gen.mkTemplate(gen.mkParents(mods, newParents, parentPos),
+                         self, newConstrMods, vparamss, body, o2p(tstart))
       }
     }
 

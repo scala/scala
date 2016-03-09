@@ -1,15 +1,124 @@
-test Test1 was successful
-test Test2 was successful
-test Test3 was successful
-test Test4 was successful
+enums.scala:23: warning: match may not be exhaustive.
+It would fail on the following inputs: ConstructorWeek(), Friday, Monday, Thursday, Tuesday, Wednesday
+  def isWeekendMissing = this match {
+                         ^
+enums.scala:45: warning: match may not be exhaustive.
+It would fail on the following inputs: $anon(), $anon(), $anon(), Friday, MethodWeek(), Monday, Thursday, Tuesday, Wednesday
+  def isWeekendMissing = this match {
+                         ^
+enums.scala:61: warning: match may not be exhaustive.
+It would fail on the following inputs: $anon(), $anon(), $anon(), ArgNamedWeek(), Friday, Monday, Thursday, Tuesday, Wednesday
+  def isWeekendMissing = this match {
+                         ^
+enums.scala:77: warning: match may not be exhaustive.
+It would fail on the following inputs: $anon(), $anon(), $anon(), CaseWeek(_), Friday, Monday, Thursday, Tuesday, Wednesday
+  def isWeekendCase = this match {
+                      ^
+enums.scala:81: warning: match may not be exhaustive.
+It would fail on the following inputs: $anon(), $anon(), $anon(), CaseWeek(_), Friday, Monday, Thursday, Tuesday, Wednesday
+  def isWeekendMissing = this match {
+                         ^
+enums.scala:163: warning: match may not be exhaustive.
+It would fail on the following inputs: Friday, Monday, Thursday, Tuesday, Wednesday, Week()
+  def isWeekendMissing(week: Week) = week match {
+                                     ^
+==== enum Empty ====
+true
+16401
+FINAL PUBLIC
+class java.lang.Enum
+List()
+List(private Empty(java.lang.String,int))
+List(public static Empty Empty.valueOf(java.lang.String), public static Empty[] Empty.values())
+List(private static final Empty[] Empty.$VALUES)
+List()
 
-D1.ValueSet(North, East)
-D2.ValueSet(North, East)
-D1.ValueSet(North, East, West)
-D2.ValueSet(North, East, West)
-List(101)
-List(101)
-D1.ValueSet(North, East)
-D2.ValueSet(North, East)
-WeekDays.ValueSet(Tue, Wed, Thu, Fri)
+==== enum ReallyEmpty ====
+true
+16401
+FINAL PUBLIC
+class java.lang.Enum
+List()
+List(private ReallyEmpty(java.lang.String,int))
+List(public static ReallyEmpty ReallyEmpty.valueOf(java.lang.String), public static ReallyEmpty[] ReallyEmpty.values())
+List(private static final ReallyEmpty[] ReallyEmpty.$VALUES)
+List()
 
+==== enum Week ====
+true
+16401
+FINAL PUBLIC
+class java.lang.Enum
+List()
+List(private Week(java.lang.String,int))
+List(public static Week Week.valueOf(java.lang.String), public static Week[] Week.values())
+List(private static final Week[] Week.$VALUES, public static final Week Week.Friday, public static final Week Week.Monday, public static final Week Week.Saturday, public static final Week Week.Sunday, public static final Week Week.Thursday, public static final Week Week.Tuesday, public static final Week Week.Wednesday)
+true
+List(Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday)
+true
+true
+true
+true
+
+==== enum ConstructorWeek ====
+true
+16401
+FINAL PUBLIC
+class java.lang.Enum
+List()
+List(private ConstructorWeek(java.lang.String,int,boolean))
+List(public boolean ConstructorWeek.isWeekend(), public boolean ConstructorWeek.isWeekendMissing(), public static ConstructorWeek ConstructorWeek.valueOf(java.lang.String), public static ConstructorWeek[] ConstructorWeek.values())
+List(private static final ConstructorWeek[] ConstructorWeek.$VALUES, public static final ConstructorWeek ConstructorWeek.Friday, public static final ConstructorWeek ConstructorWeek.Monday, public static final ConstructorWeek ConstructorWeek.Saturday, public static final ConstructorWeek ConstructorWeek.Sunday, public static final ConstructorWeek ConstructorWeek.Thursday, public static final ConstructorWeek ConstructorWeek.Tuesday, public static final ConstructorWeek ConstructorWeek.Wednesday, private final boolean ConstructorWeek.isWeekend)
+true
+List(Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday)
+true
+true
+(List(Saturday, Sunday),List(Monday, Tuesday, Wednesday, Thursday, Friday))
+
+==== enum MethodWeek ====
+true
+16385
+PUBLIC
+class java.lang.Enum
+List()
+List(public MethodWeek(java.lang.String,int))
+List(public boolean MethodWeek.isGoodDay(), public boolean MethodWeek.isWeekend(), public boolean MethodWeek.isWeekendMissing(), public static MethodWeek MethodWeek.valueOf(java.lang.String), public static MethodWeek[] MethodWeek.values())
+List(private static final MethodWeek[] MethodWeek.$VALUES, public static final MethodWeek MethodWeek.Friday, public static final MethodWeek MethodWeek.Monday, public static final MethodWeek MethodWeek.Saturday, public static final MethodWeek MethodWeek.Sunday, public static final MethodWeek MethodWeek.Thursday, public static final MethodWeek MethodWeek.Tuesday, public static final MethodWeek MethodWeek.Wednesday)
+true
+List(Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday)
+true
+true
+(List(Saturday, Sunday),List(Monday, Tuesday, Wednesday, Thursday, Friday))
+(List(Friday, Saturday, Sunday),List(Monday, Tuesday, Wednesday, Thursday))
+
+==== enum ArgNamedWeek ====
+true
+16385
+PUBLIC
+class java.lang.Enum
+List()
+List(public ArgNamedWeek(java.lang.String,int,boolean))
+List(public boolean ArgNamedWeek.isGoodDay(), public boolean ArgNamedWeek.isWeekend(), public boolean ArgNamedWeek.isWeekendMissing(), public static ArgNamedWeek ArgNamedWeek.valueOf(java.lang.String), public static ArgNamedWeek[] ArgNamedWeek.values())
+List(private static final ArgNamedWeek[] ArgNamedWeek.$VALUES, public static final ArgNamedWeek ArgNamedWeek.Friday, public static final ArgNamedWeek ArgNamedWeek.Monday, public static final ArgNamedWeek ArgNamedWeek.Saturday, public static final ArgNamedWeek ArgNamedWeek.Sunday, public static final ArgNamedWeek ArgNamedWeek.Thursday, public static final ArgNamedWeek ArgNamedWeek.Tuesday, public static final ArgNamedWeek ArgNamedWeek.Wednesday, private final boolean ArgNamedWeek.isWeekend)
+true
+List(Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday)
+true
+true
+(List(Saturday, Sunday),List(Monday, Tuesday, Wednesday, Thursday, Friday))
+(List(Friday, Saturday, Sunday),List(Monday, Tuesday, Wednesday, Thursday))
+
+==== enum CaseWeek ====
+true
+16385
+PUBLIC
+class java.lang.Enum
+List(interface scala.Product, interface scala.Serializable)
+List(public CaseWeek(java.lang.String,int,boolean))
+List(public static CaseWeek CaseWeek.apply(java.lang.String,int,boolean), public boolean CaseWeek.canEqual(java.lang.Object), public CaseWeek CaseWeek.copy(java.lang.String,int,boolean), public java.lang.String CaseWeek.copy$default$1(), public int CaseWeek.copy$default$2(), public boolean CaseWeek.copy$default$3(), public boolean CaseWeek.isGoodDay(), public boolean CaseWeek.isWeekend(), public boolean CaseWeek.isWeekendCase(), public boolean CaseWeek.isWeekendMissing(), public int CaseWeek.productArity(), public java.lang.Object CaseWeek.productElement(int), public scala.collection.Iterator CaseWeek.productIterator(), public java.lang.String CaseWeek.productPrefix(), public static scala.Option CaseWeek.unapply(CaseWeek), public static CaseWeek CaseWeek.valueOf(java.lang.String), public static CaseWeek[] CaseWeek.values())
+List(private static final CaseWeek[] CaseWeek.$VALUES, public static final CaseWeek CaseWeek.Friday, public static final CaseWeek CaseWeek.Monday, public static final CaseWeek CaseWeek.Saturday, public static final CaseWeek CaseWeek.Sunday, public static final CaseWeek CaseWeek.Thursday, public static final CaseWeek CaseWeek.Tuesday, public static final CaseWeek CaseWeek.Wednesday, private final boolean CaseWeek.isWeekend, private final java.lang.String CaseWeek.name, private final int CaseWeek.ordinal)
+true
+List(Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday)
+true
+true
+(List(Saturday, Sunday),List(Monday, Tuesday, Wednesday, Thursday, Friday))
+(List(Friday, Saturday, Sunday),List(Monday, Tuesday, Wednesday, Thursday))

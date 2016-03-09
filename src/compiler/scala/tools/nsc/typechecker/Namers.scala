@@ -665,9 +665,14 @@ trait Namers extends MethodSynthesis {
       if (isScala && deriveAccessors(tree)) enterGetterSetter(tree)
       else assignAndEnterFinishedSymbol(tree)
 
+      val sym = tree.symbol
+
       if (isEnumConstant(tree)) {
-        tree.symbol setInfo ConstantType(Constant(tree.symbol))
-        tree.symbol.owner.linkedClassOfClass addChild tree.symbol
+        sym setInfo ConstantType(Constant(sym))
+        if (sym.isJavaDefined)
+          sym.owner.linkedClassOfClass addChild sym
+        else
+          sym.owner addChild sym
       }
     }
 
@@ -698,6 +703,38 @@ trait Namers extends MethodSynthesis {
       tree.symbol = enterClassSymbol(tree)
       tree.symbol setInfo completerOf(tree)
 
+      if (mods.hasAnnotationNamed(TypeName("enum"))) {
+        var ordinal = 0
+        def newEnumItemOrdinalAttachment() = {
+          val att = new EnumConstantOrdinalAttachment(ordinal)
+          ordinal += 1
+          att
+        }
+
+        def isPossibleEnumConstantTree(tree: Tree): Boolean = { val result = tree.isInstanceOf[Ident] || tree.isInstanceOf[Apply]; println(s"$tree is enum? $result"); result }
+        def enumConstantName(enumConstant: Tree): TermName = enumConstant match {
+          case Ident(termName: TermName)                     => termName
+          case Apply(Ident(termName: TermName), _)           => termName
+          case Apply(Apply(Ident(termName: TermName), _), _) => termName
+        }
+
+        val enumConstants: List[TermName] =
+          tree.impl.body.iterator
+            .dropWhile(tree => !isPossibleEnumConstantTree(tree))
+            .takeWhile(isPossibleEnumConstantTree)
+            .map(const => {
+              const.updateAttachment(newEnumItemOrdinalAttachment())
+              const.symbol.setFlag(JAVA_ENUM)
+              enumConstantName(const)})
+            .toList
+
+        tree.symbol.setFlag(JAVA_ENUM)
+        tree.symbol.updateAttachment(EnumConstantsAttachment(enumConstants))
+
+        // We keep this for the moment, otherwise the compiler doesn't see the members.
+        ensureCompanionObject(tree)
+      }
+
       if (mods.isCase) {
         val m = ensureCompanionObject(tree, caseModuleDef)
         m.moduleClass.updateAttachment(new ClassForCaseCompanionAttachment(tree))
@@ -718,7 +755,7 @@ trait Namers extends MethodSynthesis {
       // Suggested location only.
       if (mods.isImplicit) {
         if (primaryConstructorArity == 1) {
-          log("enter implicit wrapper "+tree+", owner = "+owner)
+          log(s"enter implicit wrapper $tree, owner = $owner")
           enterImplicitWrapper(tree)
         }
         else reporter.error(tree.pos, "implicit classes must accept exactly one primary constructor parameter")
@@ -1028,6 +1065,7 @@ trait Namers extends MethodSynthesis {
 
     private def templateSig(templ: Template): Type = {
       val clazz = context.owner
+
       def checkParent(tpt: Tree): Type = {
         if (tpt.tpe.isError) AnyRefTpe
         else tpt.tpe
@@ -1040,6 +1078,10 @@ trait Namers extends MethodSynthesis {
       val decls = newScope
       val templateNamer = newNamer(context.make(templ, clazz, decls))
       templateNamer enterSyms templ.body
+
+      if (clazz.hasJavaEnumFlag)
+        clazz.attachments.get[EnumConstantsAttachment]
+          .map(att => addEnumMembers(att.constants, templateNamer))
 
       // add apply and unapply methods to companion objects of case classes,
       // unless they exist already; here, "clazz" is the module class
@@ -1617,7 +1659,6 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-
     /** Given a case class
      *   case class C[Ts] (ps: Us)
      *  Add the following methods to toScope:
@@ -1641,6 +1682,24 @@ trait Namers extends MethodSynthesis {
 
     def addCopyMethod(cdef: ClassDef, namer: Namer) {
       caseClassCopyMeth(cdef) foreach namer.enterSyntheticSym
+    }
+
+    /** Given an enum class §EnumClass with enum constants §EnumConstant1 ... §EnumConstantN,
+      * add the following members to scope:
+      * - a private static field $VALUES containing the enum constants
+      *   `<static> private[this] val $VALUES: Array[§EnumCass]`
+      * - a public static method that returns a copy of $VALUES
+      *   `<static> def values: Array[§EnumCass]`
+      *   a public static method that returns the enum constant denoted by the string if such an enum constant exists
+      * - `<static> def valueOf(name: String): §EnumCass`
+      *
+      * @param constants a list of the enum constants defined by this enum
+      * @param namer     the namer of this class
+      */
+    def addEnumMembers(constants: List[TermName], namer: Namer) = {
+      namer.enterSyntheticSym(enumValuesField(owner, constants))
+      namer.enterSyntheticSym(enumValuesMethod(owner))
+      namer.enterSyntheticSym(enumValueOfMethod(owner))
     }
 
     /**

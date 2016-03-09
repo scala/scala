@@ -519,7 +519,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     /** Does the context of tree `tree` require a stable type?
      */
-    private def isStableContext(tree: Tree, mode: Mode, pt: Type) = {
+    private def isStableContext(tree: Tree, mode: Mode, pt: Type): Boolean = {
       def ptSym = pt.typeSymbol
       def expectsStable = (
            pt.isStable
@@ -1160,7 +1160,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case atp @ AnnotatedType(_, _) if canAdaptAnnotations(tree, this, mode, pt) => // (-1)
           adaptAnnotations(tree, this, mode, pt)
         case ct @ ConstantType(value) if mode.inNone(TYPEmode | FUNmode) && (ct <:< pt) && canAdaptConstantTypeToLiteral => // (0)
-          adaptConstant(value)
+          if (value.tag == EnumTag) tree
+          else adaptConstant(value)
         case OverloadedType(pre, alts) if !mode.inFunMode => // (1)
           inferExprAlternative(tree, pt)
           adaptAfterOverloadResolution(tree, mode, pt, original)
@@ -1792,12 +1793,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     def typedClassDef(cdef: ClassDef): Tree = {
       val clazz = cdef.symbol
+      val templ = cdef.impl
       val typedMods = typedModifiers(cdef.mods)
       assert(clazz != NoSymbol, cdef)
       reenterTypeParams(cdef.tparams)
       val tparams1 = cdef.tparams mapConserve (typedTypeDef)
-      val impl1 = newTyper(context.make(cdef.impl, clazz, newScope)).typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
+      val impl1 = newTyper(context.make(templ, clazz, newScope)).typedTemplate(templ, typedParentTypes(templ))
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
+
       if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
         checkEphemeral(clazz, impl2.body)
 
@@ -2089,7 +2092,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case _ =>
           (call, Nil)
       }
-
       // associate superclass paramaccessors with their aliases
       val (superConstr, superArgs) = decompose(rhs)
       if (superConstr.symbol.isPrimaryConstructor) {
@@ -3050,6 +3052,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           } else EmptyTree
         // skip typechecking of statements in a sequence where some other statement includes the targetposition
         case s if localTarget && !includesTargetPos(s) => s
+        case enumConstant if enumConstant.symbol != null && enumConstant.symbol.hasFlag(JAVA_ENUM) &&
+            enumConstant.attachments.get[EnumConstantOrdinalAttachment].isDefined =>
+          typedEnumConstant(enumConstant)
         case _ =>
           val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this
                            else newTyper(context.make(stat, exprOwner))
@@ -3193,6 +3198,47 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           checkNoDoubleDefs
         addSynthetics(stats1)
       }
+    }
+
+    def typedEnumConstant(enumConstant: Tree) = {
+      def enumValDef(name: TermName, ordinal: Int, args: List[Tree], body: List[Tree]): ValDef =
+        ValDef(mods = Modifiers(JAVA_ENUM | STABLE | STATIC),
+               name = name,
+               tpt  = Ident(context.owner.name),
+               rhs  = enumNew(name, ordinal, args, body))
+
+      def enumNew(name: TermName, ordinal: Int, args: List[Tree], body: List[Tree]) = {
+        val allArgs = Literal(Constant(name.encoded)) :: Literal(Constant(ordinal)) :: args
+        if (body.nonEmpty)
+          context.owner.resetFlag(FINAL).setFlag(SEALED)
+        gen.mkNew(List(Apply(context.owner, allArgs: _*)), noSelfType, body.map(addOverrideModifier), NoPosition, context.owner.pos)
+      }
+
+      def addOverrideModifier(tree: Tree) = tree match {
+        case DefDef(mods, name, tparams, vparamss, tpt, rhs) => DefDef(Modifiers(mods.flags | OVERRIDE), name, tparams, vparamss, tpt, rhs)
+        case ValDef(mods, name, tpt, rhs)                    => ValDef(Modifiers(mods.flags | OVERRIDE), name, tpt, rhs)
+        case _                                               => tree
+      }
+
+      val ordinal = enumConstant.attachments.get[EnumConstantOrdinalAttachment].get.value
+
+      val enumField = enumConstant match {
+        // <ENUM>
+        case Ident(termName: TermName)                       => enumValDef(termName, ordinal, Nil, Nil)
+        // <ENUM> { <enumDef>, ... }
+        case Apply(Ident(termName: TermName),
+                   List(Block(body, Literal(Constant(()))))) => enumValDef(termName, ordinal, Nil, body)
+        // <ENUM>(<enumParam>, ...)
+        case Apply(Ident(termName: TermName), args)          => enumValDef(termName, ordinal, args, Nil)
+        // <ENUM>(<enumParam>, ...) { <enumDef>, ... }
+        case Apply(Apply(Ident(termName: TermName), args),
+                   List(Block(body, Literal(Constant(()))))) => enumValDef(termName, ordinal, args, body)
+      }
+
+      namer.enterValDef(enumField)
+      val ds = context.owner.info.decls
+      ds.enter(enumField.symbol)
+      newTyper(context.make(enumField)).typedValDef(enumField)
     }
 
     def typedArg(arg: Tree, mode: Mode, newmode: Mode, pt: Type): Tree = {
@@ -4776,11 +4822,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (isStableContext(tree, mode, pt)) tree setType clazz.thisType else tree
         }
 
+      def isEligibleForJavaStatic(cls: Symbol): Boolean =
+        ((context.unit.isJava && cls.isClass) || (cls != null && cls.companionClass.isJavaEnum && cls.isModule)) && !cls.isModuleClass
 
       // For Java, instance and static members are in the same scope, but we put the static ones in the companion object
       // so, when we can't find a member in the class scope, check the companion
       def inCompanionForJavaStatic(pre: Type, cls: Symbol, name: Name): Symbol =
-        if (!(context.unit.isJava && cls.isClass && !cls.isModuleClass)) NoSymbol else {
+        if (!isEligibleForJavaStatic(cls)) NoSymbol else {
           val companion = companionSymbolOf(cls, context)
           if (!companion.exists) NoSymbol
           else member(gen.mkAttributedRef(pre, companion), name) // assert(res.isStatic, s"inCompanionJavaStatic($pre, $cls, $name) = $res ${res.debugFlagString}")
@@ -4823,6 +4871,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
           NoSymbol
         }
+
         if (phase.erasedTypes && qual.isInstanceOf[Super] && tree.symbol != NoSymbol)
           qual setType tree.symbol.owner.tpe
 
@@ -4985,7 +5034,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // actual call to the stubbed classOf method is generated, returning null.
               typedClassOf(tree, TypeTree(pt.typeArgs.head).setPos(tree.pos.focus))
             }
-          else {
+            else {
               val pre1  = if (sym.isTopLevel) sym.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
               val tree1 = if (qual == EmptyTree) tree else atPos(tree.pos)(Select(atPos(tree.pos.focusStart)(qual), name))
               val (tree2, pre2) = makeAccessible(tree1, sym, pre1, qual)
@@ -5549,12 +5598,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def atOwner(tree: Tree, owner: Symbol): Typer =
       newTyper(context.make(tree, owner))
 
-    /** Types expression or definition `tree`.
-     */
-    def typed(tree: Tree): Tree = {
-      val ret = typed(tree, context.defaultModeForTyped, WildcardType)
-      ret
-    }
+    /** Types expression or definition `tree`. */
+    def typed(tree: Tree): Tree =
+      typed(tree, context.defaultModeForTyped, WildcardType)
 
     def typedByValueExpr(tree: Tree, pt: Type = WildcardType): Tree = typed(tree, EXPRmode | BYVALmode, pt)
 

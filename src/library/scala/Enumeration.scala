@@ -50,6 +50,7 @@ import scala.util.matching.Regex
  *                 identifies values at run-time.
  *  @author  Matthias Zenger
  */
+@deprecated("use @enum instead", "2.12.0")
 @SerialVersionUID(8476000850333817230L)
 abstract class Enumeration (initial: Int) extends Serializable {
   thisenum =>

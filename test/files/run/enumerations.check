@@ -1,0 +1,16 @@
+warning: there were 8 deprecation warnings (since 2.12.0); re-run with -deprecation for details
+test Test1 was successful
+test Test2 was successful
+test Test3 was successful
+test Test4 was successful
+
+D1.ValueSet(North, East)
+D2.ValueSet(North, East)
+D1.ValueSet(North, East, West)
+D2.ValueSet(North, East, West)
+List(101)
+List(101)
+D1.ValueSet(North, East)
+D2.ValueSet(North, East)
+WeekDays.ValueSet(Tue, Wed, Thu, Fri)
+

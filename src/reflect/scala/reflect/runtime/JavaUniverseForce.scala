@@ -393,6 +393,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.DeprecatedNameAttr
     definitions.DeprecatedInheritanceAttr
     definitions.DeprecatedOverridingAttr
+    definitions.EnumAttr
     definitions.NativeAttr
     definitions.RemoteAttr
     definitions.ScalaInlineClass

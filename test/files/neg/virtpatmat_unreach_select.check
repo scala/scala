@@ -1,6 +1,7 @@
 virtpatmat_unreach_select.scala:10: warning: unreachable code
     case WARNING.id => // unreachable
                     ^
+warning: there was one deprecation warning (since 2.12.0); re-run with -deprecation for details
 error: No warnings can be incurred under -Xfatal-warnings.
-one warning found
+two warnings found
 one error found

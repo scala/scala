@@ -13,7 +13,10 @@ import scala.collection.mutable.ListBuffer
 
 import symtab.Flags._
 
-/** Synthetic method implementations for case classes and case objects.
+/** Synthetic method implementations.
+ *
+ *  case classes and case objects
+ *  -----------------------------
  *
  *  Added to all case classes/objects:
  *    def productArity: Int
@@ -30,6 +33,13 @@ import symtab.Flags._
  *
  *  Special handling:
  *    protected def readResolve(): AnyRef
+ *
+ *  enums
+ *  -----
+ *
+ * - <static> private[this] val $VALUES: Array[§EnumCass]
+ * - <static> def values: Array[§EnumCass]
+ * - <static> def valueOf(name: String): §EnumCass
  */
 trait SyntheticMethods extends ast.TreeDSL {
   self: Analyzer =>
@@ -60,8 +70,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     renamedCaseAccessors -= caseclazz
   }
 
-  /** Add the synthetic methods to case classes.
-   */
+  /** Add the synthetic methods to case classes. */
   def addSyntheticMethods(templ: Template, clazz0: Symbol, context: Context): Template = {
     val syntheticsOk = (phase.id <= currentRun.typerPhase.id) && {
       symbolsToSynthesize(clazz0) filter (_ matchingSymbol clazz0.info isSynthetic) match {
@@ -400,4 +409,61 @@ trait SyntheticMethods extends ast.TreeDSL {
       }
     )
   }
+
+  /** {{{
+    * <static> private[this] val $VALUES: Array[§EnumCass] = Array(§EnumClass.§EnumConstant1 ... §EnumClass.§EnumConstantN)
+    * }}}
+    */
+  def enumValuesField(owner: Symbol, constants: List[TermName]): ValDef = {
+    val selectConstants = constants.map(const => Select(Ident(owner.name.toTermName), const))
+    ValDef(
+      mods = Modifiers(PRIVATE | STATIC | LOCAL),
+      name = TermName("$VALUES"),
+      tpt = AppliedTypeTree(Select(Ident(TermName("scala")), TypeName("Array")), List(Ident(owner.name))),
+      rhs =
+        Apply(
+          Apply(
+            TypeApply(
+              Select(Select(Ident(TermName("scala")), TermName("Array")), TermName("apply")),
+              List(Ident(owner.name))),
+            selectConstants),
+          List(Select(Ident(TermName("Predef")), TermName("implicitly")))))
+  }
+
+  /** {{{
+    * <static> def values: Array[§EnumCass] = $EnumCass.$VALUES.clone
+    * }}}
+    */
+  def enumValuesMethod(owner: Symbol): DefDef =
+    DefDef(
+      mods = Modifiers(STATIC),
+      name = TermName("values"),
+      tparams = List(),
+      vparamss = List(),
+      tpt =
+        AppliedTypeTree(
+          tpt = Select(Ident(TermName("scala")), TypeName("Array")),
+          args = List(Ident(owner.name))),
+      rhs = Apply(Select(Ident(TermName("$VALUES")), TermName("clone")), List()))
+
+  /** {{{
+    * <static> def valueOf(name: String): §EnumCass = Enum.valueOf(classOf[§EnumCass], name)
+    * }}}
+    */
+  def enumValueOfMethod(owner: Symbol): DefDef =
+    DefDef(
+      mods = Modifiers(STATIC),
+      name = TermName("valueOf"),
+      tparams = List(),
+      vparamss = List(
+                   List(
+                     ValDef(
+                       mods = Modifiers(PARAM),
+                       name = TermName("name"),
+                       tpt  = Ident(typeNames.String),
+                       rhs  = EmptyTree))),
+      tpt = Ident(owner.name),
+      rhs = Apply(
+              Select(Ident(JavaEnumClass.name.toTermName), TermName("valueOf")),
+              List(TypeApply(Ident(nme.classOf), List(Ident(owner.name))), Ident(TermName("name")))))
 }
