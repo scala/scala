@@ -145,15 +145,12 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     assert(classSym.isClass, classSym)
 
     def doesNotExist(method: Symbol) = {
-      // (1) SI-9124, some trait methods don't exist in the generated interface. see comment in BTypes.
-      // (2) Value classes. Member methods of value classes exist in the generated box class. However,
+      //     Value classes. Member methods of value classes exist in the generated box class. However,
       //     nested methods lifted into a value class are moved to the companion object and don't exist
       //     in the value class itself. We can identify such nested methods: the initial enclosing class
       //     is a value class, but the current owner is some other class (the module class).
-      method.owner.isTrait && method.isImplOnly || { // (1)
-        val enclCls = nextEnclosingClass(method)
-        exitingPickler(enclCls.isDerivedValueClass) && method.owner != enclCls // (2)
-      }
+      val enclCls = nextEnclosingClass(method)
+      exitingPickler(enclCls.isDerivedValueClass) && method.owner != enclCls
     }
 
     def enclosingMethod(sym: Symbol): Option[Symbol] = {

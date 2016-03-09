@@ -339,7 +339,7 @@ object Test extends BytecodeTest {
     assertNoEnclosingMethod("SI_9124$A")
     assertEnclosingMethod(classes("f1"), "SI_9124", null, null)
     assertEnclosingMethod(classes("f2"), "SI_9124", "f", "()LSI_9124$A;")
-    assertEnclosingMethod(classes("f3"), "SI_9124", null, null)
+    assertEnclosingMethod(classes("f3"), "SI_9124", "g", "()Ljava/lang/Object;")
     assertEnclosingMethod(classes("f4"), "SI_9124$O$", null, null)
     assertEnclosingMethod(classes("f5"), "SI_9124", null, null)
     assertEnclosingMethod(classes("f6"), "SI_9124", null, null)

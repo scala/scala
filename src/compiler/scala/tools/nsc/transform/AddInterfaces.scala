@@ -18,26 +18,6 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
    */
   override def phaseNewFlags: Long = lateDEFERRED
 
-  /** Is given trait member symbol a member of the trait's interface
-   *  after this transform is performed?
-   */
-  def isInterfaceMember(sym: Symbol) = (
-    sym.isType || {
-      sym.info  // initialize to set lateMETHOD flag if necessary
-
-      (     sym.isMethod
-        && !sym.isLabel
-      )
-    }
-  )
-
-  /** Does symbol need an implementation method? */
-  def needsImplMethod(sym: Symbol) = (
-       sym.isMethod
-    && isInterfaceMember(sym)
-    && (!sym.hasFlag(DEFERRED | SUPERACCESSOR) || (sym hasFlag lateDEFERRED))
-  )
-
   def transformMixinInfo(tp: Type): Type = tp match {
     case ClassInfoType(parents, decls, clazz) if clazz.isPackageClass || !clazz.isJavaDefined =>
 
@@ -48,17 +28,13 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
           if (clazz.isTrait) ObjectTpe :: tl
           else parents
       }
-      val decls1 = scopeTransform(clazz) {
-        decls filter { sym =>
-          if (clazz.isTrait) {
-            isInterfaceMember(sym) || (sym.isTerm)
-          } else sym.isClass || sym.isTerm
+      if (clazz.isTrait) {
+        decls foreach { sym =>
+          if (!sym.isType) sym.info // initialize to set lateMETHOD flag if necessary
         }
       }
-      //      if (clazz.isTrait) {
-//        decls1.enter(clazz.newMethod(nme.MIXIN_CONSTRUCTOR, clazz.pos, Flags.PROTECTED | Flags.ARTIFACT) setInfo MethodType(Nil, UnitTpe))
-//      }
-      ClassInfoType(parents1, decls1, clazz)
+      if (parents1 eq parents) tp
+      else ClassInfoType(parents1, decls, clazz)
     case _ =>
       tp
   }
@@ -114,9 +90,6 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
     override def transform(tree: Tree): Tree = {
       val sym = tree.symbol
       val tree1 = tree match {
-//        case cd @ ClassDef(mods, _, _, impl) if sym.isTrait =>
-//          val derived = deriveClassDef(cd)(templ => deriveTemplate(templ)(ts => ts.filter(t => !t.isDef || isInterfaceMember(t.symbol))))
-//          derived
         case DefDef(_,_,_,_,_,_) if sym.isClassConstructor && sym.isPrimaryConstructor && sym.owner != ArrayClass =>
           deriveDefDef(tree)(addMixinConstructorCalls(_, sym.owner)) // (3)
         case Template(parents, self, body) =>

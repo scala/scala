@@ -43,28 +43,17 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *     methods in the impl class (because they can have arbitrary initializers)
    */
   private def isImplementedStatically(sym: Symbol) = (
-       erasure.isInterfaceMember(sym)
-    && erasure.needsImplMethod(sym)
+       sym.isMethod
+    && (!sym.hasFlag(DEFERRED | SUPERACCESSOR) || (sym hasFlag lateDEFERRED))
     && sym.owner.isTrait
     && sym.isMethod
     && (!sym.isModule || sym.hasFlag(PRIVATE | LIFTED))
     && (!(sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isLazy)
+    && !sym.isPrivate
+    && !sym.hasAllFlags(LIFTED | MODULE | METHOD)
+    && !sym.isConstructor
+    && (!sym.hasFlag(notPRIVATE | LIFTED) || sym.hasFlag(ACCESSOR | SUPERACCESSOR | MODULE))
   )
-
-  /** A member of a trait is static only if it belongs only to the
-   *  implementation class, not the interface, and it is implemented
-   *  statically.
-   */
-  private def isStaticOnly(sym: Symbol) =
-    isImplementedStatically(sym) && sym.isImplOnly
-
-  /** A member of a trait is forwarded if it is implemented statically and it
-   *  is also visible in the trait's interface. In that case, a forwarder to
-   *  the member's static implementation will be added to the class that
-   *  inherits the trait.
-   */
-  private def isForwarded(sym: Symbol) =
-    isImplementedStatically(sym) && !sym.isImplOnly
 
   private def isFieldWithBitmap(field: Symbol) = {
     field.info // ensure that nested objects are transformed
@@ -247,7 +236,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
     /* Mix in members of implementation class mixinClass into class clazz */
     def mixinTraitForwarders(mixinClass: Symbol) {
-      for (member <- mixinClass.info.decls ; if isForwarded(member)) {
+      for (member <- mixinClass.info.decls ; if isImplementedStatically(member)) {
         member overridingSymbol clazz match {
           case NoSymbol =>
             if (clazz.info.findMember(member.name, 0, 0L, stableOnly = false).alternatives contains member)
@@ -442,6 +431,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           tree
 
         case _ =>
+          if (currentOwner.isTrait && sym.isSetter && !enteringPickler(sym.isDeferred)) {
+            sym.addAnnotation(TraitSetterAnnotationClass)
+          }
           tree
       }
     }
@@ -484,6 +476,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      *       - A super accessor for every super accessor in a mixin class
      *       - Forwarders for all methods that are implemented statically
      *  All superaccessors are completed with right-hand sides (@see completeSuperAccessor)
+     *
      *  @param clazz  The class to which definitions are added
      */
     private def addNewDefs(clazz: Symbol, stats: List[Tree]): List[Tree] = {
