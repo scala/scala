@@ -2169,11 +2169,23 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  (or, for traits: `$init`) of `C`.
      *
      */
+    @deprecated
     final def logicallyEnclosingMember: Symbol =
       if (isLocalDummy) enclClass.primaryConstructor
       else if (isMethod || isClass || this == NoSymbol) this
       else if (this == NoSymbol) { devWarningDumpStack("NoSymbol.logicallyEnclosingMember", 15); this }
       else owner.logicallyEnclosingMember
+
+    /** The closest enclosing method or class containing this definition.
+      */
+    final def enclosingMethodOrClass: Symbol =
+      if (isMethod && !isLabel || isClass) this
+      else if (exists) owner.enclosingMethodOrClass
+      else NoSymbol
+
+    /** The logically enclosing method or class for this symbol.
+      */
+    final def enclosure = owner.enclosingMethodOrClass
 
     /** The top-level class containing this symbol. */
     def enclosingTopLevelClass: Symbol =

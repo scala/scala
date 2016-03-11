@@ -168,6 +168,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       if (mixinClass.typeParams.isEmpty) sym
       else sym modifyInfo (_ => forwarderInfo)
     }
+    newSym updateInfo mixinMember.info // lambdalift
     newSym
   }
 
