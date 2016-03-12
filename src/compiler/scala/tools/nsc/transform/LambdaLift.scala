@@ -160,87 +160,77 @@ abstract class LambdaLift extends InfoTransform {
 //      } while (changedLiftedOwner)
 
 
+    private def markFree(local: Symbol, site: Symbol): Unit = {
+      assert(
+        isLocal(local) && local.isTerm && !local.isMethod
+          && (site.isMethod || site.isClass))
 
-    /** Mark symbol `sym` as free (not bound) in `enclosure` if `sym` is not defined in `enclosure`, and
-      * `sym` is not free in an intermediate class in the owner chain from `enclosure` to `sym.owner`.
-      *
-      * Thus, either there is an intermediate class in which `sym` is free,
-      *   and `enclosure` cannot be lifted beyond that class (it has to access the `sym` proxy stored in the class);
-      * or, there is no intermediate class, and `enclosure` can be lifted up to the class enclosing `sym`.
-      *
-      *  The idea of `markFree` is illustrated with an example:
-      *
-      *  def f(x: int) = {
-      *    class C {
-      *      class D {
-      *        val y = x
-      *      }
-      *    }
-      *  }
-      *
-      *  In this case `x` is free in the primary constructor of class `C`.
-      *  but it is not free in `D`, because after lambda lift the code would be transformed
-      *  as follows:
-      *
-      *  def f(x$0: int) {
-      *    class C(x$0: int) {
-      *      val x$1 = x$0
-      *      class D {
-      *        val y = outer.x$1
-      *      }
-      *    }
-      *  }
-      *
-      *  @pre: isLocal(sym) && (enclosure.isMethod || enclosure.isClass)
-      *  @return  If there is a non-trait class between `enclosure` and the owner of `sym`, the largest such class.
-      *           Otherwise, if there is a trait between `enclosure` and the owner of `sym`, the largest such trait.
-      *           Otherwise, NoSymbol.
-      *
-      */
-    private def markFree(sym: Symbol, enclosure: Symbol): Symbol =
-      if (enclosure != NoSymbol && enclosure != sym.enclosure) {
-        debuglog(s"mark free: ${sym.fullLocationString} with owner ${sym.owner} marked free in $enclosure")
-        val intermediate =
-          if (enclosure.isPackageClass) enclosure
-          else markFree(sym, enclosure.enclosure)
-
-//        lowerLiftedOwner(enclosure, intermediate orElse sym.enclClass)
-
-        // Constructors and methods nested inside traits get the free variables
-        // of the enclosing trait or class.
-        // Conversely, local traits do not get free variables.
-
-        /* WIP motivating `&& !(enclosure.isClass && enclosure.isFinal)`
-class Foo(val x: Any)
-object Foo {
-  def m(UGH: Any): Foo = {
-    class X extends Foo(Option(null).getOrElse(UGH))
-    new X
-  }
-}
-
-next: compiler doesn't bootstrap: java.util.NoSuchElementException: key not found: value uniqueLock
-[strap.compiler] 	at scala.collection.MapLike.default(MapLike.scala:228)
-[strap.compiler] 	at scala.collection.AbstractMap.default(Map.scala:59)
-[strap.compiler] 	at scala.collection.mutable.HashMap.apply(HashMap.scala:65)
-[strap.compiler] 	at scala.tools.nsc.transform.Mixin$MixinTransformer.getterBody$1(Mixin.scala:827)
-
-*/
-        val proxyAccessibleViaOuter = classCanStoreFields(intermediate) && !(enclosure.isClass && enclosure.isFinal)
-        if ((!proxyAccessibleViaOuter || enclosure.isConstructor)
-            && !enclosure.isTrait
-            && (symSet(free, enclosure) add sym)) {
+      // track `sym` as `free` in `site`
+      def registerFree(site: Symbol): Unit =
+        if (symSet(free, site) add local) {
+          debuglog(s"free: $local free in $site")
           changedFreeVars = true
-          if (sym.isVariable) sym setFlag CAPTURED
-          log(s"$sym is free in $enclosure")
+          if (local.isVariable) local setFlag CAPTURED
         }
 
-        if (classCanStoreFields(intermediate)) intermediate
-        else if (classCanStoreFields(enclosure)) enclosure
-        else if (intermediate.isClass) intermediate
-        else if (enclosure.isClass) enclosure
-        else NoSymbol
-      } else NoSymbol
+      val enclosureChain = {
+        val localDefSite = local.enclosure
+
+        @tailrec def loop(enclosure: Symbol, chain: List[Symbol]): List[Symbol] =
+          if (enclosure == localDefSite || enclosure == NoSymbol || enclosure.isPackageClass) chain
+          else loop(enclosure.enclosure, enclosure :: chain)
+
+        loop(site, Nil)
+      }
+
+      debuglog(s"chain for $local ref from ${site.fullLocationString}: $enclosureChain")
+
+      // Find a storage site that we can access via outer pointers, or else we must consider the symbol free.
+      // Only non-trait classes can store captures.
+      // Not all classes have outer pointers (e.g., anonymous function).
+      // Constructors must be marked free if their owner was marked free (so we can pass in the values).
+      // We can only add arguments to local methods.
+      // All references to local values must occur in local methods (or the captured local would not have been in scope).
+      var path = enclosureChain
+      var storage: Symbol = null
+
+      while (path.nonEmpty) {
+        val curr = path.head
+        val currClass = curr.enclClass
+
+        if (currClass == storage) {
+          // must get the captures to the constructor, so we can store them in fields in the class
+          if (curr.isConstructor) registerFree(curr)
+        } else if ((storage ne null) && !explicitOuter.outerAccessor(currClass).exists) {
+          // we had stored the capture, but we can't reach it since we don't have an outer pointer
+          debuglog(s"lost access to storage $storage in $curr")
+          storage = null
+        }
+
+        if (storage eq null) {
+          // A new opportunity to store our capture, but we'll need to pass it in.
+          // Subsequent elements on the chain may be able to access this storage.
+          if (classCanStoreFields(curr)) {
+            storage = curr
+            registerFree(curr)
+          } else {
+            // We can't add arguments to non-local methods since we don't see all invocations
+            val canHaveFree = curr.isMethod && isLocal(curr)
+
+            if (canHaveFree) {
+              // trait T { def foo(x: Int) = { trait U { def bar = x } } }
+              registerFree(curr)
+            } else {
+              debuglog(s"can't mark $local free in $curr in chain $enclosureChain")
+            }
+          }
+        }
+
+        path = path.tail
+      }
+    }
+
+
 
     private def markCalled(callee: Symbol, caller: Symbol): Unit = {
       registerCalled(callee, caller)
@@ -249,10 +239,10 @@ next: compiler doesn't bootstrap: java.util.NoSuchElementException: key not foun
         calledFromInner += callee
     }
 
-    private def registerCalled(callee: Symbol, caller: Symbol): SymSet = {
-      debuglog(s"mark called: $callee of ${callee.owner} is called by $caller")
+    private def registerCalled(callee: Symbol, caller: Symbol): Unit = {
       assert(isLocal(callee))
-      symSet(called, caller) += callee
+      if (symSet(called, caller) add callee)
+        debuglog(s"called: $caller calls ${callee.fullLocationString}")
     }
 
     /** The traverse function */
