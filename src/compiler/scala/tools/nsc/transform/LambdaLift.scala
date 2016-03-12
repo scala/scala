@@ -163,7 +163,8 @@ abstract class LambdaLift extends InfoTransform {
     private def markFree(local: Symbol, site: Symbol): Unit = {
       assert(
         isLocal(local) && local.isTerm && !local.isMethod
-          && (site.isMethod || site.isClass))
+          && (site.isMethod || site.isClass)
+          && (site hasTransOwner local.enclosure), s"markFree $local from $site")
 
       // track `sym` as `free` in `site`
       def registerFree(site: Symbol): Unit =
@@ -177,7 +178,7 @@ abstract class LambdaLift extends InfoTransform {
         val localDefSite = local.enclosure
 
         @tailrec def loop(enclosure: Symbol, chain: List[Symbol]): List[Symbol] =
-          if (enclosure == localDefSite || enclosure == NoSymbol || enclosure.isPackageClass) chain
+          if (enclosure == localDefSite) chain
           else loop(enclosure.enclosure, enclosure :: chain)
 
         loop(site, Nil)
