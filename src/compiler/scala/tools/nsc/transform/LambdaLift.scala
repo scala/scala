@@ -42,8 +42,6 @@ abstract class LambdaLift extends InfoTransform {
   // We must rigidly lift to this owner. We can't use the outcome of the tree analysis, since the info/type transform happens before the tree transform...
   private def liftedOwner(sym: Symbol): Symbol = sym.owner.enclClass
 
-  private def classCanStoreFields(sym: Symbol): Boolean = sym.isClass && !sym.isTrait
-
   /** Each scala.runtime.*Ref class has a static method `create(value)` that simply instantiates the Ref to carry that value. */
   private lazy val refCreateMethod: Map[Symbol, Symbol] = {
     mapFrom(allRefClasses.toList)(x => getMemberMethod(x.companionModule, nme.create))
@@ -107,6 +105,8 @@ abstract class LambdaLift extends InfoTransform {
       * so it must receive its captures as arguments or get to them via an outer path.
       * (If there's a path from its outer to an enclosing class that stores the capture.)
       * A trait does not have storage, so it must be treated like a method.
+      *
+      * TODO: not so sure about this logic
       */
     @tailrec private def isLocal(sym: Symbol): Boolean = {
       val owner = sym.owner
@@ -190,7 +190,8 @@ abstract class LambdaLift extends InfoTransform {
       // Not all classes have outer pointers (e.g., anonymous function).
       // Constructors must be marked free if their owner was marked free (so we can pass in the values).
       // We can only add arguments to local methods.
-      // All references to local values must occur in local methods (or the captured local would not have been in scope).
+      // All references to local values must occur in local methods (or the captured local would not have been in scope),
+      // thus all symbols on this path are local as they are nested in the owner of a captured local.
       var path = enclosureChain
       var storage: Symbol = null
 
@@ -210,19 +211,15 @@ abstract class LambdaLift extends InfoTransform {
         if (storage eq null) {
           // A new opportunity to store our capture, but we'll need to pass it in.
           // Subsequent elements on the chain may be able to access this storage.
-          if (classCanStoreFields(curr)) {
+          // Traits can't provide storage.
+          if (curr.isClass && !curr.isTrait) {
             storage = curr
             registerFree(curr)
+          } else if (curr.isMethod) {
+            // trait T { def foo(x: Int) = { trait U { def bar = x } } }
+            registerFree(curr)
           } else {
-            // We can't add arguments to non-local methods since we don't see all invocations
-            val canHaveFree = curr.isMethod && isLocal(curr)
-
-            if (canHaveFree) {
-              // trait T { def foo(x: Int) = { trait U { def bar = x } } }
-              registerFree(curr)
-            } else {
-              debuglog(s"can't mark $local free in $curr in chain $enclosureChain")
-            }
+            debuglog(s"can't mark $local free in $curr in chain $enclosureChain")
           }
         }
 
