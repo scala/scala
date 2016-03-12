@@ -202,7 +202,11 @@ abstract class LambdaLift extends InfoTransform {
 
         if (currClass == storage) {
           // must get the captures to the constructor, so we can store them in fields in the class
-          if (curr.isConstructor) registerFree(curr)
+          if (curr.isConstructor) {
+            registerFree(curr)
+            // stuff nested in the constructor means we're getting into weird early init/supercall territory... can't count on outer refs to get to proxy
+            storage = null
+          }
         } else if ((storage ne null) && !explicitOuter.outerAccessor(currClass).exists) {
           // we had stored the capture, but we can't reach it since we don't have an outer pointer
           debuglog(s"lost access to storage $storage in $curr")
@@ -394,12 +398,13 @@ abstract class LambdaLift extends InfoTransform {
             }
           case none =>
         }
-        searchIn(enclosure.owner.skipConstructor) // in the constructor, the proxies are ctor arguments that are stored in fields
+        searchIn(enclosure.enclosure.skipConstructor)
       }
 
       debuglog(s"proxy ${sym.debugLocationString} from ${currentOwner.debugLocationString} has logical enclosure ${sym.enclosure.debugLocationString}")
 
-      if (isSameOwnerEnclosure(sym)) sym else searchIn(currentOwner)
+      if (isSameOwnerEnclosure(sym)) sym
+      else searchIn(currentEnclosure)
     }
 
     private def memberRef(sym: Symbol): Tree = {

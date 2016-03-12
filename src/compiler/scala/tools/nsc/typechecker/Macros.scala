@@ -368,10 +368,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     new {
       val universe: self.global.type = self.global
       val callsiteTyper: universe.analyzer.Typer = typer.asInstanceOf[global.analyzer.Typer]
-      val expandee = {
-        val orig = universe.analyzer.macroExpanderAttachment(expandeeTree).original
-        if (!orig.isEmpty) orig else duplicateAndKeepPositions(expandeeTree)
-      }
+      val expandee = universe.analyzer.macroExpanderAttachment(expandeeTree).original orElse duplicateAndKeepPositions(expandeeTree)
     } with UnaffiliatedMacroContext {
       val prefix = Expr[Nothing](prefixTree)(TypeTag.Nothing)
       override def toString = "MacroContext(%s@%s +%d)".format(expandee.symbol.name, expandee.pos, enclosingMacros.length - 1 /* exclude myself */)

@@ -1687,6 +1687,7 @@ trait Trees extends api.Trees {
       * constructor, or early definition is active */
     private val selfOrSuperCalls = mutable.Stack[Symbol]()
 
+    // ??? I'm not sure we can just maintain a set like this -- how about a class defined in an early init block?
     abstract override def transform(tree: Tree) = {
       if ((treeInfo isSelfOrSuperConstrCall tree) || (treeInfo isEarlyDef tree)) {
         selfOrSuperCalls push currentOwner.owner
