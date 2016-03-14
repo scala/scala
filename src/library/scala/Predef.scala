@@ -146,9 +146,9 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
 
   /** Tests an expression, throwing an `AssertionError` if false.
    *  Calls to this method will not be generated if `-Xelide-below`
-   *  is at least `ASSERTION`.
+   *  is greater than `ASSERTION`.
    *
-   *  @see elidable
+   *  @see [[scala.annotation.elidable elidable]]
    *  @param assertion   the expression to test
    */
   @elidable(ASSERTION)
@@ -159,9 +159,9 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
 
   /** Tests an expression, throwing an `AssertionError` if false.
    *  Calls to this method will not be generated if `-Xelide-below`
-   *  is at least `ASSERTION`.
+   *  is greater than `ASSERTION`.
    *
-   *  @see elidable
+   *  @see [[scala.annotation.elidable elidable]]
    *  @param assertion   the expression to test
    *  @param message     a String to include in the failure message
    */
@@ -175,9 +175,9 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  This method differs from assert only in the intent expressed:
    *  assert contains a predicate which needs to be proven, while
    *  assume contains an axiom for a static checker.  Calls to this method
-   *  will not be generated if `-Xelide-below` is at least `ASSERTION`.
+   *  will not be generated if `-Xelide-below` is greater than `ASSERTION`.
    *
-   *  @see elidable
+   *  @see [[scala.annotation.elidable elidable]]
    *  @param assumption   the expression to test
    */
   @elidable(ASSERTION)
@@ -190,9 +190,9 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  This method differs from assert only in the intent expressed:
    *  assert contains a predicate which needs to be proven, while
    *  assume contains an axiom for a static checker.  Calls to this method
-   *  will not be generated if `-Xelide-below` is at least `ASSERTION`.
+   *  will not be generated if `-Xelide-below` is greater than `ASSERTION`.
    *
-   *  @see elidable
+   *  @see [[scala.annotation.elidable elidable]]
    *  @param assumption   the expression to test
    *  @param message      a String to include in the failure message
    */
