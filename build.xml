@@ -461,7 +461,7 @@ TODO:
     </fail>
 
     <!-- Allow this to be overridden simply -->
-    <property name="sbt.latest.version"    value="0.12.4"/>
+    <property name="sbt.latest.version"    value="0.13.9"/>
 
     <property name="sbt.src.dir"           value="${build-sbt.dir}/${sbt.latest.version}/src"/>
     <property name="sbt.lib.dir"           value="${build-sbt.dir}/${sbt.latest.version}/lib"/>
