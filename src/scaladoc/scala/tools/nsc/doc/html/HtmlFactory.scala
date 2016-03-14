@@ -16,7 +16,7 @@ import page.diagram._
 /** A class that can generate Scaladoc sites to some fixed root folder.
   * @author David Bernard
   * @author Gilles Dubochet */
-class HtmlFactory(val universe: doc.Universe, index: doc.Index, val reporter: ScalaDocReporter) {
+class HtmlFactory(val universe: doc.Universe, val reporter: ScalaDocReporter) {
   import page.{IndexScript, EntityPage}
 
   /** The character encoding to be used for generated Scaladoc sites.
@@ -99,16 +99,10 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index, val reporter: Sc
 
     libResources foreach (s => copyResource("lib/" + s))
 
-    IndexScript(universe, index) writeFor this
+    IndexScript(universe) writeFor this
 
-    if (index.hasDeprecatedMembers)
-      new page.DeprecatedIndex(universe, index, reporter) writeFor this
     try {
       writeTemplates(_ writeFor this)
-
-      for (letter <- index.firstLetterIndex) {
-        new html.page.ReferenceIndex(letter._1, index, universe, reporter) writeFor this
-      }
     } finally {
       DiagramStats.printStats(universe.settings)
       universe.dotRunner.cleanup()
