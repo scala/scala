@@ -79,7 +79,7 @@ object ScalaOptionParser {
     P <~ token(OptSpace)
   }
 
-  // TODO retrieve this data programatically, ala https://github.com/scala/scala-tool-support/blob/master/bash-completion/src/main/scala/BashCompletion.scala
+  // TODO retrieve this data programmatically, ala https://github.com/scala/scala-tool-support/blob/master/bash-completion/src/main/scala/BashCompletion.scala
   private def booleanSettingNames = List("-X", "-Xcheckinit", "-Xdev", "-Xdisable-assertions", "-Xexperimental", "-Xfatal-warnings", "-Xfull-lubs", "-Xfuture", "-Xlog-free-terms", "-Xlog-free-types", "-Xlog-implicit-conversions", "-Xlog-implicits", "-Xlog-reflective-calls",
     "-Xno-forwarders", "-Xno-patmat-analysis", "-Xno-uescape", "-Xnojline", "-Xprint-pos", "-Xprint-types", "-Xprompt", "-Xresident", "-Xshow-phases", "-Xstrict-inference", "-Xverify", "-Y",
     "-Ybreak-cycles", "-Ydebug", "-Ycompact-trees", "-YdisableFlatCpCaching", "-Ydoc-debug",

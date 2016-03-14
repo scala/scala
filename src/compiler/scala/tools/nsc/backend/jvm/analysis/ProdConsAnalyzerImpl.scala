@@ -441,10 +441,10 @@ trait ProdConsAnalyzerImpl {
  *     return a;
  *   }
  *
- * In the first frame of the method, the SoruceValue for parameter `a` gives an empty set of
+ * In the first frame of the method, the SourceValue for parameter `a` gives an empty set of
  * producer instructions.
  *
- * In the frame of the `IRETURN` instruction, the SoruceValue for parameter `a` lists a single
+ * In the frame of the `IRETURN` instruction, the SourceValue for parameter `a` lists a single
  * producer instruction: the `ISTORE 1`. This makes it look as if there was a single producer for
  * `a`, where in fact it might still hold the parameter's initial value.
  */

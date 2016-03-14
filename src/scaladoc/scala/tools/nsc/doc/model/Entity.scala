@@ -455,7 +455,7 @@ trait ValueParam extends ParameterEntity {
   /** The type of this value parameter. */
   def resultType: TypeEntity
 
-  /** The devault value of this value parameter, if it has been defined. */
+  /** The default value of this value parameter, if it has been defined. */
   def defaultValue: Option[TreeEntity]
 
   /** Whether this value parameter is implicit. */

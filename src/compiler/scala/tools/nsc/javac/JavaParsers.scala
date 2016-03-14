@@ -509,7 +509,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
                 EmptyTree
               }
             }
-          // for abstract methods (of classes), the `DEFERRED` flag is alredy set.
+          // for abstract methods (of classes), the `DEFERRED` flag is already set.
           // here we also set it for interface methods that are not static and not default.
           if (!isConcreteInterfaceMethod) mods1 |= Flags.DEFERRED
           List {

@@ -504,7 +504,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
 
         case v: VarInsnNode if isLive =>
           val longSize = if (isSize2LoadOrStore(v.getOpcode)) 1 else 0
-          maxLocals = math.max(maxLocals, v.`var` + longSize + 1) // + 1 becauase local numbers are 0-based
+          maxLocals = math.max(maxLocals, v.`var` + longSize + 1) // + 1 because local numbers are 0-based
 
         case i: IincInsnNode if isLive =>
           maxLocals = math.max(maxLocals, i.`var` + 1)

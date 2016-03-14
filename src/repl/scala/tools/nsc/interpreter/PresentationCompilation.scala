@@ -78,7 +78,7 @@ trait PresentationCompilation {
   abstract class PresentationCompileResult {
     val compiler: scala.tools.nsc.interactive.Global
     def unit: compiler.RichCompilationUnit
-    /** The length of synthetic code the precedes the user writtn code */
+    /** The length of synthetic code the precedes the user written code */
     def preambleLength: Int
     def cleanup(): Unit = {
       compiler.askShutdown()

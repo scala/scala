@@ -156,7 +156,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
         // TODO: This is maybe over-cautious.
         // We are checking if the closure body method is accessible at the closure callsite.
         // If the closure allocation has access to the body method, then the callsite (in the same
-        // method as the alloction) should have access too.
+        // method as the allocation) should have access too.
         val bodyAccessible: Either[OptimizerWarning, Boolean] = for {
           (bodyMethodNode, declClass) <- byteCodeRepository.methodNode(lambdaBodyHandle.getOwner, lambdaBodyHandle.getName, lambdaBodyHandle.getDesc): Either[OptimizerWarning, (MethodNode, InternalName)]
           isAccessible                <- inliner.memberIsAccessible(bodyMethodNode.access, classBTypeFromParsedClassfile(declClass), classBTypeFromParsedClassfile(lambdaBodyHandle.getOwner), ownerClass)

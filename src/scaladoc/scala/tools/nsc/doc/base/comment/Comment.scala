@@ -63,7 +63,7 @@ abstract class Comment {
 
   /** A list of other resources to see, including links to other entities or
     * to external documentation. The empty list is used when no other resource
-    * is mentionned. */
+    * is mentioned. */
   def see: List[Body]
 
   /** A description of the result of the entity. Typically, this provides additional

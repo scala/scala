@@ -94,7 +94,7 @@ Java platform, the following annotations have a standard meaning.
 
   * `@deprecatedName(name: <symbollit>)`<br/>
     Marks a formal parameter name as deprecated. Invocations of this entity
-    using named parameter syntax refering to the deprecated parameter name cause a deprecation warning.
+    using named parameter syntax referring to the deprecated parameter name cause a deprecation warning.
 
 ### Scala Compiler Annotations
 

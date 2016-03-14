@@ -304,7 +304,7 @@ private[concurrent] object Promise {
 
     /** Tries to add the callback, if already completed, it dispatches the callback to be executed.
      *  Used by `onComplete()` to add callbacks to a promise and by `link()` to transfer callbacks
-     *  to the root promise when linking two promises togehter.
+     *  to the root promise when linking two promises together.
      */
     @tailrec
     private def dispatchOrAddCallback(runnable: CallbackRunnable[T]): Unit = {
