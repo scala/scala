@@ -20,4 +20,3 @@ object t6161 {
   val n1: g.NameType = ???
   val n2: g.Name = n1.encode
 }
-
