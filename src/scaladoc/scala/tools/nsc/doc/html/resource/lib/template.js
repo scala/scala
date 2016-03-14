@@ -147,10 +147,10 @@ $(document).ready(function() {
     });
     $("#memberfilter > .clear").click(function() {
         $("#memberfilter input").attr("value", "");
+        $(this).hide();
         filter();
     });
     $(document).keydown(function(event) {
-
         if (event.keyCode == 9) { // tab
             $("#index-input", window.parent.document).focus();
             input.attr("value", "");
@@ -162,8 +162,7 @@ $(document).ready(function() {
         if ($(this).hasClass("in")) {
             $(this).removeClass("in");
             $(this).addClass("out");
-        }
-        else if ($(this).hasClass("out")) {
+        } else if ($(this).hasClass("out")) {
             $(this).removeClass("out");
             $(this).addClass("in");
         }
@@ -174,8 +173,7 @@ $(document).ready(function() {
         if ($(this).hasClass("in")) {
             $(this).removeClass("in");
             $(this).addClass("out");
-        }
-        else if ($(this).hasClass("out")) {
+        } else if ($(this).hasClass("out")) {
             $(this).removeClass("out");
             $(this).addClass("in");
         }
@@ -307,14 +305,11 @@ $(document).ready(function() {
             exposeMember(jqElem);
     }
 
-    $("#mbrsel-input").on("focus", function() {
-        $("#memberfilter > .clear").show();
-    });
-
-    $("#mbrsel-input").on("blur", function() {
-        setTimeout(function() {
+    $("#mbrsel-input").on("input", function() {
+        if ($(this).val().length > 0)
+            $("#memberfilter > .clear").show();
+        else
             $("#memberfilter > .clear").hide();
-        }, 10);
     });
 });
 

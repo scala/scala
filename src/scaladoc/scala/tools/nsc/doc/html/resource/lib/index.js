@@ -33,14 +33,11 @@ $(document).ready(function() {
 
     configureTextFilter();
 
-    $("#index-input").on("focus", function(e) {
-        $("#textfilter > .input > .clear").show();
-    });
-
-    $("#index-input").on("blur", function() {
-        setTimeout(function() {
+    $("#index-input").on("input", function(e) {
+        if($(this).val().length > 0)
+            $("#textfilter > .input > .clear").show();
+        else
             $("#textfilter > .input > .clear").hide();
-        }, 10);
     });
 });
 
@@ -229,6 +226,8 @@ function configureTextFilter() {
             $("div#search-results").hide();
             $("#search > span.close-results").hide();
             $("#search > span#doc-title").show();
+
+            $(this).hide();
         });
     });
 
