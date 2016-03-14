@@ -28,13 +28,11 @@ import scala.io.StdIn
  *  constructors ([[scala.collection.immutable.::]] and
  *  [[scala.collection.immutable.Nil]]).
  *
- *  === Console I/O ===
- *  Predef provides a number of simple functions for console I/O, such as
- *  `print`, `println`, `readLine`, `readInt`, etc. These functions are all
- *  aliases of the functions provided by [[scala.Console]].
+ *  === Console Output ===
+ *  For basic console output, `Predef` provides convenience methods [[print(x:Any* print]] and [[println(x:Any* println]],
+ *  which are aliases of the methods in the object [[scala.Console]].
  *
  *  === Assertions ===
- *
  *  A set of `assert` functions are provided for use as a way to document
  *  and dynamically check invariants in code. Invocations of `assert` can be elided
  *  at compile time by providing the command line option `-Xdisable-assertions`,
@@ -304,9 +302,37 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
 
   // printing -----------------------------------------------------------
 
+  /** Prints an object to `out` using its `toString` method.
+   *
+   *  @param x the object to print; may be null.
+   */
   def print(x: Any) = Console.print(x)
+
+  /** Prints a newline character on the default output.
+   */
   def println() = Console.println()
+
+  /** Prints out an object to the default output, followed by a newline character.
+   *
+   *  @param x the object to print.
+   */
   def println(x: Any) = Console.println(x)
+
+  /** Prints its arguments as a formatted string to the default output,
+   *  based on a string pattern (in a fashion similar to printf in C).
+   *
+   *  The interpretation of the formatting patterns is described in
+   *  <a href="" target="contentFrame" class="java/util/Formatter">
+   *  `java.util.Formatter`</a>.
+   *
+   *  Consider using the [[scala.StringContext.f f interpolator]] as more type safe and idiomatic.
+   *
+   *  @param text the pattern for formatting the arguments.
+   *  @param args the arguments used to instantiating the pattern.
+   *  @throws java.lang.IllegalArgumentException if there was a problem with the format string or arguments
+   *
+   *  @see [[scala.StringContext.f StringContext.f]]
+   */
   def printf(text: String, xs: Any*) = Console.print(text.format(xs: _*))
 
   // views --------------------------------------------------------------
