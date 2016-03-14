@@ -111,11 +111,6 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
         case universer: Universer =>
           val universe = makeUniverse(Left(files)) getOrElse { throw NoCompilerRunException }
           universer setUniverse universe
-
-          docletInstance match {
-            case indexer: Indexer => indexer setIndex model.IndexModelFactory.makeIndex(universe)
-            case _                => ()
-          }
         case _ => ()
       }
       docletInstance.generate()

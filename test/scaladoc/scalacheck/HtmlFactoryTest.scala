@@ -26,12 +26,9 @@ object Test extends Properties("HtmlFactory") {
 
   final val RESOURCES = "test/scaladoc/resources/"
 
-
   import scala.tools.nsc.ScalaDocReporter
   import scala.tools.nsc.doc.{DocFactory, Settings}
-  import scala.tools.nsc.doc.model.IndexModelFactory
   import scala.tools.nsc.doc.html.HtmlFactory
-  import scala.tools.nsc.doc.html.page.ReferenceIndex
 
   def getClasspath = {
     // these things can be tricky
@@ -60,8 +57,7 @@ object Test extends Properties("HtmlFactory") {
 
     createFactory.makeUniverse(Left(List(RESOURCES+basename))) match {
       case Some(universe) => {
-        val index = IndexModelFactory.makeIndex(universe)
-        (new HtmlFactory(universe, index, new ScalaDocReporter(universe.settings))).writeTemplates((page) => {
+        new HtmlFactory(universe, new ScalaDocReporter(universe.settings)).writeTemplates((page) => {
           result += (page.absoluteLinkTo(page.path) -> page.body)
         })
       }
@@ -69,24 +65,6 @@ object Test extends Properties("HtmlFactory") {
     }
 
     result
-  }
-
-  def createReferenceIndex(basename: String) = {
-    createFactory.makeUniverse(Left(List(RESOURCES+basename))) match {
-      case Some(universe) => {
-        val index = IndexModelFactory.makeIndex(universe)
-        val pages = index.firstLetterIndex.map({
-          case (key, value) => {
-            val reporter = new ScalaDocReporter(universe.settings)
-            val page = new ReferenceIndex(key, index, universe, reporter)
-            page.absoluteLinkTo(page.path) -> page.body
-          }
-        })
-        Some(pages)
-      }
-      case _ =>
-        None
-    }
   }
 
   def createTemplate(scala: String) = {
@@ -335,27 +313,6 @@ object Test extends Properties("HtmlFactory") {
     createTemplate("Trac4452.scala") match {
       case node: scala.xml.Node =>
         ! node.toString.contains(">*")
-      case _ => false
-    }
-  }
-
-  property("Trac #4471") = {
-    createReferenceIndex("Trac4471.scala") match {
-      case Some(pages) =>
-        (pages.get("index/index-f.html") match {
-          case Some(node) => node.toString.contains(">A</a></strike>")
-          case _ => false
-        }) && (pages.get("index/index-b.html") match {
-          case Some(node) => node.toString.contains(">bar</strike>")
-          case _ => false
-        })
-      case _ => false
-    }
-  }
-
-  property("SI-4641") = {
-    createReferenceIndex("SI_4641.scala") match {
-      case Some(pages) => pages.contains("index/index-_.html")
       case _ => false
     }
   }

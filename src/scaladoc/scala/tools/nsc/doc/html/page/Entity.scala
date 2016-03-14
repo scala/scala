@@ -585,7 +585,7 @@ trait EntityPage extends HtmlPage {
               <br/> ++ scala.xml.Text("To access this member you can use a ") ++
               <a href="http://stackoverflow.com/questions/2087250/what-is-the-purpose-of-type-ascription-in-scala"
                 target="_blank">type ascription</a> ++ scala.xml.Text(":") ++
-              <br/> ++ <div class="cmt"><pre>{"(" + Template.lowerFirstLetter(tpl.name) + ": " + conv.targetType.name + ")." + mbr.name + params }</pre></div>
+              <br/> ++ <div class="cmt"><pre>{"(" + EntityPage.lowerFirstLetter(tpl.name) + ": " + conv.targetType.name + ")." + mbr.name + params }</pre></div>
             }
 
             val shadowingWarning: NodeSeq =
@@ -1129,4 +1129,8 @@ object EntityPage {
     def tpl = docTpl
     def reporter = rep
   }
+
+  /* Vlad: Lesson learned the hard way: don't put any stateful code that references the model here,
+   * it won't be garbage collected and you'll end up filling the heap with garbage */
+  def lowerFirstLetter(s: String) = if (s.length >= 1) s.substring(0,1).toLowerCase() + s.substring(1) else s
 }

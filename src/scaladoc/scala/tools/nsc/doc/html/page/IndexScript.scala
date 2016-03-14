@@ -12,7 +12,7 @@ import scala.tools.nsc.doc.model.{Package, DocTemplateEntity}
 import scala.tools.nsc.doc.html.{Page, HtmlFactory}
 import scala.util.parsing.json.{JSONObject, JSONArray, JSONType}
 
-class IndexScript(universe: doc.Universe, index: doc.Index) extends Page {
+class IndexScript(universe: doc.Universe) extends Page {
   import model._
   import scala.tools.nsc.doc.base.comment.Text
   import scala.collection.immutable.Map
@@ -140,6 +140,5 @@ class IndexScript(universe: doc.Universe, index: doc.Index) extends Page {
 }
 
 object IndexScript {
-  def apply(universe: doc.Universe, index: doc.Index) =
-    new IndexScript(universe, index)
+  def apply(universe: doc.Universe) = new IndexScript(universe)
 }
