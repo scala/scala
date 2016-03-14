@@ -15,7 +15,7 @@ package mutable
 import generic._
 import annotation.tailrec
 
-/** A simple mutable map backed by a list.
+/** A simple mutable map backed by a list, so it preserves insertion order.
  *
  *  @tparam A    the type of the keys contained in this list map.
  *  @tparam B    the type of the values assigned to keys in this list map.
