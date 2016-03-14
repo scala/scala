@@ -210,7 +210,7 @@ abstract class ExplicitOuter extends InfoTransform
       // class needs to have a common naming scheme, independently of whether
       // the field was accessed from an inner class or not. See #2946
       if (sym.owner.isTrait && sym.isLocalToThis &&
-              (sym.getterIn(sym.owner.toInterface) == NoSymbol))
+              (sym.getterIn(sym.owner) == NoSymbol))
         sym.makeNotPrivate(sym.owner)
       tp
   }
@@ -241,12 +241,17 @@ abstract class ExplicitOuter extends InfoTransform
      *  Will return `EmptyTree` if there is no outer accessor because of a premature self reference.
      */
     private def outerSelect(base: Tree): Tree = {
-      val baseSym = base.tpe.typeSymbol.toInterface
+      val baseSym = base.tpe.typeSymbol
       val outerAcc = outerAccessor(baseSym)
-      if (outerAcc == NoSymbol && baseSym.ownersIterator.exists(isUnderConstruction)) {
-         // e.g neg/t6666.scala
-         // The caller will report the error with more information.
-         EmptyTree
+      if (outerAcc == NoSymbol) {
+        if (baseSym.ownersIterator.exists(isUnderConstruction)) {
+          // e.g neg/t6666.scala
+          // The caller will report the error with more information.
+          EmptyTree
+        } else {
+          globalError(currentOwner.pos, s"Internal error: unable to find the outer accessor symbol of $baseSym")
+          EmptyTree
+        }
       } else {
         val currentClass = this.currentClass //todo: !!! if this line is removed, we get a build failure that protected$currentClass need an override modifier
         // outerFld is the $outer field of the current class, if the reference can
@@ -254,6 +259,7 @@ abstract class ExplicitOuter extends InfoTransform
         // otherwise it is NoSymbol
         val outerFld =
           if (outerAcc.owner == currentClass &&
+            !outerAcc.owner.isTrait &&
             base.tpe =:= currentClass.thisType &&
             outerAcc.owner.isEffectivelyFinal)
             outerField(currentClass) suchThat (_.owner == currentClass)
@@ -274,8 +280,7 @@ abstract class ExplicitOuter extends InfoTransform
      */
     protected def outerPath(base: Tree, from: Symbol, to: Symbol): Tree = {
       //Console.println("outerPath from "+from+" to "+to+" at "+base+":"+base.tpe)
-      //assert(base.tpe.widen.baseType(from.toInterface) != NoType, ""+base.tpe.widen+" "+from.toInterface)//DEBUG
-      if (from == to || from.isImplClass && from.toInterface == to) base
+      if (from == to) base
       else outerPath(outerSelect(base), from.outerClass, to)
     }
 
@@ -400,7 +405,7 @@ abstract class ExplicitOuter extends InfoTransform
         case Template(parents, self, decls) =>
           val newDefs = new ListBuffer[Tree]
           atOwner(tree, currentOwner) {
-            if (!currentClass.isInterface || (currentClass hasFlag lateINTERFACE)) {
+            if (!currentClass.isInterface) {
               if (isInner(currentClass)) {
                 if (hasOuterField(currentClass))
                   newDefs += outerFieldDef // (1a)
@@ -479,7 +484,7 @@ abstract class ExplicitOuter extends InfoTransform
         // base.<outer>.eq(o) --> base.$outer().eq(o) if there's an accessor, else the whole tree becomes TRUE
         // TODO remove the synthetic `<outer>` method from outerFor??
         case Apply(eqsel@Select(eqapp@Apply(sel@Select(base, nme.OUTER_SYNTH), Nil), eq), args) =>
-          val outerFor = sel.symbol.owner.toInterface // TODO: toInterface necessary?
+          val outerFor = sel.symbol.owner
           val acc = outerAccessor(outerFor)
 
           if (acc == NoSymbol ||

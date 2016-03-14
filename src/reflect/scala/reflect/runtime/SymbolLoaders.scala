@@ -3,7 +3,6 @@ package reflect
 package runtime
 
 import scala.collection.mutable
-import scala.reflect.runtime.ReflectionUtils.scalacShouldntLoadClass
 import scala.reflect.internal.Flags._
 
 private[reflect] trait SymbolLoaders { self: SymbolTable =>
@@ -125,7 +124,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
       val e = super.lookupEntry(name)
       if (e != null)
         e
-      else if (scalacShouldntLoadClass(name) || (negatives contains name))
+      else if (negatives contains name)
         null
       else {
         val path =

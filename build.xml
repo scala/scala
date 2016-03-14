@@ -307,6 +307,7 @@ TODO:
 
       <artifact:remoteRepository id="sonatype-release" url="https://oss.sonatype.org/content/repositories/releases"/>
       <artifact:remoteRepository id="extra-repo" url="${extra.repo.url}"/>
+      <artifact:remoteRepository id="scala-release-temp" url="https://scala-ci.typesafe.com/artifactory/scala-release-temp/"/>
 
       <!-- prepare, for each of the names below, the property "@{name}.cross", set to the
            necessary cross suffix (usually something like "_2.11.0-M6". -->
@@ -330,12 +331,14 @@ TODO:
           -->
         <artifact:remoteRepository refid="sonatype-release"/>
         <artifact:remoteRepository refid="extra-repo"/>
+        <artifact:remoteRepository refid="scala-release-temp"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-partest${partest.cross}" version="${partest.version.number}" />
       </artifact:dependencies>
       <copy-deps project="partest"/>
 
       <artifact:dependencies pathId="scalacheck.classpath" filesetId="scalacheck.fileset" versionsId="scalacheck.versions">
         <artifact:remoteRepository refid="extra-repo"/>
+        <artifact:remoteRepository refid="scala-release-temp"/>
         <dependency groupId="org.scalacheck"         artifactId="scalacheck${scalacheck.cross}"    version="${scalacheck.version.number}" />
       </artifact:dependencies>
 
@@ -348,6 +351,7 @@ TODO:
            must specify sourcesFilesetId, javadocFilesetId to download these types of artifacts -->
       <artifact:dependencies pathId="external-modules.deps.classpath" sourcesFilesetId="external-modules.sources.fileset" javadocFilesetId="external-modules.javadoc.fileset">
         <artifact:remoteRepository refid="extra-repo"/>
+        <artifact:remoteRepository refid="scala-release-temp"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-xml${scala-xml.cross}" version="${scala-xml.version.number}"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-parser-combinators${scala-parser-combinators.cross}" version="${scala-parser-combinators.version.number}"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-swing${scala-swing.cross}" version="${scala-swing.version.number}"/>
@@ -376,6 +380,7 @@ TODO:
       <echo message="Using Scala ${starr.version} for STARR."/>
       <artifact:dependencies pathId="starr.compiler.path" filesetId="starr.fileset">
         <artifact:remoteRepository refid="extra-repo"/>
+        <artifact:remoteRepository refid="scala-release-temp"/>
         <dependency groupId="org.scala-lang" artifactId="scala-library" version="${starr.version}"/>
         <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${starr.version}"/>
         <dependency groupId="org.scala-lang" artifactId="scala-compiler" version="${starr.version}"/>

@@ -176,9 +176,6 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     override protected def createRefinementClassSymbol(pos: Position, newFlags: Long): RefinementClassSymbol =
       new RefinementClassSymbol(this, pos) with SynchronizedClassSymbol initFlags newFlags
 
-    override protected def createImplClassSymbol(name: TypeName, pos: Position, newFlags: Long): ClassSymbol =
-      new ClassSymbol(this, pos, name) with ImplClassSymbol with SynchronizedClassSymbol initFlags newFlags
-
     override protected def createPackageObjectClassSymbol(pos: Position, newFlags: Long): PackageObjectClassSymbol =
       new PackageObjectClassSymbol(this, pos) with SynchronizedClassSymbol initFlags newFlags
 

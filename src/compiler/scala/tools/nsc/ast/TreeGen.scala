@@ -145,6 +145,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   override def mkCast(tree: Tree, pt: Type): Tree = {
     debuglog("casting " + tree + ":" + tree.tpe + " to " + pt + " at phase: " + phase)
     assert(!tree.tpe.isInstanceOf[MethodType], tree)
+    assert(!pt.isInstanceOf[MethodType], tree)
     assert(pt eq pt.normalize, tree +" : "+ debugString(pt) +" ~>"+ debugString(pt.normalize))
     atPos(tree.pos) {
       mkAsInstanceOf(tree, pt, any = !phase.next.erasedTypes, wrapInApply = isAtPhaseAfter(currentRun.uncurryPhase))

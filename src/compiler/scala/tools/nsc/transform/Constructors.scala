@@ -73,7 +73,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
 
     override def transform(tree: Tree): Tree = {
       tree match {
-        case cd @ ClassDef(mods0, name0, tparams0, impl0) if !cd.symbol.isInterface && !isPrimitiveValueClass(cd.symbol) =>
+        case cd @ ClassDef(mods0, name0, tparams0, impl0) if !isPrimitiveValueClass(cd.symbol) && cd.symbol.primaryConstructor != NoSymbol =>
           if(cd.symbol eq AnyValClass) {
             cd
           }
@@ -456,7 +456,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
 
     // find and dissect primary constructor
     private val (primaryConstr, _primaryConstrParams, primaryConstrBody) = stats collectFirst {
-      case dd@DefDef(_, _, _, vps :: Nil, _, rhs: Block) if dd.symbol.isPrimaryConstructor => (dd, vps map (_.symbol), rhs)
+      case dd@DefDef(_, _, _, vps :: Nil, _, rhs: Block) if dd.symbol.isPrimaryConstructor || dd.symbol.isMixinConstructor => (dd, vps map (_.symbol), rhs)
     } getOrElse {
       abort("no constructor in template: impl = " + impl)
     }
@@ -517,9 +517,11 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
         case Apply(Select(This(_), _), List()) =>
           // references to parameter accessor methods of own class become references to parameters
           // outer accessors become references to $outer parameter
-          if (canBeSupplanted(tree.symbol))
+          if (clazz.isTrait)
+            super.transform(tree)
+          else if (canBeSupplanted(tree.symbol))
             gen.mkAttributedIdent(parameter(tree.symbol.accessed)) setPos tree.pos
-          else if (tree.symbol.outerSource == clazz && !clazz.isImplClass)
+          else if (tree.symbol.outerSource == clazz)
             gen.mkAttributedIdent(parameterNamed(nme.OUTER)) setPos tree.pos
           else
             super.transform(tree)
@@ -566,7 +568,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
     }
 
     // Constant typed vals are not memoized.
-    def memoizeValue(sym: Symbol) = !sym.info.isInstanceOf[ConstantType]
+    def memoizeValue(sym: Symbol) = !sym.info.resultType.isInstanceOf[ConstantType]
 
     /** Triage definitions and statements in this template into the following categories.
       * The primary constructor is treated separately, as it is assembled in part from these pieces.
@@ -587,7 +589,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
       for (stat <- primaryConstrBody.stats) {
         constrStatBuf += stat
         stat match {
-          case ValDef(mods, name, _, _) if mods hasFlag PRESUPER =>
+          case ValDef(mods, name, _, _) if mods.hasFlag(PRESUPER) =>
             // stat is the constructor-local definition of the field value
             val fields = presupers filter (_.getterName == name)
             assert(fields.length == 1, s"expected exactly one field by name $name in $presupers of $clazz's early initializers")
@@ -624,12 +626,12 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
 
         stat match {
           // recurse on class definition, store in defBuf
-          case _: ClassDef => defBuf += new ConstructorTransformer(unit).transform(stat)
+          case _: ClassDef if !stat.symbol.isInterface => defBuf += new ConstructorTransformer(unit).transform(stat)
 
           // Triage methods -- they all end up in the template --
           // regular ones go to `defBuf`, secondary contructors go to `auxConstructorBuf`.
           // The primary constructor is dealt with separately (we're massaging it here).
-          case _: DefDef if statSym.isPrimaryConstructor => ()
+          case _: DefDef if statSym.isPrimaryConstructor || statSym.isMixinConstructor => ()
           case _: DefDef if statSym.isConstructor => auxConstructorBuf += stat
           case _: DefDef => defBuf += stat
 

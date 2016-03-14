@@ -999,9 +999,9 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         }
 
         val cls =
-          if (jclazz.isMemberClass && !nme.isImplClassName(jname))
+          if (jclazz.isMemberClass)
             lookupClass
-          else if (jclazz.isLocalClass0 || scalacShouldntLoadClass(jname))
+          else if (jclazz.isLocalClass0)
             // local classes and implementation classes not preserved by unpickling - treat as Java
             //
             // upd. but only if they cannot be loaded as top-level classes

@@ -18,8 +18,18 @@ IVY_CACHE="$WORKSPACE/.ivy2"
 mkdir -p $IVY_CACHE
 rm -rf $IVY_CACHE/cache/org.scala-lang
 
+cat >$SBT_HOME/repositories <<EOF
+[repositories]
+  local
+  typesafe-ivy-releases: http://repo.typesafe.com/typesafe/ivy-releases/, [organization]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext], bootOnly
+  maven-central
+  sonatype-snapshots: https://oss.sonatype.org/content/repositories/snapshots
+  private-repo: https://scala-ci.typesafe.com/artifactory/scala-release-temp/
+EOF
+
 SBT_CMD=${sbtCmd-sbt}
 SBT_CMD="$SBT_CMD -sbt-version 0.13.9"
+SBT_CMD="$SBT_CMD -Dsbt.repository.config=$SBT_HOME/repositories"
 
 # temp dir where all 'non-build' operation are performed
 TMP_ROOT_DIR=$(mktemp -d -t pr-scala.XXXX)
