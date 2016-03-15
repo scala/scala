@@ -260,7 +260,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         val body =
           Block(
             List(
-              Apply(Select(Super(gen.mkAttributedThis(newClass), tpnme.EMPTY) setPos newClass.pos, nme.CONSTRUCTOR) setPos newClass.pos, Nil) setPos newClass.pos
+              atPos(newClass.pos)(Apply(gen.mkSuperInitCall, Nil))
             ) ++ assigns,
             Literal(Constant(())): Tree
           ) setPos newClass.pos

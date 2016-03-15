@@ -535,6 +535,22 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     private def genApply(app: Apply, expectedType: BType): BType = {
       var generatedType = expectedType
       lineNumber(app)
+
+      def genSuperApply(hostClass: Symbol, fun: Symbol, args: List[Tree]) = {
+        // 'super' call: Note: since constructors are supposed to
+        // return an instance of what they construct, we have to take
+        // special care. On JVM they are 'void', and Scala forbids (syntactically)
+        // to call super constructors explicitly and/or use their 'returned' value.
+        // therefore, we can ignore this fact, and generate code that leaves nothing
+        // on the stack (contrary to what the type in the AST says).
+
+        val invokeStyle = InvokeStyle.Super
+        mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
+        genLoadArguments(args, paramTKs(app))
+        genCallMethod(fun, invokeStyle, app.pos, hostClass)
+        generatedType = methodBTypeFromSymbol(fun).returnType
+      }
+
       app match {
 
         case Apply(TypeApply(fun, targs), _) =>
@@ -582,20 +598,19 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
           generatedType = genTypeApply()
 
-        // 'super' call: Note: since constructors are supposed to
-        // return an instance of what they construct, we have to take
-        // special care. On JVM they are 'void', and Scala forbids (syntactically)
-        // to call super constructors explicitly and/or use their 'returned' value.
-        // therefore, we can ignore this fact, and generate code that leaves nothing
-        // on the stack (contrary to what the type in the AST says).
         case Apply(fun @ Select(Super(qual, mix), _), args) =>
-          val invokeStyle = InvokeStyle.Super
-          // if (fun.symbol.isConstructor) Static(true) else SuperCall(mix);
-          mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
-          val hostClass = qual.symbol.parentSymbols.find(_.name == mix).orNull
-          genLoadArguments(args, paramTKs(app))
-          genCallMethod(fun.symbol, invokeStyle, app.pos, hostClass)
-          generatedType = methodBTypeFromSymbol(fun.symbol).returnType
+          val hostClass = qual.symbol.parentSymbols.filter(_.name == mix) match {
+            case Nil =>
+              // We get here for trees created by SuperSelect which use tpnme.EMPTY as the super qualifier
+              // Subsequent code uses the owner of fun.symbol to target the call.
+              null
+            case parent :: Nil=>
+              parent
+            case parents =>
+              devWarning("ambiguous parent class qualifier: " + qual.symbol.parentSymbols)
+              null
+          }
+          genSuperApply(hostClass, fun.symbol, args)
 
         // 'new' constructor call: Note: since constructors are
         // thought to return an instance of what they construct,

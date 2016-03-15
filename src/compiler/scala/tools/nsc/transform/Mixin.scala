@@ -534,7 +534,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        */
       def completeSuperAccessor(stat: Tree) = stat match {
         case DefDef(_, _, _, vparams :: Nil, _, EmptyTree) if stat.symbol.isSuperAccessor =>
-          val body = atPos(stat.pos)(Apply(Select(Super(clazz, tpnme.EMPTY), stat.symbol.alias), vparams map (v => Ident(v.symbol))))
+          val body = atPos(stat.pos)(Apply(SuperSelect(clazz, stat.symbol.alias), vparams map (v => Ident(v.symbol))))
           val pt   = stat.symbol.tpe.resultType
 
           copyDefDef(stat)(rhs = enteringMixin(transform(localTyper.typed(body, pt))))
@@ -826,7 +826,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             // if it is a mixed-in lazy value, complete the accessor
             if (getter.isLazy) {
               val isUnit    = isUnitGetter(getter)
-              val initCall  = Apply(Select(Super(clazz, tpnme.EMPTY), initializer(getter)), Nil)
+              val initCall  = Apply(SuperSelect(clazz, initializer(getter)), Nil)
               val selection = fieldAccess(getter)
               val init      = if (isUnit) initCall else atPos(getter.pos)(Assign(selection, initCall))
               val returns   = if (isUnit) UNIT else selection
@@ -907,7 +907,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             // add forwarders
             assert(sym.alias != NoSymbol, (sym, sym.debugFlagString, clazz))
             // debuglog("New forwarder: " + sym.defString + " => " + sym.alias.defString)
-            if (!sym.isMacro) addDefDef(sym, Apply(Select(Super(clazz, tpnme.EMPTY), sym.alias), sym.paramss.head.map(Ident(_))))
+            if (!sym.isMacro) addDefDef(sym, Apply(SuperSelect(clazz, sym.alias), sym.paramss.head.map(Ident(_))))
           }
         }
       }

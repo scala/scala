@@ -63,7 +63,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
    */
   private def addMixinConstructorCalls(tree: Tree, clazz: Symbol): Tree = {
     def mixinConstructorCall(mc: Symbol): Tree = atPos(tree.pos) {
-      Apply(Select(Super(clazz, tpnme.EMPTY), mc.primaryConstructor), List())
+      Apply(SuperSelect(clazz, mc.primaryConstructor), Nil)
     }
     val mixinConstructorCalls: List[Tree] = {
       for (mc <- clazz.mixinClasses.reverse
@@ -71,6 +71,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
       yield mixinConstructorCall(mc)
     }
     tree match {
+
       case Block(Nil, expr) =>
         // AnyVal constructor - have to provide a real body so the
         // jvm doesn't throw a VerifyError. But we can't add the
