@@ -13,7 +13,7 @@ chapter: 8
   Pattern1        ::=  boundvarid ‘:’ TypePat
                     |  ‘_’ ‘:’ TypePat
                     |  Pattern2
-  Pattern2        ::=  boundvarid [‘@’ Pattern3]
+  Pattern2        ::=  id [‘@’ Pattern3]
                     |  Pattern3
   Pattern3        ::=  SimplePattern
                     |  SimplePattern {id [nl] SimplePattern}
@@ -22,7 +22,7 @@ chapter: 8
                     |  Literal
                     |  StableId
                     |  StableId ‘(’ [Patterns] ‘)’
-                    |  StableId ‘(’ [Patterns ‘,’] [varid ‘@’] ‘_’ ‘*’ ‘)’
+                    |  StableId ‘(’ [Patterns ‘,’] [id ‘@’] ‘_’ ‘*’ ‘)’
                     |  ‘(’ [Patterns] ‘)’
                     |  XmlPattern
   Patterns        ::=  Pattern {‘,’ Patterns}

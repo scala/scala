@@ -1922,10 +1922,9 @@ self =>
       }
 
       /** {{{
-       *  Pattern2    ::=  boundvarid [ @ Pattern3 ]
+       *  Pattern2    ::=  id  @ Pattern3
+       *                |  `_' @ Pattern3
        *                |   Pattern3
-       *  SeqPattern2 ::=  boundvarid [ @ SeqPattern3 ]
-       *                |   SeqPattern3
        *  }}}
        */
       def pattern2(): Tree = {
@@ -1936,7 +1935,7 @@ self =>
           case Ident(nme.WILDCARD) =>
             in.nextToken()
             pattern3()
-          case Ident(name) if nme.isVariableName(name) =>
+          case Ident(name) =>
             in.nextToken()
             atPos(p.pos.start) { Bind(name, pattern3()) }
           case _ => p
