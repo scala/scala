@@ -3946,47 +3946,6 @@ trait Types
     check(tp1, tp2) && check(tp2, tp1)
   }
 
-  /** Does a pattern of type `patType` need an outer test when executed against
-   *  selector type `selType` in context defined by `currentOwner`?
-   */
-  def needsOuterTest(patType: Type, selType: Type, currentOwner: Symbol) = {
-    def createDummyClone(pre: Type): Type = {
-      val dummy = currentOwner.enclClass.newValue(nme.ANYname).setInfo(pre.widen)
-      singleType(ThisType(currentOwner.enclClass), dummy)
-    }
-    def maybeCreateDummyClone(pre: Type, sym: Symbol): Type = pre match {
-      case SingleType(pre1, sym1) =>
-        if (sym1.isModule && sym1.isStatic) {
-          if (sym.owner == sym1 || sym.isJavaDefined || sym.owner.sourceModule.isStaticModule) NoType
-          else pre
-        } else if (sym1.isModule && sym.owner == sym1.moduleClass) {
-          val pre2 = maybeCreateDummyClone(pre1, sym1)
-          if (pre2 eq NoType) pre2
-          else singleType(pre2, sym1)
-        } else {
-          createDummyClone(pre)
-        }
-      case ThisType(clazz) =>
-        if (clazz.isModuleClass)
-          maybeCreateDummyClone(clazz.typeOfThis, sym)
-        else if (sym.owner == clazz && (sym.hasFlag(PRIVATE) || sym.privateWithin == clazz))
-          NoType
-        else
-          createDummyClone(pre)
-      case _ =>
-        NoType
-    }
-    // See the test for SI-7214 for motivation for dealias. Later `treeCondStrategy#outerTest`
-    // generates an outer test based on `patType.prefix` with automatically dealises.
-    patType.dealias match {
-      case TypeRef(pre, sym, args) =>
-        val pre1 = maybeCreateDummyClone(pre, sym)
-        (pre1 ne NoType) && isPopulated(copyTypeRef(patType, pre1, sym, args), selType)
-      case _ =>
-        false
-    }
-  }
-
   def normalizePlus(tp: Type): Type = {
     if (isRawType(tp)) rawToExistential(tp)
     else tp.normalize match {

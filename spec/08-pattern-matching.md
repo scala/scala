@@ -328,10 +328,12 @@ A type pattern $T$ is of one of the following  forms:
 
 * A reference to a class $C$, $p.C$, or `$T$#$C$`.  This
   type pattern matches any non-null instance of the given class.
-  Note that the prefix of the class, if it is given, is relevant for determining
+  Note that the prefix of the class, if it exists, is relevant for determining
   class instances. For instance, the pattern $p.C$ matches only
   instances of classes $C$ which were created with the path $p$ as
-  prefix.
+  prefix. This also applies to prefixes which are not given syntactically.
+  For example, if $C$ refers to a class defined in the nearest enclosing
+  class and is thus equivalent to $this.C$, it is considered to have a prefix.
 
   The bottom types `scala.Nothing` and `scala.Null` cannot
   be used as type patterns, because they would match nothing in any case.
