@@ -1507,9 +1507,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       }
     }
 
-    private def transformCaseApply(tree: Tree, ifNot: => Unit) = {
+    private def isSimpleCaseApply(tree: Tree): Boolean = {
       val sym = tree.symbol
-
       def isClassTypeAccessible(tree: Tree): Boolean = tree match {
         case TypeApply(fun, targs) =>
           isClassTypeAccessible(fun)
@@ -1517,40 +1516,36 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           ( // SI-4859 `CaseClass1().InnerCaseClass2()` must not be rewritten to `new InnerCaseClass2()`;
             //          {expr; Outer}.Inner() must not be rewritten to `new Outer.Inner()`.
             treeInfo.isQualifierSafeToElide(module) &&
-            // SI-5626 Classes in refinement types cannot be constructed with `new`. In this case,
-            // the companion class is actually not a ClassSymbol, but a reference to an abstract type.
-            module.symbol.companionClass.isClass
-          )
+              // SI-5626 Classes in refinement types cannot be constructed with `new`. In this case,
+              // the companion class is actually not a ClassSymbol, but a reference to an abstract type.
+              module.symbol.companionClass.isClass
+            )
       }
 
-      val doTransform =
-        sym.isSourceMethod &&
+      sym.isSourceMethod &&
         sym.isCase &&
         sym.name == nme.apply &&
         isClassTypeAccessible(tree) &&
-        !tree.tpe.resultType.typeSymbol.primaryConstructor.isLessAccessibleThan(tree.symbol)
+        !tree.tpe.finalResultType.typeSymbol.primaryConstructor.isLessAccessibleThan(tree.symbol)
+    }
 
-      if (doTransform) {
-        def loop(t: Tree): Unit = t match {
-          case Ident(_) =>
-            checkUndesiredProperties(t.symbol, t.pos)
-          case Select(qual, _) =>
-            checkUndesiredProperties(t.symbol, t.pos)
-            loop(qual)
-          case _ =>
-        }
-        tree foreach {
-          case i@Ident(_) =>
-            enterReference(i.pos, i.symbol) // SI-5390 need to `enterReference` for `a` in `a.B()`
-          case _ =>
-        }
-        loop(tree)
-        toConstructor(tree.pos, tree.tpe)
+    private def transformCaseApply(tree: Tree) = {
+      def loop(t: Tree): Unit = t match {
+        case Ident(_) =>
+          checkUndesiredProperties(t.symbol, t.pos)
+        case Select(qual, _) =>
+          checkUndesiredProperties(t.symbol, t.pos)
+          loop(qual)
+        case _ =>
       }
-      else {
-        ifNot
-        tree
+
+      tree foreach {
+        case i@Ident(_) =>
+          enterReference(i.pos, i.symbol) // SI-5390 need to `enterReference` for `a` in `a.B()`
+        case _ =>
       }
+      loop(tree)
+      toConstructor(tree.pos, tree.tpe)
     }
 
     private def transformApply(tree: Apply): Tree = tree match {
@@ -1590,12 +1585,24 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         // term should have been eliminated by super accessors
         assert(!(qual.symbol.isTrait && sym.isTerm && mix == tpnme.EMPTY), (qual.symbol, sym, mix))
 
-      transformCaseApply(tree,
+      // Rewrite eligible calls to monomorphic case companion apply methods to the equivalent constructor call.
+      //
+      // Note: for generic case classes the rewrite needs to be handled at the enclosing `TypeApply` to transform
+      // `TypeApply(Select(C, apply), targs)` to `Select(New(C[targs]), <init>)`. In case such a `TypeApply`
+      // was deemed ineligible for transformation (e.g. the case constructor was private), the refchecks transform
+      // will recurse to this point with `Select(C, apply)`, which will have a type `[T](...)C[T]`.
+      //
+      // We don't need to perform the check on the Select node, and `!isHigherKinded will guard against this
+      // redundant (and previously buggy, SI-9546) consideration.
+      if (!tree.tpe.isHigherKinded && isSimpleCaseApply(tree)) {
+        transformCaseApply(tree)
+      } else {
         qual match {
           case Super(_, mix)  => checkSuper(mix)
           case _              =>
         }
-      )
+        tree
+      }
     }
     private def transformIf(tree: If): Tree = {
       val If(cond, thenpart, elsepart) = tree
@@ -1720,7 +1727,10 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
           case TypeApply(fn, args) =>
             checkBounds(tree, NoPrefix, NoSymbol, fn.tpe.typeParams, args map (_.tpe))
-            transformCaseApply(tree, ())
+            if (isSimpleCaseApply(tree))
+              transformCaseApply(tree)
+            else
+              tree
 
           case x @ Apply(_, _)  =>
             transformApply(x)
@@ -1739,12 +1749,11 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
           case Ident(name) =>
             checkUndesiredProperties(sym, tree.pos)
-            transformCaseApply(tree,
-              if (name != nme.WILDCARD && name != tpnme.WILDCARD_STAR) {
-                assert(sym != NoSymbol, "transformCaseApply: name = " + name.debugString + " tree = " + tree + " / " + tree.getClass) //debug
-                enterReference(tree.pos, sym)
-              }
-            )
+            if (name != nme.WILDCARD && name != tpnme.WILDCARD_STAR) {
+              assert(sym != NoSymbol, "transformCaseApply: name = " + name.debugString + " tree = " + tree + " / " + tree.getClass) //debug
+              enterReference(tree.pos, sym)
+            }
+            tree
 
           case x @ Select(_, _) =>
             transformSelect(x)
