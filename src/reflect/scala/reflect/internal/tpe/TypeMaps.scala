@@ -610,8 +610,14 @@ private[internal] trait TypeMaps {
     }
 
     // Does the candidate symbol match the given prefix and class?
-    private def matchesPrefixAndClass(pre: Type, clazz: Symbol)(candidate: Symbol) =
-      (clazz == candidate) && (pre.baseTypeIndex(clazz) != -1)
+    private def matchesPrefixAndClass(pre: Type, clazz: Symbol)(candidate: Symbol) = (clazz == candidate) && {
+      pre match {
+        // We may be solving for the prefix, in which case we need the
+        // subclass test to add the constraint. See pos/t7688 for an example.
+        case _: TypeVar => pre.typeSymbol isSubClass clazz
+        case _          => pre.baseTypeIndex(clazz) != -1
+      }
+    }
 
     // Whether the annotation tree currently being mapped over has had a This(_) node rewritten.
     private[this] var wroteAnnotation = false
