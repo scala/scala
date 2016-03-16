@@ -1161,6 +1161,10 @@ trait Trees extends api.Trees {
   def Super(sym: Symbol, mix: TypeName): Tree =
     Super(This(sym), mix)
 
+  /** Selection of a method in an arbitrary ancestor */
+  def SuperSelect(clazz: Symbol, sym: Symbol): Tree =
+    Select(Super(clazz, tpnme.EMPTY), sym)
+
   def This(sym: Symbol): Tree =
     This(sym.name.toTypeName) setSymbol sym
 

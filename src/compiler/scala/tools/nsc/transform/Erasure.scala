@@ -662,7 +662,7 @@ abstract class Erasure extends AddInterfaces
               adaptMember(selectFrom(applied))
             } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.typeSymbol isSubClass tree.symbol.owner))) {
               assert(tree.symbol.owner != ArrayClass)
-              selectFrom(cast(qual1, tree.symbol.owner.tpe))
+              selectFrom(cast(qual1, tree.symbol.owner.tpe.resultType))
             } else {
               selectFrom(qual1)
             }
@@ -1103,7 +1103,6 @@ abstract class Erasure extends AddInterfaces
             }
           } else tree
         case Template(parents, self, body) =>
-          assert(!currentOwner.isImplClass)
           //Console.println("checking no dble defs " + tree)//DEBUG
           checkNoDoubleDefs(tree.symbol.owner)
           treeCopy.Template(tree, parents, noSelfType, addBridges(body, currentOwner))

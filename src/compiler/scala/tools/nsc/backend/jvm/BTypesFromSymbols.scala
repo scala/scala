@@ -172,7 +172,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
      */
     def primitiveOrClassToBType(sym: Symbol): BType = {
       assertClassNotArray(sym)
-      assert(!sym.isImplClass, sym)
       primitiveTypeToBType.getOrElse(sym, classBTypeFromSymbol(sym))
     }
 
@@ -337,7 +336,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     // Check for hasAnnotationFlag for SI-9393: the classfile / java source parsers add
     // scala.annotation.Annotation as superclass to java annotations. In reality, java
     // annotation classfiles have superclass Object (like any interface classfile).
-    val superClassSym = if (classSym.isImplClass || classSym.hasJavaAnnotationFlag) ObjectClass else {
+    val superClassSym = if (classSym.hasJavaAnnotationFlag) ObjectClass else {
       val sc = classSym.superClass
       // SI-9393: Java annotation classes don't have the ABSTRACT/INTERFACE flag, so they appear
       // (wrongly) as superclasses. Fix this for BTypes: the java annotation will appear as interface
@@ -603,11 +602,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
    */
   final def isTopLevelModuleClass(sym: Symbol): Boolean = exitingPickler {
     // phase travel to pickler required for isNestedClass (looks at owner)
-    val r = sym.isModuleClass && !sym.isNestedClass
-    // The mixin phase adds the `lateMODULE` flag to trait implementation classes. Since the flag
-    // is late, it should not be visible here inside the time travel. We check this.
-    if (r) assert(!sym.isImplClass, s"isModuleClass should be false for impl class $sym")
-    r
+    sym.isModuleClass && !sym.isNestedClass
   }
 
   /**
@@ -684,7 +679,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     val finalFlag = (
       (((sym.rawflags & symtab.Flags.FINAL) != 0) || isTopLevelModuleClass(sym))
-        && !sym.enclClass.isInterface
+        && !sym.enclClass.isTrait
         && !sym.isClassConstructor
         && !sym.isMutable // lazy vals and vars both
       )
@@ -697,12 +692,12 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     GenBCode.mkFlags(
       if (privateFlag) ACC_PRIVATE else ACC_PUBLIC,
       if ((sym.isDeferred && !sym.hasFlag(symtab.Flags.JAVA_DEFAULTMETHOD))|| sym.hasAbstractFlag) ACC_ABSTRACT else 0,
-      if (sym.isInterface) ACC_INTERFACE else 0,
+      if (sym.isTraitOrInterface) ACC_INTERFACE else 0,
       if (finalFlag && !sym.hasAbstractFlag) ACC_FINAL else 0,
       if (sym.isStaticMember) ACC_STATIC else 0,
       if (sym.isBridge) ACC_BRIDGE | ACC_SYNTHETIC else 0,
       if (sym.isArtifact) ACC_SYNTHETIC else 0,
-      if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
+      if (sym.isClass && !sym.isTraitOrInterface) ACC_SUPER else 0,
       if (sym.hasJavaEnumFlag) ACC_ENUM else 0,
       if (sym.isVarargsMethod) ACC_VARARGS else 0,
       if (sym.hasFlag(symtab.Flags.SYNCHRONIZED)) ACC_SYNCHRONIZED else 0,

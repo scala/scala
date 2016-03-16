@@ -32,8 +32,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 // --------- helper functions -----------------------------------------------
 
   /** A member of a trait is implemented statically if its implementation after the
-   *  mixin transform is in the static implementation module. To be statically
-   *  implemented, a member must be a method that belonged to the trait's implementation class
+   *  mixin transform is RHS of the method body (destined to be in a interface default method)
+   *
+   *  To be statically implemented, a member must be a method that belonged to the trait's implementation class
    *  before (i.e. it is not abstract). Not statically implemented are
    *   - non-private modules: these are implemented directly in the mixin composition class
    *     (private modules, on the other hand, are implemented statically, but their
@@ -43,32 +44,17 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *     methods in the impl class (because they can have arbitrary initializers)
    */
   private def isImplementedStatically(sym: Symbol) = (
-       sym.owner.isImplClass
+       sym.isMethod
+    && (!sym.hasFlag(DEFERRED | SUPERACCESSOR) || (sym hasFlag lateDEFERRED))
+    && sym.owner.isTrait
     && sym.isMethod
     && (!sym.isModule || sym.hasFlag(PRIVATE | LIFTED))
     && (!(sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isLazy)
+    && !sym.isPrivate
+    && !sym.hasAllFlags(LIFTED | MODULE | METHOD)
+    && !sym.isConstructor
+    && (!sym.hasFlag(notPRIVATE | LIFTED) || sym.hasFlag(ACCESSOR | SUPERACCESSOR | MODULE))
   )
-
-  /** A member of a trait is static only if it belongs only to the
-   *  implementation class, not the interface, and it is implemented
-   *  statically.
-   */
-  private def isStaticOnly(sym: Symbol) =
-    isImplementedStatically(sym) && sym.isImplOnly
-
-  /** A member of a trait is forwarded if it is implemented statically and it
-   *  is also visible in the trait's interface. In that case, a forwarder to
-   *  the member's static implementation will be added to the class that
-   *  inherits the trait.
-   */
-  private def isForwarded(sym: Symbol) =
-    isImplementedStatically(sym) && !sym.isImplOnly
-
-  /** Maps the type of an implementation class to its interface;
-   *  maps all other types to themselves.
-   */
-  private def toInterface(tp: Type): Type =
-    enteringMixin(tp.typeSymbol.toInterface).tpe
 
   private def isFieldWithBitmap(field: Symbol) = {
     field.info // ensure that nested objects are transformed
@@ -96,22 +82,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      && !(sym.owner isSubClass DelayedInitClass)
      && !(sym.accessed hasAnnotation TransientAttr)
   )
-
-  /** Maps all parts of this type that refer to implementation classes to
-   *  their corresponding interfaces.
-   */
-  private val toInterfaceMap = new TypeMap {
-    def apply(tp: Type): Type = mapOver( tp match {
-      case TypeRef(pre, sym, args) if sym.isImplClass =>
-        typeRef(pre, enteringMixin(sym.toInterface), args)
-      case _ => tp
-    })
-  }
-
-  /** The implementation class corresponding to a currently compiled interface.
-   *  todo: try to use Symbol.implClass instead?
-   */
-  private def implClass(iface: Symbol) = iface.implClass orElse (erasure implClass iface)
 
   /** Returns the symbol that is accessed by a super-accessor in a mixin composition.
    *
@@ -159,8 +129,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   /** Add given member to given class, and mark member as mixed-in.
    */
   def addMember(clazz: Symbol, member: Symbol): Symbol = {
-    debuglog("new member of " + clazz + ":" + member.defString)
-    clazz.info.decls enter member setFlag MIXEDIN
+    debuglog(s"mixing into $clazz: ${member.defString}")
+    clazz.info.decls enter member setFlag MIXEDIN resetFlag JAVA_DEFAULTMETHOD
   }
   def cloneAndAddMember(mixinClass: Symbol, mixinMember: Symbol, clazz: Symbol): Symbol =
     addMember(clazz, cloneBeforeErasure(mixinClass, mixinMember, clazz))
@@ -227,12 +197,11 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       }
 
       clazz.info // make sure info is up to date, so that implClass is set.
-      val impl = implClass(clazz) orElse abort("No impl class for " + clazz)
 
-      for (member <- impl.info.decls) {
+      for (member <- clazz.info.decls) {
         if (!member.isMethod && !member.isModule && !member.isModuleVar) {
           assert(member.isTerm && !member.isDeferred, member)
-          if (member.getterIn(impl).isPrivate) {
+          if (member.getterIn(clazz).isPrivate) {
             member.makeNotPrivate(clazz) // this will also make getter&setter not private
           }
           val getter = member.getterIn(clazz)
@@ -241,6 +210,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             val setter = member.setterIn(clazz)
             if (setter == NoSymbol) addMember(clazz, newSetter(member))
           }
+          clazz.info.decls.unlink(member)
         }
       }
       debuglog("new defs of " + clazz + " = " + clazz.info.decls)
@@ -266,16 +236,12 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     )
 
     /* Mix in members of implementation class mixinClass into class clazz */
-    def mixinImplClassMembers(mixinClass: Symbol, mixinInterface: Symbol) {
-      if (!mixinClass.isImplClass) devWarning ("Impl class flag is not set " +
-        ((mixinClass.debugLocationString, mixinInterface.debugLocationString)))
-
-      for (member <- mixinClass.info.decls ; if isForwarded(member)) {
-        val imember = member overriddenSymbol mixinInterface
-        imember overridingSymbol clazz match {
+    def mixinTraitForwarders(mixinClass: Symbol) {
+      for (member <- mixinClass.info.decls ; if isImplementedStatically(member)) {
+        member overridingSymbol clazz match {
           case NoSymbol =>
-            if (clazz.info.findMember(member.name, 0, lateDEFERRED, stableOnly = false).alternatives contains imember)
-              cloneAndAddMixinMember(mixinInterface, imember).asInstanceOf[TermSymbol] setAlias member
+            if (clazz.info.findMember(member.name, 0, 0L, stableOnly = false).alternatives contains member)
+              cloneAndAddMixinMember(mixinClass, member).asInstanceOf[TermSymbol] setAlias member
           case _        =>
         }
       }
@@ -296,7 +262,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             val mixedInAccessor = cloneAndAddMixinMember(mixinClass, mixinMember)
             if (mixinMember.isLazy) {
               initializer(mixedInAccessor) = (
-                implClass(mixinClass).info.decl(mixinMember.name)
+                mixinClass.info.decl(mixinMember.name)
                   orElse abort("Could not find initializer for " + mixinMember.name)
               )
             }
@@ -358,67 +324,16 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     // first complete the superclass with mixed in members
     addMixedinMembers(clazz.superClass, unit)
 
-    for (mc <- clazz.mixinClasses ; if mc hasFlag lateINTERFACE) {
+    for (mc <- clazz.mixinClasses ; if mc.isTrait) {
       // @SEAN: adding trait tracking so we don't have to recompile transitive closures
       unit.depends += mc
       addLateInterfaceMembers(mc)
       mixinTraitMembers(mc)
-      mixinImplClassMembers(implClass(mc), mc)
+      mixinTraitForwarders(mc)
     }
   }
 
-  /** The info transform for this phase does the following:
-   *   - The parents of every class are mapped from implementation class to interface
-   *   - Implementation classes become modules that inherit nothing
-   *     and that define all.
-   */
-  override def transformInfo(sym: Symbol, tp: Type): Type = tp match {
-    case ClassInfoType(parents, decls, clazz) =>
-      var parents1 = parents
-      var decls1 = decls
-      if (!clazz.isPackageClass) {
-        exitingMixin(clazz.owner.info)
-        if (clazz.isImplClass) {
-          clazz setFlag lateMODULE
-          var sourceModule = clazz.owner.info.decls.lookup(sym.name.toTermName)
-          if (sourceModule == NoSymbol) {
-            sourceModule = (
-              clazz.owner.newModuleSymbol(sym.name.toTermName, sym.pos, MODULE)
-                setModuleClass sym.asInstanceOf[ClassSymbol]
-            )
-            clazz.owner.info.decls enter sourceModule
-          }
-          else {
-            sourceModule setPos sym.pos
-            if (sourceModule.flags != MODULE) {
-              log(s"!!! Directly setting sourceModule flags for $sourceModule from ${sourceModule.flagString} to MODULE")
-              sourceModule.flags = MODULE
-            }
-          }
-          sourceModule setInfo sym.tpe
-          // Companion module isn't visible for anonymous class at this point anyway
-          assert(clazz.sourceModule != NoSymbol || clazz.isAnonymousClass,  s"$clazz has no sourceModule: $sym ${sym.tpe}")
-          parents1 = List()
-          decls1 = newScopeWith(decls.toList filter isImplementedStatically: _*)
-        } else if (!parents.isEmpty) {
-          parents1 = parents.head :: (parents.tail map toInterface)
-        }
-      }
-      //decls1 = enteringPhase(phase.next)(newScopeWith(decls1.toList: _*))//debug
-      if ((parents1 eq parents) && (decls1 eq decls)) tp
-      else ClassInfoType(parents1, decls1, clazz)
-
-    case MethodType(params, restp) =>
-      toInterfaceMap(
-        if (isImplementedStatically(sym)) {
-          val ownerParam = sym.newSyntheticValueParam(toInterface(sym.owner.typeOfThis))
-          MethodType(ownerParam :: params, restp)
-        } else
-          tp)
-
-    case _ =>
-      tp
-  }
+  override def transformInfo(sym: Symbol, tp: Type): Type = tp
 
   /** Return a map of single-use fields to the lazy value that uses them during initialization.
    *  Each field has to be private and defined in the enclosing class, and there must
@@ -466,10 +381,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     new MixinTransformer(unit)
 
   class MixinTransformer(unit : CompilationUnit) extends Transformer {
-    /** Within a static implementation method: the parameter referring to the
-     *  current object.  Undefined everywhere else.
-     */
-    private var self: Symbol = _
 
     /** The rootContext used for typing */
     private val rootContext =
@@ -505,15 +416,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      *  (that is, every node is processed before its children).
      *  What transform does:
      *   - For every non-trait class, add all mixed in members to the class info.
-     *   - For every trait, add all late interface members to the class info
-     *   - For every static implementation method:
-     *       - remove override flag
-     *       - create a new method definition that also has a `self` parameter
-     *         (which comes first) Iuli: this position is assumed by tail call elimination
-     *         on a different receiver. Storing a new 'this' assumes it is located at
-     *         index 0 in the local variable table. See 'STORE_THIS' and GenASM.
-     *   - Map implementation class types in type-apply's to their interfaces
-     *   - Remove all fields in implementation classes
      */
     private def preTransform(tree: Tree): Tree = {
       val sym = tree.symbol
@@ -524,85 +426,17 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
           if (!currentOwner.isTrait && !isPrimitiveValueClass(currentOwner))
             addMixedinMembers(currentOwner, unit)
-          else if (currentOwner hasFlag lateINTERFACE)
+          else if (currentOwner.isTrait)
             addLateInterfaceMembers(currentOwner)
 
           tree
-        case DefDef(_, _, _, vparams :: Nil, _, _) =>
-          if (currentOwner.isImplClass) {
-            if (isImplementedStatically(sym)) {
-              sym setFlag notOVERRIDE
-              self = sym.newValueParameter(nme.SELF, sym.pos) setInfo toInterface(currentOwner.typeOfThis)
-              val selfdef = ValDef(self) setType NoType
-              copyDefDef(tree)(vparamss = List(selfdef :: vparams))
-            }
-            else EmptyTree
-          }
-          else {
-            if (currentOwner.isTrait && sym.isSetter && !enteringPickler(sym.isDeferred)) {
-              sym.addAnnotation(TraitSetterAnnotationClass)
-            }
-            tree
-          }
-        // !!! What is this doing, and why is it only looking for exactly
-        // one type parameter? It would seem to be
-        //   "Map implementation class types in type-apply's to their interfaces"
-        // from the comment on preTransform, but is there some way we should know
-        // that impl class types in type applies can only appear in single
-        // type parameter type constructors?
-        case Apply(tapp @ TypeApply(fn, List(arg)), List()) =>
-          if (arg.tpe.typeSymbol.isImplClass) {
-            val ifacetpe = toInterface(arg.tpe)
-            arg setType ifacetpe
-            tapp setType MethodType(Nil, ifacetpe)
-            tree setType ifacetpe
-          }
-          tree
-        case ValDef(_, _, _, _) if currentOwner.isImplClass =>
-          EmptyTree
+
         case _ =>
+          if (currentOwner.isTrait && sym.isSetter && !enteringPickler(sym.isDeferred)) {
+            sym.addAnnotation(TraitSetterAnnotationClass)
+          }
           tree
       }
-    }
-
-    /** Create an identifier which references self parameter.
-     */
-    private def selfRef(pos: Position) =
-      gen.mkAttributedIdent(self) setPos pos
-
-    /** Replace a super reference by this or the self parameter, depending
-     *  on whether we are in an implementation class or not.
-     *  Leave all other trees unchanged.
-     */
-    private def transformSuper(tree: Tree) = tree match {
-      case Super(qual, _) =>
-        transformThis(qual)
-      case _ =>
-        tree
-    }
-
-    /** Replace a this reference to the current implementation class by the self
-     *  parameter. Leave all other trees unchanged.
-     */
-    private def transformThis(tree: Tree) = tree match {
-      case This(_) if tree.symbol.isImplClass =>
-        assert(tree.symbol == currentOwner.enclClass)
-        selfRef(tree.pos)
-      case _ =>
-        tree
-    }
-
-    /** Create a static reference to given symbol `sym` of the
-     *  form `M.sym` where M is the symbol's implementation module.
-     */
-    private def staticRef(sym: Symbol): Tree = {
-      sym.owner.info        //todo: needed?
-      sym.owner.owner.info  //todo: needed?
-
-      if (sym.owner.sourceModule eq NoSymbol)
-        abort(s"Cannot create static reference to $sym because ${sym.safeOwner} has no source module")
-      else
-        REF(sym.owner.sourceModule) DOT sym
     }
 
     def needsInitAndHasOffset(sym: Symbol) =
@@ -643,6 +477,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      *       - A super accessor for every super accessor in a mixin class
      *       - Forwarders for all methods that are implemented statically
      *  All superaccessors are completed with right-hand sides (@see completeSuperAccessor)
+     *
      *  @param clazz  The class to which definitions are added
      */
     private def addNewDefs(clazz: Symbol, stats: List[Tree]): List[Tree] = {
@@ -700,7 +535,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        */
       def completeSuperAccessor(stat: Tree) = stat match {
         case DefDef(_, _, _, vparams :: Nil, _, EmptyTree) if stat.symbol.isSuperAccessor =>
-          val body = atPos(stat.pos)(Apply(Select(Super(clazz, tpnme.EMPTY), stat.symbol.alias), vparams map (v => Ident(v.symbol))))
+          val body = atPos(stat.pos)(Apply(SuperSelect(clazz, stat.symbol.alias), vparams map (v => Ident(v.symbol))))
           val pt   = stat.symbol.tpe.resultType
 
           copyDefDef(stat)(rhs = enteringMixin(transform(localTyper.typed(body, pt))))
@@ -887,7 +722,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           def isUnit  = sym.tpe.resultType.typeSymbol == UnitClass
           def isEmpty = stat.rhs == EmptyTree
 
-          if (sym.isLazy && !isEmpty && !clazz.isImplClass) {
+          if (!clazz.isTrait && sym.isLazy && !isEmpty) {
             assert(fieldOffset contains sym, sym)
             deriveDefDef(stat) {
               case t if isUnit => mkLazyDef(clazz, sym, List(t), UNIT, fieldOffset(sym))
@@ -898,7 +733,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
               case t => t // pass specialized lazy vals through
             }
           }
-          else if (needsInitFlag(sym) && !isEmpty && !clazz.hasFlag(IMPLCLASS | TRAIT)) {
+          else if (needsInitFlag(sym) && !isEmpty && !clazz.hasFlag(TRAIT)) {
             assert(fieldOffset contains sym, sym)
             deriveDefDef(stat)(rhs =>
               (mkCheckedAccessor(clazz, _: Tree, fieldOffset(sym), stat.pos, sym))(
@@ -992,7 +827,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             // if it is a mixed-in lazy value, complete the accessor
             if (getter.isLazy) {
               val isUnit    = isUnitGetter(getter)
-              val initCall  = Apply(staticRef(initializer(getter)), gen.mkAttributedThis(clazz) :: Nil)
+              val initCall  = Apply(SuperSelect(clazz, initializer(getter)), Nil)
               val selection = fieldAccess(getter)
               val init      = if (isUnit) initCall else atPos(getter.pos)(Assign(selection, initCall))
               val returns   = if (isUnit) UNIT else selection
@@ -1040,12 +875,11 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
       // for all symbols `sym` in the class definition, which are mixed in:
       for (sym <- clazz.info.decls ; if sym hasFlag MIXEDIN) {
-        // if current class is a trait interface, add an abstract method for accessor `sym`
-        if (clazz hasFlag lateINTERFACE) {
+        // if current class is a trait, add an abstract method for accessor `sym`
+        if (clazz.isTrait) {
           addDefDef(sym)
-        }
-        // if class is not a trait add accessor definitions
-        else if (!clazz.isTrait) {
+        } else {
+          // if class is not a trait add accessor definitions
           if (isConcreteAccessor(sym)) {
             // add accessor definitions
             addDefDef(sym, {
@@ -1072,13 +906,20 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           }
           else {
             // add forwarders
-            assert(sym.alias != NoSymbol, sym)
+            assert(sym.alias != NoSymbol, (sym, sym.debugFlagString, clazz))
             // debuglog("New forwarder: " + sym.defString + " => " + sym.alias.defString)
-            if (!sym.isMacro) addDefDef(sym, Apply(staticRef(sym.alias), gen.mkAttributedThis(clazz) :: sym.paramss.head.map(Ident)))
+            if (!sym.isMacro) addDefDef(sym, Apply(SuperSelect(clazz, sym.alias), sym.paramss.head.map(Ident(_))))
           }
         }
       }
       stats1 = add(stats1, newDefs.toList)
+      if (clazz.isTrait) stats1 =
+        stats1.filter {
+          case vd: ValDef =>
+            // TODO do we get here?
+            false
+          case _ => true
+        }
       if (!clazz.isTrait) stats1 = stats1 map completeSuperAccessor
       stats1
     }
@@ -1113,13 +954,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      *    - refer to fields in some implementation class via an abstract method in the interface.
      */
     private def postTransform(tree: Tree): Tree = {
-      def siteWithinImplClass = currentOwner.enclClass.isImplClass
       val sym = tree.symbol
-
-      // change every node type that refers to an implementation class to its
-      // corresponding interface, unless the node's symbol is an implementation class.
-      if (tree.tpe.typeSymbol.isImplClass && ((sym eq null) || !sym.isImplClass))
-        tree modifyType toInterface
 
       tree match {
         case templ @ Template(parents, self, body) =>
@@ -1130,86 +965,20 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           // add all new definitions to current class or interface
           treeCopy.Template(tree, parents1, self, addNewDefs(currentOwner, body))
 
-        // remove widening casts
-        case Apply(TypeApply(Select(qual, _), targ :: _), _) if isCastSymbol(sym) && (qual.tpe <:< targ.tpe) =>
-          qual
+        case Select(qual, name) if sym.owner.isTrait && !sym.isMethod =>
+          // refer to fields in some trait an abstract getter in the interface.
+          val ifaceGetter = sym getterIn sym.owner
 
-        case Apply(Select(qual, _), args) =>
-          /*  Changes `qual.m(args)` where m refers to an implementation
-           *  class method to Q.m(S, args) where Q is the implementation module of
-           *  `m` and S is the self parameter for the call, which
-           *  is determined as follows:
-           *     - if qual != super, qual itself
-           *     - if qual == super, and we are in an implementation class,
-           *       the current self parameter.
-           *     - if qual == super, and we are not in an implementation class, `this`
-           */
-          def staticCall(target: Symbol) = {
-            def implSym = implClass(sym.owner).info.member(sym.name)
-            assert(target ne NoSymbol,
-              List(sym + ":", sym.tpe, sym.owner, implClass(sym.owner), implSym,
-                  enteringPrevPhase(implSym.tpe), phase) mkString " "
-            )
-            typedPos(tree.pos)(Apply(staticRef(target), transformSuper(qual) :: args))
-          }
-
-          if (isStaticOnly(sym)) {
-            // change calls to methods which are defined only in implementation
-            // classes to static calls of methods in implementation modules
-            staticCall(sym)
-          }
-          else qual match {
-            case Super(_, mix) =>
-              // change super calls to methods in implementation classes to static calls.
-              // Transform references super.m(args) as follows:
-              //  - if `m` refers to a trait, insert a static call to the corresponding static
-              //    implementation
-              //  - otherwise return tree unchanged
-              assert(
-                !(mix == tpnme.EMPTY && siteWithinImplClass),
-                "illegal super in trait: " + currentOwner.enclClass + " " + tree
-              )
-
-              if (sym.owner hasFlag lateINTERFACE) {
-                if (sym.hasAccessorFlag) {
-                  assert(args.isEmpty, args)
-                  val sym1 = sym.overridingSymbol(currentOwner.enclClass)
-                  typedPos(tree.pos)((transformSuper(qual) DOT sym1)())
-                }
-                else {
-                  staticCall(enteringPrevPhase(sym.overridingSymbol(implClass(sym.owner))))
-                }
-              }
-              else {
-                assert(!siteWithinImplClass, currentOwner.enclClass)
-                tree
-              }
-            case _ =>
-              tree
-          }
-
-        case This(_) =>
-          transformThis(tree)
-
-        case Select(Super(_, _), name) =>
-          tree
-
-        case Select(qual, name) if sym.owner.isImplClass && !isStaticOnly(sym) =>
-          assert(!sym.isMethod, "no method allowed here: %s%s %s".format(sym, sym.isImplOnly, sym.flagString))
-          // refer to fields in some implementation class via an abstract
-          // getter in the interface.
-          val iface  = toInterface(sym.owner.tpe).typeSymbol
-          val ifaceGetter = sym getterIn iface
-
-          if (ifaceGetter == NoSymbol) abort("No getter for " + sym + " in " + iface)
+          if (ifaceGetter == NoSymbol) abort("No getter for " + sym + " in " + sym.owner)
           else typedPos(tree.pos)((qual DOT ifaceGetter)())
 
         case Assign(Apply(lhs @ Select(qual, _), List()), rhs) =>
-          // assign to fields in some implementation class via an abstract
-          // setter in the interface.
-          def setter = lhs.symbol.setterIn(toInterface(lhs.symbol.owner.tpe).typeSymbol) setPos lhs.pos
+          // assign to fields in some trait via an abstract setter in the interface.
+          // Note that the case above has added the empty application.
+          val setter = lhs.symbol.setterIn(lhs.symbol.owner.tpe.typeSymbol) setPos lhs.pos
 
           typedPos(tree.pos)((qual DOT setter)(rhs))
+
 
         case _ =>
           tree

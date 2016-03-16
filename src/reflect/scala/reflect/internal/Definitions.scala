@@ -921,7 +921,6 @@ trait Definitions extends api.StandardDefinitions {
     def neverHasTypeParameters(sym: Symbol) = sym match {
       case _: RefinementClassSymbol => true
       case _: ModuleClassSymbol     => true
-      case _: ImplClassSymbol       => true
       case _                        =>
         (
              sym.isPrimitiveValueClass

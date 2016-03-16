@@ -27,7 +27,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   import backendUtils._
 
   def runInliner(): Unit = {
-    rewriteFinalTraitMethodInvocations()
+//    rewriteFinalTraitMethodInvocations()
 
     for (request <- collectAndOrderInlineRequests) {
       val Right(callee) = request.callsite.callee // collectAndOrderInlineRequests returns callsites with a known callee
