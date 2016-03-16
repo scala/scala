@@ -1,85 +1,82 @@
 package xsbt
 
-import org.junit.runner.RunWith
 import xsbti.TestCallback.ExtractedClassDependencies
-import org.specs2.mutable.Specification
-import org.specs2.runner.JUnitRunner
+import sbt.internal.util.UnitSpec
 
-@RunWith(classOf[JUnitRunner])
-class DependencySpecification extends Specification {
+class DependencySpecification extends UnitSpec {
 
-  "Extracted source dependencies from public members" in {
+  "Dependency phase" should "extract class dependencies from public members" in {
     val classDependencies = extractClassDependenciesPublic
     val memberRef = classDependencies.memberRef
     val inheritance = classDependencies.inheritance
-    memberRef("A") === Set.empty
-    inheritance("A") === Set.empty
-    memberRef("B") === Set("A", "D")
-    inheritance("B") === Set("D")
-    memberRef("C") === Set("A")
-    inheritance("C") === Set.empty
-    memberRef("D") === Set.empty
-    inheritance("D") === Set.empty
-    memberRef("E") === Set.empty
-    inheritance("E") === Set.empty
-    memberRef("F") === Set("A", "B", "D", "E", "G")
-    inheritance("F") === Set("A", "E")
-    memberRef("H") === Set("B", "E", "G")
+    assert(memberRef("A") === Set.empty)
+    assert(inheritance("A") === Set.empty)
+    assert(memberRef("B") === Set("A", "D"))
+    assert(inheritance("B") === Set("D"))
+    assert(memberRef("C") === Set("A"))
+    assert(inheritance("C") === Set.empty)
+    assert(memberRef("D") === Set.empty)
+    assert(inheritance("D") === Set.empty)
+    assert(memberRef("E") === Set.empty)
+    assert(inheritance("E") === Set.empty)
+    assert(memberRef("F") === Set("A", "B", "D", "E", "G"))
+    assert(inheritance("F") === Set("A", "E"))
+    assert(memberRef("H") === Set("B", "E", "G"))
     // aliases and applied type constructors are expanded so we have inheritance dependency on B
-    inheritance("H") === Set("B", "E")
+    assert(inheritance("H") === Set("B", "E"))
   }
 
-  "Extracted source dependencies from local members" in {
+  it should "extract class dependencies from local members" in {
     val classDependencies = extractClassDependenciesLocal
     val memberRef = classDependencies.memberRef
     val inheritance = classDependencies.inheritance
     val localInheritance = classDependencies.localInheritance
-    memberRef("A") === Set.empty
-    inheritance("A") === Set.empty
-    memberRef("B") === Set.empty
-    inheritance("B") === Set.empty
-    memberRef("C.Inner1") === Set("A")
-    inheritance("C.Inner1") === Set("A")
-    memberRef("D") === Set("B")
-    inheritance("D") === Set.empty
-    localInheritance("D") === Set("B")
-    memberRef("E") === Set("B")
-    inheritance("E") === Set.empty
-    localInheritance("E") === Set("B")
+    assert(memberRef("A") === Set.empty)
+    assert(inheritance("A") === Set.empty)
+    assert(memberRef("B") === Set.empty)
+    assert(inheritance("B") === Set.empty)
+    assert(memberRef("C.Inner1") === Set("A"))
+    assert(inheritance("C.Inner1") === Set("A"))
+    assert(memberRef("D") === Set("B"))
+    assert(inheritance("D") === Set.empty)
+    assert(localInheritance("D") === Set("B"))
+    assert(memberRef("E") === Set("B"))
+    assert(inheritance("E") === Set.empty)
+    assert(localInheritance("E") === Set("B"))
   }
 
-  "Extracted source dependencies with trait as first parent" in {
+  it should "extract class dependencies with trait as first parent" in {
     val classDependencies = extractClassDependenciesTraitAsFirstPatent
     val memberRef = classDependencies.memberRef
     val inheritance = classDependencies.inheritance
-    memberRef("A") === Set.empty
-    inheritance("A") === Set.empty
-    memberRef("B") === Set("A")
-    inheritance("B") === Set("A")
+    assert(memberRef("A") === Set.empty)
+    assert(inheritance("A") === Set.empty)
+    assert(memberRef("B") === Set("A"))
+    assert(inheritance("B") === Set("A"))
     // verify that memberRef captures the oddity described in documentation of `Relations.inheritance`
     // we are mainly interested whether dependency on A is captured in `memberRef` relation so
     // the invariant that says that memberRef is superset of inheritance relation is preserved
-    memberRef("C") === Set("A", "B")
-    inheritance("C") === Set("A", "B")
+    assert(memberRef("C") === Set("A", "B"))
+    assert(inheritance("C") === Set("A", "B"))
     // same as above but indirect (C -> B -> A), note that only A is visible here
-    memberRef("D") === Set("A", "C")
-    inheritance("D") === Set("A", "C")
+    assert(memberRef("D") === Set("A", "C"))
+    assert(inheritance("D") === Set("A", "C"))
   }
 
-  "Extracted source dependencies from macro arguments" in {
+  it should "extract class dependencies from macro arguments" in {
     val classDependencies = extractClassDependenciesFromMacroArgument
     val memberRef = classDependencies.memberRef
     val inheritance = classDependencies.inheritance
 
-    memberRef("A") === Set("B", "C")
-    inheritance("A") === Set.empty
-    memberRef("B") === Set.empty
-    inheritance("B") === Set.empty
-    memberRef("C") === Set.empty
-    inheritance("C") === Set.empty
+    assert(memberRef("A") === Set("B", "C"))
+    assert(inheritance("A") === Set.empty)
+    assert(memberRef("B") === Set.empty)
+    assert(inheritance("B") === Set.empty)
+    assert(memberRef("C") === Set.empty)
+    assert(inheritance("C") === Set.empty)
   }
 
-  "Extracted class dependencies from refinement" in {
+  it should "extract class dependencies from a refinement" in {
     val srcFoo = "object Outer {\n  class Inner { type Xyz }\n\n  type TypeInner = Inner { type Xyz = Int }\n}"
     val srcBar = "object Bar {\n  def bar: Outer.TypeInner = null\n}"
 
@@ -89,13 +86,13 @@ class DependencySpecification extends Specification {
 
     val memberRef = classDependencies.memberRef
     val inheritance = classDependencies.inheritance
-    memberRef("Outer") === Set.empty
-    inheritance("Outer") === Set.empty
-    memberRef("Bar") === Set("Outer")
-    inheritance("Bar") === Set.empty
+    assert(memberRef("Outer") === Set.empty)
+    assert(inheritance("Outer") === Set.empty)
+    assert(memberRef("Bar") === Set("Outer"))
+    assert(inheritance("Bar") === Set.empty)
   }
 
-  "Class dependency on object" in {
+  it should "extract class dependency on a object correctly" in {
     val srcA =
       """object A {
         |   def foo = { B; () }
@@ -108,13 +105,13 @@ class DependencySpecification extends Specification {
 
     val memberRef = classDependencies.memberRef
     val inheritance = classDependencies.inheritance
-    memberRef("A") === Set("B")
-    inheritance("A") === Set.empty
-    memberRef("B") === Set.empty
-    inheritance("B") === Set.empty
+    assert(memberRef("A") === Set("B"))
+    assert(inheritance("A") === Set.empty)
+    assert(memberRef("B") === Set.empty)
+    assert(inheritance("B") === Set.empty)
   }
 
-  "Top level import dependencies" in {
+  it should "handle top level import dependencies" in {
     val srcA =
       """
         |package abc
@@ -140,14 +137,14 @@ class DependencySpecification extends Specification {
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val deps = compilerForTesting.extractDependenciesFromSrcs(srcA, srcB, srcC, srcD, srcE, srcF, srcG, srcH).memberRef
 
-    deps("A") === Set.empty
-    deps("B") === Set("abc.A", "abc.A.Inner")
-    deps("C") === Set("abc.A", "abc.A2")
-    deps("D") === Set("abc.A2")
-    deps("E") === Set("abc.A")
-    deps("F") === Set.empty
-    deps("foo.bar.G") === Set("abc.A")
-    deps("H") === Set("abc.A")
+    assert(deps("A") === Set.empty)
+    assert(deps("B") === Set("abc.A", "abc.A.Inner"))
+    assert(deps("C") === Set("abc.A", "abc.A2"))
+    assert(deps("D") === Set("abc.A2"))
+    assert(deps("E") === Set("abc.A"))
+    assert(deps("F") === Set.empty)
+    assert(deps("foo.bar.G") === Set("abc.A"))
+    assert(deps("H") === Set("abc.A"))
   }
 
   private def extractClassDependenciesPublic: ExtractedClassDependencies = {
@@ -158,8 +155,8 @@ class DependencySpecification extends Specification {
 		  |}""".stripMargin
     val srcD = "class D[T]"
     val srcE = "trait E[T]"
-    val srcF = "trait F extends A with E[D[B]] { self: C => }"
-    val srcG = "object G { type T[x] = B }"
+    val srcF = "trait F extends A with E[D[B]] { self: G.MyC => }"
+    val srcG = "object G { type T[x] = B ; type MyC = C }"
     // T is a type constructor [x]B
     // B extends D
     // E verifies the core type gets pulled out
@@ -216,4 +213,5 @@ class DependencySpecification extends Specification {
       compilerForTesting.extractDependenciesFromSrcs(List(List(srcB, srcC), List(srcA)))
     classDependencies
   }
+
 }

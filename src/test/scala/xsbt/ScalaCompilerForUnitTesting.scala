@@ -5,11 +5,11 @@ import xsbti.compile.SingleOutput
 import java.io.File
 import _root_.scala.tools.nsc.reporters.ConsoleReporter
 import xsbti._
-import sbt.IO.withTemporaryDirectory
+import sbt.io.IO.withTemporaryDirectory
 import xsbti.api.ClassLike
 
-import sbt.ConsoleLogger
-import xsbti.DependencyContext._
+import sbt.internal.util.ConsoleLogger
+import xsbti.api.DependencyContext._
 
 /**
  * Provides common functionality needed for unit tests that require compiling
@@ -129,7 +129,7 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
 
   private def prepareSrcFile(baseDir: File, fileName: String, src: String): File = {
     val srcFile = new File(baseDir, fileName)
-    sbt.IO.write(srcFile, src)
+    sbt.io.IO.write(srcFile, src)
     srcFile
   }
 

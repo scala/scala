@@ -45,6 +45,12 @@ abstract class Compat {
   val Nullary = global.NullaryMethodType
   val ScalaObjectClass = definitions.ScalaObjectClass
 
+  // `transformedType` doesn't exist in Scala < 2.10
+  implicit def withTransformedType(global: Global): WithTransformedType = new WithTransformedType(global)
+  class WithTransformedType(global: Global) {
+    def transformedType(tpe: Type): Type = tpe
+  }
+
   private[this] final class MiscCompat {
     // in 2.9, nme.LOCALCHILD was renamed to tpnme.LOCAL_CHILD
     def tpnme = nme
@@ -75,19 +81,35 @@ abstract class Compat {
 
     def enclosingTopLevelClass: Symbol = sym.toplevelClass
     def toplevelClass: Symbol = sourceCompatibilityOnly
+    def asMethod: MethodSymbol = sym.asInstanceOf[MethodSymbol]
   }
 
   val DummyValue = 0
   def hasMacro(s: Symbol): Boolean =
     {
       val MACRO = Flags.MACRO // will be DummyValue for versions before 2.10
-      MACRO != DummyValue && s.hasFlag(MACRO)
+      MACRO != DummyValue && s.hasFlag(MACRO.toLong)
     }
   def moduleSuffix(s: Symbol): String = s.moduleSuffix
 
   private[this] def sourceCompatibilityOnly: Nothing = throw new RuntimeException("For source compatibility only: should not get here.")
 
   private[this] final implicit def miscCompat(n: AnyRef): MiscCompat = new MiscCompat
+
+  object MirrorHelper {
+
+    private implicit def withRootMirror(x: Any): WithRootMirror = new WithRootMirror(x)
+    private class DummyMirror {
+      def getClassIfDefined(x: String): Symbol = NoSymbol
+    }
+    private class WithRootMirror(x: Any) {
+      def rootMirror: DummyMirror = new DummyMirror
+    }
+    lazy val AnyValClass = global.rootMirror.getClassIfDefined("scala.AnyVal")
+
+    def isDerivedValueClass(sym: Symbol): Boolean =
+      sym.isNonBottomSubClass(AnyValClass) && !definitions.ScalaValueClasses.contains(sym)
+  }
 
   object MacroExpansionOf {
     def unapply(tree: Tree): Option[Tree] = {
@@ -121,7 +143,7 @@ abstract class Compat {
           import analyzer._ // this is where MEA lives in 2.11.x
           tree.attachments.all.collect {
             case att: MacroExpansionAttachment => att.expandee
-          } headOption
+          }.headOption
         }
       }
     }

@@ -1,23 +1,16 @@
 package xsbt
 
-import org.junit.runner.RunWith
 import xsbti.api.ClassLike
 import xsbti.api.Def
 import xsbti.api.Package
-import org.junit.runners.JUnit4
-import org.junit.Test
-import org.junit.Assert._
-
-import org.junit.runner.RunWith
 import xsbti.api._
 import xsbt.api.HashAPI
-import org.specs2.mutable.Specification
-import org.specs2.runner.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
-class ExtractDeclaredClassesTest extends Specification {
+import sbt.internal.util.UnitSpec
 
-  "default package" in {
+class ExtractDeclaredClassesTest extends UnitSpec {
+
+  "ExtractDeclaredClasses phase" should "handle the default package" in {
     val src = """
 			|class A
 			|object B
@@ -25,10 +18,10 @@ class ExtractDeclaredClassesTest extends Specification {
     val compilerForTesting = new ScalaCompilerForUnitTesting
     val declaredClasses = compilerForTesting.extractDeclaredClassesFromSrc(src)
     val expectedClasses = Set("A", "B")
-    declaredClasses === expectedClasses
+    assert(declaredClasses === expectedClasses)
   }
 
-  "non default package" in {
+  it should "handle non default package" in {
     val src = """
 			|package a
 			|class A
@@ -37,10 +30,10 @@ class ExtractDeclaredClassesTest extends Specification {
     val compilerForTesting = new ScalaCompilerForUnitTesting
     val declaredClasses = compilerForTesting.extractDeclaredClassesFromSrc(src)
     val expectedClasses = Set("a.A", "a.B")
-    declaredClasses === expectedClasses
+    assert(declaredClasses === expectedClasses)
   }
 
-  "nested" in {
+  it should "extract nested classes" in {
     val src = """
 			|class A { class AA; object AAO }
 			|object B { class BB; object BBO }
@@ -48,20 +41,20 @@ class ExtractDeclaredClassesTest extends Specification {
     val compilerForTesting = new ScalaCompilerForUnitTesting
     val declaredClasses = compilerForTesting.extractDeclaredClassesFromSrc(src)
     val expectedClasses = Set("A", "A.AA", "A.AAO", "B", "B.BB", "B.BBO")
-    declaredClasses === expectedClasses
+    assert(declaredClasses === expectedClasses)
   }
 
-  "private class" in {
+  it should "extract private class" in {
     val src = """
 			|class A { private class AA; private[A] class BB }
 			|""".stripMargin
     val compilerForTesting = new ScalaCompilerForUnitTesting
     val declaredClasses = compilerForTesting.extractDeclaredClassesFromSrc(src)
     val expectedClasses = Set("A", "A.BB")
-    declaredClasses === expectedClasses
+    assert(declaredClasses === expectedClasses)
   }
 
-  "class in def" in {
+  it should "not extract class in a def" in {
     val src = """
 			|class A {
 			|  def foo = { class B }
@@ -70,20 +63,20 @@ class ExtractDeclaredClassesTest extends Specification {
     val compilerForTesting = new ScalaCompilerForUnitTesting
     val declaredClasses = compilerForTesting.extractDeclaredClassesFromSrc(src)
     val expectedClasses = Set("A")
-    declaredClasses === expectedClasses
+    assert(declaredClasses === expectedClasses)
   }
 
-  "companions" in {
+  it should "handle companions" in {
     val src = """
 			|class A; object A
 			|""".stripMargin
     val compilerForTesting = new ScalaCompilerForUnitTesting
     val declaredClasses = compilerForTesting.extractDeclaredClassesFromSrc(src)
     val expectedClasses = Set("A")
-    declaredClasses === expectedClasses
+    assert(declaredClasses === expectedClasses)
   }
 
-  "traits" in {
+  it should "extract traits" in {
     val src = """
 			|trait A {
 			|  class B
@@ -93,7 +86,7 @@ class ExtractDeclaredClassesTest extends Specification {
     val compilerForTesting = new ScalaCompilerForUnitTesting
     val declaredClasses = compilerForTesting.extractDeclaredClassesFromSrc(src)
     val expectedClasses = Set("A", "A.B", "A.C")
-    declaredClasses === expectedClasses
+    assert(declaredClasses === expectedClasses)
   }
 
 }

@@ -36,7 +36,7 @@ package xsbt
  * The tree walking algorithm walks into TypeTree.original explicitly.
  *
  */
-class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) extends ClassName with GlobalHelpers {
+class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) extends Compat with ClassName {
   import global._
 
   def extract(unit: CompilationUnit): Map[String, Set[String]] = {
@@ -53,12 +53,10 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
           val firstClassName = className(firstClassSymbol)
           traverser.namesUsedInClasses(firstClassName) ++= namesUsedAtTopLevel
         case None =>
-          reporter.warning(
-            unit.position(0),
+          unit.warning(NoPosition,
             """|Found names used at the top level but no class, trait or object is defined in the compilation unit.
-              |The incremental compiler cannot record used names in such case.
-              |Some errors like unused import referring to a non-existent class might not be reported.""".stripMargin
-          )
+               |The incremental compiler cannot record used names in such case.
+               |Some errors like unused import referring to a non-existent class might not be reported.""".stripMargin)
       }
     }
 
@@ -102,13 +100,11 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
 
     private def addName(name: Name, enclosingNonLocalClass: Symbol = resolveEnclosingNonLocalClass): Unit = {
       val nameAsString = name.decode.trim
-      if (enclosingNonLocalClass == NoSymbol || enclosingNonLocalClass.hasPackageFlag) {
+      if (enclosingNonLocalClass == NoSymbol || enclosingNonLocalClass.isPackage) {
         namesUsedAtTopLevel += nameAsString
-        ()
       } else {
         val className = ExtractUsedNames.this.className(enclosingNonLocalClass)
         namesUsedInClasses(className) += nameAsString
-        ()
       }
     }
 
@@ -137,24 +133,24 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       // not what we need
       case t: TypeTree if t.original != null =>
         t.original.foreach(traverse)
-      case t if t.hasSymbolField && eligibleAsUsedName(t.symbol) =>
+      case t if t.hasSymbol && eligibleAsUsedName(t.symbol) =>
         addSymbol(t.symbol)
       case _ =>
     }
 
     /**
-     * Resolves a class to which we attribute a used name by getting the enclosing class
-     * for `currentOwner` and then looking up the most inner enclosing class that is non local.
-     * The second returned value indicates if the enclosing class for `currentOwner`
-     * is a local class.
-     */
+      * Resolves a class to which we attribute a used name by getting the enclosing class
+      * for `currentOwner` and then looking up the most inner enclosing class that is non local.
+      * The second returned value indicates if the enclosing class for `currentOwner`
+      * is a local class.
+      */
     private def resolveEnclosingNonLocalClass: Symbol = {
       val fromClass = enclOrModuleClass(currentOwner)
-      if (fromClass == NoSymbol || fromClass.hasPackageFlag)
+      if (fromClass == NoSymbol || fromClass.isPackage)
         fromClass
       else {
         val fromNonLocalClass = localToNonLocalClass.resolveNonLocal(fromClass)
-        assert(!(fromClass == NoSymbol || fromClass.hasPackageFlag))
+        assert(!(fromClass == NoSymbol || fromClass.isPackage))
         fromNonLocalClass
       }
     }

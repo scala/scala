@@ -11,7 +11,7 @@ import java.io.File
 /**
  * Contains utility methods for looking up class files corresponding to Symbols.
  */
-abstract class LocateClassFile extends ClassName {
+abstract class LocateClassFile extends Compat with ClassName {
   val global: CallbackGlobal
   import global._
 
@@ -21,7 +21,7 @@ abstract class LocateClassFile extends ClassName {
     // catch package objects (that do not have this flag set)
     if (sym hasFlag scala.tools.nsc.symtab.Flags.PACKAGE) None else {
       import scala.tools.nsc.symtab.Flags
-      val binaryClassName = flatname(sym, classSeparator) + sym.moduleSuffix
+      val binaryClassName = flatname(sym, classSeparator) + moduleSuffix(sym)
       findClass(binaryClassName).map { case (file, inOut) => (file, binaryClassName, inOut) } orElse {
         if (isTopLevelModule(sym)) {
           val linked = sym.companionClass

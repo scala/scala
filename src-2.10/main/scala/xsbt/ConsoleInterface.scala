@@ -4,8 +4,8 @@
 package xsbt
 
 import xsbti.Logger
-import scala.tools.nsc.{ GenericRunnerCommand, Interpreter, ObjectRunner, Settings }
-import scala.tools.nsc.interpreter.{ IMain, InteractiveReader, ILoop }
+import scala.tools.nsc.{ GenericRunnerCommand, Interpreter, InterpreterLoop, ObjectRunner, Settings }
+import scala.tools.nsc.interpreter.InteractiveReader
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.util.ClassPath
 
@@ -22,17 +22,17 @@ class ConsoleInterface {
     compilerSettings.classpath.value = classpathString
     log.info(Message("Starting scala interpreter..."))
     log.info(Message(""))
-    val loop = new ILoop {
+    val loop = new InterpreterLoop {
 
       override def createInterpreter() = {
 
         if (loader ne null) {
-          in = InteractiveReader.apply()
-          intp = new IMain(settings) {
+          in = InteractiveReader.createDefault()
+          interpreter = new Interpreter(settings) {
             override protected def parentClassLoader = if (loader eq null) super.parentClassLoader else loader
             override protected def newCompiler(settings: Settings, reporter: Reporter) = super.newCompiler(compilerSettings, reporter)
           }
-          intp.setContextClassLoader()
+          interpreter.setContextClassLoader()
         } else
           super.createInterpreter()
 
@@ -40,29 +40,28 @@ class ConsoleInterface {
           // for 2.8 compatibility
           final class Compat {
             def bindValue(id: String, value: Any) =
-              intp.bind(id, value.asInstanceOf[AnyRef].getClass.getName, value)
+              interpreter.bind(id, value.asInstanceOf[AnyRef].getClass.getName, value)
           }
           implicit def compat(a: AnyRef): Compat = new Compat
 
           for ((id, value) <- values)
-            intp.beQuietDuring(intp.bindValue(id, value))
+            interpreter.beQuietDuring(interpreter.bindValue(id, value))
         }
 
         bind(bindNames zip bindValues)
 
         if (!initialCommands.isEmpty)
-          intp.interpret(initialCommands)
+          interpreter.interpret(initialCommands)
 
         ()
       }
       override def closeInterpreter(): Unit = {
         if (!cleanupCommands.isEmpty)
-          intp.interpret(cleanupCommands)
+          interpreter.interpret(cleanupCommands)
         super.closeInterpreter()
       }
     }
-    loop.process(if (loader eq null) compilerSettings else interpreterSettings)
-    ()
+    loop.main(if (loader eq null) compilerSettings else interpreterSettings)
   }
 }
 object MakeSettings {

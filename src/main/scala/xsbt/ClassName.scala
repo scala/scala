@@ -3,15 +3,15 @@ package xsbt
 /**
  * Utility methods for creating (source|binary) class names for a Symbol.
  */
-trait ClassName extends Compat {
+trait ClassName {
   val global: CallbackGlobal
   import global._
 
   /**
    * Creates a flat (binary) name for a class symbol `s`.
    */
-  protected def flatname(s: Symbol, separator: Char): String =
-    atPhase(currentRun.flattenPhase.next) { s fullName separator }
+  protected def flatname(s: Symbol, separator: Char) =
+    enteringPhase(currentRun.flattenPhase.next) { s fullName separator }
 
   /**
    * Create a (source) name for a class symbol `s`.
@@ -19,10 +19,10 @@ trait ClassName extends Compat {
   protected def className(s: Symbol): String = pickledName(s)
 
   private def pickledName(s: Symbol): String =
-    atPhase(currentRun.picklerPhase) { s.fullName }
+    enteringPhase(currentRun.picklerPhase.next) { s.fullName }
 
   protected def isTopLevelModule(sym: Symbol): Boolean =
-    atPhase(currentRun.picklerPhase.next) {
+    enteringPhase(currentRun.picklerPhase.next) {
       sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass
     }
 

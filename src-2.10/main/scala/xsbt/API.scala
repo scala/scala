@@ -11,7 +11,7 @@ object API {
   val name = "xsbt-api"
 }
 
-final class API(val global: CallbackGlobal) {
+final class API(val global: CallbackGlobal) extends Compat {
   import global._
 
   @inline def debug(msg: => String) = if (settings.verbose.value) inform(msg)
@@ -70,7 +70,7 @@ final class API(val global: CallbackGlobal) {
   }
 
   private abstract class TopLevelTraverser extends Traverser {
-    def `class`(s: Symbol): Unit
+    def `class`(s: Symbol)
     override def traverse(tree: Tree): Unit = {
       tree match {
         case (_: ClassDef | _: ModuleDef) if isTopLevel(tree.symbol) => `class`(tree.symbol)
