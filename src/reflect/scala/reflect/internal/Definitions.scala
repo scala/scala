@@ -686,10 +686,28 @@ trait Definitions extends api.StandardDefinitions {
       }
     }
 
+    // the result type of a function or corresponding SAM type
+    def functionResultType(tp: Type): Type = {
+      val dealiased = tp.dealiasWiden
+      if (isFunctionTypeDirect(dealiased)) dealiased.typeArgs.last
+      else samOf(tp) match {
+        case samSym if samSym.exists => tp.memberInfo(samSym).resultType.deconst
+        case _ => NoType
+      }
+    }
+
     // the SAM's parameters and the Function's formals must have the same length
     // (varargs etc don't come into play, as we're comparing signatures, not checking an application)
     def samMatchesFunctionBasedOnArity(sam: Symbol, formals: List[Any]): Boolean =
       sam.exists && sameLength(sam.info.params, formals)
+
+    def samMatchingFunction(tree: Tree, pt: Type): Symbol = {
+      if (tree.isInstanceOf[Function] && !isFunctionType(pt)) {
+        val sam = samOf(pt)
+        if (samMatchesFunctionBasedOnArity(sam, tree.asInstanceOf[Function].vparams)) sam
+        else NoSymbol
+      } else NoSymbol
+    }
 
     def isTupleType(tp: Type)          = isTupleTypeDirect(tp.dealiasWiden)
     def tupleComponents(tp: Type)      = tp.dealiasWiden.typeArgs

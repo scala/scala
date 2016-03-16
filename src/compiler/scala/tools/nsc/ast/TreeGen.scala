@@ -300,7 +300,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     abstractFunctionType(fun.vparams.map(_.symbol.tpe), fun.tpe.typeArgs.last.deconst) // TODO: use `fun.body.tpe.deconst` -- preserving wrong status quo because refactoring-only
 
   def expandFunction(localTyper: analyzer.Typer)(fun: Function, inConstructorFlag: Long): Tree = {
-    val parents = addSerializable(functionClassType(fun))
+    val parents = addObjectParent(addSerializable(functionClassType(fun)))
     val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation SerialVersionUIDAnnotation
 
     // The original owner is used in the backend for the EnclosingMethod attribute. If fun is
@@ -309,12 +309,12 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     defineOriginalOwner(anonClass, fun.symbol.originalOwner)
     anonClass setInfo ClassInfoType(parents, newScope, anonClass)
 
-    val applyMethodDef = mkMethodFromFunction(localTyper)(anonClass, fun)
-    anonClass.info.decls enter applyMethodDef.symbol
+    val samDef = mkMethodFromFunction(localTyper)(anonClass, fun)
+    anonClass.info.decls enter samDef.symbol
 
     localTyper.typedPos(fun.pos) {
       Block(
-        ClassDef(anonClass, NoMods, ListOfNil, List(applyMethodDef), fun.pos),
+        ClassDef(anonClass, NoMods, ListOfNil, List(samDef), fun.pos),
         Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
     }
   }

@@ -145,7 +145,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           gen.mkMethodCall(newTarget, args)
         }
         val body1 = if (enteringErasure(functionResultType.typeSymbol.isDerivedValueClass))
-          adaptToType(box(body.setType(ErasedValueType(functionResultType.typeSymbol, body.tpe)), "boxing lambda target"), bridgeResultType)
+          adaptToType(box(body.setType(ErasedValueType(functionResultType.typeSymbol, body.tpe))), bridgeResultType)
         else adaptToType(body, bridgeResultType)
         val methDef0 = DefDef(methSym, List(bridgeParamTrees), body1)
         val bridge = postErasure.newTransformer(unit).transform(methDef0).asInstanceOf[DefDef]

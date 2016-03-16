@@ -4553,6 +4553,11 @@ trait Types
     else (ps :+ SerializableTpe).toList
   )
 
+  def addObjectParent(tps: List[Type]) = tps match {
+    case hd :: _ if hd.typeSymbol.isTrait => ObjectTpe :: tps
+    case _ => tps
+  }
+
   /** Adds the @uncheckedBound annotation if the given `tp` has type arguments */
   final def uncheckedBounds(tp: Type): Type = {
     if (tp.typeArgs.isEmpty || UncheckedBoundsClass == NoSymbol) tp // second condition for backwards compatibility with older scala-reflect.jar

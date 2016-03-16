@@ -164,7 +164,9 @@ trait Infer extends Checkable {
                      |  was: $restpe
                      |  now""")(normalize(restpe))
     case mt @ MethodType(_, restpe) if mt.isImplicit             => normalize(restpe)
-    case mt @ MethodType(_, restpe) if !mt.isDependentMethodType => functionType(mt.paramTypes, normalize(restpe))
+    case mt @ MethodType(_, restpe) if !mt.isDependentMethodType =>
+      if (phase.erasedTypes) FunctionClass(mt.params.length).tpe
+      else functionType(mt.paramTypes, normalize(restpe))
     case NullaryMethodType(restpe)                               => normalize(restpe)
     case ExistentialType(tparams, qtpe)                          => newExistentialType(tparams, normalize(qtpe))
     case _                                                       => tp // @MAT aliases already handled by subtyping

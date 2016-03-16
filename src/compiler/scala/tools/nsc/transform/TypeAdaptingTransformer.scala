@@ -1,6 +1,7 @@
 package scala.tools.nsc
 package transform
 
+import scala.annotation.tailrec
 import scala.tools.nsc.ast.TreeDSL
 
 /**
@@ -17,11 +18,6 @@ trait TypeAdaptingTransformer {
     import definitions._
     import CODE._
 
-    def isMethodTypeWithEmptyParams(tpe: Type) = tpe match {
-      case MethodType(Nil, _) => true
-      case _                  => false
-    }
-
     private def isSafelyRemovableUnbox(fn: Tree, arg: Tree): Boolean = {
      currentRun.runDefinitions.isUnbox(fn.symbol) && {
       val cls = arg.tpe.typeSymbol
@@ -30,25 +26,14 @@ trait TypeAdaptingTransformer {
     }
 
     private def isPrimitiveValueType(tpe: Type) = isPrimitiveValueClass(tpe.typeSymbol)
-
-    private def isErasedValueType(tpe: Type) = tpe.isInstanceOf[ErasedValueType]
-
-    private def isDifferentErasedValueType(tpe: Type, other: Type) =
-      isErasedValueType(tpe) && (tpe ne other)
-
     def isPrimitiveValueMember(sym: Symbol) = isPrimitiveValueClass(sym.owner)
-
-    @inline def box(tree: Tree, target: => String): Tree = {
-      val result = box1(tree)
-      if (tree.tpe =:= UnitTpe) ()
-      else log(s"boxing ${tree.summaryString}: ${tree.tpe} into $target: ${result.tpe}")
-      result
-    }
+    def isMethodTypeWithEmptyParams(tpe: Type) = tpe.isInstanceOf[MethodType] && tpe.params.isEmpty
+    def applyMethodWithEmptyParams(qual: Tree) = Apply(qual, List()) setPos qual.pos setType qual.tpe.resultType
 
     /** Box `tree` of unboxed type */
-    private def box1(tree: Tree): Tree = tree match {
+    def box(tree: Tree): Tree = tree match {
       case LabelDef(_, _, _) =>
-        val ldef = deriveLabelDef(tree)(box1)
+        val ldef = deriveLabelDef(tree)(box)
         ldef setType ldef.rhs.tpe
       case _ =>
         val tree1 = tree.tpe match {
@@ -80,39 +65,19 @@ trait TypeAdaptingTransformer {
         typer.typedPos(tree.pos)(tree1)
     }
 
-    def unbox(tree: Tree, pt: Type): Tree = {
-      val result = unbox1(tree, pt)
-      log(s"unboxing ${tree.shortClass}: ${tree.tpe} as a ${result.tpe}")
-      result
-    }
-
     /** Unbox `tree` of boxed type to expected type `pt`.
      *
      *  @param tree the given tree
      *  @param pt   the expected type.
      *  @return     the unboxed tree
      */
-    private def unbox1(tree: Tree, pt: Type): Tree = tree match {
-/*
-      case Boxed(unboxed) =>
-        println("unbox shorten: "+tree) // this never seems to kick in during build and test; therefore disabled.
-        adaptToType(unboxed, pt)
- */
+    def unbox(tree: Tree, pt: Type): Tree = tree match {
       case LabelDef(_, _, _) =>
         val ldef = deriveLabelDef(tree)(unbox(_, pt))
         ldef setType ldef.rhs.tpe
       case _ =>
         val tree1 = pt match {
-          case ErasedValueType(clazz, underlying) =>
-            val tree0 =
-              if (tree.tpe.typeSymbol == NullClass &&
-                  isPrimitiveValueClass(underlying.typeSymbol)) {
-                // convert `null` directly to underlying type, as going
-                // via the unboxed type would yield a NPE (see SI-5866)
-                unbox1(tree, underlying)
-              } else
-                Apply(Select(adaptToType(tree, clazz.tpe), clazz.derivedValueClassUnbox), List())
-            cast(tree0, pt)
+          case ErasedValueType(clazz, underlying) => cast(unboxValueClass(tree, clazz, underlying), pt)
           case _ =>
             pt.typeSymbol match {
               case UnitClass  =>
@@ -127,11 +92,19 @@ trait TypeAdaptingTransformer {
         typer.typedPos(tree.pos)(tree1)
     }
 
+    def unboxValueClass(tree: Tree, clazz: Symbol, underlying: Type): Tree =
+      if (tree.tpe.typeSymbol == NullClass && isPrimitiveValueClass(underlying.typeSymbol)) {
+        // convert `null` directly to underlying type, as going via the unboxed type would yield a NPE (see SI-5866)
+        unbox(tree, underlying)
+      } else
+        Apply(Select(adaptToType(tree, clazz.tpe), clazz.derivedValueClassUnbox), List())
+
     /** Generate a synthetic cast operation from tree.tpe to pt.
-     *  @pre pt eq pt.normalize
+      *
+      *  @pre pt eq pt.normalize
      */
-    def cast(tree: Tree, pt: Type): Tree = {
-      if ((tree.tpe ne null) && !(tree.tpe =:= ObjectTpe)) {
+    final def cast(tree: Tree, pt: Type): Tree = {
+      if (settings.debug && (tree.tpe ne null) && !(tree.tpe =:= ObjectTpe)) {
         def word = (
           if (tree.tpe <:< pt) "upcast"
           else if (pt <:< tree.tpe) "downcast"
@@ -159,27 +132,25 @@ trait TypeAdaptingTransformer {
      *  @param pt   the expected type
      *  @return     the adapted tree
      */
-    def adaptToType(tree: Tree, pt: Type): Tree = {
-      if (settings.debug && pt != WildcardType)
-        log("adapting " + tree + ":" + tree.tpe + " : " +  tree.tpe.parents + " to " + pt)//debug
-      if (tree.tpe <:< pt)
-        tree
-      else if (isDifferentErasedValueType(tree.tpe, pt))
-        adaptToType(box(tree, pt.toString), pt)
-      else if (isDifferentErasedValueType(pt, tree.tpe))
-        adaptToType(unbox(tree, pt), pt)
-      else if (isPrimitiveValueType(tree.tpe) && !isPrimitiveValueType(pt)) {
-        adaptToType(box(tree, pt.toString), pt)
-      } else if (isMethodTypeWithEmptyParams(tree.tpe)) {
-        // [H] this assert fails when trying to typecheck tree !(SomeClass.this.bitmap) for single lazy val
-        //assert(tree.symbol.isStable, "adapt "+tree+":"+tree.tpe+" to "+pt)
-        adaptToType(Apply(tree, List()) setPos tree.pos setType tree.tpe.resultType, pt)
-//      } else if (pt <:< tree.tpe)
-//        cast(tree, pt)
-      } else if (isPrimitiveValueType(pt) && !isPrimitiveValueType(tree.tpe))
-        adaptToType(unbox(tree, pt), pt)
-      else
-        cast(tree, pt)
+    @tailrec final def adaptToType(tree: Tree, pt: Type): Tree = {
+      val tpe = tree.tpe
+
+      if ((tpe eq pt) || tpe <:< pt) tree
+      else if (tpe.isInstanceOf[ErasedValueType]) adaptToType(box(tree), pt) // what if pt is an erased value type?
+      else if (pt.isInstanceOf[ErasedValueType])  adaptToType(unbox(tree, pt), pt)
+      // See corresponding case in `Eraser`'s `adaptMember`
+      // [H] this does not hold here, however: `assert(tree.symbol.isStable)` (when typechecking !(SomeClass.this.bitmap) for single lazy val)
+      else if (isMethodTypeWithEmptyParams(tpe))  adaptToType(applyMethodWithEmptyParams(tree), pt)
+      else {
+        val gotPrimitiveVC      = isPrimitiveValueType(tpe)
+        val expectedPrimitiveVC = isPrimitiveValueType(pt)
+
+        if (gotPrimitiveVC && !expectedPrimitiveVC)      adaptToType(box(tree), pt)
+        else if (!gotPrimitiveVC && expectedPrimitiveVC) adaptToType(unbox(tree, pt), pt)
+        else if (samMatchingFunction(tree, pt).exists) {
+          tree setType pt
+        } else cast(tree, pt)
+      }
     }
   }
 }

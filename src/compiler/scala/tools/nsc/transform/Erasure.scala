@@ -647,7 +647,7 @@ abstract class Erasure extends AddInterfaces
             var qual1 = typedQualifier(qual)
             if ((isPrimitiveValueType(qual1.tpe) && !isPrimitiveValueMember(tree.symbol)) ||
                  isErasedValueType(qual1.tpe))
-              qual1 = box(qual1, "owner "+tree.symbol.owner)
+              qual1 = box(qual1)
             else if (!isPrimitiveValueType(qual1.tpe) && isPrimitiveValueMember(tree.symbol))
               qual1 = unbox(qual1, tree.symbol.owner.tpe)
 
@@ -656,10 +656,9 @@ abstract class Erasure extends AddInterfaces
             if (isPrimitiveValueMember(tree.symbol) && !isPrimitiveValueType(qual1.tpe)) {
               tree.symbol = NoSymbol
               selectFrom(qual1)
-            } else if (isMethodTypeWithEmptyParams(qual1.tpe)) {
+            } else if (isMethodTypeWithEmptyParams(qual1.tpe)) { // see also adaptToType in TypeAdapter
               assert(qual1.symbol.isStable, qual1.symbol)
-              val applied = Apply(qual1, List()) setPos qual1.pos setType qual1.tpe.resultType
-              adaptMember(selectFrom(applied))
+              adaptMember(selectFrom(applyMethodWithEmptyParams(qual1)))
             } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.typeSymbol isSubClass tree.symbol.owner))) {
               assert(tree.symbol.owner != ArrayClass)
               selectFrom(cast(qual1, tree.symbol.owner.tpe.resultType))
