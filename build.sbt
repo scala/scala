@@ -454,7 +454,6 @@ lazy val replJlineEmbedded = Project("repl-jline-embedded", file(".") / "target"
           x.name.endsWith(".class") || x.name.endsWith(".properties") || x.name.startsWith("META-INF/native") || x.name.startsWith("META-INF/maven")
         )
       }
-      //println(inputs.map(_.name).mkString("\n"))
       import JarJar.JarJarConfig._
       val config: Seq[JarJar.JarJarConfig] = Seq(
         Rule("org.fusesource.**", "scala.tools.fusesource_embedded.@1"),
@@ -799,3 +798,152 @@ commands ++= {
 }
 
 addCommandAlias("scalap",   "scalap/compile:runMain              scala.tools.scalap.Main -usejavacp")
+
+lazy val intellij = taskKey[Unit]("Update the library classpaths in the IntelliJ project files.")
+
+def moduleDeps(name: String) = Def.taskDyn { Def.task((name, (externalDependencyClasspath in Compile in LocalProject(name)).value.map(_.data))) }
+
+intellij := {
+  import xml._
+  import xml.transform._
+
+  val s = streams.value
+
+  val modules: List[(String, Seq[File])] = {
+    // for the sbt build module, the dependencies are fetched from the project's build using sbt-buildinfo
+    val buildModule = ("scala-build", scalabuild.BuildInfo.buildClasspath.split(":").toSeq.map(new File(_)))
+    // `sbt projects` lists all modules in the build
+    buildModule :: List(
+      moduleDeps("compiler").value,
+      // moduleDeps("dist").value,                // No sources, therefore no module in IntelliJ
+      moduleDeps("interactive").value,
+      moduleDeps("junit").value,
+      moduleDeps("library").value,
+      // moduleDeps("library-all").value,         // No sources
+      moduleDeps("manual").value,
+      moduleDeps("partest-extras").value,
+      moduleDeps("partest-javaagent").value,
+      moduleDeps("reflect").value,
+      moduleDeps("repl").value,
+      moduleDeps("repl-jline").value,
+      // moduleDeps("repl-jline-embedded").value, // No sources
+      // moduleDeps("root").value,                // No sources
+      // moduleDeps("scala-dist").value,          // No sources
+      moduleDeps("scaladoc").value,
+      moduleDeps("scalap").value,
+      moduleDeps("test").value)
+  }
+
+  def moduleDep(name: String, jars: Seq[File]) = {
+    val entries = jars.map(f => s"""        <root url="jar://${f.getCanonicalPath}!/" />""").mkString("\n")
+    s"""|    <library name="${name}-deps">
+        |      <CLASSES>
+        |$entries
+        |      </CLASSES>
+        |      <JAVADOC />
+        |      <SOURCES />
+        |    </library>""".stripMargin
+  }
+
+  def starrDep(jars: Seq[File]) = {
+    val entries = jars.map(f => s"""          <root url="file://${f.getCanonicalPath}" />""").mkString("\n")
+    s"""|    <library name="starr" type="Scala">
+        |      <properties>
+        |        <option name="languageLevel" value="Scala_2_12" />
+        |        <compiler-classpath>
+        |$entries
+        |        </compiler-classpath>
+        |      </properties>
+        |      <CLASSES />
+        |      <JAVADOC />
+        |      <SOURCES />
+        |    </library>""".stripMargin
+  }
+
+  def replaceLibrary(data: Node, libName: String, libType: Option[String], newContent: String) = {
+    object rule extends RewriteRule {
+      var transformed = false
+      def checkAttrs(attrs: MetaData) = {
+        def check(key: String, expected: String) = {
+          val a = attrs(key)
+          a != null && a.text == expected
+        }
+        check("name", libName) && libType.forall(tp => check("type", tp))
+      }
+
+      override def transform(n: Node): Seq[Node] = n match {
+        case e @ Elem(_, "library", attrs, _, _, _*) if checkAttrs(attrs) =>
+          transformed = true
+          XML.loadString(newContent)
+        case other =>
+          other
+      }
+    }
+    object trans extends RuleTransformer(rule)
+    val r = trans(data)
+    if (!rule.transformed) error(s"Replacing library classpath for $libName failed, no existing library found.")
+    r
+  }
+
+  val ipr = (baseDirectory in ThisBuild).value / "src/intellij/scala.ipr"
+
+  var continue = false
+  if (!ipr.exists) {
+    scala.Console.print(s"Could not find src/intellij/scala.ipr. Create new project files from src/intellij/*.SAMPLE (y/n)? ")
+    if (scala.Console.readLine() == "y") {
+      intellijCreateFromSample((baseDirectory in ThisBuild).value)
+      continue = true
+    }
+  } else {
+    scala.Console.print("Update library classpaths in the current src/intellij/scala.ipr (y/n)? ")
+    continue = scala.Console.readLine() == "y"
+  }
+  if (continue) {
+    s.log.info("Updating library classpaths in src/intellij/scala.ipr.")
+    val content = XML.loadFile(ipr)
+
+    val newStarr = replaceLibrary(content, "starr", Some("Scala"), starrDep((scalaInstance in LocalProject("compiler")).value.jars))
+    val newModules = modules.foldLeft(newStarr)({
+      case (res, (modName, jars)) =>
+        if (jars.isEmpty) res // modules without dependencies
+        else replaceLibrary(res, s"$modName-deps", None, moduleDep(modName, jars))
+    })
+
+    XML.save(ipr.getCanonicalPath, newModules)
+  } else {
+    s.log.info("Aborting.")
+  }
+}
+
+lazy val intellijFromSample = taskKey[Unit]("Create fresh IntelliJ project files from src/intellij/*.SAMPLE.")
+
+intellijFromSample := {
+  val s = streams.value
+  scala.Console.print(s"Create new project files from src/intellij/*.SAMPLE (y/n)? ")
+  if (scala.Console.readLine() == "y")
+    intellijCreateFromSample((baseDirectory in ThisBuild).value)
+  else
+    s.log.info("Aborting.")
+}
+
+def intellijCreateFromSample(basedir: File): Unit = {
+  val files = basedir / "src/intellij" * "*.SAMPLE"
+  val copies = files.get.map(f => (f, new File(f.getCanonicalPath.stripSuffix(".SAMPLE"))))
+  IO.copy(copies, overwrite = true)
+}
+
+lazy val intellijToSample = taskKey[Unit]("Update src/intellij/*.SAMPLE using the current IntelliJ project files.")
+
+intellijToSample := {
+  val s = streams.value
+  scala.Console.print(s"Update src/intellij/*.SAMPLE using the current IntelliJ project files (y/n)? ")
+  if (scala.Console.readLine() == "y") {
+    val basedir = (baseDirectory in ThisBuild).value
+    val existing = basedir / "src/intellij" * "*.SAMPLE"
+    IO.delete(existing.get)
+    val current = basedir / "src/intellij" * ("*.iml" || "*.ipr")
+    val copies = current.get.map(f => (f, new File(f.getCanonicalPath + ".SAMPLE")))
+    IO.copy(copies)
+  } else
+    s.log.info("Aborting.")
+}
