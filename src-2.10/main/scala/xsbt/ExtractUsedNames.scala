@@ -53,10 +53,12 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
           val firstClassName = className(firstClassSymbol)
           traverser.namesUsedInClasses(firstClassName) ++= namesUsedAtTopLevel
         case None =>
-          unit.warning(NoPosition,
+          unit.warning(
+            NoPosition,
             """|Found names used at the top level but no class, trait or object is defined in the compilation unit.
                |The incremental compiler cannot record used names in such case.
-               |Some errors like unused import referring to a non-existent class might not be reported.""".stripMargin)
+               |Some errors like unused import referring to a non-existent class might not be reported.""".stripMargin
+          )
       }
     }
 
@@ -139,11 +141,11 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
     }
 
     /**
-      * Resolves a class to which we attribute a used name by getting the enclosing class
-      * for `currentOwner` and then looking up the most inner enclosing class that is non local.
-      * The second returned value indicates if the enclosing class for `currentOwner`
-      * is a local class.
-      */
+     * Resolves a class to which we attribute a used name by getting the enclosing class
+     * for `currentOwner` and then looking up the most inner enclosing class that is non local.
+     * The second returned value indicates if the enclosing class for `currentOwner`
+     * is a local class.
+     */
     private def resolveEnclosingNonLocalClass: Symbol = {
       val fromClass = enclOrModuleClass(currentOwner)
       if (fromClass == NoSymbol || fromClass.isPackage)
