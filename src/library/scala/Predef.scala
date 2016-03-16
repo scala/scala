@@ -65,6 +65,49 @@ import scala.io.StdIn
  *  are provided for the "widening" of numeric values, for instance, converting a
  *  Short value to a Long value as required, and to add additional higher-order
  *  functions to Array values. These are described in more detail in the documentation of [[scala.Array]].
+ *
+ * @groupname utilities Utility Methods
+ * @groupprio utilities 10
+ *
+ * @groupname assertions Assertions
+ * @groupprio assertions 20
+ * @groupdesc assertions These methods support program verfication and runtime correctness.
+ *
+ * @groupname console-output Console Output
+ * @groupprio console-output 30
+ * @groupdesc console-output These methods provide output via the console.
+ *
+ * @groupname type-constraints Type Constraints
+ * @groupprio type-constraints 40
+ * @groupdesc type-constraints These entities allows constraints between types to be stipulated.
+ *
+ * @groupname aliases Aliases
+ * @groupprio aliases 50
+ * @groupdesc aliases These aliases bring selected immutable types into scope without any imports.
+ *
+ * @groupname conversions-string String Conversions
+ * @groupprio conversions-string 60
+ * @groupdesc conversions-string Conversions to and from String and StringOps.
+ *
+ * @groupname implicit-classes-any Implicit Classes
+ * @groupprio implicit-classes-any 70
+ * @groupdesc implicit-classes-any These implicit classes add useful extension methods to every type.
+ *
+ * @groupname implicit-classes-char CharSequence Conversions
+ * @groupprio implicit-classes-char 80
+ * @groupdesc implicit-classes-char These implicit classes add CharSequence methods to Array[Char] and IndexedSeq[Char] instances.
+ *
+ * @groupname conversions-java-to-anyval Java to Scala
+ * @groupprio conversions-java-to-anyval 90
+ * @groupdesc conversions-java-to-anyval Implicit conversion from Java primitive wrapper types to Scala equivalents.
+ *
+ * @groupname conversions-anyval-to-java Scala to Java
+ * @groupprio conversions-anyval-to-java 100
+ * @groupdesc conversions-anyval-to-java Implicit conversion from Scala AnyVals to Java primitive wrapper types equivalents.
+ *
+ * @groupname conversions-array-to-wrapped-array Array to WrappedArray
+ * @groupprio conversions-array-to-wrapped-array 110
+ * @groupdesc conversions-array-to-wrapped-array Conversions from Arrays to WrappedArrays.
  */
 object Predef extends LowPriorityImplicits with DeprecatedPredef {
   /**
@@ -78,6 +121,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    * val mapIntString = classOf[Map[Int,String]]
    * // mapIntString is java.lang.Class[Map[Int,String]] = interface scala.collection.immutable.Map
    * }}}
+   * @group utilities
    */
   def classOf[T]: Class[T] = null // This is a stub method. The actual implementation is filled in by the compiler.
 
@@ -85,19 +129,26 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  Java String (see the documentation corresponding to your Java version, for
    *  example [[http://docs.oracle.com/javase/8/docs/api/java/lang/String.html]]) or
    *  are added implicitly through [[scala.collection.immutable.StringOps]].
+   *  @group aliases
    */
   type String        = java.lang.String
+  /**  @group aliases */
   type Class[T]      = java.lang.Class[T]
 
   // miscellaneous -----------------------------------------------------
   scala.`package`                         // to force scala package object to be seen.
   scala.collection.immutable.List         // to force Nil, :: to be seen.
 
+  /**  @group aliases */
   type Function[-A, +B] = Function1[A, B]
 
+  /**  @group aliases */
   type Map[A, +B] = immutable.Map[A, B]
+  /**  @group aliases */
   type Set[A]     = immutable.Set[A]
+  /**  @group aliases */
   val Map         = immutable.Map
+  /**  @group aliases */
   val Set         = immutable.Set
 
   // Manifest types, companions, and incantations for summoning
@@ -130,8 +181,11 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   def optManifest[T](implicit m: OptManifest[T])     = m
 
   // Minor variations on identity functions
+  /** @group utilities */
   @inline def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
+  /** @group utilities */
   @inline def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world -- TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
+  /** @group utilities */
   @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
 
   // errors and asserts -------------------------------------------------
@@ -148,6 +202,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *
    *  @see [[scala.annotation.elidable elidable]]
    *  @param assertion   the expression to test
+   *  @group assertions
    */
   @elidable(ASSERTION)
   def assert(assertion: Boolean) {
@@ -162,6 +217,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  @see [[scala.annotation.elidable elidable]]
    *  @param assertion   the expression to test
    *  @param message     a String to include in the failure message
+   *  @group assertions
    */
   @elidable(ASSERTION) @inline
   final def assert(assertion: Boolean, message: => Any) {
@@ -177,6 +233,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *
    *  @see [[scala.annotation.elidable elidable]]
    *  @param assumption   the expression to test
+   *  @group assertions
    */
   @elidable(ASSERTION)
   def assume(assumption: Boolean) {
@@ -193,6 +250,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  @see [[scala.annotation.elidable elidable]]
    *  @param assumption   the expression to test
    *  @param message      a String to include in the failure message
+   *  @group assertions
    */
   @elidable(ASSERTION) @inline
   final def assume(assumption: Boolean, message: => Any) {
@@ -205,6 +263,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  for violating the condition.
    *
    *  @param requirement   the expression to test
+   *  @group assertions
    */
   def require(requirement: Boolean) {
     if (!requirement)
@@ -217,6 +276,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *
    *  @param requirement   the expression to test
    *  @param message       a String to include in the failure message
+   *  @group assertions
    */
   @inline final def require(requirement: Boolean, message: => Any) {
     if (!requirement)
@@ -225,6 +285,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
 
   /** `???` can be used for marking methods that remain to be implemented.
    *  @throws NotImplementedError
+   *  @group utilities
    */
   def ??? : Nothing = throw new NotImplementedError
 
@@ -248,11 +309,13 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
 
   // implicit classes -----------------------------------------------------
 
+  /** @group implicit-classes-any */
   implicit final class ArrowAssoc[A](private val self: A) extends AnyVal {
     @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(self, y)
     def →[B](y: B): Tuple2[A, B] = ->(y)
   }
 
+  /** @group implicit-classes-any */
   implicit final class Ensuring[A](private val self: A) extends AnyVal {
     def ensuring(cond: Boolean): A = { assert(cond); self }
     def ensuring(cond: Boolean, msg: => Any): A = { assert(cond, msg); self }
@@ -260,6 +323,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     def ensuring(cond: A => Boolean, msg: => Any): A = { assert(cond(self), msg); self }
   }
 
+  /** @group implicit-classes-any */
   implicit final class StringFormat[A](private val self: A) extends AnyVal {
     /** Returns string formatted according to given `format` string.
      *  Format strings are as for `String.format`
@@ -269,6 +333,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   }
 
   // SI-8229 retaining the pre 2.11 name for source compatibility in shadowing this implicit
+  /** @group implicit-classes-any */
   implicit final class any2stringadd[A](private val self: A) extends AnyVal {
     def +(other: String): String = String.valueOf(self) + other
   }
@@ -278,6 +343,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     @deprecated("Use Throwable#getStackTrace", "2.11.0") def getStackTraceString = self.getStackTrace().mkString("", EOL, EOL)
   }
 
+  /** @group implicit-classes-char */
   implicit final class SeqCharSequence(val __sequenceOfChars: scala.collection.IndexedSeq[Char]) extends CharSequence {
     def length: Int                                     = __sequenceOfChars.length
     def charAt(index: Int): Char                        = __sequenceOfChars(index)
@@ -285,6 +351,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     override def toString                               = __sequenceOfChars mkString ""
   }
 
+  /** @group implicit-classes-char */
   implicit final class ArrayCharSequence(val __arrayOfChars: Array[Char]) extends CharSequence {
     def length: Int                                     = __arrayOfChars.length
     def charAt(index: Int): Char                        = __arrayOfChars(index)
@@ -297,7 +364,9 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     def apply()             = mutable.StringBuilder.newBuilder
   }
 
+  /** @group conversions-string */
   @inline implicit def augmentString(x: String): StringOps = new StringOps(x)
+  /** @group conversions-string */
   @inline implicit def unaugmentString(x: StringOps): String = x.repr
 
   // printing -----------------------------------------------------------
@@ -305,16 +374,19 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   /** Prints an object to `out` using its `toString` method.
    *
    *  @param x the object to print; may be null.
+   *  @group console-output
    */
   def print(x: Any) = Console.print(x)
 
   /** Prints a newline character on the default output.
+   *  @group console-output
    */
   def println() = Console.println()
 
   /** Prints out an object to the default output, followed by a newline character.
    *
    *  @param x the object to print.
+   *  @group console-output
    */
   def println(x: Any) = Console.println(x)
 
@@ -332,6 +404,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  @throws java.lang.IllegalArgumentException if there was a problem with the format string or arguments
    *
    *  @see [[scala.StringContext.f StringContext.f]]
+   *  @group console-output
    */
   def printf(text: String, xs: Any*) = Console.print(text.format(xs: _*))
 
@@ -379,22 +452,38 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
 
   // "Autoboxing" and "Autounboxing" ---------------------------------------------------
 
+  /** @group conversions-anyval-to-java */
   implicit def byte2Byte(x: Byte): java.lang.Byte             = x.asInstanceOf[java.lang.Byte]
+  /** @group conversions-anyval-to-java */
   implicit def short2Short(x: Short): java.lang.Short         = x.asInstanceOf[java.lang.Short]
+  /** @group conversions-anyval-to-java */
   implicit def char2Character(x: Char): java.lang.Character   = x.asInstanceOf[java.lang.Character]
+  /** @group conversions-anyval-to-java */
   implicit def int2Integer(x: Int): java.lang.Integer         = x.asInstanceOf[java.lang.Integer]
+  /** @group conversions-anyval-to-java */
   implicit def long2Long(x: Long): java.lang.Long             = x.asInstanceOf[java.lang.Long]
+  /** @group conversions-anyval-to-java */
   implicit def float2Float(x: Float): java.lang.Float         = x.asInstanceOf[java.lang.Float]
+  /** @group conversions-anyval-to-java */
   implicit def double2Double(x: Double): java.lang.Double     = x.asInstanceOf[java.lang.Double]
+  /** @group conversions-anyval-to-java */
   implicit def boolean2Boolean(x: Boolean): java.lang.Boolean = x.asInstanceOf[java.lang.Boolean]
 
+  /** @group conversions-java-to-anyval */
   implicit def Byte2byte(x: java.lang.Byte): Byte             = x.asInstanceOf[Byte]
+  /** @group conversions-java-to-anyval */
   implicit def Short2short(x: java.lang.Short): Short         = x.asInstanceOf[Short]
+  /** @group conversions-java-to-anyval */
   implicit def Character2char(x: java.lang.Character): Char   = x.asInstanceOf[Char]
+  /** @group conversions-java-to-anyval */
   implicit def Integer2int(x: java.lang.Integer): Int         = x.asInstanceOf[Int]
+  /** @group conversions-java-to-anyval */
   implicit def Long2long(x: java.lang.Long): Long             = x.asInstanceOf[Long]
+  /** @group conversions-java-to-anyval */
   implicit def Float2float(x: java.lang.Float): Float         = x.asInstanceOf[Float]
+  /** @group conversions-java-to-anyval */
   implicit def Double2double(x: java.lang.Double): Double     = x.asInstanceOf[Double]
+  /** @group conversions-java-to-anyval */
   implicit def Boolean2boolean(x: java.lang.Boolean): Boolean = x.asInstanceOf[Boolean]
 
   // Type Constraints --------------------------------------------------------------
@@ -415,6 +504,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    * required lower bound.
    *
    * In part contributed by Jason Zaugg.
+   * @group type-constraints
    */
   @implicitNotFound(msg = "Cannot prove that ${From} <:< ${To}.")
   sealed abstract class <:<[-From, +To] extends (From => To) with Serializable
@@ -422,6 +512,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   // The dollar prefix is to dodge accidental shadowing of this method
   // by a user-defined method of the same name (SI-7788).
   // The collections rely on this method.
+  /** @group type-constraints */
   implicit def $conforms[A]: A <:< A = singleton_<:<.asInstanceOf[A <:< A]
 
   @deprecated("Use `implicitly[T <:< U]` or `identity` instead.", "2.11.0")
@@ -430,10 +521,12 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   /** An instance of `A =:= B` witnesses that the types `A` and `B` are equal.
    *
    * @see `<:<` for expressing subtyping constraints
+   * @group type-constraints
    */
   @implicitNotFound(msg = "Cannot prove that ${From} =:= ${To}.")
   sealed abstract class =:=[From, To] extends (From => To) with Serializable
   private[this] final val singleton_=:= = new =:=[Any,Any] { def apply(x: Any): Any = x }
+  /** @group type-constraints */
   object =:= {
      implicit def tpEquals[A]: A =:= A = singleton_=:=.asInstanceOf[A =:= A]
   }
@@ -513,6 +606,7 @@ private[scala] abstract class LowPriorityImplicits {
   @inline implicit def doubleWrapper(x: Double)   = new runtime.RichDouble(x)
   @inline implicit def booleanWrapper(x: Boolean) = new runtime.RichBoolean(x)
 
+  /** @group conversions-array-to-wrapped-array */
   implicit def genericWrapArray[T](xs: Array[T]): WrappedArray[T] =
     if (xs eq null) null
     else WrappedArray.make(xs)
@@ -520,23 +614,35 @@ private[scala] abstract class LowPriorityImplicits {
   // Since the JVM thinks arrays are covariant, one 0-length Array[AnyRef]
   // is as good as another for all T <: AnyRef.  Instead of creating 100,000,000
   // unique ones by way of this implicit, let's share one.
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapRefArray[T <: AnyRef](xs: Array[T]): WrappedArray[T] = {
     if (xs eq null) null
     else if (xs.length == 0) WrappedArray.empty[T]
     else new WrappedArray.ofRef[T](xs)
   }
 
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapIntArray(xs: Array[Int]): WrappedArray[Int] = if (xs ne null) new WrappedArray.ofInt(xs) else null
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapDoubleArray(xs: Array[Double]): WrappedArray[Double] = if (xs ne null) new WrappedArray.ofDouble(xs) else null
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapLongArray(xs: Array[Long]): WrappedArray[Long] = if (xs ne null) new WrappedArray.ofLong(xs) else null
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapFloatArray(xs: Array[Float]): WrappedArray[Float] = if (xs ne null) new WrappedArray.ofFloat(xs) else null
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapCharArray(xs: Array[Char]): WrappedArray[Char] = if (xs ne null) new WrappedArray.ofChar(xs) else null
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapByteArray(xs: Array[Byte]): WrappedArray[Byte] = if (xs ne null) new WrappedArray.ofByte(xs) else null
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapShortArray(xs: Array[Short]): WrappedArray[Short] = if (xs ne null) new WrappedArray.ofShort(xs) else null
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapBooleanArray(xs: Array[Boolean]): WrappedArray[Boolean] = if (xs ne null) new WrappedArray.ofBoolean(xs) else null
+  /** @group conversions-array-to-wrapped-array */
   implicit def wrapUnitArray(xs: Array[Unit]): WrappedArray[Unit] = if (xs ne null) new WrappedArray.ofUnit(xs) else null
 
+  /** @group conversions-string */
   implicit def wrapString(s: String): WrappedString = if (s ne null) new WrappedString(s) else null
+  /** @group conversions-string */
   implicit def unwrapString(ws: WrappedString): String = if (ws ne null) ws.self else null
 
   implicit def fallbackStringCanBuildFrom[T]: CanBuildFrom[String, T, immutable.IndexedSeq[T]] =
