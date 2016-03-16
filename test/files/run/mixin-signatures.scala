@@ -99,7 +99,7 @@ object Test {
 
   def main(args: Array[String]): Unit = {
     List(bar1, bar2, bar3, bar4, bar5) foreach show
-    List("Foo1$class", "Foo2$class") foreach show
+    List("Foo1", "Foo2") foreach show
     println(go)
   }
 }
