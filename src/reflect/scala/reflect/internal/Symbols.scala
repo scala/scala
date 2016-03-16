@@ -933,14 +933,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isCaseCopy =
       isMethod && owner.isCase && isSynthetic && name == nme.copy
 
-    /** Is this a symbol which exists only in the implementation class, not in its trait? */
-    final def isImplOnly = isPrivate || (
-       owner.isTrait && (
-            hasAllFlags(LIFTED | MODULE | METHOD)
-         || isConstructor
-         || hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR | MODULE)
-       )
-    )
     final def isModuleVar = hasFlag(MODULEVAR)
 
     /**
