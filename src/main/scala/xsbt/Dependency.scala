@@ -51,7 +51,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
         } else {
           throw new UnsupportedOperationException("Turning off name hashing is not supported in class-based dependency trackging.")
         }
-        /**
+        /*
          * Registers top level import dependencies as coming from a first top level class/trait/object declared
          * in the compilation unit.
          * If there's no top level template (class/trait/object def) declared in the compilation unit but `deps`
@@ -75,7 +75,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
               )
           }
         }
-        /**
+        /*
          * Handles dependency on given symbol by trying to figure out if represents a term
          * that is coming from either source code (not necessarily compiled in this compilation
          * run) or from class file and calls respective callback method.
