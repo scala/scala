@@ -8,6 +8,7 @@ package transform
 
 import symtab._
 import Flags._
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 abstract class Mixin extends InfoTransform with ast.TreeDSL {
@@ -237,11 +238,24 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
     /* Mix in members of implementation class mixinClass into class clazz */
     def mixinTraitForwarders(mixinClass: Symbol) {
+      val baseClasses = clazz.baseClasses
       for (member <- mixinClass.info.decls ; if isImplementedStatically(member)) {
         member overridingSymbol clazz match {
           case NoSymbol =>
-            if (clazz.info.findMember(member.name, 0, 0L, stableOnly = false).alternatives contains member)
-              cloneAndAddMixinMember(mixinClass, member).asInstanceOf[TermSymbol] setAlias member
+            if (clazz.info.findMember(member.name, 0, 0L, stableOnly = false).alternatives contains member) {
+              @tailrec
+              def needsForwarder(baseClasses: List[Symbol]): Boolean = baseClasses match {
+                case Nil => false
+                case baseClass :: tail =>
+                  def okay(sym: Symbol) = sym == NoSymbol || (sym.owner.isTrait && !sym.isDeferred)
+                  if ((baseClass eq member.owner) || okay(member overridingSymbol baseClass))
+                    needsForwarder(tail)
+                  else
+                    true
+              }
+              if (needsForwarder(baseClasses))
+                cloneAndAddMixinMember(mixinClass, member).asInstanceOf[TermSymbol] setAlias member
+            }
           case _        =>
         }
       }
