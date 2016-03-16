@@ -187,52 +187,78 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
      */
     private val inspectedOriginalTrees = collection.mutable.Set.empty[Tree]
 
-    override def traverse(tree: Tree): Unit = {
-      tree match {
-        case Import(expr, selectors) =>
-          selectors.foreach {
-            case ImportSelector(nme.WILDCARD, _, null, _) =>
-            // in case of wildcard import we do not rely on any particular name being defined
-            // on `expr`; all symbols that are being used will get caught through selections
-            case ImportSelector(name: Name, _, _, _) =>
-              def lookupImported(name: Name) = expr.symbol.info.member(name)
-              // importing a name means importing both a term and a type (if they exist)
-              addDependency(lookupImported(name.toTermName))
-              addDependency(lookupImported(name.toTypeName))
-          }
-        case select: Select =>
-          addDependency(select.symbol)
-        /*
-         * Idents are used in number of situations:
-         *  - to refer to local variable
-         *  - to refer to a top-level package (other packages are nested selections)
-         *  - to refer to a term defined in the same package as an enclosing class;
-         *    this looks fishy, see this thread:
-         *    https://groups.google.com/d/topic/scala-internals/Ms9WUAtokLo/discussion
-         */
-        case ident: Ident =>
-          addDependency(ident.symbol)
-        // In some cases (eg. macro annotations), `typeTree.tpe` may be null.
-        // See sbt/sbt#1593 and sbt/sbt#1655.
-        case typeTree: TypeTree if typeTree.tpe != null => symbolsInType(typeTree.tpe) foreach addDependency
-        case Template(parents, self, body) =>
-          traverseTrees(body)
-        case MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
-          this.traverse(original)
-        case other => ()
-      }
-      super.traverse(tree)
+    override def traverse(tree: Tree): Unit = tree match {
+      case Import(expr, selectors) =>
+        inImportNode = true
+        traverse(expr)
+        selectors.foreach {
+          case ImportSelector(nme.WILDCARD, _, null, _) =>
+          // in case of wildcard import we do not rely on any particular name being defined
+          // on `expr`; all symbols that are being used will get caught through selections
+          case ImportSelector(name: Name, _, _, _) =>
+            def lookupImported(name: Name) = expr.symbol.info.member(name)
+            // importing a name means importing both a term and a type (if they exist)
+            addDependency(lookupImported(name.toTermName))
+            addDependency(lookupImported(name.toTypeName))
+        }
+        inImportNode = false
+      /*
+       * Idents are used in number of situations:
+       *  - to refer to local variable
+       *  - to refer to a top-level package (other packages are nested selections)
+       *  - to refer to a term defined in the same package as an enclosing class;
+       *    this looks fishy, see this thread:
+       *    https://groups.google.com/d/topic/scala-internals/Ms9WUAtokLo/discussion
+       */
+      case id: Ident => addDependency(id.symbol)
+      case sel @ Select(qual, _) =>
+        traverse(qual); addDependency(sel.symbol)
+      case sel @ SelectFromTypeTree(qual, _) =>
+        traverse(qual); addDependency(sel.symbol)
+
+      case Template(parents, self, body) =>
+        // use typeSymbol to dealias type aliases -- we want to track the dependency on the real class in the alias's RHS
+        def flattenTypeToSymbols(tp: Type): List[Symbol] = if (tp eq null) Nil
+        else tp match {
+          // rt.typeSymbol is redundant if we list out all parents, TODO: what about rt.decls?
+          case rt: RefinedType => rt.parents.flatMap(flattenTypeToSymbols)
+          case _               => List(tp.typeSymbol)
+        }
+
+        val inheritanceTypes = parents.map(_.tpe).toSet
+        val inheritanceSymbols = inheritanceTypes.flatMap(flattenTypeToSymbols)
+
+        debuglog("Parent types for " + tree.symbol + " (self: " + self.tpt.tpe + "): " + inheritanceTypes + " with symbols " + inheritanceSymbols.map(_.fullName))
+
+        inheritanceSymbols.foreach(addInheritanceDependency)
+
+        val allSymbols = (inheritanceTypes + self.tpt.tpe).flatMap(symbolsInType)
+        (allSymbols ++ inheritanceSymbols).foreach(addDependency)
+        traverseTrees(body)
+
+      // In some cases (eg. macro annotations), `typeTree.tpe` may be null. See sbt/sbt#1593 and sbt/sbt#1655.
+      case typeTree: TypeTree if typeTree.tpe != null =>
+        symbolsInType(typeTree.tpe) foreach addDependency
+      case MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
+        traverse(original)
+      case _: ClassDef | _: ModuleDef if tree.symbol != null && tree.symbol != NoSymbol =>
+        // make sure we cache lookups for all classes declared in the compilation unit; the recorded information
+        // will be used in Analyzer phase
+        val sym = if (tree.symbol.isModule) tree.symbol.moduleClass else tree.symbol
+        localToNonLocalClass.resolveNonLocal(sym)
+        super.traverse(tree)
+      case other => super.traverse(other)
     }
-  }
 
-  private def symbolsInType(tp: Type): Set[Symbol] = {
-    val typeSymbolCollector =
-      new CollectTypeCollector({
-        case tpe if (tpe != null) && !tpe.typeSymbolDirect.hasPackageFlag => tpe.typeSymbolDirect
-      })
+    private def symbolsInType(tp: Type): Set[Symbol] = {
+      val typeSymbolCollector =
+        new CollectTypeCollector({
+          case tpe if (tpe != null) && !tpe.typeSymbolDirect.hasPackageFlag => tpe.typeSymbolDirect
+        })
 
-    typeSymbolCollector.collect(tp).toSet
+      typeSymbolCollector.collect(tp).toSet
 
+    }
   }
 
   def firstClassOrModuleDef(tree: Tree): Option[Tree] = {
