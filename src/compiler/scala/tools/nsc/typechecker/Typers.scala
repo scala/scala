@@ -3219,7 +3219,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // less expensive than including them in inferMethodAlternative (see below).
           def shapeType(arg: Tree): Type = arg match {
             case Function(vparams, body) =>
-              functionType(vparams map (_ => AnyTpe), shapeType(body)) // TODO: should this be erased when retyping during erasure?
+              // No need for phasedAppliedType, as we don't get here during erasure --
+              // overloading resolution happens during type checking.
+              // During erasure, the condition above (fun.symbol.isOverloaded) is false.
+              functionType(vparams map (_ => AnyTpe), shapeType(body))
             case AssignOrNamedArg(Ident(name), rhs) =>
               NamedType(name, shapeType(rhs))
             case _ =>

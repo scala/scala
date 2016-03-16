@@ -7,7 +7,7 @@ object Test {
   def test = {
     val ii1: II = x => ii(x) // works
     val ii2: II = ii         // works (adapting `ii` to `II`)
-    val ii3: II = ii _       // fails -- should work
+    val ii3: II = ii _       // works (failed before the fix)
                              // typedTyped({ii : (() => <empty>)})
                              //    typedEta(ii, pt = II)
                              //       adapt(ii, pt = (? => ?))
