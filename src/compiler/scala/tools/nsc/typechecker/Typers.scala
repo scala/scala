@@ -1055,13 +1055,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (hasUndets)
             return instantiate(tree, mode, pt)
 
-          // we know `!(tree.tpe <:< pt)`; try to remedy if there's a sam for pt
-          val sam = samMatchingFunction(tree, pt) // this implies tree.isInstanceOf[Function]
-          if (sam.exists) {
-            val samTree = adaptToSAM(sam, tree.asInstanceOf[Function], pt, mode)
-            if (samTree ne EmptyTree) return samTree
-          }
-
           if (context.implicitsEnabled && !pt.isError && !tree.isErrorTyped) {
             // (14); the condition prevents chains of views
             debuglog("inferring view from " + tree.tpe + " to " + pt)
@@ -1081,6 +1074,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   case None      => return res
                 }
             }
+          }
+
+          // we know `!(tree.tpe <:< pt)`; try to remedy if there's a sam for pt
+          val sam = samMatchingFunction(tree, pt) // this implies tree.isInstanceOf[Function]
+          if (sam.exists) {
+            val samTree = adaptToSAM(sam, tree.asInstanceOf[Function], pt, mode)
+            if (samTree ne EmptyTree) return samTree
           }
         }
 
