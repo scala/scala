@@ -461,7 +461,7 @@ TODO:
     </fail>
 
     <!-- Allow this to be overridden simply -->
-    <property name="sbt.latest.version"    value="0.13.9"/>
+    <property name="sbt.latest.version"    value="0.13.11"/>
 
     <property name="sbt.src.dir"           value="${build-sbt.dir}/${sbt.latest.version}/src"/>
     <property name="sbt.lib.dir"           value="${build-sbt.dir}/${sbt.latest.version}/lib"/>
@@ -469,7 +469,7 @@ TODO:
     <property name="sbt.interface.jar"     value="${sbt.lib.dir}/interface.jar"/>
     <property name="sbt.interface.url"     value="http://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/interface/${sbt.latest.version}/jars/interface.jar"/>
     <property name="sbt.interface.src.jar" value="${sbt.src.dir}/compiler-interface-src.jar"/>
-    <property name="sbt.interface.src.url" value="http://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/compiler-interface/${sbt.latest.version}/jars/compiler-interface-src.jar"/>
+    <property name="sbt.interface.src.url" value="http://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/compiler-interface/${sbt.latest.version}/srcs/compiler-interface-sources.jar"/>
 
 
     <!-- Additional command line arguments for scalac. They are added to all build targets -->
