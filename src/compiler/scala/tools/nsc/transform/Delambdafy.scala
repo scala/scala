@@ -172,8 +172,8 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           if (resTpOk && isReferenceType(samResultType) && functionResultType <:< samResultType) functionResultType
           else samResultType
 
-        val typeAdapter = new TypeAdapter { val typer = localTyper }
-        import typeAdapter.{box, unbox, cast, adaptToType, unboxValueClass}
+        val typeAdapter = new TypeAdapter { def typedPos(pos: Position)(tree: Tree): Tree = localTyper.typedPos(pos)(tree) }
+        import typeAdapter.{adaptToType, unboxValueClass}
 
         val targetParams = target.paramss.head
         val numCaptures  = targetParams.length - functionParamTypes.length

@@ -7,62 +7,58 @@ import scala.tools.nsc.ast.TreeDSL
 /**
  * A trait usable by transforms that need to adapt trees of one type to another type
  */
-trait TypeAdaptingTransformer {
-  self: TreeDSL =>
-
-  val analyzer: typechecker.Analyzer { val global: self.global.type }
-
-  trait TypeAdapter {
-    val typer: analyzer.Typer
+trait TypeAdaptingTransformer { self: TreeDSL =>
+  abstract class TypeAdapter {
     import global._
     import definitions._
-    import CODE._
+
+    def typedPos(pos: Position)(tree: Tree): Tree
 
     private def isSafelyRemovableUnbox(fn: Tree, arg: Tree): Boolean = {
      currentRun.runDefinitions.isUnbox(fn.symbol) && {
       val cls = arg.tpe.typeSymbol
-      (cls == definitions.NullClass) || isBoxedValueClass(cls)
+      (cls == NullClass) || isBoxedValueClass(cls)
      }
     }
 
-    private def isPrimitiveValueType(tpe: Type) = isPrimitiveValueClass(tpe.typeSymbol)
-    def isPrimitiveValueMember(sym: Symbol) = isPrimitiveValueClass(sym.owner)
-    def isMethodTypeWithEmptyParams(tpe: Type) = tpe.isInstanceOf[MethodType] && tpe.params.isEmpty
-    def applyMethodWithEmptyParams(qual: Tree) = Apply(qual, List()) setPos qual.pos setType qual.tpe.resultType
+    private def isPrimitiveValueType(tpe: Type)      = isPrimitiveValueClass(tpe.typeSymbol)
+    final def isPrimitiveValueMember(sym: Symbol)    = isPrimitiveValueClass(sym.owner)
+    final def isMethodTypeWithEmptyParams(tpe: Type) = tpe.isInstanceOf[MethodType] && tpe.params.isEmpty
+    final def applyMethodWithEmptyParams(qual: Tree) = Apply(qual, List()) setPos qual.pos setType qual.tpe.resultType
+
+    import CODE._
 
     /** Box `tree` of unboxed type */
-    def box(tree: Tree): Tree = tree match {
+    final def box(tree: Tree): Tree = tree match {
       case LabelDef(_, _, _) =>
         val ldef = deriveLabelDef(tree)(box)
         ldef setType ldef.rhs.tpe
       case _ =>
         val tree1 = tree.tpe match {
-          case ErasedValueType(clazz, _) =>
-            New(clazz, cast(tree, underlyingOfValueClass(clazz)))
-          case _ =>
-            tree.tpe.typeSymbol match {
-          case UnitClass  =>
-            if (treeInfo isExprSafeToInline tree) REF(BoxedUnit_UNIT)
-            else BLOCK(tree, REF(BoxedUnit_UNIT))
-          case NothingClass => tree // a non-terminating expression doesn't need boxing
-          case x          =>
-            assert(x != ArrayClass)
-            tree match {
-              /* Can't always remove a Box(Unbox(x)) combination because the process of boxing x
-               * may lead to throwing an exception.
-               *
-               * This is important for specialization: calls to the super constructor should not box/unbox specialized
-               * fields (see TupleX). (ID)
-               */
-              case Apply(boxFun, List(arg)) if isSafelyRemovableUnbox(tree, arg) =>
-                log(s"boxing an unbox: ${tree.symbol} -> ${arg.tpe}")
-                arg
-              case _ =>
-                (REF(currentRun.runDefinitions.boxMethod(x)) APPLY tree) setPos (tree.pos) setType ObjectTpe
-            }
-            }
+          case ErasedValueType(clazz, _) => New(clazz, cast(tree, underlyingOfValueClass(clazz)))
+          case _ => tree.tpe.typeSymbol match {
+            case UnitClass =>
+              if (treeInfo isExprSafeToInline tree) REF(BoxedUnit_UNIT)
+              else BLOCK(tree, REF(BoxedUnit_UNIT))
+            case NothingClass => tree // a non-terminating expression doesn't need boxing
+            case x =>
+              assert(x != ArrayClass)
+              tree match {
+                /* Can't always remove a Box(Unbox(x)) combination because the process of boxing x
+                 * may lead to throwing an exception.
+                 *
+                 * This is important for specialization: calls to the super constructor should not box/unbox specialized
+                 * fields (see TupleX). (ID)
+                 */
+                case Apply(boxFun, List(arg)) if isSafelyRemovableUnbox(tree, arg) =>
+                  log(s"boxing an unbox: ${tree.symbol} -> ${arg.tpe}")
+                  arg
+                case _ =>
+                  (REF(currentRun.runDefinitions.boxMethod(x)) APPLY tree) setPos (tree.pos) setType ObjectTpe
+              }
+          }
         }
-        typer.typedPos(tree.pos)(tree1)
+        typedPos(tree.pos)(tree1)
     }
 
     /** Unbox `tree` of boxed type to expected type `pt`.
@@ -71,7 +67,7 @@ trait TypeAdaptingTransformer {
      *  @param pt   the expected type.
      *  @return     the unboxed tree
      */
-    def unbox(tree: Tree, pt: Type): Tree = tree match {
+    final def unbox(tree: Tree, pt: Type): Tree = tree match {
       case LabelDef(_, _, _) =>
         val ldef = deriveLabelDef(tree)(unbox(_, pt))
         ldef setType ldef.rhs.tpe
@@ -89,10 +85,10 @@ trait TypeAdaptingTransformer {
                 Apply(currentRun.runDefinitions.unboxMethod(pt.typeSymbol), tree)
             }
         }
-        typer.typedPos(tree.pos)(tree1)
+        typedPos(tree.pos)(tree1)
     }
 
-    def unboxValueClass(tree: Tree, clazz: Symbol, underlying: Type): Tree =
+    final def unboxValueClass(tree: Tree, clazz: Symbol, underlying: Type): Tree =
       if (tree.tpe.typeSymbol == NullClass && isPrimitiveValueClass(underlying.typeSymbol)) {
         // convert `null` directly to underlying type, as going via the unboxed type would yield a NPE (see SI-5866)
         unbox(tree, underlying)
@@ -105,13 +101,12 @@ trait TypeAdaptingTransformer {
      */
     final def cast(tree: Tree, pt: Type): Tree = {
       if (settings.debug && (tree.tpe ne null) && !(tree.tpe =:= ObjectTpe)) {
-        def word = (
+        def word =
           if (tree.tpe <:< pt) "upcast"
           else if (pt <:< tree.tpe) "downcast"
           else if (pt weak_<:< tree.tpe) "coerce"
           else if (tree.tpe weak_<:< pt) "widen"
           else "cast"
-        )
         log(s"erasure ${word}s from ${tree.tpe} to $pt")
       }
       if (pt =:= UnitTpe) {
@@ -123,7 +118,8 @@ trait TypeAdaptingTransformer {
         val needsExtraCast = isPrimitiveValueType(tree.tpe.typeArgs.head) && !isPrimitiveValueType(pt.typeArgs.head)
         val tree1 = if (needsExtraCast) gen.mkRuntimeCall(nme.toObjectArray, List(tree)) else tree
         gen.mkAttributedCast(tree1, pt)
-      } else gen.mkAttributedCast(tree, pt)
+      } else if (samMatchingFunction(tree, pt).exists) tree setType pt // SAM <:< FunctionN if sam is convertible to said function
+        else gen.mkAttributedCast(tree, pt)
     }
 
     /** Adapt `tree` to expected type `pt`.
@@ -147,9 +143,7 @@ trait TypeAdaptingTransformer {
 
         if (gotPrimitiveVC && !expectedPrimitiveVC)      adaptToType(box(tree), pt)
         else if (!gotPrimitiveVC && expectedPrimitiveVC) adaptToType(unbox(tree, pt), pt)
-        else if (samMatchingFunction(tree, pt).exists) {
-          tree setType pt
-        } else cast(tree, pt)
+        else cast(tree, pt)
       }
     }
   }
