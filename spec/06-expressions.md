@@ -1365,8 +1365,11 @@ An expression `(p1, ..., pN) => body` of function type `(T1, ..., TN) => T` is s
 
 It follows that:
   - the type `S` must have an accessible, no-argument, constructor;
-  - the class of `S` must not be `@specialized`;
-  - the class of `S` must not be nested or local (it must not capture its environment).
+  - the class of `S` must not be nested or local (it must not capture its environment, as that precludes a zero-argument constructor).
+
+Additionally (the following are implementation restrictions):
+  - `S`'s [erases](03-types.html#type-erasure) to a trait (this allows for a more efficient encoding when the JVM is the underlying platform);
+  - the class of `S` must not be `@specialized`.
 
 ### Method Conversions
 

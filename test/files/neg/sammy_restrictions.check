@@ -1,46 +1,37 @@
-sammy_restrictions.scala:31: error: type mismatch;
+sammy_restrictions.scala:37: error: type mismatch;
  found   : () => Int
  required: NoAbstract
-  (() => 0)      : NoAbstract
+  (() => 0)      : NoAbstract            // error expected
       ^
-sammy_restrictions.scala:32: error: type mismatch;
- found   : Int => Int
- required: TwoAbstract
-  ((x: Int) => 0): TwoAbstract
-            ^
-sammy_restrictions.scala:35: error: type mismatch;
- found   : Int => Int
- required: NoEmptyConstructor
-  ((x: Int) => 0): NoEmptyConstructor
-            ^
-sammy_restrictions.scala:37: error: type mismatch;
- found   : Int => Int
- required: OneEmptySecondaryConstructor
-  ((x: Int) => 0): OneEmptySecondaryConstructor // derived class must have an empty *primary* to call.
-            ^
 sammy_restrictions.scala:38: error: type mismatch;
  found   : Int => Int
- required: MultipleConstructorLists
-  ((x: Int) => 0): MultipleConstructorLists
-            ^
-sammy_restrictions.scala:39: error: type mismatch;
- found   : Int => Int
- required: MultipleMethodLists
-  ((x: Int) => 0): MultipleMethodLists
-            ^
-sammy_restrictions.scala:40: error: type mismatch;
- found   : Int => Int
- required: ImplicitConstructorParam
-  ((x: Int) => 0): ImplicitConstructorParam
+ required: TwoAbstract
+  ((x: Int) => 0): TwoAbstract           // error expected
             ^
 sammy_restrictions.scala:41: error: type mismatch;
  found   : Int => Int
- required: ImplicitMethodParam
-  ((x: Int) => 0): ImplicitMethodParam
+ required: MultipleMethodLists
+  ((x: Int) => 0): MultipleMethodLists   // error expected
             ^
-sammy_restrictions.scala:44: error: type mismatch;
+sammy_restrictions.scala:42: error: type mismatch;
+ found   : Int => Int
+ required: ImplicitMethodParam
+  ((x: Int) => 0): ImplicitMethodParam   // error expected
+            ^
+sammy_restrictions.scala:45: error: type mismatch;
  found   : Int => Int
  required: PolyMethod
-  ((x: Int) => 0): PolyMethod
+  ((x: Int) => 0): PolyMethod            // error expected
             ^
-9 errors found
+sammy_restrictions.scala:47: error: missing parameter type
+  (x => x + 1): NotAnInterface[Int, Int] // error expected (not an interface)
+   ^
+sammy_restrictions.scala:48: error: type mismatch;
+ found   : String => Int
+ required: A[Object,Int]
+  ((x: String) => 1): A[Object, Int]     // error expected (type mismatch)
+               ^
+sammy_restrictions.scala:51: error: missing parameter type
+  n.app(1)(x => List(x)) // error expected: n.F is not a SAM type (it does not have a no-arg ctor since it has an outer pointer)
+           ^
+8 errors found

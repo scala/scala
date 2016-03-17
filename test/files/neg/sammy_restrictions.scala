@@ -1,45 +1,52 @@
-abstract class NoAbstract
+trait NoAbstract
 
-abstract class TwoAbstract { def ap(a: Int): Int; def pa(a: Int): Int }
+trait TwoAbstract { def ap(a: Int): Int; def pa(a: Int): Int }
 
-abstract class Base // check that the super class constructor isn't considered.
-abstract class NoEmptyConstructor(a: Int) extends Base { def this(a: String) = this(0); def ap(a: Int): Int }
+trait Base // check that the super class constructor isn't considered.
 
-abstract class OneEmptyConstructor() { def this(a: Int) = this(); def ap(a: Int): Int }
+trait MultipleMethodLists { def ap(a: Int)(): Int }
 
-abstract class OneEmptySecondaryConstructor(a: Int) { def this() = this(0); def ap(a: Int): Int }
+trait ImplicitMethodParam { def ap(a: Int)(implicit b: String): Int }
 
-abstract class MultipleConstructorLists()() { def ap(a: Int): Int }
+trait PolyClass[T] { def ap(a: T): T }
 
-abstract class MultipleMethodLists()() { def ap(a: Int)(): Int }
+trait PolyMethod { def ap[T](a: T): T }
 
-abstract class ImplicitConstructorParam()(implicit a: String) { def ap(a: Int): Int }
+trait OneAbstract { def ap(a: Int): Any }
+trait DerivedOneAbstract extends OneAbstract
 
-abstract class ImplicitMethodParam() { def ap(a: Int)(implicit b: String): Int }
+// restrictions
 
-abstract class PolyClass[T] { def ap(a: T): T }
+// must be an interface
+abstract class NotAnInterface[T, R]{ def apply(x: T): R }
 
-abstract class PolyMethod { def ap[T](a: T): T }
+trait A[T, R]{ def apply(x: T): R }
 
-abstract class OneAbstract { def ap(a: Int): Any }
-abstract class DerivedOneAbstract extends OneAbstract
+// must not capture
+class Nested {
+  trait F[T, U] { def apply(x: T): U }
+
+  def app[T, U](x: T)(f: F[T, U]): U = f(x)
+}
+
 
 object Test {
   implicit val s: String = ""
   type NonClassType = DerivedOneAbstract with OneAbstract
 
-  (() => 0)      : NoAbstract
-  ((x: Int) => 0): TwoAbstract
-  ((x: Int) => 0): DerivedOneAbstract           // okay
-  ((x: Int) => 0): NonClassType                 // okay -- we also allow type aliases in instantiation expressions, if they resolve to a class type
-  ((x: Int) => 0): NoEmptyConstructor
-  ((x: Int) => 0): OneEmptyConstructor          // okay
-  ((x: Int) => 0): OneEmptySecondaryConstructor // derived class must have an empty *primary* to call.
-  ((x: Int) => 0): MultipleConstructorLists
-  ((x: Int) => 0): MultipleMethodLists
-  ((x: Int) => 0): ImplicitConstructorParam
-  ((x: Int) => 0): ImplicitMethodParam
+  (() => 0)      : NoAbstract            // error expected
+  ((x: Int) => 0): TwoAbstract           // error expected
+  ((x: Int) => 0): DerivedOneAbstract
+  ((x: Int) => 0): NonClassType
+  ((x: Int) => 0): MultipleMethodLists   // error expected
+  ((x: Int) => 0): ImplicitMethodParam   // error expected
 
-  ((x: Int) => 0): PolyClass[Int]               // okay
-  ((x: Int) => 0): PolyMethod
+  ((x: Int) => 0): PolyClass[Int]
+  ((x: Int) => 0): PolyMethod            // error expected
+
+  (x => x + 1): NotAnInterface[Int, Int] // error expected (not an interface)
+  ((x: String) => 1): A[Object, Int]     // error expected (type mismatch)
+
+  val n = new Nested
+  n.app(1)(x => List(x)) // error expected: n.F is not a SAM type (it does not have a no-arg ctor since it has an outer pointer)
 }
