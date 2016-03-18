@@ -986,7 +986,7 @@ def foo(x: ToString): Unit
 trait ToString { def convert(x: Int): String }
 ```
 
-The application `foo(_.toString)` [resolves](06-expressions.html#overloading-resolution) to the first overload,
+The application `foo((x: Int) => x.toString)` [resolves](06-expressions.html#overloading-resolution) to the first overload,
 as it's more specific:
   - `Int => String` is compatible to `ToString` -- when expecting a value of type `ToString`, you may pass a function literal from `Int` to `String`, as it will be SAM-converted to said function;
   - `ToString` is not compatible to `Int => String` -- when expecting a function from `Int` to `String`, you may not pass a `ToString`.

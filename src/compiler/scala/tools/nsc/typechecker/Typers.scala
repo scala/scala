@@ -2726,7 +2726,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       *
       * ```
       *   new S {
-      *    <static> def apply$body(p1: T1, ..., pN: TN): T = body
+      *    def apply$body(p1: T1, ..., pN: TN): T = body
       *    def apply(p1: T1', ..., pN: TN'): T' = apply$body(p1,..., pN)
       *   }
       * ```
@@ -2737,27 +2737,28 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       * The types T1' ... TN' and T' are derived from the method signature of the sam method,
       * as seen from the fully defined `samClassTpFullyDefined`.
       *
-      * The function's body is put in a static method in the class definition to enforce scoping.
+      * The function's body is put in a (static) method in the class definition to enforce scoping.
       * S's members should not be in scope in `body`. (Putting it in the block outside the class runs into implementation problems described below)
       *
       * The restriction on implicit arguments (neither S's constructor, nor sam may take an implicit argument list),
-      * is largely to keep the implementation of type inference (the computation of `samClassTpFullyDefined`) simple.
+      * is to keep the implementation of type inference (the computation of `samClassTpFullyDefined`) simple.
+      *
+      * Impl notes:
+      *   - `fun` has a FunctionType, but the expected type `pt` is some SAM type -- let's remedy that
+      *   - `fun` is fully attributed, so we'll have to wrangle some symbols into shape (owner change, vparam syms)
+      *   - after experimentation, it works best to type check function literals fully first and then adapt to a sam type,
+      *     as opposed to a sam-specific code paths earlier on in type checking (in typedFunction).
+      *     For one, we want to emit the same bytecode regardless of whether the expected
+      *     function type is a built-in FunctionN or some SAM type
       *
       */
     def adaptToSAM(sam: Symbol, fun: Function, pt: Type, mode: Mode): Tree = {
-      // `fun` has a FunctionType, but the expected type `pt` is some SAM type -- let's remedy that
-      // `fun` is fully attributed, so we'll have to wrangle some symbols into shape (owner change, vparam syms)
-      // I tried very hard to leave `fun` untyped and rework everything into the right shape and type check once,
-      // but couldn't make it work due to retyping that happens down the line
-      // (implicit conversion retries/retypechecking, CBN transform, super call arg context nesting weirdness)
-
-      def funTpMatchesExpected(pt: Type): Boolean = isFullyDefined(pt) && {
-        // what's the signature of the method that we should actually be overriding?
+      def fullyDefinedMeetsExpectedFunTp(pt: Type): Boolean = isFullyDefined(pt) && {
         val samMethType = pt memberInfo sam
         fun.tpe <:< functionType(samMethType.paramTypes, samMethType.resultType)
       }
 
-      if (funTpMatchesExpected(pt)) fun.setType(pt)
+      if (fullyDefinedMeetsExpectedFunTp(pt)) fun.setType(pt)
       else try {
         val samClassSym = pt.typeSymbol
 
@@ -2786,9 +2787,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         debuglog(s"sam infer: $pt --> ${appliedType(samTyCon, targs)} by ${fun.tpe} <:< $samInfoWithTVars --> $targs for $tparams")
 
-        // a fully defined samClassTp
         val ptFullyDefined = appliedType(samTyCon, targs)
-        if (funTpMatchesExpected(ptFullyDefined)) {
+        if (ptFullyDefined <:< pt && fullyDefinedMeetsExpectedFunTp(ptFullyDefined)) {
           debuglog(s"sam fully defined expected type: $ptFullyDefined from $pt for ${fun.tpe}")
           fun.setType(ptFullyDefined)
         } else {

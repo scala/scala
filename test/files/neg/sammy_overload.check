@@ -1,0 +1,7 @@
+sammy_overload.scala:11: error: missing parameter type for expanded function ((x$1: <error>) => x$1.toString)
+  O.m(_.toString) // error expected: eta-conversion breaks down due to overloading
+      ^
+sammy_overload.scala:12: error: missing parameter type
+  O.m(x => x) // error expected: needs param type
+      ^
+two errors found
