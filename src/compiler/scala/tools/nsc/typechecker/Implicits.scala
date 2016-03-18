@@ -34,14 +34,33 @@ trait Implicits {
   import typingStack.{ printTyping }
   import typeDebug._
 
+  // standard usage
+  def inferImplicitFor(pt: Type, tree: Tree, context: Context, reportAmbiguous: Boolean = true): SearchResult =
+    inferImplicit(tree, pt, reportAmbiguous, isView = false, context, saveAmbiguousDivergent = true, tree.pos)
+
+  // used by typer to find an implicit coercion
+  def inferImplicitView(from: Type, to: Type, tree: Tree, context: Context, reportAmbiguous: Boolean, saveAmbiguousDivergent: Boolean) =
+    inferImplicit(tree, Function1(from, to), reportAmbiguous, isView = true, context, saveAmbiguousDivergent, tree.pos)
+
+  // used for manifests, typetags, checking language features, scaladoc
+  def inferImplicitByType(pt: Type, context: Context, pos: Position = NoPosition): SearchResult =
+    inferImplicit(EmptyTree, pt, reportAmbiguous = true, isView = false, context, saveAmbiguousDivergent = true, pos)
+
+  def inferImplicitByTypeSilent(pt: Type, context: Context, pos: Position = NoPosition): SearchResult =
+    inferImplicit(EmptyTree, pt, reportAmbiguous = false, isView = false, context, saveAmbiguousDivergent = false, pos)
+
+  @deprecated("Unused in scalac")
   def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context): SearchResult =
     inferImplicit(tree, pt, reportAmbiguous, isView, context, saveAmbiguousDivergent = true, tree.pos)
 
+  @deprecated("Unused in scalac")
   def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean): SearchResult =
     inferImplicit(tree, pt, reportAmbiguous, isView, context, saveAmbiguousDivergent, tree.pos)
 
-  /** Search for an implicit value. See the comment on `result` at the end of class `ImplicitSearch`
-   *  for more info how the search is conducted.
+  /** Search for an implicit value. Consider using one of the convenience methods above. This one has many boolean levers.
+   *
+   * See the comment on `result` at the end of class `ImplicitSearch` for more info how the search is conducted.
+   *
    *  @param tree                    The tree for which the implicit needs to be inserted.
    *                                 (the inference might instantiate some of the undetermined
    *                                 type parameters of that tree.
@@ -92,9 +111,13 @@ trait Implicits {
   /** A friendly wrapper over inferImplicit to be used in macro contexts and toolboxes.
    */
   def inferImplicit(tree: Tree, pt: Type, isView: Boolean, context: Context, silent: Boolean, withMacrosDisabled: Boolean, pos: Position, onError: (Position, String) => Unit): Tree = {
-    val wrapper1 = if (!withMacrosDisabled) (context.withMacrosEnabled[SearchResult] _) else (context.withMacrosDisabled[SearchResult] _)
-    def wrapper(inference: => SearchResult) = wrapper1(inference)
-    val result = wrapper(inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context = context, saveAmbiguousDivergent = !silent, pos = pos))
+    val result =
+      if (withMacrosDisabled) context.withMacrosDisabled {
+        inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context, saveAmbiguousDivergent = !silent, pos)
+      } else context.withMacrosEnabled {
+        inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context, saveAmbiguousDivergent = !silent, pos)
+      }
+
     if (result.isFailure && !silent) {
       val err = context.reporter.firstError
       val errPos = err.map(_.errPos).getOrElse(pos)
@@ -304,6 +327,10 @@ trait Implicits {
    */
   object Function1 {
     val Sym = FunctionClass(1)
+    val Pre = Sym.typeConstructor.prefix
+
+    def apply(from: Type, to: Type) = TypeRef(Pre, Sym, List(from, to))
+
     // It is tempting to think that this should be inspecting "tp baseType Sym"
     // rather than tp. See test case run/t8280 and the commit message which
     // accompanies it for explanation why that isn't done.
@@ -1207,7 +1234,7 @@ trait Implicits {
 
       /* Re-wraps a type in a manifest before calling inferImplicit on the result */
       def findManifest(tp: Type, manifestClass: Symbol = if (full) FullManifestClass else PartialManifestClass) =
-        inferImplicit(tree, appliedType(manifestClass, tp), reportAmbiguous = true, isView = false, context).tree
+        inferImplicitFor(appliedType(manifestClass, tp), tree, context).tree
 
       def findSubManifest(tp: Type) = findManifest(tp, if (full) FullManifestClass else OptManifestClass)
       def mot(tp0: Type, from: List[Symbol], to: List[Type]): SearchResult = {

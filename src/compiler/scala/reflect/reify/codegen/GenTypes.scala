@@ -106,14 +106,10 @@ trait GenTypes {
   private def spliceAsManifest(tpe: Type): Tree = {
     def isSynthetic(manifest: Tree) = manifest exists (sub => sub.symbol != null && (sub.symbol == FullManifestModule || sub.symbol.owner == FullManifestModule))
     def searchForManifest(typer: analyzer.Typer): Tree =
-      analyzer.inferImplicit(
-        EmptyTree,
+      analyzer.inferImplicitByTypeSilent(
         appliedType(FullManifestClass.toTypeConstructor, List(tpe)),
-        reportAmbiguous = false,
-        isView = false,
-        context = typer.context,
-        saveAmbiguousDivergent = false,
-        pos = defaultErrorPosition) match {
+        typer.context,
+        defaultErrorPosition) match {
           case success if !success.tree.isEmpty && !isSynthetic(success.tree) =>
             val manifestInScope = success.tree
             // todo. write a test for this
