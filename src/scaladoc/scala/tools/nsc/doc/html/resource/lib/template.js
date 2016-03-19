@@ -16,18 +16,6 @@ $(document).ready(function() {
         $zoomOut: $('#diagram-zoom-out'),
     });
 
-    $("#template > div > div > ol > li > span.permalink").click(function(e) {
-        e.preventDefault();
-        var href = $("a", this).attr("href");
-        if (href.indexOf("#") != -1) {
-            location.hash = href.split("#").pop();
-            $("#template > div > div > ol > li").removeClass("selected");
-            var parent = $(this).parent().addClass("selected");
-            $("#content-container").animate({scrollTop: $("#content-container").scrollTop() + $(this).offset().top - $("#search").height() - 23}, 500);
-        }
-        return false;
-    });
-
     var oldWidth = $("div#subpackage-spacer").width() + 1 + "px";
     $("div#packages > ul > li.current").click(function() {
         $("div#subpackage-spacer").css({ "width": oldWidth });
@@ -65,21 +53,22 @@ $(document).ready(function() {
     function exposeMember(jqElem) {
         var jqElemParent = jqElem.parent(),
             parentName = jqElemParent.attr("name"),
-            linearizationName = /^([^#]*)(#.*)?$/gi.exec(parentName)[1];
+            ancestorName = /^([^#]*)(#.*)?$/gi.exec(parentName)[1];
 
         // switch visibility filter if necessary
         if (jqElemParent.attr("visbl") == "prt") {
             toggleVisibilityFilter(controls.visibility.all, controls.visibility.publicOnly);
         }
 
-        // toggle appropriate linearization buttons
-        if (linearizationName) {
-            $("#linearization li.out[name='" + linearizationName + "']").removeClass("out").addClass("in");
+        // toggle appropriate ancestor filter buttons
+        if (ancestorName) {
+            $("#filterby li.out[name='" + ancestorName + "']").removeClass("out").addClass("in");
         }
 
         filter();
         jqElemParent.addClass("selected");
-        $("#content-container").animate({scrollTop: jqElemParent.offset().top - $("#search").height() - 5 }, 1000);
+        commentToggleFct(jqElemParent);
+        $("#content-scroll-container").animate({scrollTop: $("#content-scroll-container").scrollTop() + jqElemParent.offset().top - $("#search").height() - 23 }, 1000);
     }
 
     var isHiddenClass = function (name) {
@@ -241,10 +230,12 @@ $(document).ready(function() {
     /* Add toggle arrows */
     $("#template li[fullComment=yes] .modifier_kind").addClass("closed");
 
-    function commentToggleFct(signature){
-        var parent = signature.parent();
-        var shortComment = $(".shortcomment", parent);
-        var fullComment = $(".fullcomment", parent);
+    function commentToggleFct(element){
+        $("#template li.selected").removeClass("selected");
+        element.toggleClass("open");
+        var signature = element.find(".modifier_kind")
+        var shortComment = element.find(".shortcomment");
+        var fullComment = element.find(".fullcomment");
         var vis = $(":visible", fullComment);
         signature.toggleClass("closed").toggleClass("opened");
         if (vis.length > 0) {
@@ -268,9 +259,7 @@ $(document).ready(function() {
     };
 
     $("#template li[fullComment=yes]").click(function() {
-        $("#template li.selected").removeClass("selected");
-        commentToggleFct($(".modifier_kind", this));
-        $(this).toggleClass("open");
+        commentToggleFct($(this));
     });
 
     /* Linear super types and known subclasses */
@@ -298,12 +287,28 @@ $(document).ready(function() {
         return $(memberSelector);
     }
 
-    // highlight and jump to selected member
+    // highlight and jump to selected member if an anchor is provided
     if (window.location.hash) {
         var jqElem = findElementByHash(window.location.hash);
         if (jqElem.length > 0)
             exposeMember(jqElem);
     }
+
+    $("#template span.permalink").click(function(e) {
+        e.preventDefault();
+        var href = $("a", this).attr("href");
+        if (href.indexOf("#") != -1) {
+            var hash = href.split("#").pop()
+            try {
+                window.history.pushState({}, "", "#" + hash)
+            } catch (e) {
+                // fallback for file:// URLs, has worse scrolling behavior
+                location.hash = hash;
+            }
+            exposeMember(findElementByHash(hash))
+        }
+        return false;
+    });
 
     $("#mbrsel-input").on("input", function() {
         if ($(this).val().length > 0)
