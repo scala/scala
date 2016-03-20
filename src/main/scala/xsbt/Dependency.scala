@@ -156,6 +156,12 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       }
     }
 
+    private def addTreeDependency(tree: Tree): Unit = {
+      addDependency(tree.symbol)
+      if (tree.tpe != null)
+        symbolsInType(tree.tpe).foreach(addDependency)
+      ()
+    }
     private def addDependency(dep: Symbol): Unit = {
       val (fromClass, _) = resolveDependencySource
       if (fromClass == NoSymbol || fromClass.hasPackageFlag) {
@@ -210,11 +216,11 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
        *    this looks fishy, see this thread:
        *    https://groups.google.com/d/topic/scala-internals/Ms9WUAtokLo/discussion
        */
-      case id: Ident => addDependency(id.symbol)
+      case id: Ident => addTreeDependency(id)
       case sel @ Select(qual, _) =>
-        traverse(qual); addDependency(sel.symbol)
+        traverse(qual); addTreeDependency(sel)
       case sel @ SelectFromTypeTree(qual, _) =>
-        traverse(qual); addDependency(sel.symbol)
+        traverse(qual); addTreeDependency(sel)
 
       case Template(parents, self, body) =>
         // use typeSymbol to dealias type aliases -- we want to track the dependency on the real class in the alias's RHS
@@ -248,16 +254,6 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
         localToNonLocalClass.resolveNonLocal(sym)
         super.traverse(tree)
       case other => super.traverse(other)
-    }
-
-    private def symbolsInType(tp: Type): Set[Symbol] = {
-      val typeSymbolCollector =
-        new CollectTypeCollector({
-          case tpe if (tpe != null) && !tpe.typeSymbolDirect.hasPackageFlag => tpe.typeSymbolDirect
-        })
-
-      typeSymbolCollector.collect(tp).toSet
-
     }
   }
 

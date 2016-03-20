@@ -47,8 +47,60 @@ class ExtractUsedNamesSpecification extends UnitSpec {
                   |}""".stripMargin
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(srcA, srcB)
-    val expectedNames = standardNames ++ Set("A", "a", "B", "=")
+    val expectedNames = standardNames ++ Set("A", "a", "B", "=", "Int")
     assert(usedNames("B") === expectedNames)
+  }
+
+  // See source-dependencies/types-in-used-names-a for an example where
+  // this is required.
+  it should "extract names in the types of trees" in {
+    val src1 = """|class X0
+                  |class X1 extends X0
+                  |class Y
+                  |class A {
+                  |  type T >: X1 <: X0
+                  |}
+                  |class M
+                  |class N
+                  |class P0
+                  |class P1 extends P0
+                  |object B {
+                  |  type S = Y
+                  |  val lista: List[A] = ???
+                  |  val at: A#T = ???
+                  |  val as: S = ???
+                  |  def foo(m: M): N = ???
+                  |  def bar[Param >: P1 <: P0](p: Param): Param = ???
+                  |}""".stripMargin
+    val src2 = """|object Test_lista {
+                  |  val x = B.lista
+                  |}
+                  |object Test_at {
+                  |  val x = B.at
+                  |}
+                  |object Test_as {
+                  |  val x = B.as
+                  |}
+                  |object Test_foo {
+                  |  val x = B.foo(???)
+                  |}
+                  |object Test_bar {
+                  |  val x = B.bar(???)
+                  |}""".stripMargin
+    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val usedNames = compilerForTesting.extractUsedNamesFromSrc(src1, src2)
+    val expectedNames_lista = standardNames ++ Set("Test_lista", "x", "B", "lista", "package", "List", "A")
+    val expectedNames_at = standardNames ++ Set("Test_at", "x", "B", "at", "A", "T")
+    val expectedNames_as = standardNames ++ Set("Test_as", "x", "B", "as", "S")
+    val expectedNames_foo = standardNames ++ Set("Test_foo", "x", "B", "foo", "M", "N",
+      "Predef", "???", "Nothing")
+    val expectedNames_bar = standardNames ++ Set("Test_bar", "x", "B", "bar", "Param", "P1", "P0",
+      "Predef", "???", "Nothing")
+    assert(usedNames("Test_lista") === expectedNames_lista)
+    assert(usedNames("Test_at") === expectedNames_at)
+    assert(usedNames("Test_as") === expectedNames_as)
+    assert(usedNames("Test_foo") === expectedNames_foo)
+    assert(usedNames("Test_bar") === expectedNames_bar)
   }
 
   // test for https://github.com/gkossakowski/sbt/issues/3
@@ -88,8 +140,9 @@ class ExtractUsedNamesSpecification extends UnitSpec {
    * definition.
    */
   private val standardNames = Set(
-    // AnyRef is added as default parent of a class
-    "scala", "AnyRef",
+    "scala",
+    // The default parent of a class is "AnyRef" which is an alias for "Object"
+    "AnyRef", "Object",
     // class receives a default constructor which is internally called "<init>"
     "<init>"
   )

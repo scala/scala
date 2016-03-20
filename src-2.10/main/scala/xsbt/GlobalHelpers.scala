@@ -3,7 +3,7 @@ package xsbt
 import scala.tools.nsc.Global
 
 trait GlobalHelpers {
-  val global: Global
+  val global: CallbackGlobal
   import global._
 
   def symbolsInType(tp: Type): Set[Symbol] = {
@@ -13,13 +13,5 @@ trait GlobalHelpers {
       })
 
     typeSymbolCollector.collect(tp).toSet
-  }
-
-  object MacroExpansionOf {
-    def unapply(tree: Tree): Option[Tree] = {
-      tree.attachments.all.collect {
-        case att: analyzer.MacroExpansionAttachment => att.expandee
-      }.headOption
-    }
   }
 }

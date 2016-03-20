@@ -5,6 +5,8 @@ package xsbt
  *
  * Extracts simple (unqualified) names mentioned in given in non-definition position by collecting
  * all symbols associated with non-definition trees and extracting names from all collected symbols.
+ * Also extract the names of the types of non-definition trees (see source-dependencies/types-in-used-names-*
+ * and source-dependencies/as-seen-from-* for examples where this is required).
  *
  * If given symbol is mentioned both in definition and in non-definition position (e.g. in member
  * selection) then that symbol is collected. It means that names of symbols defined and used in the
@@ -96,9 +98,9 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
         super.traverse(tree)
     }
 
-    private def addSymbol(symbol: Symbol): Unit = {
-      addName(symbol.name)
-    }
+    private def addSymbol(symbol: Symbol): Unit =
+      if (eligibleAsUsedName(symbol))
+        addName(symbol.name)
 
     private def addName(name: Name, enclosingNonLocalClass: Symbol = resolveEnclosingNonLocalClass): Unit = {
       val nameAsString = name.decode.trim
@@ -137,8 +139,10 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       // not what we need
       case t: TypeTree if t.original != null =>
         t.original.foreach(traverse)
-      case t if t.hasSymbolField && eligibleAsUsedName(t.symbol) =>
+      case t if t.hasSymbolField =>
         addSymbol(t.symbol)
+        if (t.tpe != null)
+          symbolsInType(t.tpe).foreach(addSymbol)
       case _ =>
     }
 
