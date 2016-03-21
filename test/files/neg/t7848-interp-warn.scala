@@ -25,4 +25,6 @@ object Test {
   def i = s"Try using '${ "$bar" }' instead."                 // was: no warn on space test
   def j = s"Try using '${ "something like $bar" }' instead."  // warn
   def k = f"Try using '$bar' instead."                        // no warn on other std interps
+  def p = "Template ${} {}"                                   // no warn on unlikely or empty expressions
+  def q = "${}$bar"                                           // disables subsequent checks!
 }
