@@ -57,7 +57,7 @@
       <module fileurl="file://$PROJECT_DIR$/test.iml" filepath="$PROJECT_DIR$/test.iml" />
     </modules>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_6" default="false" assert-keyword="true" jdk-15="true" project-jdk-name="1.6" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="false" assert-keyword="true" jdk-15="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/../../out" />
   </component>
   <component name="ScalaCompilerConfiguration">
@@ -75,8 +75,8 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.0.4-scala-3.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.11/bundles/scala-xml_2.11-1.0.4.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.11/bundles/scala-parser-combinators_2.11-1.0.4.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M3-dc9effe/bundles/scala-xml_2.12.0-M3-dc9effe-1.0.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.12.0-M3-dc9effe/bundles/scala-parser-combinators_2.12.0-M3-dc9effe-1.0.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.12.1.jar!/" />
       </CLASSES>
       <JAVADOC />
@@ -87,8 +87,8 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.0.4-scala-3.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.11/bundles/scala-xml_2.11-1.0.4.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.11/bundles/scala-parser-combinators_2.11-1.0.4.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M3-dc9effe/bundles/scala-xml_2.12.0-M3-dc9effe-1.0.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.12.0-M3-dc9effe/bundles/scala-parser-combinators_2.12.0-M3-dc9effe-1.0.4.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -98,10 +98,10 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.0.4-scala-3.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.11/bundles/scala-xml_2.11-1.0.4.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.11/bundles/scala-parser-combinators_2.11-1.0.4.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M3-dc9effe/bundles/scala-xml_2.12.0-M3-dc9effe-1.0.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.12.0-M3-dc9effe/bundles/scala-parser-combinators_2.12.0-M3-dc9effe-1.0.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.12.1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.11/jars/scala-partest_2.11-1.0.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.12.0-M3-dc9effe/jars/scala-partest_2.12.0-M3-dc9effe-1.0.13.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/junit/junit/jars/junit-4.11.jar!/" />
@@ -112,7 +112,7 @@
     </library>
     <library name="manual-deps">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.11/bundles/scala-xml_2.11-1.0.4.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M3-dc9effe/bundles/scala-xml_2.12.0-M3-dc9effe-1.0.5.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
       </CLASSES>
@@ -124,10 +124,10 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.0.4-scala-3.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.11/bundles/scala-xml_2.11-1.0.4.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.11/bundles/scala-parser-combinators_2.11-1.0.4.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M3-dc9effe/bundles/scala-xml_2.12.0-M3-dc9effe-1.0.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.12.0-M3-dc9effe/bundles/scala-parser-combinators_2.12.0-M3-dc9effe-1.0.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.12.1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.11/jars/scala-partest_2.11-1.0.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.12.0-M3-dc9effe/jars/scala-partest_2.12.0-M3-dc9effe-1.0.13.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar!/" />
       </CLASSES>
@@ -146,8 +146,8 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.0.4-scala-3.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.11/bundles/scala-xml_2.11-1.0.4.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.11/bundles/scala-parser-combinators_2.11-1.0.4.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M3-dc9effe/bundles/scala-xml_2.12.0-M3-dc9effe-1.0.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.12.0-M3-dc9effe/bundles/scala-parser-combinators_2.12.0-M3-dc9effe-1.0.4.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -157,8 +157,8 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.0.4-scala-3.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.11/bundles/scala-xml_2.11-1.0.4.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.11/bundles/scala-parser-combinators_2.11-1.0.4.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M3-dc9effe/bundles/scala-xml_2.12.0-M3-dc9effe-1.0.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.12.0-M3-dc9effe/bundles/scala-parser-combinators_2.12.0-M3-dc9effe-1.0.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.12.1.jar!/" />
       </CLASSES>
       <JAVADOC />
@@ -200,7 +200,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.eclipse.sisu/org.eclipse.sisu.inject/eclipse-plugins/org.eclipse.sisu.inject-0.3.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.codehaus.plexus/plexus-component-annotations/jars/plexus-component-annotations-1.5.5.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.codehaus.plexus/plexus-classworlds/bundles/plexus-classworlds-2.5.2.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/biz.aQute/bndlib/jars/bndlib-1.50.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/biz.aQute.bnd/biz.aQute.bnd/jars/biz.aQute.bnd-2.4.1.jar!/" />
         <root url="jar://$USER_HOME$/.sbt/boot/scala-2.10.6/lib/scala-library.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/sbt/jars/sbt-0.13.11.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/main/jars/main-0.13.11.jar!/" />
@@ -260,9 +260,9 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.0.4-scala-3.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.11/bundles/scala-xml_2.11-1.0.4.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.11/bundles/scala-parser-combinators_2.11-1.0.4.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.11/jars/scala-partest_2.11-1.0.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M3-dc9effe/bundles/scala-xml_2.12.0-M3-dc9effe-1.0.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.12.0-M3-dc9effe/bundles/scala-parser-combinators_2.12.0-M3-dc9effe-1.0.4.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.12.0-M3-dc9effe/jars/scala-partest_2.12.0-M3-dc9effe-1.0.13.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar!/" />
       </CLASSES>
@@ -274,8 +274,8 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.0.4-scala-3.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.11/bundles/scala-xml_2.11-1.0.4.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.11/bundles/scala-parser-combinators_2.11-1.0.4.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M3-dc9effe/bundles/scala-xml_2.12.0-M3-dc9effe-1.0.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.12.0-M3-dc9effe/bundles/scala-parser-combinators_2.12.0-M3-dc9effe-1.0.4.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -284,12 +284,12 @@
       <properties>
         <option name="languageLevel" value="Scala_2_12" />
         <compiler-classpath>
-          <root url="file://$USER_HOME$/.sbt/boot/scala-2.11.8/lib/scala-library.jar" />
-          <root url="file://$USER_HOME$/.sbt/boot/scala-2.11.8/lib/scala-compiler.jar" />
-          <root url="file://$USER_HOME$/.sbt/boot/scala-2.11.8/lib/scala-reflect.jar" />
-          <root url="file://$USER_HOME$/.sbt/boot/scala-2.11.8/lib/scala-parser-combinators_2.11.jar" />
-          <root url="file://$USER_HOME$/.sbt/boot/scala-2.11.8/lib/jline.jar" />
-          <root url="file://$USER_HOME$/.sbt/boot/scala-2.11.8/lib/scala-xml_2.11.jar" />
+          <root url="file://$USER_HOME$/.sbt/boot/scala-2.12.0-M3-dc9effe/lib/scala-library.jar" />
+          <root url="file://$USER_HOME$/.sbt/boot/scala-2.12.0-M3-dc9effe/lib/scala-compiler.jar" />
+          <root url="file://$USER_HOME$/.sbt/boot/scala-2.12.0-M3-dc9effe/lib/scala-parser-combinators_2.12.0-M3-dc9effe.jar" />
+          <root url="file://$USER_HOME$/.sbt/boot/scala-2.12.0-M3-dc9effe/lib/scala-reflect.jar" />
+          <root url="file://$USER_HOME$/.sbt/boot/scala-2.12.0-M3-dc9effe/lib/scala-xml_2.12.0-M3-dc9effe.jar" />
+          <root url="file://$USER_HOME$/.sbt/boot/scala-2.12.0-M3-dc9effe/lib/jline.jar" />
         </compiler-classpath>
       </properties>
       <CLASSES />
@@ -301,10 +301,10 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.0.4-scala-3.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.11/bundles/scala-xml_2.11-1.0.4.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.11/bundles/scala-parser-combinators_2.11-1.0.4.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M3-dc9effe/bundles/scala-xml_2.12.0-M3-dc9effe-1.0.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-parser-combinators_2.12.0-M3-dc9effe/bundles/scala-parser-combinators_2.12.0-M3-dc9effe-1.0.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.12.1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.11/jars/scala-partest_2.11-1.0.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.12.0-M3-dc9effe/jars/scala-partest_2.12.0-M3-dc9effe-1.0.13.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar!/" />
       </CLASSES>
