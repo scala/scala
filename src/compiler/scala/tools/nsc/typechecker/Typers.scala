@@ -5206,7 +5206,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case MethodType(p :: _, _)   => p.isImplicit            // implicit method requires no args
           case _                       => true                    // catches all others including NullaryMethodType
         }
-        def isPlausible(m: Symbol) = m.alternatives exists (m => requiresNoArgs(m.info))
+        def isPlausible(m: Symbol) = !m.isPackage && m.alternatives.exists(x => requiresNoArgs(x.info))
 
         def maybeWarn(s: String): Unit = {
           def warn(message: String)         = context.warning(lit.pos, s"possible missing interpolator: $message")
