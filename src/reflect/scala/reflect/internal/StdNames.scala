@@ -104,7 +104,6 @@ trait StdNames {
     val ANON_FUN_NAME: NameType                = "$anonfun"
     val EMPTY: NameType                        = ""
     val EMPTY_PACKAGE_NAME: NameType           = "<empty>"
-    val IMPL_CLASS_SUFFIX                      = "$class"
     val IMPORT: NameType                       = "<import>"
     val MODULE_SUFFIX_NAME: NameType           = MODULE_SUFFIX_STRING
     val MODULE_VAR_SUFFIX: NameType            = "$module"
@@ -303,8 +302,6 @@ trait StdNames {
 
     def dropSingletonName(name: Name): TypeName = (name dropRight SINGLETON_SUFFIX.length).toTypeName
     def singletonName(name: Name): TypeName     = (name append SINGLETON_SUFFIX).toTypeName
-    def implClassName(name: Name): TypeName     = (name append IMPL_CLASS_SUFFIX).toTypeName
-    def interfaceName(implname: Name): TypeName = (implname dropRight IMPL_CLASS_SUFFIX.length).toTypeName
   }
 
   abstract class TermNames extends Keywords with TermNamesApi {
@@ -378,7 +375,6 @@ trait StdNames {
 
     def isConstructorName(name: Name)       = name == CONSTRUCTOR || name == MIXIN_CONSTRUCTOR
     def isExceptionResultName(name: Name)   = name startsWith EXCEPTION_RESULT_PREFIX
-    def isImplClassName(name: Name)         = name endsWith IMPL_CLASS_SUFFIX
     def isLocalDummyName(name: Name)        = name startsWith LOCALDUMMY_PREFIX
     def isLocalName(name: Name)             = name endsWith LOCAL_SUFFIX_STRING
     def isLoopHeaderLabel(name: Name)       = (name startsWith WHILE_PREFIX) || (name startsWith DO_WHILE_PREFIX)

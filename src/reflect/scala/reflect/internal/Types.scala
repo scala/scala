@@ -1196,7 +1196,6 @@ trait Types
   object ThisType extends ThisTypeExtractor {
     def apply(sym: Symbol): Type = (
       if (!phase.erasedTypes) unique(new UniqueThisType(sym))
-      else if (sym.isImplClass) sym.typeOfThis
       else sym.tpe_*
     )
   }

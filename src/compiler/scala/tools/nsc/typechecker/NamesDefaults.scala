@@ -469,8 +469,7 @@ trait NamesDefaults { self: Analyzer =>
       else {
         // isClass also works for methods in objects, owner is the ModuleClassSymbol
         if (param.owner.owner.isClass) {
-          // .toInterface: otherwise we get the method symbol of the impl class
-          param.owner.owner.toInterface.info.member(defGetterName)
+          param.owner.owner.info.member(defGetterName)
         } else {
           // the owner of the method is another method. find the default
           // getter in the context.

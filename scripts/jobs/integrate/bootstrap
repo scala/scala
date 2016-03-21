@@ -209,12 +209,23 @@ sbtResolve() {
 # scala-xml depends on scala-library, so sbt tries to find the scala-library of the version that we are currently building,
 # which exists only in private-repo.
 
+docTask() {
+  if [[ "$STARR_REF" != "" && "$1" != "yes" ]]; then
+    # Don't build module docs on the first round of module builds when bootstrapping
+    # a binary incompatible compiler change to avoid linkage errors with using the old Scaladoc
+    echo set publishArtifact in packageDoc in Compile := false
+  else
+    echo doc
+  fi
+}
+
 buildXML() {
   if [ "$XML_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-xml" $XML_VER )
   then echo "Found scala-xml $XML_VER; not building."
   else
     update scala scala-xml "$XML_REF" && gfxd
-    sbtBuild 'set version := "'$XML_VER'-DOC"' $clean doc 'set version := "'$XML_VER'"' test "${buildTasks[@]}"
+    doc="$(docTask $XML_BUILT)"
+    sbtBuild 'set version := "'$XML_VER'-DOC"' $clean "$doc" 'set version := "'$XML_VER'"' test "${buildTasks[@]}"
     XML_BUILT="yes" # ensure the module is built and published when buildXML is invoked for the second time, see comment above
   fi
 }
@@ -224,7 +235,8 @@ buildParsers() {
   then echo "Found scala-parser-combinators $PARSERS_VER; not building."
   else
     update scala scala-parser-combinators "$PARSERS_REF" && gfxd
-    sbtBuild 'set version := "'$PARSERS_VER'-DOC"' $clean doc 'set version := "'$PARSERS_VER'"' test "${buildTasks[@]}"
+    doc="$(docTask $PARSERS_BUILT)"
+    sbtBuild 'set version := "'$PARSERS_VER'-DOC"' $clean "$doc" 'set version := "'$PARSERS_VER'"' test "${buildTasks[@]}"
     PARSERS_BUILT="yes"
   fi
 }
@@ -234,7 +246,8 @@ buildPartest() {
   then echo "Found scala-partest $PARTEST_VER; not building."
   else
     update scala scala-partest "$PARTEST_REF" && gfxd
-    sbtBuild 'set version :="'$PARTEST_VER'"' 'set VersionKeys.scalaXmlVersion := "'$XML_VER'"' 'set VersionKeys.scalaCheckVersion := "'$SCALACHECK_VER'"' $clean doc test "${buildTasks[@]}"
+    doc="$(docTask $PARTEST_BUILT)"
+    sbtBuild 'set version :="'$PARTEST_VER'"' 'set VersionKeys.scalaXmlVersion := "'$XML_VER'"' 'set VersionKeys.scalaCheckVersion := "'$SCALACHECK_VER'"' $clean "$doc" test "${buildTasks[@]}"
     PARTEST_BUILT="yes"
   fi
 }
@@ -244,7 +257,8 @@ buildSwing() {
   then echo "Found scala-swing $SWING_VER; not building."
   else
     update scala scala-swing "$SWING_REF" && gfxd
-    sbtBuild 'set version := "'$SWING_VER'"' $clean doc test "${buildTasks[@]}"
+    doc="$(docTask $SWING_BUILT)"
+    sbtBuild 'set version := "'$SWING_VER'"' $clean "$doc" test "${buildTasks[@]}"
     SWING_BUILT="yes"
   fi
 }
@@ -255,7 +269,8 @@ buildScalacheck(){
   then echo "Found scalacheck $SCALACHECK_VER; not building."
   else
     update rickynils scalacheck $SCALACHECK_REF && gfxd
-    sbtBuild 'set version := "'$SCALACHECK_VER'"' 'set VersionKeys.scalaParserCombinatorsVersion := "'$PARSERS_VER'"' $clean doc publish # test times out NOTE: never published to sonatype
+    doc="$(docTask $SCALACHECK_BUILT)"
+    sbtBuild 'set version := "'$SCALACHECK_VER'"' 'set VersionKeys.scalaParserCombinatorsVersion := "'$PARSERS_VER'"' $clean "$doc" publish # test times out NOTE: never published to sonatype
     SCALACHECK_BUILT="yes"
   fi
 }

@@ -222,7 +222,7 @@ trait SI_9124 {
 
   def f = new A { def f2 = 0 } // enclosing method is f in the interface SI_9124
 
-  private def g = new A { def f3 = 0 } // only encl class (SI_9124), encl meth is null because the interface SI_9124 doesn't have a method g
+  private def g: Object = new A { def f3 = 0 } // only encl class (SI_9124), encl meth can be g in 2.12 because the interface SI_9124 now has the method g
 
   object O { // member, no encl meth attribute
     new A { def f4 = 0 } // enclosing class is O$, no enclosing method

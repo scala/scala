@@ -98,11 +98,6 @@ abstract class LambdaLift extends InfoTransform {
      */
     private val proxyNames       = mutable.HashMap[Symbol, Name]()
 
-    // (trait, name) -> owner
-    private val localTraits      = mutable.HashMap[(Symbol, Name), Symbol]()
-    // (owner, name) -> implClass
-    private val localImplClasses = mutable.HashMap[(Symbol, Name), Symbol]()
-
     /** A flag to indicate whether new free variables have been found */
     private var changedFreeVars: Boolean = _
 
@@ -176,24 +171,7 @@ abstract class LambdaLift extends InfoTransform {
           case ClassDef(_, _, _, _) =>
             liftedDefs(tree.symbol) = Nil
             if (sym.isLocalToBlock) {
-              // Don't rename implementation classes independently of their interfaces. If
-              // the interface is to be renamed, then we will rename the implementation
-              // class at that time. You'd think we could call ".implClass" on the trait
-              // rather than collecting them in another map, but that seems to fail for
-              // exactly the traits being renamed here (i.e. defined in methods.)
-              //
-              // !!! - it makes no sense to have methods like "implClass" and
-              // "companionClass" which fail for an arbitrary subset of nesting
-              // arrangements, and then have separate methods which attempt to compensate
-              // for that failure. There should be exactly one method for any given
-              // entity which always gives the right answer.
-              if (sym.isImplClass)
-                localImplClasses((sym.owner, tpnme.interfaceName(sym.name))) = sym
-              else {
-                renamable += sym
-                if (sym.isTrait)
-                  localTraits((sym, sym.name)) = sym.owner
-              }
+              renamable += sym
             }
           case DefDef(_, _, _, _, _, _) =>
             if (sym.isLocalToBlock) {
@@ -264,40 +242,18 @@ abstract class LambdaLift extends InfoTransform {
           //         Generating a unique name, mangled with the enclosing full class name (including
           //         package - subclass might have the same name), avoids a VerifyError in the case
           //         that a sub-class happens to lifts out a method with the *same* name.
-          if (originalName.isTermName && !sym.enclClass.isImplClass && calledFromInner(sym))
+          if (originalName.isTermName && calledFromInner(sym))
             newTermNameCached(nonAnon(sym.enclClass.fullName('$')) + nme.EXPAND_SEPARATOR_STRING + name)
           else
             name
         }
       }
 
-      /* Rename a trait's interface and implementation class in coordinated fashion. */
-      def renameTrait(traitSym: Symbol, implSym: Symbol) {
-        val originalImplName = implSym.name
-        renameSym(traitSym)
-        implSym setName tpnme.implClassName(traitSym.name)
-
-        debuglog("renaming impl class in step with %s: %s => %s".format(traitSym, originalImplName, implSym.name))
-      }
-
       val allFree: Set[Symbol] = free.values.flatMap(_.iterator).toSet
 
       for (sym <- renamable) {
-        // If we renamed a trait from Foo to Foo$1, we must rename the implementation
-        // class from Foo$class to Foo$1$class.  (Without special consideration it would
-        // become Foo$class$1 instead.) Since the symbols are being renamed out from
-        // under us, and there's no reliable link between trait symbol and impl symbol,
-        // we have maps from ((trait, name)) -> owner and ((owner, name)) -> impl.
-        localTraits remove ((sym, sym.name)) match {
-          case None        =>
-            if (allFree(sym)) proxyNames(sym) = newName(sym)
-            else renameSym(sym)
-          case Some(owner) =>
-            localImplClasses remove ((owner, sym.name)) match {
-              case Some(implSym)  => renameTrait(sym, implSym)
-              case _              => renameSym(sym) // pure interface, no impl class
-            }
-        }
+        if (allFree(sym)) proxyNames(sym) = newName(sym)
+        else renameSym(sym)
       }
 
       afterOwnPhase {
@@ -456,7 +412,6 @@ abstract class LambdaLift extends InfoTransform {
       }
 
       sym.owner = sym.owner.enclClass
-      if (sym.isClass) sym.owner = sym.owner.toInterface
       if (sym.isMethod) sym setFlag LIFTED
       liftedDefs(sym.owner) ::= tree
       // TODO: this modifies the ClassInfotype of the enclosing class, which is associated with another phase (explicitouter).

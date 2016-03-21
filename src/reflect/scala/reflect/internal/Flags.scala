@@ -157,7 +157,6 @@ class Flags extends ModifierFlags {
   final val MIXEDIN       = 1L << 35      // term member has been mixed in
   final val EXISTENTIAL   = 1L << 35      // type is an existential parameter or skolem
   final val EXPANDEDNAME  = 1L << 36      // name has been expanded with class suffix
-  final val IMPLCLASS     = 1L << 37      // symbol is an implementation class
   final val TRANS_FLAG    = 1L << 38      // transient flag guaranteed to be reset after each phase.
 
   final val LOCKED        = 1L << 39      // temporary flag to catch cyclic dependencies
@@ -199,8 +198,7 @@ class Flags extends ModifierFlags {
   // 17: CONTRAVARIANT/M INCONSTRUCTOR       LABEL
   // 25:  DEFAULTPARAM/M       TRAIT/M
   // 35:     EXISTENTIAL       MIXEDIN
-  // 37:       IMPLCLASS    PRESUPER/M
-  val OverloadedFlagsMask = 0L | BYNAMEPARAM | CONTRAVARIANT | DEFAULTPARAM | EXISTENTIAL | IMPLCLASS
+  val OverloadedFlagsMask = 0L | BYNAMEPARAM | CONTRAVARIANT | DEFAULTPARAM | EXISTENTIAL
 
   // ------- late flags (set by a transformer phase) ---------------------------------
   //
@@ -210,7 +208,7 @@ class Flags extends ModifierFlags {
   //     refchecks   7  [START] <latemethod>
   //    specialize  13  [START] <latefinal> <notprivate>
   // explicitouter  14  [START] <notprotected>
-  //       erasure  15  [START] <latedeferred> <lateinterface>
+  //       erasure  15  [START] <latedeferred>
   //         mixin  20  [START] <latemodule> <notoverride>
   //
   // lateMETHOD set in RefChecks#transformInfo.
@@ -218,13 +216,11 @@ class Flags extends ModifierFlags {
   // notPRIVATE set in Symbols#makeNotPrivate, IExplicitOuter#transform, Inliners.
   // notPROTECTED set in ExplicitOuter#transform.
   // lateDEFERRED set in AddInterfaces, Mixin, etc.
-  // lateINTERFACE set in AddInterfaces#transformMixinInfo.
   // lateMODULE set in Mixin#transformInfo.
   // notOVERRIDE set in Mixin#preTransform.
 
   final val lateDEFERRED  = (DEFERRED: Long) << LateShift
   final val lateFINAL     = (FINAL: Long) << LateShift
-  final val lateINTERFACE = (INTERFACE: Long) << LateShift
   final val lateMETHOD    = (METHOD: Long) << LateShift
   final val lateMODULE    = (MODULE: Long) << LateShift
 
@@ -439,7 +435,7 @@ class Flags extends ModifierFlags {
     case              LIFTED => "<lifted>"                            // (1L << 34)
     case         EXISTENTIAL => "<existential/mixedin>"               // (1L << 35)
     case        EXPANDEDNAME => "<expandedname>"                      // (1L << 36)
-    case           IMPLCLASS => "<implclass/presuper>"                // (1L << 37)
+    case            PRESUPER => "<presuper>"                          // (1L << 37)
     case          TRANS_FLAG => "<trans_flag>"                        // (1L << 38)
     case              LOCKED => "<locked>"                            // (1L << 39)
     case         SPECIALIZED => "<specialized>"                       // (1L << 40)
@@ -456,7 +452,7 @@ class Flags extends ModifierFlags {
     case      `lateDEFERRED` => "<latedeferred>"                      // (1L << 51)
     case         `lateFINAL` => "<latefinal>"                         // (1L << 52)
     case        `lateMETHOD` => "<latemethod>"                        // (1L << 53)
-    case     `lateINTERFACE` => "<lateinterface>"                     // (1L << 54)
+    case   0x80000000000000L => ""                                    // (1L << 54)
     case        `lateMODULE` => "<latemodule>"                        // (1L << 55)
     case      `notPROTECTED` => "<notprotected>"                      // (1L << 56)
     case       `notOVERRIDE` => "<notoverride>"                       // (1L << 57)

@@ -26,12 +26,16 @@ package <empty> {
     };
     final <artifact> private[this] def $anonfun$1(methodParam$1: String, methodLocal$1: String): String = T.this.classParam.+(T.this.field()).+(methodParam$1).+(methodLocal$1);
     abstract trait MethodLocalTrait$1 extends Object {
+      def /*MethodLocalTrait$1*/$init$(barParam$1: String): Unit = {
+        ()
+      };
+      scala.Predef.print(barParam$1);
       <synthetic> <stable> <artifact> def $outer(): T
     };
     object MethodLocalObject$2 extends Object with T#MethodLocalTrait$1 {
       def <init>($outer: T, barParam$1: String): T#MethodLocalObject$2.type = {
         MethodLocalObject$2.super.<init>();
-        MethodLocalObject$2.this.$asInstanceOf[T#MethodLocalTrait$1$class]()./*MethodLocalTrait$1$class*/$init$(barParam$1);
+        MethodLocalObject$2.super./*MethodLocalTrait$1*/$init$(barParam$1);
         ()
       };
       <synthetic> <paramaccessor> <artifact> private[this] val $outer: T = _;
@@ -50,12 +54,6 @@ package <empty> {
       T.this.MethodLocalObject$lzycompute$1(barParam$1, MethodLocalObject$module$1)
     else
       MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type]();
-    abstract trait MethodLocalTrait$1$class extends Object with T#MethodLocalTrait$1 {
-      def /*MethodLocalTrait$1$class*/$init$(barParam$1: String): Unit = {
-        ()
-      };
-      scala.Predef.print(barParam$1)
-    };
     final <artifact> private[this] def $anonfun$2(tryyParam$1: String, tryyLocal$1: runtime.ObjectRef): Unit = try {
       tryyLocal$1.elem = tryyParam$1
     } finally ()

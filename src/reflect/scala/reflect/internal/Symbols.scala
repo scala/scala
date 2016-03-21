@@ -478,10 +478,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def newAnonymousFunctionValue(pos: Position, newFlags: Long = 0L): TermSymbol =
       newTermSymbol(nme.ANON_FUN_NAME, pos, SYNTHETIC | newFlags) setInfo NoType
 
-    def newImplClass(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L): ClassSymbol = {
-      newClassSymbol(name, pos, newFlags | IMPLCLASS)
-    }
-
     /** Refinement types P { val x: String; type T <: Number }
      *  also have symbols, they are refinementClasses
      */
@@ -588,7 +584,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isAnonymousClass        = false
     def isCaseClass             = false
     def isConcreteClass         = false
-    def isImplClass             = false   // the implementation class of a trait
+    @deprecated("Trait implementation classes have been removed in Scala 2.12", "2.12.0")
+    def isImplClass             = false
     def isJavaInterface         = false
     def isNumericValueClass     = false
     def isPrimitiveValueClass   = false
@@ -936,21 +933,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isCaseCopy =
       isMethod && owner.isCase && isSynthetic && name == nme.copy
 
-    /** Is this symbol a trait which needs an implementation class? */
-    final def needsImplClass = (
-         isTrait
-      && (!isInterface || hasFlag(lateINTERFACE))
-      && !isImplClass
-    )
-
-    /** Is this a symbol which exists only in the implementation class, not in its trait? */
-    final def isImplOnly = isPrivate || (
-       (owner.isTrait || owner.isImplClass) && (
-            hasAllFlags(LIFTED | MODULE | METHOD)
-         || isConstructor
-         || hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR | MODULE)
-       )
-    )
     final def isModuleVar = hasFlag(MODULEVAR)
 
     /**
@@ -987,7 +969,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Is this symbol a static member of its class? (i.e. needs to be implemented as a Java static?) */
     final def isStaticMember: Boolean =
-      hasFlag(STATIC) || owner.isImplClass
+      hasFlag(STATIC)
 
     /** Does this symbol denote a class that defines static symbols? */
     final def isStaticOwner: Boolean =
@@ -1261,7 +1243,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def needsModuleSuffix = (
          hasModuleFlag
       && !isMethod
-      && !isImplClass
       && !isJavaDefined
     )
     /** These should be moved somewhere like JavaPlatform.
@@ -1334,9 +1315,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     protected def createPackageObjectClassSymbol(pos: Position, newFlags: Long): PackageObjectClassSymbol =
       new PackageObjectClassSymbol(this, pos) initFlags newFlags
 
-    protected def createImplClassSymbol(name: TypeName, pos: Position, newFlags: Long): ClassSymbol =
-      new ClassSymbol(this, pos, name) with ImplClassSymbol initFlags newFlags
-
     protected def createMethodSymbol(name: TermName, pos: Position, newFlags: Long): MethodSymbol =
       new MethodSymbol(this, pos, name) initFlags newFlags
 
@@ -1375,8 +1353,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         createPackageObjectClassSymbol(pos, newFlags)
       else if ((newFlags & MODULE) != 0)
         createModuleClassSymbol(name, pos, newFlags)
-      else if ((newFlags & IMPLCLASS) != 0)
-        createImplClassSymbol(name, pos, newFlags)
       else
         createClassSymbol(name, pos, newFlags)
     }
@@ -2085,12 +2061,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def sourceModule: Symbol = NoSymbol
 
-    /** The implementation class of a trait.  If available it will be the
-     *  symbol with the same owner, and the name of this symbol with $class
-     *  appended to it.
-     */
-    final def implClass: Symbol = owner.info.decl(tpnme.implClassName(name))
-
     /** The class that is logically an outer class of given `clazz`.
      *  This is the enclosing class, except for classes defined locally to constructors,
      *  where it is the outer class of the enclosing class.
@@ -2294,16 +2264,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       owner.rawInfo
     }
 
-    /** If this symbol is an implementation class, its interface, otherwise the symbol itself
-     *  The method follows two strategies to determine the interface.
-     *   - during or after erasure, it takes the last parent of the implementation class
-     *     (which is always the interface, by convention)
-     *   - before erasure, it looks up the interface name in the scope of the owner of the class.
-     *     This only works for implementation classes owned by other classes or traits.
-     *     !!! Why?
-     */
-    def toInterface: Symbol = this
-
     /** The module class corresponding to this module.
      */
     def moduleClass: Symbol = NoSymbol
@@ -2423,8 +2383,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       var bcs = base.info.baseClasses dropWhile (owner != _) drop 1
       var sym: Symbol = NoSymbol
       while (!bcs.isEmpty && sym == NoSymbol) {
-        if (!bcs.head.isImplClass)
-          sym = matchingSymbol(bcs.head, base.thisType).suchThat(!_.isDeferred)
+        sym = matchingSymbol(bcs.head, base.thisType).suchThat(!_.isDeferred)
         bcs = bcs.tail
       }
       sym
@@ -2558,7 +2517,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** String representation of symbol's definition key word */
     final def keyString: String =
       if (isJavaInterface) "interface"
-      else if (isTrait && !isImplClass) "trait"
+      else if (isTrait) "trait"
       else if (isClass) "class"
       else if (isType && !isParameter) "type"
       else if (isVariable) "var"
@@ -2585,7 +2544,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else if (isSetter) ("setter", if (isSourceMethod) "method" else "value", "SET")
         else if (isTerm && isLazy) ("lazy value", "lazy value", "LAZ")
         else if (isVariable) ("field", "variable", "VAR")
-        else if (isImplClass) ("implementation class", "class", "IMPL")
         else if (isTrait) ("trait", "trait", "TRT")
         else if (isClass) ("class", "class", "CLS")
         else if (isType) ("type", "type", "TPE")
@@ -3223,7 +3181,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def resolveOverloadedFlag(flag: Long) = flag match {
       case INCONSTRUCTOR => "<inconstructor>" // INCONSTRUCTOR / CONTRAVARIANT / LABEL
       case EXISTENTIAL   => "<existential>"   // EXISTENTIAL / MIXEDIN
-      case IMPLCLASS     => "<implclass>"     // IMPLCLASS / PRESUPER
       case _             => super.resolveOverloadedFlag(flag)
     }
 
@@ -3235,7 +3192,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isAbstractClass           = this hasFlag ABSTRACT
     override def isCaseClass               = this hasFlag CASE
     override def isClassLocalToConstructor = this hasFlag INCONSTRUCTOR
-    override def isImplClass               = this hasFlag IMPLCLASS
     override def isModuleClass             = this hasFlag MODULE
     override def isPackageClass            = this hasFlag PACKAGE
     override def isTrait                   = this hasFlag TRAIT
@@ -3253,13 +3209,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     // The corresponding interface is the last parent by convention.
     private def lastParent = if (tpe.parents.isEmpty) NoSymbol else tpe.parents.last.typeSymbol
-    override def toInterface: Symbol = (
-      if (isImplClass) {
-        if (phase.next.erasedTypes) lastParent
-        else owner.info.decl(tpnme.interfaceName(name))
-      }
-      else super.toInterface
-    )
 
     /** Is this class locally defined?
      *  A class is local, if
@@ -3290,7 +3239,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def existentialBound = GenPolyType(this.typeParams, TypeBounds.upper(this.classBound))
 
-    def primaryConstructorName = if (this hasFlag TRAIT | IMPLCLASS) nme.MIXIN_CONSTRUCTOR else nme.CONSTRUCTOR
+    def primaryConstructorName = if (this hasFlag TRAIT) nme.MIXIN_CONSTRUCTOR else nme.CONSTRUCTOR
 
     override def primaryConstructor = {
       val c = info decl primaryConstructorName
@@ -3434,12 +3383,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final override def setName(name: Name): this.type = {
       abort("Can't rename a package object to " + name)
     }
-  }
-
-  trait ImplClassSymbol extends ClassSymbol {
-    override def sourceModule = companionModule
-    // override def isImplClass = true
-    override def typeOfThis  = thisSym.tpe // don't use the ModuleClassSymbol typeOfThisCache.
   }
 
   class PackageClassSymbol protected[Symbols] (owner0: Symbol, pos0: Position, name0: TypeName)
