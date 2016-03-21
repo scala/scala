@@ -51,7 +51,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       lazy val dotRunner = new DotRunner(settings)
     }
     _modelFinished = true
-    // complete the links between model entities, everthing that couldn't have been done before
+    // complete the links between model entities, everything that couldn't have been done before
     universe.rootPackage.completeModel()
 
     Some(universe) filter (_.rootPackage != null)

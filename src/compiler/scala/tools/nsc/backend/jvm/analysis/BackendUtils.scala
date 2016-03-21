@@ -273,7 +273,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     }
 
     // we are only interested in the class references in the descriptor, so we can skip over
-    // primitves and the brackets of array descriptors
+    // primitives and the brackets of array descriptors
     def visitDescriptor(desc: String): Unit = (desc.charAt(0): @switch) match {
       case '(' =>
         val internalNames = mutable.ListBuffer.empty[String]
@@ -455,7 +455,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
           insn match {
             case v: VarInsnNode =>
               val longSize = if (isSize2LoadOrStore(v.getOpcode)) 1 else 0
-              maxLocals = math.max(maxLocals, v.`var` + longSize + 1) // + 1 becauase local numbers are 0-based
+              maxLocals = math.max(maxLocals, v.`var` + longSize + 1) // + 1 because local numbers are 0-based
 
             case i: IincInsnNode =>
               maxLocals = math.max(maxLocals, i.`var` + 1)

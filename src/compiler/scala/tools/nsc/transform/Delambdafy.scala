@@ -8,7 +8,7 @@ import scala.collection.mutable.LinkedHashMap
 
 /**
  * This transformer is responsible for preparing lambdas for runtime, by either translating to anonymous classes
- * or to a tree that will be convereted to invokedynamic by the JVM 1.8+ backend.
+ * or to a tree that will be converted to invokedynamic by the JVM 1.8+ backend.
  *
  * The main assumption it makes is that a lambda {args => body} has been turned into
  * {args => liftedBody()} where lifted body is a top level method that implements the body of the lambda.

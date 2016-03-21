@@ -33,7 +33,7 @@ object PartestUtil {
     val srcPathOption = "--srcpath"
     val grepOption = "--grep"
 
-    // HACK: if we parse `--srpath scaladoc`, we overwrite this var. The parser for test file paths
+    // HACK: if we parse `--srcpath scaladoc`, we overwrite this var. The parser for test file paths
     // then lazily creates the examples based on the current value.
     // TODO is there a cleaner way to do this with SBT's parser infrastructure?
     var srcPath = "files"

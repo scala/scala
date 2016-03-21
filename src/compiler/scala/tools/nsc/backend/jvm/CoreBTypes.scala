@@ -11,7 +11,7 @@ import scala.tools.nsc.backend.jvm.BTypes.InternalName
  *
  * The symbols used to initialize the ClassBTypes may change from one compiler run to the next. To
  * make sure the definitions are consistent with the symbols in the current run, the
- * `intializeCoreBTypes` method in BTypesFromSymbols creates a new instance of CoreBTypes in each
+ * `initializeCoreBTypes` method in BTypesFromSymbols creates a new instance of CoreBTypes in each
  * compiler run.
  *
  * The class BTypesFromSymbols does not directly reference CoreBTypes, but CoreBTypesProxy. The

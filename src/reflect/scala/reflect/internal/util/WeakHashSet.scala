@@ -223,7 +223,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
 
   def +=(elem: A) = this + elem
 
-  // from scala.reflect.interanl.Set
+  // from scala.reflect.internal.Set
   override def addEntry(x: A) { this += x }
 
   // remove an element from this set and return this set

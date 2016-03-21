@@ -3155,7 +3155,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (phase.erasedTypes) stats1
       else {
         // As packages are open, it doesn't make sense to check double definitions here. Furthermore,
-        // it is expensive if the package is large. Instead, such double defininitions are checked in `Namers.enterInScope`
+        // it is expensive if the package is large. Instead, such double definitions are checked in `Namers.enterInScope`
         if (!context.owner.isPackageClass)
           checkNoDoubleDefs
         addSynthetics(stats1)
