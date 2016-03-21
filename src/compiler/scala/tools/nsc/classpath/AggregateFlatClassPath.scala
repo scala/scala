@@ -37,8 +37,7 @@ case class AggregateFlatClassPath(aggregates: Seq[FlatClassPath]) extends FlatCl
     @tailrec
     def findEntry[T <: ClassRepClassPathEntry](aggregates: Seq[FlatClassPath], getEntries: FlatClassPath => Seq[T]): Option[T] =
       if (aggregates.nonEmpty) {
-        val entry = getEntries(aggregates.head)
-          .find(_.name == simpleClassName)
+        val entry = getEntries(aggregates.head).find(_.name == simpleClassName)
         if (entry.isDefined) entry
         else findEntry(aggregates.tail, getEntries)
       } else None
@@ -46,7 +45,11 @@ case class AggregateFlatClassPath(aggregates: Seq[FlatClassPath]) extends FlatCl
     val classEntry = findEntry(aggregates, classesGetter(pkg))
     val sourceEntry = findEntry(aggregates, sourcesGetter(pkg))
 
-    mergeClassesAndSources(classEntry.toList, sourceEntry.toList).headOption
+    (classEntry, sourceEntry) match {
+      case (Some(c), Some(s)) => Some(ClassAndSourceFilesEntry(c.file, s.file))
+      case (c @ Some(_), _) => c
+      case (_, s) => s
+    }
   }
 
   override def asURLs: Seq[URL] = aggregates.flatMap(_.asURLs)

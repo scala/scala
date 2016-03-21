@@ -5,12 +5,11 @@
 package scala.tools.nsc.interpreter
 
 import scala.reflect.internal.util.RangePosition
+import scala.reflect.io.VirtualDirectory
 import scala.tools.nsc.backend.JavaPlatform
 import scala.tools.nsc.{interactive, Settings}
-import scala.tools.nsc.io._
 import scala.tools.nsc.reporters.StoreReporter
-import scala.tools.nsc.util.ClassPath.DefaultJavaContext
-import scala.tools.nsc.util.{DirectoryClassPath, MergedClassPath}
+import scala.tools.nsc.classpath.{FlatClassPath, DirectoryFlatClassPath, VirtualDirectoryFlatClassPath, AggregateFlatClassPath}
 
 trait PresentationCompilation {
   self: IMain =>
@@ -55,8 +54,11 @@ trait PresentationCompilation {
     * You may downcast the `reporter` to `StoreReporter` to access type errors.
     */
   def newPresentationCompiler(): interactive.Global = {
-    val replOutClasspath: DirectoryClassPath = new DirectoryClassPath(replOutput.dir, DefaultJavaContext)
-    val mergedClasspath = new MergedClassPath[AbstractFile](replOutClasspath :: global.platform.classPath :: Nil, DefaultJavaContext)
+    val replOutClasspath = replOutput.dir match {
+      case vd: VirtualDirectory => VirtualDirectoryFlatClassPath(vd)
+      case dir                  => DirectoryFlatClassPath(dir.file)
+    }
+    val mergedClasspath = AggregateFlatClassPath(replOutClasspath :: global.platform.flatClassPath :: Nil)
     def copySettings: Settings = {
       val s = new Settings(_ => () /* ignores "bad option -nc" errors, etc */)
       s.processArguments(global.settings.recreateArgs, processAll = false)
@@ -68,7 +70,7 @@ trait PresentationCompilation {
       override lazy val platform: ThisPlatform = new JavaPlatform {
         val global: self.type = self
 
-        override def classPath: PlatformClassPath = mergedClasspath
+        override private[nsc] lazy val flatClassPath: FlatClassPath = mergedClasspath
       }
     }
     new interactiveGlobal.TyperRun()
