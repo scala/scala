@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
-  <component name="NewModuleRootManager" inherit-compiler-output="true">
+  <component name="NewModuleRootManager" inherit-compiler-output="false">
+    <output url="file://$MODULE_DIR$/../../build/quick/classes/partest-extras" />
+    <output-test url="file://$MODULE_DIR$/../../out/test/partest-extras" />
     <exclude-output />
     <content url="file://$MODULE_DIR$/../partest-extras">
       <sourceFolder url="file://$MODULE_DIR$/../partest-extras" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="compiler" />
     <orderEntry type="module" module-name="library" />
     <orderEntry type="module" module-name="reflect" />
+    <orderEntry type="module" module-name="compiler" />
     <orderEntry type="module" module-name="repl" />
-    <orderEntry type="library" name="partest" level="project" />
+    <orderEntry type="library" name="partest-extras-deps" level="project" />
     <orderEntry type="library" name="starr" level="project" />
-    <orderEntry type="library" name="asm" level="project" />
   </component>
 </module>

@@ -8,8 +8,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="library" />
-    <orderEntry type="library" name="scaladoc-deps" level="project" />
-    <orderEntry type="library" name="ant" level="project" />
+    <orderEntry type="library" name="manual-deps" level="project" />
     <orderEntry type="library" name="starr" level="project" />
   </component>
 </module>
