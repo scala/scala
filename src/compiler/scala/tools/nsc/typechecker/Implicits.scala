@@ -49,11 +49,11 @@ trait Implicits {
   def inferImplicitByTypeSilent(pt: Type, context: Context, pos: Position = NoPosition): SearchResult =
     inferImplicit(EmptyTree, pt, reportAmbiguous = false, isView = false, context, saveAmbiguousDivergent = false, pos)
 
-  @deprecated("Unused in scalac")
+  @deprecated("Unused in scalac", "2.12.0-M4")
   def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context): SearchResult =
     inferImplicit(tree, pt, reportAmbiguous, isView, context, saveAmbiguousDivergent = true, tree.pos)
 
-  @deprecated("Unused in scalac")
+  @deprecated("Unused in scalac", "2.12.0-M4")
   def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean): SearchResult =
     inferImplicit(tree, pt, reportAmbiguous, isView, context, saveAmbiguousDivergent, tree.pos)
 
@@ -111,12 +111,9 @@ trait Implicits {
   /** A friendly wrapper over inferImplicit to be used in macro contexts and toolboxes.
    */
   def inferImplicit(tree: Tree, pt: Type, isView: Boolean, context: Context, silent: Boolean, withMacrosDisabled: Boolean, pos: Position, onError: (Position, String) => Unit): Tree = {
-    val result =
-      if (withMacrosDisabled) context.withMacrosDisabled {
-        inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context, saveAmbiguousDivergent = !silent, pos)
-      } else context.withMacrosEnabled {
-        inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context, saveAmbiguousDivergent = !silent, pos)
-      }
+    val result = context.withMacros(enabled = !withMacrosDisabled) {
+      inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context, saveAmbiguousDivergent = !silent, pos)
+    }
 
     if (result.isFailure && !silent) {
       val err = context.reporter.firstError

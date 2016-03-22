@@ -13,9 +13,7 @@ trait Tags {
     private val runDefinitions = currentRun.runDefinitions
 
     private def resolveTag(pos: Position, taggedTp: Type, allowMaterialization: Boolean) = enteringTyper {
-      if (allowMaterialization) context.withMacrosEnabled{ inferImplicitByType(taggedTp, context, pos).tree }
-      else context.withMacrosDisabled{ inferImplicitByType(taggedTp, context, pos).tree }
-
+      context.withMacros(enabled = allowMaterialization) { inferImplicitByType(taggedTp, context, pos).tree }
     }
 
     /** Finds in scope or materializes a ClassTag.
