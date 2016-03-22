@@ -57,7 +57,7 @@ trait ZipArchiveFileLookup[FileEntryType <: ClassRepClassPathEntry] extends Flat
     } getOrElse FlatClassPathEntries(Seq.empty, Seq.empty)
   }
 
-  private def findDirEntry(pkg: String) = {
+  private def findDirEntry(pkg: String): Option[archive.DirEntry] = {
     val dirName = s"${FileUtils.dirPath(pkg)}/"
     archive.allDirs.get(dirName)
   }
