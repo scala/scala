@@ -24,7 +24,7 @@ class FutureTests extends MinimalScalaTest {
   "A future with custom ExecutionContext" should {
     "shouldHandleThrowables" in {
       val ms = new mutable.HashSet[Throwable] with mutable.SynchronizedSet[Throwable]
-      implicit val ec = scala.concurrent.ExecutionContext.fromExecutor(new scala.concurrent.forkjoin.ForkJoinPool(), {
+      implicit val ec = scala.concurrent.ExecutionContext.fromExecutorService(new scala.concurrent.forkjoin.ForkJoinPool(), {
         t =>
         ms += t
       })
@@ -64,7 +64,7 @@ class FutureTests extends MinimalScalaTest {
       Await.ready(waiting, 2000 millis)
 
       ms.size mustBe (4)
-      //FIXME should check
+      ec.shutdownNow()
     }
   }
 
@@ -541,6 +541,22 @@ class FutureTests extends MinimalScalaTest {
       val expected = try Success(5 / 0) catch { case a: ArithmeticException => Failure(a) }
       val f = Future(5).map(_ / 0)
       Await.ready(f, defaultTimeout).value.get.toString mustBe expected.toString
+    }
+
+    "should have a decent toString representation" in {      
+      val i = scala.concurrent.forkjoin.ThreadLocalRandom.current.nextInt()
+      val e = new Exception(i.toString)
+      val successString = "Future(Success("+i+"))"
+      val failureString = "Future(Failure("+e+"))"
+      val notCompletedString = "Future(<not completed>)"
+      
+      Future.successful(i).toString mustBe successString
+      Future.failed[Int](e).toString mustBe failureString
+      Promise[Int]().toString mustBe notCompletedString
+      Promise[Int]().success(i).toString mustBe successString
+      Promise[Int]().failure(e).toString mustBe failureString
+      Await.ready(Future(i)(ExecutionContext.global), defaultTimeout).toString mustBe successString
+      Await.ready(Future(throw e)(ExecutionContext.global), defaultTimeout).toString mustBe failureString
     }
 
   }
