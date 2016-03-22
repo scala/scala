@@ -127,4 +127,10 @@ class IndySammyTest extends ClearAfterClass {
       List(Op(ICONST_1), Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "boxToInteger", "(I)Ljava/lang/Integer;", false)),
       Op(IRETURN))()
 
+  // Tests ThisReferringMethodsTraverser
+  @Test
+  def testStaticIfNoThisReference: Unit = {
+    val methodNodes = compileMethods(compiler)("def foo = () => () => () => 42")
+    methodNodes.forall(m => !m.name.contains("anonfun") || (m.access & ACC_STATIC) == ACC_STATIC)
+  }
 }

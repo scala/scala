@@ -106,11 +106,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       case _ => tp
     }
 
-    private def valueTypeToObject(tpe: Type): Type =
-      if (isPrimitiveValueClass(tpe.typeSymbol) || enteringErasure(tpe.typeSymbol.isDerivedValueClass)) ObjectTpe
-      else tpe
-
-    // exclude primitives and value classses, which need special boxing
+    // exclude primitives and value classes, which need special boxing
     private def isReferenceType(tp: Type) = !tp.isInstanceOf[ErasedValueType] && {
       val sym = tp.typeSymbol
       !(isPrimitiveValueClass(sym) || sym.isDerivedValueClass)
@@ -324,7 +320,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     private var currentMethod: Symbol = NoSymbol
 
     override def traverse(tree: Tree) = tree match {
-      case DefDef(_, _, _, _, _, _) =>
+      case DefDef(_, _, _, _, _, _) if tree.symbol.isDelambdafyTarget =>
         // we don't expect defs within defs. At this phase trees should be very flat
         if (currentMethod.exists) devWarning("Found a def within a def at a phase where defs are expected to be flattened out.")
         currentMethod = tree.symbol
@@ -340,6 +336,8 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           debuglog(s"$currentMethod directly refers to 'this'")
           thisReferringMethods add currentMethod
         }
+      case _: ClassDef if !tree.symbol.isTopLevel =>
+      case _: DefDef =>
       case _ =>
         super.traverse(tree)
     }

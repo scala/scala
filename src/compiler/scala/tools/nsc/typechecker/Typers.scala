@@ -1058,11 +1058,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             inferView(tree, tree.tpe, pt) match {
               case EmptyTree => // didn't find a view -- fall through
               case coercion  =>
-                if (settings.debug || settings.logImplicitConv) {
-                  val msg = s"inferred view from ${tree.tpe} to $pt via $coercion: ${coercion.tpe}"
-                  debuglog(msg)
-                  if (settings.logImplicitConv) context.echo(tree.pos, msg)
-                }
+                def msg = s"inferred view from ${tree.tpe} to $pt via $coercion: ${coercion.tpe}"
+                if (settings.logImplicitConv) context.echo(tree.pos, msg)
+                else debuglog(msg)
 
                 val silentContext = context.makeImplicit(context.ambiguousErrors)
                 val res = newTyper(silentContext).typed(
