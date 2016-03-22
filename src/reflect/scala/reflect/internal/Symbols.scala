@@ -835,7 +835,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** The package object symbol corresponding to this package or package class symbol, or NoSymbol otherwise */
     def packageObject: Symbol =
       if (isPackageClass) tpe.packageObject
-      else if (isPackage) moduleClass.packageObject
+      else if (hasPackageFlag) moduleClass.packageObject
       else NoSymbol
 
     /** If this is a constructor, its owner: otherwise this.

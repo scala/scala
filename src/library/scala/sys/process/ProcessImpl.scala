@@ -30,8 +30,8 @@ private[process] trait ProcessImpl {
     def apply[T](f: => T): (Thread, () => T) = {
       val result = new SyncVar[Either[Throwable, T]]
       def run(): Unit =
-        try result set Right(f)
-        catch { case e: Exception => result set Left(e) }
+        try result.put(Right(f))
+        catch { case e: Exception => result.put(Left(e)) }
 
       val t = Spawn(run())
 
@@ -91,8 +91,8 @@ private[process] trait ProcessImpl {
 
     protected lazy val (processThread, getExitValue, destroyer) = {
       val code = new SyncVar[Option[Int]]()
-      code set None
-      val thread = Spawn(code set runAndExitValue())
+      code.put(None)
+      val thread = Spawn(code.put(runAndExitValue()))
 
       (
         thread,

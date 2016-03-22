@@ -977,7 +977,7 @@ trait Contexts { self: Analyzer =>
      */
     def isInPackageObject(sym: Symbol, pkg: Symbol): Boolean = {
       if (sym.isOverloaded) sym.alternatives.exists(alt => isInPackageObject(alt, pkg))
-      else pkg.isPackage && sym.owner != pkg && requiresQualifier(sym)
+      else pkg.hasPackageFlag && sym.owner != pkg && requiresQualifier(sym)
     }
 
     def isNameInScope(name: Name) = lookupSymbol(name, _ => true).isSuccess

@@ -56,7 +56,7 @@ private[process] trait ProcessBuilderImpl {
       success put false
       val t = Spawn({
         runImpl(io)
-        success set true
+        success.put(true)
       }, io.daemonizeThreads)
 
       new ThreadProcess(t, success)
