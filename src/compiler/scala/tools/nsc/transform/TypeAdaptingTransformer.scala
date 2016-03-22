@@ -118,8 +118,7 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
         val needsExtraCast = isPrimitiveValueType(tree.tpe.typeArgs.head) && !isPrimitiveValueType(pt.typeArgs.head)
         val tree1 = if (needsExtraCast) gen.mkRuntimeCall(nme.toObjectArray, List(tree)) else tree
         gen.mkAttributedCast(tree1, pt)
-      } else if (samMatchingFunction(tree, pt).exists) tree setType pt // SAM <:< FunctionN if sam is convertible to said function
-        else gen.mkAttributedCast(tree, pt)
+      } else gen.mkAttributedCast(tree, pt)
     }
 
     /** Adapt `tree` to expected type `pt`.

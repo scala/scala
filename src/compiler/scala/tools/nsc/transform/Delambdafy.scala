@@ -29,7 +29,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   /** the following two members override abstract members in Transform */
   val phaseName: String = "delambdafy"
 
-  final case class LambdaMetaFactoryCapable(target: Symbol, arity: Int, functionalInterface: Symbol)
+  final case class LambdaMetaFactoryCapable(target: Symbol, arity: Int, functionalInterface: Symbol, sam: Symbol)
 
   /**
     * Get the symbol of the target lifted lambda body method from a function. I.e. if
@@ -60,7 +60,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     private[this] lazy val methodReferencesThis: Set[Symbol] =
       (new ThisReferringMethodsTraverser).methodReferencesThisIn(unit.body)
 
-    private def mkLambdaMetaFactoryCall(fun: Function, target: Symbol, functionalInterface: Symbol, isSpecialized: Boolean): Tree = {
+    private def mkLambdaMetaFactoryCall(fun: Function, target: Symbol, functionalInterface: Symbol, samUserDefined: Symbol, isSpecialized: Boolean): Tree = {
       val pos = fun.pos
       val allCapturedArgRefs = {
         // find which variables are free in the lambda because those are captures that need to be
@@ -84,8 +84,14 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       // We then apply this symbol to the captures.
       val apply = localTyper.typedPos(pos)(Apply(Ident(msym), allCapturedArgRefs))
 
+      // TODO: this is a bit gross
+      val sam = samUserDefined orElse {
+        if (isSpecialized) functionalInterface.info.decls.find(_.isDeferred).get
+        else functionalInterface.info.member(nme.apply)
+      }
+
       // no need for adaptation when the implemented sam is of a specialized built-in function type
-      val lambdaTarget = if (isSpecialized) target else createBoxingBridgeMethodIfNeeded(fun, target, functionalInterface)
+      val lambdaTarget = if (isSpecialized) target else createBoxingBridgeMethodIfNeeded(fun, target, functionalInterface, sam)
 
       // The backend needs to know the target of the lambda and the functional interface in order
       // to emit the invokedynamic instruction. We pass this information as tree attachment.
@@ -93,7 +99,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       // see https://docs.oracle.com/javase/8/docs/api/java/lang/invoke/LambdaMetafactory.html
       //   instantiatedMethodType is derived from lambdaTarget's signature
       //   samMethodType is derived from samOf(functionalInterface)'s signature
-      apply.updateAttachment(LambdaMetaFactoryCapable(lambdaTarget, fun.vparams.length, functionalInterface))
+      apply.updateAttachment(LambdaMetaFactoryCapable(lambdaTarget, fun.vparams.length, functionalInterface, sam))
 
       apply
     }
@@ -113,7 +119,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     }
 
     // determine which lambda target to use with java's LMF -- create a new one if scala-specific boxing is required
-    def createBoxingBridgeMethodIfNeeded(fun: Function, target: Symbol, functionalInterface: Symbol): Symbol = {
+    def createBoxingBridgeMethodIfNeeded(fun: Function, target: Symbol, functionalInterface: Symbol, sam: Symbol): Symbol = {
       val oldClass = fun.symbol.enclClass
       val pos = fun.pos
 
@@ -121,7 +127,6 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       val functionParamTypes = exitingErasure(target.info.paramTypes)
       val functionResultType = exitingErasure(target.info.resultType)
 
-      val sam = samOf(functionalInterface.tpe) orElse functionalInterface.info.member(nme.apply)
       val samParamTypes = exitingErasure(sam.info.paramTypes)
       val samResultType = exitingErasure(sam.info.resultType)
 
@@ -241,7 +246,8 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           (functionalInterface, isSpecialized)
         }
 
-      mkLambdaMetaFactoryCall(originalFunction, target, functionalInterface, isSpecialized)
+      val sam = originalFunction.attachments.get[SAMFunction].map(_.sam).getOrElse(NoSymbol)
+      mkLambdaMetaFactoryCall(originalFunction, target, functionalInterface, sam, isSpecialized)
     }
 
     // here's the main entry point of the transform

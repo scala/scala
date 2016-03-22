@@ -1076,7 +1076,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val sam = samMatchingFunction(tree, pt) // this implies tree.isInstanceOf[Function]
           if (sam.exists && !tree.tpe.isErroneous) {
             val samTree = adaptToSAM(sam, tree.asInstanceOf[Function], pt, mode)
-            if (samTree ne EmptyTree) return samTree
+            if (samTree ne EmptyTree)
+              return samTree.updateAttachment(SAMFunction(pt, sam))
           }
         }
 

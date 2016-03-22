@@ -721,6 +721,12 @@ abstract class Erasure extends AddInterfaces
         if (branch == EmptyTree) branch else adaptToType(branch, tree1.tpe)
 
       tree1 match {
+        case fun: Function =>
+          fun.attachments.get[SAMFunction] match {
+            case Some(SAMFunction(samTp, _)) => fun setType specialScalaErasure(samTp)
+            case _ => fun
+          }
+
         case If(cond, thenp, elsep) =>
           treeCopy.If(tree1, cond, adaptBranch(thenp), adaptBranch(elsep))
         case Match(selector, cases) =>

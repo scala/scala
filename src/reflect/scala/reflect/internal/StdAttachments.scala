@@ -38,6 +38,19 @@ trait StdAttachments {
    */
   case class CompoundTypeTreeOriginalAttachment(parents: List[Tree], stats: List[Tree])
 
+  /** Attached to a Function node during type checking when the expected type is a SAM type (and not a built-in FunctionN).
+    *
+    * Ideally, we'd move to Dotty's Closure AST, which tracks the environment,
+    * the lifted method that has the implementation, and the target type.
+    * For backwards compatibility, an attachment is the best we can do right now.
+    *
+    * @param samTp the expected type that triggered sam conversion (may be a subtype of the type corresponding to sam's owner)
+    * @param sam the single abstract method implemented by the Function we're attaching this to
+    *
+    * @since 2.12.0-M4
+    */
+  case class SAMFunction(samTp: Type, sam: Symbol) extends PlainAttachment
+
   /** When present, indicates that the host `Ident` has been created from a backquoted identifier.
    */
   case object BackquotedIdentifierAttachment extends PlainAttachment
