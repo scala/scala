@@ -10,7 +10,7 @@ self =>
 
   trait Transformed[+B] {
     def length: Int = 0
-    def apply(idx: Int): B = error("")
+    def apply(idx: Int): B = sys.error("")
   }
 
   trait Reversed extends Transformed[A] {
