@@ -1074,7 +1074,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           // we know `!(tree.tpe <:< pt)`; try to remedy if there's a sam for pt
           val sam = samMatchingFunction(tree, pt) // this implies tree.isInstanceOf[Function]
-          if (sam.exists) {
+          if (sam.exists && !tree.tpe.isErroneous) {
             val samTree = adaptToSAM(sam, tree.asInstanceOf[Function], pt, mode)
             if (samTree ne EmptyTree) return samTree
           }
@@ -2794,7 +2794,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           EmptyTree
         }
       } catch {
-        case e@(_: NoInstance | _: TypeError) => // TODO: we get here whenever pt contains a wildcardtype???
+        case e@(_: NoInstance | _: TypeError) =>
           debuglog(s"Error during SAM synthesis: could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)\n$e")
           EmptyTree
       }
