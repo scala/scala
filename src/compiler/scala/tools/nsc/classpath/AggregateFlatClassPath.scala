@@ -125,3 +125,15 @@ case class AggregateFlatClassPath(aggregates: Seq[FlatClassPath]) extends FlatCl
   private def classesGetter(pkg: String) = (cp: FlatClassPath) => cp.classes(pkg)
   private def sourcesGetter(pkg: String) = (cp: FlatClassPath) => cp.sources(pkg)
 }
+
+object AggregateFlatClassPath {
+  def createAggregate(parts: FlatClassPath*): FlatClassPath = {
+    val elems = new ArrayBuffer[FlatClassPath]()
+    parts foreach {
+      case AggregateFlatClassPath(ps) => elems ++= ps
+      case p => elems += p
+    }
+    if (elems.size == 1) elems.head
+    else AggregateFlatClassPath(elems.toIndexedSeq)
+  }
+}

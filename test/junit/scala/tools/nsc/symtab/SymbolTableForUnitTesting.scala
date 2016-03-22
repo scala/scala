@@ -2,12 +2,12 @@ package scala.tools.nsc
 package symtab
 
 import scala.reflect.ClassTag
-import scala.reflect.internal.{Phase, NoPhase, SomePhase}
+import scala.reflect.internal.{NoPhase, Phase, SomePhase}
 import scala.tools.nsc.classpath.FlatClassPath
 import scala.tools.nsc.settings.ClassPathRepresentationType
 import scala.tools.util.FlatClassPathResolver
 import scala.tools.util.PathResolver
-import util.ClassPath
+import util.{ClassFileLookup, ClassPath}
 import io.AbstractFile
 
 /**
@@ -54,7 +54,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
     def isMaybeBoxed(sym: Symbol): Boolean = ???
     def needCompile(bin: AbstractFile, src: AbstractFile): Boolean = ???
     def externalEquals: Symbol = ???
-    def updateClassPath(subst: Map[ClassPath[AbstractFile], ClassPath[AbstractFile]]): Unit = ???
+    def updateClassPath(subst: Map[ClassFileLookup[AbstractFile], ClassFileLookup[AbstractFile]]): Unit = ???
   }
 
   object loaders extends symtab.SymbolLoaders {

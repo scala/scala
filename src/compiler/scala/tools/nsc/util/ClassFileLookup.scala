@@ -3,6 +3,8 @@
  */
 package scala.tools.nsc.util
 
+import scala.tools.nsc.Settings
+import scala.tools.nsc.classpath.{AggregateFlatClassPath, FlatClassPath, FlatClassPathFactory}
 import scala.tools.nsc.io.AbstractFile
 import java.net.URL
 
@@ -37,6 +39,25 @@ trait ClassFileLookup[T] {
   /** The whole sourcepath in the form of one String.
     */
   def asSourcePathString: String
+}
+
+object ClassFileLookup {
+  def createForFile(f: AbstractFile, current: ClassFileLookup[AbstractFile], settings: Settings): ClassFileLookup[AbstractFile] = current match {
+    case cp: ClassPath[_] => cp.context.newClassPath(f)
+    case _: FlatClassPath => FlatClassPathFactory.newClassPath(f, settings)
+  }
+
+  def createAggregate(elems: Iterable[ClassFileLookup[AbstractFile]], current: ClassFileLookup[AbstractFile]): ClassFileLookup[AbstractFile] = {
+    assert(elems.nonEmpty)
+    if (elems.size == 1) elems.head
+    else current match {
+      case cp: ClassPath[_] =>
+        new MergedClassPath(elems.asInstanceOf[Iterable[ClassPath[AbstractFile]]], cp.context)
+
+      case _: FlatClassPath =>
+        AggregateFlatClassPath.createAggregate(elems.asInstanceOf[Iterable[FlatClassPath]].toSeq : _*)
+    }
+  }
 }
 
 /**

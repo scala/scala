@@ -14,11 +14,11 @@ object Test extends StoreReporterDirectTest {
     compileString(newCompiler("-cp", classpath, "-d", s"${testOutput.path}/$jarFileName"))(code)
   }
 
-  // TODO flat classpath doesn't support the classpath invalidation yet so we force using the recursive one
-  // it's the only test which needed such a workaround
+  var classPathKind: String = ""
+
   override def settings = {
     val settings = new Settings
-    settings.YclasspathImpl.value = ClassPathRepresentationType.Recursive
+    settings.YclasspathImpl.value = classPathKind
     settings
   }
 
@@ -72,9 +72,8 @@ object Test extends StoreReporterDirectTest {
       s"[${added}] in [${output.lines.mkString("/")}]"
     )
     lines      = lines drop promptLength
-    assert {
-      lines.next.contains("testing...")
-    }
+    val r = lines.next
+    assert(r.contains("testing..."), r)
   }
 
   def test2(): Unit = {
@@ -91,14 +90,10 @@ object Test extends StoreReporterDirectTest {
     var lines  = output.lines.drop(headerLength)
     lines      = lines drop promptLength
     val added  = lines.next
-    assert {
-      added.contains("Added") && added.contains("test1.jar")
-    }
+    assert(added.contains("Added") && added.contains("test1.jar"), added)
     lines      = lines drop promptLength
     val msg    = lines.next
-    assert {
-      msg.contains("test2.jar") && msg.contains("existing classpath entries conflict")
-    }
+    assert(msg.contains("test2.jar") && msg.contains("contains a classfile that already exists on the classpath: test.Test$"), msg)
   }
 
   def test3(): Unit = {
@@ -116,13 +111,10 @@ object Test extends StoreReporterDirectTest {
     var lines  = output.lines.drop(headerLength)
     lines      = lines drop promptLength
     val added  = lines.next
-    assert {
-      added.contains("Added") && added.contains("test1.jar")
-    }
+    assert(added.contains("Added") && added.contains("test1.jar"), added)
     lines      = lines drop (2 * promptLength + 1)
-    assert {
-      lines.next.contains("new object in existing package")
-    }
+    val r = lines.next
+    assert(r.contains("new object in existing package"), r)
   }
 
   def test4(): Unit = {
@@ -136,14 +128,10 @@ object Test extends StoreReporterDirectTest {
     var lines  = output.lines.drop(headerLength)
     lines      = lines drop promptLength
     val added  = lines.next
-    assert {
-      added.contains("Added") && added.contains("test1.jar")
-    }
+    assert(added.contains("Added") && added.contains("test1.jar"), added)
     lines      = lines drop promptLength
     val msg    = lines.next
-    assert {
-      msg.contains("test1.jar") && msg.contains("existing classpath entries conflict")
-    }
+    assert(msg.contains("test1.jar") && msg.contains("contains a classfile that already exists on the classpath: test.Test$"), msg)
   }
 
   def test5(): Unit = {
@@ -167,12 +155,19 @@ object Test extends StoreReporterDirectTest {
     assert(output.contains("created test6.Z"), output)
   }
 
-  def show(): Unit = {
+  def testAll(): Unit = {
     test1()
     test2()
     test3()
     test4()
     test5()
     test6()
+  }
+
+  def show(): Unit = {
+    classPathKind = ClassPathRepresentationType.Flat
+    testAll()
+    classPathKind = ClassPathRepresentationType.Recursive
+    testAll()
   }
 }
