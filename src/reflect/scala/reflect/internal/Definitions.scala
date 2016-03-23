@@ -848,21 +848,15 @@ trait Definitions extends api.StandardDefinitions {
       // (e.g., an alias type or intersection type is fine as long as the intersection dominator compiles to an interface)
       val tpSym = erasure.javaErasure(tp).typeSymbol
 
-      if (tpSym.exists
-          // We use Java's MetaLambdaFactory, which requires an interface for the sam's owner
-          // (TODO: Can't use isInterface, yet, as it hasn't been updated for the new trait encoding)
-          && (tpSym.isJavaInterface || tpSym.isTrait)
-          // explicit outer precludes no-arg ctor
-          && tpSym.isStatic
-          // impl restriction -- we currently use the boxed apply, so not really useful to allow specialized sam types (https://github.com/scala/scala/pull/4971#issuecomment-198119167)
-          && !tpSym.isSpecialized) {
-
-        // this does not apply yet, since traits don't have constructors during type checking
-        // if tp has a constructor, it must be public and must not take any arguments
-        // (not even an implicit argument list -- to keep it simple for now)
-        //        && { val ctor = tpSym.primaryConstructor
-        //          !ctor.exists || (!ctor.isOverloaded && ctor.isPublic && ctor.info.params.isEmpty && ctor.info.paramSectionCount <= 1)
-        //        }
+      if (tpSym.exists && tpSym.isClass
+          // if tp has a constructor (its class is not a trait), it must be public and must not take any arguments
+          // (implementation restriction: implicit argument lists are excluded to simplify type inference in adaptToSAM)
+          && { val ctor = tpSym.primaryConstructor
+            !ctor.exists || (!ctor.isOverloaded && ctor.isPublic && ctor.info.params.isEmpty && ctor.info.paramSectionCount <= 1)}
+          // we won't be able to create an instance of tp if it doesn't correspond to its self type
+          // (checking conformance gets complicated when tp is not fully defined, so let's just rule out self types entirely)
+          && !tpSym.hasSelfType
+      ) {
 
         // find the single abstract member, if there is one
         // don't go out requiring DEFERRED members, as you will get them even if there's a concrete override:

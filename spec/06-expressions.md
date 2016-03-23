@@ -1358,18 +1358,26 @@ then the selection is rewritten according to the rules for
 
 ###### SAM conversion
 An expression `(p1, ..., pN) => body` of function type `(T1, ..., TN) => T` is sam-convertible to the expected type `S` if the following holds:
-  - `S` declares an abstract method `m` with signature `(p1: A1, ..., pN: AN): R`;
-  - besides `m`, `S` must not declare other deferred value members;
-  - the method `m` must have a single argument list (thus, implicit argument lists are not allowed);
-  - there must be a type `U` that is a subtype of `S`, so that the expression `new U { final def m(p1: A1, ..., pN: AN): R = body }` is well-typed (`S` need not be fully defined -- the expression will have type `U`).
+  - the class `C` of `S` declares an abstract method `m` with signature `(p1: A1, ..., pN: AN): R`;
+  - besides `m`, `C` must not declare or inherit any other deferred value members;
+  - the method `m` must have a single argument list;
+  - there must be a type `U` that is a subtype of `S`, so that the expression
+    `new U { final def m(p1: A1, ..., pN: AN): R = body }` is well-typed (conforming to the expected type `S`);
+  - for the purpose of scoping, `m` should be considered a static member (`U`'s members are not in scope in `body`);
+  - `(A1, ..., AN) => R` is a subtype of `(T1, ..., TN) => T` (satisfying this condition drives type inference of unknown type parameters in `S`);
+
+Note that a function literal that targets a SAM is not necessarily compiled to the above instance creation expression. This is platform-dependent.
 
 It follows that:
-  - the type `S` must have an accessible, no-argument, constructor;
-  - the class of `S` must not be nested or local (it must not capture its environment, as that precludes a zero-argument constructor).
+  - if class `C` defines a constructor, it must be accessible and must define exactly one, empty, argument list;
+  - `m` cannot be polymorphic;
+  - it must be possible to derive a fully-defined type `U` from `S` by inferring any unknown type parameters of `C`.
 
-Additionally (the following are implementation restrictions):
-  - `S`'s [erases](03-types.html#type-erasure) to a trait (this allows for a more efficient encoding when the JVM is the underlying platform);
-  - the class of `S` must not be `@specialized`.
+Finally, we impose some implementation restrictions (these may be lifted in future releases):
+  - `C` must not be nested or local (it must not capture its environment, as that results in a zero-argument constructor)
+  - `C`'s constructor must not have an implicit argument list (this simplifies type inference);
+  - `C` must not declare a self type (this simplifies type inference);
+  - `C` must not be `@specialized`.
 
 ### Method Conversions
 

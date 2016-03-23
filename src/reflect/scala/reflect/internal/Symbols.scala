@@ -2000,7 +2000,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def thisSym: Symbol = this
 
-    def hasSelfType = thisSym.tpeHK != this.tpeHK
+    def hasSelfType = (thisSym ne this) && (typeOfThis.typeConstructor ne typeConstructor)
 
     /** The type of `this` in a class, or else the type of the symbol itself. */
     def typeOfThis = thisSym.tpe_*

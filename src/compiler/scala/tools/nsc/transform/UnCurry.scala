@@ -74,7 +74,30 @@ abstract class UnCurry extends InfoTransform
     private val newMembers        = mutable.Map[Symbol, mutable.Buffer[Tree]]()
 
     // Expand `Function`s in constructors to class instance creation (SI-6666, SI-8363)
-    private def mustExpandFunction = forceExpandFunction || inConstructorFlag != 0
+    // We use Java's LambdaMetaFactory (LMF), which requires an interface for the sam's owner
+    private def mustExpandFunction(fun: Function) = forceExpandFunction || {
+      // (TODO: Can't use isInterface, yet, as it hasn't been updated for the new trait encoding)
+      val canUseLambdaMetaFactory = inConstructorFlag == 0 && (fun.attachments.get[SAMFunction].map(_.samTp) match {
+        case Some(userDefinedSamTp) =>
+          val tpSym = erasure.javaErasure(userDefinedSamTp).typeSymbol // we only care about what ends up in the bytecode
+          (
+            // LMF only supports interfaces
+            (tpSym.isJavaInterface || tpSym.isTrait)
+            // Unless tpSym.isStatic, even if the constructor is zero-argument now, it may acquire arguments in explicit outer or lambdalift.
+            // This is an impl restriction to simplify the decision of whether to expand the SAM during uncurry
+            // (when we don't yet know whether it will receive an outer pointer in explicit outer or whether lambda lift will add proxies for captures).
+            // When we delay sam expansion until after explicit outer & lambda lift, we could decide there whether
+            // to expand sam at compile time or use LMF, and this implementation restriction could be lifted.
+            && tpSym.isStatic
+            // impl restriction -- we currently use the boxed apply, so not really useful to allow specialized sam types (https://github.com/scala/scala/pull/4971#issuecomment-198119167)
+            && !tpSym.isSpecialized
+          )
+
+        case _ => true // our built-in FunctionN's are suitable for LambdaMetaFactory by construction
+      })
+
+      !canUseLambdaMetaFactory
+    }
 
     /** Add a new synthetic member for `currentOwner` */
     private def addNewMember(t: Tree): Unit =
@@ -191,7 +214,7 @@ abstract class UnCurry extends InfoTransform
     def transformFunction(fun: Function): Tree =
       // Undo eta expansion for parameterless and nullary methods
       if (fun.vparams.isEmpty && isByNameRef(fun.body)) { noApply += fun.body ; fun.body }
-      else if (mustExpandFunction) gen.expandFunction(localTyper)(fun, inConstructorFlag)
+      else if (mustExpandFunction(fun)) gen.expandFunction(localTyper)(fun, inConstructorFlag)
       else {
         // method definition with the same arguments, return type, and body as the original lambda
         val liftedMethod = gen.mkLiftedFunctionBodyMethod(localTyper)(fun.symbol.owner, fun)
