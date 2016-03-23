@@ -105,7 +105,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   // that are turned private by typedBlock
   private final val SYNTHETIC_PRIVATE = TRANS_FLAG
 
-  private final val InterpolatorCodeRegex  = """\$\{.*?\}""".r
+  private final val InterpolatorCodeRegex  = """\$\{\s*(.*?)\s*\}""".r
   private final val InterpolatorIdentRegex = """\$[$\w]+""".r // note that \w doesn't include $
 
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with PatternTyper with TyperContextErrors {
@@ -5206,17 +5206,23 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case MethodType(p :: _, _)   => p.isImplicit            // implicit method requires no args
           case _                       => true                    // catches all others including NullaryMethodType
         }
-        def isPlausible(m: Symbol) = m.alternatives exists (m => requiresNoArgs(m.info))
+        def isPlausible(m: Symbol) = !m.isPackage && m.alternatives.exists(x => requiresNoArgs(x.info))
 
         def maybeWarn(s: String): Unit = {
           def warn(message: String)         = context.warning(lit.pos, s"possible missing interpolator: $message")
           def suspiciousSym(name: TermName) = context.lookupSymbol(name, _ => true).symbol
-          def suspiciousExpr                = InterpolatorCodeRegex findFirstIn s
+          val suspiciousExprs               = InterpolatorCodeRegex findAllMatchIn s
           def suspiciousIdents              = InterpolatorIdentRegex findAllIn s map (s => suspiciousSym(TermName(s drop 1)))
+          def isCheapIdent(expr: String)    = (Character.isJavaIdentifierStart(expr.charAt(0)) &&
+                                               expr.tail.forall(Character.isJavaIdentifierPart))
+          def warnableExpr(expr: String)    = !expr.isEmpty && (!isCheapIdent(expr) || isPlausible(suspiciousSym(TermName(expr))))
 
-          if (suspiciousExpr.nonEmpty)
-            warn("detected an interpolated expression") // "${...}"
-          else
+          if (suspiciousExprs.nonEmpty) {
+            val exprs = (suspiciousExprs map (_ group 1)).toList
+            // short-circuit on leading ${}
+            if (!exprs.head.isEmpty && exprs.exists(warnableExpr))
+              warn("detected an interpolated expression") // "${...}"
+          } else
             suspiciousIdents find isPlausible foreach (sym => warn(s"detected interpolated identifier `$$${sym.name}`")) // "$id"
         }
         lit match {
