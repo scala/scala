@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package backend
 
-import util.ClassPath
+import util.{ClassFileLookup, ClassPath}
 import io.AbstractFile
 import scala.tools.nsc.classpath.FlatClassPath
 
@@ -23,7 +23,7 @@ trait Platform {
   private[nsc] def flatClassPath: FlatClassPath
 
   /** Update classpath with a substitution that maps entries to entries */
-  def updateClassPath(subst: Map[ClassPath[AbstractFile], ClassPath[AbstractFile]])
+  def updateClassPath(subst: Map[ClassFileLookup[AbstractFile], ClassFileLookup[AbstractFile]])
 
   /** Any platform-specific phases. */
   def platformPhases: List[SubComponent]

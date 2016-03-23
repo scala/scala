@@ -4,7 +4,6 @@
 package scala.tools.nsc.classpath
 
 import java.io.File
-import java.io.FileFilter
 import java.net.URL
 import scala.reflect.io.AbstractFile
 import scala.reflect.io.PlainFile
@@ -12,97 +11,101 @@ import scala.tools.nsc.util.ClassRepresentation
 import FileUtils._
 
 /**
- * A trait allowing to look for classpath entries of given type in directories.
- * It provides common logic for classes handling class and source files.
+ * A trait allowing to look for classpath entries in directories. It provides common logic for
+ * classes handling class and source files.
  * It makes use of the fact that in the case of nested directories it's easy to find a file
  * when we have a name of a package.
+ * It abstracts over the file representation to work with both JFile and AbstractFile.
  */
-trait DirectoryFileLookup[FileEntryType <: ClassRepClassPathEntry] extends FlatClassPath {
-  val dir: File
-  assert(dir != null, "Directory file in DirectoryFileLookup cannot be null")
+trait DirectoryLookup[FileEntryType <: ClassRepClassPathEntry] extends FlatClassPath {
+  type F
 
-  override def asURLs: Seq[URL] = Seq(dir.toURI.toURL)
-  override def asClassPathStrings: Seq[String] = Seq(dir.getPath)
+  val dir: F
 
-  import FlatClassPath.RootPackage
-  private def getDirectory(forPackage: String): Option[File] = {
-    if (forPackage == RootPackage) {
+  protected def emptyFiles: Array[F] // avoids reifying ClassTag[F]
+  protected def getSubDir(dirName: String): Option[F]
+  protected def listChildren(dir: F, filter: Option[F => Boolean] = None): Array[F]
+  protected def getName(f: F): String
+  protected def toAbstractFile(f: F): AbstractFile
+  protected def isPackage(f: F): Boolean
+
+  protected def createFileEntry(file: AbstractFile): FileEntryType
+  protected def isMatchingFile(f: F): Boolean
+
+  private def getDirectory(forPackage: String): Option[F] = {
+    if (forPackage == FlatClassPath.RootPackage) {
       Some(dir)
     } else {
       val packageDirName = FileUtils.dirPath(forPackage)
-      val packageDir = new File(dir, packageDirName)
-      if (packageDir.exists && packageDir.isDirectory) {
-        Some(packageDir)
-      } else None
+      getSubDir(packageDirName)
     }
   }
 
-  override private[nsc] def packages(inPackage: String): Seq[PackageEntry] = {
+  private[nsc] def packages(inPackage: String): Seq[PackageEntry] = {
     val dirForPackage = getDirectory(inPackage)
-    val nestedDirs: Array[File] = dirForPackage match {
-      case None => Array.empty
-      case Some(directory) => directory.listFiles(DirectoryFileLookup.packageDirectoryFileFilter)
+    val nestedDirs: Array[F] = dirForPackage match {
+      case None => emptyFiles
+      case Some(directory) => listChildren(directory, Some(isPackage))
     }
     val prefix = PackageNameUtils.packagePrefix(inPackage)
-    val entries = nestedDirs map { file =>
-      PackageEntryImpl(prefix + file.getName)
-    }
-    entries
+    nestedDirs.map(f => PackageEntryImpl(prefix + getName(f)))
   }
 
   protected def files(inPackage: String): Seq[FileEntryType] = {
     val dirForPackage = getDirectory(inPackage)
-    val files: Array[File] = dirForPackage match {
-      case None => Array.empty
-      case Some(directory) => directory.listFiles(fileFilter)
+    val files: Array[F] = dirForPackage match {
+      case None => emptyFiles
+      case Some(directory) => listChildren(directory, Some(isMatchingFile))
     }
-    val entries = files map { file =>
-      val wrappedFile = new scala.reflect.io.File(file)
-      createFileEntry(new PlainFile(wrappedFile))
-    }
-    entries
+    files.map(f => createFileEntry(toAbstractFile(f)))
   }
 
-  override private[nsc] def list(inPackage: String): FlatClassPathEntries = {
+  private[nsc] def list(inPackage: String): FlatClassPathEntries = {
     val dirForPackage = getDirectory(inPackage)
-    val files: Array[File] = dirForPackage match {
-      case None => Array.empty
-      case Some(directory) => directory.listFiles()
+    val files: Array[F] = dirForPackage match {
+      case None => emptyFiles
+      case Some(directory) => listChildren(directory)
     }
     val packagePrefix = PackageNameUtils.packagePrefix(inPackage)
     val packageBuf = collection.mutable.ArrayBuffer.empty[PackageEntry]
     val fileBuf = collection.mutable.ArrayBuffer.empty[FileEntryType]
     for (file <- files) {
-      if (file.isPackage) {
-        val pkgEntry = PackageEntryImpl(packagePrefix + file.getName)
-        packageBuf += pkgEntry
-      } else if (fileFilter.accept(file)) {
-        val wrappedFile = new scala.reflect.io.File(file)
-        val abstractFile = new PlainFile(wrappedFile)
-        fileBuf += createFileEntry(abstractFile)
-      }
+      if (isPackage(file))
+        packageBuf += PackageEntryImpl(packagePrefix + getName(file))
+      else if (isMatchingFile(file))
+        fileBuf += createFileEntry(toAbstractFile(file))
     }
     FlatClassPathEntries(packageBuf, fileBuf)
   }
-
-  protected def createFileEntry(file: AbstractFile): FileEntryType
-  protected def fileFilter: FileFilter
 }
 
-object DirectoryFileLookup {
+trait JFileDirectoryLookup[FileEntryType <: ClassRepClassPathEntry] extends DirectoryLookup[FileEntryType] {
+  type F = File
 
-  private[classpath] object packageDirectoryFileFilter extends FileFilter {
-    override def accept(pathname: File): Boolean = pathname.isPackage
+  protected def emptyFiles: Array[File] = Array.empty
+  protected def getSubDir(packageDirName: String): Option[File] = {
+    val packageDir = new File(dir, packageDirName)
+    if (packageDir.exists && packageDir.isDirectory) Some(packageDir)
+    else None
   }
+  protected def listChildren(dir: File, filter: Option[File => Boolean]): Array[File] = filter match {
+    case Some(f) => dir.listFiles(mkFileFilter(f))
+    case None => dir.listFiles()
+  }
+  protected def getName(f: File): String = f.getName
+  protected def toAbstractFile(f: File): AbstractFile = new PlainFile(new scala.reflect.io.File(f))
+  protected def isPackage(f: File): Boolean = f.isPackage
+
+  assert(dir != null, "Directory file in DirectoryFileLookup cannot be null")
+
+  def asURLs: Seq[URL] = Seq(dir.toURI.toURL)
+  def asClassPathStrings: Seq[String] = Seq(dir.getPath)
 }
 
-case class DirectoryFlatClassPath(dir: File)
-  extends DirectoryFileLookup[ClassFileEntryImpl]
-  with NoSourcePaths {
-
+case class DirectoryFlatClassPath(dir: File) extends JFileDirectoryLookup[ClassFileEntryImpl] with NoSourcePaths {
   override def findClass(className: String): Option[ClassRepresentation[AbstractFile]] = findClassFile(className) map ClassFileEntryImpl
 
-  override def findClassFile(className: String): Option[AbstractFile] = {
+  def findClassFile(className: String): Option[AbstractFile] = {
     val relativePath = FileUtils.dirPath(className)
     val classFile = new File(s"$dir/$relativePath.class")
     if (classFile.exists) {
@@ -112,31 +115,19 @@ case class DirectoryFlatClassPath(dir: File)
     } else None
   }
 
-  override protected def createFileEntry(file: AbstractFile): ClassFileEntryImpl = ClassFileEntryImpl(file)
-  override protected def fileFilter: FileFilter = DirectoryFlatClassPath.classFileFilter
+  protected def createFileEntry(file: AbstractFile): ClassFileEntryImpl = ClassFileEntryImpl(file)
+  protected def isMatchingFile(f: File): Boolean = f.isClass
 
-  override private[nsc] def classes(inPackage: String): Seq[ClassFileEntry] = files(inPackage)
+  private[nsc] def classes(inPackage: String): Seq[ClassFileEntry] = files(inPackage)
 }
 
-object DirectoryFlatClassPath {
+case class DirectoryFlatSourcePath(dir: File) extends JFileDirectoryLookup[SourceFileEntryImpl] with NoClassPaths {
+  def asSourcePathString: String = asClassPathString
 
-  private val classFileFilter = new FileFilter {
-    override def accept(pathname: File): Boolean = pathname.isClass
-  }
-}
+  protected def createFileEntry(file: AbstractFile): SourceFileEntryImpl = SourceFileEntryImpl(file)
+  protected def isMatchingFile(f: File): Boolean = endsScalaOrJava(f.getName)
 
-case class DirectoryFlatSourcePath(dir: File)
-  extends DirectoryFileLookup[SourceFileEntryImpl]
-  with NoClassPaths {
-
-  override def asSourcePathString: String = asClassPathString
-
-  override protected def createFileEntry(file: AbstractFile): SourceFileEntryImpl = SourceFileEntryImpl(file)
-  override protected def fileFilter: FileFilter = DirectoryFlatSourcePath.sourceFileFilter
-
-  override def findClass(className: String): Option[ClassRepresentation[AbstractFile]] = {
-    findSourceFile(className) map SourceFileEntryImpl
-  }
+  override def findClass(className: String): Option[ClassRepresentation[AbstractFile]] = findSourceFile(className) map SourceFileEntryImpl
 
   private def findSourceFile(className: String): Option[AbstractFile] = {
     val relativePath = FileUtils.dirPath(className)
@@ -151,12 +142,5 @@ case class DirectoryFlatSourcePath(dir: File)
     }
   }
 
-  override private[nsc] def sources(inPackage: String): Seq[SourceFileEntry] = files(inPackage)
-}
-
-object DirectoryFlatSourcePath {
-
-  private val sourceFileFilter = new FileFilter {
-    override def accept(pathname: File): Boolean = endsScalaOrJava(pathname.getName)
-  }
+  private[nsc] def sources(inPackage: String): Seq[SourceFileEntry] = files(inPackage)
 }

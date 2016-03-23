@@ -633,10 +633,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       }
     }
     def alreadyDefined(clsName: String) = intp.classLoader.tryToLoadClass(clsName).isDefined
-    val exists = entries.filter(_.hasExtension("class")).map(classNameOf).exists(alreadyDefined)
+    val existingClass = entries.filter(_.hasExtension("class")).map(classNameOf).find(alreadyDefined)
 
     if (!f.exists) echo(s"The path '$f' doesn't seem to exist.")
-    else if (exists) echo(s"The path '$f' cannot be loaded, because existing classpath entries conflict.") // TODO tell me which one
+    else if (existingClass.nonEmpty) echo(s"The path '$f' cannot be loaded, it contains a classfile that already exists on the classpath: ${existingClass.get}")
     else {
       addedClasspath = ClassPath.join(addedClasspath, f.path)
       intp.addUrlsToClassPath(f.toURI.toURL)

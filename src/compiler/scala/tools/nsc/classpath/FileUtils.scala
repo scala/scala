@@ -3,7 +3,7 @@
  */
 package scala.tools.nsc.classpath
 
-import java.io.{ File => JFile }
+import java.io.{File => JFile, FileFilter}
 import java.net.URL
 import scala.reflect.internal.FatalError
 import scala.reflect.io.AbstractFile
@@ -65,4 +65,8 @@ object FileUtils {
   // because then some tests in partest don't pass
   private def mayBeValidPackage(dirName: String): Boolean =
     (dirName != "META-INF") && (dirName != "") && (dirName.charAt(0) != '.')
+
+  def mkFileFilter(f: JFile => Boolean) = new FileFilter {
+    def accept(pathname: JFile): Boolean = f(pathname)
+  }
 }

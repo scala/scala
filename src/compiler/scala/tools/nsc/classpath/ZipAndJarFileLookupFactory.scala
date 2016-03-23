@@ -19,7 +19,6 @@ import FileUtils._
  * when there are a lot of projects having a lot of common dependencies.
  */
 sealed trait ZipAndJarFileLookupFactory {
-
   private val cache = collection.mutable.Map.empty[AbstractFile, FlatClassPath]
 
   def create(zipFile: AbstractFile, settings: Settings): FlatClassPath = {
@@ -44,7 +43,6 @@ sealed trait ZipAndJarFileLookupFactory {
  * It should be the only way of creating them as it provides caching.
  */
 object ZipAndJarFlatClassPathFactory extends ZipAndJarFileLookupFactory {
-
   private case class ZipArchiveFlatClassPath(zipFile: File)
     extends ZipArchiveFileLookup[ClassFileEntryImpl]
     with NoSourcePaths {
@@ -67,10 +65,7 @@ object ZipAndJarFlatClassPathFactory extends ZipAndJarFileLookupFactory {
    * with a particularly prepared scala-library.jar. It should have all classes listed in the manifest like e.g. this entry:
    * Name: scala/Function2$mcFJD$sp.class
    */
-  private case class ManifestResourcesFlatClassPath(file: ManifestResources)
-    extends FlatClassPath
-    with NoSourcePaths {
-
+  private case class ManifestResourcesFlatClassPath(file: ManifestResources) extends FlatClassPath with NoSourcePaths {
     override def findClassFile(className: String): Option[AbstractFile] = {
       val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
       classes(pkg).find(_.name == simpleClassName).map(_.file)
@@ -163,7 +158,6 @@ object ZipAndJarFlatClassPathFactory extends ZipAndJarFileLookupFactory {
  * It should be the only way of creating them as it provides caching.
  */
 object ZipAndJarFlatSourcePathFactory extends ZipAndJarFileLookupFactory {
-
   private case class ZipArchiveFlatSourcePath(zipFile: File)
     extends ZipArchiveFileLookup[SourceFileEntryImpl]
     with NoClassPaths {

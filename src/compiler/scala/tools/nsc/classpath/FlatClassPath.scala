@@ -28,11 +28,8 @@ trait FlatClassPath extends ClassFileLookup[AbstractFile] {
   override def findClass(className: String): Option[ClassRepresentation[AbstractFile]] = {
     val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
 
-    val foundClassFromClassFiles = classes(pkg)
-      .find(_.name == simpleClassName)
-
-    def findClassInSources = sources(pkg)
-      .find(_.name == simpleClassName)
+    val foundClassFromClassFiles = classes(pkg).find(_.name == simpleClassName)
+    def findClassInSources = sources(pkg).find(_.name == simpleClassName)
 
     foundClassFromClassFiles orElse findClassInSources
   }
@@ -50,7 +47,7 @@ case class FlatClassPathEntries(packages: Seq[PackageEntry], classesAndSources: 
 object FlatClassPathEntries {
   import scala.language.implicitConversions
   // to have working unzip method
-  implicit def entry2Tuple(entry: FlatClassPathEntries) = (entry.packages, entry.classesAndSources)
+  implicit def entry2Tuple(entry: FlatClassPathEntries): (Seq[PackageEntry], Seq[ClassRepClassPathEntry]) = (entry.packages, entry.classesAndSources)
 }
 
 sealed trait ClassRepClassPathEntry extends ClassRepresentation[AbstractFile]
