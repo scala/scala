@@ -641,8 +641,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               }
               argsSize match {
                 case 1 => bc newarray elemKind
-                case _ =>
-                  val descr = ('[' * argsSize) + elemKind.descriptor // denotes the same as: arrayN(elemKind, argsSize).descriptor
+                case _ => // this is currently dead code is Scalac, unlike in Dotty
+                  val descr = ("[" * argsSize) + elemKind.descriptor // denotes the same as: arrayN(elemKind, argsSize).descriptor
                   mnode.visitMultiANewArrayInsn(descr, argsSize)
               }
 
