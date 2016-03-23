@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
-  <component name="NewModuleRootManager" inherit-compiler-output="true">
+  <component name="NewModuleRootManager" inherit-compiler-output="false">
+    <output url="file://$MODULE_DIR$/../../build/quick/classes/library" />
+    <output-test url="file://$MODULE_DIR$/../../out/test/library" />
     <exclude-output />
     <content url="file://$MODULE_DIR$/../library">
-      <sourceFolder url="file://$MODULE_DIR$/../library/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../library" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
