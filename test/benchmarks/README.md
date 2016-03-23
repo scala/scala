@@ -44,10 +44,11 @@ To show it for _all_ methods, add `-XX:+PrintAssembly`.
 
 ## useful reading
 * [OpenJDK advice on microbenchmarks](https://wiki.openjdk.java.net/display/HotSpot/MicroBenchmarks)
-* "[Measuring performance](http://docs.scala-lang.org/overviews/parallel-collections/performance.html)" of Scala parallel collections
 * Brian Goetz's "Java theory and practice" articles:
   * "[Dynamic compilation and performance measurement](http://www.ibm.com/developerworks/java/library/j-jtp12214/)"
   * "[Anatomy of a flawed benchmark](http://www.ibm.com/developerworks/java/library/j-jtp02225/)"
+* [Doug Lea's JSR 166 benchmarks](http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/test/loops/)
+* "[Measuring performance](http://docs.scala-lang.org/overviews/parallel-collections/performance.html)" of Scala parallel collections
 
 ## legacy frameworks
 
