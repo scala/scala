@@ -19,6 +19,10 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 private[concurrent] trait Promise[T] extends scala.concurrent.Promise[T] with scala.concurrent.Future[T] {
   def future: this.type = this
+  override def toString: String = value match {
+    case Some(result) => "Future("+result+")"
+    case None => "Future(<not completed>)"
+  }
 }
 
 /* Precondition: `executor` is prepared, i.e., `executor` has been returned from invocation of `prepare` on some other `ExecutionContext`.
