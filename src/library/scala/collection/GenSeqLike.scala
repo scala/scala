@@ -58,6 +58,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *  Note: `xs.length` and `xs.size` yield the same result.
    *
    *  @return     the number of elements in this $coll.
+   *  @throws     IllegalArgumentException if the length of the sequence cannot be represented in an `Int`, for example, `(-1 to Int.MaxValue).length`.
    */
   def length: Int
 
