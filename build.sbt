@@ -801,7 +801,11 @@ addCommandAlias("scalap",   "scalap/compile:runMain              scala.tools.sca
 
 lazy val intellij = taskKey[Unit]("Update the library classpaths in the IntelliJ project files.")
 
-def moduleDeps(name: String) = Def.taskDyn { Def.task((name, (externalDependencyClasspath in Compile in LocalProject(name)).value.map(_.data))) }
+def moduleDeps(p: Project) = (externalDependencyClasspath in Compile in p).map(a => (p.id, a.map(_.data)))
+
+// aliases to projects to prevent name clashes
+def compilerP = compiler
+def testP = test
 
 intellij := {
   import xml._
@@ -814,28 +818,28 @@ intellij := {
     val buildModule = ("scala-build", scalabuild.BuildInfo.buildClasspath.split(":").toSeq.map(new File(_)))
     // `sbt projects` lists all modules in the build
     buildModule :: List(
-      moduleDeps("compiler").value,
-      // moduleDeps("dist").value,                // No sources, therefore no module in IntelliJ
-      moduleDeps("interactive").value,
-      moduleDeps("junit").value,
-      moduleDeps("library").value,
-      // moduleDeps("library-all").value,         // No sources
-      moduleDeps("manual").value,
-      moduleDeps("partest-extras").value,
-      moduleDeps("partest-javaagent").value,
-      moduleDeps("reflect").value,
-      moduleDeps("repl").value,
-      moduleDeps("repl-jline").value,
-      // moduleDeps("repl-jline-embedded").value, // No sources
-      // moduleDeps("root").value,                // No sources
-      // moduleDeps("scala-dist").value,          // No sources
-      moduleDeps("scaladoc").value,
-      moduleDeps("scalap").value,
-      moduleDeps("test").value)
+      moduleDeps(compilerP).value,
+      // moduleDeps(dist).value,                // No sources, therefore no module in IntelliJ
+      moduleDeps(interactive).value,
+      moduleDeps(junit).value,
+      moduleDeps(library).value,
+      // moduleDeps(libraryAll).value,          // No sources
+      moduleDeps(manual).value,
+      moduleDeps(partestExtras).value,
+      moduleDeps(partestJavaAgent).value,
+      moduleDeps(reflect).value,
+      moduleDeps(repl).value,
+      moduleDeps(replJline).value,
+      // moduleDeps(replJlineEmbedded).value,   // No sources
+      // moduleDeps(root).value,                // No sources
+      // moduleDeps(scalaDist).value,           // No sources
+      moduleDeps(scaladoc).value,
+      moduleDeps(scalap).value,
+      moduleDeps(testP).value)
   }
 
   def moduleDep(name: String, jars: Seq[File]) = {
-    val entries = jars.map(f => s"""        <root url="jar://${f.getCanonicalPath}!/" />""").mkString("\n")
+    val entries = jars.map(f => s"""        <root url="jar://${f.toURI.getRawPath}!/" />""").mkString("\n")
     s"""|    <library name="${name}-deps">
         |      <CLASSES>
         |$entries
@@ -846,7 +850,7 @@ intellij := {
   }
 
   def starrDep(jars: Seq[File]) = {
-    val entries = jars.map(f => s"""          <root url="file://${f.getCanonicalPath}" />""").mkString("\n")
+    val entries = jars.map(f => s"""          <root url="file://${f.toURI.getRawPath}" />""").mkString("\n")
     s"""|    <library name="starr" type="Scala">
         |      <properties>
         |        <option name="languageLevel" value="Scala_2_12" />
@@ -881,7 +885,7 @@ intellij := {
     }
     object trans extends RuleTransformer(rule)
     val r = trans(data)
-    if (!rule.transformed) error(s"Replacing library classpath for $libName failed, no existing library found.")
+    if (!rule.transformed) sys.error(s"Replacing library classpath for $libName failed, no existing library found.")
     r
   }
 
@@ -889,13 +893,13 @@ intellij := {
 
   var continue = false
   if (!ipr.exists) {
-    scala.Console.print(s"Could not find src/intellij/scala.ipr. Create new project files from src/intellij/*.SAMPLE (y/n)? ")
+    scala.Console.print(s"Could not find src/intellij/scala.ipr. Create new project files from src/intellij/*.SAMPLE (y/N)? ")
     if (scala.Console.readLine() == "y") {
       intellijCreateFromSample((baseDirectory in ThisBuild).value)
       continue = true
     }
   } else {
-    scala.Console.print("Update library classpaths in the current src/intellij/scala.ipr (y/n)? ")
+    scala.Console.print("Update library classpaths in the current src/intellij/scala.ipr (y/N)? ")
     continue = scala.Console.readLine() == "y"
   }
   if (continue) {
@@ -909,7 +913,7 @@ intellij := {
         else replaceLibrary(res, s"$modName-deps", None, moduleDep(modName, jars))
     })
 
-    XML.save(ipr.getCanonicalPath, newModules)
+    XML.save(ipr.getAbsolutePath, newModules)
   } else {
     s.log.info("Aborting.")
   }
@@ -919,7 +923,7 @@ lazy val intellijFromSample = taskKey[Unit]("Create fresh IntelliJ project files
 
 intellijFromSample := {
   val s = streams.value
-  scala.Console.print(s"Create new project files from src/intellij/*.SAMPLE (y/n)? ")
+  scala.Console.print(s"Create new project files from src/intellij/*.SAMPLE (y/N)? ")
   if (scala.Console.readLine() == "y")
     intellijCreateFromSample((baseDirectory in ThisBuild).value)
   else
@@ -928,7 +932,7 @@ intellijFromSample := {
 
 def intellijCreateFromSample(basedir: File): Unit = {
   val files = basedir / "src/intellij" * "*.SAMPLE"
-  val copies = files.get.map(f => (f, new File(f.getCanonicalPath.stripSuffix(".SAMPLE"))))
+  val copies = files.get.map(f => (f, new File(f.getAbsolutePath.stripSuffix(".SAMPLE"))))
   IO.copy(copies, overwrite = true)
 }
 
@@ -936,13 +940,13 @@ lazy val intellijToSample = taskKey[Unit]("Update src/intellij/*.SAMPLE using th
 
 intellijToSample := {
   val s = streams.value
-  scala.Console.print(s"Update src/intellij/*.SAMPLE using the current IntelliJ project files (y/n)? ")
+  scala.Console.print(s"Update src/intellij/*.SAMPLE using the current IntelliJ project files (y/N)? ")
   if (scala.Console.readLine() == "y") {
     val basedir = (baseDirectory in ThisBuild).value
     val existing = basedir / "src/intellij" * "*.SAMPLE"
     IO.delete(existing.get)
     val current = basedir / "src/intellij" * ("*.iml" || "*.ipr")
-    val copies = current.get.map(f => (f, new File(f.getCanonicalPath + ".SAMPLE")))
+    val copies = current.get.map(f => (f, new File(f.getAbsolutePath + ".SAMPLE")))
     IO.copy(copies)
   } else
     s.log.info("Aborting.")
