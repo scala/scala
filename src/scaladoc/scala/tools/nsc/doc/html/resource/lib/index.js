@@ -21,6 +21,20 @@ var Index = {};
     }
 })(Index);
 
+/** Find query string from URL */
+var QueryString = function(key) {
+    if (QueryString.map === undefined) { // only calc once
+        QueryString.map = {};
+        var keyVals = window.location.search.split("?").pop().split("&");
+        keyVals.forEach(function(elem) {
+            var pair = elem.split("=");
+            if (pair.length == 2) QueryString.map[pair[0]] = pair[1];
+        });
+    }
+
+    return QueryString.map[key];
+};
+
 $(document).ready(function() {
     // Clicking #doc-title returns the user to the root package
     $("#doc-title").click(function() { document.location = toRoot + "index.html" });
@@ -39,6 +53,11 @@ $(document).ready(function() {
         else
             $("#textfilter > .input > .clear").hide();
     });
+
+    if (QueryString("search") !== undefined) {
+        $("#index-input").val(QueryString("search"));
+        searchAll();
+    }
 });
 
 /* Handles all key presses while scrolling around with keyboard shortcuts in search results */
@@ -509,6 +528,11 @@ function searchAll() {
         $("#search > span#doc-title").show();
         return;
     }
+
+    // Replace ?search=X with current search string if not hosted locally on Chrome
+    try {
+        window.history.replaceState({}, "", "?search=" + searchStr);
+    } catch(e) {}
 
     $("div#results-content > span.search-text").remove();
 
