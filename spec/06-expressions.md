@@ -1345,17 +1345,6 @@ If $e$ has some value type and the expected type is `Unit`,
 $e$ is converted to the expected type by embedding it in the
 term `{ $e$; () }`.
 
-###### View Application
-If none of the previous conversions applies, and $e$'s type
-does not conform to the expected type $\mathit{pt}$, it is attempted to convert
-$e$ to the expected type with a [view](07-implicits.html#views).
-
-###### Selection on `Dynamic`
-If none of the previous conversions applies, and $e$ is a prefix
-of a selection $e.x$, and $e$'s type conforms to class `scala.Dynamic`,
-then the selection is rewritten according to the rules for
-[dynamic member selection](#dynamic-member-selection).
-
 ###### SAM conversion
 An expression `(p1, ..., pN) => body` of function type `(T1, ..., TN) => T` is sam-convertible to the expected type `S` if the following holds:
   - the class `C` of `S` declares an abstract method `m` with signature `(p1: A1, ..., pN: AN): R`;
@@ -1378,6 +1367,17 @@ Finally, we impose some implementation restrictions (these may be lifted in futu
   - `C`'s constructor must not have an implicit argument list (this simplifies type inference);
   - `C` must not declare a self type (this simplifies type inference);
   - `C` must not be `@specialized`.
+
+###### View Application
+If none of the previous conversions applies, and $e$'s type
+does not conform to the expected type $\mathit{pt}$, it is attempted to convert
+$e$ to the expected type with a [view](07-implicits.html#views).
+
+###### Selection on `Dynamic`
+If none of the previous conversions applies, and $e$ is a prefix
+of a selection $e.x$, and $e$'s type conforms to class `scala.Dynamic`,
+then the selection is rewritten according to the rules for
+[dynamic member selection](#dynamic-member-selection).
 
 ### Method Conversions
 
