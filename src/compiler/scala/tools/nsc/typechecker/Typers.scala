@@ -1186,7 +1186,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val savedUndetparams = context.undetparams
       silent(_.instantiate(tree, mode, UnitTpe)) orElse { _ =>
         context.undetparams = savedUndetparams
-        val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(Constant(()))))
+        val valueDiscard = atPos(tree.pos)(gen.mkUnitBlock(instantiate(tree, mode, WildcardType)))
         typed(valueDiscard, mode, UnitTpe)
       }
     }
