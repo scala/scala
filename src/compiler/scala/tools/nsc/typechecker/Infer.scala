@@ -1220,7 +1220,7 @@ trait Infer extends Checkable {
     }
 
     def inferModulePattern(pat: Tree, pt: Type) =
-      if (!(pat.tpe <:< pt)) {
+      if ((pat.symbol ne null) && pat.symbol.isModule && !(pat.tpe <:< pt)) {
         val ptparams = freeTypeParamsOfTerms(pt)
         debuglog("free type params (2) = " + ptparams)
         val ptvars = ptparams map freshVar

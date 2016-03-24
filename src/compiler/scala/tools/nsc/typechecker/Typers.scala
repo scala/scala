@@ -807,7 +807,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  (11) Widen numeric literals to their expected type, if necessary
      *  (12) When in mode EXPRmode, convert E to { E; () } if expected type is scala.Unit.
      *  (13) When in mode EXPRmode, apply AnnotationChecker conversion if expected type is annotated.
-     *  (14) When in mode EXPRmode, apply a view
+     *  (14) When in mode EXPRmode, do SAM conversion
+     *  (15) When in mode EXPRmode, apply a view
      *  If all this fails, error
      */
     protected def adapt(tree: Tree, mode: Mode, pt: Type, original: Tree = EmptyTree): Tree = {
@@ -1019,77 +1020,69 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      def fallbackAfterVanillaAdapt(): Tree = {
-        def isPopulatedPattern = {
-          if ((tree.symbol ne null) && tree.symbol.isModule)
-            inferModulePattern(tree, pt)
-
-          isPopulated(tree.tpe, approximateAbstracts(pt))
+      def adaptExprNotFunMode(): Tree = {
+        def lastTry(err: AbsTypeError = null): Tree = {
+          debuglog("error tree = " + tree)
+          if (settings.debug && settings.explaintypes) explainTypes(tree.tpe, pt)
+          if (err ne null) context.issue(err)
+          if (tree.tpe.isErroneous || pt.isErroneous) setError(tree)
+          else adaptMismatchedSkolems()
         }
-        if (mode.inPatternMode && isPopulatedPattern)
-          return tree
 
-        val tree1 = constfold(tree, pt) // (10) (11)
-        if (tree1.tpe <:< pt)
-          return adapt(tree1, mode, pt, original)
+        // TODO: should we even get to fallbackAfterVanillaAdapt for an ill-typed tree?
+        if (mode.typingExprNotFun && !tree.tpe.isErroneous) {
+          @inline def tpdPos(transformed: Tree) = typedPos(tree.pos, mode, pt)(transformed)
+          @inline def tpd(transformed: Tree)    = typed(transformed, mode, pt)
 
-        if (mode.typingExprNotFun) {
-          // The <: Any requirement inhibits attempts to adapt continuation types
-          // to non-continuation types.
-          if (tree.tpe <:< AnyTpe) pt.dealias match {
-            case TypeRef(_, UnitClass, _) => // (12)
-              if (!isPastTyper && settings.warnValueDiscard)
-                context.warning(tree.pos, "discarded non-Unit value")
-              return typedPos(tree.pos, mode, pt)(Block(List(tree), Literal(Constant(()))))
-            case TypeRef(_, sym, _) if isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt) =>
-              if (!isPastTyper && settings.warnNumericWiden)
-                context.warning(tree.pos, "implicit numeric widening")
-              return typedPos(tree.pos, mode, pt)(Select(tree, "to" + sym.name))
+          @inline def warnValueDiscard(): Unit =
+            if (!isPastTyper && settings.warnValueDiscard) context.warning(tree.pos, "discarded non-Unit value")
+          @inline def warnNumericWiden(): Unit =
+            if (!isPastTyper && settings.warnNumericWiden) context.warning(tree.pos, "implicit numeric widening")
+
+          // The <: Any requirement inhibits attempts to adapt continuation types to non-continuation types.
+          val anyTyped = tree.tpe <:< AnyTpe
+
+          pt.dealias match {
+            case TypeRef(_, UnitClass, _) if anyTyped => // (12)
+              warnValueDiscard() ; tpdPos(gen.mkUnitBlock(tree))
+            case TypeRef(_, numValueCls, _) if anyTyped && isNumericValueClass(numValueCls) && isNumericSubType(tree.tpe, pt) => // (10) (11)
+              warnNumericWiden() ; tpdPos(Select(tree, s"to${numValueCls.name}"))
+            case dealiased if dealiased.annotations.nonEmpty && canAdaptAnnotations(tree, this, mode, pt) => // (13)
+              tpd(adaptAnnotations(tree, this, mode, pt))
             case _ =>
-          }
-          if (pt.dealias.annotations.nonEmpty && canAdaptAnnotations(tree, this, mode, pt)) // (13)
-            return typed(adaptAnnotations(tree, this, mode, pt), mode, pt)
+              if (hasUndets) instantiate(tree, mode, pt)
+              else {
+                // (14) sam conversion
+                // TODO: figure out how to avoid partially duplicating typedFunction (samMatchingFunction)
+                // Could we infer the SAM type, assign it to the tree and add the attachment,
+                // all in one fell swoop at the end of typedFunction?
+                val samAttach = inferSamType(tree, pt, mode)
 
-          if (hasUndets)
-            return instantiate(tree, mode, pt)
+                if (samAttach.samTp ne NoType) tree.setType(samAttach.samTp).updateAttachment(samAttach)
+                else {  // (15) implicit view application
+                  val coercion =
+                    if (context.implicitsEnabled) inferView(tree, tree.tpe, pt)
+                    else EmptyTree
+                  if (coercion ne EmptyTree) {
+                    def msg = s"inferred view from ${tree.tpe} to $pt via $coercion: ${coercion.tpe}"
+                    if (settings.logImplicitConv) context.echo(tree.pos, msg)
+                    else debuglog(msg)
 
-          // we know `!(tree.tpe <:< pt)`; try to remedy if there's a sam for pt
-          val sam = samMatchingFunction(tree, pt) // this implies tree.isInstanceOf[Function]
-          if (sam.exists && !tree.tpe.isErroneous) {
-            val samTree = adaptToSAM(sam, tree.asInstanceOf[Function], pt, mode)
-            if (samTree ne EmptyTree)
-              return samTree.updateAttachment(SAMFunction(pt, sam))
-          }
+                    val viewApplied = new ApplyImplicitView(coercion, List(tree)) setPos tree.pos
+                    val silentContext = context.makeImplicit(context.ambiguousErrors)
+                    val typedView = newTyper(silentContext).typed(viewApplied, mode, pt)
 
-          if (context.implicitsEnabled && !pt.isError && !tree.isErrorTyped) {
-            // (14); the condition prevents chains of views
-            inferView(tree, tree.tpe, pt) match {
-              case EmptyTree => // didn't find a view -- fall through
-              case coercion  =>
-                def msg = s"inferred view from ${tree.tpe} to $pt via $coercion: ${coercion.tpe}"
-                if (settings.logImplicitConv) context.echo(tree.pos, msg)
-                else debuglog(msg)
-
-                val silentContext = context.makeImplicit(context.ambiguousErrors)
-                val res = newTyper(silentContext).typed(
-                  new ApplyImplicitView(coercion, List(tree)) setPos tree.pos, mode, pt)
-                silentContext.reporter.firstError match {
-                  case Some(err) => context.issue(err)
-                  case None      => return res
+                    silentContext.reporter.firstError match {
+                      case None => typedView
+                      case Some(err) => lastTry(err)
+                    }
+                  } else lastTry()
                 }
-            }
+              }
           }
-        }
-
-        debuglog("error tree = " + tree)
-        if (settings.debug && settings.explaintypes)
-          explainTypes(tree.tpe, pt)
-
-        if (tree.tpe.isErroneous || pt.isErroneous)
-          setError(tree)
-        else
-          adaptMismatchedSkolems()
+        } else lastTry()
       }
+
 
       def vanillaAdapt(tree: Tree) = {
         def applyPossible = {
@@ -1124,8 +1117,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
         else if (tree.tpe <:< pt)
           tree
-        else
-          fallbackAfterVanillaAdapt()
+        else if (mode.inPatternMode && { inferModulePattern(tree, pt); isPopulated(tree.tpe, approximateAbstracts(pt)) })
+          tree
+        else {
+          val constFolded = constfold(tree, pt)
+          if (constFolded.tpe <:< pt) adapt(constFolded, mode, pt, original) // set stage for (0)
+          else adaptExprNotFunMode() // (10) -- (15)
+        }
       }
 
       // begin adapt
@@ -2751,54 +2749,63 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       *     function type is a built-in FunctionN or some SAM type
       *
       */
-    def adaptToSAM(sam: Symbol, fun: Function, pt: Type, mode: Mode): Tree = {
+    def inferSamType(fun: Tree, pt: Type, mode: Mode): SAMFunction = {
+      val sam =
+        if (fun.isInstanceOf[Function] && !isFunctionType(pt)) {
+          val sam = samOf(pt)
+          if (samMatchesFunctionBasedOnArity(sam, fun.asInstanceOf[Function].vparams)) sam
+          else NoSymbol
+        } else NoSymbol
+
       def fullyDefinedMeetsExpectedFunTp(pt: Type): Boolean = isFullyDefined(pt) && {
         val samMethType = pt memberInfo sam
         fun.tpe <:< functionType(samMethType.paramTypes, samMethType.resultType)
       }
 
-      if (fullyDefinedMeetsExpectedFunTp(pt)) fun.setType(pt)
-      else try {
-        val samClassSym = pt.typeSymbol
+      SAMFunction(
+        if (!sam.exists) NoType
+        else if (fullyDefinedMeetsExpectedFunTp(pt)) pt
+        else try {
+          val samClassSym = pt.typeSymbol
 
-        // we're trying to fully define the type arguments for this type constructor
-        val samTyCon = samClassSym.typeConstructor
+          // we're trying to fully define the type arguments for this type constructor
+          val samTyCon = samClassSym.typeConstructor
 
-        // the unknowns
-        val tparams = samClassSym.typeParams
-        // ... as typevars
-        val tvars = tparams map freshVar
+          // the unknowns
+          val tparams = samClassSym.typeParams
+          // ... as typevars
+          val tvars = tparams map freshVar
 
-        val ptVars = appliedType(samTyCon, tvars)
+          val ptVars = appliedType(samTyCon, tvars)
 
-        // carry over info from pt
-        ptVars <:< pt
+          // carry over info from pt
+          ptVars <:< pt
 
-        val samInfoWithTVars = ptVars.memberInfo(sam)
+          val samInfoWithTVars = ptVars.memberInfo(sam)
 
-        // use function type subtyping, not method type subtyping (the latter is invariant in argument types)
-        fun.tpe <:< functionType(samInfoWithTVars.paramTypes, samInfoWithTVars.finalResultType)
+          // use function type subtyping, not method type subtyping (the latter is invariant in argument types)
+          fun.tpe <:< functionType(samInfoWithTVars.paramTypes, samInfoWithTVars.finalResultType)
 
-        val variances = tparams map varianceInType(sam.info)
+          val variances = tparams map varianceInType(sam.info)
 
-        // solve constraints tracked by tvars
-        val targs = solvedTypes(tvars, tparams, variances, upper = false, lubDepth(sam.info :: Nil))
+          // solve constraints tracked by tvars
+          val targs = solvedTypes(tvars, tparams, variances, upper = false, lubDepth(sam.info :: Nil))
 
-        debuglog(s"sam infer: $pt --> ${appliedType(samTyCon, targs)} by ${fun.tpe} <:< $samInfoWithTVars --> $targs for $tparams")
+          debuglog(s"sam infer: $pt --> ${appliedType(samTyCon, targs)} by ${fun.tpe} <:< $samInfoWithTVars --> $targs for $tparams")
 
-        val ptFullyDefined = appliedType(samTyCon, targs)
-        if (ptFullyDefined <:< pt && fullyDefinedMeetsExpectedFunTp(ptFullyDefined)) {
-          debuglog(s"sam fully defined expected type: $ptFullyDefined from $pt for ${fun.tpe}")
-          fun.setType(ptFullyDefined)
-        } else {
-          debuglog(s"Could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)")
-          EmptyTree
-        }
-      } catch {
-        case e@(_: NoInstance | _: TypeError) =>
-          debuglog(s"Error during SAM synthesis: could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)\n$e")
-          EmptyTree
-      }
+          val ptFullyDefined = appliedType(samTyCon, targs)
+          if (ptFullyDefined <:< pt && fullyDefinedMeetsExpectedFunTp(ptFullyDefined)) {
+            debuglog(s"sam fully defined expected type: $ptFullyDefined from $pt for ${fun.tpe}")
+            ptFullyDefined
+          } else {
+            debuglog(s"Could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)")
+            NoType
+          }
+        } catch {
+          case e@(_: NoInstance | _: TypeError) =>
+            debuglog(s"Error during SAM synthesis: could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)\n$e")
+            NoType
+        }, sam)
     }
 
     /** Type check a function literal.

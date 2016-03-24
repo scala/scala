@@ -701,14 +701,6 @@ trait Definitions extends api.StandardDefinitions {
     def samMatchesFunctionBasedOnArity(sam: Symbol, formals: List[Any]): Boolean =
       sam.exists && sameLength(sam.info.params, formals)
 
-    def samMatchingFunction(tree: Tree, pt: Type): Symbol = {
-      if (tree.isInstanceOf[Function] && !isFunctionType(pt)) {
-        val sam = samOf(pt)
-        if (samMatchesFunctionBasedOnArity(sam, tree.asInstanceOf[Function].vparams)) sam
-        else NoSymbol
-      } else NoSymbol
-    }
-
     def isTupleType(tp: Type)          = isTupleTypeDirect(tp.dealiasWiden)
     def tupleComponents(tp: Type)      = tp.dealiasWiden.typeArgs
 
