@@ -5,7 +5,7 @@ function Scheduler() {
     var scheduler = this;
     var resolution = 0;
     this.timeout = undefined;
-    this.queues = new Array(0); // an array of work pacakges indexed by index in the labels table.
+    this.queues = new Array(0); // an array of work packages indexed by index in the labels table.
     this.labels = new Array(0); // an indexed array of labels indexed by priority. This should be short.
 
     this.label = function(name, priority) {
