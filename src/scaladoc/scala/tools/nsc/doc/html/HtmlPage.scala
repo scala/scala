@@ -13,6 +13,7 @@ import base._
 import base.comment._
 import model._
 
+import scala.reflect.internal.Reporter
 import scala.xml.NodeSeq
 import scala.xml.Elem
 import scala.xml.dtd.DocType
@@ -27,7 +28,7 @@ abstract class HtmlPage extends Page { thisPage =>
   protected def title: String
 
   /** ScalaDoc reporter for error handling */
-  protected def reporter: ScalaDocReporter
+  protected def docletReporter: Reporter
 
   /** The page description */
   protected def description: String =
