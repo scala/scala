@@ -49,10 +49,6 @@ final class API(val global: CallbackGlobal) extends Compat {
           case (className: String, names: Set[String]) =>
             names foreach { (name: String) => callback.usedName(className, name) }
         }
-        val extractDeclaredClasses = new ExtractDeclaredClasses[global.type](global)
-        val declaredClasses = extractDeclaredClasses.extract(unit)
-        debug("The " + sourceFile + " contains the following declared classes " + declaredClasses)
-        declaredClasses foreach { (declaredClass: String) => callback.declaredClass(sourceFile, declaredClass) }
       }
       val classApis = traverser.allNonLocalClasses
 
