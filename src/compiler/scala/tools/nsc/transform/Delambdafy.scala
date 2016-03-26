@@ -241,7 +241,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           val isSpecialized = specializedName != funSym.name
           val functionalInterface = // TODO: this is no longer needed, right? we can just use the regular function classes
             if (isSpecialized) currentRun.runDefinitions.Scala_Java8_CompatPackage.info.decl(specializedName.prepend("J"))
-            else currentRun.runDefinitions.Scala_Java8_CompatPackage_JFunction(originalFunction.vparams.length)
+            else FunctionClass(originalFunction.vparams.length)
 
           (functionalInterface, isSpecialized)
         }
