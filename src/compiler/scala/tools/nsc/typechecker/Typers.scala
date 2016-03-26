@@ -2752,6 +2752,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def inferSamType(fun: Tree, pt: Type, mode: Mode): SAMFunction = {
       val sam =
         if (fun.isInstanceOf[Function] && !isFunctionType(pt)) {
+          // TODO: can we ensure there's always a SAMFunction attachment, instead of looking up the sam again???
+          // seems like overloading complicates things?
           val sam = samOf(pt)
           if (samMatchesFunctionBasedOnArity(sam, fun.asInstanceOf[Function].vparams)) sam
           else NoSymbol

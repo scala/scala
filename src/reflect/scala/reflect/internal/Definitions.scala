@@ -829,13 +829,15 @@ trait Definitions extends api.StandardDefinitions {
       (sym eq PartialFunctionClass) || (sym eq AbstractPartialFunctionClass)
     }
 
+    private[this] val doSam = settings.isScala212 || (settings.isScala211 && settings.Xexperimental)
+
     /** The single abstract method declared by type `tp` (or `NoSymbol` if it cannot be found).
      *
      * The method must be monomorphic and have exactly one parameter list.
      * The class defining the method is a supertype of `tp` that
      * has a public no-arg primary constructor.
      */
-    def samOf(tp: Type): Symbol = {
+    def samOf(tp: Type): Symbol = if (!doSam) NoSymbol else {
       // look at erased type because we (only) care about what ends up in bytecode
       // (e.g., an alias type or intersection type is fine as long as the intersection dominator compiles to an interface)
       val tpSym = erasure.javaErasure(tp).typeSymbol
