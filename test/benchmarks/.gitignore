@@ -4,3 +4,11 @@
 
 # what appears to be a Scala IDE-generated file
 .cache-main
+
+# standard Eclipse output directory
+/bin/
+
+# sbteclipse-generated Eclipse files
+/.classpath
+/.project
+/.settings/

@@ -4,6 +4,9 @@ import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 import org.openjdk.jmh.infra.BenchmarkParams
+import org.openjdk.jol.info.GraphLayout
+import org.openjdk.jol.info.GraphWalker
+import org.openjdk.jol.info.GraphVisitor
 
 /** Utilities for the [[OpenHashMapBenchmark]].
   * 
@@ -15,9 +18,11 @@ private object OpenHashMapBenchmark {
     * 
     * Provides an array of adequately-sized, empty maps to each invocation,
     * so that hash table allocation won't be done during measurement.
-    * 
-    * Empties the map and performs a GC after every invocation,
+    * Provides enough maps to make each invocation long enough to avoid timing artifacts.
+    * Performs a GC after re-creating the empty maps before every invocation,
     * so that only the GCs caused by the invocation contribute to the measurement.
+    * 
+    * Records the memory used by all the maps in the last invocation of each iteration.
     */
   @State(Scope.Thread)
   @AuxCounters
@@ -28,24 +33,25 @@ private object OpenHashMapBenchmark {
     /** Minimum number of nanoseconds per invocation, so as to avoid timing artifacts. */
     private[this] val minNanosPerInvocation = 1000000  // one millisecond
 
-    /** The minimum number of `put()` calls to make per invocation, so as to avoid timing artifacts. */
-    private[this] val minPutsPerInvocation = minNanosPerInvocation / nanosPerPut
-
     /** Size of the maps created in this trial. */
     private[this] var size: Int = _
 
-    /** Number of maps created in each invocation; the size of `maps`. */
-    private[this] var n: Int = _
+    /** Total number of entries in all of the `maps` combined. */
+    var mapEntries: Int = _
 
     /** Number of operations performed in the current invocation. */
     var operations: Int = _
+
+    /** Bytes of memory used in the object graphs of all the maps. */
+    var memory: Long = _
 
     var maps: Array[OpenHashMap[Int,Int]] = null
 
     @Setup
     def threadSetup(params: BenchmarkParams) {
       size = params.getParam("size").toInt
-      n = math.ceil(minPutsPerInvocation / size).toInt
+      val n = math.ceil(minNanosPerInvocation / (nanosPerPut * size)).toInt
+      mapEntries = size * n
       maps = new Array(n)
     }
 
@@ -56,9 +62,15 @@ private object OpenHashMapBenchmark {
 
     @Setup(Level.Invocation)
     def setup {
-      for (i <- 0 until n) maps(i) = new OpenHashMap[Int,Int](size)
-      operations += size * n
+      for (i <- 0 until maps.length) maps(i) = new OpenHashMap[Int,Int](size)
+      operations += mapEntries
       System.gc()  // clean up after last invocation
+    }
+
+    @TearDown(Level.Iteration)
+    def iterationTeardown {
+      // limit to smaller cases to avoid OOM
+      memory = if (mapEntries <= 1000000) GraphLayout.parseInstance(maps(0), maps.tail).totalSize else 0
     }
   }
 
