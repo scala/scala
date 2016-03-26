@@ -28,19 +28,19 @@ private[collection] trait Decorators {
   /** Generic class containing the `asJavaCollection` converter method */
   class AsJavaCollection[A](i: Iterable[A]) {
     /** Converts a Scala `Iterable` to a Java `Collection` */
-    def asJavaCollection: ju.Collection[A] = JavaConversions.asJavaCollection(i)
+    def asJavaCollection: ju.Collection[A] = wrapAsJava.asJavaCollection(i)
   }
 
   /** Generic class containing the `asJavaEnumeration` converter method */
   class AsJavaEnumeration[A](i: Iterator[A]) {
     /** Converts a Scala `Iterator` to a Java `Enumeration` */
-    def asJavaEnumeration: ju.Enumeration[A] = JavaConversions.asJavaEnumeration(i)
+    def asJavaEnumeration: ju.Enumeration[A] = wrapAsJava.asJavaEnumeration(i)
   }
 
   /** Generic class containing the `asJavaDictionary` converter method */
   class AsJavaDictionary[A, B](m : mutable.Map[A, B]) {
     /** Converts a Scala `Map` to a Java `Dictionary` */
-    def asJavaDictionary: ju.Dictionary[A, B] = JavaConversions.asJavaDictionary(m)
+    def asJavaDictionary: ju.Dictionary[A, B] = wrapAsJava.asJavaDictionary(m)
   }
 }
 

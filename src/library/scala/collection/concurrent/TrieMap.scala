@@ -1113,7 +1113,7 @@ private[concurrent] object Debug {
   def log(s: AnyRef) = logbuffer.add(s)
 
   def flush() {
-    for (s <- JavaConversions.asScalaIterator(logbuffer.iterator())) Console.out.println(s.toString)
+    for (s <- convert.wrapAsScala.asScalaIterator(logbuffer.iterator())) Console.out.println(s.toString)
     logbuffer.clear()
   }
 

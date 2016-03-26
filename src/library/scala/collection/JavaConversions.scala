@@ -11,10 +11,10 @@ package collection
 
 import convert._
 
-/**   A collection of implicit conversions supporting interoperability between
- *    Scala and Java collections.
+/** A collection of implicit conversions supporting interoperability between
+ *  Scala and Java collections.
  *
- *    The following conversions are supported:
+ *  The following conversions are supported:
  *{{{
  *    scala.collection.Iterable       <=> java.lang.Iterable
  *    scala.collection.Iterable       <=> java.util.Collection
@@ -24,8 +24,8 @@ import convert._
  *    scala.collection.mutable.Map    <=> java.util.{ Map, Dictionary }
  *    scala.collection.concurrent.Map <=> java.util.concurrent.ConcurrentMap
  *}}}
- *    In all cases, converting from a source type to a target type and back
- *    again will return the original source object, eg.
+ *  In all cases, converting from a source type to a target type and back
+ *  again will return the original source object:
  *
  *{{{
  *    import scala.collection.JavaConversions._
@@ -45,8 +45,18 @@ import convert._
  *    java.util.Properties         => scala.collection.mutable.Map[String, String]
  *}}}
  *
+ *  The transparent conversions provided here are considered
+ *  fragile because they can result in unexpected behavior and performance.
+ *
+ *  Consider using `JavaConverters` instead, which provides an `asScala` member
+ *  (respectively `asJava`) to signal that a conversion is required.
+ *
+ *  The current functionality is also provided by `convert.wrapAsScala` and
+ *  `convert.wrapAsJava`.
+ *
  *  @author Miles Sabin
  *  @author Martin Odersky
  *  @since  2.8
  */
+@deprecated("Use JavaConverters or convert.{wrapAsScala,wrapAsJava}.", since="2.12")
 object JavaConversions extends WrapAsScala with WrapAsJava

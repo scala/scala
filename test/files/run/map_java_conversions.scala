@@ -1,12 +1,8 @@
 
-
-
-
-
 object Test {
 
   def main(args: Array[String]) {
-    import collection.JavaConversions._
+    import collection.convert.wrapAsScala._
 
     test(new java.util.HashMap[String, String])
     test(new java.util.Properties)
@@ -14,7 +10,7 @@ object Test {
   }
 
   def testConcMap {
-    import collection.JavaConversions._
+    import collection.convert.wrapAsScala._
 
     val concMap = new java.util.concurrent.ConcurrentHashMap[String, String]
 

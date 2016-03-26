@@ -1,14 +1,5 @@
 
-
-
-
-
-object Test {
-
-  def main(args: Array[String]) {
-    testConversions()
-    testConverters()
-  }
+object Test extends App {
 
   def needPackageConcurrentMap(map: collection.concurrent.Map[Int, Int]) {
   }
@@ -16,7 +7,8 @@ object Test {
   }
 
   def testConversions() {
-    import collection.JavaConversions._
+    import collection.convert.wrapAsScala._
+    import collection.convert.wrapAsJava._
     val skiplist = new java.util.concurrent.ConcurrentSkipListMap[Int, Int]
     val ctrie = new collection.concurrent.TrieMap[Int, Int]
 
@@ -33,4 +25,6 @@ object Test {
     needJavaConcurrent(ctrie.asJava)
   }
 
+  testConversions()
+  testConverters()
 }
