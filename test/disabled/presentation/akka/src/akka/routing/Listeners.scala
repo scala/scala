@@ -6,7 +6,7 @@ package akka.routing
 
 import akka.actor.{ Actor, ActorRef }
 import java.util.concurrent.ConcurrentSkipListSet
-import scala.collection.JavaConversions._
+import scala.collection.convert.wrapAsScala._
 
 sealed trait ListenerMessage
 case class Listen(listener: ActorRef) extends ListenerMessage

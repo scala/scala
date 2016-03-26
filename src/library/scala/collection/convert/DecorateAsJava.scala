@@ -12,9 +12,7 @@ package convert
 
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import Decorators._
-import WrapAsJava._
 import scala.language.implicitConversions
-
 
 /** A collection of decorators that allow converting between
  *  Scala and Java collections using `asScala` and `asJava` methods.
@@ -57,9 +55,10 @@ import scala.language.implicitConversions
  *{{{
  *    java.util.Properties => scala.collection.mutable.Map
  *}}}
+ *
  *  @since  2.8.1
  */
-trait DecorateAsJava {
+trait DecorateAsJava extends AsJavaConverters {
   /**
    * Adds an `asJava` method that implicitly converts a Scala `Iterator` to a
    * Java `Iterator`. The returned Java `Iterator` is backed by the provided Scala

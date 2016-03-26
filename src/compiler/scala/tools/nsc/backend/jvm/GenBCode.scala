@@ -221,7 +221,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
      */
     class Worker2 {
       def runGlobalOptimizations(): Unit = {
-        import scala.collection.convert.decorateAsScala._
+        import scala.collection.JavaConverters._
 
         // add classes to the bytecode repo before building the call graph: the latter needs to
         // look up classes and methods in the code repo.

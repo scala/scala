@@ -18,7 +18,7 @@ import BytecodeUtils._
 import BackendReporting._
 import Opcodes._
 import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository.CompilationUnit
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 
 class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
   import btypes._

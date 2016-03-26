@@ -18,7 +18,7 @@ import scala.tools.asm.tree.analysis._
 
 import opt.BytecodeUtils._
 
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 
 /**
  * This class provides additional queries over ASM's built-in `SourceValue` analysis.

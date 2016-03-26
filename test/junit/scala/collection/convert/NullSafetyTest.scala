@@ -7,7 +7,7 @@ import org.junit.Test
 import org.junit.experimental.runners.Enclosed
 import org.junit.runner.RunWith
 
-import scala.collection.JavaConversions._
+import collection.convert.ImplicitConversions._
 import scala.collection.JavaConverters._
 import scala.collection.{mutable, concurrent}
 

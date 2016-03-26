@@ -1,5 +1,5 @@
 import java.util.LinkedList
-import collection.JavaConversions._
+import collection.convert.ImplicitConversions._
 
 object Test extends App {
   def assertListEquals[A](expected: List[A], actual: Seq[A]) {
