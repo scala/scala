@@ -78,13 +78,13 @@ package scala
  *
  * === Converting between Java Collections ===
  *
- * The [[scala.collection.JavaConversions]] object provides implicit defs that
- * will allow mostly seamless integration between APIs using Java Collections
- * and the Scala collections library.
- *
- * Alternatively the [[scala.collection.JavaConverters]] object provides a collection
+ * The [[scala.collection.JavaConverters]] object provides a collection
  * of decorators that allow converting between Scala and Java collections using `asScala`
  * and `asJava` methods.
+ * 
+ * The [[scala.collection.JavaConversions]] object methods are deprecated.
+ * The transparent conversions it provides are considered fragile because
+ * they can result in unexpected behavior and performance.
  */
 package object collection {
   import scala.collection.generic.CanBuildFrom
