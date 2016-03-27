@@ -1,17 +1,48 @@
 # Scala library benchmarks
 
-This directory is a standalone SBT project
-that makes use of the [SBT plugin for JMH](https://github.com/ktoso/sbt-jmh),
-with the usual directory structure:
-source code for the benchmarks, which utilize [JMH](http://openjdk.java.net/projects/code-tools/jmh/),
-should be placed in `src/main/scala`.
+This directory is a standalone SBT project, within the Scala project,
+that makes use of the [SBT plugin](https://github.com/ktoso/sbt-jmh) for [JMH](http://openjdk.java.net/projects/code-tools/jmh/).
 
-The benchmarks require first building Scala into `../../build/pack`.
-They can then be (built and) run from `sbt` with "`jmh:run`".
-"`jmh:run -h`" displays the usual JMH options available.
+## running a benchmark
+
+The benchmarks require first building Scala into `../../build/pack`, using Ant.
+
+You'll then need to know the fully-qualified name of the benchmark runner class.
+The benchmarking classes are organized under `src/main/scala`,
+in the same package hierarchy as the classes that they test.
+Assuming that we're benchmarking `scala.collection.mutable.OpenHashMap`,
+the benchmark runner would likely be named `scala.collection.mutable.OpenHashMapRunner`.
+Using this example, one would simply run
+
+    jmh:runMain scala.collection.mutable.OpenHashMapRunner
+
+in SBT.
+SBT should be run _from this directory_.
+
+The JMH results can be found under `target/jmh-results/`.
+`target` gets deleted on an SBT `clean`,
+so you should copy these files out of `target` if you wish to preserve them.
+
+## creating a benchmark and runner
+
+The benchmarking classes use the same package hierarchy as the classes that they test
+in order to make it easy to expose, in package scope, members of the class under test,
+should that be necessary for benchmarking.
+
+There are two types of classes in the source directory:
+those suffixed "`Benchmark`" and those suffixed "`Runner`".
+The former are benchmarks that can be run directly using `jmh:run`;
+however, they are normally run from a corresponding class of the latter type,
+which is run using `jmh:runMain` (as described above).
+This …`Runner` class is useful for setting appropriate JMH command options,
+and for processing the JMH results into files that can be read by other tools, such as Gnuplot.
+
+The `benchmark.JmhRunner` trait should be woven into any runner class, for the standard behavior that it provides.
+This includes creating output files in a subdirectory of `target/jmh-results`
+derived from the fully-qualified package name of the `Runner` class.
 
 ## some useful HotSpot options
-Adding these to the `jmh:run` command line may help if you're using the HotSpot (Oracle, OpenJDK) compiler.
+Adding these to the `jmh:run` or `jmh:runMain` command line may help if you're using the HotSpot (Oracle, OpenJDK) compiler.
 They require prefixing with `-jvmArgs`.
 See [the Java documentation](http://docs.oracle.com/javase/8/docs/technotes/tools/unix/java.html) for more options. 
 
