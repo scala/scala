@@ -76,13 +76,9 @@ package scala
  * The concrete parallel collections also have specific performance characteristics which are
  * described in [[http://docs.scala-lang.org/overviews/parallel-collections/concrete-parallel-collections.html#performance-characteristics the parallel collections guide]]
  *
- * === Converting between Java Collections ===
+ * === Converting to and from Java Collections ===
  *
- * The [[scala.collection.JavaConversions]] object provides implicit defs that
- * will allow mostly seamless integration between APIs using Java Collections
- * and the Scala collections library.
- *
- * Alternatively the [[scala.collection.JavaConverters]] object provides a collection
+ * The [[scala.collection.JavaConverters]] object provides a collection
  * of decorators that allow converting between Scala and Java collections using `asScala`
  * and `asJava` methods.
  */
