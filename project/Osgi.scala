@@ -3,7 +3,8 @@ import aQute.bnd.osgi.Constants._
 import java.util.Properties
 import sbt._
 import sbt.Keys._
-import scala.collection.JavaConversions._
+import collection.convert.wrapAsScala._
+import collection.convert.wrapAsJava._
 import VersionUtil.versionProperties
 
 /** OSGi packaging for the Scala build, distilled from sbt-osgi. We do not use sbt-osgi because it

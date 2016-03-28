@@ -1,4 +1,4 @@
-import scala.collection.JavaConversions._
+import scala.collection.convert.wrapAsScala._
 
 class Outer {
   protected class Inner extends BeanDefinitionVisitor {

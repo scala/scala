@@ -3,7 +3,8 @@ case class Foo(s: String)
 
 object Test {
   def f1 = {
-    import scala.collection.JavaConversions._
+    import scala.collection.convert.wrapAsScala._
+    import scala.collection.convert.wrapAsJava._
     val map: Map[Foo, String] = Map(Foo("a") -> "a", Foo("b") -> "b")
     val v = map.get("a")  // should be a type error, actually returns null
   }

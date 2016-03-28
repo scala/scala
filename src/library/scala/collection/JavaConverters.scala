@@ -11,7 +11,7 @@ package collection
 
 import convert._
 
-// TODO: I cleaned all this documentation up in JavaConversions, but the
+// TODO: I cleaned all this documentation up in deprecated JxxxConversions, but the
 // documentation in here is basically the pre-cleaned-up version with minor
 // additions.  Would be nice to have in one place.
 
