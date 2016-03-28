@@ -333,7 +333,7 @@ div.members > ol > li {
   padding: 5px 0 5px;
   margin-bottom: 0.4em;
   min-height: 3.7em;
-  border-left: 0 solid #72D0EB;
+  border-left: 0.25em solid white;
   -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.1);
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
   transition: 0.1s;
@@ -341,7 +341,8 @@ div.members > ol > li {
 
 div.members > ol >li.selected,
 div.members > ol > li:hover {
-  background-color: #c2d2dc;
+  background-color: #dae7f0;
+  border-left-color: #dae7f0;
 }
 
 div.members > ol >li[fullComment=yes].selected,
@@ -351,7 +352,6 @@ div.members > ol > li[fullComment=yes]:hover {
 }
 
 div.members > ol > li:last-child {
-  border: 0;
   padding: 5px 0 5px;
 }
 
