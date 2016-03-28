@@ -7,6 +7,8 @@ import org.openjdk.jmh.infra.BenchmarkParams
 import org.openjdk.jol.info.GraphLayout
 import org.openjdk.jol.info.GraphWalker
 import org.openjdk.jol.info.GraphVisitor
+import org.openjdk.jmh.infra.IterationParams
+import org.openjdk.jmh.runner.IterationType
 
 /** Utilities for the [[OpenHashMapBenchmark]].
   * 
@@ -61,16 +63,21 @@ private object OpenHashMapBenchmark {
     }
 
     @Setup(Level.Invocation)
-    def setup {
+    def setup(params: IterationParams) {
       for (i <- 0 until maps.length) maps(i) = new OpenHashMap[Int,Int](size)
-      operations += mapEntries
-      System.gc()  // clean up after last invocation
+
+      if (params.getType == IterationType.MEASUREMENT) {
+        operations += mapEntries
+        System.gc()  // clean up after last invocation
+      }
     }
 
     @TearDown(Level.Iteration)
-    def iterationTeardown {
-      // limit to smaller cases to avoid OOM
-      memory = if (mapEntries <= 1000000) GraphLayout.parseInstance(maps(0), maps.tail).totalSize else 0
+    def iterationTeardown(params: IterationParams) {
+      if (params.getType == IterationType.MEASUREMENT) {
+        // limit to smaller cases to avoid OOM
+        memory = if (mapEntries <= 1000000) GraphLayout.parseInstance(maps(0), maps.tail).totalSize else 0
+      }
     }
   }
 
@@ -154,7 +161,7 @@ private object OpenHashMapBenchmark {
 
 /** Benchmark for the library's [[OpenHashMap]]. */
 @BenchmarkMode(Array(Mode.AverageTime))
-@Fork(10)
+@Fork(6)
 @Threads(1)
 @Warmup(iterations = 20)
 @Measurement(iterations = 6)
