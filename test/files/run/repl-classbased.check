@@ -6,18 +6,26 @@ scala> class C { implicit val k: K = K("OK?"); override def toString = s"C($k)" 
 defined class C
 
 scala> val c = new C
-c: C = C(K(OK?))
+c: INSTANCE.C = C(K(OK?))
 
 scala> import c.k
 import c.k
 
 scala> implicitly[K]
-res0: K = K(OK?)
+res0: INSTANCE.K = K(OK?)
 
 scala> val k = 42
+<console>:13: warning: imported `k' is permanently hidden by definition of value k
+import c.k
+         ^
 k: Int = 42
 
 scala> k                 // was K(OK?)
-res1: Int = 42
+<console>:19: error: reference to k is ambiguous;
+it is imported twice in the same scope by
+import $line11$read.k
+and import c.k
+       k                 // was K(OK?)
+       ^
 
 scala> :quit

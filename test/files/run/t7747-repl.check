@@ -15,13 +15,13 @@ scala> val z = x * y
 z: Int = 156
 
 scala> 2 ; 3
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:10: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
        2 ;;
        ^
 res0: Int = 3
 
 scala> { 2 ; 3 }
-<console>:12: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
        { 2 ; 3 }
          ^
 res1: Int = 3
@@ -30,16 +30,16 @@ scala> 5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Mooo
   1 +
   2 +
   3 } ; bippy+88+11
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:10: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
        5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
        ^
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:10: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
        5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
            ^
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:10: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
        5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
                                   ^
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:10: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
        5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
                                                                                          ^
 defined object Cow
@@ -81,10 +81,10 @@ scala>   (  (2 + 2 )  )
 res10: Int = 4
 
 scala> 5 ;   (  (2 + 2 )  ) ; ((5))
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:10: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
        5 ;   (  (2 + 2 )  ) ;;
        ^
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:10: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
        5 ;   (  (2 + 2 )  ) ;;
                    ^
 res11: Int = 5
@@ -101,10 +101,10 @@ res14: String = 4423
 scala> 
 
 scala> 55 ; ((2 + 2)) ; (1, 2, 3)
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:10: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
        55 ; ((2 + 2)) ;;
        ^
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:10: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
        55 ; ((2 + 2)) ;;
                 ^
 res15: (Int, Int, Int) = (1,2,3)
@@ -121,7 +121,7 @@ scala> () => 5
 res17: () => Int = <function0>
 
 scala> 55 ; () => 5
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:10: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
        55 ;;
        ^
 res18: () => Int = <function0>
@@ -209,13 +209,13 @@ Forgetting all expression results and named terms: $intp, BippyBungus, Bovine, C
 Forgetting defined types: BippyBungus, Moo, Ruminant
 
 scala> x1 + x2 + x3
-<console>:12: error: not found: value x1
+<console>:11: error: not found: value x1
        x1 + x2 + x3
        ^
-<console>:12: error: not found: value x2
+<console>:11: error: not found: value x2
        x1 + x2 + x3
             ^
-<console>:12: error: not found: value x3
+<console>:11: error: not found: value x3
        x1 + x2 + x3
                  ^
 
@@ -223,7 +223,7 @@ scala> val x1 = 4
 x1: Int = 4
 
 scala> new BippyBungus
-<console>:12: error: not found: type BippyBungus
+<console>:11: error: not found: type BippyBungus
        new BippyBungus
            ^
 
@@ -251,27 +251,20 @@ class $read extends _root_.java.io.Serializable {
     super.<init>;
     ()
   };
-  class $iw extends _root_.java.io.Serializable {
-    def <init>() = {
-      super.<init>;
-      ()
-    };
-    import $line44.$read.INSTANCE.$iw.$iw.BippyBups;
-    import $line44.$read.INSTANCE.$iw.$iw.BippyBups;
-    import $line45.$read.INSTANCE.$iw.$iw.PuppyPups;
-    import $line45.$read.INSTANCE.$iw.$iw.PuppyPups;
-    import $line46.$read.INSTANCE.$iw.$iw.Bingo;
-    import $line46.$read.INSTANCE.$iw.$iw.Bingo;
-    class $iw extends _root_.java.io.Serializable {
-      def <init>() = {
-        super.<init>;
-        ()
-      };
-      val res3 = List(BippyBups, PuppyPups, Bingo)
-    };
-    val $iw = new $iw.<init>
-  };
-  val $iw = new $iw.<init>
+  import _root_.scala.tools.nsc.interpreter.$iw;
+  import _root_.scala.tools.nsc.interpreter.$iw;
+  import $line44.$read.INSTANCE.BippyBups;
+  import _root_.scala.tools.nsc.interpreter.$iw;
+  import $line44.$read.INSTANCE.BippyBups;
+  import _root_.scala.tools.nsc.interpreter.$iw;
+  import $line45.$read.INSTANCE.PuppyPups;
+  import _root_.scala.tools.nsc.interpreter.$iw;
+  import $line45.$read.INSTANCE.PuppyPups;
+  import _root_.scala.tools.nsc.interpreter.$iw;
+  import $line46.$read.INSTANCE.Bingo;
+  import _root_.scala.tools.nsc.interpreter.$iw;
+  import $line46.$read.INSTANCE.Bingo;
+  val res3 = List(BippyBups, PuppyPups, Bingo)
 }
 object $read extends scala.AnyRef {
   def <init>() = {
@@ -280,16 +273,16 @@ object $read extends scala.AnyRef {
   };
   val INSTANCE = new $read.<init>
 }
-res3: List[Product with Serializable] = List(BippyBups(), PuppyPups(), Bingo())
+res3: List[Serializable with Product] = List(BippyBups(), PuppyPups(), Bingo())
 
 scala> case class Sum(exp: String, exp2: String)
 defined class Sum
 
 scala> val a = Sum("A", "B")
-a: Sum = Sum(A,B)
+a: INSTANCE.Sum = Sum(A,B)
 
 scala> def b(a: Sum): String = a match { case Sum(_, _) => "Found Sum" }
-b: (a: Sum)String
+b: (a: INSTANCE.Sum)String
 
 scala> b(a)
 res4: String = Found Sum
@@ -300,6 +293,6 @@ import scala.tools.nsc._, intp.global._, definitions._
 Try :help or completions for vals._ and power._
 
 scala> intp.lastRequest
-res5: $r.intp.Request = Request(line=def $ires3 = intp.global, 1 trees)
+res5: INSTANCE.$r.intp.Request = Request(line=def $ires3 = intp.global, 1 trees)
 
 scala> :quit

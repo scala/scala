@@ -19,7 +19,7 @@ scala> :k new { def empty = false }
 AnyRef{def empty: Boolean}'s kind is A
 
 scala> :k Nonexisting
-<console>:12: error: not found: value Nonexisting
+<console>:11: error: not found: value Nonexisting
        Nonexisting
        ^
 
