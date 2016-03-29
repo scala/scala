@@ -120,7 +120,7 @@ private[scala] trait PropertiesTrait {
 
   /** The default end of line character.
    */
-  def lineSeparator         = propOrElse("line.separator", "\n")
+  def lineSeparator         = System.lineSeparator()
 
   /* Various well-known properties. */
   def javaClassPath         = propOrEmpty("java.class.path")
