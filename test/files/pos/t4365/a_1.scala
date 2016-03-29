@@ -9,7 +9,7 @@ trait SeqViewLike[+A,
   trait Transformed[+B] extends super[GenSeqViewLike].Transformed[B]
 
   abstract class AbstractTransformed[+B] extends Seq[B] with Transformed[B] {
-    def underlying: Coll = error("")
+    def underlying: Coll = sys.error("")
   }
 
   trait Reversed extends Transformed[A] with super[GenSeqViewLike].Reversed

@@ -188,13 +188,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   /** @group utilities */
   @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
 
-  // errors and asserts -------------------------------------------------
-
-  // !!! Remove this when possible - ideally for 2.11.
-  // We are stuck with it a while longer because sbt's compiler interface
-  // still calls it as of 0.12.2.
-  @deprecated("Use `sys.error(message)` instead", "2.9.0")
-  def error(message: String): Nothing = sys.error(message)
+  // assertions ---------------------------------------------------------
 
   /** Tests an expression, throwing an `AssertionError` if false.
    *  Calls to this method will not be generated if `-Xelide-below`
