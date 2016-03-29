@@ -264,7 +264,8 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         }
       }
 
-    def typ(): Tree =
+    def typ(): Tree = {
+      annotations()
       optArrayBrackets {
         if (in.token == FINAL) in.nextToken()
         if (in.token == IDENTIFIER) {
@@ -287,6 +288,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           basicType()
         }
       }
+    }
 
     def typeArgs(t: Tree): Tree = {
       val wildcards = new ListBuffer[TypeDef]
@@ -404,6 +406,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
     def typeParam(): TypeDef =
       atPos(in.currentPos) {
+        annotations()
         val name = identForType()
         val hi = if (in.token == EXTENDS) { in.nextToken() ; bound() } else EmptyTree
         TypeDef(Modifiers(Flags.JAVA | Flags.DEFERRED | Flags.PARAM), name, Nil, TypeBoundsTree(EmptyTree, hi))
