@@ -523,6 +523,8 @@ trait Definitions extends api.StandardDefinitions {
          def MacroContextTreeType         = BlackboxContextClass.map(sym => getTypeMember(sym, tpnme.Tree))
     lazy val MacroImplAnnotation          = requiredClass[scala.reflect.macros.internal.macroImpl]
 
+    lazy val Interpreter_iw               = getClassIfDefined("scala.tools.nsc.interpreter.$iw")
+
     lazy val StringContextClass           = requiredClass[scala.StringContext]
 
     // SI-8392 a reflection universe on classpath may not have

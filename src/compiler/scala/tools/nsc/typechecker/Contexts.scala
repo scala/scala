@@ -1195,7 +1195,8 @@ trait Contexts { self: Analyzer =>
     }
     override final def imports      = impInfo :: super.imports
     override final def firstImport  = Some(impInfo)
-    override final def isRootImport = !tree.pos.isDefined
+    override final val isRootImport = !tree.pos.isDefined || (
+      tree.symbol != NoSymbol && tree.symbol == definitions.Interpreter_iw)
     override final def toString     = super.toString + " with " + s"ImportContext { $impInfo; outer.owner = ${outer.owner} }"
   }
 
