@@ -1,10 +1,12 @@
 package xsbt
 
+import scala.tools.nsc.Global
+
 /**
  * Utility methods for creating (source|binary) class names for a Symbol.
  */
 trait ClassName {
-  val global: CallbackGlobal
+  val global: Global
   import global._
 
   /**

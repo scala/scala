@@ -6,6 +6,8 @@ import scala.tools.nsc.symtab.Flags
 import scala.collection.mutable.{ HashMap, HashSet }
 import xsbti.api._
 
+import scala.tools.nsc.Global
+
 /**
  * Extracts full (including private members) API representation out of Symbols and Types.
  *
@@ -31,18 +33,13 @@ import xsbti.api._
  *
  * Each compilation unit should be processed by a fresh instance of this class.
  *
- * This class depends on instance of CallbackGlobal instead of regular Global because
- * it has a call to `addInheritedDependencies` method defined in CallbackGlobal. In the future
- * we should refactor this code so inherited dependencies are just accumulated in a buffer and
- * exposed to a client that can pass them to an instance of CallbackGlobal it holds.
- *
  * NOTE: This class extract *full* API representation. In most of other places in the incremental compiler,
  * only non-private (accessible from other compilation units) members are relevant. Other parts of the
  * incremental compiler filter out private definitions before processing API structures. Check SameAPI for
  * an example.
  *
  */
-class ExtractAPI[GlobalType <: CallbackGlobal](
+class ExtractAPI[GlobalType <: Global](
   val global: GlobalType,
   // Tracks the source file associated with the CompilationUnit currently being processed by the API phase.
   // This is used when recording inheritance dependencies.
@@ -373,10 +370,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
     // We're not interested in the full linearization, so we can just use `parents`,
     // which side steps issues with baseType when f-bounded existential types and refined types mix
     // (and we get cyclic types which cause a stack overflow in showAPI).
-    //
-    // The old algorithm's semantics for inherited dependencies include all types occurring as a parent anywhere in a type,
-    // so that, in `class C { def foo: A  }; class A extends B`, C is considered to have an "inherited dependency" on `A` and `B`!!!
-    val parentTypes = if (global.callback.nameHashing()) info.parents else linearizedAncestorTypes(info)
+    val parentTypes = info.parents
     val decls = info.decls.toList
     val declsNoModuleCtor = if (s.isModuleClass) removeConstructors(decls) else decls
     mkStructure(s, parentTypes, declsNoModuleCtor, Nil)
@@ -412,10 +406,7 @@ class ExtractAPI[GlobalType <: CallbackGlobal](
     // We're not interested in the full linearization, so we can just use `parents`,
     // which side steps issues with baseType when f-bounded existential types and refined types mix
     // (and we get cyclic types which cause a stack overflow in showAPI).
-    //
-    // The old algorithm's semantics for inherited dependencies include all types occurring as a parent anywhere in a type,
-    // so that, in `class C { def foo: A  }; class A extends B`, C is considered to have an "inherited dependency" on `A` and `B`!!!
-    val parentTypes = if (global.callback.nameHashing()) info.parents else linearizedAncestorTypes(info)
+    val parentTypes = info.parents
     mkStructure(s, parentTypes, Nil, Nil)
   }
 

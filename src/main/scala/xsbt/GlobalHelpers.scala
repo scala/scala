@@ -3,7 +3,7 @@ package xsbt
 import scala.tools.nsc.Global
 
 trait GlobalHelpers {
-  val global: CallbackGlobal
+  val global: Global
   import global.{ analyzer, Tree }
 
   object MacroExpansionOf {
