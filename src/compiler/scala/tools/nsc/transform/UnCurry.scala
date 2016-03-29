@@ -79,21 +79,12 @@ abstract class UnCurry extends InfoTransform
       // (TODO: Can't use isInterface, yet, as it hasn't been updated for the new trait encoding)
       val canUseLambdaMetaFactory = inConstructorFlag == 0 && (fun.attachments.get[SAMFunction] match {
         case Some(SAMFunction(userDefinedSamTp, sam)) =>
-          val tpSym = erasure.javaErasure(userDefinedSamTp).typeSymbol // we only care about what ends up in the bytecode
-          (
-            // LMF only supports interfaces
-            (tpSym.isJavaInterface || tpSym.isTrait)
-            // Unless tpSym.isStatic, even if the constructor is zero-argument now, it may acquire arguments in explicit outer or lambdalift.
-            // This is an impl restriction to simplify the decision of whether to expand the SAM during uncurry
-            // (when we don't yet know whether it will receive an outer pointer in explicit outer or whether lambda lift will add proxies for captures).
-            // When we delay sam expansion until after explicit outer & lambda lift, we could decide there whether
-            // to expand sam at compile time or use LMF, and this implementation restriction could be lifted.
-            && tpSym.isStatic
-            // impl restriction -- we currently use the boxed apply, so not really useful to allow specialized sam types (https://github.com/scala/scala/pull/4971#issuecomment-198119167)
-            // specialization and LMF are at odds, since LMF implements the single abstract method,
-            // but that's the one that specialization leaves generic, whereas we need to implement the specialized one to avoid boxing
-            && !specializeTypes.isSpecializedIn(sam, userDefinedSamTp)
-          )
+          // LambdaMetaFactory cannot mix in trait members for us, or instantiate classes -- only pure interfaces need apply
+          erasure.compilesToPureInterface(erasure.javaErasure(userDefinedSamTp).typeSymbol) &&
+          // impl restriction -- we currently use the boxed apply, so not really useful to allow specialized sam types (https://github.com/scala/scala/pull/4971#issuecomment-198119167)
+          // specialization and LMF are at odds, since LMF implements the single abstract method,
+          // but that's the one that specialization leaves generic, whereas we need to implement the specialized one to avoid boxing
+          !specializeTypes.isSpecializedIn(sam, userDefinedSamTp)
 
         case _ => true // our built-in FunctionN's are suitable for LambdaMetaFactory by construction
       })

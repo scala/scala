@@ -1187,5 +1187,37 @@ abstract class Erasure extends AddInterfaces
     bridge.resetFlag(BRIDGE)
   }
 
+  /** Does this symbol compile to the underlying platform's notion of an interface,
+    * without requiring compiler magic before it can be instantiated?
+    *
+    * More specifically, we're interested in whether LambdaMetaFactory can instantiate this type,
+    * assuming it has a single abstract method. In other words, if we were to mix this
+    * trait into a class, it should not result in any compiler-generated members having to be
+    * implemented in ("mixed in to") this class (except for the SAM).
+    *
+    * Thus, the type must erase to a java interface, either by virtue of being defined as one,
+    * or by being a trait that:
+    *   - is static (explicitouter or lambdalift may add disqualifying members)
+    *   - extends only other traits that compile to pure interfaces (except for Any)
+    *   - has no val/var members
+    *
+    * TODO: can we speed this up using the INTERFACE flag, or set it correctly by construction?
+    */
+  final def compilesToPureInterface(tpSym: Symbol): Boolean = {
+    def ok(sym: Symbol) =
+      sym.isJavaInterface ||
+      sym.isTrait &&
+      // Unless sym.isStatic, even if the constructor is zero-argument now, it may acquire arguments in explicit outer or lambdalift.
+      // This is an impl restriction to simplify the decision of whether to expand the SAM during uncurry
+      // (when we don't yet know whether it will receive an outer pointer in explicit outer or whether lambda lift will add proxies for captures).
+      // When we delay sam expansion until after explicit outer & lambda lift, we could decide there whether
+      // to expand sam at compile time or use LMF, and this implementation restriction could be lifted.
+      sym.isStatic &&
+      (sym.isInterface || sym.info.decls.forall(mem => mem.isMethod || mem.isType)) // TODO OPT: && {sym setFlag INTERFACE; true})
+
+    // we still need to check our ancestors even if the INTERFACE flag is set, as it doesn't take inheritance into account
+    ok(tpSym) && tpSym.ancestors.forall(sym => (sym eq AnyClass) || (sym eq ObjectClass) || ok(sym))
+  }
+
   private class TypeRefAttachment(val tpe: TypeRef)
 }
