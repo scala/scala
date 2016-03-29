@@ -22,7 +22,6 @@ object OpenHashMap {
   def empty[K, V] = new OpenHashMap[K, V]
 
   final private class OpenEntry[Key, Value](val key: Key,
-                                            val hash: Int,
                                             var value: Option[Value])
                 extends HashEntry[Key, OpenEntry[Key, Value]]
 
@@ -98,23 +97,12 @@ extends AbstractMap[Key, Value]
   /** Return the index of the first slot in the hash table (in probe order)
     * that either is empty, or is or was last occupied by the given key.
     */
-  private[this] def findIndex(key: Key) : Int = findIndex(key, hashOf(key))
-
-  /** Return the index of the first slot in the hash table (in probe order)
-    * that either is empty, or is or was last occupied by the given key.
-    * 
-    * This method is an optimization for when the hash value is in hand.
-    * 
-    * @param hash hash value for `key`
-    */
-  private[this] def findIndex(key: Key, hash: Int): Int = {
-    var j = hash
-
-    var index = hash & mask
+  private[this] def findIndex(key: Key) : Int = {
+    var j = hashOf(key)
+    var index = j & mask
     var perturb = index
     while(table(index) != null &&
-          !(table(index).hash == hash &&
-            table(index).key == key)){
+          table(index).key != key) {
       j = 5 * j + 1 + perturb
       perturb >>= 5
       index = j & mask
@@ -123,11 +111,9 @@ extends AbstractMap[Key, Value]
   }
 
   private[this] def addEntry(entry: Entry) =
-    if (entry != null) table(findIndex(entry.key, entry.hash)) = entry
+    if (entry != null) table(findIndex(entry.key)) = entry
 
-  override def update(key: Key, value: Value) {
-    put(key, hashOf(key), value)
-  }
+  override def update(key: Key, value: Value): Unit = put(key, value)
 
   @deprecatedOverriding("+= should not be overridden in order to maintain consistency with put.", "2.11.0")
   def += (kv: (Key, Value)): this.type = { put(kv._1, kv._2); this }
@@ -135,15 +121,12 @@ extends AbstractMap[Key, Value]
   @deprecatedOverriding("-= should not be overridden in order to maintain consistency with remove.", "2.11.0")
   def -= (key: Key): this.type = { remove(key); this }
 
-  override def put(key: Key, value: Value): Option[Value] =
-    put(key, hashOf(key), value)
-
-  private def put(key: Key, hash: Int, value: Value): Option[Value] = {
+  override def put(key: Key, value: Value): Option[Value] = {
     if (2 * (size + deleted) > mask) growTable()
-    val index = findIndex(key, hash)
+    val index = findIndex(key)
     val entry = table(index)
     if (entry == null) {
-      table(index) = new OpenEntry(key, hash, Some(value))
+      table(index) = new OpenEntry(key, Some(value))
       modCount += 1
       size += 1
       None
@@ -171,17 +154,12 @@ extends AbstractMap[Key, Value]
   }
 
   def get(key : Key) : Option[Value] = {
-    val hash = hashOf(key)
-
-    var j = hash
-    var index = hash & mask
+    var j = hashOf(key)
+    var index = j & mask
     var perturb = index
     var entry = table(index)
     while(entry != null){
-      if (entry.hash == hash &&
-          entry.key == key){
-        return entry.value
-      }
+      if (entry.key == key)  return entry.value
 
       j = 5 * j + 1 + perturb
       perturb >>= 5
@@ -217,7 +195,7 @@ extends AbstractMap[Key, Value]
 
   override def clone() = {
     val it = new OpenHashMap[Key, Value]
-    foreachUndeletedEntry(entry => it.put(entry.key, entry.hash, entry.value.get))
+    foreachUndeletedEntry(entry => it.put(entry.key, entry.value.get))
     it
   }
 
