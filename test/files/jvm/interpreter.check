@@ -41,6 +41,9 @@ scala> trait PointlessTrait
 defined trait PointlessTrait
 
 scala> val (x,y) = (2,3)
+<console>:10: warning: imported `x' is permanently hidden by definition of value x
+import x
+                    ^
 x: Int = 2
 y: Int = 3
 
@@ -353,7 +356,7 @@ defined class Term
 scala> def f(e: Exp) = e match {  // non-exhaustive warning here
   case _:Fact => 3
 }
-<console>:18: warning: match may not be exhaustive.
+<console>:20: warning: match may not be exhaustive.
 It would fail on the following inputs: Exp(), Term()
        def f(e: Exp) = e match {  // non-exhaustive warning here
                        ^
@@ -363,6 +366,6 @@ scala> :quit
 plusOne: (x: Int)Int
 res0: Int = 6
 res0: String = after reset
-<console>:12: error: not found: value plusOne
+<console>:11: error: not found: value plusOne
        plusOne(5) // should be undefined now
        ^

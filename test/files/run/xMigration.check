@@ -10,7 +10,7 @@ res1: Iterable[String] = MapLike.DefaultValuesIterable(eis)
 scala> :setting -Xmigration:any
 
 scala> Map(1 -> "eis").values    // warn
-<console>:12: warning: method values in trait MapLike has changed semantics in version 2.8.0:
+<console>:11: warning: method values in trait MapLike has changed semantics in version 2.8.0:
 `values` returns `Iterable[V]` rather than `Iterator[V]`.
        Map(1 -> "eis").values    // warn
                        ^
@@ -24,7 +24,7 @@ res3: Iterable[String] = MapLike.DefaultValuesIterable(eis)
 scala> :setting -Xmigration:2.7
 
 scala> Map(1 -> "eis").values    // warn
-<console>:12: warning: method values in trait MapLike has changed semantics in version 2.8.0:
+<console>:11: warning: method values in trait MapLike has changed semantics in version 2.8.0:
 `values` returns `Iterable[V]` rather than `Iterator[V]`.
        Map(1 -> "eis").values    // warn
                        ^
@@ -38,7 +38,7 @@ res5: Iterable[String] = MapLike.DefaultValuesIterable(eis)
 scala> :setting -Xmigration      // same as :any
 
 scala> Map(1 -> "eis").values    // warn
-<console>:12: warning: method values in trait MapLike has changed semantics in version 2.8.0:
+<console>:11: warning: method values in trait MapLike has changed semantics in version 2.8.0:
 `values` returns `Iterable[V]` rather than `Iterator[V]`.
        Map(1 -> "eis").values    // warn
                        ^
