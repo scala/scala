@@ -71,6 +71,23 @@ class IndySammyTest extends ClearAfterClass {
     )
   }
 
+//  def testSpecial(lam: String, lamTp: String, arg: String)(allowMessage: StoreReporter#Info => Boolean = _ => false) = {
+//    val cls = compile("trait Special[@specialized A] { def apply(a: A): A}" )
+//    val methodNodes = compileMethods(compiler)(s"def lam : $lamTp = $lam" +";"+ appDef(arg), allowMessage)
+//
+//    val anonfun = methodNodes.filter(_.name contains "$anonfun$").map(convertMethod)
+//    val lamInsn = methodNodes.find(_.name == "lam").map(instructionsFromMethod).get.dropNonOp
+//    val applyInvoke = methodNodes.find(_.name == "app").map(convertMethod).get
+//
+//    assert(lamInsn.length == 2 && lamInsn.head.isInstanceOf[InvokeDynamic], lamInsn)
+//    assertSameCode(anonfun, lamBody)
+//    assertSameCode(applyInvoke, List(
+//      VarOp(ALOAD, 0),
+//      Invoke(INVOKEVIRTUAL, "C", "lam", s"()L${funClassName(from, to)};", false)) ++ appArgs ++ List(
+//      Invoke(INVOKEINTERFACE, funClassName(from, to), "apply", applySig, true), ret)
+//    )
+//  }
+
   // x => x : VC => VC applied to VC(1)
   @Test
   def testVC_VC_VC =
@@ -126,6 +143,13 @@ class IndySammyTest extends ClearAfterClass {
       List(VarOp(ALOAD, 0), Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "unboxToInt", "(Ljava/lang/Object;)I", false), Op(IRETURN)),
       List(Op(ICONST_1), Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "boxToInteger", "(I)Ljava/lang/Integer;", false)),
       Op(IRETURN))()
+
+  // TODO
+  // x => x : Special[Int] applied to 1
+//  @Test
+//  def testSpecial_Int_1 =
+//    testSpecial("x => x", "Special[Int]", "1")()
+
 
   // Tests ThisReferringMethodsTraverser
   @Test

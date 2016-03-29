@@ -285,6 +285,19 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     for ((tvar, tpe) <- sym.info.typeParams.zip(args) if !tvar.isSpecialized || !isPrimitiveValueType(tpe))
       yield tpe
 
+  /** Is `member` potentially affected by specialization? This is a gross overapproximation,
+    * but it should be okay for use outside of specialization.
+    */
+  def possiblySpecialized(sym: Symbol) = specializedTypeVars(sym).nonEmpty
+
+  /** Refines possiblySpecialized taking into account the instantiation of the specialized type variables at `site` */
+  def isSpecializedIn(sym: Symbol, site: Type) =
+    specializedTypeVars(sym) exists { tvar =>
+      val concretes = concreteTypes(tvar)
+      (concretes contains AnyRefClass) || (concretes contains site.memberType(tvar))
+    }
+
+
   val specializedType = new TypeMap {
     override def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, args) if args.nonEmpty =>

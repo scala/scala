@@ -77,8 +77,8 @@ abstract class UnCurry extends InfoTransform
     // We use Java's LambdaMetaFactory (LMF), which requires an interface for the sam's owner
     private def mustExpandFunction(fun: Function) = forceExpandFunction || {
       // (TODO: Can't use isInterface, yet, as it hasn't been updated for the new trait encoding)
-      val canUseLambdaMetaFactory = inConstructorFlag == 0 && (fun.attachments.get[SAMFunction].map(_.samTp) match {
-        case Some(userDefinedSamTp) =>
+      val canUseLambdaMetaFactory = inConstructorFlag == 0 && (fun.attachments.get[SAMFunction] match {
+        case Some(SAMFunction(userDefinedSamTp, sam)) =>
           val tpSym = erasure.javaErasure(userDefinedSamTp).typeSymbol // we only care about what ends up in the bytecode
           (
             // LMF only supports interfaces
@@ -90,7 +90,9 @@ abstract class UnCurry extends InfoTransform
             // to expand sam at compile time or use LMF, and this implementation restriction could be lifted.
             && tpSym.isStatic
             // impl restriction -- we currently use the boxed apply, so not really useful to allow specialized sam types (https://github.com/scala/scala/pull/4971#issuecomment-198119167)
-            && !tpSym.isSpecialized
+            // specialization and LMF are at odds, since LMF implements the single abstract method,
+            // but that's the one that specialization leaves generic, whereas we need to implement the specialized one to avoid boxing
+            && !specializeTypes.isSpecializedIn(sam, userDefinedSamTp)
           )
 
         case _ => true // our built-in FunctionN's are suitable for LambdaMetaFactory by construction
