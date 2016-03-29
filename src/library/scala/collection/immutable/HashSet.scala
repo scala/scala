@@ -31,8 +31,7 @@ import scala.annotation.tailrec
  *  @define coll immutable hash set
  */
 @SerialVersionUID(2L)
-@deprecatedInheritance("The implementation details of immutable hash sets make inheriting from them unwise.", "2.11.0")
-class HashSet[A] extends AbstractSet[A]
+sealed class HashSet[A] extends AbstractSet[A]
                     with Set[A]
                     with GenericSetTemplate[A, HashSet]
                     with SetLike[A, HashSet[A]]

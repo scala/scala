@@ -46,8 +46,7 @@ import generic._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@deprecatedInheritance("PriorityQueue is not intended to be subclassed due to extensive private implementation details.", "2.11.0")
-class PriorityQueue[A](implicit val ord: Ordering[A])
+sealed class PriorityQueue[A](implicit val ord: Ordering[A])
    extends AbstractIterable[A]
       with Iterable[A]
       with GenericOrderedTraversableTemplate[A, PriorityQueue]
@@ -266,3 +265,176 @@ object PriorityQueue extends OrderedTraversableFactory[PriorityQueue] {
   implicit def canBuildFrom[A](implicit ord: Ordering[A]): CanBuildFrom[Coll, A, PriorityQueue[A]] = new GenericCanBuildFrom[A]
 }
 
+
+/** This class servers as a proxy for priority queues. The
+  *  elements of the queue have to be ordered in terms of the
+  *  `Ordered[T]` class.
+  *
+  *  @author  Matthias Zenger
+  *  @version 1.0, 03/05/2004
+  *  @since   1
+  */
+@deprecated("Proxying is deprecated due to lack of use and compiler-level support.", "2.11.0")
+sealed abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends PriorityQueue[A]
+  with Proxy
+{
+  def self: PriorityQueue[A]
+
+  /** Creates a new iterator over all elements contained in this
+    *  object.
+    *
+    *  @return the new iterator
+    */
+  override def iterator: Iterator[A] = self.iterator
+
+  /** Returns the length of this priority queue.
+    */
+  override def length: Int = self.length
+
+  /** Checks if the queue is empty.
+    *
+    *  @return true, iff there is no element in the queue.
+    */
+  override def isEmpty: Boolean = self.isEmpty
+
+  /** Inserts a single element into the priority queue.
+    *
+    *  @param  elem        the element to insert
+    */
+  override def +=(elem: A): this.type = { self += elem; this }
+
+  /** Adds all elements provided by an iterator into the priority queue.
+    *
+    *  @param  it        an iterator
+    */
+  override def ++=(it: TraversableOnce[A]): this.type = {
+    self ++= it
+    this
+  }
+
+  /** Adds all elements to the queue.
+    *
+    *  @param  elems       the elements to add.
+    */
+  override def enqueue(elems: A*): Unit = self ++= elems
+
+  /** Returns the element with the highest priority in the queue,
+    *  and removes this element from the queue.
+    *
+    *  @return   the element with the highest priority.
+    */
+  override def dequeue(): A = self.dequeue()
+
+  /** Returns the element with the highest priority in the queue,
+    *  or throws an error if there is no element contained in the queue.
+    *
+    *  @return   the element with the highest priority.
+    */
+  override def head: A = self.head
+
+  /** Removes all elements from the queue. After this operation is completed,
+    *  the queue will be empty.
+    */
+  override def clear(): Unit = self.clear()
+
+  /** Returns a regular queue containing the same elements.
+    */
+  override def toQueue: Queue[A] = self.toQueue
+
+  /** This method clones the priority queue.
+    *
+    *  @return  a priority queue with the same elements.
+    */
+  override def clone(): PriorityQueue[A] = new PriorityQueueProxy[A] {
+    def self = PriorityQueueProxy.this.self.clone()
+  }
+}
+
+
+/** This class implements synchronized priority queues using a binary heap.
+  *  The elements of the queue have to be ordered in terms of the `Ordered[T]` class.
+  *
+  *  @tparam A    type of the elements contained in this synchronized priority queue
+  *  @param ord   implicit ordering used to compared elements of type `A`
+  *
+  *  @author  Matthias Zenger
+  *  @version 1.0, 03/05/2004
+  *  @since   1
+  *  @define Coll `SynchronizedPriorityQueue`
+  *  @define coll synchronized priority queue
+  */
+@deprecated("Comprehensive synchronization via selective overriding of methods is inherently unreliable.  Consider java.util.concurrent.ConcurrentSkipListSet as an alternative.", "2.11.0")
+sealed class SynchronizedPriorityQueue[A](implicit ord: Ordering[A]) extends PriorityQueue[A] {
+
+  /** Checks if the queue is empty.
+    *
+    *  @return true, iff there is no element in the queue.
+    */
+  override def isEmpty: Boolean = synchronized { super.isEmpty }
+
+  /** Inserts a single element into the priority queue.
+    *
+    *  @param  elem        the element to insert
+    */
+  override def +=(elem: A): this.type = {
+    synchronized {
+      super.+=(elem)
+    }
+    this
+  }
+
+  /** Adds all elements of a traversable object into the priority queue.
+    *
+    *  @param  xs        a traversable object
+    */
+  override def ++=(xs: TraversableOnce[A]): this.type = {
+    synchronized {
+      super.++=(xs)
+    }
+    this
+  }
+
+  /** Adds all elements to the queue.
+    *
+    *  @param  elems       the elements to add.
+    */
+  override def enqueue(elems: A*): Unit = synchronized { super.++=(elems) }
+
+  /** Returns the element with the highest priority in the queue,
+    *  and removes this element from the queue.
+    *
+    *  @return   the element with the highest priority.
+    */
+  override def dequeue(): A = synchronized { super.dequeue() }
+
+  /** Returns the element with the highest priority in the queue,
+    *  or throws an error if there is no element contained in the queue.
+    *
+    *  @return   the element with the highest priority.
+    */
+  override def head: A = synchronized { super.head }
+
+  /** Removes all elements from the queue. After this operation is completed,
+    *  the queue will be empty.
+    */
+  override def clear(): Unit = synchronized { super.clear() }
+
+  /** Returns an iterator which yield all the elements of the priority
+    *  queue in descending priority order.
+    *
+    *  @return  an iterator over all elements sorted in descending order.
+    */
+  override def iterator: Iterator[A] = synchronized { super.iterator }
+
+  /** Checks if two queues are structurally identical.
+    *
+    *  @return true, iff both queues contain the same sequence of elements.
+    */
+  override def equals(that: Any): Boolean = synchronized { super.equals(that) }
+
+  /** Returns a textual representation of a queue as a string.
+    *
+    *  @return the string representation of this queue.
+    */
+  override def toString(): String = synchronized { super.toString() }
+}

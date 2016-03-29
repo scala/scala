@@ -648,7 +648,14 @@ lazy val root = (project in file("."))
     publishArtifact := false,
     publish := {},
     publishLocal := {},
-    commands ++= ScriptCommands.all
+    commands ++= ScriptCommands.all,
+    // Generate (Product|TupleN|Function|AbstractFunction)*.scala files. Once the ANT build is gone,
+    // we should move them into a managedSources dir instead of overwriting sources checked into git.
+    commands += Command.command("genprod") { state =>
+      val dir = (((baseDirectory in ThisBuild).value) / "src" / "library" / "scala").getPath
+      genprod.main(Array(dir))
+      state
+    }
   )
   .aggregate(library, reflect, compiler, interactive, repl, replJline, replJlineEmbedded,
     scaladoc, scalap, partestExtras, junit, libraryAll, scalaDist).settings(

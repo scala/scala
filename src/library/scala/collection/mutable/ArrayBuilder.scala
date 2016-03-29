@@ -53,8 +53,7 @@ object ArrayBuilder {
    *
    *  @tparam T     type of elements for the array builder, subtype of `AnyRef` with a `ClassTag` context bound.
    */
-  @deprecatedInheritance("ArrayBuilder.ofRef is an internal implementation not intended for subclassing.", "2.11.0")
-  class ofRef[T <: AnyRef : ClassTag] extends ArrayBuilder[T] {
+  final class ofRef[T <: AnyRef : ClassTag] extends ArrayBuilder[T] {
 
     private var elems: Array[T] = _
     private var capacity: Int = 0
@@ -119,8 +118,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `byte`s. It can be reused. */
-  @deprecatedInheritance("ArrayBuilder.ofByte is an internal implementation not intended for subclassing.", "2.11.0")
-  class ofByte extends ArrayBuilder[Byte] {
+  final class ofByte extends ArrayBuilder[Byte] {
 
     private var elems: Array[Byte] = _
     private var capacity: Int = 0
@@ -185,8 +183,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `short`s. It can be reused. */
-  @deprecatedInheritance("ArrayBuilder.ofShort is an internal implementation not intended for subclassing.", "2.11.0")
-  class ofShort extends ArrayBuilder[Short] {
+  final class ofShort extends ArrayBuilder[Short] {
 
     private var elems: Array[Short] = _
     private var capacity: Int = 0
@@ -251,8 +248,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `char`s. It can be reused. */
-  @deprecatedInheritance("ArrayBuilder.ofChar is an internal implementation not intended for subclassing.", "2.11.0")
-  class ofChar extends ArrayBuilder[Char] {
+  final class ofChar extends ArrayBuilder[Char] {
 
     private var elems: Array[Char] = _
     private var capacity: Int = 0
@@ -317,8 +313,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `int`s. It can be reused. */
-  @deprecatedInheritance("ArrayBuilder.ofInt is an internal implementation not intended for subclassing.", "2.11.0")
-  class ofInt extends ArrayBuilder[Int] {
+  final class ofInt extends ArrayBuilder[Int] {
 
     private var elems: Array[Int] = _
     private var capacity: Int = 0
@@ -383,8 +378,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `long`s. It can be reused. */
-  @deprecatedInheritance("ArrayBuilder.ofLong is an internal implementation not intended for subclassing.", "2.11.0")
-  class ofLong extends ArrayBuilder[Long] {
+  final class ofLong extends ArrayBuilder[Long] {
 
     private var elems: Array[Long] = _
     private var capacity: Int = 0
@@ -449,8 +443,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `float`s. It can be reused. */
-  @deprecatedInheritance("ArrayBuilder.ofFloat is an internal implementation not intended for subclassing.", "2.11.0")
-  class ofFloat extends ArrayBuilder[Float] {
+  final class ofFloat extends ArrayBuilder[Float] {
 
     private var elems: Array[Float] = _
     private var capacity: Int = 0
@@ -515,8 +508,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `double`s. It can be reused. */
-  @deprecatedInheritance("ArrayBuilder.ofDouble is an internal implementation not intended for subclassing.", "2.11.0")
-  class ofDouble extends ArrayBuilder[Double] {
+  final class ofDouble extends ArrayBuilder[Double] {
 
     private var elems: Array[Double] = _
     private var capacity: Int = 0
@@ -646,8 +638,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `Unit` type. It can be reused. */
-  @deprecatedInheritance("ArrayBuilder.ofUnit is an internal implementation not intended for subclassing.", "2.11.0")
-  class ofUnit extends ArrayBuilder[Unit] {
+  final class ofUnit extends ArrayBuilder[Unit] {
 
     private var size: Int = 0
 
