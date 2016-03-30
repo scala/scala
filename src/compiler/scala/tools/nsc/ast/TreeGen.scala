@@ -310,9 +310,13 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     newDefDef(methSym, moveToMethod(useMethodParams(fun.body)))(tpt = TypeTree(resTp))
   }
 
+  // TODO: the rewrite to AbstractFunction is superfluous once we compile FunctionN to a SAM type (aka functional interface)
+  def functionClassType(fun: Function): Type =
+    if (isFunctionType(fun.tpe)) abstractFunctionType(fun.vparams.map(_.symbol.tpe), fun.body.tpe.deconst)
+    else fun.tpe
 
   def expandFunction(localTyper: analyzer.Typer)(fun: Function, inConstructorFlag: Long): Tree = {
-    val parents = addSerializable(fun.tpe)
+    val parents = addSerializable(functionClassType(fun))
     val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation SerialVersionUIDAnnotation
 
     // The original owner is used in the backend for the EnclosingMethod attribute. If fun is
