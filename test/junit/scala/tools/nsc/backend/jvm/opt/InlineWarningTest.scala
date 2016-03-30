@@ -67,10 +67,10 @@ class InlineWarningTest extends ClearAfterClass {
       "T::m2()I is annotated @inline but cannot be inlined: the method is not final and may be overridden",
       "D::m2()I is annotated @inline but cannot be inlined: the method is not final and may be overridden")
     compile(code, allowMessage = i => {count += 1; warns.exists(i.msg contains _)})
-    assert(count == 5, count) // TODO SD-85: 5th warning
+    assert(count == 4, count)
   }
 
-  // TODO SD-85: no more impl classes. this test (and the warning it tests!) can be removed
+  // TODO SD-86: no more impl classes. this test (and the warning it tests!) can be removed
   @org.junit.Ignore @Test
   def traitMissingImplClass(): Unit = {
     val codeA = "trait T { @inline final def f = 1 }"

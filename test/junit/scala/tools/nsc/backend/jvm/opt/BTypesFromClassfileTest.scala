@@ -67,14 +67,17 @@ class BTypesFromClassfileTest {
     // there's a separate InlineInfoTest.
 
     val chk1 = sameBTypes(fromSym.superClass, fromClassfile.superClass, checked)
+    
+    // was:
+    // val chk2 = sameBTypes(fromSym.interfaces, fromClassfile.interfaces, chk1)
 
+    // TODO: The new trait encoding emits redundant parents in the backend to avoid linkage errors in invokespecial
+    // Need to give this some more thought, maybe do it earlier so it is reflected in the Symbol's info, too.
     val fromSymInterfaces = fromSym.interfaces
     val fromClassFileInterfaces = fromClassfile.interfaces
     val (matching, other) = fromClassFileInterfaces.partition(x => fromSymInterfaces.exists(_.internalName == x.internalName))
     val chk2 = sameBTypes(fromSym.interfaces, matching, chk1)
     for (redundant <- other) {
-      // TODO SD-86 The new trait encoding emits redundant parents in the backend to avoid linkage errors in invokespecial
-      //            Need to give this some more thought, maybe do it earlier so it is reflected in the Symbol's info, too.
       assert(matching.exists(x => x.isSubtypeOf(redundant).orThrow), redundant)
     }
 

@@ -132,7 +132,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
               (declarationClassNode, source) <- byteCodeRepository.classNodeAndSource(declarationClass): Either[OptimizerWarning, (ClassNode, Source)]
             } yield {
                 val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
-                val CallsiteInfo(safeToInline, safeToRewrite, canInlineFromSource, annotatedInline, annotatedNoInline, samParamTypes, warning) = analyzeCallsite(method, declarationClassBType, call.owner, source)
+                val CallsiteInfo(safeToInline, safeToRewrite, canInlineFromSource, annotatedInline, annotatedNoInline, samParamTypes, warning) = analyzeCallsite(method, declarationClassBType, call, source)
                 Callee(
                   callee = method,
                   calleeDeclarationClass = declarationClassBType,
@@ -264,7 +264,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
   /**
    * Analyze a callsite and gather meta-data that can be used for inlining decisions.
    */
-  private def analyzeCallsite(calleeMethodNode: MethodNode, calleeDeclarationClassBType: ClassBType, receiverTypeInternalName: InternalName, calleeSource: Source): CallsiteInfo = {
+  private def analyzeCallsite(calleeMethodNode: MethodNode, calleeDeclarationClassBType: ClassBType, call: MethodInsnNode, calleeSource: Source): CallsiteInfo = {
     val methodSignature = calleeMethodNode.name + calleeMethodNode.desc
 
     try {
@@ -277,7 +277,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
 
           val isAbstract = BytecodeUtils.isAbstractMethod(calleeMethodNode)
 
-          val receiverType = classBTypeFromParsedClassfile(receiverTypeInternalName)
+          val receiverType = classBTypeFromParsedClassfile(call.owner)
           // (1) A non-final method can be safe to inline if the receiver type is a final subclass. Example:
           //   class A { @inline def f = 1 }; object B extends A; B.f  // can be inlined
           //
@@ -295,6 +295,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           // TODO: type analysis can render more calls statically resolved. Example:
           //   new A.f  // can be inlined, the receiver type is known to be exactly A.
           val isStaticallyResolved: Boolean = {
+            isNonVirtualCall(call) || // SD-86: super calls (invokespecial) can be inlined
             methodInlineInfo.effectivelyFinal ||
               receiverType.info.orThrow.inlineInfo.isEffectivelyFinal // (1)
           }
