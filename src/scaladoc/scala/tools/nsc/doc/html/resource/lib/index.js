@@ -412,7 +412,12 @@ function handleSearchedPackage(res, regExp) {
  */
 function searchEntity(entity, ul, regExp) {
     return new Promise(function(resolve, reject) {
-        var matchingMembers = $.grep(entity.members, function(member, i) {
+        var allMembers =
+            (entity.members_trait  || [])
+            .concat(entity.members_class || [])
+            .concat(entity.members_object || [])
+
+        var matchingMembers = $.grep(allMembers, function(member, i) {
             return regExp.test(member.label);
         });
 
