@@ -3,6 +3,11 @@ trait TInt extends T[Int]
 
 trait TWithVal { val x: Any = 1; def apply(x: Int): String }
 
+trait TImpure { def apply(x: Int): String ; println(1) }
+
+trait Println { println(1) }
+trait TImpureSuper extends Println { def apply(x: Int): String  }
+
 object Test extends App {
   final val AnonFunClass = "$anonfun$"
   final val LMFClass = "$$Lambda$" // LambdaMetaFactory names classes like this
@@ -38,5 +43,6 @@ object Test extends App {
   notLMF(fVal)
   assert(fVal.x == 1)
 
-
+  notLMF((x => "a"): TImpure)
+  notLMF((x => "a"): TImpureSuper)
 }

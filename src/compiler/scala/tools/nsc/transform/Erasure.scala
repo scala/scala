@@ -1213,6 +1213,10 @@ abstract class Erasure extends AddInterfaces
       // When we delay sam expansion until after explicit outer & lambda lift, we could decide there whether
       // to expand sam at compile time or use LMF, and this implementation restriction could be lifted.
       sym.isStatic &&
+      // HACK: this is to rule out traits with an effectful initializer.
+      // The constructor only exists if the trait's template has statements.
+      // Sadly, we can't be more precise without access to the tree that defines the SAM's owner.
+      !sym.primaryConstructor.exists &&
       (sym.isInterface || sym.info.decls.forall(mem => mem.isMethod || mem.isType)) // TODO OPT: && {sym setFlag INTERFACE; true})
 
     // we still need to check our ancestors even if the INTERFACE flag is set, as it doesn't take inheritance into account
