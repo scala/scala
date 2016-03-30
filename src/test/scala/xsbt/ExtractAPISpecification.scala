@@ -1,6 +1,6 @@
 package xsbt
 
-import xsbti.api.{ DefinitionType, ClassLike, Def }
+import xsbti.api._
 import xsbt.api.SameAPI
 import sbt.internal.util.UnitSpec
 
@@ -114,5 +114,39 @@ class ExtractAPISpecification extends UnitSpec {
 				}""".stripMargin
     val fooMethodApi2 = compileAndGetFooMethodApi(src2)
     assert(SameAPI.apply(fooMethodApi1, fooMethodApi2), "APIs are not the same.")
+  }
+
+  /**
+   * Checks if representation of the inherited Namer class (with a declared self variable) in Global.Foo
+   * is stable between compiling from source and unpickling. We compare extracted APIs of Global when Global
+   * is compiled together with Namers or Namers is compiled first and then Global refers
+   * to Namers by unpickling types from class files.
+   */
+  it should "make a stable representation of a self variable that has no self type" in pendingUntilFixed {
+    def selectNamer(apis: Set[ClassLike]): ClassLike = {
+      def selectClass(defs: Iterable[Definition], name: String): ClassLike = defs.collectFirst {
+        case cls: ClassLike if cls.name == name => cls
+      }.get
+      val global = apis.find(_.name == "Global").get
+      //val foo = selectClass(global.structure.declared, "Global.Foo")
+      val foo = apis.find(_.name == "Global.Foo").get
+      selectClass(foo.structure.inherited, "Namers.Namer")
+    }
+    val src1 =
+      """|class Namers {
+        |  class Namer { thisNamer => }
+        |}
+        |""".stripMargin
+    val src2 =
+      """|class Global {
+        |  class Foo extends Namers
+        |}
+        |""".stripMargin
+    val compilerForTesting = new ScalaCompilerForUnitTesting
+    val apis = compilerForTesting.extractApisFromSrcs(reuseCompilerInstance = false)(List(src1, src2), List(src2))
+    val _ :: src2Api1 :: src2Api2 :: Nil = apis.toList
+    val namerApi1 = selectNamer(src2Api1)
+    val namerApi2 = selectNamer(src2Api2)
+    assert(SameAPI(namerApi1, namerApi2))
   }
 }

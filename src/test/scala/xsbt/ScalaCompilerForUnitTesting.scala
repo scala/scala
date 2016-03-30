@@ -26,6 +26,15 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
     analysisCallback.apis(tempSrcFile)
   }
 
+  /**
+   * Compiles given source code using Scala compiler and returns API representation
+   * extracted by ExtractAPI class.
+   */
+  def extractApisFromSrcs(reuseCompilerInstance: Boolean)(srcs: List[String]*): Seq[Set[ClassLike]] = {
+    val (tempSrcFiles, analysisCallback) = compileSrcs(srcs.toList, reuseCompilerInstance)
+    tempSrcFiles.map(analysisCallback.apis)
+  }
+
   def extractUsedNamesFromSrc(src: String): Map[String, Set[String]] = {
     val (_, analysisCallback) = compileSrcs(src)
     analysisCallback.usedNames.toMap
@@ -63,7 +72,7 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
    * file system-independent way of testing dependencies between source code "files".
    */
   def extractDependenciesFromSrcs(srcs: List[List[String]]): ExtractedClassDependencies = {
-    val (_, testCallback) = compileSrcs(srcs)
+    val (_, testCallback) = compileSrcs(srcs, reuseCompilerInstance = true)
 
     val memberRefDeps = testCallback.classDependencies collect {
       case (target, src, DependencyByMemberRef) => (src, target)
@@ -97,8 +106,10 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
    * The sequence of temporary files corresponding to passed snippets and analysis
    * callback is returned as a result.
    */
-  private def compileSrcs(groupedSrcs: List[List[String]],
-    reuseCompilerInstance: Boolean): (Seq[File], TestCallback) = {
+  private def compileSrcs(
+    groupedSrcs: List[List[String]],
+    reuseCompilerInstance: Boolean
+  ): (Seq[File], TestCallback) = {
     withTemporaryDirectory { temp =>
       val analysisCallback = new TestCallback(nameHashing)
       val classesDir = new File(temp, "classes")
