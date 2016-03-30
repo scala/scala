@@ -11,7 +11,9 @@ object Test extends MemoryTest {
     cm.mkToolBox()
   }
 
-  override def maxDelta = 10
+  // I'm not sure this is a great way to test for memory leaks,
+  // since we're also testing how good the JVM's GC is, and this is not easily reproduced between machines/over time
+  override def maxDelta = 12
   override def calcsPerIter = 8
   override def calc() {
     var snippet = """

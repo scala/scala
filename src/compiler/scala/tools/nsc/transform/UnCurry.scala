@@ -75,9 +75,9 @@ abstract class UnCurry extends InfoTransform
 
     // Expand `Function`s in constructors to class instance creation (SI-6666, SI-8363)
     // We use Java's LambdaMetaFactory (LMF), which requires an interface for the sam's owner
-    private def mustExpandFunction(fun: Function) = forceExpandFunction || {
+    private def mustExpandFunction(fun: Function) = {
       // (TODO: Can't use isInterface, yet, as it hasn't been updated for the new trait encoding)
-      val canUseLambdaMetaFactory = inConstructorFlag == 0 && (fun.attachments.get[SAMFunction] match {
+      val canUseLambdaMetaFactory = (fun.attachments.get[SAMFunction] match {
         case Some(SAMFunction(userDefinedSamTp, sam)) =>
           // LambdaMetaFactory cannot mix in trait members for us, or instantiate classes -- only pure interfaces need apply
           erasure.compilesToPureInterface(erasure.javaErasure(userDefinedSamTp).typeSymbol) &&
@@ -207,8 +207,10 @@ abstract class UnCurry extends InfoTransform
     def transformFunction(fun: Function): Tree =
       // Undo eta expansion for parameterless and nullary methods
       if (fun.vparams.isEmpty && isByNameRef(fun.body)) { noApply += fun.body ; fun.body }
-      else if (mustExpandFunction(fun)) gen.expandFunction(localTyper)(fun, inConstructorFlag)
-      else {
+      else if (forceExpandFunction || inConstructorFlag != 0) {
+        // Expand the function body into an anonymous class
+        gen.expandFunction(localTyper)(fun, inConstructorFlag)
+      } else {
         // method definition with the same arguments, return type, and body as the original lambda
         val liftedMethod = gen.mkLiftedFunctionBodyMethod(localTyper)(fun.symbol.owner, fun)
 
@@ -217,7 +219,11 @@ abstract class UnCurry extends InfoTransform
           gen.mkForwarder(gen.mkAttributedRef(liftedMethod.symbol), (fun.vparams map (_.symbol)) :: Nil)
         ))
 
-        localTyper.typedPos(fun.pos)(Block(liftedMethod, super.transform(newFun)))
+        val typedNewFun = localTyper.typedPos(fun.pos)(Block(liftedMethod, super.transform(newFun)))
+        if (mustExpandFunction(fun)) {
+          val Block(stats, expr : Function) = typedNewFun
+          treeCopy.Block(typedNewFun, stats, gen.expandFunction(localTyper)(expr, inConstructorFlag))
+        } else typedNewFun
       }
 
     def transformArgs(pos: Position, fun: Symbol, args: List[Tree], formals: List[Type]) = {
