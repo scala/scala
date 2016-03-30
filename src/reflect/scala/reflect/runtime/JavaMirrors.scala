@@ -1161,6 +1161,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       propagatePackageBoundary(jmeth.javaFlags, meth)
       copyAnnotations(meth, jmeth)
       if (jmeth.javaFlags.isVarargs) meth modifyInfo arrayToRepeated
+      if (jmeth.getDefaultValue != null) meth.addAnnotation(AnnotationDefaultAttr)
       markAllCompleted(meth)
       meth
     }

@@ -469,13 +469,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         case NullTag    => emit(asm.Opcodes.ACONST_NULL)
 
         case ClazzTag   =>
-          val toPush: BType = {
-            typeToBType(const.typeValue) match {
-              case kind: PrimitiveBType => boxedClassOfPrimitive(kind)
-              case kind => kind
-            }
-          }
-          mnode.visitLdcInsn(toPush.toASMType)
+          val tp = typeToBType(const.typeValue)
+          // classOf[Int] is transformed to Integer.TYPE by CleanUp
+          assert(!tp.isPrimitive, s"expected class type in classOf[T], found primitive type $tp")
+          mnode.visitLdcInsn(tp.toASMType)
 
         case EnumTag   =>
           val sym       = const.symbolValue

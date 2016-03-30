@@ -177,7 +177,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     /**
      * When compiling Array.scala, the type parameter T is not erased and shows up in method
-     * signatures, e.g. `def apply(i: Int): T`. A TyperRef to T is replaced by ObjectReference.
+     * signatures, e.g. `def apply(i: Int): T`. A TypeRef for T is replaced by ObjectRef.
      */
     def nonClassTypeRefToBType(sym: Symbol): ClassBType = {
       assert(sym.isType && isCompilingArray, sym)
@@ -190,39 +190,24 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       case TypeRef(_, sym, _)                 => primitiveOrClassToBType(sym) // Common reference to a type such as scala.Int or java.lang.String
       case ClassInfoType(_, _, sym)           => primitiveOrClassToBType(sym) // We get here, for example, for genLoadModule, which invokes typeToBType(moduleClassSymbol.info)
 
-      /* AnnotatedType should (probably) be eliminated by erasure. However we know it happens for
-       * meta-annotated annotations (@(ann @getter) val x = 0), so we don't emit a warning.
-       * The type in the AnnotationInfo is an AnnotatedTpe. Tested in jvm/annotations.scala.
-       */
-      case a @ AnnotatedType(_, t) =>
-        debuglog(s"typeKind of annotated type $a")
-        typeToBType(t)
-
-      /* ExistentialType should (probably) be eliminated by erasure. We know they get here for
-       * classOf constants:
-       *   class C[T]
-       *   class T { final val k = classOf[C[_]] }
-       */
-      case e @ ExistentialType(_, t) =>
-        debuglog(s"typeKind of existential type $e")
-        typeToBType(t)
-
       /* The cases below should probably never occur. They are kept for now to avoid introducing
        * new compiler crashes, but we added a warning. The compiler / library bootstrap and the
        * test suite don't produce any warning.
        */
 
       case tp =>
-        currentUnit.warning(tp.typeSymbol.pos,
+        warning(tp.typeSymbol.pos,
           s"an unexpected type representation reached the compiler backend while compiling $currentUnit: $tp. " +
             "If possible, please file a bug on issues.scala-lang.org.")
 
         tp match {
-          case ThisType(ArrayClass)               => ObjectRef // was introduced in 9b17332f11 to fix SI-999, but this code is not reached in its test, or any other test
-          case ThisType(sym)                      => classBTypeFromSymbol(sym)
-          case SingleType(_, sym)                 => primitiveOrClassToBType(sym)
-          case ConstantType(_)                    => typeToBType(t.underlying)
-          case RefinedType(parents, _)            => parents.map(typeToBType(_).asClassBType).reduceLeft((a, b) => a.jvmWiseLUB(b).get)
+          case ThisType(ArrayClass)    => ObjectRef // was introduced in 9b17332f11 to fix SI-999, but this code is not reached in its test, or any other test
+          case ThisType(sym)           => classBTypeFromSymbol(sym)
+          case SingleType(_, sym)      => primitiveOrClassToBType(sym)
+          case ConstantType(_)         => typeToBType(t.underlying)
+          case RefinedType(parents, _) => parents.map(typeToBType(_).asClassBType).reduceLeft((a, b) => a.jvmWiseLUB(b).get)
+          case AnnotatedType(_, t)     => typeToBType(t)
+          case ExistentialType(_, t)   => typeToBType(t)
         }
     }
   }
