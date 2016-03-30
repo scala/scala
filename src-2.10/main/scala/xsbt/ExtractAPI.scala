@@ -594,7 +594,8 @@ class ExtractAPI[GlobalType <: Global](
     // as that invariant is established on completing the class symbol (`mkClassLike` calls `s.initialize` before calling us).
     // Technically, we could even ignore a self type that's a supertype of the class's type,
     // as it does not contribute any information relevant outside of the class definition.
-    if ((s.thisSym eq s) || s.typeOfThis == s.info) Constants.emptyType else processType(in, s.typeOfThis)
+    if ((s.thisSym eq s) || (s.thisSym.tpeHK == s.tpeHK)) Constants.emptyType else processType(in, s.typeOfThis)
+
   def extractAllClassesOf(in: Symbol, c: Symbol): Unit = {
     classLike(in, c)
     ()
