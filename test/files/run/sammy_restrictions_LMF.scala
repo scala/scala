@@ -8,6 +8,11 @@ trait TImpure { def apply(x: Int): String ; println(1) }
 trait Println { println(1) }
 trait TImpureSuper extends Println { def apply(x: Int): String  }
 
+class C
+trait A extends C
+trait B extends A
+trait TClassParent extends B { def apply(x: Int): String }
+
 object Test extends App {
   final val AnonFunClass = "$anonfun$"
   final val LMFClass = "$$Lambda$" // LambdaMetaFactory names classes like this
@@ -45,4 +50,8 @@ object Test extends App {
 
   notLMF((x => "a"): TImpure)
   notLMF((x => "a"): TImpureSuper)
+
+  val fClassParent: TClassParent = x => "a"
+  notLMF(fClassParent)
+  assert(fClassParent(1) == "a")
 }

@@ -1747,13 +1747,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             classinfo.parents map (_.instantiateTypeParams(List(tparam), List(AnyRefTpe))),
             classinfo.decls,
             clazz)
-          clazz.setInfo {
-            clazz.info match {
-              case PolyType(tparams, _) => PolyType(tparams, newinfo)
-              case _ => newinfo
-            }
-          }
+          updatePolyClassInfo(clazz, newinfo)
           FinitaryError(tparam)
+        }
+      }
+    }
+
+    private def updatePolyClassInfo(clazz: Symbol, newinfo: ClassInfoType): clazz.type = {
+      clazz.setInfo {
+        clazz.info match {
+          case PolyType(tparams, _) => PolyType(tparams, newinfo)
+          case _ => newinfo
         }
       }
     }
@@ -1866,6 +1870,26 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // please FIXME: uncommenting this line breaks everything
       // val templ = treeCopy.Template(templ0, templ0.body, templ0.self, templ0.parents)
       val clazz = context.owner
+
+      val parentTypes = parents1.map(_.tpe)
+
+      // The parents may have been normalized by typedParentTypes.
+      // We must update the info as well, or we won't find the super constructor for our now-first parent class
+      // Consider `class C ; trait T extends C ; trait U extends T`
+      // `U`'s info will start with parent `T`, but `typedParentTypes` will return `List(C, T)` (`== parents1`)
+      // now, the super call in the primary ctor will fail to find `C`'s ctor, since it bases its search on
+      // `U`'s info, not the trees.
+      //
+      // For correctness and performance, we restrict this rewrite to anonymous classes,
+      // as others have their parents in order already (it seems!), and we certainly
+      // don't want to accidentally rewire superclasses for e.g. the primitive value classes.
+      //
+      // TODO: Find an example of a named class needing this rewrite, I tried but couldn't find one.
+      if (clazz.isAnonymousClass && clazz.info.parents != parentTypes) {
+//        println(s"updating parents of $clazz from ${clazz.info.parents} to $parentTypes")
+        updatePolyClassInfo(clazz, ClassInfoType(parentTypes, clazz.info.decls, clazz))
+      }
+
       clazz.annotations.map(_.completeInfo())
       if (templ.symbol == NoSymbol)
         templ setSymbol clazz.newLocalDummy(templ.pos)

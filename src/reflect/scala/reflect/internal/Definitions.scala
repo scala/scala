@@ -581,7 +581,6 @@ trait Definitions extends api.StandardDefinitions {
     /** Creators for TupleN, ProductN, FunctionN. */
     def tupleType(elems: List[Type])                            = TupleClass.specificType(elems)
     def functionType(formals: List[Type], restpe: Type)         = FunctionClass.specificType(formals, restpe)
-    def abstractFunctionType(formals: List[Type], restpe: Type) = AbstractFunctionClass.specificType(formals, restpe)
 
     def wrapArrayMethodName(elemtp: Type): TermName = elemtp.typeSymbol match {
       case ByteClass    => nme.wrapByteArray
