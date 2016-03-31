@@ -2879,8 +2879,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           silent(_.typed(fn, mode.forFunMode, pt)) filter (_ => context.undetparams.isEmpty) map { fn1 =>
             // if context.undetparams is not empty, the function was polymorphic,
             // so we need the missing arguments to infer its type. See #871
-            //println("typing eta "+fun+":"+fn1.tpe+"/"+context.undetparams)
             val ftpe = normalize(fn1.tpe) baseType FunctionClass(numVparams)
+//            println(s"typeUnEtaExpanded $fn : ${fn1.tpe} (unwrapped $fun) --> normalized: $ftpe")
+
             if (isFunctionType(ftpe) && isFullyDefined(ftpe)) ftpe
             else NoType
           } orElse { _ => NoType }
@@ -4365,28 +4366,35 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case _ => tp
       }
 
-      def expectingFunctionMatchingFormals(formals: List[Symbol]) =
-        isFunctionType(pt) || samMatchesFunctionBasedOnArity(samOf(pt), formals)
 
-      def typedEta(expr1: Tree): Tree = expr1.tpe match {
-        case TypeRef(_, ByNameParamClass, _) =>
-          val expr2 = Function(List(), expr1) setPos expr1.pos
-          new ChangeOwnerTraverser(context.owner, expr2.symbol).traverse(expr2)
-          typed1(expr2, mode, pt)
-        case NullaryMethodType(restpe) =>
-          val expr2 = Function(List(), expr1) setPos expr1.pos
-          new ChangeOwnerTraverser(context.owner, expr2.symbol).traverse(expr2)
-          typed1(expr2, mode, pt)
-        case PolyType(_, MethodType(formals, _)) =>
-          if (expectingFunctionMatchingFormals(formals)) expr1
-          else adapt(expr1, mode, checkArity(expr1)(functionTypeWildcard(formals.length)))
-        case MethodType(formals, _) =>
-          if (expectingFunctionMatchingFormals(formals)) expr1
-          else adapt(expr1, mode, checkArity(expr1)(functionTypeWildcard(formals.length)))
+      /** Eta expand an expression like `m _`, where `m` denotes a method or a by-name argument
+        *
+        * The spec says:
+        * The expression `$e$ _` is well-formed if $e$ is of method type or if $e$ is a call-by-name parameter.
+        *   (1) If $e$ is a method with parameters, `$e$ _` represents $e$ converted to a function type
+        *       by [eta expansion](#eta-expansion).
+        *   (2) If $e$ is a parameterless method or call-by-name parameter of type `=>$T$`, `$e$ _` represents
+        *       the function of type `() => $T$`, which evaluates $e$ when it is applied to the empty parameterlist `()`.
+        */
+      def typedEta(methodValue: Tree): Tree = methodValue.tpe match {
+        case tp@(MethodType(_, _) | PolyType(_, MethodType(_, _))) => // (1)
+          val formals = tp.params
+          if (isFunctionType(pt) || samMatchesFunctionBasedOnArity(samOf(pt), formals)) methodValue
+          else adapt(methodValue, mode, checkArity(methodValue)(functionTypeWildcard(formals.length)))
+
+        case TypeRef(_, ByNameParamClass, _) |  NullaryMethodType(_) => // (2)
+          val pos = methodValue.pos
+          // must create it here to change owner (normally done by typed's typedFunction)
+          val funSym = context.owner.newAnonymousFunctionValue(pos)
+          new ChangeOwnerTraverser(context.owner, funSym) traverse methodValue
+
+          typed(Function(List(), methodValue) setSymbol funSym setPos pos, mode, pt)
+
         case ErrorType =>
-          expr1
+          methodValue
+
         case _ =>
-          UnderscoreEtaError(expr1)
+          UnderscoreEtaError(methodValue)
       }
 
       def tryTypedArgs(args: List[Tree], mode: Mode): Option[List[Tree]] = {
@@ -4430,7 +4438,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case Annotated(_, r)                    => treesInResult(r)
             case If(_, t, e)                        => treesInResult(t) ++ treesInResult(e)
             case Try(b, catches, _)                 => treesInResult(b) ++ catches
-            case Typed(r, Function(Nil, EmptyTree)) => treesInResult(r)
+            case Typed(r, Function(Nil, EmptyTree)) => treesInResult(r) // a method value
             case Select(qual, name)                 => treesInResult(qual)
             case Apply(fun, args)                   => treesInResult(fun) ++ args.flatMap(treesInResult)
             case TypeApply(fun, args)               => treesInResult(fun) ++ args.flatMap(treesInResult)
@@ -5070,11 +5078,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // because `expr` might contain nested macro calls (see SI-6673)
           //
           // Note: apparently `Function(Nil, EmptyTree)` is the secret parser marker
-          // which means trailing underscore.
+          // which means trailing underscore -- denoting a method value. See makeMethodValue in TreeBuilder.
           case Typed(expr, Function(Nil, EmptyTree)) =>
             typed1(suppressMacroExpansion(expr), mode, pt) match {
               case macroDef if treeInfo.isMacroApplication(macroDef) => MacroEtaError(macroDef)
-              case exprTyped                                         => typedEta(checkDead(exprTyped))
+              case methodValue                                       => typedEta(checkDead(methodValue))
             }
           case Typed(expr, tpt) =>
             val tpt1  = typedType(tpt, mode)                           // type the ascribed type first

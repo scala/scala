@@ -205,8 +205,11 @@ abstract class UnCurry extends InfoTransform
      *
      */
     def transformFunction(fun: Function): Tree =
-      // Undo eta expansion for parameterless and nullary methods
-      if (fun.vparams.isEmpty && isByNameRef(fun.body)) { noApply += fun.body ; fun.body }
+      // Undo eta expansion for parameterless and nullary methods, EXCEPT if `fun` targets a SAM.
+      // Normally, we can unwrap `() => cbn` to `cbn` where `cbn` refers to a CBN argument (typically `cbn` is an Ident),
+      // because we know `cbn` will already be a `Function0` thunk. When we're targeting a SAM,
+      // the types don't align and we must preserve the function wrapper.
+      if (fun.vparams.isEmpty && isByNameRef(fun.body) && fun.attachments.get[SAMFunction].isEmpty) { noApply += fun.body ; fun.body }
       else if (forceExpandFunction || inConstructorFlag != 0) {
         // Expand the function body into an anonymous class
         gen.expandFunction(localTyper)(fun, inConstructorFlag)
