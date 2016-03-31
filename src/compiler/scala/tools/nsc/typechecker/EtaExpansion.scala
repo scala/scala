@@ -15,22 +15,7 @@ import symtab.Flags._
  *  @version 1.0
  */
 trait EtaExpansion { self: Analyzer =>
-
   import global._
-
-  object etaExpansion {
-    private def isMatch(vparam: ValDef, arg: Tree) = arg match {
-      case Ident(name)  => vparam.name == name
-      case _            => false
-    }
-
-    def unapply(tree: Tree): Option[(List[ValDef], Tree, List[Tree])] = tree match {
-      case Function(vparams, Apply(fn, args)) if (vparams corresponds args)(isMatch) =>
-        Some((vparams, fn, args))
-      case _ =>
-        None
-    }
-  }
 
   /** <p>
    *    Expand partial function applications of type `type`.
