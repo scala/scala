@@ -112,8 +112,9 @@ trait Erasure {
     protected def eraseDerivedValueClassRef(tref: TypeRef): Type = erasedValueClassArg(tref)
 
     def apply(tp: Type): Type = tp match {
-      case ConstantType(_) =>
-        tp
+      case ConstantType(ct) =>
+        if (ct.tag == ClazzTag) ConstantType(Constant(apply(ct.typeValue)))
+        else tp
       case st: ThisType if st.sym.isPackageClass =>
         tp
       case st: SubType =>

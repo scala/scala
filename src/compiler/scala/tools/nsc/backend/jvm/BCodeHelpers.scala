@@ -597,17 +597,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       val classSym = if (sym.isJavaDefined && sym.isModuleClass) exitingPickler(sym.linkedClassOfClass) else sym
       classBTypeFromSymbol(classSym).internalName
     }
-
-    /**
-     * The jvm descriptor of a type.
-     */
-    final def descriptor(t: Type): String = typeToBType(t).descriptor
-
-    /**
-     * The jvm descriptor for a symbol.
-     */
-    final def descriptor(sym: Symbol): String = classBTypeFromSymbol(sym).descriptor
-
   } // end of trait BCInnerClassGen
 
   trait BCAnnotGen extends BCInnerClassGen {
@@ -615,6 +604,35 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     private lazy val AnnotationRetentionPolicySourceValue  = AnnotationRetentionPolicyModule.tpe.member(TermName("SOURCE"))
     private lazy val AnnotationRetentionPolicyClassValue   = AnnotationRetentionPolicyModule.tpe.member(TermName("CLASS"))
     private lazy val AnnotationRetentionPolicyRuntimeValue = AnnotationRetentionPolicyModule.tpe.member(TermName("RUNTIME"))
+
+    /**
+     * Annotations are not processed by the compilation pipeline like ordinary trees. Instead, the
+     * typer extracts them into [[AnnotationInfo]] objects which are attached to the corresponding
+     * symbol (sym.annotations) or type (as an AnnotatedType, eliminated by erasure).
+     *
+     * For Scala annotations this is OK: they are stored in the pickle and ignored by the backend.
+     * Java annoations on the other hand are additionally emitted to the classfile in Java's format.
+     *
+     * This means that [[Type]] instances within an AnnotaionInfo reach the backend non-erased. Examples:
+     *   - @(javax.annotation.Resource @annotation.meta.getter) val x = 0
+     *     Here, annotationInfo.atp is an AnnotatedType.
+     *   - @SomeAnnotation[T] val x = 0
+     *     In principle, the annotationInfo.atp is a non-erased type ref. However, this cannot
+     *     actually happen because Java annotations cannot be generic.
+     *   - @javax.annotation.Resource(`type` = classOf[List[_]]) val x = 0
+     *     The annotationInfo.assocs contains a LiteralAnnotArg(Constant(tp)) where tp is the
+     *     non-erased existential type.
+     */
+    def erasedType(tp: Type): Type = enteringErasure {
+      // make sure we don't erase value class references to the type that the value class boxes
+      // this is basically the same logic as in erasure's preTransform, case Literal(classTag).
+      tp.dealiasWiden match {
+        case tr @ TypeRef(_, clazz, _) if clazz.isDerivedValueClass => erasure.scalaErasure.eraseNormalClassRef(tr)
+        case tpe => erasure.erasure(tpe.typeSymbol)(tpe)
+      }
+    }
+
+    def descriptorForErasedType(tp: Type): String = typeToBType(erasedType(tp)).descriptor
 
     /** Whether an annotation should be emitted as a Java annotation
       * .initialize: if 'annot' is read from pickle, atp might be uninitialized
@@ -652,7 +670,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         ca(idx) = b.asInstanceOf[Char]
         idx += 1
       }
-
       ca
     }
 
@@ -715,9 +732,10 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
               case StringTag  =>
                 assert(const.value != null, const) // TODO this invariant isn't documented in `case class Constant`
                 av.visit(name, const.stringValue)  // `stringValue` special-cases null, but that execution path isn't exercised for a const with StringTag
-              case ClazzTag   => av.visit(name, typeToBType(const.typeValue).toASMType)
+              case ClazzTag   =>
+                av.visit(name, typeToBType(erasedType(const.typeValue)).toASMType)
               case EnumTag =>
-                val edesc  = descriptor(const.tpe) // the class descriptor of the enumeration class.
+                val edesc  = descriptorForErasedType(const.tpe) // the class descriptor of the enumeration class.
                 val evalue = const.symbolValue.name.toString // value the actual enumeration value.
                 av.visitEnum(name, edesc, evalue)
             }
@@ -742,7 +760,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         case NestedAnnotArg(annInfo) =>
           val AnnotationInfo(typ, args, assocs) = annInfo
           assert(args.isEmpty, args)
-          val desc = descriptor(typ) // the class descriptor of the nested annotation class
+          val desc = descriptorForErasedType(typ) // the class descriptor of the nested annotation class
           val nestedVisitor = av.visitAnnotation(name, desc)
           emitAssocs(nestedVisitor, assocs)
       }
@@ -767,7 +785,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       for(annot <- annotations; if shouldEmitAnnotation(annot)) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
-        val av = cw.visitAnnotation(descriptor(typ), isRuntimeVisible(annot))
+        val av = cw.visitAnnotation(descriptorForErasedType(typ), isRuntimeVisible(annot))
         emitAssocs(av, assocs)
       }
     }
@@ -779,7 +797,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       for(annot <- annotations; if shouldEmitAnnotation(annot)) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
-        val av = mw.visitAnnotation(descriptor(typ), isRuntimeVisible(annot))
+        val av = mw.visitAnnotation(descriptorForErasedType(typ), isRuntimeVisible(annot))
         emitAssocs(av, assocs)
       }
     }
@@ -791,7 +809,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       for(annot <- annotations; if shouldEmitAnnotation(annot)) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
-        val av = fw.visitAnnotation(descriptor(typ), isRuntimeVisible(annot))
+        val av = fw.visitAnnotation(descriptorForErasedType(typ), isRuntimeVisible(annot))
         emitAssocs(av, assocs)
       }
     }
@@ -806,7 +824,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
            annot <- annots) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
-        val pannVisitor: asm.AnnotationVisitor = jmethod.visitParameterAnnotation(idx, descriptor(typ), isRuntimeVisible(annot))
+        val pannVisitor: asm.AnnotationVisitor = jmethod.visitParameterAnnotation(idx, descriptorForErasedType(typ), isRuntimeVisible(annot))
         emitAssocs(pannVisitor, assocs)
       }
     }
@@ -990,7 +1008,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
 
       mirrorMethod.visitCode()
 
-      mirrorMethod.visitFieldInsn(asm.Opcodes.GETSTATIC, moduleName, strMODULE_INSTANCE_FIELD, descriptor(module))
+      mirrorMethod.visitFieldInsn(asm.Opcodes.GETSTATIC, moduleName, strMODULE_INSTANCE_FIELD, classBTypeFromSymbol(module).descriptor)
 
       var index = 0
       for(jparamType <- paramJavaTypes) {
@@ -1051,7 +1069,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     def getExceptions(excs: List[AnnotationInfo]): List[String] = {
       for (ThrownException(tp) <- excs.distinct)
       yield {
-        val erased = enteringErasure(erasure.erasure(tp.typeSymbol)(tp))
+        val erased = erasedType(tp)
         internalName(erased.typeSymbol)
       }
     }

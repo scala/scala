@@ -1118,7 +1118,7 @@ abstract class Erasure extends AddInterfaces
 
         case Literal(ct) if ct.tag == ClazzTag
                          && ct.typeValue.typeSymbol != definitions.UnitClass =>
-          val erased = ct.typeValue match {
+          val erased = ct.typeValue.dealiasWiden match {
             case tr @ TypeRef(_, clazz, _) if clazz.isDerivedValueClass => scalaErasure.eraseNormalClassRef(tr)
             case tpe => specialScalaErasure(tpe)
           }
