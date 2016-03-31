@@ -83,6 +83,10 @@ object Exception {
    *  Pass a different value for rethrow if you want to probably
    *  unwisely allow catching control exceptions and other throwables
    *  which the rest of the world may expect to get through.
+   *  @tparam T result type of bodies used in try and catch blocks
+   *  @param pf Partial function used when applying catch logic to determine result value
+   *  @param fin Finally logic which if defined will be invoked after catch logic
+   *  @param rethrow Predicate on throwables determining when to rethrow a caught [[Throwable]]
    */
   class Catch[+T](
     val pf: Catcher[T],
@@ -105,10 +109,12 @@ object Exception {
       }
       finally fin foreach (_.invoke())
 
-    /* Create an empty Try container with this Catch and the supplied `Finally`. */
-    def andFinally(body: => Unit): Catch[T] = fin match {
-      case None     => new Catch(pf, Some(new Finally(body)), rethrow)
-      case Some(f)  => new Catch(pf, Some(f and body), rethrow)
+    /** Create a new Catch container from this object and the supplied finally body.
+     *  @param body The additional logic to apply after all existing finally bodies
+     */
+    def andFinally(body: => Unit): Catch[T] = {
+      val appendedFin = fin map(_ and body) getOrElse new Finally(body)
+      new Catch(pf, Some(appendedFin), rethrow)
     }
 
     /** Apply this catch logic to the supplied body, mapping the result
@@ -117,13 +123,13 @@ object Exception {
     def opt[U >: T](body: => U): Option[U] = toOption(Some(body))
 
     /** Apply this catch logic to the supplied body, mapping the result
-     *  into Either[Throwable, T] - Left(exception) if an exception was caught,
-     *  Right(T) otherwise.
+     *  into `Either[Throwable, T]` - `Left(exception)` if an exception was caught,
+     *  `Right(T)` otherwise.
      */
     def either[U >: T](body: => U): Either[Throwable, U] = toEither(Right(body))
 
     /** Apply this catch logic to the supplied body, mapping the result
-     * into Try[T] - Failure if an exception was caught, Success(T) otherwise.
+     * into `Try[T]` - `Failure` if an exception was caught, `Success(T)` otherwise.
      */
     def withTry[U >: T](body: => U): scala.util.Try[U] = toTry(Success(body))
 
