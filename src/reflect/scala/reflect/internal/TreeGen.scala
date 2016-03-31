@@ -310,12 +310,15 @@ abstract class TreeGen {
   /** Builds a tuple */
   def mkTuple(elems: List[Tree], flattenUnary: Boolean = true): Tree = elems match {
     case Nil =>
-      Literal(Constant(()))
+      mkLiteralUnit
     case tree :: Nil if flattenUnary =>
       tree
     case _ =>
       Apply(scalaDot(TupleClass(elems.length).name.toTermName), elems)
   }
+
+  def mkLiteralUnit: Literal = Literal(Constant(()))
+  def mkUnitBlock(expr: Tree): Block = Block(List(expr), mkLiteralUnit)
 
   def mkTupleType(elems: List[Tree], flattenUnary: Boolean = true): Tree = elems match {
     case Nil =>
@@ -395,7 +398,7 @@ abstract class TreeGen {
         if (body forall treeInfo.isInterfaceMember) None
         else Some(
           atPos(wrappingPos(superPos, lvdefs)) (
-            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(lvdefs, Literal(Constant(()))))))
+            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(lvdefs, mkLiteralUnit))))
       }
       else {
         // convert (implicit ... ) to ()(implicit ... ) if it's the only parameter section
@@ -409,7 +412,7 @@ abstract class TreeGen {
                                          // therefore here we emit a dummy which gets populated when the template is named and typechecked
         Some(
           atPos(wrappingPos(superPos, lvdefs ::: vparamss1.flatten).makeTransparent) (
-            DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant(()))))))
+            DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), mkLiteralUnit))))
       }
     }
     constr foreach (ensureNonOverlapping(_, parents ::: gvdefs, focus = false))
@@ -481,7 +484,7 @@ abstract class TreeGen {
    *  written by end user. It's important to distinguish the two so that
    *  quasiquotes can strip synthetic ones away.
    */
-  def mkSyntheticUnit() = Literal(Constant(())).updateAttachment(SyntheticUnitAttachment)
+  def mkSyntheticUnit() = mkLiteralUnit.updateAttachment(SyntheticUnitAttachment)
 
   /** Create block of statements `stats`  */
   def mkBlock(stats: List[Tree], doFlatten: Boolean = true): Tree =

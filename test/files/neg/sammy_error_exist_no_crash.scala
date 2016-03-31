@@ -1,4 +1,4 @@
-abstract class F[T] { def apply(s: T): Int }
+trait F[T] { def apply(s: T): Int }
 
 object NeedsNiceError {
   def bar(x: F[_ >: String]) = ???

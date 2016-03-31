@@ -37,6 +37,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.FixedMirrorTreeCreator
     this.FixedMirrorTypeCreator
     this.CompoundTypeTreeOriginalAttachment
+    this.SAMFunction
     this.BackquotedIdentifierAttachment
     this.ForAttachment
     this.SyntheticUnitAttachment

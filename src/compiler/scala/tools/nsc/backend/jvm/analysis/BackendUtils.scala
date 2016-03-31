@@ -125,7 +125,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
 
   private val anonfunAdaptedName = """.*\$anonfun\$\d+\$adapted""".r
   def hasAdaptedImplMethod(closureInit: ClosureInstantiation): Boolean = {
-    isrJFunctionType(Type.getReturnType(closureInit.lambdaMetaFactoryCall.indy.desc).getInternalName) &&
+    isBuiltinFunctionType(Type.getReturnType(closureInit.lambdaMetaFactoryCall.indy.desc).getInternalName) &&
     anonfunAdaptedName.pattern.matcher(closureInit.lambdaMetaFactoryCall.implMethod.getName).matches
   }
 
@@ -250,7 +250,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     }
   }
 
-  def isrJFunctionType(internalName: InternalName): Boolean = srJFunctionRefs(internalName)
+  def isBuiltinFunctionType(internalName: InternalName): Boolean = functionRefs(internalName)
 
   /**
    * Visit the class node and collect all referenced nested classes.

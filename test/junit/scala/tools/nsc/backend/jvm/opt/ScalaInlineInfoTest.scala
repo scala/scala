@@ -100,7 +100,7 @@ class ScalaInlineInfoTest extends ClearAfterClass {
   @Test
   def inlineInfoSam(): Unit = {
     val code =
-      """abstract class C {
+      """trait C { // expected to be seen as sam: g(I)I
         |  def f = 0
         |  def g(x: Int): Int
         |  val foo = "hi"
@@ -108,10 +108,10 @@ class ScalaInlineInfoTest extends ClearAfterClass {
         |abstract class D {
         |  val biz: Int
         |}
-        |trait T {
+        |trait T { // expected to be seen as sam: h(Ljava/lang/String;)I
         |  def h(a: String): Int
         |}
-        |abstract class E extends T {
+        |trait E extends T { // expected to be seen as sam: h(Ljava/lang/String;)I
         |  def hihi(x: Int) = x
         |}
         |class F extends T {

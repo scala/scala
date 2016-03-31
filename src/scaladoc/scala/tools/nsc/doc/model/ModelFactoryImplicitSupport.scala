@@ -236,7 +236,7 @@ trait ModelFactoryImplicitSupport {
         try {
           // TODO: Not sure if `owner = sym.owner` is the right thing to do -- seems similar to what scalac should be doing
           val silentContext = context.make(owner = sym.owner).makeSilent(reportAmbiguousErrors = false)
-          val search = inferImplicit(EmptyTree, tpe, false, false, silentContext, false)
+          val search = inferImplicitByTypeSilent(tpe, silentContext)
           available = Some(search.tree != EmptyTree)
         } catch {
           case _: TypeError =>

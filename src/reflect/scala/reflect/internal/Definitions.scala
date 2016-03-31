@@ -675,6 +675,32 @@ trait Definitions extends api.StandardDefinitions {
     // Note that these call .dealiasWiden and not .normalize, the latter of which
     // tends to change the course of events by forcing types.
     def isFunctionType(tp: Type)       = isFunctionTypeDirect(tp.dealiasWiden)
+    // the number of arguments expected by the function described by `tp` (a FunctionN or SAM type),
+    // or `-1` if `tp` does not represent a function type or SAM
+    def functionArityFromType(tp: Type) = {
+      val dealiased = tp.dealiasWiden
+      if (isFunctionTypeDirect(dealiased)) dealiased.typeArgs.length - 1
+      else samOf(tp) match {
+        case samSym if samSym.exists => samSym.info.params.length
+        case _ => -1
+      }
+    }
+
+    // the result type of a function or corresponding SAM type
+    def functionResultType(tp: Type): Type = {
+      val dealiased = tp.dealiasWiden
+      if (isFunctionTypeDirect(dealiased)) dealiased.typeArgs.last
+      else samOf(tp) match {
+        case samSym if samSym.exists => tp.memberInfo(samSym).resultType.deconst
+        case _ => NoType
+      }
+    }
+
+    // the SAM's parameters and the Function's formals must have the same length
+    // (varargs etc don't come into play, as we're comparing signatures, not checking an application)
+    def samMatchesFunctionBasedOnArity(sam: Symbol, formals: List[Any]): Boolean =
+      sam.exists && sameLength(sam.info.params, formals)
+
     def isTupleType(tp: Type)          = isTupleTypeDirect(tp.dealiasWiden)
     def tupleComponents(tp: Type)      = tp.dealiasWiden.typeArgs
 
@@ -793,10 +819,6 @@ trait Definitions extends api.StandardDefinitions {
 
     private[this] var volatileRecursions: Int = 0
     private[this] val pendingVolatiles = mutable.HashSet[Symbol]()
-    def abstractFunctionForFunctionType(tp: Type) = {
-      assert(isFunctionType(tp), tp)
-      abstractFunctionType(tp.typeArgs.init, tp.typeArgs.last)
-    }
     def functionNBaseType(tp: Type): Type = tp.baseClasses find isFunctionSymbol match {
       case Some(sym) => tp baseType unspecializedSymbol(sym)
       case _         => tp
@@ -807,22 +829,29 @@ trait Definitions extends api.StandardDefinitions {
       (sym eq PartialFunctionClass) || (sym eq AbstractPartialFunctionClass)
     }
 
+    private[this] val doSam = settings.isScala212 || (settings.isScala211 && settings.Xexperimental)
+
     /** The single abstract method declared by type `tp` (or `NoSymbol` if it cannot be found).
      *
      * The method must be monomorphic and have exactly one parameter list.
      * The class defining the method is a supertype of `tp` that
      * has a public no-arg primary constructor.
      */
-    def samOf(tp: Type): Symbol = if (!settings.Xexperimental) NoSymbol else findSam(tp)
+    def samOf(tp: Type): Symbol = if (!doSam) NoSymbol else {
+      // look at erased type because we (only) care about what ends up in bytecode
+      // (e.g., an alias type or intersection type is fine as long as the intersection dominator compiles to an interface)
+      val tpSym = erasure.javaErasure(tp).typeSymbol
 
-    def findSam(tp: Type): Symbol = {
-      // if tp has a constructor, it must be public and must not take any arguments
-      // (not even an implicit argument list -- to keep it simple for now)
-      val tpSym  = tp.typeSymbol
-      val ctor   = tpSym.primaryConstructor
-      val ctorOk = !ctor.exists || (!ctor.isOverloaded && ctor.isPublic && ctor.info.params.isEmpty && ctor.info.paramSectionCount <= 1)
+      if (tpSym.exists && tpSym.isClass
+          // if tp has a constructor (its class is not a trait), it must be public and must not take any arguments
+          // (implementation restriction: implicit argument lists are excluded to simplify type inference in adaptToSAM)
+          && { val ctor = tpSym.primaryConstructor
+            !ctor.exists || (!ctor.isOverloaded && ctor.isPublic && ctor.info.params.isEmpty && ctor.info.paramSectionCount <= 1)}
+          // we won't be able to create an instance of tp if it doesn't correspond to its self type
+          // (checking conformance gets complicated when tp is not fully defined, so let's just rule out self types entirely)
+          && !tpSym.hasSelfType
+      ) {
 
-      if (tpSym.exists && ctorOk) {
         // find the single abstract member, if there is one
         // don't go out requiring DEFERRED members, as you will get them even if there's a concrete override:
         //    scala> abstract class X { def m: Int }
@@ -1538,7 +1567,6 @@ trait Definitions extends api.StandardDefinitions {
       private lazy val PolySigMethods: Set[Symbol] = Set[Symbol](MethodHandle.info.decl(sn.Invoke), MethodHandle.info.decl(sn.InvokeExact)).filter(_.exists)
 
       lazy val Scala_Java8_CompatPackage = rootMirror.getPackageIfDefined("scala.runtime.java8")
-      lazy val Scala_Java8_CompatPackage_JFunction = (0 to MaxFunctionArity).toArray map (i => getMemberIfDefined(Scala_Java8_CompatPackage.moduleClass, TypeName("JFunction" + i)))
     }
   }
 }

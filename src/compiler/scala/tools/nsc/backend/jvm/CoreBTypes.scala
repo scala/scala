@@ -219,14 +219,12 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
 
   // enumeration of specialized classes is temporary, while we still use the java-defined JFunctionN.
   // once we switch to ordinary FunctionN, we can use specializedSubclasses just like for tuples.
-  private def functionClasses(base: String): Set[Symbol] = {
-    def primitives = Iterator("B", "S", "I", "J", "C", "F", "D", "Z", "V")
+  private def specializedJFunctionSymbols(base: String): Seq[Symbol] = {
+    def primitives = Seq("B", "S", "I", "J", "C", "F", "D", "Z", "V")
     def ijfd = Iterator("I", "J", "F", "D")
     def ijfdzv = Iterator("I", "J", "F", "D", "Z", "V")
     def ijd = Iterator("I", "J", "D")
-    val classNames = Set.empty[String] ++ {
-      (0 to 22).map(base + _)
-    } ++ {
+    val classNames = {
       primitives.map(base + "0$mc" + _ + "$sp") // Function0
     } ++ {
       // return type specializations appear first in the name string (alphabetical sorting)
@@ -237,7 +235,7 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
     classNames map getRequiredClass
   }
 
-  lazy val srJFunctionRefs: Set[InternalName] = functionClasses("scala.runtime.java8.JFunction").map(classBTypeFromSymbol(_).internalName)
+  lazy val functionRefs: Set[InternalName] = (FunctionClass.seq ++ specializedJFunctionSymbols("scala.runtime.java8.JFunction")).map(classBTypeFromSymbol(_).internalName).toSet
 
   lazy val typeOfArrayOp: Map[Int, BType] = {
     import scalaPrimitives._
@@ -343,7 +341,7 @@ trait CoreBTypesProxyGlobalIndependent[BTS <: BTypes] {
   def srRefConstructors        : Map[InternalName, MethodNameAndType]
   def tupleClassConstructors   : Map[InternalName, MethodNameAndType]
 
-  def srJFunctionRefs: Set[InternalName]
+  def functionRefs: Set[InternalName]
 
   def lambdaMetaFactoryBootstrapHandle  : asm.Handle
   def lambdaDeserializeBootstrapHandle  : asm.Handle
@@ -410,7 +408,7 @@ final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: 
   def srRefConstructors        : Map[InternalName, MethodNameAndType] = _coreBTypes.srRefConstructors
   def tupleClassConstructors   : Map[InternalName, MethodNameAndType] = _coreBTypes.tupleClassConstructors
 
-  def srJFunctionRefs: Set[InternalName] = _coreBTypes.srJFunctionRefs
+  def functionRefs: Set[InternalName] = _coreBTypes.functionRefs
 
   def srSymbolLiteral           : ClassBType = _coreBTypes.srSymbolLiteral
   def srStructuralCallSite      : ClassBType = _coreBTypes.srStructuralCallSite

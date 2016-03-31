@@ -174,7 +174,7 @@ class CallGraphTest extends ClearAfterClass {
         |  def t2(i: Int, f: Int => Int, z: Int) = h(f) + i - z
         |  def t3(f: Int => Int) = h(x => f(x + 1))
         |}
-        |abstract class D {
+        |trait D {
         |  def iAmASam(x: Int): Int
         |  def selfSamCall = iAmASam(10)
         |}

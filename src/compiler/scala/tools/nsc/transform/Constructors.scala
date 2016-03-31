@@ -501,8 +501,6 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
         !sym.isSetter
       )
 
-      private def possiblySpecialized(s: Symbol) = specializeTypes.specializedTypeVars(s).nonEmpty
-
       /*
        * whether `sym` denotes a param-accessor (ie a field) that fulfills all of:
        *   (a) has stationary value, ie the same value provided via the corresponding ctor-arg; and
@@ -511,7 +509,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
        *         (b.2) the constructor in the specialized (sub-)class.
        *   (c) isn't part of a DelayedInit subclass.
        */
-      private def canBeSupplanted(sym: Symbol) = !isDelayedInitSubclass && isStationaryParamRef(sym) && !possiblySpecialized(sym)
+      private def canBeSupplanted(sym: Symbol) = !isDelayedInitSubclass && isStationaryParamRef(sym) && !specializeTypes.possiblySpecialized(sym)
 
       override def transform(tree: Tree): Tree = tree match {
         case Apply(Select(This(_), _), List()) =>
@@ -531,7 +529,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
           gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
 
         case Select(_, _) if guardSpecializedFieldInit => // reasoning behind this guard in the docu of `usesSpecializedField`
-          if (possiblySpecialized(tree.symbol)) {
+          if (specializeTypes.possiblySpecialized(tree.symbol)) {
             usesSpecializedField = true
           }
           super.transform(tree)

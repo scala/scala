@@ -4,8 +4,8 @@
  * What you see below is very much work-in-progress. The following features are implemented:
  *   - Compiling all classses for the compiler and library ("compile" in the respective subprojects)
  *   - Running JUnit tests ("test") and partest ("test/it:test")
- *   - Creating build-sbt/quick with all compiled classes and launcher scripts ("dist/mkQuick")
- *   - Creating build-sbt/pack with all JARs and launcher scripts ("dist/mkPack")
+ *   - Creating build/quick with all compiled classes and launcher scripts ("dist/mkQuick")
+ *   - Creating build/pack with all JARs and launcher scripts ("dist/mkPack")
  *   - Building all scaladoc sets ("doc")
  *   - Publishing ("publishDists" and standard sbt tasks like "publish" and "publishLocal")
  *
@@ -722,8 +722,8 @@ def configureAsSubproject(project: Project): Project = {
 
 lazy val buildDirectory = settingKey[File]("The directory where all build products go. By default ./build")
 lazy val mkBin = taskKey[Seq[File]]("Generate shell script (bash or Windows batch).")
-lazy val mkQuick = taskKey[Unit]("Generate a full build, including scripts, in build-sbt/quick")
-lazy val mkPack = taskKey[Unit]("Generate a full build, including scripts, in build-sbt/pack")
+lazy val mkQuick = taskKey[Unit]("Generate a full build, including scripts, in build/quick")
+lazy val mkPack = taskKey[Unit]("Generate a full build, including scripts, in build/pack")
 
 // Defining these settings is somewhat redundant as we also redefine settings that depend on them.
 // However, IntelliJ's project import works better when these are set correctly.
@@ -782,7 +782,7 @@ def generateServiceProviderResources(services: (String, String)*): Setting[_] =
     }
   }.taskValue
 
-buildDirectory in ThisBuild := (baseDirectory in ThisBuild).value / "build-sbt"
+buildDirectory in ThisBuild := (baseDirectory in ThisBuild).value / "build"
 
 // Add tab completion to partest
 commands += Command("partest")(_ => PartestUtil.partestParser((baseDirectory in ThisBuild).value, (baseDirectory in ThisBuild).value / "test")) { (state, parsed) =>

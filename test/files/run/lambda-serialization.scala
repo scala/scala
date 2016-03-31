@@ -1,8 +1,11 @@
 import java.io.{ByteArrayInputStream, ObjectInputStream, ObjectOutputStream, ByteArrayOutputStream}
 
+trait IntToString { def apply(i: Int): String }
+
 object Test {
   def main(args: Array[String]): Unit = {
-    roundTrip
+    roundTrip()
+    roundTripIndySam()
   }
 
   def roundTrip(): Unit = {
@@ -20,6 +23,15 @@ object Test {
     val specializedLambda = (p: Int) => List(p, c).length
     assert(serializeDeserialize(specializedLambda).apply(42) == 2)
     assert(serializeDeserialize(serializeDeserialize(specializedLambda)).apply(42) == 2)
+  }
+
+  // lambda targeting a SAM, not a FunctionN (should behave the same way)
+  def roundTripIndySam(): Unit = {
+    val lambda: IntToString = (x: Int) => "yo!" * x
+    val reconstituted1 = serializeDeserialize(lambda).asInstanceOf[IntToString]
+    val reconstituted2 = serializeDeserialize(reconstituted1).asInstanceOf[IntToString]
+    assert(reconstituted1.apply(2) == "yo!yo!")
+    assert(reconstituted1.getClass == reconstituted2.getClass)
   }
 
   def serializeDeserialize[T <: AnyRef](obj: T) = {
