@@ -244,6 +244,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     var context = context0
     def context1 = context
 
+    // for use with silent type checking to when we can't have results with undetermined type params
+    // note that this captures the context var
+    val isMonoContext = (_: Any) => context.undetparams.isEmpty
+
     def dropExistential(tp: Type): Type = tp match {
       case ExistentialType(tparams, tpe) =>
         new SubstWildcardMap(tparams).apply(tp)
@@ -2888,20 +2892,31 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         // If we're typing `(a1: T1, ..., aN: TN) => m(a1,..., aN)`, where some Ti are not fully defined,
         // type `m` directly (undoing eta-expansion of method m) to determine the argument types.
+        // This tree is the result from one of:
+        //   - manual eta-expansion with named arguments (x => f(x));
+        //   - wildcard-style eta expansion (`m(_, _,)`);
+        //   - instantiateToMethodType adapting a tree of method type to a function type using etaExpand.
+        //
+        // Note that method values are a separate thing (`m _`): they have the idiosyncratic shape
+        // of `Typed(expr, Function(Nil, EmptyTree))`
         val ptUnrollingEtaExpansion =
           if (paramsMissingType.nonEmpty && pt != ErrorType) fun.body match {
+            // we can compare arguments and parameters by name because there cannot be a binder between
+            // the function's valdefs and the Apply's arguments
             case Apply(meth, args) if (vparams corresponds args) { case (p, Ident(name)) => p.name == name case _ => false } =>
+              // We're looking for a method (as indicated by FUNmode in the silent typed below),
+              // so let's make sure our expected type is a MethodType
               val methArgs = NoSymbol.newSyntheticValueParams(argpts map { case NoType => WildcardType case tp => tp })
-              // we're looking for a method (as indicated by FUNmode), so let's make sure our expected type is a MethodType
-              val methPt = MethodType(methArgs, respt)
-
-              silent(_.typed(meth, mode.forFunMode, methPt)) filter (_ => context.undetparams.isEmpty) map { methTyped =>
+              silent(_.typed(meth, mode.forFunMode, MethodType(methArgs, respt))) filter (isMonoContext) map { methTyped =>
                 // if context.undetparams is not empty, the method was polymorphic,
                 // so we need the missing arguments to infer its type. See #871
                 val funPt = normalize(methTyped.tpe) baseType FunctionClass(numVparams)
                 // println(s"typeUnEtaExpanded $meth : ${methTyped.tpe} --> normalized: $funPt")
 
-                if (isFunctionType(funPt) && isFullyDefined(funPt)) funPt
+                // If we are sure this function type provides all the necesarry info, so that we won't have
+                // any undetermined argument types, go ahead an recurse below (`typedFunction(fun, mode, ptUnrollingEtaExpansion)`)
+                // and rest assured we won't end up right back here (and keep recursing)
+                if (isFunctionType(funPt) && funPt.typeArgs.iterator.take(numVparams).forall(isFullyDefined)) funPt
                 else null
               } orElse { _ => null }
             case _ => null
