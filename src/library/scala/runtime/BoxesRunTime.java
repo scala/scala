@@ -236,10 +236,10 @@ public final class BoxesRunTime
         if (iv == dv) return iv;
 
         long lv = n.longValue();
-        if (lv == dv) return java.lang.Long.valueOf(lv).hashCode();
+        if (lv == dv) return java.lang.Long.hashCode(lv);
 
         float fv = n.floatValue();
-        if (fv == dv) return java.lang.Float.valueOf(fv).hashCode();
+        if (fv == dv) return java.lang.Float.hashCode(fv);
         else return n.hashCode();
     }
     public static int hashFromFloat(java.lang.Float n) {
@@ -248,7 +248,7 @@ public final class BoxesRunTime
         if (iv == fv) return iv;
 
         long lv = n.longValue();
-        if (lv == fv) return java.lang.Long.valueOf(lv).hashCode();
+        if (lv == fv) return java.lang.Long.hashCode(lv);
         else return n.hashCode();
     }
     public static int hashFromNumber(java.lang.Number n) {

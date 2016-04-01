@@ -66,13 +66,10 @@ trait Task[R, +Tp] {
   }
 
   private[parallel] def mergeThrowables(that: Task[_, _]) {
-    // TODO: As soon as we target Java >= 7, use Throwable#addSuppressed
-    // to pass additional Throwables to the caller, e. g.
-    // if (this.throwable != null && that.throwable != null)
-    //   this.throwable.addSuppressed(that.throwable)
-    // For now, we just use whatever Throwable comes across “first”.
-    if (this.throwable == null && that.throwable != null)
-      this.throwable = that.throwable
+     if (this.throwable != null && that.throwable != null)
+       this.throwable.addSuppressed(that.throwable)
+     else if (this.throwable == null && that.throwable != null)
+       this.throwable = that.throwable
   }
 
   // override in concrete task implementations to signal abort to other tasks

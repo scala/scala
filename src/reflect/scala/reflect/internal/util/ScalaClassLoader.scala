@@ -139,6 +139,10 @@ object ScalaClassLoader {
       classloaderURLs :+= url
       super.addURL(url)
     }
+    override def close(): Unit = {
+      super.close()
+      classloaderURLs = null
+    }
   }
 
   def fromURLs(urls: Seq[URL], parent: ClassLoader = null): URLClassLoader =
