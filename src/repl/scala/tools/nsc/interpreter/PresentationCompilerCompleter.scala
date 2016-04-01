@@ -76,8 +76,7 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion {
               case _ => false
             }
             (
-                 isUniversal && nme.isReplWrapperName(m.prefix.typeSymbol.name)
-              || isUniversal && tabCount == 0 && r.name.isEmpty
+              isUniversal && tabCount == 0 && r.name.isEmpty
               || viaUniversalExtensionMethod && tabCount == 0 && r.name.isEmpty
             )
           }
