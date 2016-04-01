@@ -200,7 +200,8 @@ import scala.language.implicitConversions"""
     def classLines: List[String]
     def objectLines: List[String]
     def commonClassLines = List(
-      "override def getClass(): Class[@name@] = null"
+      "// Provide a more specific return type for Scaladoc",
+      "override def getClass(): Class[@name@] = ???"
     )
 
     def lcname = name.toLowerCase
@@ -225,15 +226,13 @@ import scala.language.implicitConversions"""
     def indent(s: String)  = if (s == "") "" else "  " + s
     def indentN(s: String) = s.lines map indent mkString "\n"
 
-    def boxUnboxImpls = Map(
+    def boxUnboxInterpolations = Map(
       "@boxRunTimeDoc@" -> """
  *  Runtime implementation determined by `scala.runtime.BoxesRunTime.boxTo%s`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
  *""".format(boxedSimpleName),
-      "@boxImpl@"   -> "%s.valueOf(x)".format(boxedName),
       "@unboxRunTimeDoc@" -> """
  *  Runtime implementation determined by `scala.runtime.BoxesRunTime.unboxTo%s`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
  *""".format(name),
-      "@unboxImpl@" -> "x.asInstanceOf[%s].%sValue()".format(boxedName, lcname),
       "@unboxDoc@"  -> "the %s resulting from calling %sValue() on `x`".format(name, lcname)
     )
     def interpolations = Map(
@@ -243,7 +242,7 @@ import scala.language.implicitConversions"""
       "@boxed@"     -> boxedName,
       "@lcname@"    -> lcname,
       "@zero@"      -> zeroRep
-    ) ++ boxUnboxImpls
+    ) ++ boxUnboxInterpolations
 
     def interpolate(s: String): String = interpolations.foldLeft(s) {
       case (str, (key, value)) => str.replaceAll(key, value)
@@ -305,7 +304,7 @@ package scala
  *  @param  x   the @name@ to be boxed
  *  @return     a @boxed@ offering `x` as its underlying value.
  */
-def box(x: @name@): @boxed@ = @boxImpl@
+def box(x: @name@): @boxed@ = ???
 
 /** Transform a boxed type into a value type.  Note that this
  *  method is not typesafe: it accepts any Object, but will throw
@@ -315,7 +314,7 @@ def box(x: @name@): @boxed@ = @boxImpl@
  *  @throws     ClassCastException  if the argument is not a @boxed@
  *  @return     @unboxDoc@
  */
-def unbox(x: java.lang.Object): @name@ = @unboxImpl@
+def unbox(x: java.lang.Object): @name@ = ???
 
 /** The String representation of the scala.@name@ companion object. */
 override def toString = "object scala.@name@"
@@ -444,7 +443,8 @@ def &(x: Boolean): Boolean
   */
 def ^(x: Boolean): Boolean
 
-override def getClass(): Class[Boolean] = null
+// Provide a more specific return type for Scaladoc
+override def getClass(): Class[Boolean] = ???
     """.trim.lines.toList
 
     def objectLines = interpolate(allCompanions + "\n" + nonUnitCompanions).lines.toList
@@ -458,15 +458,14 @@ override def getClass(): Class[Boolean] = null
  */
 """
     def classLines  = List(
-      """override def getClass(): Class[Unit] = null"""
+      "// Provide a more specific return type for Scaladoc",
+      "override def getClass(): Class[Unit] = ???"
     )
     def objectLines = interpolate(allCompanions).lines.toList
 
-    override def boxUnboxImpls = Map(
+    override def boxUnboxInterpolations = Map(
       "@boxRunTimeDoc@" -> "",
-      "@boxImpl@"   -> "scala.runtime.BoxedUnit.UNIT",
       "@unboxRunTimeDoc@" -> "",
-      "@unboxImpl@" -> "()",
       "@unboxDoc@"  -> "the Unit value ()"
     )
   }

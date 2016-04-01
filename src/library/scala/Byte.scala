@@ -434,7 +434,8 @@ final abstract class Byte private extends AnyVal {
   /** Returns the remainder of the division of this value by `x`. */
   def %(x: Double): Double
 
-  override def getClass(): Class[Byte] = null
+  // Provide a more specific return type for Scaladoc
+  override def getClass(): Class[Byte] = ???
 }
 
 object Byte extends AnyValCompanion {
@@ -451,7 +452,7 @@ object Byte extends AnyValCompanion {
    *  @param  x   the Byte to be boxed
    *  @return     a java.lang.Byte offering `x` as its underlying value.
    */
-  def box(x: Byte): java.lang.Byte = java.lang.Byte.valueOf(x)
+  def box(x: Byte): java.lang.Byte = ???
 
   /** Transform a boxed type into a value type.  Note that this
    *  method is not typesafe: it accepts any Object, but will throw
@@ -463,7 +464,7 @@ object Byte extends AnyValCompanion {
    *  @throws     ClassCastException  if the argument is not a java.lang.Byte
    *  @return     the Byte resulting from calling byteValue() on `x`
    */
-  def unbox(x: java.lang.Object): Byte = x.asInstanceOf[java.lang.Byte].byteValue()
+  def unbox(x: java.lang.Object): Byte = ???
 
   /** The String representation of the scala.Byte companion object. */
   override def toString = "object scala.Byte"
