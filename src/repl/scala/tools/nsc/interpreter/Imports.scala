@@ -27,34 +27,12 @@ trait Imports {
   }
 
   /** Symbols whose contents are language-defined to be imported. */
-  def languageWildcardSyms: List[Symbol] = List(JavaLangPackage, ScalaPackage, PredefModule)
+  private def languageWildcardSyms: List[Symbol] = List(JavaLangPackage, ScalaPackage, PredefModule)
   def languageWildcardHandlers = languageWildcardSyms map makeWildcardImportHandler
-
-  def allImportedNames = importHandlers flatMap (_.importedNames)
-
-  /** Types which have been wildcard imported, such as:
-   *    val x = "abc" ; import x._  // type java.lang.String
-   *    import java.lang.String._   // object java.lang.String
-   *
-   *  Used by tab completion.
-   *
-   *  XXX right now this gets import x._ and import java.lang.String._,
-   *  but doesn't figure out import String._.  There's a lot of ad hoc
-   *  scope twiddling which should be swept away in favor of digging
-   *  into the compiler scopes.
-   */
-  def sessionWildcards: List[Type] = {
-    importHandlers filter (_.importsWildcard) map (_.targetType) distinct
-  }
-
-  def languageSymbols        = languageWildcardSyms flatMap membersAtPickler
-  def sessionImportedSymbols = importHandlers flatMap (_.importedSymbols)
-  def importedSymbols        = languageSymbols ++ sessionImportedSymbols
-  def importedTermSymbols    = importedSymbols collect { case x: TermSymbol => x }
 
   /** Tuples of (source, imported symbols) in the order they were imported.
    */
-  def importedSymbolsBySource: List[(Symbol, List[Symbol])] = {
+  private def importedSymbolsBySource: List[(Symbol, List[Symbol])] = {
     val lang    = languageWildcardSyms map (sym => (sym, membersAtPickler(sym)))
     val session = importHandlers filter (_.targetType != NoType) map { mh =>
       (mh.targetType.typeSymbol, mh.importedSymbols)
