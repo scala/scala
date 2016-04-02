@@ -29,6 +29,4 @@ import scala.annotation.meta._
  * @since 2.8.1
  */
 @param
-class deprecatedName(name: Symbol) extends scala.annotation.StaticAnnotation {
-  def this() = this(Symbol("<none>"))
-}
+class deprecatedName(name: Symbol = Symbol("<none>"), since: String = "") extends scala.annotation.StaticAnnotation
