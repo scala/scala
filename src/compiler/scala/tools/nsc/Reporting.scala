@@ -68,8 +68,9 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
     // behold! the symbol that caused the deprecation warning (may not be deprecated itself)
     def deprecationWarning(pos: Position, sym: Symbol, msg: String): Unit = _deprecationWarnings.warn(pos, msg)
     def deprecationWarning(pos: Position, sym: Symbol): Unit = {
-      val suffix = sym.deprecationMessage match { case Some(msg) => ": "+ msg case _ => "" }
-      deprecationWarning(pos, sym, s"$sym${sym.locationString} is deprecated$suffix")
+      val version = sym.deprecationVersion match { case Some(ver) => s" (since $ver)" case _ => "" }
+      val message = sym.deprecationMessage match { case Some(msg) => s": $msg"        case _ => "" }
+      deprecationWarning(pos, sym, s"$sym${sym.locationString} is deprecated$version$message")
     }
 
     private[this] var reportedFeature = Set[Symbol]()

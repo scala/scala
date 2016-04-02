@@ -871,13 +871,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         )
       }
 
-    def isStrictFP          = hasAnnotation(ScalaStrictFPAttr) || (enclClass hasAnnotation ScalaStrictFPAttr)
-    def isSerializable      = info.baseClasses.exists(p => p == SerializableClass || p == JavaSerializableClass)
-    def hasBridgeAnnotation = hasAnnotation(BridgeClass)
-    def isDeprecated        = hasAnnotation(DeprecatedAttr)
-    def deprecationMessage  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
-    def deprecationVersion  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)
-    def deprecatedParamName = getAnnotation(DeprecatedNameAttr) flatMap (_ symbolArg 0 orElse Some(nme.NO_NAME))
+    def isStrictFP             = hasAnnotation(ScalaStrictFPAttr) || (enclClass hasAnnotation ScalaStrictFPAttr)
+    def isSerializable         = info.baseClasses.exists(p => p == SerializableClass || p == JavaSerializableClass)
+    def hasBridgeAnnotation    = hasAnnotation(BridgeClass)
+    def isDeprecated           = hasAnnotation(DeprecatedAttr)
+    def deprecationMessage     = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
+    def deprecationVersion     = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)
+    def deprecatedParamName    = getAnnotation(DeprecatedNameAttr) flatMap (_ symbolArg 0 orElse Some(nme.NO_NAME))
+    def deprecatedParamVersion = getAnnotation(DeprecatedNameAttr) flatMap (_ symbolArg 1)
     def hasDeprecatedInheritanceAnnotation
                             = hasAnnotation(DeprecatedInheritanceAttr)
     def deprecatedInheritanceMessage
