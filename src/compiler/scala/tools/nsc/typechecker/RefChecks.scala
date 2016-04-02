@@ -548,10 +548,11 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
         def checkOverrideDeprecated() {
           if (other.hasDeprecatedOverridingAnnotation && !member.ownerChain.exists(x => x.isDeprecated || x.hasBridgeAnnotation)) {
-            val version = other.deprecatedOverridingVersion map (ver => s" (since $ver)") getOrElse ""
-            val message = other.deprecatedOverridingMessage map (msg => s": $msg")        getOrElse ""
-            val report = s"overriding ${other.fullLocationString} is deprecated$version$message"
-            currentRun.reporting.deprecationWarning(member.pos, other, report)
+            val version = other.deprecatedOverridingVersion.getOrElse("")
+            val since   = if (version.isEmpty) version else s" (since $version)"
+            val message = other.deprecatedOverridingMessage map (msg => s": $msg") getOrElse ""
+            val report  = s"overriding ${other.fullLocationString} is deprecated$since$message"
+            currentRun.reporting.deprecationWarning(member.pos, other, report, version)
           }
         }
       }
@@ -1423,7 +1424,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           currentRun.reporting.deprecationWarning(
             tree.pos,
             symbol,
-            s"${symbol.toString} overrides concrete, non-deprecated symbol(s):    ${concrOvers.map(_.name.decode).mkString(", ")}")
+            s"${symbol.toString} overrides concrete, non-deprecated symbol(s):    ${concrOvers.map(_.name.decode).mkString(", ")}", "")
       }
     }
     private def isRepeatedParamArg(tree: Tree) = currentApplication match {

@@ -113,7 +113,7 @@ trait Future[+T] extends Awaitable[T] {
    *
    * @group Callbacks
    */
-  @deprecated("use `foreach` or `onComplete` instead (keep in mind that they take total rather than partial functions)", "2.12")
+  @deprecated("use `foreach` or `onComplete` instead (keep in mind that they take total rather than partial functions)", "2.12.0")
   def onSuccess[U](pf: PartialFunction[T, U])(implicit executor: ExecutionContext): Unit = onComplete {
     case Success(v) =>
       pf.applyOrElse[T, Any](v, Predef.conforms[T]) // Exploiting the cached function to avoid MatchError
@@ -138,7 +138,7 @@ trait Future[+T] extends Awaitable[T] {
    *
    * @group Callbacks
    */
-  @deprecated("use `onComplete` or `failed.foreach` instead (keep in mind that they take total rather than partial functions)", "2.12")
+  @deprecated("use `onComplete` or `failed.foreach` instead (keep in mind that they take total rather than partial functions)", "2.12.0")
   def onFailure[U](@deprecatedName('callback) pf: PartialFunction[Throwable, U])(implicit executor: ExecutionContext): Unit = onComplete {
     case Failure(t) =>
       pf.applyOrElse[Throwable, Any](t, Predef.conforms[Throwable]) // Exploiting the cached function to avoid MatchError
@@ -688,7 +688,7 @@ object Future {
    * @param p         the predicate which indicates if it's a match
    * @return          the `Future` holding the optional result of the search
    */
-  @deprecated("use the overloaded version of this method that takes a scala.collection.immutable.Iterable instead", "2.12")
+  @deprecated("use the overloaded version of this method that takes a scala.collection.immutable.Iterable instead", "2.12.0")
   def find[T](@deprecatedName('futurestravonce) futures: TraversableOnce[Future[T]])(@deprecatedName('predicate) p: T => Boolean)(implicit executor: ExecutionContext): Future[Option[T]] = {
     val futuresBuffer = futures.toBuffer
     if (futuresBuffer.isEmpty) successful[Option[T]](None)
@@ -775,7 +775,7 @@ object Future {
    * @param op       the fold operation to be applied to the zero and futures
    * @return         the `Future` holding the result of the fold
    */
-  @deprecated("use Future.foldLeft instead", "2.12")
+  @deprecated("use Future.foldLeft instead", "2.12.0")
   def fold[T, R](futures: TraversableOnce[Future[T]])(zero: R)(@deprecatedName('foldFun) op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
     if (futures.isEmpty) successful(zero)
     else sequence(futures).map(_.foldLeft(zero)(op))
@@ -794,7 +794,7 @@ object Future {
    * @param op       the reduce operation which is applied to the results of the futures
    * @return         the `Future` holding the result of the reduce
    */
-  @deprecated("use Future.reduceLeft instead", "2.12")
+  @deprecated("use Future.reduceLeft instead", "2.12.0")
   def reduce[T, R >: T](futures: TraversableOnce[Future[T]])(op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
     if (futures.isEmpty) failed(new NoSuchElementException("reduce attempted on empty collection"))
     else sequence(futures).map(_ reduceLeft op)

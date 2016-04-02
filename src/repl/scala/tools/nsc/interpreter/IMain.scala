@@ -780,7 +780,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
           }
           ((pos, msg)) :: loop(filtered)
       }
-      val warnings = loop(run.reporting.allConditionalWarnings)
+      val warnings = loop(run.reporting.allConditionalWarnings.map{case (pos, (msg, since)) => (pos, msg)})
       if (warnings.nonEmpty)
         mostRecentWarnings = warnings
     }

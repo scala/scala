@@ -132,7 +132,7 @@ sealed abstract class Try[+T] extends Product with Serializable {
    *  collection" contract even though it seems unlikely to matter much in a
    *  collection with max size 1.
    */
-  @deprecatedInheritance("You were never supposed to be able to extend this class.", "2.12")
+  @deprecatedInheritance("You were never supposed to be able to extend this class.", "2.12.0")
   class WithFilter(p: T => Boolean) {
     def map[U](f:     T => U): Try[U]           = Try.this filter p map f
     def flatMap[U](f: T => Try[U]): Try[U]      = Try.this filter p flatMap f
