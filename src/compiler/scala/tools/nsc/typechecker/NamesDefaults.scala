@@ -565,14 +565,15 @@ trait NamesDefaults { self: Analyzer =>
           case Some(`name`)      => true
           case Some(nme.NO_NAME) => anonOK
         }
+      def since = param.deprecatedParamVersion.map(ver => s" (since $ver)").getOrElse("")
       def checkName = {
         val res = param.name == name
-        if (res && checkDeprecation(true)) warn(s"naming parameter $name has been deprecated.")
+        if (res && checkDeprecation(true)) warn(s"naming parameter $name is deprecated$since.")
         res
       }
       def checkAltName = {
         val res = checkDeprecation(false)
-        if (res) warn(s"the parameter name $name has been deprecated. Use ${param.name} instead.")
+        if (res) warn(s"the parameter name $name is deprecated$since: Use ${param.name} instead")
         res
       }
       !param.isSynthetic && (checkName || checkAltName)

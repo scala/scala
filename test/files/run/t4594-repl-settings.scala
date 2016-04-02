@@ -15,7 +15,7 @@ object Test extends SessionTest {
    |scala> :settings -deprecation
    |
    |scala> def b = depp
-   |<console>:12: warning: method depp is deprecated: Please don't do that.
+   |<console>:12: warning: method depp is deprecated (since Time began.): Please don't do that.
    |       def b = depp
    |               ^
    |b: String

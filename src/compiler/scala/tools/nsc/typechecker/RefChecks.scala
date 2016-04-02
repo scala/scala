@@ -548,9 +548,10 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
         def checkOverrideDeprecated() {
           if (other.hasDeprecatedOverridingAnnotation && !member.ownerChain.exists(x => x.isDeprecated || x.hasBridgeAnnotation)) {
-            val suffix = other.deprecatedOverridingMessage map (": " + _) getOrElse ""
-            val msg = s"overriding ${other.fullLocationString} is deprecated$suffix"
-            currentRun.reporting.deprecationWarning(member.pos, other, msg)
+            val version = other.deprecatedOverridingVersion map (ver => s" (since $ver)") getOrElse ""
+            val message = other.deprecatedOverridingMessage map (msg => s": $msg")        getOrElse ""
+            val report = s"overriding ${other.fullLocationString} is deprecated$version$message"
+            currentRun.reporting.deprecationWarning(member.pos, other, report)
           }
         }
       }
