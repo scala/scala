@@ -506,7 +506,7 @@ function listItem(entity, regExp) {
     } else {
         var spacer = document.createElement("div");
         spacer.className = "icon spacer";
-        li.appendChild(spacer);
+        li.insertBefore(spacer, iconElem);
     }
 
     var ul = document.createElement("ul");
