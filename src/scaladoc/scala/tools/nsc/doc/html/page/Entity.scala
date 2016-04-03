@@ -216,14 +216,13 @@ trait EntityPage extends HtmlPage {
     <body class={ tpl.kind + (if (tpl.isType) " type" else " value") }>
       <div id="definition">
         {
-          val (src, alt) = docEntityKindToBigImage(tpl)
-          val identifier = alt.toString.substring(0,2).toLowerCase
+          val imageClass = docEntityImageClass(tpl)
 
           tpl.companion match {
             case Some(companion) if (companion.visibility.isPublic && companion.inSource != None) =>
-              <a href={relativeLinkTo(companion)} title={docEntityKindToCompanionTitle(tpl)}><div class={s"big-circle companion $identifier"}>{ identifier.substring(0,1) }</div></a>
+              <a href={relativeLinkTo(companion)} title={docEntityKindToCompanionTitle(tpl)}><div class={s"big-circle $imageClass"}>{ imageClass.substring(0,1) }</div></a>
             case _ =>
-              <div class={ "big-circle " + alt.toString.toLowerCase }>{ identifier.substring(0,1) }</div>
+              <div class={s"big-circle $imageClass"}>{ imageClass.substring(0,1) }</div>
           }
         }
         { owner }

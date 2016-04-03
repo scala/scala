@@ -33,6 +33,7 @@ class HtmlFactory(val universe: doc.Universe, val reporter: ScalaDocReporter) {
     "class_comp.svg",
     "object_comp.svg",
     "trait_comp.svg",
+    "object_comp_trait.svg",
     "abstract_type.svg",
     "lato-v11-latin-100.eot",
     "lato-v11-latin-100.ttf",
