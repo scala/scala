@@ -275,8 +275,13 @@ $(document).ready(function() {
       }
     };
 
-    $(".toggleContainer:not(.diagram-container)").click(function() {
+    $(".toggleContainer:not(.diagram-container):not(.full-signature-block)").click(function() {
       toggleShowContentFct($(this));
+    });
+
+    $(".toggleContainer.full-signature-block").click(function() {
+      toggleShowContentFct($(this));
+      return false;
     });
 
     if ($("#order > ol > li.group").length == 1) { orderGroup(); };
