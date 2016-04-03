@@ -79,21 +79,24 @@ trait EntityPage extends HtmlPage {
               <ul>
                 {
                   def entityToUl(mbr: TemplateEntity with MemberEntity, indentation: Int): NodeSeq =
-                    <li class={"current-entities indented" + indentation}>
-                      {
-                        mbr match {
-                          case dtpl: DocTemplateEntity =>
-                            dtpl.companion.fold(<span class="separator"></span>) { c: DocTemplateEntity =>
-                              <a class="object" href={relativeLinkTo(c)} title={c.comment.fold("")(com => inlineToStr(com.short))}></a>
-                            }
-                          case _ => <span class="separator"></span>
+                    if (mbr.isObject && hasCompanion(mbr))
+                      NodeSeq.Empty
+                    else
+                      <li class={"current-entities indented" + indentation}>
+                        {
+                          mbr match {
+                            case dtpl: DocTemplateEntity =>
+                              dtpl.companion.fold(<span class="separator"></span>) { c: DocTemplateEntity =>
+                                <a class="object" href={relativeLinkTo(c)} title={c.comment.fold("")(com => inlineToStr(com.short))}></a>
+                              }
+                            case _ => <span class="separator"></span>
+                          }
                         }
-                      }
-                      <a class={mbr.kind} href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => inlineToStr(com.short))}></a>
-                      <a href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => inlineToStr(com.short))}>
-                        {mbr.name}
-                      </a>
-                    </li>
+                        <a class={mbr.kind} href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => inlineToStr(com.short))}></a>
+                        <a href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => inlineToStr(com.short))}>
+                          {mbr.name}
+                        </a>
+                      </li>
 
                   // Get path from root
                   val rootToParentLis = tpl.toRoot
@@ -123,7 +126,7 @@ trait EntityPage extends HtmlPage {
                   val subsToTplLis    = subsToTpl.map(memberToHtml(_, tpl, indentation = rootToParentLis.length))
                   val subsAfterTplLis = subsAfterTpl.map(memberToHtml(_, tpl, indentation = rootToParentLis.length))
                   val currEntityLis   = currentPackageTpls
-                    .filter(x => !x.isPackage && (x.isTrait || x.isClass || x.isAbstractType))
+                    .filter(x => !x.isPackage && (x.isTrait || x.isClass || x.isAbstractType || x.isObject))
                     .sortBy(_.name)
                     .map(entityToUl(_, (if (tpl.isPackage) 0 else -1) + rootToParentLis.length))
                   val currSubLis = tpl.templates

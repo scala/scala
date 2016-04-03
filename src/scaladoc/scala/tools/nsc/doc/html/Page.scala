@@ -102,6 +102,11 @@ abstract class Page {
     relativize(thisPage.path.reverse, destPath.reverse).mkString("/")
   }
 
+  def hasCompanion(mbr: TemplateEntity): Boolean = mbr match {
+    case dtpl: DocTemplateEntity => dtpl.companion.isDefined
+    case _ => false
+  }
+
   protected def inlineToStr(inl: comment.Inline): String = inl match {
     case comment.Chain(items) => items flatMap (inlineToStr(_)) mkString ""
     case comment.Italic(in) => inlineToStr(in)
