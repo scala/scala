@@ -649,11 +649,14 @@ lazy val root = (project in file("."))
     publish := {},
     publishLocal := {},
     commands ++= ScriptCommands.all,
-    // Generate (Product|TupleN|Function|AbstractFunction)*.scala files. Once the ANT build is gone,
-    // we should move them into a managedSources dir instead of overwriting sources checked into git.
-    commands += Command.command("genprod") { state =>
-      val dir = (((baseDirectory in ThisBuild).value) / "src" / "library" / "scala").getPath
-      genprod.main(Array(dir))
+    // Generate (Product|TupleN|Function|AbstractFunction)*.scala files and scaladoc stubs for all AnyVal sources.
+    // They should really go into a managedSources dir instead of overwriting sources checked into git but scaladoc
+    // source links (could be fixed by shipping these sources with the scaladoc bundles) and scala-js source maps
+    // rely on them being on github.
+    commands += Command.command("generateSources") { state =>
+      val dir = (((baseDirectory in ThisBuild).value) / "src" / "library" / "scala")
+      genprod.main(Array(dir.getPath))
+      GenerateAnyVals.run(dir.getAbsoluteFile)
       state
     }
   )
