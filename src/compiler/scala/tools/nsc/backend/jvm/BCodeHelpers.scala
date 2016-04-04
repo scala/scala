@@ -263,11 +263,13 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
           val name      = methodSym.javaSimpleName.toString // same as in genDefDef
           val signature = name + methodSymToDescriptor(methodSym)
 
-          // Some detours are required here because of changing flags (lateDEFERRED):
-          // 1. Why the phase travel? Concrete trait methods obtain the lateDEFERRED flag in Mixin.
-          //    This makes isEffectivelyFinalOrNotOverridden false, which would prevent non-final
-          //    but non-overridden methods of sealed traits from being inlined.
-          val effectivelyFinal = exitingPickler(methodSym.isEffectivelyFinalOrNotOverridden) && !(methodSym.owner.isTrait && methodSym.isModule)
+          // In `trait T { object O }`, `oSym.isEffectivelyFinalOrNotOverridden` is true, but the
+          // method is abstract in bytecode, `defDef.rhs.isEmpty`. Abstract methods are excluded
+          // so they are not marked final in the InlineInfo attribute.
+          //
+          // However, due to https://github.com/scala/scala-dev/issues/126, this currently does not
+          // work, the abstract accessor for O will be marked effectivelyFinal.
+          val effectivelyFinal = methodSym.isEffectivelyFinalOrNotOverridden && !methodSym.isDeferred
 
           val info = MethodInlineInfo(
             effectivelyFinal                    = effectivelyFinal,
