@@ -216,16 +216,20 @@ span.symbol > a {
   background: url("class.svg") no-repeat center;
 }
 
-.big-circle.cl.companion {
+.big-circle.class-companion-object {
   background: url("class_comp.svg") no-repeat center;
 }
 
-.big-circle.ob.companion {
+.big-circle.object-companion-class {
   background: url("object_comp.svg") no-repeat center;
 }
 
-.big-circle.tr.companion {
+.big-circle.trait-companion-object {
   background: url("trait_comp.svg") no-repeat center;
+}
+
+.big-circle.object-companion-trait {
+  background: url("object_comp_trait.svg") no-repeat center;
 }
 
 .big-circle.object {

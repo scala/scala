@@ -79,21 +79,24 @@ trait EntityPage extends HtmlPage {
               <ul>
                 {
                   def entityToUl(mbr: TemplateEntity with MemberEntity, indentation: Int): NodeSeq =
-                    <li class={"current-entities indented" + indentation}>
-                      {
-                        mbr match {
-                          case dtpl: DocTemplateEntity =>
-                            dtpl.companion.fold(<span class="separator"></span>) { c: DocTemplateEntity =>
-                              <a class="object" href={relativeLinkTo(c)} title={c.comment.fold("")(com => inlineToStr(com.short))}></a>
-                            }
-                          case _ => <span class="separator"></span>
+                    if (mbr.isObject && hasCompanion(mbr))
+                      NodeSeq.Empty
+                    else
+                      <li class={"current-entities indented" + indentation}>
+                        {
+                          mbr match {
+                            case dtpl: DocTemplateEntity =>
+                              dtpl.companion.fold(<span class="separator"></span>) { c: DocTemplateEntity =>
+                                <a class="object" href={relativeLinkTo(c)} title={c.comment.fold("")(com => inlineToStr(com.short))}></a>
+                              }
+                            case _ => <span class="separator"></span>
+                          }
                         }
-                      }
-                      <a class={mbr.kind} href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => inlineToStr(com.short))}></a>
-                      <a href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => inlineToStr(com.short))}>
-                        {mbr.name}
-                      </a>
-                    </li>
+                        <a class={mbr.kind} href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => inlineToStr(com.short))}></a>
+                        <a href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => inlineToStr(com.short))}>
+                          {mbr.name}
+                        </a>
+                      </li>
 
                   // Get path from root
                   val rootToParentLis = tpl.toRoot
@@ -123,7 +126,7 @@ trait EntityPage extends HtmlPage {
                   val subsToTplLis    = subsToTpl.map(memberToHtml(_, tpl, indentation = rootToParentLis.length))
                   val subsAfterTplLis = subsAfterTpl.map(memberToHtml(_, tpl, indentation = rootToParentLis.length))
                   val currEntityLis   = currentPackageTpls
-                    .filter(x => !x.isPackage && (x.isTrait || x.isClass || x.isAbstractType))
+                    .filter(x => !x.isPackage && (x.isTrait || x.isClass || x.isAbstractType || x.isObject))
                     .sortBy(_.name)
                     .map(entityToUl(_, (if (tpl.isPackage) 0 else -1) + rootToParentLis.length))
                   val currSubLis = tpl.templates
@@ -213,14 +216,13 @@ trait EntityPage extends HtmlPage {
     <body class={ tpl.kind + (if (tpl.isType) " type" else " value") }>
       <div id="definition">
         {
-          val (src, alt) = docEntityKindToBigImage(tpl)
-          val identifier = alt.toString.substring(0,2).toLowerCase
+          val imageClass = docEntityImageClass(tpl)
 
           tpl.companion match {
             case Some(companion) if (companion.visibility.isPublic && companion.inSource != None) =>
-              <a href={relativeLinkTo(companion)} title={docEntityKindToCompanionTitle(tpl)}><div class={s"big-circle companion $identifier"}>{ identifier.substring(0,1) }</div></a>
+              <a href={relativeLinkTo(companion)} title={docEntityKindToCompanionTitle(tpl)}><div class={s"big-circle $imageClass"}>{ imageClass.substring(0,1) }</div></a>
             case _ =>
-              <div class={ "big-circle " + alt.toString.toLowerCase }>{ identifier.substring(0,1) }</div>
+              <div class={s"big-circle $imageClass"}>{ imageClass.substring(0,1) }</div>
           }
         }
         { owner }

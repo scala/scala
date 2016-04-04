@@ -216,40 +216,15 @@ abstract class HtmlPage extends Page { thisPage =>
     val Trait, Class, Type, Object, Package = Value
   }
 
-  /** Returns the _big image name and the alt attribute
-   *  corresponding to the DocTemplate Entity (upper left icon) */
-  def docEntityKindToBigImage(ety: DocTemplateEntity) = {
-    def entityToImage(e: DocTemplateEntity) =
-      if (e.isTrait)                              Image.Trait
-      else if (e.isClass)                         Image.Class
-      else if (e.isAbstractType || e.isAliasType) Image.Type
-      else if (e.isObject)                        Image.Object
-      else if (e.isPackage)                       Image.Package
-      else {
-        // FIXME: an entity *should* fall into one of the above categories,
-        // but AnyRef is somehow not
-        Image.Class
-      }
-
-    val image = entityToImage(ety)
-    val companionImage = ety.companion filter {
-      e => e.visibility.isPublic && ! e.inSource.isEmpty
-    } map { entityToImage }
-
-    (image, companionImage) match {
-      case (from, Some(to)) =>
-        ((from + "_to_" + to + "_big.png").toLowerCase, from + "/" + to)
-      case (from, None) =>
-        ((from + "_big.png").toLowerCase, from.toString)
-    }
-  }
-
   def permalink(template: Entity, isSelf: Boolean = true): Elem =
     <span class="permalink">
       <a href={ memberToUrl(template, isSelf) } title="Permalink">
         <i class="material-icons">&#xE157;</i>
       </a>
     </span>
+
+  def docEntityImageClass(tpl: DocTemplateEntity): String =
+    tpl.kind + tpl.companion.fold("")("-companion-" + _.kind)
 
   def docEntityKindToCompanionTitle(ety: DocTemplateEntity, baseString: String = "See companion") =
     ety.companion match{
