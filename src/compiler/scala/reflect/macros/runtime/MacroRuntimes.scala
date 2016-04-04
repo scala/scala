@@ -4,7 +4,6 @@ package runtime
 import java.net.URLClassLoader
 
 import scala.reflect.internal.Flags._
-import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.runtime.ReflectionUtils
 import scala.reflect.internal.util.AbstractFileClassLoader
 

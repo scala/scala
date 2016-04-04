@@ -8,7 +8,6 @@ package transform
 
 import symtab._
 import Flags._
-import scala.tools.nsc.util.ClassPath
 
 abstract class AddInterfaces extends InfoTransform { self: Erasure =>
   import global._                  // the global environment

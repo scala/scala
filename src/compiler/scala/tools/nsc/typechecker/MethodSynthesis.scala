@@ -5,8 +5,6 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.language.higherKinds
-
 import symtab.Flags._
 import scala.reflect.internal.util.StringOps.ojoin
 import scala.reflect.internal.util.ListOfNil

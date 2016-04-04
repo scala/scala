@@ -1,7 +1,6 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.annotation.switch
 import scala.tools.asm
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 
@@ -31,7 +30,7 @@ import scala.tools.nsc.backend.jvm.BTypes.InternalName
 class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
   import bTypes._
   import global._
-  import rootMirror.{requiredClass, requiredModule, getRequiredClass, getClassIfDefined}
+  import rootMirror.{requiredClass, getRequiredClass, getClassIfDefined}
   import definitions._
 
   /**

@@ -8,11 +8,12 @@ package backend.jvm
 package opt
 
 import scala.annotation.{tailrec, switch}
+
 import scala.tools.asm.Type
 import scala.tools.asm.tree.analysis.Frame
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
-import scala.collection.{mutable, immutable}
+import scala.collection.mutable
 import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.analysis._

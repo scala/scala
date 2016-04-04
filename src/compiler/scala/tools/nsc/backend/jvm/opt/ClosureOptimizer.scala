@@ -8,10 +8,10 @@ package backend.jvm
 package opt
 
 import scala.annotation.switch
-import scala.collection.{mutable, immutable}
+import scala.collection.mutable
 import scala.collection.immutable.IntMap
 import scala.reflect.internal.util.NoPosition
-import scala.tools.asm.{Handle, Type, Opcodes}
+import scala.tools.asm.{Type, Opcodes}
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import BytecodeUtils._

@@ -8,7 +8,6 @@ package tools.nsc
 package backend.jvm
 
 import scala.tools.asm
-import scala.collection.mutable
 import scala.tools.nsc.io.AbstractFile
 import GenBCode._
 import BackendReporting._
@@ -896,10 +895,10 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
 
         if(!isValidSignature) {
           reporter.warning(sym.pos,
-              """|compiler bug: created invalid generic signature for %s in %s
-                 |signature: %s
+            sm"""|compiler bug: created invalid generic signature for $sym in ${sym.owner.skipPackageObject.fullName}
+                 |signature: $sig
                  |if this is reproducible, please report bug at https://issues.scala-lang.org/
-              """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig))
+              """.trim)
           return null
         }
       }
@@ -909,13 +908,13 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         val bytecodeTpe = owner.thisType.memberInfo(sym)
         if (!sym.isType && !sym.isConstructor && !(erasure.erasure(sym)(normalizedTpe) =:= bytecodeTpe)) {
           reporter.warning(sym.pos,
-              """|compiler bug: created generic signature for %s in %s that does not conform to its erasure
-                 |signature: %s
-                 |original type: %s
-                 |normalized type: %s
-                 |erasure type: %s
+            sm"""|compiler bug: created generic signature for $sym in ${sym.owner.skipPackageObject.fullName} that does not conform to its erasure
+                 |signature: $sig
+                 |original type: $memberTpe
+                 |normalized type: $normalizedTpe
+                 |erasure type: $bytecodeTpe
                  |if this is reproducible, please report bug at http://issues.scala-lang.org/
-              """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig, memberTpe, normalizedTpe, bytecodeTpe))
+              """.trim)
            return null
         }
       }

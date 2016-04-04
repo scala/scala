@@ -7,14 +7,11 @@ package scala
 package tools
 package util
 
-import scala.language.postfixOps
-
 import java.net.URL
 import scala.tools.reflect.WrappedProperties.AccessControl
 import scala.tools.nsc.Settings
 import scala.tools.nsc.util.{ ClassFileLookup, ClassPath, JavaClassPath }
 import scala.reflect.io.{ File, Directory, Path, AbstractFile }
-import scala.reflect.runtime.ReflectionUtils
 import ClassPath.{ JavaContext, DefaultJavaContext, split }
 import PartialFunction.condOpt
 import scala.tools.nsc.classpath.{ AggregateFlatClassPath, ClassPathFactory, FlatClassPath, FlatClassPathFactory }

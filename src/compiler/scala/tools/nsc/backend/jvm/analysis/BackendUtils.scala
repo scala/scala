@@ -3,13 +3,12 @@ package backend.jvm
 package analysis
 
 import scala.annotation.switch
-import scala.tools.asm.{Handle, Type, Label}
+import scala.tools.asm.{Handle, Type}
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis.{Frame, BasicInterpreter, Analyzer, Value}
 import GenBCode._
 import scala.tools.nsc.backend.jvm.BTypes._
-import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 import java.lang.invoke.LambdaMetafactory
 import scala.collection.mutable

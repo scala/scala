@@ -14,8 +14,6 @@ import scala.collection.mutable.DoublingUnrolledBuffer
 import scala.collection.mutable.UnrolledBuffer.Unrolled
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.Task
-import scala.reflect.ClassTag
-
 
 /** An array combiner that uses doubling unrolled buffers to store elements. */
 trait UnrolledParArrayCombiner[T]

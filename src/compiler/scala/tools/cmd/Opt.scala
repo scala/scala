@@ -20,7 +20,7 @@ object Opt {
     self: Implicit =>
 
     protected def fail(msg: String) = runAndExit(println(programInfo.runner + ": " + msg))
-    protected def failOption(arg: String, why: String) = fail("%s: '%s' is %s".format(opt, arg, why))
+    protected def failOption(arg: String, why: String) = fail(s"$opt: '$arg' is $why")
   }
 
   trait Implicit {

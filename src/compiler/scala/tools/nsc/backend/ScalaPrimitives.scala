@@ -7,7 +7,7 @@ package scala
 package tools.nsc
 package backend
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 
 /** Scala primitive operations are represented as methods in `Any` and
  *  `AnyVal` subclasses. Here we demultiplex them by providing a mapping

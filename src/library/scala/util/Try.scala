@@ -10,7 +10,6 @@ package scala
 package util
 
 import scala.util.control.NonFatal
-import scala.language.implicitConversions
 
 /**
  * The `Try` type represents a computation that may either result in an exception, or return a

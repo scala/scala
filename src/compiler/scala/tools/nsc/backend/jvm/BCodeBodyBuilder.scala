@@ -11,7 +11,6 @@ package jvm
 
 import scala.annotation.switch
 import scala.reflect.internal.Flags
-import java.lang.invoke.LambdaMetafactory
 
 import scala.tools.asm
 import GenBCode._
@@ -803,7 +802,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       for (caze @ CaseDef(pat, guard, body) <- tree.cases) {
         assert(guard == EmptyTree, guard)
         val switchBlockPoint = new asm.Label
-        switchBlocks ::= (switchBlockPoint, body)
+        switchBlocks ::= ((switchBlockPoint, body))
         pat match {
           case Literal(value) =>
             flatKeys ::= value.intValue

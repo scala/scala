@@ -3,7 +3,6 @@ package reflect
 package internal
 
 import scala.language.implicitConversions
-import scala.language.higherKinds
 
 import scala.reflect.api.Universe
 import scala.reflect.macros.Attachments

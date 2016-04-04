@@ -3933,6 +3933,8 @@ trait Types
         et.withTypeVars(isConsistent(_, tp2))
       case (_, et: ExistentialType) =>
         et.withTypeVars(isConsistent(tp1, _))
+      case (_, _) =>
+        throw new MatchError((tp1, tp2))
     }
 
     def check(tp1: Type, tp2: Type) = (

@@ -1,7 +1,5 @@
 package scala.tools.nsc.interactive
 
-import scala.language.implicitConversions
-
 import Lexer._
 import java.io.Writer
 

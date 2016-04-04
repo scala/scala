@@ -11,8 +11,6 @@ package scala
 package collection
 package mutable
 
-import generic._
-
 /** `ReusableBuilder` is a marker trait that indicates that a `Builder`
  *  can be reused to build more than one instance of a collection.  In
  *  particular, calling `result` followed by `clear` will produce a
@@ -44,7 +42,7 @@ trait ReusableBuilder[-Elem, +To] extends Builder[Elem, To] {
    *  After a call to `result`, the behavior of all other methods is undefined
    *  save for `clear`.  If `clear` is called, then the builder is reset and
    *  may be used to build another instance.
-   *  
+   *
    *  @return a collection containing the elements added to this builder.
    */
   override def result(): To    // Note: overriding for scaladoc only!
