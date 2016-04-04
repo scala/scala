@@ -414,6 +414,11 @@ object Test extends BytecodeTest {
     List("SpecializedClassesAreTopLevel$T$", "SpecializedClassesAreTopLevel$T$B$mcI$sp", "SpecializedClassesAreTopLevel$T$B").foreach(testInner(_, t, b))
   }
 
+  def testAnonymousClassesMayBeNestedInSpecialized() {
+    assertEnclosingMethod("AnonymousClassesMayBeNestedInSpecialized$C$$anon$17", "AnonymousClassesMayBeNestedInSpecialized$C", "foo", "(Ljava/lang/Object;)LAnonymousClassesMayBeNestedInSpecialized$A;")
+    assertEnclosingMethod("AnonymousClassesMayBeNestedInSpecialized$C$mcI$sp$$anon$18", "AnonymousClassesMayBeNestedInSpecialized$C$mcI$sp", "foo$mcI$sp", "(I)LAnonymousClassesMayBeNestedInSpecialized$A;")
+  }
+
   def testNestedInValueClass() {
     List(
       "NestedInValueClass",
@@ -466,6 +471,7 @@ object Test extends BytecodeTest {
     testSI_9124()
     testImplClassesTopLevel()
     testSpecializedClassesTopLevel()
+    testAnonymousClassesMayBeNestedInSpecialized()
     testNestedInValueClass()
   }
 }

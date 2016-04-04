@@ -232,13 +232,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     }
 
     def addClassFields() {
-      /*  Non-method term members are fields, except for module members. Module
-       *  members can only happen on .NET (no flatten) for inner traits. There,
-       *  a module symbol is generated (transformInfo in mixin) which is used
-       *  as owner for the members of the implementation class (so that the
-       *  backend emits them as static).
-       *  No code is needed for this module symbol.
-       */
       for (f <- fieldSymbols(claszSymbol)) {
         val javagensig = getGenericSignature(f, claszSymbol)
         val flags = javaFieldFlags(f)

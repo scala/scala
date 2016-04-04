@@ -50,7 +50,7 @@ package internal
 // 34:               LIFTED
 // 35:          EXISTENTIAL       MIXEDIN
 // 36:         EXPANDEDNAME
-// 37:            IMPLCLASS    PRESUPER/M
+// 37:           PRESUPER/M
 // 38:           TRANS_FLAG
 // 39:               LOCKED
 // 40:          SPECIALIZED

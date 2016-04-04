@@ -96,11 +96,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
    * scala.Null is mapped to scala.runtime.Null$. This is because there exist no class files
    * for the Nothing / Null. If used for example as a parameter type, we use the runtime classes
    * in the classfile method signature.
-   *
-   * Note that the referenced class symbol may be an implementation class. For example when
-   * compiling a mixed-in method that forwards to the static method in the implementation class,
-   * the class descriptor of the receiver (the implementation class) is obtained by creating the
-   * ClassBType.
    */
   final def classBTypeFromSymbol(classSym: Symbol): ClassBType = {
     assert(classSym != NoSymbol, "Cannot create ClassBType from NoSymbol")
@@ -159,9 +154,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
   /**
    * This method returns the BType for a type reference, for example a parameter type.
-   *
-   * If `t` references a class, typeToBType ensures that the class is not an implementation class.
-   * See also comment on classBTypeFromSymbol, which is invoked for implementation classes.
    */
   final def typeToBType(t: Type): BType = {
     import definitions.ArrayClass
@@ -264,12 +256,12 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
    * current phase, for example, after lambdalift, all local classes become member of the enclosing
    * class.
    *
-   * Impl classes are always considered top-level, see comment in BTypes.
+   * Specialized classes are always considered top-level, see comment in BTypes.
    */
   private def memberClassesForInnerClassTable(classSymbol: Symbol): List[Symbol] = classSymbol.info.decls.collect({
     case sym if sym.isClass && !considerAsTopLevelImplementationArtifact(sym) =>
       sym
-    case sym if sym.isModule && !considerAsTopLevelImplementationArtifact(sym) => // impl classes get the lateMODULE flag in mixin
+    case sym if sym.isModule && !considerAsTopLevelImplementationArtifact(sym) =>
       val r = exitingPickler(sym.moduleClass)
       assert(r != NoSymbol, sym.fullLocationString)
       r
@@ -317,7 +309,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       )
     }
 
-    // Check for isImplClass: trait implementation classes have NoSymbol as superClass
     // Check for hasAnnotationFlag for SI-9393: the classfile / java source parsers add
     // scala.annotation.Annotation as superclass to java annotations. In reality, java
     // annotation classfiles have superclass Object (like any interface classfile).
@@ -380,8 +371,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       }
 
       val companionModuleMembers = if (considerAsTopLevelImplementationArtifact(classSym)) Nil else {
-        // If this is a top-level non-impl (*) class, the member classes of the companion object are
-        // added as members of the class. For example:
+        // If this is a top-level class, the member classes of the companion object are added as
+        // members of the class. For example:
         //   class C { }
         //   object C {
         //     class D
@@ -392,11 +383,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
         // (done by buildNestedInfo). See comment in BTypes.
         // For consistency, the InnerClass entry for D needs to be present in C - to Java it looks
         // like D is a member of C, not C$.
-        //
-        // (*) We exclude impl classes: if the classfile for the impl class exists on the classpath,
-        // a linkedClass symbol is found for which isTopLevelModule is true, so we end up searching
-        // members of that weird impl-class-module-class-symbol. that search probably cannot return
-        // any classes, but it's better to exclude it.
         val javaCompatMembers = {
           if (linkedClass != NoSymbol && isTopLevelModuleClass(linkedClass))
           // phase travel to exitingPickler: this makes sure that memberClassesForInnerClassTable only sees member
@@ -454,7 +440,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     assert(innerClassSym.isClass, s"Cannot build NestedInfo for non-class symbol $innerClassSym")
 
     val isTopLevel = innerClassSym.rawowner.isPackageClass
-    // impl classes are considered top-level, see comment in BTypes
+    // specialized classes are considered top-level, see comment in BTypes
     if (isTopLevel || considerAsTopLevelImplementationArtifact(innerClassSym)) None
     else if (innerClassSym.rawowner.isTerm) {
       // This case should never be reached: the lambdalift phase mutates the rawowner field of all
@@ -592,17 +578,11 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
   /**
    * True for module classes of modules that are top-level or owned only by objects. Module classes
-   * for such objects will get a MODULE$ flag and a corresponding static initializer.
+   * for such objects will get a MODULE$ field and a corresponding static initializer.
    */
   final def isStaticModuleClass(sym: Symbol): Boolean = {
-    /* (1) Phase travel to to pickler is required to exclude implementation classes; they have the
-     * lateMODULEs after mixin, so isModuleClass would be true.
-     * (2) isStaticModuleClass is a source-level property. See comment on isOriginallyStaticOwner.
-     */
-    exitingPickler { // (1)
-      sym.isModuleClass &&
-      isOriginallyStaticOwner(sym.originalOwner) // (2)
-    }
+    sym.isModuleClass &&
+    isOriginallyStaticOwner(sym.originalOwner) // isStaticModuleClass is a source-level property, see comment on isOriginallyStaticOwner
   }
 
   // legacy, to be removed when the @remote annotation gets removed

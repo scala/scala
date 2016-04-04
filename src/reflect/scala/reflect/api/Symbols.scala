@@ -260,9 +260,6 @@ trait Symbols { self: Universe =>
      *  with an object definition (module class in scala compiler parlance)?
      *  If yes, `isType` is also guaranteed to be true.
      *
-     *  Note to compiler developers: During the "mixin" phase, trait implementation class symbols
-     *  receive the `lateMODULE` flag, hence `isImplClass && isModuleClass` becomes true.
-     *
      *  @group Tests
      */
     def isModuleClass: Boolean = false
@@ -354,8 +351,7 @@ trait Symbols { self: Universe =>
     /******************* tests *******************/
 
     /** Does this symbol represent a synthetic (i.e. a compiler-generated) entity?
-     *  Examples of synthetic entities are accessors for vals and vars
-     *  or mixin constructors in trait implementation classes.
+     *  Examples of synthetic entities are accessors for vals and vars.
      *
      *  @group Tests
      */

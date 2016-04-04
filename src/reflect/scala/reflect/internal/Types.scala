@@ -2462,7 +2462,6 @@ trait Types
     def isImplicit = (params ne Nil) && params.head.isImplicit
     def isJava = false // can we do something like for implicits? I.e. do Java methods without parameters need to be recognized?
 
-    //assert(paramTypes forall (pt => !pt.typeSymbol.isImplClass))//DEBUG
     override def paramSectionCount: Int = resultType.paramSectionCount + 1
 
     override def paramss: List[List[Symbol]] = params :: resultType.paramss
