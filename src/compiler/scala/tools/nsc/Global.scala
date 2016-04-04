@@ -283,7 +283,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // Over 200 closure objects are eliminated by inlining this.
   @inline final def log(msg: => AnyRef) {
     if (shouldLogAtThisPhase)
-      inform("[log %s%s] %s".format(globalPhase, atPhaseStackMessage, msg))
+      inform(s"[log $globalPhase$atPhaseStackMessage] $msg")
   }
 
   @inline final override def debuglog(msg: => String) {
@@ -305,10 +305,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       try Some(Charset.forName(name))
       catch {
         case _: IllegalCharsetNameException =>
-          globalError("illegal charset name '" + name + "'")
+          globalError(s"illegal charset name '$name'")
           None
         case _: UnsupportedCharsetException =>
-          globalError("unsupported charset '" + name + "'")
+          globalError(s"unsupported charset '$name'")
           None
       }
 

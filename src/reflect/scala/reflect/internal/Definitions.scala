@@ -840,7 +840,7 @@ trait Definitions extends api.StandardDefinitions {
     def samOf(tp: Type): Symbol = if (!doSam) NoSymbol else {
       // look at erased type because we (only) care about what ends up in bytecode
       // (e.g., an alias type or intersection type is fine as long as the intersection dominator compiles to an interface)
-      val tpSym = erasure.javaErasure(tp).typeSymbol
+      val tpSym: Symbol = erasure.javaErasure(tp).typeSymbol
 
       if (tpSym.exists && tpSym.isClass
           // if tp has a constructor (its class is not a trait), it must be public and must not take any arguments

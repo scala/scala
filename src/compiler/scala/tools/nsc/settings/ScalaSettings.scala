@@ -9,10 +9,11 @@ package tools
 package nsc
 package settings
 
+import scala.language.existentials
+
 import scala.annotation.elidable
 import scala.tools.util.PathResolver.Defaults
 import scala.collection.mutable
-import scala.language.{implicitConversions, existentials}
 
 trait ScalaSettings extends AbsScalaSettings
                        with StandardScalaSettings

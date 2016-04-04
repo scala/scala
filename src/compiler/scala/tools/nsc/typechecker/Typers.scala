@@ -2882,7 +2882,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val paramsMissingType = mutable.ArrayBuffer.empty[ValDef] //.sizeHint(numVparams) probably useless, since initial size is 16 and max fun arity is 22
         // first, try to define param types from expected function's arg types if needed
         foreach2(vparams, argpts) { (vparam, argpt) =>
-          if (vparam.tpt isEmpty) {
+          if (vparam.tpt.isEmpty) {
             if (isFullyDefined(argpt)) vparam.tpt setType argpt
             else paramsMissingType += vparam
 

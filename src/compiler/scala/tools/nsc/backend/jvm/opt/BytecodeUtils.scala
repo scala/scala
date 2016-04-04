@@ -8,6 +8,7 @@ package backend.jvm
 package opt
 
 import scala.annotation.{tailrec, switch}
+
 import scala.collection.mutable
 import scala.reflect.internal.util.Collections._
 import scala.tools.asm.commons.CodeSizeEvaluator
@@ -17,7 +18,6 @@ import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import GenBCode._
 import scala.collection.convert.decorateAsScala._
-import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.analysis.InstructionStackEffect
 
 object BytecodeUtils {

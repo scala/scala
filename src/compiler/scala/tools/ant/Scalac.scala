@@ -551,7 +551,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
         val str =
           if (javaFiles.isEmpty) "%d source file%s".format(list.length, plural(list))
           else "%d scala and %d java source files".format(scalaFiles.length, javaFiles.length)
-        log("Compiling %s to %s".format(str, getDestination.toString))
+        log(s"Compiling $str to $getDestination")
       }
       else log("No files selected for compilation", Project.MSG_VERBOSE)
 

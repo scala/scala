@@ -4,7 +4,6 @@ package transform
 import symtab._
 import Flags._
 import scala.collection._
-import scala.collection.mutable.LinkedHashMap
 
 /**
   * This transformer is responsible for preparing Function nodes for runtime,

@@ -7,8 +7,6 @@ package scala.tools
 package nsc
 package settings
 
-import language.existentials
-
 /** Settings influencing the printing of warnings.
  */
 trait Warnings {

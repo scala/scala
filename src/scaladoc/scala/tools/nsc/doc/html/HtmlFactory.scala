@@ -17,7 +17,7 @@ import page.diagram._
   * @author David Bernard
   * @author Gilles Dubochet */
 class HtmlFactory(val universe: doc.Universe, val reporter: ScalaDocReporter) {
-  import page.{IndexScript, EntityPage}
+  import page.IndexScript
 
   /** The character encoding to be used for generated Scaladoc sites.
     * This value is currently always UTF-8. */

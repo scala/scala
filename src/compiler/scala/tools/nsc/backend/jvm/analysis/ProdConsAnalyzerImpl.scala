@@ -15,7 +15,6 @@ import scala.tools.asm.{Type, MethodVisitor}
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
-import scala.tools.nsc.backend.jvm.BTypes.InternalName
 
 import opt.BytecodeUtils._
 

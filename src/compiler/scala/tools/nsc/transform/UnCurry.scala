@@ -8,7 +8,6 @@ package tools.nsc
 package transform
 
 import scala.annotation.tailrec
-import scala.language.postfixOps
 
 import symtab.Flags._
 import scala.collection.mutable

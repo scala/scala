@@ -7,9 +7,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.collection.immutable.IntMap
-import scala.tools.asm.Type
-import scala.tools.asm.tree.{MethodNode, MethodInsnNode}
+import scala.tools.asm.tree.MethodNode
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.backend.jvm.BackendReporting.OptimizerWarning

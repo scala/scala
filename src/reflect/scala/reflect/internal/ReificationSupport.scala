@@ -287,6 +287,8 @@ trait ReificationSupport { self: SymbolTable =>
           val evdefs = gvdefs.zip(lvdefs).map {
             case (gvdef @ ValDef(_, _, tpt: TypeTree, _), ValDef(_, _, _, rhs)) =>
               copyValDef(gvdef)(tpt = tpt.original, rhs = rhs)
+            case (tr1, tr2) =>
+              throw new MatchError((tr1, tr2))
           }
           val edefs = evdefs ::: etdefs
           if (ctorMods.isTrait)
