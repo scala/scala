@@ -247,14 +247,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
    * Build the [[InlineInfo]] for a class symbol.
    */
   def buildInlineInfoFromClassSymbol(classSym: Symbol, classSymToInternalName: Symbol => InternalName, methodSymToDescriptor: Symbol => String): InlineInfo = {
-    val traitSelfType = if (classSym.isTrait) {
-      // The mixin phase uses typeOfThis for the self parameter in implementation class methods.
-      val selfSym = classSym.typeOfThis.typeSymbol
-      if (selfSym != classSym) Some(classSymToInternalName(selfSym)) else None
-    } else {
-      None
-    }
-
     val isEffectivelyFinal = classSym.isEffectivelyFinal
 
     val sam = {
@@ -291,7 +283,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
 
           val info = MethodInlineInfo(
             effectivelyFinal                    = effectivelyFinal,
-            traitMethodWithStaticImplementation = false,
             annotatedInline                     = methodSym.hasAnnotation(ScalaInlineClass),
             annotatedNoInline                   = methodSym.hasAnnotation(ScalaNoInlineClass)
           )
@@ -299,7 +290,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         }
     }).toMap
 
-    InlineInfo(traitSelfType, isEffectivelyFinal, sam, methodInlineInfos, warning)
+    InlineInfo(isEffectivelyFinal, sam, methodInlineInfos, warning)
   }
 
   /*

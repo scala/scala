@@ -41,7 +41,7 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
     compilingMethods.map(methodNode => {
       var requests = Set.empty[InlineRequest]
       callGraph.callsites(methodNode).valuesIterator foreach {
-        case callsite @ Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, _, canInlineFromSource, calleeAnnotatedInline, _, _, callsiteWarning)), _, _, _, pos, _, _) =>
+        case callsite @ Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, canInlineFromSource, calleeAnnotatedInline, _, _, callsiteWarning)), _, _, _, pos, _, _) =>
           inlineRequest(callsite) match {
             case Some(Right(req)) => requests += req
             case Some(Left(w))    =>
@@ -57,9 +57,7 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
                 // reason is, for example, mixed compilation (which has a separate -Yopt-warning flag).
                 def initMsg = s"${BackendReporting.methodSignature(calleeDeclClass.internalName, callee)} is annotated @inline but cannot be inlined"
                 def warnMsg = callsiteWarning.map(" Possible reason:\n" + _).getOrElse("")
-                if (doRewriteTraitCallsite(callsite))
-                  backendReporting.inlinerWarning(pos, s"$initMsg: the trait method call could not be rewritten to the static implementation method." + warnMsg)
-                else if (!safeToInline)
+                if (!safeToInline)
                   backendReporting.inlinerWarning(pos, s"$initMsg: the method is not final and may be overridden." + warnMsg)
                 else
                   backendReporting.inlinerWarning(pos, s"$initMsg." + warnMsg)

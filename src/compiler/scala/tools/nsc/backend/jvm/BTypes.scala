@@ -255,13 +255,11 @@ abstract class BTypes {
       val methodInfos = classNode.methods.asScala.map(methodNode => {
         val info = MethodInlineInfo(
           effectivelyFinal                    = BytecodeUtils.isFinalMethod(methodNode),
-          traitMethodWithStaticImplementation = false,
           annotatedInline                     = false,
           annotatedNoInline                   = false)
         (methodNode.name + methodNode.desc, info)
       }).toMap
       InlineInfo(
-        traitImplClassSelfType = None,
         isEffectivelyFinal = BytecodeUtils.isFinalClass(classNode),
         sam = inlinerHeuristics.javaSam(classNode.name),
         methodInfos = methodInfos,
@@ -1139,22 +1137,8 @@ object BTypes {
    * Note that this class should contain information that can only be obtained from the ClassSymbol.
    * Information that can be computed from the ClassNode should be added to the call graph instead.
    *
-   * @param traitImplClassSelfType `Some(tp)` if this InlineInfo describes a trait, and the `self`
-   *                               parameter type of the methods in the implementation class is not
-   *                               the trait itself. Example:
-   *                                 trait T { self: U => def f = 1 }
-   *                               Generates something like:
-   *                                 class T$class { static def f(self: U) = 1 }
-   *
-   *                               In order to inline a trat method call, the INVOKEINTERFACE is
-   *                               rewritten to an INVOKESTATIC of the impl class, so we need the
-   *                               self type (U) to get the right signature.
-   *
-   *                               `None` if the self type is the interface type, or if this
-   *                               InlineInfo does not describe a trait.
-   *
    * @param isEffectivelyFinal     True if the class cannot have subclasses: final classes, module
-   *                               classes, trait impl classes.
+   *                               classes.
    *
    * @param sam                    If this class is a SAM type, the SAM's "$name$descriptor".
    *
@@ -1166,26 +1150,21 @@ object BTypes {
    *                               InlineInfo, for example if some classfile could not be found on
    *                               the classpath. This warning can be reported later by the inliner.
    */
-  final case class InlineInfo(traitImplClassSelfType: Option[InternalName],
-                              isEffectivelyFinal: Boolean,
+  final case class InlineInfo(isEffectivelyFinal: Boolean,
                               sam: Option[String],
                               methodInfos: Map[String, MethodInlineInfo],
                               warning: Option[ClassInlineInfoWarning])
 
-  val EmptyInlineInfo = InlineInfo(None, false, None, Map.empty, None)
+  val EmptyInlineInfo = InlineInfo(false, None, Map.empty, None)
 
   /**
    * Metadata about a method, used by the inliner.
    *
    * @param effectivelyFinal                    True if the method cannot be overridden (in Scala)
-   * @param traitMethodWithStaticImplementation True if the method is an interface method method of
-   *                                            a trait method and has a static counterpart in the
-   *                                            implementation class.
    * @param annotatedInline                     True if the method is annotated `@inline`
    * @param annotatedNoInline                   True if the method is annotated `@noinline`
    */
   final case class MethodInlineInfo(effectivelyFinal: Boolean,
-                                    traitMethodWithStaticImplementation: Boolean,
                                     annotatedInline: Boolean,
                                     annotatedNoInline: Boolean)
 

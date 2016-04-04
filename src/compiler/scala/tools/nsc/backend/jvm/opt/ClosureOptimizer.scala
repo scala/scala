@@ -363,7 +363,6 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
           callee = bodyMethodNode,
           calleeDeclarationClass = bodyDeclClassType,
           safeToInline = canInlineFromSource,
-          safeToRewrite = false, // the lambda body method is not a trait interface method
           canInlineFromSource = canInlineFromSource,
           annotatedInline = false,
           annotatedNoInline = false,
