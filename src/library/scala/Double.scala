@@ -200,7 +200,8 @@ final abstract class Double private extends AnyVal {
   /** Returns the remainder of the division of this value by `x`. */
   def %(x: Double): Double
 
-  override def getClass(): Class[Double] = null
+  // Provide a more specific return type for Scaladoc
+  override def getClass(): Class[Double] = ???
 }
 
 object Double extends AnyValCompanion {
@@ -229,7 +230,7 @@ object Double extends AnyValCompanion {
    *  @param  x   the Double to be boxed
    *  @return     a java.lang.Double offering `x` as its underlying value.
    */
-  def box(x: Double): java.lang.Double = java.lang.Double.valueOf(x)
+  def box(x: Double): java.lang.Double = ???
 
   /** Transform a boxed type into a value type.  Note that this
    *  method is not typesafe: it accepts any Object, but will throw
@@ -241,7 +242,7 @@ object Double extends AnyValCompanion {
    *  @throws     ClassCastException  if the argument is not a java.lang.Double
    *  @return     the Double resulting from calling doubleValue() on `x`
    */
-  def unbox(x: java.lang.Object): Double = x.asInstanceOf[java.lang.Double].doubleValue()
+  def unbox(x: java.lang.Object): Double = ???
 
   /** The String representation of the scala.Double companion object. */
   override def toString = "object scala.Double"

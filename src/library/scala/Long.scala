@@ -434,7 +434,8 @@ final abstract class Long private extends AnyVal {
   /** Returns the remainder of the division of this value by `x`. */
   def %(x: Double): Double
 
-  override def getClass(): Class[Long] = null
+  // Provide a more specific return type for Scaladoc
+  override def getClass(): Class[Long] = ???
 }
 
 object Long extends AnyValCompanion {
@@ -451,7 +452,7 @@ object Long extends AnyValCompanion {
    *  @param  x   the Long to be boxed
    *  @return     a java.lang.Long offering `x` as its underlying value.
    */
-  def box(x: Long): java.lang.Long = java.lang.Long.valueOf(x)
+  def box(x: Long): java.lang.Long = ???
 
   /** Transform a boxed type into a value type.  Note that this
    *  method is not typesafe: it accepts any Object, but will throw
@@ -463,7 +464,7 @@ object Long extends AnyValCompanion {
    *  @throws     ClassCastException  if the argument is not a java.lang.Long
    *  @return     the Long resulting from calling longValue() on `x`
    */
-  def unbox(x: java.lang.Object): Long = x.asInstanceOf[java.lang.Long].longValue()
+  def unbox(x: java.lang.Object): Long = ???
 
   /** The String representation of the scala.Long companion object. */
   override def toString = "object scala.Long"

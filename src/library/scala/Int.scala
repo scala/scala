@@ -434,7 +434,8 @@ final abstract class Int private extends AnyVal {
   /** Returns the remainder of the division of this value by `x`. */
   def %(x: Double): Double
 
-  override def getClass(): Class[Int] = null
+  // Provide a more specific return type for Scaladoc
+  override def getClass(): Class[Int] = ???
 }
 
 object Int extends AnyValCompanion {
@@ -451,7 +452,7 @@ object Int extends AnyValCompanion {
    *  @param  x   the Int to be boxed
    *  @return     a java.lang.Integer offering `x` as its underlying value.
    */
-  def box(x: Int): java.lang.Integer = java.lang.Integer.valueOf(x)
+  def box(x: Int): java.lang.Integer = ???
 
   /** Transform a boxed type into a value type.  Note that this
    *  method is not typesafe: it accepts any Object, but will throw
@@ -463,7 +464,7 @@ object Int extends AnyValCompanion {
    *  @throws     ClassCastException  if the argument is not a java.lang.Integer
    *  @return     the Int resulting from calling intValue() on `x`
    */
-  def unbox(x: java.lang.Object): Int = x.asInstanceOf[java.lang.Integer].intValue()
+  def unbox(x: java.lang.Object): Int = ???
 
   /** The String representation of the scala.Int companion object. */
   override def toString = "object scala.Int"
