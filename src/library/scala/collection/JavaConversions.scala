@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2016, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://www.scala-lang.org/           **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -48,15 +48,13 @@ import convert._
  *  The transparent conversions provided here are considered
  *  fragile because they can result in unexpected behavior and performance.
  *
- *  Consider using `JavaConverters` instead, which provides an `asScala` member
- *  (respectively `asJava`) to signal that a conversion is required.
- *
- *  The current functionality is also provided by `convert.wrapAsScala` and
- *  `convert.wrapAsJava`.
+ *  Therefore, this API has been deprecated and `JavaConverters` should be
+ *  used instead. `JavaConverters` provides the same conversions, but through
+ *  extension methods.
  *
  *  @author Miles Sabin
  *  @author Martin Odersky
  *  @since  2.8
  */
-@deprecated("Use JavaConverters or convert.{wrapAsScala,wrapAsJava}.", since="2.12")
+@deprecated("Use JavaConverters", since="2.12")
 object JavaConversions extends WrapAsScala with WrapAsJava

@@ -13,6 +13,7 @@ package convert
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import scala.language.implicitConversions
 
+@deprecatedInheritance("Use JavaConverters", since="2.12")
 trait WrapAsScala {
   import Wrappers._
   /**

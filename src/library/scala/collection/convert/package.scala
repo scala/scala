@@ -10,10 +10,16 @@ package scala
 package collection
 
 package object convert {
+  @deprecated("Use JavaConverters", since="2.12")
   val decorateAsJava  = new DecorateAsJava { }
+  @deprecated("Use JavaConverters", since="2.12")
   val decorateAsScala = new DecorateAsScala { }
+  @deprecated("Use JavaConverters", since="2.12")
   val decorateAll     = new DecorateAsJava with DecorateAsScala { }
+  @deprecated("Use JavaConverters", since="2.12")
   val wrapAsJava      = new WrapAsJava { }
+  @deprecated("Use JavaConverters", since="2.12")
   val wrapAsScala     = new WrapAsScala { }
+  @deprecated("Use JavaConverters", since="2.12")
   val wrapAll         = new WrapAsJava with WrapAsScala { }
 }
