@@ -1,3 +1,6 @@
-warning: there was one feature warning; re-run with -feature for details
 public Category<?> C.category()
 public Category<scala.Tuple2> C.category1()
+public default Category<java.lang.Object> M1.category()
+public default Category<scala.Tuple2> M1.category1()
+public default Category<java.lang.Object> M2.category()
+public default Category<scala.Tuple2> M2.category1()

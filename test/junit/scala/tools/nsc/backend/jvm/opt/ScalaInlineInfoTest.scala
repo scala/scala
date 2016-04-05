@@ -113,10 +113,6 @@ class ScalaInlineInfoTest extends ClearAfterClass {
     val infoC = inlineInfo(c)
     val expectC = InlineInfo(false, None, Map(
       "O()LT$O$;"                             -> MethodInlineInfo(true ,false,false),
-      "f1()I"                                 -> MethodInlineInfo(false,false,false),
-      "f3()I"                                 -> MethodInlineInfo(false,false,false),
-      "f4()Ljava/lang/String;"                -> MethodInlineInfo(false,true ,false),
-      "f5()I"                                 -> MethodInlineInfo(true ,false,false),
       "f6()I"                                 -> MethodInlineInfo(false,false,false),
       "x1()I"                                 -> MethodInlineInfo(false,false,false),
       "T$_setter_$x1_$eq(I)V"                 -> MethodInlineInfo(false,false,false),

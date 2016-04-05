@@ -3,11 +3,14 @@ package scala.issues
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
+
 import scala.tools.asm.Opcodes._
 import scala.tools.nsc.backend.jvm.AsmUtils
 import scala.tools.nsc.backend.jvm.CodeGenTools._
 import org.junit.Assert._
+
 import scala.collection.JavaConverters._
+import scala.tools.asm.tree.ClassNode
 import scala.tools.partest.ASMConverters._
 import scala.tools.testing.ClearAfterClass
 
@@ -207,5 +210,135 @@ class BytecodeTest extends ClearAfterClass {
       Label(10), Op(ICONST_1), Jump(GOTO, Label(17)),
       Label(14), Op(ICONST_0),
       Label(17), Op(IRETURN)))
+  }
+
+  object forwarderTestUtils {
+    def findMethods(cls: ClassNode, name: String): List[Method] = cls.methods.iterator.asScala.find(_.name == name).map(convertMethod).toList
+
+    import language.implicitConversions
+    implicit def s2c(s: Symbol)(implicit classes: Map[String, ClassNode]): ClassNode = classes(s.name)
+
+    def checkForwarder(c: ClassNode, target: String) = {
+      val List(f) = findMethods(c, "f")
+      assertSameCode(f, List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, target, "f", "()I", false), Op(IRETURN)))
+    }
+  }
+
+  @Test
+  def traitMethodForwarders(): Unit = {
+    import forwarderTestUtils._
+    val code =
+      """trait T1 { def f = 1 }
+        |trait T2 extends T1 { override def f = 2 }
+        |trait T3 { self: T1 => override def f = 3 }
+        |
+        |abstract class A1 { def f: Int }
+        |class A2 { def f: Int = 4 }
+        |
+        |trait T4 extends A1 { def f = 5 }
+        |trait T5 extends A2 { override def f = 6 }
+        |
+        |trait T6 { def f: Int }
+        |trait T7 extends T6 { abstract override def f = super.f + 1 }
+        |
+        |trait T8 { override def clone() = super.clone() }
+        |
+        |class A3 extends T1 { override def f = 7 }
+        |
+        |class C1 extends T1
+        |class C2 extends T2
+        |class C3 extends T1 with T2
+        |class C4 extends T2 with T1
+        |class C5 extends T1 with T3
+        |
+        |// traits extending a class that defines f
+        |class C6 extends T4
+        |class C7 extends T5
+        |class C8 extends A1 with T4
+        |class C9 extends A2 with T5
+        |
+        |// T6: abstract f in trait
+        |class C10 extends T6 with T1
+        |class C11 extends T6 with T2
+        |abstract class C12 extends A1 with T6
+        |class C13 extends A2 with T6
+        |class C14 extends T4 with T6
+        |class C15 extends T5 with T6
+        |
+        |// superclass overrides a trait method
+        |class C16 extends A3
+        |class C17 extends A3 with T1
+        |
+        |// abstract override
+        |class C18 extends T6 { def f = 22 }
+        |class C19 extends C18 with T7
+        |
+        |class C20 extends T8
+      """.stripMargin
+
+    implicit val classes = compileClasses(compiler)(code).map(c => (c.name, c)).toMap
+
+    val noForwarder = List('C1, 'C2, 'C3, 'C4, 'C10, 'C11, 'C12, 'C13, 'C16, 'C17)
+    for (c <- noForwarder) assertEquals(findMethods(c, "f"), Nil)
+
+    checkForwarder('C5, "T3")
+    checkForwarder('C6, "T4")
+    checkForwarder('C7, "T5")
+    checkForwarder('C8, "T4")
+    checkForwarder('C9, "T5")
+    checkForwarder('C14, "T4")
+    checkForwarder('C15, "T5")
+    assertSameSummary(getSingleMethod('C18, "f"), List(BIPUSH, IRETURN))
+    checkForwarder('C19, "T7")
+    assertSameCode(getSingleMethod('C19, "T7$$super$f"), List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "C18", "f", "()I", false), Op(IRETURN)))
+    assertInvoke(getSingleMethod('C20, "clone"), "T8", "clone") // mixin forwarder
+  }
+
+  @Test
+  def noTraitMethodForwardersForOverloads(): Unit = {
+    import forwarderTestUtils._
+    val code =
+      """trait T1 { def f(x: Int) = 0 }
+        |trait T2 { def f(x: String) = 1 }
+        |class C extends T1 with T2
+      """.stripMargin
+    val List(c, t1, t2) = compileClasses(compiler)(code)
+    assertEquals(findMethods(c, "f"), Nil)
+  }
+
+  @Test
+  def traitMethodForwardersForJavaDefaultMethods(): Unit = {
+    import forwarderTestUtils._
+    val j1 = ("interface J1 { int f(); }", "J1.java")
+    val j2 = ("interface J2 { default int f() { return 1; } }", "J2.java")
+    val j3 = ("interface J3 extends J1 { default int f() { return 2; } }", "J3.java")
+    val j4 = ("interface J4 extends J2 { default int f() { return 3; } }", "J4.java")
+    val code =
+      """trait T1 extends J2 { override def f = 4 }
+        |trait T2 { self: J2 => override def f = 5 }
+        |
+        |class K1 extends J2
+        |class K2 extends J1 with J2
+        |class K3 extends J2 with J1
+        |
+        |class K4 extends J3
+        |class K5 extends J3 with J1
+        |class K6 extends J1 with J3
+        |
+        |class K7 extends J4
+        |class K8 extends J4 with J2
+        |class K9 extends J2 with J4
+        |
+        |class K10 extends T1 with J2
+        |class K11 extends J2 with T1
+        |
+        |class K12 extends J2 with T2
+      """.stripMargin
+    implicit val classes = compileClasses(compiler)(code, List(j1, j2, j3, j4)).map(c => (c.name, c)).toMap
+
+    val noForwarder = List('K1, 'K2, 'K3, 'K4, 'K5, 'K6, 'K7, 'K8, 'K9, 'K10, 'K11)
+    for (c <- noForwarder) assertEquals(findMethods(c, "f"), Nil)
+
+    checkForwarder('K12, "T2")
   }
 }
