@@ -179,8 +179,8 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       case _ => false
     }
 
+    // Synthetic names are no longer included
     (symbol != NoSymbol) &&
-      !symbol.isSynthetic &&
       !emptyName(symbol.name)
   }
 }

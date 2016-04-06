@@ -181,8 +181,8 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       case _ => false
     }
 
+    // Synthetic names are no longer included. See https://github.com/sbt/sbt/issues/2537
     (symbol != NoSymbol) &&
-      !symbol.isSynthetic &&
       !emptyName(symbol.name)
   }
 }
