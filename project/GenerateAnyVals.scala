@@ -1,14 +1,6 @@
-/* NSC -- new Scala compiler
- * Copyright 2007-2013 LAMP/EPFL
- * @author  Paul Phillips
- */
-
-package scala.tools.cmd
-package gen
-
 /** Code generation of the AnyVal types and their companions. */
-trait AnyValReps {
-  self: AnyVals =>
+trait GenerateAnyValReps {
+  self: GenerateAnyVals =>
 
   sealed abstract class AnyValNum(name: String, repr: Option[String], javaEquiv: String)
       extends AnyValRep(name,repr,javaEquiv) {
@@ -271,7 +263,7 @@ import scala.language.implicitConversions"""
   }
 }
 
-trait AnyValTemplates {
+trait GenerateAnyValTemplates {
   def headerTemplate = """/*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
@@ -281,8 +273,8 @@ trait AnyValTemplates {
 \*                                                                      */
 
 // DO NOT EDIT, CHANGES WILL BE LOST
-// This auto-generated code can be modified in scala.tools.cmd.gen.
-// Afterwards, running tools/codegen-anyvals regenerates this source file.
+// This auto-generated code can be modified in "project/GenerateAnyVals.scala".
+// Afterwards, running "sbt generateSources" regenerates this source file.
 
 package scala
 
@@ -351,7 +343,7 @@ final val MaxValue = @boxed@.MAX_VALUE
 """
 }
 
-class AnyVals extends AnyValReps with AnyValTemplates {
+class GenerateAnyVals extends GenerateAnyValReps with GenerateAnyValTemplates {
   object B extends AnyValNum("Byte",    Some("8-bit signed integer"),                  "byte")
   object S extends AnyValNum("Short",   Some("16-bit signed integer"),                 "short")
   object C extends AnyValNum("Char",    Some("16-bit unsigned integer"),               "char")
@@ -480,4 +472,15 @@ override def getClass(): Class[Boolean] = ???
   def values   = List(U, Z) ++ numeric
 
   def make() = values map (x => (x.name, x.make()))
+}
+
+object GenerateAnyVals {
+  def run(outDir: java.io.File) {
+    val av = new GenerateAnyVals
+
+    av.make() foreach { case (name, code ) =>
+      val file = new java.io.File(outDir, name + ".scala")
+      sbt.IO.write(file, code, java.nio.charset.Charset.forName("UTF-8"), false)
+    }
+  }
 }

@@ -7,8 +7,8 @@
 \*                                                                      */
 
 // DO NOT EDIT, CHANGES WILL BE LOST
-// This auto-generated code can be modified in scala.tools.cmd.gen.
-// Afterwards, running tools/codegen-anyvals regenerates this source file.
+// This auto-generated code can be modified in "project/GenerateAnyVals.scala".
+// Afterwards, running "sbt generateSources" regenerates this source file.
 
 package scala
 
