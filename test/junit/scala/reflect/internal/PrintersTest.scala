@@ -8,14 +8,6 @@ import scala.reflect.runtime.{currentMirror=>cm}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-@RunWith(classOf[JUnit4])
-class PrintersTest extends BasePrintTests
-  with ClassPrintTests
-  with TraitPrintTests
-  with ValAndDefPrintTests
-  with QuasiTreesPrintTests
-  with PackagePrintTests
-
 object PrinterHelper {
   val toolbox = cm.mkToolBox()
 
@@ -73,7 +65,8 @@ object PrinterHelper {
 
 import PrinterHelper._
 
-trait BasePrintTests {
+@RunWith(classOf[JUnit4])
+class BasePrintTest {
   @Test def testIdent = assertTreeCode(Ident("*"))("*")
 
   @Test def testConstant1 = assertTreeCode(Literal(Constant("*")))("\"*\"")
@@ -348,7 +341,8 @@ trait BasePrintTests {
   @Test def testImport4 = assertPrintedCode("import scala.collection._")
 }
 
-trait ClassPrintTests {
+@RunWith(classOf[JUnit4])
+class ClassPrintTest {
   @Test def testClass = assertPrintedCode("class *")
 
   @Test def testClassWithBody = assertPrintedCode(sm"""
@@ -833,7 +827,8 @@ trait ClassPrintTests {
     |}""")
 }
 
-trait TraitPrintTests {
+@RunWith(classOf[JUnit4])
+class TraitPrintTest {
   @Test def testTrait = assertPrintedCode("trait *")
 
   @Test def testTraitWithBody = assertPrintedCode(sm"""
@@ -953,7 +948,8 @@ trait TraitPrintTests {
     |}""")  
 }
 
-trait ValAndDefPrintTests {
+@RunWith(classOf[JUnit4])
+class ValAndDefPrintTest {
   @Test def testVal1 = assertPrintedCode("val a: scala.Unit = ()")
 
   @Test def testVal2 = assertPrintedCode("val * : scala.Unit = ()")
@@ -1093,7 +1089,8 @@ trait ValAndDefPrintTests {
     |}""", wrapCode = true)
 }
 
-trait PackagePrintTests {
+@RunWith(classOf[JUnit4])
+class PackagePrintTest {
   @Test def testPackage1 = assertPrintedCode(sm"""
     |package foo.bar {
     |  
@@ -1131,7 +1128,8 @@ trait PackagePrintTests {
     |}""", checkTypedTree = false)
 }
 
-trait QuasiTreesPrintTests {
+@RunWith(classOf[JUnit4])
+class QuasiTreesPrintTest {
   @Test def testQuasiIdent = assertTreeCode(q"*")("*")
 
   @Test def testQuasiVal = assertTreeCode(q"val * : Unit = null")("val * : Unit = null")
