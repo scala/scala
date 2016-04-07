@@ -127,7 +127,11 @@ trait Imports {
           case rh :: rest if !keepHandler(rh.handler) => select(rest, wanted)
           case rh :: rest                             =>
             import rh.handler._
-            val newWanted = wanted ++ referencedNames -- definedNames -- importedNames
+            val augment = rh match {
+              case ReqAndHandler(_, _: ImportHandler) => referencedNames            // for "import a.b", add "a" to names to be resolved
+              case _ => Nil
+            }
+            val newWanted = wanted ++ augment -- definedNames -- importedNames
             rh :: select(rest, newWanted)
         }
       }
@@ -161,6 +165,8 @@ trait Imports {
       val tempValLines = mutable.Set[Int]()
       for (ReqAndHandler(req, handler) <- reqsToUse) {
         val objName = req.lineRep.readPathInstance
+        if (isReplTrace)
+          code.append(ss"// $objName definedNames ${handler.definedNames}, curImps $currentImps\n")
         handler match {
           case h: ImportHandler if checkHeader(h) =>
             header.clear()
@@ -175,21 +181,20 @@ trait Imports {
             currentImps ++= x.importedNames
 
           case x if isClassBased =>
-            for (imv <- x.definedNames) {
-              if (!currentImps.contains(imv)) {
-                x match {
-                  case _: ClassHandler =>
-                    code.append("import " + objName + req.accessPath + ".`" + imv + "`\n")
-                  case _ =>
-                    val valName = req.lineRep.packageName + req.lineRep.readName
-                    if (!tempValLines.contains(req.lineRep.lineId)) {
-                      code.append(s"val $valName: ${objName}.type = $objName\n")
-                      tempValLines += req.lineRep.lineId
-                    }
-                    code.append(s"import $valName${req.accessPath}.`$imv`;\n")
-                }
-                currentImps += imv
+            for (sym <- x.definedSymbols) {
+              maybeWrap(sym.name)
+              x match {
+                case _: ClassHandler =>
+                  code.append(s"import ${objName}${req.accessPath}.`${sym.name}`\n")
+                case _ =>
+                  val valName = s"${req.lineRep.packageName}${req.lineRep.readName}"
+                  if (!tempValLines.contains(req.lineRep.lineId)) {
+                    code.append(s"val $valName: ${objName}.type = $objName\n")
+                    tempValLines += req.lineRep.lineId
+                  }
+                  code.append(s"import ${valName}${req.accessPath}.`${sym.name}`\n")
               }
+              currentImps += sym.name
             }
           // For other requests, import each defined name.
           // import them explicitly instead of with _, so that
