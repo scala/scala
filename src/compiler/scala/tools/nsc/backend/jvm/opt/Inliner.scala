@@ -27,8 +27,6 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   import backendUtils._
 
   def runInliner(): Unit = {
-//    rewriteFinalTraitMethodInvocations()
-
     for (request <- collectAndOrderInlineRequests) {
       val Right(callee) = request.callsite.callee // collectAndOrderInlineRequests returns callsites with a known callee
 
@@ -67,111 +65,6 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
       def pos(c: Callsite) = c.callsiteMethod.instructions.indexOf(c.callsiteInstruction)
       pos(xCs) - pos(yCs)
-    }
-  }
-
-  // Rewriting final trait method callsites to the implementation class enables inlining.
-  def rewriteFinalTraitMethodInvocations(): Unit = {
-    // Collect callsites to rewrite before actually rewriting anything. This prevents changing the
-    // `callsties` map while iterating it.
-    val toRewrite = mutable.ArrayBuffer.empty[Callsite]
-    for (css <- callsites.valuesIterator; cs <- css.valuesIterator if doRewriteTraitCallsite(cs)) toRewrite += cs
-    toRewrite foreach rewriteFinalTraitMethodInvocation
-  }
-
-  /**
-   * True for statically resolved trait callsites that should be rewritten to the static implementation method.
-   */
-  def doRewriteTraitCallsite(callsite: Callsite) = callsite.callee match {
-    case Right(callee) => callee.safeToRewrite
-    case _ => false
-  }
-
-  /**
-   * Rewrite the INVOKEINTERFACE callsite of a final trait method invocation to INVOKESTATIC of the
-   * corresponding method in the implementation class. This enables inlining final trait methods.
-   *
-   * In a final trait method callsite, the callee is safeToInline and the callee method is abstract
-   * (the receiver type is the interface, so the method is abstract).
-   */
-  def rewriteFinalTraitMethodInvocation(callsite: Callsite): Unit = {
-    // The analyzer used below needs to have a non-null frame for the callsite instruction
-    localOpt.minimalRemoveUnreachableCode(callsite.callsiteMethod, callsite.callsiteClass.internalName)
-
-    // If the callsite was eliminated by DCE, do nothing.
-    if (!callGraph.containsCallsite(callsite)) return
-
-    val Right(Callee(callee, calleeDeclarationClass, _, _, canInlineFromSource, annotatedInline, annotatedNoInline, samParamTypes, infoWarning)) = callsite.callee
-
-    val traitMethodArgumentTypes = asm.Type.getArgumentTypes(callee.desc)
-
-    val implClassInternalName = calleeDeclarationClass.internalName + "$class"
-
-    val selfParamTypeV: Either[OptimizerWarning, ClassBType] = calleeDeclarationClass.info.map(_.inlineInfo.traitImplClassSelfType match {
-      case Some(internalName) => classBTypeFromParsedClassfile(internalName)
-      case None               => calleeDeclarationClass
-    })
-
-    def implClassMethodV(implMethodDescriptor: String): Either[OptimizerWarning, MethodNode] = {
-      byteCodeRepository.methodNode(implClassInternalName, callee.name, implMethodDescriptor).map(_._1)
-    }
-
-    // The rewrite reading the implementation class and the implementation method from the bytecode
-    // repository. If either of the two fails, the rewrite is not performed.
-    val res = for {
-      selfParamType        <- selfParamTypeV
-      implMethodDescriptor =  asm.Type.getMethodDescriptor(asm.Type.getReturnType(callee.desc), selfParamType.toASMType +: traitMethodArgumentTypes: _*)
-      implClassMethod      <- implClassMethodV(implMethodDescriptor)
-      implClassBType       =  classBTypeFromParsedClassfile(implClassInternalName)
-      selfTypeOk           <- calleeDeclarationClass.isSubtypeOf(selfParamType)
-    } yield {
-
-      // The self parameter type may be incompatible with the trait type.
-      //   trait T { self: S => def foo = 1 }
-      // The $self parameter type of T$class.foo is S, which may be unrelated to T. If we re-write
-      // a call to T.foo to T$class.foo, we need to cast the receiver to S, otherwise we get a
-      // VerifyError. We run a `SourceInterpreter` to find all producer instructions of the
-      // receiver value and add a cast to the self type after each.
-      if (!selfTypeOk) {
-        // We don't need to worry about the method being too large for running an analysis.
-        // Callsites of large methods are not added to the call graph.
-        val analyzer = new AsmAnalyzer(callsite.callsiteMethod, callsite.callsiteClass.internalName, new Analyzer(new SourceInterpreter))
-        val receiverValue = analyzer.frameAt(callsite.callsiteInstruction).peekStack(traitMethodArgumentTypes.length)
-        for (i <- receiverValue.insns.asScala) {
-          val cast = new TypeInsnNode(CHECKCAST, selfParamType.internalName)
-          callsite.callsiteMethod.instructions.insert(i, cast)
-        }
-      }
-
-      val newCallsiteInstruction = new MethodInsnNode(INVOKESTATIC, implClassInternalName, callee.name, implMethodDescriptor, false)
-      callsite.callsiteMethod.instructions.insert(callsite.callsiteInstruction, newCallsiteInstruction)
-      callsite.callsiteMethod.instructions.remove(callsite.callsiteInstruction)
-
-      callGraph.removeCallsite(callsite.callsiteInstruction, callsite.callsiteMethod)
-      val staticCallSamParamTypes = {
-        if (selfParamType.info.get.inlineInfo.sam.isEmpty) samParamTypes - 0
-        else samParamTypes.updated(0, selfParamType)
-      }
-      val staticCallsite = callsite.copy(
-        callsiteInstruction = newCallsiteInstruction,
-        callee              = Right(Callee(
-          callee                 = implClassMethod,
-          calleeDeclarationClass = implClassBType,
-          safeToInline           = true,
-          safeToRewrite          = false,
-          canInlineFromSource    = canInlineFromSource,
-          annotatedInline        = annotatedInline,
-          annotatedNoInline      = annotatedNoInline,
-          samParamTypes          = staticCallSamParamTypes,
-          calleeInfoWarning      = infoWarning))
-      )
-      callGraph.addCallsite(staticCallsite)
-    }
-
-    for (warning <- res.left) {
-      val Right(callee) = callsite.callee
-      val newCallee = callee.copy(calleeInfoWarning = Some(RewriteTraitCallToStaticImplMethodFailed(calleeDeclarationClass.internalName, callee.callee.name, callee.callee.desc, warning)))
-      callGraph.addCallsite(callsite.copy(callee = Right(newCallee)))
     }
   }
 

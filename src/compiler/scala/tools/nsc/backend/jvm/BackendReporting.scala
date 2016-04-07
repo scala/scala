@@ -170,9 +170,6 @@ object BackendReporting {
 
       case MethodInlineInfoError(_, _, _, cause) =>
         s"Error while computing the inline information for method $warningMessageSignature:\n" + cause
-
-      case RewriteTraitCallToStaticImplMethodFailed(_, _, _, cause) =>
-        cause.toString
     }
 
     def emitWarning(settings: ScalaSettings): Boolean = this match {
@@ -182,15 +179,12 @@ object BackendReporting {
       case MethodInlineInfoMissing(_, _, _, None)                   => settings.YoptWarningNoInlineMissingBytecode
 
       case MethodInlineInfoError(_, _, _, cause)                    => cause.emitWarning(settings)
-
-      case RewriteTraitCallToStaticImplMethodFailed(_, _, _, cause) => cause.emitWarning(settings)
     }
   }
 
   case class MethodInlineInfoIncomplete(declarationClass: InternalName, name: String, descriptor: String, cause: ClassInlineInfoWarning) extends CalleeInfoWarning
   case class MethodInlineInfoMissing(declarationClass: InternalName, name: String, descriptor: String, cause: Option[ClassInlineInfoWarning]) extends CalleeInfoWarning
   case class MethodInlineInfoError(declarationClass: InternalName, name: String, descriptor: String, cause: NoClassBTypeInfo) extends CalleeInfoWarning
-  case class RewriteTraitCallToStaticImplMethodFailed(declarationClass: InternalName, name: String, descriptor: String, cause: OptimizerWarning) extends CalleeInfoWarning
 
   sealed trait CannotInlineWarning extends OptimizerWarning {
     def calleeDeclarationClass: InternalName

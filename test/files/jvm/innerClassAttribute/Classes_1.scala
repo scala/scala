@@ -186,7 +186,7 @@ trait A24 extends A24Base {
   }
 }
 
-class SI_9105 {    
+class SI_9105 {
                                        //      outerClass       enclMeth
   val fun = (s: String) => {
     class A                            //        SI_9105           null
@@ -266,6 +266,23 @@ class SpecializedClassesAreTopLevel {
   // def n: Object = {
   //   class D[@specialized(Int) T]
   //   new D[Int]
+  // }
+}
+
+object AnonymousClassesMayBeNestedInSpecialized {
+  abstract class A
+  class C[@specialized(Int) T] {
+    def foo(t: T): A = new A { }
+  }
+
+  // specialization duplicates the anonymous class, one copy is nested in the specialized subclass of C
+
+  // class C$mcI$sp extends C[Int] {
+  //   override def foo(t: Int): A = C$mcI$sp.this.foo$mcI$sp(t);
+  //   override def foo$mcI$sp(t: Int): A = {
+  //     final class $anon extends A { }
+  //     new <$anon: A>()
+  //   }
   // }
 }
 

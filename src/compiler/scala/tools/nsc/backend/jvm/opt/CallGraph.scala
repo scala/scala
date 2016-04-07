@@ -132,16 +132,16 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
               (declarationClassNode, source) <- byteCodeRepository.classNodeAndSource(declarationClass): Either[OptimizerWarning, (ClassNode, Source)]
             } yield {
                 val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
-                val CallsiteInfo(safeToInline, safeToRewrite, canInlineFromSource, annotatedInline, annotatedNoInline, samParamTypes, warning) = analyzeCallsite(method, declarationClassBType, call, source)
+                val info = analyzeCallsite(method, declarationClassBType, call, source)
+                import info._
                 Callee(
                   callee = method,
                   calleeDeclarationClass = declarationClassBType,
                   safeToInline = safeToInline,
-                  safeToRewrite = false,
                   canInlineFromSource = canInlineFromSource,
                   annotatedInline = annotatedInline,
                   annotatedNoInline = annotatedNoInline,
-                  samParamTypes = samParamTypes,
+                  samParamTypes = info.samParamTypes,
                   calleeInfoWarning = warning)
               }
 
@@ -256,7 +256,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
   /**
    * Just a named tuple used as return type of `analyzeCallsite`.
    */
-  private case class CallsiteInfo(safeToInline: Boolean, safeToRewrite: Boolean, canInlineFromSource: Boolean,
+  private case class CallsiteInfo(safeToInline: Boolean, canInlineFromSource: Boolean,
                                   annotatedInline: Boolean, annotatedNoInline: Boolean,
                                   samParamTypes: IntMap[ClassBType],
                                   warning: Option[CalleeInfoWarning])
@@ -300,16 +300,12 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
               receiverType.info.orThrow.inlineInfo.isEffectivelyFinal // (1)
           }
 
-          val isRewritableTraitCall = false
-
           val warning = calleeDeclarationClassBType.info.orThrow.inlineInfo.warning.map(
             MethodInlineInfoIncomplete(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, _))
 
           // (1) For invocations of final trait methods, the callee isStaticallyResolved but also
           //     abstract. Such a callee is not safe to inline - it needs to be re-written to the
           //     static impl method first (safeToRewrite).
-          // (2) Final trait methods can be rewritten from the interface to the static implementation
-          //     method to enable inlining.
           CallsiteInfo(
             safeToInline      =
               canInlineFromSource &&
@@ -318,7 +314,6 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
                 !BytecodeUtils.isConstructor(calleeMethodNode) &&
                 !BytecodeUtils.isNativeMethod(calleeMethodNode) &&
                 !BytecodeUtils.hasCallerSensitiveAnnotation(calleeMethodNode),
-            safeToRewrite       = canInlineFromSource && isRewritableTraitCall, // (2)
             canInlineFromSource = canInlineFromSource,
             annotatedInline     = methodInlineInfo.annotatedInline,
             annotatedNoInline   = methodInlineInfo.annotatedNoInline,
@@ -327,12 +322,12 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
 
         case None =>
           val warning = MethodInlineInfoMissing(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, calleeDeclarationClassBType.info.orThrow.inlineInfo.warning)
-          CallsiteInfo(false, false, false, false, false, IntMap.empty, Some(warning))
+          CallsiteInfo(false, false, false, false, IntMap.empty, Some(warning))
       }
     } catch {
       case Invalid(noInfo: NoClassBTypeInfo) =>
         val warning = MethodInlineInfoError(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, noInfo)
-        CallsiteInfo(false, false, false, false, false, IntMap.empty, Some(warning))
+        CallsiteInfo(false, false, false, false, IntMap.empty, Some(warning))
     }
   }
 
@@ -387,20 +382,18 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    * @param calleeDeclarationClass The class in which the callee is declared
    * @param safeToInline           True if the callee can be safely inlined: it cannot be overridden,
    *                               and the inliner settings (project / global) allow inlining it.
-   * @param safeToRewrite          True if the callee is the interface method of a concrete trait method
-   *                               that can be safely re-written to the static implementation method.
    * @param annotatedInline        True if the callee is annotated @inline
    * @param annotatedNoInline      True if the callee is annotated @noinline
    * @param samParamTypes          A map from parameter positions to SAM parameter types
    * @param calleeInfoWarning      An inliner warning if some information was not available while
    *                               gathering the information about this callee.
    */
-  final case class Callee(callee: MethodNode, calleeDeclarationClass: ClassBType,
-                          safeToInline: Boolean, safeToRewrite: Boolean, canInlineFromSource: Boolean,
-                          annotatedInline: Boolean, annotatedNoInline: Boolean,
-                          samParamTypes: IntMap[ClassBType],
-                          calleeInfoWarning: Option[CalleeInfoWarning]) {
-    assert(!(safeToInline && safeToRewrite), s"A callee of ${callee.name} can be either safeToInline or safeToRewrite, but not both.")
+  final case class Callee(
+                           callee: MethodNode, calleeDeclarationClass: btypes.ClassBType,
+                           safeToInline: Boolean, canInlineFromSource: Boolean,
+                           annotatedInline: Boolean, annotatedNoInline: Boolean,
+                           samParamTypes: IntMap[btypes.ClassBType],
+                           calleeInfoWarning: Option[CalleeInfoWarning]) {
     override def toString = s"Callee($calleeDeclarationClass.${callee.name})"
   }
 

@@ -956,10 +956,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *    method `owner` returns the class C.
      *
      * Why not make a stable version of `isStatic`? Maybe some parts of the compiler depend on the
-     * current implementation. For example
-     *   trait T { def foo = 1 }
-     * The method `foo` in the implementation class T$impl will be `isStatic`, because trait
-     * impl classes get the `lateMODULE` flag (T$impl.isStaticOwner is true).
+     * current implementation.
      */
     def isStatic = (this hasFlag STATIC) || owner.isStaticOwner
 
@@ -2780,7 +2777,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       case DEFAULTPARAM => "<defaultparam>" // TRAIT
       case MIXEDIN      => "<mixedin>"      // EXISTENTIAL
       case LABEL        => "<label>"        // CONTRAVARIANT / INCONSTRUCTOR
-      case PRESUPER     => "<presuper>"     // IMPLCLASS
       case BYNAMEPARAM  => if (this.isValueParameter) "<bynameparam>" else "<captured>" // COVARIANT
       case _            => super.resolveOverloadedFlag(flag)
     }

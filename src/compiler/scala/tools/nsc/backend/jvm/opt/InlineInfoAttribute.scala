@@ -27,7 +27,7 @@ import scala.tools.nsc.backend.jvm.BackendReporting.UnknownScalaInlineInfoVersio
  * In principle we could encode the InlineInfo into a Java annotation (instead of a classfile attribute).
  * However, an attribute allows us to save many bits. In particular, note that the strings in an
  * InlineInfo are serialized as references to constants in the constant pool, and those strings
- * (traitImplClassSelfType, method names, method signatures) would exist in there anyway. So the
+ * (method names, method signatures) would exist in there anyway. So the
  * ScalaInlineAttribute remains relatively compact.
  */
 case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineInfoAttribute.attributeName) {
@@ -48,14 +48,10 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
     result.putByte(InlineInfoAttribute.VERSION)
 
     var finalSelfSam = 0
-    if (inlineInfo.isEffectivelyFinal)               finalSelfSam |= 1
-    if (inlineInfo.traitImplClassSelfType.isDefined) finalSelfSam |= 2
-    if (inlineInfo.sam.isDefined)                    finalSelfSam |= 4
+    if (inlineInfo.isEffectivelyFinal) finalSelfSam |= 1
+    //                                 finalSelfSam |= 2 // no longer written
+    if (inlineInfo.sam.isDefined)      finalSelfSam |= 4
     result.putByte(finalSelfSam)
-
-    for (selfInternalName <- inlineInfo.traitImplClassSelfType) {
-      result.putShort(cw.newUTF8(selfInternalName))
-    }
 
     for (samNameDesc <- inlineInfo.sam) {
       val (name, desc) = samNameDesc.span(_ != '(')
@@ -75,10 +71,10 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
       result.putShort(cw.newUTF8(desc))
 
       var inlineInfo = 0
-      if (info.effectivelyFinal)                    inlineInfo |= 1
-      if (info.traitMethodWithStaticImplementation) inlineInfo |= 2
-      if (info.annotatedInline)                     inlineInfo |= 4
-      if (info.annotatedNoInline)                   inlineInfo |= 8
+      if (info.effectivelyFinal)  inlineInfo |= 1
+      //                          inlineInfo |= 2 // no longer written
+      if (info.annotatedInline)   inlineInfo |= 4
+      if (info.annotatedNoInline) inlineInfo |= 8
       result.putByte(inlineInfo)
     }
 
@@ -106,10 +102,7 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
       val hasSelf = (finalSelfSam & 2) != 0
       val hasSam  = (finalSelfSam & 4) != 0
 
-      val self = if (!hasSelf) None else {
-        val selfName = nextUTF8()
-        Some(selfName)
-      }
+      if (hasSelf) nextUTF8() // no longer used
 
       val sam = if (!hasSam) None else {
         val name = nextUTF8()
@@ -123,14 +116,14 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
         val desc = nextUTF8()
 
         val inlineInfo = nextByte()
-        val isFinal                             = (inlineInfo & 1) != 0
-        val traitMethodWithStaticImplementation = (inlineInfo & 2) != 0
-        val isInline                            = (inlineInfo & 4) != 0
-        val isNoInline                          = (inlineInfo & 8) != 0
-        (name + desc, MethodInlineInfo(isFinal, traitMethodWithStaticImplementation, isInline, isNoInline))
+        val isFinal                                = (inlineInfo & 1) != 0
+        // val traitMethodWithStaticImplementation = (inlineInfo & 2) != 0 // no longer used
+        val isInline                               = (inlineInfo & 4) != 0
+        val isNoInline                             = (inlineInfo & 8) != 0
+        (name + desc, MethodInlineInfo(isFinal, isInline, isNoInline))
       }).toMap
 
-      InlineInfoAttribute(InlineInfo(self, isFinal, sam, infos, None))
+      InlineInfoAttribute(InlineInfo(isFinal, sam, infos, None))
     } else {
       val msg = UnknownScalaInlineInfoVersion(cr.getClassName, version)
       InlineInfoAttribute(BTypes.EmptyInlineInfo.copy(warning = Some(msg)))
@@ -140,6 +133,13 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
 
 object InlineInfoAttribute {
   /**
+   * Notes:
+   *  - `traitImplClassSelfType` is no longer emitted, `hasTraitImplClassSelfType` is always emitted
+   *    as 0. Similarly, `traitMethodWithStaticImplementation` is always emitted 0.
+   *  - When reading an existing attribute where `hasTraitImplClassSelfType` is 1, the
+   *    `traitImplClassSelfType` is ignored. Also the value of `traitMethodWithStaticImplementation`
+   *    is ignored.
+   *
    * [u1]    version
    * [u1]    isEffectivelyFinal (<< 0), hasTraitImplClassSelfType (<< 1), hasSam (<< 2)
    * [u2]?   traitImplClassSelfType (reference)
@@ -159,4 +159,4 @@ object InlineInfoAttribute {
  * In order to instruct the ASM framework to de-serialize the ScalaInlineInfo attribute, we need
  * to pass a prototype instance when running the class reader.
  */
-object InlineInfoAttributePrototype extends InlineInfoAttribute(InlineInfo(null, false, null, null, null))
+object InlineInfoAttributePrototype extends InlineInfoAttribute(InlineInfo(false, null, null, null))

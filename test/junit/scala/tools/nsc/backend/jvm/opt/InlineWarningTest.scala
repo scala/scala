@@ -70,30 +70,6 @@ class InlineWarningTest extends ClearAfterClass {
     assert(count == 4, count)
   }
 
-  // TODO SD-86: no more impl classes. this test (and the warning it tests!) can be removed
-  @org.junit.Ignore @Test
-  def traitMissingImplClass(): Unit = {
-    val codeA = "trait T { @inline final def f = 1 }"
-    val codeB = "class C { def t1(t: T) = t.f }"
-
-    val removeImpl = (outDir: AbstractFile) => {
-      val f = outDir.lookupName("T$class.class", directory = false)
-      if (f != null) f.delete()
-    }
-
-    val warn =
-      """T::f()I is annotated @inline but cannot be inlined: the trait method call could not be rewritten to the static implementation method. Possible reason:
-        |The method f(LT;)I could not be found in the class T$class or any of its parents.
-        |Note that the following parent classes could not be found on the classpath: T$class""".stripMargin
-
-    var c = 0
-    compileSeparately(List(codeA, codeB), extraArgs = InlineWarningTest.args, afterEach = removeImpl, allowMessage = i => {c += 1; i.msg contains warn})
-    assert(c == 1, c)
-
-    // only summary here
-    compileSeparately(List(codeA, codeB), extraArgs = InlineWarningTest.argsNoWarn, afterEach = removeImpl, allowMessage = _.msg contains "there was one inliner warning")
-  }
-
   @Test
   def handlerNonEmptyStack(): Unit = {
     val code =
