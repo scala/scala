@@ -217,23 +217,9 @@ class ExtractAPI[GlobalType <: Global](
 
   private def viewer(s: Symbol) = (if (s.isModule) s.moduleClass else s).thisType
   private def printMember(label: String, in: Symbol, t: Type) = println(label + " in " + in + " : " + t + " (debug: " + debugString(t) + " )")
-  private def defDef(in: Symbol, s: Symbol): List[xsbti.api.Def] =
+  private def defDef(in: Symbol, s: Symbol): xsbti.api.Def =
     {
-
-      val hasValueClassAsParameter: Boolean = {
-        s.asMethod.paramss.flatten map (_.info) exists (_.typeSymbol.isDerivedValueClass)
-      }
-
-      def hasValueClassAsReturnType(tpe: Type): Boolean = tpe match {
-        case PolyType(_, base)             => hasValueClassAsReturnType(base)
-        case MethodType(_, resultType)     => hasValueClassAsReturnType(resultType)
-        case NullaryMethodType(resultType) => hasValueClassAsReturnType(resultType)
-        case resultType                    => resultType.typeSymbol.isDerivedValueClass
-      }
-
-      val inspectPostErasure = hasValueClassAsParameter || hasValueClassAsReturnType(viewer(in).memberInfo(s))
-
-      def build(t: Type, typeParams: Array[xsbti.api.TypeParameter], valueParameters: List[xsbti.api.ParameterList]): List[xsbti.api.Def] =
+      def build(t: Type, typeParams: Array[xsbti.api.TypeParameter], valueParameters: List[xsbti.api.ParameterList]): xsbti.api.Def =
         {
           def parameterList(syms: List[Symbol], erase: Boolean = false): xsbti.api.ParameterList =
             {
@@ -245,57 +231,14 @@ class ExtractAPI[GlobalType <: Global](
               assert(typeParams.isEmpty)
               assert(valueParameters.isEmpty)
               build(base, typeParameters(in, typeParams0), Nil)
-            case mType @ MethodType(params, resultType) =>
-              // The types of a method's parameters change between phases: For instance, if a
-              // parameter is a subtype of AnyVal, then it won't have the same type before and after
-              // erasure. Therefore we record the type of parameters before AND after erasure to
-              // make sure that we don't miss some API changes.
-              //   class A(val x: Int) extends AnyVal
-              //   def foo(a: A): Int = A.x <- has type (LA)I before erasure
-              //                            <- has type (I)I after erasure
-              // If we change A from value class to normal class, we need to recompile all clients
-              // of def foo.
-              val beforeErasure =
-                build(resultType, typeParams, parameterList(params) :: valueParameters)
-              val afterErasure =
-                if (inspectPostErasure)
-                  build(resultType, typeParams, parameterList(mType.params, erase = true) :: valueParameters)
-                else
-                  Nil
-
-              beforeErasure ++ afterErasure
+            case MethodType(params, resultType) =>
+              build(resultType, typeParams, parameterList(params) :: valueParameters)
             case NullaryMethodType(resultType) =>
               build(resultType, typeParams, valueParameters)
             case returnType =>
-              def makeDef(retTpe: xsbti.api.Type): xsbti.api.Def =
-                new xsbti.api.Def(
-                  valueParameters.reverse.toArray,
-                  retTpe,
-                  typeParams,
-                  simpleName(s),
-                  getAccess(s),
-                  getModifiers(s),
-                  annotations(in, s)
-                )
-
-              // The return type of a method may change before and after erasure. Consider the
-              // following method:
-              //   class A(val x: Int) extends AnyVal
-              //   def foo(x: Int): A = new A(x) <- has type (I)LA before erasure
-              //                                 <- has type (I)I after erasure
-              // If we change A from value class to normal class, we need to recompile all clients
-              // of def foo.
-              val beforeErasure = makeDef(processType(in, dropConst(returnType)))
-              val afterErasure =
-                if (inspectPostErasure) {
-                  val erasedReturn = dropConst(global.transformedType(viewer(in).memberInfo(s))) map {
-                    case MethodType(_, r) => r
-                    case other            => other
-                  }
-                  List(makeDef(processType(in, erasedReturn)))
-                } else Nil
-
-              beforeErasure :: afterErasure
+              val retType = processType(in, dropConst(returnType))
+              new xsbti.api.Def(valueParameters.reverse.toArray, retType, typeParams,
+                simpleName(s), getAccess(s), getModifiers(s), annotations(in, s))
           }
         }
       def parameterS(erase: Boolean)(s: Symbol): xsbti.api.MethodParameter = {
@@ -420,22 +363,22 @@ class ExtractAPI[GlobalType <: Global](
     defs
   }
 
-  private def definition(in: Symbol, sym: Symbol): List[xsbti.api.Definition] =
+  private def definition(in: Symbol, sym: Symbol): Option[xsbti.api.Definition] =
     {
-      def mkVar = List(fieldDef(in, sym, false, new xsbti.api.Var(_, _, _, _, _)))
-      def mkVal = List(fieldDef(in, sym, true, new xsbti.api.Val(_, _, _, _, _)))
+      def mkVar = Some(fieldDef(in, sym, false, new xsbti.api.Var(_, _, _, _, _)))
+      def mkVal = Some(fieldDef(in, sym, true, new xsbti.api.Val(_, _, _, _, _)))
       if (isClass(sym))
-        if (ignoreClass(sym)) Nil else List(classLike(in, sym))
+        if (ignoreClass(sym)) None else Some(classLike(in, sym))
       else if (sym.isNonClassType)
-        List(typeDef(in, sym))
+        Some(typeDef(in, sym))
       else if (sym.isVariable)
-        if (isSourceField(sym)) mkVar else Nil
+        if (isSourceField(sym)) mkVar else None
       else if (sym.isStable)
-        if (isSourceField(sym)) mkVal else Nil
+        if (isSourceField(sym)) mkVal else None
       else if (sym.isSourceMethod && !sym.isSetter)
-        if (sym.isGetter) mkVar else defDef(in, sym)
+        if (sym.isGetter) mkVar else Some(defDef(in, sym))
       else
-        Nil
+        None
     }
   private def ignoreClass(sym: Symbol): Boolean =
     sym.isLocalClass || sym.isAnonymousClass || sym.fullName.endsWith(tpnme.LOCAL_CHILD.toString)
