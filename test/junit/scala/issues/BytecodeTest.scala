@@ -10,6 +10,7 @@ import scala.tools.nsc.backend.jvm.CodeGenTools._
 import org.junit.Assert._
 
 import scala.collection.JavaConverters._
+import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.ClassNode
 import scala.tools.partest.ASMConverters._
 import scala.tools.testing.ClearAfterClass
@@ -341,4 +342,137 @@ class BytecodeTest extends ClearAfterClass {
 
     checkForwarder('K12, "T2")
   }
+
+  @Test
+  def invocationReceivers(): Unit = {
+    val List(c1, c2, t, u) = compileClasses(compiler)(invocationReceiversTestCode.definitions("Object"))
+    // mixin forwarder in C1
+    assertSameCode(getSingleMethod(c1, "clone"), List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "T", "clone", "()Ljava/lang/Object;", false), Op(ARETURN)))
+    assertInvoke(getSingleMethod(c1, "f1"), "T", "clone")
+    assertInvoke(getSingleMethod(c1, "f2"), "T", "clone")
+    assertInvoke(getSingleMethod(c1, "f3"), "C1", "clone")
+    assertInvoke(getSingleMethod(c2, "f1"), "T", "clone")
+    assertInvoke(getSingleMethod(c2, "f2"), "T", "clone")
+    assertInvoke(getSingleMethod(c2, "f3"), "C1", "clone")
+
+    val List(c1b, c2b, tb, ub) = compileClasses(compiler)(invocationReceiversTestCode.definitions("String"))
+    def ms(c: ClassNode, n: String) = c.methods.asScala.toList.filter(_.name == n)
+    assert(ms(tb, "clone").length == 1)
+    assert(ms(ub, "clone").isEmpty)
+    val List(c1Clone) = ms(c1b, "clone")
+    assertEquals(c1Clone.desc, "()Ljava/lang/Object;")
+    assert((c1Clone.access | Opcodes.ACC_BRIDGE) != 0)
+    assertSameCode(convertMethod(c1Clone), List(VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C1", "clone", "()Ljava/lang/String;", false), Op(ARETURN)))
+
+    def iv(m: Method) = getSingleMethod(c1b, "f1").instructions.collect({case i: Invoke => i})
+    assertSameCode(iv(getSingleMethod(c1b, "f1")), List(Invoke(INVOKEINTERFACE, "T", "clone", "()Ljava/lang/String;", true)))
+    assertSameCode(iv(getSingleMethod(c1b, "f2")), List(Invoke(INVOKEINTERFACE, "T", "clone", "()Ljava/lang/String;", true)))
+    // invokeinterface T.clone in C1 is OK here because it is not an override of Object.clone (different siganture)
+    assertSameCode(iv(getSingleMethod(c1b, "f3")), List(Invoke(INVOKEINTERFACE, "T", "clone", "()Ljava/lang/String;", true)))
+  }
+
+  @Test
+  def invocationReceiversProtected(): Unit = {
+    // http://lrytz.github.io/scala-aladdin-bugtracker/displayItem.do%3Fid=455.html / 9954eaf
+    // also https://issues.scala-lang.org/browse/SI-1430 / 0bea2ab (same but with interfaces)
+    val aC =
+      """package a;
+        |/*package private*/ abstract class A {
+        |  public int f() { return 1; }
+        |  public int t;
+        |}
+      """.stripMargin
+    val bC =
+      """package a;
+        |public class B extends A { }
+      """.stripMargin
+    val iC =
+      """package a;
+        |/*package private*/ interface I { int f(); }
+      """.stripMargin
+    val jC =
+      """package a;
+        |public interface J extends I { }
+      """.stripMargin
+    val cC =
+      """package b
+        |class C {
+        |  def f1(b: a.B) = b.f
+        |  def f2(b: a.B) = { b.t = b.t + 1 }
+        |  def f3(j: a.J) = j.f
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(compiler)(cC, javaCode = List((aC, "A.java"), (bC, "B.java"), (iC, "I.java"), (jC, "J.java")))
+    assertInvoke(getSingleMethod(c, "f1"), "a/B", "f") // receiver needs to be B (A is not accessible in class C, package b)
+    println(getSingleMethod(c, "f2").instructions.stringLines)
+    assertInvoke(getSingleMethod(c, "f3"), "a/J", "f") // receiver needs to be J
+  }
+
+  @Test
+  def specialInvocationReceivers(): Unit = {
+    val code =
+      """class C {
+        |  def f1(a: Array[String]) = a.clone()
+        |  def f2(a: Array[Int]) = a.hashCode()
+        |  def f3(n: Nothing) = n.hashCode()
+        |  def f4(n: Null) = n.toString()
+        |
+        |}
+      """.stripMargin
+    val List(c) = compileClasses(compiler)(code)
+    assertInvoke(getSingleMethod(c, "f1"), "[Ljava/lang/String;", "clone") // array descriptor as receiver
+    assertInvoke(getSingleMethod(c, "f2"), "java/lang/Object", "hashCode") // object receiver
+    assertInvoke(getSingleMethod(c, "f3"), "java/lang/Object", "hashCode")
+    assertInvoke(getSingleMethod(c, "f4"), "java/lang/Object", "toString")
+  }
+}
+
+object invocationReceiversTestCode {
+  // if cloneType is more specific than Object (e.g., String), a bridge method is generated.
+  def definitions(cloneType: String) =
+   s"""trait T { override def clone(): $cloneType = "hi" }
+      |trait U extends T
+      |class C1 extends U with Cloneable {
+      |  // The comments below are true when $cloneType is Object.
+      |  // C1 gets a forwarder for clone that invokes T.clone. this is needed because JVM method
+      |  // resolution always prefers class members, so it would resolve to Object.clone, even if
+      |  // C1 is a subtype of the interface T which has an overriding default method for clone.
+      |
+      |  // invokeinterface T.clone
+      |  def f1 = (this: T).clone()
+      |
+      |  // cannot invokeinterface U.clone (NoSuchMethodError). Object.clone would work here, but
+      |  // not in the example in C2 (illegal access to protected). T.clone works in all cases and
+      |  // resolves correctly.
+      |  def f2 = (this: U).clone()
+      |
+      |  // invokevirtual C1.clone()
+      |  def f3 = (this: C1).clone()
+      |}
+      |
+      |class C2 {
+      |  def f1(t: T) = t.clone()  // invokeinterface T.clone
+      |  def f2(t: U) = t.clone()  // invokeinterface T.clone -- Object.clone would be illegal (protected, explained in C1)
+      |  def f3(t: C1) = t.clone() // invokevirtual C1.clone -- Object.clone would be illegal
+      |}
+    """.stripMargin
+
+  val runCode =
+    """
+      |val r = new StringBuffer()
+      |val c1 = new C1
+      |r.append(c1.f1)
+      |r.append(c1.f2)
+      |r.append(c1.f3)
+      |val t = new T { }
+      |val u = new U { }
+      |val c2 = new C2
+      |r.append(c2.f1(t))
+      |r.append(c2.f1(u))
+      |r.append(c2.f1(c1))
+      |r.append(c2.f2(u))
+      |r.append(c2.f2(c1))
+      |r.append(c2.f3(c1))
+      |r.toString
+    """.stripMargin
 }
