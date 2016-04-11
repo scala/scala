@@ -147,4 +147,16 @@ class RunTest extends ClearAfterClass {
     assertEquals(run[String](definitions("Object") + runCode), "hi" * 9)
     assertEquals(run[String](definitions("String") + runCode), "hi" * 9) // bridge method for clone generated
   }
+
+  @Test
+  def classOfUnitConstant(): Unit = {
+    val code =
+      """abstract class A { def f: Class[_] }
+        |class C extends A { final val f = classOf[Unit] }
+        |val c = new C
+        |(c.f, (c: A).f)
+      """.stripMargin
+    val u = Void.TYPE
+    assertEquals(run[(Class[_], Class[_])](code), (u, u))
+  }
 }
