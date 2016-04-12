@@ -6,12 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 package collection
 package mutable
-
 
 /** `History[A, B]` objects may subscribe to events of
  *  type `A` published by an object of type `B`.

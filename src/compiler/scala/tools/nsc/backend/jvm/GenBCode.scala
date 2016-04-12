@@ -3,7 +3,6 @@
  * @author  Martin Odersky
  */
 
-
 package scala
 package tools.nsc
 package backend

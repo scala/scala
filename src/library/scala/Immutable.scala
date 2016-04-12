@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 
 /** A marker trait for all immutable datastructures such as immutable

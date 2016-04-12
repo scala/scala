@@ -6,12 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 package collection
 package mutable
-
 
 /** `Publisher[A,This]` objects publish events of type `A`
  *  to all registered subscribers. When subscribing, a subscriber may specify

@@ -6,12 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 package collection
 package mutable
-
 
 /** A revertible history is a `History` object which supports
  *  an undo operation. Type variable `Evt` refers to the type

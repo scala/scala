@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.beans
 
 /** This annotation indicates that bean information should

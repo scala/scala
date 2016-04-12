@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.beans
 
 /** Provides some simple runtime processing necessary to create

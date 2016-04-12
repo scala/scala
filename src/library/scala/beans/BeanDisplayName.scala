@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.beans
 
 /** Provides a display name when generating bean information. This

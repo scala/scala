@@ -3,7 +3,6 @@
  * @author  Lex Spoon
  */
 
-
 package scala.tools.nsc
 
 import java.net.URL

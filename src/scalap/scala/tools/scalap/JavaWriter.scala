@@ -5,7 +5,6 @@
 **
 */
 
-
 package scala.tools.scalap
 
 import java.io._

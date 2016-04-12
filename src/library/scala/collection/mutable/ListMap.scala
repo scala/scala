@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 package collection
 package mutable
@@ -62,7 +60,6 @@ extends AbstractMap[A, B]
     else if (elems.head._1 == key) { siz -= 1; acc ::: elems.tail }
     else remove(key, elems.tail, elems.head :: acc)
   }
-
 
   @deprecatedOverriding("No sensible way to override as this functionality relies upon access to private methods.", "2.11.0")
   override def clear() = { elems = List(); siz = 0 }

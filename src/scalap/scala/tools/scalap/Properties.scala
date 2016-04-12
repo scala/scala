@@ -5,7 +5,6 @@
 **
 */
 
-
 package scala.tools.scalap
 
 /** Loads decoder.properties from the jar. */

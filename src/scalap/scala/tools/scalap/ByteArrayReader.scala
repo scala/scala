@@ -5,10 +5,8 @@
 **
 */
 
-
 package scala
 package tools.scalap
-
 
 class ByteArrayReader(content: Array[Byte]) {
 

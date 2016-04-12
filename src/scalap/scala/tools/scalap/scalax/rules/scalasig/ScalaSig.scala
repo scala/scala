@@ -5,7 +5,6 @@
 **
 */
 
-
 package scala.tools.scalap
 package scalax
 package rules

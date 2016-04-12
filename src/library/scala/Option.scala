@@ -335,7 +335,6 @@ final case class Some[+A](x: A) extends Option[A] {
   def get = x
 }
 
-
 /** This case object represents non-existent values.
  *
  *  @author  Martin Odersky

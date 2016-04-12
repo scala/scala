@@ -5,12 +5,10 @@
 **
 */
 
-
 package scala
 package tools.scalap
 
 import java.io._
-
 
 class CodeWriter(writer: Writer) {
 

@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.concurrent
 
 /** This class provides a simple FIFO queue of data objects,
