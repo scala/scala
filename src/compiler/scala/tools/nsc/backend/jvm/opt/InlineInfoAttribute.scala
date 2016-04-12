@@ -47,11 +47,12 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
 
     result.putByte(InlineInfoAttribute.VERSION)
 
-    var finalSelfSam = 0
-    if (inlineInfo.isEffectivelyFinal) finalSelfSam |= 1
-    //                                 finalSelfSam |= 2 // no longer written
-    if (inlineInfo.sam.isDefined)      finalSelfSam |= 4
-    result.putByte(finalSelfSam)
+    var flags = 0
+    if (inlineInfo.isEffectivelyFinal)      flags |= 1
+    //                                      flags |= 2 // no longer written
+    if (inlineInfo.sam.isDefined)           flags |= 4
+    if (inlineInfo.lateInterfaces.nonEmpty) flags |= 8
+    result.putByte(flags)
 
     for (samNameDesc <- inlineInfo.sam) {
       val (name, desc) = samNameDesc.span(_ != '(')
@@ -78,6 +79,9 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
       result.putByte(inlineInfo)
     }
 
+    result.putShort(inlineInfo.lateInterfaces.length)
+    for (i <- inlineInfo.lateInterfaces) result.putShort(cw.newUTF8(i))
+
     result
   }
 
@@ -97,10 +101,11 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
 
     val version = nextByte()
     if (version == 1) {
-      val finalSelfSam = nextByte()
-      val isFinal = (finalSelfSam & 1) != 0
-      val hasSelf = (finalSelfSam & 2) != 0
-      val hasSam  = (finalSelfSam & 4) != 0
+      val flags = nextByte()
+      val isFinal           = (flags & 1) != 0
+      val hasSelf           = (flags & 2) != 0
+      val hasSam            = (flags & 4) != 0
+      val hasLateInterfaces = (flags & 8) != 0
 
       if (hasSelf) nextUTF8() // no longer used
 
@@ -116,14 +121,21 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
         val desc = nextUTF8()
 
         val inlineInfo = nextByte()
-        val isFinal                                = (inlineInfo & 1) != 0
-        // val traitMethodWithStaticImplementation = (inlineInfo & 2) != 0 // no longer used
-        val isInline                               = (inlineInfo & 4) != 0
-        val isNoInline                             = (inlineInfo & 8) != 0
+        val isFinal    = (inlineInfo & 1) != 0
+        //             = (inlineInfo & 2) != 0 // no longer used
+        val isInline   = (inlineInfo & 4) != 0
+        val isNoInline = (inlineInfo & 8) != 0
         (name + desc, MethodInlineInfo(isFinal, isInline, isNoInline))
       }).toMap
 
-      InlineInfoAttribute(InlineInfo(isFinal, sam, infos, None))
+      val lateInterfaces = if (!hasLateInterfaces) Nil else {
+        val numLateInterfaces = nextShort()
+        (0 until numLateInterfaces).map(_ => nextUTF8())
+      }
+
+      val info = InlineInfo(isFinal, sam, infos, None)
+      info.lateInterfaces ++= lateInterfaces
+      InlineInfoAttribute(info)
     } else {
       val msg = UnknownScalaInlineInfoVersion(cr.getClassName, version)
       InlineInfoAttribute(BTypes.EmptyInlineInfo.copy(warning = Some(msg)))
@@ -141,7 +153,7 @@ object InlineInfoAttribute {
    *    is ignored.
    *
    * [u1]    version
-   * [u1]    isEffectivelyFinal (<< 0), hasTraitImplClassSelfType (<< 1), hasSam (<< 2)
+   * [u1]    isEffectivelyFinal (<< 0), hasTraitImplClassSelfType (<< 1), hasSam (<< 2), hasLateInterfaces (<< 3)
    * [u2]?   traitImplClassSelfType (reference)
    * [u2]?   samName (reference)
    * [u2]?   samDescriptor (reference)
@@ -149,6 +161,8 @@ object InlineInfoAttribute {
    *   [u2]  name (reference)
    *   [u2]  descriptor (reference)
    *   [u1]  isFinal (<< 0), traitMethodWithStaticImplementation (<< 1), hasInlineAnnotation (<< 2), hasNoInlineAnnotation (<< 3)
+   * [u2]?   numLateInterfaces
+   *   [u2]  lateInterface (reference)
    */
   final val VERSION: Byte = 1
 

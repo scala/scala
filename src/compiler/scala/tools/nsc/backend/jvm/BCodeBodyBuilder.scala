@@ -1060,8 +1060,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val receiverName = internalName(receiverClass)
 
       // super calls are only allowed to direct parents
-      if (style.isSuper && receiverClass.isTraitOrInterface && !cnode.interfaces.contains(receiverName))
+      if (style.isSuper && receiverClass.isTraitOrInterface && !cnode.interfaces.contains(receiverName)) {
+        thisBType.info.get.inlineInfo.lateInterfaces += receiverName
         cnode.interfaces.add(receiverName)
+      }
 
       def needsInterfaceCall(sym: Symbol) = {
         sym.isTraitOrInterface ||

@@ -7,7 +7,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.annotation.switch
-import scala.collection.{mutable, concurrent}
+import scala.collection.{concurrent, mutable}
 import scala.collection.concurrent.TrieMap
 import scala.reflect.internal.util.Position
 import scala.tools.asm
@@ -18,6 +18,7 @@ import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt._
 import scala.collection.convert.decorateAsScala._
+import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.settings.ScalaSettings
 
 /**
@@ -180,8 +181,6 @@ abstract class BTypes {
         Some(classBTypeFromParsedClassfile(superName))
     }
 
-    val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(classBTypeFromParsedClassfile)(collection.breakOut)
-
     val flags = classNode.access
 
     /**
@@ -225,6 +224,9 @@ abstract class BTypes {
     }
 
     val inlineInfo = inlineInfoFromClassfile(classNode)
+
+    val classfileInterfaces: List[ClassBType] = classNode.interfaces.asScala.map(classBTypeFromParsedClassfile)(collection.breakOut)
+    val interfaces = classfileInterfaces.filterNot(i => inlineInfo.lateInterfaces.contains(i.internalName))
 
     classBType.info = Right(ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo, inlineInfo))
     classBType
@@ -1144,7 +1146,27 @@ object BTypes {
   final case class InlineInfo(isEffectivelyFinal: Boolean,
                               sam: Option[String],
                               methodInfos: Map[String, MethodInlineInfo],
-                              warning: Option[ClassInlineInfoWarning])
+                              warning: Option[ClassInlineInfoWarning]) {
+    /**
+     * A super call (invokespecial) to a default method T.m is only allowed if the interface T is
+     * a direct parent of the class. Super calls are introduced for example in Mixin when generating
+     * forwarder methods:
+     *
+     *   trait T { override def clone(): Object = "hi" }
+     *   trait U extends T
+     *   class C extends U
+     *
+     * The class C gets a forwarder that invokes T.clone(). During code generation the interface T
+     * is added as direct parent to class C. Note that T is not a (direct) parent in the frontend
+     * type of class C.
+     *
+     * All interfaces that are added to a class during code generation are added to this buffer and
+     * stored in the InlineInfo classfile attribute. This ensures that the ClassBTypes for a
+     * specific class is the same no matter if it's constructed from a Symbol or from a classfile.
+     * This is tested in BTypesFromClassfileTest.
+     */
+    val lateInterfaces: ListBuffer[InternalName] = ListBuffer.empty
+  }
 
   val EmptyInlineInfo = InlineInfo(false, None, Map.empty, None)
 

@@ -112,7 +112,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       gen(cd.impl)
 
-
       val shouldAddLambdaDeserialize = (
         settings.target.value == "jvm-1.8"
           && settings.Ydelambdafy.value == "method"
