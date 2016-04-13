@@ -37,8 +37,6 @@ object ScalaRunTime {
 
   def isValueClass(clazz: jClass[_]) = clazz.isPrimitive()
 
-  // includes specialized subclasses and future proofed against hypothetical TupleN (for N > 22)
-  def isTuple(x: Any) = x != null && x.getClass.getName.startsWith("scala.Tuple")
   def isAnyVal(x: Any) = x match {
     case _: Byte | _: Short | _: Char | _: Int | _: Long | _: Float | _: Double | _: Boolean | _: Unit => true
     case _                                                                                             => false
@@ -238,6 +236,9 @@ object ScalaRunTime {
     }
     def isScalaClass(x: AnyRef)         = packageOf(x) startsWith "scala."
     def isScalaCompilerClass(x: AnyRef) = packageOf(x) startsWith "scala.tools.nsc."
+
+    // includes specialized subclasses and future proofed against hypothetical TupleN (for N > 22)
+    def isTuple(x: Any) = x != null && x.getClass.getName.startsWith("scala.Tuple")
 
     // When doing our own iteration is dangerous
     def useOwnToString(x: Any) = x match {
