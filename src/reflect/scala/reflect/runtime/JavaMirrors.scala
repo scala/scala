@@ -475,9 +475,9 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         }
 
         symbol match {
-          case Any_== | Object_==                     => ScalaRunTime.inlinedEquals(objReceiver, objArg0)
-          case Any_!= | Object_!=                     => !ScalaRunTime.inlinedEquals(objReceiver, objArg0)
-          case Any_## | Object_##                     => ScalaRunTime.hash(objReceiver)
+          case Any_== | Object_==                     => objReceiver == objArg0
+          case Any_!= | Object_!=                     => objReceiver != objArg0
+          case Any_## | Object_##                     => objReceiver.##
           case Any_equals                             => receiver.equals(objArg0)
           case Any_hashCode                           => receiver.hashCode
           case Any_toString                           => receiver.toString
