@@ -13,7 +13,6 @@ package collection
 package mutable
 
 import scala.reflect.ClassTag
-import scala.runtime.ScalaRunTime._
 
 /** A builder class for arrays.
  *
@@ -34,7 +33,7 @@ class WrappedArrayBuilder[A](tag: ClassTag[A]) extends ReusableBuilder[A, Wrappe
   private var size: Int = 0
 
   private def mkArray(size: Int): WrappedArray[A] = {
-    val runtimeClass = arrayElementClass(tag)
+    val runtimeClass = tag.runtimeClass
     val newelems = runtimeClass match {
       case java.lang.Byte.TYPE      => new WrappedArray.ofByte(new Array[Byte](size)).asInstanceOf[WrappedArray[A]]
       case java.lang.Short.TYPE     => new WrappedArray.ofShort(new Array[Short](size)).asInstanceOf[WrappedArray[A]]

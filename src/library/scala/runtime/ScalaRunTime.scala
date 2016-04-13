@@ -43,15 +43,6 @@ object ScalaRunTime {
     else java.lang.reflect.Array.newInstance(clazz, 0).getClass
   }
 
-  /** Return the class object representing elements in arrays described by a given schematic.
-   */
-  def arrayElementClass(schematic: Any): jClass[_] = schematic match {
-    case cls: jClass[_]   => cls.getComponentType
-    case tag: ClassTag[_] => tag.runtimeClass
-    case _                =>
-      throw new UnsupportedOperationException(s"unsupported schematic $schematic (${schematic.getClass})")
-  }
-
   /** Return the class object representing an unboxed value type,
    *  e.g., classOf[int], not classOf[java.lang.Integer].  The compiler
    *  rewrites expressions like 5.getClass to come here.

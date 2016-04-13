@@ -2,7 +2,6 @@ package scala
 package reflect
 
 import java.lang.{ Class => jClass }
-import scala.runtime.ScalaRunTime.arrayElementClass
 
 /**
  *
@@ -105,7 +104,7 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
   override def hashCode = scala.runtime.ScalaRunTime.hash(runtimeClass)
   override def toString = {
     def prettyprint(clazz: jClass[_]): String =
-      if (clazz.isArray) s"Array[${prettyprint(arrayElementClass(clazz))}]" else
+      if (clazz.isArray) s"Array[${prettyprint(clazz.getComponentType)}]" else
       clazz.getName
     prettyprint(runtimeClass)
   }

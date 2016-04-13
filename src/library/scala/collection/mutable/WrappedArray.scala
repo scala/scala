@@ -13,7 +13,6 @@ package collection
 package mutable
 
 import scala.reflect.ClassTag
-import scala.runtime.ScalaRunTime._
 import scala.collection.generic._
 import scala.collection.parallel.mutable.ParArray
 
@@ -46,7 +45,7 @@ extends AbstractSeq[T]
   def elemTag: ClassTag[T]
 
   @deprecated("use elemTag instead", "2.10.0")
-  def elemManifest: ClassManifest[T] = ClassManifest.fromClass[T](arrayElementClass(elemTag).asInstanceOf[Class[T]])
+  def elemManifest: ClassManifest[T] = ClassManifest.fromClass[T](elemTag.runtimeClass.asInstanceOf[Class[T]])
 
   /** The length of the array */
   def length: Int
@@ -63,10 +62,10 @@ extends AbstractSeq[T]
   override def par = ParArray.handoff(array)
 
   private def elementClass: Class[_] =
-    arrayElementClass(array.getClass)
+    array.getClass.getComponentType
 
   override def toArray[U >: T : ClassTag]: Array[U] = {
-    val thatElementClass = arrayElementClass(implicitly[ClassTag[U]])
+    val thatElementClass = implicitly[ClassTag[U]].runtimeClass
     if (elementClass eq thatElementClass)
       array.asInstanceOf[Array[U]]
     else
@@ -122,7 +121,7 @@ object WrappedArray {
   def newBuilder[A]: Builder[A, IndexedSeq[A]] = new ArrayBuffer
 
   final class ofRef[T <: AnyRef](val array: Array[T]) extends WrappedArray[T] with Serializable {
-    lazy val elemTag = ClassTag[T](arrayElementClass(array.getClass))
+    lazy val elemTag = ClassTag[T](array.getClass.getComponentType)
     def length: Int = array.length
     def apply(index: Int): T = array(index).asInstanceOf[T]
     def update(index: Int, elem: T) { array(index) = elem }
