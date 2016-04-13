@@ -24,8 +24,7 @@ object ScalaInlineInfoTest extends ClearAfterClass.Clearable {
 @RunWith(classOf[JUnit4])
 class ScalaInlineInfoTest extends ClearAfterClass {
   ClearAfterClass.stateToClear = ScalaInlineInfoTest
-
-  val compiler = newCompiler()
+  val compiler = ScalaInlineInfoTest.compiler
 
   def inlineInfo(c: ClassNode): InlineInfo = c.attrs.asScala.collect({ case a: InlineInfoAttribute => a.inlineInfo }).head
 
@@ -113,6 +112,7 @@ class ScalaInlineInfoTest extends ClearAfterClass {
     val infoC = inlineInfo(c)
     val expectC = InlineInfo(false, None, Map(
       "O()LT$O$;"                             -> MethodInlineInfo(true ,false,false),
+      "O$lzycompute()LT$O$;"                  -> MethodInlineInfo(true, false,false),
       "f6()I"                                 -> MethodInlineInfo(false,false,false),
       "x1()I"                                 -> MethodInlineInfo(false,false,false),
       "T$_setter_$x1_$eq(I)V"                 -> MethodInlineInfo(false,false,false),
@@ -166,5 +166,17 @@ class ScalaInlineInfoTest extends ClearAfterClass {
         ("T",Some("h(Ljava/lang/String;)I")),
         ("U",None)))
 
+  }
+
+  @Test
+  def lzyComputeInlineInfo(): Unit = {
+    val code = "class C { object O }"
+    val List(c, om) = compileClasses(compiler)(code)
+    val infoC = inlineInfo(c)
+    val expected = Map(
+      "<init>()V"            -> MethodInlineInfo(false,false,false),
+      "O$lzycompute()LC$O$;" -> MethodInlineInfo(true,false,false),
+      "O()LC$O$;"            -> MethodInlineInfo(true,false,false))
+    assert(infoC.methodInfos == expected, mapDiff(infoC.methodInfos, expected))
   }
 }

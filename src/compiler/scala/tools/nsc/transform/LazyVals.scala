@@ -215,14 +215,16 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
 
     def mkSlowPathDef(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
                       stats: List[Tree], retVal: Tree): Tree = {
-      // Q: is there a reason to first set owner to `clazz` (by using clazz.newMethod), and then
-      // changing it to lzyVal.owner very soon after? Could we just do lzyVal.owner.newMethod?
-      val defSym = clazz.newMethod(nme.newLazyValSlowComputeName(lzyVal.name.toTermName), lzyVal.pos, STABLE | PRIVATE)
+      val owner = lzyVal.owner
+      val defSym = owner.newMethod(nme.newLazyValSlowComputeName(lzyVal.name.toTermName), lzyVal.pos, STABLE | PRIVATE)
       defSym setInfo MethodType(List(), lzyVal.tpe.resultType)
-      defSym.owner = lzyVal.owner
+      if (owner.isClass) owner.info.decls.enter(defSym)
       debuglog(s"crete slow compute path $defSym with owner ${defSym.owner} for lazy val $lzyVal")
-      if (bitmaps.contains(lzyVal))
-        bitmaps(lzyVal).map(_.owner = defSym)
+      // this is a hack i don't understand for lazy vals nested in a lazy val, introduced in 3769f4d,
+      // tested in pos/t3670 (add9be64). class A { val n = { lazy val b = { lazy val dd = 3; dd }; b } }
+      // bitmaps has an entry bMethodSym -> List(bitmap$0), where bitmap$0.owner == bMethodSym.
+      // now we set bitmap$0.owner = b$lzycomputeMethodSym.
+      for (bitmap <- bitmaps(lzyVal)) bitmap.owner = defSym
       val rhs: Tree = gen.mkSynchronizedCheck(clazz, cond, syncBody, stats).changeOwner(currentOwner -> defSym)
 
       DefDef(defSym, addBitmapDefs(lzyVal, BLOCK(rhs, retVal)))
