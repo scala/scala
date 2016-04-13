@@ -116,15 +116,15 @@ object ScalaRunTime {
   }
 
   def array_clone(xs: AnyRef): AnyRef = xs match {
-    case x: Array[AnyRef]  => ArrayRuntime.cloneArray(x)
-    case x: Array[Int]     => ArrayRuntime.cloneArray(x)
-    case x: Array[Double]  => ArrayRuntime.cloneArray(x)
-    case x: Array[Long]    => ArrayRuntime.cloneArray(x)
-    case x: Array[Float]   => ArrayRuntime.cloneArray(x)
-    case x: Array[Char]    => ArrayRuntime.cloneArray(x)
-    case x: Array[Byte]    => ArrayRuntime.cloneArray(x)
-    case x: Array[Short]   => ArrayRuntime.cloneArray(x)
-    case x: Array[Boolean] => ArrayRuntime.cloneArray(x)
+    case x: Array[AnyRef]  => x.clone()
+    case x: Array[Int]     => x.clone()
+    case x: Array[Double]  => x.clone()
+    case x: Array[Long]    => x.clone()
+    case x: Array[Float]   => x.clone()
+    case x: Array[Char]    => x.clone()
+    case x: Array[Byte]    => x.clone()
+    case x: Array[Short]   => x.clone()
+    case x: Array[Boolean] => x.clone()
     case x: Array[Unit]    => x
     case null => throw new NullPointerException
   }
