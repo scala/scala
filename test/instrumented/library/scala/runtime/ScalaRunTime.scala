@@ -35,8 +35,6 @@ object ScalaRunTime {
   private def isArrayClass(clazz: jClass[_], atLevel: Int): Boolean =
     clazz.isArray && (atLevel == 1 || isArrayClass(clazz.getComponentType, atLevel - 1))
 
-  def isValueClass(clazz: jClass[_]) = clazz.isPrimitive()
-
   /** Return the class object representing an array with element class `clazz`.
    */
   def arrayClass(clazz: jClass[_]): jClass[_] = {
@@ -153,9 +151,6 @@ object ScalaRunTime {
     m
   }
 
-  def checkInitialized[T <: AnyRef](x: T): T =
-    if (x == null) throw new UninitializedError else x
-
   def _toString(x: Product): String =
     x.productIterator.mkString(x.productPrefix + "(", ",", ")")
 
@@ -175,32 +170,11 @@ object ScalaRunTime {
     }
   }
 
-  /** Fast path equality method for inlining; used when -optimise is set.
-   */
-  @inline def inlinedEquals(x: Object, y: Object): Boolean =
-    if (x eq y) true
-    else if (x eq null) false
-    else if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.equalsNumObject(x.asInstanceOf[java.lang.Number], y)
-    else if (x.isInstanceOf[java.lang.Character]) BoxesRunTime.equalsCharObject(x.asInstanceOf[java.lang.Character], y)
-    else x.equals(y)
-
-  def _equals(x: Product, y: Any): Boolean = y match {
-    case y: Product if x.productArity == y.productArity => x.productIterator sameElements y.productIterator
-    case _                                              => false
-  }
-
   /** Implementation of `##`. */
   def hash(x: Any): Int =
     if (x == null) 0
     else if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.hashFromNumber(x.asInstanceOf[java.lang.Number])
     else x.hashCode
-
-  /** A helper method for constructing case class equality methods,
-   *  because existential types get in the way of a clean outcome and
-   *  it's performing a series of Any/Any equals comparisons anyway.
-   *  See ticket #2867 for specifics.
-   */
-  def sameElements(xs1: scala.collection.Seq[Any], xs2: scala.collection.Seq[Any]) = xs1 sameElements xs2
 
   /** Given any Scala value, convert it to a String.
    *
@@ -292,19 +266,5 @@ object ScalaRunTime {
     val nl = if (s contains "\n") "\n" else ""
 
     nl + s + "\n"
-  }
-  private[scala] def checkZip(what: String, coll1: TraversableOnce[_], coll2: TraversableOnce[_]) {
-    if (sys.props contains "scala.debug.zip") {
-      val xs = coll1.toIndexedSeq
-      val ys = coll2.toIndexedSeq
-      if (xs.length != ys.length) {
-        Console.err.println(
-          "Mismatched zip in " + what + ":\n" +
-          "  this: " + xs.mkString(", ") + "\n" +
-          "  that: " + ys.mkString(", ")
-        )
-        (new Exception).getStackTrace.drop(2).take(10).foreach(println)
-      }
-    }
   }
 }
