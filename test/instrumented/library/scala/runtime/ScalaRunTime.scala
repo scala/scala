@@ -37,11 +37,6 @@ object ScalaRunTime {
 
   def isValueClass(clazz: jClass[_]) = clazz.isPrimitive()
 
-  def isAnyVal(x: Any) = x match {
-    case _: Byte | _: Short | _: Char | _: Int | _: Long | _: Float | _: Double | _: Boolean | _: Unit => true
-    case _                                                                                             => false
-  }
-
   /** Return the class object representing an array with element class `clazz`.
    */
   def arrayClass(clazz: jClass[_]): jClass[_] = {

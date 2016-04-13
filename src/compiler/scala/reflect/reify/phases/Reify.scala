@@ -1,7 +1,6 @@
 package scala.reflect.reify
 package phases
 
-import scala.runtime.ScalaRunTime.isAnyVal
 import scala.reflect.reify.codegen._
 
 trait Reify extends GenSymbols
@@ -57,4 +56,9 @@ trait Reify extends GenSymbols
     case _                        =>
       throw new Error("reifee %s of type %s is not supported".format(reifee, reifee.getClass))
   })
+
+  private def isAnyVal(x: Any) = x match {
+    case _: Byte | _: Short | _: Char | _: Int | _: Long | _: Float | _: Double | _: Boolean | _: Unit => true
+    case _                                                                                             => false
+  }
 }
