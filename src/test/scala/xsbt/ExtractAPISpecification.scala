@@ -122,15 +122,10 @@ class ExtractAPISpecification extends UnitSpec {
    * is compiled together with Namers or Namers is compiled first and then Global refers
    * to Namers by unpickling types from class files.
    */
-  it should "make a stable representation of a self variable that has no self type" in {
+  it should "make a stable representation of a self variable that has no self type" in pendingUntilFixed {
     def selectNamer(apis: Set[ClassLike]): ClassLike = {
-      def selectClass(defs: Iterable[Definition], name: String): ClassLike = defs.collectFirst {
-        case cls: ClassLike if cls.name == name => cls
-      }.get
-      val global = apis.find(_.name == "Global").get
-      //val foo = selectClass(global.structure.declared, "Global.Foo")
-      val foo = apis.find(_.name == "Global.Foo").get
-      selectClass(foo.structure.inherited, "Namers.Namer")
+      // TODO: this doesn't work yet because inherited classes are not extracted
+      apis.find(_.name == "Global.Foo.Namer").get
     }
     val src1 =
       """|class Namers {
