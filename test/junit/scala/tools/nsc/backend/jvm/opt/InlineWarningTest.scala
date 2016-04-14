@@ -113,7 +113,7 @@ class InlineWarningTest extends BytecodeTesting {
 
     val warn =
       """M::f()I is annotated @inline but could not be inlined:
-        |The callee M::f()I contains the instruction INVOKESPECIAL M.nested$1 ()I
+        |The callee M::f()I contains the instruction INVOKESTATIC M.nested$1 ()I
         |that would cause an IllegalAccessError when inlined into class N""".stripMargin
 
     var c = 0
@@ -140,7 +140,7 @@ class InlineWarningTest extends BytecodeTesting {
 
     val warn =
       """M::f(Lscala/Function1;)I could not be inlined:
-        |The callee M::f(Lscala/Function1;)I contains the instruction INVOKESPECIAL M.nested$1 ()I
+        |The callee M::f(Lscala/Function1;)I contains the instruction INVOKESTATIC M.nested$1 ()I
         |that would cause an IllegalAccessError when inlined into class N""".stripMargin
 
     var c = 0
