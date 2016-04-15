@@ -67,8 +67,6 @@ abstract class ExplicitOuter extends InfoTransform
     result
   }
 
-  private val innerClassConstructorParamName: TermName = newTermName("arg" + nme.OUTER)
-
   class RemoveBindingsTransformer(toRemove: Set[Symbol]) extends Transformer {
     override def transform(tree: Tree) = tree match {
       case Bind(_, body) if toRemove(tree.symbol) => super.transform(body)
@@ -169,7 +167,7 @@ abstract class ExplicitOuter extends InfoTransform
 
       val paramsWithOuter =
         if (sym.isClassConstructor && isInner(sym.owner)) // 1
-          sym.newValueParameter(innerClassConstructorParamName, sym.pos).setInfo(sym.owner.outerClass.thisType) :: params
+          sym.newValueParameter(nme.OUTER_ARG, sym.pos).setInfo(sym.owner.outerClass.thisType) :: params
         else params
 
       if ((resTpTransformed ne resTp) || (paramsWithOuter ne params)) MethodType(paramsWithOuter, resTpTransformed)

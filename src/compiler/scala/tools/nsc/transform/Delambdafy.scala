@@ -279,10 +279,15 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         if (!dd.symbol.hasFlag(STATIC) && !methodReferencesThis(dd.symbol))
           dd.symbol.setFlag(STATIC)
         super.transform(tree)
+      case Apply(fun, outer :: rest) if shouldElideOuterArg(fun.symbol, outer) =>
+        val nullOuter = gen.mkZero(outer.tpe)
+        treeCopy.Apply(tree, transform(fun), nullOuter :: transformTrees(rest))
       case _ => super.transform(tree)
     }
   } // DelambdafyTransformer
 
+  private def shouldElideOuterArg(fun: Symbol, outerArg: Tree): Boolean =
+    fun.isConstructor && treeInfo.isQualifierSafeToElide(outerArg) && fun.hasAttachment[OuterArgCanBeElided.type]
 
   // A traverser that finds symbols used but not defined in the given Tree
   // TODO freeVarTraverser in LambdaLift does a very similar task. With some
@@ -368,6 +373,9 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       case Apply(sel @ Select(This(_), _), args) if sel.symbol.isLiftedMethod =>
         if (currentMethod.exists) liftedMethodReferences(currentMethod) += sel.symbol
         super.traverseTrees(args)
+      case Apply(fun, outer :: rest) if shouldElideOuterArg(fun.symbol, outer) =>
+        super.traverse(fun)
+        super.traverseTrees(rest)
       case This(_) =>
         if (currentMethod.exists && tree.symbol == currentMethod.enclClass) {
           debuglog(s"$currentMethod directly refers to 'this'")
