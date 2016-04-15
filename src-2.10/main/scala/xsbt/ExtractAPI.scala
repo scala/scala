@@ -221,10 +221,10 @@ class ExtractAPI[GlobalType <: Global](
     {
       def build(t: Type, typeParams: Array[xsbti.api.TypeParameter], valueParameters: List[xsbti.api.ParameterList]): xsbti.api.Def =
         {
-          def parameterList(syms: List[Symbol], erase: Boolean = false): xsbti.api.ParameterList =
+          def parameterList(syms: List[Symbol]): xsbti.api.ParameterList =
             {
               val isImplicitList = syms match { case head :: _ => isImplicit(head); case _ => false }
-              new xsbti.api.ParameterList(syms.map(parameterS(erase)).toArray, isImplicitList)
+              new xsbti.api.ParameterList(syms.map(parameterS).toArray, isImplicitList)
             }
           t match {
             case PolyType(typeParams0, base) =>
@@ -241,8 +241,8 @@ class ExtractAPI[GlobalType <: Global](
                 simpleName(s), getAccess(s), getModifiers(s), annotations(in, s))
           }
         }
-      def parameterS(erase: Boolean)(s: Symbol): xsbti.api.MethodParameter = {
-        val tp: global.Type = if (erase) global.transformedType(s.info) else s.info
+      def parameterS(s: Symbol): xsbti.api.MethodParameter = {
+        val tp: global.Type = s.info
         makeParameter(simpleName(s), tp, tp.typeSymbol, s)
       }
 
