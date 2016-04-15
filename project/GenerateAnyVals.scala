@@ -225,7 +225,9 @@ import scala.language.implicitConversions"""
       "@unboxRunTimeDoc@" -> """
  *  Runtime implementation determined by `scala.runtime.BoxesRunTime.unboxTo%s`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
  *""".format(name),
-      "@unboxDoc@"  -> "the %s resulting from calling %sValue() on `x`".format(name, lcname)
+      "@unboxDoc@" -> "the %s resulting from calling %sValue() on `x`".format(name, lcname),
+      "@boxImpl@" -> "???",
+      "@unboxImpl@" -> "???"
     )
     def interpolations = Map(
       "@name@"      -> name,
@@ -296,7 +298,7 @@ package scala
  *  @param  x   the @name@ to be boxed
  *  @return     a @boxed@ offering `x` as its underlying value.
  */
-def box(x: @name@): @boxed@ = ???
+def box(x: @name@): @boxed@ = @boxImpl@
 
 /** Transform a boxed type into a value type.  Note that this
  *  method is not typesafe: it accepts any Object, but will throw
@@ -306,7 +308,7 @@ def box(x: @name@): @boxed@ = ???
  *  @throws     ClassCastException  if the argument is not a @boxed@
  *  @return     @unboxDoc@
  */
-def unbox(x: java.lang.Object): @name@ = ???
+def unbox(x: java.lang.Object): @name@ = @unboxImpl@
 
 /** The String representation of the scala.@name@ companion object. */
 override def toString = "object scala.@name@"
@@ -458,7 +460,9 @@ override def getClass(): Class[Boolean] = ???
     override def boxUnboxInterpolations = Map(
       "@boxRunTimeDoc@" -> "",
       "@unboxRunTimeDoc@" -> "",
-      "@unboxDoc@"  -> "the Unit value ()"
+      "@unboxDoc@" -> "the Unit value ()",
+      "@boxImpl@" -> "scala.runtime.BoxedUnit.UNIT",
+      "@unboxImpl@" -> "x.asInstanceOf[scala.runtime.BoxedUnit]"
     )
   }
 

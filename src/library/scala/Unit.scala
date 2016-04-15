@@ -30,7 +30,7 @@ object Unit extends AnyValCompanion {
    *  @param  x   the Unit to be boxed
    *  @return     a scala.runtime.BoxedUnit offering `x` as its underlying value.
    */
-  def box(x: Unit): scala.runtime.BoxedUnit = ???
+  def box(x: Unit): scala.runtime.BoxedUnit = scala.runtime.BoxedUnit.UNIT
 
   /** Transform a boxed type into a value type.  Note that this
    *  method is not typesafe: it accepts any Object, but will throw
@@ -40,7 +40,7 @@ object Unit extends AnyValCompanion {
    *  @throws     ClassCastException  if the argument is not a scala.runtime.BoxedUnit
    *  @return     the Unit value ()
    */
-  def unbox(x: java.lang.Object): Unit = ???
+  def unbox(x: java.lang.Object): Unit = x.asInstanceOf[scala.runtime.BoxedUnit]
 
   /** The String representation of the scala.Unit companion object. */
   override def toString = "object scala.Unit"
