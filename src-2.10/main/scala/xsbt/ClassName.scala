@@ -20,6 +20,21 @@ trait ClassName {
    */
   protected def className(s: Symbol): String = pickledName(s)
 
+  /**
+    * Create a (source) name for the class symbol `s` with a prefix determined by the class symbol `in`.
+    *
+    * If `s` represents a package object `pkg3`, then the returned name will be `pkg1.pkg2.pkg3.package`.
+    * If `s` represents a class `Foo` nested in package object `pkg3` then the returned name is `pkg1.pkg2.pk3.Foo`.
+    */
+  protected def classNameAsSeenIn(in: Symbol, s: Symbol): String = atPhase(currentRun.picklerPhase.next) {
+    if (in.isRoot || in.isRootPackage || in == NoSymbol || in.isEffectiveRoot)
+      s.simpleName.toString
+    else if (in.isPackageObjectOrClass)
+      in.owner.fullName + "." + s.name
+    else
+      in.fullName + "." + s.name
+  }
+
   private def pickledName(s: Symbol): String =
     atPhase(currentRun.picklerPhase) { s.fullName }
 
