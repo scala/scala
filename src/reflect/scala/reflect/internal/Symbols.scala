@@ -914,6 +914,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this symbol an accessor method for outer? */
     final def isOuterField = isArtifact && (unexpandedName == nme.OUTER_LOCAL)
 
+    /** Is this symbol an outer parameter in a constructor */
+    final def isOuterParam = isParameter && owner.isConstructor && (name == nme.OUTER_ARG || name == nme.OUTER)
+
     /** Does this symbol denote a stable value, ignoring volatility?
      *
      * Stability and volatility are checked separately to allow volatile paths in patterns that amount to equality checks. SI-6815
