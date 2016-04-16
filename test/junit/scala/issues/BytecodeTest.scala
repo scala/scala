@@ -71,17 +71,16 @@ class BytecodeTest extends ClearAfterClass {
     val outDir = compiler.settings.outputDirs.getSingleOutput.get
     val outfiles = (for (f <- outDir.iterator if !f.isDirectory) yield (f.name, f.toByteArray)).toList
 
-    def check(classfile: String, annotName: String) = {
+    def check(classfile: String, annotName: String, visible: Boolean) = {
       val f = (outfiles collect { case (`classfile`, bytes) => AsmUtils.readClass(bytes) }).head
-      val descs = f.visibleAnnotations.asScala.map(_.desc).toList
+      val descs =
+        if (visible) f.visibleAnnotations.asScala.map(_.desc).toList
+        else  f.invisibleAnnotations.asScala.map(_.desc).toList
       assertTrue(descs.toString, descs exists (_ contains annotName))
     }
 
-    check("A.class", "AnnotA")
-
-    // known issue SI-8928: the visibility of AnnotB should be CLASS, but annotation classes without
-    // a @Retention annotation are currently emitted as RUNTIME.
-    check("B.class", "AnnotB")
+    check("A.class", "AnnotA", visible = true)
+    check("B.class", "AnnotB", visible = false)
   }
 
   @Test

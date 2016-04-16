@@ -238,7 +238,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    *  a symbol or an annotated type.
    *
    *  Annotations are written to the classfile as Java annotations
-   *  if `atp` conforms to `ClassfileAnnotation` (the classfile parser adds
+   *  if `atp` conforms to `PlatformAnnotation` (the classfile parser adds
    *  this interface to any Java annotation class).
    *
    *  Annotations are pickled (written to scala symtab attribute in the
@@ -393,20 +393,24 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
   protected[scala] def treeToAnnotation(tree: Tree): Annotation = tree match {
     case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
       def encodeJavaArg(arg: Tree): ClassfileAnnotArg = arg match {
-        case Literal(const) => LiteralAnnotArg(const)
-        case Apply(ArrayModule, args) => ArrayAnnotArg(args map encodeJavaArg toArray)
+        case Literal(const)                                 => LiteralAnnotArg(const)
+        case Apply(ArrayModule, args)                       => ArrayAnnotArg(args.map(encodeJavaArg).toArray)
+        case Apply(Select(Select(Ident(ScalaPackage), ArrayModule), TermName("apply")), args)
+                                                            => ArrayAnnotArg(args.map(encodeJavaArg).toArray)
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) => NestedAnnotArg(treeToAnnotation(arg))
-        case _ => throw new Exception(s"unexpected java argument shape $arg: literals, arrays and nested annotations are supported")
+        case _ =>
+          throw new Exception(s"unexpected java argument shape ${showRaw(arg)}: literals, arrays and nested annotations are supported")
       }
       def encodeJavaArgs(args: List[Tree]): List[(Name, ClassfileAnnotArg)] = args match {
         case AssignOrNamedArg(Ident(name), arg) :: rest => (name, encodeJavaArg(arg)) :: encodeJavaArgs(rest)
+        case ValDef(_, name, _, arg)            :: rest => (name, encodeJavaArg(arg)) :: encodeJavaArgs(rest)
         case arg :: rest => throw new Exception(s"unexpected java argument shape $arg: only AssignOrNamedArg trees are supported")
         case Nil => Nil
       }
       val atp = tpt.tpe
       if (atp != null && (atp.typeSymbol isNonBottomSubClass StaticAnnotationClass)) AnnotationInfo(atp, args, Nil)
-      else if (atp != null && (atp.typeSymbol isNonBottomSubClass ClassfileAnnotationClass)) AnnotationInfo(atp, Nil, encodeJavaArgs(args))
-      else throw new Exception(s"unexpected annotation type $atp: only subclasses of StaticAnnotation and ClassfileAnnotation are supported")
+      else if (atp != null && (atp.typeSymbol isNonBottomSubClass PlatformAnnotationClass)) AnnotationInfo(atp, Nil, encodeJavaArgs(args))
+      else throw new Exception(s"unexpected annotation type $atp: only subclasses of StaticAnnotation and PlatformAnnotation are supported")
     case _ =>
       throw new Exception("""unexpected tree shape: only q"new $annType(..$args)" is supported""")
   }

@@ -15,7 +15,7 @@
   ()
 }
 {
-  class D extends scala.annotation.Annotation with scala.annotation.StaticAnnotation {
+  class D extends StaticAnnotation {
     def <init>(): D = {
       D.super.<init>();
       ()

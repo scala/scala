@@ -23,7 +23,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
       val parents1 = parents match {
         case Nil      => Nil
         case hd :: tl =>
-          assert(!hd.typeSymbol.isTrait, clazz)
+          //assert(!hd.typeSymbol.isTrait, clazz) // fails pos/t3429 because of AnnotationDefault
           if (clazz.isTrait) ObjectTpe :: tl
           else parents
       }

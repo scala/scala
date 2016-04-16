@@ -265,6 +265,10 @@ trait ContextErrors {
         setError(tree)
       }
 
+      // typedClassDef
+      def InvalidPlatformAnnotationError(sym: Symbol) =
+        issueSymbolTypeError(sym, s"PlatformAnnotation ${sym} is neither a RuntimeAnnotation nor a ClassfileAnnotation")
+
       // typedTypeDef
       def LowerBoundError(tree: TypeDef, lowB: Type, highB: Type) =
         issueNormalTypeError(tree, "lower bound "+lowB+" does not conform to upper bound "+highB)

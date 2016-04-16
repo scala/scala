@@ -241,6 +241,22 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       t
     }
 
+    def qualIdOrClassLiteral(): Tree = {
+      var t: RefTree = atPos(in.currentPos) { Ident(ident()) }
+      while (in.token == DOT) {
+        in.nextToken()
+        val curPos = in.currentPos
+        if (in.token == CLASS) {
+          in.nextToken()
+          return TypeApply(Select(scalaDot(nme.Predef), nme.classOf), List(t)) // List(convertToTypeId(t))?
+        } else {
+          val id = ident()
+          t = atPos(curPos) { Select(t, id) }
+        }
+      }
+      t
+    }
+
     def optArrayBrackets(tpt: Tree): Tree =
       if (in.token == LBRACKET) {
         val tpt1 = atPos(in.pos) { arrayOf(tpt) }
@@ -323,35 +339,102 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       } else t
     }
 
+    /** Annotations ::= Annotation* */
     def annotations(): List[Tree] = {
-      //var annots = new ListBuffer[Tree]
+      val annots = new ListBuffer[Tree]
       while (in.token == AT) {
         in.nextToken()
-        annotation()
+        annots += annotation()
       }
-      List() // don't pass on annotations for now
+      annots.toList
     }
 
-    /** Annotation ::= TypeName [`(` AnnotationArgument {`,` AnnotationArgument} `)`]
+    /** Annotation              ::= `@` (NormalAnnotation | MarkerAnnotation | SingleElementAnnotation)
+     *  NormalAnnotation        ::= Ident `(` ElementValuePair* `)`
+     *  MarkerAnnotation        ::= Ident
+     *  SingleElementAnnotation ::= Ident `(` ElementValue `)`
+     *
+     *  ElementValuePair        ::= Ident `=` ElementValue
+     *  ElementValue            ::= ConditionalExpression | Annotation | ElementValueArray
+     *  ConditionalExpression   ::=
+     *  ElementValueArray       ::= `{` (ElementValue `,`)* `,`?  }
      */
-    def annotation() {
-      qualId()
-      if (in.token == LPAREN) { skipAhead(); accept(RPAREN) }
-      else if (in.token == LBRACE) { skipAhead(); accept(RBRACE) }
+    def annotation(): Tree = {
+      val t = convertToTypeId(qualId())
+      val args: ListBuffer[List[Tree]] = ListBuffer.empty
+      if (in.token == LPAREN) { // NormalAnnotation
+        in.nextToken()
+        if (in.token == RPAREN) { // NormalAnnotation without any ElementValuePair, e. g. @Foo()
+          // Nothing to do
+        } else if (in.token == LBRACE) { // SingleElementAnnotation where the element is an array, e. g. @Foo({1,2,3})
+          args += List(elementValueArray)
+        } else if (in.token == IDENTIFIER && in.lookaheadToken == EQUALS) { // NormalAnnotation with ElementValuePairs, e. g. @Foo(bar = BAZ, ber = BEZ)
+          args ++= repsep(elementValuePair, COMMA).map(annot => List(annot))
+        } else { // SingleElementAnnotation
+          args += List(elementValue())
+        }
+        accept(RPAREN)
+      } else { // MarkerAnnotation, e. g. @Foo
+        // Nothing to do
+      }
+      New(t, args.toList)
+    }
+
+    def elementValuePair(): Tree = {
+      val elementName = Ident(ident())
+      accept(EQUALS)
+      val elementValue = qualIdOrClassLiteral()
+      AssignOrNamedArg(elementName, elementValue)
+    }
+
+    def elementValue(): Tree = in.token match {
+      case AT =>                       annotation()
+      case LBRACE =>                   elementValueArray()
+      case IDENTIFIER =>               qualIdOrClassLiteral()
+      case _ if isLiteral(in.token) => literal()
+    }
+
+    def literal(): Literal = {
+      val constant: Any =
+        in.token match {
+          case STRINGLIT =>
+            val str = in.cbuf.toString()
+            in.cbuf.clear()
+            str
+          case INTLIT =>
+            in.intVal.toInt
+          case LONGLIT =>
+            in.intVal
+          case DOUBLELIT =>
+            in.floatVal
+          case FLOATLIT =>
+            in.floatVal.toFloat
+          case CHARLIT =>
+            in.intVal.toChar
+      }
+      in.nextToken()
+      Literal(Constant(constant))
+    }
+
+    def elementValueArray(): Tree = {
+      accept(LBRACE)
+      val array = Apply(Ident(ArrayModule), repsep(qualId, COMMA))
+      accept(RBRACE)
+      array
     }
 
     def modifiers(inInterface: Boolean): Modifiers = {
       var flags: Long = Flags.JAVA
       // assumed true unless we see public/private/protected
       var isPackageAccess = true
-      var annots: List[Tree] = Nil
-      def addAnnot(sym: Symbol) = annots :+= New(sym.tpe)
+      val annots: ListBuffer[Tree] = ListBuffer.empty
+      def addAnnot(sym: Symbol) = annots += New(sym.tpe)
 
       while (true) {
         in.token match {
           case AT if (in.lookaheadToken != INTERFACE) =>
             in.nextToken()
-            annotation()
+            annots += annotation()
           case PUBLIC =>
             isPackageAccess = false
             in.nextToken()
@@ -390,7 +473,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
               if (isPackageAccess && !inInterface) thisPackageName
               else tpnme.EMPTY
 
-            return Modifiers(flags, privateWithin) withAnnotations annots
+            return Modifiers(flags, privateWithin) withAnnotations annots.toList
         }
       }
       abort("should not be here")
@@ -741,20 +824,22 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val idefs = members.toList ::: (sdefs flatMap forwarders)
       (sdefs, idefs)
     }
-    def annotationParents = List(
-      gen.scalaAnnotationDot(tpnme.Annotation),
-      Select(javaLangDot(nme.annotation), tpnme.Annotation),
-      gen.scalaAnnotationDot(tpnme.ClassfileAnnotation)
-    )
+    def annotationParents(mods: Modifiers) = {
+      //println(s"${mods.annotations}") read rentention from annotation and set parent accordingly
+      List(
+        gen.scalaAnnotationDot(tpnme.Annotation),
+        Select(javaLangDot(nme.annotation), tpnme.Annotation),
+        gen.scalaAnnotationDot(tpnme.PlatformAnnotation))
+    }
     def annotationDecl(mods: Modifiers): List[Tree] = {
       accept(AT)
       accept(INTERFACE)
       val pos = in.currentPos
       val name = identForType()
       val (statics, body) = typeBody(AT, name)
-      val templ = makeTemplate(annotationParents, body)
+      val templ = makeTemplate(annotationParents(mods), body)
       addCompanionObject(statics, atPos(pos) {
-        ClassDef(mods | Flags.JAVA_ANNOTATION, name, List(), templ)
+      ClassDef(mods | Flags.JAVA_ANNOTATION, name, List(), templ)
       })
     }
 

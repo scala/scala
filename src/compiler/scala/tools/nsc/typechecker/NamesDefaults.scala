@@ -36,6 +36,8 @@ trait NamesDefaults { self: Analyzer =>
     def this(default: Symbol) = this(mutable.Set(default))
   }
 
+  class AnnotationDefaultsAttachment(val defaults: List[(Name, ClassfileAnnotArg)])
+
   case class NamedApplyInfo(
     qual:       Option[Tree],
     targs:      List[Tree],

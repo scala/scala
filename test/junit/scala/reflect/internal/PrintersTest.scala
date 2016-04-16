@@ -33,10 +33,10 @@ object PrinterHelper {
     def wrapCode(source: String) = {
       val context = sm"""
       |trait PrintersContext {
-      |  class baz extends scala.annotation.Annotation with scala.annotation.StaticAnnotation;
-      |  class foo1[A, B] extends scala.annotation.Annotation with scala.annotation.StaticAnnotation;
-      |  class foo2[A, B](a: scala.Int)(b: scala.Int) extends scala.annotation.Annotation with scala.annotation.StaticAnnotation;
-      |  class foo3[Af, Bf](a: scala.Int)(b: scala.Float, c: PrintersContext.this.foo1[Af, Bf]) extends scala.annotation.Annotation with scala.annotation.StaticAnnotation;
+      |  class baz extends scala.annotation.StaticAnnotation;
+      |  class foo1[A, B] extends scala.annotation.StaticAnnotation;
+      |  class foo2[A, B](a: scala.Int)(b: scala.Int) extends scala.annotation.StaticAnnotation;
+      |  class foo3[Af, Bf](a: scala.Int)(b: scala.Float, c: PrintersContext.this.foo1[Af, Bf]) extends scala.annotation.StaticAnnotation;
       |  trait A1;
       |  trait B1;
       |${source.trim.lines map {"  " + _} mkString s"$LF"}

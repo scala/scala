@@ -1,2 +1,3 @@
 false
 List(JavaAnnotationWithNestedEnum_1(value = VALUE))
+List(@JavaAnnotationWithNestedEnum_1(value=VALUE))

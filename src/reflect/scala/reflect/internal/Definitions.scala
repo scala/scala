@@ -1139,13 +1139,21 @@ trait Definitions extends api.StandardDefinitions {
       def BoxedUnit_TYPE            = getMemberValue(BoxedUnitModule, nme.TYPE_)
 
     // Annotation base classes
+    lazy val JavaAnnotationClass        = requiredClass[java.lang.annotation.Annotation]
     lazy val AnnotationClass            = requiredClass[scala.annotation.Annotation]
+    lazy val ConstantAnnotationClass    = requiredClass[scala.annotation.ConstantAnnotation]
+    lazy val PlatformAnnotationClass    = requiredClass[scala.annotation.PlatformAnnotation]
     lazy val ClassfileAnnotationClass   = requiredClass[scala.annotation.ClassfileAnnotation]
+    lazy val RuntimeAnnotationClass     = requiredClass[scala.annotation.RuntimeAnnotation]
     lazy val StaticAnnotationClass      = requiredClass[scala.annotation.StaticAnnotation]
 
     // Java retention annotations
     lazy val AnnotationRetentionAttr       = requiredClass[java.lang.annotation.Retention]
     lazy val AnnotationRetentionPolicyAttr = requiredClass[java.lang.annotation.RetentionPolicy]
+    lazy val AnnotationRetentionPolicyModule       = AnnotationRetentionPolicyAttr.companionModule
+    lazy val AnnotationRetentionPolicySourceValue  = AnnotationRetentionPolicyModule.tpe.member(TermName("SOURCE"))
+    lazy val AnnotationRetentionPolicyClassValue   = AnnotationRetentionPolicyModule.tpe.member(TermName("CLASS"))
+    lazy val AnnotationRetentionPolicyRuntimeValue = AnnotationRetentionPolicyModule.tpe.member(TermName("RUNTIME"))
 
     // Annotations
     lazy val BridgeClass                = requiredClass[scala.annotation.bridge]
@@ -1200,7 +1208,7 @@ trait Definitions extends api.StandardDefinitions {
       // Trying to allow for deprecated locations
       sym.isAliasType && isMetaAnnotation(sym.info.typeSymbol)
     )
-    lazy val metaAnnotations: Set[Symbol] = getPackage(TermName("scala.annotation.meta")).info.members filter (_ isSubClass StaticAnnotationClass) toSet
+    lazy val metaAnnotations: Set[Symbol] = getPackage(TermName("scala.annotation.meta")).info.members.filter(_ isSubClass StaticAnnotationClass).toSet
 
     // According to the scala.annotation.meta package object:
     // * By default, annotations on (`val`-, `var`- or plain) constructor parameters
