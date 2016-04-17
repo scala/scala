@@ -12,7 +12,6 @@ package immutable
 
 import generic._
 import scala.annotation.tailrec
-import mutable.{Builder, ReusableBuilder}
 
 /** $factoryInfo
  *  @define Coll immutable.ListSet
@@ -23,33 +22,8 @@ object ListSet extends ImmutableSetFactory[ListSet] {
   /** setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ListSet[A]] = setCanBuildFrom[A]
 
-  override def newBuilder[A]: Builder[A, ListSet[A]] = new ListSetBuilder[A]
-
   private object EmptyListSet extends ListSet[Any] { }
   private[collection] def emptyInstance: ListSet[Any] = EmptyListSet
-
-  /** A custom builder because forgetfully adding elements one at
-   *  a time to a list backed set puts the "squared" in N^2.  There is a
-   *  temporary space cost, but it's improbable a list backed set could
-   *  become large enough for this to matter given its pricy element lookup.
-   *
-   *  This builder is reusable.
-   */
-  class ListSetBuilder[Elem](initial: ListSet[Elem]) extends ReusableBuilder[Elem, ListSet[Elem]] {
-    def this() = this(empty[Elem])
-    protected val elems = (new mutable.ListBuffer[Elem] ++= initial).reverse
-    protected val seen  = new mutable.HashSet[Elem] ++= initial
-
-    def +=(x: Elem): this.type = {
-      if (!seen(x)) {
-        elems += x
-        seen += x
-      }
-      this
-    }
-    def clear() = { elems.clear() ; seen.clear() }
-    def result() = elems.foldLeft(empty[Elem])(_ unchecked_+ _)
-  }
 }
 
 /** This class implements immutable sets using a list-based data
@@ -104,9 +78,8 @@ sealed class ListSet[A] extends AbstractSet[A]
    */
   override def ++(xs: GenTraversableOnce[A]): ListSet[A] =
     if (xs.isEmpty) this
-    else (new ListSet.ListSetBuilder(this) ++= xs.seq).result()
+    else (repr /: xs) (_ + _)
 
-  private[ListSet] def unchecked_+(e: A): ListSet[A] = new Node(e)
   private[ListSet] def unchecked_outer: ListSet[A] =
     throw new NoSuchElementException("Empty ListSet has no outer pointer")
 
@@ -115,33 +88,34 @@ sealed class ListSet[A] extends AbstractSet[A]
    *  @throws java.util.NoSuchElementException
    *  @return the new iterator
    */
-  def iterator: Iterator[A] = new AbstractIterator[A] {
-    var that: ListSet[A] = self
-    def hasNext = that.nonEmpty
-    def next: A =
-      if (hasNext) {
-        val res = that.head
-        that = that.tail
-        res
+  def iterator: Iterator[A] = {
+    def reverseList = {
+      var curr: ListSet[A] = self
+      var res: List[A] = Nil
+      while (!curr.isEmpty) {
+        res = curr.elem :: res
+        curr = curr.next
       }
-      else Iterator.empty.next()
+      res
+    }
+    reverseList.iterator
   }
 
   /**
    *  @throws java.util.NoSuchElementException
    */
-  override def head: A = throw new NoSuchElementException("Set has no elements")
+  protected def elem: A = throw new NoSuchElementException("elem of empty set")
 
   /**
    *  @throws java.util.NoSuchElementException
    */
-  override def tail: ListSet[A] = throw new NoSuchElementException("Next of an empty set")
+  protected def next: ListSet[A] = throw new NoSuchElementException("Next of an empty set")
 
   override def stringPrefix = "ListSet"
 
   /** Represents an entry in the `ListSet`.
    */
-  protected class Node(override val head: A) extends ListSet[A] with Serializable {
+  protected class Node(override val elem: A) extends ListSet[A] with Serializable {
     override private[ListSet] def unchecked_outer = self
 
     /** Returns the number of elements in this set.
@@ -166,7 +140,7 @@ sealed class ListSet[A] extends AbstractSet[A]
      */
     override def contains(e: A) = containsInternal(this, e)
     @tailrec private def containsInternal(n: ListSet[A], e: A): Boolean =
-      !n.isEmpty && (n.head == e || containsInternal(n.unchecked_outer, e))
+      !n.isEmpty && (n.elem == e || containsInternal(n.unchecked_outer, e))
 
     /** This method creates a new set with an additional element.
      */
@@ -174,11 +148,14 @@ sealed class ListSet[A] extends AbstractSet[A]
 
     /** `-` can be used to remove a single element from a set.
      */
-    override def -(e: A): ListSet[A] = if (e == head) self else {
-      val tail = self - e; new tail.Node(head)
-    }
+    override def -(e: A): ListSet[A] = removeInternal(e, this, Nil)
 
-    override def tail: ListSet[A] = self
+    @tailrec private def removeInternal(k: A, cur: ListSet[A], acc: List[ListSet[A]]): ListSet[A] =
+      if (cur.isEmpty) acc.last
+      else if (k == cur.elem) (cur.next /: acc) { case (t, h) => new t.Node(h.elem) }
+      else removeInternal(k, cur.next, cur :: acc)
+
+    override protected def next: ListSet[A] = self
   }
 
   override def toSet[B >: A]: Set[B] = this.asInstanceOf[ListSet[B]]

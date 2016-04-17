@@ -113,7 +113,8 @@ extends AbstractMap[A, B]
    *  @param xs     the traversable object.
    */
   override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): ListMap[A, B1] =
-    ((repr: ListMap[A, B1]) /: xs.seq) (_ + _)
+    if (xs.isEmpty) this
+    else ((repr: ListMap[A, B1]) /: xs) (_ + _)
 
   /** This creates a new mapping without the given `key`.
    *  If the map does not contain a mapping for the given key, the
@@ -125,14 +126,18 @@ extends AbstractMap[A, B]
 
   /** Returns an iterator over key-value pairs.
    */
-  def iterator: Iterator[(A,B)] =
-    new AbstractIterator[(A,B)] {
-      var self: ListMap[A,B] = ListMap.this
-      def hasNext = !self.isEmpty
-      def next(): (A,B) =
-        if (!hasNext) throw new NoSuchElementException("next on empty iterator")
-        else { val res = (self.key, self.value); self = self.next; res }
-    }.toList.reverseIterator
+  def iterator: Iterator[(A, B)] = {
+    def reverseList = {
+      var curr: ListMap[A, B] = this
+      var res: List[(A, B)] = Nil
+      while (!curr.isEmpty) {
+        res = (curr.key, curr.value) :: res
+        curr = curr.next
+      }
+      res
+    }
+    reverseList.iterator
+  }
 
   protected def key: A = throw new NoSuchElementException("empty map")
   protected def value: B = throw new NoSuchElementException("empty map")
@@ -210,14 +215,9 @@ extends AbstractMap[A, B]
     override def - (k: A): ListMap[A, B1] = remove0(k, this, Nil)
 
     @tailrec private def remove0(k: A, cur: ListMap[A, B1], acc: List[ListMap[A, B1]]): ListMap[A, B1] =
-      if (cur.isEmpty)
-        acc.last
-      else if (k == cur.key)
-        (cur.next /: acc) {
-          case (t, h) => val tt = t; new tt.Node(h.key, h.value) // SI-7459
-        }
-      else
-        remove0(k, cur.next, cur::acc)
+      if (cur.isEmpty) acc.last
+      else if (k == cur.key) (cur.next /: acc) { case (t, h) => new t.Node(h.key, h.value) }
+      else remove0(k, cur.next, cur::acc)
 
     override protected def next: ListMap[A, B1] = ListMap.this
 
