@@ -245,8 +245,9 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       // In some cases (eg. macro annotations), `typeTree.tpe` may be null. See sbt/sbt#1593 and sbt/sbt#1655.
       case typeTree: TypeTree if typeTree.tpe != null =>
         symbolsInType(typeTree.tpe) foreach addDependency
-      case MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
+      case m @ MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
         traverse(original)
+        super.traverse(m)
       case _: ClassDef | _: ModuleDef if tree.symbol != null && tree.symbol != NoSymbol =>
         // make sure we cache lookups for all classes declared in the compilation unit; the recorded information
         // will be used in Analyzer phase
