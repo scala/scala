@@ -821,11 +821,11 @@ trait Infer extends Checkable {
         case OverloadedType(pre, alts)                                      => alts exists (alt => isAsSpecific(pre memberType alt, ftpe2))
         case et: ExistentialType                                            => isAsSpecific(et.skolemizeExistential, ftpe2)
         case NullaryMethodType(restpe)                                      => isAsSpecific(restpe, ftpe2)
-        case mt @ MethodType(_, restpe) if mt.isImplicit                    => isAsSpecific(restpe, ftpe2)
+        case mt @ MethodType(_, _) if mt.isImplicit                         => isAsSpecific(skipImplicit(mt), ftpe2)
         case mt @ MethodType(_, _) if bothAreVarargs                        => checkIsApplicable(mt.paramTypes mapConserve repeatedToSingle)
         case mt @ MethodType(params, _) if params.nonEmpty                  => checkIsApplicable(mt.paramTypes)
         case PolyType(tparams, NullaryMethodType(restpe))                   => isAsSpecific(PolyType(tparams, restpe), ftpe2)
-        case PolyType(tparams, mt @ MethodType(_, restpe)) if mt.isImplicit => isAsSpecific(PolyType(tparams, restpe), ftpe2)
+        case PolyType(tparams, mt @ MethodType(_, _)) if mt.isImplicit      => isAsSpecific(PolyType(tparams, skipImplicit(mt)), ftpe2)
         case PolyType(_, mt @ MethodType(params, _)) if params.nonEmpty     => checkIsApplicable(mt.paramTypes)
         case ErrorType                                                      => true
         case _                                                              => onRight
@@ -1065,7 +1065,7 @@ trait Infer extends Checkable {
         if (isFullyDefined(pt)) {
           inferFor(pt.instantiateTypeParams(ptparams, ptparams map (x => WildcardType))) flatMap { targs =>
             val ctorTpInst = tree.tpe.instantiateTypeParams(undetparams, targs)
-            val resTpInst  = skipImplicit(ctorTpInst.finalResultType)
+            val resTpInst  = ctorTpInst.finalResultType
             val ptvars     =
               ptparams map {
                 // since instantiateTypeVar wants to modify the skolem that corresponds to the method's type parameter,
