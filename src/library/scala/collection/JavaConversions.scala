@@ -11,7 +11,7 @@ package collection
 
 import convert._
 
-/** A collection of implicit conversions supporting interoperability between
+/** A variety of implicit conversions supporting interoperability between
  *  Scala and Java collections.
  *
  *  The following conversions are supported:

@@ -14,17 +14,7 @@ import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import WrapAsScala._
 import WrapAsJava._
 
-/** Adapters for Java/Scala collections API.
- *  
- *  The implicit scope of these wrappers includes the current
- *  lexical scope as well as enclosing package scopes, so the
- *  implicit conversions provided by `AsScalaImplicits` and
- *  `AsJavaImplicits` must not be installed in those enclosing
- *  scopes.
- *  
- *  In particular, the implicit scope of classes extending these
- *  wrappers also includes those contexts. See SI-5580.
- */
+/** Adapters for Java/Scala collections API. */
 private[collection] trait Wrappers {
   trait IterableWrapperTrait[A] extends ju.AbstractCollection[A] {
     val underlying: Iterable[A]
