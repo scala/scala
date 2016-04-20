@@ -251,7 +251,7 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
     )
   }
 
-  lazy val hashMethodSym: Symbol = getMember(ScalaRunTimeModule, nme.hash_)
+  lazy val hashMethodSym: Symbol = getMember(RuntimeStaticsModule, nme.anyHash)
 
   // TODO @lry avoiding going through through missingHook for every line in the REPL: https://github.com/scala/scala/commit/8d962ed4ddd310cc784121c426a2e3f56a112540
   lazy val AndroidParcelableInterface : Symbol = getClassIfDefined("android.os.Parcelable")

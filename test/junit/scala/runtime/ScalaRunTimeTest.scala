@@ -9,14 +9,6 @@ import org.junit.runners.JUnit4
 @RunWith(classOf[JUnit4])
 class ScalaRunTimeTest {
   @Test
-  def hashConsistentWithStaticsHash(): Unit = {
-    val problematicValue: Double = -Math.pow(2, 53) + 1
-    val scalaRunTimeHash = ScalaRunTime.hash(problematicValue)
-    val staticsHash = Statics.anyHash(problematicValue)
-    assertEquals(scalaRunTimeHash, staticsHash)
-  }
-
-  @Test
   def testStingOf() {
     import ScalaRunTime.stringOf
     import scala.collection._
