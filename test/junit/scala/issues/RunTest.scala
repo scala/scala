@@ -140,4 +140,11 @@ class RunTest extends ClearAfterClass {
     val i = Integer.TYPE
     assertEquals(run[List[Class[_]]](code), List(i, i))
   }
+
+  @Test
+  def invocationReceivers(): Unit = {
+    import invocationReceiversTestCode._
+    assertEquals(run[String](definitions("Object") + runCode), "hi" * 9)
+    assertEquals(run[String](definitions("String") + runCode), "hi" * 9) // bridge method for clone generated
+  }
 }

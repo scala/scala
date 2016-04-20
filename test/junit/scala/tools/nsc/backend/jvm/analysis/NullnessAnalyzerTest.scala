@@ -68,12 +68,12 @@ class NullnessAnalyzerTest extends ClearAfterClass {
     // So in the frame for `ALOAD 0`, the stack is still empty.
 
     val res =
-      """                                                          L0: 0:  NotNull
-        |                                             LINENUMBER 1 L0: 0:  NotNull
-        |                                                     ALOAD 0: 0:  NotNull
-        |INVOKEVIRTUAL java/lang/Object.toString ()Ljava/lang/String;: 0:  NotNull, 1:  NotNull
-        |                                                     ARETURN: 0:  NotNull, 1: Unknown1
-        |                                                          L0: null""".stripMargin
+      """                                           L0: 0:  NotNull
+        |                              LINENUMBER 1 L0: 0:  NotNull
+        |                                      ALOAD 0: 0:  NotNull
+        |INVOKEVIRTUAL C.toString ()Ljava/lang/String;: 0:  NotNull, 1:  NotNull
+        |                                      ARETURN: 0:  NotNull, 1: Unknown1
+        |                                           L0: null""".stripMargin
 //    println(showAllNullnessFrames(newNullnessAnalyzer(m), m))
     assertEquals(showAllNullnessFrames(newNullnessAnalyzer(m), m), res)
   }

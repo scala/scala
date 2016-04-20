@@ -59,7 +59,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
     // current class
     var cnode: asm.tree.ClassNode  = null
-    var thisName: String           = null // the internal name of the class being emitted
+    var thisBType: ClassBType      = null
 
     var claszSymbol: Symbol        = null
     var isCZParcelable             = false
@@ -91,9 +91,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       isCZParcelable    = isAndroidParcelableClass(claszSymbol)
       isCZStaticModule  = isStaticModuleClass(claszSymbol)
       isCZRemote        = isRemote(claszSymbol)
-      thisName          = internalName(claszSymbol)
-
-      val classBType = classBTypeFromSymbol(claszSymbol)
+      thisBType         = classBTypeFromSymbol(claszSymbol)
 
       cnode = new asm.tree.ClassNode()
 
@@ -114,7 +112,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       gen(cd.impl)
 
-
       val shouldAddLambdaDeserialize = (
         settings.target.value == "jvm-1.8"
           && settings.Ydelambdafy.value == "method"
@@ -123,7 +120,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       if (shouldAddLambdaDeserialize)
         backendUtils.addLambdaDeserialize(cnode)
 
-      cnode.visitAttribute(classBType.inlineInfoAttribute.get)
+      cnode.visitAttribute(thisBType.inlineInfoAttribute.get)
 
       if (AsmUtils.traceClassEnabled && cnode.name.contains(AsmUtils.traceClassPattern))
         AsmUtils.traceClass(cnode)
@@ -144,7 +141,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       val thisSignature = getGenericSignature(claszSymbol, claszSymbol.owner)
       cnode.visit(classfileVersion, flags,
-                  thisName, thisSignature,
+                  thisBType.internalName, thisSignature,
                   superClass, interfaceNames.toArray)
 
       if (emitSource) {
@@ -157,7 +154,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         case _ => ()
       }
 
-      val ssa = getAnnotPickle(thisName, claszSymbol)
+      val ssa = getAnnotPickle(thisBType.internalName, claszSymbol)
       cnode.visitAttribute(if (ssa.isDefined) pickleMarkerLocal else pickleMarkerForeign)
       emitAnnotations(cnode, claszSymbol.annotations ++ ssa)
 
@@ -178,7 +175,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
             }
             if (isCandidateForForwarders) {
               log(s"Adding static forwarders from '$claszSymbol' to implementations in '$lmoc'")
-              addForwarders(isRemote(claszSymbol), cnode, thisName, lmoc.moduleClass)
+              addForwarders(isRemote(claszSymbol), cnode, thisBType.internalName, lmoc.moduleClass)
             }
           }
         }
@@ -196,7 +193,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       val fv =
         cnode.visitField(GenBCode.PublicStaticFinal, // TODO confirm whether we really don't want ACC_SYNTHETIC nor ACC_DEPRECATED
                          strMODULE_INSTANCE_FIELD,
-                         "L" + thisName + ";",
+                         thisBType.descriptor,
                          null, // no java-generic-signature
                          null  // no initial value
         )
@@ -220,11 +217,11 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       /* "legacy static initialization" */
       if (isCZStaticModule) {
-        clinit.visitTypeInsn(asm.Opcodes.NEW, thisName)
+        clinit.visitTypeInsn(asm.Opcodes.NEW, thisBType.internalName)
         clinit.visitMethodInsn(asm.Opcodes.INVOKESPECIAL,
-                               thisName, INSTANCE_CONSTRUCTOR_NAME, "()V", false)
+                               thisBType.internalName, INSTANCE_CONSTRUCTOR_NAME, "()V", false)
       }
-      if (isCZParcelable) { legacyAddCreatorCode(clinit, cnode, thisName) }
+      if (isCZParcelable) { legacyAddCreatorCode(clinit, cnode, thisBType.internalName) }
       clinit.visitInsn(asm.Opcodes.RETURN)
 
       clinit.visitMaxs(0, 0) // just to follow protocol, dummy arguments
@@ -604,7 +601,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
             if (!hasStaticBitSet) {
               mnode.visitLocalVariable(
                 "this",
-                "L" + thisName + ";",
+                thisBType.descriptor,
                 null,
                 veryFirstProgramPoint,
                 onePastLastProgramPoint,
@@ -686,8 +683,8 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         val jname  = callee.javaSimpleName.toString
         val jtype  = methodBTypeFromSymbol(callee).descriptor
         insnParcA  = new asm.tree.MethodInsnNode(asm.Opcodes.INVOKESTATIC, jowner, jname, jtype, false)
-        // PUTSTATIC `thisName`.CREATOR;
-        insnParcB  = new asm.tree.FieldInsnNode(asm.Opcodes.PUTSTATIC, thisName, "CREATOR", andrFieldDescr)
+        // PUTSTATIC `thisBType.internalName`.CREATOR;
+        insnParcB  = new asm.tree.FieldInsnNode(asm.Opcodes.PUTSTATIC, thisBType.internalName, "CREATOR", andrFieldDescr)
       }
 
       // insert a few instructions for initialization before each return instruction

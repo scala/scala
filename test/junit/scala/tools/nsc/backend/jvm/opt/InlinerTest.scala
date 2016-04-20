@@ -458,19 +458,6 @@ class InlinerTest extends ClearAfterClass {
   }
 
   @Test
-  def inlineMixinMethods(): Unit = {
-    val code =
-      """trait T {
-        |  @inline final def f = 1
-        |}
-        |class C extends T
-      """.stripMargin
-    val List(c, t) = compile(code)
-    // the static implementation method is inlined into the mixin, so there's no invocation in the mixin
-    assertNoInvoke(getSingleMethod(c, "f"))
-  }
-
-  @Test
   def inlineTraitInherited(): Unit = {
     val code =
       """trait T {
@@ -545,7 +532,7 @@ class InlinerTest extends ClearAfterClass {
     val List(c, oMirror, oModule, t) = compile(code, allowMessage = i => {count += 1; i.msg contains warn})
     assert(count == 1, count)
 
-    assertNoInvoke(getSingleMethod(oModule, "f"))
+    assertNoInvoke(getSingleMethod(t, "f"))
 
     assertNoInvoke(getSingleMethod(c, "t1"))
     assertNoInvoke(getSingleMethod(c, "t2"))
@@ -1497,10 +1484,12 @@ class InlinerTest extends ClearAfterClass {
   @Test
   def sd86(): Unit = {
     val code =
-      """trait T { @inline def f = 1 } // note that f is not final
-        |class C extends T
+      """trait T1 { @inline def f = 999 }
+        |trait T2 { self: T1 => @inline override def f = 1 } // note that f is not final
+        |class C extends T1 with T2
       """.stripMargin
-    val List(c, t) = compile(code, allowMessage = _ => true)
+    val List(c, t1, t2) = compile(code, allowMessage = _ => true)
+    // the forwarder C.f is inlined, so there's no invocation
     assertSameSummary(getSingleMethod(c, "f"), List(ICONST_1, IRETURN))
   }
 }

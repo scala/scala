@@ -47,7 +47,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        sym.isMethod
     && (!sym.hasFlag(DEFERRED | SUPERACCESSOR) || (sym hasFlag lateDEFERRED))
     && sym.owner.isTrait
-    && sym.isMethod
     && (!sym.isModule || sym.hasFlag(PRIVATE | LIFTED))
     && (!(sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isLazy)
     && !sym.isPrivate
@@ -240,8 +239,41 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       for (member <- mixinClass.info.decls ; if isImplementedStatically(member)) {
         member overridingSymbol clazz match {
           case NoSymbol =>
-            if (clazz.info.findMember(member.name, 0, 0L, stableOnly = false).alternatives contains member)
-              cloneAndAddMixinMember(mixinClass, member).asInstanceOf[TermSymbol] setAlias member
+            val isMemberOfClazz = clazz.info.findMember(member.name, 0, 0L, stableOnly = false).alternatives.contains(member)
+            if (isMemberOfClazz) {
+              val competingMethods = clazz.baseClasses.iterator
+                .filter(_ ne mixinClass)
+                .map(member.overriddenSymbol)
+                .filter(_.exists)
+                .toList
+
+              // `member` is a concrete `method` defined in `mixinClass`, which is a base class of
+              // `clazz`, and the method is not overridden in `clazz`. A forwarder is needed if:
+              //
+              //   - A non-trait base class defines matching method. Example:
+              //       class C {def f: Int}; trait T extends C {def f = 1}; class D extends T
+              //     Even if C.f is abstract, the forwarder in D is needed, otherwise the JVM would
+              //     resolve `D.f` to `C.f`, see jvms-6.5.invokevirtual.
+              //
+              //   - There exists another concrete, matching method in any of the base classes, and
+              //     the `mixinClass` does not itself extend that base class. In this case the
+              //     forwarder is needed to disambiguate. Example:
+              //       trait T1 {def f = 1}; trait T2 extends T1 {override def f = 2}; class C extends T2
+              //     In C we don't need a forwarder for f because T2 extends T1, so the JVM resolves
+              //     C.f to T2.f non-ambiguously. See jvms-5.4.3.3, "maximally-specific method".
+              //       trait U1 {def f = 1}; trait U2 {self:U1 => override def f = 2}; class D extends U2
+              //     In D the forwarder is needed, the interfaces U1 and U2 are unrelated at the JVM
+              //     level.
+
+              lazy val mixinSuperInterfaces = mixinClass.ancestors.filter(_.isTraitOrInterface)
+              val needsForwarder = competingMethods.exists(m => {
+                !m.owner.isTraitOrInterface ||
+                  (!m.isDeferred && !mixinSuperInterfaces.contains(m.owner))
+              })
+              if (needsForwarder)
+                cloneAndAddMixinMember(mixinClass, member).asInstanceOf[TermSymbol] setAlias member
+            }
+
           case _        =>
         }
       }
