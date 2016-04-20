@@ -14,8 +14,25 @@ import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import scala.language.implicitConversions
 
 @deprecated("Use JavaConverters or consider ToScalaImplicits", since="2.12")
-trait WrapAsScala {
+trait WrapAsScala extends LowPriorityWrapAsScala {
+  // provide higher-priority implicits with names that don't exist in JavaConverters for the case
+  // when importing both JavaConverters._ and JavaConversions._. otherwise implicit conversions
+  // would not apply, see https://github.com/scala/scala/pull/5109#issuecomment-212417789
+  implicit def `deprecated asScalaIterator`[A](it: ju.Iterator[A]): Iterator[A] = asScalaIterator(it)
+  implicit def `deprecated enumerationAsScalaIterator`[A](i: ju.Enumeration[A]): Iterator[A] = enumerationAsScalaIterator(i)
+  implicit def `deprecated iterableAsScalaIterable`[A](i: jl.Iterable[A]): Iterable[A] = iterableAsScalaIterable(i)
+  implicit def `deprecated collectionAsScalaIterable`[A](i: ju.Collection[A]): Iterable[A] = collectionAsScalaIterable(i)
+  implicit def `deprecated asScalaBuffer`[A](l: ju.List[A]): mutable.Buffer[A] = asScalaBuffer(l)
+  implicit def `deprecated asScalaSet`[A](s: ju.Set[A]): mutable.Set[A] = asScalaSet(s)
+  implicit def `deprecated mapAsScalaMap`[A, B](m: ju.Map[A, B]): mutable.Map[A, B] = mapAsScalaMap(m)
+  implicit def `deprecated mapAsScalaConcurrentMap`[A, B](m: juc.ConcurrentMap[A, B]): concurrent.Map[A, B] = mapAsScalaConcurrentMap(m)
+  implicit def `deprecated dictionaryAsScalaMap`[A, B](p: ju.Dictionary[A, B]): mutable.Map[A, B] = dictionaryAsScalaMap(p)
+  implicit def `deprecated propertiesAsScalaMap`(p: ju.Properties): mutable.Map[String, String] = propertiesAsScalaMap(p)
+}
+
+private[convert] trait LowPriorityWrapAsScala {
   import Wrappers._
+
   /**
    * Implicitly converts a Java `Iterator` to a Scala `Iterator`.
    *
