@@ -1106,14 +1106,14 @@ private[concurrent] case object TrieMapSerializationEnd
 
 
 private[concurrent] object Debug {
-  import scala.collection._
+  import JavaConverters._
 
   lazy val logbuffer = new java.util.concurrent.ConcurrentLinkedQueue[AnyRef]
 
   def log(s: AnyRef) = logbuffer.add(s)
 
   def flush() {
-    for (s <- JavaConversions.asScalaIterator(logbuffer.iterator())) Console.out.println(s.toString)
+    for (s <- logbuffer.iterator().asScala) Console.out.println(s.toString)
     logbuffer.clear()
   }
 

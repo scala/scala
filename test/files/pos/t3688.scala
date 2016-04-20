@@ -1,5 +1,5 @@
 import collection.mutable
-import collection.JavaConversions._
+import collection.convert.wrapAsJava._
 import java.{util => ju}
 
 object Test {

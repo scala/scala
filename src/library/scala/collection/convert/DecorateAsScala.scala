@@ -12,10 +12,9 @@ package convert
 
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import Decorators._
-import WrapAsScala._
 import scala.language.implicitConversions
 
-trait DecorateAsScala {
+trait DecorateAsScala extends AsScalaConverters {
   /**
    * Adds an `asScala` method that implicitly converts a Java `Iterator` to
    * a Scala `Iterator`.

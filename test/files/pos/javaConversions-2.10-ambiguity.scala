@@ -1,5 +1,5 @@
-import collection.{JavaConversions, mutable, concurrent}
-import JavaConversions._
+import collection.{mutable, concurrent}
+import collection.convert.wrapAsScala._
 import java.util.concurrent.{ConcurrentHashMap => CHM}
 
 object Bar {

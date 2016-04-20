@@ -14,9 +14,16 @@ import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import WrapAsScala._
 import WrapAsJava._
 
-/** Don't put the implementations in the same scope as the implicits
- *  which utilize them, or they will stow away into every scope which
- *  extends one of those implementations.  See SI-5580.
+/** Adapters for Java/Scala collections API.
+ *  
+ *  The implicit scope of these wrappers includes the current
+ *  lexical scope as well as enclosing package scopes, so the
+ *  implicit conversions provided by `AsScalaImplicits` and
+ *  `AsJavaImplicits` must not be installed in those enclosing
+ *  scopes.
+ *  
+ *  In particular, the implicit scope of classes extending these
+ *  wrappers also includes those contexts. See SI-5580.
  */
 private[collection] trait Wrappers {
   trait IterableWrapperTrait[A] extends ju.AbstractCollection[A] {
@@ -284,12 +291,12 @@ private[collection] trait Wrappers {
   }
 
   /** Wraps a Java map as a Scala one.  If the map is to support concurrent access,
-    * use [[JConcurrentMapWrapper]] instead.  If the wrapped map is synchronized 
-    * (e.g. from `java.util.Collections.synchronizedMap`), it is your responsibility 
-    * to wrap all non-atomic operations with `underlying.synchronized`.
-    * This includes `get`, as `java.util.Map`'s API does not allow for an
-    * atomic `get` when `null` values may be present.
-    */
+   *  use [[JConcurrentMapWrapper]] instead.  If the wrapped map is synchronized 
+   *  (e.g. from `java.util.Collections.synchronizedMap`), it is your responsibility 
+   *  to wrap all non-atomic operations with `underlying.synchronized`.
+   *  This includes `get`, as `java.util.Map`'s API does not allow for an
+   *  atomic `get` when `null` values may be present.
+   */
   case class JMapWrapper[A, B](underlying : ju.Map[A, B]) extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JMapWrapper[A, B]] {
     override def empty = JMapWrapper(new ju.HashMap[A, B])
   }
@@ -317,9 +324,9 @@ private[collection] trait Wrappers {
   }
 
   /** Wraps a concurrent Java map as a Scala one.  Single-element concurrent
-    * access is supported; multi-element operations such as maps and filters
-    * are not guaranteed to be atomic.
-    */
+   *  access is supported; multi-element operations such as maps and filters
+   *  are not guaranteed to be atomic.
+   */
   case class JConcurrentMapWrapper[A, B](underlying: juc.ConcurrentMap[A, B]) extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JConcurrentMapWrapper[A, B]] with concurrent.Map[A, B] {
     override def get(k: A) = Option(underlying get k)
 
