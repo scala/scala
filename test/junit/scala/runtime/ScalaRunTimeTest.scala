@@ -5,69 +5,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-/** Tests for the private class DefaultPromise */
+/** Tests for the runtime object ScalaRunTime */
 @RunWith(classOf[JUnit4])
 class ScalaRunTimeTest {
-  @Test
-  def testIsTuple() {
-    import ScalaRunTime.isTuple
-    def check(v: Any) = {
-      assertTrue(v.toString, isTuple(v))
-    }
-
-    val s = ""
-    check(Tuple1(s))
-    check((s, s))
-    check((s, s, s))
-    check((s, s, s, s))
-    check((s, s, s, s, s))
-    check((s, s, s, s, s, s))
-    check((s, s, s, s, s, s, s))
-    check((s, s, s, s, s, s, s, s))
-    check((s, s, s, s, s, s, s, s, s))
-    check((s, s, s, s, s, s, s, s, s, s))
-    check((s, s, s, s, s, s, s, s, s, s, s))
-    check((s, s, s, s, s, s, s, s, s, s, s, s))
-    check((s, s, s, s, s, s, s, s, s, s, s, s, s))
-    check((s, s, s, s, s, s, s, s, s, s, s, s, s, s))
-    check((s, s, s, s, s, s, s, s, s, s, s, s, s, s, s))
-    check((s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s))
-    check((s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s))
-    check((s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s))
-    check((s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s))
-    check((s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s))
-    check((s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s))
-    check((s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s))
-
-    // some specialized variants will have mangled classnames
-    check(Tuple1(0))
-    check((0, 0))
-    check((0, 0, 0))
-    check((0, 0, 0, 0))
-    check((0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-    check((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-
-    case class C()
-    val c = new C()
-    assertFalse(c.toString, isTuple(c))
-  }
-
   @Test
   def testStingOf() {
     import ScalaRunTime.stringOf
@@ -109,14 +49,17 @@ class ScalaRunTimeTest {
     val tuple1 = Tuple1(0)
     assertEquals("(0,)", stringOf(tuple1))
     assertEquals("(0,)", stringOf(tuple1, 0))
+    assertEquals("(Array(0),)", stringOf(Tuple1(Array(0))))
 
     val tuple2 = Tuple2(0, 1)
     assertEquals("(0,1)", stringOf(tuple2))
     assertEquals("(0,1)", stringOf(tuple2, 0))
+    assertEquals("(Array(0),1)", stringOf((Array(0), 1)))
 
     val tuple3 = Tuple3(0, 1, 2)
     assertEquals("(0,1,2)", stringOf(tuple3))
     assertEquals("(0,1,2)", stringOf(tuple3, 0))
+    assertEquals("(Array(0),1,2)", stringOf((Array(0), 1, 2)))
 
     val x = new Object {
         override def toString(): String = "this is the stringOf string"

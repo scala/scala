@@ -12,7 +12,6 @@ import scala.reflect.internal.util.ListOfNil
 import scala.reflect.macros.runtime.{AbortMacroException, MacroRuntimes}
 import scala.reflect.macros.compiler.DefaultMacroCompiler
 import scala.tools.reflect.FastTrack
-import scala.runtime.ScalaRunTime
 import Fingerprint._
 
 /**
@@ -239,7 +238,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
         if (!payload.contains(field)) failField("is supposed to be there")
         val raw: Any = payload(field)
         if (raw == null) failField(s"is not supposed to be null")
-        val expected = ScalaRunTime.box(clazz)
+        val expected = box(clazz)
         val actual = raw.getClass
         if (!expected.isAssignableFrom(actual)) failField(s"has wrong type: expected $expected, actual $actual")
         raw.asInstanceOf[T]
@@ -255,6 +254,19 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       val methodName = unpickle("methodName", classOf[String])
       val signature = unpickle("signature", classOf[List[List[Fingerprint]]])
       MacroImplBinding(isBundle, isBlackbox, className, methodName, signature, targs)
+    }
+
+    private def box[T](clazz: Class[T]): Class[_] = clazz match {
+      case java.lang.Byte.TYPE => classOf[java.lang.Byte]
+      case java.lang.Short.TYPE => classOf[java.lang.Short]
+      case java.lang.Character.TYPE => classOf[java.lang.Character]
+      case java.lang.Integer.TYPE => classOf[java.lang.Integer]
+      case java.lang.Long.TYPE => classOf[java.lang.Long]
+      case java.lang.Float.TYPE => classOf[java.lang.Float]
+      case java.lang.Double.TYPE => classOf[java.lang.Double]
+      case java.lang.Void.TYPE => classOf[scala.runtime.BoxedUnit]
+      case java.lang.Boolean.TYPE => classOf[java.lang.Boolean]
+      case _ => clazz
     }
   }
 

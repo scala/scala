@@ -11,7 +11,6 @@ package collection
 package mutable
 
 import scala.reflect.ClassTag
-import scala.runtime.ScalaRunTime._
 import parallel.mutable.ParArray
 
 /** This class serves as a wrapper for `Array`s with all the operations found in
@@ -35,7 +34,7 @@ import parallel.mutable.ParArray
 sealed trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParallelizable[T, ParArray[T]] {
 
   private def elementClass: Class[_] =
-    arrayElementClass(repr.getClass)
+    repr.getClass.getComponentType
 
   override def copyToArray[U >: T](xs: Array[U], start: Int, len: Int) {
     val l = len min repr.length min (xs.length - start)
@@ -43,7 +42,7 @@ sealed trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomPara
   }
 
   override def toArray[U >: T : ClassTag]: Array[U] = {
-    val thatElementClass = arrayElementClass(implicitly[ClassTag[U]])
+    val thatElementClass = implicitly[ClassTag[U]].runtimeClass
     if (elementClass eq thatElementClass)
       repr.asInstanceOf[Array[U]]
     else
@@ -91,7 +90,7 @@ sealed trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomPara
     val bb: Builder[Array[U], Array[Array[U]]] = Array.newBuilder(ClassTag[Array[U]](elementClass))
     if (isEmpty) bb.result()
     else {
-      def mkRowBuilder() = Array.newBuilder(ClassTag[U](arrayElementClass(elementClass)))
+      def mkRowBuilder() = Array.newBuilder(ClassTag[U](elementClass.getComponentType))
       val bs = asArray(head) map (_ => mkRowBuilder())
       for (xs <- this) {
         var i = 0
@@ -184,7 +183,7 @@ object ArrayOps {
 
     override protected[this] def thisCollection: WrappedArray[T] = new WrappedArray.ofRef[T](repr)
     override protected[this] def toCollection(repr: Array[T]): WrappedArray[T] = new WrappedArray.ofRef[T](repr)
-    override protected[this] def newBuilder = new ArrayBuilder.ofRef[T]()(ClassTag[T](arrayElementClass(repr.getClass)))
+    override protected[this] def newBuilder = new ArrayBuilder.ofRef[T]()(ClassTag[T](repr.getClass.getComponentType))
 
     def length: Int = repr.length
     def apply(index: Int): T = repr(index)

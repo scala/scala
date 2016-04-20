@@ -3,7 +3,8 @@
 object Test
 {
   import java.{ lang => jl }
-  import scala.runtime.BoxesRunTime.{ hashFromNumber, hashFromObject }
+  import scala.runtime.BoxesRunTime.hashFromNumber
+  import scala.runtime.ScalaRunTime.{ hash => hashFromAny }
 
   def allSame[T](xs: List[T]) = assert(xs.distinct.size == 1, "failed: " + xs)
 
@@ -17,7 +18,7 @@ object Test
       val hashes = mkNumbers(n) map hashFromNumber
       allSame(hashes)
       if (n >= 0) {
-        val charCode = hashFromObject(n.toChar: Character)
+        val charCode = hashFromAny(n.toChar: Character)
         assert(charCode == hashes.head)
       }
     }

@@ -154,7 +154,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       }
       def apply(schemaAndValue: (jClass[_], Any)): ClassfileAnnotArg = schemaAndValue match {
         case ConstantArg(value)                      => LiteralAnnotArg(Constant(value))
-        case (clazz @ ArrayClass(), value: Array[_]) => ArrayAnnotArg(value map (x => apply(ScalaRunTime.arrayElementClass(clazz) -> x)))
+        case (clazz @ ArrayClass(), value: Array[_]) => ArrayAnnotArg(value map (x => apply(clazz.getComponentType -> x)))
         case (AnnotationClass(), value: jAnnotation) => NestedAnnotArg(JavaAnnotationProxy(value))
         case _                                       => UnmappableAnnotArg
       }
@@ -475,9 +475,9 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         }
 
         symbol match {
-          case Any_== | Object_==                     => ScalaRunTime.inlinedEquals(objReceiver, objArg0)
-          case Any_!= | Object_!=                     => !ScalaRunTime.inlinedEquals(objReceiver, objArg0)
-          case Any_## | Object_##                     => ScalaRunTime.hash(objReceiver)
+          case Any_== | Object_==                     => objReceiver == objArg0
+          case Any_!= | Object_!=                     => objReceiver != objArg0
+          case Any_## | Object_##                     => objReceiver.##
           case Any_equals                             => receiver.equals(objArg0)
           case Any_hashCode                           => receiver.hashCode
           case Any_toString                           => receiver.toString
