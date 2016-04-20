@@ -12,7 +12,7 @@ object HKGADT {
 
   sealed trait Foo1[F]
   final case class Bar1() extends Foo1[Int]
-  def frob1[A](foo: Foo1[A]) = foo match {
+  def frob1[A](foo: Foo1[A]): A = foo match {
     case Bar1() => 1
   }
 }
