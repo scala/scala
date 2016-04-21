@@ -36,10 +36,11 @@ public final class Statics {
   }
 
   public static int longHash(long lv) {
-    if ((int)lv == lv)
-      return (int)lv;
-    else
-      return (int)(lv ^ (lv >>> 32));
+    int iv = (int)lv;
+    if (iv == lv)
+      return iv;
+
+    return java.lang.Long.hashCode(lv);
   }
 
   public static int doubleHash(double dv) {
@@ -47,16 +48,15 @@ public final class Statics {
     if (iv == dv)
       return iv;
 
-    float fv = (float)dv;
-    if (fv == dv)
-      return java.lang.Float.floatToIntBits(fv);
-
     long lv = (long)dv;
     if (lv == dv)
-      return (int)lv;
+      return java.lang.Long.hashCode(lv);
 
-    lv = Double.doubleToLongBits(dv);
-    return (int)(lv ^ (lv >>> 32));
+    float fv = (float)dv;
+    if (fv == dv)
+      return java.lang.Float.hashCode(fv);
+
+    return java.lang.Double.hashCode(dv);
   }
 
   public static int floatHash(float fv) {
@@ -66,9 +66,9 @@ public final class Statics {
 
     long lv = (long)fv;
     if (lv == fv)
-      return (int)(lv^(lv>>>32));
+      return java.lang.Long.hashCode(lv);
 
-    return java.lang.Float.floatToIntBits(fv);
+    return java.lang.Float.hashCode(fv);
   }
 
   public static int anyHash(Object x) {
