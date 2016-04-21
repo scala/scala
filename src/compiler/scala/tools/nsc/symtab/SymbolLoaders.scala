@@ -154,7 +154,7 @@ abstract class SymbolLoaders {
 
   /** Initialize toplevel class and module symbols in `owner` from class path representation `classRep`
    */
-  def initializeFromClassPath(owner: Symbol, classRep: ClassRepresentation[AbstractFile]) {
+  def initializeFromClassPath(owner: Symbol, classRep: ClassRepresentation) {
     ((classRep.binary, classRep.source) : @unchecked) match {
       case (Some(bin), Some(src))
       if platform.needCompile(bin, src) && !binaryOnly(owner, classRep.name) =>
@@ -247,36 +247,6 @@ abstract class SymbolLoaders {
   }
 
   /**
-   * Load contents of a package
-   */
-  class PackageLoader(classpath: ClassPath[AbstractFile]) extends SymbolLoader with FlagAgnosticCompleter {
-    protected def description = s"package loader ${classpath.name}"
-
-    protected def doComplete(root: Symbol) {
-      assert(root.isPackageClass, root)
-      // Time travel to a phase before refchecks avoids an initialization issue. `openPackageModule`
-      // creates a module symbol and invokes invokes `companionModule` while the `infos` field is
-      // still null. This calls `isModuleNotMethod`, which forces the `info` if run after refchecks.
-      enteringPhase(phaseBeforeRefchecks) {
-        root.setInfo(new PackageClassInfoType(newScope, root))
-
-        if (!root.isRoot) {
-          for (classRep <- classpath.classes) {
-            initializeFromClassPath(root, classRep)
-          }
-        }
-        if (!root.isEmptyPackageClass) {
-          for (pkg <- classpath.packages) {
-            enterPackage(root, pkg.name, new PackageLoader(pkg))
-          }
-
-          openPackageModule(root)
-        }
-      }
-    }
-  }
-
-  /**
    * Loads contents of a package
    */
   class PackageLoaderUsingFlatClassPath(packageName: String, classPath: FlatClassPath) extends SymbolLoader with FlagAgnosticCompleter {
@@ -329,10 +299,7 @@ abstract class SymbolLoaders {
 
       val loaders = SymbolLoaders.this.asInstanceOf[SymbolLoadersRefined]
 
-      override def classFileLookup: util.ClassFileLookup[AbstractFile] = settings.YclasspathImpl.value match {
-        case ClassPathRepresentationType.Recursive => platform.classPath
-        case ClassPathRepresentationType.Flat => platform.flatClassPath
-      }
+      override def classFileLookup: util.ClassFileLookup = platform.flatClassPath
     }
 
     protected def description = "class file "+ classfile.toString

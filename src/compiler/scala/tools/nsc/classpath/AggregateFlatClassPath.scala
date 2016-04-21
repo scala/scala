@@ -30,7 +30,7 @@ case class AggregateFlatClassPath(aggregates: Seq[FlatClassPath]) extends FlatCl
     find(aggregates)
   }
 
-  override def findClass(className: String): Option[ClassRepresentation[AbstractFile]] = {
+  override def findClass(className: String): Option[ClassRepresentation] = {
     val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
 
     @tailrec

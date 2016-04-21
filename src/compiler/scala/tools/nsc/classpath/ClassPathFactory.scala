@@ -12,7 +12,7 @@ import scala.tools.nsc.util.ClassPath
  * The logic has been abstracted from ClassPath#ClassPathContext so it's possible
  * to have common trait that supports both recursive and flat classpath representations.
  *
- * Therefore, we expect that T will be either ClassPath[U] or FlatClassPath.
+ * Therefore, we expect that T will FlatClassPath.
  */
 trait ClassPathFactory[T] {
 

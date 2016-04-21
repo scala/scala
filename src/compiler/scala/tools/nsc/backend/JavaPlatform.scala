@@ -9,7 +9,7 @@ package backend
 import io.AbstractFile
 import scala.tools.nsc.classpath.{AggregateFlatClassPath, FlatClassPath}
 import scala.tools.nsc.settings.ClassPathRepresentationType
-import scala.tools.nsc.util.{ClassFileLookup, ClassPath, MergedClassPath}
+import scala.tools.nsc.util.ClassFileLookup
 import scala.tools.util.FlatClassPathResolver
 import scala.tools.util.PathResolver
 
@@ -19,38 +19,20 @@ trait JavaPlatform extends Platform {
   import global._
   import definitions._
 
-  private[nsc] var currentClassPath: Option[MergedClassPath[AbstractFile]] = None
-
-  def classPath: ClassPath[AbstractFile] = {
-    assert(settings.YclasspathImpl.value == ClassPathRepresentationType.Recursive,
-      "To use recursive classpath representation you must enable it with -YclasspathImpl:recursive compiler option.")
-
-    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings).result)
-    currentClassPath.get
-  }
-
   private[nsc] var currentFlatClassPath: Option[FlatClassPath] = None
 
   private[nsc] def flatClassPath: FlatClassPath = {
-    assert(settings.YclasspathImpl.value == ClassPathRepresentationType.Flat,
-      "To use flat classpath representation you must enable it with -YclasspathImpl:flat compiler option.")
-
     if (currentFlatClassPath.isEmpty) currentFlatClassPath = Some(new FlatClassPathResolver(settings).result)
     currentFlatClassPath.get
   }
 
   /** Update classpath with a substituted subentry */
-  def updateClassPath(subst: Map[ClassFileLookup[AbstractFile], ClassFileLookup[AbstractFile]]) = global.classPath match {
-    case cp: ClassPath[AbstractFile] =>
-      val s = subst.asInstanceOf[Map[ClassPath[AbstractFile], ClassPath[AbstractFile]]]
-      currentClassPath = Some(new MergedClassPath(cp.entries map (e => s.getOrElse(e, e)), cp.context))
-
+  def updateClassPath(subst: Map[FlatClassPath, FlatClassPath]): Unit = global.classPath match {
     case AggregateFlatClassPath(entries) =>
-      val s = subst.asInstanceOf[Map[FlatClassPath, FlatClassPath]]
-      currentFlatClassPath = Some(AggregateFlatClassPath(entries map (e => s.getOrElse(e, e))))
+      currentFlatClassPath = Some(AggregateFlatClassPath(entries map (e => subst.getOrElse(e, e))))
 
     case cp: FlatClassPath =>
-      currentFlatClassPath = Some(subst.getOrElse(cp, cp).asInstanceOf[FlatClassPath])
+      currentFlatClassPath = Some(subst.getOrElse(cp, cp))
   }
 
   def platformPhases = List(

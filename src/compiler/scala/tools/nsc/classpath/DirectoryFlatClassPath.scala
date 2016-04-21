@@ -103,7 +103,7 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepClassPathEntry] extends Dire
 }
 
 case class DirectoryFlatClassPath(dir: File) extends JFileDirectoryLookup[ClassFileEntryImpl] with NoSourcePaths {
-  override def findClass(className: String): Option[ClassRepresentation[AbstractFile]] = findClassFile(className) map ClassFileEntryImpl
+  override def findClass(className: String): Option[ClassRepresentation] = findClassFile(className) map ClassFileEntryImpl
 
   def findClassFile(className: String): Option[AbstractFile] = {
     val relativePath = FileUtils.dirPath(className)
@@ -127,7 +127,7 @@ case class DirectoryFlatSourcePath(dir: File) extends JFileDirectoryLookup[Sourc
   protected def createFileEntry(file: AbstractFile): SourceFileEntryImpl = SourceFileEntryImpl(file)
   protected def isMatchingFile(f: File): Boolean = endsScalaOrJava(f.getName)
 
-  override def findClass(className: String): Option[ClassRepresentation[AbstractFile]] = findSourceFile(className) map SourceFileEntryImpl
+  override def findClass(className: String): Option[ClassRepresentation] = findSourceFile(className) map SourceFileEntryImpl
 
   private def findSourceFile(className: String): Option[AbstractFile] = {
     val relativePath = FileUtils.dirPath(className)

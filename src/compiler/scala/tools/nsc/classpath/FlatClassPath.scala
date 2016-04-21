@@ -14,7 +14,7 @@ import scala.tools.nsc.util.{ ClassFileLookup, ClassPath, ClassRepresentation }
  *
  * This is an alternative design compared to scala.tools.nsc.util.ClassPath
  */
-trait FlatClassPath extends ClassFileLookup[AbstractFile] {
+trait FlatClassPath extends ClassFileLookup {
   /** Empty string represents root package */
   private[nsc] def packages(inPackage: String): Seq[PackageEntry]
   private[nsc] def classes(inPackage: String): Seq[ClassFileEntry]
@@ -25,7 +25,7 @@ trait FlatClassPath extends ClassFileLookup[AbstractFile] {
 
   // A default implementation which should be overridden, if we can create the more efficient
   // solution for a given type of FlatClassPath
-  override def findClass(className: String): Option[ClassRepresentation[AbstractFile]] = {
+  override def findClass(className: String): Option[ClassRepresentation] = {
     val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
 
     val foundClassFromClassFiles = classes(pkg).find(_.name == simpleClassName)
@@ -50,7 +50,7 @@ object FlatClassPathEntries {
   implicit def entry2Tuple(entry: FlatClassPathEntries): (Seq[PackageEntry], Seq[ClassRepClassPathEntry]) = (entry.packages, entry.classesAndSources)
 }
 
-sealed trait ClassRepClassPathEntry extends ClassRepresentation[AbstractFile]
+sealed trait ClassRepClassPathEntry extends ClassRepresentation
 
 trait ClassFileEntry extends ClassRepClassPathEntry {
   def file: AbstractFile

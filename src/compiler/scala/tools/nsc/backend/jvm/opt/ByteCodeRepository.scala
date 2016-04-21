@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong
  *
  * @param classPath The compiler classpath where classfiles are searched and read from.
  */
-class ByteCodeRepository[BT <: BTypes](val classPath: ClassFileLookup[AbstractFile], val btypes: BT) {
+class ByteCodeRepository[BT <: BTypes](val classPath: ClassFileLookup, val btypes: BT) {
   import btypes._
 
   /**

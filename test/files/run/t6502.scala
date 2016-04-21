@@ -14,14 +14,6 @@ object Test extends StoreReporterDirectTest {
     compileString(newCompiler("-cp", classpath, "-d", s"${testOutput.path}/$jarFileName"))(code)
   }
 
-  var classPathKind: String = ""
-
-  override def settings = {
-    val settings = new Settings
-    settings.YclasspathImpl.value = classPathKind
-    settings
-  }
-
   def app1 = """
     package test
 
@@ -155,19 +147,12 @@ object Test extends StoreReporterDirectTest {
     assert(output.contains("created test6.Z"), output)
   }
 
-  def testAll(): Unit = {
+  def show(): Unit = {
     test1()
     test2()
     test3()
     test4()
     test5()
     test6()
-  }
-
-  def show(): Unit = {
-    classPathKind = ClassPathRepresentationType.Flat
-    testAll()
-    classPathKind = ClassPathRepresentationType.Recursive
-    testAll()
   }
 }

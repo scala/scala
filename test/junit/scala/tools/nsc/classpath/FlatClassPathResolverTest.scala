@@ -96,52 +96,6 @@ class FlatClassPathResolverTest {
   }
 
   @Test
-  def testCreatedEntriesAgainstRecursiveClassPath: Unit = {
-    val flatClassPath = createFlatClassPath(settings)
-    val recursiveClassPath = new PathResolver(settings).result
-
-    def compareEntriesInPackage(inPackage: String): Unit = {
-
-      @tailrec
-      def traverseToPackage(packageNameParts: Seq[String], cp: ClassPath[AbstractFile]): ClassPath[AbstractFile] = {
-        packageNameParts match {
-          case Nil => cp
-          case h :: t =>
-            cp.packages.find(_.name == h) match {
-              case Some(nestedCp) => traverseToPackage(t, nestedCp)
-              case _ => throw new Exception(s"There's no package $inPackage in recursive classpath - error when searching for '$h'")
-            }
-        }
-      }
-
-      val packageNameParts = if (inPackage == FlatClassPath.RootPackage) Nil else inPackage.split('.').toList
-      val recursiveClassPathInPackage = traverseToPackage(packageNameParts, recursiveClassPath)
-
-      val flatCpPackages = flatClassPath.packages(inPackage).map(_.name)
-      val pkgPrefix = PackageNameUtils.packagePrefix(inPackage)
-      val recursiveCpPackages = recursiveClassPathInPackage.packages.map(pkgPrefix + _.name)
-      assertEquals(s"Packages in package '$inPackage' on flat cp should be the same as on the recursive cp",
-        recursiveCpPackages, flatCpPackages)
-
-      val flatCpSources = flatClassPath.sources(inPackage).map(_.name).sorted
-      val recursiveCpSources = recursiveClassPathInPackage.classes
-        .filter(_.source.nonEmpty)
-        .map(_.name).sorted
-      assertEquals(s"Source entries in package '$inPackage' on flat cp should be the same as on the recursive cp",
-        recursiveCpSources, flatCpSources)
-
-      val flatCpClasses = flatClassPath.classes(inPackage).map(_.name).sorted
-      val recursiveCpClasses = recursiveClassPathInPackage.classes
-        .filter(_.binary.nonEmpty)
-        .map(_.name).sorted
-      assertEquals(s"Class entries in package '$inPackage' on flat cp should be the same as on the recursive cp",
-        recursiveCpClasses, flatCpClasses)
-    }
-
-    packagesToTest foreach compareEntriesInPackage
-  }
-
-  @Test
   def testFindClassFile: Unit = {
     val classPath = createFlatClassPath(settings)
     classFilesToFind foreach { className =>
