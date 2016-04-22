@@ -1,15 +1,15 @@
-#!/bin/bash -x
+#!/bin/bash
 
 ./pull-binary-libs.sh
 
 export ANT_OPTS="-Dfile.encoding=UTF-8 -server -XX:+AggressiveOpts -XX:+UseParNewGC -Xmx2G -Xss1M -XX:MaxPermSize=512M -XX:ReservedCodeCacheSize=128M"
 
-# TODO: don't hardcode this path, which is just where we currently have
-# ant manually installed on jenkins-worker-windows-publish.
-PATH=/cygdrive/c/apache-ant-1.9.6/bin:$PATH
+# TODO: don't hardcode these paths -- should be in scala/scala-jenkins-infra, passed in through env vars from jenkins
+export PATH='/cygdrive/c/Program Files/Java/jdk1.8.0_92/bin:/cygdrive/c/apache-ant-1.9.6/bin:/cygdrive/c/Program Files (x86)/Git-2.5.3/Cmd:/bin:/usr/bin:'
+export JAVA_HOME='C:/Program Files/Java/jdk1.8.0_92'
 
-# TODO: don't hardcode here -- move to scala-jenkins-infra
-export JAVA_HOME='c:/Program Files/Java/jdk1.8.0_92/'
-export PATH="$JAVA_HOME/bin:$PATH"
+java -version
+javac -version
+ant -version
 
 ant test-opt
