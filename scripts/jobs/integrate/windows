@@ -12,4 +12,4 @@ PATH=/cygdrive/c/apache-ant-1.9.6/bin:$PATH
 export JAVA_HOME='c:/Program Files/Java/jdk1.8.0_92/'
 export PATH="$JAVA_HOME/bin:$PATH"
 
-ant -Dscalac.args.optimise=-Yopt test
+ant test-opt
