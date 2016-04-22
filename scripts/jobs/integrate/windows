@@ -8,6 +8,9 @@ export ANT_OPTS="-Dfile.encoding=UTF-8 -server -XX:+AggressiveOpts -XX:+UseParNe
 # ant manually installed on jenkins-worker-windows-publish.
 PATH=/cygdrive/c/apache-ant-1.9.6/bin:$PATH
 
+export JAVA_HOME='C:/java/jdk-1.6'
+export PATH="$JAVA_HOME/bin:$PATH"
+
 ant \
   -Dstarr.version=2.11.8 \
   -Dscalac.args.optimise=-optimise \
