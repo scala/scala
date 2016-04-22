@@ -101,7 +101,7 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
   // case class accessories
   override def canEqual(x: Any) = x.isInstanceOf[ClassTag[_]]
   override def equals(x: Any) = x.isInstanceOf[ClassTag[_]] && this.runtimeClass == x.asInstanceOf[ClassTag[_]].runtimeClass
-  override def hashCode = scala.runtime.ScalaRunTime.hash(runtimeClass)
+  override def hashCode = runtimeClass.##
   override def toString = {
     def prettyprint(clazz: jClass[_]): String =
       if (clazz.isArray) s"Array[${prettyprint(clazz.getComponentType)}]" else

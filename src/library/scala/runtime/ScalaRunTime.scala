@@ -158,11 +158,9 @@ object ScalaRunTime {
     }
   }
 
-  /** Implementation of `##`. */
-  def hash(x: Any): Int =
-    if (x == null) 0
-    else if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.hashFromNumber(x.asInstanceOf[java.lang.Number])
-    else x.hashCode
+  /** Old implementation of `##`. */
+  @deprecated("Use scala.runtime.Statics.anyHash instead.", "2.12.0")
+  def hash(x: Any): Int = Statics.anyHash(x.asInstanceOf[Object])
 
   /** Given any Scala value, convert it to a String.
    *

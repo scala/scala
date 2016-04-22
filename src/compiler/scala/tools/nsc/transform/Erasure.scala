@@ -1013,24 +1013,20 @@ abstract class Erasure extends AddInterfaces
                 // erasure the ScalaRunTime.hash overload goes from Unit => Int to BoxedUnit => Int.
                 // This must be because some earlier transformation is being skipped on ##, but so
                 // far I don't know what.  For null we now define null.## == 0.
+                def staticsCall(methodName: TermName): Tree = {
+                  val newTree = gen.mkMethodCall(RuntimeStaticsModule, methodName, qual :: Nil)
+                  global.typer.typed(newTree)
+                }
+
                 qual.tpe.typeSymbol match {
                   case UnitClass | NullClass                    => LIT(0)
                   case IntClass                                 => qual
                   case s @ (ShortClass | ByteClass | CharClass) => numericConversion(qual, s)
                   case BooleanClass                             => If(qual, LIT(true.##), LIT(false.##))
-                  case _                                        =>
-                    // Since we are past typer, we need to avoid creating trees carrying
-                    // overloaded types.  This logic is custom (and technically incomplete,
-                    // although serviceable) for def hash.  What is really needed is for
-                    // the overloading logic presently hidden away in a few different
-                    // places to be properly exposed so we can just call "resolveOverload"
-                    // after typer.  Until then:
-                    val alts    = ScalaRunTimeModule.info.member(nme.hash_).alternatives
-                    def alt1    = alts find (_.info.paramTypes.head =:= qual.tpe)
-                    def alt2    = ScalaRunTimeModule.info.member(nme.hash_) suchThat (_.info.paramTypes.head.typeSymbol == AnyClass)
-                    val newTree = gen.mkRuntimeCall(nme.hash_, qual :: Nil) setSymbol (alt1 getOrElse alt2)
-
-                    global.typer.typed(newTree)
+                  case LongClass                                => staticsCall(nme.longHash)
+                  case FloatClass                               => staticsCall(nme.floatHash)
+                  case DoubleClass                              => staticsCall(nme.doubleHash)
+                  case _                                        => staticsCall(nme.anyHash)
                 }
               } else if (isPrimitiveValueClass(qual.tpe.typeSymbol)) {
                 // Rewrite 5.getClass to ScalaRunTime.anyValClass(5)

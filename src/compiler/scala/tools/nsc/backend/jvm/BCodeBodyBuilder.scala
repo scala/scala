@@ -1089,7 +1089,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
     /* Generate the scala ## method. */
     def genScalaHash(tree: Tree, applyPos: Position): BType = {
-      genLoadModule(ScalaRunTimeModule) // TODO why load ScalaRunTimeModule if ## has InvokeStyle of Static(false) ?
       genLoad(tree, ObjectRef)
       genCallMethod(hashMethodSym, InvokeStyle.Static, applyPos)
     }
