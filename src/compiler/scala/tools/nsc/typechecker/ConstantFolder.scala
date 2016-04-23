@@ -102,13 +102,13 @@ abstract class ConstantFolder {
     case nme.XOR => Constant(x.longValue ^ y.longValue)
     case nme.AND => Constant(x.longValue & y.longValue)
     case nme.LSL if x.tag <= IntTag
-                 => Constant(x.intValue << y.longValue)
+                 => Constant(x.intValue << y.longValue.toInt) // TODO: remove .toInt once starr includes the fix for SI-9516 (2.12.0-M5)
     case nme.LSL => Constant(x.longValue <<  y.longValue)
     case nme.LSR if x.tag <= IntTag
-                 => Constant(x.intValue >>> y.longValue)
+                 => Constant(x.intValue >>> y.longValue.toInt) // TODO: remove .toInt once starr includes the fix for SI-9516 (2.12.0-M5)
     case nme.LSR => Constant(x.longValue >>> y.longValue)
     case nme.ASR if x.tag <= IntTag
-                 => Constant(x.intValue >> y.longValue)
+                 => Constant(x.intValue >> y.longValue.toInt) // TODO: remove .toInt once starr includes the fix for SI-9516 (2.12.0-M5)
     case nme.ASR => Constant(x.longValue >> y.longValue)
     case nme.EQ  => Constant(x.longValue == y.longValue)
     case nme.NE  => Constant(x.longValue != y.longValue)

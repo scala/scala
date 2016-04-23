@@ -117,15 +117,16 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
         // binary operation
         case rarg :: Nil =>
-          resKind = tpeTK(larg).maxType(tpeTK(rarg))
-          if (scalaPrimitives.isShiftOp(code) || scalaPrimitives.isBitwiseOp(code)) {
+          val isShiftOp = scalaPrimitives.isShiftOp(code)
+          resKind = tpeTK(larg).maxType(if (isShiftOp) INT else tpeTK(rarg))
+
+          if (isShiftOp || scalaPrimitives.isBitwiseOp(code)) {
             assert(resKind.isIntegralType || (resKind == BOOL),
                    s"$resKind incompatible with arithmetic modulo operation.")
           }
 
           genLoad(larg, resKind)
-          genLoad(rarg, // check .NET size of shift arguments!
-                  if (scalaPrimitives.isShiftOp(code)) INT else resKind)
+          genLoad(rarg, if (isShiftOp) INT else resKind)
 
           (code: @switch) match {
             case ADD => bc add resKind
