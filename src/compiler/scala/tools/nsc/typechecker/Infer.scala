@@ -148,7 +148,7 @@ trait Infer extends Checkable {
   }
 
   def skipImplicit(tp: Type) = tp match {
-    case mt: MethodType if mt.isImplicit  => mt.resultType
+    case mt: MethodType if mt.isImplicit  => mt.resultType //
     case _                                => tp
   }
 
@@ -163,7 +163,7 @@ trait Infer extends Checkable {
       logResult(sm"""|Normalizing PolyType in infer:
                      |  was: $restpe
                      |  now""")(normalize(restpe))
-    case mt @ MethodType(_, restpe) if mt.isImplicit             => normalize(restpe)
+    case mt @ MethodType(_, restpe) if mt.isImplicit             => normalize(restpe) //
     case mt @ MethodType(_, restpe) if !mt.isDependentMethodType =>
       if (phase.erasedTypes) FunctionClass(mt.params.length).tpe
       else functionType(mt.paramTypes, normalize(restpe))
@@ -366,7 +366,7 @@ trait Infer extends Checkable {
       // optimize type variables wrt to the implicit formals only; ignore the result type.
       // See test pos/jesper.scala
       def variance = restpe match {
-        case mt: MethodType if mt.isImplicit && isFullyDefined(pt) => MethodType(mt.params, AnyTpe)
+        case mt: MethodType if mt.isImplicit && isFullyDefined(pt) => MethodType(mt.params, AnyTpe) //
         case _                                                     => restpe
       }
       def solve() = solvedTypes(tvars, tparams, tparams map varianceInType(variance), upper = false, lubDepth(restpe :: pt :: Nil))
@@ -811,21 +811,21 @@ trait Infer extends Checkable {
       def onRight = ftpe2 match {
         case OverloadedType(pre, alts)                     => alts forall (alt => isAsSpecific(ftpe1, pre memberType alt))
         case et: ExistentialType                           => et.withTypeVars(isAsSpecific(ftpe1, _))
-        case mt @ MethodType(_, restpe)                    => !mt.isImplicit || isAsSpecific(ftpe1, restpe)
+        case mt @ MethodType(_, restpe)                    => !mt.isImplicit || isAsSpecific(ftpe1, restpe) //
         case NullaryMethodType(res)                        => isAsSpecific(ftpe1, res)
         case PolyType(tparams, NullaryMethodType(restpe))  => isAsSpecific(ftpe1, PolyType(tparams, restpe))
-        case PolyType(tparams, mt @ MethodType(_, restpe)) => !mt.isImplicit || isAsSpecific(ftpe1, PolyType(tparams, restpe))
+        case PolyType(tparams, mt @ MethodType(_, restpe)) => !mt.isImplicit || isAsSpecific(ftpe1, PolyType(tparams, restpe)) //
         case _                                             => isAsSpecificValueType(ftpe1, ftpe2, Nil, Nil)
       }
       ftpe1 match {
         case OverloadedType(pre, alts)                                      => alts exists (alt => isAsSpecific(pre memberType alt, ftpe2))
         case et: ExistentialType                                            => isAsSpecific(et.skolemizeExistential, ftpe2)
         case NullaryMethodType(restpe)                                      => isAsSpecific(restpe, ftpe2)
-        case mt @ MethodType(_, restpe) if mt.isImplicit                    => isAsSpecific(restpe, ftpe2)
+        case mt @ MethodType(_, restpe) if mt.isImplicit                    => isAsSpecific(restpe, ftpe2) //
         case mt @ MethodType(_, _) if bothAreVarargs                        => checkIsApplicable(mt.paramTypes mapConserve repeatedToSingle)
         case mt @ MethodType(params, _) if params.nonEmpty                  => checkIsApplicable(mt.paramTypes)
         case PolyType(tparams, NullaryMethodType(restpe))                   => isAsSpecific(PolyType(tparams, restpe), ftpe2)
-        case PolyType(tparams, mt @ MethodType(_, restpe)) if mt.isImplicit => isAsSpecific(PolyType(tparams, restpe), ftpe2)
+        case PolyType(tparams, mt @ MethodType(_, restpe)) if mt.isImplicit => isAsSpecific(PolyType(tparams, restpe), ftpe2) //
         case PolyType(_, mt @ MethodType(params, _)) if params.nonEmpty     => checkIsApplicable(mt.paramTypes)
         case ErrorType                                                      => true
         case _                                                              => onRight

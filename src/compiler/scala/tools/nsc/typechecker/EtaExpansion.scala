@@ -99,7 +99,7 @@ trait EtaExpansion { self: Analyzer =>
 
     /* Eta-expand lifted tree. */
     def expand(tree: Tree, tpe: Type): Tree = tpe match {
-      case mt @ MethodType(paramSyms, restpe) if !mt.isImplicit =>
+      case mt @ MethodType(paramSyms, restpe) if !mt.isImplicit => //
         val params: List[(ValDef, Boolean)] = paramSyms.map {
           sym =>
             val origTpe = sym.tpe

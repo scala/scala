@@ -52,7 +52,7 @@ trait DestructureTypes {
       else node("assocs", nodeList(names.indices.toList, (i: Int) => atom(names(i).toString, args(i))))
     }
     private def typeTypeName(tp: Type) = tp match {
-      case mt @ MethodType(_, _) if mt.isImplicit => "ImplicitMethodType"
+      case mt @ MethodType(_, _) if mt.isImplicit => "ImplicitMethodType" //
       case TypeRef(_, sym, _)                     => typeRefType(sym)
       case _                                      => tp.kind
     }
