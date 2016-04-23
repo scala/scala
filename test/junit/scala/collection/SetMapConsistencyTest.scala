@@ -9,6 +9,7 @@ import scala.collection.JavaConverters._
 /* Tests various maps by making sure they all agree on the same answers. */
 @RunWith(classOf[JUnit4])
 class SetMapConsistencyTest {
+  import scala.reflect.ClassTag
   
   trait MapBox[A] {
     protected def oor(s: String, n: Int) = throw new IllegalArgumentException(s"Out of range for $s: $n")
@@ -65,7 +66,7 @@ class SetMapConsistencyTest {
   
   def boxMhm[A] = new BoxMutableMap[A, cm.HashMap[A, Int]](new cm.HashMap[A, Int], "mutable.HashMap")
   
-  def boxMohm[A] = new BoxMutableMap[A, cm.OpenHashMap[A, Int]](new cm.OpenHashMap[A, Int], "mutable.OpenHashMap")
+  def boxMohm[A : ClassTag] = new BoxMutableMap[A, cm.OpenHashMap[A, Int]](new cm.OpenHashMap[A, Int], "mutable.OpenHashMap")
 
   def boxMtm[A: Ordering] = new BoxMutableMap[A, cm.TreeMap[A, Int]](new cm.TreeMap[A, Int], "mutable.TreeMap")
   
