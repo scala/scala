@@ -11,8 +11,7 @@ import scala.annotation.tailrec
 import scala.tools.asm
 import asm.Opcodes._
 import asm.tree._
-import scala.collection.convert.decorateAsScala._
-import scala.collection.convert.decorateAsJava._
+import scala.collection.JavaConverters._
 import AsmUtils._
 import BytecodeUtils._
 import collection.mutable

@@ -16,7 +16,7 @@ import scala.tools.testing.ClearAfterClass
 
 import BackendReporting._
 
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 
 object InlineInfoTest extends ClearAfterClass.Clearable {
   var compiler = newCompiler(extraArgs = "-Yopt:l:classpath")

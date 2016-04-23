@@ -12,8 +12,7 @@ import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 import java.lang.invoke.LambdaMetafactory
 import scala.collection.mutable
-import scala.collection.convert.decorateAsJava._
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 
 /**
  * This component hosts tools and utilities used in the backend that require access to a `BTypes`

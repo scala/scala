@@ -21,7 +21,7 @@ import ASMConverters._
 import AsmUtils._
 import BackendReporting._
 
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 import scala.tools.testing.ClearAfterClass
 
 object CallGraphTest extends ClearAfterClass.Clearable {

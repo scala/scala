@@ -9,7 +9,7 @@ package opt
 
 import scala.tools.asm
 import asm.tree._
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 import scala.collection.concurrent
 import scala.tools.asm.Attribute
 import scala.tools.nsc.backend.jvm.BackendReporting._

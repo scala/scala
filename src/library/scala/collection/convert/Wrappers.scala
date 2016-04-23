@@ -14,10 +14,7 @@ import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import WrapAsScala._
 import WrapAsJava._
 
-/** Don't put the implementations in the same scope as the implicits
- *  which utilize them, or they will stow away into every scope which
- *  extends one of those implementations.  See SI-5580.
- */
+/** Adapters for Java/Scala collections API. */
 private[collection] trait Wrappers {
   trait IterableWrapperTrait[A] extends ju.AbstractCollection[A] {
     val underlying: Iterable[A]

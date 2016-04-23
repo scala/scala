@@ -1,6 +1,6 @@
 import java.io.File
 
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 import scala.tools.asm.tree.{ClassNode, InvokeDynamicInsnNode}
 import scala.tools.asm.{Handle, Opcodes}
 import scala.tools.partest.BytecodeTest.modifyClassFile

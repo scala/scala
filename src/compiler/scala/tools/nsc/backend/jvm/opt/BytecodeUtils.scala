@@ -17,7 +17,7 @@ import scala.tools.asm.{Label, Type}
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import GenBCode._
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 import scala.tools.nsc.backend.jvm.analysis.InstructionStackEffect
 
 object BytecodeUtils {

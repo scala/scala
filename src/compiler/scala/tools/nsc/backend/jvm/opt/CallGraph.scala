@@ -12,7 +12,7 @@ import scala.reflect.internal.util.{NoPosition, Position}
 import scala.tools.asm.{Opcodes, Type, Handle}
 import scala.tools.asm.tree._
 import scala.collection.{concurrent, mutable}
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.analysis._

@@ -9,8 +9,7 @@ import scala.tools.asm.tree.{InsnList, AbstractInsnNode, ClassNode, MethodNode}
 import java.io.{StringWriter, PrintWriter}
 import scala.tools.asm.util.{CheckClassAdapter, TraceClassVisitor, TraceMethodVisitor, Textifier}
 import scala.tools.asm.{ClassReader, ClassWriter, Attribute}
-import scala.collection.convert.decorateAsScala._
-import scala.collection.convert.decorateAsJava._
+import scala.collection.JavaConverters._
 import scala.tools.nsc.backend.jvm.analysis.InitialProducer
 import scala.tools.nsc.backend.jvm.opt.InlineInfoAttributePrototype
 

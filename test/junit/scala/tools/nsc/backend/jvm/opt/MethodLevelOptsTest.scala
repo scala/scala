@@ -16,7 +16,7 @@ import CodeGenTools._
 import scala.tools.partest.ASMConverters
 import ASMConverters._
 import scala.tools.testing.ClearAfterClass
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 
 object MethodLevelOptsTest extends ClearAfterClass.Clearable {
   var methodOptCompiler = newCompiler(extraArgs = "-Yopt:l:method")

@@ -58,7 +58,7 @@ trait Creator[T] {
  * Java API
  */
 sealed abstract class Option[A] extends java.lang.Iterable[A] {
-  import scala.collection.JavaConversions._
+  import scala.collection.convert.wrapAsScala._
 
   def get: A
   def isEmpty: Boolean

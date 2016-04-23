@@ -17,7 +17,7 @@ import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt._
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.settings.ScalaSettings
 

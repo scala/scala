@@ -9,7 +9,7 @@ package opt
 
 import scala.tools.asm.tree.MethodNode
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 import scala.tools.nsc.backend.jvm.BackendReporting.OptimizerWarning
 
 class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {

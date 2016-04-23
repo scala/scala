@@ -13,7 +13,7 @@ import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.BTypes.{MethodInlineInfo, InlineInfo}
 import scala.tools.partest.ASMConverters
 import ASMConverters._
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 import scala.tools.testing.ClearAfterClass
 
 object ScalaInlineInfoTest extends ClearAfterClass.Clearable {

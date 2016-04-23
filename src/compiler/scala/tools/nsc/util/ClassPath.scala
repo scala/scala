@@ -113,10 +113,9 @@ object ClassPath {
   }
 
   def manifests: List[java.net.URL] = {
-    import scala.collection.convert.WrapAsScala.enumerationAsScalaIterator
-    Thread.currentThread().getContextClassLoader()
-      .getResources("META-INF/MANIFEST.MF")
-      .filter(_.getProtocol == "jar").toList
+    import scala.collection.JavaConverters._
+    val resources = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF")
+    resources.asScala.filter(_.getProtocol == "jar").toList
   }
 
   class JavaContext extends ClassPathContext[AbstractFile] {

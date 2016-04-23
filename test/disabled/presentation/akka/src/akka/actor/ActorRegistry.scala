@@ -342,7 +342,7 @@ class Index[K <: AnyRef, V <: AnyRef: ArrayTag] {
    * if no matches it returns None
    */
   def findValue(key: K)(f: (V) => Boolean): Option[V] = {
-    import scala.collection.JavaConversions._
+    import scala.collection.convert.wrapAsScala._
     val set = container get key
     if (set ne null) set.iterator.find(f)
     else None
@@ -352,7 +352,7 @@ class Index[K <: AnyRef, V <: AnyRef: ArrayTag] {
    * Applies the supplied function to all keys and their values
    */
   def foreach(fun: (K, V) => Unit) {
-    import scala.collection.JavaConversions._
+    import scala.collection.convert.wrapAsScala._
     container.entrySet foreach { (e) =>
       e.getValue.foreach(fun(e.getKey, _))
     }

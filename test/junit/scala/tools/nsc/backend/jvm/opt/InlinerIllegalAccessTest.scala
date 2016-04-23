@@ -16,7 +16,7 @@ import scala.tools.partest.ASMConverters
 import ASMConverters._
 import AsmUtils._
 
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 import scala.tools.testing.ClearAfterClass
 
 object InlinerIllegalAccessTest extends ClearAfterClass.Clearable {

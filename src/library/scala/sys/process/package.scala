@@ -203,9 +203,9 @@ package scala.sys {
   package object process extends ProcessImplicits {
     /** The arguments passed to `java` when creating this process */
     def javaVmArguments: List[String] = {
-      import scala.collection.JavaConversions._
+      import scala.collection.JavaConverters._
 
-      java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments().toList
+      java.lang.management.ManagementFactory.getRuntimeMXBean.getInputArguments.asScala.toList
     }
     /** The input stream of this process */
     def stdin  = java.lang.System.in

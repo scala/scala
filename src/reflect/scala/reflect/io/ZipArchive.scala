@@ -13,7 +13,7 @@ import java.io.{ File => JFile }
 import java.util.zip.{ ZipEntry, ZipFile, ZipInputStream }
 import java.util.jar.Manifest
 import scala.collection.mutable
-import scala.collection.convert.WrapAsScala.asScalaIterator
+import scala.collection.JavaConverters._
 import scala.annotation.tailrec
 
 /** An abstraction for zip files and streams.  Everything is written the way
@@ -238,7 +238,7 @@ final class ManifestResources(val url: URL) extends ZipArchive(null) {
     val root     = new DirEntry("/")
     val dirs     = mutable.HashMap[String, DirEntry]("/" -> root)
     val manifest = new Manifest(input)
-    val iter     = manifest.getEntries().keySet().iterator().filter(_.endsWith(".class")).map(new ZipEntry(_))
+    val iter     = manifest.getEntries().keySet().iterator().asScala.filter(_.endsWith(".class")).map(new ZipEntry(_))
 
     for (zipEntry <- iter) {
       val dir = getDir(dirs, zipEntry)

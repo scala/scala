@@ -17,7 +17,7 @@ import scala.tools.testing.ClearAfterClass
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 import AsmUtils._
 
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 
 object NullnessAnalyzerTest extends ClearAfterClass.Clearable {
   var noOptCompiler = newCompiler(extraArgs = "-Yopt:l:none")
