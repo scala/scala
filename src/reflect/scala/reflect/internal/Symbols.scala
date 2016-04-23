@@ -665,12 +665,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isLazyAccessor       = isLazy && lazyAccessor != NoSymbol
     final def isOverridableMember  = !(isClass || isEffectivelyFinal) && safeOwner.isClass
 
-    /** Does this symbol denote a wrapper created by the repl? */
-    final def isInterpreterWrapper = (
-         (this hasFlag MODULE)
-      && isTopLevel
-      && nme.isReplWrapperName(name)
-    )
 
     /** In our current architecture, symbols for top-level classes and modules
      *  are created as dummies. Package symbols just call newClass(name) or newModule(name) and
@@ -852,7 +846,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isEmptyPrefix = (
          isEffectiveRoot                      // has no prefix for real, <empty> or <root>
       || isAnonOrRefinementClass              // has uninteresting <anon> or <refinement> prefix
-      || nme.isReplWrapperName(name)          // has ugly $iw. prefix (doesn't call isInterpreterWrapper due to nesting)
     )
     def isFBounded = info match {
       case TypeBounds(_, _) => info.baseTypeSeq exists (_ contains this)

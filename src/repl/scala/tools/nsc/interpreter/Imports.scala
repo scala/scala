@@ -27,34 +27,12 @@ trait Imports {
   }
 
   /** Symbols whose contents are language-defined to be imported. */
-  def languageWildcardSyms: List[Symbol] = List(JavaLangPackage, ScalaPackage, PredefModule)
+  private def languageWildcardSyms: List[Symbol] = List(JavaLangPackage, ScalaPackage, PredefModule)
   def languageWildcardHandlers = languageWildcardSyms map makeWildcardImportHandler
-
-  def allImportedNames = importHandlers flatMap (_.importedNames)
-
-  /** Types which have been wildcard imported, such as:
-   *    val x = "abc" ; import x._  // type java.lang.String
-   *    import java.lang.String._   // object java.lang.String
-   *
-   *  Used by tab completion.
-   *
-   *  XXX right now this gets import x._ and import java.lang.String._,
-   *  but doesn't figure out import String._.  There's a lot of ad hoc
-   *  scope twiddling which should be swept away in favor of digging
-   *  into the compiler scopes.
-   */
-  def sessionWildcards: List[Type] = {
-    importHandlers filter (_.importsWildcard) map (_.targetType) distinct
-  }
-
-  def languageSymbols        = languageWildcardSyms flatMap membersAtPickler
-  def sessionImportedSymbols = importHandlers flatMap (_.importedSymbols)
-  def importedSymbols        = languageSymbols ++ sessionImportedSymbols
-  def importedTermSymbols    = importedSymbols collect { case x: TermSymbol => x }
 
   /** Tuples of (source, imported symbols) in the order they were imported.
    */
-  def importedSymbolsBySource: List[(Symbol, List[Symbol])] = {
+  private def importedSymbolsBySource: List[(Symbol, List[Symbol])] = {
     val lang    = languageWildcardSyms map (sym => (sym, membersAtPickler(sym)))
     val session = importHandlers filter (_.targetType != NoType) map { mh =>
       (mh.targetType.typeSymbol, mh.importedSymbols)
@@ -136,73 +114,58 @@ trait Imports {
       select(allReqAndHandlers reverseMap { case (r, h) => ReqAndHandler(r, h) }, wanted).reverse
     }
 
-    // add code for a new object to hold some imports
-    def addWrapper() {
-      import nme.{ INTERPRETER_IMPORT_WRAPPER => iw }
-      code append (wrapper.prewrap format iw)
-      trailingBraces append wrapper.postwrap
-      accessPath append s".$iw"
-      currentImps.clear()
-    }
-
-    def maybeWrap(names: Name*) = if (names exists currentImps) addWrapper()
-
-    def wrapBeforeAndAfter[T](op: => T): T = {
-      addWrapper()
-      try op finally addWrapper()
-    }
-
     // imports from Predef are relocated to the template header to allow hiding.
     def checkHeader(h: ImportHandler) = h.referencedNames contains PredefModule.name
 
     // loop through previous requests, adding imports for each one
-    wrapBeforeAndAfter {
-      // Reusing a single temporary value when import from a line with multiple definitions.
-      val tempValLines = mutable.Set[Int]()
-      for (ReqAndHandler(req, handler) <- reqsToUse) {
-        val objName = req.lineRep.readPathInstance
-        handler match {
-          case h: ImportHandler if checkHeader(h) =>
-            header.clear()
-            header append f"${h.member}%n"
-          // If the user entered an import, then just use it; add an import wrapping
-          // level if the import might conflict with some other import
-          case x: ImportHandler if x.importsWildcard =>
-            wrapBeforeAndAfter(code append (x.member + "\n"))
-          case x: ImportHandler =>
-            maybeWrap(x.importedNames: _*)
-            code append (x.member + "\n")
-            currentImps ++= x.importedNames
+    def addLevelChangingImport() = code.append("import _root_.scala.tools.nsc.interpreter.$iw\n")
+    // Reusing a single temporary value when import from a line with multiple definitions.
+    val tempValLines = mutable.Set[Int]()
+    addLevelChangingImport()
+    for (ReqAndHandler(req, handler) <- reqsToUse) {
+      val objName = req.lineRep.readPathInstance
+      handler match {
+        case h: ImportHandler if checkHeader(h) =>
+          header.clear()
+          header append f"${h.member}%n"
+        // If the user entered an import, then just use it; add an import wrapping
+        // level if the import might conflict with some other import
+        case x: ImportHandler if x.importsWildcard =>
+          addLevelChangingImport()
+          code append (x.member + "\n")
+        case x: ImportHandler =>
+          addLevelChangingImport()
+          code append (x.member + "\n")
+          currentImps ++= x.importedNames
 
-          case x if isClassBased =>
-            for (imv <- x.definedNames) {
-              if (!currentImps.contains(imv)) {
-                x match {
-                  case _: ClassHandler =>
-                    code.append("import " + objName + req.accessPath + ".`" + imv + "`\n")
-                  case _ =>
-                    val valName = req.lineRep.packageName + req.lineRep.readName
-                    if (!tempValLines.contains(req.lineRep.lineId)) {
-                      code.append(s"val $valName = $objName\n")
-                      tempValLines += req.lineRep.lineId
-                    }
-                    code.append(s"import $valName${req.accessPath}.`$imv`;\n")
-                }
-                currentImps += imv
+        case x if isClassBased =>
+          for (imv <- x.definedNames) {
+            if (!currentImps.contains(imv)) {
+              x match {
+                case _: ClassHandler =>
+                  code.append("import " + objName + req.accessPath + ".`" + imv + "`\n")
+                case _ =>
+                  val valName = req.lineRep.packageName + req.lineRep.readName
+                  if (!tempValLines.contains(req.lineRep.lineId)) {
+                    code.append(s"val $valName = $objName\n")
+                    tempValLines += req.lineRep.lineId
+                  }
+                  code.append(s"import $valName${req.accessPath}.`$imv`;\n")
               }
+              currentImps += imv
             }
-          // For other requests, import each defined name.
-          // import them explicitly instead of with _, so that
-          // ambiguity errors will not be generated. Also, quote
-          // the name of the variable, so that we don't need to
-          // handle quoting keywords separately.
-          case x =>
-            for (sym <- x.definedSymbols) {
-              maybeWrap(sym.name)
-              code append s"import ${x.path}\n"
-              currentImps += sym.name
-            }
-        }
+          }
+        // For other requests, import each defined name.
+        // import them explicitly instead of with _, so that
+        // ambiguity errors will not be generated. Also, quote
+        // the name of the variable, so that we don't need to
+        // handle quoting keywords separately.
+        case x =>
+          for (sym <- x.definedSymbols) {
+            addLevelChangingImport()
+            code append s"import ${x.path}\n"
+            currentImps += sym.name
+          }
       }
     }
 

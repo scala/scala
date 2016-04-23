@@ -550,7 +550,7 @@ trait Namers extends MethodSynthesis {
             defSym andAlso (typer.permanentlyHiddenWarning(pos, to0, _))
           }
         }
-        if (!tree.symbol.isSynthetic && expr.symbol != null && !expr.symbol.isInterpreterWrapper) {
+        if (!tree.symbol.isSynthetic && expr.symbol != null) {
           if (base.member(from) != NoSymbol)
             check(to0)
           if (base.member(from.toTypeName) != NoSymbol)

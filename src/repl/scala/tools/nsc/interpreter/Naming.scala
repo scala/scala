@@ -16,7 +16,7 @@ import scala.util.matching.Regex
 trait Naming {
   def unmangle(str: String): String = {
     val ESC = '\u001b'
-    val cleaned = removeIWPackages(removeLineWrapper(str))
+    val cleaned = str.replaceAll(lineRegex, "")
     // Looking to exclude binary data which hoses the terminal, but
     // let through the subset of it we need, like whitespace and also
     // <ESC> for ansi codes.
@@ -37,16 +37,17 @@ trait Naming {
 
   // The two name forms this is catching are the two sides of this assignment:
   //
-  // $line3.$read.$iw.$iw.Bippy =
-  //   $line3.$read$$iw$$iw$Bippy@4a6a00ca
-  lazy val lineRegex = {
+  // $line3.$read.Bippy =
+  //   $line3.$read$Bippy@4a6a00ca
+  private lazy val lineRegex = {
     val sn = sessionNames
     val members = List(sn.read, sn.eval, sn.print) map Regex.quote mkString ("(?:", "|", ")")
     debugging("lineRegex")(Regex.quote(sn.line) + """\d+[./]""" + members + """[$.]""")
   }
 
-  private def removeLineWrapper(s: String) = s.replaceAll(lineRegex, "")
-  private def removeIWPackages(s: String)  = s.replaceAll("""\$iw[$.]""", "")
+  // Example input: $line3.$read$
+  private lazy val classNameRegex = (lineRegex + ".*").r
+  def isLineWrapperClassName(name: String): Boolean = classNameRegex.findFirstIn(name).nonEmpty
 
   trait SessionNames {
     // All values are configurable by passing e.g. -Dscala.repl.name.read=XXX
