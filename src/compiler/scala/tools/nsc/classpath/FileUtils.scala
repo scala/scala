@@ -63,7 +63,7 @@ object FileUtils {
 
   // probably it should match a pattern like [a-z_]{1}[a-z0-9_]* but it cannot be changed
   // because then some tests in partest don't pass
-  private def mayBeValidPackage(dirName: String): Boolean =
+  def mayBeValidPackage(dirName: String): Boolean =
     (dirName != "META-INF") && (dirName != "") && (dirName.charAt(0) != '.')
 
   def mkFileFilter(f: JFile => Boolean) = new FileFilter {

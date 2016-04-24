@@ -4,6 +4,7 @@
 package scala.tools.nsc.classpath
 
 import scala.reflect.io.{AbstractFile, VirtualDirectory}
+import scala.reflect.io.Path.string2path
 import scala.tools.nsc.Settings
 import FileUtils.AbstractFileOps
 import scala.tools.nsc.util.ClassPath
@@ -52,7 +53,10 @@ class ClassPathFactory(settings: Settings) {
   protected def classesInPathImpl(path: String, expand: Boolean) =
     for {
       file <- expandPath(path, expand)
-      dir <- Option(AbstractFile.getDirectory(file))
+      dir <- {
+        def asImage = if (file.endsWith(".jimage")) Some(AbstractFile.getFile(file)) else None
+        Option(AbstractFile.getDirectory(file)).orElse(asImage)
+      }
     } yield newClassPath(dir)
 
   private def createSourcePath(file: AbstractFile): ClassPath =
