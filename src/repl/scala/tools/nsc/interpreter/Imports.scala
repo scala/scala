@@ -183,7 +183,7 @@ trait Imports {
                   case _ =>
                     val valName = req.lineRep.packageName + req.lineRep.readName
                     if (!tempValLines.contains(req.lineRep.lineId)) {
-                      code.append(s"val $valName = $objName\n")
+                      code.append(s"val $valName: ${objName}.type = $objName\n")
                       tempValLines += req.lineRep.lineId
                     }
                     code.append(s"import $valName${req.accessPath}.`$imv`;\n")
