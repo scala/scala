@@ -377,6 +377,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ElidableMethodClass
     definitions.ImplicitNotFoundClass
     definitions.ImplicitAmbiguousClass
+    definitions.JUnitTestClass
     definitions.MigrationAnnotationClass
     definitions.ScalaStrictFPAttr
     definitions.SwitchClass
