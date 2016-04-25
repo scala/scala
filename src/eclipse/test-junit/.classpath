@@ -11,6 +11,7 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/partest-extras"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/scaladoc"/>
 	<classpathentry kind="var" path="SCALA_BASEDIR/build/deps/scaladoc/scala-xml_2.12.0-M4-1.0.5.jar"/>
+	<classpathentry kind="var" path="SCALA_BASEDIR/build/deps/junit/jol-core-0.5.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="output" path="build-test-junit"/>
 </classpath>

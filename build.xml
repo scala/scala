@@ -277,6 +277,7 @@ TODO:
       <property name="junit.version" value="4.12"/>
       <artifact:dependencies pathId="junit.classpath" filesetId="junit.fileset">
         <dependency groupId="junit" artifactId="junit" version="${junit.version}"/>
+        <dependency groupId="org.openjdk.jol" artifactId="jol-core" version="0.5"/>
       </artifact:dependencies>
       <copy-deps project="junit"/>
 
