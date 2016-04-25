@@ -101,52 +101,6 @@ trait ScaladocAnalyzer extends Analyzer {
 abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends SyntaxAnalyzer {
   import global._
 
-  class ScaladocJavaUnitParser(unit: CompilationUnit) extends {
-    override val in = new ScaladocJavaUnitScanner(unit)
-  } with JavaUnitParser(unit) { }
-
-  class ScaladocJavaUnitScanner(unit: CompilationUnit) extends JavaUnitScanner(unit) {
-    /** buffer for the documentation comment
-     */
-    var docBuffer: StringBuilder = null
-
-    /** add the given character to the documentation buffer
-     */
-    protected def putDocChar(c: Char) {
-      if (docBuffer ne null) docBuffer.append(c)
-    }
-
-    override protected def skipComment(): Boolean = {
-      if (in.ch == '/') {
-        do {
-          in.next
-        } while ((in.ch != CR) && (in.ch != LF) && (in.ch != SU))
-        true
-      } else if (in.ch == '*') {
-        docBuffer = null
-        in.next
-        val scaladoc = ("/**", "*/")
-        if (in.ch == '*')
-          docBuffer = new StringBuilder(scaladoc._1)
-        do {
-          do {
-            if (in.ch != '*' && in.ch != SU) {
-              in.next; putDocChar(in.ch)
-            }
-          } while (in.ch != '*' && in.ch != SU)
-          while (in.ch == '*') {
-            in.next; putDocChar(in.ch)
-          }
-        } while (in.ch != '/' && in.ch != SU)
-        if (in.ch == '/') in.next
-        else incompleteInputError("unclosed comment")
-        true
-      } else {
-        false
-      }
-    }
-  }
-
   class ScaladocUnitScanner(unit0: CompilationUnit, patches0: List[BracePatch]) extends UnitScanner(unit0, patches0) {
 
     private var docBuffer: StringBuilder = null        // buffer for comments (non-null while scanning)
@@ -257,6 +211,79 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
         joined
       }
       else trees
+    }
+  }
+
+  class ScaladocJavaUnitScanner(unit: CompilationUnit) extends JavaUnitScanner(unit) {
+
+    private val docBuffer: StringBuilder = new StringBuilder
+    private var inDocComment = false
+    private var docStart: Int = 0
+    private var lastDoc: DocComment = null
+
+    // get last doc comment
+    def flushDoc(): DocComment = try lastDoc finally lastDoc = null
+
+    override protected def putCommentChar(): Unit = {
+      if (inDocComment) docBuffer append in.ch
+      in.next
+    }
+
+    override protected def skipBlockComment(isDoc: Boolean): Unit = {
+      // condition is true when comment is entered the first time,
+      // i.e. immediately after "/*" and when current character is "*"
+      if (!inDocComment && isDoc) {
+        docBuffer append "/*"
+        docStart = currentPos.start
+        inDocComment = true
+      }
+      super.skipBlockComment(isDoc)
+    }
+
+    override protected def skipComment(): Boolean = {
+      val skipped = super.skipComment()
+      if (skipped && inDocComment) {
+        val raw = docBuffer.toString
+        val position = Position.range(unit.source, docStart, docStart, in.cpos)
+        lastDoc = DocComment(raw, position)
+        signalParsedDocComment(raw, position)
+        docBuffer.setLength(0) // clear buffer
+        inDocComment = false
+        true
+      } else {
+        skipped
+      }
+    }
+
+  }
+
+  class ScaladocJavaUnitParser(unit: CompilationUnit) extends {
+    override val in = new ScaladocJavaUnitScanner(unit)
+  } with JavaUnitParser(unit) {
+
+    override def joinComment(trees: => List[Tree]): List[Tree] = {
+      val doc = in.flushDoc()
+
+      if ((doc ne null) && doc.raw.length > 0) {
+        log(s"joinComment(doc=$doc)")
+        val joined = trees map { t =>
+          DocDef(doc, t) setPos {
+            if (t.pos.isDefined) {
+              val pos = doc.pos.withEnd(t.pos.end)
+              pos.makeTransparent
+            } else {
+              t.pos
+            }
+          }
+        }
+        joined.find(_.pos.isOpaqueRange) foreach { main =>
+          val mains = List(main)
+          joined foreach { t => if (t ne main) ensureNonOverlapping(t, mains) }
+        }
+        joined
+      } else {
+        trees
+      }
     }
   }
 }
