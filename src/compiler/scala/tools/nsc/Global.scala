@@ -13,7 +13,7 @@ import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, U
 import scala.collection.{immutable, mutable}
 import io.{AbstractFile, Path, SourceReader}
 import reporters.Reporter
-import util.{ClassFileLookup, StatisticsInfo, returning}
+import util.{ClassPath, StatisticsInfo, returning}
 import scala.reflect.ClassTag
 import scala.reflect.internal.util.{BatchSourceFile, NoSourceFile, ScalaClassLoader, ScriptSourceFile, SourceFile}
 import scala.reflect.internal.pickling.PickleBuffer
@@ -30,7 +30,6 @@ import backend.jvm.GenBCode
 import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath._
-import scala.tools.nsc.settings.ClassPathRepresentationType
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
     extends SymbolTable
@@ -54,7 +53,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: self.type = self
-    def rootLoader: LazyType = new loaders.PackageLoaderUsingFlatClassPath(FlatClassPath.RootPackage, flatClassPath)
+    def rootLoader: LazyType = new loaders.PackageLoader(ClassPath.RootPackage, classPath)
     override def toString = "compiler mirror"
   }
   implicit val MirrorTag: ClassTag[Mirror] = ClassTag[Mirror](classOf[GlobalMirror])
@@ -97,9 +96,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   type ThisPlatform = JavaPlatform { val global: Global.this.type }
   lazy val platform: ThisPlatform  = new GlobalPlatform
 
-  def classPath: ClassFileLookup = platform.flatClassPath
-
-  private def flatClassPath: FlatClassPath = platform.flatClassPath
+  def classPath: ClassPath = platform.classPath
 
   // sub-components --------------------------------------------------
 
@@ -758,9 +755,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** Extend classpath of `platform` and rescan updated packages. */
   def extendCompilerClassPath(urls: URL*): Unit = {
-    val urlClasspaths = urls.map(u => FlatClassPathFactory.newClassPath(AbstractFile.getURL(u), settings))
-    val newClassPath = AggregateFlatClassPath.createAggregate(platform.flatClassPath +: urlClasspaths : _*)
-    platform.currentFlatClassPath = Some(newClassPath)
+    val urlClasspaths = urls.map(u => ClassPathFactory.newClassPath(AbstractFile.getURL(u), settings))
+    val newClassPath = AggregateClassPath.createAggregate(platform.classPath +: urlClasspaths : _*)
+    platform.currentClassPath = Some(newClassPath)
     invalidateClassPathEntries(urls.map(_.getPath): _*)
   }
 
@@ -793,26 +790,26 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
    *                entries on the classpath.
    */
   def invalidateClassPathEntries(paths: String*): Unit = {
-    implicit object ClassPathOrdering extends Ordering[FlatClassPath] {
-      def compare(a: FlatClassPath, b: FlatClassPath): Int = a.asClassPathString compareTo b.asClassPathString
+    implicit object ClassPathOrdering extends Ordering[ClassPath] {
+      def compare(a: ClassPath, b: ClassPath): Int = a.asClassPathString compareTo b.asClassPathString
     }
     val invalidated, failed = new mutable.ListBuffer[ClassSymbol]
 
-    def assoc(path: String): Option[(FlatClassPath, FlatClassPath)] = {
-      def origin(lookup: ClassFileLookup): Option[String] = lookup match {
+    def assoc(path: String): Option[(ClassPath, ClassPath)] = {
+      def origin(lookup: ClassPath): Option[String] = lookup match {
         case cp: JFileDirectoryLookup[_] => Some(cp.dir.getPath)
         case cp: ZipArchiveFileLookup[_] => Some(cp.zipFile.getPath)
         case _ => None
       }
 
-      def entries(lookup: ClassFileLookup): Seq[FlatClassPath] = lookup match {
-        case cp: AggregateFlatClassPath => cp.aggregates
-        case cp: FlatClassPath => Seq(cp)
+      def entries(lookup: ClassPath): Seq[ClassPath] = lookup match {
+        case cp: AggregateClassPath => cp.aggregates
+        case cp: ClassPath => Seq(cp)
       }
 
       val dir = AbstractFile.getDirectory(path) // if path is a `jar`, this is a FileZipArchive (isDirectory is true)
       val canonical = dir.canonicalPath         // this is the canonical path of the .jar
-      def matchesCanonical(e: ClassFileLookup) = origin(e) match {
+      def matchesCanonical(e: ClassPath) = origin(e) match {
         case Some(opath) =>
           AbstractFile.getDirectory(opath).canonicalPath == canonical
         case None =>
@@ -820,7 +817,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
       entries(classPath) find matchesCanonical match {
         case Some(oldEntry) =>
-          Some(oldEntry -> FlatClassPathFactory.newClassPath(dir, settings))
+          Some(oldEntry -> ClassPathFactory.newClassPath(dir, settings))
         case None =>
           error(s"Error adding entry to classpath. During invalidation, no entry named $path in classpath $classPath")
           None
@@ -830,15 +827,15 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     if (subst.nonEmpty) {
       platform updateClassPath subst
       informProgress(s"classpath updated on entries [${subst.keys mkString ","}]")
-      def mkClassPath(elems: Iterable[FlatClassPath]): FlatClassPath =
+      def mkClassPath(elems: Iterable[ClassPath]): ClassPath =
         if (elems.size == 1) elems.head
-        else AggregateFlatClassPath.createAggregate(elems.toSeq: _*)
+        else AggregateClassPath.createAggregate(elems.toSeq: _*)
       val oldEntries = mkClassPath(subst.keys)
       val newEntries = mkClassPath(subst.values)
       classPath match {
-        case fcp: FlatClassPath => mergeNewEntriesFlat(
+        case cp: ClassPath => mergeNewEntries(
           RootClass, "",
-          oldEntries, newEntries, fcp,
+          oldEntries, newEntries, cp,
           invalidated, failed)
       }
     }
@@ -867,20 +864,19 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
    * Otherwise, sub-packages in newEntries are looked up in the symbol table (created if
    * non-existent) and the merge function is called recursively.
    */
-  private def mergeNewEntriesFlat(
-      packageClass: ClassSymbol, fullPackageName: String,
-      oldEntries: FlatClassPath, newEntries: FlatClassPath, fullClasspath: FlatClassPath,
-      invalidated: mutable.ListBuffer[ClassSymbol], failed: mutable.ListBuffer[ClassSymbol]): Unit = {
+  private def mergeNewEntries(packageClass: ClassSymbol, fullPackageName: String,
+                              oldEntries: ClassPath, newEntries: ClassPath, fullClasspath: ClassPath,
+                              invalidated: mutable.ListBuffer[ClassSymbol], failed: mutable.ListBuffer[ClassSymbol]): Unit = {
     ifDebug(informProgress(s"syncing $packageClass, $oldEntries -> $newEntries"))
 
-    def packageExists(cp: FlatClassPath): Boolean = {
+    def packageExists(cp: ClassPath): Boolean = {
       val (parent, _) = PackageNameUtils.separatePkgAndClassNames(fullPackageName)
       cp.packages(parent).exists(_.name == fullPackageName)
     }
 
     def invalidateOrRemove(pkg: ClassSymbol) = {
       if (packageExists(fullClasspath))
-        pkg setInfo new loaders.PackageLoaderUsingFlatClassPath(fullPackageName, fullClasspath)
+        pkg setInfo new loaders.PackageLoader(fullPackageName, fullClasspath)
       else
         pkg.owner.info.decls unlink pkg.sourceModule
       invalidated += pkg
@@ -898,9 +894,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         val (_, subPackageName) = PackageNameUtils.separatePkgAndClassNames(p.name)
         val subPackage = packageClass.info.decl(newTermName(subPackageName)) orElse {
           // package does not exist in symbol table, create a new symbol
-          loaders.enterPackage(packageClass, subPackageName, new loaders.PackageLoaderUsingFlatClassPath(p.name, fullClasspath))
+          loaders.enterPackage(packageClass, subPackageName, new loaders.PackageLoader(p.name, fullClasspath))
         }
-        mergeNewEntriesFlat(
+        mergeNewEntries(
           subPackage.moduleClass.asClass, p.name,
           oldEntries, newEntries, fullClasspath,
           invalidated, failed)

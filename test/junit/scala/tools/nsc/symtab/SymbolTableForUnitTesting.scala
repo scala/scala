@@ -3,11 +3,8 @@ package symtab
 
 import scala.reflect.ClassTag
 import scala.reflect.internal.{NoPhase, Phase, SomePhase}
-import scala.tools.nsc.classpath.FlatClassPath
-import scala.tools.nsc.settings.ClassPathRepresentationType
-import scala.tools.util.FlatClassPathResolver
 import scala.tools.util.PathResolver
-import util.{ClassFileLookup, ClassPath}
+import util.ClassPath
 import io.AbstractFile
 
 /**
@@ -30,7 +27,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
 
   override def isCompilerUniverse: Boolean = true
 
-  def flatClassPath: FlatClassPath = platform.flatClassPath
+  def classPath: ClassPath = platform.classPath
 
   object platform extends backend.Platform {
     val symbolTable: SymbolTableForUnitTesting.this.type = SymbolTableForUnitTesting.this
@@ -38,12 +35,12 @@ class SymbolTableForUnitTesting extends SymbolTable {
 
     def platformPhases: List[SubComponent] = Nil
 
-    private[nsc] lazy val flatClassPath: FlatClassPath = new FlatClassPathResolver(settings).result
+    private[nsc] lazy val classPath: ClassPath = new PathResolver(settings).result
 
     def isMaybeBoxed(sym: Symbol): Boolean = ???
     def needCompile(bin: AbstractFile, src: AbstractFile): Boolean = ???
     def externalEquals: Symbol = ???
-    def updateClassPath(subst: Map[FlatClassPath, FlatClassPath]): Unit = ???
+    def updateClassPath(subst: Map[ClassPath, ClassPath]): Unit = ???
   }
 
   object loaders extends symtab.SymbolLoaders {
@@ -58,7 +55,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: SymbolTableForUnitTesting.this.type = SymbolTableForUnitTesting.this
 
-    def rootLoader: LazyType = new loaders.PackageLoaderUsingFlatClassPath(FlatClassPath.RootPackage, flatClassPath)
+    def rootLoader: LazyType = new loaders.PackageLoader(ClassPath.RootPackage, classPath)
 
     override def toString = "compiler mirror"
   }

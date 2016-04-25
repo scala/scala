@@ -7,11 +7,9 @@ package scala.tools.nsc
 package backend
 
 import io.AbstractFile
-import scala.tools.nsc.classpath.{AggregateFlatClassPath, FlatClassPath}
-import scala.tools.nsc.settings.ClassPathRepresentationType
-import scala.tools.nsc.util.ClassFileLookup
-import scala.tools.util.FlatClassPathResolver
+import scala.tools.nsc.classpath.AggregateClassPath
 import scala.tools.util.PathResolver
+import scala.tools.nsc.util.ClassPath
 
 trait JavaPlatform extends Platform {
   val global: Global
@@ -19,20 +17,20 @@ trait JavaPlatform extends Platform {
   import global._
   import definitions._
 
-  private[nsc] var currentFlatClassPath: Option[FlatClassPath] = None
+  private[nsc] var currentClassPath: Option[ClassPath] = None
 
-  private[nsc] def flatClassPath: FlatClassPath = {
-    if (currentFlatClassPath.isEmpty) currentFlatClassPath = Some(new FlatClassPathResolver(settings).result)
-    currentFlatClassPath.get
+  private[nsc] def classPath: ClassPath = {
+    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings).result)
+    currentClassPath.get
   }
 
   /** Update classpath with a substituted subentry */
-  def updateClassPath(subst: Map[FlatClassPath, FlatClassPath]): Unit = global.classPath match {
-    case AggregateFlatClassPath(entries) =>
-      currentFlatClassPath = Some(AggregateFlatClassPath(entries map (e => subst.getOrElse(e, e))))
+  def updateClassPath(subst: Map[ClassPath, ClassPath]): Unit = global.classPath match {
+    case AggregateClassPath(entries) =>
+      currentClassPath = Some(AggregateClassPath(entries map (e => subst.getOrElse(e, e))))
 
-    case cp: FlatClassPath =>
-      currentFlatClassPath = Some(subst.getOrElse(cp, cp))
+    case cp: ClassPath =>
+      currentClassPath = Some(subst.getOrElse(cp, cp))
   }
 
   def platformPhases = List(

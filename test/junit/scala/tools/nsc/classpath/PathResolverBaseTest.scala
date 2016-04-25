@@ -9,20 +9,17 @@ import org.junit._
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import scala.annotation.tailrec
-import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.Settings
-import scala.tools.util.FlatClassPathResolver
 import scala.tools.util.PathResolver
 
 @RunWith(classOf[JUnit4])
-class FlatClassPathResolverTest {
+class PathResolverBaseTest {
 
   val tempDir = new TemporaryFolder()
 
-  private val packagesToTest = List(FlatClassPath.RootPackage, "scala", "scala.reflect", "scala.reflect.io")
-  private val classFilesToFind = List("scala.tools.util.FlatClassPathResolver",
+  private val packagesToTest = List(ClassPath.RootPackage, "scala", "scala.reflect", "scala.reflect.io")
+  private val classFilesToFind = List("scala.tools.util.PathResolver",
     "scala.reflect.io.AbstractFile",
     "scala.collection.immutable.List",
     "scala.Option",
@@ -60,7 +57,7 @@ class FlatClassPathResolverTest {
   def deleteTempDir: Unit = tempDir.delete()
 
   private def createFlatClassPath(settings: Settings) =
-    new FlatClassPathResolver(settings).result
+    new PathResolver(settings).result
 
   @Test
   def testEntriesFromListOperationAgainstSeparateMethods: Unit = {
@@ -70,7 +67,7 @@ class FlatClassPathResolverTest {
       val packages = classPath.packages(inPackage)
       val classes = classPath.classes(inPackage)
       val sources = classPath.sources(inPackage)
-      val FlatClassPathEntries(packagesFromList, classesAndSourcesFromList) = classPath.list(inPackage)
+      val ClassPathEntries(packagesFromList, classesAndSourcesFromList) = classPath.list(inPackage)
 
       val packageNames = packages.map(_.name).sorted
       val packageNamesFromList = packagesFromList.map(_.name).sorted

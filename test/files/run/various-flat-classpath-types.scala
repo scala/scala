@@ -5,7 +5,7 @@
 import java.io.{File => JFile, FileInputStream, FileOutputStream}
 import java.util.zip.{ZipEntry, ZipOutputStream}
 import scala.reflect.io.{Directory, File}
-import scala.tools.nsc.classpath.FlatClassPath.RootPackage
+import scala.tools.nsc.util.ClassPath.RootPackage
 import scala.tools.nsc.classpath.PackageNameUtils
 import scala.tools.nsc.io.Jar
 

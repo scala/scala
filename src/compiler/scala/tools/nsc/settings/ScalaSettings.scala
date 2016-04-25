@@ -388,8 +388,3 @@ trait ScalaSettings extends AbsScalaSettings
     None
   }
 }
-
-object ClassPathRepresentationType {
-  val Flat = "flat"
-  val Recursive = "recursive"
-}

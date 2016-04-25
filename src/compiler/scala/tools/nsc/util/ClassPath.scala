@@ -7,7 +7,7 @@
 package scala.tools.nsc
 package util
 
-import io.{ AbstractFile, Directory, File, Jar }
+import io.{AbstractFile, Directory, File, Jar}
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.regex.PatternSyntaxException
@@ -15,7 +15,54 @@ import java.util.regex.PatternSyntaxException
 import File.pathSeparator
 import Jar.isJarOrZip
 
+/**
+  * A representation of the compiler's class- or sourcepath.
+  */
+trait ClassPath {
+  import scala.tools.nsc.classpath._
+  def asURLs: Seq[URL]
+
+  /** Empty string represents root package */
+  private[nsc] def packages(inPackage: String): Seq[PackageEntry]
+  private[nsc] def classes(inPackage: String): Seq[ClassFileEntry]
+  private[nsc] def sources(inPackage: String): Seq[SourceFileEntry]
+
+  /** Allows to get entries for packages and classes merged with sources possibly in one pass. */
+  private[nsc] def list(inPackage: String): ClassPathEntries
+
+  /**
+    * It returns both classes from class file and source files (as our base ClassRepresentation).
+    * So note that it's not so strictly related to findClassFile.
+    */
+  def findClass(className: String): Option[ClassRepresentation] = {
+    // A default implementation which should be overridden, if we can create the more efficient
+    // solution for a given type of ClassPath
+    val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
+
+    val foundClassFromClassFiles = classes(pkg).find(_.name == simpleClassName)
+    def findClassInSources = sources(pkg).find(_.name == simpleClassName)
+
+    foundClassFromClassFiles orElse findClassInSources
+  }
+  def findClassFile(className: String): Option[AbstractFile]
+
+  def asClassPathStrings: Seq[String]
+
+  /** The whole classpath in the form of one String.
+    */
+  def asClassPathString: String = ClassPath.join(asClassPathStrings: _*)
+  // for compatibility purposes
+  @deprecated("Use asClassPathString instead of this one", "2.11.5")
+  def asClasspathString: String = asClassPathString
+
+  /** The whole sourcepath in the form of one String.
+    */
+  def asSourcePathString: String
+}
+
 object ClassPath {
+  val RootPackage = ""
+
   /** Expand single path entry */
   private def expandS(pattern: String): List[String] = {
     val wildSuffix = File.separator + "*"
@@ -54,7 +101,7 @@ object ClassPath {
   def expandDir(extdir: String): List[String] = {
     AbstractFile getDirectory extdir match {
       case null => Nil
-      case dir  => dir filter (_.isClassContainer) map (x => new java.io.File(dir.file, x.name) getPath) toList
+      case dir  => dir.filter(_.isClassContainer).map(x => new java.io.File(dir.file, x.name).getPath).toList
     }
   }
 
@@ -87,6 +134,12 @@ object ClassPath {
 
   @deprecated("Shim for sbt's compiler interface", since = "2.12")
   sealed abstract class JavaContext
+}
+
+trait ClassRepresentation {
+  def name: String
+  def binary: Option[AbstractFile]
+  def source: Option[AbstractFile]
 }
 
 @deprecated("Shim for sbt's compiler interface", since = "2.12")

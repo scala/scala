@@ -8,16 +8,16 @@ package tools.nsc
 package symtab
 package classfile
 
-import java.io.{ File, IOException }
+import java.io.{File, IOException}
 import java.lang.Integer.toHexString
-import scala.collection.{ mutable, immutable }
-import scala.collection.mutable.{ ListBuffer, ArrayBuffer }
+import scala.collection.{immutable, mutable}
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.annotation.switch
-import scala.reflect.internal.{ JavaAccFlags }
-import scala.reflect.internal.pickling.{PickleBuffer, ByteCodecs}
+import scala.reflect.internal.JavaAccFlags
+import scala.reflect.internal.pickling.{ByteCodecs, PickleBuffer}
 import scala.reflect.io.NoAbstractFile
+import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.ClassFileLookup
 
 /** This abstract class implements a class file parser.
  *
@@ -43,8 +43,8 @@ abstract class ClassfileParser {
    */
   protected def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol
 
-  /** The way of the class file lookup used by the compiler. */
-  def classFileLookup: ClassFileLookup
+  /** The compiler classpath. */
+  def classPath: ClassPath
 
   import definitions._
   import scala.reflect.internal.ClassfileConstants._
@@ -357,7 +357,7 @@ abstract class ClassfileParser {
   }
 
   private def loadClassSymbol(name: Name): Symbol = {
-    val file = classFileLookup findClassFile name.toString getOrElse {
+    val file = classPath findClassFile name.toString getOrElse {
       // SI-5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
       // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
       // that are not in their correct place (see bug for details)
@@ -1079,7 +1079,7 @@ abstract class ClassfileParser {
     for (entry <- innerClasses.entries) {
       // create a new class member for immediate inner classes
       if (entry.outerName == currentClass) {
-        val file = classFileLookup.findClassFile(entry.externalName.toString)
+        val file = classPath.findClassFile(entry.externalName.toString)
         enterClassAndModule(entry, file.getOrElse(NoAbstractFile))
       }
     }

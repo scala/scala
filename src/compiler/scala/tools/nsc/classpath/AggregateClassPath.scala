@@ -12,15 +12,16 @@ import scala.tools.nsc.util.ClassRepresentation
 
 /**
  * A classpath unifying multiple class- and sourcepath entries.
- * Flat classpath can obtain entries for classes and sources independently
+ * The Classpath can obtain entries for classes and sources independently
  * so it tries to do operations quite optimally - iterating only these collections
  * which are needed in the given moment and only as far as it's necessary.
+ *
  * @param aggregates classpath instances containing entries which this class processes
  */
-case class AggregateFlatClassPath(aggregates: Seq[FlatClassPath]) extends FlatClassPath {
+case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
   override def findClassFile(className: String): Option[AbstractFile] = {
     @tailrec
-    def find(aggregates: Seq[FlatClassPath]): Option[AbstractFile] =
+    def find(aggregates: Seq[ClassPath]): Option[AbstractFile] =
       if (aggregates.nonEmpty) {
         val classFile = aggregates.head.findClassFile(className)
         if (classFile.isDefined) classFile
@@ -32,7 +33,7 @@ case class AggregateFlatClassPath(aggregates: Seq[FlatClassPath]) extends FlatCl
 
   override def findClass(className: String): Option[ClassRepresentation] = {
     @tailrec
-    def findEntry(aggregates: Seq[FlatClassPath], isSource: Boolean): Option[ClassRepresentation] =
+    def findEntry(aggregates: Seq[ClassPath], isSource: Boolean): Option[ClassRepresentation] =
       if (aggregates.nonEmpty) {
         val entry = aggregates.head.findClass(className) match {
           case s @ Some(_: SourceFileEntry) if isSource => s
@@ -70,11 +71,11 @@ case class AggregateFlatClassPath(aggregates: Seq[FlatClassPath]) extends FlatCl
   override private[nsc] def sources(inPackage: String): Seq[SourceFileEntry] =
     getDistinctEntries(_.sources(inPackage))
 
-  override private[nsc] def list(inPackage: String): FlatClassPathEntries = {
+  override private[nsc] def list(inPackage: String): ClassPathEntries = {
     val (packages, classesAndSources) = aggregates.map(_.list(inPackage)).unzip
     val distinctPackages = packages.flatten.distinct
     val distinctClassesAndSources = mergeClassesAndSources(classesAndSources: _*)
-    FlatClassPathEntries(distinctPackages, distinctClassesAndSources)
+    ClassPathEntries(distinctPackages, distinctClassesAndSources)
   }
 
   /**
@@ -82,11 +83,11 @@ case class AggregateFlatClassPath(aggregates: Seq[FlatClassPath]) extends FlatCl
    * creates an entry containing both of them. If there would be more than one class or source
    * entries for the same class it always would use the first entry of each type found on a classpath.
    */
-  private def mergeClassesAndSources(entries: Seq[ClassRepClassPathEntry]*): Seq[ClassRepClassPathEntry] = {
+  private def mergeClassesAndSources(entries: Seq[ClassRepresentation]*): Seq[ClassRepresentation] = {
     // based on the implementation from MergedClassPath
     var count = 0
     val indices = collection.mutable.HashMap[String, Int]()
-    val mergedEntries = new ArrayBuffer[ClassRepClassPathEntry](1024)
+    val mergedEntries = new ArrayBuffer[ClassRepresentation](1024)
 
     for {
       partOfEntries <- entries
@@ -111,7 +112,7 @@ case class AggregateFlatClassPath(aggregates: Seq[FlatClassPath]) extends FlatCl
     mergedEntries.toIndexedSeq
   }
 
-  private def getDistinctEntries[EntryType <: ClassRepClassPathEntry](getEntries: FlatClassPath => Seq[EntryType]): Seq[EntryType] = {
+  private def getDistinctEntries[EntryType <: ClassRepresentation](getEntries: ClassPath => Seq[EntryType]): Seq[EntryType] = {
     val seenNames = collection.mutable.HashSet[String]()
     val entriesBuffer = new ArrayBuffer[EntryType](1024)
     for {
@@ -125,14 +126,14 @@ case class AggregateFlatClassPath(aggregates: Seq[FlatClassPath]) extends FlatCl
   }
 }
 
-object AggregateFlatClassPath {
-  def createAggregate(parts: FlatClassPath*): FlatClassPath = {
-    val elems = new ArrayBuffer[FlatClassPath]()
+object AggregateClassPath {
+  def createAggregate(parts: ClassPath*): ClassPath = {
+    val elems = new ArrayBuffer[ClassPath]()
     parts foreach {
-      case AggregateFlatClassPath(ps) => elems ++= ps
+      case AggregateClassPath(ps) => elems ++= ps
       case p => elems += p
     }
     if (elems.size == 1) elems.head
-    else AggregateFlatClassPath(elems.toIndexedSeq)
+    else AggregateClassPath(elems.toIndexedSeq)
   }
 }

@@ -6,9 +6,8 @@
 package scala.tools.nsc
 package backend
 
-import util.{ClassFileLookup, ClassPath}
 import io.AbstractFile
-import scala.tools.nsc.classpath.FlatClassPath
+import scala.tools.nsc.util.ClassPath
 
 /** The platform dependent pieces of Global.
  */
@@ -17,10 +16,10 @@ trait Platform {
   import symbolTable._
 
   /** The new implementation of compiler classpath. */
-  private[nsc] def flatClassPath: FlatClassPath
+  private[nsc] def classPath: ClassPath
 
   /** Update classpath with a substitution that maps entries to entries */
-  def updateClassPath(subst: Map[FlatClassPath, FlatClassPath])
+  def updateClassPath(subst: Map[ClassPath, ClassPath])
 
   /** Any platform-specific phases. */
   def platformPhases: List[SubComponent]

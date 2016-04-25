@@ -1,6 +1,5 @@
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.{ ILoop, replProps }
-import scala.tools.nsc.settings.ClassPathRepresentationType
 import scala.tools.partest._
 
 object Test extends StoreReporterDirectTest {

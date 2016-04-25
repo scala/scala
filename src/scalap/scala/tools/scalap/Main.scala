@@ -8,15 +8,12 @@
 package scala
 package tools.scalap
 
-import java.io.{ PrintStream, OutputStreamWriter, ByteArrayOutputStream }
+import java.io.{ByteArrayOutputStream, OutputStreamWriter, PrintStream}
 import scala.reflect.NameTransformer
 import scala.tools.nsc.Settings
-import scala.tools.nsc.classpath.AggregateFlatClassPath
-import scala.tools.nsc.classpath.FlatClassPathFactory
-import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.settings.ClassPathRepresentationType
-import scala.tools.nsc.util.ClassFileLookup
-import scala.tools.util.PathResolverFactory
+import scala.tools.nsc.classpath.{AggregateClassPath, ClassPathFactory}
+import scala.tools.nsc.util.ClassPath
+import scala.tools.util.PathResolver
 import scalax.rules.scalasig._
 
 /**The main object used to execute scalap on the command-line.
@@ -99,7 +96,7 @@ class Main {
   /** Executes scalap with the given arguments and classpath for the
    *  class denoted by `classname`.
    */
-  def process(args: Arguments, path: ClassFileLookup)(classname: String): Unit = {
+  def process(args: Arguments, path: ClassPath)(classname: String): Unit = {
     // find the classfile
     val encName = classname match {
       case "scala.AnyRef" => "java.lang.Object"
@@ -208,9 +205,9 @@ object Main extends Main {
 
   private def createClassPath(cpArg: Option[String], settings: Settings) = cpArg match {
     case Some(cp) =>
-      AggregateFlatClassPath(new FlatClassPathFactory(settings).classesInExpandedPath(cp))
+      AggregateClassPath(new ClassPathFactory(settings).classesInExpandedPath(cp))
     case _ =>
       settings.classpath.value = "." // include '.' in the default classpath SI-6669
-      PathResolverFactory.create(settings).result
+      new PathResolver(settings).result
   }
 }

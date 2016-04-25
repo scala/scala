@@ -7,7 +7,6 @@ package scala.tools.nsc.interpreter
 import scala.reflect.internal.util.RangePosition
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.backend.JavaPlatform
-import scala.tools.nsc.settings.ClassPathRepresentationType
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.{interactive, Settings}
 import scala.tools.nsc.reporters.StoreReporter
@@ -57,8 +56,8 @@ trait PresentationCompilation {
     */
   def newPresentationCompiler(): interactive.Global = {
     def mergedFlatClasspath = {
-      val replOutClasspath = FlatClassPathFactory.newClassPath(replOutput.dir, settings)
-      AggregateFlatClassPath(replOutClasspath :: global.platform.flatClassPath :: Nil)
+      val replOutClasspath = ClassPathFactory.newClassPath(replOutput.dir, settings)
+      AggregateClassPath(replOutClasspath :: global.platform.classPath :: Nil)
     }
     def copySettings: Settings = {
       val s = new Settings(_ => () /* ignores "bad option -nc" errors, etc */)
@@ -71,7 +70,7 @@ trait PresentationCompilation {
       override lazy val platform: ThisPlatform = {
         new JavaPlatform {
           val global: self.type = self
-          override private[nsc] lazy val flatClassPath: FlatClassPath = mergedFlatClasspath
+          override private[nsc] lazy val classPath: ClassPath = mergedFlatClasspath
         }
       }
     }

@@ -4,8 +4,9 @@ import scala.tools.nsc.util.ClassRepresentation
 import scala.reflect.io.{Path, PlainFile, VirtualDirectory, AbstractFile}
 import FileUtils._
 import java.net.URL
+import scala.tools.nsc.util.ClassPath
 
-case class VirtualDirectoryFlatClassPath(dir: VirtualDirectory) extends FlatClassPath with DirectoryLookup[ClassFileEntryImpl] with NoSourcePaths {
+case class VirtualDirectoryClassPath(dir: VirtualDirectory) extends ClassPath with DirectoryLookup[ClassFileEntryImpl] with NoSourcePaths {
   type F = AbstractFile
 
   protected def emptyFiles: Array[AbstractFile] = Array.empty
