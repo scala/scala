@@ -39,7 +39,6 @@ object Osgi {
     },
     packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), bundle).identityMap,
     // Also create OSGi source bundles:
-    artifact in (Compile, packageBin) ~= (_.copy(`type` = "bundle")),
     packageOptions in (Compile, packageSrc) += Package.ManifestAttributes(
       "Bundle-Name" -> (description.value + " Sources"),
       "Bundle-SymbolicName" -> (bundleSymbolicName.value + ".source"),
