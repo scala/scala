@@ -2856,8 +2856,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (samMatchesFunctionBasedOnArity(sam, vparams)) samToFunctionType(pt, sam)
           else pt.dealias
 
-        val ptNormSym        = ptNorm.typeSymbolDirect
-        val ptNormArgs       = ptNorm.typeArgs
+        val (ptNormSym, ptNormArgs) =
+          if (!settings.isScala211) (ptNorm.typeSymbolDirect, ptNorm.typeArgs)
+          else ptNorm baseType FunctionSymbol match { // for those relying on the hack in SI-6221 and can't switch to SAM
+            case TypeRef(_, FunctionSymbol, typeArgs) => (FunctionSymbol, typeArgs)
+            case _                                    => (NoSymbol, Nil)
+          }
+
         val expectedArgCount =
           // erroneous type or we're at erasure (we don't check arity nor infer argument types during erasure, as we already did so during typers)
           if (ptNormArgs.isEmpty) -1
