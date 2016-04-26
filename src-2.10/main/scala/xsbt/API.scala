@@ -14,8 +14,6 @@ object API {
 final class API(val global: CallbackGlobal) extends Compat {
   import global._
 
-  @inline def debug(msg: => String) = if (settings.verbose.value) inform(msg)
-
   def newPhase(prev: Phase) = new ApiPhase(prev)
   class ApiPhase(prev: Phase) extends GlobalPhase(prev) {
     override def description = "Extracts the public API from source files."
@@ -25,7 +23,7 @@ final class API(val global: CallbackGlobal) extends Compat {
         val start = System.currentTimeMillis
         super.run
         val stop = System.currentTimeMillis
-        debug("API phase took : " + ((stop - start) / 1000.0) + " s")
+        debuglog("API phase took : " + ((stop - start) / 1000.0) + " s")
       }
 
     def apply(unit: global.CompilationUnit): Unit = processUnit(unit)
@@ -33,7 +31,7 @@ final class API(val global: CallbackGlobal) extends Compat {
     def processUnit(unit: CompilationUnit) = if (!unit.isJava) processScalaUnit(unit)
     def processScalaUnit(unit: CompilationUnit): Unit = {
       val sourceFile = unit.source.file.file
-      debug("Traversing " + sourceFile)
+      debuglog("Traversing " + sourceFile)
       callback.startSource(sourceFile)
       val extractApi = new ExtractAPI[global.type](global, sourceFile)
       val traverser = new TopLevelHandler(extractApi)
@@ -43,7 +41,7 @@ final class API(val global: CallbackGlobal) extends Compat {
         val allUsedNames = extractUsedNames.extract(unit)
         def showUsedNames(className: String, names: Set[String]): String =
           s"$className:\n\t${names.mkString(", ")}"
-        debug("The " + sourceFile + " contains the following used names:\n" +
+        debuglog("The " + sourceFile + " contains the following used names:\n" +
           allUsedNames.map((showUsedNames _).tupled).mkString("\n"))
         allUsedNames foreach {
           case (className: String, names: Set[String]) =>
