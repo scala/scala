@@ -26,9 +26,7 @@ final class BackendReportingImpl(val global: Global) extends BackendReporting {
 /**
  * Utilities for error reporting.
  *
- * Defines some tools to make error reporting with Either easier. Would be subsumed by a right-biased
- * Either in the standard library (or scalaz \/) (Validation is different, it accumulates multiple
- * errors).
+ * Defines some utility methods to make error reporting with Either easier.
  */
 object BackendReporting {
   def methodSignature(classInternalName: InternalName, name: String, desc: String) = {
@@ -42,19 +40,12 @@ object BackendReporting {
   def assertionError(message: String): Nothing = throw new AssertionError(message)
 
   implicit class RightBiasedEither[A, B](val v: Either[A, B]) extends AnyVal {
-    def map[C](f: B => C): Either[A, C] = v.right.map(f)
-    def flatMap[C](f: B => Either[A, C]): Either[A, C] = v.right.flatMap(f)
     def withFilter(f: B => Boolean)(implicit empty: A): Either[A, B] = v match {
       case Left(_)  => v
       case Right(e) => if (f(e)) v else Left(empty) // scalaz.\/ requires an implicit Monoid m to get m.empty
     }
-    def foreach[U](f: B => U): Unit = v.right.foreach(f)
 
-    def getOrElse[C >: B](alt: => C): C = v.right.getOrElse(alt)
-
-    /**
-     * Get the value, fail with an assertion if this is an error.
-     */
+    /** Get the value, fail with an assertion if this is an error. */
     def get: B = {
       assert(v.isRight, v.left.get)
       v.right.get
