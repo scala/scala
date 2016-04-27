@@ -11,9 +11,8 @@ import java.util.{Collection => JCollection, List => JList}
 
 import _root_.jline.{console => jconsole}
 import jline.console.ConsoleReader
-import jline.console.completer.{CompletionHandler, Completer, ArgumentCompleter}
+import jline.console.completer.{CandidateListCompletionHandler, CompletionHandler, Completer, ArgumentCompleter}
 import jconsole.history.{History => JHistory}
-
 
 import scala.tools.nsc.interpreter
 import scala.tools.nsc.interpreter.{Completion, JLineCompletion, NoCompletion}
@@ -136,6 +135,9 @@ private class JLineConsoleReader extends jconsole.ConsoleReader with interpreter
           newCursor
         }
       }
+    getCompletionHandler match {
+      case clch: CandidateListCompletionHandler => clch.setPrintSpaceAfterFullCompletion(false)
+    }
 
     // a last bit of nastiness: parsing help depending on the flavor of completer (fixme)
     completion match {
