@@ -8,6 +8,8 @@ import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.CodeGenTools._
 import JavaConverters._
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils.isSynchronizedMethod
 import scala.tools.testing.ClearAfterClass
 
 object DefaultMethodTest extends ClearAfterClass.Clearable {
@@ -20,7 +22,7 @@ class DefaultMethodTest extends ClearAfterClass {
   val compiler = DefaultMethodTest.compiler
 
   @Test
-  def defaultMethodsViaGenBCode(): Unit = {
+  def defaultMethods(): Unit = {
     import compiler._
     val code = "package pack { trait T { def foo: Int }}"
     object makeFooDefaultMethod extends Transformer {
@@ -39,5 +41,20 @@ class DefaultMethodTest extends ClearAfterClass {
     assertTrue("default method body emitted", foo.instructions.size() > 0)
   }
 
-
+  @Test
+  def defaultMethodAccSynchronized(): Unit = {
+    import compiler._
+    val code = """
+        package pack { trait T {
+           def foo: String = synchronized(toString)
+           def bar(other: AnyRef): String = other.synchronized(toString)
+        }}
+      """
+    val asmClasses: List[ClassNode] = readAsmClasses(compile(compiler)(code, Nil))
+    val methods = asmClasses.head.methods.iterator.asScala.toList
+    def only[A](as: List[A]) = {assert(as.size == 1, as); as.head}
+    val List(foo, bar) = List("foo", "bar").map(n => only(methods.filter(_.name == n)))
+    assertTrue("self synchronized default method should be ACC_SYNCHRONIZED", isSynchronizedMethod(foo))
+    assertTrue("other synchronized default method should not be ACC_SYNCHRONIZED", !isSynchronizedMethod(bar))
+  }
 }
