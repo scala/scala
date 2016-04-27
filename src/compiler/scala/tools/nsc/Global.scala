@@ -394,15 +394,18 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
       if (settings.debug && (settings.verbose || currentRun.size < 5))
         inform("[running phase " + name + " on " + unit + "]")
+      if (!cancelled(unit)) {
+        currentRun.informUnitStarting(this, unit)
+        try withCurrentUnitNoLog(unit)(task)
+        finally currentRun.advanceUnit()
+      }
+    }
 
+    final def withCurrentUnitNoLog(unit: CompilationUnit)(task: => Unit) {
       val unit0 = currentUnit
       try {
         currentRun.currentUnit = unit
-        if (!cancelled(unit)) {
-          currentRun.informUnitStarting(this, unit)
-          task
-        }
-        currentRun.advanceUnit()
+        task
       } finally {
         //assert(currentUnit == unit)
         currentRun.currentUnit = unit0
