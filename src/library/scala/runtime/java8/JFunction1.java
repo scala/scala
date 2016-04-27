@@ -6,7 +6,7 @@
 package scala.runtime.java8;
 
 @FunctionalInterface
-public interface JFunction1<T1, R> extends scala.Function1<T1, R> {
+public interface JFunction1<T1, R> extends scala.Function1<T1, R>, java.io.Serializable {
     default void apply$mcVI$sp(int v1) {
         apply((T1) scala.runtime.BoxesRunTime.boxToInteger(v1));
     }

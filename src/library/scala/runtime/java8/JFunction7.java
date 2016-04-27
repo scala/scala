@@ -6,5 +6,5 @@
 package scala.runtime.java8;
 
 @FunctionalInterface
-public interface JFunction7<T1, T2, T3, T4, T5, T6, T7, R> extends scala.Function7<T1, T2, T3, T4, T5, T6, T7, R> {
+public interface JFunction7<T1, T2, T3, T4, T5, T6, T7, R> extends scala.Function7<T1, T2, T3, T4, T5, T6, T7, R>, java.io.Serializable {
 }
