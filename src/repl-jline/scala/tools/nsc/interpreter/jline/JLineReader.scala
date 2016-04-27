@@ -149,26 +149,6 @@ private class JLineConsoleReader extends jconsole.ConsoleReader with interpreter
       case _                  => this addCompleter completer
     }
 
-    // This is a workaround for https://github.com/jline/jline2/issues/208
-    // and should not be necessary once we upgrade to JLine 2.13.1
-    ///
-    // Test by:
-    // scala> {" ".char}<LEFT><TAB>
-    //
-    // And checking we don't get an extra } on the line.
-    ///
-    val handler = getCompletionHandler
-    setCompletionHandler(new CompletionHandler {
-      override def complete(consoleReader: ConsoleReader, list: JList[CharSequence], i: Int): Boolean = {
-        try {
-          handler.complete(consoleReader, list, i)
-        } finally if (getCursorBuffer.cursor != getCursorBuffer.length()) {
-          print(" ")
-          getCursorBuffer.write(' ')
-          backspace()
-        }
-      }
-    })
     setAutoprintThreshold(400) // max completion candidates without warning
   }
 }
