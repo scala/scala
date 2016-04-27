@@ -200,9 +200,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
    *  @return   A reversed priority queue.
    */
   def reverse = {
-    val revq = new PriorityQueue[A]()(new scala.math.Ordering[A] {
-      def compare(x: A, y: A) = ord.compare(y, x)
-    })
+    val revq = new PriorityQueue[A]()(ord.reverse)
     for (i <- 1 until resarr.length) revq += resarr(i)
     revq
   }
