@@ -10,7 +10,7 @@ package opt
 import scala.tools.asm
 import asm.tree._
 import scala.collection.JavaConverters._
-import scala.collection.concurrent
+import scala.collection.{concurrent, mutable}
 import scala.tools.asm.Attribute
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.io.AbstractFile
@@ -132,38 +132,135 @@ class ByteCodeRepository[BT <: BTypes](val classPath: ClassFileLookup[AbstractFi
    * The method node for a method matching `name` and `descriptor`, accessed in class `ownerInternalNameOrArrayDescriptor`.
    * The declaration of the method may be in one of the parents.
    *
-   * TODO: make sure we always return the right method, the one being invoked. write tests.
-   *   - if there's an abstract and a concrete one. could possibly somehow the abstract be returned?
-   *   - with traits and default methods, if there is more than one default method inherited and
-   *     no override: what should be returned? We should not just inline one of the two.
+   * Note that the JVM spec performs method lookup in two steps: resolution and selection.
+   *
+   * Method resolution, defined in jvms-5.4.3.3 and jvms-5.4.3.4, is the first step and is identical
+   * for all invocation styles (virtual, interface, special, static). If C is the receiver class
+   * in the invocation instruction:
+   *   1 find a matching method (name and descriptor) in C
+   *   2 then in C's superclasses
+   *   3 then find the maximally-specific matching superinterface methods, succeed if there's a
+   *     single non-abstract one. static and private methods in superinterfaces are not considered.
+   *   4 then pick a random non-static, non-private superinterface method.
+   *   5 then fail.
+   *
+   * Note that for an `invokestatic` instruction, a method reference `B.m` may resolve to `A.m`, if
+   * class `B` doesn't specify a matching method `m`, but the parent `A` does.
+   *
+   * Selection depends on the invocation style and is defined in jvms-6.5.
+   *   - invokestatic: invokes the resolved method
+   *   - invokevirtual / invokeinterface: searches for an override of the resolved method starting
+   *     at the dynamic receiver type. the search procedure is basically the same as in resolution,
+   *     but it fails at 4 instead of picking a superinterface method at random.
+   *   - invokespecial: if C is the receiver in the invocation instruction, searches for an override
+   *     of the resolved method starting at
+   *       - the superclass of the current class, if C is a superclass of the current class
+   *       - C otherwise
+   *     again, the search procedure is the same.
+   *
+   * In the method here we implement method *resolution*. Whether or not the returned method is
+   * actually invoked at runtime depends on the invocation instruction and the class hierarchy, so
+   * the users (e.g. the inliner) have to be aware of method selection.
+   *
+   * Note that the returned method may be abstract (ACC_ABSTRACT), native (ACC_NATIVE) or signature
+   * polymorphic (methods `invoke` and `invokeExact` in class `MehtodHandles`).
    *
    * @return The [[MethodNode]] of the requested method and the [[InternalName]] of its declaring
-   *         class, or an error message if the method could not be found.
+   *         class, or an error message if the method could not be found. An error message is also
+   *         returned if method resolution results in multiple default methods.
    */
   def methodNode(ownerInternalNameOrArrayDescriptor: String, name: String, descriptor: String): Either[MethodNotFound, (MethodNode, InternalName)] = {
-    // on failure, returns a list of class names that could not be found on the classpath
-    def methodNodeImpl(ownerInternalName: InternalName): Either[List[ClassNotFound], (MethodNode, InternalName)] = {
-      classNode(ownerInternalName) match {
-        case Left(e)  => Left(List(e))
-        case Right(c) =>
-          c.methods.asScala.find(m => m.name == name && m.desc == descriptor) match {
-            case Some(m) => Right((m, ownerInternalName))
-            case None    => findInParents(Option(c.superName) ++: c.interfaces.asScala.toList, Nil)
-          }
+    def findMethod(c: ClassNode): Option[MethodNode] = c.methods.asScala.find(m => m.name == name && m.desc == descriptor)
+
+    // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-2.html#jvms-2.9: "In Java SE 8, the only
+    // signature polymorphic methods are the invoke and invokeExact methods of the class MethodHandle.
+    def isSignaturePolymorphic(owner: InternalName) = owner == coreBTypes.jliMethodHandleRef.internalName && (name == "invoke" || name == "invokeExact")
+
+    // Note: if `owner` is an interface, in the first iteration we search for a matching member in the interface itself.
+    // If that fails, the recursive invocation checks in the superclass (which is Object) with `publicInstanceOnly == true`.
+    // This is specified in jvms-5.4.3.4: interface method resolution only returns public, non-static methods of Object.
+    def findInSuperClasses(owner: ClassNode, publicInstanceOnly: Boolean = false): Either[ClassNotFound, Option[(MethodNode, InternalName)]] = {
+      findMethod(owner) match {
+        case Some(m) if !publicInstanceOnly || (isPublicMethod(m) && !isStaticMethod(m)) => Right(Some((m, owner.name)))
+        case None =>
+          if (isSignaturePolymorphic(owner.name)) Right(Some((owner.methods.asScala.find(_.name == name).get, owner.name)))
+          else if (owner.superName == null) Right(None)
+          else classNode(owner.superName).flatMap(findInSuperClasses(_, isInterface(owner)))
       }
     }
 
-    // find the MethodNode in one of the parent classes
-    def findInParents(parents: List[InternalName], failedClasses: List[ClassNotFound]): Either[List[ClassNotFound], (MethodNode, InternalName)] = parents match {
-      case x :: xs => methodNodeImpl(x).left.flatMap(failed => findInParents(xs, failed ::: failedClasses))
-      case Nil     => Left(failedClasses)
+    def findInInterfaces(initialOwner: ClassNode): Either[ClassNotFound, Option[(MethodNode, InternalName)]] = {
+      val visited = mutable.Set.empty[InternalName]
+      val found = mutable.ListBuffer.empty[(MethodNode, ClassNode)]
+
+      def findIn(owner: ClassNode): Option[ClassNotFound] = {
+        for (i <- owner.interfaces.asScala if !visited(i)) classNode(i) match {
+          case Left(e) => return Some(e)
+          case Right(c) =>
+            visited += i
+            // abstract and static methods are excluded, see jvms-5.4.3.3
+            for (m <- findMethod(c) if !isPrivateMethod(m) && !isStaticMethod(m)) found += ((m, c))
+            val recusionResult = findIn(c)
+            if (recusionResult.isDefined) return recusionResult
+        }
+        None
+      }
+
+      findIn(initialOwner)
+
+      val result =
+        if (found.size <= 1) found.headOption
+        else {
+          val maxSpecific = found.filterNot({
+            case (method, owner) =>
+              isAbstractMethod(method) || {
+                val ownerTp = classBTypeFromClassNode(owner)
+                found exists {
+                  case (other, otherOwner) =>
+                    (other ne method) && {
+                      val otherTp = classBTypeFromClassNode(otherOwner)
+                      otherTp.isSubtypeOf(ownerTp).get
+                    }
+                }
+              }
+          })
+          // (*) note that if there's no single, non-abstract, maximally-specific method, the jvm
+          // method resolution (jvms-5.4.3.3) returns any of the non-private, non-static parent
+          // methods at random (abstract or concrete).
+          // we chose not to do this here, to prevent the inliner from potentially inlining the
+          // wrong method. in other words, we guarantee that a concrete method is only returned if
+          // it resolves deterministically.
+          // however, there may be multiple abstract methods inherited. in this case we *do* want
+          // to return a result to allow performing accessibility checks in the inliner. note that
+          // for accessibility it does not matter which of these methods is return, as they are all
+          // non-private (i.e., public, protected is not possible, jvms-4.1).
+          // the remaining case (when there's no max-specific method, but some non-abstract one)
+          // does not occur in bytecode generated by scalac or javac. we return no result in this
+          // case. this may at worst prevent some optimizations from happening.
+          if (maxSpecific.size == 1) maxSpecific.headOption
+          else if (found.forall(p => isAbstractMethod(p._1))) found.headOption // (*)
+          else None
+        }
+      Right(result.map(p => (p._1, p._2.name)))
     }
 
     // In a MethodInsnNode, the `owner` field may be an array descriptor, for example when invoking `clone`. We don't have a method node to return in this case.
-    if (ownerInternalNameOrArrayDescriptor.charAt(0) == '[')
-      Left(MethodNotFound(name, descriptor, ownerInternalNameOrArrayDescriptor, Nil))
-    else
-      methodNodeImpl(ownerInternalNameOrArrayDescriptor).left.map(MethodNotFound(name, descriptor, ownerInternalNameOrArrayDescriptor, _))
+    if (ownerInternalNameOrArrayDescriptor.charAt(0) == '[') {
+      Left(MethodNotFound(name, descriptor, ownerInternalNameOrArrayDescriptor, None))
+    } else {
+      def notFound(cnf: Option[ClassNotFound]) = Left(MethodNotFound(name, descriptor, ownerInternalNameOrArrayDescriptor, cnf))
+      val res: Either[ClassNotFound, Option[(MethodNode, InternalName)]] = classNode(ownerInternalNameOrArrayDescriptor).flatMap(c =>
+        findInSuperClasses(c) flatMap {
+          case None => findInInterfaces(c)
+          case res => Right(res)
+        }
+      )
+      res match {
+        case Left(e) => notFound(Some(e))
+        case Right(None) => notFound(None)
+        case Right(Some(res)) => Right(res)
+      }
+    }
   }
 
   private def parseClass(internalName: InternalName): Either[ClassNotFound, ClassNode] = {

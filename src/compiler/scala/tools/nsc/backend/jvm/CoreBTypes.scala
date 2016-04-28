@@ -107,6 +107,7 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
   lazy val juHashMapRef              : ClassBType = classBTypeFromSymbol(JavaUtilHashMap)           // java/util/HashMap
   lazy val sbScalaBeanInfoRef        : ClassBType = classBTypeFromSymbol(requiredClass[scala.beans.ScalaBeanInfo])
   lazy val jliSerializedLambdaRef    : ClassBType = classBTypeFromSymbol(requiredClass[java.lang.invoke.SerializedLambda])
+  lazy val jliMethodHandleRef        : ClassBType = classBTypeFromSymbol(requiredClass[java.lang.invoke.MethodHandle])
   lazy val jliMethodHandlesRef       : ClassBType = classBTypeFromSymbol(requiredClass[java.lang.invoke.MethodHandles])
   lazy val jliMethodHandlesLookupRef : ClassBType = classBTypeFromSymbol(exitingPickler(getRequiredClass("java.lang.invoke.MethodHandles.Lookup"))) // didn't find a reliable non-stringly-typed way that works for inner classes in the backend
   lazy val jliMethodTypeRef          : ClassBType = classBTypeFromSymbol(requiredClass[java.lang.invoke.MethodType])
@@ -320,6 +321,7 @@ trait CoreBTypesProxyGlobalIndependent[BTS <: BTypes] {
   def jliCallSiteRef            : ClassBType
   def jliMethodTypeRef          : ClassBType
   def jliSerializedLambdaRef    : ClassBType
+  def jliMethodHandleRef        : ClassBType
   def jliMethodHandlesLookupRef : ClassBType
   def srBoxesRunTimeRef         : ClassBType
   def srBoxedUnitRef            : ClassBType
@@ -383,6 +385,7 @@ final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: 
   def juHashMapRef              : ClassBType = _coreBTypes.juHashMapRef
   def sbScalaBeanInfoRef        : ClassBType = _coreBTypes.sbScalaBeanInfoRef
   def jliSerializedLambdaRef    : ClassBType = _coreBTypes.jliSerializedLambdaRef
+  def jliMethodHandleRef        : ClassBType = _coreBTypes.jliMethodHandleRef
   def jliMethodHandlesRef       : ClassBType = _coreBTypes.jliMethodHandlesRef
   def jliMethodHandlesLookupRef : ClassBType = _coreBTypes.jliMethodHandlesLookupRef
   def jliMethodTypeRef          : ClassBType = _coreBTypes.jliMethodTypeRef

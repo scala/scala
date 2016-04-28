@@ -103,12 +103,12 @@ class InlineWarningTest extends ClearAfterClass {
     val warns = List(
       """failed to determine if bar should be inlined:
         |The method bar()I could not be found in the class A or any of its parents.
-        |Note that the following parent classes are defined in Java sources (mixed compilation), no bytecode is available: A""".stripMargin,
+        |Note that the parent class A is defined in a Java source (mixed compilation), no bytecode is available.""".stripMargin,
 
       """B::flop()I is annotated @inline but could not be inlined:
         |Failed to check if B::flop()I can be safely inlined to B without causing an IllegalAccessError. Checking instruction INVOKESTATIC A.bar ()I failed:
         |The method bar()I could not be found in the class A or any of its parents.
-        |Note that the following parent classes are defined in Java sources (mixed compilation), no bytecode is available: A""".stripMargin)
+        |Note that the parent class A is defined in a Java source (mixed compilation), no bytecode is available.""".stripMargin)
 
     var c = 0
     val List(b) = compile(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; warns.tail.exists(i.msg contains _)})

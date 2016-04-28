@@ -206,6 +206,12 @@ object CodeGenTools {
     assert(actual == expected, s"\nFound   : ${quote(actual)}\nExpected: ${quote(expected)}")
   }
 
+  def assertNoIndy(m: Method): Unit = assertNoIndy(m.instructions)
+  def assertNoIndy(l: List[Instruction]) = {
+    val indy = l collect { case i: InvokeDynamic => i }
+    assert(indy.isEmpty, indy)
+  }
+
   def getSingleMethod(classNode: ClassNode, name: String): Method =
     convertMethod(classNode.methods.asScala.toList.find(_.name == name).get)
 
