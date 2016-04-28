@@ -113,7 +113,8 @@ trait Erasure {
 
     def apply(tp: Type): Type = tp match {
       case ConstantType(ct) =>
-        if (ct.tag == ClazzTag) ConstantType(Constant(apply(ct.typeValue)))
+        // erase classOf[List[_]] to classOf[List]. special case for classOf[Unit], avoid erasing to classOf[BoxedUnit].
+        if (ct.tag == ClazzTag && ct.typeValue.typeSymbol != UnitClass) ConstantType(Constant(apply(ct.typeValue)))
         else tp
       case st: ThisType if st.sym.isPackageClass =>
         tp
@@ -165,7 +166,7 @@ trait Erasure {
 
   /**   The erasure |T| of a type T. This is:
    *
-   *   - For a constant type, itself.
+   *   - For a constant type classOf[T], classOf[|T|], unless T is Unit. For any other constant type, itself.
    *   - For a type-bounds structure, the erasure of its upper bound.
    *   - For every other singleton type, the erasure of its supertype.
    *   - For a typeref scala.Array+[T] where T is an abstract type, AnyRef.
