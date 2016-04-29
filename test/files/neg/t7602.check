@@ -1,5 +1,5 @@
-t7602.scala:16: error: method foo is defined twice
-  conflicting symbols both originated in file 't7602.scala'
+t7602.scala:16: error: method foo is defined twice;
+  the conflicting method foo was defined at line 15:7
   def foo : Device
       ^
 one error found

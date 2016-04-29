@@ -1,16 +1,16 @@
 t800.scala:4: error: qualification is already defined as value qualification
   val qualification = false;
       ^
-t800.scala:8: error: method qualification is defined twice
-  conflicting symbols both originated in file 't800.scala'
+t800.scala:8: error: value qualification is defined twice;
+  the conflicting variable qualification was defined at line 7:7
   val qualification = false;
       ^
-t800.scala:12: error: value qualification is defined twice
-  conflicting symbols both originated in file 't800.scala'
+t800.scala:12: error: variable qualification is defined twice;
+  the conflicting value qualification was defined at line 11:7
   var qualification = false;
       ^
-t800.scala:16: error: method qualification is defined twice
-  conflicting symbols both originated in file 't800.scala'
+t800.scala:16: error: variable qualification is defined twice;
+  the conflicting variable qualification was defined at line 15:7
   var qualification = false;
       ^
 four errors found

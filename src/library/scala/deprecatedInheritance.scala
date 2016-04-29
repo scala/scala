@@ -8,6 +8,8 @@
 
 package scala
 
+import scala.annotation.meta._
+
 /** An annotation that designates that inheriting from a class is deprecated.
  *
  *  This is usually done to warn about a non-final class being made final in a future version.
@@ -35,4 +37,5 @@ package scala
  *  @see    [[scala.deprecatedOverriding]]
  *  @see    [[scala.deprecatedName]]
  */
+@getter @setter @beanGetter @beanSetter
 class deprecatedInheritance(message: String = "", since: String = "") extends scala.annotation.StaticAnnotation

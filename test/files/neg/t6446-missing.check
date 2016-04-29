@@ -11,17 +11,18 @@ superaccessors   6  add super accessors in traits and nested classes
        pickler   8  serialize symbol tables
      refchecks   9  reference/override checking, translate nested objects
        uncurry  10  uncurry, translate function values to anonymous classes
-     tailcalls  11  replace tail calls by jumps
-    specialize  12  @specialized-driven class and method specialization
- explicitouter  13  this refs to outer pointers
-       erasure  14  erase types, add interfaces for traits
-   posterasure  15  clean up erased inline classes
-      lazyvals  16  allocate bitmaps, translate lazy vals into lazified defs
-    lambdalift  17  move nested functions to top level
-  constructors  18  move field definitions into constructors
-       flatten  19  eliminate inner classes
-         mixin  20  mixin composition
-       cleanup  21  platform-specific cleanups, generate reflective calls
-    delambdafy  22  remove lambdas
-           jvm  23  generate JVM bytecode
-      terminal  24  the last phase during a compilation run
+        fields  11  synthesize accessors and fields
+     tailcalls  12  replace tail calls by jumps
+    specialize  13  @specialized-driven class and method specialization
+ explicitouter  14  this refs to outer pointers
+       erasure  15  erase types, add interfaces for traits
+   posterasure  16  clean up erased inline classes
+      lazyvals  17  allocate bitmaps, translate lazy vals into lazified defs
+    lambdalift  18  move nested functions to top level
+  constructors  19  move field definitions into constructors
+       flatten  20  eliminate inner classes
+         mixin  21  mixin composition
+       cleanup  22  platform-specific cleanups, generate reflective calls
+    delambdafy  23  remove lambdas
+           jvm  24  generate JVM bytecode
+      terminal  25  the last phase during a compilation run

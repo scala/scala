@@ -133,12 +133,14 @@ trait TypeDiagnostics {
     alternatives(tree) map (x => "  " + methodTypeErrorString(x)) mkString ("", " <and>\n", "\n")
 
   /** The symbol which the given accessor represents (possibly in part).
-   *  This is used for error messages, where we want to speak in terms
-   *  of the actual declaration or definition, not in terms of the generated setters
-   *  and getters.
-   */
+    * This is used for error messages, where we want to speak in terms
+    * of the actual declaration or definition, not in terms of the generated setters
+    * and getters.
+    *
+    * TODO: is it wise to create new symbols simply to generate error message? is this safe in interactive/resident mode?
+    */
   def underlyingSymbol(member: Symbol): Symbol =
-    if (!member.hasAccessorFlag) member
+    if (!member.hasAccessorFlag || member.owner.isTrait) member
     else if (!member.isDeferred) member.accessed
     else {
       val getter = if (member.isSetter) member.getterIn(member.owner) else member
@@ -532,8 +534,8 @@ trait TypeDiagnostics {
           val what = (
             if (sym.isDefaultGetter) "default argument"
             else if (sym.isConstructor) "constructor"
-            else if (sym.isVar || sym.isGetter && sym.accessed.isVar) "var"
-            else if (sym.isVal || sym.isGetter && sym.accessed.isVal || sym.isLazy) "val"
+            else if (sym.isVar || sym.isGetter && (sym.accessed.isVar || (sym.owner.isTrait && !sym.hasFlag(STABLE)))) "var"
+            else if (sym.isVal || sym.isGetter && (sym.accessed.isVal || (sym.owner.isTrait && sym.hasFlag(STABLE))) || sym.isLazy) "val"
             else if (sym.isSetter) "setter"
             else if (sym.isMethod) "method"
             else if (sym.isModule) "object"

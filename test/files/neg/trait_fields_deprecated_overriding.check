@@ -1,0 +1,6 @@
+trait_fields_deprecated_overriding.scala:8: warning: overriding value x in trait DeprecatedOverriding is deprecated
+  override val x = 2
+               ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

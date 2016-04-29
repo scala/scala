@@ -1,0 +1,4 @@
+val_sig_infer_struct.scala:7: error: value foo is not a member of Object
+  def bar = f.foo
+              ^
+one error found

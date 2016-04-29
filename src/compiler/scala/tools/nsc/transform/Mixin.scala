@@ -45,8 +45,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *     methods in the impl class (because they can have arbitrary initializers)
    */
   private def isImplementedStatically(sym: Symbol) = (
-       sym.isMethod
-    && (!sym.hasFlag(DEFERRED | SUPERACCESSOR) || (sym hasFlag lateDEFERRED))
+    sym.isMethod
+    && notDeferredOrLate(sym)
     && sym.owner.isTrait
     && (!sym.isModule || sym.hasFlag(PRIVATE | LIFTED))
     && (!(sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isLazy)
@@ -109,22 +109,24 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
 // --------- type transformation -----------------------------------------------
 
-  def isConcreteAccessor(member: Symbol) =
-    member.hasAccessorFlag && (!member.isDeferred || (member hasFlag lateDEFERRED))
+  private def notDeferredOrLate(sym: Symbol) = !sym.hasFlag(DEFERRED) || sym.hasFlag(lateDEFERRED)
 
   /** Is member overridden (either directly or via a bridge) in base class sequence `bcs`? */
   def isOverriddenAccessor(member: Symbol, bcs: List[Symbol]): Boolean = beforeOwnPhase {
     def hasOverridingAccessor(clazz: Symbol) = {
       clazz.info.nonPrivateDecl(member.name).alternatives.exists(
         sym =>
-          isConcreteAccessor(sym) &&
+          sym.hasFlag(ACCESSOR) &&
           !sym.hasFlag(MIXEDIN) &&
+          notDeferredOrLate(sym) &&
           matchesType(sym.tpe, member.tpe, alwaysMatchSimple = true))
     }
     (    bcs.head != member.owner
       && (hasOverridingAccessor(bcs.head) || isOverriddenAccessor(member, bcs.tail))
     )
   }
+
+  private def isUnitGetter(sym: Symbol) = sym.tpe.resultType.typeSymbol == UnitClass
 
   /** Add given member to given class, and mark member as mixed-in.
    */
@@ -198,6 +200,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
       clazz.info // make sure info is up to date, so that implClass is set.
 
+      // TODO: is this needed? can there be fields in a class that don't have accessors yet but need them???
+      // can we narrow this down to just getters for lazy vals? param accessors?
       for (member <- clazz.info.decls) {
         if (!member.isMethod && !member.isModule && !member.isModuleVar) {
           assert(member.isTerm && !member.isDeferred, member)
@@ -293,49 +297,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     def mixinTraitMembers(mixinClass: Symbol) {
       // For all members of a trait's interface do:
       for (mixinMember <- mixinClass.info.decls) {
-        if (isConcreteAccessor(mixinMember)) {
-          if (isOverriddenAccessor(mixinMember, clazz.info.baseClasses))
-            devWarning(s"Overridden concrete accessor: ${mixinMember.fullLocationString}")
-          else {
-            // mixin field accessors
-            val mixedInAccessor = cloneAndAddMixinMember(mixinClass, mixinMember)
-            if (mixinMember.isLazy) {
-              initializer(mixedInAccessor) = (
-                mixinClass.info.decl(mixinMember.name)
-                  orElse abort("Could not find initializer for " + mixinMember.name)
-              )
-            }
-            if (!mixinMember.isSetter)
-              mixinMember.tpe match {
-                case MethodType(Nil, ConstantType(_)) =>
-                  // mixinMember is a constant; only getter is needed
-                  ;
-                case MethodType(Nil, TypeRef(_, UnitClass, _)) =>
-                  // mixinMember is a value of type unit. No field needed
-                  ;
-                case _ => // otherwise mixin a field as well
-                  // enteringPhase: the private field is moved to the implementation class by erasure,
-                  // so it can no longer be found in the mixinMember's owner (the trait)
-                  val accessed = enteringPickler(mixinMember.accessed)
-                  // #3857, need to retain info before erasure when cloning (since cloning only
-                  // carries over the current entry in the type history)
-                  val sym = enteringErasure {
-                    // so we have a type history entry before erasure
-                    clazz.newValue(mixinMember.localName, mixinMember.pos).setInfo(mixinMember.tpe.resultType)
-                  }
-                  sym updateInfo mixinMember.tpe.resultType // info at current phase
-
-                  val newFlags = (
-                      ( PrivateLocal )
-                    | ( mixinMember getFlag MUTABLE | LAZY)
-                    | ( if (mixinMember.hasStableFlag) 0 else MUTABLE )
-                  )
-
-                  addMember(clazz, sym setFlag newFlags setAnnotations accessed.annotations)
-              }
-          }
-        }
-        else if (mixinMember.isSuperAccessor) { // mixin super accessors
+        if (mixinMember.hasFlag(SUPERACCESSOR)) { // mixin super accessors
           val superAccessor = addMember(clazz, mixinMember.cloneSymbol(clazz)) setPos clazz.pos
           assert(superAccessor.alias != NoSymbol, superAccessor)
 
@@ -347,9 +309,52 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
               superAccessor.asInstanceOf[TermSymbol] setAlias alias1
           }
         }
-        else if (mixinMember.isMethod && mixinMember.isModule && mixinMember.hasNoFlags(LIFTED | BRIDGE)) {
+        else if (mixinMember.hasAllFlags(METHOD | MODULE) && mixinMember.hasNoFlags(LIFTED | BRIDGE)) {
           // mixin objects: todo what happens with abstract objects?
           addMember(clazz, mixinMember.cloneSymbol(clazz, mixinMember.flags & ~(DEFERRED | lateDEFERRED)) setPos clazz.pos)
+        }
+        else if (mixinMember.hasFlag(ACCESSOR) && notDeferredOrLate(mixinMember)
+                 && (mixinMember hasFlag (LAZY | PARAMACCESSOR))
+                 && !isOverriddenAccessor(mixinMember, clazz.info.baseClasses)) {
+          // pick up where `fields` left off -- it already mixed in fields and accessors for regular vals.
+          // but has ignored lazy vals and constructor parameter accessors
+          // TODO: captures added by lambdalift for local traits?
+          //
+          // mixin accessor for lazy val or constructor parameter
+          // (note that a paramaccessor cannot have a constant type as it must have a user-defined type)
+          val mixedInAccessor = cloneAndAddMixinMember(mixinClass, mixinMember)
+          val name = mixinMember.name
+
+          if (mixinMember.isLazy)
+            initializer(mixedInAccessor) =
+              (mixinClass.info.decl(name) orElse abort(s"Could not find initializer for lazy val $name!"))
+
+          // Add field while we're mixing in the getter (unless it's a Unit-typed lazy val)
+          //
+          // lazy val of type Unit doesn't need a field -- the bitmap is enough.
+          // TODO: constant-typed lazy vals... it's an extreme corner case, but we could also suppress the field in:
+          // `trait T { final lazy val a = "a" }; class C extends T`, but who writes code like that!? :)
+          // we'd also have to change the lazyvals logic if we do this
+          if (!nme.isSetterName(name) && !(mixinMember.isLazy && isUnitGetter(mixinMember))) {
+            // enteringPhase: the private field is moved to the implementation class by erasure,
+            // so it can no longer be found in the mixinMember's owner (the trait)
+            val accessed = enteringPickler(mixinMember.accessed)
+            // #3857, need to retain info before erasure when cloning (since cloning only
+            // carries over the current entry in the type history)
+            val sym = enteringErasure {
+              // so we have a type history entry before erasure
+              clazz.newValue(mixinMember.localName, mixinMember.pos).setInfo(mixinMember.tpe.resultType)
+            }
+            sym updateInfo mixinMember.tpe.resultType // info at current phase
+
+            val newFlags = (
+              (PrivateLocal)
+              | (mixinMember getFlag MUTABLE | LAZY)
+              | (if (mixinMember.hasStableFlag) 0 else MUTABLE)
+              )
+
+            addMember(clazz, sym setFlag newFlags setAnnotations accessed.annotations)
+          }
         }
       }
     }
@@ -470,11 +475,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
           tree
 
-        case _ =>
-          if (currentOwner.isTrait && sym.isSetter && !enteringPickler(sym.isDeferred)) {
-            sym.addAnnotation(TraitSetterAnnotationClass)
-          }
-          tree
+        case _ => tree
       }
     }
 
@@ -758,13 +759,12 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       def addCheckedGetters(clazz: Symbol, stats: List[Tree]): List[Tree] = {
         def dd(stat: DefDef) = {
           val sym     = stat.symbol
-          def isUnit  = sym.tpe.resultType.typeSymbol == UnitClass
           def isEmpty = stat.rhs == EmptyTree
 
           if (!clazz.isTrait && sym.isLazy && !isEmpty) {
             assert(fieldOffset contains sym, sym)
             deriveDefDef(stat) {
-              case t if isUnit => mkLazyDef(clazz, sym, List(t), UNIT, fieldOffset(sym))
+              case t if isUnitGetter(sym) => mkLazyDef(clazz, sym, List(t), UNIT, fieldOffset(sym))
 
               case Block(stats, res) =>
                 mkLazyDef(clazz, sym, stats, Select(This(clazz), res.symbol), fieldOffset(sym))
@@ -776,8 +776,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             assert(fieldOffset contains sym, sym)
             deriveDefDef(stat)(rhs =>
               (mkCheckedAccessor(clazz, _: Tree, fieldOffset(sym), stat.pos, sym))(
-                if (sym.tpe.resultType.typeSymbol == UnitClass) UNIT
-                else rhs
+                if (isUnitGetter(sym)) UNIT else rhs
               )
             )
           }
@@ -903,7 +902,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         }
       }
 
-      def isUnitGetter(getter: Symbol) = getter.tpe.resultType.typeSymbol == UnitClass
       def fieldAccess(accessor: Symbol) = Select(This(clazz), accessor.accessed)
 
       def isOverriddenSetter(sym: Symbol) =
@@ -919,7 +917,12 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           addDefDef(sym)
         } else {
           // if class is not a trait add accessor definitions
-          if (isConcreteAccessor(sym)) {
+          // used to include `sym` with `sym hasFlag lateDEFERRED` as not deferred,
+          // but I don't think MIXEDIN members ever get this flag
+          assert(!sym.hasFlag(lateDEFERRED), s"mixedin $sym from $clazz has lateDEFERRED flag?!")
+          if (sym.hasFlag(ACCESSOR) && !sym.hasFlag(DEFERRED)) {
+            assert(sym hasFlag (LAZY | PARAMACCESSOR), s"mixed in $sym from $clazz is not lazy/param?!?")
+
             // add accessor definitions
             addDefDef(sym, {
               if (sym.isSetter) {

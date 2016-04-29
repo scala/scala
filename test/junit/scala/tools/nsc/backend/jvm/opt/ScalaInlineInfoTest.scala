@@ -113,7 +113,7 @@ class ScalaInlineInfoTest extends BytecodeTesting {
       "x3_$eq(I)V"                            -> MethodInlineInfo(false,false,false),
       "x4$lzycompute()I"                      -> MethodInlineInfo(true ,false,false),
       "x4()I"                                 -> MethodInlineInfo(false,false,false),
-      "x5()I"                                 -> MethodInlineInfo(true ,false,false),
+//      "x5()I"                                 -> MethodInlineInfo(true ,false,false), -- there is no x5 in the class as it's implemented fully in the interface
       "T$$super$toString()Ljava/lang/String;" -> MethodInlineInfo(true ,false,false),
       "<init>()V"                             -> MethodInlineInfo(false,false,false)),
       None)

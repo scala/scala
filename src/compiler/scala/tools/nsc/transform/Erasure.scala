@@ -1151,6 +1151,8 @@ abstract class Erasure extends AddInterfaces
               treeCopy.ArrayValue(
                 tree1, elemtpt setType specialScalaErasure.applyInArray(elemtpt.tpe), trees map transform).clearType()
             case DefDef(_, _, _, _, tpt, _) =>
+              fields.dropFieldAnnotationsFromGetter(tree.symbol) // TODO: move this in some post-processing transform in the fields phase?
+
               try super.transform(tree1).clearType()
               finally tpt setType specialErasure(tree1.symbol)(tree1.symbol.tpe).resultType
             case ApplyDynamic(qual, Literal(Constant(boostrapMethodRef: Symbol)) :: _) =>

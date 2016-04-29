@@ -8,7 +8,7 @@ initialized y: lazy val y: Int
 uninitialized z: def z: <?>
 initialized z: def z: Int
 uninitialized t: def t: <?>
-initialized t: def t[T <: Int](x: D)(y: x.W): Int
+initialized t: def t[T <: <?>](x: D)(y: x.W): Int
 uninitialized W: type W = String
 initialized W: type W = String
 uninitialized C: class C extends 
