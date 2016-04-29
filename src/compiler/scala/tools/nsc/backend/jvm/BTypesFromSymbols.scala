@@ -549,7 +549,10 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       if (classSym.isEffectivelyFinal) None
       else {
         // Phase travel necessary. For example, nullary methods (getter of an abstract val) get an
-        // empty parameter list in later phases and would therefore be picked as SAM.
+        // empty parameter list in uncurry and would therefore be picked as SAM.
+        // Similarly, the fields phases adds abstract trait setters, which should not be considered
+        // abstract for SAMs (they do disqualify the SAM from LMF treatment,
+        // but an anonymous subclasss can be spun up by scalac after making just the single abstract method concrete)
         val samSym = exitingPickler(definitions.samOf(classSym.tpe))
         if (samSym == NoSymbol) None
         else Some(samSym.javaSimpleName.toString + methodBTypeFromSymbol(samSym).descriptor)
@@ -724,7 +727,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       (((sym.rawflags & symtab.Flags.FINAL) != 0) || isTopLevelModuleClass(sym))
         && !sym.enclClass.isTrait
         && !sym.isClassConstructor
-        && !sym.isMutable // lazy vals and vars both
+        && (!sym.isMutable || nme.isTraitSetterName(sym.name)) // lazy vals and vars and their setters cannot be final, but trait setters are
       )
 
     // Primitives are "abstract final" to prohibit instantiation

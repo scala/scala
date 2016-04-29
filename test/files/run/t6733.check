@@ -2,23 +2,22 @@ method $init$: isPrivateThis = false, isProtectedThis = false
 value pri1a: isPrivateThis = true, isProtectedThis = false
 method pri2a: isPrivateThis = true, isProtectedThis = false
 variable pri3a: isPrivateThis = true, isProtectedThis = false
-value pri4a: isPrivateThis = true, isProtectedThis = false
+variable pri3a: isPrivateThis = true, isProtectedThis = false
+lazy value pri4a: isPrivateThis = true, isProtectedThis = false
 lazy value pri4a: isPrivateThis = true, isProtectedThis = false
 type Pri5a: isPrivateThis = true, isProtectedThis = false
 class Pri6: isPrivateThis = true, isProtectedThis = false
 trait Pri7: isPrivateThis = true, isProtectedThis = false
 object Pri8: isPrivateThis = true, isProtectedThis = false
 value pro1a: isPrivateThis = false, isProtectedThis = true
-value pro1a: isPrivateThis = true, isProtectedThis = false
 value pro1b: isPrivateThis = false, isProtectedThis = true
 method pro2a: isPrivateThis = false, isProtectedThis = true
 method pro2b: isPrivateThis = false, isProtectedThis = true
-method pro3a: isPrivateThis = false, isProtectedThis = true
-method pro3a_=: isPrivateThis = false, isProtectedThis = true
-variable pro3a: isPrivateThis = true, isProtectedThis = false
-method pro3b: isPrivateThis = false, isProtectedThis = true
-method pro3b_=: isPrivateThis = false, isProtectedThis = true
-value pro4a: isPrivateThis = false, isProtectedThis = true
+variable pro3a: isPrivateThis = false, isProtectedThis = true
+variable pro3a: isPrivateThis = false, isProtectedThis = true
+variable pro3b: isPrivateThis = false, isProtectedThis = true
+variable pro3b: isPrivateThis = false, isProtectedThis = true
+lazy value pro4a: isPrivateThis = false, isProtectedThis = true
 lazy value pro4a: isPrivateThis = true, isProtectedThis = false
 type Pro5a: isPrivateThis = false, isProtectedThis = true
 type Pro5b: isPrivateThis = false, isProtectedThis = true

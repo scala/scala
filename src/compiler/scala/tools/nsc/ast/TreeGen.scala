@@ -290,6 +290,16 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   }
 
 
+  // the result type of a function or corresponding SAM type
+  private def functionResultType(tp: Type): Type = {
+    val dealiased = tp.dealiasWiden
+    if (isFunctionTypeDirect(dealiased)) dealiased.typeArgs.last
+    else samOf(tp) match {
+      case samSym if samSym.exists => tp.memberInfo(samSym).resultType.deconst
+      case _ => NoType
+    }
+  }
+
   /**
     * Lift a Function's body to a method. For use during Uncurry, where Function nodes have type FunctionN[T1, ..., Tn, R]
     *

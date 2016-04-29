@@ -164,7 +164,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
 
     def enclosingMethod(sym: Symbol): Option[Symbol] = {
       if (sym.isClass || sym == NoSymbol) None
-      else if (sym.isMethod) {
+      else if (sym.isMethod && !sym.isGetter) {
         if (doesNotExist(sym)) None else Some(sym)
       }
       else enclosingMethod(nextEnclosing(sym))

@@ -298,16 +298,29 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       def infoString(sym: Symbol) = infoString0(sym, sym.owner != clazz)
       def infoStringWithLocation(sym: Symbol) = infoString0(sym, true)
 
-      def infoString0(sym: Symbol, showLocation: Boolean) = {
-        val sym1 = analyzer.underlyingSymbol(sym)
-        sym1.toString() +
+      def infoString0(member: Symbol, showLocation: Boolean) = {
+        val underlying = // not using analyzer.underlyingSymbol(member) because we should get rid of it
+          if (!(member hasFlag ACCESSOR)) member
+          else member.accessed match {
+              case field if field.exists => field
+              case _ if member.isSetter  => member.getterIn(member.owner)
+              case _ => member
+            }
+
+        def memberInfo =
+          self.memberInfo(underlying) match {
+            case getterTp if underlying.isGetter => getterTp.resultType
+            case tp => tp
+          }
+
+        underlying.toString() +
         (if (showLocation)
-          sym1.locationString +
-          (if (sym1.isAliasType) ", which equals "+self.memberInfo(sym1)
-           else if (sym1.isAbstractType) " with bounds"+self.memberInfo(sym1)
-           else if (sym1.isModule) ""
-           else if (sym1.isTerm) " of type "+self.memberInfo(sym1)
-           else "")
+          underlying.locationString +
+          (if (underlying.isAliasType)         s", which equals $memberInfo"
+           else if (underlying.isAbstractType) s" with bounds$memberInfo"
+           else if (underlying.isModule)       ""
+           else if (underlying.isTerm)         s" of type $memberInfo"
+           else                                "")
          else "")
       }
 
@@ -321,7 +334,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         def memberTp = lowType
         def otherTp  = highType
 
-        debuglog("Checking validity of %s overriding %s".format(member.fullLocationString, other.fullLocationString))
+//        debuglog(s"Checking validity of ${member.fullLocationString} overriding ${other.fullLocationString}")
 
         def noErrorType = !pair.isErroneous
         def isRootOrNone(sym: Symbol) = sym != null && sym.isRoot || sym == NoSymbol
@@ -346,9 +359,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
               analyzer.foundReqMsg(member.tpe, other.tpe)
             else ""
 
-          "overriding %s;\n %s %s%s".format(
-            infoStringWithLocation(other), infoString(member), msg, addendum
-          )
+          s"overriding ${infoStringWithLocation(other)};\n ${infoString(member)} $msg$addendum"
         }
         def emitOverrideError(fullmsg: String) {
           if (member.owner == clazz) reporter.error(member.pos, fullmsg)
@@ -439,9 +450,11 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           } else if (other.isAbstractOverride && other.isIncompleteIn(clazz) && !member.isAbstractOverride) {
             overrideError("needs `abstract override' modifiers")
           }
-          else if (member.isAnyOverride && (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.isLazy) {
-            // !?! this is not covered by the spec. We need to resolve this either by changing the spec or removing the test here.
-            // !!! is there a !?! convention? I'm !!!ing this to make sure it turns up on my searches.
+          else if (member.isAnyOverride && (other hasFlag ACCESSOR) && !(other hasFlag STABLE)) {
+            // The check above used to look at `field` == `other.accessed`, ensuring field.isVariable && !field.isLazy,
+            // which I think is identical to the more direct `!(other hasFlag STABLE)` (given that `other` is a method).
+            // Also, we're moving away from (looking at) underlying fields (vals in traits no longer have them, to begin with)
+            // TODO: this is not covered by the spec. We need to resolve this either by changing the spec or removing the test here.
             if (!settings.overrideVars)
               overrideError("cannot override a mutable variable")
           }
@@ -456,7 +469,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           } else if (member.isValue && member.isLazy &&
                      other.isValue && !other.isSourceMethod && !other.isDeferred && !other.isLazy) {
             overrideError("cannot override a concrete non-lazy value")
-          } else if (other.isValue && other.isLazy && !other.isSourceMethod && !other.isDeferred &&
+          } else if (other.isValue && other.isLazy && !other.isSourceMethod && !other.isDeferred && // !(other.hasFlag(MODULE) && other.hasFlag(PACKAGE | JAVA)) && other.hasFlag(LAZY)  && (!other.isMethod || other.hasFlag(STABLE)) && !other.hasFlag(DEFERRED)
                      member.isValue && !member.isLazy) {
             overrideError("must be declared lazy to override a concrete lazy value")
           } else if (other.isDeferred && member.isTermMacro && member.extendedOverriddenSymbols.forall(_.isDeferred)) { // (1.9)
@@ -547,7 +560,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         }
 
         def checkOverrideDeprecated() {
-          if (other.hasDeprecatedOverridingAnnotation && !member.ownerChain.exists(x => x.isDeprecated || x.hasBridgeAnnotation)) {
+          if (other.hasDeprecatedOverridingAnnotation && !(member.hasDeprecatedOverridingAnnotation || member.ownerChain.exists(x => x.isDeprecated || x.hasBridgeAnnotation))) {
             val version = other.deprecatedOverridingVersion.getOrElse("")
             val since   = if (version.isEmpty) version else s" (since $version)"
             val message = other.deprecatedOverridingMessage map (msg => s": $msg") getOrElse ""
@@ -651,7 +664,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
           for (member <- missing) {
             def undefined(msg: String) = abstractClassError(false, infoString(member) + " is not defined" + msg)
-            val underlying = analyzer.underlyingSymbol(member)
+            val underlying = analyzer.underlyingSymbol(member) // TODO: don't use this method
 
             // Give a specific error message for abstract vars based on why it fails:
             // It could be unimplemented, have only one accessor, or be uninitialized.
@@ -1133,22 +1146,16 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       case _ =>
     }
 
-    // SI-6276 warn for `def foo = foo` or `val bar: X = bar`, which come up more frequently than you might think.
-    def checkInfiniteLoop(valOrDef: ValOrDefDef) {
-      def callsSelf = valOrDef.rhs match {
-        case t @ (Ident(_) | Select(This(_), _)) =>
-          t hasSymbolWhich (_.accessedOrSelf == valOrDef.symbol)
-        case _ => false
+    // SI-6276 warn for trivial recursion, such as `def foo = foo` or `val bar: X = bar`, which come up more frequently than you might think.
+    // TODO: Move to abide rule. Also, this does not check that the def is final or not overridden, for example
+    def checkInfiniteLoop(sym: Symbol, rhs: Tree): Unit =
+      if (!sym.isValueParameter && sym.paramss.isEmpty) {
+        rhs match {
+          case t@(Ident(_) | Select(This(_), _)) if t hasSymbolWhich (_.accessedOrSelf == sym) =>
+            reporter.warning(rhs.pos, s"${sym.fullLocationString} does nothing other than call itself recursively")
+          case _ =>
+        }
       }
-      val trivialInfiniteLoop = (
-        !valOrDef.isErroneous
-     && !valOrDef.symbol.isValueParameter
-     && valOrDef.symbol.paramss.isEmpty
-     && callsSelf
-      )
-      if (trivialInfiniteLoop)
-        reporter.warning(valOrDef.rhs.pos, s"${valOrDef.symbol.fullLocationString} does nothing other than call itself recursively")
-    }
 
 // Transformation ------------------------------------------------------------
 
@@ -1659,16 +1666,19 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         // inside annotations.
         applyRefchecksToAnnotations(tree)
         var result: Tree = tree match {
-          case vod: ValOrDefDef =>
+          // NOTE: a val in a trait is now a DefDef, with the RHS being moved to an Assign in Constructors
+          case tree: ValOrDefDef =>
             checkDeprecatedOvers(tree)
-            checkInfiniteLoop(vod)
+            if (!tree.isErroneous)
+              checkInfiniteLoop(tree.symbol, tree.rhs)
+
             if (settings.warnNullaryUnit)
               checkNullaryMethodReturnType(sym)
             if (settings.warnInaccessible) {
               if (!sym.isConstructor && !sym.isEffectivelyFinalOrNotOverridden && !sym.isSynthetic)
                 checkAccessibilityOfReferencedTypes(tree)
             }
-            vod match {
+            tree match {
               case dd: DefDef =>
                 checkByNameRightAssociativeDef(dd)
 

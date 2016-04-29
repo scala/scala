@@ -1,7 +1,7 @@
 t6666.scala:23: error: Implementation restriction: access of method x$2 in object O1 from <$anon: Function0>, would require illegal premature access to object O1
   F.byname(x)
            ^
-t6666.scala:30: error: Implementation restriction: access of value x$3 in object O2 from <$anon: Function0>, would require illegal premature access to object O2
+t6666.scala:30: error: Implementation restriction: access of method x$3 in object O2 from <$anon: Function0>, would require illegal premature access to object O2
   F.byname(x)
            ^
 t6666.scala:37: error: Implementation restriction: access of method x$4 in object O3 from <$anon: Function0>, would require illegal premature access to object O3
@@ -10,7 +10,7 @@ t6666.scala:37: error: Implementation restriction: access of method x$4 in objec
 t6666.scala:50: error: Implementation restriction: access of method x$6 in class C1 from <$anon: Function0>, would require illegal premature access to the unconstructed `this` of class C1
   F.byname(x)
            ^
-t6666.scala:54: error: Implementation restriction: access of value x$7 in class C2 from <$anon: Function0>, would require illegal premature access to the unconstructed `this` of class C2
+t6666.scala:54: error: Implementation restriction: access of method x$7 in class C2 from <$anon: Function0>, would require illegal premature access to the unconstructed `this` of class C2
   F.byname(x)
            ^
 t6666.scala:58: error: Implementation restriction: access of method x$8 in class C3 from <$anon: Function0>, would require illegal premature access to the unconstructed `this` of class C3

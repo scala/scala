@@ -1,5 +1,5 @@
 t8849.scala:8: error: ambiguous implicit values:
- both value global in object Implicits of type => scala.concurrent.ExecutionContext
+ both lazy value global in object Implicits of type => scala.concurrent.ExecutionContext
  and value dummy of type scala.concurrent.ExecutionContext
  match expected type scala.concurrent.ExecutionContext
     require(implicitly[ExecutionContext] eq dummy)

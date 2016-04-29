@@ -1360,7 +1360,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               notAllowed(s"redefinition of $name method. See SIP-15, criterion 4.")
             else if (stat.symbol != null && stat.symbol.isParamAccessor)
               notAllowed("additional parameter")
+            // concrete accessor (getter) in trait corresponds to a field definition (neg/anytrait.scala)
+            // TODO: only reject accessors that actually give rise to field (e.g., a constant-type val is fine)
+            else if (!isValueClass && stat.symbol.isAccessor && !stat.symbol.isDeferred)
+              notAllowed("field definition")
             checkEphemeralDeep.traverse(rhs)
+          // for value class or "exotic" vals in traits
+          // (traits don't receive ValDefs for regular vals until fields phase -- well, except for early initialized/lazy vals)
           case _: ValDef =>
             notAllowed("field definition")
           case _: ModuleDef =>
@@ -4219,7 +4225,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 //      if (varsym.isVariable ||
 //        // setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
 //        (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
-        if (varsym.isVariable || varsym.isValue && phase.erasedTypes) {
+        if (varsym.isVariable || varsym.isValue && phase.assignsFields) {
           val rhs1 = typedByValueExpr(rhs, lhs1.tpe)
           treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitTpe
         }

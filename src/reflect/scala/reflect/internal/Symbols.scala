@@ -96,8 +96,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isByNameParam: Boolean = this.isValueParameter && (this hasFlag BYNAMEPARAM)
     def isImplementationArtifact: Boolean = (this hasFlag BRIDGE) || (this hasFlag VBRIDGE) || (this hasFlag ARTIFACT)
     def isJava: Boolean = isJavaDefined
-    def isVal: Boolean = isTerm && !isModule && !isMethod && !isMutable
-    def isVar: Boolean = isTerm && !isModule && !isMethod && !isLazy && isMutable
+
+    def isField: Boolean = isTerm && !isModule && (!isMethod || owner.isTrait && isAccessor)
+    def isMutableVal = if (owner.isTrait) !hasFlag(STABLE) else isMutable
+    def isVal: Boolean = isField && !isMutableVal
+    def isVar: Boolean = isField && !isLazy && isMutableVal
+
     def isAbstract: Boolean = isAbstractClass || isDeferred || isAbstractType
     def isPrivateThis = (this hasFlag PRIVATE) && (this hasFlag LOCAL)
     def isProtectedThis = (this hasFlag PROTECTED) && (this hasFlag LOCAL)
@@ -1532,7 +1536,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def setInfo(info: Type): this.type  = { info_=(info); this }
     /** Modifies this symbol's info in place. */
     def modifyInfo(f: Type => Type): this.type = setInfo(f(info))
-    /** Substitute second list of symbols for first in current info. */
+    /** Substitute second list of symbols for first in current info.
+      *
+      * NOTE: this discards the type history (uses setInfo)
+      */
     def substInfo(syms0: List[Symbol], syms1: List[Symbol]): this.type =
       if (syms0.isEmpty) this
       else modifyInfo(_.substSym(syms0, syms1))
@@ -2048,7 +2055,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       assert(hasAccessorFlag, this)
       val localField = owner.info decl localName
 
-      if (localField == NoSymbol && this.hasFlag(MIXEDIN)) {
+      if (localField == NoSymbol && this.hasFlag(MIXEDIN)) { // TODO: fields phase does not (yet?) add MIXEDIN in setMixedinAccessorFlags
         // SI-8087: private[this] fields don't have a `localName`. When searching the accessed field
         // for a mixin accessor of such a field, we need to look for `name` instead.
         // The phase travel ensures that the field is found (`owner` is the trait class symbol, the
@@ -2088,8 +2095,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** If this is a lazy value, the lazy accessor; otherwise this symbol. */
     def lazyAccessorOrSelf: Symbol = if (isLazy) lazyAccessor else this
 
-    /** If this is an accessor, the accessed symbol.  Otherwise, this symbol. */
-    def accessedOrSelf: Symbol = if (hasAccessorFlag) accessed else this
+    /** `accessed`, if this is an accessor that should have an underlying field. Otherwise, `this`.
+      *  Note that a "regular" accessor in a trait does not have a field, as an interface cannot define a field.
+      *  "non-regular" vals are: early initialized or lazy vals.
+      *  Eventually, we should delay introducing symbols for all val/vars until the fields (or lazyvals) phase,
+      *  as they are an implementation detail that's irrelevant to type checking.
+      */
+    def accessedOrSelf: Symbol =
+      if (hasAccessorFlag && (!owner.isTrait || hasFlag(PRESUPER | LAZY))) accessed
+      else this
 
     /** For an outer accessor: The class from which the outer originates.
      *  For all other symbols: NoSymbol
@@ -2532,30 +2546,34 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     private def symbolKind: SymbolKind = {
       var kind =
-        if (isTermMacro) ("term macro", "macro method", "MACM")
-        else if (isInstanceOf[FreeTermSymbol]) ("free term", "free term", "FTE")
-        else if (isInstanceOf[FreeTypeSymbol]) ("free type", "free type", "FTY")
-        else if (isPackageClass) ("package class", "package", "PKC")
-        else if (hasPackageFlag) ("package", "package", "PK")
-        else if (isPackageObject) ("package object", "package", "PKO")
-        else if (isPackageObjectClass) ("package object class", "package", "PKOC")
-        else if (isAnonymousClass) ("anonymous class", "anonymous class", "AC")
-        else if (isRefinementClass) ("refinement class", "", "RC")
-        else if (isModule) ("module", "object", "MOD")
-        else if (isModuleClass) ("module class", "object", "MODC")
-        else if (isGetter) ("getter", if (isSourceMethod) "method" else "value", "GET")
-        else if (isSetter) ("setter", if (isSourceMethod) "method" else "value", "SET")
-        else if (isTerm && isLazy) ("lazy value", "lazy value", "LAZ")
-        else if (isVariable) ("field", "variable", "VAR")
-        else if (isTrait) ("trait", "trait", "TRT")
-        else if (isClass) ("class", "class", "CLS")
-        else if (isType) ("type", "type", "TPE")
-        else if (isClassConstructor && (owner.hasCompleteInfo && isPrimaryConstructor)) ("primary constructor", "constructor", "PCTOR")
-        else if (isClassConstructor) ("constructor", "constructor", "CTOR")
-        else if (isSourceMethod) ("method", "method", "METH")
-        else if (isTerm) ("value", "value", "VAL")
-        else ("", "", "???")
+        if (isTermMacro)                         ("term macro",           "macro method",    "MACM")
+        else if (isInstanceOf[FreeTermSymbol])   ("free term",            "free term",       "FTE")
+        else if (isInstanceOf[FreeTypeSymbol])   ("free type",            "free type",       "FTY")
+        else if (isPackageClass)                 ("package class",        "package",         "PKC")
+        else if (hasPackageFlag)                 ("package",              "package",         "PK")
+        else if (isPackageObject)                ("package object",       "package",         "PKO")
+        else if (isPackageObjectClass)           ("package object class", "package",         "PKOC")
+        else if (isAnonymousClass)               ("anonymous class",      "anonymous class", "AC")
+        else if (isRefinementClass)              ("refinement class",     "",                "RC")
+        else if (isModule)                       ("module",               "object",          "MOD")
+        else if (isModuleClass)                  ("module class",         "object",          "MODC")
+        else if (isAccessor &&
+                  !hasFlag(STABLE | LAZY))       ("setter",               "variable",        "SET")
+        else if (isAccessor && !hasFlag(LAZY))   ("getter",               "value",           "GET")
+        else if (isTerm && hasFlag(LAZY))        ("lazy value",           "lazy value",      "LAZ")
+        else if (isVariable)                     ("field",                "variable",        "VAR")
+        else if (isTrait)                        ("trait",                "trait",           "TRT")
+        else if (isClass)                        ("class",                "class",           "CLS")
+        else if (isType)                         ("type",                 "type",            "TPE")
+        else if (isClassConstructor && (owner.hasCompleteInfo &&
+                   isPrimaryConstructor))        ("primary constructor",  "constructor",     "PCTOR")
+        else if (isClassConstructor)             ("constructor",          "constructor",     "CTOR")
+        else if (isMethod)                       ("method",               "method",          "METH")
+        else if (isTerm)                         ("value",                "value",           "VAL")
+        else                                     ("",                     "",                "???")
+
       if (isSkolem) kind = (kind._1, kind._2, kind._3 + "#SKO")
+
       SymbolKind(kind._1, kind._2, kind._3)
     }
 
@@ -2623,12 +2641,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  If hasMeaninglessName is true, uses the owner's name to disambiguate identity.
      */
     override def toString: String = {
-      if (isPackageObjectOrClass && !settings.debug)
-        s"package object ${owner.decodedName}"
-      else compose(
-        kindString,
-        if (hasMeaninglessName) owner.decodedName + idString else nameString
-      )
+      val simplifyNames = !settings.debug
+      if (isPackageObjectOrClass && simplifyNames) s"package object ${owner.decodedName}"
+      else {
+        val kind = kindString
+        val _name: String =
+          if (hasMeaninglessName) owner.decodedName + idString
+          else if (simplifyNames && (kind == "variable" || kind == "value")) unexpandedName.getterName.decode.toString // TODO: make condition less gross?
+          else nameString
+
+        compose(kind, _name)
+      }
     }
 
     /** String representation of location.
@@ -2764,18 +2787,21 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     )
     ***/
     override def isValueParameter   = this hasFlag PARAM
-
     override def isSetterParameter  = isValueParameter && owner.isSetter
-    override def isAccessor         = this hasFlag ACCESSOR
-    override def isGetter           = isAccessor && !isSetter
+
     override def isDefaultGetter    = name containsName nme.DEFAULT_GETTER_STRING
-    override def isSetter           = isAccessor && nme.isSetterName(name)  // todo: make independent of name, as this can be forged.
+
+    override def isAccessor         = this hasFlag ACCESSOR
+    override def isGetter           = isAccessor && !nme.isSetterName(name)   // TODO: make independent of name, as this can be forged.
+    override def isSetter           = isAccessor && nme.isSetterName(name)    // TODO: make independent of name, as this can be forged.
+
     override def isLocalDummy       = nme.isLocalDummyName(name)
+
     override def isClassConstructor = name == nme.CONSTRUCTOR
     override def isMixinConstructor = name == nme.MIXIN_CONSTRUCTOR
-    override def isConstructor      = nme.isConstructorName(name)
+    override def isConstructor      = isClassConstructor || isMixinConstructor
 
-    override def isPackageObject = isModule && (name == nme.PACKAGE)
+    override def isPackageObject    = isModule && (name == nme.PACKAGE)
 
     // The name in comments is what it is being disambiguated from.
     // TODO - rescue CAPTURED from BYNAMEPARAM so we can see all the names.
@@ -2900,10 +2926,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isVarargsMethod = this hasFlag VARARGS
     override def isLiftedMethod  = this hasFlag LIFTED
 
-    // TODO - this seems a strange definition for "isSourceMethod", given that
-    // it does not make any specific effort to exclude synthetics.  Figure out what
-    // this method is really for and what logic makes sense.
-    override def isSourceMethod  = !(this hasFlag STABLE)  // exclude all accessors
+    // TODO: this definition of isSourceMethod makes no sense -- inline it and re-evaluate at each call site.
+    // I'm guessing it meant "method written by user, and not generated by the compiler"
+    // (And then assuming those generated by the compiler don't require certain transformations?)
+    // Use SYNTHETIC/ARTIFACT instead as an indicator? I don't see how it makes sense to only exclude getters.
+    // Note also that trait vals are modelled as getters, and thus that user-supplied code appears in their rhs.
+    // Originally, it may have been an optimization to skip methods that were not user-defined (getters),
+    // but it doesn't even exclude setters, contrary to its original comment (// exclude all accessors)
+    override def isSourceMethod  = !(this hasFlag STABLE)
+
     // unfortunately having the CASEACCESSOR flag does not actually mean you
     // are a case accessor (you can also be a field.)
     override def isCaseAccessorMethod = isCaseAccessor

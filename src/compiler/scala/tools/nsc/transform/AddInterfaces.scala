@@ -50,12 +50,6 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
     }
   }
 
-  private def mkAssign(clazz: Symbol, assignSym: Symbol, rhs: Tree): Tree = {
-    val qual = Select(This(clazz), assignSym)
-    if (assignSym.isSetter) Apply(qual, List(rhs))
-    else Assign(qual, rhs)
-  }
-
   /** Add calls to supermixin constructors
    *    `super[mix].$init$()`
    *  to tree, which is assumed to be the body of a constructor of class clazz.
