@@ -295,7 +295,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       }
 
       case line :: ls if (lastTagKey.isDefined) => {
-        val newtags = if (!line.isEmpty) {
+        val newtags = if (!line.isEmpty || inCodeBlock) {
           val key = lastTagKey.get
           val value =
             ((tags get key): @unchecked) match {
