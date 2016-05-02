@@ -68,6 +68,8 @@ object BitSet extends BitSetFactory[BitSet] {
   /** The empty bitset */
   val empty: BitSet = new BitSet1(0L)
 
+  private def createSmall(a: Long, b: Long): BitSet = if (b == 0L) new BitSet1(a) else new BitSet2(a, b)
+
   /** A builder that takes advantage of mutable BitSets. */
   def newBuilder: Builder[Int, BitSet] = new Builder[Int, BitSet] {
     private[this] val b = new mutable.BitSet
@@ -84,7 +86,7 @@ object BitSet extends BitSetFactory[BitSet] {
     val len = elems.length
     if (len == 0) empty
     else if (len == 1) new BitSet1(elems(0))
-    else if (len == 2) new BitSet2(elems(0), elems(1))
+    else if (len == 2) createSmall(elems(0), elems(1))
     else {
       val a = new Array[Long](len)
       Array.copy(elems, 0, a, 0, len)
@@ -99,7 +101,7 @@ object BitSet extends BitSetFactory[BitSet] {
     val len = elems.length
     if (len == 0) empty
     else if (len == 1) new BitSet1(elems(0))
-    else if (len == 2) new BitSet2(elems(0), elems(1))
+    else if (len == 2) createSmall(elems(0), elems(1))
     else new BitSetN(elems)
   }
 
@@ -109,7 +111,7 @@ object BitSet extends BitSetFactory[BitSet] {
     protected def word(idx: Int) = if (idx == 0) elems else 0L
     protected def updateWord(idx: Int, w: Long): BitSet =
       if (idx == 0) new BitSet1(w)
-      else if (idx == 1) new BitSet2(elems, w)
+      else if (idx == 1) createSmall(elems, w)
       else fromBitMaskNoCopy(updateArray(Array(elems), idx, w))
     override def head: Int =
       if (elems == 0L) throw new NoSuchElementException("Empty BitSet")
@@ -124,7 +126,7 @@ object BitSet extends BitSetFactory[BitSet] {
     protected def word(idx: Int) = if (idx == 0) elems0 else if (idx == 1) elems1 else 0L
     protected def updateWord(idx: Int, w: Long): BitSet =
       if (idx == 0) new BitSet2(w, elems1)
-      else if (idx == 1) new BitSet2(elems0, w)
+      else if (idx == 1) createSmall(elems0, w)
       else fromBitMaskNoCopy(updateArray(Array(elems0, elems1), idx, w))
     override def head: Int =
       if (elems0 == 0L) {
@@ -135,7 +137,7 @@ object BitSet extends BitSetFactory[BitSet] {
     override def tail: BitSet =
       if (elems0 == 0L) {
         if (elems1 == 0L) throw new NoSuchElementException("Empty BitSet")
-        new BitSet2(elems0, elems1 - java.lang.Long.lowestOneBit(elems1))
+        createSmall(elems0, elems1 - java.lang.Long.lowestOneBit(elems1))
       }
       else new BitSet2(elems0 - java.lang.Long.lowestOneBit(elems0), elems1)
   }
