@@ -66,7 +66,7 @@ final class API(val global: CallbackGlobal) extends Compat {
   }
 
   private abstract class TopLevelTraverser extends Traverser {
-    def `class`(s: Symbol)
+    def `class`(s: Symbol): Unit
     override def traverse(tree: Tree): Unit = {
       tree match {
         case (_: ClassDef | _: ModuleDef) if isTopLevel(tree.symbol) => `class`(tree.symbol)
