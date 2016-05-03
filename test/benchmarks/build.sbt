@@ -1,6 +1,6 @@
 scalaHome := Some(file("../../build/pack"))
 scalaVersion := "2.11.8"
-scalacOptions += "-feature"
+scalacOptions ++= Seq("-feature", "-Yopt:l:classpath")
 
 lazy val root = (project in file(".")).
   enablePlugins(JmhPlugin).
