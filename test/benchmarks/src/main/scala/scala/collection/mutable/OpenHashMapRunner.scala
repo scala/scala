@@ -14,6 +14,7 @@ import org.openjdk.jmh.runner.options.Options
 import benchmark.JmhRunner
 import org.openjdk.jmh.runner.options.OptionsBuilder
 import org.openjdk.jmh.runner.options.VerboseMode
+import org.openjdk.jmh.results.Result
 
 /** Replacement JMH application that runs the [[OpenHashMap]] benchmark.
   * 
@@ -24,27 +25,35 @@ object OpenHashMapRunner extends JmhRunner {
   private[this] val outputFile = new File(outputDirectory, "OpenHashMap.dat")
 
   /** Qualifier to add to the name of a memory usage data set. */
-  private[this] val memoryDatasetQualifer = " memory"
+  private[this] val memoryDatasetQualifier = "-memory"
 
-  /** Name of the JMH parameter for the number of map entries per invocation. */
-  private[this] val sizeParamName = "size"
+  private[this] implicit class MyRunResult(r: RunResult) {
+    /** Return the dataset label. */
+    def label = r.getPrimaryResult.getLabel
 
-  /** Name of the JMH auxiliary counter that collects operation counts. */
-  private[this] val operationsAuxCounterName = "operations"
+    /** Return the value of the JMH parameter for the number of map entries per invocation. */
+    def size: String = r.getParams.getParam("size")
 
-  /** Name of the JMH auxiliary counter that collects memory usage. */
-  private[this] val memoryAuxCounterName = "memory"
+    /** Return the operation counts. */
+    def operations = Option(r.getSecondaryResults.get("operations"))
 
-  /** Name of the JMH auxiliary counter that collects the number of map entries. */
-  private[this] val entriesAuxCounterName = "mapEntries"
+    /** Return the number of map entries. */
+    def entries = r.getSecondaryResults.get("mapEntries")
+
+    /** Return the memory usage. */
+    def memory = Option(r.getSecondaryResults.get("memory"))
+  }
+
+  /** Return the statistics of the given result as a string. */
+  private[this] def stats(r: Result[_]) = r.getScore + " " + r.getStatistics.getStandardDeviation
+
 
   def main(args: Array[String]) {
     import scala.collection.JavaConversions._
     import scala.language.existentials
   
     val opts = new CommandLineOptions(args: _*)
-    var builder = new OptionsBuilder().parent(opts)
-      .jvmArgsPrepend("-Xmx6000m")
+    var builder = new OptionsBuilder().parent(opts).jvmArgsPrepend("-Xmx6000m")
     if (!opts.verbosity.hasValue)  builder = builder.verbosity(VerboseMode.SILENT)
 
     val results = new Runner(builder.build).run()
@@ -55,18 +64,17 @@ object OpenHashMapRunner extends JmhRunner {
     val datasetByName = Map.empty[String, Set[RunResult]]
 
     /** Ordering for the results within a data set. Orders by increasing number of map entries. */
-    val ordering = Ordering.by[RunResult, Int](_.getParams.getParam(sizeParamName).toInt)
+    val ordering = Ordering.by[RunResult, Int](_.size.toInt)
 
-    def addToDataset(result: RunResult, key: String): Unit =
-      datasetByName.get(key)
-        .getOrElse({ val d = SortedSet.empty(ordering); datasetByName.put(key, d); d }) += result
+    def addToDataset(key: String, result: RunResult): Unit =
+      datasetByName.getOrElseUpdate(key, SortedSet.empty(ordering)) += result
 
-    results.foreach { result: RunResult ⇒
-      addToDataset(result, result.getPrimaryResult.getLabel)
+    results.foreach { result =>
+      addToDataset(result.label, result)
 
       // Create another data set for trials that track memory usage
-      if (result.getSecondaryResults.containsKey(memoryAuxCounterName))
-        addToDataset(result, result.getPrimaryResult.getLabel + memoryDatasetQualifer)
+      if (result.memory.isDefined)
+        addToDataset(result.label + memoryDatasetQualifier, result)
     }
 
     //TODO Write out test parameters
@@ -75,31 +83,17 @@ object OpenHashMapRunner extends JmhRunner {
 
     val f = new PrintWriter(outputFile, "UTF-8")
     try {
-      datasetByName.foreach(_ match { case (label: String, dataset: Iterable[RunResult]) ⇒ {
-        f.format("# [%s]\n", label)
+      datasetByName.foreach(_ match { case (label: String, dataset: Iterable[RunResult]) => {
+        f.println(s"# [$label]")
 
-        val isMemoryUsageDataset = label.contains(memoryDatasetQualifer)
-        dataset.foreach { result ⇒
-          val size = result.getParams.getParam(sizeParamName)
-          val secondaryResults = result.getSecondaryResults
-          if (isMemoryUsageDataset) {
-            val memoryResult = secondaryResults.get(memoryAuxCounterName)
-            val entriesResult = secondaryResults.get(entriesAuxCounterName)
-            f.format("%s %f %f %f %f\n", size,
-              Double.box(entriesResult.getScore), Double.box(entriesResult.getStatistics.getStandardDeviation),
-              Double.box(memoryResult.getScore), Double.box(memoryResult.getStatistics.getStandardDeviation))
-          }
-          else {
-            if (secondaryResults.containsKey(operationsAuxCounterName)) {
-              val operationsResult = secondaryResults.get(operationsAuxCounterName)
-              f.format("%s %f %f\n", size,
-                Double.box(operationsResult.getScore), Double.box(operationsResult.getStatistics.getStandardDeviation))
-            } else {
-              val primary = result.getPrimaryResult
-              f.format("%s %f %f\n", size,
-                Double.box(primary.getScore), Double.box(primary.getStatistics.getStandardDeviation))
-            }
-          }
+        val isMemoryUsageDataset = label.endsWith(memoryDatasetQualifier)
+        dataset.foreach { r =>
+          f.println(r.size + " " + (
+            if (isMemoryUsageDataset)
+              stats(r.entries) + " " + stats(r.memory.get)
+            else
+              stats(r.operations getOrElse r.getPrimaryResult)
+          ))
         }
 
         f.println(); f.println()  // data set separator

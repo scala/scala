@@ -170,7 +170,7 @@ private object OpenHashMapBenchmark {
 class OpenHashMapBenchmark {
   import OpenHashMapBenchmark._
 
-  @Param(Array("50", "100", "250", "1000", "2500", "10000", "25000", "100000", "250000", "1000000", "2500000",
+  @Param(Array("25", "50", "100", "250", "1000", "2500", "10000", "25000", "100000", "250000", "1000000", "2500000",
                "5000000", "7500000", "10000000", "25000000"))
   var size: Int = _
 
