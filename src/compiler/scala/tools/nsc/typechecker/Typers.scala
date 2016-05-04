@@ -2992,43 +2992,35 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def includesTargetPos(tree: Tree) =
         tree.pos.isRange && context.unit.exists && (tree.pos includes context.unit.targetPos)
       val localTarget = stats exists includesTargetPos
-      def typedStat(stat: Tree): Tree = {
-        if (context.owner.isRefinementClass && !treeInfo.isDeclarationOrTypeDef(stat))
-          OnlyDeclarationsError(stat)
-        else
-          stat match {
-            case imp @ Import(_, _) =>
-              imp.symbol.initialize
-              if (!imp.symbol.isError) {
-                context = context.make(imp)
-                typedImport(imp)
-              } else EmptyTree
-            case _ =>
-              if (localTarget && !includesTargetPos(stat)) {
-                // skip typechecking of statements in a sequence where some other statement includes
-                // the targetposition
-                stat
-              } else {
-                val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) {
-                  this
-                } else newTyper(context.make(stat, exprOwner))
-                // XXX this creates a spurious dead code warning if an exception is thrown
-                // in a constructor, even if it is the only thing in the constructor.
-                val result = checkDead(localTyper.typedByValueExpr(stat))
+      def typedStat(stat: Tree): Tree = stat match {
+        case s if context.owner.isRefinementClass && !treeInfo.isDeclarationOrTypeDef(s) => OnlyDeclarationsError(s)
+        case imp @ Import(_, _) =>
+          imp.symbol.initialize
+          if (!imp.symbol.isError) {
+            context = context.make(imp)
+            typedImport(imp)
+          } else EmptyTree
+        // skip typechecking of statements in a sequence where some other statement includes the targetposition
+        case s if localTarget && !includesTargetPos(s) => s
+        case _ =>
+          val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) {
+            this
+          } else newTyper(context.make(stat, exprOwner))
+          // XXX this creates a spurious dead code warning if an exception is thrown
+          // in a constructor, even if it is the only thing in the constructor.
+          val result = checkDead(localTyper.typedByValueExpr(stat))
 
-                if (treeInfo.isSelfOrSuperConstrCall(result)) {
-                  context.inConstructorSuffix = true
-                  if (treeInfo.isSelfConstrCall(result) && result.symbol.pos.pointOrElse(0) >= exprOwner.enclMethod.pos.pointOrElse(0))
-                    ConstructorsOrderError(stat)
-                }
-
-                if (!isPastTyper && treeInfo.isPureExprForWarningPurposes(result)) context.warning(stat.pos,
-                  "a pure expression does nothing in statement position; " +
-                  "you may be omitting necessary parentheses"
-                )
-                result
-              }
+          if (treeInfo.isSelfOrSuperConstrCall(result)) {
+            context.inConstructorSuffix = true
+            if (treeInfo.isSelfConstrCall(result) && result.symbol.pos.pointOrElse(0) >= exprOwner.enclMethod.pos.pointOrElse(0))
+              ConstructorsOrderError(stat)
           }
+
+          if (!isPastTyper && treeInfo.isPureExprForWarningPurposes(result)) context.warning(stat.pos,
+            "a pure expression does nothing in statement position; " +
+            "you may be omitting necessary parentheses"
+          )
+          result
       }
 
       /* 'accessor' and 'accessed' are so similar it becomes very difficult to
