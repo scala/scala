@@ -538,8 +538,33 @@ trait ContextErrors {
       def NamedAndDefaultArgumentsNotSupportedForMacros(tree: Tree, fun: Tree) =
         NormalTypeError(tree, "macro applications do not support named and/or default arguments")
 
-      def TooManyArgsNamesDefaultsError(tree: Tree, fun: Tree) =
-        NormalTypeError(tree, "too many arguments for "+treeSymTypeMsg(fun))
+      def TooManyArgsNamesDefaultsError(tree: Tree, fun: Tree, expected: Int, supplied: Int, unknowns: List[Name]) = {
+        val msg = {
+          val badappl = {
+            val excess = supplied - expected
+            val target = treeSymTypeMsg(fun)
+
+            if (expected == 0) s"no arguments allowed for nullary $target"
+            else if (excess < 3 && expected <= 5) s"too many arguments ($supplied) for $target"
+            else if (expected > 10) s"$supplied arguments but expected $expected for $target"
+            else {
+              val oneOf =
+                if (excess == 1) "one more argument"
+                else if (excess > 0) s"$excess more arguments"
+                else "too many arguments"
+              s"$oneOf than can be applied to $target"
+            }
+          }
+          val suppl = 
+            unknowns.size match {
+              case 0 => ""
+              case 1 => s"\nNote that '${unknowns.head}' is not a parameter name of the invoked method."
+              case _ => unknowns.mkString("\nNote that '", "', '", "' are not parameter names of the invoked method.")
+            }
+          s"${badappl}${suppl}"
+        }
+        NormalTypeError(tree, msg)
+      }
 
       // can it still happen? see test case neg/overloaded-unapply.scala
       def OverloadedUnapplyError(tree: Tree) =
@@ -551,7 +576,7 @@ trait ContextErrors {
       def MultipleVarargError(tree: Tree) =
         NormalTypeError(tree, "when using named arguments, the vararg parameter has to be specified exactly once")
 
-      def ModuleUsingCompanionClassDefaultArgsErrror(tree: Tree) =
+      def ModuleUsingCompanionClassDefaultArgsError(tree: Tree) =
         NormalTypeError(tree, "module extending its companion class cannot use default constructor arguments")
 
       def NotEnoughArgsError(tree: Tree, fun: Tree, missing: List[Symbol]) = {

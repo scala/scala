@@ -3330,7 +3330,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // #2064
               duplErrorTree(WrongNumberOfArgsError(tree, fun))
             } else if (lencmp > 0) {
-              tryTupleApply orElse duplErrorTree(TooManyArgsNamesDefaultsError(tree, fun))
+              tryTupleApply orElse duplErrorTree {
+                val (namelessArgs, _) = removeNames(Typer.this)(args, params)
+                val wrongs = (namelessArgs zip args) collect {
+                  case (_: Assign, AssignOrNamedArg(Ident(name), _)) => name
+                }
+                TooManyArgsNamesDefaultsError(tree, fun, expected = formals.size, supplied = args.size, wrongs)
+              }
             } else if (lencmp == 0) {
               // we don't need defaults. names were used, so this application is transformed
               // into a block (@see transformNamedApplication in NamesDefaults)
@@ -3394,7 +3400,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 val lencmp2 = compareLengths(allArgs, formals)
 
                 if (!sameLength(allArgs, args) && callToCompanionConstr(context, funSym)) {
-                  duplErrorTree(ModuleUsingCompanionClassDefaultArgsErrror(tree))
+                  duplErrorTree(ModuleUsingCompanionClassDefaultArgsError(tree))
                 } else if (lencmp2 > 0) {
                   removeNames(Typer.this)(allArgs, params) // #3818
                   duplErrTree
