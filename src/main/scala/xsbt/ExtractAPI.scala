@@ -56,7 +56,7 @@ class ExtractAPI[GlobalType <: Global](
   private[this] val typeCache = new HashMap[(Symbol, Type), xsbti.api.Type]
   // these caches are necessary for correctness
   private[this] val structureCache = new HashMap[Symbol, xsbti.api.Structure]
-  private[this] val classLikeCache = new HashMap[(Symbol, Symbol), xsbti.api.ClassLike]
+  private[this] val classLikeCache = new HashMap[(Symbol, Symbol), xsbti.api.ClassLikeDef]
   private[this] val pending = new HashSet[xsbti.api.Lazy[_]]
 
   private[this] val emptyStringArray = new Array[String](0)
@@ -341,29 +341,17 @@ class ExtractAPI[GlobalType <: Global](
   // but that does not take linearization into account.
   def linearizedAncestorTypes(info: Type): List[Type] = info.baseClasses.tail.map(info.baseType)
 
-  /*
-  * Create structure without any members. This is used to declare an inner class as a member of other class
-  * but to not include its full api. Class signature is enough.
-  */
-  private def mkStructureWithEmptyMembers(info: Type, s: Symbol): xsbti.api.Structure = {
-    // We're not interested in the full linearization, so we can just use `parents`,
-    // which side steps issues with baseType when f-bounded existential types and refined types mix
-    // (and we get cyclic types which cause a stack overflow in showAPI).
-    val parentTypes = info.parents
-    mkStructure(s, parentTypes, Nil, Nil)
-  }
-
   private def mkStructure(s: Symbol, bases: List[Type], declared: List[Symbol], inherited: List[Symbol]): xsbti.api.Structure = {
     new xsbti.api.Structure(lzy(types(s, bases)), lzy(processDefinitions(s, declared)), lzy(processDefinitions(s, inherited)))
   }
-  private def processDefinitions(in: Symbol, defs: List[Symbol]): Array[xsbti.api.Definition] =
+  private def processDefinitions(in: Symbol, defs: List[Symbol]): Array[xsbti.api.ClassDefinition] =
     sort(defs.toArray).flatMap((d: Symbol) => definition(in, d))
   private[this] def sort(defs: Array[Symbol]): Array[Symbol] = {
     Arrays.sort(defs, sortClasses)
     defs
   }
 
-  private def definition(in: Symbol, sym: Symbol): Option[xsbti.api.Definition] =
+  private def definition(in: Symbol, sym: Symbol): Option[xsbti.api.ClassDefinition] =
     {
       def mkVar = Some(fieldDef(in, sym, false, new xsbti.api.Var(_, _, _, _, _)))
       def mkVal = Some(fieldDef(in, sym, true, new xsbti.api.Val(_, _, _, _, _)))
@@ -549,8 +537,8 @@ class ExtractAPI[GlobalType <: Global](
     allNonLocalClassesInSrc.toSet
   }
 
-  private def classLike(in: Symbol, c: Symbol): ClassLike = classLikeCache.getOrElseUpdate((in, c), mkClassLike(in, c))
-  private def mkClassLike(in: Symbol, c: Symbol): ClassLike = {
+  private def classLike(in: Symbol, c: Symbol): ClassLikeDef = classLikeCache.getOrElseUpdate((in, c), mkClassLike(in, c))
+  private def mkClassLike(in: Symbol, c: Symbol): ClassLikeDef = {
     // Normalize to a class symbol, and initialize it.
     // (An object -- aka module -- also has a term symbol,
     //  but it's the module class that holds the info about its structure.)
@@ -563,23 +551,26 @@ class ExtractAPI[GlobalType <: Global](
       } else DefinitionType.ClassDef
     val childrenOfSealedClass = sort(sym.children.toArray).map(c => processType(c, c.tpe))
     val topLevel = sym.owner.isPackageClass
+    val anns = annotations(in, c)
+    val modifiers = getModifiers(c)
+    val acc = getAccess(c)
+    val name = classNameAsSeenIn(in, c)
+    val tParams = typeParameters(in, sym) // look at class symbol
+    val selfType = lzy(this.selfType(in, sym))
     def constructClass(structure: xsbti.api.Lazy[Structure]): ClassLike = {
-      new xsbti.api.ClassLike(
-        defType, lzy(selfType(in, sym)), structure, emptyStringArray,
-        childrenOfSealedClass, topLevel, typeParameters(in, sym), // look at class symbol
-        className(c), getAccess(c), getModifiers(c), annotations(in, c)
-      ) // use original symbol (which is a term symbol when `c.isModule`) for `name` and other non-classy stuff
+      new xsbti.api.ClassLike(defType, selfType, structure, emptyStringArray,
+        childrenOfSealedClass, topLevel, tParams, name, acc, modifiers, anns) // use original symbol (which is a term symbol when `c.isModule`) for `name` and other non-classy stuff
     }
-
     val info = viewer(in).memberInfo(sym)
     val structure = lzy(structureWithInherited(info, sym))
     val classWithMembers = constructClass(structure)
-    val structureWithoutMembers = lzy(mkStructureWithEmptyMembers(info, sym))
-    val classWithoutMembers = constructClass(structureWithoutMembers)
 
     allNonLocalClassesInSrc += classWithMembers
 
-    classWithoutMembers
+    val classDef = new xsbti.api.ClassLikeDef(
+      defType, tParams, name, acc, modifiers, anns
+    ) // use original symbol (which is a term symbol when `c.isModule`) for `name` and other non-classy stuff
+    classDef
   }
 
   // TODO: could we restrict ourselves to classes, ignoring the term symbol for modules,

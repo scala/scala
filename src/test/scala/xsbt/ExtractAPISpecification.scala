@@ -124,13 +124,8 @@ class ExtractAPISpecification extends UnitSpec {
    */
   it should "make a stable representation of a self variable that has no self type" in {
     def selectNamer(apis: Set[ClassLike]): ClassLike = {
-      def selectClass(defs: Iterable[Definition], name: String): ClassLike = defs.collectFirst {
-        case cls: ClassLike if cls.name == name => cls
-      }.get
-      val global = apis.find(_.name == "Global").get
-      //val foo = selectClass(global.structure.declared, "Global.Foo")
-      val foo = apis.find(_.name == "Global.Foo").get
-      selectClass(foo.structure.inherited, "Namers.Namer")
+      // TODO: this doesn't work yet because inherited classes are not extracted
+      apis.find(_.name == "Global.Foo.Namer").get
     }
     val src1 =
       """|class Namers {
@@ -148,6 +143,33 @@ class ExtractAPISpecification extends UnitSpec {
     val namerApi1 = selectNamer(src2Api1)
     val namerApi2 = selectNamer(src2Api2)
     assert(SameAPI(namerApi1, namerApi2))
+  }
+
+  it should "make a different representation for an inherited class" in {
+    val src =
+      """|class A[T] {
+         |  abstract class AA { def t: T }
+         |}
+         |class B extends A[Int]
+      """.stripMargin
+    val compilerForTesting = new ScalaCompilerForUnitTesting
+    val apis = compilerForTesting.extractApisFromSrc(src).map(a => a.name -> a).toMap
+    assert(apis.keySet === Set("A", "A.AA", "B", "B.AA"))
+    assert(apis("A.AA") !== apis("B.AA"))
+  }
+
+  it should "handle package objects and type companions" in {
+    val src =
+      """|package object abc {
+         |  type BuildInfoKey = BuildInfoKey.Entry[_]
+         |  object BuildInfoKey {
+         |    sealed trait Entry[A]
+         |  }
+         |}
+      """.stripMargin
+    val compilerForTesting = new ScalaCompilerForUnitTesting
+    val apis = compilerForTesting.extractApisFromSrc(src).map(a => a.name -> a).toMap
+    assert(apis.keySet === Set("abc.package", "abc.BuildInfoKey", "abc.BuildInfoKey.Entry"))
   }
 
   /**
