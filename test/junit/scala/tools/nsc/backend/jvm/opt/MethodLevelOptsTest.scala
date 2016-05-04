@@ -221,7 +221,7 @@ class MethodLevelOptsTest extends BytecodeTesting {
       VarOp(ILOAD, 1),
       VarOp(ILOAD, 2),
       VarOp(ILOAD, 3),
-      Invoke(INVOKESTATIC, "C", "C$$$anonfun$1", "(III)I", false), Op(IRETURN)))
+      Invoke(INVOKESTATIC, "C", "$anonfun$t$1", "(III)I", false), Op(IRETURN)))
   }
 
   @Test

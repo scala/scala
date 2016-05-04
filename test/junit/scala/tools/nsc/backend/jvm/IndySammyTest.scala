@@ -43,7 +43,7 @@ class IndySammyTest extends BytecodeTesting {
     val c = compileClass(s"class C { ${lamDef(from, to, body)}; ${appDef(arg)} }", allowMessage = allowMessage)
 
     val applySig = getAsmMethod(funClass, "apply").desc
-    val anonfun = getMethod(c, "C$$$anonfun$1")
+    val anonfun = getMethod(c, "$anonfun$lam$1")
     val lamInsn = getInstructions(c, "lam").dropNonOp
     val applyInvoke = getMethod(c, "app")
 

@@ -7,8 +7,8 @@ package <empty> {
     };
     def bar(x: () => String): String = x.apply();
     def foo(): String = Foo.this.bar({
-      final <artifact> def $anonfun(): String = "";
-      (() => $anonfun())
+      final <artifact> def $anonfun$foo(): String = "";
+      (() => $anonfun$foo())
     })
   }
 }

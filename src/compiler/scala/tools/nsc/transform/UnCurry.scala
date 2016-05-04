@@ -213,6 +213,7 @@ abstract class UnCurry extends InfoTransform
         // Expand the function body into an anonymous class
         gen.expandFunction(localTyper)(fun, inConstructorFlag)
       } else {
+        val mustExpand = mustExpandFunction(fun)
         // method definition with the same arguments, return type, and body as the original lambda
         val liftedMethod = gen.mkLiftedFunctionBodyMethod(localTyper)(fun.symbol.owner, fun)
 
@@ -221,11 +222,18 @@ abstract class UnCurry extends InfoTransform
           gen.mkForwarder(gen.mkAttributedRef(liftedMethod.symbol), (fun.vparams map (_.symbol)) :: Nil)
         ))
 
+        if (!mustExpand) {
+          liftedMethod.symbol.updateAttachment(DelambdafyTarget)
+          liftedMethod.updateAttachment(DelambdafyTarget)
+        }
+
         val typedNewFun = localTyper.typedPos(fun.pos)(Block(liftedMethod, super.transform(newFun)))
-        if (mustExpandFunction(fun)) {
+        if (mustExpand) {
           val Block(stats, expr : Function) = typedNewFun
           treeCopy.Block(typedNewFun, stats, gen.expandFunction(localTyper)(expr, inConstructorFlag))
-        } else typedNewFun
+        } else {
+          typedNewFun
+        }
       }
 
     def transformArgs(pos: Position, fun: Symbol, args: List[Tree], formals: List[Type]) = {
@@ -341,13 +349,18 @@ abstract class UnCurry extends InfoTransform
 
     private def isSelfSynchronized(ddef: DefDef) = ddef.rhs match {
       case Apply(fn @ TypeApply(Select(sel, _), _), _) =>
-        fn.symbol == Object_synchronized && sel.symbol == ddef.symbol.enclClass && !ddef.symbol.enclClass.isTrait
+        fn.symbol == Object_synchronized && sel.symbol == ddef.symbol.enclClass && !ddef.symbol.enclClass.isTrait &&
+          !ddef.symbol.isDelambdafyTarget /* these become static later, unsuitable for ACC_SYNCHRONIZED */
       case _ => false
     }
 
     /** If an eligible method is entirely wrapped in a call to synchronized
      *  locked on the same instance, remove the synchronized scaffolding and
      *  mark the method symbol SYNCHRONIZED for bytecode generation.
+     *
+     *  Delambdafy targets are deemed ineligible as the Delambdafy phase will
+     *  replace `this.synchronized` with `$this.synchronzed` now that it emits
+     *  all lambda impl methods as static.
      */
     private def translateSynchronized(tree: Tree) = tree match {
       case dd @ DefDef(_, _, _, _, _, Apply(fn, body :: Nil)) if isSelfSynchronized(dd) =>
