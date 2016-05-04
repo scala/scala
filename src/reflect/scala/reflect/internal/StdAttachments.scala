@@ -51,6 +51,8 @@ trait StdAttachments {
     */
   case class SAMFunction(samTp: Type, sam: Symbol) extends PlainAttachment
 
+  case object DelambdafyTarget extends PlainAttachment
+
   /** When present, indicates that the host `Ident` has been created from a backquoted identifier.
    */
   case object BackquotedIdentifierAttachment extends PlainAttachment

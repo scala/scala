@@ -61,6 +61,9 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
     private def mkLambdaMetaFactoryCall(fun: Function, target: Symbol, functionalInterface: Symbol, samUserDefined: Symbol, isSpecialized: Boolean): Tree = {
       val pos = fun.pos
+      def isSelfParam(p: Symbol) = p.isSynthetic && p.name == nme.SELF
+      val hasSelfParam = isSelfParam(target.firstParam)
+
       val allCapturedArgRefs = {
         // find which variables are free in the lambda because those are captures that need to be
         // passed into the constructor of the anonymous function class
@@ -68,7 +71,8 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           gen.mkAttributedRef(capture) setPos pos
         ).toList
 
-        if (target hasFlag STATIC) captureArgs  // no `this` reference needed
+        if (!hasSelfParam) captureArgs.filterNot(arg => isSelfParam(arg.symbol))
+        else if (currentMethod.hasFlag(Flags.STATIC)) captureArgs
         else (gen.mkAttributedThis(fun.symbol.enclClass) setPos pos) :: captureArgs
       }
 
@@ -179,7 +183,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         val numCaptures  = targetParams.length - functionParamTypes.length
         val (targetCapturedParams, targetFunctionParams) = targetParams.splitAt(numCaptures)
 
-        val methSym = oldClass.newMethod(target.name.append("$adapted").toTermName, target.pos, target.flags | FINAL | ARTIFACT)
+        val methSym = oldClass.newMethod(target.name.append("$adapted").toTermName, target.pos, target.flags | FINAL | ARTIFACT | STATIC)
         val bridgeCapturedParams = targetCapturedParams.map(param => methSym.newSyntheticValueParam(param.tpe, param.name.toTermName))
         val bridgeFunctionParams =
           map2(targetFunctionParams, bridgeParamTypes)((param, tp) => methSym.newSyntheticValueParam(tp, param.name.toTermName))
@@ -223,10 +227,8 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
     private def transformFunction(originalFunction: Function): Tree = {
       val target = targetMethod(originalFunction)
-      target.makeNotPrivate(target.owner)
-
-      // must be done before calling createBoxingBridgeMethod and mkLambdaMetaFactoryCall
-      if (!(target hasFlag STATIC) && !methodReferencesThis(target)) target setFlag STATIC
+      assert(target.hasFlag(Flags.STATIC))
+      target.setFlag(notPRIVATE)
 
       val funSym = originalFunction.tpe.typeSymbolDirect
       // The functional interface that can be used to adapt the lambda target method `target` to the given function type.
@@ -252,11 +254,22 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     // here's the main entry point of the transform
     override def transform(tree: Tree): Tree = tree match {
       // the main thing we care about is lambdas
-      case fun: Function => super.transform(transformFunction(fun))
+      case fun: Function =>
+        super.transform(transformFunction(fun))
       case Template(_, _, _) =>
+        def pretransform(tree: Tree): Tree = tree match {
+          case dd: DefDef if dd.symbol.isDelambdafyTarget =>
+            if (!dd.symbol.hasFlag(STATIC) && methodReferencesThis(dd.symbol)) {
+              gen.mkStatic(dd, sym => sym)
+            } else {
+              dd.symbol.setFlag(STATIC)
+              dd
+            }
+          case t => t
+        }
         try {
           // during this call boxingBridgeMethods will be populated from the Function case
-          val Template(parents, self, body) = super.transform(tree)
+          val Template(parents, self, body) = super.transform(deriveTemplate(tree)(_.mapConserve(pretransform)))
           Template(parents, self, body ++ boxingBridgeMethods)
         } finally boxingBridgeMethods.clear()
       case _ => super.transform(tree)

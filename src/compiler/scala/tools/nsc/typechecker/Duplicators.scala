@@ -229,7 +229,12 @@ abstract class Duplicators extends Analyzer {
 
         case ddef @ DefDef(_, _, _, _, tpt, rhs) =>
           ddef.tpt modifyType fixType
-          super.typed(ddef.clearType(), mode, pt)
+          val result = super.typed(ddef.clearType(), mode, pt)
+          // TODO this is a hack, we really need a cleaner way to transport symbol attachments to duplicated methods
+          // bodies in specialized subclasses.
+          if (ddef.hasAttachment[DelambdafyTarget.type])
+            result.symbol.updateAttachment(DelambdafyTarget)
+          result
 
         case fun: Function =>
           debuglog("Clearing the type and retyping Function: " + fun)

@@ -11,7 +11,7 @@ package <empty> {
     def foo(methodParam: String): Function0 = {
       val methodLocal: String = "";
       {
-        (() => T.this.$anonfun$1(methodParam, methodLocal))
+        (() => T.this.$anonfun$foo$1(methodParam, methodLocal))
       }
     };
     def bar(barParam: String): Object = {
@@ -21,10 +21,10 @@ package <empty> {
     def tryy(tryyParam: String): Function0 = {
       var tryyLocal: runtime.ObjectRef = scala.runtime.ObjectRef.create("");
       {
-        (() => T.this.$anonfun$2(tryyParam, tryyLocal))
+        (() => T.this.$anonfun$tryy$1(tryyParam, tryyLocal))
       }
     };
-    final <artifact> private[this] def $anonfun$1(methodParam$1: String, methodLocal$1: String): String = T.this.classParam.+(T.this.field()).+(methodParam$1).+(methodLocal$1);
+    final <artifact> private[this] def $anonfun$foo$1(methodParam$1: String, methodLocal$1: String): String = T.this.classParam.+(T.this.field()).+(methodParam$1).+(methodLocal$1);
     abstract trait MethodLocalTrait$1 extends Object {
       def /*MethodLocalTrait$1*/$init$(barParam$1: String): Unit = {
         ()
@@ -54,7 +54,7 @@ package <empty> {
       T.this.MethodLocalObject$lzycompute$1(barParam$1, MethodLocalObject$module$1)
     else
       MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type]();
-    final <artifact> private[this] def $anonfun$2(tryyParam$1: String, tryyLocal$1: runtime.ObjectRef): Unit = try {
+    final <artifact> private[this] def $anonfun$tryy$1(tryyParam$1: String, tryyLocal$1: runtime.ObjectRef): Unit = try {
       tryyLocal$1.elem = tryyParam$1
     } finally ()
   }
