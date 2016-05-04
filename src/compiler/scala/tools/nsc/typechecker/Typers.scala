@@ -3003,22 +3003,23 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // skip typechecking of statements in a sequence where some other statement includes the targetposition
         case s if localTarget && !includesTargetPos(s) => s
         case _ =>
-          val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) {
-            this
-          } else newTyper(context.make(stat, exprOwner))
+          val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this
+                           else newTyper(context.make(stat, exprOwner))
           // XXX this creates a spurious dead code warning if an exception is thrown
           // in a constructor, even if it is the only thing in the constructor.
           val result = checkDead(localTyper.typedByValueExpr(stat))
 
           if (treeInfo.isSelfOrSuperConstrCall(result)) {
             context.inConstructorSuffix = true
-            if (treeInfo.isSelfConstrCall(result) && result.symbol.pos.pointOrElse(0) >= exprOwner.enclMethod.pos.pointOrElse(0))
-              ConstructorsOrderError(stat)
+            if (treeInfo.isSelfConstrCall(result)) {
+              if (result.symbol == exprOwner.enclMethod)
+                ConstructorRecursesError(stat)
+              else if (result.symbol.pos.pointOrElse(0) >= exprOwner.enclMethod.pos.pointOrElse(0))
+                ConstructorsOrderError(stat)
+            }
           }
-
           if (!isPastTyper && treeInfo.isPureExprForWarningPurposes(result)) context.warning(stat.pos,
-            "a pure expression does nothing in statement position; " +
-            "you may be omitting necessary parentheses"
+            "a pure expression does nothing in statement position; you may be omitting necessary parentheses"
           )
           result
       }
