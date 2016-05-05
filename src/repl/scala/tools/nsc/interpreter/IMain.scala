@@ -11,18 +11,18 @@ import PartialFunction.cond
 import scala.language.implicitConversions
 import scala.beans.BeanProperty
 import scala.collection.mutable
-import scala.concurrent.{ Future, ExecutionContext }
-import scala.reflect.runtime.{ universe => ru }
-import scala.reflect.{ ClassTag, classTag }
-import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
-import scala.tools.util.PathResolverFactory
+import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.runtime.{universe => ru}
+import scala.reflect.{ClassTag, classTag}
+import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.typechecker.{ TypeStrings, StructuredTypeStrings }
+import scala.tools.nsc.typechecker.{StructuredTypeStrings, TypeStrings}
 import scala.tools.nsc.util._
 import ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.util.Exceptional.unwrap
-import javax.script.{AbstractScriptEngine, Bindings, ScriptContext, ScriptEngine, ScriptEngineFactory, ScriptException, CompiledScript, Compilable}
+import javax.script.{AbstractScriptEngine, Bindings, Compilable, CompiledScript, ScriptContext, ScriptEngine, ScriptEngineFactory, ScriptException}
 import java.net.URL
+import scala.tools.util.PathResolver
 
 /** An interpreter for Scala code.
  *
@@ -91,7 +91,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
   def compilerClasspath: Seq[java.net.URL] = (
     if (isInitializeComplete) global.classPath.asURLs
-    else PathResolverFactory.create(settings).resultAsURLs  // the compiler's classpath
+    else new PathResolver(settings).resultAsURLs  // the compiler's classpath
   )
   def settings = initialSettings
   // Run the code body with the given boolean settings flipped to true.

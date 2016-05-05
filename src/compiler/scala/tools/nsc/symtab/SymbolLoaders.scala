@@ -10,10 +10,8 @@ import classfile.ClassfileParser
 import java.io.IOException
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.internal.util.Statistics
-import scala.reflect.io.{ AbstractFile, NoAbstractFile }
-import scala.tools.nsc.classpath.FlatClassPath
-import scala.tools.nsc.settings.ClassPathRepresentationType
-import scala.tools.nsc.util.{ ClassPath, ClassRepresentation }
+import scala.reflect.io.{AbstractFile, NoAbstractFile}
+import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 
 /** This class ...
  *
@@ -154,7 +152,7 @@ abstract class SymbolLoaders {
 
   /** Initialize toplevel class and module symbols in `owner` from class path representation `classRep`
    */
-  def initializeFromClassPath(owner: Symbol, classRep: ClassRepresentation[AbstractFile]) {
+  def initializeFromClassPath(owner: Symbol, classRep: ClassRepresentation) {
     ((classRep.binary, classRep.source) : @unchecked) match {
       case (Some(bin), Some(src))
       if platform.needCompile(bin, src) && !binaryOnly(owner, classRep.name) =>
@@ -247,41 +245,11 @@ abstract class SymbolLoaders {
   }
 
   /**
-   * Load contents of a package
-   */
-  class PackageLoader(classpath: ClassPath[AbstractFile]) extends SymbolLoader with FlagAgnosticCompleter {
-    protected def description = s"package loader ${classpath.name}"
-
-    protected def doComplete(root: Symbol) {
-      assert(root.isPackageClass, root)
-      // Time travel to a phase before refchecks avoids an initialization issue. `openPackageModule`
-      // creates a module symbol and invokes invokes `companionModule` while the `infos` field is
-      // still null. This calls `isModuleNotMethod`, which forces the `info` if run after refchecks.
-      enteringPhase(phaseBeforeRefchecks) {
-        root.setInfo(new PackageClassInfoType(newScope, root))
-
-        if (!root.isRoot) {
-          for (classRep <- classpath.classes) {
-            initializeFromClassPath(root, classRep)
-          }
-        }
-        if (!root.isEmptyPackageClass) {
-          for (pkg <- classpath.packages) {
-            enterPackage(root, pkg.name, new PackageLoader(pkg))
-          }
-
-          openPackageModule(root)
-        }
-      }
-    }
-  }
-
-  /**
    * Loads contents of a package
    */
-  class PackageLoaderUsingFlatClassPath(packageName: String, classPath: FlatClassPath) extends SymbolLoader with FlagAgnosticCompleter {
+  class PackageLoader(packageName: String, classPath: ClassPath) extends SymbolLoader with FlagAgnosticCompleter {
     protected def description = {
-      val shownPackageName = if (packageName == FlatClassPath.RootPackage) "<root package>" else packageName
+      val shownPackageName = if (packageName == ClassPath.RootPackage) "<root package>" else packageName
       s"package loader $shownPackageName"
     }
 
@@ -298,9 +266,9 @@ abstract class SymbolLoaders {
           val fullName = pkg.name
 
           val name =
-            if (packageName == FlatClassPath.RootPackage) fullName
+            if (packageName == ClassPath.RootPackage) fullName
             else fullName.substring(packageName.length + 1)
-          val packageLoader = new PackageLoaderUsingFlatClassPath(fullName, classPath)
+          val packageLoader = new PackageLoader(fullName, classPath)
           enterPackage(root, name, packageLoader)
         }
 
@@ -329,10 +297,7 @@ abstract class SymbolLoaders {
 
       val loaders = SymbolLoaders.this.asInstanceOf[SymbolLoadersRefined]
 
-      override def classFileLookup: util.ClassFileLookup[AbstractFile] = settings.YclasspathImpl.value match {
-        case ClassPathRepresentationType.Recursive => platform.classPath
-        case ClassPathRepresentationType.Flat => platform.flatClassPath
-      }
+      override def classPath: ClassPath = platform.classPath
     }
 
     protected def description = "class file "+ classfile.toString

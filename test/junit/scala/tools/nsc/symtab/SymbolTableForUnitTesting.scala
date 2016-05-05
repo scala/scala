@@ -3,11 +3,8 @@ package symtab
 
 import scala.reflect.ClassTag
 import scala.reflect.internal.{NoPhase, Phase, SomePhase}
-import scala.tools.nsc.classpath.FlatClassPath
-import scala.tools.nsc.settings.ClassPathRepresentationType
-import scala.tools.util.FlatClassPathResolver
 import scala.tools.util.PathResolver
-import util.{ClassFileLookup, ClassPath}
+import util.ClassPath
 import io.AbstractFile
 
 /**
@@ -30,8 +27,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
 
   override def isCompilerUniverse: Boolean = true
 
-  def classPath = platform.classPath
-  def flatClassPath: FlatClassPath = platform.flatClassPath
+  def classPath: ClassPath = platform.classPath
 
   object platform extends backend.Platform {
     val symbolTable: SymbolTableForUnitTesting.this.type = SymbolTableForUnitTesting.this
@@ -39,22 +35,12 @@ class SymbolTableForUnitTesting extends SymbolTable {
 
     def platformPhases: List[SubComponent] = Nil
 
-    lazy val classPath: ClassPath[AbstractFile] = {
-      assert(settings.YclasspathImpl.value == ClassPathRepresentationType.Recursive,
-        "It's not possible to use the recursive classpath representation, when it's not the chosen classpath scanning method")
-      new PathResolver(settings).result
-    }
-
-    private[nsc] lazy val flatClassPath: FlatClassPath = {
-      assert(settings.YclasspathImpl.value == ClassPathRepresentationType.Flat,
-        "It's not possible to use the flat classpath representation, when it's not the chosen classpath scanning method")
-      new FlatClassPathResolver(settings).result
-    }
+    private[nsc] lazy val classPath: ClassPath = new PathResolver(settings).result
 
     def isMaybeBoxed(sym: Symbol): Boolean = ???
     def needCompile(bin: AbstractFile, src: AbstractFile): Boolean = ???
     def externalEquals: Symbol = ???
-    def updateClassPath(subst: Map[ClassFileLookup[AbstractFile], ClassFileLookup[AbstractFile]]): Unit = ???
+    def updateClassPath(subst: Map[ClassPath, ClassPath]): Unit = ???
   }
 
   object loaders extends symtab.SymbolLoaders {
@@ -69,10 +55,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: SymbolTableForUnitTesting.this.type = SymbolTableForUnitTesting.this
 
-    def rootLoader: LazyType = settings.YclasspathImpl.value match {
-      case ClassPathRepresentationType.Flat => new loaders.PackageLoaderUsingFlatClassPath(FlatClassPath.RootPackage, flatClassPath)
-      case ClassPathRepresentationType.Recursive => new loaders.PackageLoader(classPath)
-    }
+    def rootLoader: LazyType = new loaders.PackageLoader(ClassPath.RootPackage, classPath)
 
     override def toString = "compiler mirror"
   }
