@@ -12,6 +12,7 @@ import scala.tools.nsc.backend.jvm.opt._
 import scala.tools.nsc.backend.jvm.BTypes._
 import BackendReporting._
 import scala.tools.nsc.settings.ScalaSettings
+import scala.reflect.internal.Flags.{DEFERRED, SYNTHESIZE_IMPL_IN_SUBCLASS}
 
 /**
  * This class mainly contains the method classBTypeFromSymbol, which extracts the necessary
@@ -580,7 +581,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
           //
           // However, due to https://github.com/scala/scala-dev/issues/126, this currently does not
           // work, the abstract accessor for O will be marked effectivelyFinal.
-          val effectivelyFinal = methodSym.isEffectivelyFinalOrNotOverridden && !methodSym.isDeferred
+          val effectivelyFinal = methodSym.isEffectivelyFinalOrNotOverridden && !(methodSym hasFlag DEFERRED | SYNTHESIZE_IMPL_IN_SUBCLASS)
 
           val info = MethodInlineInfo(
             effectivelyFinal  = effectivelyFinal,
@@ -716,15 +717,9 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     // scala compiler. The word final is heavily overloaded unfortunately;
     // for us it means "not overridable". At present you can't override
     // vars regardless; this may change.
-    //
-    // The logic does not check .isFinal (which checks flags for the FINAL flag,
-    // and includes symbols marked lateFINAL) instead inspecting rawflags so
-    // we can exclude lateFINAL. Such symbols are eligible for inlining, but to
-    // avoid breaking proxy software which depends on subclassing, we do not
-    // emit ACC_FINAL.
 
     val finalFlag = (
-      (((sym.rawflags & symtab.Flags.FINAL) != 0) || isTopLevelModuleClass(sym))
+           (sym.isFinal || isTopLevelModuleClass(sym))
         && !sym.enclClass.isTrait
         && !sym.isClassConstructor
         && (!sym.isMutable || nme.isTraitSetterName(sym.name)) // lazy vals and vars and their setters cannot be final, but trait setters are

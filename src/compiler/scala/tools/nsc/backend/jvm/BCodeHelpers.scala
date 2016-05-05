@@ -239,6 +239,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       sym.isErroneous
     }
 
+
   /*
    * must-single-thread
    */

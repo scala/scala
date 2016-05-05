@@ -31,12 +31,7 @@ class FlagsTest {
 
   @Test
   def testTimedFlags(): Unit = {
-    testLate(lateDEFERRED, _.isDeferred)
-    testLate(lateFINAL, _.isFinal)
-    testLate(lateMETHOD, _.isMethod)
-    testLate(lateMODULE, _.isModule)
     testNot(PROTECTED | notPROTECTED, _.isProtected)
-    testNot(OVERRIDE | notOVERRIDE, _.isOverride)
     testNot(PRIVATE | notPRIVATE, _.isPrivate)
 
     assertFalse(withFlagMask(AllFlags)(sym.setFlag(PRIVATE | notPRIVATE).isPrivate))

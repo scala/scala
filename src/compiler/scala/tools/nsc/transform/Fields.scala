@@ -83,10 +83,10 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
   private def accessorImplementedInSubclass(accessor: Symbol) =
     (accessor hasFlag SYNTHESIZE_IMPL_IN_SUBCLASS) && (accessor hasFlag (ACCESSOR | MODULE))
 
-  private def concreteOrSynthImpl(sym: Symbol): Boolean = !(sym hasFlag DEFERRED) || (sym hasFlag SYNTHESIZE_IMPL_IN_SUBCLASS)
+  @inline final def notDeferredOrSynthImpl(sym: Symbol): Boolean = !(sym hasFlag DEFERRED) || (sym hasFlag SYNTHESIZE_IMPL_IN_SUBCLASS)
 
   private def synthesizeImplInSubclasses(accessor: Symbol): Unit =
-    accessor setFlag lateDEFERRED | SYNTHESIZE_IMPL_IN_SUBCLASS
+    accessor setFlag SYNTHESIZE_IMPL_IN_SUBCLASS
 
   private def setClonedTraitSetterFlags(clazz: Symbol, correspondingGetter: Symbol, cloneInSubclass: Symbol): Unit = {
     val overridden = isOverriddenAccessor(correspondingGetter, clazz)
@@ -96,7 +96,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
   // TODO: add MIXEDIN (see e.g., `accessed` on `Symbol`)
   private def setMixedinAccessorFlags(orig: Symbol, cloneInSubclass: Symbol): Unit =
-    cloneInSubclass setFlag OVERRIDE | NEEDS_TREES resetFlag DEFERRED | lateDEFERRED | SYNTHESIZE_IMPL_IN_SUBCLASS
+    cloneInSubclass setFlag OVERRIDE | NEEDS_TREES resetFlag DEFERRED | SYNTHESIZE_IMPL_IN_SUBCLASS
 
   private def setFieldFlags(accessor: Symbol, fieldInSubclass: TermSymbol): Unit =
     fieldInSubclass setFlag (NEEDS_TREES |
@@ -128,7 +128,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
 
   def matchingAccessor(pre: Type, member: Symbol, clazz: Symbol) = {
-    val res = member.matchingSymbol(clazz, pre) filter (sym => (sym hasFlag ACCESSOR) && concreteOrSynthImpl(sym))
+    val res = member.matchingSymbol(clazz, pre) filter (sym => (sym hasFlag ACCESSOR) && notDeferredOrSynthImpl(sym))
     //    if (res != NoSymbol) println(s"matching accessor for $member in $clazz = $res (under $pre)")
     //    else println(s"no matching accessor for $member in $clazz (under $pre) among ${clazz.info.decls}")
     res
