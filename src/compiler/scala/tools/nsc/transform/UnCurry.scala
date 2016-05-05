@@ -341,7 +341,8 @@ abstract class UnCurry extends InfoTransform
 
     private def isSelfSynchronized(ddef: DefDef) = ddef.rhs match {
       case Apply(fn @ TypeApply(Select(sel, _), _), _) =>
-        fn.symbol == Object_synchronized && sel.symbol == ddef.symbol.enclClass && !ddef.symbol.enclClass.isTrait
+        val result = fn.symbol == Object_synchronized && sel.symbol == ddef.symbol.enclClass
+        result
       case _ => false
     }
 
