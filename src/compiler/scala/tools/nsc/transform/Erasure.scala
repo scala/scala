@@ -499,7 +499,7 @@ abstract class Erasure extends AddInterfaces
       if (!bridgeNeeded)
         return
 
-      var newFlags = (member.flags | BRIDGE | ARTIFACT) & ~(ACCESSOR | DEFERRED | LAZY | lateDEFERRED)
+      var newFlags = (member.flags | BRIDGE | ARTIFACT) & ~(ACCESSOR | DEFERRED | LAZY)
       // If `member` is a ModuleSymbol, the bridge should not also be a ModuleSymbol. Otherwise we
       // end up with two module symbols with the same name in the same scope, which is surprising
       // when implementing later phases.

@@ -86,7 +86,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
   private def concreteOrSynthImpl(sym: Symbol): Boolean = !(sym hasFlag DEFERRED) || (sym hasFlag SYNTHESIZE_IMPL_IN_SUBCLASS)
 
   private def synthesizeImplInSubclasses(accessor: Symbol): Unit =
-    accessor setFlag lateDEFERRED | SYNTHESIZE_IMPL_IN_SUBCLASS
+    accessor setFlag SYNTHESIZE_IMPL_IN_SUBCLASS
 
   private def setClonedTraitSetterFlags(clazz: Symbol, correspondingGetter: Symbol, cloneInSubclass: Symbol): Unit = {
     val overridden = isOverriddenAccessor(correspondingGetter, clazz)
@@ -96,7 +96,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
   // TODO: add MIXEDIN (see e.g., `accessed` on `Symbol`)
   private def setMixedinAccessorFlags(orig: Symbol, cloneInSubclass: Symbol): Unit =
-    cloneInSubclass setFlag OVERRIDE | NEEDS_TREES resetFlag DEFERRED | lateDEFERRED | SYNTHESIZE_IMPL_IN_SUBCLASS
+    cloneInSubclass setFlag OVERRIDE | NEEDS_TREES resetFlag DEFERRED | SYNTHESIZE_IMPL_IN_SUBCLASS
 
   private def setFieldFlags(accessor: Symbol, fieldInSubclass: TermSymbol): Unit =
     fieldInSubclass setFlag (NEEDS_TREES |

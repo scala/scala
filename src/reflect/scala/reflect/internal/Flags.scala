@@ -178,13 +178,14 @@ class Flags extends ModifierFlags {
   //
   // Flags from 1L to (1L << 50) are normal flags.
   //
-  // The flags DEFERRED (1L << 4) to MODULE (1L << 8) have a `late` counterpart. Late flags change
-  // their counterpart from 0 to 1 after a specific phase (see below). The first late flag
-  // (lateDEFERRED) is at (1L << 51), i.e., late flags are shifted by 47. The last one is (1L << 55).
+  // The "late" counterpart to flags DEFERRED (1L << 4) to MODULE (1L << 8)
+  // show up in `sym.flags` as their regular counterpart once the phase mask admits them (see below).
+  // The first late flag (lateDEFERRED) is at (1L << 51), i.e., late flags are shifted by 47. The last one is (1L << 55).
+  // Think of it as a poor man's flag history akin to the type history for a symbol's info.
   //
-  // The flags PROTECTED (1L) to PRIVATE (1L << 2) have a `not` counterpart. Negated flags change
-  // their counterpart from 1 to 0 after a specific phase (see below). They are shifted by 56, i.e.,
-  // the first negated flag (notPROTECTED) is at (1L << 56), the last at (1L << 58).
+  // The "not" counterpart to flags PROTECTED (1L) to PRIVATE (1L << 2)
+  // are negated flags that suppress their counterpart after a specific phase (see below).
+  // They are shifted by 56, i.e., the first negated flag (notPROTECTED) is at (1L << 56), the last at (1L << 58).
   //
   // Late and negative flags are only enabled after certain phases, implemented by the phaseNewFlags
   // method of the SubComponent, so they implement a bit of a flag history.

@@ -46,7 +46,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    */
   private def isImplementedStatically(sym: Symbol) = (
     sym.isMethod
-    && notDeferredOrLate(sym)
+    && notDeferred(sym)
     && sym.owner.isTrait
     && (!sym.isModule || sym.hasFlag(PRIVATE | LIFTED))
     && (!(sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isLazy)
@@ -109,7 +109,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
 // --------- type transformation -----------------------------------------------
 
-  private def notDeferredOrLate(sym: Symbol) = !sym.hasFlag(DEFERRED) || sym.hasFlag(lateDEFERRED)
+  private def notDeferred(sym: Symbol) = !sym.hasFlag(DEFERRED) || sym.hasFlag(SYNTHESIZE_IMPL_IN_SUBCLASS)
 
   /** Is member overridden (either directly or via a bridge) in base class sequence `bcs`? */
   def isOverriddenAccessor(member: Symbol, bcs: List[Symbol]): Boolean = beforeOwnPhase {
@@ -118,7 +118,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         sym =>
           sym.hasFlag(ACCESSOR) &&
           !sym.hasFlag(MIXEDIN) &&
-          notDeferredOrLate(sym) &&
+          notDeferred(sym) &&
           matchesType(sym.tpe, member.tpe, alwaysMatchSimple = true))
     }
     (    bcs.head != member.owner
@@ -174,11 +174,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       treatedClassInfos(clazz) = clazz.info
       assert(phase == currentRun.mixinPhase, phase)
 
-      /* Create a new getter. Getters are never private or local. They are
-       *  always accessors and deferred. */
+      /* Create a new getter. Getters are never private or local.
+       * They are always accessors and deferred.
+       *
+       * TODO: I guess newGetter and newSetter are needed for fields added after the fields phase (lambdalift) -- can we fix that?
+       */
       def newGetter(field: Symbol): Symbol = {
-        // println("creating new getter for "+ field +" : "+ field.info +" at "+ field.locationString+(field hasFlag MUTABLE))
-        val newFlags = field.flags & ~PrivateLocal | ACCESSOR | lateDEFERRED | ( if (field.isMutable) 0 else STABLE )
+        //println(s"creating new getter for $field : ${field.info} at ${field.locationString} // mutable: ${field hasFlag MUTABLE}")
+        val newFlags = field.flags & ~PrivateLocal | ACCESSOR | ( if (field.isMutable) 0 else STABLE ) | SYNTHESIZE_IMPL_IN_SUBCLASS // TODO: do we need SYNTHESIZE_IMPL_IN_SUBCLASS to indicate that `notDeferred(setter)` should hold
         // TODO preserve pre-erasure info?
         clazz.newMethod(field.getterName, field.pos, newFlags) setInfo MethodType(Nil, field.info)
       }
@@ -186,9 +189,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       /* Create a new setter. Setters are never private or local. They are
        * always accessors and deferred. */
       def newSetter(field: Symbol): Symbol = {
-        //println("creating new setter for "+field+field.locationString+(field hasFlag MUTABLE))
+        //println(s"creating new setter for $field ${field.locationString} // mutable: ${field hasFlag MUTABLE}")
         val setterName = field.setterName
-        val newFlags   = field.flags & ~PrivateLocal | ACCESSOR | lateDEFERRED
+        val newFlags   = field.flags & ~PrivateLocal | ACCESSOR | SYNTHESIZE_IMPL_IN_SUBCLASS // TODO: do we need SYNTHESIZE_IMPL_IN_SUBCLASS to indicate that `notDeferred(setter)` should hold
         val setter     = clazz.newMethod(setterName, field.pos, newFlags)
         // TODO preserve pre-erasure info?
         setter setInfo MethodType(setter.newSyntheticValueParams(List(field.info)), UnitTpe)
@@ -236,7 +239,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     def cloneAndAddMixinMember(mixinClass: Symbol, mixinMember: Symbol): Symbol = (
       cloneAndAddMember(mixinClass, mixinMember, clazz)
            setPos clazz.pos
-        resetFlag DEFERRED | lateDEFERRED
+        resetFlag DEFERRED
     )
 
     /* Mix in members of implementation class mixinClass into class clazz */
@@ -311,9 +314,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         }
         else if (mixinMember.hasAllFlags(METHOD | MODULE) && mixinMember.hasNoFlags(LIFTED | BRIDGE)) {
           // mixin objects: todo what happens with abstract objects?
-          // addMember(clazz, mixinMember.cloneSymbol(clazz, mixinMember.flags & ~(DEFERRED | lateDEFERRED)) setPos clazz.pos)
+          // addMember(clazz, mixinMember.cloneSymbol(clazz, mixinMember.flags & ~DEFERRED) setPos clazz.pos)
         }
-        else if (mixinMember.hasFlag(ACCESSOR) && notDeferredOrLate(mixinMember)
+        else if (mixinMember.hasFlag(ACCESSOR) && notDeferred(mixinMember)
                  && (mixinMember hasFlag (LAZY | PARAMACCESSOR))
                  && !isOverriddenAccessor(mixinMember, clazz.info.baseClasses)) {
           // pick up where `fields` left off -- it already mixed in fields and accessors for regular vals.
@@ -917,9 +920,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           addDefDef(sym)
         } else {
           // if class is not a trait add accessor definitions
-          // used to include `sym` with `sym hasFlag lateDEFERRED` as not deferred,
-          // but I don't think MIXEDIN members ever get this flag
-          assert(!sym.hasFlag(lateDEFERRED), s"mixedin $sym from $clazz has lateDEFERRED flag?!")
           if (sym.hasFlag(ACCESSOR) && !sym.hasFlag(DEFERRED)) {
             assert(sym hasFlag (LAZY | PARAMACCESSOR), s"mixed in $sym from $clazz is not lazy/param?!?")
 
