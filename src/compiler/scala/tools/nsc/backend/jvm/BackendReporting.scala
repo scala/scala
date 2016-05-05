@@ -42,15 +42,15 @@ object BackendReporting {
   def assertionError(message: String): Nothing = throw new AssertionError(message)
 
   implicit class RightBiasedEither[A, B](val v: Either[A, B]) extends AnyVal {
-    def map[U](f: B => U) = v.right.map(f)
-    def flatMap[BB](f: B => Either[A, BB]) = v.right.flatMap(f)
+    def map[C](f: B => C): Either[A, C] = v.right.map(f)
+    def flatMap[C](f: B => Either[A, C]): Either[A, C] = v.right.flatMap(f)
     def withFilter(f: B => Boolean)(implicit empty: A): Either[A, B] = v match {
       case Left(_)  => v
       case Right(e) => if (f(e)) v else Left(empty) // scalaz.\/ requires an implicit Monoid m to get m.empty
     }
-    def foreach[U](f: B => U) = v.right.foreach(f)
+    def foreach[U](f: B => U): Unit = v.right.foreach(f)
 
-    def getOrElse[BB >: B](alt: => BB): BB = v.right.getOrElse(alt)
+    def getOrElse[C >: B](alt: => C): C = v.right.getOrElse(alt)
 
     /**
      * Get the value, fail with an assertion if this is an error.
@@ -101,11 +101,14 @@ object BackendReporting {
           else ""
         }
 
-      case MethodNotFound(name, descriptor, ownerInternalName, missingClasses) =>
-        val (javaDef, others) = missingClasses.partition(_.definedInJavaSource)
-        s"The method $name$descriptor could not be found in the class $ownerInternalName or any of its parents." +
-          (if (others.isEmpty) "" else others.map(_.internalName).mkString("\nNote that the following parent classes could not be found on the classpath: ", ", ", "")) +
-          (if (javaDef.isEmpty) "" else javaDef.map(_.internalName).mkString("\nNote that the following parent classes are defined in Java sources (mixed compilation), no bytecode is available: ", ",", ""))
+      case MethodNotFound(name, descriptor, ownerInternalName, missingClass) =>
+        val missingClassWarning = missingClass match {
+          case None => ""
+          case Some(c) =>
+            if (c.definedInJavaSource) s"\nNote that the parent class ${c.internalName} is defined in a Java source (mixed compilation), no bytecode is available."
+            else s"\nNote that the parent class ${c.internalName} could not be found on the classpath."
+        }
+        s"The method $name$descriptor could not be found in the class $ownerInternalName or any of its parents." + missingClassWarning
 
       case FieldNotFound(name, descriptor, ownerInternalName, missingClass) =>
         s"The field node $name$descriptor could not be found because the classfile $ownerInternalName cannot be found on the classpath." +
@@ -127,7 +130,7 @@ object BackendReporting {
   }
 
   case class ClassNotFound(internalName: InternalName, definedInJavaSource: Boolean) extends MissingBytecodeWarning
-  case class MethodNotFound(name: String, descriptor: String, ownerInternalNameOrArrayDescriptor: InternalName, missingClasses: List[ClassNotFound]) extends MissingBytecodeWarning {
+  case class MethodNotFound(name: String, descriptor: String, ownerInternalNameOrArrayDescriptor: InternalName, missingClass: Option[ClassNotFound]) extends MissingBytecodeWarning {
     def isArrayMethod = ownerInternalNameOrArrayDescriptor.charAt(0) == '['
   }
   case class FieldNotFound(name: String, descriptor: String, ownerInternalName: InternalName, missingClass: Option[ClassNotFound]) extends MissingBytecodeWarning

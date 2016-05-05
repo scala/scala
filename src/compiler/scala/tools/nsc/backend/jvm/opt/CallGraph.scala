@@ -131,19 +131,19 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
               (method, declarationClass)     <- byteCodeRepository.methodNode(call.owner, call.name, call.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
               (declarationClassNode, source) <- byteCodeRepository.classNodeAndSource(declarationClass): Either[OptimizerWarning, (ClassNode, Source)]
             } yield {
-                val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
-                val info = analyzeCallsite(method, declarationClassBType, call, source)
-                import info._
-                Callee(
-                  callee = method,
-                  calleeDeclarationClass = declarationClassBType,
-                  safeToInline = safeToInline,
-                  canInlineFromSource = canInlineFromSource,
-                  annotatedInline = annotatedInline,
-                  annotatedNoInline = annotatedNoInline,
-                  samParamTypes = info.samParamTypes,
-                  calleeInfoWarning = warning)
-              }
+              val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
+              val info = analyzeCallsite(method, declarationClassBType, call, source)
+              import info._
+              Callee(
+                callee = method,
+                calleeDeclarationClass = declarationClassBType,
+                safeToInline = safeToInline,
+                canInlineFromSource = canInlineFromSource,
+                annotatedInline = annotatedInline,
+                annotatedNoInline = annotatedNoInline,
+                samParamTypes = info.samParamTypes,
+                calleeInfoWarning = warning)
+            }
 
             val argInfos = computeArgInfos(callee, call, prodCons)
 
@@ -388,12 +388,11 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    * @param calleeInfoWarning      An inliner warning if some information was not available while
    *                               gathering the information about this callee.
    */
-  final case class Callee(
-                           callee: MethodNode, calleeDeclarationClass: btypes.ClassBType,
-                           safeToInline: Boolean, canInlineFromSource: Boolean,
-                           annotatedInline: Boolean, annotatedNoInline: Boolean,
-                           samParamTypes: IntMap[btypes.ClassBType],
-                           calleeInfoWarning: Option[CalleeInfoWarning]) {
+  final case class Callee(callee: MethodNode, calleeDeclarationClass: btypes.ClassBType,
+                          safeToInline: Boolean, canInlineFromSource: Boolean,
+                          annotatedInline: Boolean, annotatedNoInline: Boolean,
+                          samParamTypes: IntMap[btypes.ClassBType],
+                          calleeInfoWarning: Option[CalleeInfoWarning]) {
     override def toString = s"Callee($calleeDeclarationClass.${callee.name})"
   }
 

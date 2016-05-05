@@ -99,6 +99,10 @@ object BytecodeUtils {
     methodNode.name == INSTANCE_CONSTRUCTOR_NAME || methodNode.name == CLASS_CONSTRUCTOR_NAME
   }
 
+  def isPublicMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_PUBLIC) != 0
+
+  def isPrivateMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_PRIVATE) != 0
+
   def isStaticMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_STATIC) != 0
 
   def isAbstractMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_ABSTRACT) != 0
@@ -107,9 +111,11 @@ object BytecodeUtils {
 
   def isNativeMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_NATIVE) != 0
 
-  def hasCallerSensitiveAnnotation(methodNode: MethodNode) = methodNode.visibleAnnotations != null && methodNode.visibleAnnotations.asScala.exists(_.desc == "Lsun/reflect/CallerSensitive;")
+  def hasCallerSensitiveAnnotation(methodNode: MethodNode): Boolean = methodNode.visibleAnnotations != null && methodNode.visibleAnnotations.asScala.exists(_.desc == "Lsun/reflect/CallerSensitive;")
 
   def isFinalClass(classNode: ClassNode): Boolean = (classNode.access & ACC_FINAL) != 0
+
+  def isInterface(classNode: ClassNode): Boolean = (classNode.access & ACC_INTERFACE) != 0
 
   def isFinalMethod(methodNode: MethodNode): Boolean = (methodNode.access & (ACC_FINAL | ACC_PRIVATE | ACC_STATIC)) != 0
 
