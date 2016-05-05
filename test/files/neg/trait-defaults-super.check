@@ -1,0 +1,4 @@
+trait-defaults-super.scala:14: error: Implementation restruction: unable to emit a super call to java/lang/Iterable.spliterator from C. Add java/lang/Iterable as a direct parent of C
+class C extends T
+      ^
+one error found

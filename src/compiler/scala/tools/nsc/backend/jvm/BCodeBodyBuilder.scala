@@ -1077,10 +1077,15 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           if (needsInterfaceCall(receiverClass)) bc.invokeinterface(receiverName, jname, mdescr, pos)
           else                               bc.invokevirtual  (receiverName, jname, mdescr, pos)
         case Super   =>
-          if (receiverClass.isTraitOrInterface) {
+          if (receiverClass.isTrait && method.owner.isTrait && !method.owner.isJavaDefined) {
             val staticDesc = MethodBType(typeToBType(method.owner.info) :: method.info.paramTypes.map(typeToBType), typeToBType(method.info.resultType)).descriptor
             bc.invokestatic(receiverName, jname, staticDesc, pos)
-          } else bc.invokespecial  (receiverName, jname, mdescr, pos)
+          } else {
+            if (receiverClass.isTraitOrInterface && !cnode.interfaces.contains(receiverName))
+              reporter.error(pos, s"Implementation restruction: unable to emit a super call to ${receiverName}.${method.name} from ${cnode.name}. Add $receiverName as a direct parent of ${cnode.name}")
+            else
+              bc.invokespecial  (receiverName, jname, mdescr, pos)
+          }
       }
 
       bmType.returnType
