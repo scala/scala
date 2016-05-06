@@ -4,13 +4,13 @@ object HKGADT {
 
   def frob[F[_]](foo: Foo[F]): F[Int] =
     foo match {
-      case Bar() => List(1)
+      case Bar() => Set(1)
     }
 
   sealed trait Foo1[F]
   final case class Bar1() extends Foo1[Int]
   def frob1[A](foo: Foo1[A]): A = foo match {
-    case Bar1() => 1
+    case Bar1() => true
   }
 }
 
@@ -21,15 +21,15 @@ object HKGADT2 {
 
   def frob[F[_]](foo: Foo[F]): F[Int] =
     foo match {
-      case Bar() => List(1)
-      case Baz() => Set(1)
+      case Bar() => Set(1)
+      case Baz() => List(1)
     }
 
   sealed trait Foo1[F]
   final case class Bar1() extends Foo1[Int]
   final case class Baz1() extends Foo1[Boolean]
   def frob1[A](foo: Foo1[A]): A = foo match {
-    case Bar1() => 1
-    case Baz1() => true
+    case Bar1() => true
+    case Baz1() => 1
   }
 }
