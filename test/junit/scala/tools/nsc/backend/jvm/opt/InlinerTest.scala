@@ -428,7 +428,7 @@ class InlinerTest extends ClearAfterClass {
       """B::flop()I is annotated @inline but could not be inlined:
         |Failed to check if B::flop()I can be safely inlined to B without causing an IllegalAccessError. Checking instruction INVOKESTATIC A.bar ()I failed:
         |The method bar()I could not be found in the class A or any of its parents.
-        |Note that the following parent classes are defined in Java sources (mixed compilation), no bytecode is available: A""".stripMargin
+        |Note that the parent class A is defined in a Java source (mixed compilation), no bytecode is available.""".stripMargin
 
     var c = 0
     val List(b) = compile(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; i.msg contains warn})
@@ -833,7 +833,7 @@ class InlinerTest extends ClearAfterClass {
     val warn =
       """failed to determine if <init> should be inlined:
         |The method <init>()V could not be found in the class A$Inner or any of its parents.
-        |Note that the following parent classes could not be found on the classpath: A$Inner""".stripMargin
+        |Note that the parent class A$Inner could not be found on the classpath.""".stripMargin
 
     var c = 0
 
@@ -955,18 +955,12 @@ class InlinerTest extends ClearAfterClass {
     val List(c, _, _) = compile(code)
 
     val t1 = getSingleMethod(c, "t1")
-    assert(t1.instructions forall { // indy is eliminated by push-pop
-      case _: InvokeDynamic => false
-      case _ => true
-    })
+    assertNoIndy(t1)
     // the indy call is inlined into t, and the closure elimination rewrites the closure invocation to the body method
     assertInvoke(t1, "C", "C$$$anonfun$2")
 
     val t2 = getSingleMethod(c, "t2")
-    assert(t2.instructions forall { // indy is eliminated by push-pop
-      case _: InvokeDynamic => false
-      case _ => true
-    })
+    assertNoIndy(t2)
     assertInvoke(t2, "M$", "M$$$anonfun$1")
   }
 
@@ -1491,5 +1485,32 @@ class InlinerTest extends ClearAfterClass {
     val List(c, t1, t2) = compile(code, allowMessage = _ => true)
     // the forwarder C.f is inlined, so there's no invocation
     assertSameSummary(getSingleMethod(c, "f"), List(ICONST_1, IRETURN))
+  }
+
+  @Test
+  def sd140(): Unit = {
+    val code =
+      """trait T { @inline def f = 0 }
+        |trait U extends T { @inline override def f = 1 }
+        |trait V extends T { def m = 0 }
+        |final class K extends V with U { override def m = super[V].m }
+        |class C { def t = (new K).f }
+      """.stripMargin
+    val c :: _ = compile(code)
+    assertSameSummary(getSingleMethod(c, "t"), List(NEW, "<init>", ICONST_1, IRETURN))  // ICONST_1, U.f is inlined (not T.f)
+  }
+
+  @Test
+  def inlineArrayForeach(): Unit = {
+    val code =
+      """class C {
+        |  def consume(x: Int) = ()
+        |  def t(a: Array[Int]): Unit = a foreach consume
+        |}
+      """.stripMargin
+    val List(c) = compile(code)
+    val t = getSingleMethod(c, "t")
+    assertNoIndy(t)
+    assertInvoke(t, "C", "C$$$anonfun$1")
   }
 }

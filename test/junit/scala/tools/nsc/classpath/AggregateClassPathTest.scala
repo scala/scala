@@ -10,6 +10,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import scala.reflect.io.VirtualFile
 import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.util.ClassPath
 
 /**
  * Tests whether AggregateFlatClassPath returns correct entries taken from
@@ -17,14 +18,14 @@ import scala.tools.nsc.io.AbstractFile
  * (in the case of the repeated entry for a class or a source it returns the first one).
  */
 @RunWith(classOf[JUnit4])
-class AggregateFlatClassPathTest {
+class AggregateClassPathTest {
 
-  private class TestFlatClassPath extends FlatClassPath {
+  private abstract class TestClassPathBase extends ClassPath {
     override def packages(inPackage: String): Seq[PackageEntry] = unsupported
     override def sources(inPackage: String): Seq[SourceFileEntry] = unsupported
     override def classes(inPackage: String): Seq[ClassFileEntry] = unsupported
 
-    override def list(inPackage: String): FlatClassPathEntries = unsupported
+    override def list(inPackage: String): ClassPathEntries = unsupported
     override def findClassFile(name: String): Option[AbstractFile] = unsupported
 
     override def asClassPathStrings: Seq[String] = unsupported
@@ -32,7 +33,7 @@ class AggregateFlatClassPathTest {
     override def asURLs: Seq[URL] = unsupported
   }
 
-  private case class TestClassPath(virtualPath: String, classesInPackage: EntryNamesInPackage*) extends TestFlatClassPath {
+  private case class TestClassPath(virtualPath: String, classesInPackage: EntryNamesInPackage*) extends TestClassPathBase {
 
     override def classes(inPackage: String): Seq[ClassFileEntry] =
       for {
@@ -43,10 +44,10 @@ class AggregateFlatClassPathTest {
     override def sources(inPackage: String): Seq[SourceFileEntry] = Nil
 
     // we'll ignore packages
-    override def list(inPackage: String): FlatClassPathEntries = FlatClassPathEntries(Nil, classes(inPackage))
+    override def list(inPackage: String): ClassPathEntries = ClassPathEntries(Nil, classes(inPackage))
   }
 
-  private case class TestSourcePath(virtualPath: String, sourcesInPackage: EntryNamesInPackage*) extends TestFlatClassPath {
+  private case class TestSourcePath(virtualPath: String, sourcesInPackage: EntryNamesInPackage*) extends TestClassPathBase {
 
     override def sources(inPackage: String): Seq[SourceFileEntry] =
       for {
@@ -57,7 +58,7 @@ class AggregateFlatClassPathTest {
     override def classes(inPackage: String): Seq[ClassFileEntry] = Nil
 
     // we'll ignore packages
-    override def list(inPackage: String): FlatClassPathEntries = FlatClassPathEntries(Nil, sources(inPackage))
+    override def list(inPackage: String): ClassPathEntries = ClassPathEntries(Nil, sources(inPackage))
   }
 
   private case class EntryNamesInPackage(inPackage: String)(val names: String*)
@@ -88,7 +89,7 @@ class AggregateFlatClassPathTest {
 
   private def virtualFile(pathPrefix: String, inPackage: String, fileName: String, extension: String) = {
     val packageDirs =
-      if (inPackage == FlatClassPath.RootPackage) ""
+      if (inPackage == ClassPath.RootPackage) ""
       else inPackage.split('.').mkString("/", "/", "")
     new VirtualFile(fileName + extension, s"$pathPrefix$packageDirs/$fileName$extension")
   }
@@ -101,12 +102,12 @@ class AggregateFlatClassPathTest {
       TestSourcePath(dir2, EntryNamesInPackage(pkg3)("J", "K", "L"))
     )
 
-    AggregateFlatClassPath(partialClassPaths)
+    AggregateClassPath(partialClassPaths)
   }
 
   @Test
   def testGettingPackages: Unit = {
-    case class ClassPathWithPackages(packagesInPackage: EntryNamesInPackage*) extends TestFlatClassPath {
+    case class ClassPathWithPackages(packagesInPackage: EntryNamesInPackage*) extends TestClassPathBase {
       override def packages(inPackage: String): Seq[PackageEntry] =
         packagesInPackage.find(_.inPackage == inPackage).map(_.names).getOrElse(Nil) map PackageEntryImpl
     }
@@ -115,7 +116,7 @@ class AggregateFlatClassPathTest {
       ClassPathWithPackages(EntryNamesInPackage(pkg1)("pkg1.c", "pkg1.b", "pkg1.a"),
         EntryNamesInPackage(pkg2)("pkg2.d", "pkg2.a", "pkg2.e"))
     )
-    val cp = AggregateFlatClassPath(partialClassPaths)
+    val cp = AggregateClassPath(partialClassPaths)
 
     val packagesInPkg1 = Seq("pkg1.a", "pkg1.d", "pkg1.f", "pkg1.c", "pkg1.b")
     assertEquals(packagesInPkg1, cp.packages(pkg1).map(_.name))
@@ -156,7 +157,7 @@ class AggregateFlatClassPathTest {
       TestClassPath(dir4, EntryNamesInPackage(pkg2)("A", "H", "I")),
       TestClassPath(dir2, EntryNamesInPackage(pkg3)("J", "K", "L"))
     )
-    val cp = AggregateFlatClassPath(partialClassPaths)
+    val cp = AggregateClassPath(partialClassPaths)
 
     val sourcesInPkg1 = Seq(sourceFileEntry(dir2, pkg1, "C"),
       sourceFileEntry(dir2, pkg1, "B"),
@@ -190,7 +191,7 @@ class AggregateFlatClassPathTest {
     )
     assertEquals(classesAndSourcesInPkg1, cp.list(pkg1).classesAndSources)
 
-    assertEquals(FlatClassPathEntries(Nil, Nil), cp.list(nonexistingPkg))
+    assertEquals(ClassPathEntries(Nil, Nil), cp.list(nonexistingPkg))
   }
 
   @Test

@@ -4,8 +4,9 @@ import scala.tools.nsc.util.ClassRepresentation
 import scala.reflect.io.{Path, PlainFile, VirtualDirectory, AbstractFile}
 import FileUtils._
 import java.net.URL
+import scala.tools.nsc.util.ClassPath
 
-case class VirtualDirectoryFlatClassPath(dir: VirtualDirectory) extends FlatClassPath with DirectoryLookup[ClassFileEntryImpl] with NoSourcePaths {
+case class VirtualDirectoryClassPath(dir: VirtualDirectory) extends ClassPath with DirectoryLookup[ClassFileEntryImpl] with NoSourcePaths {
   type F = AbstractFile
 
   protected def emptyFiles: Array[AbstractFile] = Array.empty
@@ -23,7 +24,7 @@ case class VirtualDirectoryFlatClassPath(dir: VirtualDirectory) extends FlatClas
   def asURLs: Seq[URL] = Seq(new URL(dir.name))
   def asClassPathStrings: Seq[String] = Seq(dir.path)
 
-  override def findClass(className: String): Option[ClassRepresentation[AbstractFile]] = findClassFile(className) map ClassFileEntryImpl
+  override def findClass(className: String): Option[ClassRepresentation] = findClassFile(className) map ClassFileEntryImpl
 
   def findClassFile(className: String): Option[AbstractFile] = {
     val relativePath = FileUtils.dirPath(className)

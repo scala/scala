@@ -29,8 +29,8 @@ import scala.reflect.ClassTag
  *  val f: Future[String] = Future {
  *    s + " future!"
  *  }
- *  f onSuccess {
- *    case msg => println(msg)
+ *  f foreach {
+ *    msg => println(msg)
  *  }
  *  }}}
  *

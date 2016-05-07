@@ -613,7 +613,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         loadBytes[String]("scala.reflect.ScalaSignature") match {
           case Some(ssig) =>
             info(s"unpickling Scala $clazz and $module, owner = ${clazz.owner}")
-            val bytes = ssig.getBytes
+            val bytes = ssig.getBytes(java.nio.charset.StandardCharsets.UTF_8)
             val len = ByteCodecs.decode(bytes)
             assignAssociatedFile(clazz, module, jclazz)
             unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
@@ -622,7 +622,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
             loadBytes[Array[String]]("scala.reflect.ScalaLongSignature") match {
               case Some(slsig) =>
                 info(s"unpickling Scala $clazz and $module with long Scala signature")
-                val encoded = slsig flatMap (_.getBytes)
+                val encoded = slsig flatMap (_.getBytes(java.nio.charset.StandardCharsets.UTF_8))
                 val len = ByteCodecs.decode(encoded)
                 val decoded = encoded.take(len)
                 assignAssociatedFile(clazz, module, jclazz)

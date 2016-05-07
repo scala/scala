@@ -7,9 +7,7 @@ package scala.tools.nsc.interpreter
 import scala.reflect.internal.util.RangePosition
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.backend.JavaPlatform
-import scala.tools.nsc.settings.ClassPathRepresentationType
-import scala.tools.nsc.util.ClassPath.DefaultJavaContext
-import scala.tools.nsc.util.{ClassPath, MergedClassPath, DirectoryClassPath}
+import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.{interactive, Settings}
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.classpath._
@@ -58,12 +56,8 @@ trait PresentationCompilation {
     */
   def newPresentationCompiler(): interactive.Global = {
     def mergedFlatClasspath = {
-      val replOutClasspath = FlatClassPathFactory.newClassPath(replOutput.dir, settings)
-      AggregateFlatClassPath(replOutClasspath :: global.platform.flatClassPath :: Nil)
-    }
-    def mergedRecursiveClasspath = {
-      val replOutClasspath: DirectoryClassPath = new DirectoryClassPath(replOutput.dir, DefaultJavaContext)
-      new MergedClassPath[AbstractFile](replOutClasspath :: global.platform.classPath :: Nil, DefaultJavaContext)
+      val replOutClasspath = ClassPathFactory.newClassPath(replOutput.dir, settings)
+      AggregateClassPath(replOutClasspath :: global.platform.classPath :: Nil)
     }
     def copySettings: Settings = {
       val s = new Settings(_ => () /* ignores "bad option -nc" errors, etc */)
@@ -74,16 +68,9 @@ trait PresentationCompilation {
     val storeReporter: StoreReporter = new StoreReporter
     val interactiveGlobal = new interactive.Global(copySettings, storeReporter) { self =>
       override lazy val platform: ThisPlatform = {
-        if (settings.YclasspathImpl.value == ClassPathRepresentationType.Flat) {
-          new JavaPlatform {
-            val global: self.type = self
-            override private[nsc] lazy val flatClassPath: FlatClassPath = mergedFlatClasspath
-          }
-        } else {
-          new JavaPlatform {
-            val global: self.type = self
-            override def classPath: ClassPath[AbstractFile] = mergedRecursiveClasspath
-          }
+        new JavaPlatform {
+          val global: self.type = self
+          override private[nsc] lazy val classPath: ClassPath = mergedFlatClasspath
         }
       }
     }

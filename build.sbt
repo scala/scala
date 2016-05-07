@@ -4,7 +4,7 @@
  * What you see below is very much work-in-progress. The following features are implemented:
  *   - Compiling all classses for the compiler and library ("compile" in the respective subprojects)
  *   - Running JUnit tests ("test") and partest ("test/it:test")
- *   - Creating build/quick with all compiled classes and launcher scripts ("dist/mkQuick")
+ *   - Creating build/quick with all compiled classes and launcher scripts ("˜")
  *   - Creating build/pack with all JARs and launcher scripts ("dist/mkPack")
  *   - Building all scaladoc sets ("doc")
  *   - Publishing ("publishDists" and standard sbt tasks like "publish" and "publishLocal")
