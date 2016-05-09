@@ -34,8 +34,6 @@ in some inner scope _shadows_ bindings of lower precedence in the
 same scope as well as bindings of the same or lower precedence in outer
 scopes.
 
-<!-- TODO: either the example, the spec, or the compiler is wrong
-
 Note that shadowing is only a partial order. In a situation like
 
 ```scala
@@ -48,7 +46,6 @@ val x = 1
 
 neither binding of `x` shadows the other. Consequently, the
 reference to `x` in the last line of the block above would be ambiguous.
--->
 
 A reference to an unqualified (type- or term-) identifier $x$ is bound
 by the unique binding, which
@@ -84,7 +81,9 @@ package Q {
 ```
 
 The following program illustrates different kinds of bindings and
-precedences between them.
+precedences between them.  It is assumed that the definitions for the
+objects names named `X` in packages `P` and `Q` are made in a different
+file (a different compilation unit) than that of the program.
 
 ```scala
 package P {                  // `X' bound by package clause
@@ -95,17 +94,20 @@ object A {
     import Q._               // `X' bound by wildcard import
     println("L7: "+X)        // `X' refers to `Q.X' here
     import X._               // `x' and `y' bound by wildcard import
-    println("L8: "+x)        // `x' refers to `Q.X.x' here
+    println("L9: "+x)        // `x' refers to `Q.X.x' here
     object C {
       val x = 3              // `x' bound by local definition
       println("L12: "+x)     // `x' refers to constant `3' here
-      { import Q.X._         // `x' and `y' bound by wildcard import
-//      println("L14: "+x)   // reference to `x' is ambiguous here
+      object D {
+        import Q.X._         // `x' and `y' bound by wildcard import
+//      println("L15: "+x)   // reference to `x' is ambiguous here
         import X.y           // `y' bound by explicit import
-        println("L16: "+y)   // `y' refers to `Q.X.y' here
-        { val x = "abc"      // `x' bound by local definition
+        println("L17: "+y)   // `y' refers to `Q.X.y' here
+        def abc() =  { val x = "abc"   // `x' bound by local definition
           import P.X._       // `x' and `y' bound by wildcard import
-//        println("L19: "+y) // reference to `y' is ambiguous here
-          println("L20: "+x) // `x' refers to string "abc" here
-}}}}}}
+//        println("L20: "+y) // reference to `y' is ambiguous here
+          println("L21: "+x) // `x' refers to string "abc" here
+}}}}
+  def main(args: Array[String]): Unit = { B.C.D.abc }
+}}
 ```
