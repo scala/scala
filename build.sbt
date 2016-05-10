@@ -88,7 +88,7 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
     val mappings = artifacts.toSeq.map { case (a, f) =>
       val typeSuffix = a.`type` match {
         case "pom" => "-pom.xml"
-        case "bundle" | "jar" => ".jar"
+        case "jar" => ".jar"
         case "doc" => "-docs.jar"
         case tpe => s"-$tpe.${a.extension}"
       }
@@ -103,6 +103,8 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
     if (file.exists) List(Credentials(file))
     else Nil
   },
+  // Add a "default" Ivy configuration because sbt expects the Scala distribution to have one:
+  ivyConfigurations += Configuration("default", "Default", true, List(Configurations.Runtime), true),
   publishMavenStyle := true
 )
 
@@ -240,8 +242,8 @@ def fixPom(extra: (String, scala.xml.Node)*): Setting[_] = {
   ) ++ extra) }
 }
 
-/** Remove unwanted dependencies from the POM. */
-def removePomDependencies(deps: (String, String)*): Setting[_] = {
+/** Remove unwanted dependencies from the POM and ivy.xml. */
+def removePomDependencies(deps: (String, String)*): Seq[Setting[_]] = Seq(
   pomPostProcess := { n =>
     val n2 = pomPostProcess.value.apply(n)
     import scala.xml._
@@ -256,12 +258,38 @@ def removePomDependencies(deps: (String, String)*): Setting[_] = {
         case n => Seq(n)
       }
     })).transform(Seq(n2)).head
+  },
+  deliverLocal := {
+    import scala.xml._
+    import scala.xml.transform._
+    val f = deliverLocal.value
+    val e = (new RuleTransformer(new RewriteRule {
+      override def transform(node: Node) = node match {
+        case e: Elem if e.label == "dependency" && {
+          val org = e.attribute("org").getOrElse("").toString
+          val name = e.attribute("name").getOrElse("").toString
+          deps.exists { case (g, a) =>
+             org == g && (name == a || name == (a + "_" + scalaBinaryVersion.value))
+          }
+        } => Seq.empty
+        case n => Seq(n)
+      }
+    })).transform(Seq(XML.loadFile(f))).head
+    XML.save(f.getAbsolutePath, e, xmlDecl = true)
+    f
   }
-}
+)
 
 val disableDocs = Seq[Setting[_]](
   sources in (Compile, doc) := Seq.empty,
   publishArtifact in (Compile, packageDoc) := false
+)
+
+val disablePublishing = Seq[Setting[_]](
+  publishArtifact := false,
+  // The above is enough for Maven repos but it doesn't prevent publishing of ivy.xml files
+  publish := {},
+  publishLocal := {}
 )
 
 lazy val setJarLocation: Setting[_] =
@@ -325,10 +353,10 @@ lazy val library = configureAsSubproject(project)
       "/project/name" -> <name>Scala Library</name>,
       "/project/description" -> <description>Standard library for the Scala Programming Language</description>,
       "/project/packaging" -> <packaging>jar</packaging>
-    ),
-    // Remove the dependency on "forkjoin" from the POM because it is included in the JAR:
-    removePomDependencies(("org.scala-lang", "forkjoin"))
+    )
   )
+  // Remove the dependency on "forkjoin" from the POM because it is included in the JAR:
+  .settings(removePomDependencies(("org.scala-lang", "forkjoin")): _*)
   .settings(filterDocSources("*.scala" -- (regexFileFilter(".*/runtime/.*\\$\\.scala") ||
                                            regexFileFilter(".*/runtime/ScalaRunTime\\.scala") ||
                                            regexFileFilter(".*/runtime/StringAdd\\.scala"))): _*)
@@ -406,43 +434,44 @@ lazy val compiler = configureAsSubproject(project)
       "/project/description" -> <description>Compiler for the Scala Programming Language</description>,
       "/project/packaging" -> <packaging>jar</packaging>
     ),
-    apiURL := None,
-    removePomDependencies(
-      ("org.apache.ant", "ant"),
-      ("org.scala-lang.modules", "scala-asm")
-    )
+    apiURL := None
   )
+  .settings(removePomDependencies(
+    ("org.apache.ant", "ant"),
+    ("org.scala-lang.modules", "scala-asm")
+  ): _*)
   .dependsOn(library, reflect)
 
 lazy val interactive = configureAsSubproject(project)
   .settings(disableDocs: _*)
+  .settings(disablePublishing: _*)
   .settings(
     name := "scala-compiler-interactive",
-    description := "Scala Interactive Compiler",
-    publishArtifact := false
+    description := "Scala Interactive Compiler"
   )
   .dependsOn(compiler)
 
 lazy val repl = configureAsSubproject(project)
   .settings(disableDocs: _*)
+  .settings(disablePublishing: _*)
   .settings(
     connectInput in run := true,
-    publishArtifact := false,
     run <<= (run in Compile).partialInput(" -usejavacp") // Automatically add this so that `repl/run` works without additional arguments.
   )
   .dependsOn(compiler, interactive)
 
 lazy val replJline = configureAsSubproject(Project("repl-jline", file(".") / "src" / "repl-jline"))
   .settings(disableDocs: _*)
+  .settings(disablePublishing: _*)
   .settings(
     libraryDependencies += jlineDep,
-    name := "scala-repl-jline",
-    publishArtifact := false
+    name := "scala-repl-jline"
   )
   .dependsOn(repl)
 
 lazy val replJlineEmbedded = Project("repl-jline-embedded", file(".") / "target" / "repl-jline-embedded-src-dummy")
   .settings(scalaSubprojectSettings: _*)
+  .settings(disablePublishing: _*)
   .settings(
     name := "scala-repl-jline-embedded",
     // There is nothing to compile for this project. Instead we use the compile task to create
@@ -473,18 +502,17 @@ lazy val replJlineEmbedded = Project("repl-jline-embedded", file(".") / "target"
       val outdir = (classDirectory in Compile).value
       JarJar(inputs, outdir, config)
     }),
-    publishArtifact := false,
     connectInput in run := true
   )
   .dependsOn(replJline)
 
 lazy val scaladoc = configureAsSubproject(project)
   .settings(disableDocs: _*)
+  .settings(disablePublishing: _*)
   .settings(
     name := "scala-compiler-doc",
     description := "Scala Documentation Generator",
     libraryDependencies ++= Seq(scalaXmlDep, scalaParserCombinatorsDep, partestDep),
-    publishArtifact := false,
     includeFilter in unmanagedResources in Compile := "*.html" | "*.css" | "*.gif" | "*.png" | "*.js" | "*.txt"
   )
   .dependsOn(compiler)
@@ -526,10 +554,10 @@ lazy val partestExtras = configureAsSubproject(Project("partest-extras", file(".
   .dependsOn(replJlineEmbedded)
   .settings(clearSourceAndResourceDirectories: _*)
   .settings(disableDocs: _*)
+  .settings(disablePublishing: _*)
   .settings(
     name := "scala-partest-extras",
     description := "Scala Compiler Testing Tool (compiler-specific extras)",
-    publishArtifact := false,
     libraryDependencies += partestDep,
     unmanagedSourceDirectories in Compile := List(baseDirectory.value)
   )
@@ -539,8 +567,8 @@ lazy val junit = project.in(file("test") / "junit")
   .settings(clearSourceAndResourceDirectories: _*)
   .settings(commonSettings: _*)
   .settings(disableDocs: _*)
+  .settings(disablePublishing: _*)
   .settings(
-    publishArtifact := false,
     fork in Test := true,
     libraryDependencies ++= Seq(junitDep, junitIntefaceDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
@@ -572,9 +600,9 @@ lazy val test = project
   .configs(IntegrationTest)
   .settings(commonSettings: _*)
   .settings(disableDocs: _*)
+  .settings(disablePublishing: _*)
   .settings(Defaults.itSettings: _*)
   .settings(
-    publishArtifact := false,
     libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep, scalacheckDep),
     unmanagedBase in IntegrationTest := baseDirectory.value / "files" / "lib",
     unmanagedJars in IntegrationTest <+= (unmanagedBase) (j => Attributed.blank(j)) map(identity),
@@ -601,8 +629,8 @@ lazy val test = project
 
 lazy val manual = configureAsSubproject(project)
   .settings(disableDocs: _*)
+  .settings(disablePublishing: _*)
   .settings(
-    publishArtifact := false,
     libraryDependencies ++= Seq(scalaXmlDep, antDep),
     classDirectory in Compile := (target in Compile).value / "classes"
   )
@@ -672,9 +700,9 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
 
 lazy val root = (project in file("."))
   .settings(disableDocs: _*)
+  .settings(disablePublishing: _*)
   .settings(generateBuildCharacterFileSettings: _*)
   .settings(
-    publishArtifact := false,
     publish := {},
     publishLocal := {},
     commands ++= ScriptCommands.all
@@ -756,8 +784,8 @@ def configureAsForkOfJavaProject(project: Project): Project = {
   (project in base)
     .settings(commonSettings: _*)
     .settings(disableDocs: _*)
+    .settings(disablePublishing: _*)
     .settings(
-      publishArtifact := false,
       sourceDirectory in Compile := baseDirectory.value,
       javaSource in Compile := (sourceDirectory in Compile).value,
       sources in Compile in doc := Seq.empty,
