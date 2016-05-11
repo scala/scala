@@ -198,13 +198,14 @@ package object interpreter extends ReplConfig with ReplStrings {
     }
   }
 
-  /* debug assist
+  /* An s-interpolator that uses `stringOf(arg)` instead of `String.valueOf(arg)`. */
   private[nsc] implicit class `smart stringifier`(val sc: StringContext) extends AnyVal {
     import StringContext._, runtime.ScalaRunTime.stringOf
     def ss(args: Any*): String = sc.standardInterpolator(treatEscapes, args map stringOf)
-  } debug assist */
+  }
+  /* Try (body) lastly (more) */
   private[nsc] implicit class `try lastly`[A](val t: Try[A]) extends AnyVal {
-    private def effect[X](last: =>Unit)(a: X): Try[A] = { last; t }
-    def lastly(last: =>Unit): Try[A] = t transform (effect(last) _, effect(last) _)
+    private def effect[X](last: => Unit)(a: X): Try[A] = { last; t }
+    def lastly(last: => Unit): Try[A] = t transform (effect(last) _, effect(last) _)
   }
 }
