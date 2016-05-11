@@ -538,7 +538,14 @@ trait ContextErrors {
       def NamedAndDefaultArgumentsNotSupportedForMacros(tree: Tree, fun: Tree) =
         NormalTypeError(tree, "macro applications do not support named and/or default arguments")
 
-      def TooManyArgsNamesDefaultsError(tree: Tree, fun: Tree, expected: Int, supplied: Int, unknowns: List[Name]) = {
+      def TooManyArgsNamesDefaultsError(tree: Tree, fun: Tree, formals: List[Type], args: List[Tree], namelessArgs: List[Tree], argPos: Array[Int]) = {
+        val expected = formals.size
+        val supplied = args.size
+        // pick a caret. For f(k=1,i=2,j=3), argPos[0,-1,1] b/c `k=1` taken as arg0
+        val excessive = {
+          val i = argPos.indexWhere(_ >= expected)
+          if (i < 0) tree else args(i min (supplied - 1))
+        }
         val msg = {
           val badappl = {
             val excess = supplied - expected
@@ -548,12 +555,15 @@ trait ContextErrors {
             else if (excess < 3 && expected <= 5) s"too many arguments ($supplied) for $target"
             else if (expected > 10) s"$supplied arguments but expected $expected for $target"
             else {
-              val oneOf =
+              val more =
                 if (excess == 1) "one more argument"
                 else if (excess > 0) s"$excess more arguments"
                 else "too many arguments"
-              s"$oneOf than can be applied to $target"
+              s"$more than can be applied to $target"
             }
+          }
+          val unknowns = (namelessArgs zip args) collect {
+            case (_: Assign, AssignOrNamedArg(Ident(name), _)) => name
           }
           val suppl = 
             unknowns.size match {
@@ -563,7 +573,7 @@ trait ContextErrors {
             }
           s"${badappl}${suppl}"
         }
-        NormalTypeError(tree, msg)
+        NormalTypeError(excessive, msg)
       }
 
       // can it still happen? see test case neg/overloaded-unapply.scala
