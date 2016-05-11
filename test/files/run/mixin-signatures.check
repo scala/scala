@@ -60,6 +60,7 @@ interface Foo1 {
     generic: public abstract R Base.f(T)
   public default java.lang.String Foo1.f(java.lang.Object)
     generic: public default java.lang.String Foo1.f(T)
+  public static java.lang.String Foo1.f(Foo1,java.lang.Object) <synthetic>
   public abstract java.lang.Object Base.g(java.lang.Object)
     generic: public abstract R Base.g(T)
   public abstract java.lang.String Foo1.g(java.lang.Object)
@@ -73,6 +74,7 @@ interface Foo2 {
     generic: public abstract R Base.f(T)
   public default java.lang.Object Foo2.f(java.lang.String)
     generic: public default R Foo2.f(java.lang.String)
+  public static java.lang.Object Foo2.f(Foo2,java.lang.String) <synthetic>
   public abstract java.lang.Object Base.g(java.lang.Object)
     generic: public abstract R Base.g(T)
   public abstract java.lang.Object Foo2.g(java.lang.String)

@@ -234,18 +234,10 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     val allParents = classParents ++ classSym.annotations.flatMap(newParentForAnnotation)
 
-    // We keep the superClass when computing minimizeParents to eliminate more interfaces.
-    // Example: T can be eliminated from D
-    //   trait T
-    //   class C extends T
-    //   class D extends C with T
-    val interfaces = erasure.minimizeParents(allParents) match {
+    val interfaces = allParents match {
       case superClass :: ifs if !isInterfaceOrTrait(superClass.typeSymbol) =>
         ifs
       case ifs =>
-        // minimizeParents removes the superclass if it's redundant, for example:
-        //  trait A
-        //  class C extends Object with A  // minimizeParents removes Object
         ifs
     }
     interfaces.map(_.typeSymbol)

@@ -187,26 +187,6 @@ abstract class Erasure extends AddInterfaces
 
   private def isErasedValueType(tpe: Type) = tpe.isInstanceOf[ErasedValueType]
 
-  /* Drop redundant types (ones which are implemented by some other parent) from the immediate parents.
-   * This is important on Android because there is otherwise an interface explosion.
-   */
-  def minimizeParents(parents: List[Type]): List[Type] = if (parents.isEmpty) parents else {
-    def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait
-
-    var rest   = parents.tail
-    var leaves = collection.mutable.ListBuffer.empty[Type] += parents.head
-    while(rest.nonEmpty) {
-      val candidate = rest.head
-      val nonLeaf = leaves exists { t => t.typeSymbol isSubClass candidate.typeSymbol }
-      if(!nonLeaf) {
-        leaves = leaves filterNot { t => isInterfaceOrTrait(t.typeSymbol) && (candidate.typeSymbol isSubClass t.typeSymbol) }
-        leaves += candidate
-      }
-      rest = rest.tail
-    }
-    leaves.toList
-  }
-
 
   /** The Java signature of type 'info', for symbol sym. The symbol is used to give the right return
    *  type for constructors.
@@ -224,12 +204,11 @@ abstract class Erasure extends AddInterfaces
         case _ => tps
       }
 
-      val minParents = minimizeParents(parents)
       val validParents =
         if (isTraitSignature)
           // java is unthrilled about seeing interfaces inherit from classes
-          minParents filter (p => isInterfaceOrTrait(p.typeSymbol))
-        else minParents
+          parents filter (p => isInterfaceOrTrait(p.typeSymbol))
+        else parents
 
       val ps = ensureClassAsFirstParent(validParents)
 

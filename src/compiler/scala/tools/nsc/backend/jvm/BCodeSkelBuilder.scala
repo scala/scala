@@ -489,7 +489,18 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
         case ValDef(mods, name, tpt, rhs) => () // fields are added in `genPlainClass()`, via `addClassFields()`
 
-        case dd : DefDef => genDefDef(dd)
+        case dd : DefDef =>
+          if (dd.symbol.owner.isTrait && dd.rhs != EmptyTree && !dd.symbol.isPrivate && !dd.symbol.hasFlag(Flags.STATIC)) {
+            // Split concrete methods in traits (including mixin constructors) into a static method
+            // with an explicit this parameter, and a non-static forwarder method.
+            val staticDefDef = global.gen.mkStatic(dd, _.cloneSymbol)
+            val forwarderDefDef = {
+              val forwarderBody = Apply(global.gen.mkAttributedRef(staticDefDef.symbol), This(dd.symbol.owner).setType(dd.symbol.owner.typeConstructor) :: dd.vparamss.head.map(p => global.gen.mkAttributedIdent(p.symbol))).setType(dd.symbol.info.resultType)
+              deriveDefDef(dd)(_ => global.atPos(dd.pos)(forwarderBody))
+            }
+            genDefDef(staticDefDef)
+            genDefDef(forwarderDefDef)
+          } else genDefDef(dd)
 
         case Template(_, _, body) => body foreach gen
 
