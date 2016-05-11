@@ -6,6 +6,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.tools.testing.AssertUtil._
+
 @RunWith(classOf[JUnit4])
 class RegexTest {
   @Test def t8022CharSequence(): Unit = {
@@ -43,5 +45,67 @@ class RegexTest {
       case _       => None
     }
     assertEquals(List((1,2),(3,4),(5,6)), z)
+  }
+
+  @Test def `SI-9666: use inline group names`(): Unit = {
+    val r = new Regex("a(?<Bee>b*)c")
+    val ms = r findAllIn "stuff abbbc more abc and so on"
+    assertTrue(ms.hasNext)
+    assertEquals("abbbc", ms.next())
+    assertEquals("bbb", ms group "Bee")
+    assertTrue(ms.hasNext)
+    assertEquals("abc", ms.next())
+    assertEquals("b", ms group "Bee")
+    assertFalse(ms.hasNext)
+  }
+
+  @Test def `SI-9666: use explicit group names`(): Unit = {
+    val r = new Regex("a(b*)c", "Bee")
+    val ms = r findAllIn "stuff abbbc more abc and so on"
+    assertTrue(ms.hasNext)
+    assertEquals("abbbc", ms.next())
+    assertEquals("bbb", ms group "Bee")
+    assertTrue(ms.hasNext)
+    assertEquals("abc", ms.next())
+    assertEquals("b", ms group "Bee")
+    assertFalse(ms.hasNext)
+  }
+
+  @Test def `SI-9666: fall back to explicit group names`(): Unit = {
+    val r = new Regex("a(?<Bar>b*)c", "Bee")
+    val ms = r findAllIn "stuff abbbc more abc and so on"
+    assertTrue(ms.hasNext)
+    assertEquals("abbbc", ms.next())
+    assertEquals("bbb", ms group "Bee")
+    assertEquals("bbb", ms group "Bar")
+    assertTrue(ms.hasNext)
+    assertEquals("abc", ms.next())
+    assertEquals("b", ms group "Bee")
+    assertEquals("b", ms group "Bar")
+    assertFalse(ms.hasNext)
+  }
+
+  //type NoGroup = NoSuchElementException
+  type NoGroup = IllegalArgumentException
+
+  @Test def `SI-9666: throw on bad name`(): Unit = {
+    assertThrows[NoGroup] {
+      val r = new Regex("a(?<Bar>b*)c")
+      val ms = r findAllIn "stuff abbbc more abc and so on"
+      assertTrue(ms.hasNext)
+      ms group "Bee"
+    }
+    assertThrows[NoGroup] {
+      val r = new Regex("a(?<Bar>b*)c", "Bar")
+      val ms = r findAllIn "stuff abbbc more abc and so on"
+      assertTrue(ms.hasNext)
+      ms group "Bee"
+    }
+    assertThrows[NoGroup] {
+      val r = new Regex("a(b*)c", "Bar")
+      val ms = r findAllIn "stuff abbbc more abc and so on"
+      assertTrue(ms.hasNext)
+      ms group "Bee"
+    }
   }
 }
