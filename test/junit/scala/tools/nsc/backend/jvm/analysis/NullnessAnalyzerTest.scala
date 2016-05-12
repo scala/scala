@@ -19,18 +19,9 @@ import AsmUtils._
 
 import scala.collection.JavaConverters._
 
-object NullnessAnalyzerTest extends ClearAfterClass.Clearable {
-  var noOptCompiler = newCompiler(extraArgs = "-Yopt:l:none")
-
-  def clear(): Unit = {
-    noOptCompiler = null
-  }
-}
-
 @RunWith(classOf[JUnit4])
 class NullnessAnalyzerTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = NullnessAnalyzerTest
-  val noOptCompiler = NullnessAnalyzerTest.noOptCompiler
+  val noOptCompiler = cached("noOptCompiler", () => newCompiler(extraArgs = "-Yopt:l:none"))
   import noOptCompiler.genBCode.bTypes.backendUtils._
 
   def newNullnessAnalyzer(methodNode: MethodNode, classInternalName: InternalName = "C") = new AsmAnalyzer(methodNode, classInternalName, new NullnessAnalyzer(noOptCompiler.genBCode.bTypes))

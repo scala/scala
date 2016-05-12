@@ -9,16 +9,9 @@ import scala.tools.asm.Opcodes._
 import scala.tools.partest.ASMConverters._
 import scala.tools.testing.ClearAfterClass
 
-object DirectCompileTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Yopt:l:method")
-  def clear(): Unit = { compiler = null }
-}
-
 @RunWith(classOf[JUnit4])
 class DirectCompileTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = DirectCompileTest
-
-  val compiler = DirectCompileTest.compiler
+  val compiler = cached("compiler", () => newCompiler(extraArgs = "-Yopt:l:method"))
 
   @Test
   def testCompile(): Unit = {

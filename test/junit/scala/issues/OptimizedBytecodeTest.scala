@@ -15,17 +15,10 @@ import AsmUtils._
 
 import scala.tools.testing.ClearAfterClass
 
-object OptimizedBytecodeTest extends ClearAfterClass.Clearable {
-  val args = "-Yopt:l:classpath -Yopt-warnings"
-  var compiler = newCompiler(extraArgs = args)
-  def clear(): Unit = { compiler = null }
-}
-
 @RunWith(classOf[JUnit4])
 class OptimizedBytecodeTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = OptimizedBytecodeTest
-
-  val compiler = OptimizedBytecodeTest.compiler
+  val args = "-Yopt:l:classpath -Yopt-warnings"
+  val compiler = cached("compiler", () => newCompiler(extraArgs = args))
 
   @Test
   def t2171(): Unit = {
@@ -127,7 +120,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |object Warmup { def filter[A](p: Any => Boolean): Any = filter[Any](p) }
       """.stripMargin
     val c2 = "class C { def t = warmup.Warmup.filter[Any](x => false) }"
-    val List(c, _, _) = compileClassesSeparately(List(c1, c2), extraArgs = OptimizedBytecodeTest.args)
+    val List(c, _, _) = compileClassesSeparately(List(c1, c2), extraArgs = args)
     assertInvoke(getSingleMethod(c, "t"), "warmup/Warmup$", "filter")
   }
 
@@ -268,7 +261,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val cls = compileClassesSeparately(List(c1, c2), extraArgs = OptimizedBytecodeTest.args)
+    val cls = compileClassesSeparately(List(c1, c2), extraArgs = args)
     val c = cls.find(_.name == "C").get
     assertSameSummary(getSingleMethod(c, "t"), List(
       GETSTATIC, IFNONNULL, ACONST_NULL, ATHROW, // module load and null checks not yet eliminated

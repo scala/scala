@@ -14,15 +14,9 @@ import scala.tools.partest.ASMConverters
 import ASMConverters._
 import scala.tools.testing.ClearAfterClass
 
-object StringConcatTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler()
-  def clear(): Unit = { compiler = null }
-}
-
 @RunWith(classOf[JUnit4])
 class StringConcatTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = StringConcatTest
-  val compiler = StringConcatTest.compiler
+  val compiler = cached("compiler", () => newCompiler())
 
   @Test
   def appendOverloadNoBoxing(): Unit = {

@@ -10,14 +10,8 @@ import scala.tools.nsc.backend.jvm.CodeGenTools._
 import JavaConverters._
 import scala.tools.testing.ClearAfterClass
 
-object DefaultMethodTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler()
-  def clear(): Unit = { compiler = null }
-}
-
 class DefaultMethodTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = DefaultMethodTest
-  val compiler = DefaultMethodTest.compiler
+  val compiler = cached("compiler", () => newCompiler())
 
   @Test
   def defaultMethodsViaGenBCode(): Unit = {

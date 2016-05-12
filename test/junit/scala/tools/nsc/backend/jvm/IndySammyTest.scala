@@ -15,21 +15,13 @@ import ASMConverters._
 
 import scala.tools.testing.ClearAfterClass
 
-object IndySammyTest extends ClearAfterClass.Clearable {
-  var _compiler = newCompiler()
-
-  def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] =
-    compileClasses(_compiler)(scalaCode, javaCode, allowMessage)
-
-  def clear(): Unit = { _compiler = null }
-}
 
 @RunWith(classOf[JUnit4])
 class IndySammyTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = IndySammyTest
-  import IndySammyTest._
 
-  val compiler = _compiler
+  val compiler = cached("compiler", () => newCompiler())
+  def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] =
+    compileClasses(compiler)(scalaCode, javaCode, allowMessage)
 
   def funClassName(from: String, to: String) = s"Fun$from$to"
   def classPrologue(from: String, to: String) =

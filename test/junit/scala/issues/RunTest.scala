@@ -9,22 +9,17 @@ import scala.reflect.runtime._
 import scala.tools.reflect.ToolBox
 import scala.tools.testing.ClearAfterClass
 
-object RunTest extends ClearAfterClass.Clearable {
-  var toolBox = universe.runtimeMirror(getClass.getClassLoader).mkToolBox()
-  override def clear(): Unit = { toolBox = null }
-
-  // definitions for individual tests
+object RunTest {
 
   class VC(val x: Any) extends AnyVal
 }
 
 @RunWith(classOf[JUnit4])
 class RunTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = RunTest
+  val toolBox = cached("toolbox", () => universe.runtimeMirror(getClass.getClassLoader).mkToolBox())
 
   def run[T](code: String): T = {
-    val tb = RunTest.toolBox
-    tb.eval(tb.parse(code)).asInstanceOf[T]
+    toolBox.eval(toolBox.parse(code)).asInstanceOf[T]
   }
 
   @Test

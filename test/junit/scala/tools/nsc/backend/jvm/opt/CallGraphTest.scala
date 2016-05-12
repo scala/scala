@@ -24,29 +24,23 @@ import BackendReporting._
 import scala.collection.JavaConverters._
 import scala.tools.testing.ClearAfterClass
 
-object CallGraphTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Yopt:inline-global -Yopt-warnings")
-  def clear(): Unit = { compiler = null }
-
-  // allows inspecting the caches after a compilation run
-  val notPerRun: List[Clearable] = List(
-    compiler.genBCode.bTypes.classBTypeFromInternalName,
-    compiler.genBCode.bTypes.byteCodeRepository.compilingClasses,
-    compiler.genBCode.bTypes.byteCodeRepository.parsedClasses,
-    compiler.genBCode.bTypes.callGraph.callsites)
-  notPerRun foreach compiler.perRunCaches.unrecordCache
-}
-
 @RunWith(classOf[JUnit4])
 class CallGraphTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = CallGraphTest
+  val compiler = cached("compiler", () => newCompiler(extraArgs = "-Yopt:inline-global -Yopt-warnings")
+  )
+  import compiler.genBCode.bTypes
+  val notPerRun: List[Clearable] = List(
+    bTypes.classBTypeFromInternalName,
+    bTypes.byteCodeRepository.compilingClasses,
+    bTypes.byteCodeRepository.parsedClasses,
+    bTypes.callGraph.callsites)
+  notPerRun foreach compiler.perRunCaches.unrecordCache
 
-  val compiler = CallGraphTest.compiler
   import compiler.genBCode.bTypes._
   import callGraph._
 
   def compile(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
-    CallGraphTest.notPerRun.foreach(_.clear())
+    notPerRun.foreach(_.clear())
     compileClasses(compiler)(code, allowMessage = allowMessage).map(c => byteCodeRepository.classNode(c.name).get)
   }
 
