@@ -88,9 +88,6 @@ package object interpreter extends ReplConfig with ReplStrings {
           }
       }
 
-      if (filtered.isEmpty)
-        return "No implicits have been imported other than those in Predef."
-
       filtered foreach {
         case (source, syms) =>
           p("/* " + syms.size + " implicit members imported from " + source.fullName + " */")
@@ -126,7 +123,14 @@ package object interpreter extends ReplConfig with ReplStrings {
           }
           p("")
       }
-      ""
+      
+      if (filtered.nonEmpty) 
+        "" // side-effects above
+      else if (global.settings.nopredef || global.settings.noimports) 
+        "No implicits have been imported."
+      else
+        "No implicits have been imported other than those in Predef." 
+
     }
 
     def kindCommandInternal(expr: String, verbose: Boolean): Unit = {
