@@ -274,7 +274,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
     val prefix = "#partest"
     val b = new ListBuffer[String]()
     var on = true
-    for (line <- file2String(checkFile).lines) {
+    for (line <- file2String(checkFile).linesIfNonEmpty) {
       if (line startsWith prefix) {
         on = retainOn(line stripPrefix prefix)
       } else if (on) {
@@ -285,7 +285,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
   }
 
   def currentDiff = {
-    val logged = augmentString(file2String(logFile)).lines.toList
+    val logged = file2String(logFile).linesIfNonEmpty.toList
     val (other, othername) = if (checkFile.canRead) (filteredCheck, checkFile.getName) else (Nil, "empty")
     compareContents(original = other, revised = logged, originalName = othername, revisedName = logFile.getName)
   }

@@ -48,6 +48,10 @@ package object partest {
   /** Sources have a numerical group, specified by name_7 and so on. */
   private val GroupPattern = """.*_(\d+)""".r
 
+  implicit class `special string ops`(private val s: String) extends AnyVal {
+    def linesIfNonEmpty: Iterator[String] = if (!s.isEmpty) s.lines else Iterator.empty
+  }
+
   implicit class FileOps(val f: File) {
     private def sf = SFile(f)
 
@@ -78,7 +82,7 @@ package object partest {
       }
 
     def fileContents: String    = try sf.slurp() catch { case _: java.io.FileNotFoundException => "" }
-    def fileLines: List[String] = augmentString(fileContents).lines.toList
+    def fileLines: List[String] = fileContents.linesIfNonEmpty.toList
   }
 
   implicit class PathOps(p: Path) extends FileOps(p.jfile) { }
