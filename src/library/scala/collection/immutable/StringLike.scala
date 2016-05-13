@@ -100,19 +100,23 @@ self =>
   /** Return all lines in this string in an iterator, including trailing
    *  line end characters.
    *
-   *  The number of strings returned is one greater than the number of line
-   *  end characters in this string. For an empty string, a single empty
-   *  line is returned. A line end character is one of
-   *  - `LF` - line feed   (`0x0A` hex)
-   *  - `FF` - form feed   (`0x0C` hex)
+   *  This method is analogous to `s.split(EOL).toIterator`,
+   *  except that any existing line endings are preserved in the result strings.
+   *
+   *  The empty string yields an iterator with one element, the empty string.
+   *
+   *  A line end character is one of
+   *  - `LF` - line feed   (`0x0A`)
+   *  - `FF` - form feed   (`0x0C`)
    */
   def linesWithSeparators: Iterator[String] = new AbstractIterator[String] {
     val str = self.toString
     private val len = str.length
-    private var index = 0
+    private var index = -1
     def hasNext: Boolean = index < len
     def next(): String = {
       if (index >= len) throw new NoSuchElementException("next on empty iterator")
+      index = index max 0
       val start = index
       while (index < len && !isLineBreak(apply(index))) index += 1
       index += 1
@@ -121,7 +125,7 @@ self =>
   }
 
   /** Return all lines in this string in an iterator, excluding trailing line
-   *  end characters, i.e., apply `.stripLineEnd` to all lines
+   *  end characters; i.e., apply `.stripLineEnd` to all lines
    *  returned by `linesWithSeparators`.
    */
   def lines: Iterator[String] =
