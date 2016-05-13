@@ -1,0 +1,5 @@
+
+scala> :implicits
+No implicits have been imported.
+
+scala> :quit
