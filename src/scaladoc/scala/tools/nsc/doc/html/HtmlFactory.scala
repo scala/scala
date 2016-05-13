@@ -12,12 +12,13 @@ import java.io.{ File => JFile }
 import io.{ Streamable, Directory }
 import scala.collection._
 import page.diagram._
+import scala.reflect.internal.Reporter
 
 /** A class that can generate Scaladoc sites to some fixed root folder.
   * @author David Bernard
   * @author Gilles Dubochet */
-class HtmlFactory(val universe: doc.Universe, val reporter: ScalaDocReporter) {
-  import page.IndexScript
+class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
+  import page.{IndexScript, EntityPage}
 
   /** The character encoding to be used for generated Scaladoc sites.
     * This value is currently always UTF-8. */

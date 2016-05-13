@@ -6,8 +6,8 @@
 package scala.tools.nsc
 package doc
 
-import scala.util.control.ControlThrowable
 import reporters.Reporter
+import scala.util.control.ControlThrowable
 import scala.reflect.internal.util.BatchSourceFile
 
 /** A documentation processor controls the process of generating Scala
@@ -105,7 +105,19 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
     def generate() = {
       import doclet._
       val docletClass    = Class.forName(settings.docgenerator.value) // default is html.Doclet
-      val docletInstance = docletClass.newInstance().asInstanceOf[Generator]
+      val docletInstance =
+        docletClass
+        .getConstructors
+        .find { constr =>
+          constr.getParameterTypes.length == 1 &&
+          constr.getParameterTypes.apply(0) == classOf[scala.reflect.internal.Reporter]
+        }
+        .map(_.newInstance(reporter))
+        .getOrElse{
+          reporter.warning(null, "Doclets should be created with the Reporter constructor, otherwise logging reporters will not be shared by the creating parent")
+          docletClass.newInstance()
+        }
+        .asInstanceOf[Generator]
 
       docletInstance match {
         case universer: Universer =>
