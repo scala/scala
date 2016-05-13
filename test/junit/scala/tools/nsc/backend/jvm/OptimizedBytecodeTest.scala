@@ -44,7 +44,7 @@ class OptimizedBytecodeTest extends BytecodeTesting {
 
     assertSameSummary(getMethod(c, "t"), List(
       LDC, ASTORE, ALOAD /*0*/, ALOAD /*1*/, "$anonfun$t$1", IRETURN))
-    assertSameSummary(getMethod(c, "$anonfun$t$1"), List(ALOAD, IFNONNULL, ACONST_NULL, ATHROW, -1, LDC, "$anonfun$t$2", IRETURN))
+    assertSameSummary(getMethod(c, "$anonfun$t$1"), List(LDC, "$anonfun$t$2", IRETURN))
     assertSameSummary(getMethod(c, "$anonfun$t$2"), List(-1 /*A*/, GOTO /*A*/))
   }
 
