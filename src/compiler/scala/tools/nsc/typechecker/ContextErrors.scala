@@ -469,6 +469,11 @@ trait ContextErrors {
         setError(tree)
       }
 
+      def ConstructorRecursesError(tree: Tree) = {
+        issueNormalTypeError(tree, "constructor invokes itself")
+        setError(tree)
+      }
+
       def OnlyDeclarationsError(tree: Tree) = {
         issueNormalTypeError(tree, "only declarations allowed here")
         setError(tree)
