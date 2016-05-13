@@ -100,11 +100,13 @@ self =>
   /** Return all lines in this string in an iterator, including trailing
    *  line end characters.
    *
-   *  The number of strings returned is one greater than the number of line
-   *  end characters in this string. For an empty string, a single empty
-   *  line is returned. A line end character is one of
-   *  - `LF` - line feed   (`0x0A` hex)
-   *  - `FF` - form feed   (`0x0C` hex)
+   *  This method is analogous to `s.split(EOL).toIterator`,
+   *  except that any existing line endings are preserved in the result strings,
+   *  and the empty string yields an empty iterator.
+   *
+   *  A line end character is one of
+   *  - `LF` - line feed   (`0x0A`)
+   *  - `FF` - form feed   (`0x0C`)
    */
   def linesWithSeparators: Iterator[String] = new AbstractIterator[String] {
     val str = self.toString
@@ -121,14 +123,14 @@ self =>
   }
 
   /** Return all lines in this string in an iterator, excluding trailing line
-   *  end characters, i.e., apply `.stripLineEnd` to all lines
+   *  end characters; i.e., apply `.stripLineEnd` to all lines
    *  returned by `linesWithSeparators`.
    */
   def lines: Iterator[String] =
     linesWithSeparators map (line => new WrappedString(line).stripLineEnd)
 
   /** Return all lines in this string in an iterator, excluding trailing line
-   *  end characters, i.e., apply `.stripLineEnd` to all lines
+   *  end characters; i.e., apply `.stripLineEnd` to all lines
    *  returned by `linesWithSeparators`.
    */
   @deprecated("Use `lines` instead.","2.11.0")
