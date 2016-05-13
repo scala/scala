@@ -344,7 +344,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     val newSym = maybeClone(orig.symbol)
     newSym.setFlag(STATIC)
     // Add an explicit self parameter
-    val selfParamSym = newSym.newSyntheticValueParam(newSym.owner.typeConstructor, nme.SELF)
+    val selfParamSym = newSym.newSyntheticValueParam(newSym.owner.typeConstructor, nme.SELF).setFlag(ARTIFACT)
     newSym.updateInfo(newSym.info match {
       case mt @ MethodType(params, res) => copyMethodType(mt, selfParamSym :: params, res)
     })
