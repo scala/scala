@@ -198,7 +198,7 @@ trait ContextErrors {
         val foundType: Type = req.dealiasWiden match {
           case RefinedType(parents, decls) if !decls.isEmpty && found.typeSymbol.isAnonOrRefinementClass =>
             val retyped    = typed (tree.duplicate.clearType())
-            val foundDecls = retyped.tpe.decls filter (sym => !sym.isConstructor && !sym.isSynthetic)
+            val foundDecls = retyped.tpe.decls filter (sym => !sym.isConstructor && !sym.isSynthetic && !sym.isErroneous)
             if (foundDecls.isEmpty || (found.typeSymbol eq NoSymbol)) found
             else {
               // The members arrive marked private, presumably because there was no
@@ -212,7 +212,8 @@ trait ContextErrors {
           case _ =>
             found
         }
-        assert(!foundType.isErroneous && !req.isErroneous, (foundType, req))
+        assert(!foundType.isErroneous, s"AdaptTypeError - foundType is Erroneous: $foundType")
+        assert(!req.isErroneous, s"AdaptTypeError - req is Erroneous: $req")
 
         issueNormalTypeError(callee, withAddendum(callee.pos)(typeErrorMsg(foundType, req)))
         infer.explainTypes(foundType, req)
