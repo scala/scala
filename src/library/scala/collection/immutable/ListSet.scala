@@ -32,6 +32,7 @@ object ListSet extends ImmutableSetFactory[ListSet] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ListSet[A]] =
     setCanBuildFrom[A]
 
+  @SerialVersionUID(5010379588739277132L)
   private object EmptyListSet extends ListSet[Any]
   private[collection] def emptyInstance: ListSet[Any] = EmptyListSet
 }
@@ -58,6 +59,7 @@ object ListSet extends ImmutableSetFactory[ListSet] {
   * @define mayNotTerminateInf
   * @define willNotTerminateInf
   */
+@SerialVersionUID(-8417059026623606218L)
 sealed class ListSet[A] extends AbstractSet[A]
   with Set[A]
   with GenericSetTemplate[A, ListSet]
@@ -101,6 +103,7 @@ sealed class ListSet[A] extends AbstractSet[A]
   /**
     * Represents an entry in the `ListSet`.
     */
+  @SerialVersionUID(-787710309854855049L)
   protected class Node(override protected val elem: A) extends ListSet[A] with Serializable {
 
     override def size = sizeInternal(this, 0)
