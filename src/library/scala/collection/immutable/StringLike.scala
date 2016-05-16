@@ -290,28 +290,51 @@ self =>
   /**
    * @throws java.lang.NumberFormatException - If the string does not contain a parsable byte.
    */
-  def toByte: Byte       = java.lang.Byte.parseByte(toString)
+  def toByte: Byte =
+    toString match {
+      case null => throw new NumberFormatException("null")
+      case s    => java.lang.Byte.parseByte(s.trim) // parseByte doesn't trim
+    }
   /**
    * @throws java.lang.NumberFormatException - If the string does not contain a parsable short.
    */
-  def toShort: Short     = java.lang.Short.parseShort(toString)
+  def toShort: Short =
+  toString match {
+    case null => throw new NumberFormatException("null")
+    case s    => java.lang.Short.parseShort(s.trim) // parseShort doesn't trim
+  }
   /**
    * @throws java.lang.NumberFormatException  - If the string does not contain a parsable int.
    */
-  def toInt: Int         = java.lang.Integer.parseInt(toString)
+  def toInt: Int =
+    toString match {
+      case null => throw new NumberFormatException("null")
+      case s    => java.lang.Integer.parseInt(s.trim) // parseInt doesn't trim
+    }
   /**
    * @throws java.lang.NumberFormatException  - If the string does not contain a parsable long.
    */
-  def toLong: Long       = java.lang.Long.parseLong(toString)
+  def toLong: Long =
+    toString match {
+      case null => throw new NumberFormatException("null")
+      case s    => java.lang.Long.parseLong(s.trim) // parseLong doesn't trim
+    }
   /**
    * @throws java.lang.NumberFormatException - If the string does not contain a parsable float.
    */
-  def toFloat: Float     = java.lang.Float.parseFloat(toString)
+  def toFloat: Float =
+    toString match {
+      case null => throw new NumberFormatException("null") // parseFloat(null) throws NPE
+      case s    => java.lang.Float.parseFloat(s)
+    }
   /**
    * @throws java.lang.NumberFormatException - If the string does not contain a parsable double.
    */
-  def toDouble: Double   = java.lang.Double.parseDouble(toString)
-
+  def toDouble: Double =
+    toString match {
+      case null => throw new NumberFormatException("null") // parseDouble(null) throws NPE
+      case s    => java.lang.Double.parseDouble(s)
+    }
   private def parseBoolean(s: String): Boolean =
     if (s != null) s.toLowerCase match {
       case "true" => true
