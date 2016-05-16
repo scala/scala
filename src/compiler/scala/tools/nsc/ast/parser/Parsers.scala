@@ -379,11 +379,15 @@ self =>
           case DefDef(_, nme.main, Nil, List(_), _, _)  => true
           case _                                        => false
         }
+        def isApp(t: Tree) = t match {
+          case Template(ps, _, _) => ps.exists { case Ident(x) if x.decoded == "App" => true ; case _ => false }
+          case _ => false
+        }
         /* For now we require there only be one top level object. */
         var seenModule = false
         val newStmts = stmts collect {
           case t @ Import(_, _) => t
-          case md @ ModuleDef(mods, name, template) if !seenModule && (md exists isMainMethod) =>
+          case md @ ModuleDef(mods, name, template) if !seenModule && (isApp(template) || md.exists(isMainMethod)) =>
             seenModule = true
             /* This slightly hacky situation arises because we have no way to communicate
              * back to the scriptrunner what the name of the program is.  Even if we were
