@@ -15,15 +15,9 @@ import scala.tools.asm.tree.ClassNode
 import scala.tools.partest.ASMConverters._
 import scala.tools.testing.ClearAfterClass
 
-object BytecodeTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler()
-  def clear(): Unit = { compiler = null }
-}
-
 @RunWith(classOf[JUnit4])
 class BytecodeTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = BytecodeTest
-  val compiler = BytecodeTest.compiler
+  val compiler = cached("compiler", () => newCompiler())
 
   @Test
   def t8731(): Unit = {

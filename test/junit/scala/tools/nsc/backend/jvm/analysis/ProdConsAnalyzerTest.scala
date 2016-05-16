@@ -14,18 +14,9 @@ import scala.tools.testing.ClearAfterClass
 import CodeGenTools._
 import AsmUtils._
 
-object ProdConsAnalyzerTest extends ClearAfterClass.Clearable {
-  var noOptCompiler = newCompiler(extraArgs = "-Yopt:l:none")
-
-  def clear(): Unit = {
-    noOptCompiler = null
-  }
-}
-
 @RunWith(classOf[JUnit4])
 class ProdConsAnalyzerTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = ProdConsAnalyzerTest
-  val noOptCompiler = ProdConsAnalyzerTest.noOptCompiler
+  val noOptCompiler =cached("compiler", () => newCompiler(extraArgs = "-Yopt:l:none"))
   import noOptCompiler.genBCode.bTypes.backendUtils._
 
   def prodToString(producer: AbstractInsnNode) = producer match {

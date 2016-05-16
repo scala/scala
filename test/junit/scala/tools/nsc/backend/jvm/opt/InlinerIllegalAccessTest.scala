@@ -19,16 +19,9 @@ import AsmUtils._
 import scala.collection.JavaConverters._
 import scala.tools.testing.ClearAfterClass
 
-object InlinerIllegalAccessTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Yopt:l:none")
-  def clear(): Unit = { compiler = null }
-}
-
 @RunWith(classOf[JUnit4])
 class InlinerIllegalAccessTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = InlinerIllegalAccessTest
-
-  val compiler = InlinerIllegalAccessTest.compiler
+  val compiler = cached("compiler", () => newCompiler(extraArgs = "-Yopt:l:none"))
   import compiler.genBCode.bTypes._
 
   def addToRepo(cls: List[ClassNode]): Unit = for (c <- cls) byteCodeRepository.add(c, ByteCodeRepository.Classfile)

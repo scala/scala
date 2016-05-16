@@ -27,16 +27,9 @@ import BackendReporting._
 import scala.collection.JavaConverters._
 import scala.tools.testing.ClearAfterClass
 
-object ClosureOptimizerTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Yopt:l:classpath -Yopt-warnings:_")
-  def clear(): Unit = { compiler = null }
-}
-
 @RunWith(classOf[JUnit4])
 class ClosureOptimizerTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = ClosureOptimizerTest
-
-  val compiler = ClosureOptimizerTest.compiler
+  val compiler = cached("compiler", () => newCompiler(extraArgs = "-Yopt:l:classpath -Yopt-warnings:_"))
 
   @Test
   def nothingTypedClosureBody(): Unit = {

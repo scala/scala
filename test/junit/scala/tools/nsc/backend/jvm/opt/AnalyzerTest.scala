@@ -21,15 +21,9 @@ import BytecodeUtils._
 import scala.collection.JavaConverters._
 import scala.tools.testing.ClearAfterClass
 
-object AnalyzerTest extends ClearAfterClass.Clearable {
-  var noOptCompiler = newCompiler(extraArgs = "-Yopt:l:none")
-  def clear(): Unit = { noOptCompiler = null }
-}
-
 @RunWith(classOf[JUnit4])
 class AnalyzerTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = AnalyzerTest
-  val noOptCompiler = AnalyzerTest.noOptCompiler
+  val noOptCompiler = cached("compiler", () => newCompiler(extraArgs = "-Yopt:l:none"))
 
   @Test
   def aliasingOfPrimitives(): Unit = {

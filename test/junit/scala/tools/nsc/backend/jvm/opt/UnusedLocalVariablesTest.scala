@@ -14,16 +14,9 @@ import scala.tools.partest.ASMConverters
 import ASMConverters._
 import scala.tools.testing.ClearAfterClass
 
-object UnusedLocalVariablesTest extends ClearAfterClass.Clearable {
-  var dceCompiler = newCompiler(extraArgs = "-Yopt:unreachable-code")
-  def clear(): Unit = { dceCompiler = null }
-}
-
 @RunWith(classOf[JUnit4])
 class UnusedLocalVariablesTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = UnusedLocalVariablesTest
-
-  val dceCompiler = UnusedLocalVariablesTest.dceCompiler
+  val dceCompiler = cached("dceCompiler", () => newCompiler(extraArgs = "-Yopt:unreachable-code"))
 
   @Test
   def removeUnusedVar(): Unit = {

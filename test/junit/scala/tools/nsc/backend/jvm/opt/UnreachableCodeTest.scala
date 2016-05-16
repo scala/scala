@@ -15,27 +15,13 @@ import scala.tools.partest.ASMConverters
 import ASMConverters._
 import scala.tools.testing.ClearAfterClass
 
-object UnreachableCodeTest extends ClearAfterClass.Clearable {
-  // jvm-1.6 enables emitting stack map frames, which impacts the code generation wrt dead basic blocks,
-  // see comment in BCodeBodyBuilder
-  var methodOptCompiler = newCompiler(extraArgs = "-Yopt:l:method")
-  var dceCompiler       = newCompiler(extraArgs = "-Yopt:unreachable-code")
-  var noOptCompiler     = newCompiler(extraArgs = "-Yopt:l:none")
-
-  def clear(): Unit = {
-    methodOptCompiler = null
-    dceCompiler = null
-    noOptCompiler = null
-  }
-}
-
 @RunWith(classOf[JUnit4])
 class UnreachableCodeTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = UnreachableCodeTest
-
-  val methodOptCompiler     = UnreachableCodeTest.methodOptCompiler
-  val dceCompiler           = UnreachableCodeTest.dceCompiler
-  val noOptCompiler         = UnreachableCodeTest.noOptCompiler
+  // jvm-1.6 enables emitting stack map frames, which impacts the code generation wrt dead basic blocks,
+  // see comment in BCodeBodyBuilder
+  val methodOptCompiler     = cached("methodOptCompiler", () => newCompiler(extraArgs = "-Yopt:l:method"))
+  val dceCompiler           = cached("dceCompiler", () => newCompiler(extraArgs = "-Yopt:unreachable-code"))
+  val noOptCompiler         = cached("noOptCompiler", () => newCompiler(extraArgs = "-Yopt:l:none"))
 
   def assertEliminateDead(code: (Instruction, Boolean)*): Unit = {
     val method = genMethod()(code.map(_._1): _*)

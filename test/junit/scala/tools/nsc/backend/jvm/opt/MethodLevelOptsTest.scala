@@ -18,16 +18,9 @@ import ASMConverters._
 import scala.tools.testing.ClearAfterClass
 import scala.collection.JavaConverters._
 
-object MethodLevelOptsTest extends ClearAfterClass.Clearable {
-  var methodOptCompiler = newCompiler(extraArgs = "-Yopt:l:method")
-  def clear(): Unit = { methodOptCompiler = null }
-}
-
 @RunWith(classOf[JUnit4])
 class MethodLevelOptsTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = MethodLevelOptsTest
-
-  val methodOptCompiler = MethodLevelOptsTest.methodOptCompiler
+  val methodOptCompiler = cached("methodOptCompiler", () => newCompiler(extraArgs = "-Yopt:l:method"))
 
   def wrapInDefault(code: Instruction*) = List(Label(0), LineNumber(1, Label(0))) ::: code.toList ::: List(Label(1))
 

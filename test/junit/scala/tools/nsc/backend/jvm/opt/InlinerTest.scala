@@ -22,35 +22,27 @@ import BackendReporting._
 import scala.collection.JavaConverters._
 import scala.tools.testing.ClearAfterClass
 
-object InlinerTest extends ClearAfterClass.Clearable {
-  val args = "-Yopt:l:classpath -Yopt-warnings"
-  var compiler = newCompiler(extraArgs = args)
-  var inlineOnlyCompiler = newCompiler(extraArgs = "-Yopt:inline-project")
-
-  // allows inspecting the caches after a compilation run
-  def notPerRun: List[Clearable] = List(
-    compiler.genBCode.bTypes.classBTypeFromInternalName,
-    compiler.genBCode.bTypes.byteCodeRepository.compilingClasses,
-    compiler.genBCode.bTypes.byteCodeRepository.parsedClasses,
-    compiler.genBCode.bTypes.callGraph.callsites)
-  notPerRun foreach compiler.perRunCaches.unrecordCache
-
-  def clear(): Unit = { compiler = null; inlineOnlyCompiler = null }
-}
-
 @RunWith(classOf[JUnit4])
 class InlinerTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = InlinerTest
+  val args = "-Yopt:l:classpath -Yopt-warnings"
+  val compiler = cached("compiler", () => newCompiler(extraArgs = args))
+  val inlineOnlyCompiler = cached("inlineOnlyCompiler", () => newCompiler(extraArgs = "-Yopt:inline-project"))
+  import compiler.genBCode.bTypes
+  // allows inspecting the caches after a compilation run
+  def notPerRun: List[Clearable] = List(
+    bTypes.classBTypeFromInternalName,
+    bTypes.byteCodeRepository.compilingClasses,
+    bTypes.byteCodeRepository.parsedClasses,
+    bTypes.callGraph.callsites)
+  notPerRun foreach compiler.perRunCaches.unrecordCache
 
-  val compiler = InlinerTest.compiler
   import compiler.genBCode.bTypes._
   import compiler.genBCode.bTypes.backendUtils._
   import inlinerHeuristics._
 
-  val inlineOnlyCompiler = InlinerTest.inlineOnlyCompiler
 
   def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
-    InlinerTest.notPerRun.foreach(_.clear())
+    notPerRun.foreach(_.clear())
     compileClasses(compiler)(scalaCode, javaCode, allowMessage)
     // Use the class nodes stored in the byteCodeRepository. The ones returned by compileClasses are not the same,
     // these are created new from the classfile byte array. They are completely separate instances which cannot
@@ -837,7 +829,7 @@ class InlinerTest extends ClearAfterClass {
 
     var c = 0
 
-    compileClasses(newCompiler(extraArgs = InlinerTest.args + " -Yopt-warnings:_"))(
+    compileClasses(newCompiler(extraArgs = args + " -Yopt-warnings:_"))(
       scalaCode,
       List((javaCode, "A.java")),
       allowMessage = i => {c += 1; i.msg contains warn})
@@ -899,7 +891,7 @@ class InlinerTest extends ClearAfterClass {
         |  def t = System.arraycopy(null, 0, null, 0, 0)
         |}
       """.stripMargin
-    val List(c) = compileClasses(newCompiler(extraArgs = InlinerTest.args + " -Yopt-inline-heuristics:everything"))(code)
+    val List(c) = compileClasses(newCompiler(extraArgs = args + " -Yopt-inline-heuristics:everything"))(code)
     assertInvoke(getSingleMethod(c, "t"), "java/lang/System", "arraycopy")
   }
 

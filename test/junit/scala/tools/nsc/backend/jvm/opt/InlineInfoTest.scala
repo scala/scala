@@ -18,25 +18,19 @@ import BackendReporting._
 
 import scala.collection.JavaConverters._
 
-object InlineInfoTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Yopt:l:classpath")
-  def clear(): Unit = { compiler = null }
-
-  def notPerRun: List[Clearable] = List(
-    compiler.genBCode.bTypes.classBTypeFromInternalName,
-    compiler.genBCode.bTypes.byteCodeRepository.compilingClasses,
-    compiler.genBCode.bTypes.byteCodeRepository.parsedClasses)
-  notPerRun foreach compiler.perRunCaches.unrecordCache
-}
-
 @RunWith(classOf[JUnit4])
 class InlineInfoTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = InlineInfoTest
+  val compiler = cached("compiler", () => newCompiler(extraArgs = "-Yopt:l:classpath"))
 
-  val compiler = InlineInfoTest.compiler
+  import compiler.genBCode.bTypes
+  def notPerRun: List[Clearable] = List(
+    bTypes.classBTypeFromInternalName,
+    bTypes.byteCodeRepository.compilingClasses,
+    bTypes.byteCodeRepository.parsedClasses)
+  notPerRun foreach compiler.perRunCaches.unrecordCache
 
   def compile(code: String) = {
-    InlineInfoTest.notPerRun.foreach(_.clear())
+    notPerRun.foreach(_.clear())
     compileClasses(compiler)(code)
   }
 

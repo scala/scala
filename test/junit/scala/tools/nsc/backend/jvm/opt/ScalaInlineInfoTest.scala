@@ -16,15 +16,9 @@ import ASMConverters._
 import scala.collection.JavaConverters._
 import scala.tools.testing.ClearAfterClass
 
-object ScalaInlineInfoTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Yopt:l:none")
-  def clear(): Unit = { compiler = null }
-}
-
 @RunWith(classOf[JUnit4])
 class ScalaInlineInfoTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = ScalaInlineInfoTest
-  val compiler = ScalaInlineInfoTest.compiler
+  val compiler = cached("compiler", () => newCompiler(extraArgs = "-Yopt:l:none"))
 
   def inlineInfo(c: ClassNode): InlineInfo = c.attrs.asScala.collect({ case a: InlineInfoAttribute => a.inlineInfo }).head
 
