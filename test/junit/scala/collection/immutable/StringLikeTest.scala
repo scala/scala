@@ -46,19 +46,29 @@ class StringLikeTest {
   @Test
   def testNumericConversion: Unit = {
     val sOne = " \t\n 1 \n\r\t "
+    val sOk  = "2"
     val sNull:String = null
 
-    assertTrue("trim toInt", sOne.toInt == 1)
-    assertTrue("trim toLong", sOne.toLong == 1L)
-    assertTrue("trim toShort", sOne.toShort == 1.toShort)
-    assertTrue("trim toByte", sOne.toByte == 1.toByte)
-    assertTrue("trim toDouble", sOne.toDouble == 1.0d) // was working before issue
-    assertTrue("trim toFloat", sOne.toFloat == 1.0f) // was working before issue
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toInt, {s => s == "null"}) // was working before issue
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toLong, {s => s == "null"}) // was working before issue
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toShort, {s => s == "null"}) // was working before issue
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toByte, {s => s == "null"}) // was working before issue
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toDouble, {s => s == "null"})
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toFloat, {s => s == "null"})
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sOne.toInt)
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sOne.toLong)
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sOne.toShort)
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sOne.toByte)
+    assertTrue("trim toDouble", sOne.toDouble == 1.0d)
+    assertTrue("trim toFloat", sOne.toFloat == 1.0f)
+
+    assertTrue("no trim toInt", sOk.toInt == 2)
+    assertTrue("no trim toLong", sOk.toLong == 2L)
+    assertTrue("no trim toShort", sOk.toShort == 2.toShort)
+    assertTrue("no trim toByte", sOk.toByte == 2.toByte)
+    assertTrue("no trim toDouble", sOk.toDouble == 2.0d)
+    assertTrue("no trim toFloat", sOk.toFloat == 2.0f)
+
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toInt, {s => s == "null"})
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toLong, {s => s == "null"})
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toShort, {s => s == "null"})
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toByte, {s => s == "null"})
+
+    AssertUtil.assertThrows[java.lang.NullPointerException](sNull.toDouble)
+    AssertUtil.assertThrows[java.lang.NullPointerException](sNull.toFloat)
   }
 }
