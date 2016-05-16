@@ -1,5 +1,6 @@
 package scala.collection.immutable
 
+import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -39,5 +40,25 @@ class StringLikeTest {
     AssertUtil.assertSameElements("".split('x'), Array("")) // not Array()
     AssertUtil.assertSameElements("--ch--omp--".split("-"), Array("", "", "ch", "", "omp")) // All the cases!
     AssertUtil.assertSameElements(twopairs.split(high), Array(twopairs)) //don't split on characters that are half a surrogate pair
+  }
+
+  /* Test for SI-9767 */
+  @Test
+  def testNumericConversion: Unit = {
+    val sOne = " \t\n 1 \n\r\t "
+    val sNull:String = null
+
+    assertTrue("trim toInt", sOne.toInt == 1)
+    assertTrue("trim toLong", sOne.toLong == 1L)
+    assertTrue("trim toShort", sOne.toShort == 1.toShort)
+    assertTrue("trim toByte", sOne.toByte == 1.toByte)
+    assertTrue("trim toDouble", sOne.toDouble == 1.0d) // was working before issue
+    assertTrue("trim toFloat", sOne.toFloat == 1.0f) // was working before issue
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toInt, {s => s == "null"}) // was working before issue
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toLong, {s => s == "null"}) // was working before issue
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toShort, {s => s == "null"}) // was working before issue
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toByte, {s => s == "null"}) // was working before issue
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toDouble, {s => s == "null"})
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toFloat, {s => s == "null"})
   }
 }
