@@ -192,4 +192,22 @@ class IteratorTest {
     assertSameElements(exp, res)
     assertEquals(8, counter) // was 14
   }
+
+  // SI-9766
+  @Test def exhaustedConcatIteratorConcat: Unit = {
+    def consume[A](i: Iterator[A]) = {
+      while(i.hasNext) i.next()
+    }
+    val joiniter = Iterator.empty ++ Seq(1, 2, 3)
+    assertTrue(joiniter.hasNext)
+    consume(joiniter)
+    val concatiter = joiniter ++ Seq(4, 5, 6)
+    assertTrue(concatiter.hasNext)
+    consume(concatiter)
+    assertFalse(concatiter.hasNext)
+    val concatFromEmpty = concatiter ++ Seq(7, 8, 9)
+    assertTrue(concatFromEmpty.hasNext)
+    consume(concatFromEmpty)
+    assertFalse(concatFromEmpty.hasNext)
+  }
 }
