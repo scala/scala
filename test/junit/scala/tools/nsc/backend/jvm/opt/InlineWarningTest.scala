@@ -27,20 +27,12 @@ import BackendReporting._
 import scala.collection.JavaConverters._
 import scala.tools.testing.ClearAfterClass
 
-object InlineWarningTest extends ClearAfterClass.Clearable {
-  val argsNoWarn = "-Yopt:l:classpath"
-  val args = argsNoWarn + " -Yopt-warnings"
-  var compiler = newCompiler(extraArgs = args)
-  var compilerWarnAll = newCompiler(extraArgs = argsNoWarn + " -Yopt-warnings:_")
-  def clear(): Unit = { compiler = null; compilerWarnAll = null }
-}
-
 @RunWith(classOf[JUnit4])
 class InlineWarningTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = InlineWarningTest
-
-  val compiler = InlineWarningTest.compiler
-  val compilerWarnAll = InlineWarningTest.compilerWarnAll
+  val argsNoWarn = "-Yopt:l:classpath"
+  val args = argsNoWarn + " -Yopt-warnings"
+  val compiler = cached("compiler", () => newCompiler(extraArgs = args))
+  val compilerWarnAll = cached("compilerWarnAll", () => newCompiler(extraArgs = argsNoWarn + " -Yopt-warnings:_"))
 
   def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false, compiler: Global = compiler): List[ClassNode] = {
     compileClasses(compiler)(scalaCode, javaCode, allowMessage)
@@ -115,10 +107,10 @@ class InlineWarningTest extends ClearAfterClass {
     assert(c == 1, c)
 
     // no warnings here
-    compileClasses(newCompiler(extraArgs = InlineWarningTest.argsNoWarn + " -Yopt-warnings:none"))(scalaCode, List((javaCode, "A.java")))
+    compileClasses(newCompiler(extraArgs = argsNoWarn + " -Yopt-warnings:none"))(scalaCode, List((javaCode, "A.java")))
 
     c = 0
-    compileClasses(newCompiler(extraArgs = InlineWarningTest.argsNoWarn + " -Yopt-warnings:no-inline-mixed"))(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; warns.exists(i.msg contains _)})
+    compileClasses(newCompiler(extraArgs = argsNoWarn + " -Yopt-warnings:no-inline-mixed"))(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; warns.exists(i.msg contains _)})
     assert(c == 2, c)
   }
 

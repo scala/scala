@@ -16,18 +16,10 @@ import scala.tools.partest.ASMConverters
 import ASMConverters._
 import scala.tools.testing.ClearAfterClass
 
-object PatmatBytecodeTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler()
-  var optCompiler = newCompiler(extraArgs = "-Yopt:l:project")
-  def clear(): Unit = { compiler = null; optCompiler = null }
-}
-
 @RunWith(classOf[JUnit4])
 class PatmatBytecodeTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = PatmatBytecodeTest
-
-  val compiler = PatmatBytecodeTest.compiler
-  val optCompiler = PatmatBytecodeTest.optCompiler
+  val compiler = cached("compiler", () => newCompiler())
+  val optCompiler = cached("optCompiler", () => newCompiler(extraArgs = "-Yopt:l:project"))
 
   @Test
   def t6956(): Unit = {

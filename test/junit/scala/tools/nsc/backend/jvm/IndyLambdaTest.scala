@@ -10,17 +10,8 @@ import scala.tools.nsc.backend.jvm.CodeGenTools._
 import scala.tools.testing.ClearAfterClass
 import scala.collection.JavaConverters._
 
-object IndyLambdaTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler()
-
-  def clear(): Unit = {
-    compiler = null
-  }
-}
-
 class IndyLambdaTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = IndyLambdaTest
-  val compiler = IndyLambdaTest.compiler
+  val compiler = cached("compiler", () => newCompiler())
 
   @Test def boxingBridgeMethodUsedSelectively(): Unit = {
     def implMethodDescriptorFor(code: String): String = {
