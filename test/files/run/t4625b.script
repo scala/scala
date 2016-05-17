@@ -1,0 +1,8 @@
+
+trait X { def x = "Misc top-level detritus" }
+
+object Bumpkus
+
+object Main extends X with App {
+  println(x)
+}
