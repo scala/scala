@@ -1,0 +1,6 @@
+
+val x = "value x"
+
+object Main extends App {
+  println(s"Test ran with $x.")
+}

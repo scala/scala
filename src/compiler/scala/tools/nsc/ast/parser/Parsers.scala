@@ -389,8 +389,8 @@ self =>
         }
         /* For now we require there only be one top level object. */
         var seenModule = false
+        var disallowed = EmptyTree: Tree
         val newStmts = stmts collect {
-          case t @ Import(_, _) => t
           case md @ ModuleDef(mods, name, template) if !seenModule && (isApp(template) || md.exists(isMainMethod)) =>
             seenModule = true
             /* This slightly hacky situation arises because we have no way to communicate
@@ -404,11 +404,18 @@ self =>
             else treeCopy.ModuleDef(md, mods, mainModuleName, template)
           case md @ ModuleDef(_, _, _)   => md
           case cd @ ClassDef(_, _, _, _) => cd
-          case _ =>
+          case t  @ Import(_, _)         => t
+          case t =>
             /* If we see anything but the above, fail. */
-            return None
+            disallowed = t
+            EmptyTree
         }
-        Some(makeEmptyPackage(0, newStmts))
+        if (disallowed.isEmpty) Some(makeEmptyPackage(0, newStmts))
+        else {
+          if (seenModule)
+            warning(disallowed.pos.point, "Script has a main object but statement is disallowed")
+          None
+        }
       }
 
       if (mainModuleName == newTermName(ScriptRunner.defaultScriptMain))

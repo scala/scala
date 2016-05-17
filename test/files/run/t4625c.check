@@ -1,0 +1,3 @@
+newSource1.scala:2: warning: Script has a main object but statement is disallowed
+val x = "value x"
+    ^
