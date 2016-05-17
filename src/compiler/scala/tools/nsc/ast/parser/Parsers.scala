@@ -383,7 +383,7 @@ self =>
           case _                                        => false
         }
         def isApp(t: Tree) = t match {
-          case Template(ps, _, _) => ps.exists(cond(_) { case Ident(tpnme.App) => true })
+          case Template(parents, _, _) => parents.exists(cond(_) { case Ident(tpnme.App) => true })
           case _ => false
         }
         /* For now we require there only be one top level object. */
@@ -401,6 +401,8 @@ self =>
              */
             if (name == mainModuleName) md
             else treeCopy.ModuleDef(md, mods, mainModuleName, template)
+          case md @ ModuleDef(_, _, _)   => md
+          case cd @ ClassDef(_, _, _, _) => cd
           case _ =>
             /* If we see anything but the above, fail. */
             return None
