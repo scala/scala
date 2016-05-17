@@ -4,7 +4,7 @@
  * What you see below is very much work-in-progress. The following features are implemented:
  *   - Compiling all classses for the compiler and library ("compile" in the respective subprojects)
  *   - Running JUnit tests ("test") and partest ("test/it:test")
- *   - Creating build/quick with all compiled classes and launcher scripts ("˜")
+ *   - Creating build/quick with all compiled classes and launcher scripts ("dist/mkQuick")
  *   - Creating build/pack with all JARs and launcher scripts ("dist/mkPack")
  *   - Building all scaladoc sets ("doc")
  *   - Publishing ("publishDists" and standard sbt tasks like "publish" and "publishLocal")
@@ -208,7 +208,9 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
 
   // Don't log process output (e.g. of forked `compiler/runMain ...Main`), just pass it
   // directly to stdout
-  outputStrategy in run := Some(StdoutOutput)
+  outputStrategy in run := Some(StdoutOutput),
+  Quiet.silenceScalaBinaryVersionWarning,
+  Quiet.silenceIvyUpdateInfoLogging
 )
 
 /** Extra post-processing for the published POM files. These are needed to create POMs that
@@ -494,6 +496,7 @@ lazy val replJlineEmbedded = Project("repl-jline-embedded", file(".") / "target"
       JarJar(inputs, outdir, config)
     }),
     connectInput in run := true
+
   )
   .dependsOn(replJline)
 
@@ -686,7 +689,8 @@ lazy val root = (project in file("."))
       genprod.main(Array(dir.getPath))
       GenerateAnyVals.run(dir.getAbsoluteFile)
       state
-    }
+    },
+    Quiet.silenceIvyUpdateInfoLogging
   )
   .aggregate(library, reflect, compiler, interactive, repl, replJline, replJlineEmbedded,
     scaladoc, scalap, partestExtras, junit, libraryAll, scalaDist).settings(
