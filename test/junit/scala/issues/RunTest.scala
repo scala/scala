@@ -10,8 +10,8 @@ import scala.tools.reflect.ToolBox
 import scala.tools.testing.ClearAfterClass
 
 object RunTest {
-
   class VC(val x: Any) extends AnyVal
+  class VCI(val x: Int) extends AnyVal { override def toString = "" + x }
 }
 
 @RunWith(classOf[JUnit4])
@@ -153,5 +153,101 @@ class RunTest extends ClearAfterClass {
       """.stripMargin
     val u = Void.TYPE
     assertEquals(run[(Class[_], Class[_])](code), (u, u))
+  }
+
+  @Test
+  def t9671(): Unit = {
+    val code =
+      """import scala.issues.RunTest.VCI
+        |
+        |def f1(a: Any) = "" + a
+        |def f2(a: AnyVal) = "" + a
+        |def f3[T](a: T) = "" + a
+        |def f4(a: Int) = "" + a
+        |def f5(a: VCI) = "" + a
+        |def f6(u: Unit) = "" + u
+        |
+        |def n1: AnyRef = null
+        |def n2: Null = null
+        |def n3: Any = null
+        |def n4[T]: T = null.asInstanceOf[T]
+        |
+        |def npe(s: => String) = try { s; throw new Error() } catch { case _: NullPointerException => "npe" }
+        |
+        |    f1(null.asInstanceOf[Int])  +
+        |    f1(  n1.asInstanceOf[Int])  +
+        |    f1(  n2.asInstanceOf[Int])  +
+        |    f1(  n3.asInstanceOf[Int])  +
+        |    f1(               n4[Int])  + // "null"
+        |"-"                             +
+        |    f1(null.asInstanceOf[VCI])  +
+        |npe(f1(  n1.asInstanceOf[VCI])) + // SI-8097
+        |    f1(  n2.asInstanceOf[VCI])  +
+        |npe(f1(  n3.asInstanceOf[VCI])) + // SI-8097
+        |    f1(               n4[VCI])  + // "null"
+        |"-"                             +
+        |    f1(null.asInstanceOf[Unit]) + // "null", SI-9066
+        |    f1(  n1.asInstanceOf[Unit]) + // "null", SI-9066
+        |    f1(  n2.asInstanceOf[Unit]) + // "null", SI-9066
+        |    f1(  n3.asInstanceOf[Unit]) + // "null", SI-9066
+        |    f1(               n4[Unit]) + // "null"
+        |"-"                             +
+        |    f2(null.asInstanceOf[Int])  +
+        |    f2(  n1.asInstanceOf[Int])  +
+        |    f2(  n2.asInstanceOf[Int])  +
+        |    f2(  n3.asInstanceOf[Int])  +
+        |    f2(               n4[Int])  + // "null"
+        |"-"                             +
+        |    f2(null.asInstanceOf[VCI])  +
+        |npe(f2(  n1.asInstanceOf[VCI])) + // SI-8097
+        |    f2(  n2.asInstanceOf[VCI])  +
+        |npe(f2(  n3.asInstanceOf[VCI])) + // SI-8097
+        |    f2(               n4[VCI])  + // "null"
+        |"-"                             +
+        |    f2(null.asInstanceOf[Unit]) + // "null", SI-9066
+        |    f2(  n1.asInstanceOf[Unit]) + // "null", SI-9066
+        |    f2(  n2.asInstanceOf[Unit]) + // "null", SI-9066
+        |    f2(  n3.asInstanceOf[Unit]) + // "null", SI-9066
+        |    f2(               n4[Unit]) + // "null"
+        |"-"                             +
+        |    f3(null.asInstanceOf[Int])  +
+        |    f3(  n1.asInstanceOf[Int])  +
+        |    f3(  n2.asInstanceOf[Int])  +
+        |    f3(  n3.asInstanceOf[Int])  +
+        |    f3(               n4[Int])  + // "null"
+        |"-"                             +
+        |    f3(null.asInstanceOf[VCI])  +
+        |npe(f3(  n1.asInstanceOf[VCI])) + // SI-8097
+        |    f3(  n2.asInstanceOf[VCI])  +
+        |npe(f3(  n3.asInstanceOf[VCI])) + // SI-8097
+        |    f3(               n4[VCI])  + // "null"
+        |"-"                             +
+        |    f3(null.asInstanceOf[Unit]) + // "null", SI-9066
+        |    f3(  n1.asInstanceOf[Unit]) + // "null", SI-9066
+        |    f3(  n2.asInstanceOf[Unit]) + // "null", SI-9066
+        |    f3(  n3.asInstanceOf[Unit]) + // "null", SI-9066
+        |    f3(               n4[Unit]) + // "null"
+        |"-"                             +
+        |    f4(null.asInstanceOf[Int])  +
+        |    f4(  n1.asInstanceOf[Int])  +
+        |    f4(  n2.asInstanceOf[Int])  +
+        |    f4(  n3.asInstanceOf[Int])  +
+        |    f4(               n4[Int])  +
+        |"-"                             +
+        |    f5(null.asInstanceOf[VCI])  +
+        |npe(f5(  n1.asInstanceOf[VCI])) + // SI-8097
+        |    f5(  n2.asInstanceOf[VCI])  +
+        |npe(f5(  n3.asInstanceOf[VCI])) + // SI-8097
+        |npe(f5(               n4[VCI])) + // SI-8097
+        |"-"                             +
+        |    f6(null.asInstanceOf[Unit]) + // "null", SI-9066
+        |    f6(  n1.asInstanceOf[Unit]) + // "null", SI-9066
+        |    f6(  n2.asInstanceOf[Unit]) + // "null", SI-9066
+        |    f6(  n3.asInstanceOf[Unit]) + // "null", SI-9066
+        |    f6(               n4[Unit])   // "null"
+      """.stripMargin
+
+    assertEquals(run[String](code),
+      "0000null-0npe0npenull-nullnullnullnullnull-0000null-0npe0npenull-nullnullnullnullnull-0000null-0npe0npenull-nullnullnullnullnull-00000-0npe0npenpe-nullnullnullnullnull")
   }
 }

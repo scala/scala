@@ -1911,8 +1911,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   /** Forward to the generic class constructor. If the current class initializes
    *  specialized fields corresponding to parameters, it passes null to the superclass
-   *  constructor. This saves the boxing cost for initializing generic fields that are
-   *  never used.
+   *  constructor.
    *
    *  For example:
    *  {{{
@@ -1926,7 +1925,17 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *        super.this(null.asInstanceOf[Int], null.asInstanceOf[Int])
    *      }
    *    }
-   *  }}
+   *  }}}
+   *
+   *  Note that erasure first transforms `null.asInstanceOf[Int]` to `unbox(null)`, which is 0.
+   *  Then it adapts the argument `unbox(null)` of type Int to the erased parameter type of Tuple2,
+   *  which is Object, so it inserts a `box` call and we get `box(unbox(null))`, which is
+   *  `new Integer(0)` (not `null`).
+   *
+   *  However it does not make sense to create an Integer instance to be stored in the generic field
+   *  of the superclass: that field is never used. Therefore we mark the `null` tree with the
+   *  [[SpecializedSuperConstructorCallArgument]] attachment and special-case erasure to replace
+   *  `box(unbox(null))` by `null` in this case.
    */
   private def forwardCtorCall(pos: scala.reflect.internal.util.Position, receiver: Tree, paramss: List[List[ValDef]], clazz: Symbol): Tree = {
     log(s"forwardCtorCall($pos, $receiver, $paramss, $clazz)")
@@ -1945,7 +1954,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
     val argss = mmap(paramss)(x =>
       if (initializesSpecializedField(x.symbol))
-        gen.mkAsInstanceOf(Literal(Constant(null)), x.symbol.tpe)
+        gen.mkAsInstanceOf(Literal(Constant(null)).updateAttachment(SpecializedSuperConstructorCallArgument), x.symbol.tpe)
       else
         Ident(x.symbol)
     )
@@ -1989,5 +1998,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       }
 
       resultTree
-    }  }
+    }
+  }
+  object SpecializedSuperConstructorCallArgument
 }

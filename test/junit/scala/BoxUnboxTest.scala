@@ -48,22 +48,22 @@ class BoxUnboxTest {
     assertEquals(n4, 0)
     val n5 = null.asInstanceOf[Int] == 0
     assertTrue(n5)
-    val n6 = null.asInstanceOf[Int] == null       // SI-9671 -- should be false, but is true
-    assertThrows[AssertionError](assertFalse(n6)) // should not throw
+    val n6 = null.asInstanceOf[Int] == null
+    assertFalse(n6)
     val n7 = null.asInstanceOf[Int] != 0
     assertFalse(n7)
-    val n8 = null.asInstanceOf[Int] != null      // SI-9671 -- should be true, but is false
-    assertThrows[AssertionError](assertTrue(n8)) // should not throw
+    val n8 = null.asInstanceOf[Int] != null
+    assertTrue(n8)
 
     val mp = new java.util.HashMap[Int, Int]
     val n9 = mp.get(0)
     assertEquals(n9, 0)
-    val n10 = mp.get(0) == null                    // SI-602 -- maybe related to SI-9671 (test above)?
+    val n10 = mp.get(0) == null                    // SI-602
     assertThrows[AssertionError](assertFalse(n10)) // should not throw
 
     def f(a: Any) = "" + a
-    val n11 = f(null.asInstanceOf[Int])                  // "null", should be "0". probably same cause as SI-602.
-    assertThrows[AssertionError](assertEquals(n11, "0")) // should not throw
+    val n11 = f(null.asInstanceOf[Int])
+    assertEquals(n11, "0")
 
     def n12 = genericNull[Int]
     assertEquals(n12, 0)
@@ -81,8 +81,8 @@ class BoxUnboxTest {
 
   @Test
   def boxUnboxBoolean(): Unit = {
-    val n1 = Option(null.asInstanceOf[Boolean])                 // SI-7397 -- should be Some(false), but is None
-    assertThrows[AssertionError](assertEquals(n1, Some(false))) // should not throw
+    val n1 = Option(null.asInstanceOf[Boolean])
+    assertEquals(n1, Some(false))
   }
 
   @Test

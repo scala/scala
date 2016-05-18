@@ -606,10 +606,8 @@ abstract class Erasure extends AddInterfaces
           // !!! Make pending/run/t5866b.scala work. The fix might be here and/or in unbox1.
           if (isPrimitiveValueType(targ.tpe) || isErasedValueType(targ.tpe)) {
             val noNullCheckNeeded = targ.tpe match {
-              case ErasedValueType(_, underlying) =>
-                isPrimitiveValueClass(underlying.typeSymbol)
-              case _ =>
-                true
+              case ErasedValueType(_, underlying) => isPrimitiveValueType(underlying)
+              case _ => true
             }
             if (noNullCheckNeeded) unbox(qual1, targ.tpe)
             else {
