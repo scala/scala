@@ -106,14 +106,14 @@ class BoxUnboxTest {
     Unit.unbox({eff(); null}); chk()
     assertThrows[ClassCastException](Unit.unbox({eff(); ""})); chk()
 
-    val n1 = null.asInstanceOf[Unit]              // SI-9066: should be UNIT, but currently null
-    assertThrows[AssertionError](assert(n1 == b)) // should not throw
+    val n1 = null.asInstanceOf[Unit]
+    assert(n1 == b)
 
-    val n2 = null.asInstanceOf[Unit] == b    // SI-9066: should be true, but currently false
-    assertThrows[AssertionError](assert(n2)) // should not throw
+    val n2 = null.asInstanceOf[Unit] == b
+    assert(n2)
 
     def f(a: Any) = "" + a
-    val n3 = f(null.asInstanceOf[Unit])                  // "null", should be "()". probably same cause as SI-602.
-    assertThrows[AssertionError](assertEquals(n3, "()")) // should not throw
+    val n3 = f(null.asInstanceOf[Unit])
+    assertEquals(n3, "()")
   }
 }
