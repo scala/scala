@@ -344,7 +344,7 @@ abstract class Erasure extends AddInterfaces
           buf.toString
 
         case RefinedType(parents, decls) =>
-          boxedSig(intersectionDominator(parents))
+          jsig(intersectionDominator(parents), primitiveOK = primitiveOK)
         case ClassInfoType(parents, _, _) =>
           superSig(parents)
         case AnnotatedType(_, atp) =>
