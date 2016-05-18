@@ -1,5 +1,5 @@
 public Bippy<java.lang.Object> Test.f1(long)
-public Bippy<java.lang.Object> Test.f2(java.lang.Object)
+public Bippy<java.lang.Object> Test.f2(long)
 public Bippy<java.lang.Object> Test.i1(Bippy<java.lang.Object>)
 public Bippy<java.lang.Object> Test.i2(Bippy<java.lang.Object>)
 public int Test.g1(long)
