@@ -26,7 +26,11 @@
 /build.properties
 /buildcharacter.properties
 
+# might get generated when testing Jenkins scripts locally
+/jenkins.properties
+
 # target directories for ant build
+/build
 /build/
 /dists/
 
@@ -52,5 +56,6 @@
 # Sbt's target directories
 /target/
 /project/target/
-/project/project/target
+/project/project/target/
+/project/project/project/target/
 /build-sbt/

@@ -600,11 +600,11 @@ object JavapClass {
     def parents: List[ClassLoader] = parentsOf(loader)
     /* all file locations */
     def locations = {
-      def alldirs = parents flatMap (_ match {
+      def alldirs = parents flatMap {
         case ucl: ScalaClassLoader.URLClassLoader => ucl.classPathURLs
         case jcl: java.net.URLClassLoader         => jcl.getURLs
         case _ => Nil
-      })
+      }
       val dirs = for (d <- alldirs; if d.getProtocol == "file") yield Path(new JFile(d.toURI))
       dirs
     }

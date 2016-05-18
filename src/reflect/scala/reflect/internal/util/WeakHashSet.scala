@@ -41,7 +41,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
    * power of two equal to or greater than the specified initial capacity
    */
   private def computeCapacity = {
-    if (initialCapacity < 0) throw new IllegalArgumentException("initial capacity cannot be less than 0");
+    if (initialCapacity < 0) throw new IllegalArgumentException("initial capacity cannot be less than 0")
     var candidate = 1
     while (candidate < initialCapacity) {
       candidate  *= 2
@@ -372,13 +372,13 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
      * Number of buckets that hold collisions. Useful for diagnosing performance issues.
      */
     def collisionBucketsCount: Int =
-      (table filter (entry => entry != null && entry.tail != null)).size
+      (table count (entry => entry != null && entry.tail != null))
 
     /**
      * Number of buckets that are occupied in this hash table.
      */
     def fullBucketsCount: Int =
-      (table filter (entry => entry != null)).size
+      (table count (entry => entry != null))
 
     /**
      *  Number of buckets in the table

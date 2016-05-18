@@ -18,6 +18,9 @@ IVY_CACHE="$WORKSPACE/.ivy2"
 mkdir -p $IVY_CACHE
 rm -rf $IVY_CACHE/cache/org.scala-lang
 
+SBT_CMD=${sbtCmd-sbt}
+SBT_CMD="$SBT_CMD -sbt-version 0.13.11"
+
 # temp dir where all 'non-build' operation are performed
 TMP_ROOT_DIR=$(mktemp -d -t pr-scala.XXXX)
 TMP_DIR="${TMP_ROOT_DIR}/tmp"

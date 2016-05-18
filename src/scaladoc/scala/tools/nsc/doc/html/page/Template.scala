@@ -139,7 +139,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
                   if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty)
                     NodeSeq.Empty
                   else
-                    <li class="inherit out"><span>By inheritance</span></li>
+                    <li class="inherit out"><span>By Inheritance</span></li>
                 }
               </ol>
             </div>
@@ -175,7 +175,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
             <span class="filtertype"></span>
             <ol>
               <li class="hideall out"><span>Hide All</span></li>
-              <li class="showall in"><span>Show all</span></li>
+              <li class="showall in"><span>Show All</span></li>
             </ol>
           </div>
         }
@@ -280,7 +280,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
 
       {
         if (Set("epfl", "EPFL").contains(tpl.universe.settings.docfooter.value))
-          <div id="footer">Scala programming documentation. Copyright (c) 2003-2015 <a href="http://www.epfl.ch" target="_top">EPFL</a>, with contributions from <a href="http://typesafe.com" target="_top">Typesafe</a>.</div>
+          <div id="footer">Scala programming documentation. Copyright (c) 2003-2016 <a href="http://www.epfl.ch" target="_top">EPFL</a>, with contributions from <a href="http://www.lightbend.com" target="_top">Lightbend</a>.</div>
         else
           <div id="footer"> { tpl.universe.settings.docfooter.value } </div>
       }

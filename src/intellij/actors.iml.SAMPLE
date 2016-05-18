@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
-  <component name="NewModuleRootManager" inherit-compiler-output="true">
+  <component name="NewModuleRootManager" inherit-compiler-output="false">
+    <output url="file://$MODULE_DIR$/../../build/quick/classes/actors" />
+    <output-test url="file://$MODULE_DIR$/../../out/test/actors" />
     <exclude-output />
     <content url="file://$MODULE_DIR$/../actors">
       <sourceFolder url="file://$MODULE_DIR$/../actors" isTestSource="false" />

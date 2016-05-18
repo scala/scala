@@ -8,14 +8,11 @@ object MyApp extends App {
 object Test extends ReplTest {
   def code = ":javap -app MyApp$"
 
-  override def welcoming = true
-
-  // The constant pool indices are not the same for GenASM / GenBCode, so
-  // replacing the exact numbers by XX.
-  lazy val hasConstantPoolRef = """(.*)(#\d\d)(.*)""".r
-
-  override def normalize(s: String) = s match {
-    case hasConstantPoolRef(start, ref, end) => start + "#XX" + end
-    case _ => super.normalize(s)
+  override def show() = {
+    val coded  = "Code:"
+    val strung = "String Hello, delayed world."
+    val lines  = eval().toList
+    assert (lines.count(s => s.endsWith(coded)) == 1)
+    assert (lines.count(s => s.endsWith(strung)) == 1)
   }
 }

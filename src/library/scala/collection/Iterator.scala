@@ -10,7 +10,7 @@ package scala
 package collection
 
 import mutable.ArrayBuffer
-import scala.annotation.migration
+import scala.annotation.{tailrec, migration}
 import immutable.Stream
 import scala.collection.generic.CanBuildFrom
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
@@ -168,8 +168,10 @@ object Iterator {
   private[scala] final class ConcatIterator[+A](private[this] var current: Iterator[A], initial: Vector[() => Iterator[A]]) extends Iterator[A] {
     @deprecated def this(initial: Vector[() => Iterator[A]]) = this(Iterator.empty, initial) // for binary compatibility
     private[this] var queue: Vector[() => Iterator[A]] = initial
+    private[this] var currentHasNextChecked = false
     // Advance current to the next non-empty iterator
     // current is set to null when all iterators are exhausted
+    @tailrec
     private[this] def advance(): Boolean = {
       if (queue.isEmpty) {
         current = null
@@ -178,20 +180,57 @@ object Iterator {
       else {
         current = queue.head()
         queue = queue.tail
-        current.hasNext || advance()
+        if (current.hasNext) {
+          currentHasNextChecked = true
+          true
+        } else advance()
       }
     }
-    def hasNext = (current ne null) && (current.hasNext || advance())
-    def next()  = if (hasNext) current.next else Iterator.empty.next
+    def hasNext =
+      if (currentHasNextChecked) true
+      else if (current eq null) false
+      else if (current.hasNext) {
+        currentHasNextChecked = true
+        true
+      } else advance()
+    def next()  =
+      if (hasNext) {
+        currentHasNextChecked = false
+        current.next()
+      } else Iterator.empty.next()
 
     override def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] =
       new ConcatIterator(current, queue :+ (() => that.toIterator))
   }
 
   private[scala] final class JoinIterator[+A](lhs: Iterator[A], that: => GenTraversableOnce[A]) extends Iterator[A] {
+    private[this] var state = 0 // 0: lhs not checked, 1: lhs has next, 2: switched to rhs
     private[this] lazy val rhs: Iterator[A] = that.toIterator
-    def hasNext = lhs.hasNext || rhs.hasNext
-    def next    = if (lhs.hasNext) lhs.next else rhs.next
+    def hasNext = state match {
+      case 0 =>
+        if (lhs.hasNext) {
+          state = 1
+          true
+        } else {
+          state = 2
+          rhs.hasNext
+        }
+      case 1 => true
+      case _ => rhs.hasNext
+    }
+    def next() = state match {
+      case 0 =>
+        if (lhs.hasNext) lhs.next()
+        else {
+          state = 2
+          rhs.next()
+        }
+      case 1 =>
+        state = 0
+        lhs.next()
+      case _ =>
+        rhs.next()
+    }
 
     override def ++[B >: A](that: => GenTraversableOnce[B]) =
       new ConcatIterator(this, Vector(() => that.toIterator))
@@ -851,7 +890,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @usecase def foreach(f: A => Unit): Unit
    *    @inheritdoc
    */
-  def foreach[U](f: A =>  U) { while (hasNext) f(next()) }
+  def foreach[U](f: A => U) { while (hasNext) f(next()) }
 
   /** Tests whether a predicate holds for all values produced by this iterator.
    *  $mayNotTerminateInf

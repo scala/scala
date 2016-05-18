@@ -67,7 +67,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
   }
 
   override /*IterableLike*/
-  def foreach[B](f: A => B) {
+  def foreach[U](f: A => U) {
     var these = this
     while (!these.isEmpty) {
       f(these.head)

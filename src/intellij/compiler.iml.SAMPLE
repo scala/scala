@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
-  <component name="NewModuleRootManager" inherit-compiler-output="true">
+  <component name="NewModuleRootManager" inherit-compiler-output="false">
+    <output url="file://$MODULE_DIR$/../../build/quick/classes/compiler" />
+    <output-test url="file://$MODULE_DIR$/../../out/test/compiler" />
     <exclude-output />
     <content url="file://$MODULE_DIR$/../compiler">
-      <sourceFolder url="file://$MODULE_DIR$/../compiler/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../compiler" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="library" />
     <orderEntry type="module" module-name="reflect" />
+    <orderEntry type="library" name="compiler-deps" level="project" />
     <orderEntry type="library" name="starr" level="project" />
-    <orderEntry type="library" name="ant" level="project" />
-    <orderEntry type="library" name="asm" level="project" />
   </component>
 </module>

@@ -22,7 +22,7 @@
 #    - To prevent staging on sonatype (for testing), set publishToSonatype to anything but "yes"
 #    - Note: After building a release, the jenkins job provides an updated versions.properties file as artifact.
 #      Put this file in the Scala repo and create a pull request, and also update the file build.number.
-# 
+#
 # - Otherwise, a nightly release is built:
 #    - version number is read from the build.number file, extended with -$sha-nightly
 
@@ -73,7 +73,7 @@
 
 
 # Requirements
-#  - sbtCmd must point to sbt from sbt-extras
+#  - SBT_CMD must point to sbt from sbt-extras
 #  - ~/.sonatype-curl, ~/.m2/settings.xml, ~/.credentials, ~/.credentials-sonatype, ~/.credentials-private-repo
 #    as defined by https://github.com/scala/scala-jenkins-infra/tree/master/templates/default
 #  - ~/.sbt/0.13/plugins/gpg.sbt with:
@@ -88,10 +88,6 @@ publishPrivateTask=${publishPrivateTask-"publish"}
 publishSonatypeTaskCore=${publishSonatypeTaskCore-"publish-signed"}
 publishSonatypeTaskModules=${publishSonatypeTaskModules-"publish-signed"}
 publishLockerPrivateTask=${publishLockerPrivateTask-$publishPrivateTask} # set to "init" to speed up testing of the script (if you already built locker before)
-
-sbtCmd=${sbtCmd-sbt} # TESTING (this is a marker for defaults to change when testing locally: should be sbtx on my mac)
-
-sbtCmd="$sbtCmd -sbt-version 0.13.8"
 
 forceRebuild=${forceRebuild-no}
 
@@ -180,8 +176,8 @@ function st_stagingRepoClose() {
 sbtArgs="-no-colors -ivy $baseDir/ivy2 -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig -Dsbt.global.base=$HOME/.sbt/0.13 -sbt-dir $HOME/.sbt/0.13"
 
 sbtBuild() {
-  echo "### sbtBuild: "$sbtCmd $sbtArgs "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
-  $sbtCmd $sbtArgs "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@" >> $baseDir/logs/builds 2>&1
+  echo "### sbtBuild: "$SBT_CMD $sbtArgs "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
+  $SBT_CMD $sbtArgs "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@" >> $baseDir/logs/builds 2>&1
 }
 
 sbtResolve() {
@@ -189,8 +185,8 @@ sbtResolve() {
   touch build.sbt
   # Can be set to `full` if a module requires cross-versioning against the full Scala version, like the continuations plugin.
   cross=${4-binary}
-  echo "### sbtResolve: $sbtCmd $sbtArgs " "${scalaVersionTasks[@]}" "\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
-  $sbtCmd $sbtArgs "${scalaVersionTasks[@]}" \
+  echo "### sbtResolve: $SBT_CMD $sbtArgs " "${scalaVersionTasks[@]}" "\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
+  $SBT_CMD $sbtArgs "${scalaVersionTasks[@]}" \
     "set libraryDependencies := Seq(\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross)" \
       'show update' >> $baseDir/logs/resolution 2>&1
 }
@@ -242,22 +238,13 @@ buildPartest() {
   fi
 }
 
-# buildPartestIface() {
-#   if [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-partest-interface" $PARTEST_IFACE_VER )
-#   then echo "Found scala-partest-interface $PARTEST_IFACE_VER; not building."
-#   else
-#     update scala scala-partest-interface "$PARTEST_IFACE_REF" && gfxd
-#     sbtBuild 'set version :="'$PARTEST_IFACE_VER'"' $clean "${buildTasks[@]}"
-#   fi
-# }
-
 buildContinuations() {
   if [ "$CONT_PLUG_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.plugins"  "scala-continuations-plugin" $CONTINUATIONS_VER full )
   then echo "Found scala-continuations-plugin $CONTINUATIONS_VER; not building."
   else
     update scala scala-continuations $CONTINUATIONS_REF && gfxd
 
-    $sbtCmd $sbtArgs 'project plugin' "${scalaVersionTasks[@]}" "${publishTasks[@]}" \
+    $SBT_CMD $sbtArgs 'project plugin' "${scalaVersionTasks[@]}" "${publishTasks[@]}" \
       'set version := "'$CONTINUATIONS_VER'"' $clean "compile:package" test "${buildTasks[@]}" # https://github.com/scala/scala-continuations/pull/4
     CONT_PLUG_BUILT="yes"
   fi
@@ -266,7 +253,7 @@ buildContinuations() {
   then echo "Found scala-continuations-library $CONTINUATIONS_VER; not building."
   else
     update scala scala-continuations $CONTINUATIONS_REF && gfxd
-    $sbtCmd $sbtArgs 'project library' "${scalaVersionTasks[@]}" "${publishTasks[@]}" \
+    $SBT_CMD $sbtArgs 'project library' "${scalaVersionTasks[@]}" "${publishTasks[@]}" \
       'set version := "'$CONTINUATIONS_VER'"' $clean test "${buildTasks[@]}"
     CONT_LIB_BUILT="yes"
   fi
@@ -316,7 +303,6 @@ buildModules() {
   buildActorsMigration
   buildScalacheck
   buildPartest
-  # buildPartestIface
 }
 
 buildPublishedModules() {
@@ -328,7 +314,6 @@ buildPublishedModules() {
   buildSwing
   buildActorsMigration
   buildPartest
-  # buildPartestIface
 }
 
 
@@ -445,7 +430,6 @@ deriveModuleVersions() {
                 SWING_REF="v$SWING_VER"
      ACTORS_MIGRATION_REF="v$ACTORS_MIGRATION_VER"
               PARTEST_REF="v$PARTEST_VER"
-      # PARTEST_IFACE_REF="v$PARTEST_IFACE_VER"
            SCALACHECK_REF="$SCALACHECK_VER" # no `v` in their tags
    else
     # use HEAD as default when no revision is specified on the command line
@@ -455,7 +439,6 @@ deriveModuleVersions() {
                SWING_REF=${SWING_REF-"HEAD"}
     ACTORS_MIGRATION_REF=${ACTORS_MIGRATION_REF-"HEAD"}
              PARTEST_REF=${PARTEST_REF-"HEAD"}
-     # PARTEST_IFACE_REF=${PARTEST_IFACE_REF-"HEAD"}
           SCALACHECK_REF=${SCALACHECK_REF-"HEAD"}
 
                  XML_VER=$(deriveVersion scala scala-xml "$XML_REF")
@@ -476,7 +459,6 @@ deriveModuleVersions() {
   echo "SWING            = $SWING_VER at $SWING_REF"
   echo "XML              = $XML_VER at $XML_REF"
 
-  # PARTEST_IFACE_VER=${PARTEST_IFACE_VER-$(deriveVersion scala scala-partest-interface "$PARTEST_IFACE_REF")}
 }
 
 createNetrcFile() {

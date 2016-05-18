@@ -156,7 +156,7 @@ override def companion: GenericCompanion[Vector] = Vector
   override def take(n: Int): Vector[A] = {
     if (n <= 0)
       Vector.empty
-    else if (startIndex + n < endIndex)
+    else if (startIndex < endIndex - n)
       dropBack0(startIndex + n)
     else
       this
@@ -165,7 +165,7 @@ override def companion: GenericCompanion[Vector] = Vector
   override def drop(n: Int): Vector[A] = {
     if (n <= 0)
       this
-    else if (startIndex + n < endIndex)
+    else if (startIndex < endIndex - n)
       dropFront0(startIndex + n)
     else
       Vector.empty
@@ -951,8 +951,6 @@ private[immutable] trait VectorPointer[T] {
     // STUFF BELOW USED BY APPEND / UPDATE
 
     private[immutable] final def copyOf(a: Array[AnyRef]) = {
-      //println("copy")
-      if (a eq null) println ("NULL")
       val b = new Array[AnyRef](a.length)
       Platform.arraycopy(a, 0, b, 0, a.length)
       b

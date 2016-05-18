@@ -1,7 +1,7 @@
-depmet_1.scala:2: error: illegal dependent method type: parameter appears in the type of another parameter in the same section or an earlier one
+depmet_1.scala:2: error: illegal dependent method type: parameter may only be referenced in a subsequent parameter section
   def precise0(y: x.type)(x: String): Unit = {}
                           ^
-depmet_1.scala:3: error: illegal dependent method type: parameter appears in the type of another parameter in the same section or an earlier one
+depmet_1.scala:3: error: illegal dependent method type: parameter may only be referenced in a subsequent parameter section
   def precise1(x: String, y: x.type): Unit = {}
                ^
 depmet_1.scala:4: error: not found: value y

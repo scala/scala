@@ -3,7 +3,7 @@ This is the official repository for the [Scala Programming Language](http://www.
 
 # How to contribute
 
-To contribute to the Scala Standard Library, Scala Compiler and Scala Language Specification, please send us a [pull request](https://help.github.com/articles/using-pull-requests/#fork--pull) from your fork of this repository! We do have to ask you to sign the [Scala CLA](http://typesafe.com/contribute/cla/scala) before we can merge any of your work into our code base, to protect its open source nature.
+To contribute to the Scala Standard Library, Scala Compiler and Scala Language Specification, please send us a [pull request](https://help.github.com/articles/using-pull-requests/#fork--pull) from your fork of this repository! We do have to ask you to sign the [Scala CLA](http://www.lightbend.com/contribute/cla/scala) before we can merge any of your work into our code base, to protect its open source nature.
 
 For more information on building and developing the core of Scala, read on!
 
@@ -23,7 +23,7 @@ If you need some help with your PR at any time, please feel free to @-mention an
                                                                                                   | username                                                       | talk to me about...                               |
 --------------------------------------------------------------------------------------------------|----------------------------------------------------------------|---------------------------------------------------|
  <img src="https://avatars.githubusercontent.com/adriaanm"     height="50px" title="Adriaan Moors"/>        | [`@adriaanm`](https://github.com/adriaanm)           | type checker, pattern matcher, infrastructure, language spec |
- <img src="https://avatars.githubusercontent.com/SethTisue"    height="50px" title="Seth Tisue"/>           | [`@SethTisue`](https://github.com/SethTisue)         | back-end, library, the welcome-to-Scala experience, build |
+ <img src="https://avatars.githubusercontent.com/SethTisue"    height="50px" title="Seth Tisue"/>           | [`@SethTisue`](https://github.com/SethTisue)         | build, developer docs, community build, Jenkins, library, the welcome-to-Scala experience |
  <img src="https://avatars.githubusercontent.com/retronym"     height="50px" title="Jason Zaugg"/>          | [`@retronym`](https://github.com/retronym)           | compiler performance, weird compiler bugs, Java 8 lambdas, REPL |
  <img src="https://avatars.githubusercontent.com/Ichoran"      height="50px" title="Rex Kerr"/>             | [`@Ichoran`](https://github.com/Ichoran)             | collections library, performance              |
  <img src="https://avatars.githubusercontent.com/lrytz"        height="50px" title="Lukas Rytz"/>           | [`@lrytz`](https://github.com/lrytz)                 | optimizer, named & default arguments              |
@@ -40,16 +40,12 @@ P.S.: If you have some spare time to help out around here, we would be delighted
 
 # Handy Links
   - [A wealth of documentation](http://docs.scala-lang.org)
+  - [mailing lists](http://www.scala-lang.org/community/)
+  - [Gitter room for Scala contributors](https://gitter.im/scala/contributors)
   - [Scala CI](https://scala-ci.typesafe.com/)
-  - [Download the latest nightly](http://www.scala-lang.org/files/archive/nightly/2.11.x/)
-  - [(Deprecated) Scala CI at EPFL](https://scala-webapps.epfl.ch/jenkins/)
-  - Scala mailing lists:
-    - [Compiler and standard library development](https://groups.google.com/group/scala-internals)
-    - [Users of Scala](https://groups.google.com/group/scala-user)
-    - [Scala language discussion](https://groups.google.com/group/scala-language)
-    - [Scala Improvement Process](https://groups.google.com/group/scala-sips)
-    - [Debate](https://groups.google.com/group/scala-debate)
-    - [Announcements](https://groups.google.com/group/scala-announce)
+  - download the latest nightlies:
+      - [2.11.x](http://www.scala-lang.org/files/archive/nightly/2.11.x/)
+      - [2.12.x](http://www.scala-lang.org/files/archive/nightly/2.12.x/)
 
 # Repository structure
 
@@ -74,7 +70,13 @@ scala/
 
 ## Requirements
 
-You'll need a Java SDK (6 or newer), Apache Ant (version 1.9.0 or above), and curl (for `./pull-binary-libs.sh`).
+You'll need a Java SDK.  The baseline version is 6 for 2.11.x, 8 for
+2.12.x. (It's also possible to use a later SDK for local development,
+but the CI will verify against the baseline version.)
+
+You'll also need Apache Ant (version 1.9.0 or above) and curl (for `./pull-binary-libs.sh`).
+
+Mac OS X and Linux work. Windows may work if you use Cygwin. (Community help with keeping the build working on Windows is appreciated.)
 
 ## Git Hygiene
 
@@ -129,25 +131,10 @@ Here, `<milestone>` is the milestone targeted by the PR (e.g., 2.11.6), and `<sh
 
 ## IDE Setup
 ### Eclipse
-Download the [Scala IDE bundle](http://scala-ide.org/download/sdk.html). It comes preconfigured for optimal performance.
+See [src/eclipse/README.md](src/eclipse/README.md).
 
-  - Run `ant init` to download some necessary jars.
-  - Import the project (in `src/eclipse`) via `File` → `Import Existing Projects into Workspace`. Check all projects and click ok.
-
-For important details on building, debugging and file encodings, please see [the excellent tutorial on scala-ide.org](http://scala-ide.org/docs/tutorials/scalac-trunk/index.html) and the included README.md in src/eclipse.
-
-### IntelliJ 14
-Use the latest IntelliJ IDEA release and install the Scala plugin from within the IDE.
-
-The following steps are required to use IntelliJ IDEA on Scala trunk
- - Run `ant init`. This will download some JARs to `./build/deps`, which are included in IntelliJ's classpath.
- - Run `./src/intellij/setup.sh`.
- - Open `./src/intellij/scala.ipr` in IntelliJ.
- - `File` → `Project Structure` → `Project` → `Project SDK`. Create an SDK entry named "1.6" containing the Java 1.6 SDK.
-   (You may use a later SDK for local development, but the CI will verify against Java 6.)
-
-Compilation within IDEA is performed in `-Dlocker.skip=1` mode: the sources are built
-directly using the STARR compiler (which is downloaded from [the Central Repository](http://central.sonatype.org/), according to `starr.version` in `versions.properties`).
+### IntelliJ 15
+See [src/intellij/README.md](src/intellij/README.md).
 
 ## Building with sbt (EXPERIMENTAL)
 

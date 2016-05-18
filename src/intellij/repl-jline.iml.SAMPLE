@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="false">
+    <output url="file://$MODULE_DIR$/../../build/quick/classes/repl-jline" />
+    <output-test url="file://$MODULE_DIR$/../../out/test/repl-jline" />
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../repl-jline">
+      <sourceFolder url="file://$MODULE_DIR$/../repl-jline" isTestSource="false" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="library" />
+    <orderEntry type="module" module-name="reflect" />
+    <orderEntry type="module" module-name="compiler" />
+    <orderEntry type="module" module-name="interactive" />
+    <orderEntry type="module" module-name="repl" />
+    <orderEntry type="library" name="repl-jline-deps" level="project" />
+    <orderEntry type="library" name="starr" level="project" />
+  </component>
+</module>

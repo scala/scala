@@ -164,7 +164,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
   }
 
   def printClass() {
-    val pck = getPackage(cf.classname);
+    val pck = getPackage(cf.classname)
     if (pck.length() > 0)
       println("package " + pck + ";")
     print(flagsToStr(true, cf.flags))
@@ -175,14 +175,14 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
         printClassHeader;
       case Some(cf.Attribute(_, data)) =>
         val mp = new MetaParser(getName(
-          ((data(0) & 0xff) << 8) + (data(1) & 0xff)).trim());
+          ((data(0) & 0xff) << 8) + (data(1) & 0xff)).trim())
         mp.parse match {
           case None => printClassHeader;
           case Some(str) =>
             if (isInterface(cf.flags))
-              print("trait " + getSimpleClassName(cf.classname) + str);
+              print("trait " + getSimpleClassName(cf.classname) + str)
             else
-              print("class " + getSimpleClassName(cf.classname) + str);
+              print("class " + getSimpleClassName(cf.classname) + str)
         }
     }
     var statics: List[cf.Member] = Nil

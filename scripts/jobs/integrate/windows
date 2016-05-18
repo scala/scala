@@ -1,0 +1,19 @@
+#!/bin/bash -x
+
+./pull-binary-libs.sh
+
+export ANT_OPTS="-Dfile.encoding=UTF-8 -server -XX:+AggressiveOpts -XX:+UseParNewGC -Xmx2G -Xss1M -XX:MaxPermSize=512M -XX:ReservedCodeCacheSize=128M"
+
+# TODO: don't hardcode this path -- should be in scala/scala-jenkins-infra
+export PATH='/cygdrive/c/java/jdk-1.6/bin:/cygdrive/c/apache-ant-1.9.6/bin:/cygdrive/c/Program Files (x86)/Git-2.5.3/Cmd:/bin:/usr/bin:'
+export JAVA_HOME='C:/java/jdk-1.6'
+
+java -version
+javac -version
+ant -version
+
+ant \
+  -Dstarr.version=2.11.8 \
+  -Dscalac.args.optimise=-optimise \
+  -Dlocker.skip=1 \
+  test

@@ -1,22 +1,26 @@
 Eclipse project files
 =====================
 
-The following points describe how to get Scala to run in Eclipse. Please also take a look at the [excellent tutorial on scala-ide.org](http://scala-ide.org/docs/tutorials/scalac-trunk/index.html).
+For important details on building, debugging and file encodings, please see [the excellent tutorial on scala-ide.org](http://scala-ide.org/docs/tutorials/scalac-trunk/index.html).
 
-0. Import all projects into a [very recent version of Scala IDE for Eclipse](http://scala-ide.org/download/nightly.html) by choosing `File/Import Existing Projects`
-and navigate to `scala/src/eclipse`. Check all projects and click ok.
+The following points describe how to build Scala using Eclipse.
 
-0. You need to define a `path variable` inside Eclipse. Define `SCALA_BASEDIR` in 
-`Preferences/General/Workspace/Linked Resources`. The value should be the absolute 
-path to your Scala checkout. All paths in the project files are relative to this one,
-so nothing will work before you do so.
+0. Download the [Scala IDE bundle](http://scala-ide.org/download/sdk.html). It comes preconfigured for optimal performance.
 
-  The same `SCALA_BASEDIR` variable needs to be defined as a `classpath variable` in
+0. Run `ant build` to download some necessary jars and see a successful build.
+
+0. You need to define a `path variable` and a `classpath variable` inside Eclipse, both pointing to the Scala checkout directory:
+  - (experimental): run `./update-workspace.sh scala_checkout_dir [workspace_dir]`. This should update your workspace settings
+ (restart Eclipse if it was running). For example:
+ ```
+ ./update-workspace.sh $HOME/git/scala ~/Documents/workspace-scalac
+ ```
+  - If the above didn't work, you can perform these steps manually: Define `SCALA_BASEDIR` in `Preferences/General/Workspace/Linked Resources`. The value should be the absolute
+path to your Scala checkout. All paths in the project files are relative to this one, so nothing will work before you do so.
+The same `SCALA_BASEDIR` variable needs to be defined **also** as a `classpath variable` in
 `Java/Build Path/Classpath Variables`.
 
-  Additionally, we start using Maven dependencies (e.g. `JUnit`) so you need to define another
-`classpath variable` inside Eclipse. Define `M2_REPO` in `Java/Build Path/Classpath Variables`
-to point to your local Maven repository (e.g. `$HOME/.m2/repository`).
+0. Import the project (in `src/eclipse`) via `File` → `Import Existing Projects` and navigate to `scala/src/eclipse`. Check all projects and click ok.
 
   Lastly, the JRE used by Eclipse needs to know the path to the `JLine` library, which is used by the REPL.
 To set the JAR file, navigate to `Java/Installed JREs`, select the default JRE, press `Edit/Add External JARs...`
@@ -29,7 +33,7 @@ JDK. The Scala library uses such APIs, so you'd see this error:
         Access restriction: The method compareAndSwapObject(Object, long, Object, Object)
         from the type Unsafe is not accessible due to restriction on required library.
 
-  You can *fix* it by allowing calls to restricted APIs in `Java/Compiler/Errors/Warnings/Deprecated and Restricted API` 
+  You can *fix* it by allowing calls to restricted APIs in `Java/Compiler/Errors/Warnings/Deprecated and Restricted API`
 settings.
 
 0. Project files are tracked by Git, so adding them to `.gitignore` won't prevent them

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="interactive"/>
+	<classpathentry kind="var" path="SCALA_BASEDIR/build/deps/asm/scala-asm-5.0.4-scala-3.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/scaladoc"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/scala-compiler"/>

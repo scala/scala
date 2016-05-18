@@ -58,7 +58,19 @@ package object math {
    *          logarithms.
    */
   def exp(x: Double): Double = java.lang.Math.exp(x)
+
+  /** Returns the natural logarithm of a `double` value.
+   *
+   *  @param  x the number to take the natural logarithm of
+   *  @return the value `logₑ(x)` where `e` is Eulers number
+   */
   def log(x: Double): Double = java.lang.Math.log(x)
+  
+  /** Returns the square root of a `double` value.
+   * 
+   * @param  x the number to take the square root of
+   * @return the value √x
+   */
   def sqrt(x: Double): Double = java.lang.Math.sqrt(x)
   def IEEEremainder(x: Double, y: Double): Double = java.lang.Math.IEEEremainder(x, y)
 

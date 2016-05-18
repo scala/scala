@@ -184,7 +184,7 @@ TODO:
 
   <property name="dists.dir"               value="${basedir}/dists"/>
 
-  <property name="copyright.string"        value="Copyright 2002-2015, LAMP/EPFL"/>
+  <property name="copyright.string"        value="Copyright 2002-2016, LAMP/EPFL"/>
 
   <!-- These are NOT the flags used to run SuperSabbus, but the ones written
        into the script runners created with scala.tools.ant.ScalaTool -->
@@ -534,6 +534,8 @@ TODO:
     <property name="scalac.args.locker"    value="${scalac.args.all}"/>
     <property name="scalac.args.quick"     value="${scalac.args.all}"/>
     <property name="scalac.args.strap"     value="${scalac.args.quick}"/>
+
+    <property name="partest.scalac_opts"   value=""/> <!-- set default value, otherwise the property name will be passed to partest if undefined -->
 
     <!-- This is the start time for the distribution -->
     <tstamp prefix="time">
@@ -1642,7 +1644,7 @@ TODO:
     <mkdir dir="${bc-build.dir}"/>
     <!-- Pull down MIMA -->
     <artifact:dependencies pathId="mima.classpath">
-      <dependency groupId="com.typesafe" artifactId="mima-reporter_2.10" version="0.1.6"/>
+      <dependency groupId="com.typesafe" artifactId="mima-reporter_2.10" version="0.1.8"/>
     </artifact:dependencies>
     <artifact:dependencies pathId="old.bc.classpath">
       <dependency groupId="org.scala-lang" artifactId="scala-library" version="${bc-reference-version}"/>
@@ -1684,20 +1686,15 @@ TODO:
   <target name="docs.lib" depends="docs.start" unless="docs.skip">
     <staged-docs project="library">
       <include name="**/*.scala"/>
-      <exclude name="runtime/*$.scala"/>
-      <exclude name="runtime/ScalaRunTime.scala"/>
-      <exclude name="runtime/StringAdd.scala"/>
+      <exclude name="**/runtime/*$.scala"/>
+      <exclude name="**/runtime/ScalaRunTime.scala"/>
+      <exclude name="**/runtime/StringAdd.scala"/>
     </staged-docs>
   </target>
 
   <target name="docs.reflect" depends="docs.start" unless="docs.skip">
     <staged-docs project="reflect">
       <include name="**/*.scala"/>
-      <exclude name="reflect/Code.scala"/>
-      <exclude name="reflect/Print.scala"/>
-      <exclude name="reflect/Symbol.scala"/>
-      <exclude name="reflect/Tree.scala"/>
-      <exclude name="reflect/Type.scala"/>
     </staged-docs>
   </target>
 

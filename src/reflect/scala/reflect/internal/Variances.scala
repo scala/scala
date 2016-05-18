@@ -122,15 +122,21 @@ trait Variances {
        *  same is true of the parameters (ValDefs) unless we are inside a
        *  refinement, in which case they are checked from here.
        */
-      def apply(tp: Type): Type = tp match {
-        case _ if isUncheckedVariance(tp)                    => tp
-        case _ if resultTypeOnly(tp)                         => this(tp.resultType)
-        case TypeRef(_, sym, _) if sym.isAliasType           => this(tp.normalize)
-        case TypeRef(_, sym, _) if !sym.variance.isInvariant => checkVarianceOfSymbol(sym) ; mapOver(tp)
-        case RefinedType(_, _)                               => withinRefinement(mapOver(tp))
-        case ClassInfoType(parents, _, _)                    => parents foreach this ; tp
-        case mt @ MethodType(_, result)                      => flipped(mt.paramTypes foreach this) ; this(result)
-        case _                                               => mapOver(tp)
+      def apply(tp: Type): Type = {
+        tp match {
+          case _ if isUncheckedVariance(tp)                    =>
+          case _ if resultTypeOnly(tp)                         => this(tp.resultType)
+          case TypeRef(_, sym, _) if sym.isAliasType           => this(tp.normalize)
+          case TypeRef(_, sym, _) if !sym.variance.isInvariant => checkVarianceOfSymbol(sym) ; mapOver(tp)
+          case RefinedType(_, _)                               => withinRefinement(mapOver(tp))
+          case ClassInfoType(parents, _, _)                    => parents foreach this
+          case mt @ MethodType(_, result)                      => flipped(mt.paramTypes foreach this) ; this(result)
+          case _                                               => mapOver(tp)
+        }
+        // We're using TypeMap here for type traversal only. To avoid wasteful symbol
+        // cloning during the recursion, it is important to return the input `tp`, rather
+        // than the result of the pattern match above, which normalizes types.
+        tp
       }
       def validateDefinition(base: Symbol) {
         val saved = this.base

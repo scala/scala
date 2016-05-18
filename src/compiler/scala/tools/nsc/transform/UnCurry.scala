@@ -638,7 +638,7 @@ abstract class UnCurry extends InfoTransform
      * This transformation erases the dependent method types by:
      *   - Widening the formal parameter type to existentially abstract
      *     over the prior parameters (using `packSymbols`). This transformation
-     *     is performed in the the `InfoTransform`er [[scala.reflect.internal.transform.UnCurry]].
+     *     is performed in the `InfoTransform`er [[scala.reflect.internal.transform.UnCurry]].
      *   - Inserting casts in the method body to cast to the original,
      *     precise type.
      *

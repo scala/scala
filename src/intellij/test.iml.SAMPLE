@@ -7,16 +7,15 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="actors" />
-    <orderEntry type="module" module-name="compiler" />
     <orderEntry type="module" module-name="forkjoin" />
-    <orderEntry type="module" module-name="interactive" />
     <orderEntry type="module" module-name="library" />
-    <orderEntry type="module" module-name="partest-extras" />
+    <orderEntry type="module" module-name="actors" />
     <orderEntry type="module" module-name="reflect" />
+    <orderEntry type="module" module-name="compiler" />
     <orderEntry type="module" module-name="repl" />
-    <orderEntry type="library" name="partest" level="project" />
-    <orderEntry type="library" name="scaladoc-deps" level="project" />
-    <orderEntry type="library" name="asm" level="project" />
+    <orderEntry type="module" module-name="interactive" />
+    <orderEntry type="module" module-name="scaladoc" />
+    <orderEntry type="module" module-name="partest-extras" />
+    <orderEntry type="library" name="test-deps" level="project" />
   </component>
 </module>

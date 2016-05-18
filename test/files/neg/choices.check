@@ -1,2 +1,6 @@
+error: Usage: -Yresolve-term-conflict:<strategy>
+ where <strategy> choices are package, object, error (default: error)
+error: bad option: '-Yresolve-term-conflict'
 error: bad options: -Yresolve-term-conflict
-one error found
+error: flags file may only contain compiler options, found: -Yresolve-term-conflict
+four errors found

@@ -39,7 +39,7 @@ abstract class Attachments { self =>
 
   /** An underlying payload of the given class type `T`. */
   def get[T: ClassTag]: Option[T] =
-    (all filter matchesTag[T]).headOption.asInstanceOf[Option[T]]
+    (all find matchesTag[T]).asInstanceOf[Option[T]]
 
   /** Check underlying payload contains an instance of type `T`. */
   def contains[T: ClassTag]: Boolean =

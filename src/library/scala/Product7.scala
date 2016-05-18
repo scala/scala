@@ -24,7 +24,7 @@ trait Product7[+T1, +T2, +T3, +T4, +T5, +T6, +T7] extends Any with Product {
   override def productArity = 7
 
   
-  /** Returns the n-th projection of this product if 0 < n <= productArity,
+  /** Returns the n-th projection of this product if 0 <= n < productArity,
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
    *  @param n number of the projection to be returned

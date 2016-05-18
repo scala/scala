@@ -125,9 +125,9 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
       } else if (in.ch == '*') {
         docBuffer = null
         in.next
-        val scalaDoc = ("/**", "*/")
+        val scaladoc = ("/**", "*/")
         if (in.ch == '*')
-          docBuffer = new StringBuilder(scalaDoc._1)
+          docBuffer = new StringBuilder(scaladoc._1)
         do {
           do {
             if (in.ch != '*' && in.ch != SU) {

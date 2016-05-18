@@ -59,6 +59,10 @@ trait Parsers { self: Quasiquotes =>
 
       override implicit lazy val fresh: FreshNameCreator = new FreshNameCreator(nme.QUASIQUOTE_PREFIX)
 
+      // Do not check for tuple arity. The placeholders can support arbitrary tuple sizes.
+      override def makeSafeTupleTerm(trees: List[Tree], offset: Offset): Tree = treeBuilder.makeTupleTerm(trees)
+      override def makeSafeTupleType(trees: List[Tree], offset: Offset): Tree = treeBuilder.makeTupleType(trees)
+
       override val treeBuilder = new ParserTreeBuilder {
         override implicit def fresh: FreshNameCreator = parser.fresh
 

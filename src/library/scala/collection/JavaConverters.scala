@@ -52,7 +52,10 @@ import convert._
  *  - `scala.collection.Set` => `java.util.Set`
  *  - `scala.collection.Map` => `java.util.Map`
  *
- *  @author Martin Odersky
+ *  The following one way conversion is provided via `asScala`:
+ *
+ *  - `java.util.Properties` => `scala.collection.mutable.Map`
+ *
  *  @since  2.8.1
  */
 object JavaConverters extends DecorateAsJava with DecorateAsScala

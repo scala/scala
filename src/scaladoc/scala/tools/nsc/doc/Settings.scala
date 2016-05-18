@@ -25,7 +25,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
   )
 
   /** A setting that defines the overall title of the documentation, typically the name of the library being
-    * documented. ''Note:'' This setting is currently not used. */
+    * documented. */
   val doctitle = StringSetting (
     "-doc-title",
     "title",
@@ -34,7 +34,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
   )
 
   /** A setting that defines the overall version number of the documentation, typically the version of the library being
-    * documented. ''Note:'' This setting is currently not used. */
+    * documented. */
   val docversion = StringSetting (
     "-doc-version",
     "version",
@@ -45,7 +45,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
   val docfooter = StringSetting (
     "-doc-footer",
     "footer",
-    "A footer on every ScalaDoc page, by default the EPFL/Typesafe copyright notice. Can be overridden with a custom footer.",
+    "A footer on every Scaladoc page, by default the EPFL/Lightbend copyright notice. Can be overridden with a custom footer.",
     ""
   )
 
@@ -212,9 +212,10 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
   // For improved help output.
   def scaladocSpecific = Set[Settings#Setting](
     docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator, docRootContent, useStupidTypes,
+    docExternalDoc,
     docAuthor, docDiagrams, docDiagramsDebug, docDiagramsDotPath,
     docDiagramsDotTimeout, docDiagramsDotRestart,
-    docImplicits, docImplicitsDebug, docImplicitsShowAll, docImplicitsHide,
+    docImplicits, docImplicitsDebug, docImplicitsShowAll, docImplicitsHide, docImplicitsSoundShadowing,
     docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses,
     docNoPrefixes, docNoLinkWarnings, docRawOutput, docSkipPackages,
     docExpandAllTypes, docGroups
@@ -275,24 +276,36 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
       ("scala.reflect.ClassManifest"            -> ((tparam: String) => tparam + " is accompanied by a ClassManifest, which is a runtime representation of its type that survives erasure")) +
       ("scala.reflect.OptManifest"              -> ((tparam: String) => tparam + " is accompanied by an OptManifest, which can be either a runtime representation of its type or the NoManifest, which means the runtime type is not available")) +
       ("scala.reflect.ClassTag"                 -> ((tparam: String) => tparam + " is accompanied by a ClassTag, which is a runtime representation of its type that survives erasure")) +
-      ("scala.reflect.api.TypeTags.WeakTypeTag" -> ((tparam: String) => tparam + " is accompanied by an WeakTypeTag, which is a runtime representation of its type that survives erasure")) +
+      ("scala.reflect.api.TypeTags.WeakTypeTag" -> ((tparam: String) => tparam + " is accompanied by a WeakTypeTag, which is a runtime representation of its type that survives erasure")) +
       ("scala.reflect.api.TypeTags.TypeTag"     -> ((tparam: String) => tparam + " is accompanied by a TypeTag, which is a runtime representation of its type that survives erasure"))
+
+    private val excludedClassnamePatterns = Set(
+      """^scala.Tuple.*""",
+      """^scala.Product.*""",
+      """^scala.Function.*""",
+      """^scala.runtime.AbstractFunction.*"""
+    ) map (_.r)
+
+    private val notExcludedClasses = Set(
+      "scala.Tuple1",
+      "scala.Tuple2",
+      "scala.Product",
+      "scala.Product1",
+      "scala.Product2",
+      "scala.Function",
+      "scala.Function1",
+      "scala.Function2",
+      "scala.runtime.AbstractFunction0",
+      "scala.runtime.AbstractFunction1",
+      "scala.runtime.AbstractFunction2"
+    )
 
     /**
      * Set of classes to exclude from index and diagrams
      * TODO: Should be configurable
      */
     def isExcluded(qname: String) = {
-      ( ( qname.startsWith("scala.Tuple") || qname.startsWith("scala.Product") ||
-         qname.startsWith("scala.Function") || qname.startsWith("scala.runtime.AbstractFunction")
-       ) && !(
-        qname == "scala.Tuple1" || qname == "scala.Tuple2" ||
-        qname == "scala.Product" || qname == "scala.Product1" || qname == "scala.Product2" ||
-        qname == "scala.Function" || qname == "scala.Function1" || qname == "scala.Function2" ||
-        qname == "scala.runtime.AbstractFunction0" || qname == "scala.runtime.AbstractFunction1" ||
-        qname == "scala.runtime.AbstractFunction2"
-      )
-     )
+      excludedClassnamePatterns.exists(_.findFirstMatchIn(qname).isDefined) && !notExcludedClasses(qname)
     }
 
     /** Common conversion targets that affect any class in Scala */
