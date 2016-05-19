@@ -606,10 +606,8 @@ abstract class Erasure extends AddInterfaces
           // !!! Make pending/run/t5866b.scala work. The fix might be here and/or in unbox1.
           if (isPrimitiveValueType(targ.tpe) || isErasedValueType(targ.tpe)) {
             val noNullCheckNeeded = targ.tpe match {
-              case ErasedValueType(_, underlying) =>
-                isPrimitiveValueClass(underlying.typeSymbol)
-              case _ =>
-                true
+              case ErasedValueType(_, underlying) => isPrimitiveValueType(underlying)
+              case _ => true
             }
             if (noNullCheckNeeded) unbox(qual1, targ.tpe)
             else {
@@ -1143,6 +1141,10 @@ abstract class Erasure extends AddInterfaces
         else {
           val tree1 = preErase(tree)
           tree1 match {
+            case TypeApply(fun, targs @ List(targ)) if fun.symbol == Any_asInstanceOf && targ.tpe == UnitTpe =>
+              // SI-9066 prevent transforming `o.asInstanceOf[Unit]` to `o.asInstanceOf[BoxedUnit]`.
+              // adaptMember will then replace the call by a reference to BoxedUnit.UNIT.
+              treeCopy.TypeApply(tree1, transform(fun), targs).clearType()
             case EmptyTree | TypeTree() =>
               tree1 setType specialScalaErasure(tree1.tpe)
             case ArrayValue(elemtpt, trees) =>

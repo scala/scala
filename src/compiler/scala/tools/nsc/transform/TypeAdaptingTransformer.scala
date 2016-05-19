@@ -14,11 +14,18 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
 
     def typedPos(pos: Position)(tree: Tree): Tree
 
+    /**
+     * SI-4148: can't always replace box(unbox(x)) by x because
+     *   - unboxing x may lead to throwing an exception, e.g. in "aah".asInstanceOf[Int]
+     *   - box(unbox(null)) is not `null` but the box of zero
+     */
     private def isSafelyRemovableUnbox(fn: Tree, arg: Tree): Boolean = {
-     currentRun.runDefinitions.isUnbox(fn.symbol) && {
-      val cls = arg.tpe.typeSymbol
-      (cls == NullClass) || isBoxedValueClass(cls)
-     }
+      currentRun.runDefinitions.isUnbox(fn.symbol) && {
+        // replace box(unbox(null)) by null when passed to the super constructor in a specialized
+        // class, see comment in SpecializeTypes.forwardCtorCall.
+        arg.hasAttachment[specializeTypes.SpecializedSuperConstructorCallArgument.type] ||
+          isBoxedValueClass(arg.tpe.typeSymbol)
+      }
     }
 
     private def isPrimitiveValueType(tpe: Type)      = isPrimitiveValueClass(tpe.typeSymbol)
@@ -44,14 +51,7 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
             case x =>
               assert(x != ArrayClass)
               tree match {
-                /* Can't always remove a Box(Unbox(x)) combination because the process of boxing x
-                 * may lead to throwing an exception.
-                 *
-                 * This is important for specialization: calls to the super constructor should not box/unbox specialized
-                 * fields (see TupleX). (ID)
-                 */
                 case Apply(boxFun, List(arg)) if isSafelyRemovableUnbox(tree, arg) =>
-                  log(s"boxing an unbox: ${tree.symbol} -> ${arg.tpe}")
                   arg
                 case _ =>
                   (REF(currentRun.runDefinitions.boxMethod(x)) APPLY tree) setPos (tree.pos) setType ObjectTpe

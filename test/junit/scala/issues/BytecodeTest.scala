@@ -419,6 +419,16 @@ class BytecodeTest extends ClearAfterClass {
     assertInvoke(getSingleMethod(c, "f3"), "java/lang/Object", "hashCode")
     assertInvoke(getSingleMethod(c, "f4"), "java/lang/Object", "toString")
   }
+
+  @Test
+  def superConstructorArgumentInSpecializedClass(): Unit = {
+    // see comment in SpecializeTypes.forwardCtorCall
+    val code = "case class C[@specialized(Int) T](_1: T)"
+    val List(c, cMod, cSpec) = compileClasses(compiler)(code)
+    assertSameSummary(getSingleMethod(cSpec, "<init>"),
+      // pass `null` to super constructor, no box-unbox, no Integer created
+      List(ALOAD, ILOAD, PUTFIELD, ALOAD, ACONST_NULL, "<init>", RETURN))
+  }
 }
 
 object invocationReceiversTestCode {
