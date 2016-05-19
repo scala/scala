@@ -573,7 +573,7 @@ trait NamesDefaults { self: Analyzer =>
       }
       def checkAltName = {
         val res = checkDeprecation(false)
-        if (res) warn(s"the parameter name $name is deprecated$since: Use ${param.name} instead")
+        if (res) warn(s"the parameter name $name is deprecated$since: use ${param.name} instead")
         res
       }
       !param.isSynthetic && (checkName || checkAltName)

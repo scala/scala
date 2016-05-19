@@ -584,7 +584,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isAnonymousClass        = false
     def isCaseClass             = false
     def isConcreteClass         = false
-    @deprecated("Trait implementation classes have been removed in Scala 2.12", "2.12.0")
+    @deprecated("trait implementation classes have been removed in Scala 2.12", "2.12.0")
     def isImplClass             = false
     def isJavaInterface         = false
     def isNumericValueClass     = false
@@ -1002,7 +1002,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isTopLevel = owner.isPackageClass
 
     /** Is this symbol defined in a block? */
-    @deprecated("Use isLocalToBlock instead", "2.11.0")
+    @deprecated("use isLocalToBlock instead", "2.11.0")
     final def isLocal: Boolean = owner.isTerm
 
     /** Is this symbol defined in a block? */
@@ -1218,7 +1218,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
 // ------ name attribute --------------------------------------------------------------
 
-    @deprecated("Use unexpandedName", "2.11.0") def originalName: Name = unexpandedName
+    @deprecated("use unexpandedName", "2.11.0") def originalName: Name = unexpandedName
 
     /** If this symbol has an expanded name, its original (unexpanded) name,
      *  otherwise the name itself.
@@ -2374,7 +2374,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         Nil
     )
 
-    @deprecated("Use `superSymbolIn` instead", "2.11.0")
+    @deprecated("use `superSymbolIn` instead", "2.11.0")
     final def superSymbol(base: Symbol): Symbol = superSymbolIn(base)
 
     /** The symbol accessed by a super in the definition of this symbol when
@@ -2391,7 +2391,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       sym
     }
 
-    @deprecated("Use `getterIn` instead", "2.11.0")
+    @deprecated("use `getterIn` instead", "2.11.0")
     final def getter(base: Symbol): Symbol = getterIn(base)
 
     /** The getter of this value or setter definition in class `base`, or NoSymbol if none exists. */
@@ -2402,7 +2402,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def setterName: TermName = name.setterName
     def localName: TermName  = name.localName
 
-    @deprecated("Use `setterIn` instead", "2.11.0")
+    @deprecated("use `setterIn` instead", "2.11.0")
     final def setter(base: Symbol, hasExpandedName: Boolean = needsExpandedSetterName): Symbol =
       setterIn(base, hasExpandedName)
 

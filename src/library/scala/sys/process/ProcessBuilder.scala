@@ -172,9 +172,9 @@ trait ProcessBuilder extends Source with Sink {
     * and then throw an exception.
     */
   def lineStream: Stream[String]
-  
+
   /** Deprecated (renamed). Use `lineStream` instead. */
-  @deprecated("Use lineStream instead.", "2.11.0")
+  @deprecated("use lineStream instead", "2.11.0")
   def lines: Stream[String] = lineStream
 
   /** Starts the process represented by this builder.  The output is returned as
@@ -184,9 +184,9 @@ trait ProcessBuilder extends Source with Sink {
     * to termination and then throw an exception.
     */
   def lineStream(log: ProcessLogger): Stream[String]
-  
+
   /** Deprecated (renamed).  Use `lineStream(log: ProcessLogger)` instead. */
-  @deprecated("Use stream instead.", "2.11.0")
+  @deprecated("use stream instead", "2.11.0")
   def lines(log: ProcessLogger): Stream[String] = lineStream(log)
 
   /** Starts the process represented by this builder.  The output is returned as
@@ -196,9 +196,9 @@ trait ProcessBuilder extends Source with Sink {
     * but will not throw an exception.
     */
   def lineStream_! : Stream[String]
-  
+
   /** Deprecated (renamed).  Use `lineStream_!` instead. */
-  @deprecated("Use lineStream_! instead.", "2.11.0")  
+  @deprecated("use lineStream_! instead", "2.11.0")
   def lines_! : Stream[String] = lineStream_!
 
   /** Starts the process represented by this builder.  The output is returned as
@@ -208,9 +208,9 @@ trait ProcessBuilder extends Source with Sink {
     * to termination but will not throw an exception.
     */
   def lineStream_!(log: ProcessLogger): Stream[String]
-  
+
   /** Deprecated (renamed).  Use `lineStream_!(log: ProcessLogger)` instead. */
-  @deprecated("Use stream_! instead.", "2.11.0")
+  @deprecated("use stream_! instead", "2.11.0")
   def lines_!(log: ProcessLogger): Stream[String] = lineStream_!(log)
 
   /** Starts the process represented by this builder, blocks until it exits, and

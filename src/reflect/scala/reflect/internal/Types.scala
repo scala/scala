@@ -3847,7 +3847,7 @@ trait Types
     case _                    => false
   })
 
-  @deprecated("Use isRawType", "2.10.1") // presently used by sbt
+  @deprecated("use isRawType", "2.10.1") // presently used by sbt
   def isRaw(sym: Symbol, args: List[Type]) = (
        !phase.erasedTypes
     && args.isEmpty

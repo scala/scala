@@ -308,7 +308,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  @param target The string to match
    *  @return       The matches
    */
-  @deprecated("Extracting a match result from anything but a CharSequence or Match is deprecated", "2.11.0")
+  @deprecated("extracting a match result from anything but a CharSequence or Match is deprecated", "2.11.0")
   def unapplySeq(target: Any): Option[List[String]] = target match {
     case s: CharSequence =>
       val m = pattern matcher s
@@ -321,16 +321,16 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
   //  @see UnanchoredRegex
   protected def runMatcher(m: Matcher) = m.matches()
 
-  /** Return all non-overlapping matches of this `Regex` in the given character 
+  /** Return all non-overlapping matches of this `Regex` in the given character
    *  sequence as a [[scala.util.matching.Regex.MatchIterator]],
    *  which is a special [[scala.collection.Iterator]] that returns the
    *  matched strings but can also be queried for more data about the last match,
    *  such as capturing groups and start position.
-   * 
+   *
    *  A `MatchIterator` can also be converted into an iterator
    *  that returns objects of type [[scala.util.matching.Regex.Match]],
    *  such as is normally returned by `findAllMatchIn`.
-   * 
+   *
    *  Where potential matches overlap, the first possible match is returned,
    *  followed by the next match that follows the input consumed by the
    *  first match:

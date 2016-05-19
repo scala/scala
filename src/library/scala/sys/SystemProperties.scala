@@ -87,7 +87,7 @@ object SystemProperties {
   lazy val preferIPv4Stack: BooleanProp     = BooleanProp.keyExists(PreferIPv4StackKey)
   lazy val preferIPv6Addresses: BooleanProp = BooleanProp.keyExists(PreferIPv6AddressesKey)
   lazy val noTraceSuppression: BooleanProp  = BooleanProp.valueIsTrue(NoTraceSuppressionKey)
-  @deprecated("Use noTraceSuppression", "2.12.0")
+  @deprecated("use noTraceSuppression", "2.12.0")
   def noTraceSupression        = noTraceSuppression
 }
 

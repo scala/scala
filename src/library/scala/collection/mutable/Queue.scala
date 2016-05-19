@@ -143,7 +143,7 @@ extends MutableList[A]
   /** Return the proper suffix of this list which starts with the first element that satisfies `p`.
    *  That element is unlinked from the list. If no element satisfies `p`, return None.
    */
-  @deprecated("extractFirst inappropriately exposes implementation details.  Use dequeue or dequeueAll.", "2.11.0")
+  @deprecated("extractFirst inappropriately exposes implementation details. Use dequeue or dequeueAll.", "2.11.0")
   def extractFirst(start: LinkedList[A], p: A => Boolean): Option[LinkedList[A]] = {
     if (isEmpty) None
     else {

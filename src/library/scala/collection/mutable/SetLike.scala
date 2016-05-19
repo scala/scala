@@ -224,7 +224,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
    *  @throws UnsupportedOperationException
    *  if the message was not understood.
    */
-  @deprecated("Scripting is deprecated.", "2.11.0")
+  @deprecated("scripting is deprecated", "2.11.0")
   def <<(cmd: Message[A]): Unit = cmd match {
     case Include(_, x)     => this += x
     case Remove(_, x)      => this -= x

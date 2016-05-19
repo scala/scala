@@ -46,7 +46,7 @@ object Stack extends SeqFactory[Stack] {
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(1976480595012942526L)
-@deprecated("Stack is an inelegant and potentially poorly-performing wrapper around List.  Use List instead: stack push x becomes x :: list; stack.pop is list.tail.", "2.11.0")
+@deprecated("Stack is an inelegant and potentially poorly-performing wrapper around List. Use List instead: stack push x becomes x :: list; stack.pop is list.tail.", "2.11.0")
 class Stack[+A] protected (protected val elems: List[A])
                  extends AbstractSeq[A]
                     with LinearSeq[A]

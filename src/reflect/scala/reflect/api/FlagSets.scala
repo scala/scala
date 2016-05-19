@@ -173,7 +173,7 @@ trait FlagSets { self: Universe =>
      *  - the enum's class
      *  - enum constants
      **/
-    @deprecated("Use `isJavaEnum` on the corresponding symbol instead.", since = "2.11.8")
+    @deprecated("use `isJavaEnum` on the corresponding symbol instead", since = "2.11.8")
     val ENUM: FlagSet
 
     /** Flag indicating that tree represents a parameter of the primary constructor of some class

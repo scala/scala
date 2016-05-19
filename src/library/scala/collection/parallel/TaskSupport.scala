@@ -60,7 +60,7 @@ extends TaskSupport with AdaptiveWorkStealingForkJoinTasks
  *
  *  @see [[scala.collection.parallel.TaskSupport]] for more information.
  */
-@deprecated("Use `ForkJoinTaskSupport` instead.", "2.11.0")
+@deprecated("use `ForkJoinTaskSupport` instead", "2.11.0")
 class ThreadPoolTaskSupport(val environment: ThreadPoolExecutor = ThreadPoolTasks.defaultThreadPool)
 extends TaskSupport with AdaptiveWorkStealingThreadPoolTasks
 

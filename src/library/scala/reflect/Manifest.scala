@@ -41,7 +41,7 @@ import scala.collection.mutable.{ ArrayBuilder, WrappedArray }
  */
 @scala.annotation.implicitNotFound(msg = "No Manifest available for ${T}.")
 // TODO undeprecated until Scala reflection becomes non-experimental
-// @deprecated("Use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
+// @deprecated("use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
 trait Manifest[T] extends ClassManifest[T] with Equals {
   override def typeArguments: List[Manifest[_]] = Nil
 
@@ -63,7 +63,7 @@ trait Manifest[T] extends ClassManifest[T] with Equals {
 }
 
 // TODO undeprecated until Scala reflection becomes non-experimental
-// @deprecated("Use type tags and manually check the corresponding class or type instead", "2.10.0")
+// @deprecated("use type tags and manually check the corresponding class or type instead", "2.10.0")
 @SerialVersionUID(1L)
 abstract class AnyValManifest[T <: AnyVal](override val toString: String) extends Manifest[T] with Equals {
   override def <:<(that: ClassManifest[_]): Boolean =

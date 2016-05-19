@@ -87,7 +87,7 @@ trait ExecutionContext {
      *  constructed, so that it doesn't need any additional
      *  preparation later.
      */
-  @deprecated("Preparation of ExecutionContexts will be removed.", "2.12")
+  @deprecated("preparation of ExecutionContexts will be removed", "2.12")
   def prepare(): ExecutionContext = this
 }
 

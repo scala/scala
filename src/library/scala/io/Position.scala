@@ -33,7 +33,7 @@ package io
  *  }}}
  *  @author Burak Emir (translated from work by Matthias Zenger and others)
  */
-@deprecated("This class will be removed.", "2.10.0")
+@deprecated("this class will be removed", "2.10.0")
 private[scala] abstract class Position {
   /** Definable behavior for overflow conditions.
    */

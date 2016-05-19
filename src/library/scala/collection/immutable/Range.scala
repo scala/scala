@@ -33,7 +33,7 @@ import scala.collection.parallel.immutable.ParRange
  *  `init`) are also permitted on overfull ranges.
  *
  *  @param start      the start of this range.
- *  @param end        the end of the range.  For exclusive ranges, e.g. 
+ *  @param end        the end of the range.  For exclusive ranges, e.g.
  *                    `Range(0,3)` or `(0 until 3)`, this is one
  *                    step past the last one in the range.  For inclusive
  *                    ranges, e.g. `Range.inclusive(0,3)` or `(0 to 3)`,
@@ -80,7 +80,7 @@ extends scala.collection.AbstractSeq[Int]
     || (start < end && step < 0)
     || (start == end && !isInclusive)
   )
-  @deprecated("This method will be made private, use `length` instead.", "2.11")
+  @deprecated("this method will be made private, use `length` instead.", "2.11")
   final val numRangeElements: Int = {
     if (step == 0) throw new IllegalArgumentException("step cannot be 0.")
     else if (isEmpty) 0
@@ -90,8 +90,8 @@ extends scala.collection.AbstractSeq[Int]
       else len.toInt
     }
   }
-  @deprecated("This method will be made private, use `last` instead.", "2.11")
-  final val lastElement = 
+  @deprecated("this method will be made private, use `last` instead.", "2.11")
+  final val lastElement =
     if (isEmpty) start - step
     else step match {
       case 1  => if (isInclusive) end else end-1
@@ -102,8 +102,8 @@ extends scala.collection.AbstractSeq[Int]
         else if (isInclusive) end
         else end - step
     }
-    
-  @deprecated("This method will be made private.", "2.11")
+
+  @deprecated("this method will be made private.", "2.11")
   final val terminalElement = lastElement + step
 
   /** The last element of this range.  This method will return the correct value
@@ -197,7 +197,7 @@ extends scala.collection.AbstractSeq[Int]
       copy(locationAfterN(n), end, step)
     }
   )
-  
+
   /** Creates a new range containing the elements starting at `from` up to but not including `until`.
    *
    *  $doesNotUseBuilders
@@ -214,7 +214,7 @@ extends scala.collection.AbstractSeq[Int]
       if (from >= until) newEmptyRange(fromValue)
       else new Range.Inclusive(fromValue, locationAfterN(until-1), step)
     }
-    
+
   /** Creates a new range containing all the elements of this range except the last one.
    *
    *  $doesNotUseBuilders

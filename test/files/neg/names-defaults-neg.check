@@ -112,7 +112,7 @@ names-defaults-neg.scala:90: error: deprecated parameter name x has to be distin
 names-defaults-neg.scala:91: error: deprecated parameter name a has to be distinct from any other parameter name (deprecated or not).
   def deprNam2(a: String)(@deprecatedName('a) b: Int) = 1
                                               ^
-names-defaults-neg.scala:93: warning: the parameter name y is deprecated: Use b instead
+names-defaults-neg.scala:93: warning: the parameter name y is deprecated: use b instead
   deprNam3(y = 10, b = 2)
              ^
 names-defaults-neg.scala:93: error: parameter 'b' is already specified at parameter position 1
