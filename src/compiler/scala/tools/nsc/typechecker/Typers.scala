@@ -4494,7 +4494,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val opeqStart = if (Statistics.canEnable) Statistics.startTimer(failedOpEqNanos) else null
 
         def onError(reportError: => Tree): Tree = fun match {
-          case Select(qual, name) if !mode.inPatternMode && nme.isOpAssignmentName(newTermName(name.decode)) =>
+          case Select(qual, name)
+            if !mode.inPatternMode && nme.isOpAssignmentName(newTermName(name.decode)) && !qual.exists(_.isErroneous) =>
+
             val qual1 = typedQualifier(qual)
             if (treeInfo.isVariableOrGetter(qual1)) {
               if (Statistics.canEnable) Statistics.stopTimer(failedOpEqNanos, opeqStart)

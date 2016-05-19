@@ -1,0 +1,4 @@
+t9781.scala:3: error: not found: value undefinedSymbol
+  c(undefinedSymbol) += 1
+    ^
+one error found
