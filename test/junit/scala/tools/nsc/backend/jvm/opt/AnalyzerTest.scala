@@ -11,7 +11,7 @@ import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
 import scala.tools.nsc.backend.jvm.analysis.{AliasingFrame, AliasingAnalyzer}
 
-import CodeGenTools._
+import scala.tools.testing.BytecodeTesting._
 import scala.tools.partest.ASMConverters
 import ASMConverters._
 import AsmUtils._

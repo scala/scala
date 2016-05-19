@@ -8,7 +8,7 @@ import org.junit.Test
 import scala.tools.asm.Opcodes._
 import org.junit.Assert._
 
-import CodeGenTools._
+import scala.tools.testing.BytecodeTesting._
 import scala.tools.asm.tree.{AbstractInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.partest.ASMConverters

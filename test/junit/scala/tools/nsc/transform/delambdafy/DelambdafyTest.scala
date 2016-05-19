@@ -1,9 +1,7 @@
 package scala.tools.nsc.transform.delambdafy
 
 import scala.reflect.io.Path.jfile2path
-import scala.tools.nsc.backend.jvm.CodeGenTools.getGeneratedClassfiles
-import scala.tools.nsc.backend.jvm.CodeGenTools.makeSourceFile
-import scala.tools.nsc.backend.jvm.CodeGenTools.newCompilerWithoutVirtualOutdir
+import scala.tools.testing.BytecodeTesting._
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.testing.TempDir
 

@@ -12,7 +12,7 @@ import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.AsmUtils._
 import scala.tools.testing.AssertUtil._
 
-import CodeGenTools._
+import scala.tools.testing.BytecodeTesting._
 import scala.tools.partest.ASMConverters
 import ASMConverters._
 import scala.tools.testing.ClearAfterClass

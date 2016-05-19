@@ -1,4 +1,4 @@
-package scala.tools.nsc.backend.jvm
+package scala.tools.testing
 
 import org.junit.Assert._
 
@@ -10,14 +10,13 @@ import scala.tools.asm.tree.{AbstractInsnNode, ClassNode, MethodNode}
 import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.StoreReporter
-import scala.tools.nsc.settings.MutableSettings
-import scala.tools.nsc.{Settings, Global}
+import scala.tools.nsc.{Global, Settings}
 import scala.tools.partest.ASMConverters
 import scala.collection.JavaConverters._
-import scala.tools.testing.TempDir
-import AsmUtils._
+import scala.tools.nsc.backend.jvm.AsmUtils
 
-object CodeGenTools {
+object BytecodeTesting {
+  import AsmUtils._
   import ASMConverters._
 
   def genMethod( flags: Int = Opcodes.ACC_PUBLIC,

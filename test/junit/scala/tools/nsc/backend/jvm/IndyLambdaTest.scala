@@ -6,7 +6,7 @@ import org.junit.{Assert, Test}
 import scala.tools.asm.{Handle, Opcodes}
 import scala.tools.asm.tree.InvokeDynamicInsnNode
 import scala.tools.nsc.backend.jvm.AsmUtils._
-import scala.tools.nsc.backend.jvm.CodeGenTools._
+import scala.tools.testing.BytecodeTesting._
 import scala.tools.testing.ClearAfterClass
 import scala.collection.JavaConverters._
 

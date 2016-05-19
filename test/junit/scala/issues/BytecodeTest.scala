@@ -6,7 +6,7 @@ import org.junit.Test
 
 import scala.tools.asm.Opcodes._
 import scala.tools.nsc.backend.jvm.AsmUtils
-import scala.tools.nsc.backend.jvm.CodeGenTools._
+import scala.tools.testing.BytecodeTesting._
 import org.junit.Assert._
 
 import scala.collection.JavaConverters._

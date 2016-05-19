@@ -7,7 +7,7 @@ import org.junit.Test
 import scala.tools.asm.Opcodes
 import org.junit.Assert._
 
-import scala.tools.nsc.backend.jvm.CodeGenTools._
+import scala.tools.testing.BytecodeTesting._
 import scala.tools.testing.ClearAfterClass
 
 @RunWith(classOf[JUnit4])

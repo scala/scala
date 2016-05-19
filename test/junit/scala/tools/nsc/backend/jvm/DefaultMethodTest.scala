@@ -6,7 +6,7 @@ import org.junit.Test
 import scala.collection.JavaConverters
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.ClassNode
-import scala.tools.nsc.backend.jvm.CodeGenTools._
+import scala.tools.testing.BytecodeTesting._
 import JavaConverters._
 import scala.tools.testing.ClearAfterClass
 

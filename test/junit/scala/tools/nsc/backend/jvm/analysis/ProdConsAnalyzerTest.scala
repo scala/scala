@@ -11,7 +11,7 @@ import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.AbstractInsnNode
 import scala.tools.partest.ASMConverters._
 import scala.tools.testing.ClearAfterClass
-import CodeGenTools._
+import scala.tools.testing.BytecodeTesting._
 import AsmUtils._
 
 @RunWith(classOf[JUnit4])

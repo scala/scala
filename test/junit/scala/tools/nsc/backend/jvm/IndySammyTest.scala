@@ -9,7 +9,7 @@ import org.junit.Test
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.nsc.reporters.StoreReporter
-import CodeGenTools._
+import scala.tools.testing.BytecodeTesting._
 import scala.tools.partest.ASMConverters
 import ASMConverters._
 
