@@ -6,7 +6,7 @@
 package scala.runtime.java8;
 
 @FunctionalInterface
-public interface JFunction0<R> extends scala.Function0<R> {
+public interface JFunction0<R> extends scala.Function0<R>, java.io.Serializable {
     default void $init$() {
     };
     default void apply$mcV$sp() {
