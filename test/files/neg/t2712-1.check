@@ -1,0 +1,13 @@
+t2712-1.scala:7: error: no type parameters for method foo: (m: M[A])Unit exist so that it can be applied to arguments (test.Two[Int,String])
+ --- because ---
+argument expression's type is not compatible with formal parameter type;
+ found   : test.Two[Int,String]
+ required: ?M[?A]
+  def test(ma: Two[Int, String]) = foo(ma) // should fail with -Ypartial-unification *disabled*
+                                   ^
+t2712-1.scala:7: error: type mismatch;
+ found   : test.Two[Int,String]
+ required: M[A]
+  def test(ma: Two[Int, String]) = foo(ma) // should fail with -Ypartial-unification *disabled*
+                                       ^
+two errors found

@@ -1,0 +1,13 @@
+t2712-2.scala:16: error: type mismatch;
+ found   : test.Foo
+ required: test.Two[test.X1,Object]
+Note: test.X2 <: Object (and test.Foo <: test.Two[test.X1,test.X2]), but trait Two is invariant in type B.
+You may wish to define B as +B instead. (SLS 4.5)
+  test1(foo): One[X3]     // fails with -Ypartial-unification enabled
+        ^
+t2712-2.scala:16: error: type mismatch;
+ found   : test.Two[test.X1,Object]
+ required: test.One[test.X3]
+  test1(foo): One[X3]     // fails with -Ypartial-unification enabled
+       ^
+two errors found

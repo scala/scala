@@ -3076,13 +3076,43 @@ trait Types
        */
       def unifyFull(tpe: Type): Boolean = {
         def unifySpecific(tp: Type) = {
-          sameLength(typeArgs, tp.typeArgs) && {
-            val lhs = if (isLowerBound) tp.typeArgs else typeArgs
-            val rhs = if (isLowerBound) typeArgs else tp.typeArgs
+          val tpTypeArgs = tp.typeArgs
+          val arityDelta = compareLengths(typeArgs, tpTypeArgs)
+          if (arityDelta == 0) {
+            val lhs = if (isLowerBound) tpTypeArgs else typeArgs
+            val rhs = if (isLowerBound) typeArgs else tpTypeArgs
             // This is a higher-kinded type var with same arity as tp.
             // If so (see SI-7517), side effect: adds the type constructor itself as a bound.
-            isSubArgs(lhs, rhs, params, AnyDepth) && { addBound(tp.typeConstructor); true }
-          }
+            isSubArgs(lhs, rhs, params, AnyDepth) && {addBound(tp.typeConstructor); true}
+          } else if (settings.YpartialUnification && arityDelta < 0 && typeArgs.nonEmpty) {
+            // Simple algorithm as suggested by Paul Chiusano in the comments on SI-2712
+            //
+            //   https://issues.scala-lang.org/browse/SI-2712?focusedCommentId=61270
+            //
+            // Treat the type constructor as curried and partially applied, we treat a prefix
+            // as constants and solve for the suffix. For the example in the ticket, unifying
+            // M[A] with Int => Int this unifies as,
+            //
+            //   M[t] = [t][Int => t]  --> abstract on the right to match the expected arity
+            //   A = Int               --> capture the remainder on the left
+            //
+            // A more "natural" unifier might be M[t] = [t][t => t]. There's lots of scope for
+            // experimenting with alternatives here.
+            val numCaptured = tpTypeArgs.length - typeArgs.length
+            val (captured, abstractedArgs) = tpTypeArgs.splitAt(numCaptured)
+
+            val (lhs, rhs) =
+              if (isLowerBound) (abstractedArgs, typeArgs)
+              else (typeArgs, abstractedArgs)
+
+            isSubArgs(lhs, rhs, params, AnyDepth) && {
+              val tpSym = tp.typeSymbolDirect
+              val abstractedTypeParams = tpSym.typeParams.drop(numCaptured).map(_.cloneSymbol(tpSym))
+
+              addBound(PolyType(abstractedTypeParams, appliedType(tp.typeConstructor, captured ++ abstractedTypeParams.map(_.tpeHK))))
+              true
+            }
+          } else false
         }
         // The type with which we can successfully unify can be hidden
         // behind singleton types and type aliases.
