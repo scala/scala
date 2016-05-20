@@ -3,7 +3,7 @@ package backend.jvm
 package opt
 
 import org.junit.Assert._
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
@@ -1488,7 +1488,9 @@ class InlinerTest extends BytecodeTesting {
     assertSameSummary(getMethod(c, "t"), List(NEW, "<init>", ICONST_1, IRETURN))  // ICONST_1, U.f is inlined (not T.f)
   }
 
-  @Test
+  // Can be enabled when using 2.12.0-M5 as starr. This test works under a full boostrap, but not
+  // when compiled with M4.
+  @Test @Ignore
   def inlineArrayForeach(): Unit = {
     val code =
       """class C {
