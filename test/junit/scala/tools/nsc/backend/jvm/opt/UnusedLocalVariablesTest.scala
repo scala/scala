@@ -8,9 +8,9 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.JavaConverters._
-import scala.tools.partest.ASMConverters
 import scala.tools.partest.ASMConverters._
 import scala.tools.testing.BytecodeTesting
+import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class UnusedLocalVariablesTest extends BytecodeTesting {
@@ -48,7 +48,7 @@ class UnusedLocalVariablesTest extends BytecodeTesting {
                  |  }
                  |}
                  |""".stripMargin
-    val cls = compileClasses(code).head
+    val cls = compileClass(code)
     val m = convertMethod(cls.methods.asScala.toList.find(_.desc == "(I)V").get)
     assertTrue(m.localVars.length == 2) // this, a, but not y
 
@@ -69,19 +69,14 @@ class UnusedLocalVariablesTest extends BytecodeTesting {
         |}
       """.stripMargin
 
-    val clss2 = compileClasses(code2)
-    val cls2 = clss2.find(_.name == "C").get
-    val companion2 = clss2.find(_.name == "C$").get
+    val List(cls2, companion2) = compileClasses(code2)
 
-    val clsConstr = convertMethod(cls2.methods.asScala.toList.find(_.name == "<init>").get)
-    val companionConstr = convertMethod(companion2.methods.asScala.toList.find(_.name == "<init>").get)
-
-    assertTrue(clsConstr.localVars.length == 1) // this
-    assertTrue(companionConstr.localVars.length == 1) // this
+    assertTrue(getMethod(cls2, "<init>").localVars.length == 1) // this
+    assertTrue(getMethod(companion2, "<init>").localVars.length == 1) // this
   }
 
   def assertLocalVarCount(code: String, numVars: Int): Unit = {
-    assertTrue(singleMethod(code).localVars.length == numVars)
+    assertTrue(compileMethod(code).localVars.length == numVars)
   }
 
 }

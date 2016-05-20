@@ -24,7 +24,7 @@ class NullnessAnalyzerTest extends BytecodeTesting {
   def newNullnessAnalyzer(methodNode: MethodNode, classInternalName: InternalName = "C") = new AsmAnalyzer(methodNode, classInternalName, new NullnessAnalyzer(global.genBCode.bTypes))
 
   def testNullness(analyzer: AsmAnalyzer[NullnessValue], method: MethodNode, query: String, index: Int, nullness: NullnessValue): Unit = {
-    for (i <- findInstr(method, query)) {
+    for (i <- findInstrs(method, query)) {
       val r = analyzer.frameAt(i).getValue(index)
       assertTrue(s"Expected: $nullness, found: $r. At instr ${textify(i)}", nullness == r)
     }
@@ -50,7 +50,7 @@ class NullnessAnalyzerTest extends BytecodeTesting {
 
   @Test
   def showNullnessFramesTest(): Unit = {
-    val List(m) = compileMethods("def f = this.toString")
+    val m = compileAsmMethod("def f = this.toString")
 
     // NOTE: the frame for an instruction represents the state *before* executing that instr.
     // So in the frame for `ALOAD 0`, the stack is still empty.
@@ -68,14 +68,14 @@ class NullnessAnalyzerTest extends BytecodeTesting {
 
   @Test
   def thisNonNull(): Unit = {
-    val List(m) = compileMethods("def f = this.toString")
+    val m = compileAsmMethod("def f = this.toString")
     val a = newNullnessAnalyzer(m)
     testNullness(a, m, "ALOAD 0", 0, NotNullValue)
   }
 
   @Test
   def instanceMethodCall(): Unit = {
-    val List(m) = compileMethods("def f(a: String) = a.trim")
+    val m = compileAsmMethod("def f(a: String) = a.trim")
     val a = newNullnessAnalyzer(m)
     testNullness(a, m, "INVOKEVIRTUAL java/lang/String.trim", 1, UnknownValue1)
     testNullness(a, m, "ARETURN", 1, NotNullValue)
@@ -83,7 +83,7 @@ class NullnessAnalyzerTest extends BytecodeTesting {
 
   @Test
   def constructorCall(): Unit = {
-    val List(m) = compileMethods("def f = { val a = new Object; a.toString }")
+    val m = compileAsmMethod("def f = { val a = new Object; a.toString }")
     val a = newNullnessAnalyzer(m)
 
     // for reference, the output of showAllNullnessFrames(a, m) - note that the frame represents the state *before* executing the instr.
@@ -108,7 +108,7 @@ class NullnessAnalyzerTest extends BytecodeTesting {
 
   @Test
   def explicitNull(): Unit = {
-    val List(m) = compileMethods("def f = { var a: Object = null; a }")
+    val m = compileAsmMethod("def f = { var a: Object = null; a }")
     val a = newNullnessAnalyzer(m)
     for ((insn, index, nullness) <- List(
       ("+ACONST_NULL", 2, NullValue),
@@ -119,14 +119,14 @@ class NullnessAnalyzerTest extends BytecodeTesting {
 
   @Test
   def stringLiteralsNotNull(): Unit = {
-    val List(m) = compileMethods("""def f = { val a = "hi"; a.trim }""")
+    val m = compileAsmMethod("""def f = { val a = "hi"; a.trim }""")
     val a = newNullnessAnalyzer(m)
     testNullness(a, m, "+ASTORE 1", 1, NotNullValue)
   }
 
   @Test
   def newArraynotNull() {
-    val List(m) = compileMethods("def f = { val a = new Array[Int](2); a(0) }")
+    val m = compileAsmMethod("def f = { val a = new Array[Int](2); a(0) }")
     val a = newNullnessAnalyzer(m)
     testNullness(a, m, "+NEWARRAY T_INT", 2, NotNullValue) // new array on stack
     testNullness(a, m, "+ASTORE 1", 1, NotNullValue)       // local var (a)
@@ -144,7 +144,7 @@ class NullnessAnalyzerTest extends BytecodeTesting {
         |  a.toString
         |}
       """.stripMargin
-    val List(m) = compileMethods(code)
+    val m = compileAsmMethod(code)
     val a = newNullnessAnalyzer(m)
     val toSt = "+INVOKEVIRTUAL java/lang/Object.toString"
     testNullness(a, m, toSt, 3, UnknownValue1)
@@ -170,7 +170,7 @@ class NullnessAnalyzerTest extends BytecodeTesting {
         |  // d is null here, assinged in both branches.
         |}
       """.stripMargin
-    val List(m) = compileMethods(code)
+    val m = compileAsmMethod(code)
     val a = newNullnessAnalyzer(m)
 
     val trim = "INVOKEVIRTUAL java/lang/String.trim"
@@ -206,7 +206,7 @@ class NullnessAnalyzerTest extends BytecodeTesting {
         |  a.asInstanceOf[String].trim  // the stack value (LOAD of local a) is still not-null after the CHECKCAST
         |}
       """.stripMargin
-    val List(m) = compileMethods(code)
+    val m = compileAsmMethod(code)
     val a = newNullnessAnalyzer(m)
 
     val instof = "+INSTANCEOF"

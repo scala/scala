@@ -26,7 +26,7 @@ class DefaultMethodTest extends BytecodeTesting {
         case _ => super.transform(tree)
       }
     }
-    val asmClasses: List[ClassNode] = readAsmClasses(compiler.compileTransformed(code, Nil, makeFooDefaultMethod.transform(_)))
+    val asmClasses: List[ClassNode] = compiler.compileClassesTransformed(code, Nil, makeFooDefaultMethod.transform(_))
     val foo = asmClasses.head.methods.iterator.asScala.toList.last
     assertTrue("default method should not be abstract", (foo.access & Opcodes.ACC_ABSTRACT) == 0)
     assertTrue("default method body emitted", foo.instructions.size() > 0)

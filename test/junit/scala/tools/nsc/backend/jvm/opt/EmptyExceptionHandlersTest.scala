@@ -60,8 +60,8 @@ class EmptyExceptionHandlersTest extends BytecodeTesting {
   def eliminateUnreachableHandler(): Unit = {
     val code = "def f: Unit = try { } catch { case _: Exception => println(0) }; println(1)"
 
-    assertTrue(noOptCompiler.singleMethod(code).handlers.length == 1)
-    val optMethod = dceCompiler.singleMethod(code)
+    assertTrue(noOptCompiler.compileMethod(code).handlers.length == 1)
+    val optMethod = dceCompiler.compileMethod(code)
     assertTrue(optMethod.handlers.isEmpty)
 
     val code2 =
@@ -73,7 +73,7 @@ class EmptyExceptionHandlersTest extends BytecodeTesting {
         |  println(2)
         |}""".stripMargin
 
-    assertTrue(dceCompiler.singleMethod(code2).handlers.isEmpty)
+    assertTrue(dceCompiler.compileMethod(code2).handlers.isEmpty)
   }
 
   @Test
@@ -85,6 +85,6 @@ class EmptyExceptionHandlersTest extends BytecodeTesting {
         |  catch { case _: Exception => 2 }
         |}""".stripMargin
 
-    assertTrue(dceCompiler.singleMethod(code).handlers.length == 1)
+    assertTrue(dceCompiler.compileMethod(code).handlers.length == 1)
   }
 }

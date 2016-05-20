@@ -104,10 +104,10 @@ class CallGraphTest extends BytecodeTesting {
     val List(cCls, cMod, dCls, testCls) = compile(code, checkMsg)
     assert(msgCount == 6, msgCount)
 
-    val List(cf1, cf2, cf3, cf4, cf5, cf6, cf7) = findAsmMethods(cCls, _.startsWith("f"))
-    val List(df1, df3) = findAsmMethods(dCls, _.startsWith("f"))
-    val g1 = findAsmMethod(cMod, "g1")
-    val List(t1, t2) = findAsmMethods(testCls, _.startsWith("t"))
+    val List(cf1, cf2, cf3, cf4, cf5, cf6, cf7) = getAsmMethods(cCls, _.startsWith("f"))
+    val List(df1, df3) = getAsmMethods(dCls, _.startsWith("f"))
+    val g1 = getAsmMethod(cMod, "g1")
+    val List(t1, t2) = getAsmMethods(testCls, _.startsWith("t"))
 
     val List(cf1Call, cf2Call, cf3Call, cf4Call, cf5Call, cf6Call, cf7Call, cg1Call) = callsInMethod(t1)
     val List(df1Call, df2Call, df3Call, df4Call, df5Call, df6Call, df7Call, dg1Call) = callsInMethod(t2)
@@ -143,7 +143,7 @@ class CallGraphTest extends BytecodeTesting {
         |}
       """.stripMargin
     val List(c) = compile(code)
-    val m = findAsmMethod(c, "m")
+    val m = getAsmMethod(c, "m")
     val List(fn) = callsInMethod(m)
     val forNameMeth = byteCodeRepository.methodNode("java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;").get._1
     val classTp = classBTypeFromInternalName("java/lang/Class")

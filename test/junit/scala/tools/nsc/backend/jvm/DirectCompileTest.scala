@@ -17,7 +17,7 @@ class DirectCompileTest extends BytecodeTesting {
 
   @Test
   def testCompile(): Unit = {
-    val List(("C.class", bytes)) = compile(
+    val List(("C.class", bytes)) = compileToBytes(
       """class C {
         |  def f = 1
         |}
@@ -45,21 +45,19 @@ class DirectCompileTest extends BytecodeTesting {
       """def f = 10
         |def g = f
       """.stripMargin)
-    assertTrue(f.name == "f")
-    assertTrue(g.name == "g")
 
-    assertSameCode(instructionsFromMethod(f).dropNonOp,
+    assertSameCode(f.instructions.dropNonOp,
       List(IntOp(BIPUSH, 10), Op(IRETURN)))
 
-    assertSameCode(instructionsFromMethod(g).dropNonOp,
+    assertSameCode(g.instructions.dropNonOp,
       List(VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "f", "()I", itf = false), Op(IRETURN)))
   }
 
   @Test
   def testDropNonOpAliveLabels(): Unit = {
     // makes sure that dropNoOp doesn't drop labels that are being used
-    val List(f) = compileMethods("""def f(x: Int) = if (x == 0) "a" else "b"""")
-    assertSameCode(instructionsFromMethod(f).dropLinesFrames, List(
+    val is = compileInstructions("""def f(x: Int) = if (x == 0) "a" else "b"""")
+    assertSameCode(is.dropLinesFrames, List(
       Label(0),
       VarOp(ILOAD, 1),
       Op(ICONST_0),
@@ -79,7 +77,7 @@ class DirectCompileTest extends BytecodeTesting {
     val codeA = "class A { def f = 1 }"
     val codeB = "class B extends A { def g = f }"
     val List(a, b) = compileClassesSeparately(List(codeA, codeB))
-    val ins = getSingleMethod(b, "g").instructions
+    val ins = getInstructions(b, "g")
     assert(ins exists {
       case Invoke(_, "B", "f", _, _) => true
       case _ => false
@@ -88,6 +86,6 @@ class DirectCompileTest extends BytecodeTesting {
 
   @Test
   def compileErroneous(): Unit = {
-    compileClasses("class C { def f: String = 1 }", allowMessage = _.msg contains "type mismatch")
+    compileToBytes("class C { def f: String = 1 }", allowMessage = _.msg contains "type mismatch")
   }
 }

@@ -56,8 +56,8 @@ class CompactLocalVariablesTest extends ClearAfterClass {
         |}
         |""".stripMargin
 
-    val List(noCompact)   = noCompactVarsCompiler.compileMethods(code)
-    val List(withCompact) = methodOptCompiler.compileMethods(code)
+    val noCompact   = noCompactVarsCompiler.compileAsmMethod(code)
+    val withCompact = methodOptCompiler.compileAsmMethod(code)
 
     // code is the same, except for local var indices
     assertTrue(noCompact.instructions.size == withCompact.instructions.size)

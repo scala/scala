@@ -36,10 +36,10 @@ class BytecodeTest extends BytecodeTesting {
         |}
       """.stripMargin
 
-    val List(c) = compileClasses(code)
+    val c = compileClass(code)
 
-    assertTrue(getSingleMethod(c, "f").instructions.count(_.isInstanceOf[TableSwitch]) == 1)
-    assertTrue(getSingleMethod(c, "g").instructions.count(_.isInstanceOf[LookupSwitch]) == 1)
+    assertTrue(getInstructions(c, "f").count(_.isInstanceOf[TableSwitch]) == 1)
+    assertTrue(getInstructions(c, "g").count(_.isInstanceOf[LookupSwitch]) == 1)
   }
 
   @Test
@@ -99,7 +99,7 @@ class BytecodeTest extends BytecodeTesting {
       """.stripMargin
     val List(mirror, module) = compileClasses(code)
 
-    val unapplyLineNumbers = getSingleMethod(module, "unapply").instructions.filter(_.isInstanceOf[LineNumber])
+    val unapplyLineNumbers = getInstructions(module, "unapply").filter(_.isInstanceOf[LineNumber])
     assert(unapplyLineNumbers == List(LineNumber(2, Label(0))), unapplyLineNumbers)
 
     val expected = List(
@@ -122,7 +122,7 @@ class BytecodeTest extends BytecodeTesting {
       Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false)
     )
 
-    val mainIns = getSingleMethod(module, "main").instructions filter {
+    val mainIns = getInstructions(module, "main") filter {
       case _: LineNumber | _: Invoke | _: Jump => true
       case _ => false
     }
@@ -144,24 +144,24 @@ class BytecodeTest extends BytecodeTesting {
         |}
       """.stripMargin
 
-    val List(c) = compileClasses(code)
+    val c = compileClass(code)
 
     // t1: no unnecessary GOTOs
-    assertSameCode(getSingleMethod(c, "t1"), List(
+    assertSameCode(getMethod(c, "t1"), List(
       VarOp(ILOAD, 1), Jump(IFEQ, Label(6)),
       Op(ICONST_1), Jump(GOTO, Label(9)),
       Label(6), Op(ICONST_2),
       Label(9), Op(IRETURN)))
 
     // t2: no unnecessary GOTOs
-    assertSameCode(getSingleMethod(c, "t2"), List(
+    assertSameCode(getMethod(c, "t2"), List(
       VarOp(ILOAD, 1), IntOp(SIPUSH, 393), Jump(IF_ICMPNE, Label(7)),
       Op(ICONST_1), Jump(GOTO, Label(10)),
       Label(7), Op(ICONST_2),
       Label(10), Op(IRETURN)))
 
     // t3: Array == is translated to reference equality, AnyRef == to null checks and equals
-    assertSameCode(getSingleMethod(c, "t3"), List(
+    assertSameCode(getMethod(c, "t3"), List(
       // Array ==
       VarOp(ALOAD, 1), VarOp(ALOAD, 2), Jump(IF_ACMPEQ, Label(23)),
       // AnyRef ==
@@ -180,13 +180,13 @@ class BytecodeTest extends BytecodeTesting {
       Label(13), Op(IRETURN))
 
     // t4: one side is known null, so just a null check on the other
-    assertSameCode(getSingleMethod(c, "t4"), t4t5)
+    assertSameCode(getMethod(c, "t4"), t4t5)
 
     // t5: one side known null, so just a null check on the other
-    assertSameCode(getSingleMethod(c, "t5"), t4t5)
+    assertSameCode(getMethod(c, "t5"), t4t5)
 
     // t6: no unnecessary GOTOs
-    assertSameCode(getSingleMethod(c, "t6"), List(
+    assertSameCode(getMethod(c, "t6"), List(
       VarOp(ILOAD, 1), IntOp(BIPUSH, 10), Jump(IF_ICMPNE, Label(7)),
       VarOp(ILOAD, 2), Jump(IFNE, Label(12)),
       Label(7), VarOp(ILOAD, 1), Op(ICONST_1), Jump(IF_ICMPEQ, Label(16)),
@@ -195,10 +195,10 @@ class BytecodeTest extends BytecodeTesting {
       Label(19), Op(IRETURN)))
 
     // t7: universal equality
-    assertInvoke(getSingleMethod(c, "t7"), "scala/runtime/BoxesRunTime", "equals")
+    assertInvoke(getMethod(c, "t7"), "scala/runtime/BoxesRunTime", "equals")
 
     // t8: no null checks invoking equals on modules and constants
-    assertSameCode(getSingleMethod(c, "t8"), List(
+    assertSameCode(getMethod(c, "t8"), List(
       Field(GETSTATIC, "scala/collection/immutable/Nil$", "MODULE$", "Lscala/collection/immutable/Nil$;"), VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", false), Jump(IFNE, Label(10)),
       Ldc(LDC, ""), VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", false), Jump(IFNE, Label(14)),
       Label(10), Op(ICONST_1), Jump(GOTO, Label(17)),
@@ -207,13 +207,11 @@ class BytecodeTest extends BytecodeTesting {
   }
 
   object forwarderTestUtils {
-    def findMethods(cls: ClassNode, name: String): List[Method] = cls.methods.iterator.asScala.find(_.name == name).map(convertMethod).toList
-
     import language.implicitConversions
     implicit def s2c(s: Symbol)(implicit classes: Map[String, ClassNode]): ClassNode = classes(s.name)
 
     def checkForwarder(c: ClassNode, target: String) = {
-      val List(f) = findMethods(c, "f")
+      val List(f) = getMethods(c, "f")
       assertSameCode(f, List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, target, "f", "()I", false), Op(IRETURN)))
     }
   }
@@ -273,7 +271,7 @@ class BytecodeTest extends BytecodeTesting {
     implicit val classes = compileClasses(code).map(c => (c.name, c)).toMap
 
     val noForwarder = List('C1, 'C2, 'C3, 'C4, 'C10, 'C11, 'C12, 'C13, 'C16, 'C17)
-    for (c <- noForwarder) assertEquals(findMethods(c, "f"), Nil)
+    for (c <- noForwarder) assertEquals(getMethods(c, "f"), Nil)
 
     checkForwarder('C5, "T3")
     checkForwarder('C6, "T4")
@@ -282,10 +280,10 @@ class BytecodeTest extends BytecodeTesting {
     checkForwarder('C9, "T5")
     checkForwarder('C14, "T4")
     checkForwarder('C15, "T5")
-    assertSameSummary(getSingleMethod('C18, "f"), List(BIPUSH, IRETURN))
+    assertSameSummary(getMethod('C18, "f"), List(BIPUSH, IRETURN))
     checkForwarder('C19, "T7")
-    assertSameCode(getSingleMethod('C19, "T7$$super$f"), List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "C18", "f", "()I", false), Op(IRETURN)))
-    assertInvoke(getSingleMethod('C20, "clone"), "T8", "clone") // mixin forwarder
+    assertSameCode(getMethod('C19, "T7$$super$f"), List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "C18", "f", "()I", false), Op(IRETURN)))
+    assertInvoke(getMethod('C20, "clone"), "T8", "clone") // mixin forwarder
   }
 
   @Test
@@ -297,7 +295,7 @@ class BytecodeTest extends BytecodeTesting {
         |class C extends T1 with T2
       """.stripMargin
     val List(c, t1, t2) = compileClasses(code)
-    assertEquals(findMethods(c, "f"), Nil)
+    assertEquals(getMethods(c, "f"), Nil)
   }
 
   @Test
@@ -331,7 +329,7 @@ class BytecodeTest extends BytecodeTesting {
     implicit val classes = compileClasses(code, List(j1, j2, j3, j4)).map(c => (c.name, c)).toMap
 
     val noForwarder = List('K1, 'K2, 'K3, 'K4, 'K5, 'K6, 'K7, 'K8, 'K9, 'K10, 'K11)
-    for (c <- noForwarder) assertEquals(findMethods(c, "f"), Nil)
+    for (c <- noForwarder) assertEquals(getMethods(c, "f"), Nil)
 
     checkForwarder('K12, "T2")
   }
@@ -340,13 +338,13 @@ class BytecodeTest extends BytecodeTesting {
   def invocationReceivers(): Unit = {
     val List(c1, c2, t, u) = compileClasses(invocationReceiversTestCode.definitions("Object"))
     // mixin forwarder in C1
-    assertSameCode(getSingleMethod(c1, "clone"), List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "T", "clone", "()Ljava/lang/Object;", false), Op(ARETURN)))
-    assertInvoke(getSingleMethod(c1, "f1"), "T", "clone")
-    assertInvoke(getSingleMethod(c1, "f2"), "T", "clone")
-    assertInvoke(getSingleMethod(c1, "f3"), "C1", "clone")
-    assertInvoke(getSingleMethod(c2, "f1"), "T", "clone")
-    assertInvoke(getSingleMethod(c2, "f2"), "T", "clone")
-    assertInvoke(getSingleMethod(c2, "f3"), "C1", "clone")
+    assertSameCode(getMethod(c1, "clone"), List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "T", "clone", "()Ljava/lang/Object;", false), Op(ARETURN)))
+    assertInvoke(getMethod(c1, "f1"), "T", "clone")
+    assertInvoke(getMethod(c1, "f2"), "T", "clone")
+    assertInvoke(getMethod(c1, "f3"), "C1", "clone")
+    assertInvoke(getMethod(c2, "f1"), "T", "clone")
+    assertInvoke(getMethod(c2, "f2"), "T", "clone")
+    assertInvoke(getMethod(c2, "f3"), "C1", "clone")
 
     val List(c1b, c2b, tb, ub) = compileClasses(invocationReceiversTestCode.definitions("String"))
     def ms(c: ClassNode, n: String) = c.methods.asScala.toList.filter(_.name == n)
@@ -357,11 +355,11 @@ class BytecodeTest extends BytecodeTesting {
     assert((c1Clone.access | Opcodes.ACC_BRIDGE) != 0)
     assertSameCode(convertMethod(c1Clone), List(VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C1", "clone", "()Ljava/lang/String;", false), Op(ARETURN)))
 
-    def iv(m: Method) = getSingleMethod(c1b, "f1").instructions.collect({case i: Invoke => i})
-    assertSameCode(iv(getSingleMethod(c1b, "f1")), List(Invoke(INVOKEINTERFACE, "T", "clone", "()Ljava/lang/String;", true)))
-    assertSameCode(iv(getSingleMethod(c1b, "f2")), List(Invoke(INVOKEINTERFACE, "T", "clone", "()Ljava/lang/String;", true)))
+    def iv(m: Method) = getInstructions(c1b, "f1").collect({case i: Invoke => i})
+    assertSameCode(iv(getMethod(c1b, "f1")), List(Invoke(INVOKEINTERFACE, "T", "clone", "()Ljava/lang/String;", true)))
+    assertSameCode(iv(getMethod(c1b, "f2")), List(Invoke(INVOKEINTERFACE, "T", "clone", "()Ljava/lang/String;", true)))
     // invokeinterface T.clone in C1 is OK here because it is not an override of Object.clone (different siganture)
-    assertSameCode(iv(getSingleMethod(c1b, "f3")), List(Invoke(INVOKEINTERFACE, "T", "clone", "()Ljava/lang/String;", true)))
+    assertSameCode(iv(getMethod(c1b, "f3")), List(Invoke(INVOKEINTERFACE, "T", "clone", "()Ljava/lang/String;", true)))
   }
 
   @Test
@@ -395,9 +393,9 @@ class BytecodeTest extends BytecodeTesting {
         |  def f3(j: a.J) = j.f
         |}
       """.stripMargin
-    val List(c) = compileClasses(cC, javaCode = List((aC, "A.java"), (bC, "B.java"), (iC, "I.java"), (jC, "J.java")))
-    assertInvoke(getSingleMethod(c, "f1"), "a/B", "f") // receiver needs to be B (A is not accessible in class C, package b)
-    assertInvoke(getSingleMethod(c, "f3"), "a/J", "f") // receiver needs to be J
+    val c = compileClass(cC, javaCode = List((aC, "A.java"), (bC, "B.java"), (iC, "I.java"), (jC, "J.java")))
+    assertInvoke(getMethod(c, "f1"), "a/B", "f") // receiver needs to be B (A is not accessible in class C, package b)
+    assertInvoke(getMethod(c, "f3"), "a/J", "f") // receiver needs to be J
   }
 
   @Test
@@ -411,11 +409,11 @@ class BytecodeTest extends BytecodeTesting {
         |
         |}
       """.stripMargin
-    val List(c) = compileClasses(code)
-    assertInvoke(getSingleMethod(c, "f1"), "[Ljava/lang/String;", "clone") // array descriptor as receiver
-    assertInvoke(getSingleMethod(c, "f2"), "java/lang/Object", "hashCode") // object receiver
-    assertInvoke(getSingleMethod(c, "f3"), "java/lang/Object", "hashCode")
-    assertInvoke(getSingleMethod(c, "f4"), "java/lang/Object", "toString")
+    val c = compileClass(code)
+    assertInvoke(getMethod(c, "f1"), "[Ljava/lang/String;", "clone") // array descriptor as receiver
+    assertInvoke(getMethod(c, "f2"), "java/lang/Object", "hashCode") // object receiver
+    assertInvoke(getMethod(c, "f3"), "java/lang/Object", "hashCode")
+    assertInvoke(getMethod(c, "f4"), "java/lang/Object", "toString")
   }
 
   @Test
@@ -423,7 +421,7 @@ class BytecodeTest extends BytecodeTesting {
     // see comment in SpecializeTypes.forwardCtorCall
     val code = "case class C[@specialized(Int) T](_1: T)"
     val List(c, cMod, cSpec) = compileClasses(code)
-    assertSameSummary(getSingleMethod(cSpec, "<init>"),
+    assertSameSummary(getMethod(cSpec, "<init>"),
       // pass `null` to super constructor, no box-unbox, no Integer created
       List(ALOAD, ILOAD, PUTFIELD, ALOAD, ACONST_NULL, "<init>", RETURN))
   }

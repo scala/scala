@@ -37,9 +37,9 @@ class InlinerSeparateCompilationTest {
 
     val warn = "T::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden"
     val List(c, o, oMod, t) = compileClassesSeparately(List(codeA, codeB), args + " -Yopt-warnings", _.msg contains warn)
-    assertInvoke(getSingleMethod(c, "t1"), "T", "f")
-    assertNoInvoke(getSingleMethod(c, "t2"))
-    assertNoInvoke(getSingleMethod(c, "t3"))
+    assertInvoke(getMethod(c, "t1"), "T", "f")
+    assertNoInvoke(getMethod(c, "t2"))
+    assertNoInvoke(getMethod(c, "t3"))
   }
 
   @Test
@@ -57,7 +57,7 @@ class InlinerSeparateCompilationTest {
       """.stripMargin
 
     val List(c, t) = compileClassesSeparately(List(codeA, codeB), args)
-    assertNoInvoke(getSingleMethod(c, "t1"))
+    assertNoInvoke(getMethod(c, "t1"))
   }
 
   @Test
@@ -80,7 +80,7 @@ class InlinerSeparateCompilationTest {
       """.stripMargin
 
     val List(c, t, u) = compileClassesSeparately(List(codeA, codeB), args)
-    for (m <- List("t1", "t2", "t3")) assertNoInvoke(getSingleMethod(c, m))
+    for (m <- List("t1", "t2", "t3")) assertNoInvoke(getMethod(c, m))
   }
 
   @Test
@@ -101,7 +101,7 @@ class InlinerSeparateCompilationTest {
       """.stripMargin
 
     val List(a, t) = compileClassesSeparately(List(codeA, assembly), args)
-    assertNoInvoke(getSingleMethod(t, "f"))
-    assertNoInvoke(getSingleMethod(a, "n"))
+    assertNoInvoke(getMethod(t, "f"))
+    assertNoInvoke(getMethod(a, "n"))
   }
 }

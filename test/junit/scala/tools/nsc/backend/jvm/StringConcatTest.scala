@@ -50,9 +50,9 @@ class StringConcatTest extends BytecodeTesting {
         |         chrs: Array[Char]) = this + str + v + z + c + b + s + i + f + l + d + sbuf + chsq + chrs
         |}
       """.stripMargin
-    val List(c) = compileClasses(code)
+    val c = compileClass(code)
 
-    def invokeNameDesc(m: String): List[String] = getSingleMethod(c, m).instructions collect {
+    def invokeNameDesc(m: String): List[String] = getInstructions(c, m) collect {
       case Invoke(_, _, name, desc, _) => name + desc
     }
     assertEquals(invokeNameDesc("t1"), List(

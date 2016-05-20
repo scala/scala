@@ -38,7 +38,7 @@ class InlineWarningTest extends BytecodeTesting {
       "C::m1()I is annotated @inline but cannot be inlined: the method is not final and may be overridden",
       "T::m2()I is annotated @inline but cannot be inlined: the method is not final and may be overridden",
       "D::m2()I is annotated @inline but cannot be inlined: the method is not final and may be overridden")
-    compile(code, allowMessage = i => {count += 1; warns.exists(i.msg contains _)})
+    compileToBytes(code, allowMessage = i => {count += 1; warns.exists(i.msg contains _)})
     assert(count == 4, count)
   }
 
@@ -53,7 +53,7 @@ class InlineWarningTest extends BytecodeTesting {
       """.stripMargin
 
     var c = 0
-    compile(code, allowMessage = i => {c += 1; i.msg contains "operand stack at the callsite in C::t1()V contains more values"})
+    compileToBytes(code, allowMessage = i => {c += 1; i.msg contains "operand stack at the callsite in C::t1()V contains more values"})
     assert(c == 1, c)
   }
 
@@ -83,14 +83,14 @@ class InlineWarningTest extends BytecodeTesting {
         |Note that the parent class A is defined in a Java source (mixed compilation), no bytecode is available.""".stripMargin)
 
     var c = 0
-    val List(b) = compile(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; warns.tail.exists(i.msg contains _)})
+    val List(b) = compileToBytes(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; warns.tail.exists(i.msg contains _)})
     assert(c == 1, c)
 
     // no warnings here
-    newCompiler(extraArgs = s"$optCp -Yopt-warnings:none").compile(scalaCode, List((javaCode, "A.java")))
+    newCompiler(extraArgs = s"$optCp -Yopt-warnings:none").compileToBytes(scalaCode, List((javaCode, "A.java")))
 
     c = 0
-    newCompiler(extraArgs = s"$optCp -Yopt-warnings:no-inline-mixed").compile(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; warns.exists(i.msg contains _)})
+    newCompiler(extraArgs = s"$optCp -Yopt-warnings:no-inline-mixed").compileToBytes(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; warns.exists(i.msg contains _)})
     assert(c == 2, c)
   }
 
@@ -117,7 +117,7 @@ class InlineWarningTest extends BytecodeTesting {
         |that would cause an IllegalAccessError when inlined into class N""".stripMargin
 
     var c = 0
-    compile(code, allowMessage = i => { c += 1; i.msg contains warn })
+    compileToBytes(code, allowMessage = i => { c += 1; i.msg contains warn })
     assert(c == 1, c)
   }
 
@@ -136,7 +136,7 @@ class InlineWarningTest extends BytecodeTesting {
         |  def t(a: M) = a.f(x => x + 1)
         |}
       """.stripMargin
-    compile(code, allowMessage = _ => false) // no warnings allowed
+    compileToBytes(code, allowMessage = _ => false) // no warnings allowed
 
     val warn =
       """M::f(Lscala/Function1;)I could not be inlined:
@@ -144,7 +144,7 @@ class InlineWarningTest extends BytecodeTesting {
         |that would cause an IllegalAccessError when inlined into class N""".stripMargin
 
     var c = 0
-    compilerWarnAll.compile(code, allowMessage = i => { c += 1; i.msg contains warn })
+    compilerWarnAll.compileToBytes(code, allowMessage = i => { c += 1; i.msg contains warn })
     assert(c == 1, c)
   }
 
@@ -165,7 +165,7 @@ class InlineWarningTest extends BytecodeTesting {
         |does not have the same strictfp mode as the callee C::f()I.""".stripMargin
 
     var c = 0
-    compile(code, allowMessage = i => { c += 1; i.msg contains warn })
+    compileToBytes(code, allowMessage = i => { c += 1; i.msg contains warn })
     assert(c == 1, c)
   }
 }

@@ -44,14 +44,23 @@ class Compiler(val global: Global) {
     }
   }
 
-  def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[(String, Array[Byte])] = {
+  def compileToBytes(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[(String, Array[Byte])] = {
     val run = newRun
     run.compileSources(makeSourceFile(scalaCode, "unitTestSource.scala") :: javaCode.map(p => makeSourceFile(p._1, p._2)))
     checkReport(allowMessage)
     getGeneratedClassfiles(global.settings.outputDirs.getSingleOutput.get)
   }
 
-  def compileTransformed(scalaCode: String, javaCode: List[(String, String)] = Nil, beforeBackend: global.Tree => global.Tree): List[(String, Array[Byte])] = {
+  def compileClasses(code: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
+    readAsmClasses(compileToBytes(code, javaCode, allowMessage))
+  }
+
+  def compileClass(code: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): ClassNode = {
+    val List(c) = compileClasses(code, javaCode, allowMessage)
+    c
+  }
+
+  def compileToBytesTransformed(scalaCode: String, javaCode: List[(String, String)] = Nil, beforeBackend: global.Tree => global.Tree): List[(String, Array[Byte])] = {
     import global._
     settings.stopBefore.value = "jvm" :: Nil
     val run = newRun
@@ -68,22 +77,30 @@ class Compiler(val global: Global) {
     getGeneratedClassfiles(settings.outputDirs.getSingleOutput.get)
   }
 
-  def compileClasses(code: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
-    readAsmClasses(compile(code, javaCode, allowMessage))
+  def compileClassesTransformed(scalaCode: String, javaCode: List[(String, String)] = Nil, beforeBackend: global.Tree => global.Tree): List[ClassNode] =
+    readAsmClasses(compileToBytesTransformed(scalaCode, javaCode, beforeBackend))
+
+  def compileAsmMethods(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[MethodNode] = {
+    val c = compileClass(s"class C { $code }", allowMessage = allowMessage)
+    getAsmMethods(c, _ != "<init>")
   }
 
-  def compileMethods(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[MethodNode] = {
-    compileClasses(s"class C { $code }", allowMessage = allowMessage).head.methods.asScala.toList.filterNot(_.name == "<init>")
+  def compileAsmMethod(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): MethodNode = {
+    val List(m) = compileAsmMethods(code, allowMessage)
+    m
   }
 
-  def singleMethodInstructions(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[Instruction] = {
+  def compileMethods(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[Method] =
+    compileAsmMethods(code, allowMessage).map(convertMethod)
+
+  def compileMethod(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): Method = {
     val List(m) = compileMethods(code, allowMessage = allowMessage)
-    instructionsFromMethod(m)
+    m
   }
 
-  def singleMethod(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): Method = {
+  def compileInstructions(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[Instruction] = {
     val List(m) = compileMethods(code, allowMessage = allowMessage)
-    convertMethod(m)
+    m.instructions
   }
 }
 
@@ -145,7 +162,7 @@ object BytecodeTesting {
    * The output directory is a physical directory, I have not figured out if / how it's possible to
    * add a VirtualDirectory to the classpath of a compiler.
    */
-  def compileSeparately(codes: List[String], extraArgs: String = "", allowMessage: StoreReporter#Info => Boolean = _ => false, afterEach: AbstractFile => Unit = _ => ()): List[(String, Array[Byte])] = {
+  def compileToBytesSeparately(codes: List[String], extraArgs: String = "", allowMessage: StoreReporter#Info => Boolean = _ => false, afterEach: AbstractFile => Unit = _ => ()): List[(String, Array[Byte])] = {
     val outDir = AbstractFile.getDirectory(TempDir.createTempDir())
     val outDirPath = outDir.canonicalPath
     val argsWithOutDir = extraArgs + s" -d $outDirPath -cp $outDirPath"
@@ -162,13 +179,11 @@ object BytecodeTesting {
     classfiles
   }
 
-  def compileClassesSeparately(codes: List[String], extraArgs: String = "", allowMessage: StoreReporter#Info => Boolean = _ => false, afterEach: AbstractFile => Unit = _ => ()) = {
-    readAsmClasses(compileSeparately(codes, extraArgs, allowMessage, afterEach))
+  def compileClassesSeparately(codes: List[String], extraArgs: String = "", allowMessage: StoreReporter#Info => Boolean = _ => false, afterEach: AbstractFile => Unit = _ => ()): List[ClassNode] = {
+    readAsmClasses(compileToBytesSeparately(codes, extraArgs, allowMessage, afterEach))
   }
 
-  def readAsmClasses(classfiles: List[(String, Array[Byte])]) = {
-    classfiles.map(p => AsmUtils.readClass(p._2)).sortBy(_.name)
-  }
+  def readAsmClasses(classfiles: List[(String, Array[Byte])]) = classfiles.map(p => AsmUtils.readClass(p._2)).sortBy(_.name)
 
   def assertSameCode(method: Method, expected: List[Instruction]): Unit = assertSameCode(method.instructions.dropNonOp, expected)
   def assertSameCode(actual: List[Instruction], expected: List[Instruction]): Unit = {
@@ -218,21 +233,49 @@ object BytecodeTesting {
     assert(indy.isEmpty, indy)
   }
 
-  def getSingleMethod(classNode: ClassNode, name: String): Method =
-    convertMethod(classNode.methods.asScala.toList.find(_.name == name).get)
+  def findClass(cs: List[ClassNode], name: String): ClassNode = {
+    val List(c) = cs.filter(_.name == name)
+    c
+  }
 
-  def findAsmMethods(c: ClassNode, p: String => Boolean) = c.methods.iterator.asScala.filter(m => p(m.name)).toList.sortBy(_.name)
-  def findAsmMethod(c: ClassNode, name: String) = findAsmMethods(c, _ == name).head
+  def getAsmMethods(c: ClassNode, p: String => Boolean): List[MethodNode] =
+    c.methods.iterator.asScala.filter(m => p(m.name)).toList.sortBy(_.name)
+
+  def getAsmMethods(c: ClassNode, name: String): List[MethodNode] =
+    getAsmMethods(c, _ == name)
+
+  def getAsmMethod(c: ClassNode, name: String): MethodNode = {
+    val List(m) = getAsmMethods(c, name)
+    m
+  }
+
+  def getMethods(c: ClassNode, name: String): List[Method] =
+    getAsmMethods(c, name).map(convertMethod)
+
+  def getMethod(c: ClassNode, name: String): Method =
+    convertMethod(getAsmMethod(c, name))
+
+  def getInstructions(c: ClassNode, name: String): List[Instruction] =
+    getMethod(c, name).instructions
 
   /**
    * Instructions that match `query` when textified.
    * If `query` starts with a `+`, the next instruction is returned.
    */
-  def findInstr(method: MethodNode, query: String): List[AbstractInsnNode] = {
+  def findInstrs(method: MethodNode, query: String): List[AbstractInsnNode] = {
     val useNext = query(0) == '+'
     val instrPart = if (useNext) query.drop(1) else query
     val insns = method.instructions.iterator.asScala.filter(i => textify(i) contains instrPart).toList
     if (useNext) insns.map(_.getNext) else insns
+  }
+
+  /**
+   * Instruction that matches `query` when textified.
+   * If `query` starts with a `+`, the next instruction is returned.
+   */
+  def findInstr(method: MethodNode, query: String): AbstractInsnNode = {
+    val List(i) = findInstrs(method, query)
+    i
   }
 
   def assertHandlerLabelPostions(h: ExceptionHandler, instructions: List[Instruction], startIndex: Int, endIndex: Int, handlerIndex: Int): Unit = {
