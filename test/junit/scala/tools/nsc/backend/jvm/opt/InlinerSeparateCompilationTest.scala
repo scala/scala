@@ -8,13 +8,9 @@ import org.junit.runners.JUnit4
 
 import scala.tools.testing.BytecodeTesting._
 
-object InlinerSeparateCompilationTest {
-  val args = "-Yopt:l:classpath"
-}
-
 @RunWith(classOf[JUnit4])
 class InlinerSeparateCompilationTest {
-  import InlinerSeparateCompilationTest._
+  val args = "-Yopt:l:classpath"
 
   @Test
   def inlnieMixedinMember(): Unit = {
