@@ -30,7 +30,7 @@ trait ScalaSettings extends AbsScalaSettings
   protected def defaultClasspath = sys.env.getOrElse("CLASSPATH", ".")
 
   /** Enabled under -Xexperimental. */
-  protected def experimentalSettings = List[BooleanSetting](YmethodInfer, overrideObjects, overrideVars)
+  protected def experimentalSettings = List[BooleanSetting](YpartialUnification)
 
   /** Enabled under -Xfuture. */
   protected def futureSettings = List[BooleanSetting]()
