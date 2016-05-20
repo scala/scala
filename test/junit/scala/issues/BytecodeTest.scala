@@ -206,19 +206,13 @@ class BytecodeTest extends BytecodeTesting {
       Label(17), Op(IRETURN)))
   }
 
-  object forwarderTestUtils {
-    import language.implicitConversions
-    implicit def s2c(s: Symbol)(implicit classes: Map[String, ClassNode]): ClassNode = classes(s.name)
-
-    def checkForwarder(c: ClassNode, target: String) = {
-      val List(f) = getMethods(c, "f")
-      assertSameCode(f, List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, target, "f", "()I", false), Op(IRETURN)))
-    }
+  def checkForwarder(classes: Map[String, ClassNode], clsName: Symbol, target: String) = {
+    val List(f) = getMethods(classes(clsName.name), "f")
+    assertSameCode(f, List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, target, "f", "()I", false), Op(IRETURN)))
   }
 
   @Test
   def traitMethodForwarders(): Unit = {
-    import forwarderTestUtils._
     val code =
       """trait T1 { def f = 1 }
         |trait T2 extends T1 { override def f = 2 }
@@ -268,27 +262,26 @@ class BytecodeTest extends BytecodeTesting {
         |class C20 extends T8
       """.stripMargin
 
-    implicit val classes = compileClasses(code).map(c => (c.name, c)).toMap
+    val c = compileClasses(code).map(c => (c.name, c)).toMap
 
     val noForwarder = List('C1, 'C2, 'C3, 'C4, 'C10, 'C11, 'C12, 'C13, 'C16, 'C17)
-    for (c <- noForwarder) assertEquals(getMethods(c, "f"), Nil)
+    for (cn <- noForwarder) assertEquals(getMethods(c(cn.name), "f"), Nil)
 
-    checkForwarder('C5, "T3")
-    checkForwarder('C6, "T4")
-    checkForwarder('C7, "T5")
-    checkForwarder('C8, "T4")
-    checkForwarder('C9, "T5")
-    checkForwarder('C14, "T4")
-    checkForwarder('C15, "T5")
-    assertSameSummary(getMethod('C18, "f"), List(BIPUSH, IRETURN))
-    checkForwarder('C19, "T7")
-    assertSameCode(getMethod('C19, "T7$$super$f"), List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "C18", "f", "()I", false), Op(IRETURN)))
-    assertInvoke(getMethod('C20, "clone"), "T8", "clone") // mixin forwarder
+    checkForwarder(c, 'C5, "T3")
+    checkForwarder(c, 'C6, "T4")
+    checkForwarder(c, 'C7, "T5")
+    checkForwarder(c, 'C8, "T4")
+    checkForwarder(c, 'C9, "T5")
+    checkForwarder(c, 'C14, "T4")
+    checkForwarder(c, 'C15, "T5")
+    assertSameSummary(getMethod(c("C18"), "f"), List(BIPUSH, IRETURN))
+    checkForwarder(c, 'C19, "T7")
+    assertSameCode(getMethod(c("C19"), "T7$$super$f"), List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "C18", "f", "()I", false), Op(IRETURN)))
+    assertInvoke(getMethod(c("C20"), "clone"), "T8", "clone") // mixin forwarder
   }
 
   @Test
   def noTraitMethodForwardersForOverloads(): Unit = {
-    import forwarderTestUtils._
     val code =
       """trait T1 { def f(x: Int) = 0 }
         |trait T2 { def f(x: String) = 1 }
@@ -300,7 +293,6 @@ class BytecodeTest extends BytecodeTesting {
 
   @Test
   def traitMethodForwardersForJavaDefaultMethods(): Unit = {
-    import forwarderTestUtils._
     val j1 = ("interface J1 { int f(); }", "J1.java")
     val j2 = ("interface J2 { default int f() { return 1; } }", "J2.java")
     val j3 = ("interface J3 extends J1 { default int f() { return 2; } }", "J3.java")
@@ -326,12 +318,12 @@ class BytecodeTest extends BytecodeTesting {
         |
         |class K12 extends J2 with T2
       """.stripMargin
-    implicit val classes = compileClasses(code, List(j1, j2, j3, j4)).map(c => (c.name, c)).toMap
+    val c = compileClasses(code, List(j1, j2, j3, j4)).map(c => (c.name, c)).toMap
 
     val noForwarder = List('K1, 'K2, 'K3, 'K4, 'K5, 'K6, 'K7, 'K8, 'K9, 'K10, 'K11)
-    for (c <- noForwarder) assertEquals(getMethods(c, "f"), Nil)
+    for (cn <- noForwarder) assertEquals(getMethods(c(cn.name), "f"), Nil)
 
-    checkForwarder('K12, "T2")
+    checkForwarder(c, 'K12, "T2")
   }
 
   @Test
