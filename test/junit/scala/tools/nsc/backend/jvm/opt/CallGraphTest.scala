@@ -2,46 +2,38 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import scala.collection.generic.Clearable
-import scala.collection.immutable.IntMap
-import scala.tools.asm.Opcodes._
-import org.junit.Assert._
-
-import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis._
-import scala.tools.nsc.reporters.StoreReporter
-import scala.tools.testing.AssertUtil._
-
-import scala.tools.testing.BytecodeTesting._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import AsmUtils._
-import BackendReporting._
 
 import scala.collection.JavaConverters._
-import scala.tools.testing.ClearAfterClass
+import scala.collection.generic.Clearable
+import scala.collection.immutable.IntMap
+import scala.tools.asm.tree._
+import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.nsc.reporters.StoreReporter
+import scala.tools.testing.BytecodeTesting
+import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
-class CallGraphTest extends ClearAfterClass {
-  val compiler = cached("compiler", () => newCompiler(extraArgs = "-Yopt:inline-global -Yopt-warnings")
-  )
-  import compiler.genBCode.bTypes
+class CallGraphTest extends BytecodeTesting {
+  override def compilerArgs = "-Yopt:inline-global -Yopt-warnings"
+  import compiler._
+  import global.genBCode.bTypes
   val notPerRun: List[Clearable] = List(
     bTypes.classBTypeFromInternalName,
     bTypes.byteCodeRepository.compilingClasses,
     bTypes.byteCodeRepository.parsedClasses,
     bTypes.callGraph.callsites)
-  notPerRun foreach compiler.perRunCaches.unrecordCache
+  notPerRun foreach global.perRunCaches.unrecordCache
 
-  import compiler.genBCode.bTypes._
+  import global.genBCode.bTypes._
   import callGraph._
 
   def compile(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
     notPerRun.foreach(_.clear())
-    compileClasses(compiler)(code, allowMessage = allowMessage).map(c => byteCodeRepository.classNode(c.name).get)
+    compileClasses(code, allowMessage = allowMessage).map(c => byteCodeRepository.classNode(c.name).get)
   }
 
   def callsInMethod(methodNode: MethodNode): List[MethodInsnNode] = methodNode.instructions.iterator.asScala.collect({

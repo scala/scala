@@ -2,21 +2,20 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import scala.tools.asm.Opcodes._
-import org.junit.Assert._
-import scala.collection.JavaConverters._
 
-import scala.tools.testing.BytecodeTesting._
+import scala.collection.JavaConverters._
 import scala.tools.partest.ASMConverters
-import ASMConverters._
-import scala.tools.testing.ClearAfterClass
+import scala.tools.partest.ASMConverters._
+import scala.tools.testing.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
-class UnusedLocalVariablesTest extends ClearAfterClass {
-  val dceCompiler = cached("dceCompiler", () => newCompiler(extraArgs = "-Yopt:unreachable-code"))
+class UnusedLocalVariablesTest extends BytecodeTesting {
+  override def compilerArgs = "-Yopt:unreachable-code"
+  import compiler._
 
   @Test
   def removeUnusedVar(): Unit = {
@@ -49,7 +48,7 @@ class UnusedLocalVariablesTest extends ClearAfterClass {
                  |  }
                  |}
                  |""".stripMargin
-    val cls = compileClasses(dceCompiler)(code).head
+    val cls = compileClasses(code).head
     val m = convertMethod(cls.methods.asScala.toList.find(_.desc == "(I)V").get)
     assertTrue(m.localVars.length == 2) // this, a, but not y
 
@@ -70,7 +69,7 @@ class UnusedLocalVariablesTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val clss2 = compileClasses(dceCompiler)(code2)
+    val clss2 = compileClasses(code2)
     val cls2 = clss2.find(_.name == "C").get
     val companion2 = clss2.find(_.name == "C$").get
 
@@ -82,7 +81,7 @@ class UnusedLocalVariablesTest extends ClearAfterClass {
   }
 
   def assertLocalVarCount(code: String, numVars: Int): Unit = {
-    assertTrue(singleMethod(dceCompiler)(code).localVars.length == numVars)
+    assertTrue(singleMethod(code).localVars.length == numVars)
   }
 
 }

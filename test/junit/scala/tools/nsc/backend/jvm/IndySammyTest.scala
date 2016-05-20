@@ -2,26 +2,20 @@ package scala.tools.nsc
 package backend.jvm
 
 import org.junit.Assert.assertEquals
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
 
 import scala.tools.asm.Opcodes._
-import scala.tools.asm.tree._
 import scala.tools.nsc.reporters.StoreReporter
+import scala.tools.partest.ASMConverters._
+import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-
-import scala.tools.testing.ClearAfterClass
 
 
 @RunWith(classOf[JUnit4])
-class IndySammyTest extends ClearAfterClass {
-
-  val compiler = cached("compiler", () => newCompiler())
-  def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] =
-    compileClasses(compiler)(scalaCode, javaCode, allowMessage)
+class IndySammyTest extends BytecodeTesting {
+  import compiler._
 
   def funClassName(from: String, to: String) = s"Fun$from$to"
   def classPrologue(from: String, to: String) =
@@ -45,8 +39,8 @@ class IndySammyTest extends ClearAfterClass {
   def test(from: String, to: String, arg: String, body: String => String = x => x)
           (expectedSig: String, lamBody: List[Instruction], appArgs: List[Instruction], ret: Instruction)
           (allowMessage: StoreReporter#Info => Boolean = _ => false) = {
-    val cls = compile(s"${classPrologue(from, to)}")
-    val methodNodes = compileMethods(compiler)(lamDef(from, to, body) +";"+ appDef(arg), allowMessage)
+    val cls = compileClasses(s"${classPrologue(from, to)}")
+    val methodNodes = compileMethods(lamDef(from, to, body) +";"+ appDef(arg), allowMessage)
 
     val applySig = cls.head.methods.get(0).desc
     val anonfun = methodNodes.find(_.name contains "$anonfun$").map(convertMethod).get
@@ -64,7 +58,7 @@ class IndySammyTest extends ClearAfterClass {
   }
 
 //  def testSpecial(lam: String, lamTp: String, arg: String)(allowMessage: StoreReporter#Info => Boolean = _ => false) = {
-//    val cls = compile("trait Special[@specialized A] { def apply(a: A): A}" )
+//    val cls = compileClasses("trait Special[@specialized A] { def apply(a: A): A}" )
 //    val methodNodes = compileMethods(compiler)(s"def lam : $lamTp = $lam" +";"+ appDef(arg), allowMessage)
 //
 //    val anonfun = methodNodes.filter(_.name contains "$anonfun$").map(convertMethod)
@@ -146,7 +140,7 @@ class IndySammyTest extends ClearAfterClass {
   // Tests ThisReferringMethodsTraverser
   @Test
   def testStaticIfNoThisReference: Unit = {
-    val methodNodes = compileMethods(compiler)("def foo = () => () => () => 42")
+    val methodNodes = compileMethods("def foo = () => () => () => 42")
     methodNodes.forall(m => !m.name.contains("anonfun") || (m.access & ACC_STATIC) == ACC_STATIC)
   }
 }

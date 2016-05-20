@@ -2,41 +2,21 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import scala.collection.generic.Clearable
-import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.BatchSourceFile
-import scala.tools.asm.Opcodes._
-import org.junit.Assert._
 
-import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis._
-import scala.tools.nsc.io._
-import scala.tools.nsc.reporters.StoreReporter
-import scala.tools.testing.AssertUtil._
-
+import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import AsmUtils._
-
-import BackendReporting._
-
-import scala.collection.JavaConverters._
-import scala.tools.testing.ClearAfterClass
 
 @RunWith(classOf[JUnit4])
-class InlineWarningTest extends ClearAfterClass {
-  val argsNoWarn = "-Yopt:l:classpath"
-  val args = argsNoWarn + " -Yopt-warnings"
-  val compiler = cached("compiler", () => newCompiler(extraArgs = args))
-  val compilerWarnAll = cached("compilerWarnAll", () => newCompiler(extraArgs = argsNoWarn + " -Yopt-warnings:_"))
+class InlineWarningTest extends BytecodeTesting {
+  def optCp = "-Yopt:l:classpath"
+  override def compilerArgs = s"$optCp -Yopt-warnings"
 
-  def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false, compiler: Global = compiler): List[ClassNode] = {
-    compileClasses(compiler)(scalaCode, javaCode, allowMessage)
-  }
+  import compiler._
+
+  val compilerWarnAll = cached("compilerWarnAll", () => newCompiler(extraArgs = s"$optCp -Yopt-warnings:_"))
 
   @Test
   def nonFinal(): Unit = {
@@ -107,10 +87,10 @@ class InlineWarningTest extends ClearAfterClass {
     assert(c == 1, c)
 
     // no warnings here
-    compileClasses(newCompiler(extraArgs = argsNoWarn + " -Yopt-warnings:none"))(scalaCode, List((javaCode, "A.java")))
+    newCompiler(extraArgs = s"$optCp -Yopt-warnings:none").compile(scalaCode, List((javaCode, "A.java")))
 
     c = 0
-    compileClasses(newCompiler(extraArgs = argsNoWarn + " -Yopt-warnings:no-inline-mixed"))(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; warns.exists(i.msg contains _)})
+    newCompiler(extraArgs = s"$optCp -Yopt-warnings:no-inline-mixed").compile(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; warns.exists(i.msg contains _)})
     assert(c == 2, c)
   }
 
@@ -164,7 +144,7 @@ class InlineWarningTest extends ClearAfterClass {
         |that would cause an IllegalAccessError when inlined into class N""".stripMargin
 
     var c = 0
-    compile(code, compiler = compilerWarnAll, allowMessage = i => { c += 1; i.msg contains warn })
+    compilerWarnAll.compile(code, allowMessage = i => { c += 1; i.msg contains warn })
     assert(c == 1, c)
   }
 

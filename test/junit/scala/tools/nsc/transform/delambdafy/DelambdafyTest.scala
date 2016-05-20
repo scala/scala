@@ -1,14 +1,14 @@
 package scala.tools.nsc.transform.delambdafy
 
-import scala.reflect.io.Path.jfile2path
-import scala.tools.testing.BytecodeTesting._
-import scala.tools.nsc.io.AbstractFile
-import scala.tools.testing.TempDir
-
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+
+import scala.reflect.io.Path.jfile2path
+import scala.tools.nsc.io.AbstractFile
+import scala.tools.testing.BytecodeTesting._
+import scala.tools.testing.TempDir
 
 @RunWith(classOf[JUnit4])
 class DelambdafyTest {
@@ -53,9 +53,9 @@ object Delambdafy {
     val extraArgs = "-Ydelambdafy:method"
     val argsWithOutDir = extraArgs + s" -d $outDirPath -cp $outDirPath"
     val compiler = newCompilerWithoutVirtualOutdir(extraArgs = argsWithOutDir)
-    compiler.settings.outputDirs.add(srcFile.file, outDir)
+    compiler.global.settings.outputDirs.add(srcFile.file, outDir)
 
-    new compiler.Run().compileSources(List(srcFile))
+    new compiler.global.Run().compileSources(List(srcFile))
 
     val classfiles = getGeneratedClassfiles(outDir)
     outDir.delete()

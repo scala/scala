@@ -1,21 +1,23 @@
 package scala.tools.nsc.backend.jvm
 
+import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Assert._
-import scala.tools.testing.BytecodeTesting._
+
 import scala.tools.asm.Opcodes._
 import scala.tools.partest.ASMConverters._
-import scala.tools.testing.ClearAfterClass
+import scala.tools.testing.BytecodeTesting
+import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
-class DirectCompileTest extends ClearAfterClass {
-  val compiler = cached("compiler", () => newCompiler(extraArgs = "-Yopt:l:method"))
+class DirectCompileTest extends BytecodeTesting {
+  override def compilerArgs = "-Yopt:l:method"
+  import compiler._
 
   @Test
   def testCompile(): Unit = {
-    val List(("C.class", bytes)) = compile(compiler)(
+    val List(("C.class", bytes)) = compile(
       """class C {
         |  def f = 1
         |}
@@ -26,12 +28,12 @@ class DirectCompileTest extends ClearAfterClass {
 
   @Test
   def testCompileClasses(): Unit = {
-    val List(cClass, cModuleClass) = compileClasses(compiler)("class C; object C")
+    val List(cClass, cModuleClass) = compileClasses("class C; object C")
 
     assertTrue(cClass.name == "C")
     assertTrue(cModuleClass.name == "C$")
 
-    val List(dMirror, dModuleClass) = compileClasses(compiler)("object D")
+    val List(dMirror, dModuleClass) = compileClasses("object D")
 
     assertTrue(dMirror.name == "D")
     assertTrue(dModuleClass.name == "D$")
@@ -39,7 +41,7 @@ class DirectCompileTest extends ClearAfterClass {
 
   @Test
   def testCompileMethods(): Unit = {
-    val List(f, g) = compileMethods(compiler)(
+    val List(f, g) = compileMethods(
       """def f = 10
         |def g = f
       """.stripMargin)
@@ -56,7 +58,7 @@ class DirectCompileTest extends ClearAfterClass {
   @Test
   def testDropNonOpAliveLabels(): Unit = {
     // makes sure that dropNoOp doesn't drop labels that are being used
-    val List(f) = compileMethods(compiler)("""def f(x: Int) = if (x == 0) "a" else "b"""")
+    val List(f) = compileMethods("""def f(x: Int) = if (x == 0) "a" else "b"""")
     assertSameCode(instructionsFromMethod(f).dropLinesFrames, List(
       Label(0),
       VarOp(ILOAD, 1),
@@ -86,6 +88,6 @@ class DirectCompileTest extends ClearAfterClass {
 
   @Test
   def compileErroneous(): Unit = {
-    compileClasses(compiler)("class C { def f: String = 1 }", allowMessage = _.msg contains "type mismatch")
+    compileClasses("class C { def f: String = 1 }", allowMessage = _.msg contains "type mismatch")
   }
 }

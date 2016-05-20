@@ -2,22 +2,23 @@ package scala.tools.nsc
 package backend.jvm
 package analysis
 
+import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Assert._
 
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.AbstractInsnNode
+import scala.tools.nsc.backend.jvm.AsmUtils._
 import scala.tools.partest.ASMConverters._
-import scala.tools.testing.ClearAfterClass
+import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
-import AsmUtils._
 
 @RunWith(classOf[JUnit4])
-class ProdConsAnalyzerTest extends ClearAfterClass {
-  val noOptCompiler =cached("compiler", () => newCompiler(extraArgs = "-Yopt:l:none"))
-  import noOptCompiler.genBCode.bTypes.backendUtils._
+class ProdConsAnalyzerTest extends BytecodeTesting {
+  override def compilerArgs = "-Yopt:l:none"
+  import compiler._
+  import global.genBCode.bTypes.backendUtils._
 
   def prodToString(producer: AbstractInsnNode) = producer match {
     case p: InitialProducer => p.toString
@@ -48,7 +49,7 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
 
   @Test
   def parameters(): Unit = {
-    val List(m) = compileMethods(noOptCompiler)("def f = this.toString")
+    val List(m) = compileMethods("def f = this.toString")
     val a = new ProdConsAnalyzer(m, "C")
     val call = findInstr(m, "INVOKEVIRTUAL").head
 
@@ -92,7 +93,7 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
 
   @Test
   def branching(): Unit = {
-    val List(m) = compileMethods(noOptCompiler)("def f(x: Int) = { var a = x; if (a == 0) a = 12; a }")
+    val List(m) = compileMethods("def f(x: Int) = { var a = x; if (a == 0) a = 12; a }")
     val a = new ProdConsAnalyzer(m, "C")
 
     val List(ret) = findInstr(m, "IRETURN")
@@ -106,7 +107,7 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
 
   @Test
   def checkCast(): Unit = {
-    val List(m) = compileMethods(noOptCompiler)("def f(o: Object) = o.asInstanceOf[String]")
+    val List(m) = compileMethods("def f(o: Object) = o.asInstanceOf[String]")
     val a = new ProdConsAnalyzer(m, "C")
     assert(findInstr(m, "CHECKCAST java/lang/String").length == 1)
 
@@ -116,7 +117,7 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
 
   @Test
   def instanceOf(): Unit = {
-    val List(m) = compileMethods(noOptCompiler)("def f(o: Object) = o.isInstanceOf[String]")
+    val List(m) = compileMethods("def f(o: Object) = o.isInstanceOf[String]")
     val a = new ProdConsAnalyzer(m, "C")
     assert(findInstr(m, "INSTANCEOF java/lang/String").length == 1)
 
@@ -126,7 +127,7 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
 
   @Test
   def unInitLocal(): Unit = {
-    val List(m) = compileMethods(noOptCompiler)("def f(b: Boolean) = { if (b) { var a = 0; println(a) }; 1 }")
+    val List(m) = compileMethods("def f(b: Boolean) = { if (b) { var a = 0; println(a) }; 1 }")
     val a = new ProdConsAnalyzer(m, "C")
 
     val List(store) = findInstr(m, "ISTORE")
@@ -140,7 +141,7 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
 
   @Test
   def dupCopying(): Unit = {
-    val List(m) = compileMethods(noOptCompiler)("def f = new Object")
+    val List(m) = compileMethods("def f = new Object")
     val a = new ProdConsAnalyzer(m, "C")
 
     val List(newO)   = findInstr(m, "NEW")
@@ -222,7 +223,7 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
 
   @Test
   def copyingInsns(): Unit = {
-    val List(m) = compileMethods(noOptCompiler)("def f = 0l.asInstanceOf[Int]")
+    val List(m) = compileMethods("def f = 0l.asInstanceOf[Int]")
     val a = new ProdConsAnalyzer(m, "C")
 
     val List(cnst) = findInstr(m, "LCONST_0")

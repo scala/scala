@@ -2,22 +2,23 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import scala.tools.asm.Opcodes._
-import org.junit.Assert._
 
+import scala.tools.asm.Opcodes._
+import scala.tools.partest.ASMConverters._
+import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import scala.tools.testing.ClearAfterClass
 
 
 @RunWith(classOf[JUnit4])
-class EmptyExceptionHandlersTest extends ClearAfterClass {
+class EmptyExceptionHandlersTest extends BytecodeTesting {
+  override def compilerArgs = "-Yopt:unreachable-code"
+  def dceCompiler = compiler
+
   val noOptCompiler = cached("noOptCompiler", () => newCompiler(extraArgs = "-Yopt:l:none"))
-  val dceCompiler   = cached("dceCompiler", () => newCompiler(extraArgs = "-Yopt:unreachable-code"))
 
   val exceptionDescriptor = "java/lang/Exception"
 
@@ -59,8 +60,8 @@ class EmptyExceptionHandlersTest extends ClearAfterClass {
   def eliminateUnreachableHandler(): Unit = {
     val code = "def f: Unit = try { } catch { case _: Exception => println(0) }; println(1)"
 
-    assertTrue(singleMethod(noOptCompiler)(code).handlers.length == 1)
-    val optMethod = singleMethod(dceCompiler)(code)
+    assertTrue(noOptCompiler.singleMethod(code).handlers.length == 1)
+    val optMethod = dceCompiler.singleMethod(code)
     assertTrue(optMethod.handlers.isEmpty)
 
     val code2 =
@@ -72,7 +73,7 @@ class EmptyExceptionHandlersTest extends ClearAfterClass {
         |  println(2)
         |}""".stripMargin
 
-    assertTrue(singleMethod(dceCompiler)(code2).handlers.isEmpty)
+    assertTrue(dceCompiler.singleMethod(code2).handlers.isEmpty)
   }
 
   @Test
@@ -84,6 +85,6 @@ class EmptyExceptionHandlersTest extends ClearAfterClass {
         |  catch { case _: Exception => 2 }
         |}""".stripMargin
 
-    assertTrue(singleMethod(dceCompiler)(code).handlers.length == 1)
+    assertTrue(dceCompiler.singleMethod(code).handlers.length == 1)
   }
 }

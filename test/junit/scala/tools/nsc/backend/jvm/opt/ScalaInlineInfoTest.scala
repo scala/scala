@@ -2,23 +2,20 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import scala.tools.asm.Opcodes._
-import org.junit.Assert._
 
-import scala.tools.testing.BytecodeTesting._
-import scala.tools.asm.tree.ClassNode
-import scala.tools.nsc.backend.jvm.BTypes.{MethodInlineInfo, InlineInfo}
-import scala.tools.partest.ASMConverters
-import ASMConverters._
 import scala.collection.JavaConverters._
-import scala.tools.testing.ClearAfterClass
+import scala.tools.asm.tree.ClassNode
+import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
+import scala.tools.testing.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
-class ScalaInlineInfoTest extends ClearAfterClass {
-  val compiler = cached("compiler", () => newCompiler(extraArgs = "-Yopt:l:none"))
+class ScalaInlineInfoTest extends BytecodeTesting {
+  override def compilerArgs = "-Yopt:l:none"
+  import compiler._
 
   def inlineInfo(c: ClassNode): InlineInfo = c.attrs.asScala.collect({ case a: InlineInfoAttribute => a.inlineInfo }).head
 
@@ -72,7 +69,7 @@ class ScalaInlineInfoTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val cs @ List(c, t, tl, to) = compileClasses(compiler)(code)
+    val cs @ List(c, t, tl, to) = compileClasses(code)
     val infoT = inlineInfo(t)
     val expectT = InlineInfo (
       false, // final class
@@ -149,7 +146,7 @@ class ScalaInlineInfoTest extends ClearAfterClass {
         |  def nullary: Int
         |}
       """.stripMargin
-    val cs = compileClasses(compiler)(code)
+    val cs = compileClasses(code)
     val sams = cs.map(c => (c.name, inlineInfo(c).sam))
     assertEquals(sams,
       List(
@@ -165,7 +162,7 @@ class ScalaInlineInfoTest extends ClearAfterClass {
   @Test
   def lzyComputeInlineInfo(): Unit = {
     val code = "class C { object O }"
-    val List(c, om) = compileClasses(compiler)(code)
+    val List(c, om) = compileClasses(code)
     val infoC = inlineInfo(c)
     val expected = Map(
       "<init>()V"            -> MethodInlineInfo(false,false,false),

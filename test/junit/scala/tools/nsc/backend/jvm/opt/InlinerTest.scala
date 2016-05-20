@@ -2,48 +2,44 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import scala.collection.generic.Clearable
-import scala.tools.asm.Opcodes._
-import org.junit.Assert._
-
-import scala.tools.asm.tree._
-import scala.tools.nsc.reporters.StoreReporter
-
-import scala.tools.testing.BytecodeTesting._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import AsmUtils._
-
-import BackendReporting._
 
 import scala.collection.JavaConverters._
-import scala.tools.testing.ClearAfterClass
+import scala.collection.generic.Clearable
+import scala.tools.asm.Opcodes._
+import scala.tools.asm.tree._
+import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.nsc.reporters.StoreReporter
+import scala.tools.partest.ASMConverters._
+import scala.tools.testing.BytecodeTesting
+import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
-class InlinerTest extends ClearAfterClass {
-  val args = "-Yopt:l:classpath -Yopt-warnings"
-  val compiler = cached("compiler", () => newCompiler(extraArgs = args))
+class InlinerTest extends BytecodeTesting {
+  override def compilerArgs = "-Yopt:l:classpath -Yopt-warnings"
+
   val inlineOnlyCompiler = cached("inlineOnlyCompiler", () => newCompiler(extraArgs = "-Yopt:inline-project"))
-  import compiler.genBCode.bTypes
+
+  import compiler._
+  import global.genBCode.bTypes
   // allows inspecting the caches after a compilation run
   def notPerRun: List[Clearable] = List(
     bTypes.classBTypeFromInternalName,
     bTypes.byteCodeRepository.compilingClasses,
     bTypes.byteCodeRepository.parsedClasses,
     bTypes.callGraph.callsites)
-  notPerRun foreach compiler.perRunCaches.unrecordCache
+  notPerRun foreach global.perRunCaches.unrecordCache
 
-  import compiler.genBCode.bTypes._
-  import compiler.genBCode.bTypes.backendUtils._
+  import global.genBCode.bTypes.{byteCodeRepository, callGraph, inliner, inlinerHeuristics}
   import inlinerHeuristics._
 
 
   def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
     notPerRun.foreach(_.clear())
-    compileClasses(compiler)(scalaCode, javaCode, allowMessage)
+    compileClasses(scalaCode, javaCode, allowMessage)
     // Use the class nodes stored in the byteCodeRepository. The ones returned by compileClasses are not the same,
     // these are created new from the classfile byte array. They are completely separate instances which cannot
     // be used to look up methods / callsites in the callGraph hash maps for example.
@@ -138,7 +134,7 @@ class InlinerTest extends ClearAfterClass {
 
     assertSameCode(convertMethod(g), gBeforeLocalOpt)
 
-    compiler.genBCode.bTypes.localOpt.methodOptimizations(g, "C")
+    global.genBCode.bTypes.localOpt.methodOptimizations(g, "C")
     assertSameCode(convertMethod(g), invokeQQQ :+ Op(ATHROW))
   }
 
@@ -380,7 +376,7 @@ class InlinerTest extends ClearAfterClass {
       """.stripMargin
 
     // use a compiler without local optimizations (cleanups)
-    val List(c) = compileClasses(inlineOnlyCompiler)(code)
+    val List(c) = inlineOnlyCompiler.compileClasses(code)
     val ms @ List(f1, f2, g1, g2) = c.methods.asScala.filter(_.name.length == 2).toList
 
     // stack height at callsite of f1 is 1, so max of g1 after inlining is max of f1 + 1
@@ -829,7 +825,7 @@ class InlinerTest extends ClearAfterClass {
 
     var c = 0
 
-    compileClasses(newCompiler(extraArgs = args + " -Yopt-warnings:_"))(
+    newCompiler(extraArgs = compilerArgs + " -Yopt-warnings:_").compileClasses(
       scalaCode,
       List((javaCode, "A.java")),
       allowMessage = i => {c += 1; i.msg contains warn})
@@ -891,7 +887,7 @@ class InlinerTest extends ClearAfterClass {
         |  def t = System.arraycopy(null, 0, null, 0, 0)
         |}
       """.stripMargin
-    val List(c) = compileClasses(newCompiler(extraArgs = args + " -Yopt-inline-heuristics:everything"))(code)
+    val List(c) = newCompiler(extraArgs = compilerArgs + " -Yopt-inline-heuristics:everything").compileClasses(code)
     assertInvoke(getSingleMethod(c, "t"), "java/lang/System", "arraycopy")
   }
 

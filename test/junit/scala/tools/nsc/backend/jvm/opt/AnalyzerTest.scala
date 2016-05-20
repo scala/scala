@@ -2,28 +2,21 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import org.junit.Assert._
 
-import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
-import scala.tools.nsc.backend.jvm.analysis.{AliasingFrame, AliasingAnalyzer}
-
+import scala.tools.nsc.backend.jvm.analysis.{AliasingAnalyzer, AliasingFrame}
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
+import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import AsmUtils._
-import BackendReporting._
-import BytecodeUtils._
-
-import scala.collection.JavaConverters._
-import scala.tools.testing.ClearAfterClass
 
 @RunWith(classOf[JUnit4])
-class AnalyzerTest extends ClearAfterClass {
-  val noOptCompiler = cached("compiler", () => newCompiler(extraArgs = "-Yopt:l:none"))
+class AnalyzerTest extends BytecodeTesting {
+  override def compilerArgs = "-Yopt:l:none"
+  import compiler._
 
   @Test
   def aliasingOfPrimitives(): Unit = {
@@ -39,7 +32,7 @@ class AnalyzerTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val List(c) = compileClasses(noOptCompiler)(code)
+    val List(c) = compileClasses(code)
     val a = new AliasingAnalyzer(new BasicInterpreter)
     val f = findAsmMethod(c, "f")
     a.analyze("C", f)

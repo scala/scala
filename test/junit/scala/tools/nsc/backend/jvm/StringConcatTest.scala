@@ -1,22 +1,18 @@
 package scala.tools.nsc
 package backend.jvm
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import scala.tools.asm.Opcodes._
-import org.junit.Assert._
 
-import scala.tools.testing.AssertUtil._
-
+import scala.tools.partest.ASMConverters._
+import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import scala.tools.testing.ClearAfterClass
 
 @RunWith(classOf[JUnit4])
-class StringConcatTest extends ClearAfterClass {
-  val compiler = cached("compiler", () => newCompiler())
+class StringConcatTest extends BytecodeTesting {
+  import compiler._
 
   @Test
   def appendOverloadNoBoxing(): Unit = {
@@ -54,7 +50,7 @@ class StringConcatTest extends ClearAfterClass {
         |         chrs: Array[Char]) = this + str + v + z + c + b + s + i + f + l + d + sbuf + chsq + chrs
         |}
       """.stripMargin
-    val List(c) = compileClasses(compiler)(code)
+    val List(c) = compileClasses(code)
 
     def invokeNameDesc(m: String): List[String] = getSingleMethod(c, m).instructions collect {
       case Invoke(_, _, name, desc, _) => name + desc

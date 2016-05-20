@@ -1,24 +1,20 @@
 package scala.tools.nsc
 package transform.patmat
 
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
+
 import scala.tools.asm.Opcodes._
-import org.junit.Assert._
-
 import scala.tools.nsc.backend.jvm.AsmUtils._
-import scala.tools.testing.AssertUtil._
-
+import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import scala.tools.testing.ClearAfterClass
 
 @RunWith(classOf[JUnit4])
-class PatmatBytecodeTest extends ClearAfterClass {
-  val compiler = cached("compiler", () => newCompiler())
+class PatmatBytecodeTest extends BytecodeTesting {
   val optCompiler = cached("optCompiler", () => newCompiler(extraArgs = "-Yopt:l:project"))
+
+  import compiler._
 
   @Test
   def t6956(): Unit = {
@@ -42,7 +38,7 @@ class PatmatBytecodeTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val List(c) = compileClasses(compiler)(code)
+    val List(c) = compileClasses(code)
     assert(getSingleMethod(c, "s1").instructions.count(_.opcode == TABLESWITCH) == 1, textify(c))
     assert(getSingleMethod(c, "s2").instructions.count(_.opcode == TABLESWITCH) == 1, textify(c))
   }
@@ -70,7 +66,7 @@ class PatmatBytecodeTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val List(c) = compileClasses(compiler)(code)
+    val List(c) = compileClasses(code)
     assert(getSingleMethod(c, "s1").instructions.count(_.opcode == TABLESWITCH) == 1, textify(c))
     assert(getSingleMethod(c, "s2").instructions.count(_.opcode == TABLESWITCH) == 1, textify(c))
   }
@@ -85,7 +81,7 @@ class PatmatBytecodeTest extends ClearAfterClass {
         |  }
         |}
       """.stripMargin
-    val c = compileClasses(optCompiler)(code).head
+    val c = optCompiler.compileClasses(code).head
 
     assertSameSummary(getSingleMethod(c, "a"), List(
       NEW, DUP, ICONST_1, LDC, "<init>",
@@ -102,7 +98,7 @@ class PatmatBytecodeTest extends ClearAfterClass {
         |  }
         |}
       """.stripMargin
-    val c = compileClasses(optCompiler)(code).head
+    val c = optCompiler.compileClasses(code).head
     assert(!getSingleMethod(c, "a").instructions.exists(i => i.opcode == IFNULL || i.opcode == IFNONNULL), textify(findAsmMethod(c, "a")))
   }
 
@@ -116,7 +112,7 @@ class PatmatBytecodeTest extends ClearAfterClass {
         |  }
         |}
       """.stripMargin
-    val c = compileClasses(optCompiler)(code).head
+    val c = optCompiler.compileClasses(code).head
     assertSameSummary(getSingleMethod(c, "a"), List(
       NEW, DUP, ICONST_1, "boxToInteger", LDC, "<init>", ASTORE /*1*/,
       ALOAD /*1*/, "y", ASTORE /*2*/,
@@ -137,7 +133,7 @@ class PatmatBytecodeTest extends ClearAfterClass {
         |  }
         |}
       """.stripMargin
-    val c = compileClasses(optCompiler)(code, allowMessage = _.msg.contains("may not be exhaustive")).head
+    val c = optCompiler.compileClasses(code, allowMessage = _.msg.contains("may not be exhaustive")).head
 
     val expected = List(
       ALOAD /*1*/ , INSTANCEOF /*::*/ , IFEQ /*A*/ ,
@@ -169,7 +165,7 @@ class PatmatBytecodeTest extends ClearAfterClass {
         |  def t9 = { val C(a, _) = C("hi", 23); a.toString }
         |}
       """.stripMargin
-    val List(c, cMod) = compileClasses(optCompiler)(code)
+    val List(c, cMod) = optCompiler.compileClasses(code)
     assertSameSummary(getSingleMethod(c, "t1"), List(ICONST_1, ICONST_2, IADD, IRETURN))
     assertSameSummary(getSingleMethod(c, "t2"), List(ICONST_1, IRETURN))
     assertInvokedMethods(getSingleMethod(c, "t3"), List("C.tplCall", "scala/Tuple2._1", "scala/Tuple2._2$mcI$sp", "scala/MatchError.<init>", "java/lang/String.length"))

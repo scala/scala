@@ -1,23 +1,22 @@
 package scala.issues
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-
-import scala.tools.asm.Opcodes._
-import scala.tools.nsc.backend.jvm.AsmUtils
-import scala.tools.testing.BytecodeTesting._
-import org.junit.Assert._
 
 import scala.collection.JavaConverters._
 import scala.tools.asm.Opcodes
+import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree.ClassNode
+import scala.tools.nsc.backend.jvm.AsmUtils
 import scala.tools.partest.ASMConverters._
-import scala.tools.testing.ClearAfterClass
+import scala.tools.testing.BytecodeTesting
+import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
-class BytecodeTest extends ClearAfterClass {
-  val compiler = cached("compiler", () => newCompiler())
+class BytecodeTest extends BytecodeTesting {
+  import compiler._
 
   @Test
   def t8731(): Unit = {
@@ -37,7 +36,7 @@ class BytecodeTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val List(c) = compileClasses(compiler)(code)
+    val List(c) = compileClasses(code)
 
     assertTrue(getSingleMethod(c, "f").instructions.count(_.isInstanceOf[TableSwitch]) == 1)
     assertTrue(getSingleMethod(c, "g").instructions.count(_.isInstanceOf[LookupSwitch]) == 1)
@@ -64,9 +63,9 @@ class BytecodeTest extends ClearAfterClass {
         |@AnnotB class B
       """.stripMargin
 
-    val run = new compiler.Run()
+    val run = new global.Run()
     run.compileSources(List(new BatchSourceFile("AnnotA.java", annotA), new BatchSourceFile("AnnotB.java", annotB), new BatchSourceFile("Test.scala", scalaSrc)))
-    val outDir = compiler.settings.outputDirs.getSingleOutput.get
+    val outDir = global.settings.outputDirs.getSingleOutput.get
     val outfiles = (for (f <- outDir.iterator if !f.isDirectory) yield (f.name, f.toByteArray)).toList
 
     def check(classfile: String, annotName: String) = {
@@ -98,7 +97,7 @@ class BytecodeTest extends ClearAfterClass {
         |  }
         |}
       """.stripMargin
-    val List(mirror, module) = compileClasses(compiler)(code)
+    val List(mirror, module) = compileClasses(code)
 
     val unapplyLineNumbers = getSingleMethod(module, "unapply").instructions.filter(_.isInstanceOf[LineNumber])
     assert(unapplyLineNumbers == List(LineNumber(2, Label(0))), unapplyLineNumbers)
@@ -145,7 +144,7 @@ class BytecodeTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val List(c) = compileClasses(compiler)(code)
+    val List(c) = compileClasses(code)
 
     // t1: no unnecessary GOTOs
     assertSameCode(getSingleMethod(c, "t1"), List(
@@ -271,7 +270,7 @@ class BytecodeTest extends ClearAfterClass {
         |class C20 extends T8
       """.stripMargin
 
-    implicit val classes = compileClasses(compiler)(code).map(c => (c.name, c)).toMap
+    implicit val classes = compileClasses(code).map(c => (c.name, c)).toMap
 
     val noForwarder = List('C1, 'C2, 'C3, 'C4, 'C10, 'C11, 'C12, 'C13, 'C16, 'C17)
     for (c <- noForwarder) assertEquals(findMethods(c, "f"), Nil)
@@ -297,7 +296,7 @@ class BytecodeTest extends ClearAfterClass {
         |trait T2 { def f(x: String) = 1 }
         |class C extends T1 with T2
       """.stripMargin
-    val List(c, t1, t2) = compileClasses(compiler)(code)
+    val List(c, t1, t2) = compileClasses(code)
     assertEquals(findMethods(c, "f"), Nil)
   }
 
@@ -329,7 +328,7 @@ class BytecodeTest extends ClearAfterClass {
         |
         |class K12 extends J2 with T2
       """.stripMargin
-    implicit val classes = compileClasses(compiler)(code, List(j1, j2, j3, j4)).map(c => (c.name, c)).toMap
+    implicit val classes = compileClasses(code, List(j1, j2, j3, j4)).map(c => (c.name, c)).toMap
 
     val noForwarder = List('K1, 'K2, 'K3, 'K4, 'K5, 'K6, 'K7, 'K8, 'K9, 'K10, 'K11)
     for (c <- noForwarder) assertEquals(findMethods(c, "f"), Nil)
@@ -339,7 +338,7 @@ class BytecodeTest extends ClearAfterClass {
 
   @Test
   def invocationReceivers(): Unit = {
-    val List(c1, c2, t, u) = compileClasses(compiler)(invocationReceiversTestCode.definitions("Object"))
+    val List(c1, c2, t, u) = compileClasses(invocationReceiversTestCode.definitions("Object"))
     // mixin forwarder in C1
     assertSameCode(getSingleMethod(c1, "clone"), List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "T", "clone", "()Ljava/lang/Object;", false), Op(ARETURN)))
     assertInvoke(getSingleMethod(c1, "f1"), "T", "clone")
@@ -349,7 +348,7 @@ class BytecodeTest extends ClearAfterClass {
     assertInvoke(getSingleMethod(c2, "f2"), "T", "clone")
     assertInvoke(getSingleMethod(c2, "f3"), "C1", "clone")
 
-    val List(c1b, c2b, tb, ub) = compileClasses(compiler)(invocationReceiversTestCode.definitions("String"))
+    val List(c1b, c2b, tb, ub) = compileClasses(invocationReceiversTestCode.definitions("String"))
     def ms(c: ClassNode, n: String) = c.methods.asScala.toList.filter(_.name == n)
     assert(ms(tb, "clone").length == 1)
     assert(ms(ub, "clone").isEmpty)
@@ -396,9 +395,8 @@ class BytecodeTest extends ClearAfterClass {
         |  def f3(j: a.J) = j.f
         |}
       """.stripMargin
-    val List(c) = compileClasses(compiler)(cC, javaCode = List((aC, "A.java"), (bC, "B.java"), (iC, "I.java"), (jC, "J.java")))
+    val List(c) = compileClasses(cC, javaCode = List((aC, "A.java"), (bC, "B.java"), (iC, "I.java"), (jC, "J.java")))
     assertInvoke(getSingleMethod(c, "f1"), "a/B", "f") // receiver needs to be B (A is not accessible in class C, package b)
-    println(getSingleMethod(c, "f2").instructions.stringLines)
     assertInvoke(getSingleMethod(c, "f3"), "a/J", "f") // receiver needs to be J
   }
 
@@ -413,7 +411,7 @@ class BytecodeTest extends ClearAfterClass {
         |
         |}
       """.stripMargin
-    val List(c) = compileClasses(compiler)(code)
+    val List(c) = compileClasses(code)
     assertInvoke(getSingleMethod(c, "f1"), "[Ljava/lang/String;", "clone") // array descriptor as receiver
     assertInvoke(getSingleMethod(c, "f2"), "java/lang/Object", "hashCode") // object receiver
     assertInvoke(getSingleMethod(c, "f3"), "java/lang/Object", "hashCode")
@@ -424,7 +422,7 @@ class BytecodeTest extends ClearAfterClass {
   def superConstructorArgumentInSpecializedClass(): Unit = {
     // see comment in SpecializeTypes.forwardCtorCall
     val code = "case class C[@specialized(Int) T](_1: T)"
-    val List(c, cMod, cSpec) = compileClasses(compiler)(code)
+    val List(c, cMod, cSpec) = compileClasses(code)
     assertSameSummary(getSingleMethod(cSpec, "<init>"),
       // pass `null` to super constructor, no box-unbox, no Integer created
       List(ALOAD, ILOAD, PUTFIELD, ALOAD, ACONST_NULL, "<init>", RETURN))

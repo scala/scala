@@ -2,30 +2,99 @@ package scala.tools.testing
 
 import org.junit.Assert._
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.BatchSourceFile
 import scala.reflect.io.VirtualDirectory
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.{AbstractInsnNode, ClassNode, MethodNode}
 import scala.tools.cmd.CommandLineParser
+import scala.tools.nsc.backend.jvm.AsmUtils
+import scala.tools.nsc.backend.jvm.AsmUtils._
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.{Global, Settings}
-import scala.tools.partest.ASMConverters
-import scala.collection.JavaConverters._
-import scala.tools.nsc.backend.jvm.AsmUtils
+import scala.tools.partest.ASMConverters._
+
+trait BytecodeTesting extends ClearAfterClass {
+  def compilerArgs = "" // to be overridden
+  val compiler = cached("compiler", () => BytecodeTesting.newCompiler(extraArgs = compilerArgs))
+}
+
+class Compiler(val global: Global) {
+  import BytecodeTesting._
+
+  def resetOutput(): Unit = {
+    global.settings.outputDirs.setSingleOutput(new VirtualDirectory("(memory)", None))
+  }
+
+  private def newRun: global.Run = {
+    global.reporter.reset()
+    resetOutput()
+    new global.Run()
+  }
+
+  private def reporter = global.reporter.asInstanceOf[StoreReporter]
+
+  def checkReport(allowMessage: StoreReporter#Info => Boolean = _ => false): Unit = {
+    val disallowed = reporter.infos.toList.filter(!allowMessage(_)) // toList prevents an infer-non-wildcard-existential warning.
+    if (disallowed.nonEmpty) {
+      val msg = disallowed.mkString("\n")
+      assert(false, "The compiler issued non-allowed warnings or errors:\n" + msg)
+    }
+  }
+
+  def compile(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[(String, Array[Byte])] = {
+    val run = newRun
+    run.compileSources(makeSourceFile(scalaCode, "unitTestSource.scala") :: javaCode.map(p => makeSourceFile(p._1, p._2)))
+    checkReport(allowMessage)
+    getGeneratedClassfiles(global.settings.outputDirs.getSingleOutput.get)
+  }
+
+  def compileTransformed(scalaCode: String, javaCode: List[(String, String)] = Nil, beforeBackend: global.Tree => global.Tree): List[(String, Array[Byte])] = {
+    import global._
+    settings.stopBefore.value = "jvm" :: Nil
+    val run = newRun
+    val scalaUnit = newCompilationUnit(scalaCode, "unitTestSource.scala")
+    val javaUnits = javaCode.map(p => newCompilationUnit(p._1, p._2))
+    val units = scalaUnit :: javaUnits
+    run.compileUnits(units, run.parserPhase)
+    settings.stopBefore.value = Nil
+    scalaUnit.body = beforeBackend(scalaUnit.body)
+    checkReport(_ => false)
+    val run1 = newRun
+    run1.compileUnits(units, run1.phaseNamed("jvm"))
+    checkReport(_ => false)
+    getGeneratedClassfiles(settings.outputDirs.getSingleOutput.get)
+  }
+
+  def compileClasses(code: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
+    readAsmClasses(compile(code, javaCode, allowMessage))
+  }
+
+  def compileMethods(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[MethodNode] = {
+    compileClasses(s"class C { $code }", allowMessage = allowMessage).head.methods.asScala.toList.filterNot(_.name == "<init>")
+  }
+
+  def singleMethodInstructions(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[Instruction] = {
+    val List(m) = compileMethods(code, allowMessage = allowMessage)
+    instructionsFromMethod(m)
+  }
+
+  def singleMethod(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): Method = {
+    val List(m) = compileMethods(code, allowMessage = allowMessage)
+    convertMethod(m)
+  }
+}
 
 object BytecodeTesting {
-  import AsmUtils._
-  import ASMConverters._
-
-  def genMethod( flags: Int = Opcodes.ACC_PUBLIC,
-                 name: String = "m",
-                 descriptor: String = "()V",
-                 genericSignature: String = null,
-                 throwsExceptions: Array[String] = null,
-                 handlers: List[ExceptionHandler] = Nil,
-                 localVars: List[LocalVariable] = Nil)(body: Instruction*): MethodNode = {
+  def genMethod(flags: Int = Opcodes.ACC_PUBLIC,
+                name: String = "m",
+                descriptor: String = "()V",
+                genericSignature: String = null,
+                throwsExceptions: Array[String] = null,
+                handlers: List[ExceptionHandler] = Nil,
+                localVars: List[LocalVariable] = Nil)(body: Instruction*): MethodNode = {
     val node = new MethodNode(flags, name, descriptor, genericSignature, throwsExceptions)
     applyToMethod(node, Method(body.toList, handlers, localVars))
     node
@@ -38,32 +107,20 @@ object BytecodeTesting {
     cls
   }
 
-  private def resetOutput(compiler: Global): Unit = {
-    compiler.settings.outputDirs.setSingleOutput(new VirtualDirectory("(memory)", None))
-  }
-
-  def newCompiler(defaultArgs: String = "-usejavacp", extraArgs: String = ""): Global = {
+  def newCompiler(defaultArgs: String = "-usejavacp", extraArgs: String = ""): Compiler = {
     val compiler = newCompilerWithoutVirtualOutdir(defaultArgs, extraArgs)
-    resetOutput(compiler)
+    compiler.resetOutput()
     compiler
   }
 
-  def newCompilerWithoutVirtualOutdir(defaultArgs: String = "-usejavacp", extraArgs: String = ""): Global = {
+  def newCompilerWithoutVirtualOutdir(defaultArgs: String = "-usejavacp", extraArgs: String = ""): Compiler = {
     def showError(s: String) = throw new Exception(s)
     val settings = new Settings(showError)
     val args = (CommandLineParser tokenize defaultArgs) ++ (CommandLineParser tokenize extraArgs)
     val (_, nonSettingsArgs) = settings.processArguments(args, processAll = true)
     if (nonSettingsArgs.nonEmpty) showError("invalid compiler flags: " + nonSettingsArgs.mkString(" "))
-    new Global(settings, new StoreReporter)
+    new Compiler(new Global(settings, new StoreReporter))
   }
-
-  def newRun(compiler: Global): compiler.Run = {
-    compiler.reporter.reset()
-    resetOutput(compiler)
-    new compiler.Run()
-  }
-
-  def reporter(compiler: Global) = compiler.reporter.asInstanceOf[StoreReporter]
 
   def makeSourceFile(code: String, filename: String): BatchSourceFile = new BatchSourceFile(filename, code)
 
@@ -77,38 +134,6 @@ object BytecodeTesting {
       res.toList
     }
     files(outDir)
-  }
-
-  def checkReport(compiler: Global, allowMessage: StoreReporter#Info => Boolean = _ => false): Unit = {
-    val disallowed = reporter(compiler).infos.toList.filter(!allowMessage(_)) // toList prevents an infer-non-wildcard-existential warning.
-    if (disallowed.nonEmpty) {
-      val msg = disallowed.mkString("\n")
-      assert(false, "The compiler issued non-allowed warnings or errors:\n" + msg)
-    }
-  }
-
-  def compile(compiler: Global)(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[(String, Array[Byte])] = {
-    val run = newRun(compiler)
-    run.compileSources(makeSourceFile(scalaCode, "unitTestSource.scala") :: javaCode.map(p => makeSourceFile(p._1, p._2)))
-    checkReport(compiler, allowMessage)
-    getGeneratedClassfiles(compiler.settings.outputDirs.getSingleOutput.get)
-  }
-
-  def compileTransformed(compiler: Global)(scalaCode: String, javaCode: List[(String, String)] = Nil, beforeBackend: compiler.Tree => compiler.Tree): List[(String, Array[Byte])] = {
-    compiler.settings.stopBefore.value = "jvm" :: Nil
-    val run = newRun(compiler)
-    import compiler._
-    val scalaUnit = newCompilationUnit(scalaCode, "unitTestSource.scala")
-    val javaUnits = javaCode.map(p => newCompilationUnit(p._1, p._2))
-    val units = scalaUnit :: javaUnits
-    run.compileUnits(units, run.parserPhase)
-    compiler.settings.stopBefore.value = Nil
-    scalaUnit.body = beforeBackend(scalaUnit.body)
-    checkReport(compiler, _ => false)
-    val run1 = newRun(compiler)
-    run1.compileUnits(units, run1.phaseNamed("jvm"))
-    checkReport(compiler, _ => false)
-    getGeneratedClassfiles(compiler.settings.outputDirs.getSingleOutput.get)
   }
 
   /**
@@ -127,8 +152,8 @@ object BytecodeTesting {
 
     for (code <- codes) {
       val compiler = newCompilerWithoutVirtualOutdir(extraArgs = argsWithOutDir)
-      new compiler.Run().compileSources(List(makeSourceFile(code, "unitTestSource.scala")))
-      checkReport(compiler, allowMessage)
+      new compiler.global.Run().compileSources(List(makeSourceFile(code, "unitTestSource.scala")))
+      compiler.checkReport(allowMessage)
       afterEach(outDir)
     }
 
@@ -143,24 +168,6 @@ object BytecodeTesting {
 
   def readAsmClasses(classfiles: List[(String, Array[Byte])]) = {
     classfiles.map(p => AsmUtils.readClass(p._2)).sortBy(_.name)
-  }
-
-  def compileClasses(compiler: Global)(code: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
-    readAsmClasses(compile(compiler)(code, javaCode, allowMessage))
-  }
-
-  def compileMethods(compiler: Global)(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[MethodNode] = {
-    compileClasses(compiler)(s"class C { $code }", allowMessage = allowMessage).head.methods.asScala.toList.filterNot(_.name == "<init>")
-  }
-
-  def singleMethodInstructions(compiler: Global)(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[Instruction] = {
-    val List(m) = compileMethods(compiler)(code, allowMessage = allowMessage)
-    instructionsFromMethod(m)
-  }
-
-  def singleMethod(compiler: Global)(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): Method = {
-    val List(m) = compileMethods(compiler)(code, allowMessage = allowMessage)
-    convertMethod(m)
   }
 
   def assertSameCode(method: Method, expected: List[Instruction]): Unit = assertSameCode(method.instructions.dropNonOp, expected)

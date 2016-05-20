@@ -3,22 +3,21 @@ package scala.issues
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
+
 import scala.tools.asm.Opcodes._
 import org.junit.Assert._
 
 import scala.tools.nsc.backend.jvm.AsmUtils
-
 import scala.tools.testing.BytecodeTesting._
 import scala.tools.partest.ASMConverters
 import ASMConverters._
 import AsmUtils._
-
-import scala.tools.testing.ClearAfterClass
+import scala.tools.testing.{BytecodeTesting, ClearAfterClass}
 
 @RunWith(classOf[JUnit4])
-class OptimizedBytecodeTest extends ClearAfterClass {
-  val args = "-Yopt:l:classpath -Yopt-warnings"
-  val compiler = cached("compiler", () => newCompiler(extraArgs = args))
+class OptimizedBytecodeTest extends BytecodeTesting {
+  override def compilerArgs = "-Yopt:l:classpath -Yopt-warnings"
+  import compiler._
 
   @Test
   def t2171(): Unit = {
@@ -28,7 +27,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |  def t(): Unit = while (true) m("...")
         |}
       """.stripMargin
-    val List(c) = compileClasses(compiler)(code)
+    val List(c) = compileClasses(code)
     assertSameCode(getSingleMethod(c, "t"), List(Label(0), Jump(GOTO, Label(0))))
   }
 
@@ -46,7 +45,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |    }
         |}
       """.stripMargin
-    val List(c) = compileClasses(compiler)(code)
+    val List(c) = compileClasses(code)
 
     assertSameSummary(getSingleMethod(c, "t"), List(
       LDC, ASTORE, ALOAD /*0*/, ALOAD /*1*/, "C$$$anonfun$1", IRETURN))
@@ -72,7 +71,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |  def h(block: => Unit): Nothing = ???
         |}
       """.stripMargin
-    val List(c, t, tMod) = compileClasses(compiler)(code, allowMessage = _.msg.contains("not be exhaustive"))
+    val List(c, t, tMod) = compileClasses(code, allowMessage = _.msg.contains("not be exhaustive"))
     assertSameSummary(getSingleMethod(c, "t"), List(GETSTATIC, "$qmark$qmark$qmark", ATHROW))
   }
 
@@ -97,7 +96,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |arguments expected by the callee ErrorHandler$::defaultIfIOException(Lscala/Function0;Lscala/Function0;)Ljava/lang/Object;. These values would be discarded
         |when entering an exception handler declared in the inlined method.""".stripMargin
 
-    compileClasses(compiler)(code, allowMessage = _.msg == msg)
+    compileClasses(code, allowMessage = _.msg == msg)
   }
 
   @Test
@@ -110,7 +109,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |  }
         |}
       """.stripMargin
-    compileClasses(compiler)(code)
+    compileClasses(code)
   }
 
   @Test
@@ -120,7 +119,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |object Warmup { def filter[A](p: Any => Boolean): Any = filter[Any](p) }
       """.stripMargin
     val c2 = "class C { def t = warmup.Warmup.filter[Any](x => false) }"
-    val List(c, _, _) = compileClassesSeparately(List(c1, c2), extraArgs = args)
+    val List(c, _, _) = compileClassesSeparately(List(c1, c2), extraArgs = compilerArgs)
     assertInvoke(getSingleMethod(c, "t"), "warmup/Warmup$", "filter")
   }
 
@@ -135,7 +134,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |  }
         |}
       """.stripMargin
-    compileClasses(compiler)(code)
+    compileClasses(code)
   }
 
   @Test
@@ -163,7 +162,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |  }
         |}
       """.stripMargin
-    compileClasses(compiler)(code)
+    compileClasses(code)
   }
 
   @Test
@@ -179,7 +178,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |  }
         |}
       """.stripMargin
-    compileClasses(compiler)(code)
+    compileClasses(code)
   }
 
   @Test
@@ -201,7 +200,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |  val NoContext = self.analyzer.NoContext
         |}
       """.stripMargin
-    compileClasses(compiler)(code)
+    compileClasses(code)
   }
 
   @Test
@@ -218,7 +217,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |  }
         |}
       """.stripMargin
-    val List(c) = compileClasses(compiler)(code)
+    val List(c) = compileClasses(code)
     assertSameSummary(getSingleMethod(c, "t"), List(
         ALOAD /*1*/, INSTANCEOF /*Some*/, IFNE /*A*/,
         ALOAD /*0*/, "getInt", POP,
@@ -237,7 +236,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |  }
         |}
       """.stripMargin
-    val List(c) = compileClasses(compiler)(code)
+    val List(c) = compileClasses(code)
     assertSameSummary(getSingleMethod(c, "t"), List(
       -1 /*A*/, ILOAD /*1*/, TABLESWITCH,
       -1, ALOAD, "pr", RETURN,
@@ -261,7 +260,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val cls = compileClassesSeparately(List(c1, c2), extraArgs = args)
+    val cls = compileClassesSeparately(List(c1, c2), extraArgs = compilerArgs)
     val c = cls.find(_.name == "C").get
     assertSameSummary(getSingleMethod(c, "t"), List(
       GETSTATIC, IFNONNULL, ACONST_NULL, ATHROW, // module load and null checks not yet eliminated
@@ -300,7 +299,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |  def f2b() = identity(wrapper2(5))  // not inlined
         |}
       """.stripMargin
-    val List(c) = compileClasses(compiler)(code, allowMessage = _.msg.contains("exception handler declared in the inlined method"))
+    val List(c) = compileClasses(code, allowMessage = _.msg.contains("exception handler declared in the inlined method"))
     assertInvoke(getSingleMethod(c, "f1a"), "C", "C$$$anonfun$1")
     assertInvoke(getSingleMethod(c, "f1b"), "C", "wrapper1")
     assertInvoke(getSingleMethod(c, "f2a"), "C", "C$$$anonfun$3")
@@ -318,7 +317,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |  def t = mbarray_apply_minibox(null, 0)
         |}
       """.stripMargin
-    val List(c) = compileClasses(compiler)(code)
+    val List(c) = compileClasses(code)
     assertNoInvoke(getSingleMethod(c, "t"))
   }
 
@@ -336,7 +335,7 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |object Nill extends Listt
         |class Listt
       """.stripMargin
-    val List(c, nil, nilMod, listt) = compileClasses(compiler)(code)
+    val List(c, nil, nilMod, listt) = compileClasses(code)
     assertInvoke(getSingleMethod(c, "t"), "C", "C$$$anonfun$1")
   }
 
@@ -355,14 +354,14 @@ class OptimizedBytecodeTest extends ClearAfterClass {
         |  final def apply(a: Any): Any = throw new RuntimeException(key)
         |}
       """.stripMargin
-    val List(c, f) = compileClasses(compiler)(code)
+    val List(c, f) = compileClasses(code)
     assertInvoke(getSingleMethod(c, "crash"), "C", "map")
   }
 
   @Test
   def optimiseEnablesNewOpt(): Unit = {
     val code = """class C { def t = (1 to 10) foreach println }"""
-    val List(c) = readAsmClasses(compile(newCompiler(extraArgs = "-optimise -deprecation"))(code, allowMessage = _.msg.contains("is deprecated")))
+    val List(c) = readAsmClasses(newCompiler(extraArgs = "-optimise -deprecation").compile(code, allowMessage = _.msg.contains("is deprecated")))
     assertInvoke(getSingleMethod(c, "t"), "C", "C$$$anonfun$1") // range-foreach inlined from classpath
   }
 }

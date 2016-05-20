@@ -2,17 +2,15 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
+
 import scala.tools.asm.Opcodes._
-import org.junit.Assert._
-
+import scala.tools.partest.ASMConverters._
 import scala.tools.testing.AssertUtil._
-
 import scala.tools.testing.BytecodeTesting._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
 import scala.tools.testing.ClearAfterClass
 
 @RunWith(classOf[JUnit4])
@@ -20,12 +18,12 @@ class UnreachableCodeTest extends ClearAfterClass {
   // jvm-1.6 enables emitting stack map frames, which impacts the code generation wrt dead basic blocks,
   // see comment in BCodeBodyBuilder
   val methodOptCompiler     = cached("methodOptCompiler", () => newCompiler(extraArgs = "-Yopt:l:method"))
-  val dceCompiler           = cached("dceCompiler", () => newCompiler(extraArgs = "-Yopt:unreachable-code"))
-  val noOptCompiler         = cached("noOptCompiler", () => newCompiler(extraArgs = "-Yopt:l:none"))
+  val dceCompiler           = cached("dceCompiler",       () => newCompiler(extraArgs = "-Yopt:unreachable-code"))
+  val noOptCompiler         = cached("noOptCompiler",     () => newCompiler(extraArgs = "-Yopt:l:none"))
 
   def assertEliminateDead(code: (Instruction, Boolean)*): Unit = {
     val method = genMethod()(code.map(_._1): _*)
-    dceCompiler.genBCode.bTypes.localOpt.removeUnreachableCodeImpl(method, "C")
+    dceCompiler.global.genBCode.bTypes.localOpt.removeUnreachableCodeImpl(method, "C")
     val nonEliminated = instructionsFromMethod(method)
     val expectedLive = code.filter(_._2).map(_._1).toList
     assertSameCode(nonEliminated, expectedLive)
@@ -112,10 +110,10 @@ class UnreachableCodeTest extends ClearAfterClass {
   @Test
   def basicEliminationCompiler(): Unit = {
     val code = "def f: Int = { return 1; 2 }"
-    val withDce = singleMethodInstructions(dceCompiler)(code)
+    val withDce = dceCompiler.singleMethodInstructions(code)
     assertSameCode(withDce.dropNonOp, List(Op(ICONST_1), Op(IRETURN)))
 
-    val noDce = singleMethodInstructions(noOptCompiler)(code)
+    val noDce = noOptCompiler.singleMethodInstructions(code)
 
     // The emitted code is ICONST_1, IRETURN, ICONST_2, IRETURN. The latter two are dead.
     //
@@ -141,23 +139,23 @@ class UnreachableCodeTest extends ClearAfterClass {
     def wrapInDefault(code: Instruction*) = List(Label(0), LineNumber(1, Label(0))) ::: code.toList ::: List(Label(1))
 
     val code = "def f: Int = { return 0; try { 1 } catch { case _: Exception => 2 } }"
-    val m = singleMethod(dceCompiler)(code)
+    val m = dceCompiler.singleMethod(code)
     assertTrue(m.handlers.isEmpty) // redundant (if code is gone, handler is gone), but done once here for extra safety
     assertSameCode(m.instructions,
       wrapInDefault(Op(ICONST_0), Op(IRETURN)))
 
     val code2 = "def f: Unit = { try { } catch { case _: Exception => () }; () }"
     // requires fixpoint optimization of methodOptCompiler (dce alone is not enough): first the handler is eliminated, then it's dead catch block.
-    assertSameCode(singleMethodInstructions(methodOptCompiler)(code2), wrapInDefault(Op(RETURN)))
+    assertSameCode(methodOptCompiler.singleMethodInstructions(code2), wrapInDefault(Op(RETURN)))
 
     val code3 = "def f: Unit = { try { } catch { case _: Exception => try { } catch { case _: Exception => () } }; () }"
-    assertSameCode(singleMethodInstructions(methodOptCompiler)(code3), wrapInDefault(Op(RETURN)))
+    assertSameCode(methodOptCompiler.singleMethodInstructions(code3), wrapInDefault(Op(RETURN)))
 
     // this example requires two iterations to get rid of the outer handler.
     // the first iteration of DCE cannot remove the inner handler. then the inner (empty) handler is removed.
     // then the second iteration of DCE removes the inner catch block, and then the outer handler is removed.
     val code4 = "def f: Unit = { try { try { } catch { case _: Exception => () } } catch { case _: Exception => () }; () }"
-    assertSameCode(singleMethodInstructions(methodOptCompiler)(code4), wrapInDefault(Op(RETURN)))
+    assertSameCode(methodOptCompiler.singleMethodInstructions(code4), wrapInDefault(Op(RETURN)))
   }
 
   @Test // test the dce-testing tools
@@ -174,7 +172,7 @@ class UnreachableCodeTest extends ClearAfterClass {
   }
 
   @Test
-  def bytecodeEquivalence: Unit = {
+  def bytecodeEquivalence(): Unit = {
     assertTrue(List(VarOp(ILOAD, 1)) ===
                List(VarOp(ILOAD, 2)))
     assertTrue(List(VarOp(ILOAD, 1), VarOp(ISTORE, 1)) ===
@@ -216,7 +214,7 @@ class UnreachableCodeTest extends ClearAfterClass {
         |  def t4 = cons(nt)
         |}
       """.stripMargin
-    val List(c) = compileClasses(noOptCompiler)(code)
+    val List(c) = noOptCompiler.compileClasses(code)
 
     assertSameSummary(getSingleMethod(c, "nl"), List(ACONST_NULL, ARETURN))
 
@@ -243,7 +241,7 @@ class UnreachableCodeTest extends ClearAfterClass {
     assertSameSummary(getSingleMethod(c, "t4"), List(
       ALOAD, ALOAD, "nt", ATHROW, NOP, NOP, NOP, ATHROW))
 
-    val List(cDCE) = compileClasses(dceCompiler)(code)
+    val List(cDCE) = dceCompiler.compileClasses(code)
     assertSameSummary(getSingleMethod(cDCE, "t3"), List(ALOAD, NEW, DUP, LDC, "<init>", ATHROW))
     assertSameSummary(getSingleMethod(cDCE, "t4"), List(ALOAD, ALOAD, "nt", ATHROW))
   }
