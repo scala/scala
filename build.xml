@@ -1163,7 +1163,7 @@ TODO:
       </pre>
       <!-- JSR-223 support introduced in 2.11 -->
       <jar-opts>
-        <service type="javax.script.ScriptEngineFactory" provider="scala.tools.nsc.interpreter.IMain$Factory"/>
+        <service type="javax.script.ScriptEngineFactory" provider="scala.tools.nsc.interpreter.Scripted$Factory"/>
       </jar-opts>
     </staged-pack>
   </target>
