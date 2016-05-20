@@ -1,18 +1,13 @@
-package scala.issues
+package scala.tools.nsc.backend.jvm
 
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
 
 import scala.tools.asm.Opcodes._
-import org.junit.Assert._
-
-import scala.tools.nsc.backend.jvm.AsmUtils
+import scala.tools.partest.ASMConverters._
+import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import AsmUtils._
-import scala.tools.testing.{BytecodeTesting, ClearAfterClass}
 
 @RunWith(classOf[JUnit4])
 class OptimizedBytecodeTest extends BytecodeTesting {

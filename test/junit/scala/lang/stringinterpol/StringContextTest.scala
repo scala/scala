@@ -1,15 +1,14 @@
 
-package scala
+package scala.lang.stringinterpol
 
 import java.text.DecimalFormat
 
-import language.implicitConversions
-
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.language.implicitConversions
 import scala.tools.testing.AssertUtil._
 
 object StringContextTestUtils {
@@ -128,7 +127,7 @@ class StringContextTest {
     val fff  = new java.util.Formattable {
       def formatTo(f: java.util.Formatter, g: Int, w: Int, p: Int) = f.format("4")
     }
-    import java.util.{ Calendar, Locale }
+    import java.util.{Calendar, Locale}
     val c = Calendar.getInstance(Locale.US)
     c.set(2012, Calendar.MAY, 26)
     implicit def strToDate(x: String): Calendar = c
