@@ -1,13 +1,11 @@
 package scala.issues
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.{AfterClass, BeforeClass, Test}
-import org.junit.Assert._
 
-import scala.reflect.runtime._
-import scala.tools.reflect.ToolBox
-import scala.tools.testing.ClearAfterClass
+import scala.tools.testing.RunTesting
 
 object RunTest {
   class VC(val x: Any) extends AnyVal
@@ -15,12 +13,8 @@ object RunTest {
 }
 
 @RunWith(classOf[JUnit4])
-class RunTest extends ClearAfterClass {
-  val toolBox = cached("toolbox", () => universe.runtimeMirror(getClass.getClassLoader).mkToolBox())
-
-  def run[T](code: String): T = {
-    toolBox.eval(toolBox.parse(code)).asInstanceOf[T]
-  }
+class RunTest extends RunTesting {
+  import runner._
 
   @Test
   def classOfValueClassAlias(): Unit = {
