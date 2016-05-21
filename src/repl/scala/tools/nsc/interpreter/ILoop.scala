@@ -908,9 +908,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       // we can get at it in generated code.
       intp.quietBind(NamedParam[IMain]("$intp", intp)(tagOfIMain, classTag[IMain]))
 
-      // add a help function for anyone who types "help" instead of ":help". Easily shadowed.
-      //addHelp()
-
       // Auto-run code via some setting.
       ( replProps.replAutorunCode.option
           flatMap (f => File(f).safeSlurp())
@@ -938,9 +935,24 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         }
       case _ =>
     }
-    // TODO: wait until after startup to enable obnoxious settings
-    def withSuppressedSettings[A](body: =>A): A = {
-      body
+    // wait until after startup to enable noisy settings
+    def withSuppressedSettings[A](body: => A): A = {
+      val ss = this.settings
+      import ss._
+      val noisy = List(Xprint, Ytyperdebug)
+      val noisesome = noisy.exists(!_.isDefault)
+      val current = (Xprint.value, Ytyperdebug.value)
+      if (isReplDebug || !noisesome) body
+      else {
+        this.settings.Xprint.value = List.empty
+        this.settings.Ytyperdebug.value = false
+        try body
+        finally {
+          Xprint.value       = current._1
+          Ytyperdebug.value  = current._2
+          intp.global.printTypings = current._2
+        }
+      }
     }
     def startup(): String = withSuppressedSettings {
       // starting
