@@ -163,29 +163,56 @@ object Iterator {
   }
 
   /** Avoid stack overflows when applying ++ to lots of iterators by
-   *  flattening the unevaluated iterators out into a vector of closures.
+   *  maintaining the unevaluated iterators as chained ConcatIterators.
    */
-  private[scala] final class ConcatIterator[+A](private[this] var current: Iterator[A], initial: Vector[() => Iterator[A]]) extends Iterator[A] {
+  private[scala] final class ConcatIterator[+A](private var current: Iterator[A @uV], initial: Vector[() => Iterator[A]]) extends Iterator[A] {
     @deprecated def this(initial: Vector[() => Iterator[A]]) = this(Iterator.empty, initial) // for binary compatibility
-    private[this] var queue: Vector[() => Iterator[A]] = initial
-    private[this] var currentHasNextChecked = false
+    // two-element cell, the next and rest
+    private var queue: Vector[() => Iterator[A @uV]] = initial
+    private var queueIndex = -1
+    private var currentHasNextChecked = false
+
     // Advance current to the next non-empty iterator
     // current is set to null when all iterators are exhausted
     @tailrec
     private[this] def advance(): Boolean = {
-      if (queue.isEmpty) {
+      if (queueIndex >= 1 || queue(queueIndex + 1) == null) {
         current = null
         false
       }
       else {
-        current = queue.head()
-        queue = queue.tail
-        if (current.hasNext) {
-          currentHasNextChecked = true
-          true
-        } else advance()
+        queueIndex += 1
+        current = queue(queueIndex)()
+        merge()
+
+        currentHasNextChecked || (
+        current.hasNext && {
+            currentHasNextChecked = true
+            true
+          }
+        ) || advance()
       }
     }
+    // If the current iterator is a ConcatIterator, merge it into this one
+    @tailrec
+    private[this] def merge(): Unit = current match {
+      case ci: ConcatIterator[_] =>
+        current = ci.current
+        currentHasNextChecked = ci.currentHasNextChecked
+        val q0 = queue(0)
+        val q1 = queue(1)
+        val c0 = ci.queue(0)
+        val c1 = ci.queue(1)
+        queue = queueIndex match {
+          case -1 => Vector(c0, () => new ConcatIterator(c1(), Vector(q0, q1)))
+          case 0  => Vector(c0, () => new ConcatIterator(Iterator.empty, Vector(c1, q1)))
+          case 1  => Vector(c0, c1)
+        }
+        queueIndex = -1
+        merge()
+      case _ => ()
+    }
+
     def hasNext =
       if (currentHasNextChecked) true
       else if (current eq null) false
@@ -193,6 +220,7 @@ object Iterator {
         currentHasNextChecked = true
         true
       } else advance()
+
     def next()  =
       if (hasNext) {
         currentHasNextChecked = false
@@ -200,7 +228,17 @@ object Iterator {
       } else Iterator.empty.next()
 
     override def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] =
-      new ConcatIterator(current, queue :+ (() => that.toIterator))
+      if (current eq null) new JoinIterator(Iterator.empty, that)
+      else new ConcatIterator(current,
+        queueIndex match {
+          case -1 =>
+            Vector(queue(0), () => new ConcatIterator(Iterator.empty, Vector(queue(1), () => that.toIterator)))
+          case 0  =>
+            Vector(queue(1), () => that.toIterator)
+          case 1  =>
+            Vector(() => that.toIterator, () => Iterator.empty)
+        }
+      )
   }
 
   private[scala] final class JoinIterator[+A](lhs: Iterator[A], that: => GenTraversableOnce[A]) extends Iterator[A] {
@@ -233,7 +271,7 @@ object Iterator {
     }
 
     override def ++[B >: A](that: => GenTraversableOnce[B]) =
-      new ConcatIterator(this, Vector(() => that.toIterator))
+      new ConcatIterator(this, Vector(() => that.toIterator, () => Iterator.empty))
   }
 }
 
