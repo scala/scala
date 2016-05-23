@@ -2,46 +2,38 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import scala.collection.generic.Clearable
-import scala.collection.immutable.IntMap
-import scala.tools.asm.Opcodes._
-import org.junit.Assert._
-
-import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis._
-import scala.tools.nsc.reporters.StoreReporter
-import scala.tools.testing.AssertUtil._
-
-import CodeGenTools._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import AsmUtils._
-import BackendReporting._
 
 import scala.collection.JavaConverters._
-import scala.tools.testing.ClearAfterClass
+import scala.collection.generic.Clearable
+import scala.collection.immutable.IntMap
+import scala.tools.asm.tree._
+import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.nsc.reporters.StoreReporter
+import scala.tools.testing.BytecodeTesting
+import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
-class CallGraphTest extends ClearAfterClass {
-  val compiler = cached("compiler", () => newCompiler(extraArgs = "-Yopt:inline-global -Yopt-warnings")
-  )
-  import compiler.genBCode.bTypes
+class CallGraphTest extends BytecodeTesting {
+  override def compilerArgs = "-Yopt:inline-global -Yopt-warnings"
+  import compiler._
+  import global.genBCode.bTypes
   val notPerRun: List[Clearable] = List(
     bTypes.classBTypeFromInternalName,
     bTypes.byteCodeRepository.compilingClasses,
     bTypes.byteCodeRepository.parsedClasses,
     bTypes.callGraph.callsites)
-  notPerRun foreach compiler.perRunCaches.unrecordCache
+  notPerRun foreach global.perRunCaches.unrecordCache
 
-  import compiler.genBCode.bTypes._
+  import global.genBCode.bTypes._
   import callGraph._
 
   def compile(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
     notPerRun.foreach(_.clear())
-    compileClasses(compiler)(code, allowMessage = allowMessage).map(c => byteCodeRepository.classNode(c.name).get)
+    compileClasses(code, allowMessage = allowMessage).map(c => byteCodeRepository.classNode(c.name).get)
   }
 
   def callsInMethod(methodNode: MethodNode): List[MethodInsnNode] = methodNode.instructions.iterator.asScala.collect({
@@ -112,10 +104,10 @@ class CallGraphTest extends ClearAfterClass {
     val List(cCls, cMod, dCls, testCls) = compile(code, checkMsg)
     assert(msgCount == 6, msgCount)
 
-    val List(cf1, cf2, cf3, cf4, cf5, cf6, cf7) = findAsmMethods(cCls, _.startsWith("f"))
-    val List(df1, df3) = findAsmMethods(dCls, _.startsWith("f"))
-    val g1 = findAsmMethod(cMod, "g1")
-    val List(t1, t2) = findAsmMethods(testCls, _.startsWith("t"))
+    val List(cf1, cf2, cf3, cf4, cf5, cf6, cf7) = getAsmMethods(cCls, _.startsWith("f"))
+    val List(df1, df3) = getAsmMethods(dCls, _.startsWith("f"))
+    val g1 = getAsmMethod(cMod, "g1")
+    val List(t1, t2) = getAsmMethods(testCls, _.startsWith("t"))
 
     val List(cf1Call, cf2Call, cf3Call, cf4Call, cf5Call, cf6Call, cf7Call, cg1Call) = callsInMethod(t1)
     val List(df1Call, df2Call, df3Call, df4Call, df5Call, df6Call, df7Call, dg1Call) = callsInMethod(t2)
@@ -151,7 +143,7 @@ class CallGraphTest extends ClearAfterClass {
         |}
       """.stripMargin
     val List(c) = compile(code)
-    val m = findAsmMethod(c, "m")
+    val m = getAsmMethod(c, "m")
     val List(fn) = callsInMethod(m)
     val forNameMeth = byteCodeRepository.methodNode("java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;").get._1
     val classTp = classBTypeFromInternalName("java/lang/Class")

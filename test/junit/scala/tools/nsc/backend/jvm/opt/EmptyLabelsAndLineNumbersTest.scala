@@ -2,16 +2,16 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import scala.tools.asm.Opcodes._
-import org.junit.Assert._
-import scala.tools.testing.AssertUtil._
 
-import CodeGenTools._
+import scala.tools.asm.Opcodes._
 import scala.tools.partest.ASMConverters
-import ASMConverters._
+import scala.tools.partest.ASMConverters._
+import scala.tools.testing.AssertUtil._
+import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class EmptyLabelsAndLineNumbersTest {

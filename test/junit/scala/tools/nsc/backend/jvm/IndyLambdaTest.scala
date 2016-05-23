@@ -1,21 +1,19 @@
 package scala.tools.nsc.backend.jvm
 
 import org.junit.Assert._
-import org.junit.{Assert, Test}
+import org.junit.Test
 
-import scala.tools.asm.{Handle, Opcodes}
-import scala.tools.asm.tree.InvokeDynamicInsnNode
-import scala.tools.nsc.backend.jvm.AsmUtils._
-import scala.tools.nsc.backend.jvm.CodeGenTools._
-import scala.tools.testing.ClearAfterClass
 import scala.collection.JavaConverters._
+import scala.tools.asm.Handle
+import scala.tools.asm.tree.InvokeDynamicInsnNode
+import scala.tools.testing.BytecodeTesting
 
-class IndyLambdaTest extends ClearAfterClass {
-  val compiler = cached("compiler", () => newCompiler())
+class IndyLambdaTest extends BytecodeTesting {
+  import compiler._
 
   @Test def boxingBridgeMethodUsedSelectively(): Unit = {
     def implMethodDescriptorFor(code: String): String = {
-      val method = compileMethods(compiler)(s"""def f = $code """).find(_.name == "f").get
+      val method = compileAsmMethods(s"""def f = $code """).find(_.name == "f").get
       val x = method.instructions.iterator.asScala.toList
       x.flatMap {
         case insn : InvokeDynamicInsnNode => insn.bsmArgs.collect { case h : Handle => h.getDesc }
@@ -48,17 +46,17 @@ class IndyLambdaTest extends ClearAfterClass {
     assertEquals("(I)I", implMethodDescriptorFor("(x: Int) => x"))
 
     // non-builtin sams are like specialized functions
-    compileClasses(compiler)("class VC(private val i: Int) extends AnyVal; trait FunVC { def apply(a: VC): VC }")
+    compileToBytes("class VC(private val i: Int) extends AnyVal; trait FunVC { def apply(a: VC): VC }")
     assertEquals("(I)I", implMethodDescriptorFor("((x: VC) => x): FunVC"))
 
-    compileClasses(compiler)("trait Fun1[T, U] { def apply(a: T): U }")
+    compileToBytes("trait Fun1[T, U] { def apply(a: T): U }")
     assertEquals(s"($obj)$str", implMethodDescriptorFor("(x => x.toString): Fun1[Int, String]"))
     assertEquals(s"($obj)$obj", implMethodDescriptorFor("(x => println(x)): Fun1[Int, Unit]"))
     assertEquals(s"($obj)$str", implMethodDescriptorFor("((x: VC) => \"\") : Fun1[VC, String]"))
     assertEquals(s"($str)$obj", implMethodDescriptorFor("((x: String) => new VC(0)) : Fun1[String, VC]"))
 
-    compileClasses(compiler)("trait Coll[A, Repr] extends Any")
-    compileClasses(compiler)("final class ofInt(val repr: Array[Int]) extends AnyVal with Coll[Int, Array[Int]]")
+    compileToBytes("trait Coll[A, Repr] extends Any")
+    compileToBytes("final class ofInt(val repr: Array[Int]) extends AnyVal with Coll[Int, Array[Int]]")
 
     assertEquals(s"([I)$obj", implMethodDescriptorFor("((xs: Array[Int]) => new ofInt(xs)): Array[Int] => Coll[Int, Array[Int]]"))
   }

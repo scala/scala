@@ -2,36 +2,31 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import scala.collection.generic.Clearable
-import org.junit.Assert._
-
-import CodeGenTools._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import AsmUtils._
-import scala.tools.testing.ClearAfterClass
-
-import BackendReporting._
 
 import scala.collection.JavaConverters._
+import scala.collection.generic.Clearable
+import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.testing.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
-class InlineInfoTest extends ClearAfterClass {
-  val compiler = cached("compiler", () => newCompiler(extraArgs = "-Yopt:l:classpath"))
+class InlineInfoTest extends BytecodeTesting {
+  import compiler.global
+  import global.genBCode.bTypes
 
-  import compiler.genBCode.bTypes
+  override def compilerArgs = "-Yopt:l:classpath"
+
   def notPerRun: List[Clearable] = List(
     bTypes.classBTypeFromInternalName,
     bTypes.byteCodeRepository.compilingClasses,
     bTypes.byteCodeRepository.parsedClasses)
-  notPerRun foreach compiler.perRunCaches.unrecordCache
+  notPerRun foreach global.perRunCaches.unrecordCache
 
   def compile(code: String) = {
     notPerRun.foreach(_.clear())
-    compileClasses(compiler)(code)
+    compiler.compileClasses(code)
   }
 
   @Test
@@ -55,11 +50,11 @@ class InlineInfoTest extends ClearAfterClass {
       """.stripMargin
     val classes = compile(code)
 
-    val fromSyms = classes.map(c => compiler.genBCode.bTypes.classBTypeFromInternalName(c.name).info.get.inlineInfo)
+    val fromSyms = classes.map(c => global.genBCode.bTypes.classBTypeFromInternalName(c.name).info.get.inlineInfo)
 
     val fromAttrs = classes.map(c => {
       assert(c.attrs.asScala.exists(_.isInstanceOf[InlineInfoAttribute]), c.attrs)
-      compiler.genBCode.bTypes.inlineInfoFromClassfile(c)
+      global.genBCode.bTypes.inlineInfoFromClassfile(c)
     })
 
     assert(fromSyms == fromAttrs)

@@ -2,34 +2,19 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import scala.collection.generic.Clearable
-import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.BatchSourceFile
+
 import scala.tools.asm.Opcodes._
-import org.junit.Assert._
-
-import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis._
-import scala.tools.nsc.io._
-import scala.tools.nsc.reporters.StoreReporter
-import scala.tools.testing.AssertUtil._
-
-import CodeGenTools._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import AsmUtils._
-
-import BackendReporting._
-
-import scala.collection.JavaConverters._
-import scala.tools.testing.ClearAfterClass
+import scala.tools.partest.ASMConverters._
+import scala.tools.testing.BytecodeTesting
+import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
-class ClosureOptimizerTest extends ClearAfterClass {
-  val compiler = cached("compiler", () => newCompiler(extraArgs = "-Yopt:l:classpath -Yopt-warnings:_"))
+class ClosureOptimizerTest extends BytecodeTesting {
+  override def compilerArgs = "-Yopt:l:classpath -Yopt-warnings:_"
+  import compiler._
 
   @Test
   def nothingTypedClosureBody(): Unit = {
@@ -41,9 +26,9 @@ class ClosureOptimizerTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val List(c) = compileClasses(compiler)(code)
-    val t = findAsmMethod(c, "t")
-    val List(bodyCall) = findInstr(t, "INVOKESTATIC C.C$$$anonfun$1 ()Lscala/runtime/Nothing$")
+    val c = compileClass(code)
+    val t = getAsmMethod(c, "t")
+    val bodyCall = findInstr(t, "INVOKESTATIC C.C$$$anonfun$1 ()Lscala/runtime/Nothing$")
     assert(bodyCall.getNext.getOpcode == ATHROW)
   }
 
@@ -57,9 +42,9 @@ class ClosureOptimizerTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val List(c) = compileClasses(compiler)(code)
-    val t = findAsmMethod(c, "t")
-    val List(bodyCall) = findInstr(t, "INVOKESTATIC C.C$$$anonfun$1 ()Lscala/runtime/Null$")
+    val c = compileClass(code)
+    val t = getAsmMethod(c, "t")
+    val bodyCall = findInstr(t, "INVOKESTATIC C.C$$$anonfun$1 ()Lscala/runtime/Null$")
     assert(bodyCall.getNext.getOpcode == POP)
     assert(bodyCall.getNext.getNext.getOpcode == ACONST_NULL)
   }
@@ -74,8 +59,8 @@ class ClosureOptimizerTest extends ClearAfterClass {
         |  }
         |}
       """.stripMargin
-    val List(c) = compileClasses(compiler)(code)
-    assertSameCode(getSingleMethod(c, "t"),
+    val c = compileClass(code)
+    assertSameCode(getMethod(c, "t"),
       List(VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "scala/collection/immutable/List", "head", "()Ljava/lang/Object;", false),
         TypeOp(CHECKCAST, "java/lang/String"), Invoke(INVOKESTATIC, "C", "C$$$anonfun$1", "(Ljava/lang/String;)Ljava/lang/String;", false),
         Op(ARETURN)))
@@ -95,7 +80,7 @@ class ClosureOptimizerTest extends ClearAfterClass {
         |  }
         |}
       """.stripMargin
-    val List(c) = compileClasses(compiler)(code)
-    assertSameSummary(getSingleMethod(c, "t"), List(NEW, DUP, LDC, "<init>", ATHROW))
+    val c = compileClass(code)
+    assertSameSummary(getMethod(c, "t"), List(NEW, DUP, LDC, "<init>", ATHROW))
   }
 }

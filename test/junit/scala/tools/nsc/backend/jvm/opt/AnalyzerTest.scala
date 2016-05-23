@@ -2,28 +2,21 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import org.junit.Assert._
 
-import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
-import scala.tools.nsc.backend.jvm.analysis.{AliasingFrame, AliasingAnalyzer}
-
-import CodeGenTools._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import AsmUtils._
-import BackendReporting._
-import BytecodeUtils._
-
-import scala.collection.JavaConverters._
-import scala.tools.testing.ClearAfterClass
+import scala.tools.nsc.backend.jvm.analysis.{AliasingAnalyzer, AliasingFrame}
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
+import scala.tools.testing.BytecodeTesting
+import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
-class AnalyzerTest extends ClearAfterClass {
-  val noOptCompiler = cached("compiler", () => newCompiler(extraArgs = "-Yopt:l:none"))
+class AnalyzerTest extends BytecodeTesting {
+  override def compilerArgs = "-Yopt:l:none"
+  import compiler._
 
   @Test
   def aliasingOfPrimitives(): Unit = {
@@ -39,17 +32,17 @@ class AnalyzerTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val List(c) = compileClasses(noOptCompiler)(code)
+    val c = compileClass(code)
     val a = new AliasingAnalyzer(new BasicInterpreter)
-    val f = findAsmMethod(c, "f")
+    val f = getAsmMethod(c, "f")
     a.analyze("C", f)
 
-    val List(_, i2l) = findInstr(f, "I2L")
+    val List(_, i2l) = findInstrs(f, "I2L")
     val aliasesAtI2l = a.frameAt(i2l, f).asInstanceOf[AliasingFrame[_]].aliases
     assertEquals(aliasesAtI2l(1).iterator.toList, List(1, 8, 9)) // a, e and stack top
     assertEquals(aliasesAtI2l(4).iterator.toList, List(4, 6))
 
-    val List(add) = findInstr(f, "LADD")
+    val add = findInstr(f, "LADD")
     val aliasesAtAdd = a.frameAt(add, f).asInstanceOf[AliasingFrame[_]].aliases
     assertEquals(aliasesAtAdd(1).iterator.toList, List(1, 8)) // after i2l the value on the stack is no longer an alias
     assertEquals(aliasesAtAdd(4).iterator.toList, List(4, 6, 10)) // c, d and stack top
