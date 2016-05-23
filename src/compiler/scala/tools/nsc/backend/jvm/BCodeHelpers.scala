@@ -76,7 +76,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     val origOwner = sym.originalOwner
     // phase travel necessary: after flatten, the name includes the name of outer classes.
     // if some outer name contains $anon, a non-anon class is considered anon.
-    if (delambdafyInline() && sym.rawowner.isAnonymousFunction) {
+    if (delambdafyInline() && exitingPickler(sym.rawowner.isAnonymousFunction)) {
       // SI-9105: special handling for anonymous functions under delambdafy:inline.
       //
       //   class C { def t = () => { def f { class Z } } }

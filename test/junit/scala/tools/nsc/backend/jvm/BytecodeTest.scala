@@ -1,5 +1,6 @@
 package scala.tools.nsc.backend.jvm
 
+import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -136,5 +137,35 @@ class BytecodeTest extends BytecodeTesting {
       Label(10), Op(ICONST_1), Jump(GOTO, Label(17)),
       Label(14), Op(ICONST_0),
       Label(17), Op(IRETURN)))
+  }
+
+  @Test // wrong local variable table for methods containing while loops
+  def t9179(): Unit = {
+    val code =
+      """class C {
+        |  def t(): Unit = {
+        |    var x = ""
+        |    while (x != null) {
+        |      foo()
+        |      x = null
+        |    }
+        |    bar()
+        |  }
+        |  def foo(): Unit = ()
+        |  def bar(): Unit = ()
+        |}
+      """.stripMargin
+    val c = compileClass(code)
+    val t = getMethod(c, "t")
+    val isFrameLine = (x: Instruction) => x.isInstanceOf[FrameEntry] || x.isInstanceOf[LineNumber]
+    assertSameCode(t.instructions.filterNot(isFrameLine), List(
+      Label(0), Ldc(LDC, ""), Label(3), VarOp(ASTORE, 1),
+      Label(5), VarOp(ALOAD, 1), Jump(IFNULL, Label(21)),
+      Label(10), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "foo", "()V", false), Label(14), Op(ACONST_NULL), VarOp(ASTORE, 1), Label(18), Jump(GOTO, Label(5)),
+      Label(21), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "bar", "()V", false), Label(26), Op(RETURN), Label(28)))
+    val labels = t.instructions collect { case l: Label => l }
+    val x = t.localVars.find(_.name == "x").get
+    assertEquals(x.start, labels(1))
+    assertEquals(x.end, labels(7))
   }
 }

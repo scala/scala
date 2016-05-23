@@ -1503,4 +1503,27 @@ class InlinerTest extends BytecodeTesting {
     assertNoIndy(t)
     assertInvoke(t, "C", "C$$$anonfun$1")
   }
+
+  @Test
+  def t9121(): Unit = {
+    val codes = List(
+      """package p1
+        |object Implicits {
+        |  class ScalaObservable(val underlying: Any) extends AnyVal {
+        |    @inline def scMap[R](f: String): Any = f.toRx
+        |  }
+        |  implicit class RichFunction1[T1, R](val f: String) extends AnyVal {
+        |    def toRx: Any = ""
+        |  }
+        |}
+      """.stripMargin,
+      """
+        |import p1.Implicits._
+        |class C {
+        |  def t(): Unit = new ScalaObservable("").scMap("")
+        |}
+      """.stripMargin)
+    val c :: _ = compileClassesSeparately(codes, extraArgs = compilerArgs)
+    assertInvoke(getMethod(c, "t"), "p1/Implicits$RichFunction1$", "toRx$extension")
+  }
 }
