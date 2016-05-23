@@ -66,7 +66,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     def p_swap(a: Int, b: Int) = super.swap(a, b)
   }
 
-  protected[this] override def newBuilder = new PriorityQueue[A]
+  protected[this] override def newBuilder = PriorityQueue.newBuilder[A]
 
   private val resarr = new ResizableArrayAccess[A]
 
@@ -89,14 +89,15 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     }
   }
 
-  protected def fixDown(as: Array[AnyRef], m: Int, n: Int): Unit = {
+  protected def fixDown(as: Array[AnyRef], m: Int, n: Int): Boolean = {
+    // returns true if any swaps were done (used in heapify)
     var k: Int = m
     while (n >= 2 * k) {
       var j = 2 * k
       if (j < n && toA(as(j)) < toA(as(j + 1)))
         j += 1
       if (toA(as(k)) >= toA(as(j)))
-        return
+        return k != m
       else {
         val h = as(k)
         as(k) = as(j)
@@ -104,6 +105,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
         k = j
       }
     }
+    k != m
   }
 
   /** Inserts a single element into the priority queue.
@@ -117,6 +119,66 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     fixUp(resarr.p_array, resarr.p_size0)
     resarr.p_size0 += 1
     this
+  }
+
+  override def ++=(xs: TraversableOnce[A]): this.type = {
+    val from = resarr.p_size0
+    for (x <- xs) unsafeAdd(x)
+    heapify(from)
+    this
+  }
+
+  private def unsafeAdd(elem: A): Unit = {
+    // like += but skips fixUp, which breaks the ordering invariant
+    // a series of unsafeAdds MUST be followed by heapify
+    resarr.p_ensureSize(resarr.p_size0 + 1)
+    resarr.p_array(resarr.p_size0) = elem.asInstanceOf[AnyRef]
+    resarr.p_size0 += 1
+  }
+
+  private def heapify(from: Int): Unit = {
+    // elements at indices 1..from-1 were already in heap order before any adds
+    // elements at indices from..n are newly added, their order must be fixed
+    val n = length
+
+    if (from <= 2) {
+      // no pre-existing order to maintain, do the textbook heapify algorithm
+      for (i <- n/2 to 1 by -1) fixDown(resarr.p_array, i, n)
+    }
+    else if (n - from < 4) {
+      // for very small adds, doing the simplest fix is faster
+      for (i <- from to n) fixUp(resarr.p_array, i)
+    }
+    else {
+      var min = from/2 // tracks the minimum element in the queue
+      val queue = scala.collection.mutable.Queue[Int](min)
+
+      // do fixDown on the parents of all the new elements
+      // except the parent of the first new element, which is in the queue
+      // (that parent is treated specially because it might be the root)
+      for (i <- n/2 until min by -1) {
+        if (fixDown(resarr.p_array, i, n)) {
+          // there was a swap, so also need to fixDown i's parent
+          val parent = i/2
+          if (parent < min) { // make sure same parent isn't added twice
+            min = parent
+            queue += parent
+          }
+        }
+      }
+
+      while (queue.nonEmpty) {
+        val i = queue.dequeue()
+        if (fixDown(resarr.p_array, i, n)) {
+          val parent = i/2
+          if (parent < min && parent > 0) {
+            // the "parent > 0" is to avoid adding the parent of the root
+            min = parent
+            queue += parent
+          }
+        }
+      }
+    }
   }
 
   /** Adds all elements provided by a `TraversableOnce` object
@@ -142,9 +204,11 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
   def dequeue(): A =
     if (resarr.p_size0 > 1) {
       resarr.p_size0 = resarr.p_size0 - 1
-      resarr.p_swap(1, resarr.p_size0)
+      val result = resarr.p_array(1)
+      resarr.p_array(1) = resarr.p_array(resarr.p_size0)
+      resarr.p_array(resarr.p_size0) = null // erase reference from array
       fixDown(resarr.p_array, 1, resarr.p_size0 - 1)
-      toA(resarr.p_array(resarr.p_size0))
+      toA(result)
     } else
       throw new NoSuchElementException("no element to remove from heap")
 
@@ -186,24 +250,33 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     }
   }
 
-  /** Returns the reverse of this queue. The priority queue that gets
-   *  returned will have an inversed ordering - if for some elements
-   *  `x` and `y` the original queue's ordering
-   *  had `compare` returning an integer ''w'', the new one will return ''-w'',
-   *  assuming the original ordering abides its contract.
+  /** Returns the reverse of this priority queue. The new priority queue has
+   *  the same elements as the original, but the opposite ordering.
    *
-   *  Note that the order of the elements will be reversed unless the
-   *  `compare` method returns 0. In this case, such elements
-   *  will be subsequent, but their corresponding subinterval may be inappropriately
-   *  reversed. However, due to the compare-equals contract, they will also be equal.
+   *  For example, the element with the highest priority in `pq` has the lowest
+   *  priority in `pq.reverse`, and vice versa.
    *
-   *  @return   A reversed priority queue.
+   *  Ties are handled arbitrarily.  Elements with equal priority may or
+   *  may not be reversed with respect to each other.
+   *
+   *  @return   the reversed priority queue.
    */
   def reverse = {
     val revq = new PriorityQueue[A]()(ord.reverse)
-    for (i <- 1 until resarr.length) revq += resarr(i)
+    // copy the existing data into the new array backwards
+    // this won't put it exactly into the correct order,
+    // but will require less fixing than copying it in
+    // the original order
+    val n = resarr.p_size0
+    revq.resarr.p_ensureSize(n)
+    revq.resarr.p_size0 = n
+    val from = resarr.p_array
+    val to = revq.resarr.p_array
+    for (i <- 1 until n) to(i) = from(n-i)
+    revq.heapify(1)
     revq
   }
+
 
   /** Returns an iterator which yields all the elements in the reverse order
    *  than that returned by the method `iterator`.
@@ -254,12 +327,27 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
    *
    *  @return  a priority queue with the same elements.
    */
-  override def clone(): PriorityQueue[A] = new PriorityQueue[A] ++= this.iterator
+  override def clone(): PriorityQueue[A] = {
+    val pq = new PriorityQueue[A]
+    val n = resarr.p_size0
+    pq.resarr.p_ensureSize(n)
+    pq.resarr.p_size0 = n
+    scala.compat.Platform.arraycopy(resarr.p_array, 1, pq.resarr.p_array, 1, n-1)
+    pq
+  }
 }
 
 
 object PriorityQueue extends OrderedTraversableFactory[PriorityQueue] {
-  def newBuilder[A](implicit ord: Ordering[A]) = new PriorityQueue[A]
+  def newBuilder[A](implicit ord: Ordering[A]): Builder[A, PriorityQueue[A]] = {
+    new Builder[A, PriorityQueue[A]] {
+      val pq = new PriorityQueue[A]
+      def +=(elem: A): this.type = { pq.unsafeAdd(elem); this }
+      def result(): PriorityQueue[A] = { pq.heapify(1); pq }
+      def clear(): Unit = pq.clear()
+    }
+  }
+
   implicit def canBuildFrom[A](implicit ord: Ordering[A]): CanBuildFrom[Coll, A, PriorityQueue[A]] = new GenericCanBuildFrom[A]
 }
 
