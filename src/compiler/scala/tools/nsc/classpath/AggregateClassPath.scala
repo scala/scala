@@ -6,6 +6,7 @@ package scala.tools.nsc.classpath
 import java.net.URL
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
+import scala.reflect.internal.FatalError
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.util.ClassRepresentation
@@ -72,7 +73,16 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
     getDistinctEntries(_.sources(inPackage))
 
   override private[nsc] def list(inPackage: String): ClassPathEntries = {
-    val (packages, classesAndSources) = aggregates.map(_.list(inPackage)).unzip
+    val (packages, classesAndSources) = aggregates.map { cp =>
+      try {
+        cp.list(inPackage)
+      } catch {
+        case ex: java.io.IOException =>
+          val e = new FatalError(ex.getMessage)
+          e.initCause(ex)
+          throw e
+      }
+    }.unzip
     val distinctPackages = packages.flatten.distinct
     val distinctClassesAndSources = mergeClassesAndSources(classesAndSources: _*)
     ClassPathEntries(distinctPackages, distinctClassesAndSources)
