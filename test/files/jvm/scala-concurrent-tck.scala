@@ -90,6 +90,25 @@ trait FutureCallbacks extends TestBase {
     promise.success(-1)
   }
 
+  def stressTestNumberofCallbacks(): Unit = once {
+    done =>
+      val promise = Promise[Unit]
+      val otherPromise = Promise[Unit]
+      def attachMeaninglessCallbacksTo(f: Future[Any]): Unit = (1 to 1000).foreach(_ => f.onComplete(_ => ()))
+      attachMeaninglessCallbacksTo(promise.future)
+      val future = promise.future.flatMap { _ =>
+        attachMeaninglessCallbacksTo(otherPromise.future)
+        otherPromise.future
+      }
+      val numbers = new java.util.concurrent.ConcurrentHashMap[Int, Unit]()
+      (0 to 10000) foreach { x => numbers.put(x, ()) }
+      Future.sequence((0 to 10000) map { x => future.andThen({ case _ => numbers.remove(x) }) }) onComplete {
+        _ => done(numbers.isEmpty)
+      }
+      promise.success(())
+      otherPromise.success(())
+  }
+
   testOnSuccess()
   testOnSuccessWhenCompleted()
   testOnSuccessWhenFailed()
@@ -100,6 +119,7 @@ trait FutureCallbacks extends TestBase {
   //testOnFailureWhenSpecialThrowable(7, new InterruptedException)
   testThatNestedCallbacksDoNotYieldStackOverflow()
   testOnFailureWhenTimeoutException()
+  stressTestNumberofCallbacks()
 }
 
 
@@ -283,6 +303,16 @@ def testTransformFailure(): Unit = once {
       g onFailure { case t => done(t.getMessage() == "expected") }
   }
 
+  def testFlatMapDelayed(): Unit = once {
+    done =>
+      val f = Future { 5 }
+      val p = Promise[Int]
+      val g = f flatMap { _ => p.future }
+      g onSuccess { case x => done(x == 10) }
+      g onFailure { case _ => done(false) }
+      p.success(10)
+  }
+
   def testFilterSuccess(): Unit = once {
     done =>
       val f = Future { 4 }
@@ -458,6 +488,7 @@ def testTransformFailure(): Unit = once {
   testMapFailure()
   testFlatMapSuccess()
   testFlatMapFailure()
+  testFlatMapDelayed()
   testFilterSuccess()
   testFilterFailure()
   testCollectSuccess()
