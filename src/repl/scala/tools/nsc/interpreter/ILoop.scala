@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2015 LAMP/EPFL
+ * Copyright 2005-2016 LAMP/EPFL
  * @author Alexander Spoon
  */
 package scala
@@ -15,7 +15,7 @@ import scala.tools.asm.ClassReader
 import scala.util.Properties.{ jdkHome, javaVersion, versionString, javaVmName }
 import scala.tools.nsc.util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
 import scala.reflect.classTag
-import scala.reflect.internal.util.{ BatchSourceFile, ScalaClassLoader }
+import scala.reflect.internal.util.{ BatchSourceFile, ScalaClassLoader, NoPosition }
 import ScalaClassLoader._
 import scala.reflect.io.{ File, Directory }
 import scala.tools.util._
@@ -181,9 +181,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     out.flush()
   }
   // turn off intp reporter and our echo
-  def mumly[A](op: =>A): A =
+  def mumly[A](op: => A): A =
     if (isReplDebug) op
-    else intp beSilentDuring {
+    else intp beQuietDuring {
       val saved = mum
       mum = true
       try op finally mum = saved
@@ -576,9 +576,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
   }
 
-  def withFile[A](filename: String)(action: File => A): Option[A] = {
+  def withFile[A](filename: String)(action: File => A): Option[A] = intp.withLabel(filename) {
     val res = Some(File(filename)) filter (_.exists) map action
-    if (res.isEmpty) echo("That file does not exist")  // courtesy side-effect
+    if (res.isEmpty) intp.reporter.warning(NoPosition, s"File `$filename' does not exist.")  // courtesy side-effect
     res
   }
 
@@ -715,6 +715,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
    */
   def pasteCommand(arg: String): Result = {
     var shouldReplay: Option[String] = None
+    var label = "<pastie>"
     def result = Result(keepRunning = true, shouldReplay)
     val (raw, file, margin) =
       if (arg.isEmpty) (false, None, None)
@@ -735,6 +736,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       }
     val code = (file, margin) match {
       case (Some(name), None) =>
+        label = name
         withFile(name) { f =>
           shouldReplay = Some(s":paste $arg")
           val s = f.slurp.trim
@@ -757,17 +759,17 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         text
     }
     def interpretCode() = {
-      val res = intp interpret code
+      val res = intp.withLabel(label)(intp interpret code)
       // if input is incomplete, let the compiler try to say why
       if (res == IR.Incomplete) {
         echo("The pasted code is incomplete!\n")
         // Remembrance of Things Pasted in an object
-        val errless = intp compileSources new BatchSourceFile("<pastie>", s"object pastel {\n$code\n}")
+        val errless = intp compileSources new BatchSourceFile(label, s"object pastel {\n$code\n}")
         if (errless) echo("...but compilation found no error? Good luck with that.")
       }
     }
     def compileCode() = {
-      val errless = intp compileSources new BatchSourceFile("<pastie>", code)
+      val errless = intp compileSources new BatchSourceFile(label, code)
       if (!errless) echo("There were compilation errors!")
     }
     if (code.nonEmpty) {
