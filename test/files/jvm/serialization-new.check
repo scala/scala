@@ -97,12 +97,12 @@ x = Queue(a, b, c)
 y = Queue(a, b, c)
 x equals y: true, y equals x: true
 
-x = Range(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
-y = Range(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+x = Range 0 until 10
+y = Range 0 until 10
 x equals y: true, y equals x: true
 
-x = NumericRange(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
-y = NumericRange(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+x = NumericRange 0 until 10
+y = NumericRange 0 until 10
 x equals y: true, y equals x: true
 
 x = Map(1 -> A, 2 -> B, 3 -> C)

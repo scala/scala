@@ -396,22 +396,20 @@ extends scala.collection.AbstractSeq[Int]
     case _ =>
       super.equals(other)
   }
-  /** Note: hashCode can't be overridden without breaking Seq's
-   *  equals contract.
-   */
 
-  override def toString() = {
-    val endStr =
-      if (numRangeElements > Range.MAX_PRINT || (!isEmpty && numRangeElements < 0)) ", ... )" else ")"
-    take(Range.MAX_PRINT).mkString("Range(", ", ", endStr)
+  /* Note: hashCode can't be overridden without breaking Seq's equals contract. */
+
+  override def toString = {
+    val preposition = if (isInclusive) "to" else "until"
+    val stepped = if (step == 1) "" else s" by $step"
+    val prefix = if (isEmpty) "empty " else if (!isExact) "inexact " else ""
+    s"${prefix}Range $start $preposition $end$stepped"
   }
 }
 
 /** A companion object for the `Range` class.
  */
 object Range {
-  private[immutable] val MAX_PRINT = 512  // some arbitrary value
-
   /** Counts the number of range elements.
    *  @pre  step != 0
    *  If the size of the range exceeds Int.MaxValue, the
@@ -514,6 +512,7 @@ object Range {
   // we offer a partially constructed object.
   class Partial[T, U](private val f: T => U) extends AnyVal {
     def by(x: T): U = f(x)
+    override def toString = "Range requires step"
   }
 
   // Illustrating genericity with Int Range, which should have the same behavior
