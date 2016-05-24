@@ -1257,7 +1257,6 @@ trait Infer extends Checkable {
       def isFreeTypeParamOfTerm(sym: Symbol) = (
         sym.isAbstractType
           && sym.owner.isTerm
-          && !sym.info.bounds.exists(_.typeParams.nonEmpty)
         )
 
       // Intentionally *not* using `Type#typeSymbol` here, which would normalize `tp`
