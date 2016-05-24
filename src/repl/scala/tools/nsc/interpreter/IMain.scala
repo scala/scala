@@ -1191,7 +1191,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       var isIncomplete = false
       def parse = {
         reporter.reset()
-        val trees = newUnitParser(line).parseStats()
+        val trees = newUnitParser(line, label).parseStats()
         if (reporter.hasErrors) Error(trees)
         else if (isIncomplete) Incomplete(trees)
         else Success(trees)
