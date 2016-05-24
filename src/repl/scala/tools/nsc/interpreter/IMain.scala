@@ -614,7 +614,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     bindRep.compile(s"""
         |object ${bindRep.evalName} {
         |  var value: $boundType = _
-        |  def set(x: Any) = value = x.asInstanceOf[$boundType]
+        |  def set(x: _root_.scala.Any) = value = x.asInstanceOf[$boundType]
         |}
       """.stripMargin
     )
@@ -882,7 +882,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     }
 
     class ClassBasedWrapper extends Wrapper {
-      def preambleHeader = "class %s extends Serializable { "
+      def preambleHeader = "class %s extends _root_.java.io.Serializable { "
 
       /** Adds an object that instantiates the outer wrapping class. */
       def postamble  = s"""
@@ -915,7 +915,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       val preamble = """
       |object %s {
       |  %s
-      |  lazy val %s: String = %s {
+      |  lazy val %s: _root_.java.lang.String = %s {
       |    %s
       |    (""
       """.stripMargin.format(

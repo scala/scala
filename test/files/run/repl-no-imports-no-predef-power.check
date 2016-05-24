@@ -1,0 +1,29 @@
+
+scala> :power
+Power mode enabled. :phase is at typer.
+import scala.tools.nsc._, intp.global._, definitions._
+Try :help or completions for vals._ and power._
+
+scala> // guarding against "error: reference to global is ambiguous"
+
+scala> global.emptyValDef  // "it is imported twice in the same scope by ..."
+warning: there was one deprecation warning; re-run with -deprecation for details
+res0: $r.global.noSelfType.type = private val _ = _
+
+scala> val tp = ArrayClass[scala.util.Random]    // magic with tags
+warning: there was one feature warning; re-run with -feature for details
+tp: $r.global.Type = Array[scala.util.Random]
+
+scala> tp.memberType(Array_apply)                // evidence
+res1: $r.global.Type = (i: Int)scala.util.Random
+
+scala> val m = LIT(10)                           // treedsl
+m: $r.treedsl.global.Literal = 10
+
+scala> typed(m).tpe                              // typed is in scope
+res2: $r.treedsl.global.Type = Int(10)
+
+scala> """escaping is hard, m'kah"""
+res3: String = escaping is hard, m'kah
+
+scala> :quit

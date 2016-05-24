@@ -42,7 +42,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
         val adjusted = contextual.map { n =>
             val valname = n.decodedName
             s"""def `$valname` = $ctx.`$valname`
-                def `${valname}_=`(x: Object) = $ctx.`$valname` = x"""
+                def `${valname}_=`(x: _root_.java.lang.Object) = $ctx.`$valname` = x"""
           }.mkString(preamble, "\n", "\n")
         ComputedImports(header, adjusted, trailer, path)
       }
@@ -87,30 +87,32 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
 
   if (intp.isInitializeComplete) {
     // compile the dynamic ScriptContext object holder
-    scriptContextRep compile s"""
-      |import javax.script._
+    val ctxRes = scriptContextRep compile s"""
+      |import _root_.javax.script._
       |object ${scriptContextRep.evalName} {
       |  var value: ScriptContext = _
-      |  def set(x: Any) = value = x.asInstanceOf[ScriptContext]
+      |  def set(x: _root_.scala.Any) = value = x.asInstanceOf[ScriptContext]
       |}
     """.stripMargin
+    if (!ctxRes) throw new ScriptException("Failed to compile ctx")
     dynamicContext = getContext
 
     // Bridge dynamic references and script context
-    intp compileString s"""
+    val dynRes = intp compileString s"""
      |package scala.tools.nsc.interpreter
-     |import language.dynamics
-     |import javax.script._, ScriptContext.ENGINE_SCOPE
-     |object dynamicBindings extends Dynamic {
+     |import _root_.scala.language.dynamics
+     |import _root_.javax.script._, ScriptContext.ENGINE_SCOPE
+     |object dynamicBindings extends _root_.scala.Dynamic {
      |  def context: ScriptContext = ${ scriptContextRep.evalPath }.value
      |  // $ctx.x retrieves the attribute x
-     |  def selectDynamic(field: String): Object = context.getAttribute(field)
+     |  def selectDynamic(field: _root_.java.lang.String): _root_.java.lang.Object = context.getAttribute(field)
      |  // $ctx.x = v
-     |  def updateDynamic(field: String)(value: Object) = context.setAttribute(field, value, ENGINE_SCOPE)
+     |  def updateDynamic(field: _root_.java.lang.String)(value: _root_.java.lang.Object) = context.setAttribute(field, value, ENGINE_SCOPE)
      |}
      |""".stripMargin
+    if (!dynRes) throw new ScriptException("Failed to compile dynamicBindings")
     intp beQuietDuring {
-      intp interpret s"val $ctx: scala.tools.nsc.interpreter.dynamicBindings.type = scala.tools.nsc.interpreter.dynamicBindings"
+      intp interpret s"val $ctx: _root_.scala.tools.nsc.interpreter.dynamicBindings.type = _root_.scala.tools.nsc.interpreter.dynamicBindings"
       intp bind ("$engine" -> (this: ScriptEngine with Compilable))
     }
   }
@@ -292,7 +294,7 @@ object Scripted {
       case _ => null
     }
 
-    def getProgram(statements: String*): String = statements.mkString("object Main extends App {\n\t", "\n\t", "\n}")
+    def getProgram(statements: String*): String = statements.mkString("object Main extends _root_.scala.App {\n\t", "\n\t", "\n}")
 
     def getScriptEngine: ScriptEngine = {
       val settings = new Settings()

@@ -13,6 +13,14 @@ class ScriptedTest {
     // same as by service discovery
     //new ScriptEngineManager().getEngineByName("scala").asInstanceOf[ScriptEngine with Compilable]
 
+  // scripted, but also -Yno-predef -Yno-imports
+  def scriptedNoNothing: ScriptEngine with Compilable = {
+    val settings = new Settings()
+    settings.noimports.value = true
+    settings.nopredef.value = true
+    Scripted(settings = settings)
+  }
+
   @Test def eval() = {
     val engine = scripted
     engine.put("foo","bar")
@@ -21,6 +29,17 @@ class ScriptedTest {
     bindings.put("foo","baz")
     assert("baz" == engine.eval("foo", bindings))
     val c = engine.compile("def f = foo.asInstanceOf[String] ; f * 2")
+    assert("barbar" == c.eval())
+    assert("bazbaz" == c.eval(bindings))
+  }
+  @Test def evalNoNothing() = {
+    val engine = scriptedNoNothing
+    engine.put("foo","bar")
+    assert("bar" == engine.eval("foo"))
+    val bindings = engine.createBindings()
+    bindings.put("foo","baz")
+    assert("baz" == engine.eval("foo", bindings))
+    val c = engine.compile("import scala.Predef.augmentString ; def f = foo.asInstanceOf[java.lang.String] ; f * 2")
     assert("barbar" == c.eval())
     assert("bazbaz" == c.eval(bindings))
   }
