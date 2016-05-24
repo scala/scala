@@ -302,7 +302,9 @@ trait ScalaSettings extends AbsScalaSettings
   def YoptWarningNoInlineMissingBytecode            = YoptWarnings.contains(YoptWarningsChoices.noInlineMissingBytecode)
   def YoptWarningNoInlineMissingScalaInlineInfoAttr = YoptWarnings.contains(YoptWarningsChoices.noInlineMissingScalaInlineInfoAttr)
 
-  val YoptTrace = StringSetting("-Yopt-trace", "package/Class.method", "Trace the optimizer progress for a specific method.", "")
+  val YoptTrace = StringSetting("-Yopt-trace", "package/Class.method", "Trace the optimizer progress for methods; `_` to print all, prefix match to select.", "")
+
+  val YoptLogInline = StringSetting("-Yopt-log-inline", "package/Class.method", "Print a summary of inliner activity; `_` to print all, prefix match to select.", "")
 
   private def removalIn212 = "This flag is scheduled for removal in 2.12. If you have a case where you need this flag then please report a bug."
 

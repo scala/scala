@@ -17,7 +17,7 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
   import inliner._
   import callGraph._
 
-  case class InlineRequest(callsite: Callsite, post: List[InlineRequest]) {
+  case class InlineRequest(callsite: Callsite, post: List[InlineRequest], reason: String) {
     // invariant: all post inline requests denote callsites in the callee of the main callsite
     for (pr <- post) assert(pr.callsite.callsiteMethod == callsite.callee.get.callee, s"Callsite method mismatch: main $callsite - post ${pr.callsite}")
   }
@@ -40,7 +40,7 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
       var requests = Set.empty[InlineRequest]
       callGraph.callsites(methodNode).valuesIterator foreach {
         case callsite @ Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, canInlineFromSource, calleeAnnotatedInline, _, _, callsiteWarning)), _, _, _, pos, _, _) =>
-          inlineRequest(callsite) match {
+          inlineRequest(callsite, requests) match {
             case Some(Right(req)) => requests += req
             case Some(Left(w))    =>
               if ((calleeAnnotatedInline && bTypes.compilerSettings.YoptWarningEmitAtInlineFailed) || w.emitWarning(compilerSettings)) {
@@ -87,20 +87,29 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
    *           InlineRequest for the original callsite? new subclass of OptimizerWarning.
    *         `Some(Right)` if the callsite should be and can be inlined
    */
-  def inlineRequest(callsite: Callsite): Option[Either[OptimizerWarning, InlineRequest]] = {
+  def inlineRequest(callsite: Callsite, selectedRequestsForCallee: Set[InlineRequest]): Option[Either[OptimizerWarning, InlineRequest]] = {
     val callee = callsite.callee.get
-    def requestIfCanInline(callsite: Callsite): Either[OptimizerWarning, InlineRequest] = inliner.earlyCanInlineCheck(callsite) match {
+    def requestIfCanInline(callsite: Callsite, reason: String): Either[OptimizerWarning, InlineRequest] = inliner.earlyCanInlineCheck(callsite) match {
       case Some(w) => Left(w)
-      case None => Right(InlineRequest(callsite, Nil))
+      case None => Right(InlineRequest(callsite, Nil, reason))
     }
 
     compilerSettings.YoptInlineHeuristics.value match {
       case "everything" =>
-        if (callee.safeToInline) Some(requestIfCanInline(callsite))
+        if (callee.safeToInline) {
+          val reason = if (compilerSettings.YoptLogInline.isSetByUser) "the inline strategy is \"everything\"" else null
+          Some(requestIfCanInline(callsite, reason))
+        }
         else None
 
       case "at-inline-annotated" =>
-        if (callee.safeToInline && callee.annotatedInline) Some(requestIfCanInline(callsite))
+        if (callee.safeToInline && callee.annotatedInline) {
+          val reason = if (compilerSettings.YoptLogInline.isSetByUser) {
+            val what = if (callee.safeToInline) "callee" else "callsite"
+            s"the $what is annotated `@inline`"
+          } else null
+          Some(requestIfCanInline(callsite, reason))
+        }
         else None
 
       case "default" =>
@@ -108,7 +117,30 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
           def shouldInlineHO = callee.samParamTypes.nonEmpty && (callee.samParamTypes exists {
             case (index, _) => callsite.argInfos.contains(index)
           })
-          if (callee.annotatedInline || callsite.annotatedInline || shouldInlineHO) Some(requestIfCanInline(callsite))
+          if (callee.annotatedInline || callsite.annotatedInline || shouldInlineHO) {
+            val reason = if (compilerSettings.YoptLogInline.isSetByUser) {
+              if (callee.annotatedInline || callsite.annotatedInline) {
+                val what = if (callee.safeToInline) "callee" else "callsite"
+                s"the $what is annotated `@inline`"
+              } else {
+                val paramNames = Option(callee.callee.parameters).map(_.asScala.map(_.name).toVector)
+                def param(i: Int) = {
+                  def syn = s"<param $i>"
+                  paramNames.fold(syn)(v => v.applyOrElse(i, (_: Int) => syn))
+                }
+                def samInfo(i: Int, sam: String, arg: String) = s"the argument for parameter (${param(i)}: $sam) is a $arg"
+                val argInfos = for ((i, sam) <- callee.samParamTypes; info <- callsite.argInfos.get(i)) yield {
+                  val argKind = info match {
+                    case FunctionLiteral => "function literal"
+                    case ForwardedParam(_) => "parameter of the callsite method"
+                  }
+                  samInfo(i, sam.internalName.split('/').last, argKind)
+                }
+                s"the callee is a higher-order method, ${argInfos.mkString(", ")}"
+              }
+            } else null
+            Some(requestIfCanInline(callsite, reason))
+          }
           else None
         } else None
     }
