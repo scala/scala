@@ -10,10 +10,10 @@ chapter: 8
 
 ```ebnf
   Pattern         ::=  Pattern1 { ‘|’ Pattern1 }
-  Pattern1        ::=  varid ‘:’ TypePat
+  Pattern1        ::=  boundvarid ‘:’ TypePat
                     |  ‘_’ ‘:’ TypePat
                     |  Pattern2
-  Pattern2        ::=  varid [‘@’ Pattern3]
+  Pattern2        ::=  id [‘@’ Pattern3]
                     |  Pattern3
   Pattern3        ::=  SimplePattern
                     |  SimplePattern {id [nl] SimplePattern}
@@ -22,7 +22,7 @@ chapter: 8
                     |  Literal
                     |  StableId
                     |  StableId ‘(’ [Patterns] ‘)’
-                    |  StableId ‘(’ [Patterns ‘,’] [varid ‘@’] ‘_’ ‘*’ ‘)’
+                    |  StableId ‘(’ [Patterns ‘,’] [id ‘@’] ‘_’ ‘*’ ‘)’
                     |  ‘(’ [Patterns] ‘)’
                     |  XmlPattern
   Patterns        ::=  Pattern {‘,’ Patterns}

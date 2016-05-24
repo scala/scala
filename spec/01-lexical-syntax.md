@@ -49,6 +49,8 @@ classes (Unicode general category given in parentheses):
 ```ebnf
 op       ::=  opchar {opchar}
 varid    ::=  lower idrest
+boundvarid ::=  varid
+             | ‘`’ varid ‘`’
 plainid  ::=  upper idrest
            |  varid
            |  op
