@@ -388,8 +388,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    *  based on a string pattern (in a fashion similar to printf in C).
    *
    *  The interpretation of the formatting patterns is described in
-   *  <a href="" target="contentFrame" class="java/util/Formatter">
-   *  `java.util.Formatter`</a>.
+   *  [[java.util.Formatter]].
    *
    *  Consider using the [[scala.StringContext.f f interpolator]] as more type safe and idiomatic.
    *
