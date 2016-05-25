@@ -13,7 +13,7 @@ package io
   *
   * object ColorDemo extends App {
   *
-  *   println(s"$REVERSED${BOLD}Hello 1979!$RESET")
+  *   println(s"${REVERSED}${BOLD}Hello 1979!${RESET}")
   * }
   * }}}
   *
