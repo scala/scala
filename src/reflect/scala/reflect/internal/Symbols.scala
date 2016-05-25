@@ -725,7 +725,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def setFlag(mask: Long): this.type   = { _rawflags |= mask ; this }
     def resetFlag(mask: Long): this.type = { _rawflags &= ~mask ; this }
-    def resetFlags() { rawflags &= TopLevelCreationFlags }
+    def resetFlags() { rawflags = 0 }
 
     /** Default implementation calls the generic string function, which
      *  will print overloaded flags as <flag1/flag2/flag3>.  Subclasses
