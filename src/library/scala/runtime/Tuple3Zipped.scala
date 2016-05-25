@@ -123,7 +123,7 @@ final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](val colls: (Travers
 }
 
 object Tuple3Zipped {
-  final class Ops[T1, T2, T3](val x: (T1, T2, T3)) extends AnyVal {
+  final class Ops[T1, T2, T3](private val x: (T1, T2, T3)) extends AnyVal {
     def invert[El1, CC1[X] <: TraversableOnce[X], El2, CC2[X] <: TraversableOnce[X], El3, CC3[X] <: TraversableOnce[X], That]
       (implicit w1: T1 <:< CC1[El1],
                 w2: T2 <:< CC2[El2],

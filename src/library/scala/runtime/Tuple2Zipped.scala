@@ -115,7 +115,7 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
 }
 
 object Tuple2Zipped {
-  final class Ops[T1, T2](val x: (T1, T2)) extends AnyVal {
+  final class Ops[T1, T2](private val x: (T1, T2)) extends AnyVal {
     def invert[El1, CC1[X] <: TraversableOnce[X], El2, CC2[X] <: TraversableOnce[X], That]
       (implicit w1: T1 <:< CC1[El1],
                 w2: T2 <:< CC2[El2],
