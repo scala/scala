@@ -158,6 +158,10 @@ self =>
    */
   def isDefinedAt(key: A) = contains(key)
 
+  override /*PartialFunction*/
+  def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 => B1): B1 =
+    getOrElse(x, default(x))
+
   /** Collects all keys of this map in a set.
    * @return  a set containing all keys of this map.
    */
