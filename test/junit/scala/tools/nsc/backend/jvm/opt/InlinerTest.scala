@@ -835,11 +835,11 @@ class InlinerTest extends BytecodeTesting {
   @Test
   def inlineInvokeSpecial(): Unit = {
     val code =
-      """class Aa {
+      """class A {
         |  def f1 = 0
         |}
-        |class B extends Aa {
-        |  @inline final override def f1 = 1 + super.f1 // invokespecial Aa.f1
+        |class B extends A {
+        |  @inline final override def f1 = 1 + super.f1 // invokespecial A.f1
         |
         |  private def f2m = 0                          // public B$$f2m in bytecode
         |  @inline final def f2 = f2m                   // invokevirtual B.B$$f2m
@@ -863,13 +863,13 @@ class InlinerTest extends BytecodeTesting {
 
     val warn =
       """B::f1()I is annotated @inline but could not be inlined:
-        |The callee B::f1()I contains the instruction INVOKESPECIAL Aa.f1 ()I
+        |The callee B::f1()I contains the instruction INVOKESPECIAL A.f1 ()I
         |that would cause an IllegalAccessError when inlined into class T.""".stripMargin
     var c = 0
     val List(a, b, t) = compile(code, allowMessage = i => {c += 1; i.msg contains warn})
     assert(c == 1, c)
 
-    assertInvoke(getMethod(b, "t1"), "Aa", "f1")
+    assertInvoke(getMethod(b, "t1"), "A", "f1")
     assertInvoke(getMethod(b, "t2"), "B", "B$$f2m")
     assertInvoke(getMethod(b, "t3"), "B", "<init>")
     assertInvoke(getMethod(b, "t4"), "B", "<init>")
