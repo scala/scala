@@ -21,10 +21,16 @@ object OpenHashMap {
   def apply[K, V](elems : (K, V)*) = new OpenHashMap[K, V] ++= elems
   def empty[K, V] = new OpenHashMap[K, V]
 
-  final private class OpenEntry[Key, Value](val key: Key,
-                                            val hash: Int,
+  /** A hash table entry.
+    * 
+    * The entry is occupied if and only if its `value` is a `Some`;
+    * deleted if and only if its `value` is `None`.
+    * If its `key` is not the default value of type `Key`, the entry is occupied.
+    * If the entry is occupied, `hash` contains the hash value of `key`.
+    */
+  final private class OpenEntry[Key, Value](var key: Key,
+                                            var hash: Int,
                                             var value: Option[Value])
-                extends HashEntry[Key, OpenEntry[Key, Value]]
 
   private[mutable] def nextPositivePowerOfTwo(i : Int) = 1 << (32 - Integer.numberOfLeadingZeros(i - 1))
 }
@@ -64,7 +70,14 @@ extends AbstractMap[Key, Value]
   private[this] val actualInitialSize = OpenHashMap.nextPositivePowerOfTwo(initialSize)
 
   private var mask = actualInitialSize - 1
-  private var table : Array[Entry] = new Array[Entry](actualInitialSize)
+
+  /** The hash table.
+    * 
+    * The table's entries are initialized to `null`, indication of an empty slot.
+    * A slot is either deleted or occupied if and only if the entry is non-`null`.
+    */
+  private[this] var table = new Array[Entry](actualInitialSize)
+
   private var _size = 0
   private var deleted = 0
 
@@ -91,42 +104,43 @@ extends AbstractMap[Key, Value]
     table = new Array[Entry](newSize)
     mask = newSize - 1
     oldTable.foreach( entry =>
-      if (entry != null && entry.value != None) addEntry(entry))
+      if (entry != null && entry.value != None)
+        table(findIndex(entry.key, entry.hash)) = entry )
     deleted = 0
   }
 
   /** Return the index of the first slot in the hash table (in probe order)
-    * that either is empty, or is or was last occupied by the given key.
-    */
-  private[this] def findIndex(key: Key) : Int = findIndex(key, hashOf(key))
-
-  /** Return the index of the first slot in the hash table (in probe order)
-    * that either is empty, or is or was last occupied by the given key.
-    * 
-    * This method is an optimization for when the hash value is in hand.
+    * that is, in order of preference, either occupied by the given key, deleted, or empty.
     * 
     * @param hash hash value for `key`
     */
   private[this] def findIndex(key: Key, hash: Int): Int = {
     var j = hash
-
     var index = hash & mask
     var perturb = index
-    while(table(index) != null &&
-          !(table(index).hash == hash &&
-            table(index).key == key)){
+
+    /** Index of the first slot containing a deleted entry, or -1 if none found yet. */
+    var firstDeletedIndex = -1
+
+    var entry = table(index)
+    while (entry != null) {
+      if (entry.hash == hash && entry.key == key && entry.value != None)
+        return index
+
+      if (firstDeletedIndex == -1 && entry.value == None)
+        firstDeletedIndex = index
+
       j = 5 * j + 1 + perturb
       perturb >>= 5
       index = j & mask
+      entry = table(index)
     }
-    index
+
+    if (firstDeletedIndex == -1) index else firstDeletedIndex
   }
 
-  private[this] def addEntry(entry: Entry) =
-    if (entry != null) table(findIndex(entry.key, entry.hash)) = entry
-
   override def update(key: Key, value: Value) {
-    put(key, hashOf(key), value)
+    put(key, value)
   }
 
   @deprecatedOverriding("+= should not be overridden in order to maintain consistency with put.", "2.11.0")
@@ -150,6 +164,8 @@ extends AbstractMap[Key, Value]
     } else {
       val res = entry.value
       if (entry.value == None) {
+        entry.key = key
+        entry.hash = hash
         size += 1
         deleted -= 1
         modCount += 1
@@ -159,13 +175,22 @@ extends AbstractMap[Key, Value]
     }
   }
 
+  /** Delete the hash table slot contained in the given entry. */
+  @inline
+  private[this] def deleteSlot(entry: Entry) = {
+    entry.key = null.asInstanceOf[Key]
+    entry.hash = 0
+    entry.value = None
+
+    size -= 1
+    deleted += 1
+  }
+
   override def remove(key : Key): Option[Value] = {
-    val index = findIndex(key)
-    if (table(index) != null && table(index).value != None){
-      val res = table(index).value
-      table(index).value = None
-      size -= 1
-      deleted += 1
+    val entry = table(findIndex(key, hashOf(key)))
+    if (entry != null && entry.value != None) {
+      val res = entry.value
+      deleteSlot(entry)
       res
     } else None
   }
@@ -249,7 +274,7 @@ extends AbstractMap[Key, Value]
   }
 
   override def retain(f : (Key, Value) => Boolean) = {
-    foreachUndeletedEntry(entry => if (!f(entry.key, entry.value.get)) {entry.value = None; size -= 1; deleted += 1} )
+    foreachUndeletedEntry(entry => if (!f(entry.key, entry.value.get)) deleteSlot(entry))
     this
   }
 
