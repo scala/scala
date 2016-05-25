@@ -108,7 +108,7 @@ object ScalaOptionParser {
   private def multiChoiceSettingNames = Map[String, List[String]](
     "-Xlint" -> List("adapted-args", "nullary-unit", "inaccessible", "nullary-override", "infer-any", "missing-interpolator", "doc-detached", "private-shadow", "type-parameter-shadow", "poly-implicit-overload", "option-implicit", "delayedinit-select", "by-name-right-associative", "package-object-classes", "unsound-match", "stars-align"),
     "-language" -> List("help", "_", "dynamics", "postfixOps", "reflectiveCalls", "implicitConversions", "higherKinds", "existentials", "experimental.macros"),
-    "-Yopt" -> List("l:none", "l:default", "l:method", "l:project", "l:classpath", "unreachable-code", "simplify-jumps", "empty-line-numbers", "empty-labels", "compact-locals", "nullness-tracking", "closure-elimination", "inline-project", "inline-global"),
+    "-opt" -> List("l:none", "l:default", "l:method", "l:project", "l:classpath", "unreachable-code", "simplify-jumps", "empty-line-numbers", "empty-labels", "compact-locals", "nullness-tracking", "closure-elimination", "inline-project", "inline-global"),
     "-Ystatistics" -> List("parser", "typer", "patmat", "erasure", "cleanup", "jvm")
   )
   private def scalaVersionSettings = List("-Xmigration", "-Xsource")

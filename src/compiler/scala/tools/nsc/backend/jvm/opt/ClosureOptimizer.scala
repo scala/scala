@@ -358,7 +358,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     val callee = bodyMethod.map({
       case (bodyMethodNode, bodyMethodDeclClass) =>
         val bodyDeclClassType = classBTypeFromParsedClassfile(bodyMethodDeclClass)
-        val canInlineFromSource = compilerSettings.YoptInlineGlobal || bodyMethodIsBeingCompiled
+        val canInlineFromSource = compilerSettings.optInlineGlobal || bodyMethodIsBeingCompiled
         Callee(
           callee = bodyMethodNode,
           calleeDeclarationClass = bodyDeclClassType,

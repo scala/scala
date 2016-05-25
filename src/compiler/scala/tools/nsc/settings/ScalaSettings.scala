@@ -205,7 +205,7 @@ trait ScalaSettings extends AbsScalaSettings
   val exposeEmptyPackage = BooleanSetting ("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
   val Ydelambdafy        = ChoiceSetting  ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "method")
 
-  object YoptChoices extends MultiChoiceEnumeration {
+  object optChoices extends MultiChoiceEnumeration {
     val unreachableCode         = Choice("unreachable-code",          "Eliminate unreachable code, exception handlers guarding no instructions, redundant metadata (debug information, line numbers).")
     val simplifyJumps           = Choice("simplify-jumps",            "Simplify branching instructions, eliminate unnecessary ones.")
     val compactLocals           = Choice("compact-locals",            "Eliminate empty slots in the sequence of local variables.")
@@ -217,8 +217,8 @@ trait ScalaSettings extends AbsScalaSettings
     val inlineProject           = Choice("inline-project",            "Inline only methods defined in the files being compiled. Enables unreachable-code.")
     val inlineGlobal            = Choice("inline-global",             "Inline methods from any source, including classfiles on the compile classpath. Enables unreachable-code.")
 
-    // note: unlike the other optimizer levels, "l:none" appears up in the `Yopt.value` set because it's not an expanding option (expandsTo is empty)
-    val lNone           = Choice("l:none",      "Disable optimizations. Takes precedence: `-Yopt:l:none,+box-unbox` / `-Yopt:l:none -Yopt:box-unbox` don't enable box-unbox.")
+    // note: unlike the other optimizer levels, "l:none" appears up in the `opt.value` set because it's not an expanding option (expandsTo is empty)
+    val lNone           = Choice("l:none",      "Disable optimizations. Takes precedence: `-opt:l:none,+box-unbox` / `-opt:l:none -opt:box-unbox` don't enable box-unbox.")
 
     private val defaultChoices = List(unreachableCode)
     val lDefault        = Choice("l:default",   "Enable default optimizations: "+ defaultChoices.mkString("", ",", "."),                                    expandsTo = defaultChoices)
@@ -234,37 +234,37 @@ trait ScalaSettings extends AbsScalaSettings
   }
 
   // We don't use the `default` parameter of `MultiChoiceSetting`: it specifies the default values
-  // when `-Yopt` is passed without explicit choices. When `-Yopt` is not explicitly specified, the
-  // set `Yopt.value` is empty.
-  val Yopt = MultiChoiceSetting(
-    name = "-Yopt",
+  // when `-opt` is passed without explicit choices. When `-opt` is not explicitly specified, the
+  // set `opt.value` is empty.
+  val opt = MultiChoiceSetting(
+    name = "-opt",
     helpArg = "optimization",
     descr = "Enable optimizations",
-    domain = YoptChoices)
+    domain = optChoices)
 
-  private def optEnabled(choice: YoptChoices.Choice) = {
-    !Yopt.contains(YoptChoices.lNone) && {
-      Yopt.contains(choice) ||
-      !Yopt.isSetByUser && YoptChoices.lDefault.expandsTo.contains(choice)
+  private def optEnabled(choice: optChoices.Choice) = {
+    !opt.contains(optChoices.lNone) && {
+      opt.contains(choice) ||
+      !opt.isSetByUser && optChoices.lDefault.expandsTo.contains(choice)
     }
   }
 
-  def YoptNone                    = Yopt.contains(YoptChoices.lNone)
-  def YoptUnreachableCode         = optEnabled(YoptChoices.unreachableCode)
-  def YoptSimplifyJumps           = optEnabled(YoptChoices.simplifyJumps)
-  def YoptCompactLocals           = optEnabled(YoptChoices.compactLocals)
-  def YoptCopyPropagation         = optEnabled(YoptChoices.copyPropagation)
-  def YoptRedundantCasts          = optEnabled(YoptChoices.redundantCasts)
-  def YoptBoxUnbox                = optEnabled(YoptChoices.boxUnbox)
-  def YoptNullnessTracking        = optEnabled(YoptChoices.nullnessTracking)
-  def YoptClosureInvocations      = optEnabled(YoptChoices.closureInvocations)
+  def optNone                    = opt.contains(optChoices.lNone)
+  def optUnreachableCode         = optEnabled(optChoices.unreachableCode)
+  def optSimplifyJumps           = optEnabled(optChoices.simplifyJumps)
+  def optCompactLocals           = optEnabled(optChoices.compactLocals)
+  def optCopyPropagation         = optEnabled(optChoices.copyPropagation)
+  def optRedundantCasts          = optEnabled(optChoices.redundantCasts)
+  def optBoxUnbox                = optEnabled(optChoices.boxUnbox)
+  def optNullnessTracking        = optEnabled(optChoices.nullnessTracking)
+  def optClosureInvocations      = optEnabled(optChoices.closureInvocations)
 
-  def YoptInlineProject           = optEnabled(YoptChoices.inlineProject)
-  def YoptInlineGlobal            = optEnabled(YoptChoices.inlineGlobal)
-  def YoptInlinerEnabled          = YoptInlineProject || YoptInlineGlobal
+  def optInlineProject           = optEnabled(optChoices.inlineProject)
+  def optInlineGlobal            = optEnabled(optChoices.inlineGlobal)
+  def optInlinerEnabled          = optInlineProject || optInlineGlobal
 
-  def YoptBuildCallGraph          = YoptInlinerEnabled || YoptClosureInvocations
-  def YoptAddToBytecodeRepository = YoptBuildCallGraph || YoptInlinerEnabled || YoptClosureInvocations
+  def optBuildCallGraph          = optInlinerEnabled || optClosureInvocations
+  def optAddToBytecodeRepository = optBuildCallGraph || optInlinerEnabled || optClosureInvocations
 
   val YoptInlineHeuristics = ChoiceSetting(
     name = "-Yopt-inline-heuristics",
@@ -273,7 +273,7 @@ trait ScalaSettings extends AbsScalaSettings
     choices = List("at-inline-annotated", "everything", "default"),
     default = "default")
 
-  object YoptWarningsChoices extends MultiChoiceEnumeration {
+  object optWarningsChoices extends MultiChoiceEnumeration {
     val none                               = Choice("none"                       , "No optimizer warnings.")
     val atInlineFailedSummary              = Choice("at-inline-failed-summary"   , "One-line summary if there were @inline method calls that could not be inlined.")
     val atInlineFailed                     = Choice("at-inline-failed"           , "A detailed warning for each @inline method call that could not be inlined.")
@@ -283,24 +283,24 @@ trait ScalaSettings extends AbsScalaSettings
     val noInlineMissingScalaInlineInfoAttr = Choice("no-inline-missing-attribute", "Warn if an inlining decision cannot be made because a Scala classfile does not have a ScalaInlineInfo attribute.")
   }
 
-  val YoptWarnings = MultiChoiceSetting(
-    name = "-Yopt-warnings",
+  val optWarnings = MultiChoiceSetting(
+    name = "-opt-warnings",
     helpArg = "warning",
     descr = "Enable optimizer warnings",
-    domain = YoptWarningsChoices,
-    default = Some(List(YoptWarningsChoices.atInlineFailed.name)))
+    domain = optWarningsChoices,
+    default = Some(List(optWarningsChoices.atInlineFailed.name)))
 
-  def YoptWarningsSummaryOnly = YoptWarnings.value subsetOf Set(YoptWarningsChoices.none, YoptWarningsChoices.atInlineFailedSummary)
+  def optWarningsSummaryOnly = optWarnings.value subsetOf Set(optWarningsChoices.none, optWarningsChoices.atInlineFailedSummary)
 
-  def YoptWarningEmitAtInlineFailed =
-    !YoptWarnings.isSetByUser ||
-      YoptWarnings.contains(YoptWarningsChoices.atInlineFailedSummary) ||
-      YoptWarnings.contains(YoptWarningsChoices.atInlineFailed) ||
-      YoptWarnings.contains(YoptWarningsChoices.anyInlineFailed)
+  def optWarningEmitAtInlineFailed =
+    !optWarnings.isSetByUser ||
+      optWarnings.contains(optWarningsChoices.atInlineFailedSummary) ||
+      optWarnings.contains(optWarningsChoices.atInlineFailed) ||
+      optWarnings.contains(optWarningsChoices.anyInlineFailed)
 
-  def YoptWarningNoInlineMixed                      = YoptWarnings.contains(YoptWarningsChoices.noInlineMixed)
-  def YoptWarningNoInlineMissingBytecode            = YoptWarnings.contains(YoptWarningsChoices.noInlineMissingBytecode)
-  def YoptWarningNoInlineMissingScalaInlineInfoAttr = YoptWarnings.contains(YoptWarningsChoices.noInlineMissingScalaInlineInfoAttr)
+  def optWarningNoInlineMixed                      = optWarnings.contains(optWarningsChoices.noInlineMixed)
+  def optWarningNoInlineMissingBytecode            = optWarnings.contains(optWarningsChoices.noInlineMissingBytecode)
+  def optWarningNoInlineMissingScalaInlineInfoAttr = optWarnings.contains(optWarningsChoices.noInlineMissingScalaInlineInfoAttr)
 
   val YoptTrace = StringSetting("-Yopt-trace", "package/Class.method", "Trace the optimizer progress for a specific method.", "")
 
@@ -340,8 +340,8 @@ trait ScalaSettings extends AbsScalaSettings
   val future        = BooleanSetting("-Xfuture", "Turn on future language features.") enablingIfNotSetByUser futureSettings
   val optimise      = BooleanSetting("-optimise", "Compiler flag for the optimizer in Scala 2.11")
     .withAbbreviation("-optimize")
-    .withDeprecationMessage("In 2.12, -optimise enables -Yopt:l:classpath. Check -Yopt:help for using the Scala 2.12 optimizer.")
-    .withPostSetHook(_ => Yopt.tryToSet(List(YoptChoices.lClasspath.name)))
+    .withDeprecationMessage("In 2.12, -optimise enables -opt:l:classpath. Check -opt:help for using the Scala 2.12 optimizer.")
+    .withPostSetHook(_ => opt.tryToSet(List(optChoices.lClasspath.name)))
   val Xexperimental = BooleanSetting("-Xexperimental", "Enable experimental extensions.") enablingIfNotSetByUser experimentalSettings
 
   // Feature extensions

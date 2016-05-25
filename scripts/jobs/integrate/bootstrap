@@ -494,7 +494,7 @@ bootstrap() {
             -Dremote.snapshot.repository=NOPE\
             -Dremote.release.repository=$releaseTempRepoUrl\
             -Drepository.credentials.id=$releaseTempRepoCred\
-            -Dscalac.args.optimise=-Yopt:l:classpath\
+            -Dscalac.args.optimise=-opt:l:classpath\
             -Ddocs.skip=1\
             -Dlocker.skip=1\
             $publishStarrPrivateTask >> $baseDir/logs/builds 2>&1
@@ -516,7 +516,7 @@ bootstrap() {
       $SET_STARR\
       -Dremote.release.repository=$releaseTempRepoUrl\
       -Drepository.credentials.id=$releaseTempRepoCred\
-      -Dscalac.args.optimise=-Yopt:l:classpath\
+      -Dscalac.args.optimise=-opt:l:classpath\
       -Ddocs.skip=1\
       -Dlocker.skip=1\
       $publishLockerPrivateTask >> $baseDir/logs/builds 2>&1
@@ -555,7 +555,7 @@ bootstrap() {
       -Dremote.snapshot.repository=NOPE\
       -Dremote.release.repository=$releaseTempRepoUrl\
       -Drepository.credentials.id=$releaseTempRepoCred\
-      -Dscalac.args.optimise=-Yopt:l:classpath\
+      -Dscalac.args.optimise=-opt:l:classpath\
       $antBuildTask $publishPrivateTask
 
   # clear ivy cache (and to be sure, local as well), so the next round of sbt builds sees the fresh scala

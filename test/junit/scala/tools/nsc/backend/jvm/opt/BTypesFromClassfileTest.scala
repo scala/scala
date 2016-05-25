@@ -14,7 +14,7 @@ import scala.tools.testing.BytecodeTesting
 @RunWith(classOf[JUnit4])
 class BTypesFromClassfileTest extends BytecodeTesting {
   // inliner enabled -> inlineInfos are collected (and compared) in ClassBTypes
-  override def compilerArgs = "-Yopt:inline-global"
+  override def compilerArgs = "-opt:inline-global"
 
   import compiler.global._
   import definitions._

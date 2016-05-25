@@ -16,7 +16,7 @@ class InlineInfoTest extends BytecodeTesting {
   import compiler.global
   import global.genBCode.bTypes
 
-  override def compilerArgs = "-Yopt:l:classpath"
+  override def compilerArgs = "-opt:l:classpath"
 
   def notPerRun: List[Clearable] = List(
     bTypes.classBTypeFromInternalName,

@@ -11,7 +11,7 @@ object Test extends DirectTest {
 
   def compileCode(code: String) = {
     val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
-    compileString(newCompiler("-cp", classpath, "-d", testOutput.path, "-Yopt:l:classpath", "-Yopt-inline-heuristics:everything", "-Yopt-warnings:_"))(code)
+    compileString(newCompiler("-cp", classpath, "-d", testOutput.path, "-opt:l:classpath", "-Yopt-inline-heuristics:everything", "-opt-warnings:_"))(code)
   }
 
   def show(): Unit = {

@@ -102,7 +102,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
       // It is also used to get the stack height at the call site.
 
       val analyzer = {
-        if (compilerSettings.YoptNullnessTracking && AsmAnalyzer.sizeOKForNullness(methodNode)) {
+        if (compilerSettings.optNullnessTracking && AsmAnalyzer.sizeOKForNullness(methodNode)) {
           Some(new AsmAnalyzer(methodNode, definingClass.internalName, new NullnessAnalyzer(btypes)))
         } else if (AsmAnalyzer.sizeOKForBasicValue(methodNode)) {
           Some(new AsmAnalyzer(methodNode, definingClass.internalName))
@@ -273,7 +273,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
       // callee, we only check there for the methodInlineInfo, we should find it there.
       calleeDeclarationClassBType.info.orThrow.inlineInfo.methodInfos.get(methodSignature) match {
         case Some(methodInlineInfo) =>
-          val canInlineFromSource = compilerSettings.YoptInlineGlobal || calleeSource == CompilationUnit
+          val canInlineFromSource = compilerSettings.optInlineGlobal || calleeSource == CompilationUnit
 
           val isAbstract = BytecodeUtils.isAbstractMethod(calleeMethodNode)
 

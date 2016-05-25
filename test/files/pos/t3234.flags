@@ -1,1 +1,1 @@
--Yopt:l:project -Yopt-warnings -Xfatal-warnings
+-opt:l:project -opt-warnings -Xfatal-warnings

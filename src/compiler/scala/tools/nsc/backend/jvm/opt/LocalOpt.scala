@@ -191,7 +191,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
    * @return      `true` if unreachable code was eliminated in some method, `false` otherwise.
    */
   def methodOptimizations(clazz: ClassNode): Boolean = {
-    !compilerSettings.YoptNone && clazz.methods.asScala.foldLeft(false) {
+    !compilerSettings.optNone && clazz.methods.asScala.foldLeft(false) {
       case (changed, method) => methodOptimizations(method, clazz.name) || changed
     }
   }
@@ -261,46 +261,46 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
       traceIfChanged("beforeMethodOpt")
 
       // NULLNESS OPTIMIZATIONS
-      val runNullness = compilerSettings.YoptNullnessTracking && requestNullness
+      val runNullness = compilerSettings.optNullnessTracking && requestNullness
       val nullnessOptChanged = runNullness && nullnessOptimizations(method, ownerClassName)
       traceIfChanged("nullness")
 
       // UNREACHABLE CODE
       // Both AliasingAnalyzer (used in copyProp) and ProdConsAnalyzer (used in eliminateStaleStores,
       // boxUnboxElimination) require not having unreachable instructions (null frames).
-      val runDCE = (compilerSettings.YoptUnreachableCode && (requestDCE || nullnessOptChanged)) ||
-        compilerSettings.YoptBoxUnbox ||
-        compilerSettings.YoptCopyPropagation
+      val runDCE = (compilerSettings.optUnreachableCode && (requestDCE || nullnessOptChanged)) ||
+        compilerSettings.optBoxUnbox ||
+        compilerSettings.optCopyPropagation
       val (codeRemoved, liveLabels) = if (runDCE) removeUnreachableCodeImpl(method, ownerClassName) else (false, Set.empty[LabelNode])
       traceIfChanged("dce")
 
       // BOX-UNBOX
-      val runBoxUnbox = compilerSettings.YoptBoxUnbox && (requestBoxUnbox || nullnessOptChanged)
+      val runBoxUnbox = compilerSettings.optBoxUnbox && (requestBoxUnbox || nullnessOptChanged)
       val boxUnboxChanged = runBoxUnbox && boxUnboxElimination(method, ownerClassName)
       traceIfChanged("boxUnbox")
 
       // COPY PROPAGATION
-      val runCopyProp = compilerSettings.YoptCopyPropagation && (firstIteration || boxUnboxChanged)
+      val runCopyProp = compilerSettings.optCopyPropagation && (firstIteration || boxUnboxChanged)
       val copyPropChanged = runCopyProp && copyPropagation(method, ownerClassName)
       traceIfChanged("copyProp")
 
       // STALE STORES
-      val runStaleStores = compilerSettings.YoptCopyPropagation && (requestStaleStores || nullnessOptChanged || codeRemoved || boxUnboxChanged || copyPropChanged)
+      val runStaleStores = compilerSettings.optCopyPropagation && (requestStaleStores || nullnessOptChanged || codeRemoved || boxUnboxChanged || copyPropChanged)
       val storesRemoved = runStaleStores && eliminateStaleStores(method, ownerClassName)
       traceIfChanged("staleStores")
 
       // REDUNDANT CASTS
-      val runRedundantCasts = compilerSettings.YoptRedundantCasts && (firstIteration || boxUnboxChanged)
+      val runRedundantCasts = compilerSettings.optRedundantCasts && (firstIteration || boxUnboxChanged)
       val castRemoved = runRedundantCasts && eliminateRedundantCasts(method, ownerClassName)
       traceIfChanged("redundantCasts")
 
       // PUSH-POP
-      val runPushPop = compilerSettings.YoptCopyPropagation && (requestPushPop || firstIteration || storesRemoved || castRemoved)
+      val runPushPop = compilerSettings.optCopyPropagation && (requestPushPop || firstIteration || storesRemoved || castRemoved)
       val pushPopRemoved = runPushPop && eliminatePushPop(method, ownerClassName)
       traceIfChanged("pushPop")
 
       // STORE-LOAD PAIRS
-      val runStoreLoad = compilerSettings.YoptCopyPropagation && (requestStoreLoad || boxUnboxChanged || copyPropChanged || pushPopRemoved)
+      val runStoreLoad = compilerSettings.optCopyPropagation && (requestStoreLoad || boxUnboxChanged || copyPropChanged || pushPopRemoved)
       val storeLoadRemoved = runStoreLoad && eliminateStoreLoad(method)
       traceIfChanged("storeLoadPairs")
 
@@ -312,7 +312,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
 
       // SIMPLIFY JUMPS
       // almost all of the above optimizations enable simplifying more jumps, so we just run it in every iteration
-      val runSimplifyJumps = compilerSettings.YoptSimplifyJumps
+      val runSimplifyJumps = compilerSettings.optSimplifyJumps
       val jumpsChanged = runSimplifyJumps && simplifyJumps(method)
       traceIfChanged("simplifyJumps")
 
@@ -358,21 +358,21 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
         requestPushPop = true,
         requestStoreLoad = true,
         firstIteration = true)
-      if (compilerSettings.YoptUnreachableCode) unreachableCodeEliminated += method
+      if (compilerSettings.optUnreachableCode) unreachableCodeEliminated += method
       r
     } else (false, false)
 
     // (*) Removing stale local variable descriptors is required for correctness, see comment in `methodOptimizations`
     val localsRemoved =
-      if (compilerSettings.YoptCompactLocals) compactLocalVariables(method) // also removes unused
+      if (compilerSettings.optCompactLocals) compactLocalVariables(method) // also removes unused
       else if (requireEliminateUnusedLocals) removeUnusedLocalVariableNodes(method)() // (*)
       else false
     traceIfChanged("localVariables")
 
-    val lineNumbersRemoved = if (compilerSettings.YoptUnreachableCode) removeEmptyLineNumbers(method) else false
+    val lineNumbersRemoved = if (compilerSettings.optUnreachableCode) removeEmptyLineNumbers(method) else false
     traceIfChanged("lineNumbers")
 
-    val labelsRemoved = if (compilerSettings.YoptUnreachableCode) removeEmptyLabelNodes(method) else false
+    val labelsRemoved = if (compilerSettings.optUnreachableCode) removeEmptyLabelNodes(method) else false
     traceIfChanged("labels")
 
     // assert that local variable annotations are empty (we don't emit them) - otherwise we'd have
