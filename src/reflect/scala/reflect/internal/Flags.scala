@@ -235,7 +235,6 @@ class Flags extends ModifierFlags {
   final val AllFlags = -1L
 
   /** These flags can be set when class or module symbol is first created.
-   *  They are the only flags to survive a call to resetFlags().
    */
   final val TopLevelCreationFlags =
     MODULE | PACKAGE | FINAL | JAVA
