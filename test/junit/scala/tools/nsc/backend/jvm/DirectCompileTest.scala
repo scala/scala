@@ -99,4 +99,16 @@ class DirectCompileTest extends BytecodeTesting {
     compiler.compileToBytes(a)
     compiler.compileToBytes(b)
   }
+
+  @Test
+  def residentMultipleRunsNotCompanions(): Unit = {
+    val compiler = newCompiler()
+    val a = List(("public class A { }", "A.java"))
+    // when checking that a class and its companion are defined in the same compilation unit, the
+    // compiler would also emit a warning if the two symbols are defined in separate runs. this
+    // would lead to an error message when compiling the scala class A.
+    val b = "class A"
+    compiler.compileToBytes("", a)
+    compiler.compileToBytes(b)
+  }
 }
