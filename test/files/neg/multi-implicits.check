@@ -1,0 +1,7 @@
+multi-implicits.scala:30: error: '=' expected but '(' found.
+  def run[T: Baz](t: T)(implicit foo: Foo[T])(implicit bar: Bar[foo.A]): bar.B = bar.value
+                                             ^
+multi-implicits.scala:32: error: illegal start of simple expression
+  val value = run(23)
+^
+two errors found
