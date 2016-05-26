@@ -19,9 +19,9 @@ import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class InlinerTest extends BytecodeTesting {
-  override def compilerArgs = "-Yopt:l:classpath -Yopt-warnings"
+  override def compilerArgs = "-opt:l:classpath -opt-warnings"
 
-  val inlineOnlyCompiler = cached("inlineOnlyCompiler", () => newCompiler(extraArgs = "-Yopt:inline-project"))
+  val inlineOnlyCompiler = cached("inlineOnlyCompiler", () => newCompiler(extraArgs = "-opt:inline-project"))
 
   import compiler._
   import global.genBCode.bTypes
@@ -825,7 +825,7 @@ class InlinerTest extends BytecodeTesting {
 
     var c = 0
 
-    newCompiler(extraArgs = compilerArgs + " -Yopt-warnings:_").compileClasses(
+    newCompiler(extraArgs = compilerArgs + " -opt-warnings:_").compileClasses(
       scalaCode,
       List((javaCode, "A.java")),
       allowMessage = i => {c += 1; i.msg contains warn})
@@ -1459,7 +1459,7 @@ class InlinerTest extends BytecodeTesting {
     val codeA = "final class A { @inline def f = 1 }"
     val codeB = "class B { def t(a: A) = a.f }"
     // tests that no warning is emitted
-    val List(a, b) = compileClassesSeparately(List(codeA, codeB), extraArgs = "-Yopt:l:project -Yopt-warnings")
+    val List(a, b) = compileClassesSeparately(List(codeA, codeB), extraArgs = "-opt:l:project -opt-warnings")
     assertInvoke(getMethod(b, "t"), "A", "f")
   }
 

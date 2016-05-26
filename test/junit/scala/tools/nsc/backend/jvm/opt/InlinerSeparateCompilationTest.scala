@@ -10,7 +10,7 @@ import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class InlinerSeparateCompilationTest {
-  val args = "-Yopt:l:classpath"
+  val args = "-opt:l:classpath"
 
   @Test
   def inlnieMixedinMember(): Unit = {
@@ -32,7 +32,7 @@ class InlinerSeparateCompilationTest {
       """.stripMargin
 
     val warn = "T::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden"
-    val List(c, o, oMod, t) = compileClassesSeparately(List(codeA, codeB), args + " -Yopt-warnings", _.msg contains warn)
+    val List(c, o, oMod, t) = compileClassesSeparately(List(codeA, codeB), args + " -opt-warnings", _.msg contains warn)
     assertInvoke(getMethod(c, "t1"), "T", "f")
     assertNoInvoke(getMethod(c, "t2"))
     assertNoInvoke(getMethod(c, "t3"))

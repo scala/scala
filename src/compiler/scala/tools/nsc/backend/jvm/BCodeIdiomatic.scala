@@ -392,7 +392,7 @@ abstract class BCodeIdiomatic extends SubComponent {
     private def addInvoke(opcode: Int, owner: String, name: String, desc: String, itf: Boolean, pos: Position) = {
       val node = new MethodInsnNode(opcode, owner, name, desc, itf)
       jmethod.instructions.add(node)
-      if (settings.YoptInlinerEnabled) callsitePositions(node) = pos
+      if (settings.optInlinerEnabled) callsitePositions(node) = pos
     }
     final def invokedynamic(owner: String, name: String, desc: String) {
       jmethod.visitMethodInsn(Opcodes.INVOKEDYNAMIC, owner, name, desc)

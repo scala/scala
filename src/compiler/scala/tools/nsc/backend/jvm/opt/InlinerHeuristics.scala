@@ -43,16 +43,16 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
           inlineRequest(callsite) match {
             case Some(Right(req)) => requests += req
             case Some(Left(w))    =>
-              if ((calleeAnnotatedInline && bTypes.compilerSettings.YoptWarningEmitAtInlineFailed) || w.emitWarning(compilerSettings)) {
+              if ((calleeAnnotatedInline && bTypes.compilerSettings.optWarningEmitAtInlineFailed) || w.emitWarning(compilerSettings)) {
                 val annotWarn = if (calleeAnnotatedInline) " is annotated @inline but" else ""
                 val msg = s"${BackendReporting.methodSignature(calleeDeclClass.internalName, callee)}$annotWarn could not be inlined:\n$w"
                 backendReporting.inlinerWarning(callsite.callsitePosition, msg)
               }
 
             case None =>
-              if (canInlineFromSource && calleeAnnotatedInline && !callsite.annotatedNoInline && bTypes.compilerSettings.YoptWarningEmitAtInlineFailed) {
+              if (canInlineFromSource && calleeAnnotatedInline && !callsite.annotatedNoInline && bTypes.compilerSettings.optWarningEmitAtInlineFailed) {
                 // if the callsite is annotated @inline, we report an inline warning even if the underlying
-                // reason is, for example, mixed compilation (which has a separate -Yopt-warning flag).
+                // reason is, for example, mixed compilation (which has a separate -opt-warning flag).
                 def initMsg = s"${BackendReporting.methodSignature(calleeDeclClass.internalName, callee)} is annotated @inline but cannot be inlined"
                 def warnMsg = callsiteWarning.map(" Possible reason:\n" + _).getOrElse("")
                 if (!safeToInline)

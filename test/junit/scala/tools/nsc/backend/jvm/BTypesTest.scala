@@ -11,7 +11,7 @@ import scala.tools.testing.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
 class BTypesTest extends BytecodeTesting {
-  override def compilerArgs = "-Yopt:l:none"
+  override def compilerArgs = "-opt:l:none"
   import compiler.global
   locally {
     new global.Run() // initializes some of the compiler

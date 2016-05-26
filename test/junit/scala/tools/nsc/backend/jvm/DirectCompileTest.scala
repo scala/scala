@@ -12,7 +12,7 @@ import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class DirectCompileTest extends BytecodeTesting {
-  override def compilerArgs = "-Yopt:l:method"
+  override def compilerArgs = "-opt:l:method"
   import compiler._
 
   @Test

@@ -1,1 +1,1 @@
--Yopt-warnings -Yopt:l:classpath -Xfatal-warnings
+-opt-warnings -opt:l:classpath -Xfatal-warnings

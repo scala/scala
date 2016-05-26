@@ -14,7 +14,7 @@ import scala.tools.testing.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
 class InlinerIllegalAccessTest extends BytecodeTesting {
-  override def compilerArgs = "-Yopt:l:none"
+  override def compilerArgs = "-opt:l:none"
 
   import compiler._
   import global.genBCode.bTypes._

@@ -14,7 +14,7 @@ import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class UnusedLocalVariablesTest extends BytecodeTesting {
-  override def compilerArgs = "-Yopt:unreachable-code"
+  override def compilerArgs = "-opt:unreachable-code"
   import compiler._
 
   @Test

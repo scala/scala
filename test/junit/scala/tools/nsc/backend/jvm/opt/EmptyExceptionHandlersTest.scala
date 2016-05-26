@@ -15,10 +15,10 @@ import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class EmptyExceptionHandlersTest extends BytecodeTesting {
-  override def compilerArgs = "-Yopt:unreachable-code"
+  override def compilerArgs = "-opt:unreachable-code"
   def dceCompiler = compiler
 
-  val noOptCompiler = cached("noOptCompiler", () => newCompiler(extraArgs = "-Yopt:l:none"))
+  val noOptCompiler = cached("noOptCompiler", () => newCompiler(extraArgs = "-opt:l:none"))
 
   val exceptionDescriptor = "java/lang/Exception"
 

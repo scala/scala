@@ -15,8 +15,8 @@ import scala.tools.testing.ClearAfterClass
 class CompactLocalVariablesTest extends ClearAfterClass {
   // recurse-unreachable-jumps is required for eliminating catch blocks, in the first dce round they
   // are still live.only after eliminating the empty handler the catch blocks become unreachable.
-  val methodOptCompiler     = cached("methodOptCompiler",     () => newCompiler(extraArgs = "-Yopt:unreachable-code,compact-locals"))
-  val noCompactVarsCompiler = cached("noCompactVarsCompiler", () => newCompiler(extraArgs = "-Yopt:unreachable-code"))
+  val methodOptCompiler     = cached("methodOptCompiler",     () => newCompiler(extraArgs = "-opt:unreachable-code,compact-locals"))
+  val noCompactVarsCompiler = cached("noCompactVarsCompiler", () => newCompiler(extraArgs = "-opt:unreachable-code"))
 
   @Test
   def compactUnused(): Unit = {

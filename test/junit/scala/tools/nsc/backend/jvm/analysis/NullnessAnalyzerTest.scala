@@ -17,7 +17,7 @@ import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class NullnessAnalyzerTest extends BytecodeTesting {
-  override def compilerArgs = "-Yopt:l:none"
+  override def compilerArgs = "-opt:l:none"
   import compiler._
   import global.genBCode.bTypes.backendUtils._
 

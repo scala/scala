@@ -117,15 +117,15 @@ object BackendReporting {
 
     def emitWarning(settings: ScalaSettings): Boolean = this match {
       case ClassNotFound(_, javaDefined) =>
-        if (javaDefined) settings.YoptWarningNoInlineMixed
-        else settings.YoptWarningNoInlineMissingBytecode
+        if (javaDefined) settings.optWarningNoInlineMixed
+        else settings.optWarningNoInlineMissingBytecode
 
       case m @ MethodNotFound(_, _, _, missing) =>
         if (m.isArrayMethod) false
-        else settings.YoptWarningNoInlineMissingBytecode || missing.exists(_.emitWarning(settings))
+        else settings.optWarningNoInlineMissingBytecode || missing.exists(_.emitWarning(settings))
 
       case FieldNotFound(_, _, _, missing) =>
-        settings.YoptWarningNoInlineMissingBytecode || missing.exists(_.emitWarning(settings))
+        settings.optWarningNoInlineMissingBytecode || missing.exists(_.emitWarning(settings))
     }
   }
 
@@ -146,7 +146,7 @@ object BackendReporting {
 
     def emitWarning(settings: ScalaSettings): Boolean = this match {
       case NoClassBTypeInfoMissingBytecode(cause)         => cause.emitWarning(settings)
-      case NoClassBTypeInfoClassSymbolInfoFailedSI9111(_) => settings.YoptWarningNoInlineMissingBytecode
+      case NoClassBTypeInfoClassSymbolInfoFailedSI9111(_) => settings.optWarningNoInlineMissingBytecode
     }
   }
 
@@ -179,7 +179,7 @@ object BackendReporting {
       case MethodInlineInfoIncomplete(_, _, _, cause)               => cause.emitWarning(settings)
 
       case MethodInlineInfoMissing(_, _, _, Some(cause))            => cause.emitWarning(settings)
-      case MethodInlineInfoMissing(_, _, _, None)                   => settings.YoptWarningNoInlineMissingBytecode
+      case MethodInlineInfoMissing(_, _, _, None)                   => settings.optWarningNoInlineMissingBytecode
 
       case MethodInlineInfoError(_, _, _, cause)                    => cause.emitWarning(settings)
     }
@@ -225,7 +225,7 @@ object BackendReporting {
 
     def emitWarning(settings: ScalaSettings): Boolean = this match {
       case _: IllegalAccessInstruction | _: MethodWithHandlerCalledOnNonEmptyStack | _: SynchronizedMethod | _: StrictfpMismatch | _: ResultingMethodTooLarge =>
-        settings.YoptWarnings.contains(settings.YoptWarningsChoices.anyInlineFailed)
+        settings.optWarnings.contains(settings.optWarningsChoices.anyInlineFailed)
 
       case IllegalAccessCheckFailed(_, _, _, _, _, cause) =>
         cause.emitWarning(settings)
@@ -247,7 +247,7 @@ object BackendReporting {
   // but at the place where it's created (in findIllegalAccess) we don't have the necessary data (calleeName, calleeDescriptor).
   case object UnknownInvokeDynamicInstruction extends OptimizerWarning {
     override def toString = "The callee contains an InvokeDynamic instruction with an unknown bootstrap method (not a LambdaMetaFactory)."
-    def emitWarning(settings: ScalaSettings): Boolean = settings.YoptWarnings.contains(settings.YoptWarningsChoices.anyInlineFailed)
+    def emitWarning(settings: ScalaSettings): Boolean = settings.optWarnings.contains(settings.optWarningsChoices.anyInlineFailed)
   }
 
   /**
@@ -259,7 +259,7 @@ object BackendReporting {
 
     override def emitWarning(settings: ScalaSettings): Boolean = this match {
       case RewriteClosureAccessCheckFailed(_, cause) => cause.emitWarning(settings)
-      case RewriteClosureIllegalAccess(_, _)         => settings.YoptWarnings.contains(settings.YoptWarningsChoices.anyInlineFailed)
+      case RewriteClosureIllegalAccess(_, _)         => settings.optWarnings.contains(settings.optWarningsChoices.anyInlineFailed)
     }
 
     override def toString: String = this match {
@@ -291,10 +291,10 @@ object BackendReporting {
     }
 
     def emitWarning(settings: ScalaSettings): Boolean = this match {
-      case NoInlineInfoAttribute(_)                             => settings.YoptWarningNoInlineMissingScalaInlineInfoAttr
+      case NoInlineInfoAttribute(_)                             => settings.optWarningNoInlineMissingScalaInlineInfoAttr
       case ClassNotFoundWhenBuildingInlineInfoFromSymbol(cause) => cause.emitWarning(settings)
-      case ClassSymbolInfoFailureSI9111(_)                      => settings.YoptWarningNoInlineMissingBytecode
-      case UnknownScalaInlineInfoVersion(_, _)                  => settings.YoptWarningNoInlineMissingScalaInlineInfoAttr
+      case ClassSymbolInfoFailureSI9111(_)                      => settings.optWarningNoInlineMissingBytecode
+      case UnknownScalaInlineInfoVersion(_, _)                  => settings.optWarningNoInlineMissingScalaInlineInfoAttr
     }
   }
 

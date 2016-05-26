@@ -14,7 +14,7 @@ import scala.tools.testing.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
 class ScalaInlineInfoTest extends BytecodeTesting {
-  override def compilerArgs = "-Yopt:l:none"
+  override def compilerArgs = "-opt:l:none"
   import compiler._
 
   def inlineInfo(c: ClassNode): InlineInfo = c.attrs.asScala.collect({ case a: InlineInfoAttribute => a.inlineInfo }).head

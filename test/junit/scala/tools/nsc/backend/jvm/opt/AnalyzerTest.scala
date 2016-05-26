@@ -15,7 +15,7 @@ import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class AnalyzerTest extends BytecodeTesting {
-  override def compilerArgs = "-Yopt:l:none"
+  override def compilerArgs = "-opt:l:none"
   import compiler._
 
   @Test

@@ -271,7 +271,7 @@ abstract class BTypes {
     // The InlineInfo is built from the classfile (not from the symbol) for all classes that are NOT
     // being compiled. For those classes, the info is only needed if the inliner is enabled, othewise
     // we can save the memory.
-    if (!compilerSettings.YoptInlinerEnabled) BTypes.EmptyInlineInfo
+    if (!compilerSettings.optInlinerEnabled) BTypes.EmptyInlineInfo
     else fromClassfileAttribute getOrElse fromClassfileWithoutAttribute
   }
 

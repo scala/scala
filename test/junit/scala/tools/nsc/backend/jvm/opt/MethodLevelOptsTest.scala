@@ -17,7 +17,7 @@ import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class MethodLevelOptsTest extends BytecodeTesting {
-  override def compilerArgs = "-Yopt:l:method"
+  override def compilerArgs = "-opt:l:method"
   import compiler._
 
   def wrapInDefault(code: Instruction*) = List(Label(0), LineNumber(1, Label(0))) ::: code.toList ::: List(Label(1))
