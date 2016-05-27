@@ -686,23 +686,21 @@ trait Types
      *  }}}
      */
     def memberInfo(sym: Symbol): Type = {
-      require(sym ne NoSymbol, this)
+//      assert(sym ne NoSymbol, this)
       sym.info.asSeenFrom(this, sym.owner)
     }
 
     /** The type of `sym`, seen as a member of this type. */
-    def memberType(sym: Symbol): Type = sym match {
-      case meth: MethodSymbol =>
-        meth.typeAsMemberOf(this)
-      case _ =>
-        computeMemberType(sym)
-    }
-
-    def computeMemberType(sym: Symbol): Type = sym.tpeHK match { //@M don't prematurely instantiate higher-kinded types, they will be instantiated by transform, typedTypeApply, etc. when really necessary
-      case OverloadedType(_, alts) =>
-        OverloadedType(this, alts)
+    def memberType(sym: Symbol): Type = sym.tpeHK match {
+      case OverloadedType(_, alts) => OverloadedType(this, alts)
       case tp =>
-        if (sym eq NoSymbol) NoType else tp.asSeenFrom(this, sym.owner)
+        // Correct caching is nearly impossible because `sym.tpeHK.asSeenFrom(pre, sym.owner)`
+        // may have different results even for reference-identical `sym.tpeHK` and `pre` (even in the same period).
+        // For example, `pre` could be a `ThisType`. For such a type, `tpThen eq tpNow` does not imply
+        // `tpThen` and `tpNow` mean the same thing, because `tpThen.typeSymbol.info` could have been different
+        // from what it is now, and the cache won't know simply by looking at `pre`.
+        if (sym eq NoSymbol) NoType
+        else tp.asSeenFrom(this, sym.owner)
     }
 
     /** Substitute types `to` for occurrences of references to

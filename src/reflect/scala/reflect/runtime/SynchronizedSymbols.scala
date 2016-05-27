@@ -199,12 +199,7 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
 
   trait SynchronizedTermSymbol extends SynchronizedSymbol
 
-  trait SynchronizedMethodSymbol extends MethodSymbol with SynchronizedTermSymbol {
-    // we can keep this lock fine-grained, because it's just a cache over asSeenFrom, which makes deadlocks impossible
-    // unfortunately we cannot elide this lock, because the cache depends on `pre`
-    private lazy val typeAsMemberOfLock = new Object
-    override def typeAsMemberOf(pre: Type): Type = gilSynchronizedIfNotThreadsafe { typeAsMemberOfLock.synchronized { super.typeAsMemberOf(pre) } }
-  }
+  trait SynchronizedMethodSymbol extends MethodSymbol with SynchronizedTermSymbol
 
   trait SynchronizedModuleSymbol extends ModuleSymbol with SynchronizedTermSymbol
 

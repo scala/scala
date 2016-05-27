@@ -2906,11 +2906,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** A class for method symbols */
   class MethodSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
   extends TermSymbol(initOwner, initPos, initName) with MethodSymbolApi {
-    private[this] var mtpePeriod       = NoPeriod
-    private[this] var mtpePre: Type    = _
-    private[this] var mtpeResult: Type = _
-    private[this] var mtpeInfo: Type   = _
-
     override def isLabel         = this hasFlag LABEL
     override def isVarargsMethod = this hasFlag VARARGS
     override def isLiftedMethod  = this hasFlag LIFTED
@@ -2927,21 +2922,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // unfortunately having the CASEACCESSOR flag does not actually mean you
     // are a case accessor (you can also be a field.)
     override def isCaseAccessorMethod = isCaseAccessor
-
-    def typeAsMemberOf(pre: Type): Type = {
-      if (mtpePeriod == currentPeriod) {
-        if ((mtpePre eq pre) && (mtpeInfo eq info)) return mtpeResult
-      } else if (isValid(mtpePeriod)) {
-        mtpePeriod = currentPeriod
-        if ((mtpePre eq pre) && (mtpeInfo eq info)) return mtpeResult
-      }
-      val res = pre.computeMemberType(this)
-      mtpePeriod = currentPeriod
-      mtpePre = pre
-      mtpeInfo = info
-      mtpeResult = res
-      res
-    }
 
     override def isVarargs: Boolean = definitions.isVarArgsList(paramss.flatten)
 
