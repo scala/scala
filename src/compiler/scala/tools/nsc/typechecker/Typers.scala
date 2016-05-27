@@ -2391,19 +2391,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               }
               // The block is an anonymous class definitions/instantiation pair
               //   -> members that are hidden by the type of the block are made private
-              val toHide = (
-                classDecls filter (member =>
-                     member.isTerm
-                  && member.isPossibleInRefinement
-                  && member.isPublic
-                  && !matchesVisibleMember(member)
-                ) map (member => member
-                  resetFlag (PROTECTED | LOCAL)
-                  setFlag (PRIVATE | SYNTHETIC_PRIVATE)
-                  setPrivateWithin NoSymbol
-                )
-              )
-              syntheticPrivates ++= toHide
+              classDecls foreach { toHide =>
+                if (toHide.isTerm
+                    && toHide.isPossibleInRefinement
+                    && toHide.isPublic
+                    && !matchesVisibleMember(toHide)) {
+                  (toHide
+                   resetFlag (PROTECTED | LOCAL)
+                   setFlag (PRIVATE | SYNTHETIC_PRIVATE)
+                   setPrivateWithin NoSymbol)
+
+                  syntheticPrivates += toHide
+                }
+              }
+
             case _ =>
           }
         }
@@ -3641,10 +3642,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             reportAnnotationError(MultipleArgumentListForAnnotationError(ann))
           }
           else {
-            val annScope = annType.decls
-                .filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
+            val annScopeJava =
+              if (isJava) annType.decls.filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
+              else EmptyScope // annScopeJava is only used if isJava
+
             val names = mutable.Set[Symbol]()
-            names ++= (if (isJava) annScope.iterator
+            names ++= (if (isJava) annScopeJava.iterator
                        else typedFun.tpe.params.iterator)
 
             def hasValue = names exists (_.name == nme.value)
@@ -3655,7 +3658,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
             val nvPairs = args map {
               case arg @ AssignOrNamedArg(Ident(name), rhs) =>
-                val sym = if (isJava) annScope.lookup(name)
+                val sym = if (isJava) annScopeJava.lookup(name)
                           else findSymbol(typedFun.tpe.params)(_.name == name)
                 if (sym == NoSymbol) {
                   reportAnnotationError(UnknownAnnotationNameError(arg, name))

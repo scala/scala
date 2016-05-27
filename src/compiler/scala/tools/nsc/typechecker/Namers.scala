@@ -463,7 +463,7 @@ trait Namers extends MethodSynthesis {
         //      opening up the package object on the classpath at all if one exists in source.
         if (m.isPackageObject) {
           val packageScope = m.enclosingPackageClass.rawInfo.decls
-          packageScope.filter(_.owner != m.enclosingPackageClass).toList.foreach(packageScope unlink _)
+          packageScope.foreach(mem => if (mem.owner != m.enclosingPackageClass) packageScope unlink mem)
         }
         updatePosFlags(m, tree.pos, moduleFlags)
         setPrivateWithin(tree, m)

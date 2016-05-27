@@ -863,12 +863,13 @@ trait Definitions extends api.StandardDefinitions {
         //    Scopes()
         // must filter out "universal" members (getClass is deferred for some reason)
         val deferredMembers = (
-          tp membersBasedOnFlags (excludedFlags = BridgeAndPrivateFlags, requiredFlags = METHOD)
-          filter (mem => mem.isDeferredNotJavaDefault && !isUniversalMember(mem)) // TODO: test
+          tp.membersBasedOnFlags(excludedFlags = BridgeAndPrivateFlags, requiredFlags = METHOD).toList.filter(
+            mem => mem.isDeferredNotJavaDefault && !isUniversalMember(mem)
+          ) // TODO: test
         )
 
         // if there is only one, it's monomorphic and has a single argument list
-        if (deferredMembers.size == 1 &&
+        if (deferredMembers.lengthCompare(1) == 0 &&
             deferredMembers.head.typeParams.isEmpty &&
             deferredMembers.head.info.paramSectionCount == 1)
           deferredMembers.head
