@@ -311,7 +311,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         }
         else if (mixinMember.hasAllFlags(METHOD | MODULE) && mixinMember.hasNoFlags(LIFTED | BRIDGE)) {
           // mixin objects: todo what happens with abstract objects?
-          addMember(clazz, mixinMember.cloneSymbol(clazz, mixinMember.flags & ~(DEFERRED | lateDEFERRED)) setPos clazz.pos)
+          // addMember(clazz, mixinMember.cloneSymbol(clazz, mixinMember.flags & ~(DEFERRED | lateDEFERRED)) setPos clazz.pos)
         }
         else if (mixinMember.hasFlag(ACCESSOR) && notDeferredOrLate(mixinMember)
                  && (mixinMember hasFlag (LAZY | PARAMACCESSOR))
