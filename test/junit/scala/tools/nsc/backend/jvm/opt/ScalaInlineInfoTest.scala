@@ -83,7 +83,7 @@ class ScalaInlineInfoTest extends BytecodeTesting {
       false, // final class
       None, // not a sam
       Map(
-        ("O()LT$O$;",                                                 MethodInlineInfo(true ,false,false)), // the accessor is abstract in bytecode, but still effectivelyFinal because there's no (late)DEFERRED flag, https://github.com/scala/scala-dev/issues/126
+        ("O()LT$O$;",                                                 MethodInlineInfo(false,false,false)),
         ("T$$super$toString()Ljava/lang/String;",                     MethodInlineInfo(true ,false,false)),
         ("T$_setter_$x1_$eq(I)V",                                     MethodInlineInfo(false,false,false)),
         ("f1()I",                                                     MethodInlineInfo(false,false,false)),
