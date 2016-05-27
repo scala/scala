@@ -284,39 +284,39 @@ self =>
   def r(groupNames: String*): Regex = new Regex(toString, groupNames: _*)
 
   /**
-   * @throws java.lang.IllegalArgumentException - If the string does not contain a parsable boolean.
+   * @throws java.lang.IllegalArgumentException  If the string does not contain a parsable `Boolean`.
    */
   def toBoolean: Boolean = parseBoolean(toString)
   /**
-   * Parse string as a Byte (string must contain only decimal digits and optional leading '-').
-   * @throws java.lang.NumberFormatException - If the string does not contain a parsable byte.
+   * Parse as a `Byte` (string must contain only decimal digits and optional leading `-`).
+   * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Byte`.
    */
   def toByte: Byte       = java.lang.Byte.parseByte(toString)
   /**
-   * Parse string as a Short (string must contain only decimal digits and optional leading '-').
-   * @throws java.lang.NumberFormatException - If the string does not contain a parsable short.
+   * Parse as a `Short` (string must contain only decimal digits and optional leading `-`).
+   * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Short`.
    */
   def toShort: Short     = java.lang.Short.parseShort(toString)
   /**
-   * Parse string as an Int (string must contain only decimal digits and optional leading '-').
-   * @throws java.lang.NumberFormatException  - If the string does not contain a parsable int.
+   * Parse as an `Int` (string must contain only decimal digits and optional leading `-`).
+   * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Int`.
    */
   def toInt: Int         = java.lang.Integer.parseInt(toString)
   /**
-   * Parse string as a Long (string must contain only decimal digits and optional leading '-').
-   * @throws java.lang.NumberFormatException  - If the string does not contain a parsable long.
+   * Parse as a `Long` (string must contain only decimal digits and optional leading `-`).
+   * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Long`.
    */
   def toLong: Long       = java.lang.Long.parseLong(toString)
   /**
-    * Parse string as a Double (surrounding whitespace removed with trim).
-    * @throws java.lang.NumberFormatException - If the string does not contain a parsable float.
-    * @throws java.lang.NullPointerException - If the string is null.
+    * Parse as a `Float` (surrounding whitespace is removed with a `trim`).
+    * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Float`.
+    * @throws java.lang.NullPointerException  If the string is null.
    */
   def toFloat: Float     = java.lang.Float.parseFloat(toString)
   /**
-    * Parse string as a Float (surrounding whitespace removed with trim).
-    * @throws java.lang.NumberFormatException - If the string does not contain a parsable double.
-    * @throws java.lang.NullPointerException - If the string is null.
+    * Parse as a `Double` (surrounding whitespace is removed with a `trim`).
+    * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Double`.
+    * @throws java.lang.NullPointerException  If the string is null.
    */
   def toDouble: Double   = java.lang.Double.parseDouble(toString)
 
