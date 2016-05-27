@@ -25,6 +25,9 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   import inlinerHeuristics._
   import backendUtils._
 
+  case class InlineLog(request: InlineRequest, sizeBefore: Int, sizeAfter: Int, sizeInlined: Int, warning: Option[CannotInlineWarning])
+  var inlineLog: List[InlineLog] = Nil
+
   def runInliner(): Unit = {
     for (request <- collectAndOrderInlineRequests) {
       val Right(callee) = request.callsite.callee // collectAndOrderInlineRequests returns callsites with a known callee
@@ -39,6 +42,29 @@ class Inliner[BT <: BTypes](val btypes: BT) {
           val annotWarn = if (callee.annotatedInline) " is annotated @inline but" else ""
           val msg = s"${BackendReporting.methodSignature(callee.calleeDeclarationClass.internalName, callee.callee)}$annotWarn could not be inlined:\n$warning"
           backendReporting.inlinerWarning(request.callsite.callsitePosition, msg)
+        }
+      }
+    }
+
+    if (compilerSettings.YoptLogInline.isSetByUser) {
+      val methodPrefix = { val p = compilerSettings.YoptLogInline.value; if (p == "_") "" else p }
+      val byCallsiteMethod = inlineLog.groupBy(_.request.callsite.callsiteMethod).toList.sortBy(_._2.head.request.callsite.callsiteClass.internalName)
+      for ((m, mLogs) <- byCallsiteMethod) {
+        val initialSize = mLogs.minBy(_.sizeBefore).sizeBefore
+        val firstLog = mLogs.head
+        val methodName = s"${firstLog.request.callsite.callsiteClass.internalName}.${m.name}"
+        if (methodName.startsWith(methodPrefix)) {
+          println(s"Inlining into $methodName (initially $initialSize instructions, ultimately ${m.instructions.size}):")
+          val byCallee = mLogs.groupBy(_.request.callsite.callee.get).toList.sortBy(_._2.length).reverse
+          for ((c, cLogs) <- byCallee) {
+            val first = cLogs.head
+            if (first.warning.isEmpty) {
+              val num = if (cLogs.tail.isEmpty) "" else s" ${cLogs.length} times"
+              println(s"  - Inlined ${c.calleeDeclarationClass.internalName}.${c.callee.name} (${first.sizeInlined} instructions)$num: ${first.request.reason}")
+            } else
+              println(s"  - Failed to inline ${c.calleeDeclarationClass.internalName}.${c.callee.name} (${first.request.reason}): ${first.warning.get}")
+          }
+          println()
         }
       }
     }
@@ -184,7 +210,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     def impl(post: InlineRequest, at: Callsite): List[InlineRequest] = {
       post.callsite.inlinedClones.find(_.clonedWhenInlining == at) match {
         case Some(clonedCallsite) =>
-          List(InlineRequest(clonedCallsite.callsite, post.post))
+          List(InlineRequest(clonedCallsite.callsite, post.post, post.reason))
         case None =>
           post.post.flatMap(impl(_, post.callsite)).flatMap(impl(_, at))
       }
@@ -199,9 +225,17 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    * @return An inliner warning for each callsite that could not be inlined.
    */
   def inline(request: InlineRequest): List[CannotInlineWarning] = canInlineBody(request.callsite) match {
-    case Some(w) => List(w)
+    case Some(w) =>
+      if (compilerSettings.YoptLogInline.isSetByUser) {
+        val size = request.callsite.callsiteMethod.instructions.size
+        inlineLog ::= InlineLog(request, size, size, 0, Some(w))
+      }
+      List(w)
     case None =>
+      val sizeBefore = request.callsite.callsiteMethod.instructions.size
       inlineCallsite(request.callsite)
+      if (compilerSettings.YoptLogInline.isSetByUser)
+        inlineLog ::= InlineLog(request, sizeBefore, request.callsite.callsiteMethod.instructions.size, request.callsite.callee.get.callee.instructions.size, None)
       val postRequests = request.post.flatMap(adaptPostRequestForMainCallsite(_, request.callsite))
       postRequests flatMap inline
   }

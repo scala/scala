@@ -72,7 +72,7 @@ class InlinerTest extends BytecodeTesting {
 
   def inlineTest(code: String, mod: ClassNode => Unit = _ => ()): MethodNode = {
     val (gMethod, fCall) = gMethAndFCallsite(code, mod)
-    inliner.inline(InlineRequest(fCall, Nil))
+    inliner.inline(InlineRequest(fCall, Nil, null))
     gMethod
   }
 
@@ -343,7 +343,7 @@ class InlinerTest extends BytecodeTesting {
     val warning = inliner.canInlineBody(call)
     assert(warning.isEmpty, warning)
 
-    inliner.inline(InlineRequest(call, Nil))
+    inliner.inline(InlineRequest(call, Nil, null))
     val ins = instructionsFromMethod(fMeth)
 
     // no invocations, lowestOneBit is inlined
@@ -976,7 +976,7 @@ class InlinerTest extends BytecodeTesting {
 
     inliner.inline(InlineRequest(hCall,
       post = List(InlineRequest(gCall,
-        post = List(InlineRequest(fCall, Nil))))))
+        post = List(InlineRequest(fCall, Nil, null)), null)), null))
     assertNoInvoke(convertMethod(iMeth)) // no invoke in i: first h is inlined, then the inlined call to g is also inlined, etc for f
     assertInvoke(convertMethod(gMeth), "C", "f") // g itself still has the call to f
   }
@@ -998,11 +998,11 @@ class InlinerTest extends BytecodeTesting {
     val bCall = getCallsite(c, "b")
     val cCall = getCallsite(d, "c")
 
-    inliner.inline(InlineRequest(bCall, Nil))
+    inliner.inline(InlineRequest(bCall, Nil, null))
 
     val req = InlineRequest(cCall,
       List(InlineRequest(bCall,
-        List(InlineRequest(aCall, Nil)))))
+        List(InlineRequest(aCall, Nil, null)), null)), null)
     inliner.inline(req)
 
     assertNoInvoke(convertMethod(d))
