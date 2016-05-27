@@ -632,7 +632,7 @@ trait ContextErrors {
 
       //adapt
       def MissingArgsForMethodTpeError(tree: Tree, meth: Symbol) = {
-        val f = meth.name
+        val f = meth.name.decoded
         val paf = s"$f(${ meth.asMethod.paramLists map (_ map (_ => "_") mkString ",") mkString ")(" })"
         val advice = s"""
           |Unapplied methods are only converted to functions when a function type is expected.
