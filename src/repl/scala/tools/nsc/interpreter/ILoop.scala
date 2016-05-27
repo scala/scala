@@ -490,11 +490,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   def editCommand(what: String): Result = editCommand(what, Properties.envOrNone("EDITOR"))
 
   def editCommand(what: String, editor: Option[String]): Result = {
-    def diagnose(code: String) = {
-      echo("The edited code is incomplete!\n")
-      val errless = intp compileSources new BatchSourceFile("<pastie>", s"object pastel {\n$code\n}")
-      if (errless) echo("The compiler reports no errors.")
-    }
+    def diagnose(code: String): Unit = paste.incomplete("The edited code is incomplete!\n", "<edited>", code)
 
     def edit(text: String): Result = editor match {
       case Some(ed) =>
@@ -756,21 +752,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         text
     }
     def interpretCode() = {
-      val res = intp.withLabel(label)(intp interpret code)
-      // if input is incomplete, let the compiler try to say why
-      if (res == IR.Incomplete) {
-        echo("The pasted code is incomplete!\n")
-        // Remembrance of Things Pasted in an object
-        val errless = intp compileSources new BatchSourceFile(label, s"object pastel {\n$code\n}")
-        if (errless) echo("...but compilation found no error? Good luck with that.")
-      }
+      if (intp.withLabel(label)(intp interpret code) == IR.Incomplete)
+        paste.incomplete("The pasted code is incomplete!\n", label, code)
     }
-    def compileCode() = {
-      val errless = intp compileSources new BatchSourceFile(label, code)
-      if (!errless) echo("There were compilation errors!")
-    }
+    def compileCode() = paste.compilePaste(label = label, code = code)
+
     if (code.nonEmpty) {
-      if (raw) compileCode() else interpretCode()
+      if (raw || paste.isPackaged(code)) compileCode() else interpretCode()
     }
     result
   }
@@ -778,6 +766,27 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   private object paste extends Pasted(prompt) {
     def interpret(line: String) = intp interpret line
     def echo(message: String)   = ILoop.this echo message
+
+    val leadingElement = raw"(?s)\s*(package\s|/)".r
+    def isPackaged(code: String): Boolean = {
+      leadingElement.findPrefixMatchOf(code)
+        .map(m => if (m.group(1) == "/") intp.parse.packaged(code) else true)
+        .getOrElse(false)
+    }
+
+    // if input is incomplete, wrap and compile for diagnostics.
+    def incomplete(message: String, label: String, code: String): Boolean = {
+      echo(message)
+      val errless = intp.compileSources(new BatchSourceFile(label, s"object pastel {\n$code\n}"))
+      if (errless) echo("No error found in incomplete source.")
+      errless
+    }
+
+    def compilePaste(label: String, code: String): Boolean = {
+      val errless = intp.compileSources(new BatchSourceFile(label, code))
+      if (!errless) echo("There were compilation errors!")
+      errless
+    }
   }
 
   private object invocation {

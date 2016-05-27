@@ -1101,7 +1101,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     case class Incomplete(trees: List[Tree]) extends Result
     case class Success(trees: List[Tree]) extends Result
 
-    def apply(line: String): Result = debugging(s"""parse("$line")""")  {
+    def apply(line: String): Result = debugging(s"""parse("$line")""") {
       var isIncomplete = false
       def parse = {
         reporter.reset()
@@ -1110,8 +1110,18 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
         else if (isIncomplete) Incomplete(trees)
         else Success(trees)
       }
-      currentRun.parsing.withIncompleteHandler((_, _) => isIncomplete = true) {parse}
-
+      currentRun.parsing.withIncompleteHandler((_, _) => isIncomplete = true)(parse)
+    }
+    // code has a named package
+    def packaged(line: String): Boolean = {
+      def parses = {
+        reporter.reset()
+        val tree = newUnitParser(line).parse()
+        !reporter.hasErrors && {
+          tree match { case PackageDef(Ident(id), _) => id != nme.EMPTY_PACKAGE_NAME case _ => false }
+        }
+      }
+      beSilentDuring(parses)
     }
   }
 
