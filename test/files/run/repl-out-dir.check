@@ -11,6 +11,8 @@ repl-out-dir-run.obj
         $eval$.class
         $eval.class
     $line2
+        $eval$$iw$$iw$.class
+        $eval$$iw$.class
         $eval$.class
         $eval.class
         $read$$iw$$iw$.class
@@ -18,6 +20,8 @@ repl-out-dir-run.obj
         $read$.class
         $read.class
     $line3
+        $eval$$iw$$iw$.class
+        $eval$$iw$.class
         $eval$.class
         $eval.class
         $read$$iw$$iw$.class
@@ -27,6 +31,8 @@ repl-out-dir-run.obj
         $read$.class
         $read.class
     $line4
+        $eval$$iw$$iw$.class
+        $eval$$iw$.class
         $eval$.class
         $eval.class
         $read$$iw$$iw$.class
@@ -34,6 +40,8 @@ repl-out-dir-run.obj
         $read$.class
         $read.class
     $line5
+        $eval$$iw$$iw$.class
+        $eval$$iw$.class
         $eval$.class
         $eval.class
         $read$$iw$$iw$.class

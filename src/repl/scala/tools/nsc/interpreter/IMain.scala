@@ -922,19 +922,28 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       val preamble = """
       |object %s {
       |  %s
+      |  %s
       |  lazy val %s: _root_.java.lang.String = %s {
       |    %s
       |    (""
       """.stripMargin.format(
-        lineRep.evalName, evalResult, lineRep.printName,
+        lineRep.evalName, evalResult, importsPreamble, lineRep.printName,
         executionWrapper, fullAccessPath
       )
 
       val postamble = """
       |    )
       |  }
+      |  %s
+      |  lazy val %s: _root_.java.lang.String = %s {
+      |    %s
+      |  }
       |}
-      """.stripMargin
+      """.stripMargin.format(
+        importsTrailer, lineRep.printName, executionWrapper,
+        lineRep.evalPath + accessPath + "." + lineRep.printName
+      )
+
       val generate = (m: MemberHandler) => m resultExtractionCode Request.this
     }
 
