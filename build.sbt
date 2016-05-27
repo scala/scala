@@ -220,7 +220,7 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
   // directly to stdout
   outputStrategy in run := Some(StdoutOutput),
   Quiet.silenceScalaBinaryVersionWarning
-)
+) ++ removePomDependencies
 
 /** Extra post-processing for the published POM files. These are needed to create POMs that
   * are equivalent to the ones from the ANT build. In the long term this should be removed and
@@ -249,10 +249,16 @@ def fixPom(extra: (String, scala.xml.Node)*): Setting[_] = {
   ) ++ extra) }
 }
 
+val pomDependencyExclusions =
+  settingKey[Seq[(String, String)]]("List of (groupId, artifactId) pairs to exclude from the POM and ivy.xml")
+
+pomDependencyExclusions in Global := Nil
+
 /** Remove unwanted dependencies from the POM and ivy.xml. */
-def removePomDependencies(deps: (String, String)*): Seq[Setting[_]] = Seq(
+lazy val removePomDependencies: Seq[Setting[_]] = Seq(
   pomPostProcess := { n =>
     val n2 = pomPostProcess.value.apply(n)
+    val deps = pomDependencyExclusions.value
     import scala.xml._
     import scala.xml.transform._
     new RuleTransformer(new RewriteRule {
@@ -270,6 +276,7 @@ def removePomDependencies(deps: (String, String)*): Seq[Setting[_]] = Seq(
     import scala.xml._
     import scala.xml.transform._
     val f = deliverLocal.value
+    val deps = pomDependencyExclusions.value
     val e = new RuleTransformer(new RewriteRule {
       override def transform(node: Node) = node match {
         case e: Elem if e.label == "dependency" && {
@@ -366,10 +373,10 @@ lazy val library = configureAsSubproject(project)
       "/project/name" -> <name>Scala Library</name>,
       "/project/description" -> <description>Standard library for the Scala Programming Language</description>,
       "/project/packaging" -> <packaging>jar</packaging>
-    )
+    ),
+    // Remove the dependency on "forkjoin" from the POM because it is included in the JAR:
+    pomDependencyExclusions += ((organization.value, "forkjoin"))
   )
-  // Remove the dependency on "forkjoin" from the POM because it is included in the JAR:
-  .settings(removePomDependencies(("org.scala-lang", "forkjoin")): _*)
   .settings(filterDocSources("*.scala" -- (regexFileFilter(".*/runtime/.*\\$\\.scala") ||
                                            regexFileFilter(".*/runtime/ScalaRunTime\\.scala") ||
                                            regexFileFilter(".*/runtime/StringAdd\\.scala"))): _*)
@@ -451,12 +458,9 @@ lazy val compiler = configureAsSubproject(project)
       "/project/description" -> <description>Compiler for the Scala Programming Language</description>,
       "/project/packaging" -> <packaging>jar</packaging>
     ),
-    apiURL := None
+    apiURL := None,
+    pomDependencyExclusions ++= List(("org.apache.ant", "ant"), ("org.scala-lang.modules", "scala-asm"))
   )
-  .settings(removePomDependencies(
-    ("org.apache.ant", "ant"),
-    ("org.scala-lang.modules", "scala-asm")
-  ): _*)
   .dependsOn(library, reflect)
 
 lazy val interactive = configureAsSubproject(project)
