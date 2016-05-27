@@ -34,7 +34,7 @@ trait ReplStrings {
     "\"" + string2code(str) + "\""
 
   def any2stringOf(x: Any, maxlen: Int) =
-    "scala.runtime.ScalaRunTime.replStringOf(%s, %s)".format(x, maxlen)
+    "_root_.scala.runtime.ScalaRunTime.replStringOf(%s, %s)".format(x, maxlen)
 
   // no escaped or nested quotes
   private[this] val inquotes = """(['"])(.*?)\1""".r
