@@ -497,8 +497,11 @@ abstract class UnCurry extends InfoTransform
           case MethodType(_, _)           => tree
           case tp                         => tree setType MethodType(Nil, tp.resultType)
         }
-        if (tree.symbol.isMethod && !tree.tpe.isInstanceOf[PolyType])
-          gen.mkApplyIfNeeded(removeNullary())
+        val sym = tree.symbol
+        // our info transformer may not have run yet, so duplicate flag logic instead of forcing it to run
+        val isMethodExitingUncurry = (sym hasFlag METHOD) || (sym hasFlag MODULE) && !sym.isStatic
+        if (isMethodExitingUncurry && !tree.tpe.isInstanceOf[PolyType])
+          gen.mkApplyIfNeeded(removeNullary()) // apply () if tree.tpe has zero-arg MethodType
         else if (tree.isType)
           TypeTree(tree.tpe) setPos tree.pos
         else

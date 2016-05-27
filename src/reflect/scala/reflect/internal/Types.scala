@@ -3469,10 +3469,10 @@ trait Types
     if (!sym.isOverridableMember || sym.owner == pre.typeSymbol) sym
     else pre.nonPrivateMember(sym.name).suchThat { sym =>
       // SI-7928 `isModuleNotMethod` is here to avoid crashing with spuriously "overloaded" module accessor and module symbols.
-      //         These appear after refchecks eliminates ModuleDefs that implement an interface.
+      //         These appear after the fields phase eliminates ModuleDefs that implement an interface.
       //         Here, we exclude the module symbol, which allows us to bind to the accessor.
-      // SI-8054 We must only do this after refchecks, otherwise we exclude the module symbol which does not yet have an accessor!
-      val isModuleWithAccessor = phase.refChecked && sym.isModuleNotMethod
+      // SI-8054 We must only do this after fields, otherwise we exclude the module symbol which does not yet have an accessor!
+      val isModuleWithAccessor = phase.assignsFields && sym.isModuleNotMethod
       sym.isType || (!isModuleWithAccessor && sym.isStable && !sym.hasVolatileType)
     } orElse sym
   }

@@ -14,7 +14,7 @@ import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.nsc.settings.NoScalaVersion
 
 import symtab.Flags._
-import transform.InfoTransform
+import transform.Transform
 
 
 /** <p>
@@ -43,7 +43,7 @@ import transform.InfoTransform
  *
  *  @todo    Check whether we always check type parameter bounds.
  */
-abstract class RefChecks extends InfoTransform with scala.reflect.internal.transform.RefChecks {
+abstract class RefChecks extends Transform {
 
   val global: Global               // need to repeat here because otherwise last mixin defines global as
                                    // SymbolTable. If we had DOT this would not be an issue
@@ -54,31 +54,9 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "refchecks"
-  override def phaseNewFlags: Long = lateMETHOD
 
   def newTransformer(unit: CompilationUnit): RefCheckTransformer =
     new RefCheckTransformer(unit)
-  override def changesBaseClasses = false
-
-  override def transformInfo(sym: Symbol, tp: Type): Type = {
-    // !!! This is a sketchy way to do things.
-    // It would be better to replace the module symbol with a method symbol
-    // rather than creating this module/method hybrid which must be special
-    // cased all over the place. Look for the call sites which use(d) some
-    // variation of "isMethod && !isModule", which to an observer looks like
-    // a nonsensical condition. (It is now "isModuleNotMethod".)
-    if (sym.isModule && !sym.isStatic) {
-      sym setFlag lateMETHOD | STABLE
-      // Note that this as far as we can see it works equally well
-      // to set the METHOD flag here and dump lateMETHOD, but it does
-      // mean that under separate compilation the typer will see
-      // modules as methods (albeit stable ones with singleton types.)
-      // So for now lateMETHOD lives while we try to convince ourselves
-      // we can live without it or deliver that info some other way.
-      log(s"Stabilizing module method for ${sym.fullLocationString}")
-    }
-    super.transformInfo(sym, tp)
-  }
 
   val toJavaRepeatedParam  = new SubstSymMap(RepeatedParamClass -> JavaRepeatedParamClass)
   val toScalaRepeatedParam = new SubstSymMap(JavaRepeatedParamClass -> RepeatedParamClass)

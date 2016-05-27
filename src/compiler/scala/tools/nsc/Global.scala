@@ -456,7 +456,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   } with Pickler
 
   // phaseName = "refchecks"
-  override object refChecks extends {
+  object refChecks extends {
     val global: Global.this.type = Global.this
     val runsAfter = List("pickler")
     val runsRightAfter = None
