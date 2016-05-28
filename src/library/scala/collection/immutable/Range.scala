@@ -91,17 +91,16 @@ extends scala.collection.AbstractSeq[Int]
     }
   }
 
-  private val lastElement =
-    if (isEmpty) start - step
-    else step match {
-      case 1  => if (isInclusive) end else end-1
-      case -1 => if (isInclusive) end else end+1
-      case _  =>
-        val remainder = (gap % step).toInt
-        if (remainder != 0) end - remainder
-        else if (isInclusive) end
-        else end - step
-    }
+  // This field has a sensible value only for non-empty ranges
+  private val lastElement = step match {
+    case 1  => if (isInclusive) end else end-1
+    case -1 => if (isInclusive) end else end+1
+    case _  =>
+      val remainder = (gap % step).toInt
+      if (remainder != 0) end - remainder
+      else if (isInclusive) end
+      else end - step
+  }
 
   /** The last element of this range.  This method will return the correct value
    *  even if there are too many elements to iterate over.
