@@ -982,10 +982,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isEffectivelyFinal: Boolean = (
          (this hasFlag FINAL | PACKAGE)
       || isModuleOrModuleClass && (isTopLevel || !settings.overrideObjects)
-      || isTerm && (
-             isPrivate
-          || isLocalToBlock
-         )
+      || isTerm && (isPrivate || isLocalToBlock || (hasAllFlags(notPRIVATE | METHOD) && !hasFlag(DEFERRED)))
       || isClass && originalOwner.isTerm && children.isEmpty // we track known subclasses of term-owned classes, use that infer finality
     )
     /** Is this symbol effectively final or a concrete term member of sealed class whose children do not override it */
@@ -2449,14 +2446,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     final def makeNotPrivate(base: Symbol) {
       if (this.isPrivate) {
-        setFlag(notPRIVATE)
-        // Marking these methods final causes problems for proxies which use subclassing. If people
-        // write their code with no usage of final, we probably shouldn't introduce it ourselves
-        // unless we know it is safe. ... Unfortunately if they aren't marked final the inliner
-        // thinks it can't inline them. So once again marking lateFINAL, and in genjvm we no longer
-        // generate ACC_FINAL on "final" methods which are actually lateFINAL.
-        if (isMethod && !isDeferred)
-          setFlag(lateFINAL)
+        setFlag(notPRIVATE) // this makes it effectively final (isEffectivelyFinal)
+        // don't set FINAL -- methods not marked final by user should not end up final in bytecode
+        // inliner will know it's effectively final (notPRIVATE non-deferred method)
         if (!isStaticModule && !isClassConstructor) {
           expandName(base)
           if (isModule) moduleClass.makeNotPrivate(base)

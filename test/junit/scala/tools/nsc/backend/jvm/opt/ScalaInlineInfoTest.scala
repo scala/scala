@@ -75,7 +75,7 @@ class ScalaInlineInfoTest extends BytecodeTesting {
       false, // final class
       None, // not a sam
       Map(
-        ("O()LT$O$;",                                                 MethodInlineInfo(false,false,false)),
+        ("O()LT$O$;",                                                 MethodInlineInfo(false ,false,false)),
         ("T$$super$toString()Ljava/lang/String;",                     MethodInlineInfo(true ,false,false)),
         ("T$_setter_$x1_$eq(I)V",                                     MethodInlineInfo(false,false,false)),
         ("f1()I",                                                     MethodInlineInfo(false,false,false)),

@@ -107,7 +107,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
 // --------- type transformation -----------------------------------------------
 
-  private def notDeferred(sym: Symbol) = !sym.hasFlag(DEFERRED) || sym.hasFlag(SYNTHESIZE_IMPL_IN_SUBCLASS)
+  @inline final def notDeferred(sym: Symbol) = fields.notDeferredOrSynthImpl(sym)
 
   /** Is member overridden (either directly or via a bridge) in base class sequence `bcs`? */
   def isOverriddenAccessor(member: Symbol, bcs: List[Symbol]): Boolean = beforeOwnPhase {

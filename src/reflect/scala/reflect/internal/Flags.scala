@@ -221,7 +221,7 @@ class Flags extends ModifierFlags {
   // notPROTECTED set in ExplicitOuter#transform.
 
 //  final val lateDEFERRED  = (DEFERRED: Long) << LateShift // unused
-  final val lateFINAL     = (FINAL: Long) << LateShift    // only used for inliner -- could be subsumed by notPRIVATE?
+//  final val lateFINAL     = (FINAL: Long) << LateShift    // only used for inliner -- could be subsumed by notPRIVATE?
 //  final val lateMETHOD    = (METHOD: Long) << LateShift   // unused
 //  final val lateMODULE    = (MODULE: Long) << LateShift   // unused
 
@@ -452,7 +452,7 @@ class Flags extends ModifierFlags {
     case     JAVA_ANNOTATION => "<annotation>"                        // (1L << 49)
     case SYNTHESIZE_IMPL_IN_SUBCLASS => "<sub_synth>"                 // (1L << 50)
     case   0x08000000000000L => "<latedeferred>"                      // (1L << 51)
-    case         `lateFINAL` => "<latefinal>"                         // (1L << 52)
+    case   0x10000000000000L => "<latefinal>"                         // (1L << 52)
     case   0x20000000000000L => "<latemethod>"                        // (1L << 53)
     case   0x40000000000000L => ""                                    // (1L << 54)
     case   0x80000000000000L => "<latemodule>"                        // (1L << 55)

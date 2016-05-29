@@ -83,7 +83,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
   private def accessorImplementedInSubclass(accessor: Symbol) =
     (accessor hasFlag SYNTHESIZE_IMPL_IN_SUBCLASS) && (accessor hasFlag (ACCESSOR | MODULE))
 
-  private def concreteOrSynthImpl(sym: Symbol): Boolean = !(sym hasFlag DEFERRED) || (sym hasFlag SYNTHESIZE_IMPL_IN_SUBCLASS)
+  @inline final def notDeferredOrSynthImpl(sym: Symbol): Boolean = !(sym hasFlag DEFERRED) || (sym hasFlag SYNTHESIZE_IMPL_IN_SUBCLASS)
 
   private def synthesizeImplInSubclasses(accessor: Symbol): Unit =
     accessor setFlag SYNTHESIZE_IMPL_IN_SUBCLASS
@@ -128,7 +128,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
 
   def matchingAccessor(pre: Type, member: Symbol, clazz: Symbol) = {
-    val res = member.matchingSymbol(clazz, pre) filter (sym => (sym hasFlag ACCESSOR) && concreteOrSynthImpl(sym))
+    val res = member.matchingSymbol(clazz, pre) filter (sym => (sym hasFlag ACCESSOR) && notDeferredOrSynthImpl(sym))
     //    if (res != NoSymbol) println(s"matching accessor for $member in $clazz = $res (under $pre)")
     //    else println(s"no matching accessor for $member in $clazz (under $pre) among ${clazz.info.decls}")
     res

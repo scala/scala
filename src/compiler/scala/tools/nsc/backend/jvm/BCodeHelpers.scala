@@ -11,6 +11,7 @@ import scala.tools.asm
 import scala.tools.nsc.io.AbstractFile
 import GenBCode._
 import BackendReporting._
+import scala.reflect.internal.Flags
 
 /*
  *  Traits encapsulating functionality to convert Scala AST Trees into ASM ClassNodes.
@@ -271,7 +272,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
           //
           // However, due to https://github.com/scala/scala-dev/issues/126, this currently does not
           // work, the abstract accessor for O will be marked effectivelyFinal.
-          val effectivelyFinal = methodSym.isEffectivelyFinalOrNotOverridden && !methodSym.isDeferred
+          val effectivelyFinal = methodSym.isEffectivelyFinalOrNotOverridden && !(methodSym hasFlag Flags.DEFERRED | Flags.SYNTHESIZE_IMPL_IN_SUBCLASS)
 
           val info = MethodInlineInfo(
             effectivelyFinal                    = effectivelyFinal,

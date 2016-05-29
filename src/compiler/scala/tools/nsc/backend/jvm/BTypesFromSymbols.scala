@@ -635,15 +635,9 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     // scala compiler. The word final is heavily overloaded unfortunately;
     // for us it means "not overridable". At present you can't override
     // vars regardless; this may change.
-    //
-    // The logic does not check .isFinal (which checks flags for the FINAL flag,
-    // and includes symbols marked lateFINAL) instead inspecting rawflags so
-    // we can exclude lateFINAL. Such symbols are eligible for inlining, but to
-    // avoid breaking proxy software which depends on subclassing, we do not
-    // emit ACC_FINAL.
 
     val finalFlag = (
-      (((sym.rawflags & symtab.Flags.FINAL) != 0) || isTopLevelModuleClass(sym))
+           (sym.isFinal || isTopLevelModuleClass(sym))
         && !sym.enclClass.isTrait
         && !sym.isClassConstructor
         && (!sym.isMutable || nme.isTraitSetterName(sym.name)) // lazy vals and vars and their setters cannot be final, but trait setters are
