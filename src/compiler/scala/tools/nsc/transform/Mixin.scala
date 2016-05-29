@@ -19,8 +19,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   /** The name of the phase: */
   val phaseName: String = "mixin"
 
-  /** The phase might set the following new flags: */
-  override def phaseNewFlags: Long = lateMODULE | notOVERRIDE
 
   /** This map contains a binding (class -> info) if
    *  the class with this info at phase mixinPhase has been treated for mixin composition

@@ -217,20 +217,15 @@ class Flags extends ModifierFlags {
   //       erasure  15  [START] <latedeferred>
   //         mixin  20  [START] <latemodule> <notoverride>
   //
-  // lateMETHOD set in RefChecks#transformInfo.
-  // lateFINAL set in Symbols#makeNotPrivate.
   // notPRIVATE set in Symbols#makeNotPrivate, IExplicitOuter#transform, Inliners.
   // notPROTECTED set in ExplicitOuter#transform.
-  // lateDEFERRED set in AddInterfaces, Mixin, etc.
-  // lateMODULE set in Mixin#transformInfo.
-  // notOVERRIDE set in Mixin#preTransform.
 
-  final val lateDEFERRED  = (DEFERRED: Long) << LateShift
-  final val lateFINAL     = (FINAL: Long) << LateShift
-  final val lateMETHOD    = (METHOD: Long) << LateShift
-  final val lateMODULE    = (MODULE: Long) << LateShift
+//  final val lateDEFERRED  = (DEFERRED: Long) << LateShift // unused
+  final val lateFINAL     = (FINAL: Long) << LateShift    // only used for inliner -- could be subsumed by notPRIVATE?
+//  final val lateMETHOD    = (METHOD: Long) << LateShift   // unused
+//  final val lateMODULE    = (MODULE: Long) << LateShift   // unused
 
-  final val notOVERRIDE   = (OVERRIDE: Long) << AntiShift
+//  final val notOVERRIDE   = (OVERRIDE: Long) << AntiShift // unused
   final val notPRIVATE    = (PRIVATE: Long) << AntiShift
   final val notPROTECTED  = (PROTECTED: Long) << AntiShift
 
@@ -456,13 +451,13 @@ class Flags extends ModifierFlags {
     case           JAVA_ENUM => "<enum>"                              // (1L << 48)
     case     JAVA_ANNOTATION => "<annotation>"                        // (1L << 49)
     case SYNTHESIZE_IMPL_IN_SUBCLASS => "<sub_synth>"                 // (1L << 50)
-    case      `lateDEFERRED` => "<latedeferred>"                      // (1L << 51)
+    case   0x08000000000000L => "<latedeferred>"                      // (1L << 51)
     case         `lateFINAL` => "<latefinal>"                         // (1L << 52)
-    case        `lateMETHOD` => "<latemethod>"                        // (1L << 53)
-    case   0x80000000000000L => ""                                    // (1L << 54)
-    case        `lateMODULE` => "<latemodule>"                        // (1L << 55)
+    case   0x20000000000000L => "<latemethod>"                        // (1L << 53)
+    case   0x40000000000000L => ""                                    // (1L << 54)
+    case   0x80000000000000L => "<latemodule>"                        // (1L << 55)
     case      `notPROTECTED` => "<notprotected>"                      // (1L << 56)
-    case       `notOVERRIDE` => "<notoverride>"                       // (1L << 57)
+    case  0x200000000000000L => "<notoverride>"                       // (1L << 57)
     case        `notPRIVATE` => "<notprivate>"                        // (1L << 58)
     case NEEDS_TREES         => "<needs_trees>"                       // (1L << 59)
     case 0x1000000000000000L => ""                                    // (1L << 60)
