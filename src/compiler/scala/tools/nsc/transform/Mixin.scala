@@ -19,6 +19,11 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   /** The name of the phase: */
   val phaseName: String = "mixin"
 
+  def publicizeTraitMethod(sym: Symbol): Unit = {
+    // TODO: I don't believe any private accessors remain after the fields phase
+    if ((sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isModule) sym.makeNotPrivate(sym.owner) // 5
+    if (sym.isProtected) sym setFlag notPROTECTED // 6
+  }
 
   /** This map contains a binding (class -> info) if
    *  the class with this info at phase mixinPhase has been treated for mixin composition
@@ -217,6 +222,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           }
           clazz.info.decls.unlink(member)
         }
+        else if (member.isMethod) publicizeTraitMethod(member)
       }
       debuglog("new defs of " + clazz + " = " + clazz.info.decls)
     }

@@ -147,12 +147,6 @@ trait Erasure {
       case AnnotatedType(_, atp) =>
         apply(atp)
       case ClassInfoType(parents, decls, clazz) =>
-        if (clazz.isTrait) {
-          decls foreach { sym =>
-            if (!sym.isType) sym.info // run explicit outer's info transform to make not-private where needed
-          }
-        }
-
         ClassInfoType(
           if (clazz == ObjectClass || isPrimitiveValueClass(clazz) || parents.isEmpty) Nil
           else if (clazz == ArrayClass) ObjectTpe :: Nil
