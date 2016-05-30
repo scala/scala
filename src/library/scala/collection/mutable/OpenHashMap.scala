@@ -108,16 +108,13 @@ extends AbstractMap[Key, Value]
     * @param hash hash value for `key`
     */
   private[this] def findIndex(key: Key, hash: Int): Int = {
-    var j = hash
-
     var index = hash & mask
-    var perturb = index
+    var j = 0
     while(table(index) != null &&
           !(table(index).hash == hash &&
             table(index).key == key)){
-      j = 5 * j + 1 + perturb
-      perturb >>= 5
-      index = j & mask
+      j += 1
+      index = (index + j) & mask
     }
     index
   }
@@ -172,20 +169,17 @@ extends AbstractMap[Key, Value]
 
   def get(key : Key) : Option[Value] = {
     val hash = hashOf(key)
-
-    var j = hash
     var index = hash & mask
-    var perturb = index
     var entry = table(index)
+    var j = 0
     while(entry != null){
       if (entry.hash == hash &&
           entry.key == key){
         return entry.value
       }
 
-      j = 5 * j + 1 + perturb
-      perturb >>= 5
-      index = j & mask
+      j += 1
+      index = (index + j) & mask
       entry = table(index)
     }
     None
