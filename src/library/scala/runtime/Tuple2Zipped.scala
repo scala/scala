@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2016, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -34,14 +34,15 @@ object ZippedTraversable2 {
 }
 
 final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1, Repr1], IterableLike[El2, Repr2])) extends AnyVal with ZippedTraversable2[El1, El2] {
-  // This would be better as "private def coll1 = colls._1" but
-  // SI-6215 precludes private methods in value classes.
-  def map[B, To](f: (El1, El2) => B)(implicit cbf: CBF[Repr1, B, To]): To = {
-    val b = cbf(colls._1.repr)
-    b.sizeHint(colls._1)
-    val elems2 = colls._2.iterator
+  private def coll1 = colls._1
+  private def coll2 = colls._2
 
-    for (el1 <- colls._1) {
+  def map[B, To](f: (El1, El2) => B)(implicit cbf: CBF[Repr1, B, To]): To = {
+    val b = cbf(coll1.repr)
+    b.sizeHint(coll1)
+    val elems2 = coll2.iterator
+
+    for (el1 <- coll1) {
       if (elems2.hasNext)
         b += f(el1, elems2.next())
       else
@@ -52,10 +53,10 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
   }
 
   def flatMap[B, To](f: (El1, El2) => TraversableOnce[B])(implicit cbf: CBF[Repr1, B, To]): To = {
-    val b = cbf(colls._1.repr)
-    val elems2 = colls._2.iterator
+    val b = cbf(coll1.repr)
+    val elems2 = coll2.iterator
 
-    for (el1 <- colls._1) {
+    for (el1 <- coll1) {
       if (elems2.hasNext)
         b ++= f(el1, elems2.next())
       else
@@ -66,11 +67,11 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
   }
 
   def filter[To1, To2](f: (El1, El2) => Boolean)(implicit cbf1: CBF[Repr1, El1, To1], cbf2: CBF[Repr2, El2, To2]): (To1, To2) = {
-    val b1 = cbf1(colls._1.repr)
-    val b2 = cbf2(colls._2.repr)
-    val elems2 = colls._2.iterator
+    val b1 = cbf1(coll1.repr)
+    val b2 = cbf2(coll2.repr)
+    val elems2 = coll2.iterator
 
-    for (el1 <- colls._1) {
+    for (el1 <- coll1) {
       if (elems2.hasNext) {
         val el2 = elems2.next()
         if (f(el1, el2)) {
@@ -85,9 +86,9 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
   }
 
   def exists(@deprecatedName('f) p: (El1, El2) => Boolean): Boolean = {
-    val elems2 = colls._2.iterator
+    val elems2 = coll2.iterator
 
-    for (el1 <- colls._1) {
+    for (el1 <- coll1) {
       if (elems2.hasNext) {
         if (p(el1, elems2.next()))
           return true
@@ -101,9 +102,9 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
     !exists((x, y) => !p(x, y))
 
   def foreach[U](f: (El1, El2) => U): Unit = {
-    val elems2 = colls._2.iterator
+    val elems2 = coll2.iterator
 
-    for (el1 <- colls._1) {
+    for (el1 <- coll1) {
       if (elems2.hasNext)
         f(el1, elems2.next())
       else
@@ -111,11 +112,11 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
     }
   }
 
-  override def toString = "(%s, %s).zipped".format(colls._1.toString, colls._2.toString)
+  override def toString = s"($coll1, $coll2).zipped"
 }
 
 object Tuple2Zipped {
-  final class Ops[T1, T2](val x: (T1, T2)) extends AnyVal {
+  final class Ops[T1, T2](private val x: (T1, T2)) extends AnyVal {
     def invert[El1, CC1[X] <: TraversableOnce[X], El2, CC2[X] <: TraversableOnce[X], That]
       (implicit w1: T1 <:< CC1[El1],
                 w2: T2 <:< CC2[El2],
