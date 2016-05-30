@@ -9,7 +9,7 @@
 package scala
 package runtime
 
-@deprecated("Use Predef.SeqCharSequence", "2.11.0")
+@deprecated("use Predef.SeqCharSequence", "2.11.0")
 final class SeqCharSequence(val xs: scala.collection.IndexedSeq[Char]) extends CharSequence {
   def length: Int                                     = xs.length
   def charAt(index: Int): Char                        = xs(index)

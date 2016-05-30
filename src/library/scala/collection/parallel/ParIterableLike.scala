@@ -842,7 +842,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
     tasksupport.executeAndWaitResult(new ToParMap(combinerFactory(cbf), splitter)(ev) mapResult { _.resultWithTaskSupport })
   }
 
-  @deprecated("Use .seq.view instead", "2.11.0")
+  @deprecated("use .seq.view instead", "2.11.0")
   def view = seq.view
 
   override def toArray[U >: T: ClassTag]: Array[U] = {

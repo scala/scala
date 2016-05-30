@@ -30,17 +30,33 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       def this(what: String, booleanSetting: Settings#BooleanSetting) {
         this(what, () => booleanSetting, booleanSetting)
       }
-      val warnings = mutable.LinkedHashMap[Position, String]()
-      def warn(pos: Position, msg: String) =
+      val warnings = mutable.LinkedHashMap[Position, (String, String)]()
+      def warn(pos: Position, msg: String, since: String = "") =
         if (doReport()) reporter.warning(pos, msg)
-        else if (!(warnings contains pos)) warnings += ((pos, msg))
+        else if (!(warnings contains pos)) warnings += ((pos, (msg, since)))
       def summarize() =
         if (warnings.nonEmpty && (setting.isDefault || doReport())) {
-          val numWarnings  = warnings.size
-          val warningVerb  = if (numWarnings == 1) "was" else "were"
-          val warningCount = countElementsAsString(numWarnings, s"$what warning")
-
-          reporter.warning(NoPosition, s"there $warningVerb $warningCount; re-run with ${setting.name} for details")
+          val sinceAndAmount = mutable.TreeMap[String, Int]()
+          warnings.valuesIterator.foreach { case (_, since) =>
+            val value = sinceAndAmount.get(since)
+            if (value.isDefined) sinceAndAmount += ((since, value.get + 1))
+            else sinceAndAmount += ((since, 1))
+          }
+          val deprecationSummary = sinceAndAmount.size > 1
+          sinceAndAmount.foreach { case (since, amount) =>
+            val numWarnings   = amount
+            val warningsSince = if (since.nonEmpty) s" (since $since)" else ""
+            val warningVerb   = if (numWarnings == 1) "was" else "were"
+            val warningCount  = countElementsAsString(numWarnings, s"$what warning")
+            val rerun         = if (deprecationSummary) "" else s"; re-run with ${setting.name} for details"
+            reporter.warning(NoPosition, s"there $warningVerb $warningCount$warningsSince$rerun")
+          }
+          if (deprecationSummary) {
+            val numWarnings   = warnings.size
+            val warningVerb   = if (numWarnings == 1) "was" else "were"
+            val warningCount  = countElementsAsString(numWarnings, s"$what warning")
+            reporter.warning(NoPosition, s"there $warningVerb $warningCount in total; re-run with ${setting.name} for details")
+          }
         }
     }
 
@@ -53,7 +69,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
     private val _allConditionalWarnings = List(_deprecationWarnings, _uncheckedWarnings, _featureWarnings, _inlinerWarnings)
 
     // TODO: remove in favor of the overload that takes a Symbol, give that argument a default (NoSymbol)
-    def deprecationWarning(pos: Position, msg: String): Unit = _deprecationWarnings.warn(pos, msg)
+    def deprecationWarning(pos: Position, msg: String, since: String): Unit = _deprecationWarnings.warn(pos, msg, since)
     def uncheckedWarning(pos: Position, msg: String): Unit   = _uncheckedWarnings.warn(pos, msg)
     def featureWarning(pos: Position, msg: String): Unit     = _featureWarnings.warn(pos, msg)
     def inlinerWarning(pos: Position, msg: String): Unit     = _inlinerWarnings.warn(pos, msg)
@@ -66,10 +82,12 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
     def allConditionalWarnings = _allConditionalWarnings flatMap (_.warnings)
 
     // behold! the symbol that caused the deprecation warning (may not be deprecated itself)
-    def deprecationWarning(pos: Position, sym: Symbol, msg: String): Unit = _deprecationWarnings.warn(pos, msg)
+    def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String): Unit = _deprecationWarnings.warn(pos, msg, since)
     def deprecationWarning(pos: Position, sym: Symbol): Unit = {
-      val suffix = sym.deprecationMessage match { case Some(msg) => ": "+ msg case _ => "" }
-      deprecationWarning(pos, sym, s"$sym${sym.locationString} is deprecated$suffix")
+      val version = sym.deprecationVersion.getOrElse("")
+      val since   = if (version.isEmpty) version else s" (since $version)"
+      val message = sym.deprecationMessage match { case Some(msg) => s": $msg"        case _ => "" }
+      deprecationWarning(pos, sym, s"$sym${sym.locationString} is deprecated$since$message", version)
     }
 
     private[this] var reportedFeature = Set[Symbol]()

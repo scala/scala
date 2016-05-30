@@ -22,7 +22,7 @@ package immutable
  *
  *  @since 2.8
  */
-@deprecated("Proxying is deprecated due to lack of use and compiler-level support.", "2.11.0")
+@deprecated("proxying is deprecated due to lack of use and compiler-level support.", "2.11.0")
 trait SetProxy[A] extends Set[A] with SetProxyLike[A, Set[A]] {
   override def repr = this
   private def newProxy[B >: A](newSelf: Set[B]): SetProxy[B] =

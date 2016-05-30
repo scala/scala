@@ -39,7 +39,7 @@ trait ParsersCommon extends ScannersCommon { self =>
    */
   abstract class ParserCommon {
     val in: ScannerCommon
-    def deprecationWarning(off: Offset, msg: String): Unit
+    def deprecationWarning(off: Offset, msg: String, since: String): Unit
     def accept(token: Token): Int
 
     /** Methods inParensOrError and similar take a second argument which, should
@@ -154,7 +154,7 @@ self =>
 
     // suppress warnings; silent abort on errors
     def warning(offset: Offset, msg: String): Unit = ()
-    def deprecationWarning(offset: Offset, msg: String): Unit = ()
+    def deprecationWarning(offset: Offset, msg: String, since: String): Unit = ()
 
     def syntaxError(offset: Offset, msg: String): Unit = throw new MalformedInput(offset, msg)
     def incompleteInputError(msg: String): Unit = throw new MalformedInput(source.content.length - 1, msg)
@@ -206,8 +206,8 @@ self =>
     override def warning(offset: Offset, msg: String): Unit =
       reporter.warning(o2p(offset), msg)
 
-    override def deprecationWarning(offset: Offset, msg: String): Unit =
-      currentRun.reporting.deprecationWarning(o2p(offset), msg)
+    override def deprecationWarning(offset: Offset, msg: String, since: String): Unit =
+      currentRun.reporting.deprecationWarning(o2p(offset), msg, since)
 
     private var smartParsing = false
     @inline private def withSmartParsing[T](body: => T): T = {
@@ -1822,7 +1822,7 @@ self =>
       val hasEq = in.token == EQUALS
 
       if (hasVal) {
-        if (hasEq) deprecationWarning(in.offset, "val keyword in for comprehension is deprecated")
+        if (hasEq) deprecationWarning(in.offset, "val keyword in for comprehension is deprecated", "2.10.0")
         else syntaxError(in.offset, "val in for comprehension must be followed by assignment")
       }
 
@@ -2358,7 +2358,7 @@ self =>
           while (in.token == VIEWBOUND) {
             val msg = "Use an implicit parameter instead.\nExample: Instead of `def f[A <% Int](a: A)` use `def f[A](a: A)(implicit ev: A => Int)`."
             if (settings.future)
-              deprecationWarning(in.offset, s"View bounds are deprecated. $msg")
+              deprecationWarning(in.offset, s"View bounds are deprecated. $msg", "2.12.0")
             contextBoundBuf += atPos(in.skipToken())(makeFunctionTypeTree(List(Ident(pname)), typ()))
           }
           while (in.token == COLON) {
@@ -2652,14 +2652,14 @@ self =>
           if (isStatSep || in.token == RBRACE) {
             if (restype.isEmpty) {
               if (settings.future)
-                deprecationWarning(in.lastOffset, s"Procedure syntax is deprecated. Convert procedure `$name` to method by adding `: Unit`.")
+                deprecationWarning(in.lastOffset, s"Procedure syntax is deprecated. Convert procedure `$name` to method by adding `: Unit`.", "2.12.0")
               restype = scalaUnitConstr
             }
             newmods |= Flags.DEFERRED
             EmptyTree
           } else if (restype.isEmpty && in.token == LBRACE) {
             if (settings.future)
-              deprecationWarning(in.offset, s"Procedure syntax is deprecated. Convert procedure `$name` to method by adding `: Unit =`.")
+              deprecationWarning(in.offset, s"Procedure syntax is deprecated. Convert procedure `$name` to method by adding `: Unit =`.", "2.12.0")
             restype = scalaUnitConstr
             blockExpr()
           } else {
@@ -2921,7 +2921,7 @@ self =>
       case vdef @ ValDef(mods, _, _, _) if !mods.isDeferred =>
         copyValDef(vdef)(mods = mods | Flags.PRESUPER)
       case tdef @ TypeDef(mods, name, tparams, rhs) =>
-        deprecationWarning(tdef.pos.point, "early type members are deprecated. Move them to the regular body: the semantics are the same.")
+        deprecationWarning(tdef.pos.point, "early type members are deprecated. Move them to the regular body: the semantics are the same.", "2.11.0")
         treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs)
       case docdef @ DocDef(comm, rhs) =>
         treeCopy.DocDef(docdef, comm, rhs)

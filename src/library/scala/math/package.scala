@@ -65,9 +65,9 @@ package object math {
    *  @return the value `logₑ(x)` where `e` is Eulers number
    */
   def log(x: Double): Double = java.lang.Math.log(x)
-  
+
   /** Returns the square root of a `double` value.
-   * 
+   *
    * @param  x the number to take the square root of
    * @return the value √x
    */
@@ -106,7 +106,7 @@ package object math {
   def pow(x: Double, y: Double): Double = java.lang.Math.pow(x, y)
 
   /** There is no reason to round a `Long`, but this method prevents unintended conversion to `Float` followed by rounding to `Int`. */
-  @deprecated("This is an integer type; there is no reason to round it.  Perhaps you meant to call this with a floating-point value?", "2.11.0")
+  @deprecated("This is an integer type; there is no reason to round it. Perhaps you meant to call this with a floating-point value?", "2.11.0")
   def round(x: Long): Long = x
 
   /** Returns the closest `Int` to the argument.
@@ -115,7 +115,7 @@ package object math {
    *  @return the value of the argument rounded to the nearest `Int` value.
    */
   def round(x: Float): Int = java.lang.Math.round(x)
-  
+
   /** Returns the closest `Long` to the argument.
    *
    *  @param  x a floating-point value to be rounded to a `Long`.

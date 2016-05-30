@@ -586,8 +586,8 @@ trait Contexts { self: Analyzer =>
     }
 
 
-    def deprecationWarning(pos: Position, sym: Symbol, msg: String): Unit =
-      currentRun.reporting.deprecationWarning(fixPosition(pos), sym, msg)
+    def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String): Unit =
+      currentRun.reporting.deprecationWarning(fixPosition(pos), sym, msg, since)
     def deprecationWarning(pos: Position, sym: Symbol): Unit =
       currentRun.reporting.deprecationWarning(fixPosition(pos), sym) // TODO: allow this to escalate to an error, and implicit search will ignore deprecated implicits
 

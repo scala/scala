@@ -72,12 +72,12 @@ trait StringOps {
    */
   def countElementsAsString(n: Int, elements: String): String =
     n match {
-      case 0 => "no "    + elements + "s"
+      case 0 => s"no ${elements}s"
       case 1 => "one "   + elements
       case 2 => "two "   + elements + "s"
       case 3 => "three " + elements + "s"
       case 4 => "four "  + elements + "s"
-      case _ => "" + n + " " + elements + "s"
+      case _ => s"$n ${elements}s"
     }
 
   /** Turns a count into a friendly English description if n<=4.

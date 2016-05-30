@@ -128,7 +128,7 @@ trait CompilationUnits { global: Global =>
     final def warning(pos: Position, msg: String): Unit = reporter.warning(pos, msg)
 
     @deprecated("Call global.currentRun.reporting.deprecationWarning directly instead.", "2.11.2")
-    final def deprecationWarning(pos: Position, msg: String): Unit = currentRun.reporting.deprecationWarning(pos, msg)
+    final def deprecationWarning(pos: Position, msg: String, since: String): Unit = currentRun.reporting.deprecationWarning(pos, msg, since)
     @deprecated("Call global.currentRun.reporting.uncheckedWarning directly instead.", "2.11.2")
     final def uncheckedWarning(pos: Position, msg: String): Unit   = currentRun.reporting.uncheckedWarning(pos, msg)
 

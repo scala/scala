@@ -280,7 +280,7 @@ trait Symbols { self: Universe =>
      *
      *  @group Basics
      */
-    @deprecated("Use `pos.source.file` instead", "2.11.0")
+    @deprecated("use `pos.source.file` instead", "2.11.0")
     def associatedFile: scala.reflect.io.AbstractFile
 
     /** A list of annotations attached to this Symbol.
@@ -298,7 +298,7 @@ trait Symbols { self: Universe =>
      *
      *  @group Basics
      */
-    @deprecated("Use `companion` instead, but beware of possible changes in behavior", "2.11.0")
+    @deprecated("use `companion` instead, but beware of possible changes in behavior", "2.11.0")
     def companionSymbol: Symbol
 
     /** For a class: its companion object if exists.
@@ -333,7 +333,7 @@ trait Symbols { self: Universe =>
     def info: Type
 
     /** @see [[overrides]] */
-    @deprecated("Use `overrides` instead", "2.11.0")
+    @deprecated("use `overrides` instead", "2.11.0")
     def allOverriddenSymbols: List[Symbol]
 
     /** Returns all symbols overridden by this symbol.
@@ -726,7 +726,7 @@ trait Symbols { self: Universe =>
      *
      *  @group Type
      */
-    @deprecated("Use isAbstract instead", "2.11.0")
+    @deprecated("use isAbstract instead", "2.11.0")
     def isAbstractType : Boolean
 
     /** Does this symbol represent an existentially bound type?
@@ -767,7 +767,7 @@ trait Symbols { self: Universe =>
     /** @see [[paramLists]]
      *
      * The name ending with "ss" indicates that the result type is a list of lists. */
-    @deprecated("Use `paramLists` instead", "2.11.0")
+    @deprecated("use `paramLists` instead", "2.11.0")
     def paramss: List[List[Symbol]]
 
     /** All parameter lists of the method.
@@ -864,7 +864,7 @@ trait Symbols { self: Universe =>
      *
      *  @group Class
      */
-    @deprecated("Use isAbstract instead", "2.11.0")
+    @deprecated("use isAbstract instead", "2.11.0")
     def isAbstractClass: Boolean
 
     /** Does this symbol represent a case class?

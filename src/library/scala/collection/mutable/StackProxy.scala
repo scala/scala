@@ -19,7 +19,7 @@ package mutable
  *  @version 1.0, 10/05/2004
  *  @since   1
  */
-@deprecated("Proxying is deprecated due to lack of use and compiler-level support.", "2.11.0")
+@deprecated("proxying is deprecated due to lack of use and compiler-level support", "2.11.0")
 trait StackProxy[A] extends Stack[A] with Proxy {
 
   def self: Stack[A]

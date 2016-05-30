@@ -360,10 +360,8 @@ object PriorityQueue extends OrderedTraversableFactory[PriorityQueue] {
   *  @version 1.0, 03/05/2004
   *  @since   1
   */
-@deprecated("Proxying is deprecated due to lack of use and compiler-level support.", "2.11.0")
-sealed abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends PriorityQueue[A]
-  with Proxy
-{
+@deprecated("proxying is deprecated due to lack of use and compiler-level support", "2.11.0")
+sealed abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends PriorityQueue[A]  with Proxy {
   def self: PriorityQueue[A]
 
   /** Creates a new iterator over all elements contained in this
@@ -449,7 +447,7 @@ sealed abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends P
   *  @define Coll `SynchronizedPriorityQueue`
   *  @define coll synchronized priority queue
   */
-@deprecated("Comprehensive synchronization via selective overriding of methods is inherently unreliable.  Consider java.util.concurrent.ConcurrentSkipListSet as an alternative.", "2.11.0")
+@deprecated("Comprehensive synchronization via selective overriding of methods is inherently unreliable. Consider java.util.concurrent.ConcurrentSkipListSet as an alternative.", "2.11.0")
 sealed class SynchronizedPriorityQueue[A](implicit ord: Ordering[A]) extends PriorityQueue[A] {
 
   /** Checks if the queue is empty.

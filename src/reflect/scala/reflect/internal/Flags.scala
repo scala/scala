@@ -477,7 +477,7 @@ class Flags extends ModifierFlags {
     else "private[" + privateWithin + "]"
   )
 
-  @deprecated("Use flagString on the flag-carrying member", "2.10.0")
+  @deprecated("use flagString on the flag-carrying member", "2.10.0")
   private[scala] def flagsToString(flags: Long, privateWithin: String): String = {
     val access    = accessString(flags, privateWithin)
     val nonAccess = flagsToString(flags & ~AccessFlags)
@@ -485,7 +485,7 @@ class Flags extends ModifierFlags {
     List(nonAccess, access) filterNot (_ == "") mkString " "
   }
 
-  @deprecated("Use flagString on the flag-carrying member", "2.10.0")
+  @deprecated("use flagString on the flag-carrying member", "2.10.0")
   private[scala] def flagsToString(flags: Long): String = {
     // Fast path for common case
     if (flags == 0L) "" else {

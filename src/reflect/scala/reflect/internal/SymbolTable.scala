@@ -63,7 +63,7 @@ abstract class SymbolTable extends macros.Universe
   def isPastTyper = false
   protected def isDeveloper: Boolean = settings.debug
 
-  @deprecated("Use devWarning if this is really a warning; otherwise use log", "2.11.0")
+  @deprecated("use devWarning if this is really a warning; otherwise use log", "2.11.0")
   def debugwarn(msg: => String): Unit = devWarning(msg)
 
   /** Override with final implementation for inlining. */
@@ -416,7 +416,7 @@ abstract class SymbolTable extends macros.Universe
    */
   def isCompilerUniverse = false
 
-  @deprecated("Use enteringPhase", "2.10.0") // Used in SBT 0.12.4
+  @deprecated("use enteringPhase", "2.10.0") // Used in SBT 0.12.4
   @inline final def atPhase[T](ph: Phase)(op: => T): T = enteringPhase(ph)(op)
 
 

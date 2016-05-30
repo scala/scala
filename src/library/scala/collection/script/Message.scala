@@ -21,7 +21,7 @@ import mutable.ArrayBuffer
  *  @version 1.0, 08/07/2003
  *  @since   2.8
  */
-@deprecated("Scripting is deprecated.", "2.11.0")
+@deprecated("scripting is deprecated", "2.11.0")
 trait Message[+A]
 
 /** This observable update refers to inclusion operations that add new elements
@@ -30,7 +30,7 @@ trait Message[+A]
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-@deprecated("Scripting is deprecated.", "2.11.0")
+@deprecated("scripting is deprecated", "2.11.0")
 case class Include[+A](location: Location, elem: A) extends Message[A] {
   def this(elem: A) = this(NoLo, elem)
 }
@@ -41,7 +41,7 @@ case class Include[+A](location: Location, elem: A) extends Message[A] {
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-@deprecated("Scripting is deprecated.", "2.11.0")
+@deprecated("scripting is deprecated", "2.11.0")
 case class Update[+A](location: Location, elem: A) extends Message[A] {
   def this(elem: A) = this(NoLo, elem)
 }
@@ -52,7 +52,7 @@ case class Update[+A](location: Location, elem: A) extends Message[A] {
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-@deprecated("Scripting is deprecated.", "2.11.0")
+@deprecated("scripting is deprecated", "2.11.0")
 case class Remove[+A](location: Location, elem: A) extends Message[A] {
   def this(elem: A) = this(NoLo, elem)
 }
@@ -62,7 +62,7 @@ case class Remove[+A](location: Location, elem: A) extends Message[A] {
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-@deprecated("Scripting is deprecated.", "2.11.0")
+@deprecated("scripting is deprecated", "2.11.0")
 case class Reset[+A]() extends Message[A]
 
 /** Objects of this class represent compound messages consisting
@@ -71,7 +71,7 @@ case class Reset[+A]() extends Message[A]
  *  @author  Matthias Zenger
  *  @version 1.0, 10/05/2004
  */
-@deprecated("Scripting is deprecated.", "2.11.0")
+@deprecated("scripting is deprecated", "2.11.0")
 class Script[A] extends ArrayBuffer[Message[A]] with Message[A] {
 
   override def toString(): String = {

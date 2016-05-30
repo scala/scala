@@ -84,7 +84,7 @@ trait HasFlags {
   def hasDefault            = hasFlag(DEFAULTPARAM) && hasFlag(METHOD | PARAM) // Second condition disambiguates with TRAIT
   def hasJavaEnumFlag       = hasFlag(JAVA_ENUM)
   def hasJavaAnnotationFlag = hasFlag(JAVA_ANNOTATION)
-  @deprecated("Use isLocalToThis instead", "2.11.0")
+  @deprecated("use isLocalToThis instead", "2.11.0")
   def hasLocalFlag          = hasFlag(LOCAL)
   def isLocalToThis         = hasFlag(LOCAL)
   def hasModuleFlag         = hasFlag(MODULE)
@@ -109,7 +109,7 @@ trait HasFlags {
   def isOverride            = hasFlag(OVERRIDE)
   def isParamAccessor       = hasFlag(PARAMACCESSOR)
   def isPrivate             = hasFlag(PRIVATE)
-  @deprecated ("Use `hasPackageFlag` instead", "2.11.0")
+  @deprecated ("use `hasPackageFlag` instead", "2.11.0")
   def isPackage             = hasFlag(PACKAGE)
   def isPrivateLocal        = hasAllFlags(PrivateLocal)
   def isProtected           = hasFlag(PROTECTED)

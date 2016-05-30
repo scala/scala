@@ -35,7 +35,7 @@ trait ScannersCommon {
     // things to fill in, in addition to buf, decodeUni which come from CharArrayReader
     def error(off: Offset, msg: String): Unit
     def incompleteInputError(off: Offset, msg: String): Unit
-    def deprecationWarning(off: Offset, msg: String): Unit
+    def deprecationWarning(off: Offset, msg: String, since: String): Unit
   }
 
   def createKeywordArray(keywords: Seq[(Name, Token)], defaultToken: Token): (Token, Array[Token]) = {
@@ -208,7 +208,7 @@ trait Scanners extends ScannersCommon {
             if (name == nme.MACROkw)
               syntaxError(s"$name is now a reserved word; usage as an identifier is disallowed")
             else if (emitIdentifierDeprecationWarnings)
-              deprecationWarning(s"$name is now a reserved word; usage as an identifier is deprecated")
+              deprecationWarning(s"$name is a reserved word (since 2.10.0); usage as an identifier is deprecated", "2.10.0")
           }
         }
       }
@@ -824,7 +824,7 @@ trait Scanners extends ScannersCommon {
           if (settings.future)
             syntaxError(start, msg("unsupported"))
           else
-            deprecationWarning(start, msg("deprecated"))
+            deprecationWarning(start, msg("deprecated"), "2.11.0")
           putChar(oct.toChar)
         } else {
           ch match {
@@ -1034,7 +1034,7 @@ trait Scanners extends ScannersCommon {
     /** generate an error at the current token offset */
     def syntaxError(msg: String): Unit = syntaxError(offset, msg)
 
-    def deprecationWarning(msg: String): Unit = deprecationWarning(offset, msg)
+    def deprecationWarning(msg: String, since: String): Unit = deprecationWarning(offset, msg, since)
 
     /** signal an error where the input ended in the middle of a token */
     def incompleteInputError(msg: String): Unit = {
@@ -1204,8 +1204,8 @@ trait Scanners extends ScannersCommon {
     override val decodeUni: Boolean = !settings.nouescape
 
     // suppress warnings, throw exception on errors
-    def deprecationWarning(off: Offset, msg: String): Unit = ()
-    def error  (off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
+    def deprecationWarning(off: Offset, msg: String, since: String): Unit = ()
+    def error(off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
     def incompleteInputError(off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
   }
 
@@ -1214,9 +1214,9 @@ trait Scanners extends ScannersCommon {
   class UnitScanner(val unit: CompilationUnit, patches: List[BracePatch]) extends SourceFileScanner(unit.source) {
     def this(unit: CompilationUnit) = this(unit, List())
 
-    override def deprecationWarning(off: Offset, msg: String)   = currentRun.reporting.deprecationWarning(unit.position(off), msg)
-    override def error  (off: Offset, msg: String)              = reporter.error(unit.position(off), msg)
-    override def incompleteInputError(off: Offset, msg: String) = currentRun.parsing.incompleteInputError(unit.position(off), msg)
+    override def deprecationWarning(off: Offset, msg: String, since: String) = currentRun.reporting.deprecationWarning(unit.position(off), msg, since)
+    override def error(off: Offset, msg: String)                             = reporter.error(unit.position(off), msg)
+    override def incompleteInputError(off: Offset, msg: String)              = currentRun.parsing.incompleteInputError(unit.position(off), msg)
 
     private var bracePatches: List[BracePatch] = patches
 

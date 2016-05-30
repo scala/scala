@@ -208,7 +208,7 @@ trait AdaptiveWorkStealingTasks extends Tasks {
 
 
 /** An implementation of tasks objects based on the Java thread pooling API. */
-@deprecated("Use `ForkJoinTasks` instead.", "2.11.0")
+@deprecated("use `ForkJoinTasks` instead", "2.11.0")
 trait ThreadPoolTasks extends Tasks {
   import java.util.concurrent._
 
@@ -317,7 +317,7 @@ trait ThreadPoolTasks extends Tasks {
 
 }
 
-@deprecated("Use `ForkJoinTasks` instead.", "2.11.0")
+@deprecated("use `ForkJoinTasks` instead", "2.11.0")
 object ThreadPoolTasks {
   import java.util.concurrent._
 
@@ -445,7 +445,7 @@ trait AdaptiveWorkStealingForkJoinTasks extends ForkJoinTasks with AdaptiveWorkS
   def newWrappedTask[R, Tp](b: Task[R, Tp]) = new WrappedTask[R, Tp](b)
 }
 
-@deprecated("Use `AdaptiveWorkStealingForkJoinTasks` instead.", "2.11.0")
+@deprecated("use `AdaptiveWorkStealingForkJoinTasks` instead", "2.11.0")
 trait AdaptiveWorkStealingThreadPoolTasks extends ThreadPoolTasks with AdaptiveWorkStealingTasks {
 
   class WrappedTask[R, Tp](val body: Task[R, Tp])
@@ -523,7 +523,7 @@ private[parallel] final class FutureTasks(executor: ExecutionContext) extends Ta
 }
 
 /** This tasks implementation uses execution contexts to spawn a parallel computation.
- *  
+ *
  *  As an optimization, it internally checks whether the execution context is the
  *  standard implementation based on fork/join pools, and if it is, creates a
  *  `ForkJoinTaskSupport` that shares the same pool to forward its request to it.
@@ -537,7 +537,7 @@ trait ExecutionContextTasks extends Tasks {
   val environment: ExecutionContext
 
   /** A driver serves as a target for this proxy `Tasks` object.
-   *  
+   *
    *  If the execution context has the standard implementation and uses fork/join pools,
    *  the driver is `ForkJoinTaskSupport` with the same pool, as an optimization.
    *  Otherwise, the driver will be a Scala `Future`-based implementation.

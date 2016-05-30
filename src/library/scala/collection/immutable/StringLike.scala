@@ -133,7 +133,7 @@ self =>
    *  end characters; i.e., apply `.stripLineEnd` to all lines
    *  returned by `linesWithSeparators`.
    */
-  @deprecated("Use `lines` instead.","2.11.0")
+  @deprecated("use `lines` instead","2.11.0")
   def linesIterator: Iterator[String] =
     linesWithSeparators map (line => new WrappedString(line).stripLineEnd)
 

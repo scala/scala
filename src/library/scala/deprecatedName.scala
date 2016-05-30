@@ -10,25 +10,27 @@ package scala
 
 import scala.annotation.meta._
 
-/**
- * An annotation that designates the name of the parameter to which it is
- * applied as deprecated. Using that name in a named argument generates
- * a deprecation warning.
- *
- * For instance, evaluating the code below in the Scala interpreter
- * {{{
- *   def inc(x: Int, @deprecatedName('y) n: Int): Int = x + n
- *   inc(1, y = 2)
- * }}}
- * will produce the following output:
- * {{{
- * warning: there were 1 deprecation warnings; re-run with -deprecation for details
- * res0: Int = 3
- * }}}
- *
- * @since 2.8.1
- */
+
+ /** An annotation that designates that the name of a parameter is deprecated.
+  *
+  *  Using this name in a named argument generates a deprecation warning.
+  *
+  *  For instance, evaluating the code below in the Scala interpreter (with `-deprecation`)
+  *  {{{
+  *  def inc(x: Int, @deprecatedName('y, "2.12") n: Int): Int = x + n
+  *  inc(1, y = 2)
+  *  }}}
+  *  will produce the following warning:
+  *  {{{
+  *  warning: the parameter name y is deprecated (since 2.12): use n instead
+  *  inc(1, y = 2)
+  *           ^
+  *  }}}
+  *
+  *  @since  2.8.1
+  *  @see    [[scala.deprecated]]
+  *  @see    [[scala.deprecatedInheritance]]
+  *  @see    [[scala.deprecatedOverriding]]
+  */
 @param
-class deprecatedName(name: Symbol) extends scala.annotation.StaticAnnotation {
-  def this() = this(Symbol("<none>"))
-}
+class deprecatedName(name: Symbol = Symbol("<none>"), since: String = "") extends scala.annotation.StaticAnnotation
