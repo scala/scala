@@ -98,7 +98,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
    * a boolean indicating if the instruction list contains an instantiation of a serializable SAM
    * type.
    */
-  def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode]): (InsnList, Map[AbstractInsnNode, AbstractInsnNode], Boolean) = {
+  def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], keepLineNumbers: Boolean): (InsnList, Map[AbstractInsnNode, AbstractInsnNode], Boolean) = {
     val javaLabelMap = labelMap.asJava
     val result = new InsnList
     var map = Map.empty[AbstractInsnNode, AbstractInsnNode]
@@ -112,9 +112,11 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
         }
         case _ =>
       }
-      val cloned = ins.clone(javaLabelMap)
-      result add cloned
-      map += ((ins, cloned))
+      if (keepLineNumbers || !ins.isInstanceOf[LineNumberNode]) {
+        val cloned = ins.clone(javaLabelMap)
+        result add cloned
+        map += ((ins, cloned))
+      }
     }
     (result, map, hasSerializableClosureInstantiation)
   }
