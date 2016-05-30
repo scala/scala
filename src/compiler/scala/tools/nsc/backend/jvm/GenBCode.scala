@@ -77,15 +77,16 @@ abstract class GenBCode extends BCodeSyncAndTry {
 
     /* ---------------- q2 ---------------- */
 
-    case class Item2(arrivalPos:   Int,
-                     mirror:       asm.tree.ClassNode,
-                     plain:        asm.tree.ClassNode,
-                     bean:         asm.tree.ClassNode,
-                     outFolder:    scala.tools.nsc.io.AbstractFile) {
+    case class Item2(arrivalPos:     Int,
+                     mirror:         asm.tree.ClassNode,
+                     plain:          asm.tree.ClassNode,
+                     bean:           asm.tree.ClassNode,
+                     sourceFilePath: String,
+                     outFolder:      scala.tools.nsc.io.AbstractFile) {
       def isPoison = { arrivalPos == Int.MaxValue }
     }
 
-    private val poison2 = Item2(Int.MaxValue, null, null, null, null)
+    private val poison2 = Item2(Int.MaxValue, null, null, null, null, null)
     private val q2 = new _root_.java.util.LinkedList[Item2]
 
     /* ---------------- q3 ---------------- */
@@ -205,6 +206,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
         val item2 =
           Item2(arrivalPos,
                 mirrorC, plainC, beanC,
+                cunit.source.file.canonicalPath,
                 outF)
 
         q2 add item2 // at the very end of this method so that no Worker2 thread starts mutating before we're done.
@@ -226,10 +228,11 @@ abstract class GenBCode extends BCodeSyncAndTry {
         // add classes to the bytecode repo before building the call graph: the latter needs to
         // look up classes and methods in the code repo.
         if (settings.optAddToBytecodeRepository) q2.asScala foreach {
-          case Item2(_, mirror, plain, bean, _) =>
-            if (mirror != null) byteCodeRepository.add(mirror, ByteCodeRepository.CompilationUnit)
-            if (plain != null)  byteCodeRepository.add(plain, ByteCodeRepository.CompilationUnit)
-            if (bean != null)   byteCodeRepository.add(bean, ByteCodeRepository.CompilationUnit)
+          case Item2(_, mirror, plain, bean, sourceFilePath, _) =>
+            val someSourceFilePath = Some(sourceFilePath)
+            if (mirror != null) byteCodeRepository.add(mirror, someSourceFilePath)
+            if (plain != null)  byteCodeRepository.add(plain, someSourceFilePath)
+            if (bean != null)   byteCodeRepository.add(bean, someSourceFilePath)
         }
         if (settings.optBuildCallGraph) q2.asScala foreach { item =>
           // skip call graph for mirror / bean: wd don't inline into tem, and they are not used in the plain class
@@ -286,7 +289,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
           cw.toByteArray
         }
 
-        val Item2(arrivalPos, mirror, plain, bean, outFolder) = item
+        val Item2(arrivalPos, mirror, plain, bean, _, outFolder) = item
 
         val mirrorC = if (mirror == null) null else SubItem3(mirror.name, getByteArray(mirror))
         val plainC  = SubItem3(plain.name, getByteArray(plain))
