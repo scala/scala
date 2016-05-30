@@ -19,6 +19,22 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   /** The name of the phase: */
   val phaseName: String = "mixin"
 
+  /** Some trait methods need to be implemented in subclasses, so they cannot be private.
+    *
+    * They may be protected, now that traits are compiled 1:1 to interfaces.
+    *
+    * TODO: interfaces can also have private members, so there's also less need to make trait members non-private
+    * can we leave more methods private?
+    * (they still may need to be implemented in subclasses, though we could make those protected...).
+    */
+  def publicizeTraitMethod(sym: Symbol): Unit = {
+    if ((sym hasFlag PRIVATE) &&
+          (  (sym hasFlag SUPERACCESSOR)  // super accessors by definition must be implemented in a subclass, so can't have the private (TODO: why are they ever private in a trait to begin with!?!?)
+          || (sym hasFlag ACCESSOR | MODULE))) // an accessor / module *may* need to be implemented in a subclass, and thus cannot be private
+      sym.makeNotPrivate(sym.owner)
+
+    if (sym hasFlag PROTECTED) sym setFlag notPROTECTED
+  }
 
   /** This map contains a binding (class -> info) if
    *  the class with this info at phase mixinPhase has been treated for mixin composition
@@ -43,7 +59,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *     methods in the impl class (because they can have arbitrary initializers)
    */
   private def isImplementedStatically(sym: Symbol) = (
-    sym.isMethod
+    (sym.isMethod || ((sym hasFlag MODULE) && !sym.isStatic))
     && notDeferred(sym)
     && sym.owner.isTrait
     && (!sym.isModule || sym.hasFlag(PRIVATE | LIFTED))
@@ -221,6 +237,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           }
           clazz.info.decls.unlink(member)
         }
+        else if (member.isMethod) publicizeTraitMethod(member)
       }
       debuglog("new defs of " + clazz + " = " + clazz.info.decls)
     }
@@ -317,10 +334,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
               }
               superAccessor.asInstanceOf[TermSymbol] setAlias alias1
           }
-        }
-        else if (mixinMember.hasAllFlags(METHOD | MODULE) && mixinMember.hasNoFlags(LIFTED | BRIDGE)) {
-          // mixin objects: todo what happens with abstract objects?
-          // addMember(clazz, mixinMember.cloneSymbol(clazz, mixinMember.flags & ~DEFERRED) setPos clazz.pos)
         }
         else if (mixinMember.hasFlag(ACCESSOR) && notDeferred(mixinMember)
                  && (mixinMember hasFlag (LAZY | PARAMACCESSOR))
@@ -866,109 +879,70 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
       def getterBody(getter: Symbol) = {
         assert(getter.isGetter)
-        val readValue = getter.tpe match {
-          // A field "final val f = const" in a trait generates a getter with a ConstantType.
-          case MethodType(Nil, ConstantType(c)) =>
-            Literal(c)
-          case _ =>
-            // if it is a mixed-in lazy value, complete the accessor
-            if (getter.isLazy) {
-              val isUnit    = isUnitGetter(getter)
-              val initCall  = Apply(SuperSelect(clazz, initializer(getter)), Nil)
-              val selection = fieldAccess(getter)
-              val init      = if (isUnit) initCall else atPos(getter.pos)(Assign(selection, initCall))
-              val returns   = if (isUnit) UNIT else selection
-              mkLazyDef(clazz, getter, List(init), returns, fieldOffset(getter))
+        val readValue =
+          if (getter.isLazy) {
+            getter.tpe.resultType match {
+              case ConstantType(c) => Literal(c)
+              case _ =>
+                val initCall = Apply(SuperSelect(clazz, initializer(getter)), Nil)
+                val offset   = fieldOffset(getter)
+                if (isUnitGetter(getter)) mkLazyDef(clazz, getter, List(initCall), UNIT, offset)
+                else mkLazyDef(clazz, getter, List(atPos(getter.pos)(Assign(fieldAccess(getter), initCall))), fieldAccess(getter), offset)
             }
-            // For a field of type Unit in a trait, no actual field is generated when being mixed in.
-            else if (isUnitGetter(getter)) UNIT
-            else fieldAccess(getter)
-        }
+          } else {
+            assert(getter.hasFlag(PARAMACCESSOR))
+            fieldAccess(getter)
+          }
+
         if (!needsInitFlag(getter)) readValue
         else mkCheckedAccessor(clazz, readValue, fieldOffset(getter), getter.pos, getter)
       }
 
       def setterBody(setter: Symbol) = {
         val getter = setter.getterIn(clazz)
-
-        // A trait with a field of type Unit creates a trait setter (invoked by the
-        // implementation class constructor), like for any other trait field.
-        // However, no actual field is created in the class that mixes in the trait.
-        // Therefore the setter does nothing (except setting the -Xcheckinit flag).
+        assert(getter.hasFlag(PARAMACCESSOR), s"missing implementation for non-paramaccessor $setter in $clazz")
 
         val setInitFlag =
           if (!needsInitFlag(getter)) Nil
           else List(mkSetFlag(clazz, fieldOffset(getter), getter, bitmapKind(getter)))
 
-        val fieldInitializer =
-          if (isUnitGetter(getter)) Nil
-          else List(Assign(fieldAccess(setter), Ident(setter.firstParam)))
-
-        (fieldInitializer ::: setInitFlag) match {
-          case Nil => UNIT
-          // If there's only one statement, the Block factory does not actually create a Block.
-          case stats => Block(stats: _*)
-        }
+        Block(Assign(fieldAccess(setter), Ident(setter.firstParam)) :: setInitFlag : _*)
       }
 
       def fieldAccess(accessor: Symbol) = Select(This(clazz), accessor.accessed)
 
-      def isOverriddenSetter(sym: Symbol) =
-        nme.isTraitSetterName(sym.name) && {
-          val other = sym.nextOverriddenSymbol
-          isOverriddenAccessor(other.getterIn(other.owner), clazz.info.baseClasses)
-        }
 
-      // for all symbols `sym` in the class definition, which are mixed in:
+      // for all symbols `sym` in the class definition, which are mixed in by mixinTraitMembers
       for (sym <- clazz.info.decls ; if sym hasFlag MIXEDIN) {
         // if current class is a trait, add an abstract method for accessor `sym`
-        if (clazz.isTrait) {
-          addDefDef(sym)
-        } else {
-          // if class is not a trait add accessor definitions
-          if (sym.hasFlag(ACCESSOR) && !sym.hasFlag(DEFERRED)) {
-            assert(sym hasFlag (LAZY | PARAMACCESSOR), s"mixed in $sym from $clazz is not lazy/param?!?")
+        // ditto for a super accessor (will get an RHS in completeSuperAccessor)
+        if (clazz.isTrait || sym.isSuperAccessor) addDefDef(sym)
+        // implement methods mixed in from a supertrait (the symbols were created by mixinTraitMembers)
+        else if (sym.hasFlag(ACCESSOR) && !sym.hasFlag(DEFERRED)) {
+          assert(sym hasFlag (LAZY | PARAMACCESSOR), s"mixed in $sym from $clazz is not lazy/param?!?")
 
-            // add accessor definitions
-            addDefDef(sym, {
-              if (sym.isSetter) {
-                // If this is a setter of a mixed-in field which is overridden by another mixin,
-                // the trait setter of the overridden one does not need to do anything - the
-                // trait setter of the overriding field will initialize the field.
-                if (isOverriddenSetter(sym)) UNIT
-                else setterBody(sym)
-              }
-              else getterBody(sym)
-            })
-          }
-          else if (sym.isModule && !(sym hasFlag LIFTED | BRIDGE)) {
-            // Moved to Refchecks
-          }
-          else if (!sym.isMethod) {
-            // add fields
-            addValDef(sym)
-          }
-          else if (sym.isSuperAccessor) {
-            // add superaccessors
-            addDefDef(sym)
-          }
-          else {
-            // add forwarders
-            assert(sym.alias != NoSymbol, (sym, sym.debugFlagString, clazz))
-            // debuglog("New forwarder: " + sym.defString + " => " + sym.alias.defString)
-            if (!sym.isMacro) addDefDef(sym, Apply(SuperSelect(clazz, sym.alias), sym.paramss.head.map(Ident(_))))
-          }
+          // add accessor definitions
+          addDefDef(sym, if (sym.isSetter) setterBody(sym) else getterBody(sym))
+        }
+        else if (!sym.isMethod) addValDef(sym) // field
+        else if (!sym.isMacro) { // forwarder
+          assert(sym.alias != NoSymbol, (sym, sym.debugFlagString, clazz))
+          // debuglog("New forwarder: " + sym.defString + " => " + sym.alias.defString)
+          addDefDef(sym, Apply(SuperSelect(clazz, sym.alias), sym.paramss.head.map(Ident(_))))
         }
       }
+
       stats1 = add(stats1, newDefs.toList)
-      if (clazz.isTrait) stats1 =
-        stats1.filter {
+
+      if (clazz.isTrait) stats1 = stats1.filter {
           case vd: ValDef =>
-            // TODO do we get here?
+            assert(vd.symbol.hasFlag(PRESUPER | PARAMACCESSOR | LAZY), s"unexpected valdef $vd in trait $clazz")
             false
           case _ => true
         }
+
       if (!clazz.isTrait) stats1 = stats1 map completeSuperAccessor
+
       stats1
     }
 
@@ -989,8 +963,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     /** The transform that gets applied to a tree after it has been completely
      *  traversed and possible modified by a preTransform.
      *  This step will
-     *    - change every node type that refers to an implementation class to its
-     *      corresponding interface, unless the node's symbol is an implementation class.
      *    - change parents of templates to conform to parents in the symbol info
      *    - add all new definitions to a class or interface
      *    - remove widening casts
@@ -998,8 +970,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      *      to static calls of methods in implementation modules (@see staticCall)
      *    - change super calls to methods in implementation classes to static calls
      *      (@see staticCall)
-     *    - change `this` in implementation modules to references to the self parameter
-     *    - refer to fields in some implementation class via an abstract method in the interface.
      */
     private def postTransform(tree: Tree): Tree = {
       val sym = tree.symbol
@@ -1020,6 +990,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           treeCopy.Template(tree, parents1, self, statsWithNewDefs)
 
         case Select(qual, name) if sym.owner.isTrait && !sym.isMethod =>
+          assert(sym.hasFlag(PARAMACCESSOR | PRESUPER), s"!!! Unexpected reference to field $sym in trait $currentOwner")
+
           // refer to fields in some trait an abstract getter in the interface.
           val ifaceGetter = sym getterIn sym.owner
 

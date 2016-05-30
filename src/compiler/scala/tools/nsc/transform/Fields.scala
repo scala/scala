@@ -53,6 +53,8 @@ import symtab.Flags._
   * An overridden val's side-effect is still performed.
   * The only change due to overriding is that its value is never written to the field
   * (the overridden val's value is, of course, stored in the field in addition to its side-effect being performed).
+  *
+  * TODO: check init support (or drop the -Xcheck-init flag??)
   */
 abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransformers {
 
@@ -247,6 +249,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
             val accessorUnderConsideration = !(member hasFlag (DEFERRED | LAZY))
 
             // destructively mangle accessor's name (which may cause rehashing of decls), also sets flags
+            // TODO: technically, only necessary for stored fields
             if (member hasFlag PRIVATE) member makeNotPrivate clazz
 
             // Need to mark as notPROTECTED, so that it's carried over to the synthesized member in subclasses,

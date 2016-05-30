@@ -158,13 +158,6 @@ abstract class ExplicitOuter extends InfoTransform
     case MethodType(params, resTp) =>
       val resTpTransformed = transformInfo(sym, resTp)
 
-      // juggle flags (and mangle names) after transforming info
-      if (sym.owner.isTrait) {
-        // TODO: I don't believe any private accessors remain after the fields phase
-        if ((sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isModule) sym.makeNotPrivate(sym.owner) // 5
-        if (sym.isProtected) sym setFlag notPROTECTED // 6
-      }
-
       val paramsWithOuter =
         if (sym.isClassConstructor && isInner(sym.owner)) // 1
           sym.newValueParameter(nme.OUTER_ARG, sym.pos).setInfo(sym.owner.outerClass.thisType) :: params
@@ -202,14 +195,6 @@ abstract class ExplicitOuter extends InfoTransform
       if (restp eq restp1) tp else PolyType(tparams, restp1)
 
     case _ =>
-      // Local fields of traits need to be unconditionally unprivatized.
-      // Reason: Those fields might need to be unprivatized if referenced by an inner class.
-      // On the other hand, mixing in the trait into a separately compiled
-      // class needs to have a common naming scheme, independently of whether
-      // the field was accessed from an inner class or not. See #2946
-      if (sym.owner.isTrait && sym.isLocalToThis &&
-              (sym.getterIn(sym.owner) == NoSymbol))
-        sym.makeNotPrivate(sym.owner)
       tp
   }
 
@@ -300,61 +285,41 @@ abstract class ExplicitOuter extends InfoTransform
     }
   }
 
-  /** <p>
-   *    The phase performs the following transformations on terms:
-   *  </p>
-   *  <ol>
-   *    <li> <!-- 1 -->
-   *      <p>
-   *        An class which is not an interface and is not static gets an outer
-   *        accessor (@see outerDefs).
-   *      </p>
-   *      <p>
-   *        1a. A class which is not a trait gets an outer field.
-   *      </p>
-   *    </li>
-   *    <li> <!-- 4 -->
-   *      A constructor of a non-trait inner class gets an outer parameter.
-   *    </li>
-   *    <li> <!-- 5 -->
-   *      A reference C.this where C refers to an
-   *      outer class is replaced by a selection
-   *      this.$outer$$C1 ... .$outer$$Cn (@see outerPath)
-   *    </li>
-   *    <li>
-   *    </li>
-   *    <li> <!-- 7 -->
-   *      A call to a constructor Q.<init>(args) or Q.$init$(args) where Q != this and
-   *      the constructor belongs to a non-static class is augmented by an outer argument.
-   *      E.g. Q.<init>(OUTER, args) where OUTER
-   *      is the qualifier corresponding to the singleton type Q.
-   *    </li>
-   *    <li>
-   *      A call to a constructor this.<init>(args) in a
-   *      secondary constructor is augmented to this.<init>(OUTER, args)
-   *      where OUTER is the last parameter of the secondary constructor.
-   *    </li>
-   *    <li> <!-- 9 -->
-   *      Remove private modifier from class members M
-   *      that are accessed from an inner class.
-   *    </li>
-   *    <li> <!-- 10 -->
-   *      Remove protected modifier from class members M
-   *      that are accessed without a super qualifier accessed from an inner
-   *      class or trait.
-   *    </li>
-   *    <li> <!-- 11 -->
-   *      Remove private and protected modifiers
-   *      from type symbols
-   *    </li>
-   *    <li> <!-- 12 -->
-   *      Remove private modifiers from members of traits
-   *    </li>
-   *  </ol>
-   *  <p>
-   *    Note: The whole transform is run in phase explicitOuter.next.
-   *  </p>
-   */
+  /** The phase performs the following transformations (more or less...):
+    *
+    * (1) An class which is not an interface and is not static gets an outer accessor (@see outerDefs).
+    * (1a) A class which is not a trait gets an outer field.
+    *
+    * (4) A constructor of a non-trait inner class gets an outer parameter.
+    *
+    * (5) A reference C.this where C refers to an outer class is replaced by a selection
+    *     `this.$outer$$C1 ... .$outer$$Cn` (@see outerPath)
+    *
+    * (7) A call to a constructor Q.(args) or Q.$init$(args) where Q != this and
+    *     the constructor belongs to a non-static class is augmented by an outer argument.
+    *     E.g. Q.(OUTER, args) where OUTER
+    *     is the qualifier corresponding to the singleton type Q.
+    *
+    * (8) A call to a constructor this.(args) in a
+    *     secondary constructor is augmented to this.(OUTER, args)
+    *     where OUTER is the last parameter of the secondary constructor.
+    *
+    * (9) Remove private modifier from class members M that are accessed from an inner class.
+    *
+    * (10) Remove protected modifier from class members M that are accessed
+    *      without a super qualifier accessed from an inner class or trait.
+    *
+    * (11) Remove private and protected modifiers from type symbols
+    *
+    * Note: The whole transform is run in phase explicitOuter.next.
+    *
+    * TODO: Make this doc reflect what's actually going on.
+    *       Some of the deviations are motivated by separate compilation
+    *       (name mangling based on usage is inherently unstable).
+    *       Now that traits are compiled 1:1 to interfaces, they can have private members,
+    *       so there's also less need to make trait members non-private
+    *       (they still may need to be implemented in subclasses, though we could make those protected...).
+    */
   class ExplicitOuterTransformer(unit: CompilationUnit) extends OuterPathTransformer(unit) {
     transformer =>
 
