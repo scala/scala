@@ -147,10 +147,26 @@ trait Erasure {
       case AnnotatedType(_, atp) =>
         apply(atp)
       case ClassInfoType(parents, decls, clazz) =>
+        if (clazz.isTrait) {
+          decls foreach { sym =>
+            if (!sym.isType) sym.info // run explicit outer's info transform to make not-private where needed
+          }
+        }
+
         ClassInfoType(
-          if (clazz == ObjectClass || isPrimitiveValueClass(clazz)) Nil
+          if (clazz == ObjectClass || isPrimitiveValueClass(clazz) || parents.isEmpty) Nil
           else if (clazz == ArrayClass) ObjectTpe :: Nil
-          else removeLaterObjects(parents map this),
+          else {
+            val erasedParents = parents map this
+
+            // drop first parent for traits -- it has been normalized to a class by now,
+            // but we should drop that in bytecode
+            val firstParent =
+              if (clazz.hasFlag(Flags.TRAIT) && !clazz.hasFlag(Flags.JAVA)) ObjectTpe
+              else erasedParents.head
+
+            firstParent :: erasedParents.tail.filter(_.typeSymbol != ObjectClass)
+          },
           decls, clazz)
       case _ =>
         mapOver(tp)

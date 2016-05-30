@@ -1040,11 +1040,7 @@ trait Definitions extends api.StandardDefinitions {
       }
     }
 
-    /** Remove references to class Object (other than the head) in a list of parents */
-    def removeLaterObjects(tps: List[Type]): List[Type] = tps match {
-      case Nil      => Nil
-      case x :: xs  => x :: xs.filterNot(_.typeSymbol == ObjectClass)
-    }
+
     /** Remove all but one reference to class Object from a list of parents. */
     def removeRedundantObjects(tps: List[Type]): List[Type] = tps match {
       case Nil      => Nil

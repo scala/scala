@@ -12,7 +12,7 @@ import symtab._
 import Flags._
 import scala.reflect.internal.Mode._
 
-abstract class Erasure extends AddInterfaces
+abstract class Erasure extends InfoTransform
                           with scala.reflect.internal.transform.Erasure
                           with typechecker.Analyzer
                           with TypingTransformers
@@ -368,16 +368,53 @@ abstract class Erasure extends AddInterfaces
 
   class UnknownSig extends Exception
 
-  /**  The symbol's erased info. This is the type's erasure, except for the following symbols:
-   *
-   *   - For $asInstanceOf      : [T]T
-   *   - For $isInstanceOf      : [T]scala#Boolean
-   *   - For class Array        : [T]C where C is the erased classinfo of the Array class.
-   *   - For Array[T].<init>    : {scala#Int)Array[T]
-   *   - For a type parameter   : A type bounds type consisting of the erasures of its bounds.
-   */
-  override def transformInfo(sym: Symbol, tp: Type): Type =
-    transformMixinInfo(super.transformInfo(sym, tp))
+  // TODO: move to constructors?
+  object mixinTransformer extends Transformer {
+    /** Add calls to supermixin constructors
+      *    `super[mix].$init$()`
+      *  to tree, which is assumed to be the body of a constructor of class clazz.
+      */
+    private def addMixinConstructorCalls(tree: Tree, clazz: Symbol): Tree = {
+      def mixinConstructorCall(mc: Symbol): Tree = atPos(tree.pos) {
+        Apply(SuperSelect(clazz, mc.primaryConstructor), Nil)
+      }
+      val mixinConstructorCalls: List[Tree] = {
+        for (mc <- clazz.mixinClasses.reverse
+             if mc.isTrait && mc.primaryConstructor != NoSymbol)
+          yield mixinConstructorCall(mc)
+      }
+      tree match {
+
+        case Block(Nil, expr) =>
+          // AnyVal constructor - have to provide a real body so the
+          // jvm doesn't throw a VerifyError. But we can't add the
+          // body until now, because the typer knows that Any has no
+          // constructor and won't accept a call to super.init.
+          assert((clazz isSubClass AnyValClass) || clazz.info.parents.isEmpty, clazz)
+          Block(List(Apply(gen.mkSuperInitCall, Nil)), expr)
+
+        case Block(stats, expr) =>
+          // needs `hasSymbolField` check because `supercall` could be a block (named / default args)
+          val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER))
+          treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
+      }
+    }
+
+    override def transform(tree: Tree): Tree = {
+      val sym = tree.symbol
+      val tree1 = tree match {
+        case DefDef(_,_,_,_,_,_) if sym.isClassConstructor && sym.isPrimaryConstructor && sym.owner != ArrayClass =>
+          deriveDefDef(tree)(addMixinConstructorCalls(_, sym.owner)) // (3)
+        case Template(parents, self, body) =>
+          val parents1 = sym.owner.info.parents map (t => TypeTree(t) setPos tree.pos)
+          treeCopy.Template(tree, parents1, noSelfType, body)
+        case _ =>
+          tree
+      }
+      super.transform(tree1)
+    }
+  }
+
 
   val deconstMap = new TypeMap {
     // For some reason classOf[Foo] creates ConstantType(Constant(tpe)) with an actual Type for tpe,
