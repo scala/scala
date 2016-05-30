@@ -43,7 +43,7 @@ class InlinerTest extends BytecodeTesting {
     // Use the class nodes stored in the byteCodeRepository. The ones returned by compileClasses are not the same,
     // these are created new from the classfile byte array. They are completely separate instances which cannot
     // be used to look up methods / callsites in the callGraph hash maps for example.
-    byteCodeRepository.compilingClasses.valuesIterator.toList.sortBy(_.name)
+    byteCodeRepository.compilingClasses.valuesIterator.map(_._1).toList.sortBy(_.name)
   }
 
   def checkCallsite(callsite: callGraph.Callsite, callee: MethodNode) = {
