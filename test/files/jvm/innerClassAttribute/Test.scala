@@ -416,7 +416,7 @@ object Test extends BytecodeTest {
 
   def testAnonymousClassesMayBeNestedInSpecialized() {
     assertEnclosingMethod("AnonymousClassesMayBeNestedInSpecialized$C$$anon$17", "AnonymousClassesMayBeNestedInSpecialized$C", "foo", "(Ljava/lang/Object;)LAnonymousClassesMayBeNestedInSpecialized$A;")
-    assertEnclosingMethod("AnonymousClassesMayBeNestedInSpecialized$C$mcI$sp$$anon$18", "AnonymousClassesMayBeNestedInSpecialized$C$mcI$sp", "foo$mcI$sp", "(I)LAnonymousClassesMayBeNestedInSpecialized$A;")
+    assertEnclosingMethod("AnonymousClassesMayBeNestedInSpecialized$C$mcI$sp$$anon$21", "AnonymousClassesMayBeNestedInSpecialized$C$mcI$sp", "foo$mcI$sp", "(I)LAnonymousClassesMayBeNestedInSpecialized$A;")
   }
 
   def testNestedInValueClass() {
@@ -442,6 +442,20 @@ object Test extends BytecodeTest {
 
     testInner("NestedInValueClass$A", a, am)
     testInner("NestedInValueClass$A$", a, am, b, c, methodHandlesLookup)
+  }
+
+  def testLocalAndAnonymousInLazyInitializer(): Unit = {
+    assertEnclosingMethod("LocalAndAnonymousInLazyInitializer$C$$anon$18", "LocalAndAnonymousInLazyInitializer$C", null, null)
+    assertEnclosingMethod("LocalAndAnonymousInLazyInitializer$C$AA$4",     "LocalAndAnonymousInLazyInitializer$C", null, null)
+    assertEnclosingMethod("LocalAndAnonymousInLazyInitializer$C$AA$5$",    "LocalAndAnonymousInLazyInitializer$C", null, null)
+
+    assertEnclosingMethod("LocalAndAnonymousInLazyInitializer$O$$anon$19", "LocalAndAnonymousInLazyInitializer$O$", null, null)
+    assertEnclosingMethod("LocalAndAnonymousInLazyInitializer$O$AA$6",     "LocalAndAnonymousInLazyInitializer$O$", null, null)
+    assertEnclosingMethod("LocalAndAnonymousInLazyInitializer$O$AA$7$",    "LocalAndAnonymousInLazyInitializer$O$", null, null)
+
+    assertEnclosingMethod("LocalAndAnonymousInLazyInitializer$T$$anon$20", "LocalAndAnonymousInLazyInitializer$T", null, null)
+    assertEnclosingMethod("LocalAndAnonymousInLazyInitializer$T$AA$8",     "LocalAndAnonymousInLazyInitializer$T", null, null)
+    assertEnclosingMethod("LocalAndAnonymousInLazyInitializer$T$AA$9$",    "LocalAndAnonymousInLazyInitializer$T", null, null)
   }
 
   def show(): Unit = {
@@ -473,5 +487,6 @@ object Test extends BytecodeTest {
     testSpecializedClassesTopLevel()
     testAnonymousClassesMayBeNestedInSpecialized()
     testNestedInValueClass()
+    testLocalAndAnonymousInLazyInitializer()
   }
 }
