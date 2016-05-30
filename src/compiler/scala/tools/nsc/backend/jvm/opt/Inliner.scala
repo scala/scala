@@ -268,11 +268,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
     // New labels for the cloned instructions
     val labelsMap = cloneLabels(callee)
-    val (clonedInstructions, instructionMap, hasSerializableClosureInstantiation) = cloneInstructions(callee, labelsMap)
-    val keepLineNumbers = callsiteClass == calleeDeclarationClass
-    if (!keepLineNumbers) {
-      removeLineNumberNodes(clonedInstructions)
-    }
+    val (clonedInstructions, instructionMap, hasSerializableClosureInstantiation) = cloneInstructions(callee, labelsMap, keepLineNumbers = callsiteClass == calleeDeclarationClass)
 
     // local vars in the callee are shifted by the number of locals at the callsite
     val localVarShift = callsiteMethod.maxLocals
