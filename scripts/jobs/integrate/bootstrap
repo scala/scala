@@ -494,7 +494,6 @@ bootstrap() {
             -Dremote.snapshot.repository=NOPE\
             -Dremote.release.repository=$releaseTempRepoUrl\
             -Drepository.credentials.id=$releaseTempRepoCred\
-            -Dscalac.args.optimise=-opt:l:classpath\
             -Ddocs.skip=1\
             -Dlocker.skip=1\
             $publishStarrPrivateTask >> $baseDir/logs/builds 2>&1
@@ -516,7 +515,6 @@ bootstrap() {
       $SET_STARR\
       -Dremote.release.repository=$releaseTempRepoUrl\
       -Drepository.credentials.id=$releaseTempRepoCred\
-      -Dscalac.args.optimise=-opt:l:classpath\
       -Ddocs.skip=1\
       -Dlocker.skip=1\
       $publishLockerPrivateTask >> $baseDir/logs/builds 2>&1
