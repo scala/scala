@@ -2068,35 +2068,39 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case _ =>
           (call, Nil)
       }
-      val (superConstr, superArgs) = decompose(rhs)
-      assert(superConstr.symbol ne null, superConstr)//debug
-      def superClazz = superConstr.symbol.owner
-      def superParamAccessors = superClazz.constrParamAccessors
 
       // associate superclass paramaccessors with their aliases
-      if (superConstr.symbol.isPrimaryConstructor && !superClazz.isJavaDefined && sameLength(superParamAccessors, superArgs)) {
-        for ((superAcc, superArg @ Ident(name)) <- superParamAccessors zip superArgs) {
-          if (mexists(vparamss)(_.symbol == superArg.symbol)) {
-            val alias = (
-              superAcc.initialize.alias
-                orElse (superAcc getterIn superAcc.owner)
-                filter (alias => superClazz.info.nonPrivateMember(alias.name) == alias)
-            )
-            if (alias.exists && !alias.accessed.isVariable && !isRepeatedParamType(alias.accessed.info)) {
-              val ownAcc = clazz.info decl name suchThat (_.isParamAccessor) match {
-                case acc if !acc.isDeferred && acc.hasAccessorFlag => acc.accessed
-                case acc                                           => acc
-              }
-              ownAcc match {
-                case acc: TermSymbol if !acc.isVariable && !isByNameParamType(acc.info) =>
-                  debuglog(s"$acc has alias ${alias.fullLocationString}")
-                  acc setAlias alias
-                case _ =>
+      val (superConstr, superArgs) = decompose(rhs)
+      if (superConstr.symbol.isPrimaryConstructor) {
+        val superClazz = superConstr.symbol.owner
+        if (!superClazz.isJavaDefined) {
+          val superParamAccessors = superClazz.constrParamAccessors
+          if (sameLength(superParamAccessors, superArgs)) {
+            for ((superAcc, superArg@Ident(name)) <- superParamAccessors zip superArgs) {
+              if (mexists(vparamss)(_.symbol == superArg.symbol)) {
+                val alias = (
+                  superAcc.initialize.alias
+                  orElse (superAcc getterIn superAcc.owner)
+                  filter (alias => superClazz.info.nonPrivateMember(alias.name) == alias)
+                  )
+                if (alias.exists && !alias.accessed.isVariable && !isRepeatedParamType(alias.accessed.info)) {
+                  val ownAcc = clazz.info decl name suchThat (_.isParamAccessor) match {
+                    case acc if !acc.isDeferred && acc.hasAccessorFlag => acc.accessed
+                    case acc => acc
+                  }
+                  ownAcc match {
+                    case acc: TermSymbol if !acc.isVariable && !isByNameParamType(acc.info) =>
+                      debuglog(s"$acc has alias ${alias.fullLocationString}")
+                      acc setAlias alias
+                    case _ =>
+                  }
+                }
               }
             }
           }
         }
       }
+
       pending.foreach(ErrorUtils.issueTypeError)
     }
 
