@@ -181,63 +181,22 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     newSym
   }
 
-  /** Add getters and setters for all non-module fields of an implementation
-   *  class to its interface unless they are already present. This is done
-   *  only once per class. The mixedin flag is used to remember whether late
-   *  members have been added to an interface.
-   *    - lazy fields don't get a setter.
-   */
-  def addLateInterfaceMembers(clazz: Symbol) {
+  def publicizeTraitMethods(clazz: Symbol) {
     if (treatedClassInfos(clazz) != clazz.info) {
       treatedClassInfos(clazz) = clazz.info
       assert(phase == currentRun.mixinPhase, phase)
 
-      /* Create a new getter. Getters are never private or local.
-       * They are always accessors and deferred.
-       *
-       * TODO: I guess newGetter and newSetter are needed for fields added after the fields phase (lambdalift) -- can we fix that?
-       */
-      def newGetter(field: Symbol): Symbol = {
-        //println(s"creating new getter for $field : ${field.info} at ${field.locationString} // mutable: ${field hasFlag MUTABLE}")
-        val newFlags = field.flags & ~PrivateLocal | ACCESSOR | ( if (field.isMutable) 0 else STABLE ) | SYNTHESIZE_IMPL_IN_SUBCLASS // TODO: do we need SYNTHESIZE_IMPL_IN_SUBCLASS to indicate that `notDeferred(setter)` should hold
-        // TODO preserve pre-erasure info?
-        clazz.newMethod(field.getterName, field.pos, newFlags) setInfo MethodType(Nil, field.info)
-      }
-
-      /* Create a new setter. Setters are never private or local. They are
-       * always accessors and deferred. */
-      def newSetter(field: Symbol): Symbol = {
-        //println(s"creating new setter for $field ${field.locationString} // mutable: ${field hasFlag MUTABLE}")
-        val setterName = field.setterName
-        val newFlags   = field.flags & ~PrivateLocal | ACCESSOR | SYNTHESIZE_IMPL_IN_SUBCLASS // TODO: do we need SYNTHESIZE_IMPL_IN_SUBCLASS to indicate that `notDeferred(setter)` should hold
-        val setter     = clazz.newMethod(setterName, field.pos, newFlags)
-        // TODO preserve pre-erasure info?
-        setter setInfo MethodType(setter.newSyntheticValueParams(List(field.info)), UnitTpe)
-        if (field.needsExpandedSetterName)
-          setter.name = nme.expandedSetterName(setter.name, clazz)
-
-        setter
-      }
-
-      clazz.info // make sure info is up to date, so that implClass is set.
-
-      // TODO: is this needed? can there be fields in a class that don't have accessors yet but need them???
-      // can we narrow this down to just getters for lazy vals? param accessors?
       for (member <- clazz.info.decls) {
-        if (!member.isMethod && !member.isModule && !member.isModuleVar) {
+        if (member.isMethod) publicizeTraitMethod(member)
+        else {
           assert(member.isTerm && !member.isDeferred, member)
-          if (member.getterIn(clazz).isPrivate) {
-            member.makeNotPrivate(clazz) // this will also make getter&setter not private
-          }
-          val getter = member.getterIn(clazz)
-          if (getter == NoSymbol) addMember(clazz, newGetter(member))
-          if (!member.tpe.isInstanceOf[ConstantType] && !member.isLazy) {
-            val setter = member.setterIn(clazz)
-            if (setter == NoSymbol) addMember(clazz, newSetter(member))
-          }
+          // disable assert to support compiling against code compiled by an older compiler (until we re-starr)
+          // assert(member hasFlag LAZY | PRESUPER, s"unexpected $member in $clazz ${member.debugFlagString}")
+          // lazy vals still leave field symbols lying around in traits -- TODO: never emit them to begin with
+          // ditto for early init vals
           clazz.info.decls.unlink(member)
         }
-        else if (member.isMethod) publicizeTraitMethod(member)
+
       }
       debuglog("new defs of " + clazz + " = " + clazz.info.decls)
     }
@@ -393,7 +352,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     for (mc <- clazz.mixinClasses ; if mc.isTrait) {
       // @SEAN: adding trait tracking so we don't have to recompile transitive closures
       unit.depends += mc
-      addLateInterfaceMembers(mc)
+      publicizeTraitMethods(mc)
       mixinTraitMembers(mc)
       mixinTraitForwarders(mc)
     }
@@ -493,7 +452,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           if (!currentOwner.isTrait && !isPrimitiveValueClass(currentOwner))
             addMixedinMembers(currentOwner, unit)
           else if (currentOwner.isTrait)
-            addLateInterfaceMembers(currentOwner)
+            publicizeTraitMethods(currentOwner)
 
           tree
 

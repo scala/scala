@@ -506,7 +506,8 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       )
 
       /*
-       * whether `sym` denotes a param-accessor (ie a field) that fulfills all of:
+       * whether `sym` denotes a param-accessor (ie in a class a PARAMACCESSOR field, or in a trait a method with same flag)
+       * that fulfills all of:
        *   (a) has stationary value, ie the same value provided via the corresponding ctor-arg; and
        *   (b) isn't subject to specialization. We might be processing statements for:
        *         (b.1) the constructor in the generic   (super-)class; or
@@ -519,10 +520,11 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
         case Apply(Select(This(_), _), List()) =>
           // references to parameter accessor methods of own class become references to parameters
           // outer accessors become references to $outer parameter
-          if (clazz.isTrait)
+          // println(s"to param ref in $clazz for ${tree.symbol} ${tree.symbol.debugFlagString} / ${tree.symbol.outerSource} / ${canBeSupplanted(tree.symbol)}")
+          if (clazz.isTrait && !(tree.symbol hasAllFlags (ACCESSOR | PARAMACCESSOR)))
             super.transform(tree)
           else if (canBeSupplanted(tree.symbol))
-            gen.mkAttributedIdent(parameter(tree.symbol.accessed)) setPos tree.pos
+            gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
           else if (tree.symbol.outerSource == clazz)
             gen.mkAttributedIdent(parameterNamed(nme.OUTER)) setPos tree.pos
           else
@@ -700,7 +702,9 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       def omittableStat(stat: Tree) = omittableSym(stat.symbol)
 
       // The parameter accessor fields which are members of the class
-      val paramAccessors = clazz.constrParamAccessors
+      val paramAccessors =
+        if (clazz.isTrait) clazz.info.decls.toList.filter(sym => sym.hasAllFlags(STABLE | PARAMACCESSOR)) // since a trait does not have constructor parameters (yet), these can only come from lambdalift -- right?
+        else clazz.constrParamAccessors
 
       // Initialize all parameters fields that must be kept.
       val paramInits = paramAccessors filterNot omittableSym map { acc =>
@@ -708,11 +712,15 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
         // It would be better to mangle the constructor parameter name since
         // it can only be used internally, but I think we need more robust name
         // mangling before we introduce more of it.
-        val conflict = clazz.info.nonPrivateMember(acc.name) filter (s => s.isGetter && !s.isOuterField && s.enclClass.isTrait)
+        val conflict = clazz.info.nonPrivateMember(acc.name) filter (s => (s ne acc) && s.isGetter && !s.isOuterField && s.enclClass.isTrait)
         if (conflict ne NoSymbol)
           reporter.error(acc.pos, "parameter '%s' requires field but conflicts with %s".format(acc.name, conflict.fullLocationString))
 
-        copyParam(acc, parameter(acc))
+        val accSetter =
+          if (clazz.isTrait) acc.setterIn(clazz, hasExpandedName = true)
+          else acc
+
+        copyParam(accSetter, parameter(acc))
       }
 
       // Return a pair consisting of (all statements up to and including superclass and trait constr calls, rest)
