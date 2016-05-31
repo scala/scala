@@ -172,8 +172,13 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       assert(phase == currentRun.mixinPhase, phase)
 
       for (member <- clazz.info.decls) {
-        // TODO: restrict?
-        if (member.isMethod) publicizeTraitMethod(member)
+        if (!member.isMethod && !member.isModule && !member.isModuleVar) {
+          assert(member.isTerm && !member.isDeferred, member)
+          assert(member hasFlag LAZY, member)
+          // lazy vals still leave field symbols lying around in traits -- TODO: never emit them to begin with
+          clazz.info.decls.unlink(member)
+        }
+        else if (member.isMethod) publicizeTraitMethod(member)
       }
       debuglog("new defs of " + clazz + " = " + clazz.info.decls)
     }
