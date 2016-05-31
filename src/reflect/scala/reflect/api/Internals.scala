@@ -116,7 +116,7 @@ trait Internals { self: Universe =>
     /** Substitute given tree `to` for occurrences of nodes that represent
      *  `C.this`, where `C` refers to the given class `clazz`.
      */
-    def substituteThis(tree: Tree, clazz: Symbol, to: Tree): Tree
+    def substituteThis(tree: Tree, clazz: Symbol, to: => Tree): Tree
 
     /** A factory method for `ClassDef` nodes.
      */
@@ -391,7 +391,7 @@ trait Internals { self: Universe =>
         def substituteTypes(from: List[Symbol], to: List[Type]): Tree = internal.substituteTypes(tree, from, to)
 
         /** @see [[internal.substituteThis]] */
-        def substituteThis(clazz: Symbol, to: Tree): Tree = internal.substituteThis(tree, clazz, to)
+        def substituteThis(clazz: Symbol, to: => Tree): Tree = internal.substituteThis(tree, clazz, to)
       }
 
       /** Extension methods for symbols */
@@ -1143,7 +1143,7 @@ trait Internals { self: Universe =>
 
       /** @see [[InternalApi.substituteThis]] */
       @deprecated("use `internal.substituteThis` instead or import `internal.decorators._` for infix syntax", "2.11.0")
-      def substituteThis(clazz: Symbol, to: Tree): Tree = internal.substituteThis(tree, clazz, to)
+      def substituteThis(clazz: Symbol, to: => Tree): Tree = internal.substituteThis(tree, clazz, to)
     }
 
     /** Scala 2.10 compatibility enrichments for Tree. */
