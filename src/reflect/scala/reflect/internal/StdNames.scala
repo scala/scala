@@ -240,6 +240,7 @@ trait StdNames {
 
     final val Any: NameType             = "Any"
     final val AnyVal: NameType          = "AnyVal"
+    final val App: NameType             = "App"
     final val FlagSet: NameType         = "FlagSet"
     final val Mirror: NameType          = "Mirror"
     final val Modifiers: NameType       = "Modifiers"

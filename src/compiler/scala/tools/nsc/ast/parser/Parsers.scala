@@ -364,12 +364,15 @@ self =>
       val stmts = parseStats()
 
       def mainModuleName = newTermName(settings.script.value)
+
       /* If there is only a single object template in the file and it has a
        * suitable main method, we will use it rather than building another object
        * around it.  Since objects are loaded lazily the whole script would have
        * been a no-op, so we're not taking much liberty.
        */
       def searchForMain(): Option[Tree] = {
+        import PartialFunction.cond
+
         /* Have to be fairly liberal about what constitutes a main method since
          * nothing has been typed yet - for instance we can't assume the parameter
          * type will look exactly like "Array[String]" as it could have been renamed
@@ -379,11 +382,15 @@ self =>
           case DefDef(_, nme.main, Nil, List(_), _, _)  => true
           case _                                        => false
         }
+        def isApp(t: Tree) = t match {
+          case Template(parents, _, _) => parents.exists(cond(_) { case Ident(tpnme.App) => true })
+          case _ => false
+        }
         /* For now we require there only be one top level object. */
         var seenModule = false
         val newStmts = stmts collect {
           case t @ Import(_, _) => t
-          case md @ ModuleDef(mods, name, template) if !seenModule && (md exists isMainMethod) =>
+          case md @ ModuleDef(mods, name, template) if !seenModule && (isApp(template) || md.exists(isMainMethod)) =>
             seenModule = true
             /* This slightly hacky situation arises because we have no way to communicate
              * back to the scriptrunner what the name of the program is.  Even if we were
@@ -394,6 +401,8 @@ self =>
              */
             if (name == mainModuleName) md
             else treeCopy.ModuleDef(md, mods, mainModuleName, template)
+          case md @ ModuleDef(_, _, _)   => md
+          case cd @ ClassDef(_, _, _, _) => cd
           case _ =>
             /* If we see anything but the above, fail. */
             return None
