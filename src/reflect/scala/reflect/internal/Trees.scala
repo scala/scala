@@ -181,7 +181,7 @@ trait Trees extends api.Trees {
     def substituteTypes(from: List[Symbol], to: List[Type]): Tree =
       new TreeTypeSubstituter(from, to)(this)
 
-    def substituteThis(clazz: Symbol, to: Tree): Tree =
+    def substituteThis(clazz: Symbol, to: => Tree): Tree =
       new ThisSubstituter(clazz, to) transform this
 
     def hasExistingSymbol = (symbol ne null) && (symbol ne NoSymbol)

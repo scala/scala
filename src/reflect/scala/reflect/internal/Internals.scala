@@ -29,7 +29,7 @@ trait Internals extends api.Internals {
     def freeTypes(tree: Tree): List[FreeTypeSymbol] = tree.freeTypes
     def substituteSymbols(tree: Tree, from: List[Symbol], to: List[Symbol]): Tree = tree.substituteSymbols(from, to)
     def substituteTypes(tree: Tree, from: List[Symbol], to: List[Type]): Tree = tree.substituteTypes(from, to)
-    def substituteThis(tree: Tree, clazz: Symbol, to: Tree): Tree = tree.substituteThis(clazz, to)
+    def substituteThis(tree: Tree, clazz: Symbol, to: => Tree): Tree = tree.substituteThis(clazz, to)
     def attachments(tree: Tree): Attachments { type Pos = Position } = tree.attachments
     def updateAttachment[T: ClassTag](tree: Tree, attachment: T): tree.type = tree.updateAttachment(attachment)
     def removeAttachment[T: ClassTag](tree: Tree): tree.type = tree.removeAttachment[T]
