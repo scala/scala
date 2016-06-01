@@ -61,8 +61,8 @@ abstract class ScalaPrimitives {
   final val NE = 43                            // x != y
   final val LT = 44                            // x < y
   final val LE = 45                            // x <= y
-  final val GE = 46                            // x > y
-  final val GT = 47                            // x >= y
+  final val GT = 46                            // x > y
+  final val GE = 47                            // x >= y
 
   // Boolean unary operations
   final val ZNOT = 50                          // !x

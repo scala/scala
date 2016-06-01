@@ -1336,6 +1336,7 @@ object BCodeHelpers {
   }
 
   object TestOp {
+    // the order here / op numbers are important to get the correct result when calling opcodeIF
     val EQ = new TestOp(0)
     val NE = new TestOp(1)
     val LT = new TestOp(2)
