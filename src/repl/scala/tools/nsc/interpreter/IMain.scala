@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
+ * Copyright 2005-2016 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -74,13 +74,14 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
   lazy val isClassBased: Boolean = settings.Yreplclassbased.value
 
-  private[nsc] var printResults               = true      // whether to print result lines
-  private[nsc] var totalSilence               = false     // whether to print anything
-  private var _initializeComplete             = false     // compiler is initialized
-  private var _isInitialized: Future[Boolean] = null      // set up initialization future
-  private var bindExceptions                  = true      // whether to bind the lastException variable
-  private var _executionWrapper               = ""        // code to be wrapped around all lines
-  var partialInput: String = ""                           // code accumulated in multi-line REPL input
+  private[nsc] var printResults               = true        // whether to print result lines
+  private[nsc] var totalSilence               = false       // whether to print anything
+  private var _initializeComplete             = false       // compiler is initialized
+  private var _isInitialized: Future[Boolean] = null        // set up initialization future
+  private var bindExceptions                  = true        // whether to bind the lastException variable
+  private var _executionWrapper               = ""          // code to be wrapped around all lines
+  var partialInput: String                    = ""          // code accumulated in multi-line REPL input
+  private var label                           = "<console>" // compilation unit name for reporting
 
   /** We're going to go to some trouble to initialize the compiler asynchronously.
    *  It's critical that nothing call into it until it's been initialized or we will
@@ -107,6 +108,12 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
     try body
     finally if (!saved) settings.nowarn.value = false
+  }
+  // Apply a temporary label for compilation (for example, script name)
+  def withLabel[A](temp: String)(body: => A): A = {
+    val saved = label
+    label = temp
+    try body finally label = saved
   }
 
   /** construct an interpreter that reports to Console */
@@ -810,7 +817,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       case Right(result) => Right(result)
     }
 
-    def compile(source: String): Boolean = compileAndSaveRun("<console>", source)
+    def compile(source: String): Boolean = compileAndSaveRun(label, source)
 
     /** The innermost object inside the wrapper, found by
       * following accessPath into the outer one.
@@ -1184,7 +1191,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       var isIncomplete = false
       def parse = {
         reporter.reset()
-        val trees = newUnitParser(line).parseStats()
+        val trees = newUnitParser(line, label).parseStats()
         if (reporter.hasErrors) Error(trees)
         else if (isIncomplete) Incomplete(trees)
         else Success(trees)

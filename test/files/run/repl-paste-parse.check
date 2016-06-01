@@ -1,0 +1,6 @@
+Type in expressions for evaluation. Or try :help.
+
+scala> repl-paste-parse.script:1: error: illegal start of simple pattern
+val case = 9
+    ^
+:quit
