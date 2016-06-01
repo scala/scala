@@ -364,12 +364,15 @@ self =>
       val stmts = parseStats()
 
       def mainModuleName = newTermName(settings.script.value)
+
       /* If there is only a single object template in the file and it has a
        * suitable main method, we will use it rather than building another object
        * around it.  Since objects are loaded lazily the whole script would have
        * been a no-op, so we're not taking much liberty.
        */
-      def searchForMain(): Option[Tree] = {
+      def searchForMain(): Tree = {
+        import PartialFunction.cond
+
         /* Have to be fairly liberal about what constitutes a main method since
          * nothing has been typed yet - for instance we can't assume the parameter
          * type will look exactly like "Array[String]" as it could have been renamed
@@ -379,11 +382,15 @@ self =>
           case DefDef(_, nme.main, Nil, List(_), _, _)  => true
           case _                                        => false
         }
-        /* For now we require there only be one top level object. */
+        def isApp(t: Tree) = t match {
+          case Template(parents, _, _) => parents.exists(cond(_) { case Ident(tpnme.App) => true })
+          case _ => false
+        }
+        /* We allow only one main module. */
         var seenModule = false
-        val newStmts = stmts collect {
-          case t @ Import(_, _) => t
-          case md @ ModuleDef(mods, name, template) if !seenModule && (md exists isMainMethod) =>
+        var disallowed = EmptyTree: Tree
+        val newStmts = stmts.map {
+          case md @ ModuleDef(mods, name, template) if !seenModule && (isApp(template) || md.exists(isMainMethod)) =>
             seenModule = true
             /* This slightly hacky situation arises because we have no way to communicate
              * back to the scriptrunner what the name of the program is.  Even if we were
@@ -394,50 +401,63 @@ self =>
              */
             if (name == mainModuleName) md
             else treeCopy.ModuleDef(md, mods, mainModuleName, template)
-          case _ =>
+          case md @ ModuleDef(_, _, _)   => md
+          case cd @ ClassDef(_, _, _, _) => cd
+          case t  @ Import(_, _)         => t
+          case t =>
             /* If we see anything but the above, fail. */
-            return None
+            if (disallowed.isEmpty) disallowed = t
+            EmptyTree
         }
-        Some(makeEmptyPackage(0, newStmts))
+        if (disallowed.isEmpty) makeEmptyPackage(0, newStmts)
+        else {
+          if (seenModule)
+            warning(disallowed.pos.point, "Script has a main object but statement is disallowed")
+          EmptyTree
+        }
       }
 
-      if (mainModuleName == newTermName(ScriptRunner.defaultScriptMain))
-        searchForMain() foreach { return _ }
+      def mainModule: Tree =
+        if (mainModuleName == newTermName(ScriptRunner.defaultScriptMain)) searchForMain() else EmptyTree
 
-      /*  Here we are building an AST representing the following source fiction,
-       *  where `moduleName` is from -Xscript (defaults to "Main") and <stmts> are
-       *  the result of parsing the script file.
-       *
-       *  {{{
-       *  object moduleName {
-       *    def main(args: Array[String]): Unit =
-       *      new AnyRef {
-       *        stmts
-       *      }
-       *  }
-       *  }}}
-       */
-      def emptyInit   = DefDef(
-        NoMods,
-        nme.CONSTRUCTOR,
-        Nil,
-        ListOfNil,
-        TypeTree(),
-        Block(List(Apply(gen.mkSuperInitCall, Nil)), literalUnit)
-      )
+      def repackaged: Tree = {
+        /*  Here we are building an AST representing the following source fiction,
+         *  where `moduleName` is from -Xscript (defaults to "Main") and <stmts> are
+         *  the result of parsing the script file.
+         *
+         *  {{{
+         *  object moduleName {
+         *    def main(args: Array[String]): Unit =
+         *      new AnyRef {
+         *        stmts
+         *      }
+         *  }
+         *  }}}
+         */
+        def emptyInit   = DefDef(
+          NoMods,
+          nme.CONSTRUCTOR,
+          Nil,
+          ListOfNil,
+          TypeTree(),
+          Block(List(Apply(gen.mkSuperInitCall, Nil)), literalUnit)
+        )
 
-      // def main
-      def mainParamType = AppliedTypeTree(Ident(tpnme.Array), List(Ident(tpnme.String)))
-      def mainParameter = List(ValDef(Modifiers(Flags.PARAM), nme.args, mainParamType, EmptyTree))
-      def mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(tpnme.Unit), gen.mkAnonymousNew(stmts))
+        // def main
+        def mainParamType = AppliedTypeTree(Ident(tpnme.Array), List(Ident(tpnme.String)))
+        def mainParameter = List(ValDef(Modifiers(Flags.PARAM), nme.args, mainParamType, EmptyTree))
+        def mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(tpnme.Unit), gen.mkAnonymousNew(stmts))
 
-      // object Main
-      def moduleName  = newTermName(ScriptRunner scriptMain settings)
-      def moduleBody  = Template(atInPos(scalaAnyRefConstr) :: Nil, noSelfType, List(emptyInit, mainDef))
-      def moduleDef   = ModuleDef(NoMods, moduleName, moduleBody)
+        // object Main
+        def moduleName  = newTermName(ScriptRunner scriptMain settings)
+        def moduleBody  = Template(atInPos(scalaAnyRefConstr) :: Nil, noSelfType, List(emptyInit, mainDef))
+        def moduleDef   = ModuleDef(NoMods, moduleName, moduleBody)
 
-      // package <empty> { ... }
-      makeEmptyPackage(0, moduleDef :: Nil)
+        // package <empty> { ... }
+        makeEmptyPackage(0, moduleDef :: Nil)
+      }
+
+      mainModule orElse repackaged
     }
 
 /* --------------- PLACEHOLDERS ------------------------------------------- */
