@@ -115,9 +115,8 @@ extends AbstractMap[Key, Value]
     * @param hash hash value for `key`
     */
   private[this] def findIndex(key: Key, hash: Int): Int = {
-    var j = hash
     var index = hash & mask
-    var perturb = index
+    var j = 0
 
     /** Index of the first slot containing a deleted entry, or -1 if none found yet. */
     var firstDeletedIndex = -1
@@ -130,9 +129,8 @@ extends AbstractMap[Key, Value]
       if (firstDeletedIndex == -1 && entry.value == None)
         firstDeletedIndex = index
 
-      j = 5 * j + 1 + perturb
-      perturb >>= 5
-      index = j & mask
+      j += 1
+      index = (index + j) & mask
       entry = table(index)
     }
 
@@ -197,20 +195,17 @@ extends AbstractMap[Key, Value]
 
   def get(key : Key) : Option[Value] = {
     val hash = hashOf(key)
-
-    var j = hash
     var index = hash & mask
-    var perturb = index
     var entry = table(index)
+    var j = 0
     while(entry != null){
       if (entry.hash == hash &&
           entry.key == key){
         return entry.value
       }
 
-      j = 5 * j + 1 + perturb
-      perturb >>= 5
-      index = j & mask
+      j += 1
+      index = (index + j) & mask
       entry = table(index)
     }
     None

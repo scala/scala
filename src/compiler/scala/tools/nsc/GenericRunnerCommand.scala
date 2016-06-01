@@ -79,6 +79,7 @@ Other startup options:
 
  -howtorun    what to run <script|object|jar|guess> (default: guess)
  -i <file>    preload <file> before starting the repl
+ -I <file>    preload <file>, enforcing line-by-line interpretation
  -e <string>  execute <string> as if entered in the repl
  -save        save the compiled script in a jar for future use
  -nc          no compilation daemon: do not use the fsc offline compiler
