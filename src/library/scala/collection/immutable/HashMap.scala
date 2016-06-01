@@ -201,7 +201,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
           if (this.value.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this
           else new HashMap1(key, hash, value, kv)
         } else {
-          val nkv = merger(this.kv, kv)
+          val nkv = merger(this.ensurePair, if(kv != null) kv else (key, value))
           new HashMap1(nkv._1, hash, nkv._2, nkv)
         }
       } else {
