@@ -346,6 +346,7 @@ lazy val library = configureAsSubproject(project)
       base ** "*.txt" pair relativeTo(base)
     },
     Osgi.headers += "Import-Package" -> "sun.misc;resolution:=optional, *",
+    Osgi.jarlist := true,
     fixPom(
       "/project/name" -> <name>Scala Library</name>,
       "/project/description" -> <description>Standard library for the Scala Programming Language</description>,
@@ -412,13 +413,15 @@ lazy val compiler = configureAsSubproject(project)
     scalacOptions in Compile in doc ++= Seq(
       "-doc-root-content", (sourceDirectory in Compile).value + "/rootdoc.txt"
     ),
-    Osgi.headers +=
+    Osgi.headers ++= Seq(
       "Import-Package" -> ("jline.*;resolution:=optional," +
                            "org.apache.tools.ant.*;resolution:=optional," +
                            "scala.util.parsing.*;version=\"${range;[====,====];"+versionNumber("scala-parser-combinators")+"}\";resolution:=optional," +
                            "scala.xml.*;version=\"${range;[====,====];"+versionNumber("scala-xml")+"}\";resolution:=optional," +
                            "scala.*;version=\"${range;[==,=+);${ver}}\"," +
                            "*"),
+      "Class-Path" -> "scala-reflect.jar scala-library.jar"
+    ),
     // Generate the ScriptEngineFactory service definition. The ant build does this when building
     // the JAR but sbt has no support for it and it is easier to do as a resource generator:
     generateServiceProviderResources("javax.script.ScriptEngineFactory" -> "scala.tools.nsc.interpreter.IMain$Factory"),

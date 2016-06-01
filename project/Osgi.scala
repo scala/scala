@@ -1,6 +1,7 @@
 import aQute.bnd.osgi.Builder
 import aQute.bnd.osgi.Constants._
 import java.util.Properties
+import java.util.jar.Attributes
 import sbt._
 import sbt.Keys._
 import collection.JavaConverters._
@@ -16,6 +17,7 @@ object Osgi {
   val bundleName = SettingKey[String]("osgiBundleName", "The Bundle-Name for the manifest.")
   val bundleSymbolicName = SettingKey[String]("osgiBundleSymbolicName", "The Bundle-SymbolicName for the manifest.")
   val headers = SettingKey[Seq[(String, String)]]("osgiHeaders", "Headers and processing instructions for BND.")
+  val jarlist = SettingKey[Boolean]("osgiJarlist", "List classes in manifest.")
 
   def settings: Seq[Setting[_]] = Seq(
     bundleName := description.value,
@@ -33,9 +35,10 @@ object Osgi {
         "-eclipse" -> "false"
       )
     },
+    jarlist := false,
     bundle <<= Def.task {
       val res = (products in Compile in packageBin).value
-      bundleTask(headers.value.toMap, (products in Compile in packageBin).value,
+      bundleTask(headers.value.toMap, jarlist.value, (products in Compile in packageBin).value,
         (artifactPath in (Compile, packageBin)).value, res, streams.value)
     },
     packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), bundle).identityMap,
@@ -48,7 +51,7 @@ object Osgi {
     )
   )
 
-  def bundleTask(headers: Map[String, String], fullClasspath: Seq[File], artifactPath: File,
+  def bundleTask(headers: Map[String, String], jarlist: Boolean, fullClasspath: Seq[File], artifactPath: File,
                  resourceDirectories: Seq[File], streams: TaskStreams): File = {
     val log = streams.log
     val builder = new Builder
@@ -63,6 +66,12 @@ object Osgi {
     builder.getWarnings.asScala.foreach(s => log.warn(s"bnd: $s"))
     builder.getErrors.asScala.foreach(s => log.error(s"bnd: $s"))
     IO.createDirectory(artifactPath.getParentFile)
+    if (jarlist) {
+      val entries = jar.getManifest.getEntries
+      for ((name, resource) <- jar.getResources.asScala if name.endsWith(".class")) {
+        entries.put(name, new Attributes)
+      }
+    }
     jar.write(artifactPath)
     artifactPath
   }
