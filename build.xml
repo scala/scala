@@ -273,6 +273,10 @@ TODO:
         <dependency groupId="org.pantsbuild" artifactId="jarjar" version="1.6.0"/>
       </artifact:dependencies>
 
+      <artifact:dependencies pathId="jarlister.classpath">
+        <dependency groupId="com.github.rjolly" artifactId="jarlister_2.11" version="1.0"/>
+      </artifact:dependencies>
+
       <!-- JUnit -->
       <property name="junit.version" value="4.12"/>
       <artifact:dependencies pathId="junit.classpath" filesetId="junit.fileset">
@@ -787,6 +791,11 @@ TODO:
       <path refid="aux.libs"/>
     </path>
 
+    <path id="pack.lib.path">
+      <pathelement location="${library.jar}"/>
+      <path refid="jarlister.classpath"/>
+    </path>
+
     <path id="pack.bin.tool.path">
       <pathelement location="${library.jar}"/>
       <pathelement location="${xml.jar}"/>
@@ -1138,7 +1147,10 @@ TODO:
 <!-- ===========================================================================
                                   PACKED QUICK BUILD (PACK)
 ============================================================================ -->
-  <target name="pack.lib"    depends="quick.lib"> <staged-pack project="library"/></target>
+  <target name="pack.lib" depends="quick.lib"> <staged-pack project="library"/>
+    <taskdef resource="scala/tools/ant/antlib.xml" classpathref="pack.lib.path"/>
+    <jarlister file="${library.jar}"/>
+  </target>
 
   <target name="pack.reflect" depends="quick.reflect"> <staged-pack project="reflect"/> </target>
 
