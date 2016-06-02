@@ -191,7 +191,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
   /** Runs command redirecting standard out and
    *  error out to output file.
    */
-  private def runCommand(args: Seq[String], outFile: File): Boolean = {
+  protected def runCommand(args: Seq[String], outFile: File): Boolean = {
     //(Process(args) #> outFile !) == 0 or (Process(args) ! pl) == 0
     val pl = ProcessLogger(outFile)
     val nonzero = 17     // rounding down from 17.3
