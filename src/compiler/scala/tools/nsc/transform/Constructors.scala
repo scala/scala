@@ -506,7 +506,8 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       )
 
       /*
-       * whether `sym` denotes a param-accessor (ie a field) that fulfills all of:
+       * whether `sym` denotes a param-accessor (ie in a class a PARAMACCESSOR field, or in a trait a method with same flag)
+       * that fulfills all of:
        *   (a) has stationary value, ie the same value provided via the corresponding ctor-arg; and
        *   (b) isn't subject to specialization. We might be processing statements for:
        *         (b.1) the constructor in the generic   (super-)class; or
@@ -519,10 +520,8 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
         case Apply(Select(This(_), _), List()) =>
           // references to parameter accessor methods of own class become references to parameters
           // outer accessors become references to $outer parameter
-          if (clazz.isTrait)
-            super.transform(tree)
-          else if (canBeSupplanted(tree.symbol))
-            gen.mkAttributedIdent(parameter(tree.symbol.accessed)) setPos tree.pos
+          if (canBeSupplanted(tree.symbol))
+            gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
           else if (tree.symbol.outerSource == clazz)
             gen.mkAttributedIdent(parameterNamed(nme.OUTER)) setPos tree.pos
           else
