@@ -1110,22 +1110,19 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     /* Emit code to compare the two top-most stack values using the 'op' operator. */
-    private def genCJUMP(success: asm.Label, failure: asm.Label, op: TestOp, tk: BType, targetIfNoJump: asm.Label) {
-      if (targetIfNoJump == success) genCJUMP(failure, success, op.negate, tk, targetIfNoJump)
+    private def genCJUMP(success: asm.Label, failure: asm.Label, op: TestOp, tk: BType, targetIfNoJump: asm.Label, negated: Boolean = false) {
+      if (targetIfNoJump == success) genCJUMP(failure, success, op.negate, tk, targetIfNoJump, negated = !negated)
       else {
         if (tk.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
           bc.emitIF_ICMP(op, success)
         } else if (tk.isRef) { // REFERENCE(_) | ARRAY(_)
           bc.emitIF_ACMP(op, success)
         } else {
+          def useCmpG = if (negated) op == TestOp.GT || op == TestOp.GE else op == TestOp.LT || op == TestOp.LE
           (tk: @unchecked) match {
             case LONG   => emit(asm.Opcodes.LCMP)
-            case FLOAT  =>
-              if (op == TestOp.LT || op == TestOp.LE) emit(asm.Opcodes.FCMPG)
-              else emit(asm.Opcodes.FCMPL)
-            case DOUBLE =>
-              if (op == TestOp.LT || op == TestOp.LE) emit(asm.Opcodes.DCMPG)
-              else emit(asm.Opcodes.DCMPL)
+            case FLOAT  => emit(if (useCmpG) asm.Opcodes.FCMPG else asm.Opcodes.FCMPL)
+            case DOUBLE => emit(if (useCmpG) asm.Opcodes.DCMPG else asm.Opcodes.DCMPL)
           }
           bc.emitIF(op, success)
         }
@@ -1134,8 +1131,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     /* Emits code to compare (and consume) stack-top and zero using the 'op' operator */
-    private def genCZJUMP(success: asm.Label, failure: asm.Label, op: TestOp, tk: BType, targetIfNoJump: asm.Label) {
-      if (targetIfNoJump == success) genCZJUMP(failure, success, op.negate, tk, targetIfNoJump)
+    private def genCZJUMP(success: asm.Label, failure: asm.Label, op: TestOp, tk: BType, targetIfNoJump: asm.Label, negated: Boolean = false) {
+      if (targetIfNoJump == success) genCZJUMP(failure, success, op.negate, tk, targetIfNoJump, negated = !negated)
       else {
         if (tk.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
           bc.emitIF(op, success)
@@ -1145,18 +1142,17 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             case TestOp.NE => bc emitIFNONNULL success
           }
         } else {
+          def useCmpG = if (negated) op == TestOp.GT || op == TestOp.GE else op == TestOp.LT || op == TestOp.LE
           (tk: @unchecked) match {
             case LONG   =>
               emit(asm.Opcodes.LCONST_0)
               emit(asm.Opcodes.LCMP)
             case FLOAT  =>
               emit(asm.Opcodes.FCONST_0)
-              if (op == TestOp.LT || op == TestOp.LE) emit(asm.Opcodes.FCMPG)
-              else emit(asm.Opcodes.FCMPL)
+              emit(if (useCmpG) asm.Opcodes.FCMPG else asm.Opcodes.FCMPL)
             case DOUBLE =>
               emit(asm.Opcodes.DCONST_0)
-              if (op == TestOp.LT || op == TestOp.LE) emit(asm.Opcodes.DCMPG)
-              else emit(asm.Opcodes.DCMPL)
+              emit(if (useCmpG) asm.Opcodes.DCMPG else asm.Opcodes.DCMPL)
           }
           bc.emitIF(op, success)
         }
@@ -1171,8 +1167,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       case scalaPrimitives.NE => TestOp.NE
       case scalaPrimitives.LT => TestOp.LT
       case scalaPrimitives.LE => TestOp.LE
-      case scalaPrimitives.GE => TestOp.GE
       case scalaPrimitives.GT => TestOp.GT
+      case scalaPrimitives.GE => TestOp.GE
     }
 
     /** Some useful equality helpers. */
