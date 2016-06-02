@@ -2036,11 +2036,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         }
       }
     }
-    private final def caseFieldAccessorsUnsorted: List[Symbol] =
-      (info.decls filter (_.isCaseAccessorMethod)).toList
+    private final def caseFieldAccessorsUnsorted: List[Symbol] = info.decls.toList.filter(_.isCaseAccessorMethod)
 
-    final def constrParamAccessors: List[Symbol] =
-      info.decls.filter(sym => !sym.isMethod && sym.isParamAccessor).toList
+    final def constrParamAccessors: List[Symbol] = info.decls.toList.filter(sym => !sym.isMethod && sym.isParamAccessor)
 
     /** The symbol accessed by this accessor (getter or setter) function. */
     final def accessed: Symbol = {
