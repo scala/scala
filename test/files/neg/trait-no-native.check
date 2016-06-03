@@ -1,0 +1,4 @@
+trait-no-native.scala:3: error: A trait cannot define a native method.
+  @native def foo = ???
+              ^
+one error found

@@ -1659,24 +1659,32 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         // inside annotations.
         applyRefchecksToAnnotations(tree)
         var result: Tree = tree match {
-          case DefDef(_, _, _, _, _, EmptyTree) if sym hasAnnotation NativeAttr =>
-            sym resetFlag DEFERRED
-            transform(deriveDefDef(tree)(_ => typed(gen.mkSysErrorCall("native method stub"))))
-
-          case ValDef(_, _, _, _) | DefDef(_, _, _, _, _, _) =>
+          case vod: ValOrDefDef =>
             checkDeprecatedOvers(tree)
-            checkInfiniteLoop(tree.asInstanceOf[ValOrDefDef])
+            checkInfiniteLoop(vod)
             if (settings.warnNullaryUnit)
               checkNullaryMethodReturnType(sym)
             if (settings.warnInaccessible) {
               if (!sym.isConstructor && !sym.isEffectivelyFinalOrNotOverridden && !sym.isSynthetic)
                 checkAccessibilityOfReferencedTypes(tree)
             }
-            tree match {
-              case dd: DefDef => checkByNameRightAssociativeDef(dd)
-              case _          =>
+            vod match {
+              case dd: DefDef =>
+                checkByNameRightAssociativeDef(dd)
+
+                if (sym hasAnnotation NativeAttr) {
+                  if (sym.owner.isTrait) {
+                    reporter.error(tree.pos, "A trait cannot define a native method.")
+                    tree
+                  } else if (dd.rhs == EmptyTree) {
+                    // pretend it had a stub implementation
+                    sym resetFlag DEFERRED
+                    deriveDefDef(dd)(_ => typed(gen.mkSysErrorCall("native method stub")))
+                  } else tree
+                } else tree
+
+              case _ => tree
             }
-            tree
 
           case Template(parents, self, body) =>
             localTyper = localTyper.atOwner(tree, currentOwner)
