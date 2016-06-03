@@ -287,7 +287,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       case tp@ClassInfoType(parents, oldDecls, clazz) if !clazz.isPackageClass =>
         val site = clazz.thisType
 
-        // TODO: setter conflicts?
+        // setter conflicts cannot arise independently from a getter conflict, since a setter without a getter does not a val definition make
         def accessorConflictsExistingVal(accessor: Symbol): Boolean = {
           val existingGetter = oldDecls.lookup(accessor.name.getterName)
 //          println(s"$existingGetter from $accessor to ${accessor.name.getterName}")
@@ -345,7 +345,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
             val moduleVar = newModuleVar(member)
             List(moduleVar, newModuleAccessor(member, clazz, moduleVar))
           }
-          // when considering whether to mix in the trait setter, forget about conflicts -- they will be reported for the getter
+          // when considering whether to mix in the trait setter, forget about conflicts -- they are reported for the getter
           // a trait setter for an overridden val will receive a unit body in the tree transform
           else if (nme.isTraitSetterName(member.name)) {
             val getter = member.getterIn(member.owner)
@@ -356,8 +356,8 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
             List(clone)
           }
-          // avoid creating early errors in case of conflicts (wait until refchecks);
-          // also, skip overridden accessors contributed by supertraits (only act on the last overriding one)
+          // don't cause conflicts, skip overridden accessors contributed by supertraits (only act on the last overriding one)
+          // see pos/trait_fields_dependent_conflict.scala and neg/t1960.scala
           else if (accessorConflictsExistingVal(member) || isOverriddenAccessor(member, clazz)) Nil
           else if (member.isGetter && fieldMemoizationIn(member, clazz).stored) {
             // add field if needed
@@ -370,7 +370,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
             field setAnnotations (member.annotations filter AnnotationInfo.mkFilter(FieldTargetClass, defaultRetention = true))
 
             List(cloneAccessor(), field)
-          } else List(cloneAccessor())
+          } else List(cloneAccessor()) // no field needed (constant-typed getter has constant as its RHS)
         }
 
 //        println(s"mixedInAccessorAndFields for $clazz: $mixedInAccessorAndFields")
@@ -423,7 +423,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       def fieldAccess(accessor: Symbol): Option[Tree] = {
         val fieldName = accessor.localName
         val field = clazz.info.decl(fieldName)
-        // The `None` result denotes an error, but we defer to refchecks to report it.
+        // The `None` result denotes an error, but it's refchecks' job to report it (this fallback is for robustness).
         // This is the result of overriding a val with a def, so that no field is found in the subclass.
         if (field.exists) Some(Select(This(clazz), field))
         else None
@@ -527,8 +527,8 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val addedStats =
-        if (exprOwner.isLocalDummy) afterOwnPhase { fieldsAndAccessors(exprOwner.owner) }
-        else Nil
+        if (!currentOwner.isClass) Nil
+        else afterOwnPhase { fieldsAndAccessors(currentOwner) }
 
       val newStats =
         stats mapConserve (if (exprOwner != currentOwner) transformTermsAtExprOwner(exprOwner) else transform)

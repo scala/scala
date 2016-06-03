@@ -536,6 +536,8 @@ trait MethodSynthesis {
         super.validate()
       }
     }
+
+    // This trait is mixed into BooleanBeanGetter and BeanGetter by beanAccessorsFromNames, but not by beanAccessors
     trait NoSymbolBeanGetter extends AnyBeanGetter {
       // Derives a tree without attempting to use the original tree's symbol.
       override def derivedTree = {
@@ -547,10 +549,15 @@ trait MethodSynthesis {
       }
       override def createAndEnterSymbol(): MethodSymbol = enterSyntheticSym(derivedTree).asInstanceOf[MethodSymbol]
     }
-    case class BooleanBeanGetter(tree: ValDef) extends BeanAccessor("is") with AnyBeanGetter { }
-    case class BeanGetter(tree: ValDef) extends BeanAccessor("get") with AnyBeanGetter { }
+
+    // NoSymbolBeanGetter synthesizes the getter's RHS (which defers to the regular setter)
+    // (not sure why, but there is one use site of the BeanGetters where NoSymbolBeanGetter is not mixed in)
+    // TODO: clean this up...
+    case class BooleanBeanGetter(tree: ValDef) extends BeanAccessor("is") with AnyBeanGetter
+    case class BeanGetter(tree: ValDef) extends BeanAccessor("get") with AnyBeanGetter
+
+    // the bean setter's RHS delegates to the setter
     case class BeanSetter(tree: ValDef) extends BeanAccessor("set") with DerivedSetter {
-      // TODO: document, motivate
       override protected def setterRhs = Apply(Ident(tree.name.setterName), List(Ident(setterParam)))
     }
 

@@ -61,6 +61,11 @@ trait Namers extends MethodSynthesis {
     private lazy val innerNamer =
       if (isTemplateContext(context)) createInnerNamer() else this
 
+    // Cached as a val because `settings.isScala212` parses the Scala version each time...
+    // Not in Namers because then we need to go to outer first to check this.
+    // I do think it's ok to check every time we create a Namer instance (so, not a lazy val).
+    private[this] val isScala212 = settings.isScala212
+
     def createNamer(tree: Tree): Namer = {
       val sym = tree match {
         case ModuleDef(_, _, _) => tree.symbol.moduleClass
@@ -1380,7 +1385,9 @@ trait Namers extends MethodSynthesis {
             val pt = {
               val valOwner = owner.owner
               // there's no overriding outside of classes, and we didn't use to do this in 2.11, so provide opt-out
-              if (valOwner.isClass && settings.isScala212) {
+
+              if (!isScala212 || !valOwner.isClass) WildcardType
+              else {
                 // normalize to getter so that we correctly consider a val overriding a def
                 // (a val's name ends in a " ", so can't compare to def)
                 val overridingSym = if (isGetter) vdef.symbol else vdef.symbol.getterIn(valOwner)
@@ -1391,7 +1398,7 @@ trait Namers extends MethodSynthesis {
 
                 if (overridden == NoSymbol || overridden.isOverloaded) WildcardType
                 else valOwner.thisType.memberType(overridden).resultType
-              } else WildcardType
+              }
             }
 
             def patchSymInfo(tp: Type): Unit =
