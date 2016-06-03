@@ -539,8 +539,43 @@ trait ContextErrors {
       def NamedAndDefaultArgumentsNotSupportedForMacros(tree: Tree, fun: Tree) =
         NormalTypeError(tree, "macro applications do not support named and/or default arguments")
 
-      def TooManyArgsNamesDefaultsError(tree: Tree, fun: Tree) =
-        NormalTypeError(tree, "too many arguments for "+treeSymTypeMsg(fun))
+      def TooManyArgsNamesDefaultsError(tree: Tree, fun: Tree, formals: List[Type], args: List[Tree], namelessArgs: List[Tree], argPos: Array[Int]) = {
+        val expected = formals.size
+        val supplied = args.size
+        // pick a caret. For f(k=1,i=2,j=3), argPos[0,-1,1] b/c `k=1` taken as arg0
+        val excessive = {
+          val i = argPos.indexWhere(_ >= expected)
+          if (i < 0) tree else args(i min (supplied - 1))
+        }
+        val msg = {
+          val badappl = {
+            val excess = supplied - expected
+            val target = treeSymTypeMsg(fun)
+
+            if (expected == 0) s"no arguments allowed for nullary $target"
+            else if (excess < 3 && expected <= 5) s"too many arguments ($supplied) for $target"
+            else if (expected > 10) s"$supplied arguments but expected $expected for $target"
+            else {
+              val more =
+                if (excess == 1) "one more argument"
+                else if (excess > 0) s"$excess more arguments"
+                else "too many arguments"
+              s"$more than can be applied to $target"
+            }
+          }
+          val unknowns = (namelessArgs zip args) collect {
+            case (_: Assign, AssignOrNamedArg(Ident(name), _)) => name
+          }
+          val suppl = 
+            unknowns.size match {
+              case 0 => ""
+              case 1 => s"\nNote that '${unknowns.head}' is not a parameter name of the invoked method."
+              case _ => unknowns.mkString("\nNote that '", "', '", "' are not parameter names of the invoked method.")
+            }
+          s"${badappl}${suppl}"
+        }
+        NormalTypeError(excessive, msg)
+      }
 
       // can it still happen? see test case neg/overloaded-unapply.scala
       def OverloadedUnapplyError(tree: Tree) =
@@ -552,7 +587,7 @@ trait ContextErrors {
       def MultipleVarargError(tree: Tree) =
         NormalTypeError(tree, "when using named arguments, the vararg parameter has to be specified exactly once")
 
-      def ModuleUsingCompanionClassDefaultArgsErrror(tree: Tree) =
+      def ModuleUsingCompanionClassDefaultArgsError(tree: Tree) =
         NormalTypeError(tree, "module extending its companion class cannot use default constructor arguments")
 
       def NotEnoughArgsError(tree: Tree, fun: Tree, missing: List[Symbol]) = {

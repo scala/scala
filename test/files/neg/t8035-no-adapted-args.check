@@ -4,9 +4,9 @@ t8035-no-adapted-args.scala:4: warning: No automatic adaptation here: use explic
  after adaptation: Test.f((1, 2, 3): (Int, Int, Int))
   f(1, 2, 3)
    ^
-t8035-no-adapted-args.scala:4: error: too many arguments for method f: (x: (Int, Int, Int))Int
+t8035-no-adapted-args.scala:4: error: too many arguments (3) for method f: (x: (Int, Int, Int))Int
   f(1, 2, 3)
-   ^
+       ^
 t8035-no-adapted-args.scala:5: warning: No automatic adaptation here: use explicit parentheses.
         signature: Test.f[T](x: T): Int
   given arguments: <none>
