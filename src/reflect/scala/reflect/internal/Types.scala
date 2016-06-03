@@ -686,23 +686,21 @@ trait Types
      *  }}}
      */
     def memberInfo(sym: Symbol): Type = {
-      require(sym ne NoSymbol, this)
+//      assert(sym ne NoSymbol, this)
       sym.info.asSeenFrom(this, sym.owner)
     }
 
     /** The type of `sym`, seen as a member of this type. */
-    def memberType(sym: Symbol): Type = sym match {
-      case meth: MethodSymbol =>
-        meth.typeAsMemberOf(this)
-      case _ =>
-        computeMemberType(sym)
-    }
-
-    def computeMemberType(sym: Symbol): Type = sym.tpeHK match { //@M don't prematurely instantiate higher-kinded types, they will be instantiated by transform, typedTypeApply, etc. when really necessary
-      case OverloadedType(_, alts) =>
-        OverloadedType(this, alts)
+    def memberType(sym: Symbol): Type = sym.tpeHK match {
+      case OverloadedType(_, alts) => OverloadedType(this, alts)
       case tp =>
-        if (sym eq NoSymbol) NoType else tp.asSeenFrom(this, sym.owner)
+        // Correct caching is nearly impossible because `sym.tpeHK.asSeenFrom(pre, sym.owner)`
+        // may have different results even for reference-identical `sym.tpeHK` and `pre` (even in the same period).
+        // For example, `pre` could be a `ThisType`. For such a type, `tpThen eq tpNow` does not imply
+        // `tpThen` and `tpNow` mean the same thing, because `tpThen.typeSymbol.info` could have been different
+        // from what it is now, and the cache won't know simply by looking at `pre`.
+        if (sym eq NoSymbol) NoType
+        else tp.asSeenFrom(this, sym.owner)
     }
 
     /** Substitute types `to` for occurrences of references to
@@ -3471,10 +3469,10 @@ trait Types
     if (!sym.isOverridableMember || sym.owner == pre.typeSymbol) sym
     else pre.nonPrivateMember(sym.name).suchThat { sym =>
       // SI-7928 `isModuleNotMethod` is here to avoid crashing with spuriously "overloaded" module accessor and module symbols.
-      //         These appear after refchecks eliminates ModuleDefs that implement an interface.
+      //         These appear after the fields phase eliminates ModuleDefs that implement an interface.
       //         Here, we exclude the module symbol, which allows us to bind to the accessor.
-      // SI-8054 We must only do this after refchecks, otherwise we exclude the module symbol which does not yet have an accessor!
-      val isModuleWithAccessor = phase.refChecked && sym.isModuleNotMethod
+      // SI-8054 We must only do this after fields, otherwise we exclude the module symbol which does not yet have an accessor!
+      val isModuleWithAccessor = phase.assignsFields && sym.isModuleNotMethod
       sym.isType || (!isModuleWithAccessor && sym.isStable && !sym.hasVolatileType)
     } orElse sym
   }

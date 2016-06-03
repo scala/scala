@@ -75,7 +75,7 @@ class ScalaInlineInfoTest extends BytecodeTesting {
       false, // final class
       None, // not a sam
       Map(
-        ("O()LT$O$;",                                                 MethodInlineInfo(true ,false,false)), // the accessor is abstract in bytecode, but still effectivelyFinal because there's no (late)DEFERRED flag, https://github.com/scala/scala-dev/issues/126
+        ("O()LT$O$;",                                                 MethodInlineInfo(false ,false,false)),
         ("T$$super$toString()Ljava/lang/String;",                     MethodInlineInfo(true ,false,false)),
         ("T$_setter_$x1_$eq(I)V",                                     MethodInlineInfo(false,false,false)),
         ("f1()I",                                                     MethodInlineInfo(false,false,false)),
@@ -92,7 +92,7 @@ class ScalaInlineInfoTest extends BytecodeTesting {
         ("x4()I",                                                     MethodInlineInfo(false,false,false)),
         ("x5()I",                                                     MethodInlineInfo(true, false,false)),
         ("L$lzycompute$1(Lscala/runtime/VolatileObjectRef;)LT$L$2$;", MethodInlineInfo(true, false,false)),
-        ("L$1(Lscala/runtime/VolatileObjectRef;)LT$L$2$;",            MethodInlineInfo(true ,false,false)),
+        ("T$$L$1(Lscala/runtime/VolatileObjectRef;)LT$L$2$;",            MethodInlineInfo(true ,false,false)),
         ("nest$1()I",                                                 MethodInlineInfo(true, false,false)),
         ("$init$()V",                                                 MethodInlineInfo(false,false,false))),
       None // warning
@@ -113,7 +113,7 @@ class ScalaInlineInfoTest extends BytecodeTesting {
       "x3_$eq(I)V"                            -> MethodInlineInfo(false,false,false),
       "x4$lzycompute()I"                      -> MethodInlineInfo(true ,false,false),
       "x4()I"                                 -> MethodInlineInfo(false,false,false),
-      "x5()I"                                 -> MethodInlineInfo(true ,false,false),
+//      "x5()I"                                 -> MethodInlineInfo(true ,false,false), -- there is no x5 in the class as it's implemented fully in the interface
       "T$$super$toString()Ljava/lang/String;" -> MethodInlineInfo(true ,false,false),
       "<init>()V"                             -> MethodInlineInfo(false,false,false)),
       None)

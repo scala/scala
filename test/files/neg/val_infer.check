@@ -1,0 +1,6 @@
+val_infer.scala:3: error: type mismatch;
+ found   : String("")
+ required: Int
+  trait Sub extends Base { def foo = "" }
+                                     ^
+one error found

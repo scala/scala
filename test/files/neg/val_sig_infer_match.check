@@ -1,0 +1,4 @@
+val_sig_infer_match.scala:21: error: value y is not a member of A
+  def m = f.y // doesn't compile anymore
+            ^
+one error found

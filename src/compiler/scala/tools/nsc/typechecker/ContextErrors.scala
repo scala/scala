@@ -13,6 +13,7 @@ import scala.reflect.macros.runtime.AbortMacroException
 import scala.util.control.NonFatal
 import scala.tools.nsc.util.stackTraceString
 import scala.reflect.io.NoAbstractFile
+import scala.reflect.internal.util.NoSourceFile
 
 trait ContextErrors {
   self: Analyzer =>
@@ -757,22 +758,18 @@ trait ContextErrors {
       }
 
       def DefDefinedTwiceError(sym0: Symbol, sym1: Symbol) = {
+        val addPref = s";\n  the conflicting $sym1 was defined"
+        val bugNote = "\n  Note: this may be due to a bug in the compiler involving wildcards in package objects"
+
         // Most of this hard work is associated with SI-4893.
         val isBug = sym0.isAbstractType && sym1.isAbstractType && (sym0.name startsWith "_$")
-        val addendums = List(
-          if (sym0.associatedFile eq sym1.associatedFile)
-            Some("conflicting symbols both originated in file '%s'".format(sym0.associatedFile.canonicalPath))
-          else if ((sym0.associatedFile ne NoAbstractFile) && (sym1.associatedFile ne NoAbstractFile))
-            Some("conflicting symbols originated in files '%s' and '%s'".format(sym0.associatedFile.canonicalPath, sym1.associatedFile.canonicalPath))
-          else None ,
-          if (isBug) Some("Note: this may be due to a bug in the compiler involving wildcards in package objects") else None
-        )
-        val addendum = addendums.flatten match {
-          case Nil    => ""
-          case xs     => xs.mkString("\n  ", "\n  ", "")
-        }
+        val addendum = (
+          if (sym0.pos.source eq sym1.pos.source)   s"$addPref at line ${sym1.pos.line}:${sym1.pos.column}"
+          else if (sym1.pos.source ne NoSourceFile) s"$addPref at line ${sym1.pos.line}:${sym1.pos.column} of '${sym1.pos.source.path}'"
+          else if (sym1.associatedFile ne NoAbstractFile) s"$addPref in '${sym1.associatedFile.canonicalPath}'"
+          else "") + (if (isBug) bugNote else "")
 
-        issueSymbolTypeError(sym0, sym1+" is defined twice" + addendum)
+        issueSymbolTypeError(sym0, s"$sym0 is defined twice$addendum")
       }
 
       // cyclic errors

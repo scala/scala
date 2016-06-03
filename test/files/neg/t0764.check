@@ -1,5 +1,5 @@
 t0764.scala:13: error: type mismatch;
- found   : Node{type T = _1.type} where val _1: Node{type T = NextType}
+ found   : Node{type T = _2.type} where val _2: Node{type T = NextType}
  required: Node{type T = Main.this.AType}
     (which expands to)  Node{type T = Node{type T = NextType}}
         new Main[AType]( (value: AType).prepend )

@@ -1,24 +1,24 @@
 import scala.reflect.runtime.universe._
 
 abstract class C {
-  val x1: Int
-  val x2: Int = 2
-  def y1: Int
-  def y2: Int = 2
-  type T1 <: Int
-  type T2 = Int
+  val xAbs: Int
+  val x: Int = 2
+  def yAbs: Int
+  def y: Int = 2
+  type TAbs <: Int
+  type T = Int
 }
 trait T {
-  val z1: Int
-  val z2: Int = 2
-  def w1: Int
-  def w2: Int = 2
-  type U1 <: Int
-  type U2 = Int
+  val zAbs: Int
+  val z: Int = 2
+  def wAbs: Int
+  def w: Int = 2
+  type UAbs <: Int
+  type U = Int
 }
-class D extends C {
-  val x1 = 3
-  def y1 = 3
+class AllConcrete extends C {
+  val xAbs = 3
+  def yAbs = 3
 }
 object M
 
@@ -27,12 +27,12 @@ object Test extends App {
   def test[T: TypeTag] = {
     val sym = typeOf[T].typeSymbol
     println(s"=======$sym=======")
-    def printAbstract(sym: Symbol) = println(s"$sym => ${sym.isAbstract}")
+    def printAbstract(sym: Symbol) = println(s"$sym => ${if (sym.isAbstract) "abstract" else "concrete"}")
     printAbstract(sym)
     sym.info.decls.sorted.foreach(printAbstract)
   }
   test[C]
   test[T]
-  test[D]
+  test[AllConcrete]
   test[M.type]
 }

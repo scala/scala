@@ -161,11 +161,7 @@ abstract class ExplicitOuter extends InfoTransform
       val resTpTransformed = transformInfo(sym, resTp)
 
       // juggle flags (and mangle names) after transforming info
-      if (sym.owner.isTrait) {
-        // TODO: I don't believe any private accessors remain after the fields phase
-        if ((sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isModule) sym.makeNotPrivate(sym.owner) // 5
-        if (sym.isProtected) sym setFlag notPROTECTED // 6
-      }
+      if (sym.owner.isTrait) mixer.publicizeTraitMethod(sym)
 
       val paramsWithOuter =
         if (sym.isClassConstructor && isInner(sym.owner)) // 1

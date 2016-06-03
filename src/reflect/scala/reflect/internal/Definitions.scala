@@ -675,24 +675,16 @@ trait Definitions extends api.StandardDefinitions {
     // Note that these call .dealiasWiden and not .normalize, the latter of which
     // tends to change the course of events by forcing types.
     def isFunctionType(tp: Type)       = isFunctionTypeDirect(tp.dealiasWiden)
+
     // the number of arguments expected by the function described by `tp` (a FunctionN or SAM type),
     // or `-1` if `tp` does not represent a function type or SAM
+    // for use during typers (after fields, samOf will be confused by abstract accessors for trait fields)
     def functionArityFromType(tp: Type) = {
       val dealiased = tp.dealiasWiden
       if (isFunctionTypeDirect(dealiased)) dealiased.typeArgs.length - 1
       else samOf(tp) match {
         case samSym if samSym.exists => samSym.info.params.length
         case _ => -1
-      }
-    }
-
-    // the result type of a function or corresponding SAM type
-    def functionResultType(tp: Type): Type = {
-      val dealiased = tp.dealiasWiden
-      if (isFunctionTypeDirect(dealiased)) dealiased.typeArgs.last
-      else samOf(tp) match {
-        case samSym if samSym.exists => tp.memberInfo(samSym).resultType.deconst
-        case _ => NoType
       }
     }
 
@@ -1049,11 +1041,7 @@ trait Definitions extends api.StandardDefinitions {
       }
     }
 
-    /** Remove references to class Object (other than the head) in a list of parents */
-    def removeLaterObjects(tps: List[Type]): List[Type] = tps match {
-      case Nil      => Nil
-      case x :: xs  => x :: xs.filterNot(_.typeSymbol == ObjectClass)
-    }
+
     /** Remove all but one reference to class Object from a list of parents. */
     def removeRedundantObjects(tps: List[Type]): List[Type] = tps match {
       case Nil      => Nil

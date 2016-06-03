@@ -11,6 +11,7 @@ import scala.tools.asm
 import scala.tools.nsc.io.AbstractFile
 import GenBCode._
 import BackendReporting._
+import scala.reflect.internal.Flags
 
 /*
  *  Traits encapsulating functionality to convert Scala AST Trees into ASM ClassNodes.
@@ -155,7 +156,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
 
     def enclosingMethod(sym: Symbol): Option[Symbol] = {
       if (sym.isClass || sym == NoSymbol) None
-      else if (sym.isMethod) {
+      else if (sym.isMethod && !sym.isGetter) {
         if (doesNotExist(sym)) None else Some(sym)
       }
       else enclosingMethod(nextEnclosing(sym))
@@ -240,8 +241,11 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       if (classSym.isEffectivelyFinal) None
       else {
         // Phase travel necessary. For example, nullary methods (getter of an abstract val) get an
-        // empty parameter list in later phases and would therefore be picked as SAM.
-        val samSym = exitingPickler(definitions.samOf(classSym.tpe))
+        // empty parameter list in uncurry and would therefore be picked as SAM.
+        // Similarly, the fields phases adds abstract trait setters, which should not be considered
+        // abstract for SAMs (they do disqualify the SAM from LMF treatment,
+        // but an anonymous subclasss can be spun up by scalac after making just the single abstract method concrete)
+        val samSym = enteringPickler(definitions.samOf(classSym.tpe))
         if (samSym == NoSymbol) None
         else Some(samSym.javaSimpleName.toString + methodSymToDescriptor(samSym))
       }
@@ -268,7 +272,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
           //
           // However, due to https://github.com/scala/scala-dev/issues/126, this currently does not
           // work, the abstract accessor for O will be marked effectivelyFinal.
-          val effectivelyFinal = methodSym.isEffectivelyFinalOrNotOverridden && !methodSym.isDeferred
+          val effectivelyFinal = methodSym.isEffectivelyFinalOrNotOverridden && !(methodSym hasFlag Flags.DEFERRED | Flags.SYNTHESIZE_IMPL_IN_SUBCLASS)
 
           val info = MethodInlineInfo(
             effectivelyFinal                    = effectivelyFinal,

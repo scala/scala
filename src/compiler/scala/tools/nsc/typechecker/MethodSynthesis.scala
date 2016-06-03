@@ -121,6 +121,7 @@ trait MethodSynthesis {
     }
 
     // TODO: see if we can link symbol creation & tree derivation by sharing the Field/Getter/Setter factories
+    // maybe we can at least reuse some variant of standardAccessors?
     def enterGetterSetter(tree: ValDef): Unit = {
       tree.symbol =
         if (tree.mods.isLazy) {
@@ -131,15 +132,14 @@ trait MethodSynthesis {
           val getterSym = getter.createAndEnterSymbol()
 
           // Create the setter if necessary.
-          if (getter.needsSetter)
-            Setter(tree).createAndEnterSymbol()
+          if (getter.needsSetter) Setter(tree).createAndEnterSymbol()
 
-          // If the getter's abstract the tree gets the getter's symbol,
-          // otherwise, create a field (assume the getter requires storage).
+          // If the getter's abstract, the tree gets the getter's symbol,
+          // otherwise, create a field (we have to assume the getter requires storage for now).
           // NOTE: we cannot look at symbol info, since we're in the process of deriving them
           // (luckily, they only matter for lazy vals, which we've ruled out in this else branch,
           // and `doNotDeriveField` will skip them if `!mods.isLazy`)
-          if (Field.noFieldFor(tree)) getterSym setPos tree.pos
+          if (Field.noFieldFor(tree)) getterSym setPos tree.pos // TODO: why do setPos? `createAndEnterSymbol` already gave `getterSym` the position `tree.pos.focus`
           else enterStrictVal(tree)
         }
 
@@ -282,14 +282,15 @@ trait MethodSynthesis {
       final def enclClass = basisSym.enclClass
 
 
-      /* Explicit isSetter required for bean setters (beanSetterSym.isSetter is false) */
-      final def completer(sym: Symbol) = namerOf(sym).accessorTypeCompleter(tree, isSetter)
+      // There's no reliable way to detect all kinds of setters from flags or name!!!
+      // A BeanSetter's name does not end in `_=` -- it does begin with "set", but so could the getter
+      // for a regular Scala field... TODO: can we add a flag to distinguish getter/setter accessors?
+      final def completer(sym: Symbol) = namerOf(sym).accessorTypeCompleter(tree, this.isInstanceOf[DerivedSetter])
       final def fieldSelection         = Select(This(enclClass), basisSym)
 
       def derivedSym: Symbol = tree.symbol
       def derivedTree: Tree  = EmptyTree
 
-      def isSetter   = false
       def isDeferred = mods.isDeferred
       def validate() { }
       def createAndEnterSymbol(): MethodSymbol = {
@@ -304,6 +305,7 @@ trait MethodSynthesis {
 
         result
       }
+
       final def derive(initial: List[AnnotationInfo]): Tree = {
         validate()
 
@@ -311,7 +313,9 @@ trait MethodSynthesis {
         // Annotations on ValDefs can be targeted towards the following: field, getter, setter, beanGetter, beanSetter, param.
         // The defaults are:
         //   - (`val`-, `var`- or plain) constructor parameter annotations end up on the parameter, not on any other entity.
-        //   - val/var member annotations solely end up on the underlying field.
+        //   - val/var member annotations solely end up on the underlying field, except in traits (@since 2.12),
+        //     where there is no field, and the getter thus holds annotations targetting both getter & field.
+        //     As soon as there is a field/getter (in subclasses mixing in the trait), we triage the annotations.
         //
         // TODO: these defaults can be surprising for annotations not meant for accessors/fields -- should we revisit?
         // (In order to have `@foo val X` result in the X getter being annotated with `@foo`, foo needs to be meta-annotated with @getter)
@@ -319,9 +323,11 @@ trait MethodSynthesis {
           case _: Param                       => annotationFilter(ParamTargetClass,      defaultRetention = true)
           // By default annotations go to the field, except if the field is generated for a class parameter (PARAMACCESSOR).
           case _: Field                       => annotationFilter(FieldTargetClass,      defaultRetention = !mods.isParamAccessor)
+          case _: BaseGetter if owner.isTrait => annotationFilter(List(FieldTargetClass, GetterTargetClass), defaultRetention = true)
           case _: BaseGetter                  => annotationFilter(GetterTargetClass,     defaultRetention = false)
           case _: Setter                      => annotationFilter(SetterTargetClass,     defaultRetention = false)
           case _: BeanSetter                  => annotationFilter(BeanSetterTargetClass, defaultRetention = false)
+          // TODO do bean getters need special treatment to collect field-targeting annotations in traits?
           case _: AnyBeanGetter               => annotationFilter(BeanGetterTargetClass, defaultRetention = false)
         }
 
@@ -329,21 +335,23 @@ trait MethodSynthesis {
         // should be propagated to this kind of accessor.
         derivedSym setAnnotations (initial filter annotFilter)
 
+        if (derivedSym.isSetter && owner.isTrait && !isDeferred)
+          derivedSym addAnnotation TraitSetterAnnotationClass
+
         logDerived(derivedTree)
       }
     }
+
     sealed trait DerivedGetter extends DerivedFromValDef {
-      // A getter must be accompanied by a setter if the ValDef is mutable.
       def needsSetter = mods.isMutable
     }
     sealed trait DerivedSetter extends DerivedFromValDef {
-      override def isSetter = true
-      private def setterParam = derivedSym.paramss match {
+      protected def setterParam = derivedSym.paramss match {
         case (p :: Nil) :: _  => p
         case _                => NoSymbol
       }
 
-      private def setterRhs = {
+      protected def setterRhs = {
         assert(!derivedSym.isOverloaded, s"Unexpected overloaded setter $derivedSym for $basisSym in $enclClass")
         if (Field.noFieldFor(tree) || derivedSym.isOverloaded) EmptyTree
         else Assign(fieldSelection, Ident(setterParam))
@@ -390,6 +398,7 @@ trait MethodSynthesis {
       override def derivedSym = if (Field.noFieldFor(tree)) basisSym else basisSym.getterIn(enclClass)
       private def derivedRhs  = if (Field.noFieldFor(tree)) tree.rhs else fieldSelection
 
+      // TODO: more principled approach -- this is a bit bizarre
       private def derivedTpt = {
         // For existentials, don't specify a type for the getter, even one derived
         // from the symbol! This leads to incompatible existentials for the field and
@@ -457,6 +466,7 @@ trait MethodSynthesis {
       def flagsMask  = SetterFlags
       def flagsExtra = ACCESSOR
 
+      // TODO: double check logic behind need for name expansion in context of new fields phase
       override def derivedSym = basisSym.setterIn(enclClass)
     }
 
@@ -464,23 +474,34 @@ trait MethodSynthesis {
       // No field for these vals (either never emitted or eliminated later on):
       //   - abstract vals have no value we could store (until they become concrete, potentially)
       //   - lazy vals of type Unit
-      //   - [Emitted, later removed during AddInterfaces/Mixins] concrete vals in traits can't have a field
-      //   - [Emitted, later removed during Constructors] a concrete val with a statically known value (Unit / ConstantType)
+      //   - concrete vals in traits don't yield a field here either (their getter's RHS has the initial value)
+      //     Constructors will move the assignment to the constructor, abstracting over the field using the field setter,
+      //     and Fields will add a field to the class that mixes in the trait, implementing the accessors in terms of it
+      //   - [Emitted, later removed during Constructors] a concrete val with a statically known value (ConstantType)
       //     performs its side effect according to lazy/strict semantics, but doesn't need to store its value
       //     each access will "evaluate" the RHS (a literal) again
       // We would like to avoid emitting unnecessary fields, but the required knowledge isn't available until after typer.
       // The only way to avoid emitting & suppressing, is to not emit at all until we are sure to need the field, as dotty does.
       // NOTE: do not look at `vd.symbol` when called from `enterGetterSetter` (luckily, that call-site implies `!mods.isLazy`),
+      // similarly, the `def field` call-site breaks when you add `|| vd.symbol.owner.isTrait` (detected in test suite)
       // as the symbol info is in the process of being created then.
       // TODO: harmonize tree & symbol creation
-      // TODO: the `def field` call-site breaks when you add `|| vd.symbol.owner.isTrait` (detected in test suite)
-      def noFieldFor(vd: ValDef) = vd.mods.isDeferred || (vd.mods.isLazy && isUnitType(vd.symbol.info))
+      // the middle  `&& !owner.isTrait` is needed after `isLazy` because non-unit-typed lazy vals in traits still get a field -- see neg/t5455.scala
+      def noFieldFor(vd: ValDef) = (vd.mods.isDeferred
+        || (vd.mods.isLazy && !owner.isTrait && isUnitType(vd.symbol.info))
+        || (owner.isTrait && !traitFieldFor(vd)))
+
+      // TODO: never emit any fields in traits -- only use getter for lazy/presuper ones as well
+      private def traitFieldFor(vd: ValDef): Boolean = vd.mods.hasFlag(PRESUPER | LAZY)
     }
 
     case class Field(tree: ValDef) extends DerivedFromValDef {
       def name       = tree.localName
       def flagsMask  = FieldFlags
       def flagsExtra = PrivateLocal
+
+      // TODO: override def createAndEnterSymbol (currently never called on Field)
+      // and do `enterStrictVal(tree)`, so that enterGetterSetter and addDerivedTrees can share some logic...
 
       // handle lazy val first for now (we emit a Field even though we probably shouldn't...)
       override def derivedTree =
@@ -528,7 +549,10 @@ trait MethodSynthesis {
     }
     case class BooleanBeanGetter(tree: ValDef) extends BeanAccessor("is") with AnyBeanGetter { }
     case class BeanGetter(tree: ValDef) extends BeanAccessor("get") with AnyBeanGetter { }
-    case class BeanSetter(tree: ValDef) extends BeanAccessor("set") with DerivedSetter
+    case class BeanSetter(tree: ValDef) extends BeanAccessor("set") with DerivedSetter {
+      // TODO: document, motivate
+      override protected def setterRhs = Apply(Ident(tree.name.setterName), List(Ident(setterParam)))
+    }
 
     // No Symbols available.
     private def beanAccessorsFromNames(tree: ValDef) = {

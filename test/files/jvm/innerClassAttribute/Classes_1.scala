@@ -303,3 +303,40 @@ object NestedInValueClass {
     def f = { class C; new C } // outer class A$, outer method f
   }
 }
+
+object LocalAndAnonymousInLazyInitializer {
+  abstract class A
+  class C {
+    lazy val a: A = new A { }
+    lazy val b: A = {
+      class AA extends A
+      new AA
+    }
+    lazy val c: A = {
+      object AA extends A
+      AA
+    }
+  }
+  object O {
+    lazy val a: A = new A { }
+    lazy val b: A = {
+      class AA extends A
+      new AA
+    }
+    lazy val c: A = {
+      object AA extends A
+      AA
+    }
+  }
+  trait T {
+    lazy val a: A = new A { }
+    lazy val b: A = {
+      class AA extends A
+      new AA
+    }
+    lazy val c: A = {
+      object AA extends A
+      AA
+    }
+  }
+}
