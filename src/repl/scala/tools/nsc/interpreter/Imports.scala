@@ -115,8 +115,9 @@ trait Imports {
         // Single symbol imports might be implicits! See bug #1752.  Rather than
         // try to finesse this, we will mimic all imports for now.
         def keepHandler(handler: MemberHandler) = handler match {
-          // While defining classes in class based mode - implicits are not needed.
-          case h: ImportHandler if isClassBased && definesClass => h.importedNames.exists(x => wanted.contains(x))
+          case h: ImportHandler if isClassBased && definesClass =>
+            // While defining classes in class based mode, keep implicits and wanted imports.
+            h.implicitSymbols.nonEmpty || h.importedNames.exists(x => wanted.contains(x))
           case _: ImportHandler     => true
           case x if generousImports => x.definesImplicit || (x.definedNames exists (d => wanted.exists(w => d.startsWith(w))))
           case x                    => x.definesImplicit || (x.definedNames exists wanted)
