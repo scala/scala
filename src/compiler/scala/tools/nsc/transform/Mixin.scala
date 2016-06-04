@@ -21,19 +21,31 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
   /** Some trait methods need to be implemented in subclasses, so they cannot be private.
     *
-    * They may be protected, now that traits are compiled 1:1 to interfaces.
+    * We used to publicize during explicitouter (for some reason), so the condition is a bit more involved now it's done here
+    * (need to exclude lambdaLIFTED methods, as they do no exist during explicitouter and thus did not need to be excluded...)
     *
-    * TODO: interfaces can also have private members, so there's also less need to make trait members non-private
-    * can we leave more methods private?
-    * (they still may need to be implemented in subclasses, though we could make those protected...).
+    * They may be protected, now that traits are compiled 1:1 to interfaces.
+    * (The same disclaimers about mapping Scala's notion of visibility to Java's apply.)
+    *
+    *
+    * TODO: can we just set the right flags from the start??
+    *  could we use the final flag to indicate a private method is really-really-private?
     */
   def publicizeTraitMethod(sym: Symbol): Unit = {
-    if ((sym hasFlag PRIVATE) &&
-          (  (sym hasFlag SUPERACCESSOR)  // super accessors by definition must be implemented in a subclass, so can't have the private (TODO: why are they ever private in a trait to begin with!?!?)
-          || (sym hasFlag ACCESSOR | MODULE))) // an accessor / module *may* need to be implemented in a subclass, and thus cannot be private
+    if ((sym hasFlag PRIVATE) && !(sym hasFlag LIFTED) && ( // lambdalifted methods can remain private
+        // super accessors by definition must be implemented in a subclass, so can't be private
+        // TODO: why are they ever private in a trait to begin with!?!? (could just name mangle them to begin with)
+        // TODO: can we add the SYNTHESIZE_IMPL_IN_SUBCLASS flag to super accessors symbols?
+        (sym hasFlag SUPERACCESSOR)
+        // an accessor / module *may* need to be implemented in a subclass, and thus cannot be private
+        // TODO: document how we get here (lambdalift? fields has already made accessors not-private)
+        || (sym hasFlag ACCESSOR | MODULE) && (sym hasFlag SYNTHESIZE_IMPL_IN_SUBCLASS)))
       sym.makeNotPrivate(sym.owner)
 
-    if (sym hasFlag PROTECTED) sym setFlag notPROTECTED
+    // no need to make trait methods not-protected
+    // (we used to have to move them to another class when interfaces could not have concrete methods)
+    // see note in `synthFieldsAndAccessors` in Fields.scala
+    // if (sym hasFlag PROTECTED) sym setFlag notPROTECTED
   }
 
   /** This map contains a binding (class -> info) if

@@ -249,16 +249,14 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
             val accessorUnderConsideration = !(member hasFlag (DEFERRED | LAZY))
 
             // destructively mangle accessor's name (which may cause rehashing of decls), also sets flags
-            // TODO: technically, only necessary for stored fields
-            if (member hasFlag PRIVATE) member makeNotPrivate clazz
+            // this accessor has to be implemented in a subclass -- can't be private
+            if ((member hasFlag PRIVATE) && fieldMemoization.stored) member makeNotPrivate clazz
 
-            // Need to mark as notPROTECTED, so that it's carried over to the synthesized member in subclasses,
-            // since the trait member will receive this flag later in ExplicitOuter, but the synthetic subclass member will not.
-            // If we don't add notPROTECTED to the synthesized one, the member will not be seen as overriding the trait member.
-            // Therefore, addForwarders's call to membersBasedOnFlags would see the deferred member in the trait,
-            // instead of the concrete (desired) one in the class
-            // TODO: encapsulate as makeNotProtected, similar to makeNotPrivate (also do moduleClass, e.g.)
-            if (member hasFlag PROTECTED) member setFlag notPROTECTED
+            // This must remain in synch with publicizeTraitMethod in Mixins, so that the
+            // synthesized member in a subclass and the trait member remain in synch regarding access.
+            // Otherwise, the member will not be seen as overriding the trait member, and `addForwarders`'s call to
+            // `membersBasedOnFlags` would see the deferred member in the trait, instead of the concrete (desired) one in the class
+            // not doing: if (member hasFlag PROTECTED) member setFlag notPROTECTED
 
             // must not reset LOCAL, as we must maintain protected[this]ness to allow that variance hole
             // (not sure why this only problem only arose when we started setting the notPROTECTED flag)
