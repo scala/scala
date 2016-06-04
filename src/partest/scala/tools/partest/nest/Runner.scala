@@ -42,8 +42,35 @@ class TestTranscript {
   }
 }
 
+trait TestInfo {
+  /** pos/t1234 */
+  def testIdent: String
+
+  /** pos */
+  def kind: String
+
+  // inputs
+
+  /** pos/t1234.scala or pos/t1234 if dir */
+  def testFile: File
+
+  /** pos/t1234.check */
+  def checkFile: File
+
+  /** pos/t1234.flags */
+  def flagsFile: File
+
+  // outputs
+
+  /** pos/t1234-pos.obj */
+  def outFile: File
+
+  /** pos/t1234-pos.log */
+  def logFile: File
+}
+
 /** Run a single test. Rubber meets road. */
-class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
+class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo {
 
   import suiteRunner.{fileManager => fm, _}
   val fileManager = fm
@@ -809,7 +836,7 @@ class SuiteRunner(
           catch {
             case t: Throwable => throw new RuntimeException(s"Error running $testFile", t)
           }
-        NestUI.reportTest(state)
+        NestUI.reportTest(state, runner)
         runner.cleanup()
         state
       }

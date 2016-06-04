@@ -73,18 +73,16 @@ object NestUI {
     f"$word $testNumber - $testIdent%-40s$reasonString"
   }
 
-  def reportTest(state: TestState) = {
+  def reportTest(state: TestState, info: TestInfo) = {
     if (isTerse && state.isOk) {
       if (dotCount >= DotWidth) {
         outline("\n.")
         dotCount = 1
-      }
-      else {
+      } else {
         outline(".")
         dotCount += 1
       }
-    }
-    else {
+    } else {
       echo(statusLine(state))
       if (!state.isOk) {
         if (isDiffy) {
@@ -92,16 +90,11 @@ object NestUI {
           state.transcript find (_ startsWith differ) foreach (echo(_))
         }
         if (isLogging) {
-          import scala.util.matching.Regex
           def log(f: File) = {
             echo(bold(cyan(s"##### Log file '$f' from failed test #####\n")))
             echo(f.fileContents)
           }
-          val prompt = bold(red("% "))
-          val differ = raw"(?s)${Regex.quote(prompt)}diff (\S*).*".r
-          state.transcript.collect {
-            case differ(f) => f
-          } foreach (log(_))
+          if (info.logFile.canRead) log(info.logFile)
         }
       }
     }
