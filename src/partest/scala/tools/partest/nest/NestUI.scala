@@ -73,7 +73,7 @@ object NestUI {
     f"$word $testNumber - $testIdent%-40s$reasonString"
   }
 
-  def reportTest(state: TestState, info: TestInfo) = {
+  def reportTest(state: TestState, info: TestInfo) =
     if (isTerse && state.isOk) {
       if (dotCount >= DotWidth) {
         outline("\n.")
@@ -85,20 +85,22 @@ object NestUI {
     } else {
       echo(statusLine(state))
       if (!state.isOk) {
+        def showLog() = if (info.logFile.canRead) {
+          echo(bold(cyan(s"##### Log file '${info.logFile}' from failed test #####\n")))
+          echo(info.logFile.fileContents)
+        }
         if (isDiffy) {
           val differ = bold(red("% ")) + "diff "
-          state.transcript find (_ startsWith differ) foreach (echo(_))
-        }
-        if (isLogging) {
-          def log(f: File) = {
-            echo(bold(cyan(s"##### Log file '$f' from failed test #####\n")))
-            echo(f.fileContents)
+          val diffed = state.transcript find (_ startsWith differ)
+          diffed match {
+            case Some(diff) => echo(diff)
+            case None if !isLogging && !isPartestVerbose => showLog()
+            case _ => ()
           }
-          if (info.logFile.canRead) log(info.logFile)
         }
+        if (isLogging) showLog()
       }
     }
-  }
 
   def echo(message: String): Unit = synchronized {
     leftFlush()
