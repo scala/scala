@@ -19,13 +19,15 @@ class ScalaDoc {
 
   def process(args: Array[String]): Boolean = {
     var reporter: ScalaDocReporter = null
-    val docSettings = new doc.Settings(msg => reporter.error(FakePos("scaladoc"), msg + "\n  scaladoc -help  gives more information"),
+    val docSettings = new doc.Settings(msg => reporter.error(FakePos("scaladoc"), msg),
                                        msg => reporter.printMessage(msg))
     reporter = new ScalaDocReporter(docSettings)
     val command = new ScalaDoc.Command(args.toList, docSettings)
     def hasFiles = command.files.nonEmpty || docSettings.uncompilableFiles.nonEmpty
 
-    if (docSettings.version.value)
+    if (reporter.reallyHasErrors)
+      reporter.echo("Usage: scaladoc <options> <source files>\nscaladoc -help gives more information")
+    else if (docSettings.version.value)
       reporter.echo(versionMsg)
     else if (docSettings.Xhelp.value)
       reporter.echo(command.xusageMsg)
