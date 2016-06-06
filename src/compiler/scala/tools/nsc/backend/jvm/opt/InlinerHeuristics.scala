@@ -22,6 +22,8 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
     for (pr <- post) assert(pr.callsite.callsiteMethod == callsite.callee.get.callee, s"Callsite method mismatch: main $callsite - post ${pr.callsite}")
   }
 
+  def canInlineFromSource(sourceFilePath: Option[String]) = compilerSettings.optInlineGlobal || sourceFilePath.isDefined
+
   /**
    * Select callsites from the call graph that should be inlined, grouped by the containing method.
    * Cyclic inlining requests are allowed, the inliner will eliminate requests to break cycles.
@@ -32,14 +34,14 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
     // classpath. In order to get only the callsites being compiled, we start at the map of
     // compilingClasses in the byteCodeRepository.
     val compilingMethods = for {
-      classNode  <- byteCodeRepository.compilingClasses.valuesIterator
-      methodNode <- classNode.methods.iterator.asScala
+      (classNode, _) <- byteCodeRepository.compilingClasses.valuesIterator
+      methodNode     <- classNode.methods.iterator.asScala
     } yield methodNode
 
     compilingMethods.map(methodNode => {
       var requests = Set.empty[InlineRequest]
       callGraph.callsites(methodNode).valuesIterator foreach {
-        case callsite @ Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, canInlineFromSource, calleeAnnotatedInline, _, _, callsiteWarning)), _, _, _, pos, _, _) =>
+        case callsite @ Callsite(_, _, _, Right(Callee(callee, calleeDeclClass, safeToInline, sourceFilePath, calleeAnnotatedInline, _, _, callsiteWarning)), _, _, _, pos, _, _) =>
           inlineRequest(callsite, requests) match {
             case Some(Right(req)) => requests += req
             case Some(Left(w))    =>
@@ -50,7 +52,7 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
               }
 
             case None =>
-              if (canInlineFromSource && calleeAnnotatedInline && !callsite.annotatedNoInline && bTypes.compilerSettings.optWarningEmitAtInlineFailed) {
+              if (canInlineFromSource(sourceFilePath) && calleeAnnotatedInline && !callsite.annotatedNoInline && bTypes.compilerSettings.optWarningEmitAtInlineFailed) {
                 // if the callsite is annotated @inline, we report an inline warning even if the underlying
                 // reason is, for example, mixed compilation (which has a separate -opt-warning flag).
                 def initMsg = s"${BackendReporting.methodSignature(calleeDeclClass.internalName, callee)} is annotated @inline but cannot be inlined"

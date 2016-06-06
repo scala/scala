@@ -15,7 +15,6 @@ import scala.tools.asm.Attribute
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.util.ClassPath
 import BytecodeUtils._
-import ByteCodeRepository._
 import BTypes.InternalName
 import java.util.concurrent.atomic.AtomicLong
 
@@ -29,9 +28,10 @@ class ByteCodeRepository[BT <: BTypes](val classPath: ClassPath, val btypes: BT)
   import btypes._
 
   /**
-   * ClassNodes for classes being compiled in the current compilation run.
+   * Contains ClassNodes and the canonical path of the source file path of classes being compiled in
+   * the current compilation run.
    */
-  val compilingClasses: concurrent.Map[InternalName, ClassNode] = recordPerRunCache(concurrent.TrieMap.empty)
+  val compilingClasses: concurrent.Map[InternalName, (ClassNode, String)] = recordPerRunCache(concurrent.TrieMap.empty)
 
   /**
    * Cache for parsed ClassNodes.
@@ -67,20 +67,35 @@ class ByteCodeRepository[BT <: BTypes](val classPath: ClassPath, val btypes: BT)
     }
   }
 
-  def add(classNode: ClassNode, source: Source) = {
-    if (source == CompilationUnit) compilingClasses(classNode.name) = classNode
-    else parsedClasses(classNode.name) = Right((classNode, lruCounter.incrementAndGet()))
+  def add(classNode: ClassNode, sourceFilePath: Option[String]) = sourceFilePath match {
+    case Some(path) if path != "<no file>" => compilingClasses(classNode.name) = (classNode, path)
+    case _                                 => parsedClasses(classNode.name) = Right((classNode, lruCounter.incrementAndGet()))
+  }
+
+  private def parsedClassNode(internalName: InternalName): Either[ClassNotFound, ClassNode] = {
+    val r = parsedClasses.get(internalName) match {
+      case Some(l @ Left(_)) => l
+      case Some(r @ Right((classNode, _))) =>
+        parsedClasses(internalName) = Right((classNode, lruCounter.incrementAndGet()))
+        r
+      case None =>
+        limitCacheSize()
+        val res = parseClass(internalName).map((_, lruCounter.incrementAndGet()))
+        parsedClasses(internalName) = res
+        res
+    }
+    r.map(_._1)
   }
 
   /**
-   * The class node and source for an internal name. If the class node is not yet available, it is
-   * parsed from the classfile on the compile classpath.
+   * The class node and source file path (if the class is being compiled) for an internal name. If
+   * the class node is not yet available, it is parsed from the classfile on the compile classpath.
    */
-  def classNodeAndSource(internalName: InternalName): Either[ClassNotFound, (ClassNode, Source)] = {
-    classNode(internalName) map (n => {
-      val source = if (compilingClasses contains internalName) CompilationUnit else Classfile
-      (n, source)
-    })
+  def classNodeAndSourceFilePath(internalName: InternalName): Either[ClassNotFound, (ClassNode, Option[String])] = {
+    compilingClasses.get(internalName) match {
+      case Some((c, p)) => Right((c, Some(p)))
+      case _            => parsedClassNode(internalName).map((_, None))
+    }
   }
 
   /**
@@ -88,19 +103,9 @@ class ByteCodeRepository[BT <: BTypes](val classPath: ClassPath, val btypes: BT)
    * the classfile on the compile classpath.
    */
   def classNode(internalName: InternalName): Either[ClassNotFound, ClassNode] = {
-    compilingClasses.get(internalName).map(Right(_)) getOrElse {
-      val r = parsedClasses.get(internalName) match {
-        case Some(l @ Left(_)) => l
-        case Some(r @ Right((classNode, _))) =>
-          parsedClasses(internalName) = Right((classNode, lruCounter.incrementAndGet()))
-          r
-        case None =>
-          limitCacheSize()
-          val res = parseClass(internalName).map((_, lruCounter.incrementAndGet()))
-          parsedClasses(internalName) = res
-          res
-      }
-      r.map(_._1)
+    compilingClasses.get(internalName) match {
+      case Some((c, _)) => Right(c)
+      case None         => parsedClassNode(internalName)
     }
   }
 
@@ -288,14 +293,4 @@ class ByteCodeRepository[BT <: BTypes](val classPath: ClassPath, val btypes: BT)
       case None       => Left(ClassNotFound(internalName, javaDefinedClasses(internalName)))
     }
   }
-}
-
-object ByteCodeRepository {
-  /**
-   * The source of a ClassNode in the ByteCodeRepository. Can be either [[CompilationUnit]] if the
-   * class is being compiled or [[Classfile]] if the class was parsed from the compilation classpath.
-   */
-  sealed trait Source
-  object CompilationUnit extends Source
-  object Classfile extends Source
 }
