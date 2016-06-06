@@ -1001,8 +1001,13 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           val parents1 = currentOwner.info.parents map (t => TypeTree(t) setPos tree.pos)
           // mark fields which can be nulled afterward
           lazyValNullables = nullableFields(templ) withDefaultValue Set()
+          val bodyEmptyAccessors = if (!sym.enclClass.isTrait) body else body mapConserve {
+            case dd: DefDef if dd.symbol.isAccessor && !dd.symbol.isLazy =>
+              deriveDefDef(dd)(_ => EmptyTree)
+            case tree => tree
+          }
           // add all new definitions to current class or interface
-          treeCopy.Template(tree, parents1, self, addNewDefs(currentOwner, body))
+          treeCopy.Template(tree, parents1, self, addNewDefs(currentOwner, bodyEmptyAccessors))
 
         case Select(qual, name) if sym.owner.isTrait && !sym.isMethod =>
           // refer to fields in some trait an abstract getter in the interface.
