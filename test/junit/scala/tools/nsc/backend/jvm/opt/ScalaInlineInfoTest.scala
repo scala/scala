@@ -31,6 +31,14 @@ class ScalaInlineInfoTest extends BytecodeTesting {
     r.toString
   }
 
+  def assertSameMethods(c: ClassNode, nameAndSigs: Set[String]): Unit = {
+    val r = new StringBuilder
+    val inClass = c.methods.iterator.asScala.map(m => m.name + m.desc).toSet
+    for (m <- inClass.diff(nameAndSigs)) r.append(s"method in classfile found, but no inline info: $m")
+    for (m <- nameAndSigs.diff(inClass)) r.append(s"inline info found, but no method in classfile: $m")
+    assert(r.isEmpty, r.toString)
+  }
+
   @Test
   def traitMembersInlineInfo(): Unit = {
     val code =
@@ -79,26 +87,32 @@ class ScalaInlineInfoTest extends BytecodeTesting {
         ("T$$super$toString()Ljava/lang/String;",                     MethodInlineInfo(true ,false,false)),
         ("T$_setter_$x1_$eq(I)V",                                     MethodInlineInfo(false,false,false)),
         ("f1()I",                                                     MethodInlineInfo(false,false,false)),
-        ("f2()I",                                                     MethodInlineInfo(true, false,false)),
+        ("f1$(LT;)I",                                                  MethodInlineInfo(true ,false,false)),
+        ("f2()I",                                                     MethodInlineInfo(true ,false,false)), // no static impl method for private method f2
         ("f3()I",                                                     MethodInlineInfo(false,false,false)),
+        ("f3$(LT;)I",                                                  MethodInlineInfo(true ,false,false)),
         ("f4()Ljava/lang/String;",                                    MethodInlineInfo(false,true, false)),
+        ("f4$(LT;)Ljava/lang/String;",                                 MethodInlineInfo(true ,true, false)),
         ("f5()I",                                                     MethodInlineInfo(true ,false,false)),
-        ("f6()I",                                                     MethodInlineInfo(false,false,true )),
+        ("f5$(LT;)I",                                                  MethodInlineInfo(true ,false,false)),
+        ("f6()I",                                                     MethodInlineInfo(false,false,true )), // no static impl method for abstract method f6
         ("x1()I",                                                     MethodInlineInfo(false,false,false)),
         ("y2()I",                                                     MethodInlineInfo(false,false,false)),
         ("y2_$eq(I)V",                                                MethodInlineInfo(false,false,false)),
         ("x3()I",                                                     MethodInlineInfo(false,false,false)),
         ("x3_$eq(I)V",                                                MethodInlineInfo(false,false,false)),
         ("x4()I",                                                     MethodInlineInfo(false,false,false)),
+        ("x4$(LT;)I",                                                  MethodInlineInfo(true ,false,false)),
         ("x5()I",                                                     MethodInlineInfo(true, false,false)),
         ("L$lzycompute$1(Lscala/runtime/VolatileObjectRef;)LT$L$2$;", MethodInlineInfo(true, false,false)),
         ("L$1(Lscala/runtime/VolatileObjectRef;)LT$L$2$;",            MethodInlineInfo(true ,false,false)),
         ("nest$1()I",                                                 MethodInlineInfo(true, false,false)),
-        ("$init$()V",                                                 MethodInlineInfo(false,false,false))),
+        ("$init$(LT;)V",                                              MethodInlineInfo(true,false,false))),
       None // warning
     )
 
     assert(infoT == expectT, mapDiff(expectT.methodInfos, infoT.methodInfos) + infoT)
+    assertSameMethods(t, expectT.methodInfos.keySet)
 
     val infoC = inlineInfo(c)
     val expectC = InlineInfo(false, None, Map(
@@ -119,6 +133,7 @@ class ScalaInlineInfoTest extends BytecodeTesting {
       None)
 
     assert(infoC == expectC, mapDiff(expectC.methodInfos, infoC.methodInfos) + infoC)
+    assertSameMethods(c, expectC.methodInfos.keySet)
   }
 
   @Test
@@ -156,7 +171,6 @@ class ScalaInlineInfoTest extends BytecodeTesting {
         ("F",None),
         ("T",Some("h(Ljava/lang/String;)I")),
         ("U",None)))
-
   }
 
   @Test
@@ -169,5 +183,6 @@ class ScalaInlineInfoTest extends BytecodeTesting {
       "O$lzycompute()LC$O$;" -> MethodInlineInfo(true,false,false),
       "O()LC$O$;"            -> MethodInlineInfo(true,false,false))
     assert(infoC.methodInfos == expected, mapDiff(infoC.methodInfos, expected))
+    assertSameMethods(c, expected.keySet)
   }
 }

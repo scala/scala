@@ -97,7 +97,7 @@ class InlinerSeparateCompilationTest {
       """.stripMargin
 
     val List(a, t) = compileClassesSeparately(List(codeA, assembly), args)
-    assertNoInvoke(getMethod(t, "f"))
-    assertNoInvoke(getMethod(a, "n"))
+    assertNoInvoke(getMethod(t, "f$"))
+    assertNoInvoke(getMethod(a, "n$"))
   }
 }

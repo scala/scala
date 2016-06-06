@@ -1,0 +1,4 @@
+trait-defaults-super.scala:14: error: Unable to implement a super accessor required by trait T unless Iterable[String] is directly extended by class C.
+class C extends T
+      ^
+one error found

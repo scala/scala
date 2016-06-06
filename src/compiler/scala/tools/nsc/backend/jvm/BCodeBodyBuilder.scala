@@ -11,10 +11,10 @@ package jvm
 
 import scala.annotation.switch
 import scala.reflect.internal.Flags
-
 import scala.tools.asm
 import GenBCode._
 import BackendReporting._
+import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.MethodInsnNode
 import scala.tools.nsc.backend.jvm.BCodeHelpers.{InvokeStyle, TestOp}
 
@@ -637,7 +637,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           val nativeKind = tpeTK(expr)
           genLoad(expr, nativeKind)
           val MethodNameAndType(mname, methodType) = srBoxesRuntimeBoxToMethods(nativeKind)
-          bc.invokestatic(srBoxesRunTimeRef.internalName, mname, methodType.descriptor, app.pos)
+          bc.invokestatic(srBoxesRunTimeRef.internalName, mname, methodType.descriptor, itf = false, app.pos)
           generatedType = boxResultType(fun.symbol)
 
         case Apply(fun, List(expr)) if currentRun.runDefinitions.isUnbox(fun.symbol) =>
@@ -645,7 +645,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           val boxType = unboxResultType(fun.symbol)
           generatedType = boxType
           val MethodNameAndType(mname, methodType) = srBoxesRuntimeUnboxToMethods(boxType)
-          bc.invokestatic(srBoxesRunTimeRef.internalName, mname, methodType.descriptor, app.pos)
+          bc.invokestatic(srBoxesRunTimeRef.internalName, mname, methodType.descriptor, itf = false, app.pos)
 
         case app @ Apply(fun, args) =>
           val sym = fun.symbol
@@ -1058,31 +1058,40 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       }
 
       receiverClass.info // ensure types the type is up to date; erasure may add lateINTERFACE to traits
-      val receiverName = internalName(receiverClass)
-
-      // super calls are only allowed to direct parents
-      if (style.isSuper && receiverClass.isTraitOrInterface && !cnode.interfaces.contains(receiverName)) {
-        thisBType.info.get.inlineInfo.lateInterfaces += receiverName
-        cnode.interfaces.add(receiverName)
-      }
+      val receiverBType = classBTypeFromSymbol(receiverClass)
+      val receiverName = receiverBType.internalName
 
       def needsInterfaceCall(sym: Symbol) = {
         sym.isTraitOrInterface ||
           sym.isJavaDefined && sym.isNonBottomSubClass(definitions.ClassfileAnnotationClass)
       }
 
-      val jname    = method.javaSimpleName.toString
-      val bmType   = methodBTypeFromSymbol(method)
-      val mdescr   = bmType.descriptor
+      val jname  = method.javaSimpleName.toString
+      val bmType = methodBTypeFromSymbol(method)
+      val mdescr = bmType.descriptor
 
+      val isInterface = receiverBType.isInterface.get
       import InvokeStyle._
-      style match {
-        case Static  =>                      bc.invokestatic   (receiverName, jname, mdescr, pos)
-        case Special =>                      bc.invokespecial  (receiverName, jname, mdescr, pos)
-        case Virtual =>
-          if (needsInterfaceCall(receiverClass)) bc.invokeinterface(receiverName, jname, mdescr, pos)
-          else                               bc.invokevirtual  (receiverName, jname, mdescr, pos)
-        case Super   =>                      bc.invokespecial  (receiverName, jname, mdescr, pos)
+      if (style == Super) {
+        assert(receiverClass == methodOwner, s"for super call, expecting $receiverClass == $methodOwner")
+        if (receiverClass.isTrait && !receiverClass.isJavaDefined) {
+          val staticDesc = MethodBType(typeToBType(method.owner.info) :: bmType.argumentTypes, bmType.returnType).descriptor
+          val staticName = traitImplMethodName(method).toString
+          bc.invokestatic(receiverName, staticName, staticDesc, isInterface, pos)
+        } else {
+          if (receiverClass.isTraitOrInterface) {
+            // An earlier check in Mixin reports an error in this case, so it doesn't reach the backend
+            assert(cnode.interfaces.contains(receiverName), s"cannot invokespecial $receiverName.$jname, the interface is not a direct parent.")
+          }
+          bc.invokespecial(receiverName, jname, mdescr, isInterface, pos)
+        }
+      } else {
+        val opc = style match {
+          case Static => Opcodes.INVOKESTATIC
+          case Special => Opcodes.INVOKESPECIAL
+          case Virtual => if (isInterface) Opcodes.INVOKEINTERFACE else Opcodes.INVOKEVIRTUAL
+        }
+        bc.emitInvoke(opc, receiverName, jname, mdescr, isInterface, pos)
       }
 
       bmType.returnType

@@ -6,5 +6,5 @@ Method call statistics:
     1  instrumented/Foo2.someMethod()I
     1  scala/DeprecatedConsole.<init>()V
     1  scala/Predef$.println(Ljava/lang/Object;)V
-    1  scala/io/AnsiColor.$init$()V
+    1  scala/io/AnsiColor.$init$(Lscala/io/AnsiColor;)V
     1  scala/runtime/BoxesRunTime.boxToBoolean(Z)Ljava/lang/Boolean;
