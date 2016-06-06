@@ -19,7 +19,7 @@ class InlinerIllegalAccessTest extends BytecodeTesting {
   import compiler._
   import global.genBCode.bTypes._
 
-  def addToRepo(cls: List[ClassNode]): Unit = for (c <- cls) byteCodeRepository.add(c, ByteCodeRepository.Classfile)
+  def addToRepo(cls: List[ClassNode]): Unit = for (c <- cls) byteCodeRepository.add(c, None)
   def assertEmpty(ins: Option[AbstractInsnNode]) = for (i <- ins)
     throw new AssertionError(textify(i))
 

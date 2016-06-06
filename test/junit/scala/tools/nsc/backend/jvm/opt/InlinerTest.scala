@@ -43,7 +43,7 @@ class InlinerTest extends BytecodeTesting {
     // Use the class nodes stored in the byteCodeRepository. The ones returned by compileClasses are not the same,
     // these are created new from the classfile byte array. They are completely separate instances which cannot
     // be used to look up methods / callsites in the callGraph hash maps for example.
-    byteCodeRepository.compilingClasses.valuesIterator.toList.sortBy(_.name)
+    byteCodeRepository.compilingClasses.valuesIterator.map(_._1).toList.sortBy(_.name)
   }
 
   def checkCallsite(callsite: callGraph.Callsite, callee: MethodNode) = {
@@ -835,11 +835,11 @@ class InlinerTest extends BytecodeTesting {
   @Test
   def inlineInvokeSpecial(): Unit = {
     val code =
-      """class Aa {
+      """class A {
         |  def f1 = 0
         |}
-        |class B extends Aa {
-        |  @inline final override def f1 = 1 + super.f1 // invokespecial Aa.f1
+        |class B extends A {
+        |  @inline final override def f1 = 1 + super.f1 // invokespecial A.f1
         |
         |  private def f2m = 0                          // public B$$f2m in bytecode
         |  @inline final def f2 = f2m                   // invokevirtual B.B$$f2m
@@ -863,13 +863,13 @@ class InlinerTest extends BytecodeTesting {
 
     val warn =
       """B::f1()I is annotated @inline but could not be inlined:
-        |The callee B::f1()I contains the instruction INVOKESPECIAL Aa.f1 ()I
+        |The callee B::f1()I contains the instruction INVOKESPECIAL A.f1 ()I
         |that would cause an IllegalAccessError when inlined into class T.""".stripMargin
     var c = 0
     val List(a, b, t) = compile(code, allowMessage = i => {c += 1; i.msg contains warn})
     assert(c == 1, c)
 
-    assertInvoke(getMethod(b, "t1"), "Aa", "f1")
+    assertInvoke(getMethod(b, "t1"), "A", "f1")
     assertInvoke(getMethod(b, "t2"), "B", "B$$f2m")
     assertInvoke(getMethod(b, "t3"), "B", "<init>")
     assertInvoke(getMethod(b, "t4"), "B", "<init>")
@@ -1525,5 +1525,53 @@ class InlinerTest extends BytecodeTesting {
       """.stripMargin)
     val c :: _ = compileClassesSeparately(codes, extraArgs = compilerArgs)
     assertInvoke(getMethod(c, "t"), "p1/Implicits$RichFunction1$", "toRx$extension")
+  }
+
+  @Test
+  def keepLineNumbersPerCompilationUnit(): Unit = {
+    val code1 =
+      """class A {
+        |  def fx(): Unit = ()
+        |  @inline final def ma = {
+        |    fx()
+        |    1
+        |  }
+        |}
+      """.stripMargin
+    val code2 =
+      """class B extends A {
+        |  @inline final def mb = {
+        |    fx()
+        |    1
+        |  }
+        |}
+        |class C extends B {
+        |  @inline final def mc = {
+        |    fx()
+        |    1
+        |  }
+        |  def t1 = ma // no lines, not the same source file
+        |  def t2 = mb // lines
+        |  def t3 = mc // lines
+        |}
+      """.stripMargin
+    notPerRun.foreach(_.clear())
+    val run = compiler.newRun
+    run.compileSources(List(makeSourceFile(code1, "A.scala"), makeSourceFile(code2, "B.scala")))
+    val List(_, _, c) = readAsmClasses(getGeneratedClassfiles(global.settings.outputDirs.getSingleOutput.get))
+    def is(name: String) = getMethod(c, name).instructions.filterNot(_.isInstanceOf[FrameEntry])
+
+    assertSameCode(is("t1"), List(
+      Label(0), LineNumber(12, Label(0)),
+      VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "A", "fx", "()V", false),
+      Op(ICONST_1), Op(IRETURN), Label(6)))
+
+    assertSameCode(is("t2"), List(
+      Label(0), LineNumber(3, Label(0)), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "B", "fx", "()V", false),
+      Label(4), LineNumber(4, Label(4)), Op(ICONST_1), Op(IRETURN), Label(8)))
+
+    assertSameCode(is("t3"), List(
+      Label(0), LineNumber(9, Label(0)), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "fx", "()V", false),
+      Label(4), LineNumber(10, Label(4)), Op(ICONST_1), Op(IRETURN), Label(8)))
   }
 }

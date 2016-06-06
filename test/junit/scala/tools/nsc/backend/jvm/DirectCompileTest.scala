@@ -88,4 +88,27 @@ class DirectCompileTest extends BytecodeTesting {
   def compileErroneous(): Unit = {
     compileToBytes("class C { def f: String = 1 }", allowMessage = _.msg contains "type mismatch")
   }
+
+  @Test
+  def residentRedefineFinalFlag(): Unit = {
+    val compiler = newCompiler()
+    val a = "final class C { def c1 = 0 }"
+    // for re-defined class symbols (C), the compiler did not clear the `final` flag.
+    // so compiling `D` would give an error `illegal inheritance from final class C`.
+    val b = "class C; class D extends C"
+    compiler.compileToBytes(a)
+    compiler.compileToBytes(b)
+  }
+
+  @Test
+  def residentMultipleRunsNotCompanions(): Unit = {
+    val compiler = newCompiler()
+    val a = List(("public class A { }", "A.java"))
+    // when checking that a class and its companion are defined in the same compilation unit, the
+    // compiler would also emit a warning if the two symbols are defined in separate runs. this
+    // would lead to an error message when compiling the scala class A.
+    val b = "class A"
+    compiler.compileToBytes("", a)
+    compiler.compileToBytes(b)
+  }
 }

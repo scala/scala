@@ -431,6 +431,7 @@ trait Namers extends MethodSynthesis {
         && !(module isCoDefinedWith clazz)
         && module.exists
         && clazz.exists
+        && (currentRun.compiles(clazz) == currentRun.compiles(module))
       )
       if (fails) {
         reporter.error(tree.pos, (

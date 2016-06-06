@@ -97,7 +97,7 @@ class InlineWarningTest extends BytecodeTesting {
   @Test
   def cannotInlinePrivateCallIntoDifferentClass(): Unit = {
     val code =
-      """class M {
+      """class A {
         |  @inline final def f = {
         |    @noinline def nested = 0
         |    nested
@@ -106,15 +106,15 @@ class InlineWarningTest extends BytecodeTesting {
         |  def t = f // ok
         |}
         |
-        |class N {
-        |  def t(a: M) = a.f // not possible
+        |class B {
+        |  def t(a: A) = a.f // not possible
         |}
       """.stripMargin
 
     val warn =
-      """M::f()I is annotated @inline but could not be inlined:
-        |The callee M::f()I contains the instruction INVOKESTATIC M.nested$1 ()I
-        |that would cause an IllegalAccessError when inlined into class N""".stripMargin
+      """A::f()I is annotated @inline but could not be inlined:
+        |The callee A::f()I contains the instruction INVOKESTATIC A.nested$1 ()I
+        |that would cause an IllegalAccessError when inlined into class B""".stripMargin
 
     var c = 0
     compileToBytes(code, allowMessage = i => { c += 1; i.msg contains warn })
@@ -124,7 +124,7 @@ class InlineWarningTest extends BytecodeTesting {
   @Test
   def dontWarnWhenNotIlnineAnnotated(): Unit = {
     val code =
-      """class M {
+      """class A {
         |  final def f(t: Int => Int) = {
         |    @noinline def nested = 0
         |    nested + t(1)
@@ -132,16 +132,16 @@ class InlineWarningTest extends BytecodeTesting {
         |  def t = f(x => x + 1)
         |}
         |
-        |class N {
-        |  def t(a: M) = a.f(x => x + 1)
+        |class B {
+        |  def t(a: A) = a.f(x => x + 1)
         |}
       """.stripMargin
     compileToBytes(code, allowMessage = _ => false) // no warnings allowed
 
     val warn =
-      """M::f(Lscala/Function1;)I could not be inlined:
-        |The callee M::f(Lscala/Function1;)I contains the instruction INVOKESTATIC M.nested$1 ()I
-        |that would cause an IllegalAccessError when inlined into class N""".stripMargin
+      """A::f(Lscala/Function1;)I could not be inlined:
+        |The callee A::f(Lscala/Function1;)I contains the instruction INVOKESTATIC A.nested$1 ()I
+        |that would cause an IllegalAccessError when inlined into class B""".stripMargin
 
     var c = 0
     compilerWarnAll.compileToBytes(code, allowMessage = i => { c += 1; i.msg contains warn })

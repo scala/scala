@@ -29,7 +29,7 @@ class Compiler(val global: Global) {
     global.settings.outputDirs.setSingleOutput(new VirtualDirectory("(memory)", None))
   }
 
-  private def newRun: global.Run = {
+  def newRun: global.Run = {
     global.reporter.reset()
     resetOutput()
     new global.Run()

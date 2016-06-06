@@ -234,14 +234,8 @@ class Flags extends ModifierFlags {
    */
   final val AllFlags = -1L
 
-  /** These flags can be set when class or module symbol is first created.
-   *  They are the only flags to survive a call to resetFlags().
-   */
-  final val TopLevelCreationFlags =
-    MODULE | PACKAGE | FINAL | JAVA
-
   // TODO - there's no call to slap four flags onto every package.
-  final val PackageFlags = TopLevelCreationFlags
+  final val PackageFlags = MODULE | PACKAGE | FINAL | JAVA
 
   // FINAL not included here due to possibility of object overriding.
   // In fact, FINAL should not be attached regardless.  We should be able
@@ -301,7 +295,7 @@ class Flags extends ModifierFlags {
   final val ConstrFlags = JAVA
 
   /** Module flags inherited by their module-class */
-  final val ModuleToClassFlags = AccessFlags | TopLevelCreationFlags | CASE | SYNTHETIC
+  final val ModuleToClassFlags = AccessFlags | PackageFlags | CASE | SYNTHETIC
 
   /** These flags are not pickled */
   final val FlagsNotPickled = IS_ERROR | OVERLOADED | LIFTED | TRANS_FLAG | LOCKED | TRIEDCOOKING
