@@ -282,7 +282,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) extends TestInfo 
     // use lines in block so labeled? Default to sorry, Charlie.
     def retainOn(expr: String) = {
       val f = expr.trim
-      val allArgs = suiteRunner.scalacExtraArgs ++ PartestDefaults.scalacOpts.split(' ')
+      val allArgs = suiteRunner.scalacExtraArgs ++ suiteRunner.scalacOpts.split(' ')
       def flagWasSet(f: String) = allArgs contains f
       val (invert, token) =
         if (f startsWith "!") (true, f drop 1) else (false, f)
@@ -790,7 +790,8 @@ class SuiteRunner(
   val javaCmdPath: String = PartestDefaults.javaCmd,
   val javacCmdPath: String = PartestDefaults.javacCmd,
   val scalacExtraArgs: Seq[String] = Seq.empty,
-  val javaOpts: String = PartestDefaults.javaOpts) {
+  val javaOpts: String = PartestDefaults.javaOpts,
+  val scalacOpts: String = PartestDefaults.scalacOpts) {
 
   import PartestDefaults.{ numThreads, waitTime }
 
@@ -808,7 +809,7 @@ class SuiteRunner(
   s"""|Partest version:     ${Properties.versionNumberString}
       |Compiler under test: ${relativize(fileManager.compilerUnderTest.getAbsolutePath)}
       |Scala version is:    $versionMsg
-      |Scalac options are:  ${(scalacExtraArgs ++ PartestDefaults.scalacOpts.split(' ')).mkString(" ")}
+      |Scalac options are:  ${(scalacExtraArgs ++ scalacOpts.split(' ')).mkString(" ")}
       |Compilation Path:    ${relativize(joinPaths(fileManager.testClassPath))}
       |Java binaries in:    $vmBin
       |Java runtime is:     $vmName

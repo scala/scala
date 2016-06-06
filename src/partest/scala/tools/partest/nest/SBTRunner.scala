@@ -21,8 +21,19 @@ class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, log
   printSummary = false
   partestCmd   = "partest"
 
+  val defs = {
+    val Def = "-D([^=]*)=(.*)".r
+    args.collect { case Def(k, v) => (k, v) }
+  }
+
   val javaOpts = {
-    val l = args.filter(_.startsWith("-Dpartest.java_opts=")).map(_.substring(20))
+    val l = defs.collect { case ("partest.java_opts", v) => v }
+    if(l.isEmpty) PartestDefaults.javaOpts
+    else l.mkString(" ")
+  }
+
+  val scalacOpts = {
+    val l = defs.collect { case ("partest.scalac_opts", v) => v }
     if(l.isEmpty) PartestDefaults.javaOpts
     else l.mkString(" ")
   }
@@ -35,7 +46,8 @@ class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, log
     javaCmdPath = Option(javaCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd,
     javacCmdPath = Option(javacCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd,
     scalacExtraArgs = scalacArgs,
-    javaOpts = javaOpts) {
+    javaOpts = javaOpts,
+    scalacOpts = scalacOpts) {
 
       override def onFinishTest(testFile: File, result: TestState): TestState = {
         eventHandler.handle(new Event {
