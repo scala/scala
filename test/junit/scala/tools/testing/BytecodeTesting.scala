@@ -1,5 +1,6 @@
 package scala.tools.testing
 
+import junit.framework.AssertionFailedError
 import org.junit.Assert._
 
 import scala.collection.JavaConverters._
@@ -245,8 +246,13 @@ object BytecodeTesting {
     getAsmMethods(c, _ == name)
 
   def getAsmMethod(c: ClassNode, name: String): MethodNode = {
-    val List(m) = getAsmMethods(c, name)
-    m
+    val methods = getAsmMethods(c, name)
+    methods match {
+      case List(m) => m
+      case ms =>
+        val allNames = getAsmMethods(c, _ => true).map(_.name)
+        throw new AssertionFailedError(s"Could not find method named $name among ${allNames}")
+    }
   }
 
   def getMethods(c: ClassNode, name: String): List[Method] =

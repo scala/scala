@@ -1329,6 +1329,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   class SpecializationDuplicator(casts: Map[Symbol, Type]) extends Duplicator(casts) {
     override def retyped(context: Context, tree: Tree, oldThis: Symbol, newThis: Symbol, env: scala.collection.Map[Symbol, Type]): Tree =
       enteringSpecialize(super.retyped(context, tree, oldThis, newThis, env))
+
   }
 
   /** A tree symbol substituter that substitutes on type skolems.

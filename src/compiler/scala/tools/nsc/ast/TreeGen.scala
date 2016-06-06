@@ -238,7 +238,8 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
    *  (outside the synchronized block).
    *
    *  The idiom works only if the condition is using a volatile field.
-   *  @see http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html
+    *
+    *  @see http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html
    */
   def mkSynchronizedCheck(clazz: Symbol, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree =
     mkSynchronizedCheck(mkAttributedThis(clazz), cond, syncBody, stats)
@@ -274,8 +275,19 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   }
 
   // used to create the lifted method that holds a function's body
-  def mkLiftedFunctionBodyMethod(localTyper: analyzer.Typer)(owner: Symbol, fun: Function) =
-    mkMethodForFunctionBody(localTyper)(owner, fun, nme.ANON_FUN_NAME)(additionalFlags = ARTIFACT)
+  def mkLiftedFunctionBodyMethod(localTyper: global.analyzer.Typer)(owner: global.Symbol, fun: global.Function) = {
+    def nonLocalEnclosingMember(sym: Symbol): Symbol = {
+      if (sym.isLocalDummy) sym.enclClass.primaryConstructor
+      else if (sym.isLocalToBlock) nonLocalEnclosingMember(sym.originalOwner)
+      else sym
+    }
+    val ownerName = nonLocalEnclosingMember(fun.symbol.originalOwner).name match {
+      case nme.CONSTRUCTOR => nme.NEWkw // do as javac does for the suffix, prefer "new" to "$lessinit$greater$1"
+      case x => x.dropLocal
+    }
+    val newName = nme.ANON_FUN_NAME.append(nme.NAME_JOIN_STRING).append(ownerName)
+    mkMethodForFunctionBody(localTyper)(owner, fun, newName)(additionalFlags = ARTIFACT)
+  }
 
 
   /**
@@ -308,6 +320,38 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     val moveToMethod = new ChangeOwnerTraverser(fun.symbol, methSym)
 
     newDefDef(methSym, moveToMethod(useMethodParams(fun.body)))(tpt = TypeTree(resTp))
+  }
+
+  /**
+    * Create a new `DefDef` based on `orig` with an explicit self parameter.
+    *
+    * Details:
+    *   - Must by run after erasure
+    *   - If `maybeClone` is the identity function, this runs "in place"
+    *     and mutates the symbol of `orig`. `orig` should be discarded
+    *   - Symbol owners and returns are substituted, as are parameter symbols
+    *   - Recursive calls are not rewritten. This is correct if we assume
+    *     that we either:
+    *       - are in "in-place" mode, but can guarantee that no recursive calls exists
+    *       - are associating the RHS with a cloned symbol, but intend for the original
+    *         method to remain and for recursive calls to target it.
+    */
+  final def mkStatic(orig: DefDef, maybeClone: Symbol => Symbol): DefDef = {
+    assert(phase.erasedTypes, phase)
+    assert(!orig.symbol.hasFlag(SYNCHRONIZED), orig.symbol.defString)
+    val origSym = orig.symbol
+    val origParams = orig.symbol.info.params
+    val newSym = maybeClone(orig.symbol)
+    newSym.setFlag(STATIC)
+    // Add an explicit self parameter
+    val selfParamSym = newSym.newSyntheticValueParam(newSym.owner.typeConstructor, nme.SELF).setFlag(ARTIFACT)
+    newSym.updateInfo(newSym.info match {
+      case mt @ MethodType(params, res) => copyMethodType(mt, selfParamSym :: params, res)
+    })
+    val selfParam = ValDef(selfParamSym)
+    val rhs = orig.rhs.substituteThis(newSym.owner, atPos(newSym.pos)(gen.mkAttributedIdent(selfParamSym)))
+      .substituteSymbols(origParams, newSym.info.params.drop(1)).changeOwner(origSym -> newSym)
+    treeCopy.DefDef(orig, orig.mods, orig.name, orig.tparams, (selfParam :: orig.vparamss.head) :: Nil, orig.tpt, rhs).setSymbol(newSym)
   }
 
   // TODO: the rewrite to AbstractFunction is superfluous once we compile FunctionN to a SAM type (aka functional interface)

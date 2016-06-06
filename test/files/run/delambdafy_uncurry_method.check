@@ -7,8 +7,8 @@ package <empty> {
     };
     def bar(): Unit = {
       val f: Int => Int = {
-        final <artifact> def $anonfun(x: Int): Int = x.+(1);
-        ((x: Int) => $anonfun(x))
+        final <artifact> def $anonfun|(x: Int): Int = x.+(1);
+        ((x: Int) => $anonfun|(x))
       };
       ()
     }

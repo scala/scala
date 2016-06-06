@@ -121,7 +121,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
 
   def getBoxedUnit: FieldInsnNode = new FieldInsnNode(GETSTATIC, srBoxedUnitRef.internalName, "UNIT", srBoxedUnitRef.descriptor)
 
-  private val anonfunAdaptedName = """.*\$anonfun\$\d+\$adapted""".r
+  private val anonfunAdaptedName = """.*\$anonfun\$.*\$\d+\$adapted""".r
   def hasAdaptedImplMethod(closureInit: ClosureInstantiation): Boolean = {
     isBuiltinFunctionType(Type.getReturnType(closureInit.lambdaMetaFactoryCall.indy.desc).getInternalName) &&
     anonfunAdaptedName.pattern.matcher(closureInit.lambdaMetaFactoryCall.implMethod.getName).matches
