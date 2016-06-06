@@ -700,9 +700,7 @@ lazy val root = (project in file("."))
     scaladoc, scalap, partestExtras, junit, libraryAll, scalaDist).settings(
     sources in Compile := Seq.empty,
     onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
-      |This build definition has an EXPERIMENTAL status. If you are not
-      |interested in testing or working on the build itself, please use
-      |the Ant build definition for now. Check README.md for more information.""".stripMargin
+      |Check README.md for more information.""".stripMargin
   )
 
 // The following subprojects' binaries are required for building "pack":
