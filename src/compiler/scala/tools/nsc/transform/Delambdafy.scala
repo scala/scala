@@ -225,6 +225,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       }
     }
 
+
     private def transformFunction(originalFunction: Function): Tree = {
       val target = targetMethod(originalFunction)
       assert(target.hasFlag(Flags.STATIC))
@@ -272,10 +273,21 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           val Template(parents, self, body) = super.transform(deriveTemplate(tree)(_.mapConserve(pretransform)))
           Template(parents, self, body ++ boxingBridgeMethods)
         } finally boxingBridgeMethods.clear()
+      case dd: DefDef if dd.symbol.isLiftedMethod && !dd.symbol.isDelambdafyTarget =>
+        // SI-9390 emit lifted methods that don't require a `this` reference as STATIC
+        // delambdafy targets are excluded as they are made static by `transformFunction`.
+        if (!dd.symbol.hasFlag(STATIC) && !methodReferencesThis(dd.symbol))
+          dd.symbol.setFlag(STATIC)
+        super.transform(tree)
+      case Apply(fun, outer :: rest) if shouldElideOuterArg(fun.symbol, outer) =>
+        val nullOuter = gen.mkZero(outer.tpe)
+        treeCopy.Apply(tree, transform(fun), nullOuter :: transformTrees(rest))
       case _ => super.transform(tree)
     }
   } // DelambdafyTransformer
 
+  private def shouldElideOuterArg(fun: Symbol, outerArg: Tree): Boolean =
+    fun.isConstructor && treeInfo.isQualifierSafeToElide(outerArg) && fun.hasAttachment[OuterArgCanBeElided.type]
 
   // A traverser that finds symbols used but not defined in the given Tree
   // TODO freeVarTraverser in LambdaLift does a very similar task. With some
@@ -326,19 +338,28 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
     // recursively find methods that refer to 'this' directly or indirectly via references to other methods
     // for each method found add it to the referrers set
-    private def refersToThis(symbol: Symbol): Boolean =
-      (thisReferringMethods contains symbol) ||
-        (liftedMethodReferences(symbol) exists refersToThis) && {
-          // add it early to memoize
-          debuglog(s"$symbol indirectly refers to 'this'")
-          thisReferringMethods += symbol
-          true
+    private def refersToThis(symbol: Symbol): Boolean = {
+      var seen = mutable.Set[Symbol]()
+      def loop(symbol: Symbol): Boolean = {
+        if (seen(symbol)) false
+        else {
+          seen += symbol
+          (thisReferringMethods contains symbol) ||
+            (liftedMethodReferences(symbol) exists loop) && {
+              // add it early to memoize
+              debuglog(s"$symbol indirectly refers to 'this'")
+              thisReferringMethods += symbol
+              true
+            }
         }
+      }
+      loop(symbol)
+    }
 
     private var currentMethod: Symbol = NoSymbol
 
     override def traverse(tree: Tree) = tree match {
-      case DefDef(_, _, _, _, _, _) if tree.symbol.isDelambdafyTarget =>
+      case DefDef(_, _, _, _, _, _) if tree.symbol.isDelambdafyTarget || tree.symbol.isLiftedMethod =>
         // we don't expect defs within defs. At this phase trees should be very flat
         if (currentMethod.exists) devWarning("Found a def within a def at a phase where defs are expected to be flattened out.")
         currentMethod = tree.symbol
@@ -349,6 +370,12 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         // They'll be of the form {(args...) => this.anonfun(args...)}
         // but we do need to make note of the lifted body method in case it refers to 'this'
         if (currentMethod.exists) liftedMethodReferences(currentMethod) += targetMethod(fun)
+      case Apply(sel @ Select(This(_), _), args) if sel.symbol.isLiftedMethod =>
+        if (currentMethod.exists) liftedMethodReferences(currentMethod) += sel.symbol
+        super.traverseTrees(args)
+      case Apply(fun, outer :: rest) if shouldElideOuterArg(fun.symbol, outer) =>
+        super.traverse(fun)
+        super.traverseTrees(rest)
       case This(_) =>
         if (currentMethod.exists && tree.symbol == currentMethod.enclClass) {
           debuglog(s"$currentMethod directly refers to 'this'")

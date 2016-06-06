@@ -365,6 +365,7 @@ trait StdNames {
     val MODULE_INSTANCE_FIELD: NameType    = NameTransformer.MODULE_INSTANCE_NAME  // "MODULE$"
     val OUTER: NameType                    = "$outer"
     val OUTER_LOCAL: NameType              = OUTER.localName
+    val OUTER_ARG: NameType                = "arg" + OUTER
     val OUTER_SYNTH: NameType              = "<outer>" // emitted by virtual pattern matcher, replaced by outer accessor in explicitouter
     val ROOTPKG: NameType                  = "_root_"
     val SELECTOR_DUMMY: NameType           = "<unapply-selector>"

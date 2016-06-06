@@ -715,6 +715,9 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
           primaryConstrBody.expr)
       })
 
+      if (omittableAccessor.exists(_.isOuterField) && !constructorStats.exists(_.exists { case i: Ident if i.symbol.isOuterParam => true; case _ => false}))
+        primaryConstructor.symbol.updateAttachment(OuterArgCanBeElided)
+
       val constructors = primaryConstructor :: auxConstructors
 
       // Unlink all fields that can be dropped from class scope
