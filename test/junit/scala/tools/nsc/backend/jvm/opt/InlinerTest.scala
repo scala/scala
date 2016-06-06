@@ -475,11 +475,9 @@ class InlinerTest extends BytecodeTesting {
         |  def t2 = this.f
         |}
       """.stripMargin
-    val warns = Set(
-      "C::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden",
-      "T::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden")
+    val warn = "T::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden"
     var count = 0
-    val List(c, t) = compile(code, allowMessage = i => {count += 1; warns.exists(i.msg contains _)})
+    val List(c, t) = compile(code, allowMessage = i => {count += 1; i.msg contains warn})
     assert(count == 2, count)
     assertInvoke(getMethod(c, "t1"), "T", "f")
     assertInvoke(getMethod(c, "t2"), "C", "f")
@@ -520,7 +518,7 @@ class InlinerTest extends BytecodeTesting {
     val List(c, oMirror, oModule, t) = compile(code, allowMessage = i => {count += 1; i.msg contains warn})
     assert(count == 1, count)
 
-    assertNoInvoke(getMethod(t, "f"))
+    assertNoInvoke(getMethod(t, "f$"))
 
     assertNoInvoke(getMethod(c, "t1"))
     assertNoInvoke(getMethod(c, "t2"))
@@ -546,9 +544,9 @@ class InlinerTest extends BytecodeTesting {
 
     val List(assembly, c, t) = compile(code)
 
-    assertNoInvoke(getMethod(t, "f"))
+    assertNoInvoke(getMethod(t, "f$"))
 
-    assertNoInvoke(getMethod(assembly, "n"))
+    assertNoInvoke(getMethod(assembly, "n$"))
 
     assertNoInvoke(getMethod(c, "t1"))
     assertNoInvoke(getMethod(c, "t2"))
@@ -624,8 +622,8 @@ class InlinerTest extends BytecodeTesting {
     val List(ca, cb, t1, t2a, t2b) = compile(code, allowMessage = i => {count += 1; i.msg contains warning})
     assert(count == 4, count) // see comments, f is not inlined 4 times
 
-    assertNoInvoke(getMethod(t2a, "g2a"))
-    assertInvoke(getMethod(t2b, "g2b"), "T1", "f")
+    assertNoInvoke(getMethod(t2a, "g2a$"))
+    assertInvoke(getMethod(t2b, "g2b$"), "T1", "f")
 
     assertInvoke(getMethod(ca, "m1a"), "T1", "f")
     assertNoInvoke(getMethod(ca, "m2a"))            // no invoke, see comment on def g2a
@@ -684,8 +682,8 @@ class InlinerTest extends BytecodeTesting {
         |}
       """.stripMargin
     val List(c, t) = compile(code)
-    val t1 = getMethod(t, "t1")
-    val t2 = getMethod(t, "t2")
+    val t1 = getMethod(t, "t1$")
+    val t2 = getMethod(t, "t2$")
     val cast = TypeOp(CHECKCAST, "C")
     Set(t1, t2).foreach(m => assert(m.instructions.contains(cast), m.instructions))
   }
@@ -1573,5 +1571,20 @@ class InlinerTest extends BytecodeTesting {
     assertSameCode(is("t3"), List(
       Label(0), LineNumber(9, Label(0)), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "fx", "()V", false),
       Label(4), LineNumber(10, Label(4)), Op(ICONST_1), Op(IRETURN), Label(8)))
+  }
+
+  @Test
+  def traitHO(): Unit = {
+    val code =
+      """trait T {
+        |  def foreach(f: Int => Unit): Unit = f(1)
+        |}
+        |final class C extends T {
+        |  def cons(x: Int): Unit = ()
+        |  def t1 = foreach(cons)
+        |}
+      """.stripMargin
+    val List(c, t) = compile(code)
+    assertNoIndy(getMethod(c, "t1"))
   }
 }

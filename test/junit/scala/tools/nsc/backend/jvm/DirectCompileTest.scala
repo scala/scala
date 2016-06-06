@@ -1,7 +1,9 @@
 package scala.tools.nsc.backend.jvm
 
+import java.nio.file.{Files, Paths}
+
 import org.junit.Assert._
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 

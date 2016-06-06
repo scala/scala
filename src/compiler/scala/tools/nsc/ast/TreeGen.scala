@@ -336,12 +336,13 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     *       - are associating the RHS with a cloned symbol, but intend for the original
     *         method to remain and for recursive calls to target it.
     */
-  final def mkStatic(orig: DefDef, maybeClone: Symbol => Symbol): DefDef = {
+  final def mkStatic(orig: DefDef, newName: Name, maybeClone: Symbol => Symbol): DefDef = {
     assert(phase.erasedTypes, phase)
     assert(!orig.symbol.hasFlag(SYNCHRONIZED), orig.symbol.defString)
     val origSym = orig.symbol
     val origParams = orig.symbol.info.params
     val newSym = maybeClone(orig.symbol)
+    newSym.setName(newName)
     newSym.setFlag(STATIC)
     // Add an explicit self parameter
     val selfParamSym = newSym.newSyntheticValueParam(newSym.owner.typeConstructor, nme.SELF).setFlag(ARTIFACT)
