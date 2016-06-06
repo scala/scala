@@ -966,7 +966,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
       // while we go fire up the REPL
       try {
-        createInterpreter()
+        // don't allow ancient sbt to hijack the reader
+        savingReader {
+          createInterpreter()
+        }
         intp.initializeSynchronous()
         globalFuture = Future successful true
         if (intp.reporter.hasErrors) {
