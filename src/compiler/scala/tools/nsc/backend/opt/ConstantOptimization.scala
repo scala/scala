@@ -539,14 +539,14 @@ abstract class ConstantOptimization extends SubComponent {
       // number of instructions excluding the last one
       val normalCount = block.size - 1
 
-      val exceptionState = in.cleanStack
+      var exceptionState = in.cleanStack
       var normalExitState = in
       var idx = 0
       while (idx < normalCount) {
         val inst = block(idx)
         normalExitState = interpretInst(normalExitState, inst)
         if (normalExitState.locals ne exceptionState.locals)
-          exceptionState.copy(locals = exceptionState mergeLocals normalExitState.locals)
+          exceptionState = exceptionState.copy(locals = exceptionState mergeLocals normalExitState.locals)
         idx += 1
       }
 
