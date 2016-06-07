@@ -165,19 +165,14 @@ self =>
     else toString
 
   /** Replace all literal occurrences of `literal` with the string `replacement`.
-   *  This is equivalent to [[java.lang.String#replaceAll]] except that both arguments
-   *  are appropriately quoted to avoid being interpreted as metacharacters.
+   *  This method is equivalent to [[java.lang.String#replace]] except that the name
+   *  makes clear what it does.
    *
    *  @param    literal     the string which should be replaced everywhere it occurs
    *  @param    replacement the replacement string
-   *  @return               the resulting string
+   *  @return               the resulting string, with substrings replaced literally
    */
-  def replaceAllLiterally(literal: String, replacement: String): String = {
-    val arg1 = Regex.quote(literal)
-    val arg2 = Regex.quoteReplacement(replacement)
-
-    toString.replaceAll(arg1, arg2)
-  }
+  def replaceAllLiterally(literal: String, replacement: String): String = toString.replace(literal, replacement)
 
   /** For every line in this string:
    *

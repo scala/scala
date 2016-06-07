@@ -314,7 +314,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   /** For class based repl mode we use an .INSTANCE accessor. */
   val readInstanceName = if (isClassBased) ".INSTANCE" else ""
   def translateOriginalPath(p: String): String =
-    if (isClassBased) p.replace(sessionNames.read, sessionNames.read + readInstanceName) else p
+    if (isClassBased) p.replaceAllLiterally(sessionNames.read, sessionNames.read + readInstanceName)
+    else p
 
   def flatPath(sym: Symbol): String      = flatOp shift sym.javaClassName
 
@@ -333,9 +334,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       val sym = if (name endsWith "$") symbolOfTerm(name.init) else symbolOfIdent(name)
       def pathOf(s: String) = s"${s.replace('.', '/')}.class"
       sym.toOption map (s => pathOf(flatPath(s)))
-    } else {
-      None
     }
+    else None
   }
   def translateEnclosingClass(n: String) = symbolOfTerm(n).enclClass.toOption map flatPath
 
