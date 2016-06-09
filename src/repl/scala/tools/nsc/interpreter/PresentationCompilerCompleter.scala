@@ -40,12 +40,22 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion {
       val offset = result.preambleLength
       val pos1 = result.unit.source.position(offset).withEnd(offset + buf.length)
       import result.compiler._
-      val tree = new Locator(pos1) locateIn result.unit.body match {
-        case Template(_, _, constructor :: (rest :+ last)) => if (rest.isEmpty) last else Block(rest, last)
-        case t => t
+      val (tree, tpe) = new Locator(pos1).locateIn(result.unit.body) match {
+        case Template(_, _, constructor :: last :: Nil) => (last, last.tpe)
+        case Template(_, _, constructor :: (rest :+ last)) if rest.nonEmpty =>
+          val unimports = rest.dropWhile {
+            case Import(expr, _) =>
+              /* selecting $iw or from history (trailing dot or dollar required) */
+              expr.toString.startsWith("scala.tools.nsc.interpreter") || intp.naming.isLineWrapperClassName(expr.toString + "$")
+            case _ => false
+          }
+          val t = if (unimports.nonEmpty) Block(unimports, last) else last
+          (t, last.tpe)
+        case t => (t, t.tpe)
       }
-      val printed = showCode(tree) + " // : " + tree.tpe.safeToString
-      Candidates(cursor, "" :: printed :: Nil)
+      val printed = s"${showCode(tree)} // : ${ if (tpe != null) tpe.safeToString else "???" }"
+      //Candidates(cursor, "" :: printed :: Nil)
+      Candidates(cursor, "" :: printed.lines.toList)   // avoid ctl-J in JLine?
     }
     def typeAt(result: Result, start: Int, end: Int) = {
       val tpString = result.compiler.exitingTyper(result.typedTreeAt(buf, start, end).tpe.toString)

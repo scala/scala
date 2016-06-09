@@ -12,6 +12,6 @@ defined class C
 c: C = C(42)
 
 scala> val d: C = c // shew
-d: C = C(42)
+d: INSTANCE.C = C(42)
 
 scala> :quit
