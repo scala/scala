@@ -69,7 +69,7 @@ val scalaSwingDep = withoutScalaLang("org.scala-lang.modules" %% "scala-swing" %
 val scalaXmlDep = withoutScalaLang("org.scala-lang.modules" %% "scala-xml" % versionNumber("scala-xml"))
 val partestDep = withoutScalaLang("org.scala-lang.modules" %% "scala-partest" % versionNumber("partest"))
 val junitDep = "junit" % "junit" % "4.11"
-val junitIntefaceDep = "com.novocode" % "junit-interface" % "0.11" % "test"
+val junitInterfaceDep = "com.novocode" % "junit-interface" % "0.11" % "test"
 val asmDep = "org.scala-lang.modules" % "scala-asm" % versionProps("scala-asm.version")
 val jlineDep = "jline" % "jline" % versionProps("jline.version")
 val antDep = "org.apache.ant" % "ant" % "1.9.4"
@@ -576,7 +576,7 @@ lazy val junit = project.in(file("test") / "junit")
   .settings(disablePublishing: _*)
   .settings(
     fork in Test := true,
-    libraryDependencies ++= Seq(junitDep, junitIntefaceDep),
+    libraryDependencies ++= Seq(junitDep, junitInterfaceDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
   )
