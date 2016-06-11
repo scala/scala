@@ -1,0 +1,4 @@
+no-string-plus-any-1.scala:7: error: value + is not a member of String
+  def a(s1: String, s2: String) = s1 + s2
+                                     ^
+one error found
