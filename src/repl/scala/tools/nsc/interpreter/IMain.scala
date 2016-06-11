@@ -909,7 +909,28 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     private[interpreter] lazy val ObjectSourceCode: Wrapper =
       if (isClassBased) new ClassBasedWrapper else new ObjectBasedWrapper
 
-    private object ResultObjectSourceCode extends IMain.CodeAssembler[MemberHandler] {
+    private lazy val ResultObjectSourceCode: ResultObjectSourceCode =
+      if (isClassBased) ClassBasedResultObjectSourceCode else ObjectBasedResultObjectSourceCode
+
+    private object ObjectBasedResultObjectSourceCode extends ResultObjectSourceCode {
+      def prewrap = importsPreamble
+      def postwrap = s"""
+      |  %s
+      |  lazy val %s: _root_.java.lang.String = %s {
+      |    %s
+      |  }
+      """.stripMargin.format(
+        importsTrailer, lineRep.printName, executionWrapper,
+        lineRep.evalPath + accessPath + "." + lineRep.printName
+      )
+    }
+
+    private object ClassBasedResultObjectSourceCode extends ResultObjectSourceCode {
+      def prewrap = ""
+      def postwrap = ""
+    }
+
+    private abstract class ResultObjectSourceCode extends IMain.CodeAssembler[MemberHandler] {
       /** We only want to generate this code when the result
        *  is a value which can be referred to as-is.
        */
@@ -917,6 +938,13 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
         case NoSymbol => ""
         case sym      => "lazy val %s = %s".format(lineRep.resultName, originalPath(sym))
       }
+
+      /** Like preamble for an import wrapper. */
+      def prewrap: String
+
+      /** Like postamble for an import wrapper. */
+      def postwrap: String
+
       // first line evaluates object to make sure constructor is run
       // initial "" so later code can uniformly be: + etc
       val preamble = """
@@ -927,7 +955,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       |    %s
       |    (""
       """.stripMargin.format(
-        lineRep.evalName, evalResult, importsPreamble, lineRep.printName,
+        lineRep.evalName, evalResult, prewrap, lineRep.printName,
         executionWrapper, fullAccessPath
       )
 
@@ -935,14 +963,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       |    )
       |  }
       |  %s
-      |  lazy val %s: _root_.java.lang.String = %s {
-      |    %s
-      |  }
       |}
-      """.stripMargin.format(
-        importsTrailer, lineRep.printName, executionWrapper,
-        lineRep.evalPath + accessPath + "." + lineRep.printName
-      )
+      """.stripMargin.format(postwrap)
 
       val generate = (m: MemberHandler) => m resultExtractionCode Request.this
     }

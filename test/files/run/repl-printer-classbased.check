@@ -36,6 +36,6 @@ showReplPrinter: [A](implicit z: Show[A])scala.tools.nsc.interpreter.ReplPrinter
 scala> 
 
 scala> 23
-res1: Int = 23!
+res1: Int = 23
 
 scala> :quit
