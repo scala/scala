@@ -437,7 +437,7 @@ object Range {
   def count(start: Int, end: Int, step: Int): Int =
     count(start, end, step, isInclusive = false)
 
-  class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
+  final class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
 //    override def par = new ParRange(this)
     override def isInclusive = true
     override protected def copy(start: Int, end: Int, step: Int): Range = new Inclusive(start, end, step)
