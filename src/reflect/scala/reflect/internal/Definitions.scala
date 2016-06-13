@@ -1543,7 +1543,9 @@ trait Definitions extends api.StandardDefinitions {
       lazy val materializeTypeTag     = ReflectApiPackage.map(sym => getMemberMethod(sym, nme.materializeTypeTag))
 
       lazy val experimentalModule         = getMemberModule(languageFeatureModule, nme.experimental)
+      lazy val futureModule               = getMemberModule(languageFeatureModule, nme.future)
       lazy val MacrosFeature              = getLanguageFeature("macros", experimentalModule)
+      lazy val NoStringPlusFeature        = getLanguageFeature("noStringPlus", futureModule)
       lazy val DynamicsFeature            = getLanguageFeature("dynamics")
       lazy val PostfixOpsFeature          = getLanguageFeature("postfixOps")
       lazy val ReflectiveCallsFeature     = getLanguageFeature("reflectiveCalls")

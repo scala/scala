@@ -1,0 +1,6 @@
+no-string-plus-2.scala:6: error: type mismatch;
+ found   : Boolean(true)
+ required: String
+  val b = "abc" + true
+                  ^
+one error found
