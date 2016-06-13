@@ -71,6 +71,7 @@ trait ScalaSettings extends AbsScalaSettings
     val higherKinds         = Choice("higherKinds",         "Allow higher-kinded types")
     val existentials        = Choice("existentials",        "Existential types (besides wildcard types) can be written and inferred")
     val macros              = Choice("experimental.macros", "Allow macro definition (besides implementation and application)")
+    val noStringPlus        = Choice("future.noStringPlus", "Disables String.+(Any)")
   }
   val language      = {
     val description = "Enable or disable language features"

@@ -698,6 +698,7 @@ trait StdNames {
     val foreach: NameType              = "foreach"
     val freshTermName: NameType        = "freshTermName"
     val freshTypeName: NameType        = "freshTypeName"
+    val future: NameType               = "future"
     val get: NameType                  = "get"
     val parameterTypes: NameType       = "parameterTypes"
     val hashCode_ : NameType           = "hashCode"

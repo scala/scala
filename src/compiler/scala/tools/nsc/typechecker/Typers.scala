@@ -726,13 +726,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    /** Check whether feature given by `featureTrait` is enabled.
+    /** Check whether feature identified by `featureTrait` is enabled.
      *  If it is not, issue an error or a warning depending on whether the feature is required.
      *  @param  construct  A string expression that is substituted for "#" in the feature description string
      *  @param  immediate  When set, feature check is run immediately, otherwise it is run
      *                     at the end of the typechecking run for the enclosing unit. This
      *                     is done to avoid potential cyclic reference errors by implicits
      *                     that are forced too early.
+     *  @param  isAnOptInFeature  Indicates if the feature is opt-in or not
      *  @return if feature check is run immediately: true if feature is enabled, false otherwise
      *          if feature check is delayed or suppressed because we are past typer: true
      */
@@ -745,13 +746,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         def action(): Boolean = {
           def hasImport = inferImplicitByType(featureTrait.tpe, context).isSuccess
           def hasOption = settings.language contains featureName
-          val OK = hasImport || hasOption
-          if (!OK) {
+          val featureIsEnabled = hasImport || hasOption
+          if (!featureIsEnabled) {
             val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
               featureTrait getAnnotation LanguageFeatureAnnot
             context.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
           }
-          OK
+          featureIsEnabled
         }
         if (immediate) {
           action()
