@@ -319,7 +319,6 @@ TODO:
       <prepareCross name="scala-parser-combinators" />
       <prepareCross name="scala-swing"/>
       <prepareCross name="partest"/>
-      <prepareCross name="scalacheck"/>
 
       <artifact:dependencies pathId="asm.classpath" filesetId="asm.fileset">
         <dependency groupId="org.scala-lang.modules" artifactId="scala-asm" version="${scala-asm.version}"/>
@@ -338,11 +337,6 @@ TODO:
         <dependency groupId="org.scala-lang.modules" artifactId="scala-partest${partest.cross}" version="${partest.version.number}" />
       </artifact:dependencies>
       <copy-deps project="partest"/>
-
-      <artifact:dependencies pathId="scalacheck.classpath" filesetId="scalacheck.fileset" versionsId="scalacheck.versions">
-        <artifact:remoteRepository refid="extra-repo"/>
-        <dependency groupId="org.scalacheck"         artifactId="scalacheck${scalacheck.cross}"    version="${scalacheck.version.number}" />
-      </artifact:dependencies>
 
       <artifact:dependencies pathId="repl.deps.classpath" filesetId="repl.fileset" versionsId="repl.deps.versions">
         <dependency groupId="jline" artifactId="jline" version="${jline.version}"/>
@@ -567,7 +561,6 @@ TODO:
       <echo message="scala-swing.version.number                 = ${scala-swing.version.number}"/>
       <echo message="jline.version                              = ${jline.version}"/>
       <echo message="partest.version.number                     = ${partest.version.number}"/>
-      <echo message="scalacheck.version.number                  = ${scalacheck.version.number}"/>
 
       <propertyfile file="versions.properties">
         <entry key="starr.version"                              value="${starr.version}"/>
@@ -577,7 +570,6 @@ TODO:
         <entry key="scala-swing.version.number"                 value="${scala-swing.version.number}"/>
         <entry key="jline.version"                              value="${jline.version}"/>
         <entry key="partest.version.number"                     value="${partest.version.number}"/>
-        <entry key="scalacheck.version.number"                  value="${scalacheck.version.number}"/>
       </propertyfile>
     </then></if>
 
@@ -922,7 +914,7 @@ TODO:
            (but not scala-library, so we filter that one out...)
            so we provide them: scala-[library/reflect/compiler], scalap built here,
            scala-xml, scala-parser-combinators via external-modules-nocore,
-           scalacheck as part of `partest.classpath` -->
+           as part of `partest.classpath` -->
       <restrict>
         <path refid="partest.classpath"/>
         <rsel:not><rsel:or>
@@ -932,17 +924,6 @@ TODO:
       <pathelement location="${scala-xml}"/>
       <pathelement location="${scala-parser-combinators}"/>
       <!-- <pathelement location="${scala-swing}"/> -->
-
-      <restrict>
-        <path refid="scalacheck.classpath"/>
-        <rsel:not><rsel:or>
-          <rsel:name name="scala-library*.jar"/>
-          <rsel:name name="scala-compiler*.jar"/>
-          <rsel:name name="scala-reflect*.jar"/>
-          <rsel:name name="scala-parser-combinators*.jar"/>
-          <rsel:name name="scala-xml*.jar"/>
-        </rsel:or></rsel:not>
-      </restrict>
 
       <!-- partest classes specific to the core compiler build -->
       <pathelement location="${partest-extras.jar}"/>
