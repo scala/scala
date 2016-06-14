@@ -27,12 +27,12 @@ case class ScalaTool(mainClass: String,
       } else classpath.mkString(":").replace('\\', '/').replaceAll(varRegex, """\${$1}""")
 
     val variables = Map(
-      ("@@"           -> "@"), // for backwards compatibility
-      ("@class@"      -> mainClass),
-      ("@properties@" -> (properties map { case (k, v) => s"""-D$k="$v""""} mkString " ")),
-      ("@javaflags@"  -> javaOpts),
-      ("@toolflags@"  -> toolFlags),
-      ("@classpath@"  -> platformClasspath)
+      "@@"           -> "@", // for backwards compatibility
+      "@class@"      -> mainClass,
+      "@properties@" -> (properties map { case (k, v) => s"""-D$k="$v""""} mkString " "),
+      "@javaflags@"  -> javaOpts,
+      "@toolflags@"  -> toolFlags,
+      "@classpath@"  -> platformClasspath
     )
 
     val (from, to) = variables.unzip
