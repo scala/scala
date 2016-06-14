@@ -214,6 +214,19 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
   Quiet.silenceIvyUpdateInfoLogging
 )
 
+// Two modifications are needed from the stock SBT configuration in order to exclude STARR
+// from the classloader that performs test discovery.
+//   - We make `isManagedVersion` hold by providing an explicit Scala version, in order to go into the desired
+//     branch in `createTestLoader`
+//   - We remove STARR from the classloader of the scala instance
+def fixTestLoader = testLoader := {
+  val s = scalaInstance.value
+  val scalaInstance1 =
+    new ScalaInstance(s.version, appConfiguration.value.provider.scalaProvider.loader(), s.libraryJar, s.compilerJar, s.extraJars, Some(s.actualVersion))
+  assert(scalaInstance1.isManagedVersion)
+  TestFramework.createTestLoader(Attributed.data(fullClasspath.value), scalaInstance1, IO.createUniqueDirectory(taskTemporaryDirectory.value))
+}
+
 /** Extra post-processing for the published POM files. These are needed to create POMs that
   * are equivalent to the ones from the ANT build. In the long term this should be removed and
   * POMs, scaladocs, OSGi manifests, etc. should all use the same metadata. */
@@ -550,7 +563,8 @@ lazy val junit = project.in(file("test") / "junit")
     fork in Test := true,
     libraryDependencies ++= Seq(junitDep, junitIntefaceDep, jolDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
-    unmanagedSourceDirectories in Test := List(baseDirectory.value)
+    unmanagedSourceDirectories in Test := List(baseDirectory.value),
+    inConfig(Test)(fixTestLoader)
   )
 
 lazy val partestJavaAgent = Project("partest-javaagent", file(".") / "src" / "partest-javaagent")
@@ -602,7 +616,8 @@ lazy val test = project
           def isModule = true
           def annotationName = "partest"
         }, true, Array())
-     )
+     ),
+    inConfig(IntegrationTest)(fixTestLoader)
   )
 
 lazy val manual = configureAsSubproject(project)
