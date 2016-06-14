@@ -70,7 +70,6 @@ val jolDep = "org.openjdk.jol" % "jol-core" % "0.5"
 val asmDep = "org.scala-lang.modules" % "scala-asm" % versionProps("scala-asm.version")
 val jlineDep = "jline" % "jline" % versionProps("jline.version")
 val antDep = "org.apache.ant" % "ant" % "1.9.4"
-val scalacheckDep = withoutScalaLang("org.scalacheck" %% "scalacheck" % versionNumber("scalacheck") % "it")
 
 /** Publish to ./dists/maven-sbt, similar to the ANT build which publishes to ./dists/maven. This
   * can be used to compare the output of the sbt and ANT builds during the transition period. Any
@@ -595,7 +594,7 @@ lazy val test = project
   .settings(disablePublishing: _*)
   .settings(Defaults.itSettings: _*)
   .settings(
-    libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep, scalacheckDep),
+    libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep),
     unmanagedBase in IntegrationTest := baseDirectory.value / "files" / "lib",
     unmanagedJars in IntegrationTest <+= (unmanagedBase) (j => Attributed.blank(j)) map(identity),
     // no main sources
