@@ -84,6 +84,14 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     else if (in.nonEmpty) new Queue(Nil, in.reverse.tail)
     else throw new NoSuchElementException("tail on empty queue")
 
+  /* This is made to avoid inefficient implementation of iterator. */
+  override def forall(p: A => Boolean): Boolean =
+    in.forall(p) && out.forall(p)
+
+  /* This is made to avoid inefficient implementation of iterator. */
+  override def exists(p: A => Boolean): Boolean =
+    in.exists(p) || out.exists(p)
+
   /** Returns the length of the queue.
    */
   override def length = in.length + out.length
