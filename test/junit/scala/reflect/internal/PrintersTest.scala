@@ -86,6 +86,10 @@ trait BasePrintTests {
 
   @Test def testConstantLong = assertTreeCode(Literal(Constant(42l)))("42L")
 
+  @Test def testConstantStringWithTripleQuotes = assertTreeCode(
+    tree = Literal(Constant("hello\n\"\"\"world")))(
+    code = "\"\"\"hello\n\"\"\" + \"\\\"\\\"\\\"\" + \"\"\"world\"\"\"")
+
   @Test def testOpExpr = assertPrintedCode("(5).+(4)", checkTypedTree = false)
 
   @Test def testName1 = assertPrintedCode("class test")

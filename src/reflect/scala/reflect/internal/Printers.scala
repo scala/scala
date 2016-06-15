@@ -1055,7 +1055,16 @@ trait Printers extends api.Printers { self: SymbolTable =>
               val splitValue = x.stringValue.split(s"$LF").toList
               val multilineStringValue = if (x.stringValue.endsWith(s"$LF")) splitValue :+ "" else splitValue
               val trQuotes = "\"\"\""
-              print(trQuotes); printSeq(multilineStringValue) { print(_) } { print(LF) }; print(trQuotes)
+
+              def escapeSegment(value: String) {
+                printSeq(value.split(trQuotes, -1).toList) { print(_) } {
+                  print(trQuotes)
+                  print(" + \"\\\"\\\"\\\"\" + ")
+                  print(trQuotes)
+                }
+              }
+
+              print(trQuotes); printSeq(multilineStringValue)(escapeSegment) { print(LF) }; print(trQuotes)
             case _ =>
               // processing Float constants
               val printValue = x.escapedStringValue + (if (x.value.isInstanceOf[Float]) "F" else "")
