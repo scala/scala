@@ -1108,7 +1108,11 @@ trait Definitions extends api.StandardDefinitions {
     lazy val Object_synchronized = newPolyMethod(1, ObjectClass, nme.synchronized_, FINAL)(tps =>
       (Some(List(tps.head.typeConstructor)), tps.head.typeConstructor)
     )
-    lazy val String_+ = enterNewMethod(StringClass, nme.raw.PLUS, AnyTpe :: Nil, StringTpe, FINAL)
+    lazy val String_+ = {
+      // YnoStringPlus checks (settings.language.isChoiceSetByUser(settings.languageFeatures.noStringPlus))
+      val opname = if (settings.YnoStringPlus) nme.concat else nme.raw.PLUS
+      enterNewMethod(StringClass, opname, AnyTpe :: Nil, StringTpe, FINAL)
+    }
 
     def Object_getClass  = getMemberMethod(ObjectClass, nme.getClass_)
     def Object_clone     = getMemberMethod(ObjectClass, nme.clone_)

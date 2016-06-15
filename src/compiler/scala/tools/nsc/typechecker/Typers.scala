@@ -737,7 +737,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  @return if feature check is run immediately: true if feature is enabled, false otherwise
      *          if feature check is delayed or suppressed because we are past typer: true
      */
-    def checkFeature(pos: Position, featureTrait: Symbol, construct: => String = "", immediate: Boolean = false): Boolean =
+    def checkFeature(pos: Position, featureTrait: Symbol, construct: => String = "", immediate: Boolean = false, warning: Boolean = true): Boolean =
       if (isPastTyper) true
       else {
         val nestedOwners =
@@ -746,8 +746,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         def action(): Boolean = {
           def hasImport = inferImplicitByType(featureTrait.tpe, context).isSuccess
           def hasOption = settings.language contains featureName
-          val featureIsEnabled = hasImport || hasOption
-          if (!featureIsEnabled) {
+          val featureIsEnabled = hasOption || hasImport
+          if (!featureIsEnabled && warning) {
             val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
               featureTrait getAnnotation LanguageFeatureAnnot
             context.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
@@ -4821,6 +4821,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
             if ((qual1 ne qual) && !qual1.isErrorTyped)
               return typed(treeCopy.Select(tree, qual1, name), mode, pt)
+          }
+          // Before failing, see if they're building strings. We'll give them String_+ unless they've opted out.
+          if (qual.symbol != null) // Why?
+          if (name == nme.PLUS && qual.symbol.typeOfThis =:= definitions.StringTpe) {
+            if (!checkFeature(tree.pos, NoStringPlusFeature, immediate = true, warning = false))
+              return typed(treeCopy.Select(tree, qual, nme.concat), mode, pt)
           }
           NoSymbol
         }
