@@ -204,6 +204,12 @@ trait ScalaSettings extends AbsScalaSettings
   val YdisableFlatCpCaching  = BooleanSetting    ("-YdisableFlatCpCaching", "Do not cache flat classpath representation of classpath elements from jars across compiler instances.")
   val YpartialUnification = BooleanSetting ("-Ypartial-unification", "Enable partial unification in type constructor inference")
 
+  // a dependent setting to drill through the reflect layer, not available directly to user
+  val YnoStringPlus   = (new BooleanSetting("-Yno-string-plus", "Compile without synthetic String.+(Any) method") {
+    override def value: Boolean = language.isChoiceSetByUser(languageFeatures.noStringPlus)
+    //override def value: Boolean = language contains languageFeatures.noStringPlus
+  }).internalOnly
+
   val exposeEmptyPackage = BooleanSetting ("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
   val Ydelambdafy        = ChoiceSetting  ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "method")
 

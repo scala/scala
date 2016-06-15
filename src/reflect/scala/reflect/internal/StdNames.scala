@@ -882,6 +882,9 @@ trait StdNames {
 
     def newLazyValSlowComputeName(lzyValName: Name) = (lzyValName stripSuffix MODULE_VAR_SUFFIX append LAZY_SLOW_SUFFIX).toTermName
 
+    // string concat
+    val concat: NameType = "$concat"
+
     // ASCII names for operators
     val ADD       = encode("+")
     val AND       = encode("&")

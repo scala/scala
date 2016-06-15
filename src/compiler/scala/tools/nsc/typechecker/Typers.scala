@@ -728,8 +728,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  @return if feature check is run immediately: true if feature is enabled, false otherwise
      *          if feature check is delayed or suppressed because we are past typer: true if the feature is opt-in, false otherwise
      */
-    def checkFeature(pos: Position, featureTrait: Symbol, construct: => String = "", immediate: Boolean = false, isAnOptInFeature: Boolean = true): Boolean =
-      if (isPastTyper) isAnOptInFeature
+    def checkFeature(pos: Position, featureTrait: Symbol, construct: => String = "", immediate: Boolean = false, warning: Boolean = true): Boolean =
+      if (isPastTyper) true
       else {
         val nestedOwners =
           featureTrait.owner.ownerChain.takeWhile(_ != languageFeatureModule.moduleClass).reverse
@@ -737,8 +737,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         def action(): Boolean = {
           def hasImport = inferImplicitByType(featureTrait.tpe, context).isSuccess
           def hasOption = settings.language contains featureName
-          val featureIsEnabled = hasImport || hasOption
-          if (featureIsEnabled && isAnOptInFeature) {
+          val featureIsEnabled = hasOption || hasImport
+          if (!featureIsEnabled && warning) {
             val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
               featureTrait getAnnotation LanguageFeatureAnnot
             context.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
@@ -749,7 +749,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           action()
         } else {
           unit.toCheck += action
-          isAnOptInFeature
+          true
         }
       }
 
@@ -4703,13 +4703,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           dyna.wrapErrors(t, (_.typed1(t, mode, pt)))
         }
 
-        val sym0 = tree.symbol orElse member(qual, name)
-        val sym1 =
-          if (sym0 == String_+ &&
-              checkFeature(tree.pos, NoStringPlusFeature, immediate = true, isAnOptInFeature = false))
-            NoSymbol
-          else sym0
-        val sym = sym1 orElse {
+        val sym = tree.symbol orElse member(qual, name) orElse {
           // symbol not found? --> try to convert implicitly to a type that does have the required
           // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
           // xml member to StringContext, which in turn has an unapply[Seq] method)
@@ -4717,6 +4711,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
             if ((qual1 ne qual) && !qual1.isErrorTyped)
               return typed(treeCopy.Select(tree, qual1, name), mode, pt)
+          }
+          // Before failing, see if they're building strings. We'll give them String_+ unless they've opted out.
+          if (qual.symbol != null) // Why?
+          if (name == nme.PLUS && qual.symbol.typeOfThis =:= definitions.StringTpe) {
+            if (!checkFeature(tree.pos, NoStringPlusFeature, immediate = true, warning = false))
+              return typed(treeCopy.Select(tree, qual, nme.concat), mode, pt)
           }
           NoSymbol
         }
