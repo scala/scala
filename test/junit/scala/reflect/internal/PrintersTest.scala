@@ -87,7 +87,11 @@ class BasePrintTest {
 
   @Test def testConstantFormfeed = assertTreeCode(Literal(Constant("hello\fworld")))(s"${sq}hello\\fworld${sq}")
 
-  @Test def testConstantControl = assertTreeCode(Literal(Constant("hello\u0003world")))(s"${sq}hello\\03world${sq}")
+  @Test def testConstantControl = assertTreeCode(Literal(Constant("hello\u0003world")))(s"${sq}hello\\u0003world${sq}")
+
+  @Test def testConstantFormfeedChar = assertTreeCode(Literal(Constant('\f')))("'\\f'")
+
+  @Test def testConstantControlChar = assertTreeCode(Literal(Constant(3.toChar)))("'\\u0003'")
 
   @Test def testConstantEmbeddedTriple = assertTreeCode(Literal(Constant(s"${tq}hello${tq}\nworld")))(s"${tq}${teq}hello${teq}\nworld${tq}")
 
