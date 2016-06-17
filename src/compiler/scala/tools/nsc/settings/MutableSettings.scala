@@ -768,6 +768,9 @@ class MutableSettings(val errorFn: String => Unit)
 
     def contains(choice: domain.Value): Boolean = value contains choice
 
+    // avoid overloading
+    def containsChoice(choice: domain.Value): Boolean = contains(choice)
+
     def isChoiceSetByUser(choice: domain.Value): Boolean = yeas(choice) || nays(choice)
 
     override def isHelping: Boolean = sawHelp

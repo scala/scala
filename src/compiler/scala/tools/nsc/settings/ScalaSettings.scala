@@ -72,6 +72,7 @@ trait ScalaSettings extends AbsScalaSettings
     val existentials        = Choice("existentials",        "Existential types (besides wildcard types) can be written and inferred")
     val macros              = Choice("experimental.macros", "Allow macro definition (besides implementation and application)")
     val noStringPlus        = Choice("future.noStringPlus", "Disables String.+(Any)")
+    val syntax              = Choice("future.syntax",       "No octal literals")
   }
   val language      = {
     val description = "Enable or disable language features"
