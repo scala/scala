@@ -37,7 +37,7 @@ object Test extends InteractiveTest {
     prepre + docComment(nTags) + prepost + post
   }
 
-  override lazy val compiler = {
+  override lazy val compiler: Global { def getComment(sym: Symbol, source: SourceFile, fragments: List[(Symbol,SourceFile)]): Option[Comment] } = {
     prepareSettings(settings)
     new Global(settings, compilerReporter) with MemberLookupBase with CommentFactoryBase with doc.ScaladocGlobalTrait {
       outer =>
