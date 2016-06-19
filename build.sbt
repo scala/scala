@@ -70,7 +70,6 @@ val jolDep = "org.openjdk.jol" % "jol-core" % "0.5"
 val asmDep = "org.scala-lang.modules" % "scala-asm" % versionProps("scala-asm.version")
 val jlineDep = "jline" % "jline" % versionProps("jline.version")
 val antDep = "org.apache.ant" % "ant" % "1.9.4"
-val scalacheckDep = withoutScalaLang("org.scalacheck" %% "scalacheck" % versionNumber("scalacheck") % "it")
 
 /** Publish to ./dists/maven-sbt, similar to the ANT build which publishes to ./dists/maven. This
   * can be used to compare the output of the sbt and ANT builds during the transition period. Any
@@ -213,6 +212,19 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
   Quiet.silenceScalaBinaryVersionWarning,
   Quiet.silenceIvyUpdateInfoLogging
 )
+
+// Two modifications are needed from the stock SBT configuration in order to exclude STARR
+// from the classloader that performs test discovery.
+//   - We make `isManagedVersion` hold by providing an explicit Scala version, in order to go into the desired
+//     branch in `createTestLoader`
+//   - We remove STARR from the classloader of the scala instance
+def fixTestLoader = testLoader := {
+  val s = scalaInstance.value
+  val scalaInstance1 =
+    new ScalaInstance(s.version, appConfiguration.value.provider.scalaProvider.loader(), s.libraryJar, s.compilerJar, s.extraJars, Some(s.actualVersion))
+  assert(scalaInstance1.isManagedVersion)
+  TestFramework.createTestLoader(Attributed.data(fullClasspath.value), scalaInstance1, IO.createUniqueDirectory(taskTemporaryDirectory.value))
+}
 
 /** Extra post-processing for the published POM files. These are needed to create POMs that
   * are equivalent to the ones from the ANT build. In the long term this should be removed and
@@ -550,7 +562,8 @@ lazy val junit = project.in(file("test") / "junit")
     fork in Test := true,
     libraryDependencies ++= Seq(junitDep, junitIntefaceDep, jolDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
-    unmanagedSourceDirectories in Test := List(baseDirectory.value)
+    unmanagedSourceDirectories in Test := List(baseDirectory.value),
+    inConfig(Test)(fixTestLoader)
   )
 
 lazy val partestJavaAgent = Project("partest-javaagent", file(".") / "src" / "partest-javaagent")
@@ -581,7 +594,7 @@ lazy val test = project
   .settings(disablePublishing: _*)
   .settings(Defaults.itSettings: _*)
   .settings(
-    libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep, scalacheckDep),
+    libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep),
     unmanagedBase in IntegrationTest := baseDirectory.value / "files" / "lib",
     unmanagedJars in IntegrationTest <+= (unmanagedBase) (j => Attributed.blank(j)) map(identity),
     // no main sources
@@ -602,7 +615,8 @@ lazy val test = project
           def isModule = true
           def annotationName = "partest"
         }, true, Array())
-     )
+     ),
+    inConfig(IntegrationTest)(fixTestLoader)
   )
 
 lazy val manual = configureAsSubproject(project)
