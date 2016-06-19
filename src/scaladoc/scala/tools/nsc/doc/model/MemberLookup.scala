@@ -44,8 +44,22 @@ trait MemberLookup extends base.MemberLookupBase {
         /* Get package object which has associatedFile ne null */
         sym.info.member(newTermName("package"))
       else sym
-    Option(sym1.associatedFile) flatMap (_.underlyingSource) flatMap { src =>
-      val path = src.canonicalPath
+    def classpathEntryFor(s: Symbol): Option[String] = {
+      Option(s.associatedFile).flatMap(_.underlyingSource).map { src =>
+        val path = src.canonicalPath
+        if(path.endsWith(".class")) { // Individual class file -> Classpath entry is root dir
+          var nesting = s.ownerChain.count(_.hasPackageFlag)
+          if(nesting > 0) {
+            val p = 0.until(nesting).foldLeft(src) {
+              case (null, _) => null
+              case (f, _) => f.container
+            }
+            if(p eq null) path else p.canonicalPath
+          } else path
+        } else path // JAR file (and fallback option)
+      }
+    }
+    classpathEntryFor(sym1) flatMap { path =>
       settings.extUrlMapping get path map { url =>
         LinkToExternal(name, url + "#" + name)
       }

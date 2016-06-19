@@ -16,7 +16,7 @@ case $prDryRun in
     ;;
   *)
     echo ">>> Getting Scala version number."
-    $SBT_CMD "setupPublishCore $prRepoUrl" generateBuildCharacterPropertiesFile
+    $SBT_CMD --warn "setupPublishCore $prRepoUrl" generateBuildCharacterPropertiesFile
     parseScalaProperties buildcharacter.properties # produce maven_version_number
 
     echo ">>> Checking availability of Scala ${maven_version_number} in $prRepoUrl."
@@ -27,7 +27,7 @@ case $prDryRun in
     if $libraryAvailable && $reflectAvailable && $compilerAvailable; then
       echo "Scala core already built!"
     else
-      $SBT_CMD "setupPublishCore $prRepoUrl" $antBuildArgs publish
+      $SBT_CMD --warn "setupPublishCore $prRepoUrl" publish
     fi
 
     mv buildcharacter.properties jenkins.properties # parsed by the jenkins job
