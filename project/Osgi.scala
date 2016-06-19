@@ -28,8 +28,8 @@ object Osgi {
         "Bundle-Name" -> bundleName.value,
         "Bundle-SymbolicName" -> bundleSymbolicName.value,
         "ver" -> v,
-        "Export-Package" -> ("*;version=${ver}"),
-        "Import-Package" -> ("scala.*;version=\"${range;[==,=+);${ver}}\",*"),
+        "Export-Package" -> "*;version=${ver};-split-package:=merge-first",
+        "Import-Package" -> "scala.*;version=\"${range;[==,=+);${ver}}\",*",
         "Bundle-Version" -> v,
         "Bundle-RequiredExecutionEnvironment" -> "JavaSE-1.8",
         "-eclipse" -> "false"
