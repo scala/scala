@@ -16,7 +16,6 @@ trait Prop {
 
   import Prop.{Result, Proof, True, False, Exception, Undecided,
     provedToTrue, secure, mergeRes}
-  import Test.cmdLineParser.{Success, NoSuccess}
   import Gen.Parameters
 
   def apply(prms: Parameters): Result
@@ -85,13 +84,12 @@ trait Prop {
    *  avoid System.exit calls.  Returns exit code.
    */
   def mainRunner(args: Array[String]): Int = {
-    Test.cmdLineParser.parseParams(args) match {
-      case Success(params, _) =>
+    Test.parseParams(args) match {
+      case Some(params) =>
         if (Test.check(params, this).passed) 0
         else 1
-      case e: NoSuccess =>
-        println("Incorrect options:"+"\n"+e+"\n")
-        Test.cmdLineParser.printHelp
+      case None =>
+        println("Incorrect options")
         -1
     }
   }

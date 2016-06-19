@@ -13,7 +13,7 @@ import Prop.Arg
 
 object Test {
 
-  import util.{FreqMap, CmdLineParser, ConsoleReporter}
+  import util.{FreqMap, ConsoleReporter}
 
   /** Test parameters used by the [[Test.check]] method. Default
    *  parameters are defined by [[Parameters.Default]]. */
@@ -232,56 +232,7 @@ object Test {
   private def secure[T](x: => T): Either[T,Throwable] =
     try { Left(x) } catch { case e: Throwable => Right(e) }
 
-  private[scalacheck] lazy val cmdLineParser = new CmdLineParser {
-    object OptMinSuccess extends IntOpt {
-      val default = Parameters.default.minSuccessfulTests
-      val names = Set("minSuccessfulTests", "s")
-      val help = "Number of tests that must succeed in order to pass a property"
-    }
-    object OptMaxDiscardRatio extends FloatOpt {
-      val default = Parameters.default.maxDiscardRatio
-      val names = Set("maxDiscardRatio", "r")
-      val help =
-        "The maximum ratio between discarded and succeeded tests " +
-        "allowed before ScalaCheck stops testing a property. At " +
-        "least minSuccessfulTests will always be tested, though."
-    }
-    object OptMinSize extends IntOpt {
-      val default = Parameters.default.minSize
-      val names = Set("minSize", "n")
-      val help = "Minimum data generation size"
-    }
-    object OptMaxSize extends IntOpt {
-      val default = Parameters.default.maxSize
-      val names = Set("maxSize", "x")
-      val help = "Maximum data generation size"
-    }
-    object OptWorkers extends IntOpt {
-      val default = Parameters.default.workers
-      val names = Set("workers", "w")
-      val help = "Number of threads to execute in parallel for testing"
-    }
-    object OptVerbosity extends IntOpt {
-      val default = 1
-      val names = Set("verbosity", "v")
-      val help = "Verbosity level"
-    }
-
-    val opts = Set[Opt[_]](
-      OptMinSuccess, OptMaxDiscardRatio, OptMinSize,
-      OptMaxSize, OptWorkers, OptVerbosity
-    )
-
-    def parseParams(args: Array[String]) = parseArgs(args) {
-      optMap => Parameters.default
-        .withMinSuccessfulTests(optMap(OptMinSuccess): Int)
-        .withMaxDiscardRatio(optMap(OptMaxDiscardRatio): Float)
-        .withMinSize(optMap(OptMinSize): Int)
-        .withMaxSize(optMap(OptMaxSize): Int)
-        .withWorkers(optMap(OptWorkers): Int)
-        .withTestCallback(ConsoleReporter(optMap(OptVerbosity)): TestCallback)
-    }
-  }
+  def parseParams(args: Array[String]): Option[Parameters] = Some(Parameters.default)
 
   /** Tests a property with parameters that are calculated by applying
    *  the provided function to [[Parameters.default]].
@@ -294,7 +245,7 @@ object Test {
    *  }
    *  }}}
    */
-  def check(p: Prop)(f: Parameters => Parameters): Result = 
+  def check(p: Prop)(f: Parameters => Parameters): Result =
     check(f(Parameters.default), p)
 
   /** Tests a property with the given testing parameters, and returns
@@ -313,7 +264,7 @@ object Test {
     val genPrms = new Gen.Parameters.Default { override val rng = params.rng }
 
     def worker(workerIdx: Int): () => Result =
-      if (workers < 2) () => workerFun(workerIdx) 
+      if (workers < 2) () => workerFun(workerIdx)
       else spawn {
         params.customClassLoader.map(Thread.currentThread.setContextClassLoader(_))
         workerFun(workerIdx)

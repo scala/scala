@@ -67,12 +67,11 @@ class ScalaCheckFramework extends Framework {
         }
       }
 
-      import Test.cmdLineParser.{Success, NoSuccess}
-      val prms = Test.cmdLineParser.parseParams(args) match {
-        case Success(params, _) =>
+      val prms = Test.parseParams(args) match {
+        case Some(params) =>
           params.withTestCallback(testCallback).withCustomClassLoader(Some(loader))
         // TODO: Maybe handle this a bit better than throwing exception?
-        case e: NoSuccess => throw new Exception(e.toString)
+        case None => throw new Exception()
       }
 
       fingerprint match {
