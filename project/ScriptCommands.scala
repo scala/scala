@@ -25,6 +25,7 @@ object ScriptCommands {
     Project.extract(state).append(Seq(
       resolvers in Global += "scala-pr" at url,
       scalacOptions in Compile in ThisBuild += "-opt:l:classpath",
+      testOptions in IntegrationTest in LocalProject("test") ++= Seq(Tests.Argument("--show-log"), Tests.Argument("--show-diff")),
       logLevel in ThisBuild := Level.Info,
       logLevel in update in ThisBuild := Level.Warn
     ), state)

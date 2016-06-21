@@ -112,7 +112,7 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
 globalVersionSettings
 baseVersion in Global := "2.12.0"
 baseVersionSuffix in Global := "SNAPSHOT"
-mimaReferenceVersion in Global := Some("2.11.0")
+mimaReferenceVersion in Global := None
 
 lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings ++ Seq[Setting[_]](
   organization := "org.scala-lang",
@@ -567,11 +567,11 @@ lazy val junit = project.in(file("test") / "junit")
 
 lazy val osgiTestFelix = osgiTestProject(
   project.in(file(".") / "target" / "osgiTestFelix"),
-  "org.apache.felix" % "org.apache.felix.framework" % "4.4.0")
+  "org.apache.felix" % "org.apache.felix.framework" % "5.0.1")
 
 lazy val osgiTestEclipse = osgiTestProject(
   project.in(file(".") / "target" / "osgiTestEclipse"),
-  "org.eclipse.osgi" % "org.eclipse.osgi" % "3.7.1")
+  "org.eclipse.tycho" % "org.eclipse.osgi" % "3.10.100.v20150521-1310")
 
 def osgiTestProject(p: Project, framework: ModuleID) = p
   .dependsOn(library, reflect, compiler)
@@ -583,19 +583,18 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
     fork in Test := true,
     parallelExecution in Test := false,
     libraryDependencies ++= {
-      val paxExamVersion = "3.5.0" // Last version which supports Java 6
+      val paxExamVersion = "4.5.0" // Last version which supports Java 6
       Seq(
         junitDep,
         junitInterfaceDep,
-        "org.ops4j.pax.exam" % "pax-exam-container-native" % paxExamVersion
-          exclude("org.osgi", "org.osgi.core"), // Avoid dragging in a dependency which requires Java >6
-        "org.osgi" % "org.osgi.core" % "4.2.0" % "provided", // The framework (Felix / Eclipse) provides the classes
+        "org.ops4j.pax.exam" % "pax-exam-container-native" % paxExamVersion,
         "org.ops4j.pax.exam" % "pax-exam-junit4" % paxExamVersion,
         "org.ops4j.pax.exam" % "pax-exam-link-assembly" % paxExamVersion,
-        "org.ops4j.pax.url" % "pax-url-aether" % "2.2.0",
-        "org.ops4j.pax.swissbox" % "pax-swissbox-tracker" % "1.8.0",
-        "ch.qos.logback" % "logback-core" % "1.1.2",
-        "ch.qos.logback" % "logback-classic" % "1.1.2",
+        "org.ops4j.pax.url" % "pax-url-aether" % "2.4.1",
+        "org.ops4j.pax.swissbox" % "pax-swissbox-tracker" % "1.8.1",
+        "ch.qos.logback" % "logback-core" % "1.1.3",
+        "ch.qos.logback" % "logback-classic" % "1.1.3",
+        "org.slf4j" % "slf4j-api" % "1.7.12",
         framework % "test"
       )
     },
@@ -658,7 +657,7 @@ lazy val test = project
     // test sources are compiled in partest run, not here
     sources in IntegrationTest := Seq.empty,
     fork in IntegrationTest := true,
-    javaOptions in IntegrationTest += "-Xmx1G",
+    javaOptions in IntegrationTest += "-Xmx2G",
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M -XX:MaxPermSize=128M"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.scalac_opts=" + (scalacOptions in Compile).value.mkString(" ")),
