@@ -25,7 +25,9 @@ case $prDryRun in
        "partest res scalap specialized scalacheck" \
        "partest instrumented presentation" \
        "partest --srcpath scaladoc" \
+       osgiTestFelix/clean \
        osgiTestFelix/test \
+       osgiTestEclipse/clean \
        osgiTestEclipse/test \
        library/mima \
        reflect/mima \
