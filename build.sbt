@@ -658,7 +658,7 @@ lazy val test = project
     // test sources are compiled in partest run, not here
     sources in IntegrationTest := Seq.empty,
     fork in IntegrationTest := true,
-    javaOptions in IntegrationTest += "-Xmx1G",
+    javaOptions in IntegrationTest += "-Xmx2G",
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M -XX:MaxPermSize=128M"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.scalac_opts=" + (scalacOptions in Compile).value.mkString(" ")),
