@@ -1,3 +1,6 @@
+scalacOptions ++= Seq("-unchecked", "-feature", /*"-deprecation",*/
+  "-Xlint" /*, "-Xfatal-warnings"*/)
+
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.3.2"
 
 libraryDependencies += "org.pantsbuild" % "jarjar" % "1.6.3"
@@ -15,3 +18,5 @@ buildClasspath := (externalDependencyClasspath in Compile).value.map(_.data).mkS
 buildInfoKeys := Seq[BuildInfoKey](buildClasspath)
 
 buildInfoPackage := "scalabuild"
+
+libraryDependencies += "com.typesafe" %% "mima-reporter" % "0.1.8"

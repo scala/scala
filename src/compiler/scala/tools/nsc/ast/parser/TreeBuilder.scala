@@ -107,7 +107,7 @@ abstract class TreeBuilder {
   def makeCatchFromExpr(catchExpr: Tree): CaseDef = {
     val binder   = freshTermName()
     val pat      = Bind(binder, Typed(Ident(nme.WILDCARD), Ident(tpnme.Throwable)))
-    val catchDef = ValDef(Modifiers(ARTIFACT), freshTermName("catchExpr"), TypeTree(), catchExpr)
+    val catchDef = ValDef(Modifiers(ARTIFACT), freshTermName("catchExpr$"), TypeTree(), catchExpr)
     val catchFn  = Ident(catchDef.name)
     val body     = atPos(catchExpr.pos.makeTransparent)(Block(
       List(catchDef),
