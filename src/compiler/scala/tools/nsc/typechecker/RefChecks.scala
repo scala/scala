@@ -1759,6 +1759,9 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
                            // probably not, until we allow parameterised extractors
             tree
 
+          case Function(vparmas, body) =>
+            transform(body)
+            tree
 
           case _ => tree
         }
