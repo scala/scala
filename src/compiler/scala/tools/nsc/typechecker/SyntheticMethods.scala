@@ -72,7 +72,7 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     val synthesizer = new ClassMethodSynthesis(
       clazz0,
-      newTyper( if (reporter.hasErrors) context makeSilent false else context )
+      newTyper( if (reporter.hasErrors) context.makeSilent(reportAmbiguousErrors = false) else context )
     )
     import synthesizer._
 
