@@ -180,4 +180,67 @@ class SettingsTest {
     assertThrows[IllegalArgumentException](check(expected = "2.11", "-Xsource", "2.11"), _ == "-Xsource requires an argument, the syntax is -Xsource:<version>")
     assertThrows[IllegalArgumentException](check(expected = "2.11", "-Xsource:2.invalid"), _ contains "Bad version (2.invalid)")
   }
+
+  @Test def helpHasDefault(): Unit = {
+    val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
+    object mChoices extends s.MultiChoiceEnumeration {
+      val a = Choice("a", "help a")
+      val b = Choice("b", "help b")
+      val c = Choice("c", "help c")
+    }
+    val m = s.MultiChoiceSetting("-m", "args", "magic sauce", mChoices, Some(List("b")))
+
+    def check(args: String*)(t: s.MultiChoiceSetting[mChoices.type] => Boolean): Boolean = {
+      m.clear()
+      val (ok, rest) = s.processArguments(args.toList, processAll = true)
+      assert(rest.isEmpty)
+      t(m)
+    }
+
+    import mChoices._
+
+    assertTrue(check("-m")(_.value == Set(b)))
+    assertTrue(check("-m") { _ =>
+      assertEquals(
+      """magic sauce
+        |  a  help a
+        |  b  help b
+        |  c  help c
+        |Default: b
+        |""".stripMargin,
+        m.help)
+      true
+    })
+  }
+  @Test def helpHasDefaultAll(): Unit = {
+    val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
+    object mChoices extends s.MultiChoiceEnumeration {
+      val a = Choice("a", "help a")
+      val b = Choice("b", "help b")
+      val c = Choice("c", "help c")
+    }
+    val m = s.MultiChoiceSetting("-m", "args", "magic sauce", mChoices, Some(List("_")))
+
+    def check(args: String*)(t: s.MultiChoiceSetting[mChoices.type] => Boolean): Boolean = {
+      m.clear()
+      val (ok, rest) = s.processArguments(args.toList, processAll = true)
+      assert(rest.isEmpty)
+      t(m)
+    }
+
+    import mChoices._
+
+    assertTrue(check("-m")(_.value == Set(a, b, c)))
+    assertTrue(check("-m") { _ =>
+      assertEquals(
+      """magic sauce
+        |  a  help a
+        |  b  help b
+        |  c  help c
+        |Default: All choices are enabled by default.
+        |""".stripMargin,
+        m.help)
+      true
+    })
+  }
 }
