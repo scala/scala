@@ -60,7 +60,6 @@ val scalaParserCombinatorsDep    = scalaDep("org.scala-lang.modules", "scala-par
 val scalaSwingDep                = scalaDep("org.scala-lang.modules", "scala-swing")
 val scalaXmlDep                  = scalaDep("org.scala-lang.modules", "scala-xml")
 val partestDep                   = scalaDep("org.scala-lang.modules", "scala-partest",              versionProp = "partest")
-val scalacheckDep                = scalaDep("org.scalacheck",         "scalacheck",                 scope = "it")
 
 // Non-Scala dependencies:
 val junitDep          = "junit"                  % "junit"           % "4.11"
@@ -562,6 +561,7 @@ lazy val junit = project.in(file("test") / "junit")
     fork in Test := true,
     libraryDependencies ++= Seq(junitDep, junitInterfaceDep, jolDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
+    testFrameworks -= new TestFramework("org.scalacheck.ScalaCheckFramework"),
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
   )
 
@@ -642,7 +642,7 @@ lazy val test = project
   .settings(disablePublishing: _*)
   .settings(Defaults.itSettings: _*)
   .settings(
-    libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep, scalacheckDep),
+    libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep),
     libraryDependencies ++= {
       // Resolve the JARs for all test/files/lib/*.jar.desired.sha1 files through Ivy
       val baseDir = (baseDirectory in ThisBuild).value
@@ -659,6 +659,7 @@ lazy val test = project
     fork in IntegrationTest := true,
     javaOptions in IntegrationTest += "-Xmx2G",
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
+    testFrameworks -= new TestFramework("org.scalacheck.ScalaCheckFramework"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M -XX:MaxPermSize=128M"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.scalac_opts=" + (scalacOptions in Compile).value.mkString(" ")),
     testOptions in IntegrationTest += Tests.Setup { () =>
