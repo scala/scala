@@ -2,17 +2,18 @@ package scala.tools.nsc
 package backend.jvm
 package analysis
 
+import java.lang.invoke.LambdaMetafactory
+
 import scala.annotation.switch
-import scala.tools.asm.{Handle, Type}
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis.{Frame, BasicInterpreter, Analyzer, Value}
-import GenBCode._
+import scala.tools.asm.tree.analysis._
+import scala.tools.asm.{Handle, Type}
 import scala.tools.nsc.backend.jvm.BTypes._
+import scala.tools.nsc.backend.jvm.GenBCode._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
-import java.lang.invoke.LambdaMetafactory
-import scala.collection.mutable
-import scala.collection.JavaConverters._
 
 /**
  * This component hosts tools and utilities used in the backend that require access to a `BTypes`
@@ -32,7 +33,12 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
    */
   class AsmAnalyzer[V <: Value](methodNode: MethodNode, classInternalName: InternalName, val analyzer: Analyzer[V] = new Analyzer(new BasicInterpreter)) {
     computeMaxLocalsMaxStack(methodNode)
-    analyzer.analyze(classInternalName, methodNode)
+    try {
+      analyzer.analyze(classInternalName, methodNode)
+    } catch {
+      case ae: AnalyzerException =>
+        throw new AnalyzerException(null, "While processing " + classInternalName + "." + methodNode.name, ae)
+    }
     def frameAt(instruction: AbstractInsnNode): Frame[V] = analyzer.frameAt(instruction, methodNode)
   }
 

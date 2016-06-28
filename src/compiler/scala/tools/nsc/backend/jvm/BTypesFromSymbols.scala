@@ -97,11 +97,19 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
    * for the Nothing / Null. If used for example as a parameter type, we use the runtime classes
    * in the classfile method signature.
    */
-  final def classBTypeFromSymbol(classSym: Symbol): ClassBType = {
+  final def classBTypeFromSymbol(sym: Symbol): ClassBType = {
+    // For each java class, the scala compiler creates a class and a module (thus a module class).
+    // If the `sym` is a java module class, we use the java class instead. This ensures that the
+    // ClassBType is created from the main class (instead of the module class).
+    // The two symbols have the same name, so the resulting internalName is the same.
+    // Phase travel (exitingPickler) required for SI-6613 - linkedCoC is only reliable in early phases (nesting)
+    val classSym = if (sym.isJavaDefined && sym.isModuleClass) exitingPickler(sym.linkedClassOfClass) else sym
+
     assert(classSym != NoSymbol, "Cannot create ClassBType from NoSymbol")
     assert(classSym.isClass, s"Cannot create ClassBType from non-class symbol $classSym")
     assertClassNotArrayNotPrimitive(classSym)
     assert(!primitiveTypeToBType.contains(classSym) || isCompilingPrimitive, s"Cannot create ClassBType for primitive class symbol $classSym")
+
     if (classSym == NothingClass) srNothingRef
     else if (classSym == NullClass) srNullRef
     else {
@@ -234,12 +242,13 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     val allParents = classParents ++ classSym.annotations.flatMap(newParentForAnnotation)
 
+    val minimizedParents = if (classSym.isJavaDefined) allParents else erasure.minimizeParents(allParents)
     // We keep the superClass when computing minimizeParents to eliminate more interfaces.
     // Example: T can be eliminated from D
     //   trait T
     //   class C extends T
     //   class D extends C with T
-    val interfaces = erasure.minimizeParents(allParents) match {
+    val interfaces = minimizedParents match {
       case superClass :: ifs if !isInterfaceOrTrait(superClass.typeSymbol) =>
         ifs
       case ifs =>
@@ -508,7 +517,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
    * classfile attribute.
    */
   private def buildInlineInfo(classSym: Symbol, internalName: InternalName): InlineInfo = {
-    def buildFromSymbol = buildInlineInfoFromClassSymbol(classSym, classBTypeFromSymbol(_).internalName, methodBTypeFromSymbol(_).descriptor)
+    def buildFromSymbol = buildInlineInfoFromClassSymbol(classSym)
 
     // phase travel required, see implementation of `compiles`. for nested classes, it checks if the
     // enclosingTopLevelClass is being compiled. after flatten, all classes are considered top-level,
@@ -527,6 +536,74 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
           EmptyInlineInfo.copy(warning = Some(ClassNotFoundWhenBuildingInlineInfoFromSymbol(missingClass)))
       }
     }
+  }
+
+  /**
+   * Build the [[InlineInfo]] for a class symbol.
+   */
+  def buildInlineInfoFromClassSymbol(classSym: Symbol): InlineInfo = {
+    val isEffectivelyFinal = classSym.isEffectivelyFinal
+
+    val sam = {
+      if (classSym.isEffectivelyFinal) None
+      else {
+        // Phase travel necessary. For example, nullary methods (getter of an abstract val) get an
+        // empty parameter list in later phases and would therefore be picked as SAM.
+        val samSym = exitingPickler(definitions.samOf(classSym.tpe))
+        if (samSym == NoSymbol) None
+        else Some(samSym.javaSimpleName.toString + methodBTypeFromSymbol(samSym).descriptor)
+      }
+    }
+
+    var warning = Option.empty[ClassSymbolInfoFailureSI9111]
+
+    // Primitive methods cannot be inlined, so there's no point in building a MethodInlineInfo. Also, some
+    // primitive methods (e.g., `isInstanceOf`) have non-erased types, which confuses [[typeToBType]].
+    val methodInlineInfos = classSym.info.decls.iterator.filter(m => m.isMethod && !scalaPrimitives.isPrimitive(m)).flatMap({
+      case methodSym =>
+        if (completeSilentlyAndCheckErroneous(methodSym)) {
+          // Happens due to SI-9111. Just don't provide any MethodInlineInfo for that method, we don't need fail the compiler.
+          if (!classSym.isJavaDefined) devWarning("SI-9111 should only be possible for Java classes")
+          warning = Some(ClassSymbolInfoFailureSI9111(classSym.fullName))
+          Nil
+        } else {
+          val name      = methodSym.javaSimpleName.toString // same as in genDefDef
+          val signature = name + methodBTypeFromSymbol(methodSym).descriptor
+
+          // In `trait T { object O }`, `oSym.isEffectivelyFinalOrNotOverridden` is true, but the
+          // method is abstract in bytecode, `defDef.rhs.isEmpty`. Abstract methods are excluded
+          // so they are not marked final in the InlineInfo attribute.
+          //
+          // However, due to https://github.com/scala/scala-dev/issues/126, this currently does not
+          // work, the abstract accessor for O will be marked effectivelyFinal.
+          val effectivelyFinal = methodSym.isEffectivelyFinalOrNotOverridden && !methodSym.isDeferred
+
+          val info = MethodInlineInfo(
+            effectivelyFinal  = effectivelyFinal,
+            annotatedInline   = methodSym.hasAnnotation(ScalaInlineClass),
+            annotatedNoInline = methodSym.hasAnnotation(ScalaNoInlineClass))
+
+          if (needsStaticImplMethod(methodSym)) {
+            val staticName = traitImplMethodName(methodSym).toString
+            val selfParam = methodSym.newSyntheticValueParam(methodSym.owner.typeConstructor, nme.SELF)
+            val staticMethodType = methodSym.info match {
+              case mt @ MethodType(params, res) => copyMethodType(mt, selfParam :: params, res)
+            }
+            val staticMethodSignature = staticName + methodBTypeFromMethodType(staticMethodType, isConstructor = false)
+            val staticMethodInfo = MethodInlineInfo(
+              effectivelyFinal  = true,
+              annotatedInline   = info.annotatedInline,
+              annotatedNoInline = info.annotatedNoInline)
+            if (methodSym.isMixinConstructor)
+              List((staticMethodSignature, staticMethodInfo))
+            else
+              List((signature, info), (staticMethodSignature, staticMethodInfo))
+          } else
+            List((signature, info))
+        }
+    }).toMap
+
+    InlineInfo(isEffectivelyFinal, sam, methodInlineInfos, warning)
   }
 
   /**

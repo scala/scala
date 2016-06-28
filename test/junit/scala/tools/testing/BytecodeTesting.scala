@@ -12,6 +12,7 @@ import scala.tools.asm.tree.{AbstractInsnNode, ClassNode, MethodNode}
 import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.backend.jvm.AsmUtils
 import scala.tools.nsc.backend.jvm.AsmUtils._
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.{Global, Settings}
@@ -247,11 +248,19 @@ object BytecodeTesting {
 
   def getAsmMethod(c: ClassNode, name: String): MethodNode = {
     val methods = getAsmMethods(c, name)
+    def fail() = {
+      val allNames = getAsmMethods(c, _ => true).map(_.name)
+      throw new AssertionFailedError(s"Could not find method named $name among ${allNames}")
+    }
     methods match {
       case List(m) => m
-      case ms =>
-        val allNames = getAsmMethods(c, _ => true).map(_.name)
-        throw new AssertionFailedError(s"Could not find method named $name among ${allNames}")
+      case ms @ List(m1, m2) if BytecodeUtils.isInterface(c) =>
+        val (statics, nonStatics) = ms.partition(BytecodeUtils.isStaticMethod)
+        (statics, nonStatics) match {
+          case (List(staticMethod), List(_)) => m1 // prefer the static method of the pair if methods in traits
+          case _ => fail()
+        }
+      case ms => fail()
     }
   }
 

@@ -9,6 +9,7 @@ import scala.collection.JavaConverters._
 import scala.tools.asm.Opcodes
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree.ClassNode
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
 import scala.tools.partest.ASMConverters._
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
@@ -18,8 +19,8 @@ class BytecodeTest extends BytecodeTesting {
   import compiler._
 
   def checkForwarder(classes: Map[String, ClassNode], clsName: Symbol, target: String) = {
-    val List(f) = getMethods(classes(clsName.name), "f")
-    assertSameCode(f, List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, target, "f", "()I", false), Op(IRETURN)))
+    val f = getMethod(classes(clsName.name), "f")
+    assertSameCode(f, List(VarOp(ALOAD, 0), Invoke(INVOKESTATIC, target, "f$", s"(L$target;)I", true), Op(IRETURN)))
   }
 
   @Test
@@ -88,7 +89,7 @@ class BytecodeTest extends BytecodeTesting {
     assertSameSummary(getMethod(c("C18"), "f"), List(BIPUSH, IRETURN))
     checkForwarder(c, 'C19, "T7")
     assertSameCode(getMethod(c("C19"), "T7$$super$f"), List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "C18", "f", "()I", false), Op(IRETURN)))
-    assertInvoke(getMethod(c("C20"), "clone"), "T8", "clone") // mixin forwarder
+    assertInvoke(getMethod(c("C20"), "clone"), "T8", "clone$") // mixin forwarder
   }
 
   @Test
@@ -141,7 +142,7 @@ class BytecodeTest extends BytecodeTesting {
   def invocationReceivers(): Unit = {
     val List(c1, c2, t, u) = compileClasses(invocationReceiversTestCode.definitions("Object"))
     // mixin forwarder in C1
-    assertSameCode(getMethod(c1, "clone"), List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "T", "clone", "()Ljava/lang/Object;", false), Op(ARETURN)))
+    assertSameCode(getMethod(c1, "clone"), List(VarOp(ALOAD, 0), Invoke(INVOKESTATIC, "T", "clone$", "(LT;)Ljava/lang/Object;", true), Op(ARETURN)))
     assertInvoke(getMethod(c1, "f1"), "T", "clone")
     assertInvoke(getMethod(c1, "f2"), "T", "clone")
     assertInvoke(getMethod(c1, "f3"), "C1", "clone")

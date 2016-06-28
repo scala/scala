@@ -190,6 +190,7 @@ abstract class BCodeIdiomatic extends SubComponent {
         JavaStringBuilderClassName,
         INSTANCE_CONSTRUCTOR_NAME,
         "()V",
+        itf = false,
         pos
       )
     }
@@ -373,29 +374,26 @@ abstract class BCodeIdiomatic extends SubComponent {
     final def rem(tk: BType) { emitPrimitive(JCodeMethodN.remOpcodes, tk) } // can-multi-thread
 
     // can-multi-thread
-    final def invokespecial(owner: String, name: String, desc: String, pos: Position) {
-      addInvoke(Opcodes.INVOKESPECIAL, owner, name, desc, false, pos)
+    final def invokespecial(owner: String, name: String, desc: String, itf: Boolean, pos: Position): Unit = {
+      emitInvoke(Opcodes.INVOKESPECIAL, owner, name, desc, itf, pos)
     }
     // can-multi-thread
-    final def invokestatic(owner: String, name: String, desc: String, pos: Position) {
-      addInvoke(Opcodes.INVOKESTATIC, owner, name, desc, false, pos)
+    final def invokestatic(owner: String, name: String, desc: String, itf: Boolean, pos: Position): Unit = {
+      emitInvoke(Opcodes.INVOKESTATIC, owner, name, desc, itf, pos)
     }
     // can-multi-thread
-    final def invokeinterface(owner: String, name: String, desc: String, pos: Position) {
-      addInvoke(Opcodes.INVOKEINTERFACE, owner, name, desc, true, pos)
+    final def invokeinterface(owner: String, name: String, desc: String, pos: Position): Unit = {
+      emitInvoke(Opcodes.INVOKEINTERFACE, owner, name, desc, itf = true, pos)
     }
     // can-multi-thread
-    final def invokevirtual(owner: String, name: String, desc: String, pos: Position) {
-      addInvoke(Opcodes.INVOKEVIRTUAL, owner, name, desc, false, pos)
+    final def invokevirtual(owner: String, name: String, desc: String, pos: Position): Unit = {
+      emitInvoke(Opcodes.INVOKEVIRTUAL, owner, name, desc, itf = false, pos)
     }
 
-    private def addInvoke(opcode: Int, owner: String, name: String, desc: String, itf: Boolean, pos: Position) = {
+    def emitInvoke(opcode: Int, owner: String, name: String, desc: String, itf: Boolean, pos: Position): Unit = {
       val node = new MethodInsnNode(opcode, owner, name, desc, itf)
       jmethod.instructions.add(node)
       if (settings.optInlinerEnabled) callsitePositions(node) = pos
-    }
-    final def invokedynamic(owner: String, name: String, desc: String) {
-      jmethod.visitMethodInsn(Opcodes.INVOKEDYNAMIC, owner, name, desc)
     }
 
     // can-multi-thread

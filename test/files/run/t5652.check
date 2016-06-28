@@ -1,6 +1,7 @@
 public default int T1.f0()
-public default void T1.$init$()
 public static int T1.T1$$g$1()
+public static int T1.f0$(T1)
+public static void T1.$init$(T1)
 public int A1.f1()
 public static final int A1.A1$$g$2()
 public int A2.f2()

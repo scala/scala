@@ -488,7 +488,22 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
         case ValDef(mods, name, tpt, rhs) => () // fields are added in `genPlainClass()`, via `addClassFields()`
 
-        case dd : DefDef => genDefDef(dd)
+        case dd : DefDef =>
+          val sym = dd.symbol
+          if (needsStaticImplMethod(sym)) {
+            val staticDefDef = global.gen.mkStatic(dd, traitImplMethodName(sym), _.cloneSymbol)
+            val forwarderDefDef = {
+              val forwarderBody = Apply(global.gen.mkAttributedRef(staticDefDef.symbol), This(sym.owner).setType(sym.owner.typeConstructor) :: dd.vparamss.head.map(p => global.gen.mkAttributedIdent(p.symbol))).setType(sym.info.resultType)
+              // we don't want to the optimizer to inline the static method into the forwarder. Instead,
+              // the backend has a special case to transitively inline into a callsite of the forwarder
+              // when the forwarder itself is inlined.
+              forwarderBody.updateAttachment(NoInlineCallsiteAttachment)
+              deriveDefDef(dd)(_ => global.atPos(dd.pos)(forwarderBody))
+            }
+            genDefDef(staticDefDef)
+            if (!sym.isMixinConstructor)
+              genDefDef(forwarderDefDef)
+          } else genDefDef(dd)
 
         case Template(_, _, body) => body foreach gen
 

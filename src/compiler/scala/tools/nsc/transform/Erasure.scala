@@ -189,18 +189,23 @@ abstract class Erasure extends AddInterfaces
 
   /* Drop redundant types (ones which are implemented by some other parent) from the immediate parents.
    * This is important on Android because there is otherwise an interface explosion.
+   * This is now restricted to Scala defined ancestors: a Java defined ancestor may need to be listed
+   * as an immediate parent to support an `invokespecial`.
    */
   def minimizeParents(parents: List[Type]): List[Type] = if (parents.isEmpty) parents else {
-    def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait
+    def isRedundantParent(sym: Symbol) = sym.isInterface || sym.isTrait
 
     var rest   = parents.tail
     var leaves = collection.mutable.ListBuffer.empty[Type] += parents.head
     while(rest.nonEmpty) {
       val candidate = rest.head
-      val nonLeaf = leaves exists { t => t.typeSymbol isSubClass candidate.typeSymbol }
-      if(!nonLeaf) {
-        leaves = leaves filterNot { t => isInterfaceOrTrait(t.typeSymbol) && (candidate.typeSymbol isSubClass t.typeSymbol) }
-        leaves += candidate
+      if (candidate.typeSymbol.isJavaDefined && candidate.typeSymbol.isInterface) leaves += candidate
+      else {
+        val nonLeaf = leaves exists { t => t.typeSymbol isSubClass candidate.typeSymbol }
+        if (!nonLeaf) {
+          leaves = leaves filterNot { t => isRedundantParent(t.typeSymbol) && (candidate.typeSymbol isSubClass t.typeSymbol) }
+          leaves += candidate
+        }
       }
       rest = rest.tail
     }
