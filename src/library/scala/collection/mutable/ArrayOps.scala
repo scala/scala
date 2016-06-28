@@ -41,6 +41,15 @@ sealed trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomPara
     if (l > 0) Array.copy(repr, 0, xs, start, l)
   }
 
+  override def slice(from: Int, until: Int): Array[T] = {
+     val lo = math.max(from, 0)
+     val hi = math.min(math.max(until, 0), repr.length)
+     val result = java.lang.reflect.Array.newInstance(elementClass, hi-lo)
+       .asInstanceOf[Array[T]]
+     Array.copy(repr, lo, result, 0, hi-lo)
+     result.asInstanceOf[Array[T]]
+  }
+
   override def toArray[U >: T : ClassTag]: Array[U] = {
     val thatElementClass = implicitly[ClassTag[U]].runtimeClass
     if (elementClass eq thatElementClass)
