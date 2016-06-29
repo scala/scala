@@ -17,12 +17,14 @@ trait M2[F] { self: M1[F] =>
 
 abstract class C extends M1[Float] with M2[Float]
 
-object Test extends App {
+object Test {
   def t(c: Class[_]) = {
     val ms = c.getMethods.filter(_.getName.startsWith("category"))
     println(ms.map(_.toGenericString).sorted.mkString("\n"))
   }
-  t(classOf[C])
-  t(classOf[M1[_]])
-  t(classOf[M2[_]])
+  def main(args: Array[String]) {
+    t(classOf[C])
+    t(classOf[M1[_]])
+    t(classOf[M2[_]])
+  }
 }

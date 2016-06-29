@@ -247,7 +247,7 @@ buildPartest() {
   else
     update scala scala-partest "$PARTEST_REF" && gfxd
     doc="$(docTask $PARTEST_BUILT)"
-    sbtBuild 'set version :="'$PARTEST_VER'"' 'set VersionKeys.scalaXmlVersion := "'$XML_VER'"' 'set VersionKeys.scalaCheckVersion := "'$SCALACHECK_VER'"' $clean "$doc" test "${buildTasks[@]}"
+    sbtBuild 'set version :="'$PARTEST_VER'"' 'set VersionKeys.scalaXmlVersion := "'$XML_VER'"' $clean "$doc" test "${buildTasks[@]}"
     PARTEST_BUILT="yes"
   fi
 }
@@ -282,7 +282,7 @@ buildModules() {
   buildXML
   buildParsers
   buildSwing
-  buildScalacheck
+  # buildScalacheck
   buildPartest
 }
 
@@ -424,7 +424,7 @@ deriveModuleVersions() {
   echo "Module versions (versioning strategy: $moduleVersioning):"
   echo "PARSERS          = $PARSERS_VER at $PARSERS_REF"
   echo "PARTEST          = $PARTEST_VER at $PARTEST_REF"
-  echo "SCALACHECK       = $SCALACHECK_VER at $SCALACHECK_REF"
+  # echo "SCALACHECK       = $SCALACHECK_VER at $SCALACHECK_REF"
   echo "SWING            = $SWING_VER at $SWING_REF"
   echo "XML              = $XML_VER at $XML_REF"
 
@@ -444,7 +444,7 @@ removeExistingBuilds() {
   local storageApiUrl=`echo $releaseTempRepoUrl | sed 's/\(scala-release-temp\)/api\/storage\/\1/'`
   local scalaLangModules=`curl -s $storageApiUrl/org/scala-lang | jq -r '.children | .[] | "org/scala-lang" + .uri' | grep -v actors-migration`
 
-  for module in "org/scalacheck" $scalaLangModules; do
+  for module in $scalaLangModules; do
     local artifacts=`curl -s $storageApiUrl/$module | jq -r ".children | .[] | select(.uri | contains(\"$SCALA_VER\")) | .uri"`
     for artifact in $artifacts; do
       echo "Deleting $releaseTempRepoUrl$module$artifact"
@@ -464,7 +464,7 @@ constructUpdatedModuleVersions() {
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-xml.version.number=$XML_VER")
 
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dpartest.version.number=$PARTEST_VER")
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscalacheck.version.number=$SCALACHECK_VER")
+  # updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscalacheck.version.number=$SCALACHECK_VER")
 
   # allow overriding the jline version using a jenkins build parameter
   if [ ! -z "$JLINE_VER" ]     ; then updatedModuleVersions=("${updatedModuleVersions[@]}" "-Djline.version=$JLINE_VER"); fi

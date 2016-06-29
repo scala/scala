@@ -106,6 +106,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     val elided = mutable.Set.empty[InlineRequest]
     def nonElidedRequests(methodNode: MethodNode): Set[InlineRequest] = requestsByMethod(methodNode) diff elided
 
+    def allCallees(r: InlineRequest): Set[MethodNode] = r.post.flatMap(allCallees).toSet + r.callsite.callee.get.callee
+
     /**
      * Break cycles in the inline request graph by removing callsites.
      *
@@ -114,20 +116,20 @@ class Inliner[BT <: BTypes](val btypes: BT) {
      */
     def breakInlineCycles: List[InlineRequest] = {
       // is there a path of inline requests from start to goal?
-      def isReachable(start: MethodNode, goal: MethodNode): Boolean = {
-        @tailrec def reachableImpl(check: List[MethodNode], visited: Set[MethodNode]): Boolean = check match {
-          case x :: xs =>
+      def isReachable(start: Set[MethodNode], goal: MethodNode): Boolean = {
+        @tailrec def reachableImpl(check: Set[MethodNode], visited: Set[MethodNode]): Boolean = {
+          if (check.isEmpty) false
+          else {
+            val x = check.head
             if (x == goal) true
-            else if (visited(x)) reachableImpl(xs, visited)
+            else if (visited(x)) reachableImpl(check - x, visited)
             else {
-              val callees = nonElidedRequests(x).map(_.callsite.callee.get.callee)
-              reachableImpl(xs ::: callees.toList, visited + x)
+              val callees = nonElidedRequests(x).flatMap(allCallees)
+              reachableImpl(check - x ++ callees, visited + x)
             }
-
-          case Nil =>
-            false
+          }
         }
-        reachableImpl(List(start), Set.empty)
+        reachableImpl(start, Set.empty)
       }
 
       val result = new mutable.ListBuffer[InlineRequest]()
@@ -136,7 +138,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       java.util.Arrays.sort(requests, callsiteOrdering)
       for (r <- requests) {
         // is there a chain of inlining requests that would inline the callsite method into the callee?
-        if (isReachable(r.callsite.callee.get.callee, r.callsite.callsiteMethod))
+        if (isReachable(allCallees(r), r.callsite.callsiteMethod))
           elided += r
         else
           result += r
@@ -150,8 +152,8 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       if (requests.isEmpty) Nil
       else {
         val (leaves, others) = requests.partition(r => {
-          val inlineRequestsForCallee = nonElidedRequests(r.callsite.callee.get.callee)
-          inlineRequestsForCallee.forall(visited)
+          val inlineRequestsForCallees = allCallees(r).flatMap(nonElidedRequests)
+          inlineRequestsForCallees.forall(visited)
         })
         assert(leaves.nonEmpty, requests)
         leaves ::: leavesFirst(others, visited ++ leaves)

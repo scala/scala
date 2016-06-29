@@ -93,6 +93,15 @@ object BytecodeUtils {
     op == INVOKESPECIAL || op == INVOKESTATIC
   }
 
+  def isVirtualCall(instruction: AbstractInsnNode): Boolean = {
+    val op = instruction.getOpcode
+    op == INVOKEVIRTUAL || op == INVOKEINTERFACE
+  }
+
+  def isCall(instruction: AbstractInsnNode): Boolean = {
+    isNonVirtualCall(instruction) || isVirtualCall(instruction)
+  }
+
   def isExecutable(instruction: AbstractInsnNode): Boolean = instruction.getOpcode >= 0
 
   def isConstructor(methodNode: MethodNode): Boolean = {

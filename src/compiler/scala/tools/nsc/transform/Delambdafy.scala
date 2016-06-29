@@ -261,7 +261,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         def pretransform(tree: Tree): Tree = tree match {
           case dd: DefDef if dd.symbol.isDelambdafyTarget =>
             if (!dd.symbol.hasFlag(STATIC) && methodReferencesThis(dd.symbol)) {
-              gen.mkStatic(dd, sym => sym)
+              gen.mkStatic(dd, dd.symbol.name, sym => sym)
             } else {
               dd.symbol.setFlag(STATIC)
               dd
@@ -276,8 +276,10 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       case dd: DefDef if dd.symbol.isLiftedMethod && !dd.symbol.isDelambdafyTarget =>
         // SI-9390 emit lifted methods that don't require a `this` reference as STATIC
         // delambdafy targets are excluded as they are made static by `transformFunction`.
-        if (!dd.symbol.hasFlag(STATIC) && !methodReferencesThis(dd.symbol))
+        if (!dd.symbol.hasFlag(STATIC) && !methodReferencesThis(dd.symbol)) {
           dd.symbol.setFlag(STATIC)
+          dd.symbol.removeAttachment[mixer.NeedStaticImpl.type]
+        }
         super.transform(tree)
       case Apply(fun, outer :: rest) if shouldElideOuterArg(fun.symbol, outer) =>
         val nullOuter = gen.mkZero(outer.tpe)
