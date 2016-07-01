@@ -696,6 +696,7 @@ trait StdNames {
     val foreach: NameType              = "foreach"
     val freshTermName: NameType        = "freshTermName"
     val freshTypeName: NameType        = "freshTypeName"
+    val future: NameType               = "future"
     val get: NameType                  = "get"
     val parameterTypes: NameType       = "parameterTypes"
     val hashCode_ : NameType           = "hashCode"
@@ -880,6 +881,9 @@ trait StdNames {
     val toInteger: NameType   = "toInteger"
 
     def newLazyValSlowComputeName(lzyValName: Name) = (lzyValName stripSuffix MODULE_VAR_SUFFIX append LAZY_SLOW_SUFFIX).toTermName
+
+    // string concat
+    val concat: NameType = "$concat"
 
     // ASCII names for operators
     val ADD       = encode("+")

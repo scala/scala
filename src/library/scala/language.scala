@@ -180,4 +180,12 @@ object language {
      */
     implicit lazy val macros: macros = languageFeature.experimental.macros
   }
+
+  object future {
+
+    import languageFeature.future._
+
+    implicit lazy val noStringPlus: noStringPlus = languageFeature.future.noStringPlus
+
+  }
 }

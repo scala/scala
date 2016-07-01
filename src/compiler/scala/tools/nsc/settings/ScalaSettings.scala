@@ -71,6 +71,7 @@ trait ScalaSettings extends AbsScalaSettings
     val higherKinds         = Choice("higherKinds",         "Allow higher-kinded types")
     val existentials        = Choice("existentials",        "Existential types (besides wildcard types) can be written and inferred")
     val macros              = Choice("experimental.macros", "Allow macro definition (besides implementation and application)")
+    val noStringPlus        = Choice("future.noStringPlus", "Disables String.+(Any)")
   }
   val language      = {
     val description = "Enable or disable language features"
@@ -202,6 +203,12 @@ trait ScalaSettings extends AbsScalaSettings
   val inferByName     = BooleanSetting    ("-Yinfer-by-name", "Allow inference of by-name types. This is a temporary option to ease transition. See SI-7899.").withDeprecationMessage(removalIn212)
   val YdisableFlatCpCaching  = BooleanSetting    ("-YdisableFlatCpCaching", "Do not cache flat classpath representation of classpath elements from jars across compiler instances.")
   val YpartialUnification = BooleanSetting ("-Ypartial-unification", "Enable partial unification in type constructor inference")
+
+  // a dependent setting to drill through the reflect layer, not available directly to user
+  val YnoStringPlus   = (new BooleanSetting("-Yno-string-plus", "Compile without synthetic String.+(Any) method") {
+    override def value: Boolean = language.isChoiceSetByUser(languageFeatures.noStringPlus)
+    //override def value: Boolean = language contains languageFeatures.noStringPlus
+  }).internalOnly
 
   val exposeEmptyPackage = BooleanSetting ("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
   val Ydelambdafy        = ChoiceSetting  ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "method")

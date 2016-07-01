@@ -718,16 +718,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     /** Check whether feature given by `featureTrait` is enabled.
-     *  If it is not, issue an error or a warning depending on whether the feature is required.
+     *  If it is opt-in and not enabled, issue an error or a warning depending on whether the feature is required.
      *  @param  construct  A string expression that is substituted for "#" in the feature description string
      *  @param  immediate  When set, feature check is run immediately, otherwise it is run
      *                     at the end of the typechecking run for the enclosing unit. This
      *                     is done to avoid potential cyclic reference errors by implicits
      *                     that are forced too early.
+     *  @param  isAnOptInFeature  Indicates if the feature is opt-in or not
      *  @return if feature check is run immediately: true if feature is enabled, false otherwise
-     *          if feature check is delayed or suppressed because we are past typer: true
+     *          if feature check is delayed or suppressed because we are past typer: true if the feature is opt-in, false otherwise
      */
-    def checkFeature(pos: Position, featureTrait: Symbol, construct: => String = "", immediate: Boolean = false): Boolean =
+    def checkFeature(pos: Position, featureTrait: Symbol, construct: => String = "", immediate: Boolean = false, warning: Boolean = true): Boolean =
       if (isPastTyper) true
       else {
         val nestedOwners =
@@ -736,13 +737,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         def action(): Boolean = {
           def hasImport = inferImplicitByType(featureTrait.tpe, context).isSuccess
           def hasOption = settings.language contains featureName
-          val OK = hasImport || hasOption
-          if (!OK) {
+          val featureIsEnabled = hasOption || hasImport
+          if (!featureIsEnabled && warning) {
             val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
               featureTrait getAnnotation LanguageFeatureAnnot
             context.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
           }
-          OK
+          featureIsEnabled
         }
         if (immediate) {
           action()
@@ -4710,6 +4711,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
             if ((qual1 ne qual) && !qual1.isErrorTyped)
               return typed(treeCopy.Select(tree, qual1, name), mode, pt)
+          }
+          // Before failing, see if they're building strings. We'll give them String_+ unless they've opted out.
+          if (qual.symbol != null) // Why?
+          if (name == nme.PLUS && qual.symbol.typeOfThis =:= definitions.StringTpe) {
+            if (!checkFeature(tree.pos, NoStringPlusFeature, immediate = true, warning = false))
+              return typed(treeCopy.Select(tree, qual, nme.concat), mode, pt)
           }
           NoSymbol
         }
