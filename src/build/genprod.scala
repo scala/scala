@@ -315,8 +315,7 @@ class Tuple(val i: Int) extends Group("Tuple") with Arity {
  *  @constructor  Create a new tuple with {i} elements.{idiomatic}
 {params}
  */
-@deprecatedInheritance("Tuples will be made final in a future version.", "2.11.0")
-case class {className}{covariantArgs}({fields})
+final case class {className}{covariantArgs}({fields})
   extends {Product.className(i)}{invariantArgs}
 {{
   override def toString() = "(" + {mkToString} + ")"

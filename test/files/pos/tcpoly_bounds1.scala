@@ -1,7 +1,9 @@
-class Foo[t[x]<: Tuple2[Int, x]]
+case class T2[+T1, +T2](_1: T1, _2: T2) extends Product2[T1, T2]
+
+class Foo[t[x]<: T2[Int, x]]
 
 //
-class MyPair[z](a: Int, b: z) extends Tuple2[Int, z](a,b)
+class MyPair[z](a: Int, b: z) extends T2[Int, z](a,b)
 
 object foo extends Foo[MyPair]
 

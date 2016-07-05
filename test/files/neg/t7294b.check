@@ -1,6 +1,4 @@
-t7294b.scala:1: warning: inheritance from class Tuple2 in package scala is deprecated (since 2.11.0): Tuples will be made final in a future version.
+t7294b.scala:1: error: illegal inheritance from final class Tuple2
 class C extends Tuple2[Int, Int](0, 0)
                 ^
-error: No warnings can be incurred under -Xfatal-warnings.
-one warning found
 one error found
