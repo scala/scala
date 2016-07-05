@@ -8,7 +8,7 @@ trait ReplPrinter[-A] extends Any {
 }
 
 object ReplPrinter {
-  implicit def default[A]: ReplPrinter[A] = new ReplPrinter[A] {
-    def print(x: A, maxElements: Int) = ScalaRunTime.replStringOf(x, maxElements)
+  implicit object defaultReplPrinter extends ReplPrinter[Any] {
+    def print(x: Any, maxElements: Int) = ScalaRunTime.replStringOf(x, maxElements)
   }
 }
