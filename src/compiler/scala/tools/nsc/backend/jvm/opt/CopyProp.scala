@@ -295,18 +295,12 @@ class CopyProp[BT <: BTypes](val btypes: BT) {
       }
 
       /**
-       * Eliminate the closure value produced by `indy`. If the SAM type is known to construct
-       * without side-effects (e.g. scala/FunctionN), the `indy` and its inputs
-       * are eliminated, otherwise a POP is inserted.
+       * Eliminate LMF `indy` and its inputs.
        */
       def handleClosureInst(indy: InvokeDynamicInsnNode): Unit = {
-        if (isBuiltinFunctionType(Type.getReturnType(indy.desc).getInternalName)) {
-          toRemove += indy
-          callGraph.removeClosureInstantiation(indy, method)
-          handleInputs(indy, Type.getArgumentTypes(indy.desc).length)
-        } else {
-          toInsertAfter(indy) = getPop(1)
-        }
+        toRemove += indy
+        callGraph.removeClosureInstantiation(indy, method)
+        handleInputs(indy, Type.getArgumentTypes(indy.desc).length)
       }
 
       def runQueue(): Unit = while (queue.nonEmpty) {

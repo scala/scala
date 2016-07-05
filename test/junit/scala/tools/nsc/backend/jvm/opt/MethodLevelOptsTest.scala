@@ -750,4 +750,24 @@ class MethodLevelOptsTest extends BytecodeTesting {
       -1, LDC, ASTORE,
       -1, ALOAD, ARETURN))
   }
+
+  @Test
+  def elimSamLambda(): Unit = {
+    val code =
+      """class C {
+        |  def t1(x: Int) = {
+        |    val fun: java.util.function.IntFunction[Int] = y => y + 1
+        |    fun(x)
+        |  }
+        |  def t2(x: Int) = {
+        |    val fun: T = i => i + 1
+        |    fun.f(x)
+        |  }
+        |}
+        |trait T { def f(x: Int): Int }
+      """.stripMargin
+    val List(c, t) = compileClasses(code)
+    assertSameSummary(getMethod(c, "t1"), List(ILOAD, "$anonfun$t1$1", IRETURN))
+    assertSameSummary(getMethod(c, "t2"), List(ILOAD, "$anonfun$t2$1", IRETURN))
+  }
 }
