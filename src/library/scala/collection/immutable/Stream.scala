@@ -1029,6 +1029,8 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
    */
   override def stringPrefix = "Stream"
 
+  override def equals(that: Any): Boolean =
+    if (this eq that.asInstanceOf[AnyRef]) true else super.equals(that)
 }
 
 /** A specialized, extra-lazy implementation of a stream iterator, so it can
@@ -1170,6 +1172,27 @@ object Stream extends SeqFactory[Stream] {
         }
 
       tlVal
+    }
+
+    override /*LinearSeqOptimized*/
+    def sameElements[B >: A](that: GenIterable[B]): Boolean = {
+      @tailrec def consEq(a: Cons[_], b: Cons[_]): Boolean = {
+        if (a.head != b.head) false
+        else {
+          a.tail match {
+            case at: Cons[_] =>
+              b.tail match {
+                case bt: Cons[_] => (at eq bt) || consEq(at, bt)
+                case _ => false
+              }
+            case _ => b.tail.isEmpty
+          }
+        }
+      }
+      that match {
+        case that: Cons[_] => consEq(this, that)
+        case _ =>             super.sameElements(that)
+      }
     }
   }
 
