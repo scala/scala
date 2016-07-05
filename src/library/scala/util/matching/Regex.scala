@@ -11,21 +11,14 @@
  * with the main goal of pulling out information from those matches, or replacing
  * them with something else.
  *
- * There are four classes and three objects, with most of them being members of
- * Regex companion object. [[scala.util.matching.Regex]] is the class users instantiate
- * to do regular expression matching.
+ * [[scala.util.matching.Regex]] is the class users instantiate to do regular expression matching.
  *
- * The remaining classes and objects in the package are used in the following way:
- *
- * * The companion object to [[scala.util.matching.Regex]] just contains the other members.
+ * The companion object to [[scala.util.matching.Regex]] contains supporting members:
  * * [[scala.util.matching.Regex.Match]] makes more information about a match available.
- * * [[scala.util.matching.Regex.MatchIterator]] is used to iterate over multiple matches.
+ * * [[scala.util.matching.Regex.MatchIterator]] is used to iterate over matched strings.
  * * [[scala.util.matching.Regex.MatchData]] is just a base trait for the above classes.
  * * [[scala.util.matching.Regex.Groups]] extracts group from a [[scala.util.matching.Regex.Match]]
  *   without recomputing the match.
- * * [[scala.util.matching.Regex.Match]] converts a [[scala.util.matching.Regex.Match]]
- *   into a [[java.lang.String]].
- *
  */
 package scala.util.matching
 
@@ -35,6 +28,7 @@ import java.util.regex.{ Pattern, Matcher }
 /** A regular expression is used to determine whether a string matches a pattern
  *  and, if it does, to extract or transform the parts that match.
  *
+ *  === Usage ===
  *  This class delegates to the [[java.util.regex]] package of the Java Platform.
  *  See the documentation for [[java.util.regex.Pattern]] for details about
  *  the regular expression syntax for pattern strings.
@@ -53,6 +47,7 @@ import java.util.regex.{ Pattern, Matcher }
  *  Since escapes are not processed in multi-line string literals, using triple quotes
  *  avoids having to escape the backslash character, so that `"\\d"` can be written `"""\d"""`.
  *
+ *  === Extraction ===
  *  To extract the capturing groups when a `Regex` is matched, use it as
  *  an extractor in a pattern match:
  *
@@ -92,48 +87,68 @@ import java.util.regex.{ Pattern, Matcher }
  *  }
  *  }}}
  *
+ *  === Find Matches ===
  *  To find or replace matches of the pattern, use the various find and replace methods.
- *  There is a flavor of each method that produces matched strings and
- *  another that produces `Match` objects.
+ *  For each method, there is a version for working with matched strings and
+ *  another for working with `Match` objects.
  *
  *  For example, pattern matching with an unanchored `Regex`, as in the previous example,
- *  is the same as using `findFirstMatchIn`, except that the findFirst methods return an `Option`,
- *  or `None` for no match:
+ *  can also be accomplished using `findFirstMatchIn`. The `findFirst` methods return an `Option`
+ *  which is non-empty if a match is found, or `None` for no match:
  *
  *  {{{
  *  val dates = "Important dates in history: 2004-01-20, 1958-09-05, 2010-10-06, 2011-07-15"
- *  val firstDate = date findFirstIn dates getOrElse "No date found."
- *  val firstYear = for (m <- date findFirstMatchIn dates) yield m group 1
+ *  val firstDate = date.findFirstIn(dates).getOrElse("No date found.")
+ *  val firstYear = for (m <- date.findFirstMatchIn(dates)) yield m.group(1)
  *  }}}
  *
  *  To find all matches:
  *
  *  {{{
- *  val allYears = for (m <- date findAllMatchIn dates) yield m group 1
+ *  val allYears = for (m <- date.findAllMatchIn(dates)) yield m.group(1)
  *  }}}
  *
- *  But `findAllIn` returns a special iterator of strings that can be queried for the `MatchData`
- *  of the last match:
+ *  To iterate over the matched strings, use `findAllIn`, which returns a special iterator
+ *  that can be queried for the `MatchData` of the last match:
  *
  *  {{{
- *  val mi = date findAllIn dates
- *  val oldies = mi filter (_ => (mi group 1).toInt < 1960) map (s => s"$s: An oldie but goodie.")
+ *  val mi = date.findAllIn(dates)
+ *  while (mi.hasNext) {
+ *    val d = mi.next
+ *    if (mi.group(1).toInt < 1960) println(s"$d: An oldie but goodie.")
  *  }}}
  *
  *  Note that `findAllIn` finds matches that don't overlap. (See [[findAllIn]] for more examples.)
  *
  *  {{{
  *  val num = """(\d+)""".r
- *  val all = (num findAllIn "123").toList  // List("123"), not List("123", "23", "3")
+ *  val all = num.findAllIn("123").toList  // List("123"), not List("123", "23", "3")
  *  }}}
  *
+ *  Also, the "current match" of a `MatchIterator` may be advanced by either `hasNext` or `next`.
+ *  By comparison, the `Iterator[Match]` returned by `findAllMatchIn` or `findAllIn.matchData`
+ *  produces `Match` objects that remain valid after the iterator is advanced.
+ *
+ *  {{{
+ *  val ns = num.findAllIn("1 2 3")
+ *  ns.start    // 0
+ *  ns.hasNext  // true
+ *  ns.start    // 2
+ *  val ms = num.findAllMatchIn("1 2 3")
+ *  val m  = ms.next()
+ *  m.start     // 0
+ *  ms.hasNext  // true
+ *  m.start     // still 0
+ *  }}}
+ *
+ *  === Replace Text ===
  *  Text replacement can be performed unconditionally or as a function of the current match:
  *
  *  {{{
- *  val redacted    = date replaceAllIn (dates, "XXXX-XX-XX")
- *  val yearsOnly   = date replaceAllIn (dates, m => m group 1)
- *  val months      = (0 to 11) map { i => val c = Calendar.getInstance; c.set(2014, i, 1); f"$c%tb" }
- *  val reformatted = date replaceAllIn (dates, _ match { case date(y,m,d) => f"${months(m.toInt - 1)} $d, $y" })
+ *  val redacted    = date.replaceAllIn(dates, "XXXX-XX-XX")
+ *  val yearsOnly   = date.replaceAllIn(dates, m => m.group(1))
+ *  val months      = (0 to 11).map { i => val c = Calendar.getInstance; c.set(2014, i, 1); f"$c%tb" }
+ *  val reformatted = date.replaceAllIn(dates, _ match { case date(y,m,d) => f"${months(m.toInt - 1)} $d, $y" })
  *  }}}
  *
  *  Pattern matching the `Match` against the `Regex` that created it does not reapply the `Regex`.
@@ -142,7 +157,7 @@ import java.util.regex.{ Pattern, Matcher }
  *
  *  {{{
  *  val docSpree = """2011(?:-\d{2}){2}""".r
- *  val docView  = date replaceAllIn (dates, _ match {
+ *  val docView  = date.replaceAllIn(dates, _ match {
  *    case docSpree() => "Historic doc spree!"
  *    case _          => "Something else happened"
  *  })
@@ -338,8 +353,8 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  {{{
    *  val hat  = "hat[^a]+".r
    *  val hathaway = "hathatthattthatttt"
-   *  val hats = (hat findAllIn hathaway).toList                     // List(hath, hattth)
-   *  val pos  = (hat findAllMatchIn hathaway map (_.start)).toList  // List(0, 7)
+   *  val hats = hat.findAllIn(hathaway).toList                     // List(hath, hattth)
+   *  val pos  = hat.findAllMatchIn(hathaway).map(_.start).toList   // List(0, 7)
    *  }}}
    *
    *  To return overlapping matches, it is possible to formulate a regular expression
@@ -347,13 +362,13 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *
    *  {{{
    *  val madhatter = "(h)(?=(at[^a]+))".r
-   *  val madhats   = (madhatter findAllMatchIn hathaway map {
+   *  val madhats   = madhatter.findAllMatchIn(hathaway).map {
    *    case madhatter(x,y) => s"$x$y"
-   *  }).toList                                       // List(hath, hatth, hattth, hatttt)
+   *  }.toList                                       // List(hath, hatth, hattth, hatttt)
    *  }}}
    *
-   *  Attempting to retrieve match information before performing the first match
-   *  or after exhausting the iterator results in [[java.lang.IllegalStateException]].
+   *  Attempting to retrieve match information after exhausting the iterator
+   *  results in [[java.lang.IllegalStateException]].
    *  See [[scala.util.matching.Regex.MatchIterator]] for details.
    *
    *  @param source The text to match against.
@@ -743,11 +758,13 @@ object Regex {
 
   /** A class to step through a sequence of regex matches.
    *
-   *  All methods inherited from [[scala.util.matching.Regex.MatchData]] will throw
-   *  a [[java.lang.IllegalStateException]] until the matcher is initialized. The
-   *  matcher can be initialized by calling `hasNext` or `next()` or causing these
-   *  methods to be called, such as by invoking `toString` or iterating through
-   *  the iterator's elements.
+   *  This is an iterator that returns the matched strings.
+   *
+   *  Queries about match data pertain to the current state of the underlying
+   *  matcher, which is advanced by calling `hasNext` or `next`.
+   *
+   *  When matches are exhausted, queries about match data will throw
+   *  [[java.lang.IllegalStateException]].
    *
    *  @see [[java.util.regex.Matcher]]
    */
@@ -755,37 +772,62 @@ object Regex {
   extends AbstractIterator[String] with Iterator[String] with MatchData { self =>
 
     protected[Regex] val matcher = regex.pattern.matcher(source)
-    private var nextSeen = false
 
-    /** Is there another match? */
+    // 0 = not yet matched, 1 = matched, 2 = advanced to match, 3 = no more matches
+    private[this] var nextSeen = 0
+
+    /** Return true if `next` will find a match.
+     *  As a side effect, advance the underlying matcher if necessary;
+     *  queries about the current match data pertain to the underlying matcher.
+     */
     def hasNext: Boolean = {
-      if (!nextSeen) nextSeen = matcher.find()
-      nextSeen
+      nextSeen match {
+        case 0 => nextSeen = if (matcher.find()) 1 else 3
+        case 1 => ()
+        case 2 => nextSeen = 0 ; hasNext
+        case 3 => ()
+      }
+      nextSeen == 1      // otherwise, 3
     }
 
-    /** The next matched substring of `source`. */
+    /** The next matched substring of `source`.
+     *  As a side effect, advance the underlying matcher if necessary.
+     */
     def next(): String = {
-      if (!hasNext) throw new NoSuchElementException
-      nextSeen = false
+      nextSeen match {
+        case 0 => if (!hasNext) throw new NoSuchElementException ; next()
+        case 1 => nextSeen = 2
+        case 2 => nextSeen = 0 ; next()
+        case 3 => throw new NoSuchElementException
+      }
       matcher.group
     }
 
+    /** Report emptiness. */
     override def toString = super[AbstractIterator].toString
 
+    // ensure we're at a match
+    private[this] def ensure(): Unit = nextSeen match {
+      case 0 => if (!hasNext) throw new IllegalStateException
+      case 1 => ()
+      case 2 => ()
+      case 3 => throw new IllegalStateException
+    }
+
     /** The index of the first matched character. */
-    def start: Int = matcher.start
+    def start: Int = { ensure() ; matcher.start }
 
     /** The index of the first matched character in group `i`. */
-    def start(i: Int): Int = matcher.start(i)
+    def start(i: Int): Int = { ensure() ; matcher.start(i) }
 
     /** The index of the last matched character. */
-    def end: Int = matcher.end
+    def end: Int = { ensure() ; matcher.end }
 
     /** The index following the last matched character in group `i`. */
-    def end(i: Int): Int = matcher.end(i)
+    def end(i: Int): Int = { ensure() ; matcher.end(i) }
 
     /** The number of subgroups. */
-    def groupCount = matcher.groupCount
+    def groupCount = { ensure() ; matcher.groupCount }
 
     /** Convert to an iterator that yields MatchData elements instead of Strings. */
     def matchData: Iterator[Match] = new AbstractIterator[Match] {
