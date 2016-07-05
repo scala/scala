@@ -763,72 +763,88 @@ abstract class UnCurry extends InfoTransform
       if (!dd.symbol.hasAnnotation(VarargsClass) || !enteringUncurry(mexists(dd.symbol.paramss)(sym => definitions.isRepeatedParamType(sym.tpe))))
         return flatdd
 
-      def toArrayType(tp: Type): Type = {
-        val arg = elementType(SeqClass, tp)
-        // to prevent generation of an `Object` parameter from `Array[T]` parameter later
-        // as this would crash the Java compiler which expects an `Object[]` array for varargs
-        //   e.g.        def foo[T](a: Int, b: T*)
-        //   becomes     def foo[T](a: Int, b: Array[Object])
-        //   instead of  def foo[T](a: Int, b: Array[T]) ===> def foo[T](a: Int, b: Object)
-        arrayType(
-          if (arg.typeSymbol.isTypeParameterOrSkolem) ObjectTpe
-          else arg
-        )
-      }
+      val forwSym = currentClass.newMethod(dd.name.toTermName, dd.pos, VARARGS | SYNTHETIC | flatdd.symbol.flags)
 
-      val theTyper   = typer.atOwner(dd, currentClass)
-      val flatparams = flatdd.symbol.paramss.head
       val isRepeated = enteringUncurry(dd.symbol.info.paramss.flatten.map(sym => definitions.isRepeatedParamType(sym.tpe)))
 
-      // create the type
-      val forwformals = map2(flatparams, isRepeated) {
-        case (p, true) => toArrayType(p.tpe)
-        case (p, false)=> p.tpe
-      }
-      val forwresult = dd.symbol.tpe_*.finalResultType
-      val forwformsyms = map2(forwformals, flatparams)((tp, oldparam) =>
-        currentClass.newValueParameter(oldparam.name.toTermName, oldparam.pos).setInfo(tp)
-      )
-      def mono = MethodType(forwformsyms, forwresult)
-      val forwtype = dd.symbol.tpe match {
-        case MethodType(_, _) => mono
-        case PolyType(tps, _) => PolyType(tps, mono)
-      }
+      val oldPs = flatdd.symbol.paramss.head
 
-      // create the symbol
-      val forwsym = currentClass.newMethod(dd.name.toTermName, dd.pos, VARARGS | SYNTHETIC | flatdd.symbol.flags) setInfo forwtype
-      def forwParams = forwsym.info.paramss.flatten
+      // see comment in method toArrayType below
+      val arrayTypesMappedToObject = mutable.Map.empty[Symbol, Type]
 
-      // create the tree
-      val forwtree = theTyper.typedPos(dd.pos) {
-        val locals = map3(forwParams, flatparams, isRepeated) {
-          case (_, fp, false)       => null
-          case (argsym, fp, true)   =>
-            Block(Nil,
-              gen.mkCast(
-                gen.mkWrapArray(Ident(argsym), elementType(ArrayClass, argsym.tpe)),
-                seqType(elementType(SeqClass, fp.tpe))
-              )
-            )
+      val forwTpe = {
+        val (oldTps, tps) = dd.symbol.tpe match {
+          case PolyType(oldTps, _) =>
+            val newTps = oldTps.map(_.cloneSymbol(forwSym))
+            (oldTps, newTps)
+
+          case _ => (Nil, Nil)
         }
-        val seqargs = map2(locals, forwParams) {
-          case (null, argsym) => Ident(argsym)
-          case (l, _)         => l
-        }
-        val end = if (forwsym.isConstructor) List(UNIT) else Nil
 
-        DefDef(forwsym, BLOCK(Apply(gen.mkAttributedRef(flatdd.symbol), seqargs) :: end : _*))
+        def toArrayType(tp: Type, newParam: Symbol): Type = {
+          val arg = elementType(SeqClass, tp)
+          val elem = if (arg.typeSymbol.isTypeParameterOrSkolem && !(arg <:< AnyRefTpe)) {
+            // To prevent generation of an `Object` parameter from `Array[T]` parameter later
+            // as this would crash the Java compiler which expects an `Object[]` array for varargs
+            //   e.g.        def foo[T](a: Int, b: T*)
+            //   becomes     def foo[T](a: Int, b: Array[Object])
+            //   instead of  def foo[T](a: Int, b: Array[T]) ===> def foo[T](a: Int, b: Object)
+            //
+            // In order for the forwarder method to type check we need to insert a cast:
+            //   def foo'[T'](a: Int, b: Array[Object]) = foo[T'](a, wrapRefArray(b).asInstanceOf[Seq[T']])
+            // The target element type for that cast (T') is stored in the `arrayTypesMappedToObject` map.
+            val originalArg = arg.substSym(oldTps, tps)
+            arrayTypesMappedToObject(newParam) = originalArg
+            // Store the type parameter that was replaced by Object to emit the correct generic signature
+            newParam.updateAttachment(new erasure.TypeParamVarargsAttachment(originalArg))
+            ObjectTpe
+          } else
+            arg
+          arrayType(elem)
+        }
+
+        val ps = map2(oldPs, isRepeated)((oldParam, isRep) => {
+          val newParam = oldParam.cloneSymbol(forwSym)
+          val tp = if (isRep) toArrayType(oldParam.tpe, newParam) else oldParam.tpe
+          newParam.setInfo(tp)
+        })
+
+        val resTp = dd.symbol.tpe_*.finalResultType.substSym(oldPs, ps)
+        val mt = MethodType(ps, resTp)
+        val r = if (tps.isEmpty) mt else PolyType(tps, mt)
+        r.substSym(oldTps, tps)
+      }
+
+      forwSym.setInfo(forwTpe)
+      val newPs = forwTpe.params
+
+      val theTyper = typer.atOwner(dd, currentClass)
+      val forwTree = theTyper.typedPos(dd.pos) {
+        val seqArgs = map3(newPs, oldPs, isRepeated)((param, oldParam, isRep) => {
+          if (!isRep) Ident(param)
+          else {
+            val parTp = elementType(ArrayClass, param.tpe)
+            val wrap = gen.mkWrapArray(Ident(param), parTp)
+            arrayTypesMappedToObject.get(param) match {
+              case Some(tp) => gen.mkCast(wrap, seqType(tp))
+              case _ => wrap
+            }
+          }
+        })
+
+        val forwCall = Apply(gen.mkAttributedRef(flatdd.symbol), seqArgs)
+        DefDef(forwSym, if (forwSym.isConstructor) Block(List(forwCall), UNIT) else forwCall)
       }
 
       // check if the method with that name and those arguments already exists in the template
-      currentClass.info.member(forwsym.name).alternatives.find(s => s != forwsym && s.tpe.matches(forwsym.tpe)) match {
+      currentClass.info.member(forwSym.name).alternatives.find(s => s != forwSym && s.tpe.matches(forwSym.tpe)) match {
         case Some(s) => reporter.error(dd.symbol.pos,
                                    "A method with a varargs annotation produces a forwarder method with the same signature "
                                    + s.tpe + " as an existing method.")
         case None =>
           // enter symbol into scope
-          currentClass.info.decls enter forwsym
-          addNewMember(forwtree)
+          currentClass.info.decls enter forwSym
+          addNewMember(forwTree)
       }
 
       flatdd
