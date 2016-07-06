@@ -134,6 +134,8 @@ object ClassTag {
   val Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
   val Null    : ClassTag[scala.Null]       = Manifest.Null
 
+  private class GenericClassTag[T](val runtimeClass: jClass[_]) extends ClassTag[T]
+
   def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =
     runtimeClass1 match {
       case java.lang.Byte.TYPE      => ClassTag.Byte.asInstanceOf[ClassTag[T]]
@@ -148,7 +150,7 @@ object ClassTag {
       case ObjectTYPE               => ClassTag.Object.asInstanceOf[ClassTag[T]]
       case NothingTYPE              => ClassTag.Nothing.asInstanceOf[ClassTag[T]]
       case NullTYPE                 => ClassTag.Null.asInstanceOf[ClassTag[T]]
-      case _                        => new ClassTag[T]{ def runtimeClass = runtimeClass1 }
+      case _                        => new GenericClassTag[T](runtimeClass1)
     }
 
   def unapply[T](ctag: ClassTag[T]): Option[Class[_]] = Some(ctag.runtimeClass)
