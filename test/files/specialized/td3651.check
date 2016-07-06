@@ -1,7 +1,7 @@
-td3651.scala:12: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+td3651.scala:12: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     b.a
       ^
-td3651.scala:16: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+td3651.scala:16: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     der.a
         ^
 0

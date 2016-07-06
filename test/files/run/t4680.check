@@ -1,7 +1,7 @@
-t4680.scala:51: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+t4680.scala:51: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
     new C { 5 }
             ^
-t4680.scala:69: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+t4680.scala:69: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
     new { val x = 5 } with E() { 5 }
                                  ^
 warning: there was one deprecation warning (since 2.11.0); re-run with -deprecation for details

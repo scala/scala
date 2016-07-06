@@ -1,7 +1,13 @@
-t3488.scala:4: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+t3488.scala:4: warning: a pure expression does nothing in statement position
   println(foo { val List(_*)=List(0); 1 } ())
                                       ^
-t3488.scala:5: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+t3488.scala:4: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
+  println(foo { val List(_*)=List(0); 1 } ())
+                                      ^
+t3488.scala:5: warning: a pure expression does nothing in statement position
+  println(foo { val List(_*)=List(0); 1 } (1))
+                                      ^
+t3488.scala:5: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
   println(foo { val List(_*)=List(0); 1 } (1))
                                       ^
 0

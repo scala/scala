@@ -1,10 +1,10 @@
-t1181.scala:8: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
-     case (Nil, Nil) => map
-                        ^
 t1181.scala:9: error: type mismatch;
  found   : scala.collection.immutable.Map[Symbol,Symbol]
  required: Symbol
      _ => buildMap(map.updated(keyList.head, valueList.head), keyList.tail, valueList.tail)
                   ^
+t1181.scala:8: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
+     case (Nil, Nil) => map
+                        ^
 one warning found
 one error found

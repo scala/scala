@@ -1,4 +1,4 @@
-exceptions-2.scala:267: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+exceptions-2.scala:267: warning: a pure expression does nothing in statement position
     try { 1 } catch { case e: java.io.IOException => () }
           ^
 nested1: 

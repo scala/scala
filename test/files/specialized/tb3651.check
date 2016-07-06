@@ -1,4 +1,4 @@
-tb3651.scala:8: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+tb3651.scala:8: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     lk.a
        ^
 0
