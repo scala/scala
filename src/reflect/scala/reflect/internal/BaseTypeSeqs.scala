@@ -57,7 +57,7 @@ trait BaseTypeSeqs {
         pending.clear()
         throw CyclicInheritance
       } else
-        elems(i) match {
+        elems(i).underlying match {
           case rtp @ RefinedType(variants, decls) =>
             // can't assert decls.isEmpty; see t0764
             //if (!decls.isEmpty) abort("computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
@@ -87,7 +87,7 @@ trait BaseTypeSeqs {
      *  no evaluation needed.
      */
     def typeSymbol(i: Int): Symbol = {
-      elems(i) match {
+      elems(i).underlying match {
         case RefinedType(v :: vs, _) => v.typeSymbol
         case tp => tp.typeSymbol
       }
@@ -103,8 +103,15 @@ trait BaseTypeSeqs {
       newBaseTypeSeq(parents, arr)
     }
 
-    /** Compute new base type sequence with `tp` prepended to this sequence */
-    def prepend(tp: Type): BaseTypeSeq = copy(tp, 1)
+    /** Compute new base type sequence with `tp` prepended to this sequence
+     *  If the given type shares a typeSymbol with the head of the list, it
+     *  is intersected with that type.
+     */
+    def prepend(tp: Type): BaseTypeSeq = tp match {
+      case tp: ConstantType                           => prepend(tp.deconst) // pos/t4305, Class[T] vs. Class[O$$T]
+      case tp if tp.typeSymbol eq elems(0).typeSymbol => copy(intersectionType(List(tp, elems(0))), 1)
+      case _                                          => copy(tp, 1)
+    }
 
     /** Compute new base type sequence with `tp` replacing the head of this sequence */
     def updateHead(tp: Type): BaseTypeSeq = copy(tp, 0)

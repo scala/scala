@@ -268,14 +268,15 @@ trait MarkupParsers {
             acc.clear()
           }
           for (t <- ts)
-            t.attachments.get[handle.TextAttache] match {
+            (t.attachments.get[handle.TextAttache] match {
               case Some(ta) =>
                 if (acc.isEmpty) pos = ta.pos
                 acc append ta.text
               case _        =>
                 emit()
                 buf += t
-            }
+            }): Unit
+
           emit()
           buf
         }
