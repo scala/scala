@@ -35,6 +35,8 @@ showReplPrinter: [A](implicit z: Show[A])scala.tools.nsc.interpreter.ReplPrinter
 
 scala> 
 
+scala> // the lack of ! after 23 is expected because we don't enable custom string under -Yrepl-class-based
+
 scala> 23
 res1: Int = 23
 

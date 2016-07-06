@@ -24,6 +24,7 @@ implicit def showReplPrinter[A](implicit z: Show[A]): ReplPrinter[A] = new ReplP
   }
 }
 
+// the lack of ! after 23 is expected because we don't enable custom string under -Yrepl-class-based
 23
 """
 }
