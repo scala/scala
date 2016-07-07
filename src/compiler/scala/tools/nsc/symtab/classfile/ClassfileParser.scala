@@ -366,7 +366,7 @@ abstract class ClassfileParser {
       //   - better owner than `NoSymbol`
       //   - remove eager warning
       val msg = s"Class $name not found - continuing with a stub."
-      if (!settings.isScaladoc) warning(msg)
+      if ((!settings.isScaladoc) && (settings.verbose || settings.developer)) warning(msg)
       return NoSymbol.newStubSymbol(name.toTypeName, msg)
     }
     val completer     = new loaders.ClassfileLoader(file)
