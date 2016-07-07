@@ -214,7 +214,7 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    *  @param elem    the element to test.
    *  @return `true` if the option has an element that is equal (as determined by `==`) to `elem`, `false` otherwise.
    */
-  final def contains[AA >: A](elem: AA): Boolean = this match {
+  final def contains[BB >: B](elem: BB): Boolean = this match {
     case Right(b) => b == elem
     case Left(_)  => false
   }
