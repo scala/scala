@@ -13,6 +13,28 @@ package util
 import java.io.{ IOException, PrintWriter }
 import java.util.jar.Attributes.{ Name => AttributeName }
 
+sealed abstract class JavaSpecVersion extends Ordered[JavaSpecVersion] {
+  import scala.math.Ordered.orderingToOrdered
+    def compare(that: JavaSpecVersion): Int = (this, that) match {
+      case (x: JavaSpecVersion9AndBeyond, y: JavaSpecVersionBefore9) => 1
+      case (x: JavaSpecVersionBefore9, y: JavaSpecVersion9AndBeyond) => -1
+      case (x: JavaSpecVersion9AndBeyond, y: JavaSpecVersion9AndBeyond) => x.major - y.major
+      case (x: JavaSpecVersionBefore9, y: JavaSpecVersionBefore9) => (x.major, x.minor) compare (y.major, y.minor)
+    }
+}
+
+case class JavaSpecVersionBefore9(major: Int, minor: Int) extends JavaSpecVersion
+case class JavaSpecVersion9AndBeyond(major: Int) extends JavaSpecVersion
+
+
+object JavaSpecVersionBefore9 {
+  val pattern = "1.([5-8])"r
+}
+
+object JavaSpecVersion9AndBeyond {
+  val pattern = "(9|1[0-9])"r
+}
+
 /** Loads `library.properties` from the jar. */
 object Properties extends PropertiesTrait {
   protected def propCategory    = "library"
@@ -181,14 +203,19 @@ private[scala] trait PropertiesTrait {
    * }}}
    */
   def isJavaAtLeast(version: String): Boolean = {
-    def parts(x: String) = {
-      val i = x.indexOf('.')
-      if (i < 0) throw new NumberFormatException("Not a version: " + x)
-      (x.substring(0, i), x.substring(i+1, x.length))
+    val parsedJavaSpecVersion: JavaSpecVersion = parseVersion(javaSpecVersion)
+    val parsedVersion: JavaSpecVersion = parseVersion(version)
+    parsedJavaSpecVersion >= parsedVersion
+
+  }
+
+  def parseVersion(version: String): JavaSpecVersion = version match {
+    case JavaSpecVersion9AndBeyond.pattern(versionVal) => versionVal.toInt match {
+      case x if x >= 9 => JavaSpecVersion9AndBeyond(x)
+      case _ => throw new NumberFormatException("Not a version: " + version)
     }
-    val (v, _v) = parts(version)
-    val (s, _s) = parts(javaSpecVersion)
-    s.toInt >= v.toInt && _s.toInt >= _v.toInt
+    case JavaSpecVersionBefore9.pattern(versionVal) => JavaSpecVersionBefore9(1, versionVal.toInt)
+    case _ => throw new NumberFormatException("Not a version: " + version)
   }
 
   // provide a main method so version info can be obtained by running this
