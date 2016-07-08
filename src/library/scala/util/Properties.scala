@@ -168,27 +168,31 @@ private[scala] trait PropertiesTrait {
 
   /** Compares the given specification version to the specification version of the platform.
    *
-   * @param version a specification version of the form "major.minor"
+   * @param version a specification version number (legacy forms acceptable)
    * @return `true` iff the specification version of the current runtime
    * is equal to or higher than the version denoted by the given string.
    * @throws NumberFormatException if the given string is not a version string
    *
    * @example {{{
-   * // In this example, the runtime's Java specification is assumed to be at version 1.7.
+   * // In this example, the runtime's Java specification is assumed to be at version 8.
    * isJavaAtLeast("1.6")            // true
-   * isJavaAtLeast("1.7")            // true
-   * isJavaAtLeast("1.8")            // false
+   * isJavaAtLeast("1.8")            // true
+   * isJavaAtLeast("8")              // true
+   * isJavaAtLeast("9")              // false
+   * isJavaAtLeast("1.9")            // throws
    * }}}
    */
   def isJavaAtLeast(version: String): Boolean = {
-    def parts(x: String) = {
-      val i = x.indexOf('.')
-      if (i < 0) throw new NumberFormatException("Not a version: " + x)
-      (x.substring(0, i), x.substring(i+1, x.length))
+    def versionOf(s: String): Int = s.indexOf('.') match {
+      case 1 if s.charAt(0) == '1' =>
+        val v = versionOf(s.substring(2))
+        if (v < 9) v else -1
+      case -1 => s.toInt
+      case _  => -1
     }
-    val (v, _v) = parts(version)
-    val (s, _s) = parts(javaSpecVersion)
-    s.toInt >= v.toInt && _s.toInt >= _v.toInt
+    val v = versionOf(version)
+    if (v < 0) throw new NumberFormatException(s"Not a version: $version")
+    versionOf(javaSpecVersion) >= v
   }
 
   // provide a main method so version info can be obtained by running this
