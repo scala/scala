@@ -1346,7 +1346,7 @@ trait Namers extends MethodSynthesis {
             val defRhs = rvparam.rhs
 
             val defaultTree = atPos(vparam.pos.focus) {
-              DefDef(Modifiers(paramFlagsToDefaultGetter(meth.flags)) | oflag, name, defTparams, defVparamss, defTpt, defRhs)
+              DefDef(Modifiers(paramFlagsToDefaultGetter(meth.flags), ddef.mods.privateWithin) | oflag, name, defTparams, defVparamss, defTpt, defRhs)
             }
             if (!isConstr)
               methOwner.resetFlag(INTERFACE) // there's a concrete member now
