@@ -95,6 +95,8 @@ trait StdNames {
     val NAME_JOIN_STRING: String              = NameTransformer.NAME_JOIN_STRING
     val MODULE_SUFFIX_STRING: String          = NameTransformer.MODULE_SUFFIX_STRING
     val LOCAL_SUFFIX_STRING: String           = NameTransformer.LOCAL_SUFFIX_STRING
+    val LAZY_LOCAL_SUFFIX_STRING: String      = NameTransformer.LAZY_LOCAL_SUFFIX_STRING
+
     val TRAIT_SETTER_SEPARATOR_STRING: String = NameTransformer.TRAIT_SETTER_SEPARATOR_STRING
 
     val SINGLETON_SUFFIX: String     = ".type"
@@ -337,7 +339,6 @@ trait StdNames {
     val DEFAULT_CASE: NameType             = "defaultCase$"
     val EQEQ_LOCAL_VAR: NameType           = "eqEqTemp$"
     val FAKE_LOCAL_THIS: NameType          = "this$"
-    val LAZY_LOCAL: NameType               = "$lzy"
     val LAZY_SLOW_SUFFIX: NameType         = "$lzycompute"
     val UNIVERSE_BUILD_PREFIX: NameType    = "$u.internal.reificationSupport."
     val UNIVERSE_PREFIX: NameType          = "$u."

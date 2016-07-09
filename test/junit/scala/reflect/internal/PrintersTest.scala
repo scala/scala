@@ -1018,7 +1018,11 @@ class ValAndDefPrintTest {
     """,
     typedCode = sm"""
     |def a = {
-    |  lazy val test: scala.Int = 42;
+    |  lazy val test$$lzy: scala.Int = _;
+    |  lazy val test: Int = {
+    |    test$$lzy = 42;
+    |    test$$lzy
+    |  };
     |  ()
     |}""")
 

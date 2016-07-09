@@ -103,7 +103,7 @@ object TypecheckedProps extends QuasiquoteProperties("typechecked")
     val lazyName = TermName("x")
     val lazyRhsVal = 42
     val lazyRhs = Literal(Constant(lazyRhsVal))
-    val q"{lazy val $pname = $rhs}" = typecheck(q"{lazy val $lazyName = $lazyRhsVal}")
+    val q"{ $_ ; $mods val $pname: $_ = { $_ = $rhs ; $_ }   }"  = typecheck(q"{lazy val $lazyName = $lazyRhsVal}")
 
     assert(pname == lazyName)
     assert(rhs ≈ lazyRhs)

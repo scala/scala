@@ -2221,7 +2221,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (!isPastTyper && meth.isPrimaryConstructor) {
         for (vparams <- ddef.vparamss; vd <- vparams) {
           if (vd.mods.isParamAccessor) {
-            namer.validateParam(vd)
+            vd.symbol setAnnotations (vd.symbol.annotations filter AnnotationInfo.mkFilter(ParamTargetClass, defaultRetention = true))
           }
         }
       }

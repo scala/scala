@@ -300,7 +300,7 @@ trait Namers extends MethodSynthesis {
     def assignSymbol(tree: Tree): Symbol =
       logAssignSymbol(tree, tree match {
         case PackageDef(pid, _) => createPackageSymbol(tree.pos, pid)
-        case Import(_, _)       => createImportSymbol(tree)
+        case imp: Import        => createImportSymbol(imp)
         case mdef: MemberDef    => createMemberSymbol(mdef, mdef.name, -1L)
         case _                  => abort("Unexpected tree: " + tree)
       })
@@ -316,6 +316,12 @@ trait Namers extends MethodSynthesis {
       val sym = assignAndEnterSymbol(tree)
       sym setInfo completerOf(tree)
       // log("[+info] " + sym.fullLocationString)
+      sym
+    }
+
+    def createMethod(accessQual: MemberDef, name: TermName, pos: Position, flags: Long): MethodSymbol = {
+      val sym = owner.newMethod(name, pos, flags)
+      setPrivateWithin(accessQual, sym)
       sym
     }
 
@@ -355,11 +361,9 @@ trait Namers extends MethodSynthesis {
           else owner.newValue(name.toTermName, pos, flags)
       }
     }
-    def createFieldSymbol(tree: ValDef): TermSymbol =
-      owner.newValue(tree.localName, tree.pos, tree.mods.flags & FieldFlags | PrivateLocal)
 
-    def createImportSymbol(tree: Tree) =
-      NoSymbol.newImport(tree.pos) setInfo completerOf(tree)
+    def createImportSymbol(tree: Import) =
+      NoSymbol.newImport(tree.pos) setInfo (namerOf(tree.symbol) importTypeCompleter tree)
 
     /** All PackageClassInfoTypes come from here. */
     def createPackageSymbol(pos: Position, pid: RefTree): Symbol = {
@@ -632,7 +636,7 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-    def completerOf(tree: Tree): TypeCompleter = {
+    def completerOf(tree: MemberDef): TypeCompleter = {
       val mono = namerOf(tree.symbol) monoTypeCompleter tree
       val tparams = treeInfo.typeParameters(tree)
       if (tparams.isEmpty) mono
@@ -666,25 +670,6 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-    def enterLazyVal(tree: ValDef, lazyAccessor: Symbol): TermSymbol = {
-      // If the owner is not a class, this is a lazy val from a method,
-      // with no associated field.  It has an accessor with $lzy appended to its name and
-      // its flags are set differently.  The implicit flag is reset because otherwise
-      // a local implicit "lazy val x" will create an ambiguity with itself
-      // via "x$lzy" as can be seen in test #3927.
-      val sym = (
-        if (owner.isClass) createFieldSymbol(tree)
-        else owner.newValue(tree.name append nme.LAZY_LOCAL, tree.pos, (tree.mods.flags | ARTIFACT) & ~IMPLICIT)
-      )
-      enterValSymbol(tree, sym setFlag MUTABLE setLazyAccessor lazyAccessor)
-    }
-    def enterStrictVal(tree: ValDef): TermSymbol = {
-      enterValSymbol(tree, createFieldSymbol(tree))
-    }
-    def enterValSymbol(tree: ValDef, sym: TermSymbol): TermSymbol = {
-      enterInScope(sym)
-      sym setInfo namerOf(sym).monoTypeCompleter(tree)
-    }
     def enterPackage(tree: PackageDef) {
       val sym = assignSymbol(tree)
       newNamer(context.make(tree, sym.moduleClass, sym.info.decls)) enterSyms tree.stats
@@ -771,7 +756,7 @@ trait Namers extends MethodSynthesis {
       NoSymbol
     }
 
-    def monoTypeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
+    def monoTypeCompleter(tree: MemberDef) = mkTypeCompleter(tree) { sym =>
       // this early test is there to avoid infinite baseTypes when
       // adding setters and getters --> bug798
       // It is a def in an attempt to provide some insulation against
@@ -780,8 +765,9 @@ trait Namers extends MethodSynthesis {
       // on these flag checks so it can't hurt.
       def needsCycleCheck = sym.isNonClassType && !sym.isParameter && !sym.isExistential
 
-      // logDefinition(sym) {
-      val tp = typeSig(tree)
+      val annotations = annotSig(tree.mods.annotations)
+
+      val tp = typeSig(tree, annotations)
 
       findCyclicalLowerBound(tp) andAlso { sym =>
         if (needsCycleCheck) {
@@ -792,42 +778,140 @@ trait Namers extends MethodSynthesis {
           sym.initialize
         }
       }
-      sym setInfo {
-        if (sym.isJavaDefined) RestrictJavaArraysMap(tp)
-        else tp
-      }
+
+      sym.setInfo(if (!sym.isJavaDefined) tp else RestrictJavaArraysMap(tp))
+
       if (needsCycleCheck) {
         log(s"Needs cycle check: ${sym.debugLocationString}")
         if (!typer.checkNonCyclic(tree.pos, tp))
           sym setInfo ErrorType
       }
-      //}
 
       validate(sym)
     }
 
-    def moduleClassTypeCompleter(tree: ModuleDef) = {
-      mkTypeCompleter(tree) { sym =>
-        val moduleSymbol = tree.symbol
-        assert(moduleSymbol.moduleClass == sym, moduleSymbol.moduleClass)
-        moduleSymbol.info // sets moduleClass info as a side effect.
-      }
+    def moduleClassTypeCompleter(tree: ModuleDef) = mkTypeCompleter(tree) { sym =>
+      val moduleSymbol = tree.symbol
+      assert(moduleSymbol.moduleClass == sym, moduleSymbol.moduleClass)
+      moduleSymbol.info // sets moduleClass info as a side effect.
+    }
+
+
+    def importTypeCompleter(imp: Import) = mkTypeCompleter(imp) { sym =>
+      sym setInfo importSig(imp)
+    }
+
+    import AnnotationInfo.{mkFilter => annotationFilter}
+
+    def valTypeCompleter(tree: ValDef) = mkTypeCompleter(tree) { sym =>
+      val annots =
+        if (tree.mods.annotations.isEmpty) Nil
+        else annotSig(tree.mods.annotations) filter annotationFilter(FieldTargetClass, !tree.mods.isParamAccessor)
+
+      sym setInfo typeSig(tree, annots)
+
+      validate(sym)
     }
 
     /* Explicit isSetter required for bean setters (beanSetterSym.isSetter is false) */
     def accessorTypeCompleter(tree: ValDef, isSetter: Boolean) = mkTypeCompleter(tree) { sym =>
+      // println(s"triaging for ${sym.debugFlagString} $sym from $valAnnots to $annots")
+
       // typeSig calls valDefSig (because tree: ValDef)
       // sym is an accessor, while tree is the field (which may have the same symbol as the getter, or maybe it's the field)
-      val sig = accessorSigFromFieldTp(sym, isSetter, typeSig(tree))
+      // TODO: can we make this work? typeSig is called on same tree (valdef) to complete info for field and all its accessors
+      // reuse work done in valTypeCompleter if we already computed the type signature of the val
+      // (assuming the field and accessor symbols are distinct -- i.e., we're not in a trait)
+//      val valSig =
+//        if ((sym ne tree.symbol) && tree.symbol.isInitialized) tree.symbol.info
+//        else typeSig(tree, Nil) // don't set annotations for the valdef -- we just want to compute the type sig
+
+      val valSig = typeSig(tree, Nil) // don't set annotations for the valdef -- we just want to compute the type sig
+
+      val sig = accessorSigFromFieldTp(sym, isSetter, valSig)
+
+      val mods = tree.mods
+      if (mods.annotations.nonEmpty) {
+        val annotSigs = annotSig(mods.annotations)
+
+        // neg/t3403: check that we didn't get a sneaky type alias/renamed import that we couldn't detect because we only look at names during synthesis
+        // (TODO: can we look at symbols earlier?)
+        if (!((mods hasAnnotationNamed tpnme.BeanPropertyAnnot) || (mods hasAnnotationNamed tpnme.BooleanBeanPropertyAnnot))
+           && annotSigs.exists(ann => (ann.matches(BeanPropertyAttr)) || ann.matches(BooleanBeanPropertyAttr)))
+          BeanPropertyAnnotationLimitationError(tree)
+
+        sym setAnnotations (annotSigs filter filterAccessorAnnotations(isSetter))
+      }
 
       sym setInfo pluginsTypeSigAccessor(sig, typer, tree, sym)
 
       validate(sym)
     }
 
-    private def accessorSigFromFieldTp(sym: global.Symbol, isSetter: Boolean, tp: global.Type): global.Type with Product with Serializable = {
-      if (isSetter) MethodType(List(sym.newSyntheticValueParam(tp)), UnitTpe) else NullaryMethodType(tp)
+    /* Explicit isSetter required for bean setters (beanSetterSym.isSetter is false) */
+    def beanAccessorTypeCompleter(tree: ValDef, missingTpt: Boolean, isSetter: Boolean) = mkTypeCompleter(tree) { sym =>
+      context.unit.synthetics get sym match {
+        case Some(ddef: DefDef) =>
+          // sym is an accessor, while tree is the field (for traits it's actually the getter, and we're completing the setter)
+          // reuse work done in valTypeCompleter if we already computed the type signature of the val
+          // (assuming the field and accessor symbols are distinct -- i.e., we're not in a trait)
+          val valSig =
+            if ((sym ne tree.symbol) && tree.symbol.isInitialized) tree.symbol.info
+            else typeSig(tree, Nil) // don't set annotations for the valdef -- we just want to compute the type sig
+
+          // patch up the accessor's tree if the valdef's tpt was not known back when the tree was synthesized
+          if (missingTpt) { // can't look at tree.tpt here because it may have been completed by now
+            if (!isSetter) ddef.tpt setType valSig
+            else if (ddef.vparamss.nonEmpty && ddef.vparamss.head.nonEmpty) ddef.vparamss.head.head.tpt setType valSig
+            else throw new TypeError(tree.pos, s"Internal error: could not complete parameter/return type for $ddef from $sym")
+          }
+
+          val annots =
+            if (tree.mods.annotations.isEmpty) Nil
+            else annotSig(tree.mods.annotations) filter filterBeanAccessorAnnotations(isSetter)
+
+          val sig = typeSig(ddef, annots)
+
+          sym setInfo pluginsTypeSigAccessor(sig, typer, tree, sym)
+
+          validate(sym)
+
+        case _ =>
+          throw new TypeError(tree.pos, s"Internal error: no synthetic tree found for bean accessor $sym")
+      }
+
     }
+
+
+    // see scala.annotation.meta's package class for more info
+    // Annotations on ValDefs can be targeted towards the following: field, getter, setter, beanGetter, beanSetter, param.
+    // The defaults are:
+    //   - (`val`-, `var`- or plain) constructor parameter annotations end up on the parameter, not on any other entity.
+    //   - val/var member annotations solely end up on the underlying field, except in traits (@since 2.12),
+    //     where there is no field, and the getter thus holds annotations targeting both getter & field.
+    //     As soon as there is a field/getter (in subclasses mixing in the trait), we triage the annotations.
+    //
+    // TODO: these defaults can be surprising for annotations not meant for accessors/fields -- should we revisit?
+    // (In order to have `@foo val X` result in the X getter being annotated with `@foo`, foo needs to be meta-annotated with @getter)
+    private def filterAccessorAnnotations(isSetter: Boolean): AnnotationInfo => Boolean =
+      if (isSetter || !owner.isTrait)
+        annotationFilter(if (isSetter) SetterTargetClass else GetterTargetClass, defaultRetention = false)
+      else (ann =>
+        annotationFilter(FieldTargetClass, defaultRetention = true)(ann) ||
+        annotationFilter(GetterTargetClass, defaultRetention = true)(ann))
+
+    private def filterBeanAccessorAnnotations(isSetter: Boolean): AnnotationInfo => Boolean =
+      if (isSetter || !owner.isTrait)
+        annotationFilter(if (isSetter) BeanSetterTargetClass else BeanGetterTargetClass, defaultRetention = false)
+      else (ann =>
+        annotationFilter(FieldTargetClass, defaultRetention = true)(ann) ||
+          annotationFilter(BeanGetterTargetClass, defaultRetention = true)(ann))
+
+
+    private def accessorSigFromFieldTp(sym: Symbol, isSetter: Boolean, tp: Type): Type =
+      if (isSetter) MethodType(List(sym.newSyntheticValueParam(tp)), UnitTpe)
+      else NullaryMethodType(tp)
+
     def selfTypeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
       val selftpe = typer.typedType(tree).tpe
       sym setInfo {
@@ -1539,66 +1623,51 @@ trait Namers extends MethodSynthesis {
      * is then assigned to the corresponding symbol (typeSig itself does not need to assign
      * the type to the symbol, but it can if necessary).
      */
-    def typeSig(tree: Tree): Type = {
-      // log("typeSig " + tree)
-      /* For definitions, transform Annotation trees to AnnotationInfos, assign
-       * them to the sym's annotations. Type annotations: see Typer.typedAnnotated
-       * We have to parse definition annotations here (not in the typer when traversing
-       * the MemberDef tree): the typer looks at annotations of certain symbols; if
-       * they were added only in typer, depending on the compilation order, they may
-       * or may not be visible.
-       */
-      def annotate(annotated: Symbol) = {
-        // typeSig might be called multiple times, e.g. on a ValDef: val, getter, setter
-        // parse the annotations only once.
-        if (!annotated.isInitialized) tree match {
-          case defn: MemberDef =>
-            val ainfos = defn.mods.annotations filterNot (_ eq null) map { ann =>
-              val ctx    = typer.context
-              val annCtx = ctx.makeNonSilent(ann)
-              // need to be lazy, #1782. beforeTyper to allow inferView in annotation args, SI-5892.
-              AnnotationInfo lazily {
-                enteringTyper(newTyper(annCtx) typedAnnotation ann)
-              }
-            }
-            if (ainfos.nonEmpty) {
-              annotated setAnnotations ainfos
-              if (annotated.isTypeSkolem)
-                annotated.deSkolemize setAnnotations ainfos
-            }
-          case _ =>
+    def typeSig(tree: Tree, annotSigs: List[AnnotationInfo]): Type = {
+      if (annotSigs.nonEmpty) annotate(tree.symbol, annotSigs)
+
+      try tree match {
+        case member: MemberDef => createNamer(tree).memberSig(member)
+        case imp: Import       => importSig(imp)
+      } catch typeErrorHandler(tree, ErrorType)
+    }
+
+    /* For definitions, transform Annotation trees to AnnotationInfos, assign
+     * them to the sym's annotations. Type annotations: see Typer.typedAnnotated
+     * We have to parse definition annotations here (not in the typer when traversing
+     * the MemberDef tree): the typer looks at annotations of certain symbols; if
+     * they were added only in typer, depending on the compilation order, they may
+     * or may not be visible.
+     */
+    def annotSig(annotations: List[Tree]): List[AnnotationInfo] =
+      annotations filterNot (_ eq null) map { ann =>
+        val ctx = typer.context
+        // need to be lazy, #1782. enteringTyper to allow inferView in annotation args, SI-5892.
+        AnnotationInfo lazily {
+          enteringTyper {
+            newTyper(ctx.makeNonSilent(ann)) typedAnnotation ann
+          }
         }
       }
 
-      val sym: Symbol = tree.symbol
+    private def annotate(sym: Symbol, annotSigs: List[AnnotationInfo]): Unit = {
+      sym setAnnotations annotSigs
 
       // TODO: meta-annotations to indicate where module annotations should go (module vs moduleClass)
-      annotate(sym)
-      if (sym.isModule) annotate(sym.moduleClass)
-
-      def getSig = tree match {
-        case cdef: ClassDef =>
-          createNamer(tree).classSig(cdef)
-
-        case mdef: ModuleDef =>
-          createNamer(tree).moduleSig(mdef)
-
-        case ddef: DefDef =>
-          createNamer(tree).methodSig(ddef)
-
-        case vdef: ValDef =>
-          createNamer(tree).valDefSig(vdef)
-
-        case tdef: TypeDef =>
-          createNamer(tree).typeDefSig(tdef) //@M!
-
-        case imp: Import =>
-          importSig(imp)
-      }
-
-      try getSig
-      catch typeErrorHandler(tree, ErrorType)
+      if (sym.isModule) sym.moduleClass setAnnotations annotSigs
+      else if (sym.isTypeSkolem) sym.deSkolemize setAnnotations annotSigs
     }
+
+    // TODO OPT: move to method on MemberDef?
+    private def memberSig(member: MemberDef) =
+      member match {
+        case ddef: DefDef    => methodSig(ddef)
+        case vdef: ValDef    => valDefSig(vdef)
+        case tdef: TypeDef   => typeDefSig(tdef)
+        case cdef: ClassDef  => classSig(cdef)
+        case mdef: ModuleDef => moduleSig(mdef)
+        // skip PackageDef
+      }
 
     def includeParent(tpe: Type, parent: Symbol): Type = tpe match {
       case PolyType(tparams, restpe) =>
