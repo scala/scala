@@ -7,11 +7,11 @@ Try :help or completions for vals._ and power._
 scala> // guarding against "error: reference to global is ambiguous"
 
 scala> global.emptyValDef  // "it is imported twice in the same scope by ..."
-warning: there was one deprecation warning (since 2.11.0); re-run with -deprecation for details
+warning: there was one deprecation warning (since 2.11.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 res0: $r.global.noSelfType.type = private val _ = _
 
 scala> val tp = ArrayClass[scala.util.Random]    // magic with tags
-warning: there was one feature warning; re-run with -feature for details
+warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
 tp: $r.global.Type = Array[scala.util.Random]
 
 scala> tp.memberType(Array_apply)                // evidence

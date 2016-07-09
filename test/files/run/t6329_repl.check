@@ -3,28 +3,28 @@ scala> import scala.reflect.classTag
 import scala.reflect.classTag
 
 scala> classManifest[scala.List[_]]
-warning: there was one deprecation warning (since 2.10.0); re-run with -deprecation for details
+warning: there was one deprecation warning (since 2.10.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 res0: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List[<?>]
 
 scala> classTag[scala.List[_]]
 res1: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List
 
 scala> classManifest[scala.collection.immutable.List[_]]
-warning: there was one deprecation warning (since 2.10.0); re-run with -deprecation for details
+warning: there was one deprecation warning (since 2.10.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 res2: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List[<?>]
 
 scala> classTag[scala.collection.immutable.List[_]]
 res3: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List
 
 scala> classManifest[Predef.Set[_]]
-warning: there was one deprecation warning (since 2.10.0); re-run with -deprecation for details
+warning: there was one deprecation warning (since 2.10.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 res4: scala.reflect.ClassTag[scala.collection.immutable.Set[_]] = scala.collection.immutable.Set[<?>]
 
 scala> classTag[Predef.Set[_]]
 res5: scala.reflect.ClassTag[scala.collection.immutable.Set[_]] = scala.collection.immutable.Set
 
 scala> classManifest[scala.collection.immutable.Set[_]]
-warning: there was one deprecation warning (since 2.10.0); re-run with -deprecation for details
+warning: there was one deprecation warning (since 2.10.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 res6: scala.reflect.ClassTag[scala.collection.immutable.Set[_]] = scala.collection.immutable.Set[<?>]
 
 scala> classTag[scala.collection.immutable.Set[_]]

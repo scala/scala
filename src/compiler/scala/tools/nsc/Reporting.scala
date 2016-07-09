@@ -43,19 +43,19 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
             else sinceAndAmount += ((since, 1))
           }
           val deprecationSummary = sinceAndAmount.size > 1
-          sinceAndAmount.foreach { case (since, amount) =>
-            val numWarnings   = amount
+          sinceAndAmount.foreach { case (since, numWarnings) =>
             val warningsSince = if (since.nonEmpty) s" (since $since)" else ""
             val warningVerb   = if (numWarnings == 1) "was" else "were"
             val warningCount  = countElementsAsString(numWarnings, s"$what warning")
-            val rerun         = if (deprecationSummary) "" else s"; re-run with ${setting.name} for details"
-            reporter.warning(NoPosition, s"there $warningVerb $warningCount$warningsSince$rerun")
+            val rerun         = if (deprecationSummary) "" else reporter.rerunWithDetails(setting, setting.name)
+            reporter.warning(NoPosition, s"there ${warningVerb} ${warningCount}${warningsSince}${rerun}")
           }
           if (deprecationSummary) {
             val numWarnings   = warnings.size
             val warningVerb   = if (numWarnings == 1) "was" else "were"
             val warningCount  = countElementsAsString(numWarnings, s"$what warning")
-            reporter.warning(NoPosition, s"there $warningVerb $warningCount in total; re-run with ${setting.name} for details")
+            val rerun         = reporter.rerunWithDetails(setting, setting.name)
+            reporter.warning(NoPosition, s"there ${warningVerb} ${warningCount} in total${rerun}")
           }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * filter: inliner warnings; re-run with
+ * filter: inliner warnings;
  */
 import java.lang.Thread.holdsLock
 import scala.collection.mutable.StringBuilder

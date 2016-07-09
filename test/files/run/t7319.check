@@ -3,15 +3,15 @@ scala> class M[A]
 defined class M
 
 scala> implicit def ma0[A](a: A): M[A] = null
-warning: there was one feature warning; re-run with -feature for details
+warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
 ma0: [A](a: A)M[A]
 
 scala> implicit def ma1[A](a: A): M[A] = null
-warning: there was one feature warning; re-run with -feature for details
+warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
 ma1: [A](a: A)M[A]
 
 scala> def convert[F[X <: F[X]]](builder: F[_ <: F[_]]) = 0
-warning: there was one feature warning; re-run with -feature for details
+warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
 convert: [F[X <: F[X]]](builder: F[_ <: F[_]])Int
 
 scala> convert(Some[Int](0))
