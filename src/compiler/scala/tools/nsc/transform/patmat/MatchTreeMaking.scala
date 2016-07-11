@@ -465,7 +465,15 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         //  - Scala's arrays are invariant (so we don't drop type tests unsoundly)
         if (extractorArgTypeTest) mkDefault
         else expectedTp match {
-          case SingleType(_, sym)                       => mkEqTest(gen.mkAttributedQualifier(expectedTp)) // SI-4577, SI-4897
+          case SingleType(_, sym)                       =>
+            val expected = gen.mkAttributedQualifier(expectedTp)
+            if (expectedTp <:< AnyRefTpe) mkEqTest(expected) // SI-4577, SI-4897
+            else mkEqualsTest(expected)
+          // TODO SIP-23: should we test equality for literal types with eq?
+          // Conceptually cleaner, as SingleType is tested using eq.
+          // In practice it doesn't really matter, since `equals` does the same thing as `eq` in the `AnyVal` subclasses of `Any`.
+          // Should revisit if we end up lifting `eq`'s definition to `Any`, as discussed here:
+          // https://groups.google.com/d/msg/scala-internals/jsVlJI4H5OQ/8emZWRmgzcoJ
           case ThisType(sym) if sym.isModule            => and(mkEqualsTest(CODE.REF(sym)), mkTypeTest) // must use == to support e.g. List() == Nil
           case ConstantType(Constant(null)) if isAnyRef => mkEqTest(expTp(CODE.NULL))
           case ConstantType(const)                      => mkEqualsTest(expTp(Literal(const)))

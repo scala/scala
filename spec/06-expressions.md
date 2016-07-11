@@ -76,8 +76,8 @@ $T$ forSome { type $t_1[\mathit{tps}\_1] >: L_1 <: U_1$; $\ldots$; type $t_n[\ma
 SimpleExpr    ::=  Literal
 ```
 
-Typing of literals is as described [here](01-lexical-syntax.html#literals); their
-evaluation is immediate.
+Typing of literals is described along with their [lexical syntax](01-lexical-syntax.html#literals);
+their evaluation is immediate.
 
 ## The _Null_ Value
 
