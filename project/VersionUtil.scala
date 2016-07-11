@@ -61,7 +61,7 @@ object VersionUtil {
     val (base, suffix) = {
       val (b, s) = (baseVersion.value, baseVersionSuffix.value)
       if(s == "SPLIT") {
-        val split = """([\w+\.]+)(-[\w+\.]+)??""".r
+        val split = """([\w+\.]+)(-[\w+\.-]+)??""".r
         val split(b2, sOrNull) = b
         (b2, Option(sOrNull).map(_.drop(1)).getOrElse(""))
       } else (b, s)
