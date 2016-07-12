@@ -62,7 +62,7 @@ object Test extends InteractiveTest {
       def getComment(sym: Symbol, source: SourceFile, fragments: List[(Symbol,SourceFile)]): Option[Comment] = {
         val docResponse = new Response[(String, String, Position)]
         askDocComment(sym, source, sym.owner, fragments, docResponse)
-        docResponse.get.left.toOption flatMap {
+        docResponse.get.swap.toOption flatMap {
           case (expanded, raw, pos) =>
             if (expanded.isEmpty)
               None
@@ -85,13 +85,13 @@ object Test extends InteractiveTest {
       val batch = new BatchSourceFile(source.file, newText.toCharArray)
       val reloadResponse = new Response[Unit]
       compiler.askReload(List(batch), reloadResponse)
-      reloadResponse.get.left.toOption match {
+      reloadResponse.get.swap.toOption match {
         case None =>
           println("Couldn't reload")
         case Some(_) =>
           val parseResponse = new Response[Tree]
           askParsedEntered(batch, true, parseResponse)
-          parseResponse.get.left.toOption match {
+          parseResponse.get.swap.toOption match {
             case None =>
               println("Couldn't parse")
             case Some(_) =>
