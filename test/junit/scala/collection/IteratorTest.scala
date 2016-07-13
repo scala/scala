@@ -216,12 +216,16 @@ class IteratorTest {
   }
 
   @Test def bufferedHeadOptionReturnsValueWithHeadOrNone(): Unit = {
-    val i = List(1,2,3).iterator
-    val validHeadOption = i.buffered.headOption
+
+    val validHeadOption = List(1,2,3).iterator.buffered.headOption
     assertEquals(Some(1), validHeadOption)
 
-    val invalidHeadOption = i.drop(10).buffered.headOption
+    val invalidHeadOption = List(1,2,3).iterator.drop(10).buffered.headOption
     assertEquals(None: Option[Int], invalidHeadOption)
+
+    val validHeadOptionAtTail = List(1,2,3).iterator.drop(2).buffered.headOption
+    assertEquals(Some(3), validHeadOptionAtTail)
+
   }
 
 }
