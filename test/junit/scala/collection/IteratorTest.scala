@@ -214,4 +214,14 @@ class IteratorTest {
     assertSameElements(exp, res)
     assertEquals(8, counter) // was 14
   }
+
+  @Test def bufferedHeadOptionReturnsValueWithHeadOrNone(): Unit = {
+    val i = List(1,2,3).iterator
+    val validHeadOption = i.buffered.headOption
+    assertEquals(Some(1), validHeadOption)
+
+    val invalidHeadOption = i.drop(10).buffered.headOption
+    assertEquals(None: Option[Int], invalidHeadOption)
+  }
+
 }
