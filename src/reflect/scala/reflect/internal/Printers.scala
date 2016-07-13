@@ -1045,22 +1045,22 @@ trait Printers extends api.Printers { self: SymbolTable =>
             print("")
           }
 
-        case l @ Literal(x) =>
-          import Chars.LF
-          x match {
-            case Constant(v: String) if {
-              val strValue = x.stringValue
-              strValue.contains(LF) && strValue.contains("\"\"\"") && strValue.size > 1
-            } =>
-              val splitValue = x.stringValue.split(s"$LF").toList
-              val multilineStringValue = if (x.stringValue.endsWith(s"$LF")) splitValue :+ "" else splitValue
-              val trQuotes = "\"\"\""
-              print(trQuotes); printSeq(multilineStringValue) { print(_) } { print(LF) }; print(trQuotes)
-            case _ =>
-              // processing Float constants
-              val printValue = x.escapedStringValue + (if (x.value.isInstanceOf[Float]) "F" else "")
-              print(printValue)
+        case Literal(k @ Constant(s: String)) if s.contains(Chars.LF) =>
+          val tq = "\"" * 3
+          val lines = s.lines.toList
+          if (lines.lengthCompare(1) <= 0) print(k.escapedStringValue)
+          else {
+            val tqp = """["]{3}""".r
+            val tqq = """""\\""""     // ""\" is triple-quote quoted
+            print(tq)
+            printSeq(lines.map(x => tqp.replaceAllIn(x, tqq)))(print(_))(print(Chars.LF))
+            print(tq)
           }
+
+        case Literal(x) =>
+          // processing Float constants
+          val suffix = x.value match { case _: Float => "F" case _ => "" }
+          print(s"${x.escapedStringValue}${suffix}")
 
         case an @ Annotated(ap, tree) =>
           val printParentheses = needsParentheses(tree)()

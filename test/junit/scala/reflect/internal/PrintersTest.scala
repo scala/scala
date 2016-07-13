@@ -79,6 +79,22 @@ class BasePrintTest {
 
   @Test def testConstantLong = assertTreeCode(Literal(Constant(42l)))("42L")
 
+  val sq  = "\""
+  val tq  = "\"" * 3
+  val teq = "\"\"\\\""
+
+  @Test def testConstantMultiline = assertTreeCode(Literal(Constant("hello\nworld")))(s"${tq}hello\nworld${tq}")
+
+  @Test def testConstantFormfeed = assertTreeCode(Literal(Constant("hello\fworld")))(s"${sq}hello\\fworld${sq}")
+
+  @Test def testConstantControl = assertTreeCode(Literal(Constant("hello\u0003world")))(s"${sq}hello\\u0003world${sq}")
+
+  @Test def testConstantFormfeedChar = assertTreeCode(Literal(Constant('\f')))("'\\f'")
+
+  @Test def testConstantControlChar = assertTreeCode(Literal(Constant(3.toChar)))("'\\u0003'")
+
+  @Test def testConstantEmbeddedTriple = assertTreeCode(Literal(Constant(s"${tq}hello${tq}\nworld")))(s"${tq}${teq}hello${teq}\nworld${tq}")
+
   @Test def testOpExpr = assertPrintedCode("(5).+(4)", checkTypedTree = false)
 
   @Test def testName1 = assertPrintedCode("class test")
