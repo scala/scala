@@ -1,0 +1,6 @@
+ambiguous-same.scala:13: error: reference to x is ambiguous;
+it is both defined in object X and imported subsequently by
+import X.x
+    x
+    ^
+one error found

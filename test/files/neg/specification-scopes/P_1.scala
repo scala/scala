@@ -1,6 +1,7 @@
-package P {
-  object X { val x = 1; val y = 2; }
+package p {
+  object X { val x = 1; val y = 2 }
 }
-package Q {
-  object X { val x = true; val y = "" }
+
+package q {
+  object X { val x = true; val y = false }
 }
