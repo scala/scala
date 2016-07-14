@@ -1,51 +1,62 @@
-sammy_restrictions.scala:35: error: type mismatch;
+sammy_restrictions.scala:38: error: type mismatch;
  found   : () => Int
  required: NoAbstract
   (() => 0)      : NoAbstract
       ^
-sammy_restrictions.scala:36: error: type mismatch;
+sammy_restrictions.scala:39: error: type mismatch;
  found   : Int => Int
  required: TwoAbstract
   ((x: Int) => 0): TwoAbstract
             ^
-sammy_restrictions.scala:37: error: type mismatch;
+sammy_restrictions.scala:40: error: type mismatch;
  found   : Int => Int
  required: NoEmptyConstructor
   ((x: Int) => 0): NoEmptyConstructor
             ^
-sammy_restrictions.scala:38: error: type mismatch;
+sammy_restrictions.scala:41: error: type mismatch;
  found   : Int => Int
  required: MultipleConstructorLists
   ((x: Int) => 0): MultipleConstructorLists
             ^
-sammy_restrictions.scala:39: error: type mismatch;
+sammy_restrictions.scala:42: error: type mismatch;
  found   : Int => Int
  required: OneEmptySecondaryConstructor
   ((x: Int) => 0): OneEmptySecondaryConstructor // derived class must have an empty *primary* to call.
             ^
-sammy_restrictions.scala:40: error: type mismatch;
+sammy_restrictions.scala:43: error: type mismatch;
  found   : Int => Int
  required: MultipleMethodLists
   ((x: Int) => 0): MultipleMethodLists
             ^
-sammy_restrictions.scala:41: error: type mismatch;
+sammy_restrictions.scala:44: error: type mismatch;
  found   : Int => Int
  required: ImplicitConstructorParam
   ((x: Int) => 0): ImplicitConstructorParam
             ^
-sammy_restrictions.scala:42: error: type mismatch;
+sammy_restrictions.scala:45: error: type mismatch;
  found   : Int => Int
  required: ImplicitMethodParam
   ((x: Int) => 0): ImplicitMethodParam
             ^
-sammy_restrictions.scala:43: error: type mismatch;
+sammy_restrictions.scala:46: error: type mismatch;
  found   : Int => Int
  required: PolyMethod
   ((x: Int) => 0): PolyMethod
             ^
-sammy_restrictions.scala:44: error: type mismatch;
+sammy_restrictions.scala:47: error: type mismatch;
  found   : Int => Int
  required: SelfTp
   ((x: Int) => 0): SelfTp
             ^
-10 errors found
+sammy_restrictions.scala:48: error: type mismatch;
+ found   : Int => Int
+ required: T1 with U1
+  ((x: Int) => 0): T1 with U1
+            ^
+sammy_restrictions.scala:49: error: type mismatch;
+ found   : Int => Int
+ required: Test.NonClassTypeRefinement
+    (which expands to)  DerivedOneAbstract with OneAbstract
+  ((x: Int) => 0): NonClassTypeRefinement
+            ^
+12 errors found

@@ -837,9 +837,9 @@ trait Definitions extends api.StandardDefinitions {
      * The class defining the method is a supertype of `tp` that
      * has a public no-arg primary constructor.
      */
-    def samOf(tp: Type): Symbol = if (!doSam) NoSymbol else {
+    def samOf(tp: Type): Symbol = if (!doSam) NoSymbol else if (!isNonRefinementClassType(unwrapToClass(tp))) NoSymbol else {
       // look at erased type because we (only) care about what ends up in bytecode
-      // (e.g., an alias type or intersection type is fine as long as the intersection dominator compiles to an interface)
+      // (e.g., an alias type is fine as long as is compiles to a single-abstract-method)
       val tpSym: Symbol = erasure.javaErasure(tp).typeSymbol
 
       if (tpSym.exists && tpSym.isClass
