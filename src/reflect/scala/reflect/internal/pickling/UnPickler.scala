@@ -227,9 +227,7 @@ abstract class UnPickler {
             return NoSymbol
 
           if (tag == EXTMODCLASSref) {
-            val moduleVar = owner.info.decl(nme.moduleVarName(name.toTermName))
-            if (moduleVar.isLazyAccessor)
-              return moduleVar.lazyAccessor.lazyAccessor
+            owner.info.decl(nme.moduleVarName(name.toTermName))
           }
           NoSymbol
         }

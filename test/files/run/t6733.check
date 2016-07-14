@@ -4,7 +4,6 @@ method pri2a: isPrivateThis = true, isProtectedThis = false
 variable pri3a: isPrivateThis = true, isProtectedThis = false
 variable pri3a: isPrivateThis = true, isProtectedThis = false
 lazy value pri4a: isPrivateThis = true, isProtectedThis = false
-lazy value pri4a: isPrivateThis = true, isProtectedThis = false
 type Pri5a: isPrivateThis = true, isProtectedThis = false
 class Pri6: isPrivateThis = true, isProtectedThis = false
 trait Pri7: isPrivateThis = true, isProtectedThis = false
@@ -18,7 +17,6 @@ variable pro3a: isPrivateThis = false, isProtectedThis = true
 variable pro3b: isPrivateThis = false, isProtectedThis = true
 variable pro3b: isPrivateThis = false, isProtectedThis = true
 lazy value pro4a: isPrivateThis = false, isProtectedThis = true
-lazy value pro4a: isPrivateThis = true, isProtectedThis = false
 type Pro5a: isPrivateThis = false, isProtectedThis = true
 type Pro5b: isPrivateThis = false, isProtectedThis = true
 class Pro6: isPrivateThis = false, isProtectedThis = true

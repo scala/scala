@@ -97,7 +97,7 @@ trait TypeDiagnostics {
   /** An explanatory note to be added to error messages
    *  when there's a problem with abstract var defs */
   def abstractVarMessage(sym: Symbol): String =
-    if (underlyingSymbol(sym).isVariable)
+    if (sym.isSetter || sym.isGetter && sym.setterIn(sym.owner).exists)
       "\n(Note that variables need to be initialized to be defined)"
     else ""
 
@@ -140,7 +140,7 @@ trait TypeDiagnostics {
     * TODO: is it wise to create new symbols simply to generate error message? is this safe in interactive/resident mode?
     */
   def underlyingSymbol(member: Symbol): Symbol =
-    if (!member.hasAccessorFlag || member.owner.isTrait) member
+    if (!member.hasAccessorFlag || member.accessed == NoSymbol) member
     else if (!member.isDeferred) member.accessed
     else {
       val getter = if (member.isSetter) member.getterIn(member.owner) else member

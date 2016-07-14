@@ -1,9 +1,6 @@
 lazy-locals.scala:153: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   {
   ^
-lazy-locals.scala:159: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-    {
-    ^
 forced lazy val q
 q = 10
 forced lazy val t

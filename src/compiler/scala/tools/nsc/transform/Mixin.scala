@@ -11,6 +11,7 @@ import Flags._
 import scala.annotation.tailrec
 import scala.collection.mutable
 
+// TODO: move lazy vals bitmap creation to lazy vals phase now that lazy vals are mixed in during fields
 abstract class Mixin extends InfoTransform with ast.TreeDSL {
   import global._
   import definitions._
@@ -57,8 +58,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    */
   private val treatedClassInfos = perRunCaches.newMap[Symbol, Type]() withDefaultValue NoType
 
-  /** Map a lazy, mixedin field accessor to its trait member accessor */
-  private val initializer = perRunCaches.newMap[Symbol, Symbol]()
 
 // --------- helper functions -----------------------------------------------
 
@@ -295,9 +294,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       }
     }
 
-    /* Mix in members of trait mixinClass into class clazz. Also,
-     * for each lazy field in mixinClass, add a link from its mixed in member to its
-     * initializer method inside the implclass.
+    /* Mix in members of trait mixinClass into class clazz.
      */
     def mixinTraitMembers(mixinClass: Symbol) {
       // For all members of a trait's interface do:
@@ -319,28 +316,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           }
         }
         else if (mixinMember.hasFlag(ACCESSOR) && notDeferred(mixinMember)
-                 && (mixinMember hasFlag (LAZY | PARAMACCESSOR))
+                 && (mixinMember hasFlag PARAMACCESSOR)
                  && !isOverriddenAccessor(mixinMember, clazz.info.baseClasses)) {
-          // pick up where `fields` left off -- it already mixed in fields and accessors for regular vals.
-          // but has ignored lazy vals and constructor parameter accessors
-          // TODO: captures added by lambdalift for local traits?
-          //
-          // mixin accessor for lazy val or constructor parameter
+          // mixin accessor for constructor parameter
           // (note that a paramaccessor cannot have a constant type as it must have a user-defined type)
           val mixedInAccessor = cloneAndAddMixinMember(mixinClass, mixinMember)
           val name = mixinMember.name
 
-          if (mixinMember.isLazy)
-            initializer(mixedInAccessor) =
-              (mixinClass.info.decl(name) orElse abort(s"Could not find initializer for lazy val $name!"))
-
-          // Add field while we're mixing in the getter (unless it's a Unit-typed lazy val)
-          //
-          // lazy val of type Unit doesn't need a field -- the bitmap is enough.
-          // TODO: constant-typed lazy vals... it's an extreme corner case, but we could also suppress the field in:
-          // `trait T { final lazy val a = "a" }; class C extends T`, but who writes code like that!? :)
-          // we'd also have to change the lazyvals logic if we do this
-          if (!nme.isSetterName(name) && !(mixinMember.isLazy && isUnitGetter(mixinMember))) {
+          if (!nme.isSetterName(name)) {
             // enteringPhase: the private field is moved to the implementation class by erasure,
             // so it can no longer be found in the mixinMember's owner (the trait)
             val accessed = enteringPickler(mixinMember.accessed)
@@ -354,7 +337,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
             val newFlags = (
               (PrivateLocal)
-              | (mixinMember getFlag MUTABLE | LAZY)
+              | (mixinMember getFlag MUTABLE)
               | (if (mixinMember.hasStableFlag) 0 else MUTABLE)
               )
 
@@ -499,7 +482,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         else if (needsInitFlag(field) && !field.isDeferred) false
         else return NO_NAME
       )
-      if (field.accessed hasAnnotation TransientAttr) {
+      if (field.accessedOrSelf hasAnnotation TransientAttr) {
         if (isNormal) BITMAP_TRANSIENT
         else BITMAP_CHECKINIT_TRANSIENT
       } else {
@@ -862,17 +845,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
       def getterBody(getter: Symbol) = {
         assert(getter.isGetter)
-        val readValue =
-          if (getter.isLazy) {
-            getter.tpe.resultType match {
-              case ConstantType(c) => Literal(c)
-              case _ =>
-                val initCall = Apply(SuperSelect(clazz, initializer(getter)), Nil)
-                val offset   = fieldOffset(getter)
-                if (isUnitGetter(getter)) mkLazyDef(clazz, getter, List(initCall), UNIT, offset)
-                else mkLazyDef(clazz, getter, List(atPos(getter.pos)(Assign(fieldAccess(getter), initCall))), fieldAccess(getter), offset)
-            }
-          } else {
+        val readValue = {
             assert(getter.hasFlag(PARAMACCESSOR))
             fieldAccess(getter)
           }
@@ -902,7 +875,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         if (clazz.isTrait || sym.isSuperAccessor) addDefDef(sym)
         // implement methods mixed in from a supertrait (the symbols were created by mixinTraitMembers)
         else if (sym.hasFlag(ACCESSOR) && !sym.hasFlag(DEFERRED)) {
-          assert(sym hasFlag (LAZY | PARAMACCESSOR), s"mixed in $sym from $clazz is not lazy/param?!?")
+          assert(sym hasFlag (PARAMACCESSOR), s"mixed in $sym from $clazz is not lazy/param?!?")
 
           // add accessor definitions
           addDefDef(sym, if (sym.isSetter) setterBody(sym) else getterBody(sym))
@@ -919,7 +892,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
       if (clazz.isTrait) stats1 = stats1.filter {
           case vd: ValDef =>
-            assert(vd.symbol.hasFlag(PRESUPER | PARAMACCESSOR | LAZY), s"unexpected valdef $vd in trait $clazz")
+            assert(vd.symbol.hasFlag(PRESUPER | PARAMACCESSOR), s"unexpected valdef $vd in trait $clazz")
             false
           case _ => true
         }

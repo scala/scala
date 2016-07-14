@@ -35,7 +35,7 @@ final def wait(): Unit
 final def wait(x$1: Long): Unit
 final def wait(x$1: Long,x$2: Int): Unit
 final private[this] val CONST_STRING: String("constant")
-lazy private[this] var foo: Int
+lazy val foo: Int
 private[package test] def pkgPrivateM: String
 private[this] val pkgPrivateV: String
 ================================================================================

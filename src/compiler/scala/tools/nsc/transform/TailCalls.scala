@@ -274,10 +274,8 @@ abstract class TailCalls extends Transform {
       import runDefinitions.{Boolean_or, Boolean_and}
 
       tree match {
-        case ValDef(_, _, _, _) =>
-          if (tree.symbol.isLazy && tree.symbol.hasAnnotation(TailrecClass))
-            reporter.error(tree.pos, "lazy vals are not tailcall transformed")
-
+        case dd: DefDef if tree.symbol.isLazy && tree.symbol.hasAnnotation(TailrecClass) =>
+          reporter.error(tree.pos, "lazy vals are not tailcall transformed")
           super.transform(tree)
 
         case dd @ DefDef(_, name, _, vparamss0, _, rhs0) if isEligible(dd) =>

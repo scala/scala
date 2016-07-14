@@ -332,11 +332,6 @@ value dZ { // after parser
   val cD: ll.C[List[T3]]
 }
 
-value dZ { // after parser
-  private[this] val cD: ll.C[List[T3]]
-  val cD: ll.C[List[T3]]
-}
-
 value dZ { // after uncurry
   private[this] val cD: ll.C[List[T3]]
   val cD(): ll.C[List[T3]]
@@ -347,11 +342,9 @@ value dZ { // after erasure
   val cD(): ll.C
 }
 
-value jZ { // after parser
-  def thisI(): I.this.type
-  def thisC(): C.this.type
-  def t2(): T2
-  def t1(): T1
+value dZ { // after parser
+  private[this] val cD: ll.C[List[T3]]
+  val cD: ll.C[List[T3]]
 }
 
 value jZ { // after parser
@@ -391,6 +384,13 @@ value jZ { // after flatten
   def thisC(): ll.C
   def t2(): Object
   def t1(): Object
+}
+
+value jZ { // after parser
+  def thisI(): I.this.type
+  def thisC(): C.this.type
+  def t2(): T2
+  def t1(): T1
 }
 
 method kz { // after parser
