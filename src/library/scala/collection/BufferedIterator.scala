@@ -24,10 +24,7 @@ trait BufferedIterator[+A] extends Iterator[A] {
    */
   def head: A
 
-  def headOption : Option[A] = {
-    if (this.nonEmpty) Option(head)
-    else None
-  }
+  def headOption : Option[A] = if (hasNext) Some(head) else None
 
   override def buffered: this.type = this
 }

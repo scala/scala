@@ -226,6 +226,8 @@ class IteratorTest {
     val validHeadOptionAtTail = List(1,2,3).iterator.drop(2).buffered.headOption
     assertEquals(Some(3), validHeadOptionAtTail)
 
+    val nullHandingList = List(null, "yellow").iterator.buffered.headOption
+    assertEquals(Some(null), nullHandingList)
   }
 
 }
