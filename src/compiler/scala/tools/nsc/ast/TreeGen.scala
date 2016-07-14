@@ -355,20 +355,22 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     treeCopy.DefDef(orig, orig.mods, orig.name, orig.tparams, (selfParam :: orig.vparamss.head) :: Nil, orig.tpt, rhs).setSymbol(newSym)
   }
 
-  // TODO: the rewrite to AbstractFunction is superfluous once we compile FunctionN to a SAM type (aka functional interface)
-  def functionClassType(fun: Function): Type =
-    if (isFunctionType(fun.tpe)) abstractFunctionType(fun.vparams.map(_.symbol.tpe), fun.body.tpe.deconst)
-    else fun.tpe
-
   def expandFunction(localTyper: analyzer.Typer)(fun: Function, inConstructorFlag: Long): Tree = {
-    val parents = addSerializable(functionClassType(fun))
-    val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation SerialVersionUIDAnnotation
+    val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag)
+    val parents = if (isFunctionType(fun.tpe)) {
+      anonClass addAnnotation SerialVersionUIDAnnotation
+      addSerializable(abstractFunctionType(fun.vparams.map(_.symbol.tpe), fun.body.tpe.deconst))
+    } else {
+      if (fun.tpe.typeSymbol.isSubClass(JavaSerializableClass))
+        anonClass addAnnotation SerialVersionUIDAnnotation
+      fun.tpe :: Nil
+    }
+    anonClass setInfo ClassInfoType(parents, newScope, anonClass)
 
     // The original owner is used in the backend for the EnclosingMethod attribute. If fun is
     // nested in a value-class method, its owner was already changed to the extension method.
     // Saving the original owner allows getting the source structure from the class symbol.
     defineOriginalOwner(anonClass, fun.symbol.originalOwner)
-    anonClass setInfo ClassInfoType(parents, newScope, anonClass)
 
     val samDef = mkMethodFromFunction(localTyper)(anonClass, fun)
     anonClass.info.decls enter samDef.symbol

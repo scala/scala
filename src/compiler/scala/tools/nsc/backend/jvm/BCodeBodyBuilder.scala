@@ -15,7 +15,7 @@ import scala.tools.asm
 import GenBCode._
 import BackendReporting._
 import scala.tools.asm.Opcodes
-import scala.tools.asm.tree.MethodInsnNode
+import scala.tools.asm.tree.{MethodInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BCodeHelpers.{InvokeStyle, TestOp}
 
 /*
@@ -630,7 +630,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         case Apply(fun, args) if app.hasAttachment[delambdafy.LambdaMetaFactoryCapable] =>
           val attachment = app.attachments.get[delambdafy.LambdaMetaFactoryCapable].get
           genLoadArguments(args, paramTKs(app))
-          genInvokeDynamicLambda(attachment.target, attachment.arity, attachment.functionalInterface, attachment.sam)
+          genInvokeDynamicLambda(attachment.target, attachment.arity, attachment.functionalInterface, attachment.sam, attachment.isSerializable, attachment.addScalaSerializableMarker)
           generatedType = methodBTypeFromSymbol(fun.symbol).returnType
 
         case Apply(fun, List(expr)) if currentRun.runDefinitions.isBox(fun.symbol) =>
@@ -1330,7 +1330,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     def genSynchronized(tree: Apply, expectedType: BType): BType
     def genLoadTry(tree: Try): BType
 
-    def genInvokeDynamicLambda(lambdaTarget: Symbol, arity: Int, functionalInterface: Symbol, sam: Symbol) {
+    def genInvokeDynamicLambda(lambdaTarget: Symbol, arity: Int, functionalInterface: Symbol, sam: Symbol, isSerializable: Boolean, addScalaSerializableMarker: Boolean) {
       val isStaticMethod = lambdaTarget.hasFlag(Flags.STATIC)
       def asmType(sym: Symbol) = classBTypeFromSymbol(sym).toASMType
 
@@ -1343,26 +1343,24 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           /* itf = */ isInterface)
       val receiver = if (isStaticMethod) Nil else lambdaTarget.owner :: Nil
       val (capturedParams, lambdaParams) = lambdaTarget.paramss.head.splitAt(lambdaTarget.paramss.head.length - arity)
-      // Requires https://github.com/scala/scala-java8-compat on the runtime classpath
       val invokedType = asm.Type.getMethodDescriptor(asmType(functionalInterface), (receiver ::: capturedParams).map(sym => typeToBType(sym.info).toASMType): _*)
-
       val constrainedType = new MethodBType(lambdaParams.map(p => typeToBType(p.tpe)), typeToBType(lambdaTarget.tpe.resultType)).toASMType
-      val samName = sam.name.toString
       val samMethodType = methodBTypeFromSymbol(sam).toASMType
-
-      val flags = java.lang.invoke.LambdaMetafactory.FLAG_SERIALIZABLE | java.lang.invoke.LambdaMetafactory.FLAG_MARKERS
-
-      val ScalaSerializable = classBTypeFromSymbol(definitions.SerializableClass).toASMType
-      bc.jmethod.visitInvokeDynamicInsn(samName, invokedType, lambdaMetaFactoryAltMetafactoryHandle,
-        /* samMethodType          = */ samMethodType,
-        /* implMethod             = */ implMethodHandle,
-        /* instantiatedMethodType = */ constrainedType,
-        /* flags                  = */ flags.asInstanceOf[AnyRef],
-        /* markerInterfaceCount   = */ 1.asInstanceOf[AnyRef],
-        /* markerInterfaces[0]    = */ ScalaSerializable,
-        /* bridgeCount            = */ 0.asInstanceOf[AnyRef]
-      )
-      indyLambdaHosts += cnode.name
+      val markers = if (addScalaSerializableMarker) classBTypeFromSymbol(definitions.SerializableClass).toASMType :: Nil else Nil
+      visitInvokeDynamicInsnLMF(bc.jmethod, sam.name.toString, invokedType, samMethodType, implMethodHandle, constrainedType, isSerializable, markers)
+      if (isSerializable)
+        indyLambdaHosts += cnode.name
     }
   }
+
+  private def visitInvokeDynamicInsnLMF(jmethod: MethodNode, samName: String, invokedType: String, samMethodType: asm.Type,
+                                        implMethodHandle: asm.Handle, instantiatedMethodType: asm.Type,
+                                        serializable: Boolean, markerInterfaces: Seq[asm.Type]) = {
+    import java.lang.invoke.LambdaMetafactory.{FLAG_MARKERS, FLAG_SERIALIZABLE}
+    def flagIf(b: Boolean, flag: Int): Int = if (b) flag else 0
+    val flags = FLAG_MARKERS | flagIf(serializable, FLAG_SERIALIZABLE)
+    val bsmArgs = Seq(samMethodType, implMethodHandle, instantiatedMethodType, Int.box(flags), Int.box(markerInterfaces.length)) ++ markerInterfaces
+    jmethod.visitInvokeDynamicInsn(samName, invokedType, lambdaMetaFactoryAltMetafactoryHandle, bsmArgs: _*)
+  }
+
 }
