@@ -230,6 +230,35 @@ class BytecodeTest extends BytecodeTesting {
       List(ALOAD, ILOAD, PUTFIELD, ALOAD, ACONST_NULL, "<init>", RETURN))
   }
 
+  @Test
+  def mixinForwarders(): Unit = {
+    val code =
+      """trait T { def f = 1 }
+        |class C extends T
+      """.stripMargin
+    val List(c1, _) = compileClasses(code)
+    val List(c2, _) = newCompiler(extraArgs = "-Xgen-mixin-forwarders").compileClasses(code)
+    assert(getMethods(c1, "f").isEmpty)
+    assertSameCode(getMethod(c2, "f"),
+      List(VarOp(ALOAD, 0), Invoke(INVOKESTATIC, "T", "f$", "(LT;)I", true), Op(IRETURN)))
+  }
+
+  @Test
+  def sd143(): Unit = {
+    // this tests the status quo, which is wrong.
+    val code =
+      """class A { def m = 1 }
+        |class B extends A { override def m = 2 }
+        |trait T extends A
+        |class C extends B with T {
+        |  override def m = super[T].m // should invoke A.m
+        |}
+      """.stripMargin
+    val List(_, _, c, _) = compileClasses(code)
+    // even though the bytecode refers to A.m, invokespecial will resolve to B.m
+    assertSameCode(getMethod(c, "m"),
+      List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "A", "m", "()I", false), Op(IRETURN)))
+  }
 }
 
 object invocationReceiversTestCode {
