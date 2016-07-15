@@ -12,7 +12,7 @@ package scala
 package util
 
 /** Represents a value of one of two possible types (a disjoint union.)
- *  Instances of Either are either an instance of [[scala.util.Left]] or [[scala.util.Right]].
+ *  An instance of Either is either an instance of [[scala.util.Left]] or [[scala.util.Right]].
  *
  *  A common use of Either is as an alternative to [[scala.Option]] for dealing
  *  with possible missing values.  In this usage, [[scala.None]] is replaced
@@ -47,32 +47,48 @@ package util
  *  Left(23).map(_ * 2)  // Left(23)
  *  }}}
  *
- *  A ''projection'' can be used to selectively operate on a value of type Either,
- *  depending on whether it is of type Left or Right. For example, to transform an
- *  Either using a function, in the case where it's a Left, one can first apply
- *  the `left` projection and invoke `map` on that projected Either. If a `right`
- *  projection is applied to that Left, the original Left is returned, unmodified.
- *
+ *  As Either defines the methods  `map` and `flatMap`, it can also be used in for comprehensions:
  *  {{{
- *  val l: Either[String, Int] = Left("flower")
- *  val r: Either[String, Int] = Right(12)
- *  l.left.map(_.size): Either[Int, Int] // Left(6)
- *  r.left.map(_.size): Either[Int, Int] // Right(12)
- *  l.right.map(_.toDouble): Either[String, Double] // Left("flower")
- *  r.right.map(_.toDouble): Either[String, Double] // Right(12.0)
- *  }}}
+ *  val right1: Right[Double, Int] = Right(1)
+ *  val right2                     = Right(2)
+ *  val right3                     = Right(3)
+ *  val left23: Left[Double, Int]  = Left(23.0)
+ *  val left42                     = Left(42.0)
  *
- *  Like with other types which define a `map` method, the same can be achieved
- *  using a for-comprehension:
- *  {{{
- *  for (s <- l.left) yield s.size // Left(6)
- *  }}}
+ *  for (
+ *    a <- right1;
+ *    b <- right2;
+ *    c <- right3
+ *  ) yield a + b + c // Right(6)
  *
- *  To support multiple projections as generators in for-comprehensions, the Either
- *  type also defines a `flatMap` method.
+ *  for (
+ *    a <- right1;
+ *    b <- right2;
+ *    c <- left23
+ *  ) yield a + b + c // Left(23.0)
+ *
+ *  for (
+ *    a <- right1;
+ *    b <- left23;
+ *    c <- right2
+ *  ) yield a + b + c // Left(23.0)
+ *
+ *  // It is advisable to provide the type of the “missing” value (especially the right value for `Left`)
+ *  // as otherwise that type might be infered as `Nothing` without context:
+ *  for (
+ *    a <- left23;
+ *    b <- right1;
+ *    c <- left42  // type at this position: Either[Double, Nothing]
+ *  ) yield a + b + c
+ *  //            ^
+ *  // error: ambiguous reference to overloaded definition,
+ *  // both method + in class Int of type (x: Char)Int
+ *  // and  method + in class Int of type (x: Byte)Int
+ *  // match argument types (Nothing)
+ *  }}}
  *
  *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
- *  @version 1.0, 11/10/2008
+ *  @version 2.0, 2016-07-15
  *  @since 2.7
  */
 sealed abstract class Either[+A, +B] extends Product with Serializable {
@@ -112,8 +128,16 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    * If this is a `Left`, then return the left value in `Right` or vice versa.
    *
    * @example {{{
-   * val l: Either[String, Int] = Left("left")
-   * val r: Either[Int, String] = l.swap // Result: Right("left")
+   * val left: Either[String, Int] = Left("left")
+   * val right: Either[Int, String] = l.swap // Result: Right("left")
+   * }}}
+   * @example {{{
+   * val right = Right(2)
+   * val left  = Left(3)
+   * for (
+   *   r1 <- right;
+   *   r2 <- left.swap
+   * ) yield r1 * r2 // Right(6)
    * }}}
    */
   def swap: Either[B, A] = this match {
