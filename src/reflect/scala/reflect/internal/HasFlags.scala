@@ -122,9 +122,6 @@ trait HasFlags {
   def isTrait               = hasFlag(TRAIT) && !hasFlag(PARAM)
   def isTraitOrInterface    = isTrait || isInterface
 
-  def isDeferredOrJavaDefault  = hasFlag(DEFERRED | JAVA_DEFAULTMETHOD)
-  def isDeferredNotJavaDefault = isDeferred && !hasFlag(JAVA_DEFAULTMETHOD)
-
   def flagBitsToString(bits: Long): String = {
     // Fast path for common case
     if (bits == 0L) "" else {

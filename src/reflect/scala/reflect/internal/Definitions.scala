@@ -855,7 +855,7 @@ trait Definitions extends api.StandardDefinitions {
         // must filter out "universal" members (getClass is deferred for some reason)
         val deferredMembers = (
           tp.membersBasedOnFlags(excludedFlags = BridgeAndPrivateFlags, requiredFlags = METHOD).toList.filter(
-            mem => mem.isDeferredNotJavaDefault && !isUniversalMember(mem)
+            mem => mem.isDeferred && !isUniversalMember(mem)
           ) // TODO: test
         )
 
