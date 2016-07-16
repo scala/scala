@@ -50,30 +50,13 @@ class SpecVersionTest {
   }
 
   @Test def variousBadVersionStrings(): Unit = {
-    assertThrows[NumberFormatException] { sut7 isJavaAtLeast "1.9" }
+    assertThrows[NumberFormatException](sut7.isJavaAtLeast("1.9"), _ == "Not a version: 1.9")
     assertThrows[NumberFormatException] { sut9 isJavaAtLeast "1.9" }
     assertThrows[NumberFormatException] { sut7 isJavaAtLeast "9.1" }
     assertThrows[NumberFormatException] { sut9 isJavaAtLeast "9.1" }
-  }
 
-  @Test(expected = classOf[NumberFormatException])
-  def badVersion(): Unit = {
-    sut7 isJavaAtLeast "1.a"
-  }
-  @Test(expected = classOf[NumberFormatException])
-  def noVersion(): Unit = {
-    sut7 isJavaAtLeast ""
-  }
-  @Test(expected = classOf[NumberFormatException])
-  def dotOnly(): Unit = {
-    sut7 isJavaAtLeast "."
-  }
-  @Test(expected = classOf[NumberFormatException])
-  def leadingDot(): Unit = {
-    sut7 isJavaAtLeast ".5"
-  }
-  @Test(expected = classOf[NumberFormatException])
-  def notASpec(): Unit = {
-    sut7 isJavaAtLeast "1.7.1"
+    val badvs = List("1.1.8", "1.", "1.a", "", ".", ".5", "1.7.1")
+
+    for (v <- badvs) assertThrows[NumberFormatException](sut7.isJavaAtLeast(v))
   }
 }

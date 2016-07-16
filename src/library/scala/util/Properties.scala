@@ -185,7 +185,7 @@ private[scala] trait PropertiesTrait {
   def isJavaAtLeast(version: String): Boolean = {
     def versionOf(s: String): Int = s.indexOf('.') match {
       case 1 if s.charAt(0) == '1' =>
-        val v = versionOf(s.substring(2))
+        val v = s.substring(2).toInt
         if (v < 9) v else -1
       case -1 => s.toInt
       case _  => -1
