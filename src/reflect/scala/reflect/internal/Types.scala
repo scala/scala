@@ -1857,10 +1857,10 @@ trait Types
     override def safeToString: String = underlying.widen.toString + "(" + value.escapedStringValue + ")"
   }
 
-  final class UniqueFoldableConstantType(value: Constant) extends FoldableConstantType(value)
+  final class UniqueConstantType(value: Constant) extends FoldableConstantType(value)
 
   object FoldableConstantType {
-    def apply(value: Constant) = unique(new UniqueFoldableConstantType(value))
+    def apply(value: Constant) = unique(new UniqueConstantType(value))
   }
 
   abstract case class LiteralType(value: Constant) extends ConstantType {
