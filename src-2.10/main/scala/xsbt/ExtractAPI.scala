@@ -237,8 +237,8 @@ class ExtractAPI[GlobalType <: Global](
               build(resultType, typeParams, valueParameters)
             case returnType =>
               val retType = processType(in, dropConst(returnType))
-              new xsbti.api.Def(valueParameters.reverse.toArray, retType, typeParams,
-                simpleName(s), getAccess(s), getModifiers(s), annotations(in, s))
+              new xsbti.api.Def(simpleName(s), getAccess(s), getModifiers(s), annotations(in, s),
+                typeParams, valueParameters.reverse.toArray, retType)
           }
         }
       def parameterS(s: Symbol): xsbti.api.MethodParameter = {
@@ -263,11 +263,11 @@ class ExtractAPI[GlobalType <: Global](
       build(t, Array(), Nil)
     }
   private def hasDefault(s: Symbol) = s != NoSymbol && s.hasFlag(Flags.DEFAULTPARAM)
-  private def fieldDef[T](in: Symbol, s: Symbol, keepConst: Boolean, create: (xsbti.api.Type, String, xsbti.api.Access, xsbti.api.Modifiers, Array[xsbti.api.Annotation]) => T): T =
+  private def fieldDef[T](in: Symbol, s: Symbol, keepConst: Boolean, create: (String, xsbti.api.Access, xsbti.api.Modifiers, Array[xsbti.api.Annotation], xsbti.api.Type) => T): T =
     {
       val t = dropNullary(viewer(in).memberType(s))
       val t2 = if (keepConst) t else dropConst(t)
-      create(processType(in, t2), simpleName(s), getAccess(s), getModifiers(s), annotations(in, s))
+      create(simpleName(s), getAccess(s), getModifiers(s), annotations(in, s), processType(in, t2))
     }
   private def dropConst(t: Type): Type = t match {
     case ConstantType(constant) => constant.tpe
@@ -291,10 +291,10 @@ class ExtractAPI[GlobalType <: Global](
       val as = annotations(in, s)
 
       if (s.isAliasType)
-        new xsbti.api.TypeAlias(processType(in, tpe), typeParams, name, access, modifiers, as)
+        new xsbti.api.TypeAlias(name, access, modifiers, as, typeParams, processType(in, tpe))
       else if (s.isAbstractType) {
         val bounds = tpe.bounds
-        new xsbti.api.TypeDeclaration(processType(in, bounds.lo), processType(in, bounds.hi), typeParams, name, access, modifiers, as)
+        new xsbti.api.TypeDeclaration(name, access, modifiers, as, typeParams, processType(in, bounds.lo), processType(in, bounds.hi))
       } else
         error("Unknown type member" + s)
     }
@@ -558,8 +558,9 @@ class ExtractAPI[GlobalType <: Global](
     val tParams = typeParameters(in, sym) // look at class symbol
     val selfType = lzy(this.selfType(in, sym))
     def constructClass(structure: xsbti.api.Lazy[Structure]): ClassLike = {
-      new xsbti.api.ClassLike(defType, selfType, structure, emptyStringArray,
-        childrenOfSealedClass, topLevel, tParams, name, acc, modifiers, anns) // use original symbol (which is a term symbol when `c.isModule`) for `name` and other non-classy stuff
+      new xsbti.api.ClassLike(name, acc, modifiers, anns,
+        defType, selfType, structure, emptyStringArray,
+        childrenOfSealedClass, topLevel, tParams) // use original symbol (which is a term symbol when `c.isModule`) for `name` and other non-classy stuff
     }
     val info = viewer(in).memberInfo(sym)
     val structure = lzy(structureWithInherited(info, sym))
@@ -568,7 +569,7 @@ class ExtractAPI[GlobalType <: Global](
     allNonLocalClassesInSrc += classWithMembers
 
     val classDef = new xsbti.api.ClassLikeDef(
-      defType, tParams, name, acc, modifiers, anns
+      name, acc, modifiers, anns, tParams, defType
     ) // use original symbol (which is a term symbol when `c.isModule`) for `name` and other non-classy stuff
     classDef
   }
