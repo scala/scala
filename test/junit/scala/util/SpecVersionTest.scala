@@ -23,33 +23,38 @@ class SpecVersionTest {
     // override because of vals like releaseVersion
     override lazy val scalaProps = new java.util.Properties
   }
-  val sut7 = new TestProperties("1.7")
-  val sut9 = new TestProperties("9")
 
   @Test
   def comparesJDK9Correctly(): Unit = {
+    val sut9 = new TestProperties("9")
     assert(sut9 isJavaAtLeast "1")
     assert(sut9 isJavaAtLeast "1.5")
     assert(sut9 isJavaAtLeast "5")
     assert(sut9 isJavaAtLeast "1.8")
     assert(sut9 isJavaAtLeast "8")
     assert(sut9 isJavaAtLeast "9")
+    assert(sut9.isJavaAtLeast(9))
   }
 
   // SI-7265
   @Test
   def comparesCorrectly(): Unit = {
+    val sut7 = new TestProperties("1.7")
     assert(sut7 isJavaAtLeast "1")
     assert(sut7 isJavaAtLeast "1.5")
     assert(sut7 isJavaAtLeast "5")
     assert(sut7 isJavaAtLeast "1.6")
     assert(sut7 isJavaAtLeast "1.7")
+    assert(sut7.isJavaAtLeast(7))
+    assertFalse(sut7.isJavaAtLeast(9))
     assertFalse(sut7 isJavaAtLeast "1.8")
     assertFalse(sut7 isJavaAtLeast "9")
     assertFalse(sut7 isJavaAtLeast "10")
   }
 
   @Test def variousBadVersionStrings(): Unit = {
+    val sut7 = new TestProperties("1.7")
+    val sut9 = new TestProperties("9")
     assertThrows[NumberFormatException](sut7.isJavaAtLeast("1.9"), _ == "Not a version: 1.9")
     assertThrows[NumberFormatException] { sut9 isJavaAtLeast "1.9" }
     assertThrows[NumberFormatException] { sut7 isJavaAtLeast "9.1" }

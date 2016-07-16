@@ -195,6 +195,8 @@ private[scala] trait PropertiesTrait {
     versionOf(javaSpecVersion) >= v
   }
 
+  def isJavaAtLeast(version: Int): Boolean = isJavaAtLeast(version.toString)
+
   // provide a main method so version info can be obtained by running this
   def main(args: Array[String]) {
     val writer = new PrintWriter(Console.err, true)
