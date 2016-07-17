@@ -92,6 +92,7 @@ object Map extends ImmutableMapFactory[Map] {
     override def withDefaultValue[V1 >: V](d: V1): immutable.Map[K, V1] = new WithDefault[K, V1](underlying, x => d)
   }
 
+  @SerialVersionUID(-7118208696473796060L)
   private object EmptyMap extends AbstractMap[Any, Nothing] with Map[Any, Nothing] with Serializable {
     override def size: Int = 0
     override def apply(key: Any) = throw new NoSuchElementException("key not found: " + key)
@@ -147,6 +148,7 @@ object Map extends ImmutableMapFactory[Map] {
     }
   }
 
+  @SerialVersionUID(-6400718707310517135L)
   class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends AbstractMap[K, V] with Map[K, V] with Serializable {
     override def size = 3
     override def apply(key: K) =
