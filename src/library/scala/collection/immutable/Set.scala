@@ -34,7 +34,7 @@ trait Set[A] extends Iterable[A]
 {
   override def companion: GenericCompanion[Set] = Set
 
-  
+
   /** Returns this $coll as an immutable set, perhaps accepting a
    *  wider range of elements.  Since it already is an
    *  immutable set, it will only be rebuilt if the underlying structure
@@ -51,7 +51,7 @@ trait Set[A] extends Iterable[A]
     foreach(sb += _)
     sb.result()
   }
-  
+
   override def seq: Set[A] = this
   protected override def parCombiner = ParSet.newCombiner[A] // if `immutable.SetLike` gets introduced, please move this there!
 }
@@ -225,4 +225,3 @@ object Set extends ImmutableSetFactory[Set] {
     override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set4[B]]
   }
 }
-

@@ -134,7 +134,7 @@ class BasePrintTest {
   @Test def testName19 = assertPrintedCode("""class `class`""")
 
   @Test def testName20 = assertPrintedCode("""class `test name`""")
-  
+
   @Test def testName21 = assertPrintedCode("""class `test.name`""")
 
   @Test def testIfExpr1 = assertResultCode(code = sm"""
@@ -316,7 +316,7 @@ class BasePrintTest {
     |  class Foo;
     |  {
     |    final class $$anon extends Foo { self =>
-    |      
+    |
     |    };
     |    new $$anon()
     |  }
@@ -345,7 +345,7 @@ class BasePrintTest {
     typedCode = " val x: _root_.scala.Function1[_root_.scala.Predef.String, _root_.scala.Int] = ((str: _root_.scala.Predef.String) => 1)", printRoot = true)
 
   @Test def testAssign1 = assertPrintedCode("(f.v = 5).toString", checkTypedTree = false)
-  
+
   @Test def testAssign2 = assertPrintedCode("(f.v = 5)(2)", checkTypedTree = false)
 
   @Test def testImport1 = assertPrintedCode("import scala.collection.mutable")
@@ -429,12 +429,12 @@ class ClassPrintTest {
     |class X(var i: scala.Int) extends {
     |  val a = i;
     |  type B
-    |} with scala.Serializable""")
+    |} with scala.`package`.Serializable""")
 
   @Test def testClassWithThrow1 = assertPrintedCode(sm"""
     |class Throw1 {
     |  throw new scala.`package`.Exception("exception!")
-    |}""")  
+    |}""")
 
   @Test def testClassWithThrow2 = assertPrintedCode(sm"""
     |class Throw2 {
@@ -503,12 +503,12 @@ class ClassPrintTest {
 
   //class A(l: List[_])
   @Test def testClassWithExistentialParameter1 = assertPrintedCode(sm"""
-    |class Test(l: (scala.`package`.List[_$$1] forSome { 
+    |class Test(l: (scala.`package`.List[_$$1] forSome {
     |  type _$$1
     |}))""")
 
   @Test def testClassWithExistentialParameter2 = assertPrintedCode(sm"""
-    |class B(l: (scala.`package`.List[T] forSome { 
+    |class B(l: (scala.`package`.List[T] forSome {
     |  type T
     |}))""")
 
@@ -565,7 +565,7 @@ class ClassPrintTest {
     |  trait V {
     |    val x: scala.Int
     |  };
-    |  case class X(override val x: scala.Int, s: scala.Predef.String) extends scala.Cloneable;
+    |  case class X(override val x: scala.Int, s: scala.Predef.String) extends scala.`package`.Cloneable;
     |  ()
     |}""")
 
@@ -637,22 +637,22 @@ class ClassPrintTest {
   @Test def testObjectWithEarly1 = assertPrintedCode(sm"""
     |object X extends {
     |  val early: scala.Int = 42
-    |} with scala.Serializable""")
+    |} with scala.`package`.Serializable""")
 
   @Test def testObjectWithEarly2 = assertPrintedCode(sm"""
     |object X extends {
     |  val early: scala.Int = 42;
     |  type EarlyT = scala.Predef.String
-    |} with scala.Serializable""")
+    |} with scala.`package`.Serializable""")
 
   @Test def testObjectWithSelf = assertPrintedCode(sm"""
-    |object Foo extends scala.Serializable { self =>
+    |object Foo extends scala.`package`.Serializable { self =>
     |  42
     |}""")
 
   @Test def testObjectInh = assertPrintedCode(sm"""
     |trait Y {
-    |  private[Y] object X extends scala.Serializable with scala.Cloneable
+    |  private[Y] object X extends scala.`package`.Serializable with scala.`package`.Cloneable
     |}""")
 
   @Test def testObjectWithPatternMatch1 = assertPrintedCode(sm"""
@@ -853,7 +853,7 @@ class TraitPrintTest {
     |}""")
 
   @Test def testTraitWithSelfTypeAndBody = assertPrintedCode(sm"""
-    |trait X { self: scala.Cloneable =>
+    |trait X { self: scala.`package`.Cloneable =>
     |  def y = "test"
     |}""")
 
@@ -863,7 +863,7 @@ class TraitPrintTest {
     |}""")
 
   @Test def testTraitWithSelf2 = assertPrintedCode(sm"""
-    |trait X { self: scala.Cloneable with scala.Serializable =>
+    |trait X { self: scala.`package`.Cloneable with scala.`package`.Serializable =>
     |  val x: scala.Int = 1
     |}""")
 
@@ -875,7 +875,7 @@ class TraitPrintTest {
     |  val bar: scala.Predef.String
     |}""")
 
-  @Test def testTraitWithInh = assertPrintedCode("trait X extends scala.Cloneable with scala.Serializable")
+  @Test def testTraitWithInh = assertPrintedCode("trait X extends scala.`package`.Cloneable with scala.`package`.Serializable")
 
   @Test def testTraitWithEarly1 = assertPrintedCode(sm"""
     |trait X extends {
@@ -886,7 +886,7 @@ class TraitPrintTest {
     |trait X extends {
     |  val x: scala.Int = 0;
     |  type Foo = scala.Unit
-    |} with scala.Cloneable""")
+    |} with scala.`package`.Cloneable""")
 
   @Test def testTraitWithEarly3 = assertPrintedCode(sm"""
     |trait X extends {
@@ -894,7 +894,7 @@ class TraitPrintTest {
     |  val y: scala.Double = 4.0;
     |  type Foo;
     |  type XString = scala.Predef.String
-    |} with scala.Serializable""")
+    |} with scala.`package`.Serializable""")
 
   @Test def testTraitWithEarly4 = assertPrintedCode(sm"""
     |trait X extends {
@@ -902,7 +902,7 @@ class TraitPrintTest {
     |  val y: scala.Double = 4.0;
     |  type Foo;
     |  type XString = scala.Predef.String
-    |} with scala.Serializable {
+    |} with scala.`package`.Serializable {
     |  val z: scala.Int = 7
     |}""")
 
@@ -913,32 +913,32 @@ class TraitPrintTest {
 
   @Test def testTraitWithThis = assertTreeCode(q"trait Test { this: X with Y => }")(sm"""
     |trait Test { _ : X with Y =>
-    |  
+    |
     |}""")
 
   @Test def testTraitWithWhile1 = assertPrintedCode(sm"""
     |trait Test {
-    |  while (false) 
+    |  while (false)
     |    scala.Predef.println("testing...")
-    |  
+    |
     |}""")
 
   @Test def testTraitWithWhile2 = assertPrintedCode(sm"""
     |trait Test {
-    |  while (true) 
+    |  while (true)
     |    {
     |      scala.Predef.println("testing...");
     |      scala.Predef.println("testing...")
     |    }
-    |  
+    |
     |}""")
 
   @Test def testTraitWithDoWhile1 = assertPrintedCode(sm"""
     |trait Test {
-    |  do 
+    |  do
     |    scala.Predef.println("testing...")
-    |   while (true) 
-    |}""")  
+    |   while (true)
+    |}""")
 
   @Test def testTraitWithTypes = assertResultCode(
     code = sm"""
@@ -961,7 +961,7 @@ class TraitPrintTest {
     |  type B <: scala.AnyRef;
     |  protected type C;
     |  type D <: scala.AnyRef
-    |}""")  
+    |}""")
 }
 
 @RunWith(classOf[JUnit4])
@@ -984,7 +984,7 @@ class ValAndDefPrintTest {
 
   @Test def testDef6 = assertPrintedCode("def a_(b_ : scala.Int) = ()")
 
-  @Test def testDef7 = assertTreeCode{ 
+  @Test def testDef7 = assertTreeCode{
     Block(
       DefDef(NoMods, newTermName("test1"), Nil, Nil, EmptyTree, Literal(Constant(()))),
       DefDef(NoMods, newTermName("test2"), Nil, Nil :: Nil, EmptyTree, Literal(Constant(())))
@@ -1102,7 +1102,7 @@ class ValAndDefPrintTest {
 class PackagePrintTest {
   @Test def testPackage1 = assertPrintedCode(sm"""
     |package foo.bar {
-    |  
+    |
     |}""", checkTypedTree = false)
 
   @Test def testPackage2 = assertPrintedCode(sm"""
