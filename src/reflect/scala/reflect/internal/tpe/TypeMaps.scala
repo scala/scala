@@ -1012,6 +1012,9 @@ private[internal] trait TypeMaps {
           case _ =>
             tp.normalize match {
               case TypeRef(_, sym1, _) if (sym == sym1) => result = true
+              case refined: RefinedType =>
+                mapOver(tp.prefix)
+                mapOver(refined)
               case SingleType(_, sym1) if (sym == sym1) => result = true
               case _ => mapOver(tp)
             }

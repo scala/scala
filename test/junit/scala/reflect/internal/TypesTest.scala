@@ -58,4 +58,15 @@ class TypesTest {
         Assert.fail(xs.mkString("\n"))
     }
   }
+
+  @Test
+  def testRefinementContains(): Unit = {
+    val refinement = typeOf[{def foo: Int}]
+    assert(refinement.isInstanceOf[RefinedType])
+    assert(refinement.contains(IntClass))
+    val elem0 = refinement.baseTypeSeq(0)
+    assert(elem0.isInstanceOf[RefinementTypeRef])
+    assert(elem0.contains(IntClass))
+  }
+
 }
