@@ -577,21 +577,29 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       }
     }
 
-    protected def skipComment(): Boolean = {
-      @tailrec def skipLineComment(): Unit = in.ch match {
-        case CR | LF | SU =>
-        case _            => in.next; skipLineComment()
-      }
-      @tailrec def skipJavaComment(): Unit = in.ch match {
-        case SU  => incompleteInputError("unclosed comment")
-        case '*' => in.next; if (in.ch == '/') in.next else skipJavaComment()
-        case _   => in.next; skipJavaComment()
-      }
-      in.ch match {
-        case '/' => in.next ; skipLineComment() ; true
-        case '*' => in.next ; skipJavaComment() ; true
-        case _   => false
-      }
+    protected def putCommentChar(): Unit = in.next()
+
+    protected def skipBlockComment(isDoc: Boolean): Unit = in.ch match {
+      case SU  => incompleteInputError("unclosed comment")
+      case '*' => putCommentChar() ; if (in.ch == '/') putCommentChar() else skipBlockComment(isDoc)
+      case _   => putCommentChar() ; skipBlockComment(isDoc)
+    }
+
+    protected def skipLineComment(): Unit = in.ch match {
+      case CR | LF | SU =>
+      case _            => putCommentChar() ; skipLineComment()
+    }
+
+    protected def skipComment(): Boolean = in.ch match {
+      case '/' => putCommentChar() ; skipLineComment() ; true
+      case '*' =>
+        putCommentChar()
+        in.ch match {
+          case '*' => skipBlockComment(isDoc = true)
+          case _ => skipBlockComment(isDoc = false)
+        }
+        true
+      case _   => false
     }
 
 // Identifiers ---------------------------------------------------------------

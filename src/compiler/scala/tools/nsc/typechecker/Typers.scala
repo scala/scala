@@ -2247,9 +2247,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           transformedOrTyped(ddef.rhs, EXPRmode, tpt1.tpe)
         }
 
-      if (meth.isClassConstructor && !isPastTyper && !meth.owner.isSubClass(AnyValClass)) {
-        // At this point in AnyVal there is no supercall, which will blow up
-        // in computeParamAliases; there's nothing to be computed for Anyval anyway.
+      if (meth.isClassConstructor && !isPastTyper && !meth.owner.isSubClass(AnyValClass) && !meth.isJava) {
+        // There are no supercalls for AnyVal or constructors from Java sources, which
+        // would blow up in computeParamAliases; there's nothing to be computed for them
+        // anyway.
         if (meth.isPrimaryConstructor)
           computeParamAliases(meth.owner, vparamss1, rhs1)
         else
