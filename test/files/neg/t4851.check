@@ -17,13 +17,13 @@ S.scala:4: warning: Adapting argument list by creating a 5-tuple: this may not b
   val x3 = new J(1, 2, 3, 4, 5)
            ^
 S.scala:6: warning: Adapting argument list by creating a 3-tuple: this may not be what you want.
-        signature: Some.apply[A](x: A): Some[A]
+        signature: Some.apply[A](value: A): Some[A]
   given arguments: 1, 2, 3
  after adaptation: Some((1, 2, 3): (Int, Int, Int))
   val y1 = Some(1, 2, 3)
                ^
 S.scala:7: warning: Adapting argument list by creating a 3-tuple: this may not be what you want.
-        signature: Some(x: A): Some[A]
+        signature: Some(value: A): Some[A]
   given arguments: 1, 2, 3
  after adaptation: new Some((1, 2, 3): (Int, Int, Int))
   val y2 = new Some(1, 2, 3)
