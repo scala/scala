@@ -20,16 +20,7 @@ case $prDryRun in
        --warn \
        "setupValidateTest $prRepoUrl" \
        $testExtraArgs \
-       "test" \
-       "partest run pos neg jvm" \
-       "partest res scalap specialized scalacheck" \
-       "partest instrumented presentation" \
-       "partest --srcpath scaladoc" \
-       osgiTestFelix/test \
-       osgiTestEclipse/test \
-       library/mima \
-       reflect/mima \
-       doc
+       testAll
 
     ;;
 
