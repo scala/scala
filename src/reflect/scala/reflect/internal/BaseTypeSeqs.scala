@@ -59,7 +59,7 @@ trait BaseTypeSeqs {
       } else {
         def computeLazyType(rtp: RefinedType): Type = {
           if (!isIntersectionTypeForLazyBaseType(rtp))
-            abort("unexpected RefinedType in base type seq, lazy BTS elements should be created via intersectionTypeForLazyBaseType: " + rtp)
+            devWarning("unexpected RefinedType in base type seq, lazy BTS elements should be created via intersectionTypeForLazyBaseType: " + rtp)
           val variants = rtp.parents
           // can't assert decls.isEmpty; see t0764
           //if (!decls.isEmpty) abort("computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
