@@ -128,4 +128,15 @@ class TypesTest {
     // calling `apply` merges the prefix/args of the elements ot the RefinedType and rewraps in the existential
     assertEquals("M[_1] forSome { type X; type _1 >: X with Int }", T.baseTypeSeq.apply(1).toString)
   }
+
+  @Test
+  def testExistentialMerge(): Unit = {
+    val ts = typeOf[Set[Any]] :: typeOf[Set[X] forSome { type X <: Y; type Y <: Int}] :: Nil
+    def merge(ts: List[Type]) = mergePrefixAndArgs(ts, Variance.Contravariant, lubDepth(ts))
+    val merged1 = merge(ts)
+    val merged2 = merge(ts.reverse)
+    assert(ts.forall(_ <:< merged1)) // use to fail before fix to mergePrefixAndArgs for existentials
+    assert(ts.forall(_ <:< merged2))
+    assert(merged1 =:= merged2)
+  }
 }
