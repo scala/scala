@@ -142,6 +142,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
           elided += r
         else
           result += r
+        ()
       }
       result.toList
     }
