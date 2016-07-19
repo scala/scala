@@ -1164,4 +1164,7 @@ object BTypes {
   // no static way (without symbol table instance) to get to nme.ScalaATTR / ScalaSignatureATTR
   val ScalaAttributeName    = "Scala"
   val ScalaSigAttributeName = "ScalaSig"
+
+  // when inlining, local variable names of the callee are prefixed with the name of the callee method
+  val InlinedLocalVariablePrefixMaxLenght = 128
 }
