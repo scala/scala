@@ -75,12 +75,12 @@ class InlineWarningTest extends BytecodeTesting {
     val warns = List(
       """failed to determine if bar should be inlined:
         |The method bar()I could not be found in the class A or any of its parents.
-        |Note that the parent class A is defined in a Java source (mixed compilation), no bytecode is available.""".stripMargin,
+        |Note that class A is defined in a Java source (mixed compilation), no bytecode is available.""".stripMargin,
 
       """B::flop()I is annotated @inline but could not be inlined:
         |Failed to check if B::flop()I can be safely inlined to B without causing an IllegalAccessError. Checking instruction INVOKESTATIC A.bar ()I failed:
         |The method bar()I could not be found in the class A or any of its parents.
-        |Note that the parent class A is defined in a Java source (mixed compilation), no bytecode is available.""".stripMargin)
+        |Note that class A is defined in a Java source (mixed compilation), no bytecode is available.""".stripMargin)
 
     var c = 0
     val List(b) = compileToBytes(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; warns.tail.exists(i.msg contains _)})
@@ -167,5 +167,38 @@ class InlineWarningTest extends BytecodeTesting {
     var c = 0
     compileToBytes(code, allowMessage = i => { c += 1; i.msg contains warn })
     assert(c == 1, c)
+  }
+
+  @Test // scala-dev#20
+  def mixedCompilationSpuriousWarning(): Unit = {
+    val jCode =
+      """public class A {
+        |  public static final int bar() { return 100; }
+        |  public final int baz() { return 100; }
+        |}
+      """.stripMargin
+
+    val sCode =
+      """class C {
+        |  @inline final def foo = A.bar()
+        |  @inline final def fii(a: A) = a.baz()
+        |  def t = foo + fii(new A)
+        |}
+      """.stripMargin
+
+    val warns = List(
+      """C::foo()I is annotated @inline but could not be inlined:
+        |Failed to check if C::foo()I can be safely inlined to C without causing an IllegalAccessError. Checking instruction INVOKESTATIC A.bar ()I failed:
+        |The method bar()I could not be found in the class A or any of its parents.
+        |Note that class A is defined in a Java source (mixed compilation), no bytecode is available.""".stripMargin,
+
+      """C::fii(LA;)I is annotated @inline but could not be inlined:
+        |Failed to check if C::fii(LA;)I can be safely inlined to C without causing an IllegalAccessError. Checking instruction INVOKEVIRTUAL A.baz ()I failed:
+        |The method baz()I could not be found in the class A or any of its parents.
+        |Note that class A is defined in a Java source (mixed compilation), no bytecode is available.""".stripMargin
+    )
+    var c = 0
+    compileClasses(sCode, javaCode = List((jCode, "A.java")), allowMessage = i => { c += 1; warns.exists(i.msg.contains)})
+    assert(c == 2)
   }
 }

@@ -2,18 +2,20 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.JavaConverters._
 import scala.collection.generic.Clearable
+import scala.tools.nsc.backend.jvm.BTypes.MethodInlineInfo
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.testing.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
 class InlineInfoTest extends BytecodeTesting {
-  import compiler.global
+  import compiler._
   import global.genBCode.bTypes
 
   override def compilerArgs = "-opt:l:classpath"
@@ -58,5 +60,21 @@ class InlineInfoTest extends BytecodeTesting {
     })
 
     assert(fromSyms == fromAttrs)
+  }
+
+  @Test // scala-dev#20
+  def javaStaticMethodsInlineInfoInMixedCompilation(): Unit = {
+    val jCode =
+      """public class A {
+        |  public static final int bar() { return 100; }
+        |  public final int baz() { return 100; }
+        |}
+      """.stripMargin
+    compileClasses("class C { new A }", javaCode = List((jCode, "A.java")))
+    val info = global.genBCode.bTypes.classBTypeFromInternalName("A").info.get.inlineInfo
+    assertEquals(info.methodInfos, Map(
+      "bar()I"    -> MethodInlineInfo(true,false,false),
+      "<init>()V" -> MethodInlineInfo(false,false,false),
+      "baz()I"    -> MethodInlineInfo(true,false,false)))
   }
 }
