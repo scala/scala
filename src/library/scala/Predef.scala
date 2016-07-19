@@ -71,7 +71,7 @@ import scala.io.StdIn
  *
  * @groupname assertions Assertions
  * @groupprio assertions 20
- * @groupdesc assertions These methods support program verfication and runtime correctness.
+ * @groupdesc assertions These methods support program verification and runtime correctness.
  *
  * @groupname console-output Console Output
  * @groupprio console-output 30

@@ -111,7 +111,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def arrayOf(tpt: Tree) =
       AppliedTypeTree(scalaDot(tpnme.Array), List(tpt))
 
-    def blankExpr = Ident(nme.WILDCARD)
+    def blankExpr = EmptyTree
 
     def makePackaging(pkg: RefTree, stats: List[Tree]): PackageDef =
       atPos(pkg.pos) {  PackageDef(pkg, stats) }
@@ -134,6 +134,11 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val vparams = mapWithIndex(formals)((p, i) => makeSyntheticParam(i + 1, p))
       DefDef(Modifiers(Flags.JAVA), nme.CONSTRUCTOR, List(), List(vparams), TypeTree(), blankExpr)
     }
+
+    /** A hook for joining the comment associated with a definition.
+      * Overridden by scaladoc.
+      */
+    def joinComment(trees: => List[Tree]): List[Tree] = trees
 
     // ------------- general parsing ---------------------------
 
@@ -581,7 +586,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       case CLASS | ENUM | INTERFACE | AT =>
         typeDecl(if (definesInterface(parentToken)) mods | Flags.STATIC else mods)
       case _ =>
-        termDecl(mods, parentToken)
+        joinComment(termDecl(mods, parentToken))
     }
 
     def makeCompanionObject(cdef: ClassDef, statics: List[Tree]): Tree =
@@ -833,10 +838,10 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     }
 
     def typeDecl(mods: Modifiers): List[Tree] = in.token match {
-      case ENUM      => enumDecl(mods)
-      case INTERFACE => interfaceDecl(mods)
+      case ENUM      => joinComment(enumDecl(mods))
+      case INTERFACE => joinComment(interfaceDecl(mods))
       case AT        => annotationDecl(mods)
-      case CLASS     => classDecl(mods)
+      case CLASS     => joinComment(classDecl(mods))
       case _         => in.nextToken(); syntaxError("illegal start of type declaration", skipIt = true); List(errorTypeTree)
     }
 

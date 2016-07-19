@@ -7,7 +7,6 @@ package scala
 package reflect
 package internal
 
-import java.lang.Integer.toOctalString
 import scala.annotation.switch
 
 trait Constants extends api.Constants {
@@ -212,7 +211,7 @@ trait Constants extends api.Constants {
       case '"'  => "\\\""
       case '\'' => "\\\'"
       case '\\' => "\\\\"
-      case _    => if (ch.isControl) "\\0" + toOctalString(ch.toInt) else String.valueOf(ch)
+      case _    => if (ch.isControl) "\\u%04X".format(ch.toInt) else String.valueOf(ch)
     }
 
     def escapedStringValue: String = {

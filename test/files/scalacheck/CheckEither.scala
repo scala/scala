@@ -132,6 +132,58 @@ object Test extends Properties("Either") {
       case Right(a) => a
     }))
 
+  val prop_getOrElse = forAll((e: Either[Int, Int], or: Int) => e.getOrElse(or) == (e match {
+    case Left(_) => or
+    case Right(b) => b
+  }))
+
+  val prop_contains = forAll((e: Either[Int, Int], n: Int) =>
+    e.contains(n) == (e.isRight && e.right.get == n))
+
+  val prop_forall = forAll((e: Either[Int, Int]) =>
+    e.forall(_ % 2 == 0) == (e.isLeft || e.right.get % 2 == 0))
+
+  val prop_exists = forAll((e: Either[Int, Int]) =>
+    e.exists(_ % 2 == 0) == (e.isRight && e.right.get % 2 == 0))
+
+  val prop_flatMapLeftIdentity = forAll((e: Either[Int, Int], n: Int, s: String) => {
+    def f(x: Int) = if(x % 2 == 0) Left(s) else Right(s)
+    Right(n).flatMap(f(_)) == f(n)})
+
+  val prop_flatMapRightIdentity = forAll((e: Either[Int, Int]) => e.flatMap(Right(_)) == e)
+
+  val prop_flatMapComposition = forAll((e: Either[Int, Int]) => {
+    def f(x: Int) = if(x % 2 == 0) Left(x) else Right(x)
+    def g(x: Int) = if(x % 7 == 0) Right(x) else Left(x)
+    e.flatMap(f(_)).flatMap(g(_)) == e.flatMap(f(_).flatMap(g(_)))})
+
+  val prop_mapIdentity = forAll((e: Either[Int, Int]) => e.map(x => x) == e)
+
+  val prop_mapComposition = forAll((e: Either[Int, String]) => {
+    def f(s: String) = s.toLowerCase
+    def g(s: String) = s.reverse
+    e.map(x => f(g(x))) == e.map(x => g(x)).map(f(_))})
+
+  val prop_filterOrElse = forAll((e: Either[Int, Int], x: Int) => e.filterOrElse(_ % 2 == 0, -x) ==
+    (if(e.isLeft) e
+     else if(e.right.get % 2 == 0) e
+     else Left(-x)))
+
+  val prop_seq = forAll((e: Either[Int, Int]) => e.toSeq == (e match {
+    case Left(_)  => collection.immutable.Seq.empty
+    case Right(b) => collection.immutable.Seq(b)
+  }))
+
+  val prop_option = forAll((e: Either[Int, Int]) => e.toOption == (e match {
+    case Left(_)  => None
+    case Right(b) => Some(b)
+  }))
+
+  val prop_try = forAll((e: Either[Throwable, Int]) => e.toTry == (e match {
+    case Left(a)  => util.Failure(a)
+    case Right(b) => util.Success(b)
+  }))
+
   /** Hard to believe I'm "fixing" a test to reflect B before A ... */
   val prop_Either_cond = forAll((c: Boolean, a: Int, b: Int) =>
     Either.cond(c, a, b) == (if(c) Right(a) else Left(b)))
@@ -169,9 +221,21 @@ object Test extends Properties("Either") {
       ("prop_Either_right", prop_Either_right),
       ("prop_Either_joinLeft", prop_Either_joinLeft),
       ("prop_Either_joinRight", prop_Either_joinRight),
-      ("prop_Either_reduce", prop_Either_reduce),
-      ("prop_Either_cond", prop_Either_cond)
-    )
+      ("prop_Either_reduce", prop_Either_reduce),      
+      ("prop_getOrElse", prop_getOrElse),
+      ("prop_contains", prop_contains),
+      ("prop_forall", prop_forall),
+      ("prop_exists", prop_exists),
+      ("prop_flatMapLeftIdentity", prop_flatMapLeftIdentity),
+      ("prop_flatMapRightIdentity", prop_flatMapRightIdentity),
+      ("prop_flatMapComposition", prop_flatMapComposition),
+      ("prop_mapIdentity", prop_mapIdentity),
+      ("prop_mapComposition", prop_mapComposition),
+      ("prop_filterOrElse", prop_filterOrElse),
+      ("prop_seq", prop_seq),
+      ("prop_option", prop_option),
+      ("prop_try", prop_try),
+      ("prop_Either_cond", prop_Either_cond))
 
   for ((label, prop) <- tests) {
     property(label) = prop

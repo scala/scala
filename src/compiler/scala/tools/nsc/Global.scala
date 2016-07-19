@@ -411,7 +411,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     override val initial = true
   }
 
-  import syntaxAnalyzer.{ UnitScanner, UnitParser }
+  import syntaxAnalyzer.{ UnitScanner, UnitParser, JavaUnitParser }
 
   // !!! I think we're overdue for all these phase objects being lazy vals.
   // There's no way for a Global subclass to provide a custom typer
@@ -1041,6 +1041,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   def newUnitParser(code: String, filename: String = "<console>"): UnitParser =
     newUnitParser(newCompilationUnit(code, filename))
+
+  def newJavaUnitParser(unit: CompilationUnit): JavaUnitParser = new JavaUnitParser(unit)
 
   /** A Run is a single execution of the compiler on a set of units.
    */

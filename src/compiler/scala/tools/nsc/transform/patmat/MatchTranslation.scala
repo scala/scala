@@ -125,7 +125,7 @@ trait MatchTranslation {
         // TODO: paramType may contain unbound type params (run/t2800, run/t3530)
         val makers = (
           // Statically conforms to paramType
-          if (this ensureConformsTo paramType) treeMaker(binder, false, pos) :: Nil
+          if (tpe <:< paramType) treeMaker(binder, false, pos) :: Nil
           else typeTest :: extraction :: Nil
         )
         step(makers: _*)(extractor.subBoundTrees: _*)
@@ -162,16 +162,6 @@ trait MatchTranslation {
         setVarInfo(binder, paramType)
         true
       }
-      // If <:< but not =:=, no type test needed, but the tree maker relies on the binder having
-      // exactly paramType (and not just some type compatible with it.) SI-6624 shows this is necessary
-      // because apparently patBinder may have an unfortunate type (.decls don't have the case field
-      // accessors) TODO: get to the bottom of this -- I assume it happens when type checking
-      // infers a weird type for an unapply call. By going back to the parameterType for the
-      // extractor call we get a saner type, so let's just do that for now.
-      def ensureConformsTo(paramType: Type): Boolean = (
-           (tpe =:= paramType)
-        || (tpe <:< paramType) && setInfo(paramType)
-      )
 
       private def concreteType = tpe.bounds.hi
       private def unbound = unbind(tree)
@@ -396,7 +386,6 @@ trait MatchTranslation {
 
       /** Create the TreeMaker that embodies this extractor call
        *
-       * `binder` has been casted to `paramType` if necessary
        * `binderKnownNonNull` indicates whether the cast implies `binder` cannot be null
        * when `binderKnownNonNull` is `true`, `ProductExtractorTreeMaker` does not do a (redundant) null check on binder
        */
@@ -502,7 +491,7 @@ trait MatchTranslation {
        * when `binderKnownNonNull` is `true`, `ProductExtractorTreeMaker` does not do a (redundant) null check on binder
        */
       def treeMaker(binder: Symbol, binderKnownNonNull: Boolean, pos: Position): TreeMaker = {
-        val paramAccessors = binder.constrParamAccessors
+        val paramAccessors = aligner.wholeType.typeSymbol.constrParamAccessors
         val numParams = paramAccessors.length
         def paramAccessorAt(subPatIndex: Int) = paramAccessors(math.min(subPatIndex, numParams - 1))
         // binders corresponding to mutable fields should be stored (SI-5158, SI-6070)
@@ -531,7 +520,7 @@ trait MatchTranslation {
 
       // reference the (i-1)th case accessor if it exists, otherwise the (i-1)th tuple component
       override protected def tupleSel(binder: Symbol)(i: Int): Tree = {
-        val accessors = binder.caseFieldAccessors
+        val accessors = aligner.wholeType.typeSymbol.caseFieldAccessors
         if (accessors isDefinedAt (i-1)) gen.mkAttributedStableRef(binder) DOT accessors(i-1)
         else codegen.tupleSel(binder)(i) // this won't type check for case classes, as they do not inherit ProductN
       }

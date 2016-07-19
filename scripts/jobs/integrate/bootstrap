@@ -92,7 +92,7 @@ publishLockerPrivateTask=${publishLockerPrivateTask-$publishPrivateTask} # set t
 
 forceRebuild=${forceRebuild-no}
 
-antBuildTask="${antBuildTask-nightly}" # TESTING leave empty to avoid the sanity check (don't set it to "init" because ant will croak)
+sbtBuildTask="testAll" # TESTING leave empty to avoid the sanity check
 clean="clean" # TESTING leave empty to speed up testing
 
 baseDir=${WORKSPACE-`pwd`}
@@ -174,11 +174,11 @@ function st_stagingRepoClose() {
 # the old version (on jenkins, and I don't want to upgrade for risk of breaking other builds) honors -sbt-dir
 # the new version of sbt-extras ignores sbt-dir, so we pass it in as -Dsbt.global.base
 # need to set sbt-dir to one that has the gpg.sbt plugin config
-sbtArgs="-no-colors -ivy $baseDir/ivy2 -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig -Dsbt.global.base=$HOME/.sbt/0.13 -sbt-dir $HOME/.sbt/0.13"
+sbtArgs="-ivy $baseDir/ivy2 -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig -Dsbt.global.base=$HOME/.sbt/0.13 -sbt-dir $HOME/.sbt/0.13"
 
 sbtBuild() {
-  echo "### sbtBuild: "$SBT_CMD $sbtArgs "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
-  $SBT_CMD $sbtArgs "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@" >> $baseDir/logs/builds 2>&1
+  echo "### sbtBuild: "$SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@"
+  $SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" "${publishTasks[@]}" "$@" >> $baseDir/logs/builds 2>&1
 }
 
 sbtResolve() {
@@ -186,8 +186,8 @@ sbtResolve() {
   touch build.sbt
   # Can be set to `full` if a module requires cross-versioning against the full Scala version, like the continuations plugin used to.
   cross=${4-binary}
-  echo "### sbtResolve: $SBT_CMD $sbtArgs " "${scalaVersionTasks[@]}" "\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
-  $SBT_CMD $sbtArgs "${scalaVersionTasks[@]}" \
+  echo "### sbtResolve: $SBT_CMD -no-colors $sbtArgs " "${scalaVersionTasks[@]}" "\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross"
+  $SBT_CMD -no-colors $sbtArgs "${scalaVersionTasks[@]}" \
     "set libraryDependencies := Seq(\"$1\" % \"$2\" % \"$3\" cross CrossVersion.$cross)" \
       'show update' >> $baseDir/logs/resolution 2>&1
 }
@@ -490,13 +490,7 @@ bootstrap() {
         git clone --reference $WORKSPACE/.git $WORKSPACE/.git $STARR_DIR
         cd $STARR_DIR
         git co $STARR_REF
-        ant -Dmaven.version.number=$STARR_VER\
-            -Dremote.snapshot.repository=NOPE\
-            -Dremote.release.repository=$releaseTempRepoUrl\
-            -Drepository.credentials.id=$releaseTempRepoCred\
-            -Ddocs.skip=1\
-            -Dlocker.skip=1\
-            $publishStarrPrivateTask >> $baseDir/logs/builds 2>&1
+        $SBT_CMD -no-colors $sbtArgs --warn "setupBootstrapStarr $releaseTempRepoUrl $STARR_VER" $clean publish >> $baseDir/logs/builds 2>&1
       )
   fi
 
@@ -510,14 +504,7 @@ bootstrap() {
   # publish more than just core: partest needs scalap
   # in sabbus lingo, the resulting Scala build will be used as starr to build the released Scala compiler
   if [ ! -z "$STARR_VER" ]; then SET_STARR=-Dstarr.version=$STARR_VER; fi
-  ant -Dmaven.version.number=$SCALA_VER\
-      -Dremote.snapshot.repository=NOPE\
-      $SET_STARR\
-      -Dremote.release.repository=$releaseTempRepoUrl\
-      -Drepository.credentials.id=$releaseTempRepoCred\
-      -Ddocs.skip=1\
-      -Dlocker.skip=1\
-      $publishLockerPrivateTask >> $baseDir/logs/builds 2>&1
+  $SBT_CMD -no-colors $sbtArgs $SET_STARR --warn "setupBootstrapLocker $releaseTempRepoUrl $SCALA_VER" $clean publish >> $baseDir/logs/builds 2>&1
 
   echo "### Building modules using locker"
 
@@ -534,7 +521,7 @@ bootstrap() {
   echo "### Bootstrapping Scala using locker"
 
   # # TODO: close all open staging repos so that we can be reasonably sure the only open one we see after publishing below is ours
-  # # the ant call will create a new one
+  # # the sbt call will create a new one
   #
   # Rebuild Scala with these modules so that all binary versions are consistent.
   # Update versions.properties to new modules.
@@ -542,22 +529,34 @@ bootstrap() {
   # don't skip locker (-Dlocker.skip=1), or stability will fail
   # overwrite "locker" version of scala at private-repo with bootstrapped version
   cd $baseDir
-  rm -rf build/ # must leave everything else in $baseDir for downstream jobs
+  rm -rf build/
 
-  ant -Dstarr.version=$SCALA_VER\
-      -Dextra.repo.url=$releaseTempRepoUrl\
-      -Dmaven.version.suffix=$SCALA_VER_SUFFIX\
+  $SBT_CMD $sbtArgs \
+      --warn \
+      -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
-      -Dupdate.versions=1\
-      -Dscaladoc.git.commit=$SCALADOC_SOURCE_LINKS_VER\
-      -Dremote.snapshot.repository=NOPE\
-      -Dremote.release.repository=$releaseTempRepoUrl\
-      -Drepository.credentials.id=$releaseTempRepoCred\
-      -Dscalac.args.optimise=-opt:l:classpath\
-      $antBuildTask $publishPrivateTask
+      "setupBootstrapQuick $releaseTempRepoUrl $SCALA_VER" \
+      $clean \
+      $sbtBuildTask \
+      dist/mkQuick \
+      publish | grep -v "was too long to be displayed in the webview, and will be left out"
 
   # clear ivy cache (and to be sure, local as well), so the next round of sbt builds sees the fresh scala
   rm -rf $baseDir/ivy2
+
+  # Run stability tests using the just built version as "quick" and a new version as "strap"
+  mv build/quick quick1
+  rm -rf build/
+  $SBT_CMD $sbtArgs \
+      --warn \
+      -Dstarr.version=$SCALA_VER \
+      ${updatedModuleVersions[@]} \
+      "setupBootstrapQuick $releaseTempRepoUrl $SCALA_VER" \
+      $clean \
+      dist/mkQuick
+  mv build/quick build/strap
+  mv quick1 build/quick
+  tools/stability-test.sh
 
   # TODO: create PR with following commit (note that release will have been tagged already)
   # git commit versions.properties -m"Bump versions.properties for $SCALA_VER."
@@ -571,7 +570,12 @@ publishSonatype() {
   # stage to sonatype, along with all modules -Dmaven.version.suffix/-Dbuild.release not necessary,
   # since we're just publishing an existing build
   echo "### Publishing core to sonatype"
-  ant -Dmaven.version.number=$SCALA_VER $publishSonatypeTaskCore
+  $SBT_CMD $sbtArgs \
+      --warn \
+      -Dstarr.version=$SCALA_VER \
+      ${updatedModuleVersions[@]} \
+      "setupBootstrapPublish $releaseTempRepoUrl $SCALA_VER" \
+      publishSigned | grep -v "was too long to be displayed in the webview, and will be left out"
 
   echo "### Publishing modules to sonatype"
   # build/test/publish scala core modules to sonatype (this will start a new staging repo)

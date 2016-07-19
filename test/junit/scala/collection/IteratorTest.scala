@@ -214,4 +214,32 @@ class IteratorTest {
     assertSameElements(exp, res)
     assertEquals(8, counter) // was 14
   }
+  // SI-9691
+  @Test def bufferedHeadOptionReturnsValueWithHeadOrNone(): Unit = {
+    // Checks BufferedIterator returns Some(value) when there is a value
+    val validHeadOption = List(1,2,3).iterator.buffered.headOption
+    assertEquals(Some(1), validHeadOption)
+    // Checks BufferedIterator returns None when there is no value
+    val invalidHeadOption = List(1,2,3).iterator.drop(10).buffered.headOption
+    assertEquals(None: Option[Int], invalidHeadOption)
+    // Checks BufferedIterator returns Some(value) in the last position with a value
+    val validHeadOptionAtTail = List(1,2,3).iterator.drop(2).buffered.headOption
+    assertEquals(Some(3), validHeadOptionAtTail)
+    // Checks BufferedIterator returns None at the first position without a value
+    val invalidHeadOptionOnePastTail = List(1,2,3).iterator.drop(3).buffered.headOption
+    assertEquals(None, invalidHeadOptionOnePastTail)
+    // Checks BufferedIterator returns Some(null) if the next value is null.
+    val nullHandingList = List(null, "yellow").iterator.buffered.headOption
+    assertEquals(Some(null), nullHandingList)
+    // Checks that BufferedIterator is idempotent. That the head is not
+    // changed by its invocation, nor the headOption by the next call to head.
+    val it = List(1,2,3).iterator.buffered
+    val v1 = it.head
+    val v2 = it.headOption
+    val v3 = it.head
+    val v4 = it.headOption
+    assertEquals(v1, v3)
+    assertEquals(v2, v4)
+    assertEquals(Some(v1), v2)
+  }
 }

@@ -60,7 +60,7 @@ breakpoints within the Scala compiler.
 ## Running the Compiler and REPL
 
 You can create run/debug configurations to run the compiler and REPL directly within
-IntelliJ, which might accelerate development and debugging of the the compiler.
+IntelliJ, which might accelerate development and debugging of the compiler.
 
 To debug the Scala codebase you can also use "Remote" debug configuration and pass
 the corresponding arguments to the jvm running the compiler / program.
