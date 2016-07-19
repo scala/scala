@@ -85,8 +85,9 @@ class RegexTest {
     assertFalse(ms.hasNext)
   }
 
-  //type NoGroup = NoSuchElementException
   type NoGroup = IllegalArgumentException
+  type NoMatch = NoSuchElementException
+  type NoData  = IllegalStateException
 
   @Test def `SI-9666: throw on bad name`(): Unit = {
     assertThrows[NoGroup] {
@@ -106,6 +107,73 @@ class RegexTest {
       val ms = r findAllIn "stuff abbbc more abc and so on"
       assertTrue(ms.hasNext)
       ms group "Bee"
+    }
+  }
+
+  @Test def `SI-9827 MatchIterator ergonomics`(): Unit = {
+    val r = "(ab)(cd)".r
+    val s = "xxxabcdyyyabcdzzz"
+    assertEquals(3, r.findAllIn(s).start)
+    assertEquals(5, r.findAllIn(s).start(2))
+    locally {
+      val mi = r.findAllIn(s)
+      assertTrue(mi.hasNext)
+      assertEquals(3, mi.start)
+      assertEquals("abcd", mi.next())
+      assertEquals(3, mi.start)
+      assertTrue(mi.hasNext)
+      assertEquals(10, mi.start)
+    }
+    locally {
+      val mi = r.findAllIn(s)
+      assertEquals("abcd", mi.next())
+      assertEquals(3, mi.start)
+      assertEquals("abcd", mi.next())
+      assertEquals(10, mi.start)
+      assertThrows[NoMatch] { mi.next() }
+      assertThrows[NoData] { mi.start }
+    }
+    locally {
+      val mi = r.findAllIn("")
+      assertThrows[NoData] { mi.start }
+      assertThrows[NoMatch] { mi.next() }
+    }
+    locally {
+      val mi = r.findAllMatchIn(s)
+      val x = mi.next()
+      assertEquals("abcd", x.matched)
+      assertEquals(3, x.start)
+      val y = mi.next()
+      assertEquals("abcd", y.matched)
+      assertEquals(10, y.start)
+      assertThrows[NoMatch] { mi.next() }
+      assertEquals(3, x.start)
+      assertEquals(10, y.start)
+    }
+    locally {
+      val regex = "(foo)-(.*)".r
+      val s = "foo-abc-def"
+      val result = regex.findAllIn(s)
+      //result.toString // comment this line to make it not work
+      val r = (result.group(1), result.group(2))
+      assertEquals(("foo", "abc-def"), r)
+    }
+    locally {
+      val t = "this is a test"
+      val rx = " ".r
+      val m = rx.findAllIn(t)
+      assertEquals(5, rx.findAllIn(t).end)
+    }
+    locally {
+      val data = "<a>aaaaa</a><b>bbbbbb</b><c>ccccccc</c>"
+      val p = "^<a>(.+)</a><b>(.+)</b><c>(.+)</c>$".r
+      val parts = p.findAllIn(data)
+      val aes = parts.group(1)
+      val bes = parts.group(2)
+      val ces = parts.group(3)
+      assertEquals("ccccccc", ces)
+      assertEquals("bbbbbb", bes)
+      assertEquals("aaaaa", aes)
     }
   }
 }
