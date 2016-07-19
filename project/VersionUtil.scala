@@ -94,7 +94,7 @@ object VersionUtil {
   }
 
   private lazy val generateBuildCharacterPropertiesFileImpl: Def.Initialize[Task[File]] = Def.task {
-    writeProps(versionProperties.value.toMap, (baseDirectory in ThisBuild).value / "buildcharacter.properties")
+    writeProps(versionProperties.value.toMap ++ versionProps, (baseDirectory in ThisBuild).value / "buildcharacter.properties")
   }
 
   private def writeProps(m: Map[String, String], propFile: File): File = {

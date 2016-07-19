@@ -769,6 +769,32 @@ lazy val root: Project = (project in file("."))
       GenerateAnyVals.run(dir.getAbsoluteFile)
       state
     },
+    testAll := {
+      val results = ScriptCommands.sequence[Result[Unit]](List(
+        (Keys.test in Test in junit).result,
+        (testOnly in IntegrationTest in testP).toTask(" -- run pos neg jvm").result,
+        (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized scalacheck").result,
+        (testOnly in IntegrationTest in testP).toTask(" -- instrumented presentation").result,
+        (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result,
+        (Keys.test in Test in osgiTestFelix).result,
+        (Keys.test in Test in osgiTestEclipse).result,
+        (MiMa.mima in library).result,
+        (MiMa.mima in reflect).result,
+        Def.task(()).dependsOn( // Run these in parallel:
+          doc in Compile in library,
+          doc in Compile in reflect,
+          doc in Compile in compiler,
+          doc in Compile in scalap
+        ).result
+      )).value
+      val failed = results.map(_.toEither).collect { case Left(i) => i }
+      if(failed.nonEmpty) {
+        val log = streams.value.log
+        log.error(s"${failed.size} of ${results.length} test tasks failed:")
+        failed.foreach(i => log.error(s"  - $i"))
+        throw new RuntimeException
+      }
+    },
     antStyle := false,
     incOptions := incOptions.value.withNameHashing(!antStyle.value).withAntStyle(antStyle.value)
   )
@@ -838,6 +864,7 @@ lazy val buildDirectory = settingKey[File]("The directory where all build produc
 lazy val mkBin = taskKey[Seq[File]]("Generate shell script (bash or Windows batch).")
 lazy val mkQuick = taskKey[File]("Generate a full build, including scripts, in build/quick")
 lazy val mkPack = taskKey[File]("Generate a full build, including scripts, in build/pack")
+lazy val testAll = taskKey[Unit]("Run all test tasks sequentially")
 
 // Defining these settings is somewhat redundant as we also redefine settings that depend on them.
 // However, IntelliJ's project import works better when these are set correctly.
