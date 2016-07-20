@@ -341,7 +341,9 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
             // if we don't cloneInfo, method argument symbols are shared between trait and subclasses --> lambalift proxy crash
             // TODO: use derive symbol variant?
 //            println(s"cloning accessor $member to $clazz")
-            clonedAccessor setInfo ((clazz.thisType memberType member) cloneInfo clonedAccessor) // accessor.info.cloneInfo(clonedAccessor).asSeenFrom(clazz.thisType, accessor.owner)
+            // start at uncurry so that we preserve that part of the history where an accessor has a NullaryMethodType
+            enteringUncurry { clonedAccessor setInfo ((clazz.thisType memberType member) cloneInfo clonedAccessor) }
+            clonedAccessor
           }
 
           if (member hasFlag MODULE) {
