@@ -34,6 +34,8 @@ class SpecVersionTest {
     assert(sut9 isJavaAtLeast "8")
     assert(sut9 isJavaAtLeast "9")
     assert(sut9.isJavaAtLeast(9))
+    assertFalse(sut9.isJavaAtLeast(10))
+    assertFalse(sut9.isJavaAtLeast("10"))
   }
 
   // SI-7265
@@ -53,15 +55,49 @@ class SpecVersionTest {
   }
 
   @Test def variousBadVersionStrings(): Unit = {
-    val sut7 = new TestProperties("1.7")
-    val sut9 = new TestProperties("9")
-    assertThrows[NumberFormatException](sut7.isJavaAtLeast("1.9"), _ == "Not a version: 1.9")
-    assertThrows[NumberFormatException] { sut9 isJavaAtLeast "1.9" }
-    assertThrows[NumberFormatException] { sut7 isJavaAtLeast "9.1" }
-    assertThrows[NumberFormatException] { sut9 isJavaAtLeast "9.1" }
+    val sut = new TestProperties("9")
+    assertThrows[NumberFormatException](sut.isJavaAtLeast("1.9"), _ == "Not a version: 1.9")
+    assertThrows[NumberFormatException](sut.isJavaAtLeast("1."))
+    assertThrows[NumberFormatException](sut.isJavaAtLeast("1.8."))
+    assertThrows[NumberFormatException](sut.isJavaAtLeast("1.a"))
+    assertThrows[NumberFormatException](sut.isJavaAtLeast(""))
+    assertThrows[NumberFormatException](sut.isJavaAtLeast("."))
+    assertThrows[NumberFormatException](sut.isJavaAtLeast(".."))
+    assertThrows[NumberFormatException](sut.isJavaAtLeast(".5"))
+    assertThrows[NumberFormatException](sut.isJavaAtLeast("9-ea"))  //version number, not version string
+  }
 
-    val badvs = List("1.1.8", "1.", "1.a", "", ".", ".5", "1.7.1")
+  @Test def `spec has minor or more`(): Unit = {
+    val sut = new TestProperties("9.2.5")
+    assert(sut.isJavaAtLeast(9))
+    assert(sut.isJavaAtLeast("9"))
+    assert(sut.isJavaAtLeast("9.0.1"))
+    assert(sut.isJavaAtLeast("9.2.1"))
+    assert(sut.isJavaAtLeast("8.3.1"))
+    assert(sut.isJavaAtLeast("8.3.1.1.1"))
+    assertFalse(sut.isJavaAtLeast("9.3.1"))
+    assertFalse(sut.isJavaAtLeast("10.3.1"))
+  }
 
-    for (v <- badvs) assertThrows[NumberFormatException](sut7.isJavaAtLeast(v))
+  @Test def `compares only major minor security`(): Unit = {
+    val sut = new TestProperties("9.2.5.1.2.3")
+    assert(sut.isJavaAtLeast(9))
+    assert(sut.isJavaAtLeast("9"))
+    assert(sut.isJavaAtLeast("9.0.1"))
+    assert(sut.isJavaAtLeast("9.2.5.9.9.9"))
+    assertFalse(sut.isJavaAtLeast("9.2.6"))
+  }
+
+  @Test def `futurely proofed`(): Unit = {
+    val sut = new TestProperties("10.2.5")
+    assert(sut.isJavaAtLeast(9))
+    assert(sut.isJavaAtLeast(10))
+    assert(sut.isJavaAtLeast("9"))
+    assert(sut.isJavaAtLeast("9.0.1"))
+    assert(sut.isJavaAtLeast("9.2.1"))
+    assert(sut.isJavaAtLeast("8.3.1"))
+    assert(sut.isJavaAtLeast("8.3.1.1.1"))
+    assert(sut.isJavaAtLeast("9.3.1"))
+    assertFalse(sut.isJavaAtLeast("10.3.1"))
   }
 }
