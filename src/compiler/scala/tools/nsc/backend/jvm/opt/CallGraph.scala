@@ -413,22 +413,8 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
   final case class LambdaMetaFactoryCall(indy: InvokeDynamicInsnNode, samMethodType: Type, implMethod: Handle, instantiatedMethodType: Type)
 
   object LambdaMetaFactoryCall {
-    private val lambdaMetaFactoryInternalName: InternalName = "java/lang/invoke/LambdaMetafactory"
-
-    private val metafactoryHandle = {
-      val metafactoryMethodName: String = "metafactory"
-      val metafactoryDesc: String       = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;"
-      new Handle(Opcodes.H_INVOKESTATIC, lambdaMetaFactoryInternalName, metafactoryMethodName, metafactoryDesc)
-    }
-
-    private val altMetafactoryHandle = {
-      val altMetafactoryMethodName: String = "altMetafactory"
-      val altMetafactoryDesc: String       = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;"
-      new Handle(Opcodes.H_INVOKESTATIC, lambdaMetaFactoryInternalName, altMetafactoryMethodName, altMetafactoryDesc)
-    }
-
     def unapply(insn: AbstractInsnNode): Option[(InvokeDynamicInsnNode, Type, Handle, Type)] = insn match {
-      case indy: InvokeDynamicInsnNode if indy.bsm == metafactoryHandle || indy.bsm == altMetafactoryHandle =>
+      case indy: InvokeDynamicInsnNode if indy.bsm == coreBTypes.lambdaMetaFactoryMetafactoryHandle || indy.bsm == coreBTypes.lambdaMetaFactoryAltMetafactoryHandle =>
         indy.bsmArgs match {
           case Array(samMethodType: Type, implMethod: Handle, instantiatedMethodType: Type, _@_*) =>
             // LambdaMetaFactory performs a number of automatic adaptations when invoking the lambda

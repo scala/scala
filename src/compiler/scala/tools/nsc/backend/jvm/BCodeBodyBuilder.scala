@@ -1334,11 +1334,13 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val isStaticMethod = lambdaTarget.hasFlag(Flags.STATIC)
       def asmType(sym: Symbol) = classBTypeFromSymbol(sym).toASMType
 
+      val isInterface = lambdaTarget.owner.isTrait
       val implMethodHandle =
-        new asm.Handle(if (lambdaTarget.hasFlag(Flags.STATIC)) asm.Opcodes.H_INVOKESTATIC else if (lambdaTarget.owner.isTrait) asm.Opcodes.H_INVOKEINTERFACE else asm.Opcodes.H_INVOKEVIRTUAL,
+        new asm.Handle(if (lambdaTarget.hasFlag(Flags.STATIC)) asm.Opcodes.H_INVOKESTATIC else if (isInterface) asm.Opcodes.H_INVOKEINTERFACE else asm.Opcodes.H_INVOKEVIRTUAL,
           classBTypeFromSymbol(lambdaTarget.owner).internalName,
           lambdaTarget.name.toString,
-          methodBTypeFromSymbol(lambdaTarget).descriptor)
+          methodBTypeFromSymbol(lambdaTarget).descriptor,
+          /* itf = */ isInterface)
       val receiver = if (isStaticMethod) Nil else lambdaTarget.owner :: Nil
       val (capturedParams, lambdaParams) = lambdaTarget.paramss.head.splitAt(lambdaTarget.paramss.head.length - arity)
       // Requires https://github.com/scala/scala-java8-compat on the runtime classpath
@@ -1351,7 +1353,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val flags = java.lang.invoke.LambdaMetafactory.FLAG_SERIALIZABLE | java.lang.invoke.LambdaMetafactory.FLAG_MARKERS
 
       val ScalaSerializable = classBTypeFromSymbol(definitions.SerializableClass).toASMType
-      bc.jmethod.visitInvokeDynamicInsn(samName, invokedType, lambdaMetaFactoryBootstrapHandle,
+      bc.jmethod.visitInvokeDynamicInsn(samName, invokedType, lambdaMetaFactoryAltMetafactoryHandle,
         /* samMethodType          = */ samMethodType,
         /* implMethod             = */ implMethodHandle,
         /* instantiatedMethodType = */ constrainedType,

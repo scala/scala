@@ -157,7 +157,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   def staticHandleFromSymbol(sym: Symbol): asm.Handle = {
     val owner = if (sym.owner.isModuleClass) sym.owner.linkedClassOfClass else sym.owner
     val descriptor = methodBTypeFromMethodType(sym.info, isConstructor = false).descriptor
-    new asm.Handle(asm.Opcodes.H_INVOKESTATIC, classBTypeFromSymbol(owner).internalName, sym.name.encoded, descriptor)
+    val ownerBType = classBTypeFromSymbol(owner)
+    new asm.Handle(asm.Opcodes.H_INVOKESTATIC, ownerBType.internalName, sym.name.encoded, descriptor, /* itf = */ ownerBType.isInterface.get)
   }
 
   /**

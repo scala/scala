@@ -94,7 +94,7 @@ object ASMConverters {
   case class FrameEntry   (`type`: Int, local: List[Any], stack: List[Any])                                   extends Instruction { def opcode: Int = -1 }
   case class LineNumber   (line: Int, start: Label)                                                           extends Instruction { def opcode: Int = -1 }
 
-  case class MethodHandle(tag: Int, owner: String, name: String, desc: String)
+  case class MethodHandle(tag: Int, owner: String, name: String, desc: String, itf: Boolean)
 
   case class ExceptionHandler(start: Label, end: Label, handler: Label, desc: Option[String])
   case class LocalVariable(name: String, desc: String, signature: Option[String], start: Label, end: Label, index: Int)
@@ -147,7 +147,7 @@ object ASMConverters {
       case _ => a // can be: Class, method Type, primitive constant
     })(collection.breakOut)
 
-    private def convertMethodHandle(h: asm.Handle): MethodHandle = MethodHandle(h.getTag, h.getOwner, h.getName, h.getDesc)
+    private def convertMethodHandle(h: asm.Handle): MethodHandle = MethodHandle(h.getTag, h.getOwner, h.getName, h.getDesc, h.isInterface)
 
     private def convertHandlers(method: t.MethodNode): List[ExceptionHandler] = {
       method.tryCatchBlocks.asScala.map(h => ExceptionHandler(applyLabel(h.start), applyLabel(h.end), applyLabel(h.handler), Option(h.`type`)))(collection.breakOut)
@@ -227,7 +227,7 @@ object ASMConverters {
     case x => x.asInstanceOf[Object]
   }
 
-  def unconvertMethodHandle(h: MethodHandle): asm.Handle = new asm.Handle(h.tag, h.owner, h.name, h.desc)
+  def unconvertMethodHandle(h: MethodHandle): asm.Handle = new asm.Handle(h.tag, h.owner, h.name, h.desc, h.itf)
   def unconvertBsmArgs(a: List[Object]): Array[Object] = a.map({
     case h: MethodHandle => unconvertMethodHandle(h)
     case o => o
