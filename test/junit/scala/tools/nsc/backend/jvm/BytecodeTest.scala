@@ -168,4 +168,23 @@ class BytecodeTest extends BytecodeTesting {
     assertEquals(x.start, labels(1))
     assertEquals(x.end, labels(7))
   }
+
+  @Test // wrong line numbers for rewritten `this` references in trait static methods
+  def sd186_traitLineNumber(): Unit = {
+    val code =
+      """trait T {
+        |  def t(): Unit = {
+        |    toString
+        |    toString
+        |  }
+        |}
+      """.stripMargin
+    val t = compileClass(code)
+    val tMethod = getMethod(t, "t$")
+    val invoke = Invoke(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false)
+    assertSameCode(tMethod.instructions,
+      List(Label(0), LineNumber(3, Label(0)), VarOp(ALOAD, 0), invoke, Op(POP),
+        Label(5), LineNumber(4, Label(5)), VarOp(ALOAD, 0), invoke, Op(POP), Op(RETURN), Label(11))
+    )
+  }
 }
