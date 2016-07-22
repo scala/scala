@@ -1,6 +1,6 @@
 import java.io.{ByteArrayInputStream, ObjectInputStream, ObjectOutputStream, ByteArrayOutputStream}
 
-trait IntToString { def apply(i: Int): String }
+trait IntToString extends java.io.Serializable { def apply(i: Int): String }
 
 object Test {
   def main(args: Array[String]): Unit = {
