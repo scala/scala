@@ -241,8 +241,12 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
               exitingErasure(target.info.paramTypes).map(reboxValueClass) :+ reboxValueClass(exitingErasure(target.info.resultType))).toTypeName
 
           val isSpecialized = specializedName != funSym.name
-          val functionalInterface = // TODO: this is no longer needed, right? we can just use the regular function classes
-            if (isSpecialized) currentRun.runDefinitions.Scala_Java8_CompatPackage.info.decl(specializedName.prepend("J"))
+          val functionalInterface =
+            if (isSpecialized) {
+              // Unfortunately we still need to use custom functional interfaces for specialized functions so that the
+              // unboxed apply method is left abstract for us to implement.
+              currentRun.runDefinitions.Scala_Java8_CompatPackage.info.decl(specializedName.prepend("J"))
+            }
             else FunctionClass(originalFunction.vparams.length)
 
           (functionalInterface, isSpecialized)
