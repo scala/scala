@@ -27,12 +27,13 @@ object VersionUtil {
     generateBuildCharacterPropertiesFile := generateBuildCharacterPropertiesFileImpl.value
   )
 
-  case class Versions(canonicalVersion: String, mavenVersion: String, osgiVersion: String, commitSha: String, commitDate: String, isRelease: Boolean) {
+  case class Versions(canonicalVersion: String, mavenBase: String, mavenSuffix: String, osgiVersion: String, commitSha: String, commitDate: String, isRelease: Boolean) {
     val githubTree =
       if(isRelease) "v" + mavenVersion
       else if(commitSha != "unknown") commitSha
       else "master"
 
+    def mavenVersion: String = mavenBase + mavenSuffix
     override def toString = s"Canonical: $canonicalVersion, Maven: $mavenVersion, OSGi: $osgiVersion, github: $githubTree"
 
     def toMap: Map[String, String] = Map(
@@ -45,17 +46,18 @@ object VersionUtil {
   /** Compute the canonical, Maven and OSGi version number from `baseVersion` and `baseVersionSuffix`.
     * Examples of the generated versions:
     *
-    * ("2.11.8", "SNAPSHOT"    ) -> ("2.11.8-20151215-133023-7559aed3c5", "2.11.8-SNAPSHOT",            "2.11.8.v20151215-133023-7559aed3c5")
-    * ("2.11.8", "SHA-SNAPSHOT") -> ("2.11.8-20151215-133023-7559aed3c5", "2.11.8-7559aed3c5-SNAPSHOT", "2.11.8.v20151215-133023-7559aed3c5")
-    * ("2.11.8", ""            ) -> ("2.11.8",                            "2.11.8",                     "2.11.8.v20151215-133023-VFINAL-7559aed3c5")
-    * ("2.11.8", "M3"          ) -> ("2.11.8-M3",                         "2.11.8-M3",                  "2.11.8.v20151215-133023-M3-7559aed3c5")
-    * ("2.11.8", "RC4"         ) -> ("2.11.8-RC4",                        "2.11.8-RC4",                 "2.11.8.v20151215-133023-RC4-7559aed3c5")
-    * ("2.11.8-RC4", "SPLIT"   ) -> ("2.11.8-RC4",                        "2.11.8-RC4",                 "2.11.8.v20151215-133023-RC4-7559aed3c5")
+    * ("2.11.8", "SNAPSHOT"    ) -> ("2.11.8-20151215-133023-7559aed", "2.11.8-SNAPSHOT",         "2.11.8.v20151215-133023-7559aed")
+    * ("2.11.8", "SHA-SNAPSHOT") -> ("2.11.8-20151215-133023-7559aed", "2.11.8-7559aed-SNAPSHOT", "2.11.8.v20151215-133023-7559aed")
+    * ("2.11.8", "SHA-NIGHTLY" ) -> ("2.11.8-7559aed-nightly",         "2.11.8-7559aed-nightly",  "2.11.8.v20151215-133023-NIGHTLY-7559aed")
+    * ("2.11.8", ""            ) -> ("2.11.8",                         "2.11.8",                  "2.11.8.v20151215-133023-VFINAL-7559aed")
+    * ("2.11.8", "M3"          ) -> ("2.11.8-M3",                      "2.11.8-M3",               "2.11.8.v20151215-133023-M3-7559aed")
+    * ("2.11.8", "RC4"         ) -> ("2.11.8-RC4",                     "2.11.8-RC4",              "2.11.8.v20151215-133023-RC4-7559aed")
+    * ("2.11.8-RC4", "SPLIT"   ) -> ("2.11.8-RC4",                     "2.11.8-RC4",              "2.11.8.v20151215-133023-RC4-7559aed")
     *
     * A `baseVersionSuffix` of "SNAPSHOT" is the default, which is used for local snapshot builds. The PR validation
-    * job uses "SHA-SNAPSHOT". An empty suffix is used for releases. All other suffix values are treated as RC /
-    * milestone builds. The special suffix value "SPLIT" is used to split the real suffix off from `baseVersion`
-    * instead and then apply the usual logic. */
+    * job uses "SHA-SNAPSHOT". A proper version number for a nightly build can be computed with "SHA-nightly". An empty
+    * suffix is used for releases. All other suffix values are treated as RC / milestone builds. The special suffix
+    * value "SPLIT" is used to split the real suffix off from `baseVersion` instead and then apply the usual logic. */
   private lazy val versionPropertiesImpl: Def.Initialize[Versions] = Def.setting {
 
     val (base, suffix) = {
@@ -76,16 +78,17 @@ object VersionUtil {
     }
 
     val date = executeTool("get-scala-commit-date")
-    val sha = executeTool("get-scala-commit-sha").substring(0, 7) // The script produces 10 digits at the moment
+    val sha = executeTool("get-scala-commit-sha").substring(0, 7)
 
-    val (canonicalV, mavenV, osgiV, release) = suffix match {
-      case "SNAPSHOT"     => (s"$base-$date-$sha", s"$base-SNAPSHOT",      s"$base.v$date-$sha",         false)
-      case "SHA-SNAPSHOT" => (s"$base-$date-$sha", s"$base-$sha-SNAPSHOT", s"$base.v$date-$sha",         false)
-      case ""             => (s"$base",            s"$base",               s"$base.v$date-VFINAL-$sha",  true)
-      case suffix         => (s"$base-$suffix",    s"$base-$suffix",       s"$base.v$date-$suffix-$sha", true)
+    val (canonicalV, mavenSuffix, osgiV, release) = suffix match {
+      case "SNAPSHOT"     => (s"$base-$date-$sha",   s"-SNAPSHOT",      s"$base.v$date-$sha",         false)
+      case "SHA-SNAPSHOT" => (s"$base-$date-$sha",   s"-$sha-SNAPSHOT", s"$base.v$date-$sha",         false)
+      case "SHA-NIGHTLY"  => (s"$base-$sha-nightly", s"-$sha-nightly",  s"$base.v$date-NIGHTLY-$sha", true)
+      case ""             => (s"$base",              "",                s"$base.v$date-VFINAL-$sha",  true)
+      case suffix         => (s"$base-$suffix",      s"-$suffix",       s"$base.v$date-$suffix-$sha", true)
     }
 
-    Versions(canonicalV, mavenV, osgiV, sha, date, release)
+    Versions(canonicalV, base, mavenSuffix, osgiV, sha, date, release)
   }
 
   private lazy val generateVersionPropertiesFileImpl: Def.Initialize[Task[File]] = Def.task {
@@ -94,7 +97,11 @@ object VersionUtil {
   }
 
   private lazy val generateBuildCharacterPropertiesFileImpl: Def.Initialize[Task[File]] = Def.task {
-    writeProps(versionProperties.value.toMap ++ versionProps, (baseDirectory in ThisBuild).value / "buildcharacter.properties")
+    val v = versionProperties.value
+    writeProps(v.toMap ++ versionProps ++ Map(
+      "maven.version.base" -> v.mavenBase,
+      "maven.version.suffix" -> v.mavenSuffix
+    ), (baseDirectory in ThisBuild).value / "buildcharacter.properties")
   }
 
   private def writeProps(m: Map[String, String], propFile: File): File = {

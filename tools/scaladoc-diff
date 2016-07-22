@@ -49,7 +49,7 @@ if [ ! -f "build/scaladoc-output-$oldsha.txt" ]
 then
   echo "making scaladoc for parent commit ($oldsha)"
   git checkout -q $oldsha
-  ant docs.lib -Dscaladoc.raw.output='yes' > build/scaladoc-output-$oldsha.txt
+  sbt 'set scalacOptions in Compile in doc in library += "-raw-output"' library/doc > build/scaladoc-output-$oldsha.txt
   rm -rf build/scaladoc-${oldsha}
   mv build/scaladoc build/scaladoc-${oldsha}
   git checkout -q $sha
@@ -57,7 +57,7 @@ fi
 
 # create scaladoc for current commit
 echo "making scaladoc for current commit ($sha)"
-ant docs.lib -Dscaladoc.raw.output='yes' > build/scaladoc-output-$sha.txt
+sbt 'set scalacOptions in Compile in doc in library += "-raw-output"' library/doc > build/scaladoc-output-$sha.txt
 rm -rf build/scaladoc-${sha}
 mv build/scaladoc build/scaladoc-${sha}
 

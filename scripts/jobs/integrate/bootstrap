@@ -327,9 +327,10 @@ determineScalaVersion() {
     if [ -z "$scalaTag" ]
     then
       echo "No tag found, building nightly snapshot."
-      parseScalaProperties "build.number"
-      SCALA_VER_BASE="$version_major.$version_minor.$version_patch"
-      SCALA_VER_SUFFIX="-$(git rev-parse --short HEAD)-nightly"
+      $SBT_CMD $sbtArgs 'set baseVersionSuffix in Global := "SHA-NIGHTLY"' generateBuildCharacterPropertiesFile
+      parseScalaProperties "buildcharacter.properties"
+      SCALA_VER_BASE="$maven_version_base"
+      SCALA_VER_SUFFIX="$maven_version_suffix"
       SCALADOC_SOURCE_LINKS_VER=$(git rev-parse HEAD)
 
       # TODO: publish nightly snapshot using this script - currently it's a separate jenkins job still running at EPFL.
@@ -540,7 +541,7 @@ bootstrap() {
       dist/mkQuick
   mv build/quick build/strap
   mv quick1 build/quick
-  tools/stability-test.sh
+  $scriptsDir/stability-test.sh
 
   # TODO: create PR with following commit (note that release will have been tagged already)
   # git commit versions.properties -m"Bump versions.properties for $SCALA_VER."
