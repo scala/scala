@@ -1,0 +1,4 @@
+https://issues.scala-lang.org/browse/SI-1273
+https://issues.scala-lang.org/browse/SI-5103
+https://issues.scala-lang.org/browse/SI-8323
+https://issues.scala-lang.org/browse/SI-8564
