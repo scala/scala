@@ -6,7 +6,7 @@
 package scala.runtime.java8;
 
 @FunctionalInterface
-public interface JFunction0$mcC$sp extends JFunction0 {
+public interface JFunction0$mcC$sp extends scala.Function0, java.io.Serializable {
     char apply$mcC$sp();
 
     default Object apply() { return scala.runtime.BoxesRunTime.boxToCharacter(apply$mcC$sp()); }

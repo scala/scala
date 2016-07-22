@@ -6,7 +6,7 @@
 package scala.runtime.java8;
 
 @FunctionalInterface
-public interface JFunction1$mcZJ$sp extends JFunction1 {
+public interface JFunction1$mcZJ$sp extends scala.Function1, java.io.Serializable {
     boolean apply$mcZJ$sp(long v1);
 
     default Object apply(Object t) { return scala.runtime.BoxesRunTime.boxToBoolean(apply$mcZJ$sp(scala.runtime.BoxesRunTime.unboxToLong(t))); }

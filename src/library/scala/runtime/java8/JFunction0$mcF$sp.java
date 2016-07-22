@@ -6,7 +6,7 @@
 package scala.runtime.java8;
 
 @FunctionalInterface
-public interface JFunction0$mcF$sp extends JFunction0 {
+public interface JFunction0$mcF$sp extends scala.Function0, java.io.Serializable {
     float apply$mcF$sp();
 
     default Object apply() { return scala.runtime.BoxesRunTime.boxToFloat(apply$mcF$sp()); }
