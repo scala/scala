@@ -350,7 +350,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
       case mt @ MethodType(params, res) => copyMethodType(mt, selfParamSym :: params, res)
     })
     val selfParam = ValDef(selfParamSym)
-    val rhs = orig.rhs.substituteThis(newSym.owner, atPos(newSym.pos)(gen.mkAttributedIdent(selfParamSym)))
+    val rhs = orig.rhs.substituteThis(newSym.owner, gen.mkAttributedIdent(selfParamSym)) // SD-186 intentionally leaving Ident($this) is unpositioned
       .substituteSymbols(origParams, newSym.info.params.drop(1)).changeOwner(origSym -> newSym)
     treeCopy.DefDef(orig, orig.mods, orig.name, orig.tparams, (selfParam :: orig.vparamss.head) :: Nil, orig.tpt, rhs).setSymbol(newSym)
   }
