@@ -345,9 +345,11 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
  * @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  * @version 1.0, 11/10/2008
  */
-final case class Left[+A, +B](a: A) extends Either[A, B] {
+final case class Left[+A, +B](@deprecatedName('a, "2.12.0") value: A) extends Either[A, B] {
   def isLeft  = true
   def isRight = false
+
+  @deprecated("Use .value instead.", "2.12.0") def a: A = value
 }
 
 /**
@@ -356,9 +358,11 @@ final case class Left[+A, +B](a: A) extends Either[A, B] {
  * @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  * @version 1.0, 11/10/2008
  */
-final case class Right[+A, +B](b: B) extends Either[A, B] {
+final case class Right[+A, +B](@deprecatedName('b, "2.12.0") value: B) extends Either[A, B] {
   def isLeft  = false
   def isRight = true
+
+  @deprecated("Use .value instead.", "2.12.0") def b: B = value
 }
 
 object Either {
