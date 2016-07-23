@@ -165,7 +165,8 @@ trait MethodSynthesis {
     }
 
     def addDerivedTrees(typer: Typer, stat: Tree): List[Tree] = stat match {
-      case vd @ ValDef(mods, name, tpt, rhs) if deriveAccessors(vd) && !vd.symbol.isModuleVar =>
+      case vd @ ValDef(mods, name, tpt, rhs)
+          if deriveAccessors(vd) && !vd.symbol.isModuleVar && !vd.symbol.isJava =>
         // If we don't save the annotations, they seem to wander off.
         val annotations = stat.symbol.initialize.annotations
         val trees = (
@@ -183,7 +184,6 @@ trait MethodSynthesis {
           if (!trees.exists(_.symbol hasAnnotation ann.symbol))
             issueAnnotationWarning(vd, ann, GetterTargetClass)
         )
-
         trees
       case vd: ValDef =>
         warnForDroppedAnnotations(vd)
