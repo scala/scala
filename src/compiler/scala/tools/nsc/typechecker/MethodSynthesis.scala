@@ -201,7 +201,8 @@ trait MethodSynthesis {
 
     import AnnotationInfo.{mkFilter => annotationFilter}
     def addDerivedTrees(typer: Typer, stat: Tree): List[Tree] = stat match {
-      case vd @ ValDef(mods, name, tpt, rhs) if deriveAccessors(vd) && !vd.symbol.isModuleVar =>
+      case vd @ ValDef(mods, name, tpt, rhs)
+          if deriveAccessors(vd) && !vd.symbol.isModuleVar && !vd.symbol.isJava =>
         stat.symbol.initialize // needed!
 
         val getter = Getter(vd)
