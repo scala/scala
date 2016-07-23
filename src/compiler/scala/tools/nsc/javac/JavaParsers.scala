@@ -117,11 +117,8 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       atPos(pkg.pos) {  PackageDef(pkg, stats) }
 
     def makeTemplate(parents: List[Tree], stats: List[Tree]) =
-      Template(
-        parents,
-        noSelfType,
-        if (treeInfo.firstConstructor(stats) == EmptyTree) makeConstructor(List()) :: stats
-        else stats)
+      Template(parents, noSelfType, if (treeInfo.firstConstructor(stats) == EmptyTree)
+        makeConstructor(Nil) :: stats else stats)
 
     def makeSyntheticParam(count: Int, tpt: Tree): ValDef =
       makeParam(nme.syntheticParamName(count), tpt)
@@ -586,7 +583,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       case CLASS | ENUM | INTERFACE | AT =>
         typeDecl(if (definesInterface(parentToken)) mods | Flags.STATIC else mods)
       case _ =>
-        joinComment(termDecl(mods, parentToken))
+        termDecl(mods, parentToken)
     }
 
     def makeCompanionObject(cdef: ClassDef, statics: List[Tree]): Tree =
@@ -708,8 +705,15 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           in.nextToken()
         } else {
           if (in.token == ENUM || definesInterface(in.token)) mods |= Flags.STATIC
-          val decls = memberDecl(mods, parentToken)
-          (if (mods.hasStaticFlag || inInterface && !(decls exists (_.isInstanceOf[DefDef])))
+          val decls = joinComment(memberDecl(mods, parentToken))
+
+          def isDefDef(tree: Tree): Boolean = tree match {
+            case _: DefDef => true
+            case DocDef(_, defn) => isDefDef(defn)
+            case _ => false
+          }
+
+          (if (mods.hasStaticFlag || inInterface && !(decls exists isDefDef))
              statics
            else
              members) ++= decls

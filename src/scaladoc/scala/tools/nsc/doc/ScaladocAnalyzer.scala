@@ -216,10 +216,15 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
 
   class ScaladocJavaUnitScanner(unit: CompilationUnit) extends JavaUnitScanner(unit) {
 
-    private val docBuffer: StringBuilder = new StringBuilder
+    private var docBuffer: StringBuilder = _
     private var inDocComment = false
     private var docStart: Int = 0
     private var lastDoc: DocComment = null
+
+    override def init() = {
+      docBuffer = new StringBuilder
+      super.init()
+    }
 
     // get last doc comment
     def flushDoc(): DocComment = try lastDoc finally lastDoc = null
