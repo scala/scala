@@ -884,7 +884,9 @@ abstract class Erasure extends AddInterfaces
      */
     private val preTransformer = new TypingTransformer(unit) {
       // TODO: since the spec defines instanceOf checks in terms of pattern matching,
-      // this extractor should share code with TypeTestTreeMaker
+      // this extractor should share code with TypeTestTreeMaker. The corresponding
+      // code is somewhat buried in and entangled with the pattern matching mechanics
+      // which makes this fiddly to do now.
       object SingletonInstanceCheck {
         def unapply(pt: Type): Option[(TermSymbol, Tree)] = pt match {
           case SingleType(_, _) | ConstantType(_) | ThisType(_) | SuperType(_, _) =>
@@ -905,8 +907,10 @@ abstract class Erasure extends AddInterfaces
           case TypeApply(Select(qual, _), _) => qual
         }
 
-        // TODO SPEC: this should share logic with TypeTestTreeMaker in the pattern matcher,
-        // since `x.asInstanceOf[T]` is specified as the pattern match
+        // TODO: this should share logic with TypeTestTreeMaker in the pattern matcher,
+        // since `x.isInstanceOf[T]` is specified as the pattern match. The corresponding
+        // code is somewhat buried in and entangled with the pattern matching mechanics
+        // which makes this fiddly to do now.
         // `x match { case x: T => x  case null => null  case _ => throw new ClassCastException }` (why is the null case needed?)
         def preEraseAsInstanceOf = {
           (fn: @unchecked) match {
@@ -931,8 +935,10 @@ abstract class Erasure extends AddInterfaces
           // todo: also handle the case where the singleton type is buried in a compound
         }
 
-        // TODO SPEC: this should share logic with TypeTestTreeMaker in the pattern matcher,
-        // since `x.isInstanceOf[T]` is specified as the pattern match
+        // TODO: this should share logic with TypeTestTreeMaker in the pattern matcher,
+        // since `x.isInstanceOf[T]` is specified as the pattern match. The corresponding
+        // code is somewhat buried in and entangled with the pattern matching mechanics
+        // which makes this fiddly to do now.
         // `x match { case _: T => true case _ => false }` (modulo numeric conversion)
         def preEraseIsInstanceOf = {
           fn match {

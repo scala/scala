@@ -4071,7 +4071,7 @@ trait Types
   def isErrorOrWildcard(tp: Type) = (tp eq ErrorType) || (tp eq WildcardType)
 
   /** This appears to be equivalent to tp.isInstanceof[SingletonType],
-   *  except it excludes ConstantTypes.
+   *  except it excludes FoldableConstantTypes.
    */
   def isSingleType(tp: Type) = tp match {
     case ThisType(_) | SuperType(_, _) | SingleType(_, _) => true

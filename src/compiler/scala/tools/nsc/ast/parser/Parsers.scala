@@ -1019,7 +1019,7 @@ self =>
         simpleTypeRest(in.token match {
           case LPAREN   => atPos(start)(makeSafeTupleType(inParens(types()), start))
           case USCORE   => wildcardType(in.skipToken())
-          case tok if settings.YliteralTypes && isLiteralToken(tok) => atPos(start){SingletonTypeTree(literal())} // SIP-23
+          case tok if settings.YliteralTypes && isLiteralToken(tok) => atPos(start){SingletonTypeTree(literal())}
           case _        =>
             path(thisOK = false, typeOK = true) match {
               case r @ SingletonTypeTree(_) => r
@@ -1101,10 +1101,9 @@ self =>
           else
             mkOp(infixType(InfixMode.RightOp))
         }
-        // SIP-23
         def isNegatedLiteralType = settings.YliteralTypes && (
           t match { // the token for `t` (Ident("-")) has already been read, thus `isLiteral` below is looking at next token (must be a literal)
-            case Ident(name) if isLiteral => name == nme.MINUS.toTypeName // TODO: OPT? lift out nme.MINUS.toTypeName?
+            case Ident(name) if isLiteral => name == nme.MINUS.toTypeName
             case _ => false
           }
         )

@@ -844,25 +844,19 @@ trait Namers extends MethodSynthesis {
       loop(tp)
     }
 
-    /**
+    /*
      * This method has a big impact on the eventual compiled code.
-     *  At this point many values have the most specific possible
-     *  type (e.g. in val x = 42, x's type is Int(42), not Int) but
-     *  most need to be widened (which deconsts) to avoid undesirable propagation of
-     *  those singleton types.
+     * At this point many values have the most specific possible
+     * type (e.g. in val x = 42, x's type is Int(42), not Int) but
+     * most need to be widened (which deconsts) to avoid undesirable
+     * propagation of those singleton types.
      *
-     *  However, the compilation of pattern matches into switch
-     *  statements depends on constant folding, which will only take
-     *  place for those values which aren't deconsted.  The "final"
-     *  modifier is the present means of signaling that a constant
-     *  value should not deconsted, so it has a use even in situations
-     *  whether it is otherwise redundant (such as in a singleton.)
-     *
-     *  TODO: spec -- this is a crucial part of type inference
-     *
-     *  NOTES:
-     *   - Can we keep more singleton types? (E.g., for local definitions.)
-     *   - Do we need to check tpe.deconst <:< pt? (Probably not, since ConstantTypes are not user-expressible.)
+     * However, the compilation of pattern matches into switch
+     * statements depends on constant folding, which will only take
+     * place for those values which aren't deconsted.  The "final"
+     * modifier is the present means of signaling that a constant
+     * value should not deconsted, so it has a use even in situations
+     * whether it is otherwise redundant (such as in a singleton.)
      */
     private def widenIfNecessary(sym: Symbol, tpe: Type, pt: Type): Type = {
       // Are we inferring the result type of a stable symbol, whose type doesn't refer to a hidden symbol?

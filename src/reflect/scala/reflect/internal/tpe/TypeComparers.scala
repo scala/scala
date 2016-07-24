@@ -372,7 +372,6 @@ trait TypeComparers {
   private def isSubType2(tp1: Type, tp2: Type, depth: Depth): Boolean = {
     def retry(lhs: Type, rhs: Type) = ((lhs ne tp1) || (rhs ne tp2)) && isSubType(lhs, rhs, depth)
 
-    // TODO SIP-23
     if (tp1.isInstanceOf[SingletonType] && tp2.isInstanceOf[SingletonType])
       return (tp1 =:= tp2) || isThisAndSuperSubtype(tp1, tp2) || retry(tp1.underlying, tp2)
 
