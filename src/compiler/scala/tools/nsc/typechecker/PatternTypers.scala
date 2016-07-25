@@ -79,6 +79,7 @@ trait PatternTypers {
       // do not update the symbol if the tree's symbol's type does not define an unapply member
       // (e.g. since it's some method that returns an object with an unapply member)
       val fun         = inPlaceAdHocOverloadingResolution(fun0)(hasUnapplyMember)
+      val canElide    = treeInfo.isQualifierSafeToElide(fun)
       val caseClass   = companionSymbolOf(fun.tpe.typeSymbol.sourceModule, context)
       val member      = unapplyMember(fun.tpe)
       def resultType  = (fun.tpe memberType member).finalResultType
@@ -94,7 +95,7 @@ trait PatternTypers {
       // Dueling test cases: pos/overloaded-unapply.scala, run/case-class-23.scala, pos/t5022.scala
       // A case class with 23+ params has no unapply method.
       // A case class constructor may be overloaded with unapply methods in the companion.
-      if (caseClass.isCase && !member.isOverloaded)
+      if (canElide && caseClass.isCase && !member.isOverloaded)
         logResult(s"convertToCaseConstructor($fun, $caseClass, pt=$pt)")(convertToCaseConstructor(fun, caseClass, pt))
       else if (!reallyExists(member))
         CaseClassConstructorError(fun, s"${fun.symbol} is not a case class, nor does it have an unapply/unapplySeq member")
