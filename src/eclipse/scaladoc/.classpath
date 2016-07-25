@@ -2,12 +2,11 @@
 <classpath>
 	<classpathentry kind="src" path="scaladoc"/>
 	<classpathentry kind="var" path="SCALA_BASEDIR/lib/ant/ant.jar"/>
-	<classpathentry kind="var" path="SCALA_BASEDIR/build/deps/asm/scala-asm-5.0.4-scala-3.jar"/>
+	<classpathentry kind="var" path="SCALA_BASEDIR/build/deps/asm/scala-asm-5.1.0-scala-1.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/scala-compiler"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/scala-library"/>
-	<classpathentry kind="var" path="SCALA_BASEDIR/build/deps/scaladoc/scala-xml_2.12.0-M4-1.0.5.jar"/>
-	<classpathentry kind="var" path="SCALA_BASEDIR/build/deps/scaladoc/scala-parser-combinators_2.12.0-M4-1.0.4.jar"/>
-	<classpathentry kind="var" path="SCALA_BASEDIR/build/deps/partest/scala-partest_2.12.0-M4-1.0.14.jar"/>
+	<classpathentry kind="var" path="SCALA_BASEDIR/build/deps/scaladoc/scala-xml_2.12.0-M5-1.0.5.jar"/>
+	<classpathentry kind="var" path="SCALA_BASEDIR/build/deps/partest/scala-partest_2.12.0-M5-1.0.17.jar"/>
 	<classpathentry kind="output" path="build-quick-scaladoc"/>
 </classpath>

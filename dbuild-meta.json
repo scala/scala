@@ -48,11 +48,6 @@
                     "extension" : "jar",
                     "name" : "scala-xml",
                     "organization" : "org.scala-lang.modules"
-                },
-                {
-                    "extension" : "jar",
-                    "name" : "scala-parser-combinators",
-                    "organization" : "org.scala-lang.modules"
                 }
             ],
             "name" : "scala-compiler",
