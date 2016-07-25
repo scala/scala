@@ -30,5 +30,3 @@ partest --verbose test/files/run/sip23-unsound-cast-0.scala
 Noise:
 partest --verbose test/files/run/analyzerPlugins.scala
 partest --verbose test/files/run/settings-parse.scala
-partest --verbose test/files/run/t7747-repl.scala
-partest --verbose test/files/presentation/callcc-interpreter
