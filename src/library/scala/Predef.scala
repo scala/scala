@@ -337,8 +337,16 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     @deprecated("use Throwable#getStackTrace", "2.11.0") def getStackTraceString = self.getStackTrace().mkString("", EOL, EOL)
   }
 
+  // Sadly we have to do `@deprecatedName(null, "2.12.0")` because
+  // `@deprecatedName(since="2.12.0")` incurs a warning about
+  //   Usage of named or default arguments transformed this annotation constructor call into a block.
+  //   The corresponding AnnotationInfo will contain references to local values and default getters
+  //   instead of the actual argument trees
+  // and `@deprecatedName(Symbol("<none>"), "2.12.0")` crashes scalac with
+  //   scala.reflect.internal.Symbols$CyclicReference: illegal cyclic reference involving object Symbol
+  // in run/repl-no-imports-no-predef-power.scala.
   /** @group implicit-classes-char */
-  implicit final class SeqCharSequence(val __sequenceOfChars: scala.collection.IndexedSeq[Char]) extends CharSequence {
+  implicit final class SeqCharSequence(@deprecated("will be made private", "2.12.0") @deprecatedName(null, "2.12.0") val __sequenceOfChars: scala.collection.IndexedSeq[Char]) extends CharSequence {
     def length: Int                                     = __sequenceOfChars.length
     def charAt(index: Int): Char                        = __sequenceOfChars(index)
     def subSequence(start: Int, end: Int): CharSequence = new SeqCharSequence(__sequenceOfChars.slice(start, end))
@@ -346,7 +354,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   }
 
   /** @group implicit-classes-char */
-  implicit final class ArrayCharSequence(val __arrayOfChars: Array[Char]) extends CharSequence {
+  implicit final class ArrayCharSequence(@deprecated("will be made private", "2.12.0") @deprecatedName(null, "2.12.0") val __arrayOfChars: Array[Char]) extends CharSequence {
     def length: Int                                     = __arrayOfChars.length
     def charAt(index: Int): Char                        = __arrayOfChars(index)
     def subSequence(start: Int, end: Int): CharSequence = new runtime.ArrayCharSequence(__arrayOfChars, start, end)
