@@ -883,25 +883,22 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
      *
      * must-single-thread
      */
-    private def addForwarder(isRemoteClass: Boolean, jclass: asm.ClassVisitor, module: Symbol, m: Symbol): Unit = {
-      def staticForwarderGenericSignature(sym: Symbol, moduleClass: Symbol): String = {
-        if (sym.isDeferred) null // only add generic signature if method concrete; bug #1745
-        else {
-          // SI-3452 Static forwarder generation uses the same erased signature as the method if forwards to.
-          // By rights, it should use the signature as-seen-from the module class, and add suitable
-          // primitive and value-class boxing/unboxing.
-          // But for now, just like we did in mixin, we just avoid writing a wrong generic signature
-          // (one that doesn't erase to the actual signature). See run/t3452b for a test case.
-          val memberTpe = enteringErasure(moduleClass.thisType.memberInfo(sym))
-          val erasedMemberType = erasure.erasure(sym)(memberTpe)
-          if (erasedMemberType =:= sym.info)
-            getGenericSignature(sym, moduleClass, memberTpe)
-          else null
-        }
+    private def addForwarder(isRemoteClass: Boolean, jclass: asm.ClassVisitor, moduleClass: Symbol, m: Symbol): Unit = {
+      def staticForwarderGenericSignature: String = {
+        // SI-3452 Static forwarder generation uses the same erased signature as the method if forwards to.
+        // By rights, it should use the signature as-seen-from the module class, and add suitable
+        // primitive and value-class boxing/unboxing.
+        // But for now, just like we did in mixin, we just avoid writing a wrong generic signature
+        // (one that doesn't erase to the actual signature). See run/t3452b for a test case.
+        val memberTpe = enteringErasure(moduleClass.thisType.memberInfo(m))
+        val erasedMemberType = erasure.erasure(m)(memberTpe)
+        if (erasedMemberType =:= m.info)
+          getGenericSignature(m, moduleClass, memberTpe)
+        else null
       }
 
-      val moduleName     = internalName(module)
-      val methodInfo     = module.thisType.memberInfo(m)
+      val moduleName     = internalName(moduleClass)
+      val methodInfo     = moduleClass.thisType.memberInfo(m)
       val paramJavaTypes: List[BType] = methodInfo.paramTypes map typeToBType
       // val paramNames     = 0 until paramJavaTypes.length map ("x_" + _)
 
@@ -916,7 +913,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       )
 
       // TODO needed? for(ann <- m.annotations) { ann.symbol.initialize }
-      val jgensig = staticForwarderGenericSignature(m, module)
+      val jgensig = staticForwarderGenericSignature
       addRemoteExceptionAnnot(isRemoteClass, hasPublicBitSet(flags), m)
       val (throws, others) = m.annotations partition (_.symbol == definitions.ThrowsClass)
       val thrownExceptions: List[String] = getExceptions(throws)
@@ -937,7 +934,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
 
       mirrorMethod.visitCode()
 
-      mirrorMethod.visitFieldInsn(asm.Opcodes.GETSTATIC, moduleName, strMODULE_INSTANCE_FIELD, classBTypeFromSymbol(module).descriptor)
+      mirrorMethod.visitFieldInsn(asm.Opcodes.GETSTATIC, moduleName, strMODULE_INSTANCE_FIELD, classBTypeFromSymbol(moduleClass).descriptor)
 
       var index = 0
       for(jparamType <- paramJavaTypes) {
