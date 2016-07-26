@@ -189,6 +189,19 @@ object Numeric {
 
   implicit object DoubleIsFractional extends DoubleIsFractional with Ordering.DoubleOrdering
   object DoubleAsIfIntegral extends DoubleAsIfIntegral with Ordering.DoubleOrdering
+
+  class Ops[T](self: Numeric[T], lhs: T) {
+    def +(rhs: T): T       = self.plus(lhs, rhs)
+    def -(rhs: T): T       = self.minus(lhs, rhs)
+    def *(rhs: T): T       = self.times(lhs, rhs)
+    def unary_-(): T       = self.negate(lhs)
+    def abs(): T           = self.abs(lhs)
+    def signum(): Int      = self.signum(lhs)
+    def toInt(): Int       = self.toInt(lhs)
+    def toLong(): Long     = self.toLong(lhs)
+    def toFloat(): Float   = self.toFloat(lhs)
+    def toDouble(): Double = self.toDouble(lhs)
+  }
 }
 
 trait Numeric[T] extends Ordering[T] {
@@ -211,17 +224,5 @@ trait Numeric[T] extends Ordering[T] {
     else if (gt(x, zero)) 1
     else 0
 
-  class Ops(lhs: T) {
-    def +(rhs: T) = plus(lhs, rhs)
-    def -(rhs: T) = minus(lhs, rhs)
-    def *(rhs: T) = times(lhs, rhs)
-    def unary_-() = negate(lhs)
-    def abs(): T = Numeric.this.abs(lhs)
-    def signum(): Int = Numeric.this.signum(lhs)
-    def toInt(): Int = Numeric.this.toInt(lhs)
-    def toLong(): Long = Numeric.this.toLong(lhs)
-    def toFloat(): Float = Numeric.this.toFloat(lhs)
-    def toDouble(): Double = Numeric.this.toDouble(lhs)
-  }
-  implicit def mkNumericOps(lhs: T): Ops = new Ops(lhs)
+  implicit def mkNumericOps(lhs: T): Numeric.Ops[T] = new Numeric.Ops(this, lhs)
 }
