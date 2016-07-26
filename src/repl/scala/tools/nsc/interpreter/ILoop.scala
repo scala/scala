@@ -45,8 +45,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   def this(in0: BufferedReader, out: JPrintWriter) = this(Some(in0), out)
   def this() = this(None, new JPrintWriter(Console.out, true))
 
-  @deprecated("Use `intp` instead.", "2.9.0") def interpreter = intp
-  @deprecated("Use `intp` instead.", "2.9.0") def interpreter_= (i: Interpreter): Unit = intp = i
+  @deprecated("use `intp` instead.", "2.9.0") def interpreter = intp
+  @deprecated("use `intp` instead.", "2.9.0") def interpreter_= (i: Interpreter): Unit = intp = i
 
   var in: InteractiveReader = _   // the input stream from which commands come
   var settings: Settings = _
@@ -73,7 +73,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   def history = in.history
 
   // classpath entries added via :cp
-  @deprecated("Use reset, replay or require to update class path", since = "2.11")
+  @deprecated("use reset, replay or require to update class path", since = "2.11.0")
   var addedClasspath: String = ""
 
   /** A reverse list of commands to replay if the user requests a :replay */
@@ -594,7 +594,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     else File(filename).printlnAll(replayCommands: _*)
   )
 
-  @deprecated("Use reset, replay or require to update class path", since = "2.11")
+  @deprecated("use reset, replay or require to update class path", since = "2.11.0")
   def addClasspath(arg: String): Unit = {
     val f = File(arg).normalize
     if (f.exists) {
@@ -1000,7 +1000,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
   }
 
-  @deprecated("Use `process` instead", "2.9.0")
+  @deprecated("use `process` instead", "2.9.0")
   def main(settings: Settings): Unit = process(settings) //used by sbt
 }
 

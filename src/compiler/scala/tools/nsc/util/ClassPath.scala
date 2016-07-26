@@ -52,7 +52,7 @@ trait ClassPath {
     */
   def asClassPathString: String = ClassPath.join(asClassPathStrings: _*)
   // for compatibility purposes
-  @deprecated("Use asClassPathString instead of this one", "2.11.5")
+  @deprecated("use asClassPathString instead of this one", "2.11.5")
   def asClasspathString: String = asClassPathString
 
   /** The whole sourcepath in the form of one String.
@@ -128,10 +128,10 @@ object ClassPath {
     resources.asScala.filter(_.getProtocol == "jar").toList
   }
 
-  @deprecated("Shim for sbt's compiler interface", since = "2.12")
+  @deprecated("shim for sbt's compiler interface", since = "2.12.0")
   sealed abstract class ClassPathContext
 
-  @deprecated("Shim for sbt's compiler interface", since = "2.12")
+  @deprecated("shim for sbt's compiler interface", since = "2.12.0")
   sealed abstract class JavaContext
 }
 
@@ -141,11 +141,11 @@ trait ClassRepresentation {
   def source: Option[AbstractFile]
 }
 
-@deprecated("Shim for sbt's compiler interface", since = "2.12")
+@deprecated("shim for sbt's compiler interface", since = "2.12.0")
 sealed abstract class DirectoryClassPath
 
-@deprecated("Shim for sbt's compiler interface", since = "2.12")
+@deprecated("shim for sbt's compiler interface", since = "2.12.0")
 sealed abstract class MergedClassPath
 
-@deprecated("Shim for sbt's compiler interface", since = "2.12")
+@deprecated("shim for sbt's compiler interface", since = "2.12.0")
 sealed abstract class JavaClassPath

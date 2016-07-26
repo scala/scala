@@ -56,5 +56,5 @@ import convert._
  *  @author Martin Odersky
  *  @since  2.8
  */
-@deprecated("Use JavaConverters", since="2.12")
+@deprecated("use JavaConverters", since="2.12.0")
 object JavaConversions extends WrapAsScala with WrapAsJava

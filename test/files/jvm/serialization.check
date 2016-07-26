@@ -1,5 +1,5 @@
 warning: there were two deprecation warnings (since 2.11.0)
-warning: there was one deprecation warning (since 2.11.6)
+warning: there was one deprecation warning (since 2.12.0)
 warning: there were three deprecation warnings in total; re-run with -deprecation for details
 a1 = Array[1,2,3]
 _a1 = Array[1,2,3]
