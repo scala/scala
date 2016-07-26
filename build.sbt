@@ -935,7 +935,7 @@ intellij := {
 
   val modules: List[(String, Seq[File])] = {
     // for the sbt build module, the dependencies are fetched from the project's build using sbt-buildinfo
-    val buildModule = ("scala-build", scalabuild.BuildInfo.buildClasspath.split(":").toSeq.map(new File(_)))
+    val buildModule = ("scala-build", scalabuild.BuildInfo.buildClasspath.split(java.io.File.pathSeparator).toSeq.map(new File(_)))
     // `sbt projects` lists all modules in the build
     buildModule :: List(
       moduleDeps(compilerP).value,
@@ -1014,12 +1014,14 @@ intellij := {
   var continue = false
   if (!ipr.exists) {
     scala.Console.print(s"Could not find src/intellij/scala.ipr. Create new project files from src/intellij/*.SAMPLE (y/N)? ")
+    scala.Console.flush()
     if (scala.Console.readLine() == "y") {
       intellijCreateFromSample((baseDirectory in ThisBuild).value)
       continue = true
     }
   } else {
     scala.Console.print("Update library classpaths in the current src/intellij/scala.ipr (y/N)? ")
+    scala.Console.flush()
     continue = scala.Console.readLine() == "y"
   }
   if (continue) {
@@ -1044,6 +1046,7 @@ lazy val intellijFromSample = taskKey[Unit]("Create fresh IntelliJ project files
 intellijFromSample := {
   val s = streams.value
   scala.Console.print(s"Create new project files from src/intellij/*.SAMPLE (y/N)? ")
+  scala.Console.flush()
   if (scala.Console.readLine() == "y")
     intellijCreateFromSample((baseDirectory in ThisBuild).value)
   else
@@ -1061,6 +1064,7 @@ lazy val intellijToSample = taskKey[Unit]("Update src/intellij/*.SAMPLE using th
 intellijToSample := {
   val s = streams.value
   scala.Console.print(s"Update src/intellij/*.SAMPLE using the current IntelliJ project files (y/N)? ")
+  scala.Console.flush()
   if (scala.Console.readLine() == "y") {
     val basedir = (baseDirectory in ThisBuild).value
     val existing = basedir / "src/intellij" * "*.SAMPLE"
