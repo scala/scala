@@ -27,9 +27,12 @@ abstract class DerivedOneAbstract extends OneAbstract
 abstract class SelfTp { self: NoAbstract => def ap(a: Int): Any }
 abstract class SelfVar { self => def ap(a: Int): Any }
 
+trait T1 { def t(a: Int): Int }; trait U1
+
 object Test {
   implicit val s: String = ""
-  type NonClassType = DerivedOneAbstract with OneAbstract
+  type NonClassTypeRefinement = DerivedOneAbstract with OneAbstract
+  type NonClassType = DerivedOneAbstract
 
   // errors:
   (() => 0)      : NoAbstract
@@ -42,6 +45,8 @@ object Test {
   ((x: Int) => 0): ImplicitMethodParam
   ((x: Int) => 0): PolyMethod
   ((x: Int) => 0): SelfTp
+  ((x: Int) => 0): T1 with U1
+  ((x: Int) => 0): NonClassTypeRefinement
 
   // allowed:
   ((x: Int) => 0): OneEmptyConstructor
