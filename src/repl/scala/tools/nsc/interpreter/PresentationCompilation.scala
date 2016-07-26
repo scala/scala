@@ -69,7 +69,7 @@ trait PresentationCompilation {
     val interactiveGlobal = new interactive.Global(copySettings, storeReporter) { self =>
       override lazy val platform: ThisPlatform = {
         new JavaPlatform {
-          val global: self.type = self
+          lazy val global: self.type = self
           override private[nsc] lazy val classPath: ClassPath = mergedFlatClasspath
         }
       }
