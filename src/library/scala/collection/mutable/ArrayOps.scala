@@ -44,9 +44,9 @@ sealed trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomPara
   override def slice(from: Int, until: Int): Array[T] = {
      val lo = math.max(from, 0)
      val hi = math.min(math.max(until, 0), repr.length)
-     val size = math.max(hi-lo, 0)
+     val size = math.max(hi - lo, 0)
      val result = java.lang.reflect.Array.newInstance(elementClass, size)
-     if(size > 0) {
+     if (size > 0) {
       Array.copy(repr, lo, result, 0, size)
      }
      result.asInstanceOf[Array[T]]
