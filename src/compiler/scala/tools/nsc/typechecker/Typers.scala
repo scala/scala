@@ -3271,40 +3271,74 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       val fun = preSelectOverloaded(fun0)
+      val argslen = args.length
 
       fun.tpe match {
         case OverloadedType(pre, alts) =>
           def handleOverloaded = {
             val undetparams = context.undetparams
+
+            def funArgTypes(tps: List[Type]) = tps.map { tp =>
+              val relTp = tp.asSeenFrom(pre, fun.symbol.owner)
+              val argTps = functionOrSamArgTypes(relTp)
+              //println(s"funArgTypes $argTps from $relTp")
+              argTps.map(approximateAbstracts)
+            }
+
+            def functionProto(argTps: List[Type]): Type =
+              try functionType(funArgTypes(argTps).transpose.map(lub), WildcardType)
+              catch { case _: IllegalArgumentException => WildcardType }
+
+            // To propagate as much information as possible to typedFunction, which uses the expected type to
+            // infer missing parameter types for Function trees that we're typing as arguments here,
+            // we expand the parameter types for all alternatives to the expected argument length,
+            // then transpose to get a list of alternative argument types (push down the overloading to the arguments).
+            // Thus, for each `arg` in `args`, the corresponding `argPts` in `altArgPts` is a list of expected types
+            // for `arg`. Depending on which overload is picked, only one of those expected types must be met, but
+            // we're in the process of figuring that out, so we'll approximate below by normalizing them to function types
+            // and lubbing the argument types (we treat SAM and FunctionN types equally, but non-function arguments
+            // do not receive special treatment: they are typed under WildcardType.)
+            val altArgPts =
+              if (settings.isScala212 && args.exists(treeInfo.isFunctionMissingParamType))
+                try alts.map(alt => formalTypes(alt.info.paramTypes, argslen)).transpose // do least amount of work up front
+                catch { case _: IllegalArgumentException => args.map(_ => Nil) } // fail safe in case formalTypes fails to align to argslen
+              else args.map(_ => Nil) // will type under argPt == WildcardType
+
             val (args1, argTpes) = context.savingUndeterminedTypeParams() {
               val amode = forArgMode(fun, mode)
-              def typedArg0(tree: Tree) = typedArg(tree, amode, BYVALmode, WildcardType)
-              args.map {
-                case arg @ AssignOrNamedArg(Ident(name), rhs) =>
-                  // named args: only type the righthand sides ("unknown identifier" errors otherwise)
-                  // the assign is untyped; that's ok because we call doTypedApply
-                  val typedRhs        = typedArg0(rhs)
-                  val argWithTypedRhs = treeCopy.AssignOrNamedArg(arg, arg.lhs, typedRhs)
 
-                  // TODO: SI-8197/SI-4592: check whether this named argument could be interpreted as an assign
+              map2(args, altArgPts) { (arg, argPts) =>
+                def typedArg0(tree: Tree) = {
+                  // if we have an overloaded HOF such as `(f: Int => Int)Int <and> (f: Char => Char)Char`,
+                  // and we're typing a function like `x => x` for the argument, try to collapse
+                  // the overloaded type into a single function type from which `typedFunction`
+                  // can derive the argument type for `x` in the function literal above
+                  val argPt =
+                    if (argPts.nonEmpty && treeInfo.isFunctionMissingParamType(tree)) functionProto(argPts)
+                    else WildcardType
+
+                  val argTyped = typedArg(tree, amode, BYVALmode, argPt)
+                  (argTyped, argTyped.tpe.deconst)
+                }
+
+                arg match {
+                  // SI-8197/SI-4592 call for checking whether this named argument could be interpreted as an assign
                   // infer.checkNames must not use UnitType: it may not be a valid assignment, or the setter may return another type from Unit
-                  //
-                  // var typedAsAssign = true
-                  // val argTyped = silent(_.typedArg(argWithTypedRhs, amode, BYVALmode, WildcardType)) orElse { errors =>
-                  //   typedAsAssign = false
-                  //   argWithTypedRhs
-                  // }
-                  //
-                  // TODO: add an assignmentType field to NamedType, equal to:
-                  // assignmentType = if (typedAsAssign) argTyped.tpe else NoType
-
-                  (argWithTypedRhs, NamedType(name, typedRhs.tpe.deconst))
-                case arg @ treeInfo.WildcardStarArg(repeated) =>
-                  val arg1 = typedArg0(arg)
-                  (arg1, RepeatedType(arg1.tpe.deconst))
-                case arg =>
-                  val arg1 = typedArg0(arg)
-                  (arg1, arg1.tpe.deconst)
+                  // TODO: just make it an error to refer to a non-existent named arg, as it's far more likely to be
+                  //       a typo than an assignment passed as an argument
+                  case AssignOrNamedArg(lhs@Ident(name), rhs) =>
+                    // named args: only type the righthand sides ("unknown identifier" errors otherwise)
+                    // the assign is untyped; that's ok because we call doTypedApply
+                    typedArg0(rhs) match {
+                      case (rhsTyped, tp) => (treeCopy.AssignOrNamedArg(arg, lhs, rhsTyped), NamedType(name, tp))
+                    }
+                  case treeInfo.WildcardStarArg(_) =>
+                    typedArg0(arg) match {
+                      case (argTyped, tp) => (argTyped, RepeatedType(tp))
+                    }
+                  case _ =>
+                    typedArg0(arg)
+                }
               }.unzip
             }
             if (context.reporter.hasErrors)
@@ -3335,7 +3369,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case mt @ MethodType(params, _) =>
           val paramTypes = mt.paramTypes
           // repeat vararg as often as needed, remove by-name
-          val argslen = args.length
           val formals = formalTypes(paramTypes, argslen)
 
           /* Try packing all arguments into a Tuple and apply `fun`

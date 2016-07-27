@@ -263,6 +263,12 @@ abstract class TreeInfo {
     true
   }
 
+  def isFunctionMissingParamType(tree: Tree): Boolean = tree match {
+    case Function(vparams, _) => vparams.exists(_.tpt.isEmpty)
+    case _ => false
+  }
+
+
   /** Is symbol potentially a getter of a variable?
    */
   def mayBeVarGetter(sym: Symbol): Boolean = sym.info match {
