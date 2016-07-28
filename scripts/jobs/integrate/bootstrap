@@ -85,10 +85,8 @@
 moduleVersioning=${moduleVersioning-"versions.properties"}
 
 publishPrivateTask=${publishPrivateTask-"publish"}
-publishSonatypeTaskCore=${publishSonatypeTaskCore-"publish-signed"}
-publishSonatypeTaskModules=${publishSonatypeTaskModules-"publish-signed"}
-publishStarrPrivateTask=${publishStarrPrivateTask-$publishPrivateTask} # set to "init" to speed up testing of the script (if you already built STARR before)
-publishLockerPrivateTask=${publishLockerPrivateTask-$publishPrivateTask} # set to "init" to speed up testing of the script (if you already built locker before)
+publishSonatypeTaskCore=${publishSonatypeTaskCore-"publishSigned"}
+publishSonatypeTaskModules=${publishSonatypeTaskModules-"publishSigned"}
 
 forceRebuild=${forceRebuild-no}
 
@@ -111,21 +109,7 @@ mkdir -p $baseDir/resolutionScratch_
 # repo used to publish "locker" scala to (to start the bootstrap)
 releaseTempRepoCred="private-repo"
 releaseTempRepoUrl=${releaseTempRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-release-temp/"}
-jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
-
-# Used below in sbtArgs since we use a dedicated repository to share artifcacts between jobs,
-# so we need to configure SBT to use these rather than its default, Maven Central.
-# See http://www.scala-sbt.org/0.13/docs/Proxy-Repositories.html
-sbtRepositoryConfig="$scriptsDir/repositories-scala-release"
-cat > "$sbtRepositoryConfig" << EOF
-[repositories]
-  private-repo: $releaseTempRepoUrl
-  jcenter-cache: $jcenterCacheUrl
-  typesafe-ivy-releases: https://dl.bintray.com/typesafe/ivy-releases/, [organisation]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext], bootOnly
-  sbt-plugin-releases: https://dl.bintray.com/sbt/sbt-plugin-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
-  maven-central
-  local
-EOF
+generateRepositoriesConfig $releaseTempRepoUrl
 
 ##### git
 gfxd() {
@@ -575,7 +559,7 @@ publishSonatype() {
       -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
       "setupBootstrapPublish $releaseTempRepoUrl $SCALA_VER" \
-      publishSigned | grep -v "was too long to be displayed in the webview, and will be left out"
+      $publishSonatypeTaskCore | grep -v "was too long to be displayed in the webview, and will be left out"
 
   echo "### Publishing modules to sonatype"
   # build/test/publish scala core modules to sonatype (this will start a new staging repo)

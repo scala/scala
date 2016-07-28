@@ -4,6 +4,9 @@ baseDir=${WORKSPACE-`pwd`}
 scriptsDir="$baseDir/scripts"
 . $scriptsDir/common
 
+generateRepositoriesConfig $prRepoUrl
+SBT="$SBT_CMD -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
+
 case $prDryRun in
 
   yep)
@@ -15,12 +18,12 @@ case $prDryRun in
     # build quick using STARR built upstream, as specified by scalaVersion
     # (in that sense it's locker, since it was built with starr by that upstream job);
     # and run JUnit tests, partest, OSGi tests, MiMa and scaladoc
-    $SBT_CMD \
+    $SBT \
        -Dstarr.version=$scalaVersion \
        --warn \
        "setupValidateTest $prRepoUrl" \
        $testExtraArgs \
-       testAll
+       testAll | grep -v "was too long to be displayed in the webview, and will be left out"
 
     ;;
 

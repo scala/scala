@@ -154,3 +154,23 @@ EOF
   fi
   popd
 }
+
+# Generate a repositories file with all allowed repositories in our build environment.
+# Takes one optional argument, the private repository URL.
+# See http://www.scala-sbt.org/0.13/docs/Proxy-Repositories.html
+function generateRepositoriesConfig() {
+  jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
+  sbtRepositoryConfig="$scriptsDir/sbt-repositories-config"
+  echo > "$sbtRepositoryConfig" '[repositories]'
+  if [ -n "$1" ]
+  then
+    echo >> "$sbtRepositoryConfig" "  private-repo: $1"
+  fi
+  cat >> "$sbtRepositoryConfig" << EOF
+  jcenter-cache: $jcenterCacheUrl
+  typesafe-ivy-releases: https://dl.bintray.com/typesafe/ivy-releases/, [organisation]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext], bootOnly
+  sbt-plugin-releases: https://dl.bintray.com/sbt/sbt-plugin-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
+  maven-central
+  local
+EOF
+}
