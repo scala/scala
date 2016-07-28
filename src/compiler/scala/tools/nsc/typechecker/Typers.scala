@@ -872,16 +872,27 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case Block(_, tree1) => tree1.symbol
           case _               => tree.symbol
         }
-        def shouldEtaExpandToSam: Boolean = {
-          // SI-9536 don't adapt parameterless method types to a to SAM's, fall through to empty application
-          // instead for backwards compatiblity with 2.11. See comments of that ticket and SI-7187
-          // for analogous trouble with non-SAM eta expansion. Suggestions there are: a) deprecate eta expansion to Function0,
-          // or b) switch the order of eta-expansion and empty application in this adaptation.
-          !mt.params.isEmpty && samOf(pt).exists
-        }
-        if (!meth.isConstructor && (isFunctionType(pt) || shouldEtaExpandToSam)) { // (4.2)
+
+        def cantAdapt =
+          if (context.implicitsEnabled) MissingArgsForMethodTpeError(tree, meth)
+          else setError(tree)
+
+        // constructors do not eta-expand
+        if (meth.isConstructor) cantAdapt
+        // (4.2) eta-expand method value when function or sam type is expected
+        else if (isFunctionType(pt) || (!mt.params.isEmpty && samOf(pt).exists)) {
+          // SI-9536 `!mt.params.isEmpty &&`: for backwards compatiblity with 2.11,
+          // we don't adapt a zero-arg method value to a SAM
+          // In 2.13, we won't do any eta-expansion for zero-arg method values, but we should deprecate first
+
           debuglog(s"eta-expanding $tree: ${tree.tpe} to $pt")
           checkParamsConvertible(tree, tree.tpe)
+
+          // SI-7187 eta-expansion of zero-arg method value is deprecated, switch order of (4.3) and (4.2) in 2.13
+          if (mt.params.isEmpty)
+            currentRun.reporting.deprecationWarning(tree.pos, NoSymbol,
+              s"Eta-expansion of zero-argument method values is deprecated. Did you intend to write ${Apply(tree, Nil)}?", "2.12.0")
+
           val tree0 = etaExpand(context.unit, tree, this)
 
           // #2624: need to infer type arguments for eta expansion of a polymorphic method
@@ -895,12 +906,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           else
             typed(tree0, mode, pt)
         }
-        else if (!meth.isConstructor && mt.params.isEmpty) // (4.3)
-          adapt(typed(Apply(tree, Nil) setPos tree.pos), mode, pt, original)
-        else if (context.implicitsEnabled)
-          MissingArgsForMethodTpeError(tree, meth)
-        else
-          setError(tree)
+        // (4.3) apply to empty argument list -- TODO 2.13: move this one case up to avoid eta-expanding at arity 0
+        else if (mt.params.isEmpty) adapt(typed(Apply(tree, Nil) setPos tree.pos), mode, pt, original)
+        else cantAdapt
       }
 
       def adaptType(): Tree = {
