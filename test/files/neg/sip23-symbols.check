@@ -1,0 +1,11 @@
+sip23-symbols.scala:4: error: type mismatch;
+ found   : Test.sym0.type (with underlying type Symbol)
+ required: 's
+  sym0: 's
+  ^
+sip23-symbols.scala:19: error: type mismatch;
+ found   : Test.sym3.type (with underlying type Symbol)
+ required: 's
+  sym3: 's
+  ^
+two errors found

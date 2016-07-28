@@ -339,9 +339,11 @@ A type pattern $T$ is of one of the following  forms:
   be used as type patterns, because they would match nothing in any case.
 
 * A singleton type `$p$.type`. This type pattern matches only the value
-  denoted by the path $p$ (that is, a pattern match involved a
-  comparison of the matched value with $p$ using method `eq` in class
-  `AnyRef`).
+  denoted by the path $p$ (the `eq` method is used to compare the matched value to $p$).
+
+* A literal type `$lit$`. This type pattern matches only the value
+  denoted by the literal $lit$ (the `==` method is used to compare the matched value to $lit$). <!-- SIP-23 -->
+
 * A compound type pattern `$T_1$ with $\ldots$ with $T_n$` where each $T_i$ is a
   type pattern. This type pattern matches all values that are matched by each of
   the type patterns $T_i$.

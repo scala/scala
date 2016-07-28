@@ -311,7 +311,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             }
             if (!mixinMember.isSetter)
               mixinMember.tpe match {
-                case MethodType(Nil, ConstantType(_)) =>
+                case MethodType(Nil, FoldableConstantType(_)) =>
                   // mixinMember is a constant; only getter is needed
                   ;
                 case MethodType(Nil, TypeRef(_, UnitClass, _)) =>
@@ -868,7 +868,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         assert(getter.isGetter)
         val readValue = getter.tpe match {
           // A field "final val f = const" in a trait generates a getter with a ConstantType.
-          case MethodType(Nil, ConstantType(c)) =>
+          case MethodType(Nil, FoldableConstantType(c)) =>
             Literal(c)
           case _ =>
             // if it is a mixed-in lazy value, complete the accessor

@@ -1,0 +1,32 @@
+New warnings due to Symbol literals becoming pure:
+partest --verbose test/files/instrumented/indy-symbol-literal.scala
+
+Error messages changed due to more precise types being reported:
+partest --verbose test/files/neg/t8323.scala
+
+Pos tests which correctly become neg with -Yliteral-types
+partest --verbose test/files/pos/unchecked-a.scala
+
+Neg tests which correctly become pos with -Yliteral-types:
+partest --verbose test/files/neg/any-vs-anyref.scala
+partest --verbose test/files/neg/not-possible-cause.scala
+partest --verbose test/files/neg/t6263.scala
+partest --verbose test/files/neg/t900.scala
+
+Error messages changed correctly:
+partest --verbose test/files/neg/t8463.scala
+partest --verbose test/files/run/repl-colon-type.scala
+
+Compiler/REPL output changed due to more precise types being reported:
+partest --verbose test/files/neg/logImplicits.scala
+partest --verbose test/files/run/analyzerPlugins.scala
+partest --verbose test/files/run/delambdafy_uncurry_byname_inline.scala
+
+Compiler/REPL output changed due to Symbols becoming first-class literals:
+partest --verbose test/files/run/t6549.scala
+
+Run tests which correctly fail:
+partest --verbose test/files/run/sip23-unsound-cast-0.scala
+
+Unavoidable failure due to the enablement of the feature:
+partest --verbose test/files/run/settings-parse.scala

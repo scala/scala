@@ -566,7 +566,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
     }
 
     // Constant typed vals are not memoized.
-    def memoizeValue(sym: Symbol) = !sym.info.resultType.isInstanceOf[ConstantType]
+    def memoizeValue(sym: Symbol) = !sym.info.resultType.isInstanceOf[FoldableConstantType]
 
     /** Triage definitions and statements in this template into the following categories.
       * The primary constructor is treated separately, as it is assembled in part from these pieces.
