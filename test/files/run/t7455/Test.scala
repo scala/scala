@@ -23,8 +23,8 @@ object Test extends DirectTest {
       clazz = compiler.rootMirror.staticClass(name)
       constr <- clazz.info.member(termNames.CONSTRUCTOR).alternatives
     } {
-      println(constr.defString)
       fullyInitializeSymbol(constr)
+      println(constr.defString)
     }
   }
 }
