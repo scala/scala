@@ -23,7 +23,7 @@ case $prDryRun in
        --warn \
        "setupValidateTest $prRepoUrl" \
        $testExtraArgs \
-       testAll | grep -v "was too long to be displayed in the webview, and will be left out"
+       testAll
 
     ;;
 
