@@ -16,4 +16,4 @@ $SBT --warn "setupPublishCore" generateBuildCharacterPropertiesFile publishLocal
 
 # Build quick and run the tests
 parseScalaProperties buildcharacter.properties
-$SBT -Dstarr.version=$maven_version_number --warn "setupValidateTest" testAll | grep -v "was too long to be displayed in the webview, and will be left out"
+$SBT -Dstarr.version=$maven_version_number --warn "setupValidateTest" testAll

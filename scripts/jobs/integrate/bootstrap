@@ -523,7 +523,7 @@ bootstrap() {
       $clean \
       $sbtBuildTask \
       dist/mkQuick \
-      publish | grep -v "was too long to be displayed in the webview, and will be left out"
+      publish
 
   # clear ivy cache (and to be sure, local as well), so the next round of sbt builds sees the fresh scala
   rm -rf $baseDir/ivy2
@@ -559,7 +559,7 @@ publishSonatype() {
       -Dstarr.version=$SCALA_VER \
       ${updatedModuleVersions[@]} \
       "setupBootstrapPublish $releaseTempRepoUrl $SCALA_VER" \
-      $publishSonatypeTaskCore | grep -v "was too long to be displayed in the webview, and will be left out"
+      $publishSonatypeTaskCore
 
   echo "### Publishing modules to sonatype"
   # build/test/publish scala core modules to sonatype (this will start a new staging repo)
