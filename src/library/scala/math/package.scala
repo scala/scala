@@ -63,6 +63,9 @@ package scala
   *
   * @groupname randomisation Pseudo Random Number Generation
   * @groupprio randomisation 130
+  *
+  * @groupname exact Functions to avoid overflow on primitive types
+  * @groupprio exact 140
   */
 package object math {
   /** The `Double` value that is closer than any other to `e`, the base of
@@ -215,9 +218,37 @@ package object math {
     */
   def signum(x: Long): Long     = java.lang.Long.signum(x)
   /** @group signum */
-  def signum(x: Float): Float   = java.lang.Math.signum(x)
+  def signum(f: Float): Float   = java.lang.Math.signum(f)
   /** @group signum */
-  def signum(x: Double): Double = java.lang.Math.signum(x)
+  def signum(d: Double): Double = java.lang.Math.signum(d)
+
+  def floorDiv(x: Int, y: Int): Int = java.lang.Math.floorDiv(x, y)
+
+  def floorDiv(x: Long, y: Long): Long = java.lang.Math.floorDiv(x, y)
+
+  def floorMod(x: Int, y: Int): Int = java.lang.Math.floorMod(x, y)
+
+  def floorMod(x: Long, y: Long): Long = java.lang.Math.floorMod(x, y)
+
+  def copySign(magnitude: Double, sign: Double): Double = java.lang.Math.copySign(magnitude, sign)
+
+  def copySign(magnitude: Float, sign: Float): Float = java.lang.Math.copySign(magnitude, sign)
+
+  def nextAfter(start: Double, direction: Double): Double = java.lang.Math.nextAfter(start, direction)
+
+  def nextAfter(start: Float, direction: Double): Float = java.lang.Math.nextAfter(start, direction)
+
+  def nextUp(d: Double): Double = java.lang.Math.nextUp(d)
+
+  def nextUp(f: Float): Float = java.lang.Math.nextUp(f)
+
+  def nextDown(d: Double): Double = java.lang.Math.nextDown(d)
+
+  def nextDown(f: Float): Float = java.lang.Math.nextDown(f)
+
+  def scalb(d: Double, scaleFactor: Int): Double = java.lang.Math.scalb(d, scaleFactor)
+
+  def scalb(f: Float, scaleFactor: Int): Float = java.lang.Math.scalb(f, scaleFactor)
 
   // -----------------------------------------------------------------------
   // root functions
@@ -267,6 +298,16 @@ package object math {
     */
   def expm1(x: Double): Double = java.lang.Math.expm1(x)
 
+  /**
+    *  @group explog
+    */
+  def getExponent(f: Float): Int = java.lang.Math.getExponent(f)
+
+  /**
+    *  @group explog
+    */
+  def getExponent(d: Double): Int = java.lang.Math.getExponent(d)
+
   // -----------------------------------------------------------------------
   // logarithmic functions
   // -----------------------------------------------------------------------
@@ -315,13 +356,83 @@ package object math {
   /** Returns the size of an ulp of the given `Double` value.
     * @group ulp
     */
-  def ulp(x: Double): Double = java.lang.Math.ulp(x)
+  def ulp(d: Double): Double = java.lang.Math.ulp(d)
 
   /** Returns the size of an ulp of the given `Float` value.
     * @group ulp
     */
-  def ulp(x: Float): Float = java.lang.Math.ulp(x)
+  def ulp(f: Float): Float = java.lang.Math.ulp(f)
 
-  /** @group rounding */
+  /** @group exact */
   def IEEEremainder(x: Double, y: Double): Double = java.lang.Math.IEEEremainder(x, y)
+
+  // -----------------------------------------------------------------------
+  // exact functions
+  // -----------------------------------------------------------------------
+
+  /**
+    * @group exact
+    */
+  def addExact(x: Int, y: Int): Int = java.lang.Math.addExact(x, y)
+
+  /**
+    * @group exact
+    */
+  def addExact(x: Long, y: Long): Long = java.lang.Math.addExact(x, y)
+
+  /**
+    * @group exact
+    */
+  def subtractExact(x: Int, y: Int): Int = java.lang.Math.subtractExact(x, y)
+
+  /**
+    * @group exact
+    */
+  def subtractExact(x: Long, y: Long): Long = java.lang.Math.subtractExact(x, y)
+
+  /**
+    * @group exact
+    */
+  def multiplyExact(x: Int, y: Int): Int = java.lang.Math.multiplyExact(x, y)
+
+  /**
+    * @group exact
+    */
+  def multiplyExact(x: Long, y: Long): Long = java.lang.Math.multiplyExact(x, y)
+
+  /**
+    * @group exact
+    */
+  def incrementExact(a: Int): Int = java.lang.Math.incrementExact(a)
+
+  /**
+    * @group exact
+    */
+  def incrementExact(a: Long) =  java.lang.Math.incrementExact(a)
+
+  /**
+    * @group exact
+    */
+  def decrementExact(a: Int) =  java.lang.Math.decrementExact(a)
+
+  /**
+    * @group exact
+    */
+  def decrementExact(a: Long) =  java.lang.Math.decrementExact(a)
+
+  /**
+    * @group exact
+    */
+  def negateExact(a: Int) =  java.lang.Math.negateExact(a)
+
+  /**
+    * @group exact
+    */
+  def negateExact(a: Long) =  java.lang.Math.negateExact(a)
+
+  /**
+    * @group exact
+    */
+  def toIntExact(value: Long): Int = java.lang.Math.toIntExact(value)
+
 }
