@@ -116,12 +116,9 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def makePackaging(pkg: RefTree, stats: List[Tree]): PackageDef =
       atPos(pkg.pos) {  PackageDef(pkg, stats) }
 
-    def makeTemplate(parents: List[Tree], stats: List[Tree]) =
-      Template(
-        parents,
-        noSelfType,
-        if (treeInfo.firstConstructor(stats) == EmptyTree) makeConstructor(List()) :: stats
-        else stats)
+    def makeTemplate(parents: List[Tree], stats: List[Tree]) = {
+      Template(parents, noSelfType, withConstructor(stats))
+    }
 
     def makeSyntheticParam(count: Int, tpt: Tree): ValDef =
       makeParam(nme.syntheticParamName(count), tpt)
@@ -133,6 +130,18 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def makeConstructor(formals: List[Tree]) = {
       val vparams = mapWithIndex(formals)((p, i) => makeSyntheticParam(i + 1, p))
       DefDef(Modifiers(Flags.JAVA), nme.CONSTRUCTOR, List(), List(vparams), TypeTree(), blankExpr)
+    }
+
+    def withConstructor(stats: List[Tree]): List[Tree] = {
+      val pureStats = stats map {
+        case DocDef(_, defn) => defn
+        case defn => defn
+      }
+      if(treeInfo.firstConstructor(pureStats) == EmptyTree) {
+        makeConstructor(Nil) :: stats
+      } else {
+        stats
+      }
     }
 
     /** A hook for joining the comment associated with a definition.
