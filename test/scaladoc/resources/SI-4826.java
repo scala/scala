@@ -92,6 +92,8 @@ public class JavaComments {
  * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 public final class FI {
+
+    /** Doc comment on constructor */
     private FI() {
     }
 
