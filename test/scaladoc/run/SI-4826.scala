@@ -14,7 +14,7 @@ object Test extends ScaladocModelTest {
   }
 
   // no need for special settings
-  def scaladocSettings = ""
+  override def scaladocSettings = ""
 
   def testModel(rootPackage: Package) = {
     import access._
