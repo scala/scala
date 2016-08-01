@@ -94,13 +94,15 @@ object LambdaDeserializer {
     val key = serialized.getImplMethodName + " : " + serialized.getImplMethodSignature
     val factory: MethodHandle = if (cache == null) {
       makeCallSite.getTarget
-    } else cache.get(key) match {
-      case null =>
-        val callSite = makeCallSite
-        val temp = callSite.getTarget
-        cache.put(key, temp)
-        temp
-      case target => target
+    } else cache.synchronized{
+      cache.get(key) match {
+        case null =>
+          val callSite = makeCallSite
+          val temp = callSite.getTarget
+          cache.put(key, temp)
+          temp
+        case target => target
+      }
     }
 
     val captures = Array.tabulate(serialized.getCapturedArgCount)(n => serialized.getCapturedArg(n))
