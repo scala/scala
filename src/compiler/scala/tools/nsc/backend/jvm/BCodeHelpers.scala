@@ -52,7 +52,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
 
   def needsStaticImplMethod(sym: Symbol) = sym.hasAttachment[global.mixer.NeedStaticImpl.type]
 
-  final def traitImplMethodName(sym: Symbol): Name = {
+  final def traitSuperAccessorName(sym: Symbol): Name = {
     val name = sym.javaSimpleName
     if (sym.isMixinConstructor) name
     else name.append(nme.NAME_JOIN_STRING)

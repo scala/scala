@@ -1,6 +1,6 @@
 package scala.collection.mutable
 
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import org.junit.Assert._
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
