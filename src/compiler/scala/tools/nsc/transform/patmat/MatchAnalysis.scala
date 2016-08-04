@@ -520,11 +520,15 @@ trait MatchAnalysis extends MatchApproximation {
       //    - there are extractor calls (that we can't secretly/soundly) rewrite
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaExhaust) else null
       var backoff = false
+      val strict = settings.XstrictPatmatAnalysis.value
 
       val approx = new TreeMakersToPropsIgnoreNullChecks(prevBinder)
       val symbolicCases = approx.approximateMatch(cases, approx.onUnknown { tm =>
         approx.fullRewrite.applyOrElse[TreeMaker, Prop](tm, {
           case BodyTreeMaker(_, _) => True // irrelevant -- will be discarded by symbolCase later
+          case GuardTreeMaker(_) => if (strict) False else True
+          case ExtractorTreeMaker(extractor, _, _) if extractor.symbol.name != nme.unapplySeq =>
+            if (strict) False else True
           case _ => // debug.patmat("backing off due to "+ tm)
             backoff = true
             False
@@ -765,6 +769,7 @@ trait MatchAnalysis extends MatchApproximation {
       def chop(path: Tree): List[Symbol] = path match {
         case Ident(_) => List(path.symbol)
         case Select(pre, name) => chop(pre) :+ path.symbol
+        case Apply(fun, args) => chop(fun) :+ path.symbol
         case _ =>
           // debug.patmat("don't know how to chop "+ path)
           Nil
