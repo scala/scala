@@ -97,7 +97,7 @@ public final class LambdaDeserializerTest {
 
     private void checkIllegalAccess(SerializedLambda serialized) {
         try {
-            LambdaDeserializer.deserializeLambda(MethodHandles.lookup(), null, serialized);
+            LambdaDeserializer.deserializeLambda(MethodHandles.lookup(), null, null, serialized);
             throw new AssertionError();
         } catch (IllegalArgumentException iae) {
             if (!iae.getMessage().contains("Illegal lambda deserialization")) {
@@ -130,7 +130,7 @@ public final class LambdaDeserializerTest {
     @SuppressWarnings("unchecked")
     private <A, B> A reconstitute(A f1, java.util.HashMap<String, MethodHandle> cache) {
         try {
-            return (A) LambdaDeserializer.deserializeLambda(LambdaHost.lookup(), cache, writeReplace(f1));
+            return (A) LambdaDeserializer.deserializeLambda(LambdaHost.lookup(), cache, null, writeReplace(f1));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

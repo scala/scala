@@ -31,10 +31,12 @@ object LambdaDeserializer {
    *                    member of the anonymous class created by `LambdaMetaFactory`.
    * @return            An instance of the functional interface
    */
-  def deserializeLambda(lookup: MethodHandles.Lookup, cache: java.util.Map[String, MethodHandle], serialized: SerializedLambda): AnyRef = {
+  def deserializeLambda(lookup: MethodHandles.Lookup, cache: java.util.Map[String, MethodHandle],
+                        targetMethodMap: java.util.Map[String, MethodHandle], serialized: SerializedLambda): AnyRef = {
     def slashDot(name: String) = name.replaceAll("/", ".")
     val loader = lookup.lookupClass().getClassLoader
     val implClass = loader.loadClass(slashDot(serialized.getImplClass))
+    val key = LambdaDeserialize.nameAndDescriptorKey(serialized.getImplMethodName, serialized.getImplMethodSignature)
 
     def makeCallSite: CallSite = {
       import serialized._
@@ -69,7 +71,15 @@ object LambdaDeserializer {
 
       // Lookup the implementation method
       val implMethod: MethodHandle = try {
-        findMember(lookup, getImplMethodKind, implClass, getImplMethodName, implMethodSig)
+        if (targetMethodMap != null) {
+          if (targetMethodMap.containsKey(key)) {
+            targetMethodMap.get(key)
+          } else {
+            throw new IllegalArgumentException("Illegal lambda deserialization")
+          }
+        } else {
+          findMember(lookup, getImplMethodKind, implClass, getImplMethodName, implMethodSig)
+        }
       } catch {
         case e: ReflectiveOperationException => throw new IllegalArgumentException("Illegal lambda deserialization", e)
       }
@@ -91,7 +101,6 @@ object LambdaDeserializer {
       )
     }
 
-    val key = serialized.getImplMethodName + " : " + serialized.getImplMethodSignature
     val factory: MethodHandle = if (cache == null) {
       makeCallSite.getTarget
     } else cache.get(key) match {

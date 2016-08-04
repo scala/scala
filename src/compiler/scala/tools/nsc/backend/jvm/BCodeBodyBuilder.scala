@@ -14,6 +14,7 @@ import scala.reflect.internal.Flags
 import scala.tools.asm
 import GenBCode._
 import BackendReporting._
+import scala.collection.mutable
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.{MethodInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BCodeHelpers.{InvokeStyle, TestOp}
@@ -1349,7 +1350,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val markers = if (addScalaSerializableMarker) classBTypeFromSymbol(definitions.SerializableClass).toASMType :: Nil else Nil
       visitInvokeDynamicInsnLMF(bc.jmethod, sam.name.toString, invokedType, samMethodType, implMethodHandle, constrainedType, isSerializable, markers)
       if (isSerializable)
-        indyLambdaHosts += cnode.name
+        addIndyLambdaImplMethod(cnode.name, implMethodHandle :: Nil)
     }
   }
 

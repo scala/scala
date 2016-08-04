@@ -112,14 +112,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       gen(cd.impl)
 
-      val shouldAddLambdaDeserialize = (
-        settings.target.value == "jvm-1.8"
-          && settings.Ydelambdafy.value == "method"
-          && indyLambdaHosts.contains(cnode.name))
-
-      if (shouldAddLambdaDeserialize)
-        backendUtils.addLambdaDeserialize(cnode)
-
       cnode.visitAttribute(thisBType.inlineInfoAttribute.get)
 
       if (AsmUtils.traceClassEnabled && cnode.name.contains(AsmUtils.traceClassPattern))

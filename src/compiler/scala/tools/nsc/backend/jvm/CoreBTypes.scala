@@ -283,7 +283,21 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
         List(
           coreBTypes.jliMethodHandlesLookupRef,
           coreBTypes.StringRef,
-          coreBTypes.jliMethodTypeRef
+          coreBTypes.jliMethodTypeRef,
+          ArrayBType(jliMethodHandleRef)
+        ),
+        coreBTypes.jliCallSiteRef
+      ).descriptor,
+      /* itf = */ coreBTypes.srLambdaDeserialize.isInterface.get)
+  lazy val lambdaDeserializeAddTargets =
+    new scala.tools.asm.Handle(scala.tools.asm.Opcodes.H_INVOKESTATIC,
+      coreBTypes.srLambdaDeserialize.internalName, "bootstrapAddTargets",
+      MethodBType(
+        List(
+          coreBTypes.jliMethodHandlesLookupRef,
+          coreBTypes.StringRef,
+          coreBTypes.jliMethodTypeRef,
+          ArrayBType(coreBTypes.jliMethodHandleRef)
         ),
         coreBTypes.jliCallSiteRef
       ).descriptor,

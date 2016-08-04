@@ -122,7 +122,16 @@ abstract class BTypes {
    * inlining: when inlining an indyLambda instruction into a class, we need to make sure the class
    * has the method.
    */
-  val indyLambdaHosts: mutable.Set[InternalName] = recordPerRunCache(mutable.Set.empty)
+  val indyLambdaImplMethods: mutable.AnyRefMap[InternalName, mutable.LinkedHashSet[asm.Handle]] = recordPerRunCache(mutable.AnyRefMap())
+  def addIndyLambdaImplMethod(hostClass: InternalName, handle: Seq[asm.Handle]): Unit = {
+    indyLambdaImplMethods.getOrElseUpdate(hostClass, mutable.LinkedHashSet()) ++= handle
+  }
+  def getIndyLambdaImplMethods(hostClass: InternalName): List[asm.Handle] = {
+    indyLambdaImplMethods.getOrNull(hostClass) match {
+      case null => Nil
+      case xs => xs.toList.distinct
+    }
+  }
 
   /**
    * Obtain the BType for a type descriptor or internal name. For class descriptors, the ClassBType
