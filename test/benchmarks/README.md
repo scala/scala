@@ -5,9 +5,7 @@ that makes use of the [SBT plugin](https://github.com/ktoso/sbt-jmh) for [JMH](h
 
 ## Running a benchmark
 
-The benchmarks require first building Scala into `../../build/pack` with `ant`.
-If you want to build with `sbt dist/mkPack` instead,
-you'll need to change `scalaHome` in this project.
+The benchmarks require first building Scala into `../../build/pack`.
 
 You'll then need to know the fully-qualified name of the benchmark runner class.
 The benchmarking classes are organized under `src/main/scala`,
