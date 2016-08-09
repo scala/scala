@@ -95,7 +95,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
   }
 
   override /*SeqLike*/
-  def contains[A1 >: A](elem: A1): Boolean = {
+  def contains(elem: Any): Boolean = {
     var these = this
     while (!these.isEmpty) {
       if (these.head == elem) return true
