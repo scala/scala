@@ -609,26 +609,8 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         Import(Ident(cdef.name.toTermName), ImportSelector.wildList)
       }
 
-    // Importing the companion object members cannot be done uncritically: see
-    // ticket #2377 wherein a class contains two static inner classes, each of which
-    // has a static inner class called "Builder" - this results in an ambiguity error
-    // when each performs the import in the enclosing class's scope.
-    //
-    // To address this I moved the import Companion._ inside the class, as the first
-    // statement.  This should work without compromising the enclosing scope, but may (?)
-    // end up suffering from the same issues it does in scala - specifically that this
-    // leaves auxiliary constructors unable to access members of the companion object
-    // as unqualified identifiers.
-    def addCompanionObject(statics: List[Tree], cdef: ClassDef): List[Tree] = {
-      def implWithImport(importStmt: Tree) = deriveTemplate(cdef.impl)(importStmt :: _)
-      // if there are no statics we can use the original cdef, but we always
-      // create the companion so import A._ is not an error (see ticket #1700)
-      val cdefNew =
-        if (statics.isEmpty) cdef
-        else deriveClassDef(cdef)(_ => implWithImport(importCompanionObject(cdef)))
-
-      List(makeCompanionObject(cdefNew, statics), cdefNew)
-    }
+    def addCompanionObject(statics: List[Tree], cdef: ClassDef): List[Tree] =
+      List(makeCompanionObject(cdef, statics), cdef)
 
     def importDecl(): List[Tree] = {
       accept(IMPORT)
