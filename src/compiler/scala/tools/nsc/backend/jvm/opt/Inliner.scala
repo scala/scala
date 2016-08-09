@@ -106,7 +106,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     val elided = mutable.Set.empty[InlineRequest]
     def nonElidedRequests(methodNode: MethodNode): Set[InlineRequest] = requestsByMethod(methodNode) diff elided
 
-    def allCallees(r: InlineRequest): Set[MethodNode] = r.post.flatMap(allCallees).toSet + r.callsite.callee.get.callee
+    def allCallees(r: InlineRequest): Set[MethodNode] = r.post.flatMap(allCallees).toSetUp + r.callsite.callee.get.callee
 
     /**
      * Break cycles in the inline request graph by removing callsites.

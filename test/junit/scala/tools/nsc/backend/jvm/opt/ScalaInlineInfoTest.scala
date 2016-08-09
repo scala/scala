@@ -33,7 +33,7 @@ class ScalaInlineInfoTest extends BytecodeTesting {
 
   def assertSameMethods(c: ClassNode, nameAndSigs: Set[String]): Unit = {
     val r = new StringBuilder
-    val inClass = c.methods.iterator.asScala.map(m => m.name + m.desc).toSet
+    val inClass = c.methods.iterator.asScala.map(m => m.name + m.desc).toSetUp
     for (m <- inClass.diff(nameAndSigs)) r.append(s"method in classfile found, but no inline info: $m")
     for (m <- nameAndSigs.diff(inClass)) r.append(s"inline info found, but no method in classfile: $m")
     assert(r.isEmpty, r.toString)

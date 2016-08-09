@@ -5,7 +5,7 @@ object Test {
 
   def main(args: Array[String]): Unit = {
     assert(map.toMap eq map)
-    assert(set.toSet eq set)
+    assert(set.toSetUp eq set)
     assert(seq.toSeq eq seq)
   }
 }

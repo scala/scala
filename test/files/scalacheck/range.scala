@@ -229,16 +229,16 @@ abstract class RangeTest(kind: String) extends Properties("Range "+kind) {
     }
   }
 
-  property("reverse.toSet.equal") = forAll(myGen) { r =>
-//    println("reverse.toSet.equal "+str(r))
+  property("reverse.toSetUp.equal") = forAll(myGen) { r =>
+//    println("reverse.toSetUp.equal "+str(r))
     val reversed = r.reverse
-    val aresame = r.toSet == reversed.toSet
+    val aresame = r.toSetUp == reversed.toSetUp
     if (!aresame) {
       println(str(r))
       println(r)
       println(reversed)
-      println(r.toSet)
-      println(reversed.toSet)
+      println(r.toSetUp)
+      println(reversed.toSetUp)
     }
     aresame :| str(r)
   }

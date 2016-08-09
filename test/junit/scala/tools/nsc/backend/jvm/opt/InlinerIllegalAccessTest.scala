@@ -120,7 +120,7 @@ class InlinerIllegalAccessTest extends BytecodeTesting {
     addToRepo(allClasses)
 
     // set flags that Scala scala doesn't (default access, static) - a hacky way to test all access modes.
-    val names = ('a' to 'h').map(_.toString).toSet
+    val names = ('a' to 'h').map(_.toString).toSetUp
     val List(a, b, c, d, e, f, g, h) = cCl.methods.asScala.toList.filter(m => names(m.name))
 
     def checkAccess(a: MethodNode, expected: Int): Unit = {

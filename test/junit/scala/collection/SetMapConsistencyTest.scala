@@ -465,7 +465,7 @@ class SetMapConsistencyTest {
     def ihm: M = ci.HashMap.empty[Int, Boolean] ++ manyKVs
     val densities = List(0, 0.05, 0.2, 0.5, 0.8, 0.95, 1)
     def repeat = rn.nextInt(100) < 33
-    def pick(m: M, density: Double) = m.keys.filter(_ => rn.nextDouble < density).toSet
+    def pick(m: M, density: Double) = m.keys.filter(_ => rn.nextDouble < density).toSetUp
     def test: Boolean = {
       for (i <- 0 to 100) {
         var ms = List(mhm, mohm, ihm)
@@ -515,8 +515,8 @@ class SetMapConsistencyTest {
   @Test
   def testSI8264() {
     val hs = Set(-2147483648, 1, -45023380, -1, 1971207058, -54312241, -234243394) - -1
-    assert( hs.toList.toSet == hs )
-    assert( hs == hs.toList.toSet )
+    assert( hs.toList.toSetUp == hs )
+    assert( hs == hs.toList.toSetUp )
   }
 
   @Test

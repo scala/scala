@@ -177,7 +177,7 @@ trait Checkable {
       else Uncheckable
     )
     lazy val uncheckableType = if (Psym.isAbstractType) P else {
-      val possibles = typeArgsInTopLevelType(P).toSet
+      val possibles = typeArgsInTopLevelType(P).toSetUp
       val opt = possibles find { targ =>
         // Create a derived type with every possibly uncheckable type replaced
         // with a WildcardType, except for 'targ'. If !(XR <: derived) then

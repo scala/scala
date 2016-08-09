@@ -958,7 +958,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   }
 
   def makeQualifiedName(sym: Symbol, relativeTo: Option[Symbol] = None): String = {
-    val stop = relativeTo map (_.ownerChain.toSet) getOrElse Set[Symbol]()
+    val stop = relativeTo map (_.ownerChain.toSetUp) getOrElse Set[Symbol]()
     var sym1 = sym
     val path = new StringBuilder()
     // var path = List[Symbol]()

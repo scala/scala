@@ -839,7 +839,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       * append to objectName to access anything bound by request.
       */
     lazy val ComputedImports(headerPreamble, importsPreamble, importsTrailer, accessPath) =
-      exitingTyper(importsCode(referencedNames.toSet, ObjectSourceCode, definesClass, generousImports))
+      exitingTyper(importsCode(referencedNames.toSetUp, ObjectSourceCode, definesClass, generousImports))
 
     /** the line of code to compute */
     def toCompute = line

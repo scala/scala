@@ -235,14 +235,14 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     if (docSkipPackages.value == "")
       Set[String]()
     else
-      docSkipPackages.value.toLowerCase.split(':').toSet
+      docSkipPackages.value.toLowerCase.split(':').toSetUp
 
   def skipPackage(qname: String) =
     skipPackageNames(qname.toLowerCase)
 
   lazy val hiddenImplicits: Set[String] = {
     if (docImplicitsHide.value.isEmpty) hardcoded.commonConversionTargets
-    else docImplicitsHide.value.toSet flatMap { name: String =>
+    else docImplicitsHide.value.toSetUp flatMap { name: String =>
       if(name == ".") hardcoded.commonConversionTargets
       else Set(name)
     }

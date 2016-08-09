@@ -158,7 +158,7 @@ abstract class TailCalls extends Transform {
         // labels are local to a method, so only traverse the rhs of a defdef
         val collector = new TailPosLabelsTraverser
         collector traverse dd.rhs
-        collector.tailLabels.toSet
+        collector.tailLabels.toSetUp
       }
 
       private def mkLabel() = {

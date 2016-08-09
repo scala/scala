@@ -222,10 +222,10 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
    *
    *    {{{
    *      // lettersOf will return a Seq[Char] of likely repeated letters, instead of a Set
-   *      def lettersOf(words: Seq[String]) = words flatMap (word => word.toSet)
+   *      def lettersOf(words: Seq[String]) = words flatMap (word => word.toSetUp)
    *
    *      // lettersOf will return a Set[Char], not a Seq
-   *      def lettersOf(words: Seq[String]) = words.toSet flatMap (word => word.toSeq)
+   *      def lettersOf(words: Seq[String]) = words.toSetUp flatMap (word => word.toSeq)
    *
    *      // xs will be an Iterable[Int]
    *      val xs = Map("a" -> List(11,111), "b" -> List(22,222)).flatMap(_._2)

@@ -95,7 +95,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val volatileRefClass = classesMap(x => getRequiredClass("scala.runtime.Volatile" + x + "Ref"))
 
     lazy val allRefClasses: Set[Symbol] = {
-      refClass.values.toSet ++ volatileRefClass.values.toSet ++ Set(VolatileObjectRefClass, ObjectRefClass)
+      refClass.values.toSetUp ++ volatileRefClass.values.toSetUp ++ Set(VolatileObjectRefClass, ObjectRefClass)
     }
 
     def isNumericSubClass(sub: Symbol, sup: Symbol) = (
@@ -342,7 +342,7 @@ trait Definitions extends api.StandardDefinitions {
     // I could just change `isOmittablePrefix`, but there's more to it, so I'm leaving this as a todo for now
     lazy val UnqualifiedModules = List(PredefModule, ScalaPackage, JavaLangPackage)
     // Those modules and their module classes
-    lazy val UnqualifiedOwners  = UnqualifiedModules.toSet ++ UnqualifiedModules.map(_.moduleClass)
+    lazy val UnqualifiedOwners  = UnqualifiedModules.toSetUp ++ UnqualifiedModules.map(_.moduleClass)
 
     lazy val PredefModule               = requiredModule[scala.Predef.type]
          def Predef_wrapArray(tp: Type) = getMemberMethod(PredefModule, wrapArrayMethodName(tp))
@@ -1202,7 +1202,7 @@ trait Definitions extends api.StandardDefinitions {
       // Trying to allow for deprecated locations
       sym.isAliasType && isMetaAnnotation(sym.info.typeSymbol)
     )
-    lazy val metaAnnotations: Set[Symbol] = getPackage(TermName("scala.annotation.meta")).info.members filter (_ isSubClass StaticAnnotationClass) toSet
+    lazy val metaAnnotations: Set[Symbol] = getPackage(TermName("scala.annotation.meta")).info.members filter (_ isSubClass StaticAnnotationClass) toSetUp
 
     // According to the scala.annotation.meta package object:
     // * By default, annotations on (`val`-, `var`- or plain) constructor parameters
@@ -1393,9 +1393,9 @@ trait Definitions extends api.StandardDefinitions {
     lazy val symbolsNotPresentInBytecode = syntheticCoreClasses ++ syntheticCoreMethods ++ hijackedCoreClasses
 
     /** Is the symbol that of a parent which is added during parsing? */
-    lazy val isPossibleSyntheticParent = ProductClass.seq.toSet[Symbol] + ProductRootClass + SerializableClass
+    lazy val isPossibleSyntheticParent = ProductClass.seq.toSetUp[Symbol] + ProductRootClass + SerializableClass
 
-    private lazy val boxedValueClassesSet = boxedClass.values.toSet[Symbol] + BoxedUnitClass
+    private lazy val boxedValueClassesSet = boxedClass.values.toSetUp[Symbol] + BoxedUnitClass
 
     /** Is symbol a value class? */
     def isPrimitiveValueClass(sym: Symbol) = ScalaValueClasses contains sym
@@ -1492,8 +1492,8 @@ trait Definitions extends api.StandardDefinitions {
 
       lazy val boxMethod        = classesMap(x => valueCompanionMember(x, nme.box))
       lazy val unboxMethod      = classesMap(x => valueCompanionMember(x, nme.unbox))
-      lazy val isUnbox          = unboxMethod.values.toSet[Symbol]
-      lazy val isBox            = boxMethod.values.toSet[Symbol]
+      lazy val isUnbox          = unboxMethod.values.toSetUp[Symbol]
+      lazy val isBox            = boxMethod.values.toSetUp[Symbol]
 
       lazy val Boolean_and = definitions.Boolean_and
       lazy val Boolean_or = definitions.Boolean_or

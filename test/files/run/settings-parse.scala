@@ -4,7 +4,7 @@ import scala.tools.nsc._
 
 object Test {
   val tokens        = "" :: "-deprecation" :: "foo.scala" :: Nil
-  val permutations0 = tokens.toSet.subsets.flatMap(_.toList.permutations).toList.distinct
+  val permutations0 = tokens.toSetUp.subsets.flatMap(_.toList.permutations).toList.distinct
 
   def runWithCp(cp: String) = {
     val permutations = permutations0 flatMap ("-cp CPTOKEN" :: _ permutations)

@@ -41,7 +41,7 @@ trait Solving extends Logic {
     type Clause  = Set[Lit]
 
     // a clause is a disjunction of distinct literals
-    def clause(l: Lit*): Clause = l.toSet
+    def clause(l: Lit*): Clause = l.toSetUp
 
     /** Conjunctive normal form (of a Boolean formula).
      *  A formula in this form is amenable to a SAT solver
@@ -263,7 +263,7 @@ trait Solving extends Logic {
         }
 
         // add intermediate variable since we want the formula to be SAT!
-        addClauseProcessed(convert(p).toSet)
+        addClauseProcessed(convert(p).toSetUp)
 
         Solvable(buildCnf, symbolMapping)
       }

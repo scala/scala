@@ -73,8 +73,8 @@ object Test {
     assert(xs.toSeq.par == xs.toSeq)
     assert(xs.par.toSeq == xs.toSeq)
 
-    assert(xs.toSet.par == xs.toSet)
-    assert(xs.par.toSet == xs.toSet)
+    assert(xs.toSetUp.par == xs.toSetUp)
+    assert(xs.par.toSetUp == xs.toSetUp)
 
     assert(xs.toMap.par == xs.toMap)
     assert(xs.par.toMap == xs.toMap)
@@ -87,8 +87,8 @@ object Test {
     assert(xs.toSeq.par == xs.toSeq)
     assert(xs.par.toSeq == xs.toSeq)
 
-    assert(xs.toSet.par == xs.toSet)
-    assert(xs.par.toSet == xs.toSet)
+    assert(xs.toSetUp.par == xs.toSetUp)
+    assert(xs.par.toSetUp == xs.toSetUp)
   }
 
 }

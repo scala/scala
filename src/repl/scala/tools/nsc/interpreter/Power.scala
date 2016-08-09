@@ -74,7 +74,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
           pass, keep.size, discarded, unseen.size, repeats.size))
       }
       if (lastCount == processed || unseen.isEmpty || isFinished())
-        return keep.toSet
+        return keep.toSetUp
 
       lastCount = processed
       keep ++= (unseen filter isKeep filterNot isIgnore)

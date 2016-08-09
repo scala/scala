@@ -67,7 +67,7 @@ class Parsed private (
 }
 
 object Parsed {
-  val DefaultDelimiters = "[]{},`; \t".toSet
+  val DefaultDelimiters = "[]{},`; \t".toSetUp
 
   private def onull(s: String) = if (s == null) "" else s
 

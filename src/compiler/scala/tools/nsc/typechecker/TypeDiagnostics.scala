@@ -367,7 +367,7 @@ trait TypeDiagnostics {
     val strings = mutable.Map[String, Set[TypeDiag]]() withDefaultValue Set()
     val names   = mutable.Map[Name, Set[TypeDiag]]() withDefaultValue Set()
 
-    val localsSet = locals.toSet
+    val localsSet = locals.toSetUp
 
     def record(t: Type, sym: Symbol) = {
       if (!localsSet(sym)) {

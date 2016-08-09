@@ -52,7 +52,7 @@ package scala.collection.mutable {
 
     property("delete") = forAll { (tree: RB.Tree[K, V], ks: Seq[K]) =>
       ks.foreach { k => RB.delete(tree, k) }
-      RB.isValid(tree) && ks.toSet.forall { k => RB.get(tree, k) == None }
+      RB.isValid(tree) && ks.toSetUp.forall { k => RB.get(tree, k) == None }
     }
 
     property("insert & delete") = forAll { (tree: RB.Tree[K, V], ops: Seq[Either[(K, V), K]]) =>
@@ -125,7 +125,7 @@ package scala.collection.mutable {
     property("--=") = forAll { (map: mutable.TreeMap[K, V], ks: Seq[K]) =>
       val oldElems = map.toList
       map --= ks
-      val deletedElems = ks.toSet
+      val deletedElems = ks.toSetUp
       oldElems.forall { case (k, v) => map.get(k) == (if(deletedElems(k)) None else Some(v)) }
     }
 
@@ -268,7 +268,7 @@ package scala.collection.mutable {
     property("--=") = forAll { (map: mutable.TreeMap[K, V], ks: Seq[K], from: Option[K], until: Option[K]) =>
       val mapView = map.rangeImpl(from, until)
       mapView --= ks
-      ks.toSet.forall { k => map.get(k) == None && mapView.get(k) == None }
+      ks.toSetUp.forall { k => map.get(k) == None && mapView.get(k) == None }
     }
 
     property("iterator") = forAll { (entries: Map[K, V], from: Option[K], until: Option[K]) =>

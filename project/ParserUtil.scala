@@ -46,7 +46,7 @@ object ParserUtil {
         else
           Completions.strict(Set(Completion.suggestion(x.stripPrefix(seen))))
       case xs =>
-        Completions.strict(xs.map(x => Completion.tokenDisplay(x.stripPrefix(seen), x)).toSet)
+        Completions.strict(xs.map(x => Completion.tokenDisplay(x.stripPrefix(seen), x)).toSetUp)
     })).filter(!_.startsWith("-"), x => x)
   }
 }

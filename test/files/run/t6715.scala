@@ -7,7 +7,7 @@ class A {
 
 object Test {
   def main(args: Array[String]): Unit = {
-    val memberSet: Set[String] = typeOf[A].members.map{ _.toString }.toSet
+    val memberSet: Set[String] = typeOf[A].members.map{ _.toString }.toSetUp
     assert(memberSet contains "method *")
     assert(memberSet contains "method $$")
     assert(! (memberSet contains "method"))

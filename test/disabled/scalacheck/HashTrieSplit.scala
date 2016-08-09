@@ -33,9 +33,9 @@ object Test {
       }
       // println("splitting")
       val pits = pit.split
-      val fst = pits(0).toSet
-      val snd = pits(1).toSet
-      val orig = pit2.toSet
+      val fst = pits(0).toSetUp
+      val snd = pits(1).toSetUp
+      val orig = pit2.toSetUp
       if (orig.size != (fst.size + snd.size) || orig != (fst ++ snd)) {
         println("Original: " + orig)
         println("First: " + fst)

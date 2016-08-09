@@ -52,7 +52,7 @@ trait Extractors {
     val reifierBody = {
       def gc(symtab: SymbolTable): SymbolTable = {
         def loop(symtab: SymbolTable): SymbolTable = {
-          def extractNames(tree: Tree) = tree.collect{ case ref: RefTree => ref.name }.toSet
+          def extractNames(tree: Tree) = tree.collect{ case ref: RefTree => ref.name }.toSetUp
           val usedNames = extractNames(rtree) ++ symtab.syms.flatMap(sym => extractNames(symtab.symDef(sym)))
           symtab filterAliases { case (_, name) => usedNames(name) }
         }

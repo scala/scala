@@ -592,7 +592,7 @@ class SolvingTest {
   def pairWiseEncoding(ops: List[Sym]) = {
     And(ops.combinations(2).collect {
       case a :: b :: Nil => Or(Not(a), Not(b))
-    }.toSet[TestSolver.TestSolver.Prop])
+    }.toSetUp[TestSolver.TestSolver.Prop])
   }
 
   @Test
@@ -603,7 +603,7 @@ class SolvingTest {
     // (otherwise solutions can not be compared)
     val expected = TestSolver.TestSolver.findAllModelsFor(propToSolvable(And(dummySym, pairWiseEncoding(syms)))).flatMap(expandUnassigned)
     val actual = TestSolver.TestSolver.findAllModelsFor(propToSolvable(And(dummySym, AtMostOne(syms)))).flatMap(expandUnassigned)
-    assertEquals(expected.toSet, actual.toSet)
+    assertEquals(expected.toSetUp, actual.toSetUp)
   }
 }
 

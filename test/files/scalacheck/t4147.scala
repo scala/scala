@@ -15,7 +15,7 @@ object Test extends Properties("Mutable TreeSet") {
   property("Insertion doesn't allow duplicates values.") = forAll(generator) { (s: List[Int]) =>
     {
       val t = mutable.TreeSet[Int](s: _*)
-      t == s.toSet
+      t == s.toSetUp
     }
   }
 
