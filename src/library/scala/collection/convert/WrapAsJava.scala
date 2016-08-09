@@ -13,7 +13,7 @@ package convert
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import scala.language.implicitConversions
 
-@deprecated("Use JavaConverters or consider ToJavaImplicits", since="2.12")
+@deprecated("use JavaConverters or consider ToJavaImplicits", since="2.12.0")
 trait WrapAsJava extends LowPriorityWrapAsJava {
   // provide higher-priority implicits with names that don't exist in JavaConverters for the case
   // when importing both JavaConverters._ and JavaConversions._. otherwise implicit conversions
@@ -286,5 +286,5 @@ private[convert] trait LowPriorityWrapAsJava {
   }
 }
 
-@deprecated("Use JavaConverters or consider ImplicitConversionsToJava", since="2.12")
+@deprecated("use JavaConverters or consider ImplicitConversionsToJava", since="2.12.0")
 object WrapAsJava extends WrapAsJava

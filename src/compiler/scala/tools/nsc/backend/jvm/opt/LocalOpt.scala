@@ -828,8 +828,10 @@ object LocalOptImpls {
     /**
      * Replace jumps to a sequence of GOTO instructions by a jump to the final destination.
      *
+     * {{{
      *      Jump l;  [any ops];  l: GOTO m;  [any ops];  m: GOTO n;  [any ops];   n: NotGOTO; [...]
      *   => Jump n;  [rest unchanged]
+     * }}}
      *
      * If there's a loop of GOTOs, the initial jump is replaced by one of the labels in the loop.
      */
@@ -848,8 +850,10 @@ object LocalOptImpls {
     /**
      * Eliminates unnecessary jump instructions
      *
+     * {{{
      *      Jump l;  [nops];  l: [...]
      *   => POP*;    [nops];  l: [...]
+     * }}}
      *
      * Introduces 0, 1 or 2 POP instructions, depending on the number of values consumed by the Jump.
      */
@@ -865,8 +869,10 @@ object LocalOptImpls {
      * If the "else" part of a conditional branch is a simple GOTO, negates the conditional branch
      * and eliminates the GOTO.
      *
+     * {{{
      *      CondJump l;         [nops, no jump targets];  GOTO m;  [nops];  l: [...]
      *   => NegatedCondJump m;  [nops, no jump targets];           [nops];  l: [...]
+     * }}}
      *
      * Note that no jump targets are allowed in the first [nops] section. Otherwise, there could
      * be some other jump to the GOTO, and eliminating it would change behavior.
@@ -893,8 +899,10 @@ object LocalOptImpls {
     /**
      * Inlines xRETURN and ATHROW
      *
+     * {{{
      *      GOTO l;            [any ops];  l: xRETURN/ATHROW
      *   => xRETURN/ATHROW;    [any ops];  l: xRETURN/ATHROW
+     * }}}
      *
      * inlining is only done if the GOTO instruction is not part of a try block, otherwise the
      * rewrite might change the behavior. For xRETURN, the reason is that return instructions may throw
