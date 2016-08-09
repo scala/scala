@@ -15,8 +15,8 @@ import ProcessBuilder._
 
 /** Represents a sequence of one or more external processes that can be
   * executed. A `ProcessBuilder` can be a single external process, or a
-  * combination of other `ProcessBuilder`. One can control where a
-  * the output of an external process will go to, and where its input will come
+  * combination of other `ProcessBuilder`. One can control where the
+  * output of an external process will go to, and where its input will come
   * from, or leave that decision to whoever starts it.
   *
   * One creates a `ProcessBuilder` through factories provided in
