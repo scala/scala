@@ -1,6 +1,6 @@
-Bar.type, underlying =  <: scala.runtime.AbstractFunction1[Int,Bar] with Serializable{case def unapply(x$0: Bar): Option[Int]} with Singleton
+Bar.type, underlying =  <: scala.runtime.AbstractFunction1[Int,Bar] with java.io.Serializable{case def unapply(x$0: Bar): Option[Int]} with Singleton
 Bar, underlying =  <: Product with Serializable{val x: Int; def copy(x: Int): Bar; def copy$default$1: Int}
 Product with Serializable, underlying = Product with Serializable
-Bar.type, underlying =  <: scala.runtime.AbstractFunction1[Int,Bar] with Serializable{case def unapply(x$0: Bar): Option[Int]} with Singleton
+Bar.type, underlying =  <: scala.runtime.AbstractFunction1[Int,Bar] with java.io.Serializable{case def unapply(x$0: Bar): Option[Int]} with Singleton
 Bar, underlying =  <: Product with Serializable{val x: Int; def copy(x: Int): Bar; def copy$default$1: Int}
 Product with Serializable, underlying = Product with Serializable
