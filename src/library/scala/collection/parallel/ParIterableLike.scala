@@ -869,7 +869,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   override def toSeq: ParSeq[T] = toParCollection[T, ParSeq[T]](() => ParSeq.newCombiner[T])
 
-  override def toSet[U >: T]: immutable.ParSet[U] = toParCollection[U, immutable.ParSet[U]](() => immutable.ParSet.newCombiner[U])
+  override def toSetUp[U >: T]: immutable.ParSet[U] = toParCollection[U, immutable.ParSet[U]](() => immutable.ParSet.newCombiner[U])
 
   override def toMap[K, V](implicit ev: T <:< (K, V)): immutable.ParMap[K, V] = toParMap[K, V, immutable.ParMap[K, V]](() => immutable.ParMap.newCombiner[K, V])
 

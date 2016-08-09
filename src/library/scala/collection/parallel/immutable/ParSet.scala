@@ -34,7 +34,7 @@ self =>
   override def stringPrefix = "ParSet"
 
   // ok, because this could only violate `apply` and we can live with that
-  override def toSet[U >: T]: ParSet[U] = this.asInstanceOf[ParSet[U]]
+  override def toSetUp[U >: T]: ParSet[U] = this.asInstanceOf[ParSet[U]]
 }
 
 /** $factoryInfo

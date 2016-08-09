@@ -301,7 +301,11 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
 
   def toBuffer[B >: A]: mutable.Buffer[B] = to[ArrayBuffer].asInstanceOf[mutable.Buffer[B]]
 
-  def toSet[B >: A]: immutable.Set[B] = to[immutable.Set].asInstanceOf[immutable.Set[B]]
+  @deprecated("use to[Set] or toSetUp instead","2.12.0")
+  @deprecatedOverriding("override toSetUp instead","2.12.0")
+  override def toSet[B >: A]: immutable.Set[B] = toSetUp
+
+  def toSetUp[B >: A]: immutable.Set[B] = to[immutable.Set].asInstanceOf[immutable.Set[B]]
 
   def toVector: Vector[A] = to[Vector]
 
