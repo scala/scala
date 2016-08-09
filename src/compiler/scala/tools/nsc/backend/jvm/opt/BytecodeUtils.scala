@@ -324,15 +324,33 @@ object BytecodeUtils {
    * Clone the local variable descriptors of `methodNode` and map their `start` and `end` labels
    * according to the `labelMap`.
    */
-  def cloneLocalVariableNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], prefix: String, shift: Int): List[LocalVariableNode] = {
-    methodNode.localVariables.iterator().asScala.map(localVariable => new LocalVariableNode(
-      prefix + localVariable.name,
-      localVariable.desc,
-      localVariable.signature,
-      labelMap(localVariable.start),
-      labelMap(localVariable.end),
-      localVariable.index + shift
-    )).toList
+  def cloneLocalVariableNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], calleeMethodName: String, shift: Int): List[LocalVariableNode] = {
+    methodNode.localVariables.iterator().asScala.map(localVariable => {
+      val name =
+        if (calleeMethodName.length + localVariable.name.length < BTypes.InlinedLocalVariablePrefixMaxLenght) {
+          calleeMethodName + "_" + localVariable.name
+        } else {
+          val parts = localVariable.name.split("_").toVector
+          val (methNames, varName) = (calleeMethodName +: parts.init, parts.last)
+          // keep at least 5 characters per method name
+          val maxNumMethNames = BTypes.InlinedLocalVariablePrefixMaxLenght / 5
+          val usedMethNames =
+            if (methNames.length < maxNumMethNames) methNames
+            else {
+              val half = maxNumMethNames / 2
+              methNames.take(half) ++ methNames.takeRight(half)
+            }
+          val charsPerMethod = BTypes.InlinedLocalVariablePrefixMaxLenght / usedMethNames.length
+          usedMethNames.foldLeft("")((res, methName) => res + methName.take(charsPerMethod) + "_") + varName
+        }
+      new LocalVariableNode(
+        name,
+        localVariable.desc,
+        localVariable.signature,
+        labelMap(localVariable.start),
+        labelMap(localVariable.end),
+        localVariable.index + shift)
+    }).toList
   }
 
   /**

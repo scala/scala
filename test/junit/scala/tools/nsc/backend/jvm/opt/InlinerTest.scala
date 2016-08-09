@@ -1587,4 +1587,41 @@ class InlinerTest extends BytecodeTesting {
     val List(c, t) = compile(code)
     assertNoIndy(getMethod(c, "t1"))
   }
+
+  @Test
+  def limitInlinedLocalVariableNames(): Unit = {
+    val code =
+      """class C {
+        |  def f(x: Int): Int = x
+        |  @inline final def methodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFrenchSentence(param: Int) =
+        |    f(param)
+        |  @inline final def anotherMethodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFrenchSentence(param: Int) =
+        |    methodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFrenchSentence(f(param))
+        |  @inline final def oneMoreMethodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFrenchSentence(param: Int) =
+        |    anotherMethodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFrenchSentence(f(param))
+        |  @inline final def yetAnotherMethodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFrenchSentence(param: Int) =
+        |    oneMoreMethodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFrenchSentence(f(param))
+        |  @inline final def oneLastMethodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFrenchSentence(param: Int) =
+        |    yetAnotherMethodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFrenchSentence(f(param))
+        |  def t(p: Int) =
+        |    oneLastMethodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFrenchSentence(f(p)) +
+        |    oneLastMethodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFrenchSentence(f(p))
+        |}
+      """.stripMargin
+
+    val List(c) = compile(code)
+    assertEquals(getAsmMethod(c, "t").localVariables.asScala.toList.map(l => (l.name, l.index)).sortBy(_._2),List(
+      ("this",0),
+      ("p",1),
+      ("oneLastMethodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFrenchSentence_param",2),
+      ("oneLastMethodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFrenchS_yetAnotherMethodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFren_param",3),
+      ("oneLastMethodWithVeryVeryLongNameAlmostLik_yetAnotherMethodWithVeryVeryLongNameAlmost_oneMoreMethodWithVeryVeryLongNameAlmostLik_param",4),
+      ("oneLastMethodWithVeryVeryLongNam_yetAnotherMethodWithVeryVeryLong_oneMoreMethodWithVeryVeryLongNam_anotherMethodWithVeryVeryLongNam_param",5),
+      ("oneLastMethodWithVeryVery_yetAnotherMethodWithVeryV_oneMoreMethodWithVeryVery_anotherMethodWithVeryVery_methodWithVeryVeryLongNam_param",6),
+      ("oneLastMethodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFrenchSentence_param",7),
+      ("oneLastMethodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFrenchS_yetAnotherMethodWithVeryVeryLongNameAlmostLikeAGermanWordOrAFren_param",8),
+      ("oneLastMethodWithVeryVeryLongNameAlmostLik_yetAnotherMethodWithVeryVeryLongNameAlmost_oneMoreMethodWithVeryVeryLongNameAlmostLik_param",9),
+      ("oneLastMethodWithVeryVeryLongNam_yetAnotherMethodWithVeryVeryLong_oneMoreMethodWithVeryVeryLongNam_anotherMethodWithVeryVeryLongNam_param",10),
+      ("oneLastMethodWithVeryVery_yetAnotherMethodWithVeryV_oneMoreMethodWithVeryVery_anotherMethodWithVeryVery_methodWithVeryVeryLongNam_param",11)))
+  }
 }
