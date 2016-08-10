@@ -2,14 +2,10 @@ package scala.runtime;
 
 
 import java.lang.invoke.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 
 public final class LambdaDeserialize {
     public static final MethodType DESERIALIZE_LAMBDA_MT = MethodType.fromMethodDescriptorString("(Ljava/lang/invoke/SerializedLambda;)Ljava/lang/Object;", LambdaDeserialize.class.getClassLoader());
-    public static final MethodType ADD_TARGET_METHODS_MT = MethodType.fromMethodDescriptorString("([Ljava/lang/invoke/MethodHandle;)V", LambdaDeserialize.class.getClassLoader());
 
     private MethodHandles.Lookup lookup;
     private final HashMap<String, MethodHandle> cache = new HashMap<>();
@@ -37,6 +33,6 @@ public final class LambdaDeserialize {
         return new ConstantCallSite(exact);
     }
     public static String nameAndDescriptorKey(String name, String descriptor) {
-        return name + " " + descriptor;
+        return name + descriptor;
     }
 }

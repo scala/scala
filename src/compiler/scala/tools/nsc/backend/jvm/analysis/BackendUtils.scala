@@ -76,7 +76,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
    * host a static field in the enclosing class. This allows us to add this method to interfaces
    * that define lambdas in default methods.
    */
-  def addLambdaDeserialize(classNode: ClassNode, implMethods: List[Handle]): Unit = {
+  def addLambdaDeserialize(classNode: ClassNode, implMethods: Iterable[Handle]): Unit = {
     val cw = classNode
 
     // Make sure to reference the ClassBTypes of all types that are used in the code generated
@@ -87,13 +87,12 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
 
     val nilLookupDesc = MethodBType(Nil, jliMethodHandlesLookupRef).descriptor
     val serlamObjDesc = MethodBType(jliSerializedLambdaRef :: Nil, ObjectRef).descriptor
-    val addTargetMethodsObjDesc = MethodBType(ObjectRef :: Nil, UNIT).descriptor
 
     {
       val mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambda$", serlamObjDesc, null, null)
       mv.visitCode()
       mv.visitVarInsn(ALOAD, 0)
-      mv.visitInvokeDynamicInsn("lambdaDeserialize", serlamObjDesc, lambdaDeserializeBootstrapHandle, implMethods: _*)
+      mv.visitInvokeDynamicInsn("lambdaDeserialize", serlamObjDesc, lambdaDeserializeBootstrapHandle, implMethods.toArray: _*)
       mv.visitInsn(ARETURN)
       mv.visitEnd()
     }
@@ -102,8 +101,8 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
   /**
    * Clone the instructions in `methodNode` into a new [[InsnList]], mapping labels according to
    * the `labelMap`. Returns the new instruction list and a map from old to new instructions, and
-   * a boolean indicating if the instruction list contains an instantiation of a serializable SAM
-   * type.
+   * a list of lambda implementation methods references by invokedynamic[LambdaMetafactory] for a
+   * serializable SAM types.
    */
   def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], keepLineNumbers: Boolean): (InsnList, Map[AbstractInsnNode, AbstractInsnNode], List[Handle]) = {
     val javaLabelMap = labelMap.asJava

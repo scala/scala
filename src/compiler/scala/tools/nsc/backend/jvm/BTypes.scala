@@ -124,12 +124,13 @@ abstract class BTypes {
    */
   val indyLambdaImplMethods: mutable.AnyRefMap[InternalName, mutable.LinkedHashSet[asm.Handle]] = recordPerRunCache(mutable.AnyRefMap())
   def addIndyLambdaImplMethod(hostClass: InternalName, handle: Seq[asm.Handle]): Unit = {
-    indyLambdaImplMethods.getOrElseUpdate(hostClass, mutable.LinkedHashSet()) ++= handle
+    if (handle.nonEmpty)
+      indyLambdaImplMethods.getOrElseUpdate(hostClass, mutable.LinkedHashSet()) ++= handle
   }
-  def getIndyLambdaImplMethods(hostClass: InternalName): List[asm.Handle] = {
+  def getIndyLambdaImplMethods(hostClass: InternalName): Iterable[asm.Handle] = {
     indyLambdaImplMethods.getOrNull(hostClass) match {
       case null => Nil
-      case xs => xs.toList.distinct
+      case xs => xs
     }
   }
 
