@@ -5,11 +5,15 @@
 
 package scala.tools.nsc.backend.jvm
 
-import scala.tools.asm.tree.{InsnList, AbstractInsnNode, ClassNode, MethodNode}
-import java.io.{StringWriter, PrintWriter}
-import scala.tools.asm.util.{CheckClassAdapter, TraceClassVisitor, TraceMethodVisitor, Textifier}
-import scala.tools.asm.{ClassReader, ClassWriter, Attribute}
+import scala.tools.asm.tree.{AbstractInsnNode, ClassNode, FieldNode, InsnList, MethodNode}
+import java.io.{PrintWriter, StringWriter}
+import java.util
+
+import scala.tools.asm.util.{CheckClassAdapter, Textifier, TraceClassVisitor, TraceMethodVisitor}
+import scala.tools.asm.{Attribute, ClassReader, ClassWriter}
 import scala.collection.JavaConverters._
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 import scala.tools.nsc.backend.jvm.analysis.InitialProducer
 import scala.tools.nsc.backend.jvm.opt.InlineInfoAttributePrototype
 
@@ -64,21 +68,37 @@ object AsmUtils {
     bytes
   }
 
-  def textifyClassStably(bytes: Array[Byte]): Unit = {
+  def classFromBytes(bytes: Array[Byte]): ClassNode = {
     val node = new ClassNode()
     new ClassReader(bytes).accept(node, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES)
 
-    node.fields  = node.fields.asScala.sortBy(_.name).asJava
-    node.methods = node.methods.asScala.sortBy(_.name).asJava
-    node.visibleAnnotations = null
-    node.attrs = null
-    node.invisibleAnnotations = null
-
-    println(textify(node))
+    node
   }
 
-  def main(args: Array[String]): Unit = {
-    textifyClassStably(classBytes(args.head))
+//  def main(args: Array[String]): Unit = println(textify(sortedClassRead(classBytes(args.head))))
+
+  def sortClassMembers(node: ClassNode): node.type = {
+    node.fields.sort(_.name compareTo _.name)
+    node.methods.sort(_.name compareTo _.name)
+    node
+  }
+
+  // drop ScalaSig annotation and class attributes
+  def zapScalaClassAttrs(node: ClassNode): node.type = {
+    if (node.visibleAnnotations != null)
+      node.visibleAnnotations = node.visibleAnnotations.asScala.filterNot(a => a == null || a.desc.contains("Lscala/reflect/ScalaSignature")).asJava
+
+    node.attrs = null
+    node
+  }
+
+  def main(args: Array[String]): Unit = args.par.foreach { classFileName =>
+    val node = zapScalaClassAttrs(sortClassMembers(classFromBytes(classBytes(classFileName))))
+
+    val pw = new PrintWriter(classFileName + ".asm")
+    val trace = new TraceClassVisitor(pw)
+    node.accept(trace)
+    pw.close()
   }
 
   /**
