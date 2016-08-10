@@ -614,9 +614,6 @@ trait ContextErrors {
       def ParentFinalInheritanceError(parent: Tree, mixin: Symbol) =
         NormalTypeError(parent, "illegal inheritance from final "+mixin)
 
-      def ParentSealedInheritanceError(parent: Tree, psym: Symbol) =
-        NormalTypeError(parent, "illegal inheritance from sealed " + psym )
-
       def ParentSelfTypeConformanceError(parent: Tree, selfType: Type) =
         NormalTypeError(parent,
           "illegal inheritance;\n self-type "+selfType+" does not conform to "+
@@ -1134,6 +1131,9 @@ trait ContextErrors {
 
       def MissingParameterOrValTypeError(vparam: Tree) =
         issueNormalTypeError(vparam, "missing parameter type")
+
+      def ParentSealedInheritanceError(parent: Tree, psym: Symbol) =
+        NormalTypeError(parent, "illegal inheritance from sealed " + psym )
 
       def RootImportError(tree: Tree) =
         issueNormalTypeError(tree, "_root_ cannot be imported")

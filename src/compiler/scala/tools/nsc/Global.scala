@@ -214,6 +214,19 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
   }
 
+  private var propCnt = 0
+  @inline final def withPropagateCyclicReferences[T](t: => T): T = {
+    try {
+      propCnt = propCnt+1
+      t
+    } finally {
+      propCnt = propCnt-1
+      assert(propCnt >= 0)
+    }
+  }
+
+  def propagateCyclicReferences: Boolean = propCnt > 0
+
   /** Representing ASTs as graphs */
   object treeBrowsers extends {
     val global: Global.this.type = Global.this
