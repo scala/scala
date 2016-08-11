@@ -54,6 +54,7 @@ object Stack extends SeqFactory[Stack] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+@deprecated("Stack is an inelegant and potentially poorly-performing wrapper around List. Use a List assigned to a var instead.", "2.12.0")
 class Stack[A] private (var elems: List[A])
 extends AbstractSeq[A]
    with Seq[A]

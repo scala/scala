@@ -1,4 +1,6 @@
-warning: there was one deprecation warning (since 2.11.0); re-run with -deprecation for details
+warning: there was one deprecation warning (since 2.11.0)
+warning: there were two deprecation warnings (since 2.12.0)
+warning: there were three deprecation warnings in total; re-run with -deprecation for details
 3-2-1: true
 3-2-1: true
 apply
