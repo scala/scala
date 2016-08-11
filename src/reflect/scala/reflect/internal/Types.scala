@@ -1900,7 +1900,7 @@ trait Types
     require(sym.isRefinementClass, sym)
 
     // I think this is okay, but see #1241 (r12414), #2208, and typedTypeConstructor in Typers
-    override protected def normalizeImpl: Type = sym.info.normalize
+    override protected def normalizeImpl: Type = pre.memberInfo(sym).normalize
     override protected def finishPrefix(rest: String) = "" + sym.info
   }
 
