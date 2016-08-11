@@ -172,13 +172,16 @@ trait Types
   trait RewrappingTypeProxy extends SimpleTypeProxy {
     protected def maybeRewrap(newtp: Type) = (
       if (newtp eq underlying) this
-      // BoundedWildcardTypes reach here during erroneous compilation: neg/t6258
-      // Higher-kinded exclusion is because [x]CC[x] compares =:= to CC: pos/t3800
-      // Avoid reusing the existing Wrapped(RefinedType) when we've be asked to wrap an =:= RefinementTypeRef, the
-      // distinction is important in base type sequences.
-      // Otherwise, if newtp =:= underlying, don't rewrap it.
-      else if (!newtp.isWildcard && !newtp.isHigherKinded && !newtp.isInstanceOf[RefinementTypeRef] && (newtp =:= underlying)) this
-      else rewrap(newtp)
+      else {
+        // - BoundedWildcardTypes reach here during erroneous compilation: neg/t6258
+        // - Higher-kinded exclusion is because [x]CC[x] compares =:= to CC: pos/t3800
+        // - Avoid reusing the existing Wrapped(RefinedType) when we've be asked to wrap an =:= RefinementTypeRef, the
+        //   distinction is important in base type sequences. See TypesTest.testExistentialRefinement
+        // - Otherwise, if newtp =:= underlying, don't rewrap it.
+        val hasSpecialMeaningBeyond_=:= = newtp.isWildcard || newtp.isHigherKinded || newtp.isInstanceOf[RefinementTypeRef]
+        if (!hasSpecialMeaningBeyond_=:= && (newtp =:= underlying)) this
+        else rewrap(newtp)
+      }
     )
     protected def rewrap(newtp: Type): Type
 
@@ -1596,7 +1599,6 @@ trait Types
       (parents forall typeIsHigherKinded) &&
       !phase.erasedTypes
     )
-
     override def typeParams =
       if (isHigherKinded) firstParent.typeParams
       else super.typeParams
@@ -4415,6 +4417,37 @@ trait Types
     finally foreach2(tvs, saved)(_.suspended = _)
   }
 
+  final def stripExistentialsAndTypeVars(ts: List[Type], expandLazyBaseType: Boolean = false): (List[Type], List[Symbol]) = {
+    val needsStripping = ts.exists {
+      case _: RefinedType | _: TypeVar | _: ExistentialType => true
+      case _ => false
+    }
+    if (!needsStripping) (ts, Nil) // fast path for common case
+    else {
+      val tparams = mutable.ListBuffer[Symbol]()
+      val stripped = mutable.ListBuffer[Type]()
+      def stripType(tp: Type): Unit = tp match {
+        case rt: RefinedType if isIntersectionTypeForLazyBaseType(rt) =>
+          if (expandLazyBaseType)
+            rt.parents foreach stripType
+          else {
+            devWarning(s"Unexpected RefinedType in stripExistentialsAndTypeVars $ts, not expanding")
+            stripped += tp
+          }
+        case ExistentialType(qs, underlying) =>
+          tparams ++= qs
+          stripType(underlying)
+        case tv@TypeVar(_, constr) =>
+          if (tv.instValid) stripType(constr.inst)
+          else if (tv.untouchable) stripped += tv
+          else abort("trying to do lub/glb of typevar " + tv)
+        case tp => stripped += tp
+      }
+      ts foreach stripType
+      (stripped.toList, tparams.toList)
+    }
+  }
+
   /** Compute lub (if `variance == Covariant`) or glb (if `variance == Contravariant`) of given list
    *  of types `tps`. All types in `tps` are typerefs or singletypes
    *  with the same symbol.
@@ -4422,17 +4455,7 @@ trait Types
    *  Return `NoType` if the computation fails.
    */
   def mergePrefixAndArgs(tps0: List[Type], variance: Variance, depth: Depth): Type = {
-    var tparams = mutable.ListBuffer[Symbol]()
-    val tps = tps0.flatMap {
-      case rt: RefinedType if isIntersectionTypeForLazyBaseType(rt) => rt.parents
-      case ExistentialType(qs, underlying) =>
-        tparams ++= qs
-        underlying match {
-          case rt: RefinedType if isIntersectionTypeForLazyBaseType(rt) => rt.parents
-          case tp => tp :: Nil
-        }
-      case tp => tp :: Nil
-    }
+    val (tps, tparams) = stripExistentialsAndTypeVars(tps0, expandLazyBaseType = true)
 
     val merged = tps match {
       case tp :: Nil => tp
@@ -4507,7 +4530,7 @@ trait Types
       case _ =>
         abort(s"mergePrefixAndArgs($tps, $variance, $depth): unsupported tps")
     }
-    existentialAbstraction(tparams.toList, merged)
+    existentialAbstraction(tparams, merged)
   }
 
   def addMember(thistp: Type, tp: Type, sym: Symbol): Unit = addMember(thistp, tp, sym, AnyDepth)

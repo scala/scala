@@ -210,24 +210,6 @@ private[internal] trait GlbLubs {
     }
   }
 
-  private def stripExistentialsAndTypeVars(ts: List[Type]): (List[Type], List[Symbol]) = {
-    val quantified = ts flatMap {
-      case ExistentialType(qs, _) => qs
-      case t => List()
-    }
-    def stripType(tp: Type): Type = tp match {
-      case ExistentialType(_, res) =>
-        res
-      case tv@TypeVar(_, constr) =>
-        if (tv.instValid) stripType(constr.inst)
-        else if (tv.untouchable) tv
-        else abort("trying to do lub/glb of typevar "+tp)
-      case t => t
-    }
-    val strippedTypes = ts mapConserve stripType
-    (strippedTypes, quantified)
-  }
-
   /** Does this set of types have the same weak lub as
    *  it does regular lub? This is exposed so lub callers
    *  can discover whether the trees they are typing will

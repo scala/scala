@@ -1,11 +1,6 @@
 class Test {
   trait Tree
   def foo(b: Boolean, buf: collection.mutable.ArrayBuffer[Any], acc: StringBuilder) = if (b) buf else acc
-
-  // def bar(b: Boolean,
-  //   buf: scala.collection.IndexedSeqLike[Any,Cloneable with Mutable with Equals], 
-  //   acc: scala.collection.IndexedSeqLike[_18,scala.collection.mutable.IndexedSeq[_18]] with scala.collection.IndexedSeqLike[_18,IndexedSeq[_18]] forSome { type _18 >: String with Char }
-  // ) = if (b) buf else acc
-
-
 }
+// This test case minimizes a case that failed to compile due to a bug in my work on
+// SI-5294. After refining my patches, it compiles again, as expected.
