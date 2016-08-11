@@ -262,17 +262,17 @@ abstract class LambdaLift extends InfoTransform {
               debuglog(s"new proxy ${proxyName} in ${owner.fullLocationString}")
               val proxy =
                 if (owner.isTrait) {
-                  // TODO preserve pre-erasure info for the accessors?
-                  // TODO: do we need SYNTHESIZE_IMPL_IN_SUBCLASS to indicate that `notDeferred(setter)` should hold
                   val accessorFlags = newFlags.toLong | ACCESSOR | SYNTHESIZE_IMPL_IN_SUBCLASS
-                  val setter = owner.newMethod(nme.expandedSetterName(proxyName.setterName, owner), fv.pos, accessorFlags)
-                  setter setInfo MethodType(setter.newSyntheticValueParams(List(fv.info)), UnitTpe)
-                  owner.info.decls enter setter
 
-                  val getter = owner.newMethod(proxyName.getterName, fv.pos, accessorFlags | STABLE)
-                  getter setInfo MethodType(Nil, fv.info)
+                  // TODO do we need to preserve pre-erasure info for the accessors (and a NullaryMethodType for the getter)?
+                  // can't have a field in the trait, so add a setter
+                  val setter = owner.newMethod(nme.expandedSetterName(proxyName.setterName, owner), fv.pos, accessorFlags)
+                  setter setInfoAndEnter MethodType(setter.newSyntheticValueParams(List(fv.info)), UnitTpe)
+
+                  // the getter serves as the proxy -- entered below
+                  owner.newMethod(proxyName.getterName, fv.pos, accessorFlags | STABLE) setInfo MethodType(Nil, fv.info)
                 } else
-                  owner.newValue(proxyName.toTermName, owner.pos, newFlags.toLong | PrivateLocal) setInfo fv.info
+                  owner.newValue(proxyName.toTermName, fv.pos, newFlags.toLong | PrivateLocal) setInfo fv.info
 
               if (owner.isClass) owner.info.decls enter proxy
               proxy

@@ -301,7 +301,7 @@ trait MethodSynthesis {
           if (tree.symbol.owner.isTrait || Field.noFieldFor(tree)) rhs1 // TODO move tree.symbol.owner.isTrait into noFieldFor
           else gen.mkAssignAndReturn(tree.symbol, rhs1)
 
-        derivedSym setPos tree.pos // cannot set it at createAndEnterSymbol because basisSym can possibly still have NoPosition
+        derivedSym setPos tree.pos // TODO: can we propagate `tree.pos` to `derivedSym` when the symbol is created?
         val ddefRes = DefDef(derivedSym, new ChangeOwnerTraverser(tree.symbol, derivedSym)(body))
         // ValDef will have its position focused whereas DefDef will have original correct rangepos
         // ideally positions would be correct at the creation time but lazy vals are really a special case

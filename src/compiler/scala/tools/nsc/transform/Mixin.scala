@@ -25,8 +25,12 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     * (need to exclude lambdaLIFTED methods, as they do no exist during explicitouter and thus did not need to be excluded...)
     *
     * They may be protected, now that traits are compiled 1:1 to interfaces.
-    * (The same disclaimers about mapping Scala's notion of visibility to Java's apply.)
+    * The same disclaimers about mapping Scala's notion of visibility to Java's apply:
+    * we cannot emit PROTECTED methods in interfaces on the JVM,
+    * but knowing that these trait methods are protected means we won't emit static forwarders.
     *
+    * JVMLS: "Methods of interfaces may have any of the flags in Table 4.6-A set
+    * except ACC_PROTECTED, ACC_FINAL, ACC_SYNCHRONIZED, and ACC_NATIVE (JLS §9.4)."
     *
     * TODO: can we just set the right flags from the start??
     *  could we use the final flag to indicate a private method is really-really-private?
