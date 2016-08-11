@@ -254,6 +254,15 @@ public final class FI {
 	public boolean defined(Object o);
     }
 
+    /** comment about */
+    /** a comment about */
+    /** a comment */
+    void foo() {}
+
+    /** someone forgot to uncomment */
+    //void thisMethod() {}
+    /** and also this */
+    //void otherMethod() {}
 }
 
 /**
