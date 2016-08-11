@@ -69,11 +69,11 @@ scala> var four = "four"
 four: String = four
 
 scala> val four2 = m(four) // should have an existential bound
-warning: there was one feature warning; re-run with -feature for details
+warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
 four2: String @Annot(x) forSome { val x: String } = four
 
 scala> val four3 = four2   // should have the same type as four2
-warning: there was one feature warning; re-run with -feature for details
+warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
 four3: String @Annot(x) forSome { val x: String } = four
 
 scala> val stuff = m("stuff") // should not crash
@@ -96,7 +96,7 @@ scala> def m = {
   val y : String @Annot(x) = x
   y
 } // x should not escape the local scope with a narrow type
-warning: there was one feature warning; re-run with -feature for details
+warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
 m: String @Annot(x) forSome { val x: String }
 
 scala> 
@@ -110,7 +110,7 @@ scala> def n(y: String) = {
   }
   m("stuff".stripMargin)
 } // x should be existentially bound
-warning: there was one feature warning; re-run with -feature for details
+warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
 n: (y: String)String @Annot(x) forSome { val x: String }
 
 scala> 
