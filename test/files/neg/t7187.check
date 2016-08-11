@@ -1,0 +1,6 @@
+t7187.scala:3: warning: Eta-expansion of zero-argument method values is deprecated. Did you intend to write EtaExpandZeroArg.this.foo()?
+  val f: () => Any = foo
+                     ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
