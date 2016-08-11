@@ -154,19 +154,7 @@ trait EntityPage extends HtmlPage {
 
   def search =
     <div id="search">
-        <span id="doc-title">
-          {universe.settings.doctitle.value}
-          <span id="doc-version">
-          {
-            val version = universe.settings.docversion.value
-
-            if (version.length > "XX.XX.XX-XXX".length) {
-              docletReporter.summaryWarning(s"doc-version ($version) was too long to be displayed in the webview, and will be left out. The max length is: XX.XX.XX-XXX")
-              ""
-            } else version
-          }
-          </span>
-        </span>
+        <span id="doc-title">{universe.settings.doctitle.value}<span id="doc-version">{universe.settings.docversion.value}</span></span>
         <span class="close-results"><span class="left">&lt;</span> Back</span>
         <div id="textfilter">
           <span class="input">

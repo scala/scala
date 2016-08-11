@@ -167,6 +167,15 @@ textarea, input { outline: none; }
   color: #c2c2c2;
   font-weight: 100;
   font-size: 0.72em;
+  display: inline-block;
+  width: 12ex;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#search > span#doc-title > span#doc-version:hover {
+  overflow: visible;
 }
 
 #search > span.toggle-sidebar:hover {
