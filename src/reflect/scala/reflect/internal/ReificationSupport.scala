@@ -285,6 +285,7 @@ trait ReificationSupport { self: SymbolTable =>
           val (gvdefs, etdefs) = rawEdefs.partition(treeInfo.isEarlyValDef)
           val (fieldDefs, UnCtor(ctorMods, ctorVparamss, lvdefs) :: body) = rest.splitAt(indexOfCtor(rest))
           val evdefs = gvdefs.zip(lvdefs).map {
+            // TODO: in traits, early val defs are defdefs
             case (gvdef @ ValDef(_, _, tpt: TypeTree, _), ValDef(_, _, _, rhs)) =>
               copyValDef(gvdef)(tpt = tpt.original, rhs = rhs)
             case (tr1, tr2) =>

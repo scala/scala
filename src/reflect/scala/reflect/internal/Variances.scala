@@ -167,7 +167,9 @@ trait Variances {
         case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) =>
           validateVariance(sym)
           super.traverse(tree)
-        // ModuleDefs need not be considered because they have been eliminated already
+        case ModuleDef(_, _, _) =>
+          validateVariance(sym.moduleClass)
+          super.traverse(tree)
         case ValDef(_, _, _, _) =>
           validateVariance(sym)
         case DefDef(_, _, tparams, vparamss, _, _) =>

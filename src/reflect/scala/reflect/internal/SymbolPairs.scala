@@ -30,27 +30,6 @@ abstract class SymbolPairs {
   val global: SymbolTable
   import global._
 
-  /** Type operations relative to a prefix.  All operations work on Symbols,
-   *  and the types are the member types of those symbols in the prefix.
-   */
-  class RelativeTo(val prefix: Type) {
-    def this(clazz: Symbol) = this(clazz.thisType)
-    import scala.language.implicitConversions // geez, it even has to hassle me when it's private
-    private implicit def symbolToType(sym: Symbol): Type = prefix memberType sym
-
-    def erasureOf(sym: Symbol): Type         = erasure.erasure(sym)(sym: Type)
-    def signature(sym: Symbol): String       = sym defStringSeenAs (sym: Type)
-    def erasedSignature(sym: Symbol): String = sym defStringSeenAs erasureOf(sym)
-
-    def isSameType(sym1: Symbol, sym2: Symbol): Boolean    = sym1 =:= sym2
-    def isSubType(sym1: Symbol, sym2: Symbol): Boolean     = sym1 <:< sym2
-    def isSuperType(sym1: Symbol, sym2: Symbol): Boolean   = sym2 <:< sym1
-    def isSameErasure(sym1: Symbol, sym2: Symbol): Boolean = erasureOf(sym1) =:= erasureOf(sym2)
-    def matches(sym1: Symbol, sym2: Symbol): Boolean       = (sym1: Type) matches (sym2: Type)
-
-    override def toString = s"RelativeTo($prefix)"
-  }
-
   /** Are types tp1 and tp2 equivalent seen from the perspective
    *  of `baseClass`? For instance List[Int] and Seq[Int] are =:=
    *  when viewed from IterableClass.
@@ -58,10 +37,11 @@ abstract class SymbolPairs {
   def sameInBaseClass(baseClass: Symbol)(tp1: Type, tp2: Type) =
     (tp1 baseType baseClass) =:= (tp2 baseType baseClass)
 
-  case class SymbolPair(base: Symbol, low: Symbol, high: Symbol) {
+  final case class SymbolPair(base: Symbol, low: Symbol, high: Symbol) {
+    private[this] val self  = base.thisType
+
     def pos                 = if (low.owner == base) low.pos else if (high.owner == base) high.pos else base.pos
-    def self: Type          = base.thisType
-    def rootType: Type      = base.thisType
+    def rootType: Type      = self
 
     def lowType: Type       = self memberType low
     def lowErased: Type     = erasure.specialErasure(base)(low.tpe)

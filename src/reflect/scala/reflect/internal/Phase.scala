@@ -47,6 +47,10 @@ abstract class Phase(val prev: Phase) {
   final val specialized: Boolean   = ((prev ne null) && (prev ne NoPhase)) && (prev.name == "specialize" || prev.specialized)
   final val refChecked: Boolean    = ((prev ne null) && (prev ne NoPhase)) && (prev.name == "refchecks"  || prev.refChecked)
 
+  // are we past the fields phase, so that:
+  //   - we should allow writing to vals (as part of type checking trait setters)
+  //   - modules have module accessors
+  final val assignsFields: Boolean = ((prev ne null) && (prev ne NoPhase)) && (prev.name == "fields"     || prev.assignsFields)
 
   /** This is used only in unsafeTypeParams, and at this writing is
    *  overridden to false in parser, namer, typer, and erasure. (And NoPhase.)

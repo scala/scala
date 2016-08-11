@@ -456,7 +456,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   } with Pickler
 
   // phaseName = "refchecks"
-  override object refChecks extends {
+  object refChecks extends {
     val global: Global.this.type = Global.this
     val runsAfter = List("pickler")
     val runsRightAfter = None
@@ -476,10 +476,22 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val runsRightAfter = None
   } with TailCalls
 
+  // phaseName = "fields"
+  object fields extends {
+    val global: Global.this.type = Global.this
+    // after refchecks, so it doesn't have to make weird exceptions for synthetic accessors
+    // after uncurry as it produces more work for the fields phase as well as being confused by it:
+    //   - sam expansion synthesizes classes, which may need trait fields mixed in
+    //   - the fields phase adds synthetic abstract methods to traits that should not disqualify them from being a SAM type
+    // before erasure: correct signatures & bridges for accessors
+    val runsAfter = List("uncurry")
+    val runsRightAfter = None
+  } with Fields
+
   // phaseName = "explicitouter"
   object explicitOuter extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("tailcalls")
+    val runsAfter = List("fields")
     val runsRightAfter = None
   } with ExplicitOuter
 
@@ -595,7 +607,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
    *  This implementation creates a description map at the same time.
    */
   protected def computeInternalPhases(): Unit = {
-    // Note: this fits -Xshow-phases into 80 column width, which it is
+    // Note: this fits -Xshow-phases into 80 column width, which is
     // desirable to preserve.
     val phs = List(
       syntaxAnalyzer          -> "parse source into ASTs, perform simple desugaring",
@@ -608,6 +620,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       pickler                 -> "serialize symbol tables",
       refChecks               -> "reference/override checking, translate nested objects",
       uncurry                 -> "uncurry, translate function values to anonymous classes",
+      fields                  -> "synthesize accessors and fields",
       tailCalls               -> "replace tail calls by jumps",
       specializeTypes         -> "@specialized-driven class and method specialization",
       explicitOuter           -> "this refs to outer pointers",
@@ -1239,6 +1252,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val picklerPhase                 = phaseNamed("pickler")
     val refchecksPhase               = phaseNamed("refchecks")
     val uncurryPhase                 = phaseNamed("uncurry")
+    // val fieldsPhase                  = phaseNamed("fields")
     // val tailcallsPhase               = phaseNamed("tailcalls")
     val specializePhase              = phaseNamed("specialize")
     val explicitouterPhase           = phaseNamed("explicitouter")

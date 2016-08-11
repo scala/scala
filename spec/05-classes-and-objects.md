@@ -344,8 +344,8 @@ $M'$:
 - If $M$ and $M'$ are both concrete value definitions, then either none
   of them is marked `lazy` or both must be marked `lazy`.
 
-A stable member can only be overridden by a stable member.
-For example, this is not allowed:
+- A stable member can only be overridden by a stable member.
+  For example, this is not allowed:
 
 ```scala
 class X { val stable = 1}

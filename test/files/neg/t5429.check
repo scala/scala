@@ -134,7 +134,7 @@ t5429.scala:87: error: overriding value value in class A0 of type Any;
  lazy value value cannot override a concrete non-lazy value
   override lazy val value = 0      // fail (strict over lazy)
                     ^
-t5429.scala:91: error: value oneArg overrides nothing.
+t5429.scala:91: error: lazy value oneArg overrides nothing.
 Note: the super classes of class F0 contain the following, non final members named oneArg:
 def oneArg(x: String): Any
   override lazy val oneArg = 15    // fail

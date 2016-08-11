@@ -169,17 +169,23 @@ class Flags extends ModifierFlags {
 
   final val SYNCHRONIZED  = 1L << 45      // symbol is a method which should be marked ACC_SYNCHRONIZED
 
+  final val SYNTHESIZE_IMPL_IN_SUBCLASS = 1L << 50 // used in fields phase to indicate this accessor should receive an implementation in a subclass
+
+  // flags used strictly internally in the Fields phase (info/tree transform):
+  final val NEEDS_TREES   = 1L << 59           // this symbol needs a tree. (distinct from SYNTHESIZE_IMPL_IN_SUBCLASS)
+
   // ------- shift definitions -------------------------------------------------------
   //
   // Flags from 1L to (1L << 50) are normal flags.
   //
-  // The flags DEFERRED (1L << 4) to MODULE (1L << 8) have a `late` counterpart. Late flags change
-  // their counterpart from 0 to 1 after a specific phase (see below). The first late flag
-  // (lateDEFERRED) is at (1L << 51), i.e., late flags are shifted by 47. The last one is (1L << 55).
+  // The "late" counterpart to flags DEFERRED (1L << 4) to MODULE (1L << 8)
+  // show up in `sym.flags` as their regular counterpart once the phase mask admits them (see below).
+  // The first late flag (lateDEFERRED) is at (1L << 51), i.e., late flags are shifted by 47. The last one is (1L << 55).
+  // Think of it as a poor man's flag history akin to the type history for a symbol's info.
   //
-  // The flags PROTECTED (1L) to PRIVATE (1L << 2) have a `not` counterpart. Negated flags change
-  // their counterpart from 1 to 0 after a specific phase (see below). They are shifted by 56, i.e.,
-  // the first negated flag (notPROTECTED) is at (1L << 56), the last at (1L << 58).
+  // The "not" counterpart to flags PROTECTED (1L) to PRIVATE (1L << 2)
+  // are negated flags that suppress their counterpart after a specific phase (see below).
+  // They are shifted by 56, i.e., the first negated flag (notPROTECTED) is at (1L << 56), the last at (1L << 58).
   //
   // Late and negative flags are only enabled after certain phases, implemented by the phaseNewFlags
   // method of the SubComponent, so they implement a bit of a flag history.
@@ -211,20 +217,15 @@ class Flags extends ModifierFlags {
   //       erasure  15  [START] <latedeferred>
   //         mixin  20  [START] <latemodule> <notoverride>
   //
-  // lateMETHOD set in RefChecks#transformInfo.
-  // lateFINAL set in Symbols#makeNotPrivate.
   // notPRIVATE set in Symbols#makeNotPrivate, IExplicitOuter#transform, Inliners.
   // notPROTECTED set in ExplicitOuter#transform.
-  // lateDEFERRED set in AddInterfaces, Mixin, etc.
-  // lateMODULE set in Mixin#transformInfo.
-  // notOVERRIDE set in Mixin#preTransform.
 
-  final val lateDEFERRED  = (DEFERRED: Long) << LateShift
-  final val lateFINAL     = (FINAL: Long) << LateShift
-  final val lateMETHOD    = (METHOD: Long) << LateShift
-  final val lateMODULE    = (MODULE: Long) << LateShift
+//  final val lateDEFERRED  = (DEFERRED: Long) << LateShift // unused
+//  final val lateFINAL     = (FINAL: Long) << LateShift    // only used for inliner -- could be subsumed by notPRIVATE?
+//  final val lateMETHOD    = (METHOD: Long) << LateShift   // unused
+//  final val lateMODULE    = (MODULE: Long) << LateShift   // unused
 
-  final val notOVERRIDE   = (OVERRIDE: Long) << AntiShift
+//  final val notOVERRIDE   = (OVERRIDE: Long) << AntiShift // unused
   final val notPRIVATE    = (PRIVATE: Long) << AntiShift
   final val notPROTECTED  = (PROTECTED: Long) << AntiShift
 
@@ -257,7 +258,8 @@ class Flags extends ModifierFlags {
   /** These modifiers appear in TreePrinter output. */
   final val PrintableFlags =
     ExplicitFlags | BridgeFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR | MACRO |
-    ACCESSOR | SUPERACCESSOR | PARAMACCESSOR | STATIC | SPECIALIZED | SYNCHRONIZED | ARTIFACT
+    ACCESSOR | SUPERACCESSOR | PARAMACCESSOR | STATIC | SPECIALIZED | SYNCHRONIZED | ARTIFACT |
+    SYNTHESIZE_IMPL_IN_SUBCLASS | NEEDS_TREES
 
   /** When a symbol for a field is created, only these flags survive
    *  from Modifiers.  Others which may be applied at creation time are:
@@ -442,16 +444,16 @@ class Flags extends ModifierFlags {
     case  JAVA_DEFAULTMETHOD => "<defaultmethod>"                     // (1L << 47)
     case           JAVA_ENUM => "<enum>"                              // (1L << 48)
     case     JAVA_ANNOTATION => "<annotation>"                        // (1L << 49)
-    case    0x4000000000000L => ""                                    // (1L << 50)
-    case      `lateDEFERRED` => "<latedeferred>"                      // (1L << 51)
-    case         `lateFINAL` => "<latefinal>"                         // (1L << 52)
-    case        `lateMETHOD` => "<latemethod>"                        // (1L << 53)
-    case   0x80000000000000L => ""                                    // (1L << 54)
-    case        `lateMODULE` => "<latemodule>"                        // (1L << 55)
+    case SYNTHESIZE_IMPL_IN_SUBCLASS => "<sub_synth>"                 // (1L << 50)
+    case   0x08000000000000L => "<latedeferred>"                      // (1L << 51)
+    case   0x10000000000000L => "<latefinal>"                         // (1L << 52)
+    case   0x20000000000000L => "<latemethod>"                        // (1L << 53)
+    case   0x40000000000000L => ""                                    // (1L << 54)
+    case   0x80000000000000L => "<latemodule>"                        // (1L << 55)
     case      `notPROTECTED` => "<notprotected>"                      // (1L << 56)
-    case       `notOVERRIDE` => "<notoverride>"                       // (1L << 57)
+    case  0x200000000000000L => "<notoverride>"                       // (1L << 57)
     case        `notPRIVATE` => "<notprivate>"                        // (1L << 58)
-    case  0x800000000000000L => ""                                    // (1L << 59)
+    case NEEDS_TREES         => "<needs_trees>"                       // (1L << 59)
     case 0x1000000000000000L => ""                                    // (1L << 60)
     case 0x2000000000000000L => ""                                    // (1L << 61)
     case 0x4000000000000000L => ""                                    // (1L << 62)

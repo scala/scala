@@ -19,6 +19,7 @@ object NameTransformer {
   val NAME_JOIN_STRING              = sys.props.getOrElse("SCALA_NAME_JOIN_STRING", "$")
   val MODULE_INSTANCE_NAME          = "MODULE$"
   val LOCAL_SUFFIX_STRING           = " "
+  val LAZY_LOCAL_SUFFIX_STRING      = "$lzy"
   val SETTER_SUFFIX_STRING          = "_$eq"
   val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
 

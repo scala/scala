@@ -68,7 +68,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
      *     ```
      *     // typer
      *     class C { object x }
-     *     // refchecks
+     *     // fields
      *     class C { var x$module; def x() = { x$module = new x; x$module }
      *     // lazyvals
      *     class C {

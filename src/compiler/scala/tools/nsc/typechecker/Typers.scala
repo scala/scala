@@ -1373,7 +1373,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               notAllowed(s"redefinition of $name method. See SIP-15, criterion 4.")
             else if (stat.symbol != null && stat.symbol.isParamAccessor)
               notAllowed("additional parameter")
+            // concrete accessor (getter) in trait corresponds to a field definition (neg/anytrait.scala)
+            // TODO: only reject accessors that actually give rise to field (e.g., a constant-type val is fine)
+            else if (!isValueClass && stat.symbol.isAccessor && !stat.symbol.isDeferred)
+              notAllowed("field definition")
             checkEphemeralDeep.traverse(rhs)
+          // for value class or "exotic" vals in traits
+          // (traits don't receive ValDefs for regular vals until fields phase -- well, except for early initialized/lazy vals)
           case _: ValDef =>
             notAllowed("field definition")
           case _: ModuleDef =>
@@ -2015,7 +2021,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val tpt1 = checkNoEscaping.privates(sym, typedType(vdef.tpt))
       checkNonCyclic(vdef, tpt1)
 
-      if (sym.hasAnnotation(definitions.VolatileAttr) && !sym.isMutable)
+      // allow trait accessors: it's the only vehicle we have to hang on to annotations that must be passed down to
+      // the field that's mixed into a subclass
+      if (sym.hasAnnotation(definitions.VolatileAttr) && !((sym hasFlag MUTABLE) || (sym hasFlag ACCESSOR) && sym.owner.isTrait))
         VolatileValueError(vdef)
 
       val rhs1 =
@@ -2215,6 +2223,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     def typedDefDef(ddef: DefDef): DefDef = {
+      // an accessor's type completer may mutate a type inside `ddef` (`== context.unit.synthetics(ddef.symbol)`)
+      // concretely: it sets the setter's parameter type or the getter's return type (when derived from a valdef with empty tpt)
       val meth = ddef.symbol.initialize
 
       reenterTypeParams(ddef.tparams)
@@ -2224,7 +2234,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (!isPastTyper && meth.isPrimaryConstructor) {
         for (vparams <- ddef.vparamss; vd <- vparams) {
           if (vd.mods.isParamAccessor) {
-            namer.validateParam(vd)
+            vd.symbol setAnnotations (vd.symbol.annotations filter AnnotationInfo.mkFilter(ParamTargetClass, defaultRetention = true))
           }
         }
       }
@@ -3045,13 +3055,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           result
       }
 
-      /* 'accessor' and 'accessed' are so similar it becomes very difficult to
-       * follow the logic, so I renamed one to something distinct.
-       */
+      // TODO: adapt to new trait field encoding, figure out why this exaemption is made
+      // 'accessor' and 'accessed' are so similar it becomes very difficult to
+      //follow the logic, so I renamed one to something distinct.
       def accesses(looker: Symbol, accessed: Symbol) = accessed.isLocalToThis && (
-           (accessed.isParamAccessor)
-        || (looker.hasAccessorFlag && !accessed.hasAccessorFlag && accessed.isPrivate)
-      )
+        (accessed.isParamAccessor)
+          || (looker.hasAccessorFlag && !accessed.hasAccessorFlag && accessed.isPrivate)
+        )
 
       def checkNoDoubleDefs: Unit = {
         val scope = if (inBlock) context.scope else context.owner.info.decls
@@ -3059,20 +3069,39 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         while ((e ne null) && e.owner == scope) {
           var e1 = scope.lookupNextEntry(e)
           while ((e1 ne null) && e1.owner == scope) {
-            if (!accesses(e.sym, e1.sym) && !accesses(e1.sym, e.sym) &&
-                (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
-              // default getters are defined twice when multiple overloads have defaults. an
-              // error for this is issued in RefChecks.checkDefaultsInOverloaded
-              if (!e.sym.isErroneous && !e1.sym.isErroneous && !e.sym.hasDefault &&
-                  !e.sym.hasAnnotation(BridgeClass) && !e1.sym.hasAnnotation(BridgeClass)) {
-                log("Double definition detected:\n  " +
-                    ((e.sym.getClass, e.sym.info, e.sym.ownerChain)) + "\n  " +
-                    ((e1.sym.getClass, e1.sym.info, e1.sym.ownerChain)))
+            val sym = e.sym
+            val sym1 = e1.sym
 
-                DefDefinedTwiceError(e.sym, e1.sym)
-                scope.unlink(e1) // need to unlink to avoid later problems with lub; see #2779
-              }
-              e1 = scope.lookupNextEntry(e1)
+            /** From the spec (refchecks checks other conditions regarding erasing to the same type and default arguments):
+              *
+              * A block expression [... its] statement sequence may not contain two definitions or
+              * declarations that bind the same name --> `inBlock`
+              *
+              * It is an error if a template directly defines two matching members.
+              *
+              * A member definition $M$ _matches_ a member definition $M'$, if $M$ and $M'$ bind the same name,
+              * and one of following holds:
+              *   1. Neither $M$ nor $M'$ is a method definition.
+              *   2. $M$ and $M'$ define both monomorphic methods with equivalent argument types.
+              *   3. $M$ defines a parameterless method and $M'$ defines a method with an empty parameter list `()` or _vice versa_.
+              *   4. $M$ and $M'$ define both polymorphic methods with equal number of argument types $\overline T$, $\overline T'$
+              *      and equal numbers of type parameters $\overline t$, $\overline t'$, say,
+              *      and  $\overline T' = [\overline t'/\overline t]\overline T$.
+              */
+            if (!(accesses(sym, sym1) || accesses(sym1, sym))  // TODO: does this purely defer errors until later?
+                && (inBlock || !(sym.isMethod || sym1.isMethod) || (sym.tpe matches sym1.tpe))
+                // default getters are defined twice when multiple overloads have defaults.
+                // The error for this is deferred until RefChecks.checkDefaultsInOverloaded
+                && (!sym.isErroneous && !sym1.isErroneous && !sym.hasDefault &&
+                    !sym.hasAnnotation(BridgeClass) && !sym1.hasAnnotation(BridgeClass))) {
+              log("Double definition detected:\n  " +
+                  ((sym.getClass, sym.info, sym.ownerChain)) + "\n  " +
+                  ((sym1.getClass, sym1.info, sym1.ownerChain)))
+
+              DefDefinedTwiceError(sym, sym1)
+              scope.unlink(e1) // need to unlink to avoid later problems with lub; see #2779
+            }
+            e1 = scope.lookupNextEntry(e1)
           }
           e = e.next
         }
@@ -4232,7 +4261,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 //      if (varsym.isVariable ||
 //        // setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
 //        (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
-        if (varsym.isVariable || varsym.isValue && phase.erasedTypes) {
+        if (varsym.isVariable || varsym.isValue && phase.assignsFields) {
           val rhs1 = typedByValueExpr(rhs, lhs1.tpe)
           treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitTpe
         }

@@ -1,5 +1,5 @@
-t2779.scala:16: error: method f is defined twice
-  conflicting symbols both originated in file 't2779.scala'
+t2779.scala:16: error: method f is defined twice;
+  the conflicting method f was defined at line 15:18
     override def f = List(M1)
                  ^
 one error found

@@ -254,15 +254,26 @@ abstract class LambdaLift extends InfoTransform {
 
       afterOwnPhase {
         for ((owner, freeValues) <- free.toList) {
-          val newFlags = SYNTHETIC | (
-            if (owner.isClass) PARAMACCESSOR | PrivateLocal
-            else PARAM)
+          val newFlags = SYNTHETIC | (if (owner.isClass) PARAMACCESSOR else PARAM)
 
           proxies(owner) =
             for (fv <- freeValues.toList) yield {
               val proxyName = proxyNames.getOrElse(fv, fv.name)
               debuglog(s"new proxy ${proxyName} in ${owner.fullLocationString}")
-              val proxy = owner.newValue(proxyName.toTermName, owner.pos, newFlags.toLong) setInfo fv.info
+              val proxy =
+                if (owner.isTrait) {
+                  val accessorFlags = newFlags.toLong | ACCESSOR | SYNTHESIZE_IMPL_IN_SUBCLASS
+
+                  // TODO do we need to preserve pre-erasure info for the accessors (and a NullaryMethodType for the getter)?
+                  // can't have a field in the trait, so add a setter
+                  val setter = owner.newMethod(nme.expandedSetterName(proxyName.setterName, owner), fv.pos, accessorFlags)
+                  setter setInfoAndEnter MethodType(setter.newSyntheticValueParams(List(fv.info)), UnitTpe)
+
+                  // the getter serves as the proxy -- entered below
+                  owner.newMethod(proxyName.getterName, fv.pos, accessorFlags | STABLE) setInfo MethodType(Nil, fv.info)
+                } else
+                  owner.newValue(proxyName.toTermName, fv.pos, newFlags.toLong | PrivateLocal) setInfo fv.info
+
               if (owner.isClass) owner.info.decls enter proxy
               proxy
             }
@@ -320,7 +331,12 @@ abstract class LambdaLift extends InfoTransform {
 
     private def proxyRef(sym: Symbol) = {
       val psym = proxy(sym)
-      if (psym.isLocalToBlock) gen.mkAttributedIdent(psym) else memberRef(psym)
+      if (psym.isLocalToBlock) gen.mkAttributedIdent(psym)
+      else {
+        val ref = memberRef(psym)
+        if (psym.isMethod) Apply(ref, Nil) setType ref.tpe.resultType
+        else ref
+      }
     }
 
     def freeArgsOrNil(sym: Symbol) = free.getOrElse(sym, Nil).toList
@@ -354,7 +370,14 @@ abstract class LambdaLift extends InfoTransform {
           }
 
         case ClassDef(_, _, _, _) =>
-          val freeParamDefs = freeParams(sym) map (p => ValDef(p) setPos tree.pos setType NoType)
+          val freeParamSyms = freeParams(sym)
+          val freeParamDefs =
+            if (tree.symbol.isTrait) {
+              freeParamSyms flatMap { getter =>
+                val setter = getter.setterIn(tree.symbol, hasExpandedName = true)
+                List(DefDef(getter, EmptyTree) setPos tree.pos setType NoType, DefDef(setter, EmptyTree) setPos tree.pos setType NoType)
+              }
+            } else freeParamSyms map (p => ValDef(p) setPos tree.pos setType NoType)
 
           if (freeParamDefs.isEmpty) tree
           else deriveClassDef(tree)(impl => deriveTemplate(impl)(_ ::: freeParamDefs))

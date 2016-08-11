@@ -137,16 +137,16 @@ object Test {
     // }
     // val an2 = () => {
     //   object nested {
-    // 	val m = 'mfsa
+    //     val m = 'mfsa
     //   }
     //   nested.m
     // }
     // val an3 = () => {
     //   object nested {
-    // 	val f = () => {
-    // 	  'layered
-    // 	}
-    // 	def gets = f()
+    //     val f = () => {
+    //       'layered
+    //     }
+    //     def gets = f()
     //   }
     //   nested.gets
     // }
@@ -204,8 +204,8 @@ object Test {
       val s1 = 's1
       def s2 = 's2
       object inner {
-	val s3 = 's3
-	val s4 = 's4
+        val s3 = 's3
+        val s4 = 's4
       }
     }
 
@@ -223,8 +223,8 @@ object Test {
       val s5 = 's5
       def s6 = 's6
       object inner2 {
-	val s7 = 's7
-	def s8 = 's8
+        val s7 = 's7
+        def s8 = 's8
       }
     }
     assert(Local.s5 == 's5)
