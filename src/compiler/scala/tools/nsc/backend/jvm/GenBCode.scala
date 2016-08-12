@@ -266,6 +266,9 @@ abstract class GenBCode extends BCodeSyncAndTry {
             try {
               localOptimizations(item.plain)
               setInnerClasses(item.plain)
+              val lambdaImplMethods = getIndyLambdaImplMethods(item.plain.name)
+              if (lambdaImplMethods.nonEmpty)
+                backendUtils.addLambdaDeserialize(item.plain, lambdaImplMethods)
               setInnerClasses(item.mirror)
               setInnerClasses(item.bean)
               addToQ3(item)

@@ -277,7 +277,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       }
       case _ => false
     }
-    val (clonedInstructions, instructionMap, hasSerializableClosureInstantiation) = cloneInstructions(callee, labelsMap, keepLineNumbers = sameSourceFile)
+    val (clonedInstructions, instructionMap, targetHandles) = cloneInstructions(callee, labelsMap, keepLineNumbers = sameSourceFile)
 
     // local vars in the callee are shifted by the number of locals at the callsite
     val localVarShift = callsiteMethod.maxLocals
@@ -405,10 +405,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
     callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, math.max(stackHeightAtNullCheck, maxStackOfInlinedCode))
 
-    if (hasSerializableClosureInstantiation && !indyLambdaHosts(callsiteClass.internalName)) {
-      indyLambdaHosts += callsiteClass.internalName
-      addLambdaDeserialize(byteCodeRepository.classNode(callsiteClass.internalName).get)
-    }
+    addIndyLambdaImplMethod(callsiteClass.internalName, targetHandles)
 
     callGraph.addIfMissing(callee, calleeDeclarationClass)
 

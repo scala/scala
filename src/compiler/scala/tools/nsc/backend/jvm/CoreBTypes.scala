@@ -283,7 +283,8 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
         List(
           coreBTypes.jliMethodHandlesLookupRef,
           coreBTypes.StringRef,
-          coreBTypes.jliMethodTypeRef
+          coreBTypes.jliMethodTypeRef,
+          ArrayBType(jliMethodHandleRef)
         ),
         coreBTypes.jliCallSiteRef
       ).descriptor,
