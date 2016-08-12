@@ -686,6 +686,8 @@ trait Namers extends MethodSynthesis {
 
         if (name == nme.copy && sym.isSynthetic)
           enterCopyMethod(tree)
+        else if (name == nme.apply && sym.hasAllFlags(SYNTHETIC | CASE))
+          sym setInfo caseApplyMethodCompleter(tree, completerOf(tree).asInstanceOf[LockingTypeCompleter])
         else
           sym setInfo completerOf(tree)
     }
@@ -813,6 +815,15 @@ trait Namers extends MethodSynthesis {
       classSym setAnnotations (annotations filter annotationFilter(ClassTargetClass, defaultRetention = true))
     }
 
+    def caseApplyMethodCompleter(tree: DefDef, sigCompleter: LockingTypeCompleter) = mkTypeCompleter(tree) { methSym =>
+      sigCompleter.completeImpl(methSym)
+
+      // don't propagate e.g. @volatile annot to apply's argument
+      def retainOnlyParamAnnots(param: Symbol) =
+        param setAnnotations (param.annotations filter AnnotationInfo.mkFilter(ParamTargetClass, defaultRetention = false))
+
+      methSym.info.paramss.foreach(_.foreach(retainOnlyParamAnnots))
+    }
 
     // complete the type of a value definition (may have a method symbol, for those valdefs that never receive a field,
     // as specified by Field.noFieldFor)
