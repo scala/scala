@@ -1016,7 +1016,16 @@ trait Contexts { self: Analyzer =>
           || unit.exists && s.sourceFile != unit.source.file
         )
       )
-      def lookupInPrefix(name: Name)    = pre member name filter qualifies
+      def lookupInPrefix(name: Name)    = {
+        val sym = pre.member(name).filter(qualifies)
+        def isNonPackageNoModuleClass(sym: Symbol) =
+          sym.isClass && !sym.isModuleClass && !sym.isPackageClass
+        if (!sym.exists && unit.isJava && isNonPackageNoModuleClass(pre.typeSymbol)) {
+          // TODO factor out duplication with Typer::inCompanionForJavaStatic
+          val pre1 = companionSymbolOf(pre.typeSymbol, this).typeOfThis
+          pre1.member(name).filter(qualifies).andAlso(_ => pre = pre1)
+        } else sym
+      }
       def accessibleInPrefix(s: Symbol) = isAccessible(s, pre, superAccess = false)
 
       def searchPrefix = {
