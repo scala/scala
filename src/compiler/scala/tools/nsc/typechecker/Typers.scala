@@ -4885,11 +4885,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         nameLookup match {
           case LookupAmbiguous(msg)         => issue(AmbiguousIdentError(tree, name, msg))
           case LookupInaccessible(sym, msg) => issue(AccessError(tree, sym, context, msg))
-          case LookupNotFound               =>
-            inCompanionForJavaStatic(NoPrefix, context.enclClass.owner, name) orElse inEmptyPackage orElse lookupInRoot(name) match {
-              case NoSymbol => issue(SymbolNotFoundError(tree, name, context.owner, startContext))
-              case sym      => typed1(tree setSymbol sym, mode, pt)
-            }
+          case LookupNotFound               => issue(SymbolNotFoundError(tree, name, context.owner, startContext))
           case LookupSucceeded(qual, sym)   =>
             (// this -> Foo.this
             if (sym.isThisSym)
