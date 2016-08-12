@@ -1479,7 +1479,7 @@ abstract class RefChecks extends Transform {
 
     private def transformApply(tree: Apply): Tree = tree match {
       case Apply(
-        Select(qual, nme.filter | nme.withFilter),
+        Select(qual, nme.withFilter),
         List(Function(
           List(ValDef(_, pname, tpt, _)),
           Match(_, CaseDef(pat1, _, _) :: _))))

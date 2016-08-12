@@ -4837,16 +4837,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      // temporarily use `filter` as an alternative for `withFilter`
-      def tryWithFilterAndFilter(tree: Select, qual: Tree): Tree = {
-        def warn(sym: Symbol) = context.deprecationWarning(tree.pos, sym, s"`withFilter' method does not yet exist on ${qual.tpe.widen}, using `filter' method instead", "2.11.0")
-        silent(_ => typedSelect(tree, qual, nme.withFilter)) orElse { _ =>
-          silent(_ => typed1(Select(qual, nme.filter) setPos tree.pos, mode, pt)) match {
-            case SilentResultValue(res) => warn(res.symbol) ; res
-            case SilentTypeError(err)   => WithFilterError(tree, err)
-          }
-        }
-      }
       def typedSelectOrSuperCall(tree: Select) = tree match {
         case Select(qual @ Super(_, _), nme.CONSTRUCTOR) =>
           // the qualifier type of a supercall constructor is its first parent class
@@ -4860,10 +4850,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             else
               UnstableTreeError(qualTyped)
           )
-          val tree1 = name match {
-            case nme.withFilter if !settings.future => tryWithFilterAndFilter(tree, qualStableOrError)
-            case _              => typedSelect(tree, qualStableOrError, name)
-          }
+          val tree1 = typedSelect(tree, qualStableOrError, name)
           def sym = tree1.symbol
           if (tree.isInstanceOf[PostfixSelect])
             checkFeature(tree.pos, PostfixOpsFeature, name.decode)
