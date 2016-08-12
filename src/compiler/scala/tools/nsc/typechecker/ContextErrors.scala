@@ -433,8 +433,8 @@ trait ContextErrors {
         setError(fun)
       }
 
-      def WrongNumberOfParametersError(tree: Tree, argpts: List[Type]) = {
-        issueNormalTypeError(tree, "wrong number of parameters; expected = " + argpts.length)
+      def WrongNumberOfParametersError(tree: Tree, expected: Int) = {
+        issueNormalTypeError(tree, s"wrong number of parameters; expected = $expected")
         setError(tree)
       }
 
