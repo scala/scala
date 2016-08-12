@@ -307,7 +307,7 @@ trait ModelFactoryImplicitSupport {
     (tparams zip constrs) flatMap {
       case (tparam, constr) => {
         uniteConstraints(constr) match {
-          case (loBounds, upBounds) => (loBounds filter (_ != NothingTpe), upBounds filter (_ != AnyTpe)) match {
+          case (loBounds, upBounds) => (loBounds filter (_ != NothingTpe), upBounds filter (up => up != AnyTpe && up != SingletonClass.tpe)) match {
             case (Nil, Nil) =>
               Nil
             case (List(lo), List(up)) if (lo == up) =>

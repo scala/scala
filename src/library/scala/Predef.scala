@@ -125,6 +125,22 @@ object Predef extends LowPriorityImplicits {
    */
   def classOf[T]: Class[T] = null // This is a stub method. The actual implementation is filled in by the compiler.
 
+  /**
+   * Retrieve the single value of a type with a unique inhabitant.
+   *
+   * @example {{{
+   * object Foo
+   * val foo = valueOf[Foo.type]
+   * // foo is Foo.type = Foo
+   *
+   * // If -Yliteral-types has been specified
+   * val bar = valueOf[23]
+   * // bar is 23.type = 23
+   * }}}
+   * @group utilities
+   */
+  @inline def valueOf[T](implicit vt: ValueOf[T]): T {} = vt.value
+
   /** The `String` type in Scala has methods that come either from the underlying
    *  Java String (see the documentation corresponding to your Java version, for
    *  example [[http://docs.oracle.com/javase/8/docs/api/java/lang/String.html]]) or

@@ -23,6 +23,7 @@ chapter: 3
                       |  SimpleType ‘#’ id
                       |  StableId
                       |  Path ‘.’ ‘type’
+                      |  Literal
                       |  ‘(’ Types ‘)’
   TypeArgs          ::=  ‘[’ Types ‘]’
   Types             ::=  Type {‘,’ Type}
@@ -102,16 +103,46 @@ forms.
 ### Singleton Types
 
 ```ebnf
-SimpleType  ::=  Path ‘.’ type
+SimpleType  ::=  Path ‘.’ ‘type’
 ```
 
-A _singleton type_ is of the form $p.$`type`, where $p$ is a
-path pointing to a value expected to [conform](06-expressions.html#expression-typing)
-to `scala.AnyRef`. The type denotes the set of values
-consisting of `null` and the value denoted by $p$.
+A _singleton type_ is of the form $p.$`type`. Where $p$ is a path pointing to a
+value which [conforms](06-expressions.html#expression-typing) to
+`scala.AnyRef`, the type denotes the set of values consisting of `null` and the
+value denoted by $p$ (i.e., the value $v$ for which `v eq p`). Where the path
+does not conform to `scala.AnyRef` the type denotes the set consisting of only
+the value denoted by $p$.
 
-A _stable type_ is either a singleton type or a type which is
-declared to be a subtype of trait `scala.Singleton`.
+<!-- a pattern match/type test against a singleton type `p.type` desugars to `_ eq p` -->
+
+### Literal Types
+
+```ebnf
+SimpleType  ::=  Literal
+```
+
+A literal type `lit` is a special kind of singleton type which denotes the
+single literal value `lit`.  Thus, the type ascription `1: 1` gives the most
+precise type to the literal value `1`:  the literal type `1`.
+
+At run time, an expression `e` is considered to have literal type `lit` if `e ==
+lit`.  Concretely, the result of `e.isInstanceOf[lit]` and `e match { case _ :
+lit => }` is determined by evaluating `e == lit`.
+
+Literal types are available for all types for which there is dedicated syntax
+except `Unit`. This includes the numeric types (other than `Byte` and `Short`
+which don't currently have syntax), `Boolean`, `Char`, `String` and `Symbol`.
+
+<!-- TODO: use eq when we lift it up to Any -->
+
+<!-- TODO: add Byte when Byte literals are added -->
+
+<!-- TODO: there is a relationship with constant folding but the latter
+     isn't currently specified at all -->
+
+### Stable Types
+A _stable type_ is a singleton type, a literal type,
+or a type that is declared to be a subtype of trait `scala.Singleton`.
 
 ### Type Projection
 

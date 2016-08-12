@@ -1,0 +1,5 @@
+t8323.scala:5: error: method f is defined twice;
+  the conflicting method f was defined at line 4:7
+  def f(x: b.type) = x
+      ^
+one error found

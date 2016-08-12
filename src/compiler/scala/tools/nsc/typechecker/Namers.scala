@@ -1025,49 +1025,56 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-    /** This method has a big impact on the eventual compiled code.
-     *  At this point many values have the most specific possible
-     *  type (e.g. in val x = 42, x's type is Int(42), not Int) but
-     *  most need to be widened to avoid undesirable propagation of
-     *  those singleton types.
-     *
-     *  However, the compilation of pattern matches into switch
-     *  statements depends on constant folding, which will only take
-     *  place for those values which aren't widened.  The "final"
-     *  modifier is the present means of signaling that a constant
-     *  value should not be widened, so it has a use even in situations
-     *  whether it is otherwise redundant (such as in a singleton.)
-     */
-    private def widenIfNecessary(sym: Symbol, tpe: Type, pt: Type): Type = {
-      val getter =
+    private def refersToSymbolLessAccessibleThan(tp: Type, sym: Symbol): Boolean = {
+      val accessibilityReference =
         if (sym.isValue && sym.owner.isClass && sym.isPrivate)
           sym.getterIn(sym.owner)
         else sym
-      def isHidden(tp: Type): Boolean = tp match {
+
+      @annotation.tailrec def loop(tp: Type): Boolean = tp match {
         case SingleType(pre, sym) =>
-          (sym isLessAccessibleThan getter) || isHidden(pre)
+          (sym isLessAccessibleThan accessibilityReference) || loop(pre)
         case ThisType(sym) =>
-          sym isLessAccessibleThan getter
+          sym isLessAccessibleThan accessibilityReference
         case p: SimpleTypeProxy =>
-          isHidden(p.underlying)
+          loop(p.underlying)
         case _ =>
           false
       }
-      val shouldWiden = (
-           !tpe.typeSymbolDirect.isModuleClass // Infer Foo.type instead of "object Foo"
-        && (tpe.widen <:< pt)                  // Don't widen our way out of conforming to pt
-        && (   sym.isVariable
-            || sym.hasFlag(ACCESSOR) && !sym.hasFlag(STABLE)
-            || sym.isMethod && !sym.hasFlag(ACCESSOR)
-            || isHidden(tpe)
-           )
-      )
-      dropIllegalStarTypes(
-        if (shouldWiden) tpe.widen
-        else if (sym.isFinal && !sym.isLazy) tpe    // "final val" allowed to retain constant type
-        else tpe.deconst
-      )
+
+      loop(tp)
     }
+
+    /*
+     * This method has a big impact on the eventual compiled code.
+     * At this point many values have the most specific possible
+     * type (e.g. in val x = 42, x's type is Int(42), not Int) but
+     * most need to be widened (which deconsts) to avoid undesirable
+     * propagation of those singleton types.
+     *
+     * However, the compilation of pattern matches into switch
+     * statements depends on constant folding, which will only take
+     * place for those values which aren't deconsted.  The "final"
+     * modifier is the present means of signaling that a constant
+     * value should not deconsted, so it has a use even in situations
+     * whether it is otherwise redundant (such as in a singleton.)
+     */
+    private def widenIfNecessary(sym: Symbol, tpe: Type, pt: Type): Type = {
+      // Are we inferring the result type of a stable symbol, whose type doesn't refer to a hidden symbol?
+      // If we refer to an inaccessible symbol, let's hope widening will result in an expressible type.
+      // (A LiteralType should be widened because it's too precise for a definition's type.)
+      val mayKeepSingletonType = !tpe.isInstanceOf[ConstantType] && sym.isStable && !refersToSymbolLessAccessibleThan(tpe, sym)
+
+      // Only final vals may be constant folded, so deconst inferred type of other members.
+      @inline def keepSingleton = if (sym.isFinal) tpe else tpe.deconst
+
+      // Only widen if the definition can't keep its inferred singleton type,
+      // (Also keep singleton type if so indicated by the expected type `pt`
+      //  OPT: 99.99% of the time, `pt` will be `WildcardType`).
+      if (mayKeepSingletonType || (sym.isFinal && sym.isVal && !sym.isLazy) || ((pt ne WildcardType) && !(tpe.widen <:< pt))) keepSingleton
+      else tpe.widen
+    }
+
     /** Computes the type of the body in a ValDef or DefDef, and
      *  assigns the type to the tpt's node.  Returns the type.
      */
@@ -1077,7 +1084,7 @@ trait Namers extends MethodSynthesis {
         case _ => defnTyper.computeType(tree.rhs, pt)
       }
 
-      val defnTpe = widenIfNecessary(tree.symbol, rhsTpe, pt)
+      val defnTpe = dropIllegalStarTypes(widenIfNecessary(tree.symbol, rhsTpe, pt))
       tree.tpt defineType defnTpe setPos tree.pos.focus
       tree.tpt.tpe
     }

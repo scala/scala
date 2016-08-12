@@ -319,7 +319,7 @@ abstract class UnCurry extends InfoTransform
         args.take(formals.length - 1) :+ (suffix setType formals.last)
       }
 
-      val args1 = if (isVarArgTypes(formals)) transformVarargs(formals.last.typeArgs.head) else args
+      val args1 = if (isVarArgTypes(formals)) transformVarargs(formals.last.typeArgs.head.widen) else args
 
       map2(formals, args1) { (formal, arg) =>
         if (!isByNameParamType(formal)) arg
@@ -588,7 +588,7 @@ abstract class UnCurry extends InfoTransform
           val literalRhsIfConst =
             if (newParamss.head.isEmpty) { // We know newParamss.length == 1 from above
               ddSym.info.resultType match {
-                case tp@ConstantType(value) => Literal(value) setType tp setPos newRhs.pos // inlining of gen.mkAttributedQualifier(tp)
+                case tp@FoldableConstantType(value) => Literal(value) setType tp setPos newRhs.pos // inlining of gen.mkAttributedQualifier(tp)
                 case _ => newRhs
               }
             } else newRhs

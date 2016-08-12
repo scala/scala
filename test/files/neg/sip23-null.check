@@ -1,0 +1,11 @@
+sip23-null.scala:2: error: type mismatch;
+ found   : Null(null)
+ required: x.type
+  def bar(x: Any): x.type = null
+                            ^
+sip23-null.scala:3: error: type mismatch;
+ found   : Null(null)
+ required: x.type
+  def foo(x: AnyVal): x.type = null
+                               ^
+two errors found

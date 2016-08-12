@@ -638,6 +638,12 @@ object Predef {
   def classOf[T]: Class[T] = null
    // this is a dummy, classOf is handled by compiler.
 
+  // valueOf -----------------------------------------------------------
+
+  /** Retrieve the single value of a type with a unique inhabitant. */
+  @inline def valueOf[T](implicit vt: ValueOf[T]): T {} = vt.value
+   // instances of the ValueOf type class are provided by the compiler.
+
   // Standard type aliases ---------------------------------------------
 
   type String    = java.lang.String

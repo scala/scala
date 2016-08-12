@@ -140,6 +140,7 @@ trait StandardLiftables { self: Universe =>
 
     implicit def unliftScalaSymbol: Unliftable[scala.Symbol] = Unliftable {
       case Apply(ScalaDot(stdnme.Symbol), List(Literal(Constant(name: String)))) => scala.Symbol(name)
+      case Literal(Constant(s: scala.Symbol)) => s
     }
 
     implicit def unliftName[T <: Name : ClassTag]: Unliftable[T] = Unliftable[T] { case Ident(name: T) => name; case Bind(name: T, Ident(stdnme.WILDCARD)) => name }

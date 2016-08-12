@@ -19,10 +19,22 @@ abstract class ConstantFolder {
   val global: Global
   import global._
 
+  object LiteralVal {
+    def unapply(tree: Tree): Option[Constant] = tree match {
+      case Literal(x) => Some(x)
+      case term if term.symbol != null && !term.symbol.isLazy && (term.symbol.isVal || (term.symbol.isGetter && term.symbol.accessed.isVal)) =>
+        term.tpe.underlying match {
+          case ConstantType(x) => Some(x)
+          case _ => None
+        }
+      case _ => None
+    }
+  }
+
   /** If tree is a constant operation, replace with result. */
   def apply(tree: Tree): Tree = fold(tree, tree match {
-    case Apply(Select(Literal(x), op), List(Literal(y))) => foldBinop(op, x, y)
-    case Select(Literal(x), op) => foldUnop(op, x)
+    case Apply(Select(LiteralVal(x), op), List(LiteralVal(y))) => foldBinop(op, x, y)
+    case Select(LiteralVal(x), op) => foldUnop(op, x)
     case _ => null
   })
 

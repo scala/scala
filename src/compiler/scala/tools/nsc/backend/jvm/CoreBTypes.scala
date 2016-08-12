@@ -357,6 +357,14 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
     })
   }
 
+  def SSymbol_apply: Symbol = _SSymbol_apply.get
+  private[this] lazy val _SSymbol_apply: LazyVar[Symbol] = runLazy {
+    getMember(SymbolModule, nme.apply) filter (sym => sym.info.paramTypes match {
+      case List(pt) => pt.typeSymbol == StringClass
+      case _        => false
+    })
+  }
+
   def lambdaMetaFactoryMetafactoryHandle: Handle = _lambdaMetaFactoryMetafactoryHandle.get
   private[this] lazy val _lambdaMetaFactoryMetafactoryHandle: LazyVar[Handle] = runLazy {
     new Handle(Opcodes.H_INVOKESTATIC,

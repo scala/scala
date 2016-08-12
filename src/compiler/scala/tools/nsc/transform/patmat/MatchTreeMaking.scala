@@ -466,7 +466,12 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         //  - Scala's arrays are invariant (so we don't drop type tests unsoundly)
         if (extractorArgTypeTest) mkDefault
         else expectedTp match {
-          case SingleType(_, sym)                       => mkEqTest(gen.mkAttributedQualifier(expectedTp)) // scala/bug#4577, scala/bug#4897
+          case SingleType(_, sym)                       =>
+            val expected = gen.mkAttributedQualifier(expectedTp) // scala/bug#4577, scala/bug#4897
+            if (expectedTp <:< AnyRefTpe) mkEqTest(expected)
+            else mkEqualsTest(expected)
+          // Should revisit if we end up lifting `eq`'s definition to `Any`, as discussed here:
+          // https://groups.google.com/d/msg/scala-internals/jsVlJI4H5OQ/8emZWRmgzcoJ
           case ThisType(sym) if sym.isModule            => and(mkEqualsTest(CODE.REF(sym)), mkTypeTest) // must use == to support e.g. List() == Nil
           case ConstantType(Constant(null)) if isAnyRef => mkEqTest(expTp(CODE.NULL))
           case ConstantType(const)                      => mkEqualsTest(expTp(Literal(const)))

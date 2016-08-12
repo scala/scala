@@ -528,12 +528,17 @@ trait Types {
      */
     def supertpe: Type
   }
-  /** The `ConstantType` type is not directly written in user programs, but arises as the type of a constant.
-   *  The REPL expresses constant types like `Int(11)`. Here are some constants with their types:
+
+  /** A `ConstantType` type cannot be expressed in user programs; it is inferred as the type of a constant.
+   *  Here are some constants with their types and the internal string representation:
    *  {{{
-   *     1           ConstantType(Constant(1))
-   *     "abc"       ConstantType(Constant("abc"))
+   *     1           ConstantType(Constant(1))       Int(1)
+   *     "abc"       ConstantType(Constant("abc"))   String("abc")
    *  }}}
+   *
+   *  ConstantTypes denote values that may safely be constant folded during type checking.
+   *  The `deconst` operation returns the equivalent type that will not be constant folded.
+   *
    *  @template
    *  @group Types
    */

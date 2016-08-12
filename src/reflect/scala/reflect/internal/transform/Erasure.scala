@@ -112,9 +112,10 @@ trait Erasure {
     protected def eraseDerivedValueClassRef(tref: TypeRef): Type = erasedValueClassArg(tref)
 
     def apply(tp: Type): Type = tp match {
-      case ConstantType(ct) =>
+      case FoldableConstantType(ct) =>
         // erase classOf[List[_]] to classOf[List]. special case for classOf[Unit], avoid erasing to classOf[BoxedUnit].
         if (ct.tag == ClazzTag && ct.typeValue.typeSymbol != UnitClass) ConstantType(Constant(apply(ct.typeValue)))
+        else if(ct.isSymbol) SymbolTpe
         else tp
       case st: ThisType if st.sym.isPackageClass =>
         tp

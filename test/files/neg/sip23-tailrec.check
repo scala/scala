@@ -1,0 +1,7 @@
+sip23-tailrec.scala:2: error: could not optimize @tailrec annotated method loop$extension: it has a singleton result type which cannot be erased correctly
+  @annotation.tailrec final def loop(b: String): b.type = {
+                                ^
+sip23-tailrec.scala:7: error: could not optimize @tailrec annotated method loop: it has a singleton typed argument which cannot be erased correctly
+    @annotation.tailrec def loop(x: value.type): Unit = loop(x)
+                            ^
+two errors found

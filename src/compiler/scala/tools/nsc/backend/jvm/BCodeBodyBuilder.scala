@@ -444,6 +444,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           assert(const.value != null, const) // TODO this invariant isn't documented in `case class Constant`
           mnode.visitLdcInsn(const.stringValue) // `stringValue` special-cases null, but not for a const with StringTag
 
+        case SSymbolTag =>
+          mnode.visitLdcInsn(const.scalaSymbolValue.name)
+          genCallMethod(SSymbol_apply, InvokeStyle.Static, NoPosition)
+
         case NullTag    => emit(asm.Opcodes.ACONST_NULL)
 
         case ClazzTag   =>

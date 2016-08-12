@@ -51,6 +51,8 @@ trait Reify extends GenSymbols
     case mods: global.Modifiers   => reifyModifiers(mods)
     case xs: List[_]              => reifyList(xs)
     case s: String                => Literal(Constant(s))
+    case s: scala.Symbol if settings.YliteralTypes
+                                  => Literal(Constant(s))
     case v if isAnyVal(v)         => Literal(Constant(v))
     case null                     => Literal(Constant(null))
     case _                        =>

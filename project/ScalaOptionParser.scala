@@ -86,7 +86,7 @@ object ScalaOptionParser {
     "-Xno-forwarders", "-Xno-patmat-analysis", "-Xno-uescape", "-Xnojline", "-Xprint-pos", "-Xprint-types", "-Xprompt", "-Xresident", "-Xshow-phases", "-Xstrict-inference", "-Xverify", "-Y",
     "-Ybreak-cycles", "-Ydebug", "-Ycompact-trees", "-YdisableFlatCpCaching", "-Ydoc-debug",
     "-Yide-debug", "-Yinfer-argument-types",
-    "-Yissue-debug", "-Ylog-classpath", "-Ymacro-debug-lite", "-Ymacro-debug-verbose", "-Ymacro-no-expand",
+    "-Yissue-debug", "-Yliteral-types", "-Ylog-classpath", "-Ymacro-debug-lite", "-Ymacro-debug-verbose", "-Ymacro-no-expand",
     "-Yno-completion", "-Yno-generic-signatures", "-Yno-imports", "-Yno-predef",
     "-Yoverride-objects", "-Yoverride-vars", "-Ypatmat-debug", "-Yno-adapted-args", "-Ypartial-unification", "-Ypos-debug", "-Ypresentation-debug",
     "-Ypresentation-strict", "-Ypresentation-verbose", "-Yquasiquote-debug", "-Yrangepos", "-Yreify-copypaste", "-Yreify-debug", "-Yrepl-class-based",

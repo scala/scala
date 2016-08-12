@@ -702,11 +702,11 @@ self =>
 
     def isExprIntro: Boolean = isExprIntroToken(in.token)
 
-    def isTypeIntroToken(token: Token): Boolean = token match {
+    def isTypeIntroToken(token: Token): Boolean = (settings.YliteralTypes && isLiteralToken(token)) || (token match {
       case IDENTIFIER | BACKQUOTED_IDENT | THIS |
            SUPER | USCORE | LPAREN | AT => true
       case _ => false
-    }
+    })
 
     def isStatSeqEnd = in.token == RBRACE || in.token == EOF
 
@@ -1015,6 +1015,7 @@ self =>
        *                     |  SimpleType `#' Id
        *                     |  StableId
        *                     |  Path `.' type
+       *                     |  Literal
        *                     |  `(' Types `)'
        *                     |  WildcardType
        *  }}}
@@ -1024,6 +1025,7 @@ self =>
         simpleTypeRest(in.token match {
           case LPAREN   => atPos(start)(makeSafeTupleType(inParens(types()), start))
           case USCORE   => wildcardType(in.skipToken())
+          case tok if settings.YliteralTypes && isLiteralToken(tok) => atPos(start){SingletonTypeTree(literal())}
           case _        =>
             path(thisOK = false, typeOK = true) match {
               case r @ SingletonTypeTree(_) => r
@@ -1105,7 +1107,14 @@ self =>
           else
             mkOp(infixType(InfixMode.RightOp))
         }
+        def isNegatedLiteralType = settings.YliteralTypes && (
+          t match { // the token for `t` (Ident("-")) has already been read, thus `isLiteral` below is looking at next token (must be a literal)
+            case Ident(name) if isLiteral => name == nme.MINUS.toTypeName
+            case _ => false
+          }
+        )
         if (isIdent) checkRepeatedParam orElse asInfix
+        else if (isNegatedLiteralType) atPos(t.pos.start){SingletonTypeTree(literal(isNegated = true, start = t.pos.start))}
         else t
       }
 
@@ -1261,9 +1270,12 @@ self =>
      */
     def literal(isNegated: Boolean = false, inPattern: Boolean = false, start: Offset = in.offset): Tree = atPos(start) {
       def finish(value: Any): Tree = try newLiteral(value) finally in.nextToken()
-      if (in.token == SYMBOLLIT)
-        Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
-      else if (in.token == INTERPOLATIONID)
+      if (in.token == SYMBOLLIT) {
+        if(settings.YliteralTypes)
+          finish(Symbol(in.strVal.intern()))
+        else
+          Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
+      } else if (in.token == INTERPOLATIONID)
         interpolatedString(inPattern = inPattern)
       else finish(in.token match {
         case CHARLIT                => in.charVal
@@ -2607,6 +2619,11 @@ self =>
           if (!tp.isEmpty && newmods.isMutable &&
               (lhs.toList forall (_.isInstanceOf[Ident])) && in.token == USCORE) {
             in.nextToken()
+            tp match {
+              case SingletonTypeTree(Literal(Constant(_))) =>
+                syntaxError(tp.pos, "default initialization prohibited for literal-typed vars", skipIt = false)
+              case _ =>
+            }
             newmods = newmods | Flags.DEFAULTINIT
             EmptyTree
           } else {

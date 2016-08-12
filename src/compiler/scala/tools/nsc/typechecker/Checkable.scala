@@ -298,40 +298,48 @@ trait Checkable {
       if (uncheckedOk(P0)) return
       def where = if (inPattern) "pattern " else ""
 
-      // singleton types not considered here, dealias the pattern for SI-XXXX
-      val P = P0.dealiasWiden
-      val X = X0.widen
+      if(P0.typeSymbol == SingletonClass) {
+        X0 match {
+          case SingleType(_, _) | ConstantType(_) | ThisType(_) | SuperType(_, _) =>
+          case _ =>
+            reporter.warning(tree.pos, s"fruitless type test: a value of non-singleton type $X0 cannot be a Singleton")
+        }
+      } else {
+        // singleton types not considered here, dealias the pattern for SI-XXXX
+        val P = P0.dealiasWiden
+        val X = X0.widen
 
-      def PString = if (P eq P0) P.toString else s"$P (the underlying of $P0)"
+        def PString = if (P eq P0) P.toString else s"$P (the underlying of $P0)"
 
-      P match {
-        // Prohibit top-level type tests for these, but they are ok nested (e.g. case Foldable[Nothing] => ... )
-        case TypeRef(_, NothingClass | NullClass | AnyValClass, _) =>
-          InferErrorGen.TypePatternOrIsInstanceTestError(tree, P)
-        // If top-level abstract types can be checked using a classtag extractor, don't warn about them
-        case TypeRef(_, sym, _) if sym.isAbstractType && canRemedy =>
-          ;
-        // Matching on types like case _: AnyRef { def bippy: Int } => doesn't work -- yet.
-        case RefinedType(_, decls) if !decls.isEmpty =>
-          reporter.warning(tree.pos, s"a pattern match on a refinement type is unchecked")
-        case RefinedType(parents, _) =>
-          parents foreach (p => checkCheckable(tree, p, X, inPattern, canRemedy))
-        case _ =>
-          val checker = new CheckabilityChecker(X, P)
-          if (checker.result == RuntimeCheckable)
-            log(checker.summaryString)
+        P match {
+          // Prohibit top-level type tests for these, but they are ok nested (e.g. case Foldable[Nothing] => ... )
+          case TypeRef(_, NothingClass | NullClass | AnyValClass, _) =>
+            InferErrorGen.TypePatternOrIsInstanceTestError(tree, P)
+          // If top-level abstract types can be checked using a classtag extractor, don't warn about them
+          case TypeRef(_, sym, _) if sym.isAbstractType && canRemedy =>
+            ;
+          // Matching on types like case _: AnyRef { def bippy: Int } => doesn't work -- yet.
+          case RefinedType(_, decls) if !decls.isEmpty =>
+            reporter.warning(tree.pos, s"a pattern match on a refinement type is unchecked")
+          case RefinedType(parents, _) =>
+            parents foreach (p => checkCheckable(tree, p, X, inPattern, canRemedy))
+          case _ =>
+            val checker = new CheckabilityChecker(X, P)
+            if (checker.result == RuntimeCheckable)
+              log(checker.summaryString)
 
-          if (checker.neverMatches) {
-            val addendum = if (checker.neverSubClass) "" else " (but still might match its erasure)"
-            reporter.warning(tree.pos, s"fruitless type test: a value of type $X cannot also be a $PString$addendum")
-          }
-          else if (checker.isUncheckable) {
-            val msg = (
-              if (checker.uncheckableType =:= P) s"abstract type $where$PString"
-              else s"${checker.uncheckableMessage} in type $where$PString"
-            )
-            reporter.warning(tree.pos, s"$msg is unchecked since it is eliminated by erasure")
-          }
+            if (checker.neverMatches) {
+              val addendum = if (checker.neverSubClass) "" else " (but still might match its erasure)"
+              reporter.warning(tree.pos, s"fruitless type test: a value of type $X cannot also be a $PString$addendum")
+            }
+            else if (checker.isUncheckable) {
+              val msg = (
+                if (checker.uncheckableType =:= P) s"abstract type $where$PString"
+                else s"${checker.uncheckableMessage} in type $where$PString"
+              )
+              reporter.warning(tree.pos, s"$msg is unchecked since it is eliminated by erasure")
+            }
+        }
       }
     }
   }
