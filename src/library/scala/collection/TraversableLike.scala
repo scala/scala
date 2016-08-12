@@ -606,12 +606,21 @@ trait TraversableLike[+A, +Repr] extends Any
    *           simple name of the collection class $coll.
    */
   def stringPrefix : String = {
-    var string = repr.getClass.getName
-    val idx1 = string.lastIndexOf('.' : Int)
-    if (idx1 != -1) string = string.substring(idx1 + 1)
-    val idx2 = string.indexOf('$')
-    if (idx2 != -1) string = string.substring(0, idx2)
-    string
+    val fqn = repr.getClass.getName
+    val cls = {
+      val idx1 = fqn.lastIndexOf('.' : Int)
+      if (idx1 != -1) fqn.substring(idx1 + 1) else fqn
+    }
+    val parts = cls.split('$')
+    val last = parts.length - 1
+    parts.zipWithIndex.foldLeft("") { case (z, (s, i)) =>
+      if (s.isEmpty) z
+      else if (i != last && s.forall(java.lang.Character.isDigit)) "" // drop prefix in method-local classes
+      else if (i == 0 || java.lang.Character.isUpperCase(s.charAt(0))) {
+        if (z.isEmpty) s else z + '.' + s
+      }
+      else z
+    }
   }
 
   /** Creates a non-strict view of this $coll.
