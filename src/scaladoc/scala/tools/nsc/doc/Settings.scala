@@ -213,6 +213,11 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     "Group similar functions together (based on the @group annotation)"
   )
 
+  val docNoJavaComments = BooleanSetting (
+    "-no-java-comments",
+    "Prevents parsing and inclusion of comments from java sources."
+  )
+
   // For improved help output.
   def scaladocSpecific = Set[Settings#Setting](
     docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator, docRootContent, useStupidTypes,
@@ -222,7 +227,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     docImplicits, docImplicitsDebug, docImplicitsShowAll, docImplicitsHide, docImplicitsSoundShadowing,
     docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses,
     docNoPrefixes, docNoLinkWarnings, docRawOutput, docSkipPackages,
-    docExpandAllTypes, docGroups
+    docExpandAllTypes, docGroups, docNoJavaComments
   )
   val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
 
