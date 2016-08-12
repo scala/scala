@@ -59,3 +59,4 @@
 /project/project/target/
 /project/project/project/target/
 /build-sbt/
+local.sbt
