@@ -40,6 +40,8 @@ object Vector extends IndexedSeqFactory[Vector] {
  *  endian bit-mapped vector trie with a branching factor of 32.  Locality is very good, but not
  *  contiguous, which is good for very large sequences.
  *
+ *  $usesMutableState
+ *
  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#vectors "Scala's Collection Library overview"]]
  *  section on `Vectors` for more information.
  *
