@@ -641,7 +641,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
         // methods with constant result type get literals as their body
         // all methods except the primary constructor go into template
         stat.symbol.tpe match {
-          case MethodType(List(), tp @ ConstantType(c)) =>
+          case MethodType(List(), tp @ FoldableConstantType(c)) =>
             defBuf += deriveDefDef(stat)(Literal(c) setPos _.pos setType tp)
           case _ =>
             if (stat.symbol.isPrimaryConstructor) ()

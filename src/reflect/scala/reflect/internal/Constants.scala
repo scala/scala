@@ -8,6 +8,7 @@ package reflect
 package internal
 
 import java.lang.Integer.toOctalString
+import scala.{ Symbol => SSymbol }
 import scala.annotation.switch
 
 trait Constants extends api.Constants {
@@ -30,6 +31,7 @@ trait Constants extends api.Constants {
   final val ClazzTag   = 12
   // For supporting java enumerations inside java annotations (see ClassfileParser)
   final val EnumTag    = 13
+  final val SSymbolTag = 14
 
   case class Constant(value: Any) extends ConstantApi {
     import java.lang.Double.doubleToRawLongBits
@@ -49,6 +51,7 @@ trait Constants extends api.Constants {
       case x: Char      => CharTag
       case x: Type      => ClazzTag
       case x: Symbol    => EnumTag
+      case x: SSymbol   => SSymbolTag
       case _            => throw new Error("bad constant value: " + value + " of class " + value.getClass)
     }
 
@@ -60,6 +63,8 @@ trait Constants extends api.Constants {
     def isFloatRange: Boolean = ByteTag <= tag && tag <= FloatTag
     def isNumeric: Boolean    = ByteTag <= tag && tag <= DoubleTag
     def isNonUnitAnyVal       = BooleanTag <= tag && tag <= DoubleTag
+    def isSymbol: Boolean     = tag == SSymbolTag
+    def isSuitableLiteralType = (BooleanTag <= tag && tag <= NullTag) || tag == SSymbolTag
     def isAnyVal              = UnitTag <= tag && tag <= DoubleTag
 
     def tpe: Type = tag match {
@@ -76,6 +81,7 @@ trait Constants extends api.Constants {
       case NullTag    => NullTpe
       case ClazzTag   => ClassType(typeValue)
       case EnumTag    => EnumType(symbolValue)
+      case SSymbolTag => SymbolTpe
     }
 
     /** We need the equals method to take account of tags as well as values.
@@ -242,6 +248,7 @@ trait Constants extends api.Constants {
     }
     def typeValue: Type     = value.asInstanceOf[Type]
     def symbolValue: Symbol = value.asInstanceOf[Symbol]
+    def scalaSymbolValue: SSymbol = value.asInstanceOf[SSymbol]
 
     /**
      * Consider two `NaN`s to be identical, despite non-equality

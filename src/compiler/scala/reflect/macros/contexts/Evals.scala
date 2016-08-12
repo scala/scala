@@ -8,7 +8,7 @@ trait Evals {
   self: Context =>
 
   private lazy val evalMirror = ru.runtimeMirror(universe.analyzer.defaultMacroClassloader)
-  private lazy val evalToolBox = evalMirror.mkToolBox()
+  private lazy val evalToolBox = evalMirror.mkToolBox(options = if(global.settings.YliteralTypes) "-Yliteral-types" else "")
   private lazy val evalImporter = ru.internal.createImporter(universe).asInstanceOf[ru.Importer { val from: universe.type }]
 
   def eval[T](expr: Expr[T]): T = {

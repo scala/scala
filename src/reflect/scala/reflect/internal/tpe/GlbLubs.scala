@@ -257,10 +257,13 @@ private[internal] trait GlbLubs {
       lub(tps)
   )
 
+  // Need to widen result when using isNumericSubType to compare.
+  // isNumericSubType considers types after dealiasWiden, so should perform same transform on return.
+  // Example unit test: `numericLub(0, 1) == Int` (without the dealiasWiden one of the types would be returned as-is...)
   def numericLub(ts: List[Type]) =
     ts reduceLeft ((t1, t2) =>
-      if (isNumericSubType(t1, t2)) t2
-      else if (isNumericSubType(t2, t1)) t1
+      if (isNumericSubType(t1, t2)) t2.dealiasWiden
+      else if (isNumericSubType(t2, t1)) t1.dealiasWiden
       else IntTpe)
 
   private val _lubResults = new mutable.HashMap[(Depth, List[Type]), Type]

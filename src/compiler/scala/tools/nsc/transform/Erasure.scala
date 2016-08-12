@@ -385,6 +385,7 @@ abstract class Erasure extends AddInterfaces
       case PolyType(_, _)                  => mapOver(tp)
       case MethodType(_, _)                => mapOver(tp)     // nullarymethod was eliminated during uncurry
       case ConstantType(Constant(_: Type)) => ClassClass.tpe  // all classOfs erase to Class
+      case ConstantType(value)             => value.tpe.deconst
       case _                               => tp.deconst
     }
   }
@@ -563,7 +564,7 @@ abstract class Erasure extends AddInterfaces
         } else bridgingCall
       }
       val rhs = member.tpe match {
-        case MethodType(Nil, ConstantType(c)) => Literal(c)
+        case MethodType(Nil, FoldableConstantType(c)) => Literal(c)
         case _                                =>
           val sel: Tree    = Select(This(root), member)
           val bridgingCall = (sel /: bridge.paramss)((fun, vparams) => Apply(fun, vparams map Ident))
@@ -870,6 +871,20 @@ abstract class Erasure extends AddInterfaces
      *   - Reset all other type attributes to null, thus enforcing a retyping.
      */
     private val preTransformer = new TypingTransformer(unit) {
+      // TODO: since the spec defines instanceOf checks in terms of pattern matching,
+      // this extractor should share code with TypeTestTreeMaker. The corresponding
+      // code is somewhat buried in and entangled with the pattern matching mechanics
+      // which makes this fiddly to do now.
+      object SingletonInstanceCheck {
+        def unapply(pt: Type): Option[(TermSymbol, Tree)] = pt match {
+          case SingleType(_, _) | ConstantType(_) | ThisType(_) | SuperType(_, _) =>
+            val cmpOp  = if (pt <:< AnyValTpe) Any_equals else Object_eq
+            val cmpArg = gen.mkAttributedQualifier(pt)
+            Some((cmpOp, cmpArg))
+          case _ =>
+            None
+        }
+      }
 
       private def preEraseNormalApply(tree: Apply) = {
         val fn = tree.fun
@@ -879,19 +894,51 @@ abstract class Erasure extends AddInterfaces
           case Select(qual, _) => qual
           case TypeApply(Select(qual, _), _) => qual
         }
+
+        // TODO: this should share logic with TypeTestTreeMaker in the pattern matcher,
+        // since `x.isInstanceOf[T]` is specified as the pattern match. The corresponding
+        // code is somewhat buried in and entangled with the pattern matching mechanics
+        // which makes this fiddly to do now.
         def preEraseAsInstanceOf = {
           (fn: @unchecked) match {
             case TypeApply(Select(qual, _), List(targ)) =>
-              if (qual.tpe <:< targ.tpe)
-                atPos(tree.pos) { Typed(qual, TypeTree(targ.tpe)) }
-              else if (isNumericValueClass(qual.tpe.typeSymbol) && isNumericValueClass(targ.tpe.typeSymbol))
-                atPos(tree.pos)(numericConversion(qual, targ.tpe.typeSymbol))
-              else
-                tree
+              targ.tpe match {
+                case argTp@SingletonInstanceCheck(cmpOp, cmpArg) if settings.YliteralTypes =>
+                  atPos(tree.pos) {
+                      gen.evalOnce(qual, currentOwner, currentUnit) { qual =>
+                        val nonNullTest =
+                          If(Apply(Select(cmpArg, cmpOp), List(qual())),
+                             Typed(cmpArg, TypeTree(argTp)),
+                             Throw(ClassCastExceptionClass.tpe_*))
+                         // spec requires that null is an inhabitant of all subtypes of AnyRef, even non-null singleton types!
+                        if(argTp <:< AnyRefTpe)
+                          If(Apply(Select(qual(), Object_eq), List(Literal(Constant(null)))),
+                            Typed(qual(), TypeTree(argTp)),
+                            nonNullTest)
+                        else nonNullTest
+                      }
+                  }
+                case TypeRef(_, SingletonClass, _) =>
+                  qual.tpe match {
+                    case SingletonInstanceCheck(_, _) => tree
+                    case _ => Throw(ClassCastExceptionClass.tpe_*)
+                  }
+                case argTp if qual.tpe <:< argTp =>
+                  atPos(tree.pos) { Typed(qual, TypeTree(argTp)) }
+                case argTp if isNumericValueClass(qual.tpe.typeSymbol) && isNumericValueClass(argTp.typeSymbol) =>
+                  atPos(tree.pos)(numericConversion(qual, argTp.typeSymbol))
+                case _ =>
+                  tree
+              }
           }
           // todo: also handle the case where the singleton type is buried in a compound
         }
 
+        // TODO: this should share logic with TypeTestTreeMaker in the pattern matcher,
+        // since `x.isInstanceOf[T]` is specified as the pattern match. The corresponding
+        // code is somewhat buried in and entangled with the pattern matching mechanics
+        // which makes this fiddly to do now.
+        // `x match { case _: T => true case _ => false }` (modulo numeric conversion)
         def preEraseIsInstanceOf = {
           fn match {
             case TypeApply(sel @ Select(qual, name), List(targ)) =>
@@ -905,11 +952,8 @@ abstract class Erasure extends AddInterfaces
                     List(TypeTree(tp) setPos targ.pos)) setPos fn.pos,
                   List()) setPos tree.pos
               targ.tpe match {
-                case SingleType(_, _) | ThisType(_) | SuperType(_, _) =>
-                  val cmpOp = if (targ.tpe <:< AnyValTpe) Any_equals else Object_eq
-                  atPos(tree.pos) {
-                    Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))
-                  }
+                case SingletonInstanceCheck(cmpOp, cmpArg) =>
+                  atPos(tree.pos) { Apply(Select(cmpArg, cmpOp), List(qual)) }
                 case RefinedType(parents, decls) if (parents.length >= 2) =>
                   gen.evalOnce(qual, currentOwner, unit) { q =>
                     // Optimization: don't generate isInstanceOf tests if the static type
@@ -925,8 +969,12 @@ abstract class Erasure extends AddInterfaces
                       parentTests map mkIsInstanceOf(q) reduceRight gen.mkAnd
                     }
                   }
-                case _ =>
-                  tree
+                case TypeRef(_, SingletonClass, _) =>
+                  qual.tpe match {
+                    case SingletonInstanceCheck(_, _) => Literal(Constant(true))
+                    case _ => Literal(Constant(false))
+                  }
+                case _ => tree
               }
             case _ => tree
           }
@@ -1116,6 +1164,10 @@ abstract class Erasure extends AddInterfaces
           }
           treeCopy.Literal(tree, Constant(erased))
 
+        case Literal(ct) if ct.isSymbol =>
+          atPos(tree.pos) {
+            gen.mkMethodCall(definitions.Symbol_apply, List(Literal(Constant(ct.scalaSymbolValue.name))))
+          }
         case ClassDef(_,_,_,_) =>
           debuglog("defs of " + tree.symbol + " = " + tree.symbol.info.decls)
           copyClassDef(tree)(tparams = Nil)
@@ -1144,6 +1196,16 @@ abstract class Erasure extends AddInterfaces
             case ArrayValue(elemtpt, trees) =>
               treeCopy.ArrayValue(
                 tree1, elemtpt setType specialScalaErasure.applyInArray(elemtpt.tpe), trees map transform).clearType()
+            case ValDef(_, _, tpt, rhs) =>
+              val vd1 = super.transform(tree1).clearType().asInstanceOf[ValDef]
+              vd1.tpt.tpe match {
+                case FoldableConstantType(_) if !vd1.rhs.isInstanceOf[Literal] =>
+                  val deconst = vd1.tpt.tpe.deconst
+                  vd1.tpt setType deconst
+                  tree1.symbol.setInfo(deconst)
+                case _ =>
+              }
+              vd1
             case DefDef(_, _, _, _, tpt, _) =>
               try super.transform(tree1).clearType()
               finally tpt setType specialErasure(tree1.symbol)(tree1.symbol.tpe).resultType

@@ -1,0 +1,5 @@
+t8323.scala:5: error: method f is defined twice
+  conflicting symbols both originated in file 't8323.scala'
+  def f(x: b.type) = x
+      ^
+one error found

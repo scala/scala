@@ -144,6 +144,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.RefinedType
     this.ClassInfoType
     this.ConstantType
+    this.FoldableConstantType
+    this.LiteralType
     this.TypeRef
     this.MethodType
     this.NullaryMethodType
@@ -210,6 +212,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.SerializableTpe
     definitions.StringTpe
     definitions.ThrowableTpe
+    definitions.SymbolTpe
     definitions.ConstantTrue
     definitions.ConstantFalse
     definitions.ConstantNull
@@ -306,6 +309,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.WhiteboxContextClass
     definitions.MacroImplAnnotation
     definitions.StringContextClass
+    definitions.ValueOfClass
     definitions.QuasiquoteClass
     definitions.QuasiquoteClass_api
     definitions.QuasiquoteClass_api_apply

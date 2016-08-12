@@ -1130,7 +1130,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       } else tree.tpe match {
         case atp @ AnnotatedType(_, _) if canAdaptAnnotations(tree, this, mode, pt) => // (-1)
           adaptAnnotations(tree, this, mode, pt)
-        case ct @ ConstantType(value) if mode.inNone(TYPEmode | FUNmode) && (ct <:< pt) && canAdaptConstantTypeToLiteral => // (0)
+        case ct @ FoldableConstantType(value) if mode.inNone(TYPEmode | FUNmode) && (ct <:< pt) && canAdaptConstantTypeToLiteral => // (0)
           adaptConstant(value)
         case OverloadedType(pre, alts) if !mode.inFunMode => // (1)
           inferExprAlternative(tree, pt)
@@ -2981,7 +2981,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val vparams = fun.vparams mapConserve typedValDef
             val formals = vparamSyms map (_.tpe)
             val body1 = typed(fun.body, respt)
-            val restpe = packedType(body1, fun.symbol).deconst.resultType
+            val restpe = {
+              val restpe0 = packedType(body1, fun.symbol).deconst.resultType
+              restpe0 match {
+                case ct: ConstantType if (respt eq WildcardType) || (ct.widen <:< respt) => ct.widen
+                case tp => tp
+              }
+            }
             val funtpe  = appliedType(FunctionSymbol, formals :+ restpe: _*)
 
             treeCopy.Function(fun, vparams, body1) setType funtpe
@@ -5216,15 +5222,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedSingletonTypeTree(tree: SingletonTypeTree) = {
+        // If literal types are enabled we don't require AnyRef for 1.type etc
+        val pt = if (settings.YliteralTypes) WildcardType else AnyRefTpe
         val refTyped =
           context.withImplicitsDisabled {
-            typed(tree.ref, MonoQualifierModes | mode.onlyTypePat, AnyRefTpe)
+            typed(tree.ref, MonoQualifierModes | mode.onlyTypePat, pt)
           }
 
         if (refTyped.isErrorTyped) {
           setError(tree)
         } else {
-          tree setType refTyped.tpe.resultType
+          // .resultType unwraps NullaryMethodType (accessor of a path)
+          // .deconst unwraps the ConstantType to a LiteralType (for literal-based singleton types)
+          tree setType refTyped.tpe.resultType.deconst
           if (refTyped.isErrorTyped || treeInfo.admitsTypeSelection(refTyped)) tree
           else UnstableTreeError(tree)
         }

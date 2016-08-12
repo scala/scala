@@ -267,6 +267,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val SerializableTpe = SerializableClass.tpe
     lazy val StringTpe       = StringClass.tpe
     lazy val ThrowableTpe    = ThrowableClass.tpe
+    lazy val SymbolTpe       = SymbolClass.tpe
 
     lazy val ConstantTrue  = ConstantType(Constant(true))
     lazy val ConstantFalse = ConstantType(Constant(false))
@@ -505,6 +506,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val MacroImplAnnotation          = requiredClass[scala.reflect.macros.internal.macroImpl]
 
     lazy val StringContextClass           = requiredClass[scala.StringContext]
+
+    lazy val ValueOfClass                 = getClassIfDefined("scala.ValueOf")
 
     // SI-8392 a reflection universe on classpath may not have
     // quasiquotes, if e.g. crosstyping with -Xsource on
@@ -1362,7 +1365,7 @@ trait Definitions extends api.StandardDefinitions {
       else boxedClass.map(kvp => (kvp._2: Symbol, kvp._1)).getOrElse(sym, NoSymbol)
 
     /** Is type's symbol a numeric value class? */
-    def isNumericValueType(tp: Type): Boolean = tp match {
+    def isNumericValueType(tp: Type): Boolean = tp.widen match {
       case TypeRef(_, sym, _) => isNumericValueClass(sym)
       case _                  => false
     }

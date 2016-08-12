@@ -93,6 +93,7 @@ private[internal] trait TypeConstraints {
     def loBounds: List[Type] = if (numlo == NoType) lobounds else numlo :: lobounds
     def hiBounds: List[Type] = if (numhi == NoType) hibounds else numhi :: hibounds
     def avoidWiden: Boolean = avoidWidening
+    def stopWidening(): Unit = avoidWidening = true
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false) {
       // For some reason which is still a bit fuzzy, we must let Nothing through as
@@ -117,9 +118,9 @@ private[internal] trait TypeConstraints {
     }
 
     def checkWidening(tp: Type) {
-      if(tp.isStable) avoidWidening = true
+      if (TypeVar.precludesWidening(tp)) stopWidening()
       else tp match {
-        case HasTypeMember(_, _) => avoidWidening = true
+        case HasTypeMember(_, _) => stopWidening()
         case _ =>
       }
     }
