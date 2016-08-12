@@ -107,4 +107,14 @@ class StreamTest {
   def withFilter_map_properly_lazy_in_tail: Unit = {
     assertStreamOpLazyInTail(_.withFilter(_ % 2 == 0).map(identity), List(1, 2))
   }
+
+  @Test // SI-6881
+  def test_reference_equality: Unit = {
+    // Make sure we're tested with reference equality
+    val s = Stream.from(0)
+    assert(s == s, "Referentially identical streams should be equal (==)")
+    assert(s equals s, "Referentially identical streams should be equal (equals)")
+    assert((0 #:: 1 #:: s) == (0 #:: 1 #:: s), "Cons of referentially identical streams should be equal (==)")
+    assert((0 #:: 1 #:: s) equals (0 #:: 1 #:: s), "Cons of referentially identical streams should be equal (equals)")
+  }
 }
