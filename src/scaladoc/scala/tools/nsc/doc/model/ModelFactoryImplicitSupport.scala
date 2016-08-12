@@ -171,6 +171,20 @@ trait ModelFactoryImplicitSupport {
         return Nil
       }
 
+      if (!settings.docImplicitsShowAll && viewSimplifiedType.resultType.typeSymbol == sym) {
+        // If, when looking at views for a class A, we find one that returns A as well
+        // (possibly with different type parameters), we ignore it.
+        // It usually is a way to build a "whatever" into an A, but we already have an A, as in:
+        // {{{
+        //    object Box {
+        //      implicit def anyToBox[T](t: T): Box[T] = new Box(t)
+        //    }
+        //    class Box[T](val t: T)
+        // }}}
+        // We don't want the implicit conversion from Box[T] to Box[Box[T]] to appear.
+        return Nil
+      }
+
       // type the view application so we get the exact type of the result (not the formal type)
       val viewTree = result.tree.setType(viewSimplifiedType)
       val appliedTree = new ApplyImplicitView(viewTree, List(Ident("<argument>") setType viewTree.tpe.paramTypes.head))
