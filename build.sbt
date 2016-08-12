@@ -771,7 +771,8 @@ lazy val root: Project = (project in file("."))
     testAll := {
       val results = ScriptCommands.sequence[Result[Unit]](List(
         (Keys.test in Test in junit).result,
-        (testOnly in IntegrationTest in testP).toTask(" -- run pos neg jvm").result,
+        (testOnly in IntegrationTest in testP).toTask(" -- run").result,
+        (testOnly in IntegrationTest in testP).toTask(" -- pos neg jvm").result,
         (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized scalacheck").result,
         (testOnly in IntegrationTest in testP).toTask(" -- instrumented presentation").result,
         (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result,
@@ -789,7 +790,8 @@ lazy val root: Project = (project in file("."))
       // All attempts to define these together with the actual tasks due to the applicative rewriting of `.value`
       val descriptions = Vector(
         "junit/test",
-        "partest run pos neg jvm",
+        "partest run",
+        "partest pos neg jvm",
         "partest res scalap specialized scalacheck",
         "partest instrumented presentation",
         "partest --srcpath scaladoc",
