@@ -771,7 +771,8 @@ lazy val root: Project = (project in file("."))
     testAll := {
       val results = ScriptCommands.sequence[Result[Unit]](List(
         (Keys.test in Test in junit).result,
-        (testOnly in IntegrationTest in testP).toTask(" -- run pos neg jvm").result,
+        (testOnly in IntegrationTest in testP).toTask(" -- run").result,
+        (testOnly in IntegrationTest in testP).toTask(" -- pos neg jvm").result,
         (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized scalacheck").result,
         (testOnly in IntegrationTest in testP).toTask(" -- instrumented presentation").result,
         (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result,
@@ -786,11 +787,52 @@ lazy val root: Project = (project in file("."))
           doc in Compile in scalap
         ).result
       )).value
-      val failed = results.map(_.toEither).collect { case Left(i) => i }
+      // All attempts to define these together with the actual tasks due to the applicative rewriting of `.value`
+      val descriptions = Vector(
+        "junit/test",
+        "partest run",
+        "partest pos neg jvm",
+        "partest res scalap specialized scalacheck",
+        "partest instrumented presentation",
+        "partest --srcpath scaladoc",
+        "osgiTestFelix/test",
+        "osgiTestEclipse/test",
+        "library/mima",
+        "reflect/mima",
+        "doc"
+      )
+      val failed = results.map(_.toEither).zip(descriptions).collect { case (Left(i: Incomplete), d) => (i, d) }
       if(failed.nonEmpty) {
         val log = streams.value.log
+        def showScopedKey(k: Def.ScopedKey[_]): String =
+          Vector(
+            k.scope.project.toOption.map {
+              case p: ProjectRef => p.project
+              case p => p
+            }.map(_ + "/"),
+            k.scope.config.toOption.map(_.name + ":"),
+            k.scope.task.toOption.map(_.label + "::")
+          ).flatten.mkString + k.key
+        def logIncomplete(i: Incomplete, prefix: String): Unit = {
+          val sk = i.node match {
+            case Some(t: Task[_]) =>
+              t.info.attributes.entries.collect { case e if e.key == Keys.taskDefinitionKey => e.value.asInstanceOf[Def.ScopedKey[_]] }
+                .headOption.map(showScopedKey)
+            case _ => None
+          }
+          val childCount = (if(i.directCause.isDefined) 1 else 0) + i.causes.length
+          val skip = childCount <= 1 && sk.isEmpty
+          if(!skip) log.error(s"$prefix- ${sk.getOrElse("?")}")
+          i.directCause match {
+            case Some(e) => log.error(s"$prefix  - $e")
+            case None => i.causes.foreach(i => logIncomplete(i, prefix + (if(skip) "" else "  ")))
+          }
+        }
         log.error(s"${failed.size} of ${results.length} test tasks failed:")
-        failed.foreach(i => log.error(s"  - $i"))
+        failed.foreach { case (i, d) =>
+          log.error(s"- $d")
+          logIncomplete(i, "  ")
+        }
         throw new RuntimeException
       }
     },
