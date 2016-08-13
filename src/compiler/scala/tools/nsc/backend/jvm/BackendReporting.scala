@@ -96,8 +96,8 @@ object BackendReporting {
         val missingClassWarning = missingClass match {
           case None => ""
           case Some(c) =>
-            if (c.definedInJavaSource) s"\nNote that the parent class ${c.internalName} is defined in a Java source (mixed compilation), no bytecode is available."
-            else s"\nNote that the parent class ${c.internalName} could not be found on the classpath."
+            if (c.definedInJavaSource) s"\nNote that class ${c.internalName} is defined in a Java source (mixed compilation), no bytecode is available."
+            else s"\nNote that class ${c.internalName} could not be found on the classpath."
         }
         s"The method $name$descriptor could not be found in the class $ownerInternalName or any of its parents." + missingClassWarning
 

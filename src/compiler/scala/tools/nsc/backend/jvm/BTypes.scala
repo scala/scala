@@ -1155,8 +1155,7 @@ object BTypes {
   final case class InlineInfo(isEffectivelyFinal: Boolean,
                               sam: Option[String],
                               methodInfos: Map[String, MethodInlineInfo],
-                              warning: Option[ClassInlineInfoWarning]) {
-  }
+                              warning: Option[ClassInlineInfoWarning])
 
   val EmptyInlineInfo = InlineInfo(false, None, Map.empty, None)
 

@@ -562,9 +562,16 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     var warning = Option.empty[ClassSymbolInfoFailureSI9111]
 
+    def keepMember(sym: Symbol) = sym.isMethod && !scalaPrimitives.isPrimitive(sym)
+    val classMethods = classSym.info.decls.iterator.filter(keepMember)
+    val methods = if (!classSym.isJavaDefined) classMethods else {
+      val staticMethods = classSym.companionModule.info.decls.iterator.filter(m => !m.isConstructor && keepMember(m))
+      staticMethods ++ classMethods
+    }
+
     // Primitive methods cannot be inlined, so there's no point in building a MethodInlineInfo. Also, some
     // primitive methods (e.g., `isInstanceOf`) have non-erased types, which confuses [[typeToBType]].
-    val methodInlineInfos = classSym.info.decls.iterator.filter(m => m.isMethod && !scalaPrimitives.isPrimitive(m)).flatMap({
+    val methodInlineInfos = methods.flatMap({
       case methodSym =>
         if (completeSilentlyAndCheckErroneous(methodSym)) {
           // Happens due to SI-9111. Just don't provide any MethodInlineInfo for that method, we don't need fail the compiler.
