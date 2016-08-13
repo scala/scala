@@ -268,12 +268,12 @@ x = ParHashSet(1, 2, 3)
 y = ParHashSet(1, 2, 3)
 x equals y: true, y equals x: true
 
-x = ParRange(0, 1, 2, 3, 4)
-y = ParRange(0, 1, 2, 3, 4)
+x = ParRange 0 to 4
+y = ParRange 0 to 4
 x equals y: true, y equals x: true
 
-x = ParRange(0, 1, 2, 3)
-y = ParRange(0, 1, 2, 3)
+x = ParRange 0 until 4
+y = ParRange 0 until 4
 x equals y: true, y equals x: true
 
 x = ParMap(5 -> 1, 10 -> 2)
