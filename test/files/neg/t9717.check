@@ -1,0 +1,16 @@
+t9717.scala:2: error: ambiguous implicit values:
+ both value F of type Int
+ and value v of type Int
+ match expected type Int
+class B(implicit F: Int) extends A({ implicit val v: Int = 1; implicitly[Int] }) // ambiguous
+                                                                        ^
+t9717.scala:6: error: could not find implicit value for parameter e: Int
+  def this() = this(implicitly[Int]) // neg
+                              ^
+t9717.scala:7: error: not found: value f
+  def this(s: String) = this(f) // neg (`this` is not in scope!)
+                             ^
+t9717.scala:12: error: could not find implicit value for parameter e: Int
+  def this() = { this(implicitly[Int]) } // not in scope (spec 5.3.1, scope which is in effect at the point of the enclosing class definition)
+                                ^
+four errors found
