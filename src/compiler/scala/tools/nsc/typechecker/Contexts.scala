@@ -806,7 +806,7 @@ trait Contexts { self: Analyzer =>
       // -- If the first statement is in the constructor, scopingCtx == (constructor definition)
       // -- Otherwise, scopingCtx == (the class which contains the constructor)
       val scopingCtx =
-        if (owner.isConstructor) nextEnclosing(c => !c.tree.isInstanceOf[Block])
+        if (owner.isConstructor) nextEnclosing(c => true)
         else this
 
       scopingCtx.outer
