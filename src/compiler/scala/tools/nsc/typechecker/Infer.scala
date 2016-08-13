@@ -731,7 +731,7 @@ trait Infer extends Checkable {
       // If args eq the incoming arg types, fail; otherwise recurse with these args.
       def tryWithArgs(args: List[Type]) = (
            (args ne argtpes0)
-        && isApplicable(undetparams, mt, args, pt)
+        && isApplicableToMethod(undetparams, mt, args, pt) // used to be isApplicable(undetparams, mt, args, pt), knowing mt: MethodType
       )
       def tryInstantiating(args: List[Type]) = falseIfNoInstance {
         val restpe = mt resultType args

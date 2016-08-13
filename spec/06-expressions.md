@@ -1426,9 +1426,14 @@ Let $\mathscr{B}$ be the set of alternatives in $\mathscr{A}$ that are [_applica
 to expressions $(e_1 , \ldots , e_n)$ of types $(\mathit{shape}(e_1) , \ldots , \mathit{shape}(e_n))$.
 If there is precisely one alternative in $\mathscr{B}$, that alternative is chosen.
 
-Otherwise, let $S_1 , \ldots , S_m$ be the vector of types obtained by
-typing each argument with an undefined expected type.  For every
-member $m$ in $\mathscr{B}$ one determines whether it is applicable
+Otherwise, let $S_1 , \ldots , S_m$ be the list of types obtained by typing each argument as follows.
+An argument `$e_i$` of the shape `($p_1$: $T_1 , \ldots , p_n$: $T_n$) => $b$` where one of the `$T_i$` is missing,
+i.e., a function literal with a missing parameter type, is typed with an expected function type that
+propagates the least upper bound of the fully defined types of the corresponding parameters of
+the ([SAM-converted](#sam-conversion)) function types specified by the `$i$`th argument type found in each alternative.
+All other arguments are typed with an undefined expected type.
+
+For every member $m$ in $\mathscr{B}$ one determines whether it is applicable
 to expressions ($e_1 , \ldots , e_m$) of types $S_1, \ldots , S_m$.
 
 It is an error if none of the members in $\mathscr{B}$ is applicable. If there is one
