@@ -123,13 +123,20 @@ package object interpreter extends ReplConfig with ReplStrings {
           }
           p("")
       }
-      
-      if (filtered.nonEmpty) 
+
+      if (filtered.nonEmpty)
         "" // side-effects above
-      else if (global.settings.nopredef || global.settings.noimports) 
-        "No implicits have been imported."
-      else
-        "No implicits have been imported other than those in Predef." 
+      else if (global.settings.nopredef || global.settings.noimports) {
+        if (global.settings.extraPredef.isSetByUser)
+          "No implicits have been imported other than those due to flag -Yextra-predef"
+        else
+          "No implicits have been imported."
+      } else {
+        if (global.settings.extraPredef.isSetByUser)
+          "No implicits have been imported other than those in Predef and those due to flag -Yextra-predef"
+        else
+          "No implicits have been imported other than those in Predef."
+      }
 
     }
 

@@ -24,6 +24,12 @@ private[reflect] class Settings extends MutableSettings {
     override def value: Int = v
   }
 
+  class StringSetting(x: String) extends Setting {
+    type T = String
+    protected var v: String = x
+    override def value: String = v
+  }
+
   class MultiStringSetting(xs: List[String]) extends Setting {
     type T = List[String]
     protected var v: List[String] = xs
@@ -41,6 +47,7 @@ private[reflect] class Settings extends MutableSettings {
   val Yshowsymkinds     = new BooleanSetting(false)
   val breakCycles       = new BooleanSetting(false)
   val debug             = new BooleanSetting(false)
+  val extraPredef       = new StringSetting("none")
   val developer         = new BooleanSetting(false)
   val explaintypes      = new BooleanSetting(false)
   val overrideObjects   = new BooleanSetting(false)

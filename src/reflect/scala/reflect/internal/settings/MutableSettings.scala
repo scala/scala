@@ -15,6 +15,7 @@ abstract class MutableSettings extends AbsSettings {
   type Setting <: SettingValue
   type BooleanSetting <: Setting { type T = Boolean }
   type IntSetting <: Setting { type T = Int }
+  type StringSetting <: Setting { type T = String }
   type MultiStringSetting <: Setting { type T = List[String] }
 
   // basically this is a value which remembers if it's been modified
@@ -47,6 +48,7 @@ abstract class MutableSettings extends AbsSettings {
   def Yshowsymkinds: BooleanSetting
   def breakCycles: BooleanSetting
   def debug: BooleanSetting
+  def extraPredef: StringSetting
   def developer: BooleanSetting
   def explaintypes: BooleanSetting
   def overrideObjects: BooleanSetting
