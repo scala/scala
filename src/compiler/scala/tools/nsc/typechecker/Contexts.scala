@@ -1037,12 +1037,6 @@ trait Contexts { self: Analyzer =>
         else
           finish(EmptyTree, sym)
 
-      def isPackageOwnedInDifferentUnit(s: Symbol) = (
-        s.isDefinedInPackage && (
-             !currentRun.compiles(s)
-          || unit.exists && s.sourceFile != unit.source.file
-        )
-      )
       def lookupInPrefix(name: Name)    = {
         val sym = pre.member(name).filter(qualifies)
         def isNonPackageNoModuleClass(sym: Symbol) =
@@ -1112,22 +1106,30 @@ trait Contexts { self: Analyzer =>
       def lookupImport(imp: ImportInfo, requireExplicit: Boolean) =
         importedAccessibleSymbol(imp, name, requireExplicit, record = true) filter qualifies
 
-      // Java: A single-type-import declaration d in a compilation unit c of package p
-      // that imports a type named n shadows, throughout c, the declarations of:
-      //
-      //  1) any top level type named n declared in another compilation unit of p
-      //
-      // A type-import-on-demand declaration never causes any other declaration to be shadowed.
-      //
-      // Scala: Bindings of different kinds have a precedence defined on them:
-      //
-      //  1) Definitions and declarations that are local, inherited, or made available by a
-      //     package clause in the same compilation unit where the definition occurs have
-      //     highest precedence.
-      //  2) Explicit imports have next highest precedence.
-      def depthOk(imp: ImportInfo) = (
-           imp.depth > symbolDepth
-        || (unit.isJava && imp.isExplicitImport(name) && imp.depth == symbolDepth)
+      /* Java: A single-type-import declaration d in a compilation unit c of package p
+       * that imports a type named n shadows, throughout c, the declarations of:
+       *
+       *  1) any top level type named n declared in another compilation unit of p
+       *
+       * A type-import-on-demand declaration never causes any other declaration to be shadowed.
+       *
+       * Scala: Bindings of different kinds have a precedence defined on them:
+       *
+       *  1) Definitions and declarations that are local, inherited, or made available by a
+       *     package clause in the same compilation unit where the definition occurs have
+       *     highest precedence.
+       *  2) Explicit imports have next highest precedence.
+       *  3) Wildcard imports have next highest precedence.
+       *  4) Definitions made available by a package clause not in the compilation unit where
+       *     the reference occurs have lowest precedence.
+       */
+      def depthOk(imp: ImportInfo) = imp.depth > symbolDepth || (
+           imp.isExplicitImport(name)
+        && imp.depth == symbolDepth
+        && (
+              unit.isJava
+           || (defSym != NoSymbol && isPackageOwnedInDifferentUnit(defSym))  // SI-2458
+        )
       )
 
       while (!impSym.exists && imports.nonEmpty && depthOk(imports.head)) {
@@ -1137,7 +1139,7 @@ trait Contexts { self: Analyzer =>
       }
 
       if (defSym.exists && impSym.exists) {
-        // imported symbols take precedence over package-owned symbols in different compilation units.
+        // 4) imported symbols take precedence over package-owned symbols in different compilation units.
         if (isPackageOwnedInDifferentUnit(defSym))
           defSym = NoSymbol
         // Defined symbols take precedence over erroneous imports.
@@ -1247,6 +1249,12 @@ trait Contexts { self: Analyzer =>
       }
     }
 
+    def isPackageOwnedInDifferentUnit(s: Symbol) = (
+      s.isDefinedInPackage && (
+           !currentRun.compiles(s)
+        || unit.exists && s.sourceFile != unit.source.file
+      )
+    )
   } //class Context
 
   /** A `Context` focussed on an `Import` tree */
