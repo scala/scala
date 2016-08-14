@@ -133,6 +133,7 @@ trait ScalaSettings extends AbsScalaSettings
 
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
   val XfullLubs         = BooleanSetting ("-Xfull-lubs", "Retains pre 2.10 behavior of less aggressive truncation of least upper bounds.")
+  val XgenMixinForwarders = BooleanSetting("-Xgen-mixin-forwarders", "Generate forwarder methods in classes inhering concrete methods from traits.")
 
   // XML parsing options
   object XxmlSettings extends MultiChoiceEnumeration {
