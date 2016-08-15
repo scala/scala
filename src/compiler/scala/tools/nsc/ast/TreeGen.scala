@@ -234,16 +234,15 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   }
 
   /** Return the synchronized part of the double-checked locking idiom around the syncBody tree. It guards with `cond` and
-   *  synchronizes on `clazz.this`. Additional statements can be included after initialization,
-   *  (outside the synchronized block).
-   *
-   *  The idiom works only if the condition is using a volatile field.
+    * synchronizes on `attrThis`. Additional statements can be included after initialization,
+    * (outside the synchronized block).
     *
-    *  @see http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html
-   */
-  def mkSynchronizedCheck(clazz: Symbol, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree =
-    mkSynchronizedCheck(mkAttributedThis(clazz), cond, syncBody, stats)
-
+    * The idiom works only if the condition is using a volatile field.
+    *
+    * @see http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html
+    *
+    * TODO: update to state of the art on java 8 (https://shipilev.net/blog/2014/safe-public-construction/)
+    */
   def mkSynchronizedCheck(attrThis: Tree, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree = {
     def blockOrStat(stats: List[Tree]): Tree = stats match {
       case head :: Nil => head

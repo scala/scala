@@ -636,41 +636,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         }
       }
 
-      def mkSlowPathDef(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
-                        stats: List[Tree], retVal: Tree, attrThis: Tree, args: List[Tree]): Symbol = {
-        val defSym = clazz.newMethod(nme.newLazyValSlowComputeName(lzyVal.name.toTermName), lzyVal.pos, PRIVATE)
-        val params = defSym newSyntheticValueParams args.map(_.symbol.tpe)
-        defSym setInfoAndEnter MethodType(params, lzyVal.tpe.resultType)
-        val rhs: Tree = gen.mkSynchronizedCheck(attrThis, cond, syncBody, stats).changeOwner(currentOwner -> defSym)
-        val strictSubst = new TreeSymSubstituterWithCopying(args.map(_.symbol), params)
-        addDef(position(defSym), DefDef(defSym, strictSubst(BLOCK(rhs, retVal))))
-        defSym
-      }
-
-      def mkFastPathLazyBody(clazz: Symbol, lzyVal: Symbol, cond: => Tree, syncBody: List[Tree],
-                             stats: List[Tree], retVal: Tree): Tree = {
-        mkFastPathBody(clazz, lzyVal, cond, syncBody, stats, retVal, gen.mkAttributedThis(clazz), List())
-      }
-
-      def mkFastPathBody(clazz: Symbol, lzyVal: Symbol, cond: => Tree, syncBody: List[Tree],
-                        stats: List[Tree], retVal: Tree, attrThis: Tree, args: List[Tree]): Tree = {
-        val slowPathSym: Symbol = mkSlowPathDef(clazz, lzyVal, cond, syncBody, stats, retVal, attrThis, args)
-        If(cond, fn (This(clazz), slowPathSym, args.map(arg => Ident(arg.symbol)): _*), retVal)
-      }
-
-
-      /* Always copy the tree if we are going to perform sym substitution,
-       * otherwise we will side-effect on the tree that is used in the fast path
-       */
-      class TreeSymSubstituterWithCopying(from: List[Symbol], to: List[Symbol]) extends TreeSymSubstituter(from, to) {
-        override def transform(tree: Tree): Tree =
-          if (tree.hasSymbolField && from.contains(tree.symbol))
-            super.transform(tree.duplicate)
-          else super.transform(tree.duplicate)
-
-        override def apply[T <: Tree](tree: T): T = if (from.isEmpty) tree else super.apply(tree)
-      }
-
       /*  return a 'lazified' version of rhs. It uses double-checked locking to ensure
        *  initialization is performed at most once. For performance reasons the double-checked
        *  locking is split into two parts, the first (fast) path checks the bitmap without
@@ -708,20 +673,29 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        *  If the class contains only a single lazy val then the bitmap is represented
        *  as a Boolean and the condition checking is a simple bool test.
        */
-      def mkLazyDef(clazz: Symbol, lzyVal: Symbol, init: List[Tree], retVal: Tree, offset: Int): Tree = {
+      def mkLazyMemberDef(clazz: Symbol, lzyVal: Symbol, init: List[Tree], retVal: Tree, offset: Int): Tree = {
         def nullify(sym: Symbol) = Select(This(clazz), sym.accessedOrSelf) === LIT(null)
 
         val bitmapSym = bitmapFor(clazz, offset, lzyVal)
         val kind      = bitmapKind(lzyVal)
         val mask      = maskForOffset(offset, lzyVal, kind)
-        def cond      = mkTest(clazz, mask, bitmapSym, equalToZero = true, kind)
         val nulls     = lazyValNullables(lzyVal).toList sortBy (_.id) map nullify
-        def syncBody  = init ::: List(mkSetFlag(clazz, offset, lzyVal, kind), UNIT)
 
         if (nulls.nonEmpty)
           log("nulling fields inside " + lzyVal + ": " + nulls)
 
-        typedPos(init.head.pos)(mkFastPathLazyBody(clazz, lzyVal, cond, syncBody, nulls, retVal))
+        val pos = if (lzyVal.pos != NoPosition) lzyVal.pos else clazz.pos // TODO: is the else branch ever taken?
+        val slowPathSym =
+          clazz.newMethod(nme.newLazyValSlowComputeName(lzyVal.name.toTermName), pos, PRIVATE) setInfoAndEnter MethodType(Nil, lzyVal.tpe.resultType)
+
+        def thisRef = gen.mkAttributedThis(clazz)
+        def cond    = mkTest(clazz, mask, bitmapSym, equalToZero = true, kind)
+
+        val statsToSynch  = init ::: List(mkSetFlag(clazz, offset, lzyVal, kind), UNIT)
+        val synchedRhs = gen.mkSynchronizedCheck(thisRef, cond, statsToSynch, nulls)
+        addDef(pos, DefDef(slowPathSym, Block(List(synchedRhs.changeOwner(currentOwner -> slowPathSym)), retVal)))
+
+        typedPos(init.head.pos)(If(cond, Apply(Select(thisRef, slowPathSym), Nil), retVal))
       }
 
       def mkCheckedAccessor(clazz: Symbol, retVal: Tree, offset: Int, pos: Position, fieldSym: Symbol): Tree = {
@@ -752,10 +726,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           if (!clazz.isTrait && sym.isLazy && !isEmpty) {
             assert(fieldOffset contains sym, sym)
             deriveDefDef(stat) {
-              case t if isUnitGetter(sym) => mkLazyDef(clazz, sym, List(t), UNIT, fieldOffset(sym))
+              case t if isUnitGetter(sym) => mkLazyMemberDef(clazz, sym, List(t), UNIT, fieldOffset(sym))
 
               case Block(stats, res) =>
-                mkLazyDef(clazz, sym, stats, Select(This(clazz), res.symbol), fieldOffset(sym))
+                mkLazyMemberDef(clazz, sym, stats, Select(This(clazz), res.symbol), fieldOffset(sym))
 
               case t => t // pass specialized lazy vals through
             }

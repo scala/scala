@@ -111,14 +111,14 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
             debuglog(s"determined enclosing class/dummy/method for lazy val as $enclosingClassOrDummyOrMethod given symbol $sym")
             val idx = lazyVals(enclosingClassOrDummyOrMethod)
             lazyVals(enclosingClassOrDummyOrMethod) = idx + 1
-            val (rhs1, sDef) = mkLazyDef(enclosingClassOrDummyOrMethod, transform(rhs), idx, sym)
+            val (rhs1, sDef) = mkLazyLocalDef(enclosingClassOrDummyOrMethod, transform(rhs), idx, sym)
             sym.resetFlag((if (lazyUnit(sym)) 0 else LAZY) | ACCESSOR)
             (rhs1, sDef)
           } else if (sym.hasAllFlags(MODULE | METHOD) && !sym.owner.isTrait) {
             rhs match {
               case b @ Block((assign @ Assign(moduleRef, _)) :: Nil, expr) =>
                 def cond = Apply(Select(moduleRef, Object_eq), List(Literal(Constant(null))))
-                val (fastPath, slowPath) = mkFastPathBody(sym.owner.enclClass, moduleRef.symbol, cond, transform(assign) :: Nil, Nil, transform(expr))
+                val (fastPath, slowPath) = mkDoubleCheckedLocking(sym.owner.enclClass, moduleRef.symbol, cond, transform(assign) :: Nil, Nil, transform(expr))
                 (localTyper.typedPos(tree.pos)(fastPath), localTyper.typedPos(tree.pos)(slowPath))
               case rhs =>
                 global.reporter.error(tree.pos, "Unexpected tree on the RHS of a module accessor: " + rhs)
@@ -213,28 +213,27 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
       }
     }
 
-    def mkSlowPathDef(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
-                      stats: List[Tree], retVal: Tree): Tree = {
+    def mkDoubleCheckedLocking(clazz: Symbol, lzyVal: Symbol, cond: => Tree, syncBody: List[Tree], stats: List[Tree], retVal: Tree): (Tree, Tree) = {
       val owner = lzyVal.owner
       val defSym = owner.newMethod(nme.newLazyValSlowComputeName(lzyVal.name.toTermName), lzyVal.pos, STABLE | PRIVATE)
       defSym setInfo MethodType(List(), lzyVal.tpe.resultType)
       if (owner.isClass) owner.info.decls.enter(defSym)
-      debuglog(s"crete slow compute path $defSym with owner ${defSym.owner} for lazy val $lzyVal")
-      // this is a hack i don't understand for lazy vals nested in a lazy val, introduced in 3769f4d,
-      // tested in pos/t3670 (add9be64). class A { val n = { lazy val b = { lazy val dd = 3; dd }; b } }
-      // bitmaps has an entry bMethodSym -> List(bitmap$0), where bitmap$0.owner == bMethodSym.
-      // now we set bitmap$0.owner = b$lzycomputeMethodSym.
-      for (bitmap <- bitmaps(lzyVal)) bitmap.owner = defSym
-      val rhs: Tree = gen.mkSynchronizedCheck(clazz, cond, syncBody, stats).changeOwner(currentOwner -> defSym)
 
-      DefDef(defSym, addBitmapDefs(lzyVal, BLOCK(rhs, retVal)))
-    }
+      val slowPathDef: Tree = {
+        debuglog(s"crete slow compute path $defSym with owner ${defSym.owner} for lazy val $lzyVal")
+        // this is a hack i don't understand for lazy vals nested in a lazy val, introduced in 3769f4d,
+        // tested in pos/t3670 (add9be64). class A { val n = { lazy val b = { lazy val dd = 3; dd }; b } }
+        // bitmaps has an entry bMethodSym -> List(bitmap$0), where bitmap$0.owner == bMethodSym.
+        // now we set bitmap$0.owner = b$lzycomputeMethodSym.
+        for (bitmap <- bitmaps(lzyVal)) bitmap.owner = defSym
+
+        val rhs: Tree = gen.mkSynchronizedCheck(gen.mkAttributedThis(clazz), cond, syncBody, stats).changeOwner(currentOwner -> defSym)
+
+        DefDef(defSym, addBitmapDefs(lzyVal, BLOCK(rhs, retVal)))
+      }
 
 
-    def mkFastPathBody(clazz: Symbol, lzyVal: Symbol, cond: => Tree, syncBody: List[Tree],
-                       stats: List[Tree], retVal: Tree): (Tree, Tree) = {
-      val slowPathDef: Tree = mkSlowPathDef(clazz, lzyVal, cond, syncBody, stats, retVal)
-      (If(cond, Apply(Ident(slowPathDef.symbol), Nil), retVal), slowPathDef)
+      (If(cond, Apply(Ident(defSym), Nil), retVal), slowPathDef)
     }
 
     /** return a 'lazified' version of rhs. Rhs should conform to the
@@ -271,48 +270,41 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
      *    }
      *  }
      */
-    private def mkLazyDef(methOrClass: Symbol, tree: Tree, offset: Int, lazyVal: Symbol): (Tree, Tree) = {
-      val bitmapSym           = getBitmapFor(methOrClass, offset)
-      val mask                = LIT(1 << (offset % FLAGS_PER_BYTE))
+    val bitmaps = mutable.Map[Symbol, List[Symbol]]() withDefaultValue Nil
+    private def mkLazyLocalDef(methOrClass: Symbol, tree: Tree, offset: Int, lazyVal: Symbol): (Tree, Tree) = {
+      /** Return the symbol corresponding of the right bitmap int inside meth,
+       *  given offset.
+       */
+      val bitmapSym = {
+        val n = offset / FLAGS_PER_BYTE
+        val bmps = bitmaps(methOrClass)
+        if (bmps.length > n)
+          bmps(n)
+        else {
+          val sym = methOrClass.newVariable(nme.newBitmapName(nme.BITMAP_NORMAL, n), methOrClass.pos).setInfo(ByteTpe)
+          enteringTyper {
+            sym addAnnotation VolatileAttr
+          }
+
+          bitmaps(methOrClass) = (sym :: bmps).reverse
+          sym
+        }
+      }
+
+      val mask = LIT(1 << (offset % FLAGS_PER_BYTE))
       val bitmapRef = if (methOrClass.isClass) Select(This(methOrClass), bitmapSym) else Ident(bitmapSym)
 
-      def mkBlock(stmt: Tree) = BLOCK(stmt, mkSetFlag(bitmapSym, mask, bitmapRef), UNIT)
-
       debuglog(s"create complete lazy def in $methOrClass for $lazyVal")
-      val (block, res) = tree match {
-        case Block(List(assignment), res) if !lazyUnit(lazyVal) =>
-          (mkBlock(assignment),  res)
-        case rhs                          =>
-          (mkBlock(rhs),         UNIT)
+
+      val (stmt, res) = tree match {
+        case Block(List(assignment), res) if !lazyUnit(lazyVal) => (assignment,  res)
+        case rhs                          => (rhs, UNIT)
       }
+      val block = Block(List(stmt, bitmapRef === (bitmapRef GEN_| (mask, bitmapKind))), UNIT)
 
       def cond = (bitmapRef GEN_& (mask, bitmapKind)) GEN_== (ZERO, bitmapKind)
-      val lazyDefs = mkFastPathBody(methOrClass.enclClass, lazyVal, cond, List(block), Nil, res)
+      val lazyDefs = mkDoubleCheckedLocking(methOrClass.enclClass, lazyVal, cond, List(block), Nil, res)
       (atPos(tree.pos)(localTyper.typed {lazyDefs._1 }), atPos(tree.pos)(localTyper.typed {lazyDefs._2 }))
-    }
-
-    private def mkSetFlag(bmp: Symbol, mask: Tree, bmpRef: Tree): Tree =
-      bmpRef === (bmpRef GEN_| (mask, bitmapKind))
-
-    val bitmaps = mutable.Map[Symbol, List[Symbol]]() withDefaultValue Nil
-
-    /** Return the symbol corresponding of the right bitmap int inside meth,
-     *  given offset.
-     */
-    private def getBitmapFor(meth: Symbol, offset: Int): Symbol = {
-      val n = offset / FLAGS_PER_BYTE
-      val bmps = bitmaps(meth)
-      if (bmps.length > n)
-        bmps(n)
-      else {
-        val sym = meth.newVariable(nme.newBitmapName(nme.BITMAP_NORMAL, n), meth.pos).setInfo(ByteTpe)
-        enteringTyper {
-          sym addAnnotation VolatileAttr
-        }
-
-        bitmaps(meth) = (sym :: bmps).reverse
-        sym
-      }
     }
   }
 }
