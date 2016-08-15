@@ -92,6 +92,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     field.isLazy && field.isMethod && !field.isDeferred
   }
 
+  def isTransientField(field: Symbol) = field.accessedOrSelf hasAnnotation TransientAttr
+
   /** Does this field require an initialized bit?
    *  Note: fields of classes inheriting DelayedInit are not checked.
    *        This is because they are neither initialized in the constructor
@@ -101,8 +103,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *  Note: The `checkinit` option does not check if transient fields are initialized.
    */
   private def needsInitFlag(sym: Symbol) = (
-        settings.checkInit
-     && sym.isGetter
+        sym.isGetter
      && !sym.isInitializedToDefault
      && !isConstantType(sym.info.finalResultType) // SI-4742
      && !sym.hasFlag(PARAMACCESSOR | SPECIALIZED | LAZY)
@@ -467,28 +468,21 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       }
     }
 
-    def needsInitAndHasOffset(sym: Symbol) =
-      needsInitFlag(sym) && (fieldOffset contains sym)
 
     /** Examines the symbol and returns a name indicating what brand of
-     *  bitmap it requires.  The possibilities are the BITMAP_* vals
-     *  defined in StdNames.  If it needs no bitmap, nme.NO_NAME.
-     */
+      * bitmap it requires.  The possibilities are the BITMAP_* vals
+      * defined in StdNames.  If it needs no bitmap, nme.NO_NAME.
+      *
+      * bitmaps for checkinit fields are not inherited
+      */
     def bitmapCategory(field: Symbol): Name = {
       import nme._
-      val isNormal = (
-        if (isFieldWithBitmap(field)) true
-        // bitmaps for checkinit fields are not inherited
-        else if (needsInitFlag(field) && !field.isDeferred) false
-        else return NO_NAME
-      )
-      if (field.accessedOrSelf hasAnnotation TransientAttr) {
-        if (isNormal) BITMAP_TRANSIENT
-        else BITMAP_CHECKINIT_TRANSIENT
-      } else {
-        if (isNormal) BITMAP_NORMAL
-        else BITMAP_CHECKINIT
-      }
+
+      if (isFieldWithBitmap(field))
+        if (isTransientField(field)) BITMAP_TRANSIENT else BITMAP_NORMAL
+      else if (!field.isDeferred && settings.checkInit && needsInitFlag(field))
+        if (isTransientField(field)) BITMAP_CHECKINIT_TRANSIENT else BITMAP_CHECKINIT
+      else NO_NAME
     }
 
     /** Add all new definitions to a non-trait class
@@ -718,51 +712,47 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        * generated, and the class constructor is changed to set the
        * initialized bits.
        */
-      def addCheckedGetters(clazz: Symbol, stats: List[Tree]): List[Tree] = {
-        def dd(stat: DefDef) = {
-          val sym     = stat.symbol
-          def isEmpty = stat.rhs == EmptyTree
+      def addInitCheck(clazz: Symbol)(stat: DefDef): DefDef = {
+        val sym = stat.symbol
 
-          if (!clazz.isTrait && sym.isLazy && !isEmpty) {
-            assert(fieldOffset contains sym, sym)
-            deriveDefDef(stat) {
-              case t if isUnitGetter(sym) => mkLazyMemberDef(clazz, sym, List(t), UNIT, fieldOffset(sym))
+        if (!clazz.isTrait && sym.isLazy && stat.rhs != EmptyTree) {
+          assert(fieldOffset contains sym, sym)
+          deriveDefDef(stat) {
+            case t if isUnitGetter(sym) => mkLazyMemberDef(clazz, sym, List(t), UNIT, fieldOffset(sym))
 
-              case Block(stats, res) =>
-                mkLazyMemberDef(clazz, sym, stats, Select(This(clazz), res.symbol), fieldOffset(sym))
+            case Block(stats, res) =>
+              mkLazyMemberDef(clazz, sym, stats, Select(This(clazz), res.symbol), fieldOffset(sym))
 
-              case t => t // pass specialized lazy vals through
-            }
+            case t => t // pass specialized lazy vals through
           }
-          else if (needsInitFlag(sym) && !isEmpty && !clazz.hasFlag(TRAIT)) {
-            assert(fieldOffset contains sym, sym)
-            deriveDefDef(stat)(rhs =>
-              (mkCheckedAccessor(clazz, _: Tree, fieldOffset(sym), stat.pos, sym))(
-                if (isUnitGetter(sym)) UNIT else rhs
-              )
+        }
+        else if (!settings.checkInit) stat
+        else if (needsInitFlag(sym) && stat.rhs != EmptyTree && !clazz.hasFlag(TRAIT)) {
+          assert(fieldOffset contains sym, sym)
+          deriveDefDef(stat)(rhs =>
+            (mkCheckedAccessor(clazz, _: Tree, fieldOffset(sym), stat.pos, sym)) (
+              if (isUnitGetter(sym)) UNIT else rhs
             )
-          }
-          else if (sym.isConstructor) {
-            deriveDefDef(stat)(addInitBits(clazz, _))
-          }
-          else if (settings.checkInit && !clazz.isTrait && sym.isSetter) {
-            val getter = sym.getterIn(clazz)
-            if (needsInitFlag(getter) && fieldOffset.isDefinedAt(getter))
-              deriveDefDef(stat)(rhs => Block(List(rhs, localTyper.typed(mkSetFlag(clazz, fieldOffset(getter), getter, bitmapKind(getter)))), UNIT))
-            else stat
-          }
+          )
+        }
+        else if (sym.isConstructor) {
+          deriveDefDef(stat)(addInitBits(clazz, _))
+        }
+        else if (!clazz.isTrait && sym.isSetter) {
+          val getter = sym.getterIn(clazz)
+          if (needsInitFlag(getter) && fieldOffset.isDefinedAt(getter))
+            deriveDefDef(stat)(rhs => Block(List(rhs, localTyper.typed(mkSetFlag(clazz, fieldOffset(getter), getter, bitmapKind(getter)))), UNIT))
           else stat
         }
-        stats map {
-          case defn: DefDef => dd(defn)
-          case stat         => stat
-        }
+        else stat
+
       }
 
+      // @pre settings.checkInit
       class AddInitBitsTransformer(clazz: Symbol) extends Transformer {
         private def checkedGetter(lhs: Tree) = {
           val sym = clazz.info decl lhs.symbol.getterName suchThat (_.isGetter)
-          if (needsInitAndHasOffset(sym)) {
+          if (needsInitFlag(sym) && (fieldOffset contains sym)) {
             debuglog("adding checked getter for: " + sym + " " + lhs.symbol.flagString)
             List(localTyper typed mkSetFlag(clazz, fieldOffset(sym), sym, bitmapKind(sym)))
           }
@@ -774,7 +764,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           super.transformStats(
             stats flatMap {
               case stat @ Assign(lhs @ Select(This(_), _), rhs) => stat :: checkedGetter(lhs)
-              // remove initialization for default values
+              // remove initialization for default values -- TODO is this case ever hit? constructors does not generate Assigns with EmptyTree for the rhs AFAICT
               case Apply(lhs @ Select(Ident(self), _), EmptyTree.asList) if lhs.symbol.isSetter => Nil
               case stat => List(stat)
             },
@@ -785,6 +775,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
       /* Adds statements to set the 'init' bit for each field initialized
        * in the body of a constructor.
+       * @pre settings.checkInit
        */
       def addInitBits(clazz: Symbol, rhs: Tree): Tree =
         new AddInitBitsTransformer(clazz) transform rhs
@@ -815,7 +806,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         }
       }
       buildBitmapOffsets()
-      var stats1 = addCheckedGetters(clazz, stats)
+      var stats1 = stats mapConserve {
+        case dd: DefDef => addInitCheck(clazz)(dd)
+        case stat => stat
+      }
 
       def getterBody(getter: Symbol) = {
         assert(getter.isGetter)
@@ -824,7 +818,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             fieldAccess(getter)
           }
 
-        if (!needsInitFlag(getter)) readValue
+        if (!(settings.checkInit && needsInitFlag(getter))) readValue
         else mkCheckedAccessor(clazz, readValue, fieldOffset(getter), getter.pos, getter)
       }
 
@@ -833,7 +827,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         assert(getter.hasFlag(PARAMACCESSOR), s"missing implementation for non-paramaccessor $setter in $clazz")
 
         val setInitFlag =
-          if (!needsInitFlag(getter)) Nil
+          if (!(settings.checkInit && needsInitFlag(getter))) Nil
           else List(mkSetFlag(clazz, fieldOffset(getter), getter, bitmapKind(getter)))
 
         Block(Assign(fieldAccess(setter), Ident(setter.firstParam)) :: setInitFlag : _*)
