@@ -1,13 +1,13 @@
-t4047.scala:23: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+t4047.scala:23: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   a.foo
     ^
-t4047.scala:24: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+t4047.scala:24: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   a.foo
     ^
-t4047.scala:26: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+t4047.scala:26: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   b.foo
     ^
-t4047.scala:27: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+t4047.scala:27: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   b.foo
     ^
 Unit: called A.foo

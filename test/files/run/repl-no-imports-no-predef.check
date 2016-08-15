@@ -76,13 +76,13 @@ y: Int = 13
 scala> 
 
 scala> 2 ; 3
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
        2 ;;
        ^
 res14: Int = 3
 
 scala> { 2 ; 3 }
-<console>:12: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:12: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
        { 2 ; 3 }
          ^
 res15: Int = 3
@@ -92,16 +92,16 @@ bippy = {
   1 +
   2 +
   3 } ; bippy+88+11
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
        5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def
        ^
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
        5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def
            ^
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
        5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def
                                   ^
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
        5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def
                                                                                          ^
 defined object Cow
@@ -143,10 +143,10 @@ scala>   (  (2 + 2 )  )
 res24: Int = 4
 
 scala> 5 ;   (  (2 + 2 )  ) ; ((5))
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
        5 ;   (  (2 + 2 )  ) ;;
        ^
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
        5 ;   (  (2 + 2 )  ) ;;
                    ^
 res25: Int = 5
@@ -163,16 +163,16 @@ res28: String = 4423
 scala> 
 
 scala> 55 ; ((2 + 2)) ; (1, 2, 3)
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
        55 ; ((2 + 2)) ;;
        ^
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
        55 ; ((2 + 2)) ;;
                 ^
 res29: (Int, Int, Int) = (1,2,3)
 
 scala> 55 ; (x: scala.Int) => x + 1 ; () => ((5))
-<console>:12: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:12: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
        55 ; (x: scala.Int) => x + 1 ;;
        ^
 res30: () => Int = <function0>
@@ -183,7 +183,7 @@ scala> () => 5
 res31: () => Int = <function0>
 
 scala> 55 ; () => 5
-<console>:11: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
        55 ;;
        ^
 res32: () => Int = <function0>

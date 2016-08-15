@@ -1,25 +1,25 @@
-misc.scala:46: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+misc.scala:46: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     42;
     ^
-misc.scala:47: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+misc.scala:47: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     42l;
     ^
-misc.scala:48: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+misc.scala:48: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     23.5f;
     ^
-misc.scala:49: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+misc.scala:49: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     23.5;
     ^
-misc.scala:50: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+misc.scala:50: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     "Hello";
     ^
-misc.scala:51: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+misc.scala:51: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     32 + 45;
        ^
-misc.scala:62: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+misc.scala:62: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     x;
     ^
-misc.scala:74: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+misc.scala:74: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     1 < 2;
       ^
 ### Hello

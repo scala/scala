@@ -1,7 +1,7 @@
-stmt-expr-discard.scala:3: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+stmt-expr-discard.scala:3: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
     + 2
     ^
-stmt-expr-discard.scala:4: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+stmt-expr-discard.scala:4: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
     - 4
       ^
 error: No warnings can be incurred under -Xfatal-warnings.

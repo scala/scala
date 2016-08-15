@@ -1,4 +1,7 @@
-names-defaults.scala:269: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+names-defaults.scala:269: warning: a pure expression does nothing in statement position
+    spawn(b = { val ttt = 1; ttt }, a = 0)
+                             ^
+names-defaults.scala:269: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
     spawn(b = { val ttt = 1; ttt }, a = 0)
                              ^
 warning: there were four deprecation warnings; re-run with -deprecation for details
