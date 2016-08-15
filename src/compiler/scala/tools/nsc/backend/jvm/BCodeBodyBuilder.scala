@@ -657,9 +657,13 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           } else if (isPrimitive(sym)) { // primitive method call
             generatedType = genPrimitiveOp(app, expectedType)
           } else { // normal method call
+            def isTraitSuperAccessorBodyCall = app.hasAttachment[UseInvokeSpecial.type]
             val invokeStyle =
-              if (sym.isStaticMember) InvokeStyle.Static
+              if (sym.isStaticMember)
+                InvokeStyle.Static
               else if (sym.isPrivate || sym.isClassConstructor) InvokeStyle.Special
+              else if (isTraitSuperAccessorBodyCall)
+                InvokeStyle.Special
               else InvokeStyle.Virtual
 
             if (invokeStyle.hasInstance) genLoadQualifier(fun)
@@ -1077,7 +1081,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         assert(receiverClass == methodOwner, s"for super call, expecting $receiverClass == $methodOwner")
         if (receiverClass.isTrait && !receiverClass.isJavaDefined) {
           val staticDesc = MethodBType(typeToBType(method.owner.info) :: bmType.argumentTypes, bmType.returnType).descriptor
-          val staticName = traitImplMethodName(method).toString
+          val staticName = traitSuperAccessorName(method).toString
           bc.invokestatic(receiverName, staticName, staticDesc, isInterface, pos)
         } else {
           if (receiverClass.isTraitOrInterface) {

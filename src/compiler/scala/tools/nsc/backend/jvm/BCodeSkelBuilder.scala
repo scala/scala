@@ -8,12 +8,12 @@ package scala.tools.nsc
 package backend
 package jvm
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.{immutable, mutable}
 import scala.tools.nsc.symtab._
-
 import scala.tools.asm
 import GenBCode._
 import BackendReporting._
+import scala.tools.nsc.backend.jvm.BCodeHelpers.InvokeStyle
 
 /*
  *
@@ -483,18 +483,23 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         case dd : DefDef =>
           val sym = dd.symbol
           if (needsStaticImplMethod(sym)) {
-            val staticDefDef = global.gen.mkStatic(dd, traitImplMethodName(sym), _.cloneSymbol)
-            val forwarderDefDef = {
-              val forwarderBody = Apply(global.gen.mkAttributedRef(staticDefDef.symbol), This(sym.owner).setType(sym.owner.typeConstructor) :: dd.vparamss.head.map(p => global.gen.mkAttributedIdent(p.symbol))).setType(sym.info.resultType)
-              // we don't want to the optimizer to inline the static method into the forwarder. Instead,
-              // the backend has a special case to transitively inline into a callsite of the forwarder
-              // when the forwarder itself is inlined.
-              forwarderBody.updateAttachment(NoInlineCallsiteAttachment)
-              deriveDefDef(dd)(_ => global.atPos(dd.pos)(forwarderBody))
-            }
-            genDefDef(staticDefDef)
-            if (!sym.isMixinConstructor)
+            if (sym.isMixinConstructor) {
+              val statified = global.gen.mkStatic(dd, sym.name, _.cloneSymbol)
+              genDefDef(statified)
+            } else {
+              val forwarderDefDef = {
+                val dd1 = global.gen.mkStatic(deriveDefDef(dd)(_ => EmptyTree), traitSuperAccessorName(sym), _.cloneSymbol)
+                dd1.symbol.setFlag(Flags.ARTIFACT).resetFlag(Flags.OVERRIDE)
+                val selfParam :: realParams = dd1.vparamss.head.map(_.symbol)
+                deriveDefDef(dd1)(_ =>
+                  atPos(dd1.pos)(
+                    Apply(Select(global.gen.mkAttributedIdent(selfParam).setType(sym.owner.typeConstructor), dd.symbol),
+                    realParams.map(global.gen.mkAttributedIdent)).updateAttachment(UseInvokeSpecial))
+                )
+              }
               genDefDef(forwarderDefDef)
+              genDefDef(dd)
+            }
           } else genDefDef(dd)
 
         case Template(_, _, body) => body foreach gen

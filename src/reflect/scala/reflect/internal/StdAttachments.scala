@@ -76,4 +76,6 @@ trait StdAttachments {
     * in place of the outer parameter, can help callers to avoid capturing the outer instance.
     */
   case object OuterArgCanBeElided extends PlainAttachment
+
+  case object UseInvokeSpecial extends PlainAttachment
 }

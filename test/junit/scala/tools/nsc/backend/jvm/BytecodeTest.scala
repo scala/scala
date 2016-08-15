@@ -169,7 +169,7 @@ class BytecodeTest extends BytecodeTesting {
     assertEquals(x.end, labels(7))
   }
 
-  @Test // wrong line numbers for rewritten `this` references in trait static methods
+  @Test
   def sd186_traitLineNumber(): Unit = {
     val code =
       """trait T {
@@ -182,9 +182,9 @@ class BytecodeTest extends BytecodeTesting {
     val t = compileClass(code)
     val tMethod = getMethod(t, "t$")
     val invoke = Invoke(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false)
+    // ths static accessor is positioned at the line number of the accessed method.
     assertSameCode(tMethod.instructions,
-      List(Label(0), LineNumber(3, Label(0)), VarOp(ALOAD, 0), invoke, Op(POP),
-        Label(5), LineNumber(4, Label(5)), VarOp(ALOAD, 0), invoke, Op(POP), Op(RETURN), Label(11))
+      List(Label(0), LineNumber(2, Label(0)), VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "T", "t", "()V", true), Op(RETURN), Label(4))
     )
   }
 }
