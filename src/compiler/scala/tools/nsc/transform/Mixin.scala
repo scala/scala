@@ -20,30 +20,58 @@ trait InitBitmaps extends Transform with ast.TreeDSL {
   /** Map a field symbol to a unique integer denoting its position in the class layout.
     * For each class, fields defined by the class come after inherited fields.
     * Mixed-in fields count as fields defined by the class itself.
+    *
+    * DO NOT USE THIS MAP DIRECTLY, go through convenience methods
     */
-  private val fieldOffset = perRunCaches.newMap[Symbol, Int]()
+  private val _fieldOffset = perRunCaches.newMap[Symbol, Int]()
 
   private val bitmapKindForCategory = perRunCaches.newMap[Name, ClassSymbol]()
 
-  class InitializationTransformer extends Transformer {
-    /** The typer */
-    protected var localTyper: erasure.Typer = _
-    protected def typedPos(pos: Position)(tree: Tree): Tree = localTyper.typedPos(pos)(tree)
+  trait InitializationTransformation {
+    protected def typedPos(pos: Position)(tree: Tree): Tree
 
-    def accessorInitialization(clazz: Symbol, templ: Template): AccessorInitialization =
-      if (settings.checkInit) new AddsCheckInitDefs(clazz, templ)
-      else new StandardAccessorInitialization(clazz, templ)
+    def accessorInitialization(clazz: Symbol, templStats: List[Tree]): AccessorInitialization =
+      if (settings.checkInit) new CheckInitAccessorInitialization(clazz, templStats)
+      else new LazyAccessorInitialization(clazz, templStats)
 
-    trait AccessorInitialization {
-      protected val clazz: Symbol
-      protected val templ: Template
+    class AccessorInitialization(protected val clazz: Symbol){
+      private val _newDefs = mutable.ListBuffer[Tree]()
 
-      def addDefDef(sym: Symbol, rhs: Tree = EmptyTree): Unit
-      def addValDef(sym: Symbol, rhs: Tree = EmptyTree): Unit
+      def deriveStatsWithInitChecks(stats: List[Tree]): List[Tree] = stats
 
-      type WithInitChecks
-      def addInitChecks(stats: List[Tree]): WithInitChecks
-      def implementWithNewDefs(stats: WithInitChecks): List[Tree]
+      /** Add tree at given position as new definition */
+      protected def addDef(tree: ValOrDefDef): Unit = _newDefs += typedPos(position(tree.symbol))(tree)
+
+      /** The position of given symbol, or, if this is undefined,
+        * the position of the current class.
+        */
+      private def position(sym: Symbol) = if (sym.pos == NoPosition) clazz.pos else sym.pos
+
+      /** Add new method definition.
+        *
+        * @param sym The method symbol.
+        * @param rhs The method body.
+        */
+      def addDefDef(sym: Symbol, rhs: Tree = EmptyTree) = addDef(DefDef(sym, rhs))
+      def addValDef(sym: Symbol, rhs: Tree = EmptyTree) = addDef(ValDef(sym, rhs))
+
+      /** Complete `stats` with init checks and bitmaps,
+        * removing any abstract method definitions in `stats` that are
+        * matched by some symbol defined by a tree previously passed to `addDef`.
+        */
+      def implementWithNewDefs(stats: List[Tree]): List[Tree] = {
+        val newDefs = _newDefs.toList
+        val newSyms = newDefs map (_.symbol)
+        def isNotDuplicate(tree: Tree) = tree match {
+          case DefDef(_, _, _, _, _, _) =>
+            val sym = tree.symbol
+            !(sym.isDeferred &&
+              (newSyms exists (nsym => nsym.name == sym.name && (nsym.tpe matches sym.tpe))))
+          case _ => true
+        }
+        if (newDefs.isEmpty) stats
+        else newDefs ::: (stats filter isNotDuplicate)
+      }
 
       def accessorBody(sym: Symbol) =
         if (sym.isSetter) setterBody(sym, sym.getterIn(clazz)) else getterBody(sym)
@@ -66,42 +94,27 @@ trait InitBitmaps extends Transform with ast.TreeDSL {
 
     }
 
-    protected class StandardAccessorInitialization(val clazz: Symbol, val templ: Template) extends AccessorInitialization {
-      private val _newDefs = mutable.ListBuffer[Tree]()
 
-      /** Attribute given tree and anchor at given position */
-      private def attributedDef(pos: Position, tree: Tree): Tree = {
-        debuglog("add new def to " + clazz + ": " + tree)
-        typedPos(pos)(tree)
-      }
+    protected class LazyAccessorInitialization(clazz: Symbol, templStats: List[Tree]) extends AccessorInitialization(clazz) {
+      private def bitmapNumber(sym: Symbol): Int = _fieldOffset(sym) / flagsPerBitmap(sym)
+      private def offsetInBitmap(sym: Symbol)    = _fieldOffset(sym) % flagsPerBitmap(sym)
+      protected def hasBitmap(sym: Symbol)       = _fieldOffset isDefinedAt sym
 
-      /** Add tree at given position as new definition */
-      private def addDef(pos: Position, tree: ValOrDefDef): Unit = _newDefs += attributedDef(pos, tree)
+      private def flagsPerBitmap(field: Symbol): Int =
+        bitmapKind(field) match {
+          case BooleanClass => 1
+          case ByteClass    => 8
+          case IntClass     => 32
+          case LongClass    => 64
+        }
 
-      /** The position of given symbol, or, if this is undefined,
-       * the position of the current class.
-       */
-      private def position(sym: Symbol) = if (sym.pos == NoPosition) clazz.pos else sym.pos
-
-      /** Add new method definition.
-        *
-        * @param sym The method symbol.
-        * @param rhs The method body.
-        */
-      def addDefDef(sym: Symbol, rhs: Tree = EmptyTree) = addDef(position(sym), DefDef(sym, rhs))
-      def addValDef(sym: Symbol, rhs: Tree = EmptyTree) = addDef(position(sym), ValDef(sym, rhs))
-
-
-      // overridden in AddsCheckInitDefs
-      protected def addCheckedInitCheck(stat: DefDef): DefDef = stat
-
-      // overridden in AddsCheckInitDefs
-      protected def needsInitFlag(sym: Symbol): Boolean = false
-
-      // ByteClass, IntClass, LongClass
       protected def bitmapKind(field: Symbol): ClassSymbol = bitmapKindForCategory(bitmapCategory(field))
+      protected def bitmapType(field: Symbol): Type = bitmapKind(field).tpe
+      protected def bitmapName(field: Symbol): TermName = nme.newBitmapName(bitmapCategory(field), bitmapNumber(field)).toTermName
 
       protected def isTransientField(field: Symbol) = field.accessedOrSelf hasAnnotation TransientAttr
+//      protected def isFieldWithTransientBitmap(field: Symbol) = isTransientField(field) && isFieldWithBitmap(field)
+
 
       /** Examines the symbol and returns a name indicating what brand of
         * bitmap it requires.  The possibilities are the BITMAP_* vals
@@ -110,8 +123,6 @@ trait InitBitmaps extends Transform with ast.TreeDSL {
         * bitmaps for checkinit fields are not inherited
         */
       protected def bitmapCategory(field: Symbol): Name = {
-        import nme._
-
         def isFieldWithBitmap(field: Symbol) = {
           field.info // ensure that nested objects are transformed
           // For checkinit consider normal value getters
@@ -119,163 +130,142 @@ trait InitBitmaps extends Transform with ast.TreeDSL {
           field.isLazy && field.isMethod && !field.isDeferred
         }
 
+        import nme._
+
         if (isFieldWithBitmap(field))
           if (isTransientField(field)) BITMAP_TRANSIENT else BITMAP_NORMAL
-        else if (needsInitFlag(field) && !field.isDeferred)
-          if (isTransientField(field)) BITMAP_CHECKINIT_TRANSIENT else BITMAP_CHECKINIT
         else NO_NAME
       }
 
-      private def flagsPerBitmap(field: Symbol): Int = bitmapKind(field) match {
-        case BooleanClass => 1
-        case ByteClass    => 8
-        case IntClass     => 32
-        case LongClass    => 64
-      }
-
-      protected def maskForOffset(offset: Int, sym: Symbol, kind: ClassSymbol): Tree = {
-        def realOffset = offset % flagsPerBitmap(sym)
-        if (kind == LongClass) LIT(1L << realOffset) else LIT(1 << realOffset)
-      }
-
-
-      type WithInitChecks = List[Tree]
-
-      /** Complete `stats` with init checks and bitmaps,
-        * removing any abstract method definitions in `stats` that are
-        * matched by some symbol defined by a tree previously passed to `addDef`.
+      /** Fill the map from fields to offset numbers. And from bitmap category to the type used for the bitmap field (its "kind").
+        *
+        * Instead of field symbols, the map keeps their getter symbols. This makes code generation easier later.
         */
-      def implementWithNewDefs(stats: WithInitChecks): List[Tree] = {
-        val newDefs = _newDefs.toList
-        val newSyms = newDefs map (_.symbol)
-        def isNotDuplicate(tree: Tree) = tree match {
-          case DefDef(_, _, _, _, _, _) =>
-            val sym = tree.symbol
-            !(sym.isDeferred &&
-              (newSyms exists (nsym => nsym.name == sym.name && (nsym.tpe matches sym.tpe))))
-          case _ => true
+      def bitmapsFor(decls: List[Symbol]): List[Symbol] = {
+//        val bitmaps = mutable.ListBuffer.empty[Symbol]
+        def fold(fields: List[Symbol], category: Name) = {
+          var idx = 0
+          fields foreach { f =>
+            _fieldOffset(f) = idx
+//            bitmaps += newBitmapFor(idx, f)
+
+            idx += 1
+          }
+
+          if (idx == 0) ()
+          else if (idx == 1) bitmapKindForCategory(category) = BooleanClass
+          else if (idx < 9) bitmapKindForCategory(category) = ByteClass
+          else if (idx < 33) bitmapKindForCategory(category) = IntClass
+          else bitmapKindForCategory(category) = LongClass
         }
-        if (newDefs.isEmpty) stats
-        else newDefs ::: (stats filter isNotDuplicate)
+        decls groupBy bitmapCategory foreach {
+          case (nme.NO_NAME, _)   => ()
+          case (category, fields) => fold(fields, category)
+        }
+//        bitmaps.toList
+        Nil
       }
 
-      protected def isUnitGetter(sym: Symbol) = sym.tpe.resultType.typeSymbol == UnitClass
-
-      def addInitChecks(stats: List[Tree]): WithInitChecks = {
-        /* Fill the map from fields to offset numbers.
-         * Instead of field symbols, the map keeps their getter symbols. This makes
-         * code generation easier later.
-         */
-        def buildBitmapOffsets: Unit = {
-          def fold(fields: List[Symbol], category: Name) = {
-            var idx = 0
-            fields foreach { f =>
-              fieldOffset(f) = idx
-              idx += 1
-            }
-
-            if (idx == 0) ()
-            else if (idx == 1) bitmapKindForCategory(category) = BooleanClass
-            else if (idx < 9) bitmapKindForCategory(category) = ByteClass
-            else if (idx < 33) bitmapKindForCategory(category) = IntClass
-            else bitmapKindForCategory(category) = LongClass
-          }
-          clazz.info.decls.toList groupBy bitmapCategory foreach {
-            case (nme.NO_NAME, _)   => ()
-            case (category, fields) => fold(fields, category)
-          }
-        }
-
-        /** Complete lazy field accessors. Applies only to classes,
-          * for its own (non inherited) lazy fields. If 'checkinit'
-          * is enabled, getters that check for the initialized bit are
-          * generated, and the class constructor is changed to set the
-          * initialized bits.
-          */
-        def addInitCheck(stat: DefDef): DefDef = {
-          val sym = stat.symbol
-
-          if (!clazz.isTrait && sym.isLazy && stat.rhs != EmptyTree) {
-            assert(fieldOffset contains sym, sym)
-            deriveDefDef(stat) {
-              case t if isUnitGetter(sym) =>
-                mkLazyMemberDef(sym, List(t), UNIT, fieldOffset(sym))
-
-              case Block(stats, res) =>
-                mkLazyMemberDef(sym, stats, Select(This(clazz), res.symbol), fieldOffset(sym))
-
-              case t => t // pass specialized lazy vals through
-            }
-          }
-          else addCheckedInitCheck(stat)
-        }
-
-        buildBitmapOffsets
-
-        stats mapConserve {
-          case dd: DefDef => addInitCheck(dd)
-          case stat       => stat
-        }
-      }
-
-      /** Return an (untyped) tree of the form 'clazz.this.bitmapSym & mask (==|!=) 0', the
-        * precise comparison operator depending on the value of 'equalToZero'.
-        */
-      protected def mkTest(mask: Tree, bitmapSym: Symbol, equalToZero: Boolean, kind: ClassSymbol): Tree = {
-        val bitmapTree = (This(clazz) DOT bitmapSym)
-        def lhs = bitmapTree GEN_&(mask, kind)
-        kind match {
-          case BooleanClass =>
-            if (equalToZero) NOT(bitmapTree)
-            else bitmapTree
-          case _            =>
-            if (equalToZero) lhs GEN_==(ZERO, kind)
-            else lhs GEN_!=(ZERO, kind)
-        }
-      }
 
       /*
        *  Return the bitmap field for 'offset'. Depending on the hierarchy it is possible to reuse
        *  the bitmap of its parents. If that does not exist yet we create one.
        */
-      def bitmapFor(offset: RunId, field: global.Symbol): Symbol = {
-        val category = bitmapCategory(field)
-        val bitmapName = nme.newBitmapName(category, offset / flagsPerBitmap(field)).toTermName
-        val sym = clazz.info.decl(bitmapName)
+      def bitmapFor(field: Symbol): Symbol = {
+        val sym = clazz.info.decl(bitmapName(field))
 
         assert(!sym.isOverloaded, sym)
 
-        def createBitmap: Symbol = {
-          val bitmapKind = bitmapKindForCategory(category)
-          val sym = clazz.newVariable(bitmapName, clazz.pos) setInfo bitmapKind.tpe
-          enteringTyper(sym addAnnotation VolatileAttr)
-
-          category match {
-            case nme.BITMAP_TRANSIENT | nme.BITMAP_CHECKINIT_TRANSIENT => sym addAnnotation TransientAttr
-            case _                                                     =>
-          }
-          val init = bitmapKind match {
-            case BooleanClass => ValDef(sym, FALSE)
-            case _            => ValDef(sym, ZERO)
-          }
-
-          sym setFlag PrivateLocal
-          clazz.info.decls.enter(sym)
-          addDef(clazz.pos, init)
-          sym
-        }
-
-        sym orElse createBitmap
+        sym orElse newBitmapFor(field)
       }
 
-      /* Return an (untyped) tree of the form 'Clazz.this.bmp = Clazz.this.bmp | mask'. */
-      def mkSetFlag(offset: Int, valSym: Symbol, kind: ClassSymbol): Tree = {
-        val bmp = bitmapFor(offset, valSym)
-        def mask = maskForOffset(offset, valSym, kind)
-        def x = This(clazz) DOT bmp
-        def newValue = if (kind == BooleanClass) TRUE else (x GEN_|(mask, kind))
+      private def newBitmapFor(field: Symbol): Symbol = {
+        val bitmapSym =
+          clazz.newVariable(bitmapName(field), clazz.pos) setInfo bitmapType(field) setFlag PrivateLocal setPos clazz.pos
 
-        x === newValue
+        bitmapSym addAnnotation VolatileAttr
+        if (isTransientField(field)) bitmapSym addAnnotation TransientAttr
+
+        clazz.info.decls.enter(bitmapSym)
+        addDef(ValDef(bitmapSym, if (bitmapSym.info == BooleanClass) FALSE else ZERO))
+
+        bitmapSym
+      }
+
+      protected def isUnitGetter(sym: Symbol) = sym.tpe.resultType.typeSymbol == UnitClass
+
+      // overridden in CheckInitAccessorInitialization
+      def rhsWithOtherInitCheck(sym: Symbol)(rhs: Tree): Tree = rhs
+
+      /** Complete lazy field accessors. Applies only to classes,
+        * for its own (non inherited) lazy fields.
+        */
+      def rhsWithInitCheck(sym: Symbol)(rhs: Tree): Tree = {
+        if (!clazz.isTrait && sym.isLazy && rhs != EmptyTree) {
+          rhs match {
+            case rhs if isUnitGetter(sym) =>
+              mkLazyMemberDef(sym, List(rhs), UNIT)
+
+            case Block(stats, res) =>
+              mkLazyMemberDef(sym, stats, Select(This(clazz), res.symbol))
+
+            case rhs => rhs
+          }
+        }
+        else rhsWithOtherInitCheck(sym)(rhs)
+      }
+
+      override def deriveStatsWithInitChecks(stats: List[Tree]): List[Tree] = {
+        bitmapsFor(clazz.info.decls.toList)
+
+//        foreach { bitmapSym =>
+//          clazz.info.decls.enter(bitmapSym)
+//          addDef(ValDef(bitmapSym, if (bitmapSym.info == BooleanClass) FALSE else ZERO))
+//        }
+
+        stats mapConserve {
+          case dd: DefDef => deriveDefDef(dd)(rhsWithInitCheck(dd.symbol))
+          case stat       => stat
+        }
+      }
+
+
+      private def maskForOffset(sym: Symbol, kind: ClassSymbol): Constant =
+        if (kind == LongClass) Constant(1L << offsetInBitmap(sym))
+        else Constant(1 << offsetInBitmap(sym))
+
+
+      /** Return an (untyped) tree of the form 'clazz.this.bitmapSym & mask (==|!=) 0', the
+        * precise comparison operator depending on the value of 'equalToZero'.
+        */
+      protected def mkTest(field: Symbol, equalToZero: Boolean): Tree = {
+        val bitmapSym = bitmapFor(field)
+        val bitmapTree = This(clazz) DOT bitmapSym
+        val bitmapClass = bitmapSym.info.typeSymbol.asClass
+
+        if (bitmapClass == BooleanClass) {
+          if (equalToZero) NOT(bitmapTree) else bitmapTree
+        } else {
+          val mask = Literal(maskForOffset(field, bitmapClass))
+          val lhs = bitmapTree GEN_&(mask, bitmapClass)
+          if (equalToZero) lhs GEN_==(ZERO, bitmapClass)
+          else lhs GEN_!=(ZERO, bitmapClass)
+        }
+      }
+
+
+      /* Return an (untyped) tree of the form 'Clazz.this.bmp = Clazz.this.bmp | mask'. */
+      def mkSetFlag(valSym: Symbol): Tree = {
+        val bitmapSym = bitmapFor(valSym)
+        val bitmapClass = bitmapSym.info.typeSymbol.asClass
+        def x = This(clazz) DOT bitmapSym
+
+        // NOTE: bitwise or (`|`) on two bytes yields and Int (TODO: why was this not a problem when this ran during mixins?)
+        Assign(x,
+          if (bitmapClass == BooleanClass) TRUE
+          else Apply(Select(x, getMember(bitmapClass, nme.OR)), List(Literal(maskForOffset(valSym, bitmapClass))))
+        )
+
       }
 
 
@@ -291,53 +281,57 @@ trait InitBitmaps extends Transform with ast.TreeDSL {
         * @param init   The tree which initializes the field ( f = <rhs> )
         * @param offset The offset of this field in the flags bitmap
         *
-        *               The result will be a tree of the form
-        *               { if ((bitmap&n & MASK) == 0) this.l$compute()
-        *               else l$
+        * The result will be a tree of the form `if ((bitmap&n & MASK) == 0) this.l$compute() else l$`
+        * A synthetic compute method will also be added to the current class, of the following shape:
+        * ```
+        * def l$compute() = {
+        *   synchronized(this) {
+        *     if ((bitmap$n & MASK) == 0) {
+        *      init // l$ = <rhs>
+        *      bitmap$n = bimap$n | MASK
+        *     }
+        *   }
+        *   ...
+        *   this.f1 = null
+        *   ...
+        *   this.fn = null
+        *   l$
+        * }
+        * ```
         *
-        *               ...
-        *               def l$compute() = { synchronized(this) {
-        *               if ((bitmap$n & MASK) == 0) {
-        *               init // l$ = <rhs>
-        *               bitmap$n = bimap$n | MASK
-        *               }}
-        *               l$
-        *               }
+        * `bitmap$n` is a byte, int or long value acting as a bitmap of initialized values.
+        * The kind of the bitmap determines how many bit indicators for lazy vals are stored in it.
+        * For Int bitmap it is 32 and then 'n' in the above code is: (offset / 32),
+        * the MASK is (1 << (offset % 32)).
         *
-        *               ...
-        *    this.f1 = null
-        *               ... this.fn = null
-        *               }
-        *               where bitmap$n is a byte, int or long value acting as a bitmap of initialized values.
-        *               The kind of the bitmap determines how many bit indicators for lazy vals are stored in it.
-        *               For Int bitmap it is 32 and then 'n' in the above code is: (offset / 32),
-        *               the MASK is (1 << (offset % 32)).
-        *               If the class contains only a single lazy val then the bitmap is represented
-        *               as a Boolean and the condition checking is a simple bool test.
+        * If the class contains only a single lazy val then the bitmap is
+        * represented as a Boolean and the condition checking is a simple bool test.
         */
-      private def mkLazyMemberDef(lzyVal: Symbol, init: List[Tree], retVal: Tree, offset: Int): Tree = {
-        def nullify(sym: Symbol) = Select(This(clazz), sym.accessedOrSelf) === LIT(null)
-
-        val bitmapSym = bitmapFor(offset, lzyVal)
-        val kind = bitmapKind(lzyVal)
-        val mask = maskForOffset(offset, lzyVal, kind)
-        val nulls = lazyValNullables.getOrElse(lzyVal, Nil) map nullify
-
-        if (nulls.nonEmpty)
-          log("nulling fields inside " + lzyVal + ": " + nulls)
-
-        val pos = if (lzyVal.pos != NoPosition) lzyVal.pos else clazz.pos // TODO: is the else branch ever taken?
-        val slowPathSym =
-          clazz.newMethod(nme.newLazyValSlowComputeName(lzyVal.name.toTermName), pos, PRIVATE) setInfoAndEnter MethodType(Nil, lzyVal.tpe.resultType)
-
+      private def mkLazyMemberDef(lzyVal: Symbol, init: List[Tree], retVal: Tree): Tree = {
         def thisRef = gen.mkAttributedThis(clazz)
-        def cond = mkTest(mask, bitmapSym, equalToZero = true, kind)
+        def cond = mkTest(lzyVal, equalToZero = true)
 
-        val statsToSynch = init ::: List(mkSetFlag(offset, lzyVal, kind), UNIT)
-        val synchedRhs = gen.mkSynchronizedCheck(thisRef, cond, statsToSynch, nulls)
-        addDef(pos, DefDef(slowPathSym, Block(List(synchedRhs.changeOwner(currentOwner -> slowPathSym)), retVal)))
+        val slowPathDef = {
+          def nullify(sym: Symbol) = Select(This(clazz), sym.accessedOrSelf) === LIT(null)
+          val nulls = lazyValNullables.getOrElse(lzyVal, Nil) map nullify
 
-        typedPos(init.head.pos)(If(cond, Apply(Select(thisRef, slowPathSym), Nil), retVal))
+          if (nulls.nonEmpty)
+            log("nulling fields inside " + lzyVal + ": " + nulls)
+
+          val pos = if (lzyVal.pos != NoPosition) lzyVal.pos else clazz.pos // TODO: is the else branch ever taken?
+          val slowPathSym =
+            clazz.newMethod(nme.newLazyValSlowComputeName(lzyVal.name.toTermName), pos, PRIVATE) setInfoAndEnter MethodType(Nil, lzyVal.tpe.resultType)
+
+          val statsToSynch = init ::: List(mkSetFlag(lzyVal), UNIT)
+          val synchedRhs = gen.mkSynchronizedCheck(thisRef, cond, statsToSynch, nulls)
+
+          // TODO: this code used to run after classes were flattened -- do we have all the needed owner changes?
+          DefDef(slowPathSym, Block(List(synchedRhs.changeOwner(lzyVal -> slowPathSym)), retVal))
+        }
+
+        addDef(slowPathDef)
+
+        typedPos(init.head.pos)(If(cond, Apply(Select(thisRef, slowPathDef.symbol), Nil), retVal))
       }
 
       /** Map lazy values to the fields they should null after initialization. */
@@ -364,7 +358,7 @@ trait InitBitmaps extends Transform with ast.TreeDSL {
                           && sym.isPrivate
                           && !(currentOwner.isGetter && currentOwner.accessed == sym) // getter
                           && !definitions.isPrimitiveValueClass(sym.tpe.resultType.typeSymbol)
-                          && sym.owner == templ.symbol.owner
+                          && sym.owner == clazz
                           && !sym.isLazy
                           && !tree.isDef) {
                         debuglog("added use in: " + currentOwner + " -- " + tree)
@@ -375,7 +369,7 @@ trait InitBitmaps extends Transform with ast.TreeDSL {
                 }
               }
             }
-            SingleUseTraverser(templ)
+            templStats foreach SingleUseTraverser.apply
             debuglog("usedIn: " + usedIn)
             usedIn filter {
               case (_, member :: Nil) => member.isValue && member.isLazy
@@ -393,7 +387,7 @@ trait InitBitmaps extends Transform with ast.TreeDSL {
     }
 
 
-    protected class AddsCheckInitDefs(clazz: Symbol, templ: Template) extends StandardAccessorInitialization(clazz, templ) {
+    protected class CheckInitAccessorInitialization(clazz: Symbol, templStats: List[Tree]) extends LazyAccessorInitialization(clazz, templStats) {
       /** Does this field require an initialized bit?
         * Note: fields of classes inheriting DelayedInit are not checked.
         * This is because they are neither initialized in the constructor
@@ -402,7 +396,7 @@ trait InitBitmaps extends Transform with ast.TreeDSL {
         * That's why they are excluded.
         * Note: The `checkinit` option does not check if transient fields are initialized.
         */
-      override def needsInitFlag(sym: Symbol): Boolean = (
+      private def needsInitFlag(sym: Symbol): Boolean = (
         sym.isGetter
         && !sym.isInitializedToDefault
         && !isConstantType(sym.info.finalResultType) // SI-4742
@@ -413,12 +407,33 @@ trait InitBitmaps extends Transform with ast.TreeDSL {
         && !(sym.accessed hasAnnotation TransientAttr)
         )
 
+      private def needsInitFlagAndHasBitmap(sym: Symbol) = hasBitmap(sym) && needsInitFlag(sym)
+
+//      override protected def isFieldWithTransientBitmap(field: Symbol) =
+//        super.isFieldWithTransientBitmap(field) || needsInitFlag(field) && !field.isDeferred && isTransientField(field)
+
+      /** Examines the symbol and returns a name indicating what brand of
+        * bitmap it requires.  The possibilities are the BITMAP_* vals
+        * defined in StdNames.  If it needs no bitmap, nme.NO_NAME.
+        *
+        * bitmaps for checkinit fields are not inherited
+        */
+      override protected def bitmapCategory(field: Symbol): Name = {
+        import nme._
+
+        super.bitmapCategory(field) match {
+          case NO_NAME if needsInitFlag(field) && !field.isDeferred =>
+            if (isTransientField(field)) BITMAP_CHECKINIT_TRANSIENT else BITMAP_CHECKINIT
+          case category => category
+        }
+      }
+
       object addInitBitsTransformer extends Transformer {
-        private def checkedGetter(lhs: Tree) = {
+        private def checkedGetter(lhs: Tree)(pos: Position) = {
           val sym = clazz.info decl lhs.symbol.getterName suchThat (_.isGetter)
-          if (needsInitFlag(sym) && (fieldOffset contains sym)) {
+          if (needsInitFlagAndHasBitmap(sym)) {
             debuglog("adding checked getter for: " + sym + " " + lhs.symbol.flagString)
-            List(localTyper typed mkSetFlag(fieldOffset(sym), sym, bitmapKind(sym)))
+            List(typedPos(pos)(mkSetFlag(sym)))
           }
           else Nil
         }
@@ -427,7 +442,7 @@ trait InitBitmaps extends Transform with ast.TreeDSL {
           // that self is anything in particular?
           super.transformStats(
             stats flatMap {
-              case stat@Assign(lhs@Select(This(_), _), rhs) => stat :: checkedGetter(lhs)
+              case stat@Assign(lhs@Select(This(_), _), rhs) => stat :: checkedGetter(lhs)(stat.pos.focus)
               // remove initialization for default values -- TODO is this case ever hit? constructors does not generate Assigns with EmptyTree for the rhs AFAICT
               case Apply(lhs@Select(Ident(self), _), EmptyTree.asList) if lhs.symbol.isSetter => Nil
               case stat                                                                       => List(stat)
@@ -437,42 +452,27 @@ trait InitBitmaps extends Transform with ast.TreeDSL {
         }
       }
 
-      /** Adds statements to set the 'init' bit for each field initialized
-       * in the body of a constructor.
-       * @pre settings.checkInit
-       */
-      def addInitBits(rhs: Tree): Tree = addInitBitsTransformer transform rhs
-
-      override def addCheckedInitCheck(stat: DefDef): DefDef = {
-        val sym = stat.symbol
-        if (needsInitFlag(sym) && stat.rhs != EmptyTree && !clazz.hasFlag(TRAIT)) {
-          assert(fieldOffset contains sym, sym)
-          deriveDefDef(stat)(rhs =>
-            (mkCheckedAccessor(_: Tree, fieldOffset(sym), stat.pos, sym)) (
-              if (isUnitGetter(sym)) UNIT else rhs
-            )
-          )
+      /** Make getters check the initialized bit, and the class constructor & setters are changed to set the initialized bits. */
+      override def rhsWithOtherInitCheck(sym: Symbol)(rhs: Tree): Tree = {
+        // Add statements to the body of a constructor to set the 'init' bit for each field initialized in the constructor
+        if (sym.isConstructor) addInitBitsTransformer transform rhs
+        else if (clazz.hasFlag(TRAIT) || rhs == EmptyTree) rhs
+        else if (needsInitFlag(sym)) { // implies sym.isGetter
+          mkCheckedAccessor(if (isUnitGetter(sym)) UNIT else rhs, rhs.pos, sym)
         }
-        else if (sym.isConstructor) {
-          deriveDefDef(stat)(addInitBits)
-        }
-        else if (!clazz.isTrait && sym.isSetter) {
+        else if (sym.isSetter) {
           val getter = sym.getterIn(clazz)
-          if (needsInitFlag(getter) && fieldOffset.isDefinedAt(getter))
-            deriveDefDef(stat)(rhs => Block(List(rhs, localTyper.typed(mkSetFlag(fieldOffset(getter), getter, bitmapKind(getter)))), UNIT))
-          else stat
+          if (needsInitFlagAndHasBitmap(getter))
+            Block(List(rhs, typedPos(rhs.pos.focus)(mkSetFlag(getter))), UNIT)
+          else rhs
         }
-        else stat
+        else rhs
       }
 
-      def mkCheckedAccessor(retVal: Tree, offset: Int, pos: Position, fieldSym: Symbol): Tree = {
-        val sym = fieldSym.getterIn(fieldSym.owner)
-        val bitmapSym = bitmapFor(offset, sym)
-        val kind = bitmapKind(sym)
-        val mask = maskForOffset(offset, sym, kind)
+      def mkCheckedAccessor(retVal: Tree, pos: Position, getter: Symbol): Tree = {
         val msg = s"Uninitialized field: ${clazz.sourceFile}: ${pos.line}"
         val result =
-          IF(mkTest(mask, bitmapSym, equalToZero = false, kind)).
+          IF(mkTest(getter, equalToZero = false)).
             THEN(retVal).
             ELSE(Throw(NewFromConstructor(UninitializedFieldConstructor, LIT(msg))))
 
@@ -482,12 +482,12 @@ trait InitBitmaps extends Transform with ast.TreeDSL {
       // TODO: need to run this on all accessor bodies (after fields refactoring, this is only run on accessors mixed in during mixins, which is only PRESUPER | PARAMACCESSOR)
       override def getterBody(getter: Symbol) = {
         if (!needsInitFlag(getter)) super.getterBody(getter)
-        else mkCheckedAccessor(super.getterBody(getter), fieldOffset(getter), getter.pos, getter)
+        else mkCheckedAccessor(super.getterBody(getter), getter.pos, getter)
       }
 
       override def setterBody(setter: Symbol, getter: Symbol) = {
         if (!needsInitFlag(getter)) super.setterBody(setter, getter)
-        else Block(List(super.setterBody(setter, getter)), mkSetFlag(fieldOffset(getter), getter, bitmapKind(getter)))
+        else Block(List(super.setterBody(setter, getter)), mkSetFlag(getter))
       }
     }
   }
@@ -569,7 +569,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with InitBitmaps {
   )
 
 
-  
+
   /** Returns the symbol that is accessed by a super-accessor in a mixin composition.
    *
    *  @param base       The class in which everything is mixed together
@@ -830,7 +830,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with InitBitmaps {
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new MixinTransformer(unit)
 
-  class MixinTransformer(unit : CompilationUnit) extends InitializationTransformer {
+  class MixinTransformer(unit : CompilationUnit) extends Transformer with InitializationTransformation {
+    /** The typer */
+    private var localTyper: erasure.Typer = _
+    protected def typedPos(pos: Position)(tree: Tree): Tree = localTyper.typedPos(pos)(tree)
 
     /** The rootContext used for typing */
     private val rootContext =
@@ -875,10 +878,11 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with InitBitmaps {
       *
       * @param clazz The class to which definitions are added
       */
-    private def addNewDefs(clazz: Symbol, stats: List[Tree], accessorInit: AccessorInitialization): List[Tree] = {
+    private def addNewDefs(clazz: Symbol, stats: List[Tree]): List[Tree] = {
+      val accessorInit = accessorInitialization(clazz, stats)
       import accessorInit._
 
-      val statsWithInitChecks = addInitChecks(stats)
+      val statsWithInitChecks = deriveStatsWithInitChecks(stats)
 
       // for all symbols `sym` in the class definition, which are mixed in by mixinTraitMembers
       for (sym <- clazz.info.decls ; if sym hasFlag MIXEDIN) {
@@ -948,11 +952,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with InitBitmaps {
           // change parents of templates to conform to parents in the symbol info
           val parents1 = currentOwner.info.parents map (t => TypeTree(t) setPos tree.pos)
 
-          // mark fields which can be nulled afterward
-          val accessorInit = accessorInitialization(currentOwner, templ)
-
           // add all new definitions to current class or interface
-          val statsWithNewDefs = addNewDefs(currentOwner, body, accessorInit)
+          val statsWithNewDefs = addNewDefs(currentOwner, body)
           statsWithNewDefs foreach {
             case dd: DefDef if isTraitMethodRequiringStaticImpl(dd) =>
               dd.symbol.updateAttachment(NeedStaticImpl)
