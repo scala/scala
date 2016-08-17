@@ -132,7 +132,7 @@ grammar:
   Expr1             ::=  `if' `(' Expr `)' {nl} Expr [[semi] `else' Expr]
                       |  `while' `(' Expr `)' {nl} Expr
                       |  `try' (`{' Block `}' | Expr) [`catch' `{' CaseClauses `}'] [`finally' Expr]
-                      |  `do' Expr [semi] `while' `(' Expr ')'
+                      |  `do' Expr [semi] `while' `(' Expr `)'
                       |  `for' (`(' Enumerators `)' | `{' Enumerators `}') {nl} [`yield'] Expr
                       |  `throw' Expr
                       |  `return' [Expr]
@@ -190,12 +190,12 @@ grammar:
                       |  varid
                       |  Literal
                       |  StableId
-                      |  StableId ‘(’ [Patterns ‘)’
+                      |  StableId ‘(’ [Patterns] ‘)’
                       |  StableId ‘(’ [Patterns ‘,’] [varid ‘@’] ‘_’ ‘*’ ‘)’
                       |  ‘(’ [Patterns] ‘)’
                       |  XmlPattern
   Patterns          ::=  Pattern [‘,’ Patterns]
-                      |  ‘_’ *
+                      |  ‘_’ ‘*’
 
   TypeParamClause   ::=  ‘[’ VariantTypeParam {‘,’ VariantTypeParam} ‘]’
   FunTypeParamClause::=  ‘[’ TypeParam {‘,’ TypeParam} ‘]’
