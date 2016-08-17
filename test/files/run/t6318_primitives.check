@@ -1,3 +1,4 @@
+warning: there were 18 deprecation warnings (since 2.12.0); re-run with -deprecation for details
 Checking if byte matches byte
 Some(1)
 Checking if byte matches short

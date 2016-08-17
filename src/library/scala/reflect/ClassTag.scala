@@ -83,15 +83,24 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
        ) Some(x.asInstanceOf[T])
     else None
 
-  // TODO: deprecate overloads in 2.12.0, remove in 2.13.0
+  // deprecate overloads in 2.12.0, remove in 2.13.0
+  @deprecated("Specialized unapply will be removed.", since = "2.12.0")
   def unapply(x: Byte)    : Option[T] = unapplyImpl(x, classOf[Byte])
+  @deprecated("Specialized unapply will be removed.", since = "2.12.0")
   def unapply(x: Short)   : Option[T] = unapplyImpl(x, classOf[Short])
+  @deprecated("Specialized unapply will be removed.", since = "2.12.0")
   def unapply(x: Char)    : Option[T] = unapplyImpl(x, classOf[Char])
+  @deprecated("Specialized unapply will be removed.", since = "2.12.0")
   def unapply(x: Int)     : Option[T] = unapplyImpl(x, classOf[Int])
+  @deprecated("Specialized unapply will be removed.", since = "2.12.0")
   def unapply(x: Long)    : Option[T] = unapplyImpl(x, classOf[Long])
+  @deprecated("Specialized unapply will be removed.", since = "2.12.0")
   def unapply(x: Float)   : Option[T] = unapplyImpl(x, classOf[Float])
+  @deprecated("Specialized unapply will be removed.", since = "2.12.0")
   def unapply(x: Double)  : Option[T] = unapplyImpl(x, classOf[Double])
+  @deprecated("Specialized unapply will be removed.", since = "2.12.0")
   def unapply(x: Boolean) : Option[T] = unapplyImpl(x, classOf[Boolean])
+  @deprecated("Specialized unapply will be removed.", since = "2.12.0")
   def unapply(x: Unit)    : Option[T] = unapplyImpl(x, classOf[Unit])
 
   private[this] def unapplyImpl(x: Any, primitiveCls: java.lang.Class[_]): Option[T] =
