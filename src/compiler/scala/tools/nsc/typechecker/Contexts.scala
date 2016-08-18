@@ -1009,7 +1009,7 @@ trait Contexts { self: Analyzer =>
     def isNameInScope(name: Name) = lookupSymbol(name, _ => true).isSuccess
 
     /** Find the symbol of a simple name starting from this context.
-     *  All names are filtered through the "qualifies" predicate,
+     *  All names are filtered through the `qualifies` predicate,
      *  the search continuing as long as no qualifying name is found.
      */
     def lookupSymbol(name: Name, qualifies: Symbol => Boolean): NameLookup = {
@@ -1112,24 +1112,23 @@ trait Contexts { self: Analyzer =>
        *
        * Scala: Bindings of different kinds have a precedence defined on them:
        *
-       *  1) Definitions and declarations that are local, inherited, or made available by a
-       *     package clause in the same compilation unit where the definition occurs have
-       *     highest precedence.
+       *  1) Definitions and declarations that are local, inherited, or made available by
+       *     a package clause and also defined in the same compilation unit as the reference, have highest precedence.
        *  2) Explicit imports have next highest precedence.
        *  3) Wildcard imports have next highest precedence.
-       *  4) Definitions made available by a package clause not in the compilation unit where
-       *     the reference occurs have lowest precedence.
+       *  4) Definitions made available by a package clause, but not also defined in the same compilation unit
+       *     as the reference, have lowest precedence.
        */
-      def depthOk(imp: ImportInfo) = imp.depth > symbolDepth || (
-           imp.isExplicitImport(name)
-        && imp.depth == symbolDepth
-        && (
-              unit.isJava
-           || (defSym != NoSymbol && isPackageOwnedInDifferentUnit(defSym))  // SI-2458
-        )
+      def depthOk(imp: ImportInfo) = (
+          imp.depth > symbolDepth
+        ||
+          imp.depth == symbolDepth && (
+             if (unit.isJava) imp.isExplicitImport(name)
+             else (defSym != NoSymbol && isPackageOwnedInDifferentUnit(defSym))  // SI-2458
+          )
       )
 
-      while (!impSym.exists && imports.nonEmpty && depthOk(imports.head)) {
+      while (!impSym.exists && imports.nonEmpty && depthOk(imp1)) {
         impSym = lookupImport(imp1, requireExplicit = false)
         if (!impSym.exists)
           imports = imports.tail
