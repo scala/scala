@@ -101,7 +101,7 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
     // with the same base type depth.
     //
     // Notably, this will stably infer`Product with Serializable`
-    // as the type of `ase class C(); case class D(); List(C(), D()).head`, rather than the opposite order.
+    // as the type of `case class C(); case class D(); List(C(), D()).head`, rather than the opposite order.
     // On Mac, the HFS performs this sorting transparently, but on Linux the order is unspecified.
     //
     // Note this behaviour can be enabled with in javac with `javac -XDsortfiles`, but that's only

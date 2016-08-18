@@ -614,12 +614,12 @@ private[internal] trait TypeMaps {
       val pre1 = pre match {
         case tv: TypeVar =>
           // Needed with existentials in prefixes, e.g. test/files/pos/typevar-in-prefix.scala
-          // Perhaps the base type sequence of a type var should include it bounds?
+          // Perhaps the base type sequence of a type var should include its bounds?
           tv.origin
         case _ => pre
       }
       // widen needed (at least) because of https://github.com/scala/scala-dev/issues/166
-      (clazz == candidate) && (
+      (
         if (clazz.isRefinementClass)
           // base type seqs of aliases over refinement types have copied refinement types based on beta reduction
           // for reliable lookup we need to consult the base type of the type symbol. (example: pos/t8177b.scala)
