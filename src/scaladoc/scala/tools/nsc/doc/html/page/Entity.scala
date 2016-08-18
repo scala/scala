@@ -3,24 +3,21 @@
  * @author David Bernard, Manohar Jonnalagedda, Felix Mulder
  */
 
-package scala
-package tools
-package nsc
+package scala.tools.nsc
 package doc
 package html
 package page
 
 import base._
 import base.comment._
+import model._
+import model.diagram._
+import page.diagram._
 
 import scala.reflect.internal.Reporter
 import scala.collection.mutable
 import scala.xml.{NodeSeq, Text, UnprefixedAttribute}
 import scala.language.postfixOps
-
-import model._
-import model.diagram._
-import diagram._
 
 trait EntityPage extends HtmlPage {
   import ScalaDoc.SummaryReporter
