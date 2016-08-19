@@ -92,4 +92,6 @@ trait IndexedSeqLike[+A, +Repr] extends Any with SeqLike[A, Repr] {
     copyToBuffer(result)
     result
   }
+
+  override protected def sizeHintTo(b: mutable.Builder[_, _], delta: Int): Unit = { b.sizeHint(size + delta) }
 }
