@@ -379,8 +379,8 @@ object scalac extends Command {
           MItalic("posterasure"),
           "clean up erased inline classes"),
         Definition(
-          MItalic("lazyvals"),
-          "allocate bitmaps, translate lazy vals into lazified defs"),
+          MItalic("fields"),
+          "synthesize accessors and fields, including bitmaps for lazy vals"),
         Definition(
           MItalic("lambdalift"),
           "move nested functions to top level"),

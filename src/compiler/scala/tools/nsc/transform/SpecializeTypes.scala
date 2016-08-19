@@ -723,7 +723,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         } else if (!sClass.isTrait && m.isMethod && m.hasFlag(LAZY)) {
           forwardToOverload(m)
 
-        } else if (m.isValue && !m.isMethod && !m.hasFlag(LAZY)) { // concrete value definition
+        } else if (m.isValue && !m.isMethod) { // concrete value definition
           def mkAccessor(field: Symbol, name: Name) = {
             val newFlags = (SPECIALIZED | m.getterIn(clazz).flags) & ~(LOCAL | CASEACCESSOR | PARAMACCESSOR)
             // we rely on the super class to initialize param accessors
@@ -744,7 +744,14 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           enterMember(specVal)
           // create accessors
 
-          if (nme.isLocalName(m.name)) {
+          if (m.isLazy) {
+            // no getters needed (we'll specialize the compute method and accessor separately), can stay private
+            // m.setFlag(PRIVATE) -- TODO: figure out how to leave the non-specialized lazy var private
+            // (the implementation needs it to be visible while duplicating and retypechecking,
+            //  but it really could be private in bytecode)
+            specVal.setFlag(PRIVATE)
+          }
+          else if (nme.isLocalName(m.name)) {
             val specGetter = mkAccessor(specVal, specVal.getterName) setInfo MethodType(Nil, specVal.info)
             val origGetter = overrideIn(sClass, m.getterIn(clazz))
             info(origGetter) = Forward(specGetter)

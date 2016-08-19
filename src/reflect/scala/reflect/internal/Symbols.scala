@@ -1682,7 +1682,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *
      *    - packageobjects (follows namer)
      *    - superaccessors (follows typer)
-     *    - lazyvals       (follows erasure)
+     *    - lambdaLift     (follows erasure)
      *    - null
      */
     private def unsafeTypeParamPhase = {

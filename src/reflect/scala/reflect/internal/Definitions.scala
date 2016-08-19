@@ -81,7 +81,7 @@ trait Definitions extends api.StandardDefinitions {
       }
     }
 
-    private[Definitions] def classesMap[T](f: Name => T) = symbolsMap(ScalaValueClassesNoUnit, f)
+    private[Definitions] def classesMap[T](f: Name => T): Map[Symbol, T] = symbolsMap(ScalaValueClassesNoUnit, f)
     private def symbolsMap[T](syms: List[Symbol], f: Name => T): Map[Symbol, T] = mapFrom(syms)(x => f(x.name))
     private def symbolsMapFilt[T](syms: List[Symbol], p: Name => Boolean, f: Name => T) = symbolsMap(syms filter (x => p(x.name)), f)
 
@@ -93,6 +93,9 @@ trait Definitions extends api.StandardDefinitions {
     lazy val boxedClass       = classesMap(x => getClassByName(boxedName(x)))
     lazy val refClass         = classesMap(x => getRequiredClass("scala.runtime." + x + "Ref"))
     lazy val volatileRefClass = classesMap(x => getRequiredClass("scala.runtime.Volatile" + x + "Ref"))
+    lazy val lazyHolders      = symbolsMap(ScalaValueClasses, x => getClassIfDefined("scala.runtime.Lazy" + x))
+    lazy val LazyRefClass     = getClassIfDefined("scala.runtime.LazyRef")
+    lazy val LazyUnitClass    = getClassIfDefined("scala.runtime.LazyUnit")
 
     lazy val allRefClasses: Set[Symbol] = {
       refClass.values.toSet ++ volatileRefClass.values.toSet ++ Set(VolatileObjectRefClass, ObjectRefClass)

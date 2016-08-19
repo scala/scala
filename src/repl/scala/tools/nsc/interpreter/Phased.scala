@@ -88,7 +88,7 @@ trait Phased {
 
     lazy val all = List(
       Parser, Namer, Packageobjects, Typer, Superaccessors, Pickler, Refchecks,
-      Uncurry, Tailcalls, Specialize, Explicitouter, Erasure, Lazyvals, Lambdalift,
+      Uncurry, Tailcalls, Specialize, Explicitouter, Erasure, Fields, Lambdalift,
       Constructors, Flatten, Mixin, Cleanup, Delambdafy, Jvm, Terminal
     )
     lazy val nameMap = all.map(x => x.name -> x).toMap withDefaultValue NoPhaseName
@@ -114,12 +114,12 @@ trait Phased {
   case object Pickler extends PhaseName
   case object Refchecks extends PhaseName
   case object Uncurry extends PhaseName
+  case object Fields extends PhaseName
   case object Tailcalls extends PhaseName
   case object Specialize extends PhaseName
   case object Explicitouter extends PhaseName
   case object Erasure extends PhaseName
   case object PostErasure extends PhaseName
-  case object Lazyvals extends PhaseName
   case object Lambdalift extends PhaseName
   case object Constructors extends PhaseName
   case object Flatten extends PhaseName

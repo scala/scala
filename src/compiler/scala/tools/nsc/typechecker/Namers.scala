@@ -982,7 +982,7 @@ trait Namers extends MethodSynthesis {
       )
       dropIllegalStarTypes(
         if (shouldWiden) tpe.widen
-        else if (sym.isFinal) tpe    // "final val" allowed to retain constant type
+        else if (sym.isFinal && !sym.isLazy) tpe    // "final val" allowed to retain constant type
         else tpe.deconst
       )
     }

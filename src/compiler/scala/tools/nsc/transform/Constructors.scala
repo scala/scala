@@ -450,7 +450,9 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
     with    DelayedInitHelper
     with    OmittablesHelper
     with    GuardianOfCtorStmts
-    {
+    with    fields.CheckedAccessorTreeSynthesis
+  {
+    protected def typedPos(pos: Position)(tree: Tree): Tree = localTyper.typedPos(pos)(tree)
 
     val clazz         = impl.symbol.owner  // the transformed class
 
@@ -770,11 +772,20 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       // We never eliminate delayed hooks or the constructors, so, only filter `defs`.
       val prunedStats = (defs filterNot omittableStat) ::: delayedHookDefs ::: constructors
 
+      val statsWithInitChecks =
+        if (settings.checkInit) {
+          val addChecks = new SynthInitCheckedAccessorsIn(currentOwner)
+          prunedStats mapConserve {
+            case dd: DefDef => deriveDefDef(dd)(addChecks.wrapRhsWithInitChecks(dd.symbol))
+            case stat       => stat
+          }
+        } else prunedStats
+
       //  Add the static initializers
-      if (classInitStats.isEmpty) deriveTemplate(impl)(_ => prunedStats)
+      if (classInitStats.isEmpty) deriveTemplate(impl)(_ => statsWithInitChecks)
       else {
-        val staticCtor = staticConstructor(prunedStats, localTyper, impl.pos)(classInitStats)
-        deriveTemplate(impl)(_ => staticCtor :: prunedStats)
+        val staticCtor = staticConstructor(statsWithInitChecks, localTyper, impl.pos)(classInitStats)
+        deriveTemplate(impl)(_ => staticCtor :: statsWithInitChecks)
       }
     }
   } // TemplateTransformer

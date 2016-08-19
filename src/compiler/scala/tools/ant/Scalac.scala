@@ -88,7 +88,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
   object CompilerPhase extends PermissibleValue {
     val values = List("namer", "typer", "pickler", "refchecks",
                       "uncurry", "tailcalls", "specialize", "explicitouter",
-                      "erasure", "lazyvals", "lambdalift", "constructors",
+                      "erasure", "fields", "lambdalift", "constructors",
                       "flatten", "mixin", "delambdafy", "cleanup",
                       "jvm", "terminal")
   }

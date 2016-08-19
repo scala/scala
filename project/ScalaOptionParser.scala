@@ -94,7 +94,7 @@ object ScalaOptionParser {
   private def stringSettingNames = List("-Xgenerate-phase-graph", "-Xmain-class", "-Xpluginsdir", "-Xshow-class", "-Xshow-object", "-Xsource-reader", "-Ydump-classes", "-Ygen-asmp",
     "-Ypresentation-log", "-Ypresentation-replay", "-Yrepl-outdir", "-d", "-dependencyfile", "-encoding", "-Xscript")
   private def pathSettingNames = List("-bootclasspath", "-classpath", "-extdirs", "-javabootclasspath", "-javaextdirs", "-sourcepath", "-toolcp")
-  private val phases = List("all", "parser", "namer", "packageobjects", "typer", "patmat", "superaccessors", "extmethods", "pickler", "refchecks", "uncurry", "tailcalls", "specialize", "explicitouter", "erasure", "posterasure", "lazyvals", "lambdalift", "constructors", "flatten", "mixin", "cleanup", "delambdafy", "icode", "jvm", "terminal")
+  private val phases = List("all", "parser", "namer", "packageobjects", "typer", "patmat", "superaccessors", "extmethods", "pickler", "refchecks", "uncurry", "tailcalls", "specialize", "explicitouter", "erasure", "posterasure", "fields", "lambdalift", "constructors", "flatten", "mixin", "cleanup", "delambdafy", "icode", "jvm", "terminal")
   private val phaseSettings = List("-Xprint-icode", "-Ystop-after", "-Yskip", "-Yshow", "-Ystop-before", "-Ybrowse", "-Ylog", "-Ycheck", "-Xprint")
   private def multiStringSettingNames = List("-Xmacro-settings", "-Xplugin", "-Xplugin-disable", "-Xplugin-require")
   private def intSettingNames = List("-Xmax-classfile-name", "-Xelide-below", "-Ypatmat-exhaust-depth", "-Ypresentation-delay", "-Yrecursion")
