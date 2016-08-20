@@ -289,6 +289,11 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
             // destructively mangle accessor's name (which may cause rehashing of decls), also sets flags
             // this accessor has to be implemented in a subclass -- can't be private
             if ((member hasFlag PRIVATE) && !fieldMemoization.constantTyped) member makeNotPrivate clazz
+            // Since we need to refer to `member` using a super call in a subclass, we must ensure that access is allowed.
+            // If `member` has an access boundary, make sure the `PROTECTED` flag is set,
+            // to widen from `private[foo]` to `protected[foo]`
+            // (note that `member.hasAccessBoundary` implies `!member.hasFlag(PRIVATE)`, so we don't have to `resetFlag PRIVATE`)
+            else if (member.isLazy && member.hasAccessBoundary) member setFlag PROTECTED
 
             // This must remain in synch with publicizeTraitMethod in Mixins, so that the
             // synthesized member in a subclass and the trait member remain in synch regarding access.
