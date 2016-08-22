@@ -189,10 +189,29 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
     // for local modules, we synchronize on the owner of the method that owns the module
     val monitorHolder = This(moduleVar.owner.enclClass)
-    val cond = Apply(Select(moduleVarRef, Object_eq), List(CODE.NULL))
+    def needsInit = Apply(Select(moduleVarRef, Object_eq), List(CODE.NULL))
     val init = Assign(moduleVarRef, gen.newModule(module, moduleVar.info))
 
-    Block(List(gen.mkSynchronizedCheck(monitorHolder, cond, List(init), Nil)), moduleVarRef)
+    /** double-checked locking following https://shipilev.net/blog/2014/safe-public-construction/#_safe_publication
+      *
+      * public class SafeDCLFactory {
+      *   private volatile Singleton instance;
+      *
+      *   public Singleton get() {
+      *     if (instance == null) {  // check 1
+      *       synchronized(this) {
+      *         if (instance == null) { // check 2
+      *           instance = new Singleton();
+      *         }
+      *       }
+      *     }
+      *     return instance;
+      *   }
+      * }
+      *
+      * TODO: optimize using local variable?
+      */
+    Block(If(needsInit, gen.mkSynchronized(monitorHolder)(If(needsInit, init, EmptyTree)), EmptyTree) :: Nil, moduleVarRef)
   }
 
   // NoSymbol for lazy accessor sym with unit result type
@@ -523,16 +542,12 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         val valueSetter = if (isUnit) NoSymbol else valueGetter.setterIn(refClass)
         val setValue    = if (isUnit) rhs      else Apply(Select(Ident(holderSym), valueSetter), rhs :: Nil)
         val getValue    = if (isUnit) UNIT     else Apply(Select(Ident(holderSym), valueGetter), Nil)
-        gen.mkSynchronized(Ident(holderSym),
-          Block(List(
-            If(NOT(Ident(holderSym) DOT initializedGetter),
-              Block(List(
-                setInitialized),
-                setValue),
-              EmptyTree)),
-            getValue)) // must read the value within the synchronized block since it's not volatile
+
+        // must read the value within the synchronized block since it's not volatile
         // (there's no happens-before relation with the read of the volatile initialized field)
-        // TODO: double-checked locking
+        // TODO: double-checked locking (https://github.come/scala/scala-dev/issues/204)
+        gen.mkSynchronized(Ident(holderSym))(
+          If(Ident(holderSym) DOT initializedGetter, getValue, Block(List(setValue, setInitialized), getValue)))
       }
 
       // do last!

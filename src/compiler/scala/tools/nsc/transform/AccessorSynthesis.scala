@@ -329,7 +329,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
       def expandLazyClassMember(lazyVar: Symbol, lazyAccessor: Symbol, transformedRhs: Tree, nullables: Map[Symbol, List[Symbol]]): Tree = {
         // use cast so that specialization can turn null.asInstanceOf[T] into null.asInstanceOf[Long]
         def nullify(sym: Symbol) =
-        Select(thisRef, sym.accessedOrSelf) === gen.mkAsInstanceOf(NULL, sym.info.resultType)
+          Select(thisRef, sym.accessedOrSelf) === gen.mkAsInstanceOf(NULL, sym.info.resultType)
 
         val nulls = nullables.getOrElse(lazyAccessor, Nil) map nullify
 
@@ -343,13 +343,14 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
         val selectVar = if (isUnit) UNIT         else Select(thisRef, lazyVar)
         val storeRes  = if (isUnit) rhsAtSlowDef else Assign(selectVar, rhsAtSlowDef)
 
-        val synchedStats = storeRes :: mkSetFlag(lazyAccessor) :: Nil
-        val slowPathRhs =
-          Block(List(gen.mkSynchronizedCheck(thisRef, mkTest(lazyAccessor), synchedStats, nulls)), selectVar)
+        def needsInit = mkTest(lazyAccessor)
+        val doInit = Block(List(storeRes), mkSetFlag(lazyAccessor))
+        // the slow part of double-checked locking (TODO: is this the most efficient pattern? https://github.come/scala/scala-dev/issues/204)
+        val slowPathRhs = Block(gen.mkSynchronized(thisRef)(If(needsInit, doInit, EmptyTree)) :: nulls, selectVar)
 
         // The lazy accessor delegates to the compute method if needed, otherwise just accesses the var (it was initialized previously)
         // `if ((bitmap&n & MASK) == 0) this.l$compute() else l$`
-        val accessorRhs = If(mkTest(lazyAccessor), Apply(Select(thisRef, slowPathSym), Nil), selectVar)
+        val accessorRhs = If(needsInit, Apply(Select(thisRef, slowPathSym), Nil), selectVar)
 
         afterOwnPhase { // so that we can assign to vals
           Thicket(List((DefDef(slowPathSym, slowPathRhs)), DefDef(lazyAccessor, accessorRhs)) map typedPos(lazyAccessor.pos.focus))
