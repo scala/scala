@@ -105,7 +105,7 @@ forms.
 SimpleType  ::=  Path ‘.’ type
 ```
 
-A singleton type is of the form $p.$`type`, where $p$ is a
+A _singleton type_ is of the form $p.$`type`, where $p$ is a
 path pointing to a value expected to [conform](06-expressions.html#expression-typing)
 to `scala.AnyRef`. The type denotes the set of values
 consisting of `null` and the value denoted by $p$.
@@ -119,7 +119,7 @@ declared to be a subtype of trait `scala.Singleton`.
 SimpleType  ::=  SimpleType ‘#’ id
 ```
 
-A type projection $T$#$x$ references the type member named
+A _type projection_ $T$#$x$ references the type member named
 $x$ of type $T$.
 
 <!--
@@ -134,7 +134,7 @@ If $x$ references an abstract type member, then $T$ must be a
 SimpleType  ::=  StableId
 ```
 
-A type designator refers to a named value type. It can be simple or
+A _type designator_ refers to a named value type. It can be simple or
 qualified. All such type designators are shorthands for type projections.
 
 Specifically, the unqualified type name $t$ where $t$ is bound in some
@@ -167,7 +167,7 @@ SimpleType      ::=  SimpleType TypeArgs
 TypeArgs        ::=  ‘[’ Types ‘]’
 ```
 
-A parameterized type $T[ T_1 , \ldots , T_n ]$ consists of a type
+A _parameterized type_ $T[ T_1 , \ldots , T_n ]$ consists of a type
 designator $T$ and type parameters $T_1 , \ldots , T_n$ where
 $n \geq 1$. $T$ must refer to a type constructor which takes $n$ type
 parameters $a_1 , \ldots , a_n$.
@@ -227,7 +227,7 @@ G[S, Int]             // illegal: S constrains its parameter to
 SimpleType    ::=   ‘(’ Types ‘)’
 ```
 
-A tuple type $(T_1 , \ldots , T_n)$ is an alias for the
+A _tuple type_ $(T_1 , \ldots , T_n)$ is an alias for the
 class `scala.Tuple$n$[$T_1$, … , $T_n$]`, where $n \geq 2$.
 
 Tuple classes are case classes whose fields can be accessed using
@@ -255,7 +255,7 @@ trait Product_n[+$T_1$, … , +$T_n$] {
 AnnotType  ::=  SimpleType {Annotation}
 ```
 
-An annotated type $T$ $a_1, \ldots, a_n$
+An _annotated type_ $T$ $a_1, \ldots, a_n$
 attaches [annotations](11-annotations.html#user-defined-annotations)
 $a_1 , \ldots , a_n$ to the type $T$.
 
@@ -278,7 +278,7 @@ RefineStat      ::=  Dcl
                   |
 ```
 
-A compound type $T_1$ `with` … `with` $T_n \\{ R \\}$
+A _compound type_ $T_1$ `with` … `with` $T_n \\{ R \\}$
 represents objects with members as given in the component types
 $T_1 , \ldots , T_n$ and the refinement $\\{ R \\}$. A refinement
 $\\{ R \\}$ contains declarations and type definitions.
@@ -343,7 +343,7 @@ a value `callsign` and a `fly` method.
 InfixType     ::=  CompoundType {id [nl] CompoundType}
 ```
 
-An infix type $T_1$ `op` $T_2$ consists of an infix
+An _infix type_ $T_1$ `op` $T_2$ consists of an infix
 operator `op` which gets applied to two type operands $T_1$ and
 $T_2$.  The type is equivalent to the type application
 `op`$[T_1, T_2]$.  The infix operator `op` may be an
@@ -410,7 +410,7 @@ ExistentialDcl     ::= ‘type’ TypeDcl
                     |  ‘val’ ValDcl
 ```
 
-An existential type has the form `$T$ forSome { $Q$ }`
+An _existential type_ has the form `$T$ forSome { $Q$ }`
 where $Q$ is a sequence of
 [type declarations](04-basic-declarations-and-definitions.html#type-declarations-and-type-aliases).
 
@@ -564,7 +564,7 @@ report as the internal types of defined identifiers.
 
 ### Method Types
 
-A method type is denoted internally as $(\mathit{Ps})U$, where $(\mathit{Ps})$
+A _method type_ is denoted internally as $(\mathit{Ps})U$, where $(\mathit{Ps})$
 is a sequence of parameter names and types $(p_1:T_1 , \ldots , p_n:T_n)$
 for some $n \geq 0$ and $U$ is a (value or method) type.  This type
 represents named methods that take arguments named $p_1 , \ldots , p_n$
@@ -631,7 +631,7 @@ union : [A >: Nothing <: Comparable[A]] (x: Set[A], xs: Set[A]) Set[A]
 
 ### Type Constructors
 
-A type constructor is represented internally much like a polymorphic method type.
+A _type constructor_ is represented internally much like a polymorphic method type.
 `[$\pm$ $a_1$ >: $L_1$ <: $U_1 , \ldots , \pm a_n$ >: $L_n$ <: $U_n$] $T$`
 represents a type that is expected by a
 [type constructor parameter](04-basic-declarations-and-definitions.html#type-parameters) or an
