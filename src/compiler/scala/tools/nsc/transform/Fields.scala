@@ -513,42 +513,51 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       * Desugar a local `lazy val x: Int = rhs` into
       * ```
       * val x$lzy = new scala.runtime.LazyInt()
-      * def x(): Int =
+      * def x$lzycompute(): Int =
       *   x$lzy.synchronized {
-      *     if (!x$lzy.initialized) {
+      *     if (x$lzy.initialized()) x$lzy.value()
+      *     else {
       *       x$lzy.initialized = true
       *       x$lzy.value = rhs
       *     }
-      *     x$lzy.value
       *  }
+      * def x(): Int = if (x$lzy.initialized()) x$lzy.value() else x$lzycompute()
       * ```
       */
     private def mkLazyLocalDef(lazyVal: Symbol, rhs: Tree): Tree = {
+      import CODE._
+      val owner = lazyVal.owner
+
       val lazyValType = lazyVal.tpe.resultType
-      val refClass = lazyHolders.getOrElse(lazyValType.typeSymbol, LazyRefClass)
-      val refTpe = if (refClass != LazyRefClass) refClass.tpe else appliedType(refClass.typeConstructor, List(lazyValType))
+      val refClass    = lazyHolders.getOrElse(lazyValType.typeSymbol, LazyRefClass)
+      val refTpe      = if (refClass != LazyRefClass) refClass.tpe else appliedType(refClass.typeConstructor, List(lazyValType))
 
-      val flags = (lazyVal.flags & FieldFlags | ARTIFACT | MUTABLE) & ~(IMPLICIT | STABLE) // TODO: why include MUTABLE???
-      val name  = lazyVal.name.toTermName.append(nme.LAZY_LOCAL_SUFFIX_STRING)
-      val holderSym =
-        lazyVal.owner.newValue(name, lazyVal.pos, flags) setInfo refTpe
+      val lazyName  = lazyVal.name.toTermName
+      val pos       = lazyVal.pos.focus
+      val flags     = (lazyVal.flags & FieldFlags | ARTIFACT | MUTABLE) & ~(IMPLICIT | STABLE) // TODO: why include MUTABLE???
+      val holderSym = owner.newValue(lazyName append nme.LAZY_LOCAL_SUFFIX_STRING, pos, flags) setInfo refTpe
 
-      val accessor = mkAccessor(lazyVal) {
-        import CODE._
-        val initializedGetter = refTpe.member(nme.initialized)
-        val setInitialized    = Apply(Select(Ident(holderSym), initializedGetter.setterIn(refClass)), TRUE :: Nil)
-        val isUnit = refClass == LazyUnitClass
-        val valueGetter = if (isUnit) NoSymbol else refTpe.member(nme.value)
-        val valueSetter = if (isUnit) NoSymbol else valueGetter.setterIn(refClass)
-        val setValue    = if (isUnit) rhs      else Apply(Select(Ident(holderSym), valueSetter), rhs :: Nil)
-        val getValue    = if (isUnit) UNIT     else Apply(Select(Ident(holderSym), valueGetter), Nil)
+      val initializedGetter = refTpe.member(nme.initialized)
+      val isUnit            = refClass == LazyUnitClass
+      val valueGetter       = if (isUnit) NoSymbol else refTpe.member(nme.value)
+      val getValue          = if (isUnit) UNIT     else Apply(Select(Ident(holderSym), valueGetter), Nil)
 
-        // must read the value within the synchronized block since it's not volatile
-        // (there's no happens-before relation with the read of the volatile initialized field)
-        // TODO: double-checked locking (https://github.come/scala/scala-dev/issues/204)
-        gen.mkSynchronized(Ident(holderSym))(
-          If(Ident(holderSym) DOT initializedGetter, getValue, Block(List(setValue, setInitialized), getValue)))
+      def mkChecked(res: Tree) = If(Ident(holderSym) DOT initializedGetter, getValue, res)
+
+      val computerSym =
+        owner.newMethod(lazyName append nme.LAZY_SLOW_SUFFIX, pos, ARTIFACT | PRIVATE) setInfo MethodType(Nil, lazyValType)
+
+      val rhsAtComputer = rhs.changeOwner(lazyVal -> computerSym)
+      val computer = mkAccessor(computerSym) {
+        val setInitialized = Apply(Select(Ident(holderSym), initializedGetter.setterIn(refClass)), TRUE :: Nil)
+        val setValue =
+          if (isUnit) rhsAtComputer
+          else Apply(Select(Ident(holderSym), valueGetter.setterIn(refClass)), rhsAtComputer :: Nil)
+
+        gen.mkSynchronized(Ident(holderSym))(mkChecked(Block(List(setValue, setInitialized), getValue)))
       }
+
+      val accessor = mkAccessor(lazyVal)(mkChecked(Apply(Ident(computerSym), Nil)))
 
       // do last!
       // remove LAZY: prevent lazy expansion in mixin
@@ -557,7 +566,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       // lifted into a trait (TODO: not sure about the details here)
       lazyVal.resetFlag(LAZY | STABLE | ACCESSOR)
 
-      Thicket(mkField(holderSym, New(refTpe)) :: accessor :: Nil)
+      Thicket(mkField(holderSym, New(refTpe)) :: computer :: accessor :: Nil)
     }
 
     // synth trees for accessors/fields and trait setters when they are mixed into a class

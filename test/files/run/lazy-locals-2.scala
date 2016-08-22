@@ -276,7 +276,7 @@ object Test {
     c.run()
 
     val lzyComputeMethods = c.getClass.getDeclaredMethods.filter(_.getName contains "lzycompute").map(_.getName).toList.sorted
-    val expComputeMethods = List("lvl1$lzycompute", "lvl2$lzycompute", "lvl3$lzycompute", "t1$lzycompute", "t2$lzycompute", "t3$lzycompute")
+    val expComputeMethods = List("lvl1$lzycompute", "lvl2$lzycompute", "lvl3$lzycompute", "t1$lzycompute", "t1$lzycompute$1", "t1$lzycompute$10", "t1$lzycompute$11", "t1$lzycompute$12", "t1$lzycompute$13", "t1$lzycompute$2", "t1$lzycompute$3", "t1$lzycompute$4", "t1$lzycompute$5", "t1$lzycompute$6", "t1$lzycompute$7", "t1$lzycompute$8", "t1$lzycompute$9", "t2$lzycompute", "t2$lzycompute$1", "t3$lzycompute", "t3$lzycompute$1")
     assert(
       lzyComputeMethods == expComputeMethods,
       s"wrong lzycompute methods. expected:\n$expComputeMethods\nfound:\n$lzyComputeMethods")
