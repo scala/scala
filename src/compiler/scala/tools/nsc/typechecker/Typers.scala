@@ -773,7 +773,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else FunctionClass(numVparams)
       }
 
-      if (samSym.exists && samSym.owner != correspondingFunctionSymbol) // don't treat Functions as SAMs
+      if (samSym.exists && tp.typeSymbol != correspondingFunctionSymbol) // don't treat Functions as SAMs
         wildcardExtrapolation(normalize(tp memberInfo samSym))
       else NoType
     }
