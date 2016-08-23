@@ -102,12 +102,10 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
   publishMavenStyle := true
 )
 
-// Set the version number: The ANT build uses the file "build.number" to get the base version. Overriding versions or
-// suffixes for certain builds is done by directly setting variables from the shell scripts. For example, in
-// publish-core this requires computing the commit SHA first and then passing it to ANT. In the sbt build we use
-// the two settings `baseVersion` and `baseVersionSuffix` to compute all versions (canonical, Maven, OSGi). See
-// VersionUtil.versionPropertiesImpl for details. The standard sbt `version` setting should not be set directly. It
-// is the same as the Maven version and derived automatically from `baseVersion` and `baseVersionSuffix`.
+// Set the version number: We use the two settings `baseVersion` and `baseVersionSuffix` to compute all versions
+// (canonical, Maven, OSGi). See VersionUtil.versionPropertiesImpl for details. The standard sbt `version` setting
+// should not be set directly. It is the same as the Maven version and derived automatically from `baseVersion` and
+// `baseVersionSuffix`.
 globalVersionSettings
 baseVersion in Global := "2.12.0"
 baseVersionSuffix in Global := "SNAPSHOT"

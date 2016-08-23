@@ -28,7 +28,7 @@ findScalaHome () {
 # that runs this script.  I don't know why.  it may have to do with
 # which bash flags are set (-e? -x?) and with bash flags propagating
 # from one script to another? not sure. anyway, normally in a CI
-# context we run partest through ant, not through this script, so I'm
+# context we run partest through sbt, not through this script, so I'm
 # not investigating further for now.)
 term_colors=$(tput colors 2>/dev/null)
 if [[ $? == 0 ]] && [[ $term_colors -gt 2 ]]; then
@@ -54,14 +54,14 @@ if $cygwin; then
     SCALA_HOME=`cygpath --unix "$SCALA_HOME"`
 fi
 
-# Let ant construct the classpath used to run partest (downloading partest from maven if necessary)
+# Let sbt construct the classpath used to run partest (downloading partest from maven if necessary)
 # PARTEST_CLASSPATH=""
 if [ -z "$PARTEST_CLASSPATH" ] ; then
-    if [ ! -f "$SCALA_HOME/build/pack/partest.properties" ] ; then
-        (cd "$SCALA_HOME" && ant -q test.suite.init) # builds pack, downloads partest and writes classpath to build/pack/partest.properties
+    if [ ! -f "$SCALA_HOME/build/quick/partest.properties" ] ; then
+        (cd "$SCALA_HOME" && sbt dist/mkQuick) # builds quick, downloads partest and writes classpath to build/quick/partest.properties
     fi
 
-    PARTEST_CLASSPATH=$( cat "$SCALA_HOME/build/pack/partest.properties" | grep partest.classpath | sed -e 's/\\:/:/g' | cut -f2- -d= )
+    PARTEST_CLASSPATH=$( cat "$SCALA_HOME/build/quick/partest.properties" | grep partest.classpath | sed -e 's/\\:/:/g' | cut -f2- -d= )
 
     # sanity check, disabled to save time
     # $( javap -classpath $PARTEST_CLASSPATH scala.tools.partest.nest.NestRunner &> /dev/null ) || unset PARTEST_CLASSPATH
@@ -126,7 +126,7 @@ fi
 # supplied argument will be used.
 JAVA_OPTS="-Xmx1024M -Xms64M $JAVA_OPTS"
 
-# the ant task doesn't supply any options by default,
+# the sbt task doesn't supply any options by default,
 # so don't do that here either -- note that you may want to pass -optimise
 # to mimic what happens during nightlies.
 # [ -n "$SCALAC_OPTS" ] || SCALAC_OPTS="-deprecation"
