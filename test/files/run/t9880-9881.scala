@@ -8,6 +8,10 @@ object Test extends ReplTest {
     s
   }
 
+  lazy val normalizeRegex = """(import\s.*)\(.*\)""".r
+
+  override def normalize(s: String): String = normalizeRegex.replaceFirstIn(s, "$1(...)")
+
   def code =
     """
       |// import in various ways

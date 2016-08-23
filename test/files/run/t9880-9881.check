@@ -18,13 +18,13 @@ scala>
 scala> // show the imports
 
 scala> :imports
- 1) import java.lang._             (183 types, 189 terms)
- 2) import scala._                 (692 types, 728 terms)
- 3) import scala.Predef._          (127 terms, 62 are implicit)
- 4) import java.util.Date          (1 types, 1 terms)
- 5) import scala.util._            (56 types, 60 terms)
- 6) import scala.reflect.runtime.{universe=>ru} (1 terms)
- 7) import ru.TypeTag              (1 types, 1 terms)
+ 1) import java.lang._             (...)
+ 2) import scala._                 (...)
+ 3) import scala.Predef._          (...)
+ 4) import java.util.Date          (...)
+ 5) import scala.util._            (...)
+ 6) import scala.reflect.runtime.{universe=>ru} (...)
+ 7) import ru.TypeTag              (...)
 
 scala> 
 
