@@ -507,7 +507,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
     // this makes trees for mixed in fields, as well as for bitmap fields (their RHS will be EmptyTree because they are initialized implicitly)
     // if we decide to explicitly initialize, use this RHS: if (symbol.info.typeSymbol.asClass == BooleanClass) FALSE else ZERO)
     // could detect it's a bitmap field with something like `sym.name.startsWith(nme.BITMAP_PREFIX)` (or perhaps something more robust...)
-    def mkField(sym: Symbol, rhs: Tree = EmptyTree) = typedPos(sym.pos)(ValDef(sym, rhs)).asInstanceOf[ValDef]
+    def mkTypedValDef(sym: Symbol, rhs: Tree = EmptyTree) = typedPos(sym.pos)(ValDef(sym, rhs)).asInstanceOf[ValDef]
 
     /**
       * Desugar a local `lazy val x: Int = rhs` into
@@ -526,6 +526,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       */
     private def mkLazyLocalDef(lazyVal: Symbol, rhs: Tree): Tree = {
       import CODE._
+      import scala.reflect.NameTransformer.LAZY_LOCAL_SUFFIX_STRING
       val owner = lazyVal.owner
 
       val lazyValType = lazyVal.tpe.resultType
@@ -534,15 +535,21 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
       val lazyName  = lazyVal.name.toTermName
       val pos       = lazyVal.pos.focus
-      val flags     = (lazyVal.flags & FieldFlags | ARTIFACT | MUTABLE) & ~(IMPLICIT | STABLE) // TODO: why include MUTABLE???
-      val holderSym = owner.newValue(lazyName append nme.LAZY_LOCAL_SUFFIX_STRING, pos, flags) setInfo refTpe
+
+      // used twice: once in the same owner as the lazy val, another time inside the compute method
+      val localLazyName = lazyName append LAZY_LOCAL_SUFFIX_STRING
+
+      // The lazy holder val need not be mutable, as we write to its field.
+      // In fact, it MUST not be mutable to avoid capturing it as an ObjectRef in lambdalift
+      // Must be marked LAZY to allow forward references, as in `def test2 { println(s.length) ; lazy val s = "abc" }
+      val holderSym = owner.newValue(localLazyName, pos, LAZY | ARTIFACT) setInfo refTpe
 
       val initializedGetter = refTpe.member(nme.initialized)
       val isUnit            = refClass == LazyUnitClass
       val valueGetter       = if (isUnit) NoSymbol else refTpe.member(nme.value)
-      val getValue          = if (isUnit) UNIT     else Apply(Select(Ident(holderSym), valueGetter), Nil)
+      def getValue          = if (isUnit) UNIT     else Apply(Select(Ident(holderSym), valueGetter), Nil)
 
-      def mkChecked(res: Tree) = If(Ident(holderSym) DOT initializedGetter, getValue, res)
+      def mkChecked(alreadyComputed: Tree, compute: Tree) = If(Ident(holderSym) DOT initializedGetter, alreadyComputed, compute)
 
       val computerSym =
         owner.newMethod(lazyName append nme.LAZY_SLOW_SUFFIX, pos, ARTIFACT | PRIVATE) setInfo MethodType(Nil, lazyValType)
@@ -550,14 +557,26 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       val rhsAtComputer = rhs.changeOwner(lazyVal -> computerSym)
       val computer = mkAccessor(computerSym) {
         val setInitialized = Apply(Select(Ident(holderSym), initializedGetter.setterIn(refClass)), TRUE :: Nil)
-        val setValue =
-          if (isUnit) rhsAtComputer
-          else Apply(Select(Ident(holderSym), valueGetter.setterIn(refClass)), rhsAtComputer :: Nil)
 
-        gen.mkSynchronized(Ident(holderSym))(mkChecked(Block(List(setValue, setInitialized), getValue)))
+        if (isUnit)
+          gen.mkSynchronized(Ident(holderSym))(mkChecked(alreadyComputed = UNIT, compute = Block(List(rhsAtComputer, setInitialized), UNIT)))
+        else {
+          // we write to a local var outside of the synchronized block to avoid boxing/unboxing (synchronized method is polymorphic)
+          val resVarSym = computerSym.newVariable(localLazyName, pos, ARTIFACT) setInfo lazyValType
+
+          val alreadyComputed = Assign(Ident(resVarSym), getValue)
+          val storeComputed   = Apply(Select(Ident(holderSym), valueGetter.setterIn(refClass)), Ident(resVarSym) :: Nil)
+          val compute = Block(List(Assign(Ident(resVarSym), rhsAtComputer), storeComputed), setInitialized)
+
+          Block(
+            mkTypedValDef(resVarSym) ::
+            gen.mkSynchronized(Ident(holderSym))(mkChecked(alreadyComputed, compute)) :: Nil,
+            Ident(resVarSym)
+          )
+        }
       }
 
-      val accessor = mkAccessor(lazyVal)(mkChecked(Apply(Ident(computerSym), Nil)))
+      val accessor = mkAccessor(lazyVal)(mkChecked(getValue, Apply(Ident(computerSym), Nil)))
 
       // do last!
       // remove LAZY: prevent lazy expansion in mixin
@@ -566,7 +585,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       // lifted into a trait (TODO: not sure about the details here)
       lazyVal.resetFlag(LAZY | STABLE | ACCESSOR)
 
-      Thicket(mkField(holderSym, New(refTpe)) :: computer :: accessor :: Nil)
+      Thicket(mkTypedValDef(holderSym, New(refTpe)) :: computer :: accessor :: Nil)
     }
 
     // synth trees for accessors/fields and trait setters when they are mixed into a class
@@ -623,7 +642,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         case getter if getter hasAllFlags (LAZY | METHOD)   => superLazy(getter)
         case setter if setter.isSetter                      => setterBody(setter) map mkAccessor(setter)
         case getter if getter.hasFlag(ACCESSOR)             => getterBody(getter) map mkAccessor(getter)
-        case field  if !(field hasFlag METHOD)              => Some(mkField(field)) // vals/vars and module vars (cannot have flags PACKAGE | JAVA since those never receive NEEDS_TREES)
+        case field  if !(field hasFlag METHOD)              => Some(mkTypedValDef(field)) // vals/vars and module vars (cannot have flags PACKAGE | JAVA since those never receive NEEDS_TREES)
         case _ => None
       }
     }
@@ -685,7 +704,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
           if (clazz.isClass) cd
           else { // local module -- symbols cannot be generated by info transformer, so do it all here
             val moduleVar = newModuleVarSymbol(currentOwner, statSym, statSym.info.resultType, 0)
-            Thicket(cd :: mkField(moduleVar) :: mkAccessor(statSym)(moduleInit(statSym)) :: Nil)
+            Thicket(cd :: mkTypedValDef(moduleVar) :: mkAccessor(statSym)(moduleInit(statSym)) :: Nil)
           }
 
         case tree =>
