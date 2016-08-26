@@ -1117,7 +1117,8 @@ abstract class Erasure extends InfoTransform
 
         case TypeApply(fun, args) if (fun.symbol.owner != AnyClass &&
                                       fun.symbol != Object_asInstanceOf &&
-                                      fun.symbol != Object_isInstanceOf) =>
+                                      fun.symbol != Object_isInstanceOf &&
+                                      fun.symbol != Object_synchronized) =>
           // leave all other type tests/type casts, remove all other type applications
           preErase(fun)
 
@@ -1194,7 +1195,7 @@ abstract class Erasure extends InfoTransform
         else {
           val tree1 = preErase(tree)
           tree1 match {
-            case TypeApply(fun, targs @ List(targ)) if fun.symbol == Any_asInstanceOf && targ.tpe == UnitTpe =>
+            case TypeApply(fun, targs @ List(targ)) if (fun.symbol == Any_asInstanceOf  || fun.symbol == Object_synchronized) && targ.tpe == UnitTpe =>
               // SI-9066 prevent transforming `o.asInstanceOf[Unit]` to `o.asInstanceOf[BoxedUnit]`.
               // adaptMember will then replace the call by a reference to BoxedUnit.UNIT.
               treeCopy.TypeApply(tree1, transform(fun), targs).clearType()

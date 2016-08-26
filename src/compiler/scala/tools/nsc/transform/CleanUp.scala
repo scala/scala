@@ -456,6 +456,11 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
 
         super.transform(treeCopy.ApplyDynamic(tree, atPos(fn.pos)(Ident(SymbolLiteral_dummy).setType(SymbolLiteral_dummy.info)), LIT(SymbolLiteral_bootstrap) :: arg :: Nil))
 
+      // Drop the TypeApply, which was used in Erasure to make `synchronized { ... } ` erase like `...`
+      // (and to avoid boxing the argument to the polymorphic `synchronized` method).
+      case app@Apply(TypeApply(fun, _), args) if fun.symbol == Object_synchronized =>
+        super.transform(treeCopy.Apply(app, fun, args))
+
       // Replaces `Array(Predef.wrapArray(ArrayValue(...).$asInstanceOf[...]), <tag>)`
       // with just `ArrayValue(...).$asInstanceOf[...]`
       //
