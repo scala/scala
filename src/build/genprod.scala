@@ -15,7 +15,7 @@
  *  @author  Burak Emir, Stephane Micheloud, Geoffrey Washburn, Paul Phillips
  */
 object genprod extends App {
-  val MaxArity = 22
+  final val MaxArity = 22
   def arities = (1 to MaxArity).toList
 
   class Group(val name: String) {
