@@ -9,7 +9,7 @@
 import scala.language.postfixOps
 
 /** This program generates the ProductN, TupleN, FunctionN,
- *  and AbstractFunctionN, where 0 <= N <= MAX_ARITY.
+ *  and AbstractFunctionN, where 0 <= N <= MaxArity.
  *
  *    Usage: scala genprod <directory>
  *      where the argument is the desired output directory
@@ -17,8 +17,8 @@ import scala.language.postfixOps
  *  @author  Burak Emir, Stephane Micheloud, Geoffrey Washburn, Paul Phillips
  */
 object genprod extends App {
-  val MAX_ARITY = 22
-  def arities = (1 to MAX_ARITY).toList
+  val MaxArity = 22
+  def arities = (1 to MaxArity).toList
 
   class Group(val name: String) {
     def className(i: Int) = name + i
@@ -299,7 +299,7 @@ class Tuple(val i: Int) extends Group("Tuple") with Arity {
   // prettifies it a little if it's overlong
   def mkToString() = {
   def str(xs: List[String]) = xs.mkString(""" + "," + """)
-    if (i <= MAX_ARITY / 2) str(mdefs)
+    if (i <= MaxArity / 2) str(mdefs)
     else {
       val s1 = str(mdefs take (i / 2))
       val s2 = str(mdefs drop (i / 2))
