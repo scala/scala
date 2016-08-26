@@ -1,12 +1,10 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2016, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
-
-import scala.language.postfixOps
 
 /** This program generates the ProductN, TupleN, FunctionN,
  *  and AbstractFunctionN, where 0 <= N <= MaxArity.
@@ -220,7 +218,7 @@ class Function(val i: Int) extends Group("Function") with Arity {
 """  /** Creates a curried version of this function.
    *
    *  @return   a function `f` such that `f%s == apply%s`
-   */""".format(xdefs map ("(" + _ + ")") mkString, commaXs)
+   */""".format(xdefs.map("(" + _ + ")").mkString, commaXs)
   }
 
   def tupleMethod = {
@@ -363,7 +361,7 @@ class Product(val i: Int) extends Group("Product") with Arity {
   def cases = {
     val xs = for ((x, i) <- mdefs.zipWithIndex) yield "case %d => %s".format(i, x)
     val default = "case _ => throw new IndexOutOfBoundsException(n.toString())"
-    "\n" + ((xs ::: List(default)) map ("    " + _ + "\n") mkString)
+    "\n" + ((xs ::: List(default)).map("    " + _ + "\n").mkString)
   }
   def proj = {
     (mdefs,targs).zipped.map( (_,_) ).zipWithIndex.map { case ((method,typeName),index) =>
@@ -372,7 +370,7 @@ class Product(val i: Int) extends Group("Product") with Arity {
          |   */
          |  def %s: %s
          |""".stripMargin.format(index + 1, index + 1, method, typeName)
-    } mkString
+    }.mkString
   }
 
   def apply() = {
