@@ -556,6 +556,7 @@ lazy val junit = project.in(file("test") / "junit")
   .settings(disablePublishing: _*)
   .settings(
     fork in Test := true,
+    javaOptions in Test += "-Xss5M",
     libraryDependencies ++= Seq(junitDep, junitInterfaceDep, jolDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
     testFrameworks -= new TestFramework("org.scalacheck.ScalaCheckFramework"),
