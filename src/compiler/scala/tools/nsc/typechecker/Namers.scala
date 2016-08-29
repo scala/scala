@@ -952,7 +952,8 @@ trait Namers extends MethodSynthesis {
            !tpe.typeSymbolDirect.isModuleClass // Infer Foo.type instead of "object Foo"
         && (tpe.widen <:< pt)                  // Don't widen our way out of conforming to pt
         && (   sym.isVariable
-            || sym.isMethod && !sym.hasAccessorFlag
+            || sym.hasFlag(ACCESSOR) && !sym.hasFlag(STABLE)
+            || sym.isMethod && !sym.hasFlag(ACCESSOR)
             || isHidden(tpe)
            )
       )
