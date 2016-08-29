@@ -83,21 +83,6 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
        ) Some(x.asInstanceOf[T])
     else None
 
-  // TODO: deprecate overloads in 2.12.0, remove in 2.13.0
-  def unapply(x: Byte)    : Option[T] = unapplyImpl(x, classOf[Byte])
-  def unapply(x: Short)   : Option[T] = unapplyImpl(x, classOf[Short])
-  def unapply(x: Char)    : Option[T] = unapplyImpl(x, classOf[Char])
-  def unapply(x: Int)     : Option[T] = unapplyImpl(x, classOf[Int])
-  def unapply(x: Long)    : Option[T] = unapplyImpl(x, classOf[Long])
-  def unapply(x: Float)   : Option[T] = unapplyImpl(x, classOf[Float])
-  def unapply(x: Double)  : Option[T] = unapplyImpl(x, classOf[Double])
-  def unapply(x: Boolean) : Option[T] = unapplyImpl(x, classOf[Boolean])
-  def unapply(x: Unit)    : Option[T] = unapplyImpl(x, classOf[Unit])
-
-  private[this] def unapplyImpl(x: Any, primitiveCls: java.lang.Class[_]): Option[T] =
-    if (runtimeClass.isInstance(x) || runtimeClass.isAssignableFrom(primitiveCls)) Some(x.asInstanceOf[T])
-    else None
-
   // case class accessories
   override def canEqual(x: Any) = x.isInstanceOf[ClassTag[_]]
   override def equals(x: Any) = x.isInstanceOf[ClassTag[_]] && this.runtimeClass == x.asInstanceOf[ClassTag[_]].runtimeClass
