@@ -399,4 +399,6 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
    */
   def stringPrefix: String
 
+  protected def sizeHintTo(b: mutable.Builder[_, _], delta: Int): Unit = {}
+
 }

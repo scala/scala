@@ -141,7 +141,7 @@ self =>
   override /*TraversableLike*/ def drop(n: Int): Repr = {
     val b = newBuilder
     val lo = math.max(0, n)
-    b.sizeHint(this, -lo)
+    sizeHintTo(b, -lo)
     var i = 0
     val it = iterator
     while (i < n && it.hasNext) {
@@ -235,7 +235,7 @@ self =>
    */
   def dropRight(n: Int): Repr = {
     val b = newBuilder
-    if (n >= 0) b.sizeHint(this, -n)
+    if (n >= 0) sizeHintTo(b, -n)
     val lead = iterator drop n
     val it = iterator
     while (lead.hasNext) {

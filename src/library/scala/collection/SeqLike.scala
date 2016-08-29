@@ -272,7 +272,7 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
     for (x <- this)
       xs = x :: xs
     val b = newBuilder
-    b.sizeHint(this)
+    sizeHintTo(b, 0)
     for (x <- xs)
       b += x
     b.result()
