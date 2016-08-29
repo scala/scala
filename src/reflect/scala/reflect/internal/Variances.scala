@@ -50,9 +50,8 @@ trait Variances {
          sym.isParameter
       && !(tvar.isTypeParameterOrSkolem && sym.isTypeParameterOrSkolem && tvar.owner == sym.owner)
     )
-    // return Bivariant if `sym` is local to a term
-    // or is private[this] or protected[this]
-    def isLocalOnly(sym: Symbol) = !sym.owner.isClass || (
+    // Is `sym` is local to a term or is private[this] or protected[this]?
+    def isExemptFromVariance(sym: Symbol): Boolean = !sym.owner.isClass || (
          (sym.isLocalToThis || sym.isSuperAccessor) // super accessors are implicitly local #4345
       && !escapedLocals(sym)
     )
@@ -73,7 +72,7 @@ trait Variances {
       def relativeVariance(tvar: Symbol): Variance = {
         def nextVariance(sym: Symbol, v: Variance): Variance = (
           if (shouldFlip(sym, tvar)) v.flip
-          else if (isLocalOnly(sym)) Bivariant
+          else if (isExemptFromVariance(sym)) Bivariant
           else if (sym.isAliasType) (
             // Unsound pre-2.11 behavior preserved under -Xsource:2.10
             if (settings.isScala211 || sym.isOverridingSymbol) Invariant
@@ -138,7 +137,10 @@ trait Variances {
         tp
       }
       private def shouldDealias(sym: Symbol): Boolean = {
-        sym.isAliasType && isLocalOnly(sym)
+        // The RHS of (private|protected)[this] type aliases are excluded from variance checks. This is
+        // implemented in relativeVariance.
+        // As such, we need to expand references to them to retain soundness. Example: neg/t8079a.scala
+        sym.isAliasType && isExemptFromVariance(sym)
       }
       def validateDefinition(base: Symbol) {
         val saved = this.base
