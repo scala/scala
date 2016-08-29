@@ -172,11 +172,16 @@ trait Types
   trait RewrappingTypeProxy extends SimpleTypeProxy {
     protected def maybeRewrap(newtp: Type) = (
       if (newtp eq underlying) this
-      // BoundedWildcardTypes reach here during erroneous compilation: neg/t6258
-      // Higher-kinded exclusion is because [x]CC[x] compares =:= to CC: pos/t3800
-      // Otherwise, if newtp =:= underlying, don't rewrap it.
-      else if (!newtp.isWildcard && !newtp.isHigherKinded && (newtp =:= underlying)) this
-      else rewrap(newtp)
+      else {
+        // - BoundedWildcardTypes reach here during erroneous compilation: neg/t6258
+        // - Higher-kinded exclusion is because [x]CC[x] compares =:= to CC: pos/t3800
+        // - Avoid reusing the existing Wrapped(RefinedType) when we've be asked to wrap an =:= RefinementTypeRef, the
+        //   distinction is important in base type sequences. See TypesTest.testExistentialRefinement
+        // - Otherwise, if newtp =:= underlying, don't rewrap it.
+        val hasSpecialMeaningBeyond_=:= = newtp.isWildcard || newtp.isHigherKinded || newtp.isInstanceOf[RefinementTypeRef]
+        if (!hasSpecialMeaningBeyond_=:= && (newtp =:= underlying)) this
+        else rewrap(newtp)
+      }
     )
     protected def rewrap(newtp: Type): Type
 
@@ -1589,13 +1594,11 @@ trait Types
    */
   case class RefinedType(override val parents: List[Type],
                          override val decls: Scope) extends CompoundType with RefinedTypeApi {
-
     override def isHigherKinded = (
       parents.nonEmpty &&
       (parents forall typeIsHigherKinded) &&
       !phase.erasedTypes
     )
-
     override def typeParams =
       if (isHigherKinded) firstParent.typeParams
       else super.typeParams
@@ -1897,7 +1900,7 @@ trait Types
     require(sym.isRefinementClass, sym)
 
     // I think this is okay, but see #1241 (r12414), #2208, and typedTypeConstructor in Typers
-    override protected def normalizeImpl: Type = sym.info.normalize
+    override protected def normalizeImpl: Type = pre.memberInfo(sym).normalize
     override protected def finishPrefix(rest: String) = "" + sym.info
   }
 
@@ -2704,6 +2707,7 @@ trait Types
     def isRepresentableWithWildcards = {
       val qset = quantified.toSet
       underlying match {
+        case _: RefinementTypeRef => false
         case TypeRef(pre, sym, args) =>
           def isQuantified(tpe: Type): Boolean = {
             (tpe exists (t => qset contains t.typeSymbol)) ||
@@ -3521,7 +3525,9 @@ trait Types
     if ((parents eq original.parents) && (decls eq original.decls)) original
     else {
       val owner = original.typeSymbol.owner
-      val result = refinedType(parents, owner)
+      val result =
+        if (isIntersectionTypeForLazyBaseType(original)) intersectionTypeForLazyBaseType(parents)
+        else refinedType(parents, owner)
       val syms1 = decls.toList
       for (sym <- syms1)
         result.decls.enter(sym.cloneSymbol(result.typeSymbol))
@@ -3595,6 +3601,14 @@ trait Types
   def intersectionType(tps: List[Type]): Type = tps match {
     case tp :: Nil  => tp
     case _          => refinedType(tps, commonOwner(tps))
+  }
+  def intersectionTypeForLazyBaseType(tps: List[Type]) = tps match {
+    case tp :: Nil  => tp
+    case _          => RefinedType(tps, newScope, tps.head.typeSymbolDirect)
+  }
+  def isIntersectionTypeForLazyBaseType(tp: RefinedType) = tp.parents match {
+    case head :: _ => tp.typeSymbolDirect eq head.typeSymbolDirect
+    case _ => false
   }
 
 /**** This implementation to merge parents was checked in in commented-out
@@ -4403,89 +4417,120 @@ trait Types
     finally foreach2(tvs, saved)(_.suspended = _)
   }
 
+  final def stripExistentialsAndTypeVars(ts: List[Type], expandLazyBaseType: Boolean = false): (List[Type], List[Symbol]) = {
+    val needsStripping = ts.exists {
+      case _: RefinedType | _: TypeVar | _: ExistentialType => true
+      case _ => false
+    }
+    if (!needsStripping) (ts, Nil) // fast path for common case
+    else {
+      val tparams = mutable.ListBuffer[Symbol]()
+      val stripped = mutable.ListBuffer[Type]()
+      def stripType(tp: Type): Unit = tp match {
+        case rt: RefinedType if isIntersectionTypeForLazyBaseType(rt) =>
+          if (expandLazyBaseType)
+            rt.parents foreach stripType
+          else {
+            devWarning(s"Unexpected RefinedType in stripExistentialsAndTypeVars $ts, not expanding")
+            stripped += tp
+          }
+        case ExistentialType(qs, underlying) =>
+          tparams ++= qs
+          stripType(underlying)
+        case tv@TypeVar(_, constr) =>
+          if (tv.instValid) stripType(constr.inst)
+          else if (tv.untouchable) stripped += tv
+          else abort("trying to do lub/glb of typevar " + tv)
+        case tp => stripped += tp
+      }
+      ts foreach stripType
+      (stripped.toList, tparams.toList)
+    }
+  }
+
   /** Compute lub (if `variance == Covariant`) or glb (if `variance == Contravariant`) of given list
    *  of types `tps`. All types in `tps` are typerefs or singletypes
    *  with the same symbol.
    *  Return `x` if the computation succeeds with result `x`.
    *  Return `NoType` if the computation fails.
    */
-  def mergePrefixAndArgs(tps: List[Type], variance: Variance, depth: Depth): Type = tps match {
-    case tp :: Nil => tp
-    case TypeRef(_, sym, _) :: rest =>
-      val pres = tps map (_.prefix) // prefix normalizes automatically
-      val pre = if (variance.isPositive) lub(pres, depth) else glb(pres, depth)
-      val argss = tps map (_.normalize.typeArgs) // symbol equality (of the tp in tps) was checked using typeSymbol, which normalizes, so should normalize before retrieving arguments
-      val capturedParams = new ListBuffer[Symbol]
-      try {
-        if (sym == ArrayClass && phase.erasedTypes) {
-          // special treatment for lubs of array types after erasure:
-          // if argss contain one value type and some other type, the lub is Object
-          // if argss contain several reference types, the lub is an array over lub of argtypes
-          if (argss exists typeListIsEmpty) {
-            NoType  // something is wrong: an array without a type arg.
-          }
-          else {
-            val args = argss map (_.head)
-            if (args.tail forall (_ =:= args.head)) typeRef(pre, sym, List(args.head))
-            else if (args exists (arg => isPrimitiveValueClass(arg.typeSymbol))) ObjectTpe
-            else typeRef(pre, sym, List(lub(args)))
-          }
-        }
-        else transposeSafe(argss) match {
-          case None =>
-            // transpose freaked out because of irregular argss
-            // catching just in case (shouldn't happen, but also doesn't cost us)
-            // [JZ] It happens: see SI-5683.
-            debuglog(s"transposed irregular matrix!? tps=$tps argss=$argss")
-            NoType
-          case Some(argsst) =>
-            val args = map2(sym.typeParams, argsst) { (tparam, as0) =>
-              val as = as0.distinct
-              if (as.size == 1) as.head
-              else if (depth.isZero) {
-                log("Giving up merging args: can't unify %s under %s".format(as.mkString(", "), tparam.fullLocationString))
-                // Don't return "Any" (or "Nothing") when we have to give up due to
-                // recursion depth. Return NoType, which prevents us from poisoning
-                // lublist's results. It can recognize the recursion and deal with it, but
-                // only if we aren't returning invalid types.
-                NoType
-              }
-              else {
-                if (tparam.variance == variance) lub(as, depth.decr)
-                else if (tparam.variance == variance.flip) glb(as, depth.decr)
-                else {
-                  val l = lub(as, depth.decr)
-                  val g = glb(as, depth.decr)
-                  if (l <:< g) l
-                  else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
-                       // just err on the conservative side, i.e. with a bound that is too high.
-                       // if(!(tparam.info.bounds contains tparam))   //@M can't deal with f-bounds, see #2251
+  def mergePrefixAndArgs(tps0: List[Type], variance: Variance, depth: Depth): Type = {
+    val (tps, tparams) = stripExistentialsAndTypeVars(tps0, expandLazyBaseType = true)
 
-                    val qvar = commonOwner(as) freshExistential "" setInfo TypeBounds(g, l)
-                    capturedParams += qvar
-                    qvar.tpe
+    val merged = tps match {
+      case tp :: Nil => tp
+      case TypeRef(_, sym, _) :: rest =>
+        val pres = tps map (_.prefix) // prefix normalizes automatically
+      val pre = if (variance.isPositive) lub(pres, depth) else glb(pres, depth)
+        val argss = tps map (_.normalize.typeArgs) // symbol equality (of the tp in tps) was checked using typeSymbol, which normalizes, so should normalize before retrieving arguments
+      val capturedParams = new ListBuffer[Symbol]
+        try {
+          if (sym == ArrayClass && phase.erasedTypes) {
+            // special treatment for lubs of array types after erasure:
+            // if argss contain one value type and some other type, the lub is Object
+            // if argss contain several reference types, the lub is an array over lub of argtypes
+            if (argss exists typeListIsEmpty) {
+              NoType  // something is wrong: an array without a type arg.
+            }
+            else {
+              val args = argss map (_.head)
+              if (args.tail forall (_ =:= args.head)) typeRef(pre, sym, List(args.head))
+              else if (args exists (arg => isPrimitiveValueClass(arg.typeSymbol))) ObjectTpe
+              else typeRef(pre, sym, List(lub(args)))
+            }
+          }
+          else transposeSafe(argss) match {
+            case None =>
+              // transpose freaked out because of irregular argss
+              // catching just in case (shouldn't happen, but also doesn't cost us)
+              // [JZ] It happens: see SI-5683.
+              debuglog(s"transposed irregular matrix!? tps=$tps argss=$argss")
+              NoType
+            case Some(argsst) =>
+              val args = map2(sym.typeParams, argsst) { (tparam, as0) =>
+                val as = as0.distinct
+                if (as.size == 1) as.head
+                else if (depth.isZero) {
+                  log("Giving up merging args: can't unify %s under %s".format(as.mkString(", "), tparam.fullLocationString))
+                  // Don't return "Any" (or "Nothing") when we have to give up due to
+                  // recursion depth. Return NoType, which prevents us from poisoning
+                  // lublist's results. It can recognize the recursion and deal with it, but
+                  // only if we aren't returning invalid types.
+                  NoType
+                }
+                else {
+                  if (tparam.variance == variance) lub(as, depth.decr)
+                  else if (tparam.variance == variance.flip) glb(as, depth.decr)
+                  else {
+                    val l = lub(as, depth.decr)
+                    val g = glb(as, depth.decr)
+                    if (l <:< g) l
+                    else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
+                      // just err on the conservative side, i.e. with a bound that is too high.
+                      // if(!(tparam.info.bounds contains tparam))   //@M can't deal with f-bounds, see #2251
+
+                      val qvar = commonOwner(as) freshExistential "" setInfo TypeBounds(g, l)
+                      capturedParams += qvar
+                      qvar.tpe
+                    }
                   }
                 }
               }
-            }
-            if (args contains NoType) NoType
-            else existentialAbstraction(capturedParams.toList, typeRef(pre, sym, args))
+              if (args contains NoType) NoType
+              else existentialAbstraction(capturedParams.toList, typeRef(pre, sym, args))
+          }
+        } catch {
+          case ex: MalformedType => NoType
         }
-      } catch {
-        case ex: MalformedType => NoType
-      }
-    case SingleType(_, sym) :: rest =>
-      val pres = tps map (_.prefix)
-      val pre = if (variance.isPositive) lub(pres, depth) else glb(pres, depth)
-      try singleType(pre, sym)
-      catch { case ex: MalformedType => NoType }
-    case ExistentialType(tparams, quantified) :: rest =>
-      mergePrefixAndArgs(quantified :: rest, variance, depth) match {
-        case NoType => NoType
-        case tpe    => existentialAbstraction(tparams, tpe)
-      }
-    case _ =>
-      abort(s"mergePrefixAndArgs($tps, $variance, $depth): unsupported tps")
+      case SingleType(_, sym) :: rest =>
+        val pres = tps map (_.prefix)
+        val pre = if (variance.isPositive) lub(pres, depth) else glb(pres, depth)
+        try singleType(pre, sym)
+        catch { case ex: MalformedType => NoType }
+      case _ =>
+        abort(s"mergePrefixAndArgs($tps, $variance, $depth): unsupported tps")
+    }
+    existentialAbstraction(tparams, merged)
   }
 
   def addMember(thistp: Type, tp: Type, sym: Symbol): Unit = addMember(thistp, tp, sym, AnyDepth)

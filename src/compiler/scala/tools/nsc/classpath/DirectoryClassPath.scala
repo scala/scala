@@ -5,6 +5,9 @@ package scala.tools.nsc.classpath
 
 import java.io.File
 import java.net.URL
+import java.util
+import java.util.Comparator
+
 import scala.reflect.io.{AbstractFile, PlainFile}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 import FileUtils._
@@ -87,9 +90,24 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
     if (packageDir.exists && packageDir.isDirectory) Some(packageDir)
     else None
   }
-  protected def listChildren(dir: File, filter: Option[File => Boolean]): Array[File] = filter match {
-    case Some(f) => dir.listFiles(mkFileFilter(f))
-    case None => dir.listFiles()
+  protected def listChildren(dir: File, filter: Option[File => Boolean]): Array[File] = {
+    val listing = filter match {
+      case Some(f) => dir.listFiles(mkFileFilter(f))
+      case None => dir.listFiles()
+    }
+
+    // Sort by file name for stable order of directory .class entries in package scope.
+    // This gives stable results ordering of base type sequences for unrelated classes
+    // with the same base type depth.
+    //
+    // Notably, this will stably infer`Product with Serializable`
+    // as the type of `case class C(); case class D(); List(C(), D()).head`, rather than the opposite order.
+    // On Mac, the HFS performs this sorting transparently, but on Linux the order is unspecified.
+    //
+    // Note this behaviour can be enabled with in javac with `javac -XDsortfiles`, but that's only
+    // intended to improve determinism of the compiler for compiler hackers.
+    util.Arrays.sort(listing, (o1: File, o2: File) => o1.getName.compareTo(o2.getName))
+    listing
   }
   protected def getName(f: File): String = f.getName
   protected def toAbstractFile(f: File): AbstractFile = new PlainFile(new scala.reflect.io.File(f))

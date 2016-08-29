@@ -321,13 +321,20 @@ trait MethodSynthesis {
         // starts compiling (instead of failing like it's supposed to) because the typer
         // expects to be able to identify escaping locals in typedDefDef, and fails to
         // spot that brand of them. In other words it's an artifact of the implementation.
+        //
+        // JZ: ... or we could go back to uniformly using explicit result types in all cases
+        //         if we fix `dropExistential`. More details https://github.com/scala/scala-dev/issues/165
         val getterTp = derivedSym.tpe_*.finalResultType
-        val tpt = getterTp.widen match {
-          // Range position errors ensue if we don't duplicate this in some
-          // circumstances (at least: concrete vals with existential types.)
-          case _: ExistentialType => TypeTree() setOriginal (tree.tpt.duplicate setPos tree.tpt.pos.focus)
-          case _ if tree.mods.isDeferred    => TypeTree() setOriginal tree.tpt // keep type tree of original abstract field
-          case _                  => TypeTree(getterTp)
+        // Range position errors ensue if we don't duplicate this in some
+        // circumstances (at least: concrete vals with existential types.)
+        def inferredTpt = TypeTree() setOriginal (tree.tpt.duplicate setPos tree.tpt.pos.focus)
+        val tpt = getterTp match {
+          case _: ExistentialType => inferredTpt
+          case _ => getterTp.widen match {
+            case _: ExistentialType => inferredTpt
+            case _ if tree.mods.isDeferred => TypeTree() setOriginal tree.tpt // keep type tree of original abstract field
+            case _ => TypeTree(getterTp)
+          }
         }
         tpt setPos tree.tpt.pos.focus
       }

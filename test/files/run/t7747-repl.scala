@@ -10,9 +10,7 @@ object Test extends ReplTest {
 
   override def normalize(s: String) = {
     // replace indylambda function names by <function0>
-    val s2 = """\$Lambda.*""".r.replaceAllIn(s, "<function0>")
-    // Normalize ordering of LUB
-    s2.replace("Serializable with Product", "Product with Serializable")
+    """\$Lambda.*""".r.replaceAllIn(s, "<function0>")
   }
 
   def code = """
