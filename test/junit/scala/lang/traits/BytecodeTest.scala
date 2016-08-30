@@ -244,7 +244,6 @@ class BytecodeTest extends BytecodeTesting {
 
   @Test
   def sd143(): Unit = {
-    // this tests the status quo, which is wrong.
     val code =
       """class A { def m = 1 }
         |class B extends A { override def m = 2 }
@@ -253,10 +252,28 @@ class BytecodeTest extends BytecodeTesting {
         |  override def m = super[T].m // should invoke A.m
         |}
       """.stripMargin
-    val List(_, _, c, _) = compileClasses(code)
-    // even though the bytecode refers to A.m, invokespecial will resolve to B.m
-    assertSameCode(getMethod(c, "m"),
-      List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "A", "m", "()I", false), Op(IRETURN)))
+
+    val err =
+      """cannot emit super call: the selected method m is declared in class A, which is not the direct superclass of class C.
+        |An unqualified super call (super.m) would be allowed.""".stripMargin
+    val cls = compileClasses(code, allowMessage = _.msg contains err)
+    assert(cls.isEmpty, cls.map(_.name))
+  }
+
+  @Test
+  def sd143b(): Unit = {
+    val jCode = List("interface A { default int m() { return 1; } }" -> "A.java")
+    val code =
+      """class B extends A { override def m = 2 }
+        |trait T extends A
+        |class C extends B with T {
+        |  override def m = super[T].m
+        |}
+      """.stripMargin
+
+    val err = "unable to emit super call unless interface A (which declares method m) is directly extended by class C"
+    val cls = compileClasses(code, jCode, allowMessage = _.msg contains err)
+    assert(cls.isEmpty, cls.map(_.name))
   }
 
   @Test

@@ -2040,7 +2040,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               override def matches(sym: Symbol, sym1: Symbol) =
                 if (sym.isSkolem) matches(sym.deSkolemize, sym1)
                 else if (sym1.isSkolem) matches(sym, sym1.deSkolemize)
-                else super[SubstTypeMap].matches(sym, sym1)
+                else super.matches(sym, sym1)
             }
             // allow defaults on by-name parameters
             if (sym hasFlag BYNAMEPARAM)
