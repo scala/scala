@@ -65,18 +65,18 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
   /** Gives a hint that one expects the `result` of this builder
    *  to have the same size as the given collection, plus some delta. This will
    *  provide a hint only if the collection is known to have a cheap
-   *  `size` method. Currently this is assumed to be the case if and only if
-   *  the collection is of type `IndexedSeqLike`.
-   *  Some builder classes
-   *  will optimize their representation based on the hint. However,
+   *  `size` method, which is determined by calling `sizeHint`.
+   *
+   *  Some builder classes will optimize their representation based on the hint. However,
    *  builder implementations are still required to work correctly even if the hint is
    *  wrong, i.e. a different number of elements is added.
    *
    *  @param coll  the collection which serves as a hint for the result's size.
    */
   def sizeHint(coll: TraversableLike[_, _]) {
-    if (coll.isInstanceOf[collection.IndexedSeqLike[_,_]]) {
-      sizeHint(coll.size)
+    coll.sizeHintIfCheap match {
+      case -1 =>
+      case n => sizeHint(n)
     }
   }
 
@@ -94,8 +94,9 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
    *  @param delta a correction to add to the `coll.size` to produce the size hint.
    */
   def sizeHint(coll: TraversableLike[_, _], delta: Int) {
-    if (coll.isInstanceOf[collection.IndexedSeqLike[_,_]]) {
-      sizeHint(coll.size + delta)
+    coll.sizeHintIfCheap match {
+      case -1 =>
+      case n => sizeHint(n + delta)
     }
   }
 
@@ -112,8 +113,10 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
    *                       than collection's size are reduced.
    */
   def sizeHintBounded(size: Int, boundingColl: TraversableLike[_, _]) {
-    if (boundingColl.isInstanceOf[collection.IndexedSeqLike[_,_]])
-      sizeHint(size min boundingColl.size)
+    boundingColl.sizeHintIfCheap match {
+      case -1 =>
+      case n => sizeHint(size min n)
+    }
   }
 
   /** Creates a new builder by applying a transformation function to
