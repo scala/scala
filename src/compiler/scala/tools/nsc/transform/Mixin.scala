@@ -71,15 +71,15 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
    *     (private modules, on the other hand, are implemented statically, but their
    *      module variable is not. all such private modules are lifted, because
    *      non-lifted private modules have been eliminated in ExplicitOuter)
-   *   - field accessors and superaccessors, except for lazy value accessors which become initializer
-   *     methods in the impl class (because they can have arbitrary initializers)
+   *   - field accessors and superaccessors
    */
   private def isImplementedStatically(sym: Symbol) = (
     (sym.isMethod || ((sym hasFlag MODULE) && !sym.isStatic))
+      // TODO:       ^^^ non-static modules should have been turned into methods by fields by now, no? maybe the info transformer hasn't run???
     && notDeferred(sym)
     && sym.owner.isTrait
     && (!sym.isModule || sym.hasFlag(PRIVATE | LIFTED))
-    && (!(sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isLazy)
+    && (!(sym hasFlag (ACCESSOR | SUPERACCESSOR)) || (sym hasFlag LAZY))
     && !sym.isPrivate
     && !sym.hasAllFlags(LIFTED | MODULE | METHOD)
     && !sym.isConstructor
@@ -181,9 +181,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
         else {
           assert(member.isTerm && !member.isDeferred, member)
           // disable assert to support compiling against code compiled by an older compiler (until we re-starr)
-          // assert(member hasFlag LAZY | PRESUPER, s"unexpected $member in $clazz ${member.debugFlagString}")
-          // lazy vals still leave field symbols lying around in traits -- TODO: never emit them to begin with
-          // ditto for early init vals
+          // assert(member hasFlag PRESUPER, s"unexpected $member in $clazz ${member.debugFlagString}")
           clazz.info.decls.unlink(member)
         }
 
@@ -407,7 +405,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
         if (clazz.isTrait || sym.isSuperAccessor) addDefDef(sym)
         // implement methods mixed in from a supertrait (the symbols were created by mixinTraitMembers)
         else if (sym.hasFlag(ACCESSOR) && !sym.hasFlag(DEFERRED)) {
-          assert(sym hasFlag (PARAMACCESSOR), s"mixed in $sym from $clazz is not lazy/param?!?")
+          assert(sym hasFlag (PARAMACCESSOR), s"mixed in $sym from $clazz is not param?!?")
 
           // add accessor definitions
           addDefDef(sym, accessorBody(sym))
