@@ -115,7 +115,7 @@ Core commands:
   - `partest` runs partest tests (accepts options, try `partest --help`)
   - `publishLocal` publishes a distribution locally (can be used as `scalaVersion` in
     other sbt projects)
-    - Optionally `set VersionUtil.baseVersionSuffix in Global := "abcd123-SNAPSHOT"`
+    - Optionally `set baseVersionSuffix := "abcd123-SNAPSHOT"`
       where `abcd123` is the git hash of the revision being published. You can also
       use something custom like `"mypatch"`. This changes the version number from
       `2.12.0-SNAPSHOT` to something more stable (`2.12.0-abcd123-SNAPSHOT`).
