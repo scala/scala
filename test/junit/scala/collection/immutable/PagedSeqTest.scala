@@ -2,13 +2,14 @@ package scala.collection.immutable
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import org.junit.Assert._
 
 @RunWith(classOf[JUnit4])
 class PagedSeqTest {
   // should not NPE, and should equal the given Seq
   @Test
+  @Ignore("This tests a non-stack safe method in a deprecated class that requires ~1.5M stack, disabling")
   def test_SI6615(): Unit = {
     assertEquals(Seq('a'), PagedSeq.fromStrings(List.fill(5000)("a")).slice(4096, 4097))
   }
