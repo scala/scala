@@ -1,6 +1,0 @@
-C_1.scala:2: warning: JUnit tests in traits that are compiled as default methods are not executed by JUnit 4. JUnit 5 will fix this issue.
-  @org.junit.Test def foo = 0
-                      ^
-error: No warnings can be incurred under -Xfatal-warnings.
-one warning found
-one error found

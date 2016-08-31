@@ -286,12 +286,16 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                 case _ => false
               }
 
-              if (existsCompetingMethod(clazz.baseClasses))
+              def generateJUnitForwarder: Boolean = {
+                !settings.junitTraitMethodsNoForwarders &&
+                  member.annotations.nonEmpty &&
+                  JUnitAnnotations.exists(annot => annot.exists && member.hasAnnotation(annot))
+              }
+
+              if (existsCompetingMethod(clazz.baseClasses) || generateJUnitForwarder)
                 genForwarder(required = true)
               else if (settings.XgenMixinForwarders)
                 genForwarder(required = false)
-              else if (!settings.nowarnDefaultJunitMethods && JUnitTestClass.exists && member.hasAnnotation(JUnitTestClass))
-                warning(member.pos, "JUnit tests in traits that are compiled as default methods are not executed by JUnit 4. JUnit 5 will fix this issue.")
             }
 
           case _        =>
