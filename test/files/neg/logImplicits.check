@@ -1,4 +1,4 @@
-logImplicits.scala:2: applied implicit conversion from xs.type to ?{def size: ?} = implicit def _byteArrayOps(xs: Array[Byte]): scala.collection.mutable.ArrayOps.ofByte
+logImplicits.scala:2: applied implicit conversion from xs.type to ?{def size: ?} = implicit def byteArrayOps(xs: Array[Byte]): scala.collection.mutable.ArrayOps.ofByte
   def f(xs: Array[Byte]) = xs.size
                            ^
 logImplicits.scala:7: applied implicit conversion from String("abc") to ?{def map: ?} = implicit def augmentString(x: String): scala.collection.immutable.StringOps
