@@ -692,10 +692,9 @@ lazy val manual = configureAsSubproject(project)
   .settings(disableDocs: _*)
   .settings(disablePublishing: _*)
   .settings(
-    libraryDependencies ++= Seq(scalaXmlDep, antDep),
+    libraryDependencies ++= Seq(scalaXmlDep, antDep, "org.scala-lang" % "scala-library" % scalaVersion.value),
     classDirectory in Compile := (target in Compile).value / "classes"
   )
-  .dependsOn(library)
 
 lazy val libraryAll = Project("library-all", file(".") / "target" / "library-all-src-dummy")
   .settings(commonSettings: _*)
