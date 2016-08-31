@@ -136,6 +136,7 @@ public final class LambdaDeserializerTest {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private <A> A deserizalizeLambdaCreatingAllowedMap(A f1, HashMap<String, MethodHandle> cache, MethodHandles.Lookup lookup) {
         SerializedLambda serialized = writeReplace(f1);
         HashMap<String, MethodHandle> allowed = createAllowedMap(lookup, serialized);

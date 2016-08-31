@@ -45,6 +45,7 @@ public class ClearAfterClass {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T cached(String key, scala.Function0<T> t) {
         Map<String, Object> perClassCache = cache.get(getClass());
         return (T) perClassCache.computeIfAbsent(key, s -> t.apply());
