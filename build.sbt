@@ -675,7 +675,17 @@ lazy val test = project
         def isModule = true
         def annotationName = "partest"
       }, true, Array()
-    )
+    ),
+    executeTests in IntegrationTest := {
+      val result = (executeTests in IntegrationTest).value
+      if (result.overall != TestResult.Error && result.events.isEmpty) {
+        // workaround for https://github.com/sbt/sbt/issues/2722
+        val result = (executeTests in Test).value
+        (streams.value.log.error("No test events found"))
+        result.copy(overall = TestResult.Error)
+      }
+      else result
+    }
   )
 
 lazy val manual = configureAsSubproject(project)
