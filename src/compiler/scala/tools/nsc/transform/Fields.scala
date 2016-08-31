@@ -573,17 +573,11 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         if (isUnit)
           gen.mkSynchronized(Ident(holderSym))(mkChecked(alreadyComputed = UNIT, compute = Block(List(rhsAtComputer, setInitialized), UNIT)))
         else {
-          // we write to a local var outside of the synchronized block to avoid boxing/unboxing (synchronized method is polymorphic)
-          val resVarSym = computerSym.newVariable(localLazyName, pos, ARTIFACT) setInfo lazyValType
+          val valueSetter = Select(Ident(holderSym), valueGetter.setterIn(refClass))
 
-          val alreadyComputed = Assign(Ident(resVarSym), getValue)
-          val storeComputed   = Apply(Select(Ident(holderSym), valueGetter.setterIn(refClass)), Ident(resVarSym) :: Nil)
-          val compute = Block(List(Assign(Ident(resVarSym), rhsAtComputer), storeComputed), setInitialized)
-
-          Block(
-            mkTypedValDef(resVarSym) ::
-            gen.mkSynchronized(Ident(holderSym))(mkChecked(alreadyComputed, compute)) :: Nil,
-            Ident(resVarSym)
+          gen.mkSynchronized(Ident(holderSym))(mkChecked(
+              alreadyComputed = getValue,
+              compute = Block(Apply(valueSetter, rhsAtComputer :: Nil) :: setInitialized :: Nil, getValue))
           )
         }
       }
