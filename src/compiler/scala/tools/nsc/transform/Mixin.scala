@@ -287,14 +287,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
               }
 
               def generateJUnitForwarder: Boolean = {
-                !settings.junitTraitMethodsNoForwarders &&
+                settings.mixinForwarderChoices.isJunit &&
                   member.annotations.nonEmpty &&
                   JUnitAnnotations.exists(annot => annot.exists && member.hasAnnotation(annot))
               }
 
               if (existsCompetingMethod(clazz.baseClasses) || generateJUnitForwarder)
                 genForwarder(required = true)
-              else if (settings.XgenMixinForwarders)
+              else if (settings.mixinForwarderChoices.isTruthy)
                 genForwarder(required = false)
             }
 

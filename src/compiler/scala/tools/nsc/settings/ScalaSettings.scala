@@ -133,7 +133,22 @@ trait ScalaSettings extends AbsScalaSettings
 
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
   val XfullLubs         = BooleanSetting ("-Xfull-lubs", "Retains pre 2.10 behavior of less aggressive truncation of least upper bounds.")
-  val XgenMixinForwarders = BooleanSetting("-Xgen-mixin-forwarders", "Generate forwarder methods in classes inhering concrete methods from traits.")
+
+  val XmixinForceForwarders = ChoiceSetting(
+    name    = "-Xmixin-force-forwarders",
+    helpArg = "mode",
+    descr   = "Generate forwarder methods in classes inhering concrete methods from traits.",
+    choices = List("true", "junit", "false"),
+    default = "junit",
+    choicesHelp = List(
+      "Always generate mixin forwarders.",
+      "Generate mixin forwarders for JUnit-annotated methods (JUnit 4 does not support default methods).",
+      "Only generate mixin forwarders required for program correctness."))
+
+  object mixinForwarderChoices {
+    def isTruthy = XmixinForceForwarders.value == "true"
+    def isJunit = isTruthy || XmixinForceForwarders.value == "junit"
+  }
 
   // XML parsing options
   object XxmlSettings extends MultiChoiceEnumeration {

@@ -236,7 +236,7 @@ class BytecodeTest extends BytecodeTesting {
         |class C extends T
       """.stripMargin
     val List(c1, _) = compileClasses(code)
-    val List(c2, _) = newCompiler(extraArgs = "-Xgen-mixin-forwarders").compileClasses(code)
+    val List(c2, _) = newCompiler(extraArgs = "-Xmixin-force-forwarders:true").compileClasses(code)
     assert(getMethods(c1, "f").isEmpty)
     assertSameCode(getMethod(c2, "f"),
       List(VarOp(ALOAD, 0), Invoke(INVOKESTATIC, "T", "f$", "(LT;)I", true), Op(IRETURN)))
@@ -278,11 +278,11 @@ class BytecodeTest extends BytecodeTesting {
 
   @Test
   def sd210(): Unit = {
-    val forwardersCompiler = newCompiler(extraArgs = "-Xgen-mixin-forwarders")
+    val forwardersCompiler = newCompiler(extraArgs = "-Xmixin-force-forwarders:true")
     val jCode = List("interface A { default int m() { return 1; } }" -> "A.java")
 
 
-    // used to crash in the backend (SD-210) under `-Xgen-mixin-forwarders`
+    // used to crash in the backend (SD-210) under `-Xmixin-force-forwarders:true`
     val code1 =
       """trait B1 extends A // called "B1" not "B" due to scala-dev#214
         |class C extends B1
@@ -291,7 +291,7 @@ class BytecodeTest extends BytecodeTesting {
     val List(_, c1a) = compileClasses(code1, jCode)
     assert(getAsmMethods(c1a, "m").isEmpty) // ok, no forwarder
 
-    // here we test a warning. without `-Xgen-mixin-forwarders`, the forwarder would not be
+    // here we test a warning. without `-Xmixin-force-forwarders:true`, the forwarder would not be
     // generated, it is not necessary for correctness.
     val warn = "Unable to implement a mixin forwarder for method m in class C unless interface A is directly extended by class C"
     val List(_, c1b) = forwardersCompiler.compileClasses(code1, jCode, allowMessage = _.msg.contains(warn))
