@@ -748,9 +748,9 @@ class MutableSettings(val errorFn: String => Unit)
 
     def contains(choice: domain.Value): Boolean = value contains choice
 
-    def isHelping: Boolean = sawHelp
+    override def isHelping: Boolean = sawHelp
 
-    def help: String = {
+    override def help: String = {
       val choiceLength = choices.map(_.length).max + 1
       val formatStr = s"  %-${choiceLength}s %s"
       choices.zipAll(descriptions, "", "").map {
