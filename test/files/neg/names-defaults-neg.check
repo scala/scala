@@ -1,7 +1,3 @@
-names-defaults-neg.scala:65: error: not enough arguments for method apply: (a: Int, b: String)(c: Int*)Fact in object Fact.
-Unspecified value parameter b.
-  val fac = Fact(1)(2, 3)
-                ^
 names-defaults-neg.scala:5: error: type mismatch;
  found   : String("#")
  required: Int
@@ -81,6 +77,10 @@ and  method f in object t8 of type (a: Int, b: Object)String
 match argument types (a: Int,b: String) and expected result type Any
   println(t8.f(a = 0, b = "1")) // ambiguous reference
              ^
+names-defaults-neg.scala:65: error: not enough arguments for method apply: (a: Int, b: String)(c: Int*)Fact in object Fact.
+Unspecified value parameter b.
+  val fac = Fact(1)(2, 3)
+                ^
 names-defaults-neg.scala:69: error: wrong number of arguments for pattern A1(x: Int,y: String)
   A1() match { case A1(_) => () }
                       ^

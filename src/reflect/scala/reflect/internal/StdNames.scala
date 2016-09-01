@@ -704,6 +704,7 @@ trait StdNames {
     val immutable: NameType            = "immutable"
     val implicitly: NameType           = "implicitly"
     val in: NameType                   = "in"
+    val initialized : NameType         = "initialized"
     val internal: NameType             = "internal"
     val inlinedEquals: NameType        = "inlinedEquals"
     val isArray: NameType              = "isArray"

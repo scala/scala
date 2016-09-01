@@ -516,17 +516,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val runsRightAfter = Some("erasure")
   } with PostErasure
 
-  // phaseName = "lazyvals"
-  object lazyVals extends {
-    val global: Global.this.type = Global.this
-    val runsAfter = List("erasure")
-    val runsRightAfter = None
-  } with LazyVals
 
   // phaseName = "lambdalift"
   object lambdaLift extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("lazyvals")
+    val runsAfter = List("erasure")
     val runsRightAfter = None
   } with LambdaLift
 
@@ -620,13 +614,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       pickler                 -> "serialize symbol tables",
       refChecks               -> "reference/override checking, translate nested objects",
       uncurry                 -> "uncurry, translate function values to anonymous classes",
-      fields                  -> "synthesize accessors and fields",
+      fields                  -> "synthesize accessors and fields, including bitmaps for lazy vals",
       tailCalls               -> "replace tail calls by jumps",
       specializeTypes         -> "@specialized-driven class and method specialization",
       explicitOuter           -> "this refs to outer pointers",
       erasure                 -> "erase types, add interfaces for traits",
       postErasure             -> "clean up erased inline classes",
-      lazyVals                -> "allocate bitmaps, translate lazy vals into lazified defs",
       lambdaLift              -> "move nested functions to top level",
       constructors            -> "move field definitions into constructors",
       mixer                   -> "mixin composition",
@@ -1258,7 +1251,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val explicitouterPhase           = phaseNamed("explicitouter")
     val erasurePhase                 = phaseNamed("erasure")
     val posterasurePhase             = phaseNamed("posterasure")
-    // val lazyvalsPhase                = phaseNamed("lazyvals")
     val lambdaliftPhase              = phaseNamed("lambdalift")
     // val constructorsPhase            = phaseNamed("constructors")
     val flattenPhase                 = phaseNamed("flatten")

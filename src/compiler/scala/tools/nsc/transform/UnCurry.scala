@@ -439,9 +439,9 @@ abstract class UnCurry extends InfoTransform
                 super.transform(treeCopy.DefDef(dd, mods, name, tparams, vparamssNoRhs, tpt, rhs))
               }
             }
-          case ValDef(_, _, _, rhs) =>
+          case ValDef(mods, _, _, rhs) =>
             if (sym eq NoSymbol) throw new IllegalStateException("Encountered Valdef without symbol: "+ tree + " in "+ unit)
-            if (!sym.owner.isSourceMethod)
+            if (!sym.owner.isSourceMethod || mods.isLazy)
               withNeedLift(needLift = true) { super.transform(tree) }
             else
               super.transform(tree)

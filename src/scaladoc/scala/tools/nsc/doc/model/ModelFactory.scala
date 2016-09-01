@@ -106,10 +106,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     // in the doc comment of MyClass
     def linkTarget: DocTemplateImpl = inTpl
 
-    lazy val comment = {
-      val documented = if (sym.hasAccessorFlag) sym.accessed else sym
-      thisFactory.comment(documented, linkTarget, inTpl)
-    }
+    // if there is a field symbol, the ValDef will use it, which means docs attached to it will be under the field symbol, not the getter's
+    protected[this] def commentCarryingSymbol(sym: Symbol) =
+      if (sym.hasAccessorFlag && sym.accessed.exists) sym.accessed else sym
+
+    lazy val comment = thisFactory.comment(commentCarryingSymbol(sym), linkTarget, inTpl)
+
     def group = comment flatMap (_.group) getOrElse defaultGroup
     override def inTemplate = inTpl
     override def toRoot: List[MemberImpl] = this :: inTpl.toRoot
@@ -476,17 +478,18 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     override lazy val comment = {
       def nonRootTemplate(sym: Symbol): Option[DocTemplateImpl] =
         if (sym eq RootPackage) None else findTemplateMaybe(sym)
+
       /* Variable precedence order for implicitly added members: Take the variable definitions from ...
        * 1. the target of the implicit conversion
        * 2. the definition template (owner)
        * 3. the current template
        */
-      val inRealTpl = conversion.flatMap { conv =>
-        nonRootTemplate(conv.toType.typeSymbol)
-      } orElse nonRootTemplate(sym.owner) orElse Option(inTpl)
-      inRealTpl flatMap { tpl =>
-        thisFactory.comment(sym, tpl, tpl)
-      }
+      val inRealTpl = (
+        conversion.flatMap(conv => nonRootTemplate(conv.toType.typeSymbol))
+          orElse nonRootTemplate(sym.owner)
+          orElse Option(inTpl))
+
+      inRealTpl flatMap (tpl => thisFactory.comment(commentCarryingSymbol(sym), tpl, tpl))
     }
 
     override def inDefinitionTemplates = useCaseOf.fold(super.inDefinitionTemplates)(_.inDefinitionTemplates)

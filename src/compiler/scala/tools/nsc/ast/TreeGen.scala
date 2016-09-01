@@ -91,7 +91,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     )
 
   /** Make a synchronized block on 'monitor'. */
-  def mkSynchronized(monitor: Tree, body: Tree): Tree =
+  def mkSynchronized(monitor: Tree)(body: Tree): Tree =
     Apply(Select(monitor, Object_synchronized), List(body))
 
   def mkAppliedTypeForCase(clazz: Symbol): Tree = {
@@ -231,26 +231,6 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     ensureNonOverlapping(containing, exprs)
     if (prefix.isEmpty) containing
     else Block(prefix, containing) setPos (prefix.head.pos union containing.pos)
-  }
-
-  /** Return the synchronized part of the double-checked locking idiom around the syncBody tree. It guards with `cond` and
-   *  synchronizes on `clazz.this`. Additional statements can be included after initialization,
-   *  (outside the synchronized block).
-   *
-   *  The idiom works only if the condition is using a volatile field.
-    *
-    *  @see http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html
-   */
-  def mkSynchronizedCheck(clazz: Symbol, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree =
-    mkSynchronizedCheck(mkAttributedThis(clazz), cond, syncBody, stats)
-
-  def mkSynchronizedCheck(attrThis: Tree, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree = {
-    def blockOrStat(stats: List[Tree]): Tree = stats match {
-      case head :: Nil => head
-      case _ => Block(stats : _*)
-    }
-    val sync = mkSynchronized(attrThis, If(cond, blockOrStat(syncBody), EmptyTree))
-    blockOrStat(sync :: stats)
   }
 
   /** Creates a tree representing new Object { stats }.

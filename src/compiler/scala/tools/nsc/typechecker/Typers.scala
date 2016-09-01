@@ -128,6 +128,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def canTranslateEmptyListToNil    = true
     def missingSelectErrorTree(tree: Tree, qual: Tree, name: Name): Tree = tree
 
+    // used to exempt synthetic accessors (i.e. those that are synthesized by the compiler to access a field)
+    // from skolemization because there's a weird bug that causes spurious type mismatches
+    // (it seems to have something to do with existential abstraction over values
+    // https://github.com/scala/scala-dev/issues/165
+    // when we're past typer, lazy accessors are synthetic, but before they are user-defined
+    // to make this hack less hacky, we could rework our flag assignment to allow for
+    // requiring both the ACCESSOR and the SYNTHETIC bits to trigger the exemption
+    private def isSyntheticAccessor(sym: Symbol) = sym.isAccessor && (!sym.isLazy || isPastTyper)
+
     // when type checking during erasure, generate erased types in spots that aren't transformed by erasure
     // (it erases in TypeTrees, but not in, e.g., the type a Function node)
     def phasedAppliedType(sym: Symbol, args: List[Type]) = {
@@ -1159,7 +1168,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           adapt(tree setType restpe, mode, pt, original)
         case TypeRef(_, ByNameParamClass, arg :: Nil) if mode.inExprMode => // (2)
           adapt(tree setType arg, mode, pt, original)
-        case tp if mode.typingExprNotLhs && isExistentialType(tp) =>
+        case tp if mode.typingExprNotLhs && isExistentialType(tp) && !isSyntheticAccessor(context.owner) =>
           adapt(tree setType tp.dealias.skolemizeExistential(context.owner, tree), mode, pt, original)
         case PolyType(tparams, restpe) if mode.inNone(TAPPmode | PATTERNmode) && !context.inTypeConstructorAllowed => // (3)
           // assert((mode & HKmode) == 0) //@M a PolyType in HKmode represents an anonymous type function,
@@ -1373,13 +1382,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               notAllowed(s"redefinition of $name method. See SIP-15, criterion 4.")
             else if (stat.symbol != null && stat.symbol.isParamAccessor)
               notAllowed("additional parameter")
-            // concrete accessor (getter) in trait corresponds to a field definition (neg/anytrait.scala)
-            // TODO: only reject accessors that actually give rise to field (e.g., a constant-type val is fine)
-            else if (!isValueClass && stat.symbol.isAccessor && !stat.symbol.isDeferred)
-              notAllowed("field definition")
             checkEphemeralDeep.traverse(rhs)
-          // for value class or "exotic" vals in traits
-          // (traits don't receive ValDefs for regular vals until fields phase -- well, except for early initialized/lazy vals)
           case _: ValDef =>
             notAllowed("field definition")
           case _: ModuleDef =>
@@ -1956,11 +1959,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (!phase.erasedTypes && !clazz.info.resultType.isError) // @S: prevent crash for duplicated type members
         checkFinitary(clazz.info.resultType.asInstanceOf[ClassInfoType])
 
-      val body2 = {
-        val body2 =
-          if (isPastTyper || reporter.hasErrors) body1
-          else body1 flatMap rewrappingWrapperTrees(namer.addDerivedTrees(Typer.this, _))
-        val primaryCtor = treeInfo.firstConstructor(body2)
+      val bodyWithPrimaryCtor = {
+        val primaryCtor = treeInfo.firstConstructor(body1)
         val primaryCtor1 = primaryCtor match {
           case DefDef(_, _, _, _, _, Block(earlyVals :+ global.pendingSuperCall, unit)) =>
             val argss = superArgs(parents1.head) getOrElse Nil
@@ -1969,10 +1969,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             deriveDefDef(primaryCtor)(block => Block(earlyVals :+ superCall, unit) setPos pos) setPos pos
           case _ => primaryCtor
         }
-        body2 mapConserve { case `primaryCtor` => primaryCtor1; case stat => stat }
+        body1 mapConserve { case `primaryCtor` => primaryCtor1; case stat => stat }
       }
 
-      val body3 = typedStats(body2, templ.symbol)
+      val body3 = typedStats(bodyWithPrimaryCtor, templ.symbol)
 
       if (clazz.info.firstParent.typeSymbol == AnyValClass)
         validateDerivedValueClass(clazz, body3)
@@ -2436,13 +2436,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case _ =>
           }
         }
-        val stats1 = if (isPastTyper) block.stats else
-          block.stats.flatMap {
-            case vd@ValDef(_, _, _, _) if vd.symbol.isLazy =>
-              namer.addDerivedTrees(Typer.this, vd)
-            case stat => stat::Nil
-          }
-        val stats2 = typedStats(stats1, context.owner, warnPure = false)
+        val statsTyped = typedStats(block.stats, context.owner, warnPure = false)
         val expr1 = typed(block.expr, mode &~ (FUNmode | QUALmode), pt)
 
         // sanity check block for unintended expr placement
@@ -2456,18 +2450,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           def checkPure(t: Tree, supple: Boolean): Unit =
             if (treeInfo.isPureExprForWarningPurposes(t)) {
               val msg = "a pure expression does nothing in statement position"
-              val parens = if (stats2.length + count > 1) "multiline expressions might require enclosing parentheses" else ""
+              val parens = if (statsTyped.length + count > 1) "multiline expressions might require enclosing parentheses" else ""
               val discard = if (adapted) "; a value can be silently discarded when Unit is expected" else ""
               val text =
                 if (supple) s"${parens}${discard}"
                 else if (!parens.isEmpty) s"${msg}; ${parens}" else msg
               context.warning(t.pos, text)
             }
-          stats2.foreach(checkPure(_, supple = false))
+          statsTyped.foreach(checkPure(_, supple = false))
           if (result0.nonEmpty) checkPure(result0, supple = true)
         }
 
-        treeCopy.Block(block, stats2, expr1)
+        treeCopy.Block(block, statsTyped, expr1)
           .setType(if (treeInfo.isExprSafeToInline(block)) expr1.tpe else expr1.tpe.deconst)
       } finally {
         // enable escaping privates checking from the outside and recycle
@@ -3170,6 +3164,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // synt is implicit def for implicit class (#6278)
             case (ClassDef(cmods, cname, _, _), DefDef(dmods, dname, _, _, _, _)) =>
               cmods.isImplicit && dmods.isImplicit && cname.toTermName == dname
+
+            // ValDef and Accessor
+            case (ValDef(_, cname, _, _), DefDef(_, dname, _, _, _, _)) =>
+              cname.getterName == dname.getterName
 
             case _ => false
           }
@@ -4455,8 +4453,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         def narrowRhs(tp: Type) = { val sym = context.tree.symbol
           context.tree match {
             case ValDef(mods, _, _, Apply(Select(`tree`, _), _)) if !mods.isMutable && sym != null && sym != NoSymbol =>
-              val sym1 = if (sym.owner.isClass && sym.getterIn(sym.owner) != NoSymbol) sym.getterIn(sym.owner)
-                else sym.lazyAccessorOrSelf
+              val sym1 =
+                if (sym.owner.isClass && sym.getterIn(sym.owner) != NoSymbol) sym.getterIn(sym.owner)
+                else sym
               val pre = if (sym1.owner.isClass) sym1.owner.thisType else NoPrefix
               intersectionType(List(tp, singleType(pre, sym1)))
             case _ => tp

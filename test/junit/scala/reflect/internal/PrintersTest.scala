@@ -151,7 +151,7 @@ class BasePrintTest {
     |else
     |  ((a.toString): String)""",
     typedCode=sm"""
-    |val a: Int = 1;
+    |val a = 1;
     |if (PrintersContext.this.a.>(1))
     |  ((PrintersContext.this.a): scala.Int)
     |else
@@ -864,7 +864,7 @@ class TraitPrintTest {
 
   @Test def testTraitWithSelf2 = assertPrintedCode(sm"""
     |trait X { self: scala.Cloneable with scala.Serializable =>
-    |  val x: Int = 1
+    |  val x: scala.Int = 1
     |}""")
 
   @Test def testTraitTypeParams = assertPrintedCode("trait X[A, B]")
@@ -903,7 +903,7 @@ class TraitPrintTest {
     |  type Foo;
     |  type XString = scala.Predef.String
     |} with scala.Serializable {
-    |  val z: Int = 7
+    |  val z: scala.Int = 7
     |}""")
 
   @Test def testTraitWithSingletonTypeTree = assertPrintedCode(sm"""
@@ -1008,27 +1008,16 @@ class ValAndDefPrintTest {
 
   @Test def testDef9 = assertPrintedCode("def a(x: scala.Int)(implicit z: scala.Double, y: scala.Float): scala.Unit = ()")
 
-  @Test def testDefWithLazyVal1 = assertResultCode(
-    code = "def a = { lazy val test: Int = 42 }")(
-    parsedCode = sm"""
+  @Test def testDefWithLazyVal1 = assertPrintedCode(sm"""
     |def a = {
-    |  lazy val test: Int = 42;
+    |  lazy val test: scala.Int = 42;
     |  ()
     |}
-    """,
-    typedCode = sm"""
-    |def a = {
-    |  lazy val test$$lzy: scala.Int = _;
-    |  lazy val test: Int = {
-    |    test$$lzy = 42;
-    |    test$$lzy
-    |  };
-    |  ()
-    |}""")
+    """)
 
   @Test def testDefWithLazyVal2 = assertPrintedCode(sm"""
     |def a = {
-    |  lazy val test: Unit = {
+    |  lazy val test: scala.Unit = {
     |    scala.Predef.println();
     |    scala.Predef.println()
     |  };

@@ -655,7 +655,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       isClass && isFinal && loop(typeParams)
     }
 
-    final def isLazyAccessor       = isLazy && lazyAccessor != NoSymbol
     final def isOverridableMember  = !(isClass || isEffectivelyFinal) && safeOwner.isClass
 
     /** Does this symbol denote a wrapper created by the repl? */
@@ -1683,7 +1682,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *
      *    - packageobjects (follows namer)
      *    - superaccessors (follows typer)
-     *    - lazyvals       (follows erasure)
+     *    - lambdaLift     (follows erasure)
      *    - null
      */
     private def unsafeTypeParamPhase = {
@@ -2075,11 +2074,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def alias: Symbol = NoSymbol
 
-    /** For a lazy value, its lazy accessor. NoSymbol for all others. */
+    @deprecated("No longer applicable, as lazy vals are not desugared until the fields phase", "2.12.0") // used by scala-refactoring
     def lazyAccessor: Symbol = NoSymbol
 
-    /** If this is a lazy value, the lazy accessor; otherwise this symbol. */
-    def lazyAccessorOrSelf: Symbol = if (isLazy) lazyAccessor else this
+    @deprecated("No longer applicable, as lazy vals are not desugared until the fields phase", "2.12.0")
+    def lazyAccessorOrSelf: Symbol = NoSymbol
 
     /** `accessed`, if this is an accessor that should have an underlying field. Otherwise, `this`.
       *  Note that a "regular" accessor in a trait does not have a field, as an interface cannot define a field.
@@ -2088,7 +2087,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       *  as they are an implementation detail that's irrelevant to type checking.
       */
     def accessedOrSelf: Symbol =
-      if (hasAccessorFlag && (!owner.isTrait || hasFlag(PRESUPER | LAZY))) accessed
+      if (hasAccessorFlag && (!owner.isTrait || hasFlag(PRESUPER))) accessed
       else this
 
     /** For an outer accessor: The class from which the outer originates.
@@ -2832,17 +2831,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       assert(isModule, this)
       referenced = clazz
       this
-    }
-
-    def setLazyAccessor(sym: Symbol): TermSymbol = {
-      assert(isLazy && (referenced == NoSymbol || referenced == sym), (this, debugFlagString, referenced, sym))
-      referenced = sym
-      this
-    }
-
-    override def lazyAccessor: Symbol = {
-      assert(isLazy, this)
-      referenced
     }
 
     /** change name by appending $$<fully-qualified-name-of-class `base`>

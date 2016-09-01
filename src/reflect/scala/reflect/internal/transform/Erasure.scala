@@ -147,21 +147,20 @@ trait Erasure {
       case AnnotatedType(_, atp) =>
         apply(atp)
       case ClassInfoType(parents, decls, clazz) =>
-        ClassInfoType(
-          if (clazz == ObjectClass || isPrimitiveValueClass(clazz) || parents.isEmpty) Nil
+        val newParents =
+          if (parents.isEmpty || clazz == ObjectClass || isPrimitiveValueClass(clazz)) Nil
           else if (clazz == ArrayClass) ObjectTpe :: Nil
           else {
-            val erasedParents = parents map this
+            val erasedParents = parents mapConserve this
 
             // drop first parent for traits -- it has been normalized to a class by now,
             // but we should drop that in bytecode
-            val firstParent =
-              if (clazz.hasFlag(Flags.TRAIT) && !clazz.hasFlag(Flags.JAVA)) ObjectTpe
-              else erasedParents.head
-
-            firstParent :: erasedParents.tail.filter(_.typeSymbol != ObjectClass)
-          },
-          decls, clazz)
+            if (clazz.hasFlag(Flags.TRAIT) && !clazz.hasFlag(Flags.JAVA))
+              ObjectTpe :: erasedParents.tail.filter(_.typeSymbol != ObjectClass)
+            else erasedParents
+          }
+        if (newParents eq parents) tp
+        else ClassInfoType(newParents, decls, clazz)
       case _ =>
         mapOver(tp)
     }
@@ -343,23 +342,30 @@ trait Erasure {
     }
   }
 
-  /**  The symbol's erased info. This is the type's erasure, except for the following symbols:
-   *
-   *   - For $asInstanceOf      : [T]T
-   *   - For $isInstanceOf      : [T]scala#Boolean
-   *   - For class Array        : [T]C where C is the erased classinfo of the Array class.
-   *   - For Array[T].<init>    : {scala#Int)Array[T]
-   *   - For a type parameter   : A type bounds type consisting of the erasures of its bounds.
-   */
+  /** The symbol's erased info. This is the type's erasure, except for the following primitive symbols:
+    *
+    *   - $asInstanceOf    --> [T]T
+    *   - $isInstanceOf    --> [T]scala#Boolean
+    *   - synchronized     --> [T](x: T)T
+    *   - class Array      --> [T]C where C is the erased classinfo of the Array class.
+    *   - Array[T].<init>  --> {scala#Int)Array[T]
+    *
+    * An abstract type's info erases to a TypeBounds type consisting of the erasures of the abstract type's bounds.
+    */
   def transformInfo(sym: Symbol, tp: Type): Type = {
-    if (sym == Object_asInstanceOf)
+    // Do not erase the primitive `synchronized` method's info or the info of its parameter.
+    // We do erase the info of its type param so that subtyping can relate its bounds after erasure.
+    def synchronizedPrimitive(sym: Symbol) =
+      sym == Object_synchronized || (sym.owner == Object_synchronized && sym.isTerm)
+
+    if (sym == Object_asInstanceOf || synchronizedPrimitive(sym))
       sym.info
     else if (sym == Object_isInstanceOf || sym == ArrayClass)
       PolyType(sym.info.typeParams, specialErasure(sym)(sym.info.resultType))
     else if (sym.isAbstractType)
-      TypeBounds(WildcardType, WildcardType)
+      TypeBounds(WildcardType, WildcardType) // TODO why not use the erasure of the type's bounds, as stated in the doc?
     else if (sym.isTerm && sym.owner == ArrayClass) {
-      if (sym.isClassConstructor)
+      if (sym.isClassConstructor) // TODO: switch on name for all branches -- this one is sym.name == nme.CONSTRUCTOR
         tp match {
           case MethodType(params, TypeRef(pre, sym1, args)) =>
             MethodType(cloneSymbolsAndModify(params, specialErasure(sym)),
@@ -376,12 +382,14 @@ trait Erasure {
     } else if (
       sym.owner != NoSymbol &&
       sym.owner.owner == ArrayClass &&
-      sym == Array_update.paramss.head(1)) {
+      sym == Array_update.paramss.head(1)) { // TODO: can we simplify the guard, perhaps cache the symbol to compare to?
       // special case for Array.update: the non-erased type remains, i.e. (Int,A)Unit
       // since the erasure type map gets applied to every symbol, we have to catch the
       // symbol here
       tp
     } else {
+      // TODO OPT: altogether, there are 9 symbols that we special-case.
+      // Could we get to the common case more quickly by looking them up in a set?
       specialErasure(sym)(tp)
     }
   }

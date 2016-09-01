@@ -151,8 +151,12 @@ abstract class Duplicators extends Analyzer {
             ldef.symbol = newsym
             debuglog("newsym: " + newsym + " info: " + newsym.info)
 
-          case vdef @ ValDef(mods, name, _, rhs) if mods.hasFlag(Flags.LAZY) =>
-            debuglog("ValDef " + name + " sym.info: " + vdef.symbol.info)
+          // don't retypecheck val members or local lazy vals -- you'll end up with duplicate symbols because
+          // entering a valdef results in synthesizing getters etc
+          // TODO: why retype check any valdefs?? I checked and the rhs is specialized just fine this way
+          // (and there are no args/type params/... to warrant full type checking?)
+          case vdef @ ValDef(mods, name, _, rhs) if mods.hasFlag(Flags.LAZY) || owner.isClass =>
+            debuglog(s"ValDef $name in $owner sym.info: ${vdef.symbol.info}")
             invalidSyms(vdef.symbol) = vdef
             val newowner = owner orElse context.owner
             val newsym = vdef.symbol.cloneSymbol(newowner)

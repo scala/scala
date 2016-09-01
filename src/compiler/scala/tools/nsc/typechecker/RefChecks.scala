@@ -450,9 +450,9 @@ abstract class RefChecks extends Transform {
           } else if (other.isStable && !member.isStable) { // (1.4)
             overrideError("needs to be a stable, immutable value")
           } else if (member.isValue && member.isLazy &&
-                     other.isValue && !other.isSourceMethod && !other.isDeferred && !other.isLazy) {
+                     other.isValue && other.hasFlag(STABLE) && !(other.isDeferred || other.isLazy)) {
             overrideError("cannot override a concrete non-lazy value")
-          } else if (other.isValue && other.isLazy && !other.isSourceMethod && !other.isDeferred && // !(other.hasFlag(MODULE) && other.hasFlag(PACKAGE | JAVA)) && other.hasFlag(LAZY)  && (!other.isMethod || other.hasFlag(STABLE)) && !other.hasFlag(DEFERRED)
+          } else if (other.isValue && other.isLazy &&
                      member.isValue && !member.isLazy) {
             overrideError("must be declared lazy to override a concrete lazy value")
           } else if (other.isDeferred && member.isTermMacro && member.extendedOverriddenSymbols.forall(_.isDeferred)) { // (1.9)
@@ -609,7 +609,7 @@ abstract class RefChecks extends Transform {
           val (missing, rest) = memberList partition (m => m.isDeferred && !ignoreDeferred(m))
           // Group missing members by the name of the underlying symbol,
           // to consolidate getters and setters.
-          val grouped = missing groupBy (sym => analyzer.underlyingSymbol(sym).name)
+          val grouped = missing groupBy (_.name.getterName)
           val missingMethods = grouped.toList flatMap {
             case (name, syms) =>
               if (syms exists (_.isSetter)) syms filterNot (_.isGetter)
@@ -651,15 +651,16 @@ abstract class RefChecks extends Transform {
 
             // Give a specific error message for abstract vars based on why it fails:
             // It could be unimplemented, have only one accessor, or be uninitialized.
-            if (underlying.isVariable) {
-              val isMultiple = grouped.getOrElse(underlying.name, Nil).size > 1
+            val groupedAccessors = grouped.getOrElse(member.name.getterName, Nil)
+            val isMultiple = groupedAccessors.size > 1
 
+            if (groupedAccessors.exists(_.isSetter) || (member.isGetter && !isMultiple && member.setterIn(member.owner).exists)) {
               // If both getter and setter are missing, squelch the setter error.
               if (member.isSetter && isMultiple) ()
               else undefined(
                 if (member.isSetter) "\n(Note that an abstract var requires a setter in addition to the getter)"
                 else if (member.isGetter && !isMultiple) "\n(Note that an abstract var requires a getter in addition to the setter)"
-                else analyzer.abstractVarMessage(member)
+                else "\n(Note that variables need to be initialized to be defined)"
               )
             }
             else if (underlying.isMethod) {
@@ -919,17 +920,11 @@ abstract class RefChecks extends Transform {
       var index = -1
       for (stat <- stats) {
         index = index + 1
-        def enterSym(sym: Symbol) = if (sym.isLocalToBlock) {
-          currentLevel.scope.enter(sym)
-          symIndex(sym) = index
-        }
 
         stat match {
-          case DefDef(_, _, _, _, _, _) if stat.symbol.isLazy                 =>
-            enterSym(stat.symbol)
-          case ClassDef(_, _, _, _) | DefDef(_, _, _, _, _, _) | ModuleDef(_, _, _) | ValDef(_, _, _, _) =>
-            //assert(stat.symbol != NoSymbol, stat);//debug
-            enterSym(stat.symbol.lazyAccessorOrSelf)
+          case _ : MemberDef if stat.symbol.isLocalToBlock =>
+            currentLevel.scope.enter(stat.symbol)
+            symIndex(stat.symbol) = index
           case _ =>
         }
       }
@@ -1180,10 +1175,10 @@ abstract class RefChecks extends Transform {
         val tree1 = transform(tree) // important to do before forward reference check
         if (tree1.symbol.isLazy) tree1 :: Nil
         else {
-          val lazySym = tree.symbol.lazyAccessorOrSelf
-          if (lazySym.isLocalToBlock && index <= currentLevel.maxindex) {
+          val sym = tree.symbol
+          if (sym.isLocalToBlock && index <= currentLevel.maxindex) {
             debuglog("refsym = " + currentLevel.refsym)
-            reporter.error(currentLevel.refpos, "forward reference extends over definition of " + lazySym)
+            reporter.error(currentLevel.refpos, "forward reference extends over definition of " + sym)
           }
           tree1 :: Nil
         }
@@ -1451,9 +1446,9 @@ abstract class RefChecks extends Transform {
             )
       }
 
-      sym.isSourceMethod &&
+      sym.name == nme.apply &&
+        !(sym hasFlag STABLE) && // ???
         sym.isCase &&
-        sym.name == nme.apply &&
         isClassTypeAccessible(tree) &&
         !tree.tpe.finalResultType.typeSymbol.primaryConstructor.isLessAccessibleThan(tree.symbol)
     }

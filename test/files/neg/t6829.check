@@ -17,32 +17,32 @@ t6829.scala:49: error: not found: value nextState
                                              ^
 t6829.scala:50: error: type mismatch;
  found   : s.type (with underlying type Any)
- required: _53.State where val _53: G
+ required: _30.State where val _30: G
         val r = rewards(agent).r(s,a,s2)
                                  ^
 t6829.scala:50: error: type mismatch;
  found   : a.type (with underlying type Any)
- required: _53.Action where val _53: G
+ required: _30.Action where val _30: G
         val r = rewards(agent).r(s,a,s2)
                                    ^
 t6829.scala:50: error: type mismatch;
  found   : s2.type (with underlying type Any)
- required: _53.State where val _53: G
+ required: _30.State where val _30: G
         val r = rewards(agent).r(s,a,s2)
                                      ^
 t6829.scala:51: error: type mismatch;
  found   : s.type (with underlying type Any)
- required: _50.State
+ required: _25.State
         agent.learn(s,a,s2,r): G#Agent
                     ^
 t6829.scala:51: error: type mismatch;
  found   : a.type (with underlying type Any)
- required: _50.Action
+ required: _25.Action
         agent.learn(s,a,s2,r): G#Agent
                       ^
 t6829.scala:51: error: type mismatch;
  found   : s2.type (with underlying type Any)
- required: _50.State
+ required: _25.State
         agent.learn(s,a,s2,r): G#Agent
                         ^
 t6829.scala:53: error: not found: value nextState

@@ -57,7 +57,7 @@ class InlineWarningTest extends BytecodeTesting {
     assert(c == 1, c)
   }
 
-  @Test
+//  @Test -- TODO
   def mixedWarnings(): Unit = {
     val javaCode =
       """public class A {

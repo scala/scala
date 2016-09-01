@@ -10,26 +10,38 @@ import scala.annotation.tailrec
 import symtab.Flags._
 
 
-/** Synthesize accessors and field for each (strict) val owned by a trait.
+/** Synthesize accessors, fields (and bitmaps) for (lazy) vals and modules.
   *
-  * For traits:
+  * During Namers, a `ValDef` that is `lazy`, deferred and/or defined in a trait carries its getter's symbol.
+  * The underlying field symbol does not exist until this phase.
   *
-  * - Namers translates a definition `val x = rhs` into a getter `def x = rhs` -- no underlying field is created.
-  * - This phase synthesizes accessors and fields for any vals mixed into a non-trait class.
-  * - Constructors will move the rhs to an assignment in the template body.
-  *   Those statements then move to the template into the constructor,
-  *   which means it will initialize the fields defined in this template (and execute the corresponding side effects).
-  *   We need to maintain the connection between getter and rhs until after specialization so that it can duplicate vals.
-  * - A ModuleDef is desugared to a ClassDef, an accessor (which reuses the module's term symbol)
-  *   and a module var (unless the module is static and does not implement a member of a supertype, or we're in a trait).
-  *   For subclasses of traits that define modules, a module var is mixed in, as well as the required module accessors.
+  * For `val`s defined in classes, we still emit a field immediately.
+  * TODO: uniformly assign getter symbol to all `ValDef`s, stop using `accessed`.
   *
-  * Runs after uncurry to deal with classes that implement SAM traits with ValDefs.
-  * Runs before erasure (to get bridges), and thus before lambdalift/flatten, so that nested functions/definitions must be considered.
+  * This phase synthesizes accessors, fields and bitmaps (for lazy or init-checked vals under -Xcheckinit)
+  * in the first (closest in the subclassing lattice) subclass (not a trait) of a trait.
   *
-  * We run after uncurry because it can introduce subclasses of traits with fields (SAMs with vals).
-  * Lambdalift also introduces new fields (paramaccessors for captured vals), but runs too late in the pipeline
-  * (mixins still synthesizes implementations for accessors that need to be mixed into subclasses of local traits that capture).
+  * For lazy vals and modules, we emit accessors that using double-checked locking (DCL) to balance thread safety
+  * and performance. A lazy val gets a compute method for the DCL's slow path, for a module it's all done in the accessor.
+  *
+  * Local lazy vals do not receive bitmaps, but use a Lazy*Holder that has the volatile init bit and the computed value.
+  * See `mkLazyLocalDef`.
+  *
+  * Constructors will move the rhs to an assignment in the template body.
+  * Those statements then move to the template into the constructor,
+  * which means it will initialize the fields defined in this template (and execute the corresponding side effects).
+  * We need to maintain the connection between getter and rhs until after specialization so that it can duplicate vals.
+  *
+  * A ModuleDef is desugared to a ClassDef, an accessor (which reuses the module's term symbol)
+  * and a module var (unless the module is static and does not implement a member of a supertype, or we're in a trait).
+  *
+  * For subclasses of traits that define modules, a module var is mixed in, as well as the required module accessors.
+  *
+  * Phase ordering:
+  *   - Runs after uncurry to deal with classes that implement SAM traits with ValDefs.
+  *   - Runs before erasure (to get bridges), and thus before lambdalift/flatten, so that nested functions/definitions must be considered.
+  *   - Lambdalift introduces new paramaccessors for captured vals, but runs too late in the pipeline, so
+  *     mixins still synthesizes implementations for these accessors when a local trait that captures is subclassed.
   *
   *
   * In the future, would like to get closer to dotty, which lifts a val's RHS (a similar thing is done for template-level statements)
@@ -54,10 +66,12 @@ import symtab.Flags._
   * The only change due to overriding is that its value is never written to the field
   * (the overridden val's value is, of course, stored in the field in addition to its side-effect being performed).
   *
-  * TODO: check init support (or drop the -Xcheck-init flag??)
+  * TODO: Java 9 support for vals defined in traits. They are currently emitted as final,
+  *       but the write (putfield) to the val does not occur syntactically within the <init> method
+  *       (it's done by the trait setter, which is called from the trait's mixin constructor,
+  *       which is called from the subclass's constructor...)
   */
-abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransformers {
-
+abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransformers with AccessorSynthesis {
   import global._
   import definitions._
 
@@ -69,8 +83,8 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
     if (sym.isJavaDefined || sym.isPackageClass || !sym.isClass) tp
     else synthFieldsAndAccessors(tp)
 
-  // we leave lazy vars/accessors and early-init vals alone for now
-  private def excludedAccessorOrFieldByFlags(statSym: Symbol): Boolean = statSym hasFlag LAZY | PRESUPER
+  // TODO: drop PRESUPER support when we implement trait parameters in 2.13
+  private def excludedAccessorOrFieldByFlags(statSym: Symbol): Boolean = statSym hasFlag PRESUPER
 
   // used for internal communication between info and tree transform of this phase -- not pickled, not in initialflags
   // TODO: reuse MIXEDIN for NEEDS_TREES?
@@ -139,13 +153,12 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
   class FieldMemoization(accessorOrField: Symbol, site: Symbol) {
     val tp           = fieldTypeOfAccessorIn(accessorOrField, site.thisType)
-    // not stored, no side-effect
-    val pureConstant = tp.isInstanceOf[ConstantType]
-
-    // if !stored, may still have a side-effect
-    // (currently not distinguished -- used to think we could drop unit-typed vals,
-    //  but the memory model cares about writes to unit-typed fields)
-    val stored = !pureConstant // || isUnitType(tp))
+    // We can only omit strict vals of ConstantType. Lazy vals do not receive constant types (anymore).
+    // (See note at widenIfNecessary -- for example, the REPL breaks when we omit constant lazy vals)
+    // Note that a strict unit-typed val does receive a field, because we cannot omit the write to the field
+    // (well, we could emit it for non-@volatile ones, if I understand the memory model correctly,
+    //  but that seems pretty edge-casey)
+    val constantTyped = tp.isInstanceOf[ConstantType]
   }
 
   private def fieldTypeForGetterIn(getter: Symbol, pre: Type): Type = getter.info.finalResultType.asSeenFrom(pre, getter.owner)
@@ -174,22 +187,71 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
 
   // can't use the referenced field since it already tracks the module's moduleClass
-  private[this] val moduleVarOf = perRunCaches.newMap[Symbol, Symbol]
+  private[this] val moduleOrLazyVarOf = perRunCaches.newMap[Symbol, Symbol]
 
-  private def newModuleVarSymbol(site: Symbol, module: Symbol, tp: Type, extraFlags: Long): TermSymbol = {
+  // TODO: can we drop FINAL? In any case, since these variables are MUTABLE, they cannot and will
+  // not be emitted as ACC_FINAL. They are FINAL in the Scala sense, though: cannot be overridden.
+  private final val ModuleOrLazyFieldFlags = FINAL | PrivateLocal | SYNTHETIC | NEEDS_TREES
+
+  private def newModuleVarSymbol(owner: Symbol, module: Symbol, tp: Type): TermSymbol = {
 //    println(s"new module var in $site for $module of type $tp")
-    val moduleVar = site.newVariable(nme.moduleVarName(module.name.toTermName), module.pos.focus, MODULEVAR | extraFlags) setInfo tp addAnnotation VolatileAttr
-    moduleVarOf(module) = moduleVar
+    val flags = MODULEVAR | (if (owner.isClass) ModuleOrLazyFieldFlags else 0)
+
+    val moduleVar =
+      (owner.newVariable(nme.moduleVarName(module.name.toTermName), module.pos.focus, flags)
+        setInfo tp
+        addAnnotation VolatileAttr)
+
+    moduleOrLazyVarOf(module) = moduleVar
 
     moduleVar
   }
 
   private def moduleInit(module: Symbol) = {
 //    println(s"moduleInit for $module in ${module.ownerChain} --> ${moduleVarOf.get(module)}")
-    val moduleVar = moduleVarOf(module)
-    gen.mkAssignAndReturn(moduleVar, gen.newModule(module, moduleVar.info))
+    val moduleVar = moduleOrLazyVarOf(module)
+    def moduleVarRef = gen.mkAttributedRef(moduleVar)
+
+    // for local modules, we synchronize on the owner of the method that owns the module
+    val monitorHolder = This(moduleVar.owner.enclClass)
+    def needsInit = Apply(Select(moduleVarRef, Object_eq), List(CODE.NULL))
+    val init = Assign(moduleVarRef, gen.newModule(module, moduleVar.info))
+
+    /** double-checked locking following https://shipilev.net/blog/2014/safe-public-construction/#_safe_publication
+      *
+      * public class SafeDCLFactory {
+      *   private volatile Singleton instance;
+      *
+      *   public Singleton get() {
+      *     if (instance == null) {  // check 1
+      *       synchronized(this) {
+      *         if (instance == null) { // check 2
+      *           instance = new Singleton();
+      *         }
+      *       }
+      *     }
+      *     return instance;
+      *   }
+      * }
+      *
+      * TODO: optimize using local variable?
+      */
+    Block(If(needsInit, gen.mkSynchronized(monitorHolder)(If(needsInit, init, EmptyTree)), EmptyTree) :: Nil, moduleVarRef)
   }
 
+  // NoSymbol for lazy accessor sym with unit result type
+  def lazyVarOf(sym: Symbol) = moduleOrLazyVarOf.getOrElse(sym, NoSymbol)
+
+  private def newLazyVarMember(clazz: Symbol, member: Symbol, tp: Type): TermSymbol = {
+    val flags = LAZY | (member.flags & FieldFlags) | ModuleOrLazyFieldFlags
+    val name  = member.name.toTermName.append(reflect.NameTransformer.LOCAL_SUFFIX_STRING)
+
+    // Set the MUTABLE flag because the field cannot be ACC_FINAL since we write to it outside of a constructor.
+    val sym = clazz.newVariable(name, member.pos.focus, flags) setInfo tp
+
+    moduleOrLazyVarOf(member) = sym
+    sym
+  }
 
   private object synthFieldsAndAccessors extends TypeMap {
     private def newTraitSetter(getter: Symbol, clazz: Symbol) = {
@@ -210,7 +272,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
     private def newModuleAccessor(module: Symbol, site: Symbol, moduleVar: Symbol) = {
       val accessor = site.newMethod(module.name.toTermName, site.pos, STABLE | MODULE | NEEDS_TREES)
 
-      moduleVarOf(accessor) = moduleVar
+      moduleOrLazyVarOf(accessor) = moduleVar
 
       // we're in the same prefix as module, so no need for site.thisType.memberType(module)
       accessor setInfo MethodType(Nil, moduleVar.info)
@@ -220,7 +282,6 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
       accessor
     }
-
 
     // needed for the following scenario (T could be trait or class)
     // trait T { def f: Object }; object O extends T { object f }. Need to generate method f in O.
@@ -232,6 +293,15 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       acc setInfo MethodType(Nil, module.moduleClass.tpe)
     }
 
+
+    private def newSuperLazy(lazyCallingSuper: Symbol, site: Type, lazyVar: Symbol) = {
+      lazyCallingSuper.asTerm.referenced = lazyVar
+
+      val tp = site.memberInfo(lazyCallingSuper)
+
+      lazyVar setInfo tp.resultType
+      lazyCallingSuper setInfo tp
+    }
 
     def apply(tp0: Type): Type = tp0 match {
       // TODO: make less destructive (name changes, decl additions, flag setting --
@@ -246,11 +316,16 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
           if (member hasFlag ACCESSOR) {
             val fieldMemoization = fieldMemoizationIn(member, clazz)
             // check flags before calling makeNotPrivate
-            val accessorUnderConsideration = !(member hasFlag (DEFERRED | LAZY))
+            val accessorUnderConsideration = !(member hasFlag DEFERRED)
 
             // destructively mangle accessor's name (which may cause rehashing of decls), also sets flags
             // this accessor has to be implemented in a subclass -- can't be private
-            if ((member hasFlag PRIVATE) && fieldMemoization.stored) member makeNotPrivate clazz
+            if ((member hasFlag PRIVATE) && !fieldMemoization.constantTyped) member makeNotPrivate clazz
+            // Since we need to refer to `member` using a super call in a subclass, we must ensure that access is allowed.
+            // If `member` has an access boundary, make sure the `PROTECTED` flag is set,
+            // to widen from `private[foo]` to `protected[foo]`
+            // (note that `member.hasAccessBoundary` implies `!member.hasFlag(PRIVATE)`, so we don't have to `resetFlag PRIVATE`)
+            else if (member.isLazy && member.hasAccessBoundary) member setFlag PROTECTED
 
             // This must remain in synch with publicizeTraitMethod in Mixins, so that the
             // synthesized member in a subclass and the trait member remain in synch regarding access.
@@ -262,10 +337,10 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
             // (not sure why this only problem only arose when we started setting the notPROTECTED flag)
 
             // derive trait setter after calling makeNotPrivate (so that names are mangled consistently)
-            if (accessorUnderConsideration && fieldMemoization.stored) {
+            if (accessorUnderConsideration && !fieldMemoization.constantTyped) {
               synthesizeImplInSubclasses(member)
 
-              if (member hasFlag STABLE) // TODO: check isGetter?
+              if ((member hasFlag STABLE) && !(member hasFlag LAZY))
                 newDecls += newTraitSetter(member, clazz)
             }
           } else if (member hasFlag MODULE) {
@@ -296,29 +371,37 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
           (existingGetter ne NoSymbol) && (tp matches (site memberInfo existingGetter).resultType) // !existingGetter.isDeferred && -- see (3)
         }
 
-        def newModuleVar(member: Symbol): TermSymbol =
-          newModuleVarSymbol(clazz, member, site.memberType(member).resultType, PrivateLocal | SYNTHETIC | NEEDS_TREES)
+        def newModuleVarMember(member: Symbol): TermSymbol =
+          newModuleVarSymbol(clazz, member, site.memberType(member).resultType)
+
+        def newLazyVarMember(member: Symbol): TermSymbol =
+          Fields.this.newLazyVarMember(clazz, member, site.memberType(member).resultType)
 
         // a module does not need treatment here if it's static, unless it has a matching member in a superclass
         // a non-static method needs a module var
-        val modulesNeedingExpansion =
-          oldDecls.toList.filter(m => m.isModule && (!m.isStatic || m.isOverridingSymbol))
+        val modulesAndLazyValsNeedingExpansion =
+          oldDecls.toList.filter(m => (m.isModule && (!m.isStatic || m.isOverridingSymbol)) || m.isLazy)
+
+        val accessorSymbolSynth = checkedAccessorSymbolSynth(tp.typeSymbol)
 
         // expand module def in class/object (if they need it -- see modulesNeedingExpansion above)
-        val expandedModules =
-          modulesNeedingExpansion map { module =>
+        val expandedModulesAndLazyVals = (
+          modulesAndLazyValsNeedingExpansion flatMap { member =>
+            if (member.isLazy) {
+              List(newLazyVarMember(member), accessorSymbolSynth.newSlowPathSymbol(member))
+            }
             // expanding module def (top-level or nested in static module)
-            if (module.isStatic) { // implies m.isOverridingSymbol as per above filter
+            else List(if (member.isStatic) { // implies m.isOverridingSymbol as per above filter
               // Need a module accessor, to implement/override a matching member in a superclass.
               // Never a need for a module var if the module is static.
-              newMatchingModuleAccessor(clazz, module)
+              newMatchingModuleAccessor(clazz, member)
             } else {
-              nonStaticModuleToMethod(module)
+              nonStaticModuleToMethod(member)
               // must reuse symbol instead of creating an accessor
-              module setFlag NEEDS_TREES
-              newModuleVar(module)
-            }
-          }
+              member setFlag NEEDS_TREES
+              newModuleVarMember(member)
+            })
+          })
 
 //        println(s"expanded modules for $clazz: $expandedModules")
 
@@ -344,16 +427,12 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
             clonedAccessor
           }
 
-          if (member hasFlag MODULE) {
-            val moduleVar = newModuleVar(member)
-            List(moduleVar, newModuleAccessor(member, clazz, moduleVar))
-          }
           // when considering whether to mix in the trait setter, forget about conflicts -- they are reported for the getter
           // a trait setter for an overridden val will receive a unit body in the tree transform
-          else if (nme.isTraitSetterName(member.name)) {
+          if (nme.isTraitSetterName(member.name)) {
             val getter = member.getterIn(member.owner)
             val clone = cloneAccessor()
-            
+
             setClonedTraitSetterFlags(clazz, getter, clone)
             // println(s"mixed in trait setter ${clone.defString}")
 
@@ -362,7 +441,17 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
           // don't cause conflicts, skip overridden accessors contributed by supertraits (only act on the last overriding one)
           // see pos/trait_fields_dependent_conflict.scala and neg/t1960.scala
           else if (accessorConflictsExistingVal(member) || isOverriddenAccessor(member, clazz)) Nil
-          else if (member.isGetter && fieldMemoizationIn(member, clazz).stored) {
+          else if (member hasFlag MODULE) {
+            val moduleVar = newModuleVarMember(member)
+            List(moduleVar, newModuleAccessor(member, clazz, moduleVar))
+          }
+          else if (member hasFlag LAZY) {
+            val mixedinLazy = cloneAccessor()
+            val lazyVar = newLazyVarMember(mixedinLazy)
+            // println(s"mixing in lazy var: $lazyVar for $member")
+            List(lazyVar, accessorSymbolSynth.newSlowPathSymbol(mixedinLazy), newSuperLazy(mixedinLazy, site, lazyVar))
+          }
+          else if (member.isGetter && !fieldMemoizationIn(member, clazz).constantTyped) {
             // add field if needed
             val field = clazz.newValue(member.localName, member.pos) setInfo fieldTypeForGetterIn(member, clazz.thisType)
 
@@ -376,27 +465,34 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
           } else List(cloneAccessor()) // no field needed (constant-typed getter has constant as its RHS)
         }
 
-//        println(s"mixedInAccessorAndFields for $clazz: $mixedInAccessorAndFields")
+        //        println(s"mixedInAccessorAndFields for $clazz: $mixedInAccessorAndFields")
 
         // omit fields that are not memoized, retain all other members
-        def omittableField(sym: Symbol) = sym.isValue && !sym.isMethod && !fieldMemoizationIn(sym, clazz).stored
+        def omittableField(sym: Symbol) = sym.isValue && !sym.isMethod && fieldMemoizationIn(sym, clazz).constantTyped
 
         val newDecls =
-          if (expandedModules.isEmpty && mixedInAccessorAndFields.isEmpty) oldDecls.filterNot(omittableField)
+          // under -Xcheckinit we generate all kinds of bitmaps, even when there are no lazy vals
+          if (expandedModulesAndLazyVals.isEmpty && mixedInAccessorAndFields.isEmpty && !settings.checkInit)
+            oldDecls.filterNot(omittableField)
           else {
             // must not alter `decls` directly
             val newDecls = newScope
             val enter    = newDecls enter (_: Symbol)
             val enterAll = (_: List[Symbol]) foreach enter
 
+            expandedModulesAndLazyVals foreach enter
             oldDecls foreach { d => if (!omittableField(d)) enter(d) }
-            expandedModules foreach enter
             mixedInAccessorAndFields foreach enterAll
+
+            // both oldDecls and mixedInAccessorAndFields (a list of lists) contribute
+            val bitmapSyms = accessorSymbolSynth.computeBitmapInfos(newDecls.toList)
+
+            bitmapSyms foreach enter
 
             newDecls
           }
 
-//        println(s"new decls for $clazz: $expandedModules ++ $mixedInAccessorAndFields")
+        //        println(s"new decls for $clazz: $expandedModules ++ $mixedInAccessorAndFields")
 
         if (newDecls eq oldDecls) tp
         else ClassInfoType(parents, newDecls, clazz)
@@ -408,53 +504,129 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
   // done by uncurry's info transformer
   // instead of forcing every member's info to run said transformer, duplicate the flag update logic...
-  def nonStaticModuleToMethod(module: Symbol): Unit = {
+  def nonStaticModuleToMethod(module: Symbol): Unit =
     if (!module.isStatic) module setFlag METHOD | STABLE
-  }
 
-  class FieldsTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
-    def mkTypedUnit(pos: Position) = localTyper.typedPos(pos)(CODE.UNIT)
+  class FieldsTransformer(unit: CompilationUnit) extends TypingTransformer(unit) with CheckedAccessorTreeSynthesis {
+    protected def typedPos(pos: Position)(tree: Tree): Tree = localTyper.typedPos(pos)(tree)
+
+    def mkTypedUnit(pos: Position) = typedPos(pos)(CODE.UNIT)
+    // TODO: clean up. this method is not used
     def deriveUnitDef(stat: Tree)  = deriveDefDef(stat)(_ => mkTypedUnit(stat.pos))
 
-    def mkAccessor(accessor: Symbol)(body: Tree) = localTyper.typedPos(accessor.pos)(DefDef(accessor, body)).asInstanceOf[DefDef]
+    def mkAccessor(accessor: Symbol)(body: Tree) = typedPos(accessor.pos)(DefDef(accessor, body)).asInstanceOf[DefDef]
 
-    def mkField(sym: Symbol) = localTyper.typedPos(sym.pos)(ValDef(sym)).asInstanceOf[ValDef]
+    // this makes trees for mixed in fields, as well as for bitmap fields (their RHS will be EmptyTree because they are initialized implicitly)
+    // if we decide to explicitly initialize, use this RHS: if (symbol.info.typeSymbol.asClass == BooleanClass) FALSE else ZERO)
+    // could detect it's a bitmap field with something like `sym.name.startsWith(nme.BITMAP_PREFIX)` (or perhaps something more robust...)
+    def mkTypedValDef(sym: Symbol, rhs: Tree = EmptyTree) = typedPos(sym.pos)(ValDef(sym, rhs)).asInstanceOf[ValDef]
 
+    /**
+      * Desugar a local `lazy val x: Int = rhs` into
+      * ```
+      * val x$lzy = new scala.runtime.LazyInt()
+      * def x$lzycompute(): Int =
+      *   x$lzy.synchronized {
+      *     if (x$lzy.initialized()) x$lzy.value()
+      *     else {
+      *       x$lzy.initialized = true
+      *       x$lzy.value = rhs
+      *     }
+      *  }
+      * def x(): Int = if (x$lzy.initialized()) x$lzy.value() else x$lzycompute()
+      * ```
+      */
+    private def mkLazyLocalDef(lazyVal: Symbol, rhs: Tree): Tree = {
+      import CODE._
+      import scala.reflect.NameTransformer.LAZY_LOCAL_SUFFIX_STRING
+      val owner = lazyVal.owner
+
+      val lazyValType = lazyVal.tpe.resultType
+      val refClass    = lazyHolders.getOrElse(lazyValType.typeSymbol, LazyRefClass)
+      val refTpe      = if (refClass != LazyRefClass) refClass.tpe else appliedType(refClass.typeConstructor, List(lazyValType))
+
+      val lazyName  = lazyVal.name.toTermName
+      val pos       = lazyVal.pos.focus
+
+      // used twice: once in the same owner as the lazy val, another time inside the compute method
+      val localLazyName = lazyName append LAZY_LOCAL_SUFFIX_STRING
+
+      // The lazy holder val need not be mutable, as we write to its field.
+      // In fact, it MUST not be mutable to avoid capturing it as an ObjectRef in lambdalift
+      // Must be marked LAZY to allow forward references, as in `def test2 { println(s.length) ; lazy val s = "abc" }
+      val holderSym = owner.newValue(localLazyName, pos, LAZY | ARTIFACT) setInfo refTpe
+
+      val initializedGetter = refTpe.member(nme.initialized)
+      val isUnit            = refClass == LazyUnitClass
+      val valueGetter       = if (isUnit) NoSymbol else refTpe.member(nme.value)
+      def getValue          = if (isUnit) UNIT     else Apply(Select(Ident(holderSym), valueGetter), Nil)
+
+      def mkChecked(alreadyComputed: Tree, compute: Tree) = If(Ident(holderSym) DOT initializedGetter, alreadyComputed, compute)
+
+      val computerSym =
+        owner.newMethod(lazyName append nme.LAZY_SLOW_SUFFIX, pos, ARTIFACT | PRIVATE) setInfo MethodType(Nil, lazyValType)
+
+      val rhsAtComputer = rhs.changeOwner(lazyVal -> computerSym)
+      val computer = mkAccessor(computerSym) {
+        val setInitialized = Apply(Select(Ident(holderSym), initializedGetter.setterIn(refClass)), TRUE :: Nil)
+
+        if (isUnit)
+          gen.mkSynchronized(Ident(holderSym))(mkChecked(alreadyComputed = UNIT, compute = Block(List(rhsAtComputer, setInitialized), UNIT)))
+        else {
+          val valueSetter = Select(Ident(holderSym), valueGetter.setterIn(refClass))
+
+          gen.mkSynchronized(Ident(holderSym))(mkChecked(
+              alreadyComputed = getValue,
+              compute = Block(Apply(valueSetter, rhsAtComputer :: Nil) :: setInitialized :: Nil, getValue))
+          )
+        }
+      }
+
+      val accessor = mkAccessor(lazyVal)(mkChecked(getValue, Apply(Ident(computerSym), Nil)))
+
+      // do last!
+      // remove STABLE: prevent replacing accessor call of type Unit by BoxedUnit.UNIT in erasure
+      // remove ACCESSOR: prevent constructors from eliminating the method body if the lazy val is
+      // lifted into a trait (TODO: not sure about the details here)
+      lazyVal.resetFlag(STABLE | ACCESSOR)
+
+      Thicket(mkTypedValDef(holderSym, New(refTpe)) :: computer :: accessor :: Nil)
+    }
 
     // synth trees for accessors/fields and trait setters when they are mixed into a class
     def fieldsAndAccessors(clazz: Symbol): List[ValOrDefDef] = {
-      def fieldAccess(accessor: Symbol): Option[Tree] = {
+      def fieldAccess(accessor: Symbol): List[Tree] = {
         val fieldName = accessor.localName
         val field = clazz.info.decl(fieldName)
         // The `None` result denotes an error, but it's refchecks' job to report it (this fallback is for robustness).
         // This is the result of overriding a val with a def, so that no field is found in the subclass.
-        if (field.exists) Some(Select(This(clazz), field))
-        else None
+        if (field.exists) List(Select(This(clazz), field))
+        else Nil
       }
 
-      def getterBody(getter: Symbol): Option[Tree] = {
+      def getterBody(getter: Symbol): List[Tree] = {
         // accessor created by newMatchingModuleAccessor for a static module that does need an accessor
         // (because there's a matching member in a super class)
         if (getter.asTerm.referenced.isModule) {
-          Some(gen.mkAttributedRef(clazz.thisType, getter.asTerm.referenced))
+          List(gen.mkAttributedRef(clazz.thisType, getter.asTerm.referenced))
         } else {
           val fieldMemoization = fieldMemoizationIn(getter, clazz)
-          if (fieldMemoization.pureConstant) Some(gen.mkAttributedQualifier(fieldMemoization.tp)) // TODO: drop when we no longer care about producing identical bytecode
+          if (fieldMemoization.constantTyped) List(gen.mkAttributedQualifier(fieldMemoization.tp)) // TODO: drop when we no longer care about producing identical bytecode
           else fieldAccess(getter)
         }
       }
 
       //      println(s"accessorsAndFieldsNeedingTrees for $templateSym: $accessorsAndFieldsNeedingTrees")
-      def setterBody(setter: Symbol): Option[Tree] = {
+      def setterBody(setter: Symbol): List[Tree] = {
         // trait setter in trait
-        if (clazz.isTrait) Some(EmptyTree)
+        if (clazz.isTrait) List(EmptyTree)
         // trait setter for overridden val in class
-        else if (checkAndClearOverriddenTraitSetter(setter)) Some(mkTypedUnit(setter.pos))
+        else if (checkAndClearOverriddenTraitSetter(setter)) List(mkTypedUnit(setter.pos))
         // trait val/var setter mixed into class
         else fieldAccess(setter) map (fieldSel => Assign(fieldSel, Ident(setter.firstParam)))
       }
 
-      def moduleAccessorBody(module: Symbol): Some[Tree] = Some(
+      def moduleAccessorBody(module: Symbol): List[Tree] = List(
         // added during synthFieldsAndAccessors using newModuleAccessor
         // a module defined in a trait by definition can't be static (it's a member of the trait and thus gets a new instance for every outer instance)
         if (clazz.isTrait) EmptyTree
@@ -462,11 +634,20 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         else moduleInit(module)
       )
 
+      val synthAccessorInClass = new SynthLazyAccessorsIn(clazz)
+      def superLazy(getter: Symbol): List[ValOrDefDef] = {
+        assert(!clazz.isTrait)
+        // this contortion was the only way I can get the super select to be type checked correctly.. TODO: why does SelectSuper not work?
+        val rhs = Apply(Select(Super(This(clazz), tpnme.EMPTY), getter.name), Nil)
+        explodeThicket(synthAccessorInClass.expandLazyClassMember(lazyVarOf(getter), getter, rhs, Map.empty)).asInstanceOf[List[ValOrDefDef]]
+      }
+
       clazz.info.decls.toList.filter(checkAndClearNeedsTrees) flatMap {
         case module if module hasAllFlags (MODULE | METHOD) => moduleAccessorBody(module) map mkAccessor(module)
+        case getter if getter hasAllFlags (LAZY | METHOD)   => superLazy(getter)
         case setter if setter.isSetter                      => setterBody(setter) map mkAccessor(setter)
         case getter if getter.hasFlag(ACCESSOR)             => getterBody(getter) map mkAccessor(getter)
-        case field  if !(field hasFlag METHOD)              => Some(mkField(field)) // vals/vars and module vars (cannot have flags PACKAGE | JAVA since those never receive NEEDS_TREES)
+        case field  if !(field hasFlag METHOD)              => Some(mkTypedValDef(field)) // vals/vars and module vars (cannot have flags PACKAGE | JAVA since those never receive NEEDS_TREES)
         case _ => None
       }
     }
@@ -474,10 +655,8 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
     def rhsAtOwner(stat: ValOrDefDef, newOwner: Symbol): Tree =
       atOwner(newOwner)(super.transform(stat.rhs.changeOwner(stat.symbol -> newOwner)))
 
-
-    private def Thicket(trees: List[Tree]) = Block(trees, EmptyTree)
     override def transform(stat: Tree): Tree = {
-      val clazz = currentOwner
+      val currOwner = currentOwner // often a class, but not necessarily
       val statSym = stat.symbol
 
       /*
@@ -500,22 +679,37 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         // also remove ACCESSOR flag since there won't be an underlying field to access?
         case DefDef(_, _, _, _, _, rhs) if (statSym hasFlag ACCESSOR)
                                            && (rhs ne EmptyTree) && !excludedAccessorOrFieldByFlags(statSym)
-                                           && !clazz.isTrait // we've already done this for traits.. the asymmetry will be solved by the above todo
-                                           && fieldMemoizationIn(statSym, clazz).pureConstant =>
-          deriveDefDef(stat)(_ => gen.mkAttributedQualifier(rhs.tpe)) // TODO: recurse?
+                                           && !currOwner.isTrait // we've already done this for traits.. the asymmetry will be solved by the above todo
+                                           && fieldMemoizationIn(statSym, currOwner).constantTyped =>
+          deriveDefDef(stat)(_ => gen.mkAttributedQualifier(rhs.tpe))
+
+        // deferred val, trait val, lazy val (local or in class)
+        case vd@ValDef(mods, name, tpt, rhs) if vd.symbol.hasFlag(ACCESSOR) && treeInfo.noFieldFor(vd, currOwner) =>
+          val transformedRhs = atOwner(statSym)(transform(rhs))
+
+          if (rhs == EmptyTree) mkAccessor(statSym)(EmptyTree)
+          else if (currOwner.isTrait) mkAccessor(statSym)(transformedRhs)
+          else if (!currOwner.isClass) mkLazyLocalDef(vd.symbol, transformedRhs)
+          else {
+            // TODO: make `synthAccessorInClass` a field and update it in atOwner?
+            // note that `LazyAccessorTreeSynth` is pretty lightweight
+            // (it's just a bunch of methods that all take a `clazz` parameter, which is thus stored as a field)
+            val synthAccessorInClass = new SynthLazyAccessorsIn(currOwner)
+            synthAccessorInClass.expandLazyClassMember(lazyVarOf(statSym), statSym, transformedRhs, nullables.getOrElse(currOwner, Map.empty))
+          }
 
         // drop the val for (a) constant (pure & not-stored) and (b) not-stored (but still effectful) fields
         case ValDef(mods, _, _, rhs) if (rhs ne EmptyTree) && !excludedAccessorOrFieldByFlags(statSym)
-                                        && fieldMemoizationIn(statSym, clazz).pureConstant =>
-          EmptyTree
+                                        && fieldMemoizationIn(statSym, currOwner).constantTyped =>
+          EmptyThicket
 
         case ModuleDef(_, _, impl) =>
           // ??? The typer doesn't take kindly to seeing this ClassDef; we have to set NoType so it will be ignored.
           val cd = super.transform(ClassDef(statSym.moduleClass, impl) setType NoType)
-          if (clazz.isClass) cd
+          if (currOwner.isClass) cd
           else { // local module -- symbols cannot be generated by info transformer, so do it all here
-            val moduleVar = newModuleVarSymbol(currentOwner, statSym, statSym.info.resultType, 0)
-            Thicket(cd :: mkField(moduleVar) :: mkAccessor(statSym)(moduleInit(statSym)) :: Nil)
+            val moduleVar = newModuleVarSymbol(currOwner, statSym, statSym.info.resultType)
+            Thicket(cd :: mkTypedValDef(moduleVar) :: mkAccessor(statSym)(moduleInit(statSym)) :: Nil)
           }
 
         case tree =>
@@ -524,26 +718,29 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       }
     }
 
+
     def transformTermsAtExprOwner(exprOwner: Symbol)(stat: Tree) =
       if (stat.isTerm) atOwner(exprOwner)(transform(stat))
       else transform(stat)
 
+    private val nullables = perRunCaches.newMap[Symbol, Map[Symbol, List[Symbol]]]
+
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val addedStats =
-        if (!currentOwner.isClass) Nil
+        if (!currentOwner.isClass) Nil // TODO: || currentOwner.isPackageClass
         else afterOwnPhase { fieldsAndAccessors(currentOwner) }
+
+      val inRealClass = currentOwner.isClass && !(currentOwner.isPackageClass || currentOwner.isTrait)
+      if (inRealClass)
+        nullables(currentOwner) = lazyValNullables(currentOwner, stats)
 
       val newStats =
         stats mapConserve (if (exprOwner != currentOwner) transformTermsAtExprOwner(exprOwner) else transform)
 
       addedStats ::: (if (newStats eq stats) stats else {
         // check whether we need to flatten thickets and drop empty ones
-        if (newStats exists { case EmptyTree => true case Block(_, EmptyTree) => true case _ => false })
-          newStats flatMap {
-            case EmptyTree => Nil
-            case Block(thicket, EmptyTree) => thicket
-            case stat => stat :: Nil
-          }
+        if (newStats exists mustExplodeThicket)
+          newStats flatMap explodeThicket
         else newStats
       })
     }

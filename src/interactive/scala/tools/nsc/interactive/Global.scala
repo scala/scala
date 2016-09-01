@@ -72,8 +72,6 @@ trait InteractiveAnalyzer extends Analyzer {
     override def enterExistingSym(sym: Symbol, tree: Tree): Context = {
       if (sym != null && sym.owner.isTerm) {
         enterIfNotThere(sym)
-        if (sym.isLazy)
-          sym.lazyAccessor andAlso enterIfNotThere
 
         for (defAtt <- sym.attachments.get[DefaultsOfLocalMethodAttachment])
           defAtt.defaultGetters foreach enterIfNotThere

@@ -105,7 +105,6 @@ class ScalaInlineInfoTest extends BytecodeTesting {
         ("x4$(LT;)I",                                                  MethodInlineInfo(true ,false,false)),
         ("x5()I",                                                     MethodInlineInfo(true, false,false)),
         ("x5$(LT;)I",                                                  MethodInlineInfo(true ,false,false)),
-        ("L$lzycompute$1(Lscala/runtime/VolatileObjectRef;)LT$L$2$;", MethodInlineInfo(true, false,false)),
         ("L$1(Lscala/runtime/VolatileObjectRef;)LT$L$2$;",            MethodInlineInfo(true, false,false)),
         ("nest$1()I",                                                 MethodInlineInfo(true, false,false)),
         ("$init$(LT;)V",                                              MethodInlineInfo(true,false,false))),
@@ -118,7 +117,6 @@ class ScalaInlineInfoTest extends BytecodeTesting {
     val infoC = inlineInfo(c)
     val expectC = InlineInfo(false, None, Map(
       "O()LT$O$;"                             -> MethodInlineInfo(true ,false,false),
-      "O$lzycompute()LT$O$;"                  -> MethodInlineInfo(true, false,false),
       "f6()I"                                 -> MethodInlineInfo(false,false,false),
       "x1()I"                                 -> MethodInlineInfo(false,false,false),
       "T$_setter_$x1_$eq(I)V"                 -> MethodInlineInfo(false,false,false),
@@ -181,7 +179,6 @@ class ScalaInlineInfoTest extends BytecodeTesting {
     val infoC = inlineInfo(c)
     val expected = Map(
       "<init>()V"            -> MethodInlineInfo(false,false,false),
-      "O$lzycompute()LC$O$;" -> MethodInlineInfo(true,false,false),
       "O()LC$O$;"            -> MethodInlineInfo(true,false,false))
     assert(infoC.methodInfos == expected, mapDiff(infoC.methodInfos, expected))
     assertSameMethods(c, expected.keySet)

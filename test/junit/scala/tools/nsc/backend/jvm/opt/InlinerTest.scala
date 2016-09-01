@@ -726,7 +726,7 @@ class InlinerTest extends BytecodeTesting {
       """sealed trait T {
         |  lazy val a = 0
         |  val b = 1
-        |  final lazy val c = 2
+        |  final lazy val c: Int = 2 // make sure it doesn't get a constant type
         |  final val d = 3
         |  final val d1: Int = 3
         |
@@ -740,7 +740,7 @@ class InlinerTest extends BytecodeTesting {
         |trait U { // not sealed
         |  lazy val a = 0
         |  val b = 1
-        |  final lazy val c = 2
+        |  final lazy val c: Int = 2 // make sure it doesn't get a constant type
         |  final val d = 3
         |  final val d1: Int = 3
         |
@@ -766,7 +766,7 @@ class InlinerTest extends BytecodeTesting {
     val m1 = getMethod(c, "m1")
     assertInvoke(m1, "T", "a")
     assertInvoke(m1, "T", "b")
-    assertInvoke(m1, "T", "c")
+//    assertInvoke(m1, "T", "c") -- this lazy val is implemented purely in the trait, as it's constant, so it *can* be inlined
 
     assertNoInvoke(getMethod(c, "m2"))
 
@@ -779,7 +779,7 @@ class InlinerTest extends BytecodeTesting {
     val m4 = getMethod(c, "m4")
     assertInvoke(m4, "U", "a")
     assertInvoke(m4, "U", "b")
-    assertInvoke(m4, "U", "c")
+//    assertInvoke(m4, "U", "c") -- this lazy val is implemented purely in the trait, as it's constant, so it *can* be inlined
 
     assertNoInvoke(getMethod(c, "m5"))
 
