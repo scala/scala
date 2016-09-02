@@ -10,7 +10,7 @@
 #
 
 #
-# JARs aren't checked in, they are fetched by Ant / pull_binary_libs.sh
+# JARs aren't checked in, they are fetched by sbt
 #
 # We could be more concise with /lib/**/*.jar but that assumes
 # a late-model git.
@@ -22,23 +22,20 @@
 /test/files/speclib/instrumented.jar
 /tools/*.jar
 
-# Developer specific Ant properties
+# Developer specific properties
 /build.properties
 /buildcharacter.properties
 
 # might get generated when testing Jenkins scripts locally
 /jenkins.properties
 
-# target directories for ant build
-/build
+# target directory for build
 /build/
-/dists/
 
 # other
 /out/
 /bin/
 /sandbox/
-/.ant-targets-build.xml
 
 # eclipse, intellij
 /.classpath

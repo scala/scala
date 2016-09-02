@@ -17,40 +17,19 @@
  * This nicely leads me to explaining goal and non-goals of this build definition. Goals are:
  *
  *   - to be easy to tweak it in case a bug or small inconsistency is found
- *   - to mimic Ant's behavior as closely as possible
  *   - to be super explicit about any departure from standard sbt settings
- *   - to achieve functional parity with Ant build as quickly as possible
  *   - to be readable and not necessarily succinct
  *   - to provide the nicest development experience for people hacking on Scala
+ *   - originally, to mimic Ant's behavior as closely as possible, so the
+ *     sbt and Ant builds could be maintained in parallel. the Ant build
+ *     has now been removed, so we are now free to depart from that history.
  *
  * Non-goals are:
  *
- *   - to have the shortest sbt build definition possible; we'll beat Ant definition
- *     easily and that will thrill us already
+ *   - to have the shortest sbt build definition possible
  *   - to remove irregularities from our build process right away
+ *     (but let's keep making gradual progress on this)
  *   - to modularize the Scala compiler or library further
- *
- * It boils down to simple rules:
- *
- *   - project layout is set in stone for now
- *   - if you need to work on convincing sbt to follow non-standard layout then
- *     explain everything you did in comments
- *   - constantly check where Ant build produces class files, artifacts, what kind of other
- *     files generates and port all of that to here
- *
- * Note on bootstrapping:
- *
- *   Let's start with reminder what bootstrapping means in our context. It's an answer
- *   to this question: which version of Scala are using to compile Scala? The fact that
- *   the question sounds circular suggests trickiness. Indeed, bootstrapping Scala
- *   compiler is a tricky process.
- *
- *   Ant build used to have involved system of bootstrapping Scala. It would consist of
- *   three layers: starr, locker and quick. The sbt build for Scala ditches layering
- *   and strives to be as standard sbt project as possible. This means that we are simply
- *   building Scala with latest stable release of Scala.
- *   See this discussion for more details behind this decision:
- *     https://groups.google.com/d/topic/scala-internals/gp5JsM1E0Fo/discussion
  */
 
 import VersionUtil._
@@ -69,8 +48,8 @@ val asmDep            = "org.scala-lang.modules" % "scala-asm"       % versionPr
 val jlineDep          = "jline"                  % "jline"           % versionProps("jline.version")
 val antDep            = "org.apache.ant"         % "ant"             % "1.9.4"
 
-/** Publish to ./dists/maven-sbt, similar to the ANT build which publishes to ./dists/maven. This
-  * can be used to compare the output of the sbt and ANT builds during the transition period. Any
+/** Publish to ./dists/maven-sbt, similar to the Ant build which publishes to ./dists/maven. This
+  * can be used to compare the output of the sbt and Ant builds during the transition period. Any
   * real publishing should be done with sbt's standard `publish` task. */
 lazy val publishDists = taskKey[Unit]("Publish to ./dists/maven-sbt.")
 
@@ -134,10 +113,7 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
   // on Scala classes
   compileOrder := CompileOrder.JavaThenScala,
   javacOptions in Compile ++= Seq("-g", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked"),
-  // we don't want any unmanaged jars; as a reminder: unmanaged jar is a jar stored
-  // directly on the file system and it's not resolved through Ivy
-  // Ant's build stored unmanaged jars in `lib/` directory
-  unmanagedJars in Compile := Seq.empty,
+  unmanagedJars in Compile := Seq.empty,  // no JARs in version control!
   sourceDirectory in Compile := baseDirectory.value,
   unmanagedSourceDirectories in Compile := List(baseDirectory.value),
   unmanagedResourceDirectories in Compile += (baseDirectory in ThisBuild).value / "src" / thisProject.value.id,
@@ -217,7 +193,7 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
 )
 
 /** Extra post-processing for the published POM files. These are needed to create POMs that
-  * are equivalent to the ones from the ANT build. In the long term this should be removed and
+  * are equivalent to the ones from the Ant build. In the long term this should be removed and
   * POMs, scaladocs, OSGi manifests, etc. should all use the same metadata. */
 def fixPom(extra: (String, scala.xml.Node)*): Setting[_] = {
   /** Find elements in an XML document by a simple XPath and replace them */
@@ -314,8 +290,6 @@ def filterDocSources(ff: FileFilter): Seq[Setting[_]] = Seq(
   // always required because otherwise the compiler cannot even initialize Definitions without
   // binaries of the library on the classpath. Specifically, we get this error:
   // (library/compile:doc) scala.reflect.internal.FatalError: package class scala does not have a member Int
-  // Ant build does the same thing always: it puts binaries for documented classes on the classpath
-  // sbt never does this by default (which seems like a good default)
   dependencyClasspath in (Compile, doc) += (classDirectory in Compile).value,
   doc in Compile <<= doc in Compile dependsOn (compile in Compile)
 )
@@ -398,8 +372,8 @@ lazy val compiler = configureAsSubproject(project)
     // These are only needed for the POM:
     libraryDependencies ++= Seq(scalaXmlDep, jlineDep % "optional"),
     // this a way to make sure that classes from interactive and scaladoc projects
-    // end up in compiler jar (that's what Ant build does)
-    // we need to use LocalProject references (with strings) to deal with mutual recursion
+    // end up in compiler jar. note that we need to use LocalProject references
+    // (with strings) to deal with mutual recursion
     products in Compile in packageBin :=
       (products in Compile in packageBin).value ++
         Seq((dependencyClasspath in Compile).value.find(_.get(moduleID.key) == Some(asmDep)).get.data) ++
@@ -430,7 +404,7 @@ lazy val compiler = configureAsSubproject(project)
                            "*"),
       "Class-Path" -> "scala-reflect.jar scala-library.jar"
     ),
-    // Generate the ScriptEngineFactory service definition. The ant build does this when building
+    // Generate the ScriptEngineFactory service definition. The Ant build does this when building
     // the JAR but sbt has no support for it and it is easier to do as a resource generator:
     generateServiceProviderResources("javax.script.ScriptEngineFactory" -> "scala.tools.nsc.interpreter.IMain$Factory"),
     managedResourceDirectories in Compile := Seq((resourceManaged in Compile).value),
@@ -482,7 +456,7 @@ lazy val replJlineEmbedded = Project("repl-jline-embedded", file(".") / "target"
     // There is nothing to compile for this project. Instead we use the compile task to create
     // shaded versions of repl-jline and jline.jar. dist/mkBin puts all of quick/repl,
     // quick/repl-jline and quick/repl-jline-shaded on the classpath for quick/bin scripts.
-    // This is different from the ant build where all parts are combined into quick/repl, but
+    // This is different from the Ant build where all parts are combined into quick/repl, but
     // it is cleaner because it avoids circular dependencies.
     compile in Compile <<= (compile in Compile).dependsOn(Def.task {
       import java.util.jar._
@@ -732,7 +706,7 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
       (manOut ** "*.1" pair rebase(manOut, fixedManOut)).foreach { case (in, out) =>
         // Generated manpages should always use LF only. There doesn't seem to be a good reason
         // for generating them with the platform EOL first and then converting them but that's
-        // what the ant build does.
+        // what the Ant build does.
         IO.write(out, IO.readBytes(in).filterNot(_ == '\r'))
       }
       (htmlOut ** "*.html").get ++ (fixedManOut ** "*.1").get

@@ -4,8 +4,6 @@ import org.apache.commons.lang3.StringUtils.replaceEach
 
 /**
  * A class that generates a shell or batch script to execute a Scala program.
- *
- * This is a simplified copy of Ant task (see scala.tools.ant.ScalaTool).
  */
 case class ScalaTool(mainClass: String,
                      classpath: List[String],

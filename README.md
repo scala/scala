@@ -43,8 +43,6 @@ P.S.: If you have some spare time to help out around here, we would be delighted
 ```
 scala/
 +--build.sbt                 The main sbt build script
-+--build.xml                 The deprecated Ant build script
-+--pull-binary-libs.sh       Pulls binary artifacts from remote repository, used by build scripts
 +--lib/                      Pre-compiled libraries for the build
 +--src/                      All sources
    +---/library              Scala Standard Library
@@ -65,13 +63,11 @@ scala/
 ## Requirements
 
 You need the following tools:
-  - A Java SDK. The baseline version is 6 for 2.11.x, 8 for 2.12.x. It's possible
-  to use a later SDK for local development, but the CI will verify against the baseline
-  version.
-  - sbt, we recommend the [sbt-extras](https://github.com/paulp/sbt-extras) runner
-  script. It provides sensible default jvm options (stack and heap size).
-  - curl (for `./pull-binary-libs.sh`, used by the sbt / ant build).
-  - Apache Ant (version 1.9.3 or above) if you need to use the (deprecated) ant build.
+  - Java SDK. The baseline version is 8 for 2.12.x. It may be possible to use a
+    later SDK for local development, but the CI will verify against the baseline
+    version.
+  - sbt. We recommend the [sbt-extras](https://github.com/paulp/sbt-extras) runner
+    script. It provides sensible default jvm options (stack and heap size).
 
 Mac OS X and Linux work. Windows may work if you use Cygwin. Community help with keeping
 the build working on Windows is appreciated.
@@ -80,32 +76,25 @@ the build working on Windows is appreciated.
 
 ### Basics
 
-Scala is built in layers, where each layer is a complete Scala compiler and library.
-Here is a short description of the layers, from bottom to top:
+During ordinary development, a new Scala build is built by the
+previously released version.  For short we call the previous release
+"starr": the stable reference Scala release.  Building with starr is
+sufficient for most kinds of changes.
 
-  - `starr`: the stable reference Scala release. We use an official release of
-    Scala (specified by `starr.version` in [versions.properties](versions.properties)),
-    downloaded from the Central Repository.
-  - `locker` (deprecated, only in ant): an intermediate layer that existed in the
-    ant build to perform a bootstrap.
-  - `quick`: the development layer which is incrementally built when working on
-    changes in the compiler or library.
-  - `strap` (deprecated, only in ant) : a test layer used to check stability of
-    the build.
+However, a full build of Scala (a *bootstrap*, as performed by our CI)
+requires two layers. This guarantees that every Scala version can
+build itself. If you change the code generation part of the Scala
+compiler, your changes will only show up in the bytecode of the
+library and compiler after a bootstrap. See below for how to do a
+bootstrap build locally.
 
-The sbt build uses `starr` to build `quick`. This is sufficient for most development
-scenarios: changes to the library or the compiler can be tested by running the `quick`
-Scala (see below for how to do that).
-
-However, a full build of Scala (a *bootstrap*, as performed by our CI) requires two
-layers. This guarantees that every Scala version can build itself. If you change the
-code generation part of the Scala compiler, your changes will only reflect in the
-bytecode of the library and compiler after a bootstrap. See below for how to create
-a bootstrap build locally.
+For history on how the current scheme was arrived at, see
+https://groups.google.com/d/topic/scala-internals/gp5JsM1E0Fo/discussion.
 
 ### Using the Sbt Build
 
 Core commands:
+
   - `compile` compiles all sub-projects (library, reflect, compiler, scaladoc, etc)
   - `scala` / `scalac` run the REPL / compiler directly from sbt (accept options /
     arguments)
@@ -133,13 +122,13 @@ Note that sbt's incremental compilation is often too coarse for the Scala compil
 codebase and re-compiles too many files, resulting in long build times (check
 [sbt#1104](https://github.com/sbt/sbt/issues/1104) for progress on that front). In the
 meantime you can:
-  - Enable "ant mode" in which sbt only re-compiles source files that were modified.
+  - Enable "Ant mode" in which sbt only re-compiles source files that were modified.
     Create a file `local.sbt` containing the line `antStyle := true`.
     Add an entry `local.sbt` to your `~/.gitignore`.
   - Use IntelliJ IDEA for incremental compiles (see [IDE Setup](#ide-setup) below) - its
     incremental compiler is a bit less conservative, but usually correct.
 
-#### Local Bootstrap Build
+#### Bootstrapping Locally
 
 To perform a bootstrap using sbt
   - first a build is published either locally or on a temporary repository,
@@ -176,7 +165,7 @@ In order to use IntelliJ's incremental compiler:
 
 Now you can edit and build in IntelliJ and use the scripts (compiler, REPL) to
 directly test your changes. You can also run the `scala`, `scalac` and `partest`
-commands in sbt. Enable "ant mode" (explained above) to prevent sbt's incremental
+commands in sbt. Enable "Ant mode" (explained above) to prevent sbt's incremental
 compiler from re-compiling (too many) files before each `partest` invocation.
 
 # Coding Guidelines
