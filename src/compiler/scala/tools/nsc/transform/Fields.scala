@@ -528,10 +528,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       * def x$lzycompute(): Int =
       *   x$lzy.synchronized {
       *     if (x$lzy.initialized()) x$lzy.value()
-      *     else {
-      *       x$lzy.initialized = true
-      *       x$lzy.value = rhs
-      *     }
+      *     else x$lzy.initialize(rhs) // for a Unit-typed lazy val, this becomes `{ rhs ; x$lzy.initialize() }` to avoid passing around BoxedUnit
       *  }
       * def x(): Int = if (x$lzy.initialized()) x$lzy.value() else x$lzycompute()
       * ```
@@ -543,6 +540,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
       val lazyValType = lazyVal.tpe.resultType
       val refClass    = lazyHolders.getOrElse(lazyValType.typeSymbol, LazyRefClass)
+      val isUnit      = refClass == LazyUnitClass
       val refTpe      = if (refClass != LazyRefClass) refClass.tpe else appliedType(refClass.typeConstructor, List(lazyValType))
 
       val lazyName  = lazyVal.name.toTermName
@@ -556,33 +554,29 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       // Must be marked LAZY to allow forward references, as in `def test2 { println(s.length) ; lazy val s = "abc" }
       val holderSym = owner.newValue(localLazyName, pos, LAZY | ARTIFACT) setInfo refTpe
 
-      val initializedGetter = refTpe.member(nme.initialized)
-      val isUnit            = refClass == LazyUnitClass
-      val valueGetter       = if (isUnit) NoSymbol else refTpe.member(nme.value)
-      def getValue          = if (isUnit) UNIT     else Apply(Select(Ident(holderSym), valueGetter), Nil)
+      val initializedSym = refTpe.member(nme.initialized)
+      val initializeSym  = refTpe.member(nme.initialize)
 
-      def mkChecked(alreadyComputed: Tree, compute: Tree) = If(Ident(holderSym) DOT initializedGetter, alreadyComputed, compute)
+      // LazyUnit does not have a `value` member
+      val valueSym = if (isUnit) NoSymbol else refTpe.member(nme.value)
+
+      def initialized = Select(Ident(holderSym), initializedSym)
+      def initialize  = Select(Ident(holderSym), initializeSym)
+      def getValue    = if (isUnit) UNIT else Apply(Select(Ident(holderSym), valueSym), Nil)
 
       val computerSym =
         owner.newMethod(lazyName append nme.LAZY_SLOW_SUFFIX, pos, ARTIFACT | PRIVATE) setInfo MethodType(Nil, lazyValType)
 
       val rhsAtComputer = rhs.changeOwner(lazyVal -> computerSym)
-      val computer = mkAccessor(computerSym) {
-        val setInitialized = Apply(Select(Ident(holderSym), initializedGetter.setterIn(refClass)), TRUE :: Nil)
 
-        if (isUnit)
-          gen.mkSynchronized(Ident(holderSym))(mkChecked(alreadyComputed = UNIT, compute = Block(List(rhsAtComputer, setInitialized), UNIT)))
-        else {
-          val valueSetter = Select(Ident(holderSym), valueGetter.setterIn(refClass))
+      val computer = mkAccessor(computerSym)(gen.mkSynchronized(Ident(holderSym))(
+        If(initialized, getValue,
+          if (isUnit) Block(rhsAtComputer :: Nil, Apply(initialize, Nil))
+          else Apply(initialize, rhsAtComputer :: Nil))))
 
-          gen.mkSynchronized(Ident(holderSym))(mkChecked(
-              alreadyComputed = getValue,
-              compute = Block(Apply(valueSetter, rhsAtComputer :: Nil) :: setInitialized :: Nil, getValue))
-          )
-        }
-      }
-
-      val accessor = mkAccessor(lazyVal)(mkChecked(getValue, Apply(Ident(computerSym), Nil)))
+      val accessor = mkAccessor(lazyVal)(
+        If(initialized, getValue,
+          Apply(Ident(computerSym), Nil)))
 
       // do last!
       // remove STABLE: prevent replacing accessor call of type Unit by BoxedUnit.UNIT in erasure
