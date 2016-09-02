@@ -30,8 +30,8 @@ trait AbsScalaSettings {
   type OutputSetting <: Setting
 
   def BooleanSetting(name: String, descr: String): BooleanSetting
-  def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String): ChoiceSetting
-  def ChoiceSettingForcedDefault(name: String, helpArg: String, descr: String, choices: List[String], default: String): ChoiceSetting
+  def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String, choicesHelp: List[String] = Nil): ChoiceSetting
+  def ChoiceSettingForcedDefault(name: String, helpArg: String, descr: String, choices: List[String], default: String, choicesHelp: List[String] = Nil): ChoiceSetting
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]): IntSetting
   def MultiStringSetting(name: String, helpArg: String, descr: String): MultiStringSetting
   def MultiChoiceSetting[E <: MultiChoiceEnumeration](name: String, helpArg: String, descr: String, domain: E, default: Option[List[String]]): MultiChoiceSetting[E]

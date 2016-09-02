@@ -146,7 +146,22 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         val intermediateClasses = clazz.info.baseClasses.tail.takeWhile(_ != sym.owner)
         intermediateClasses.map(sym.overridingSymbol).find(s => s.isDeferred && !s.isAbstractOverride && !s.owner.isTrait).foreach {
           absSym =>
-            reporter.error(sel.pos, s"${sym.fullLocationString} cannot be directly accessed from ${clazz} because ${absSym.owner} redeclares it as abstract")
+            reporter.error(sel.pos, s"${sym.fullLocationString} cannot be directly accessed from $clazz because ${absSym.owner} redeclares it as abstract")
+        }
+      } else if (mix != tpnme.EMPTY) {
+        // SD-143: a call super[T].m that resolves to A.m cannot be translated to correct bytecode if
+        //   - A is a class (not a trait / interface), but not the direct superclass. Invokespecial
+        //     would select an overriding method in the direct superclass, rather than A.m.
+        //     https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokespecial
+        //   - A is a java-defined interface and not listed as direct parent of the class. In this
+        //     case, `invokespecial A.m` would be invalid.
+        val owner = sym.owner
+        if (!owner.isTrait && owner != clazz.superClass) {
+          reporter.error(sel.pos,
+            s"cannot emit super call: the selected $sym is declared in $owner, which is not the direct superclass of $clazz.\n" +
+            s"An unqualified super call (super.${sym.name}) would be allowed.")
+        } else if (owner.isInterface && owner.isJavaDefined && !clazz.parentSymbols.contains(owner)) {
+          reporter.error(sel.pos, s"unable to emit super call unless interface ${owner.name} (which declares $sym) is directly extended by $clazz.")
         }
       }
 

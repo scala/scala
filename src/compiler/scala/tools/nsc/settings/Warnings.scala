@@ -25,8 +25,6 @@ trait Warnings {
   // currently considered too noisy for general use
   val warnUnusedImport     = BooleanSetting("-Ywarn-unused-import", "Warn when imports are unused.")
 
-  val nowarnDefaultJunitMethods = BooleanSetting("-Ynowarn-default-junit-methods", "Don't warn when a JUnit @Test method is generated as a default method (not supported in JUnit 4).")
-
   // Experimental lint warnings that are turned off, but which could be turned on programmatically.
   // They are not activated by -Xlint and can't be enabled on the command line because they are not
   // created using the standard factory methods.

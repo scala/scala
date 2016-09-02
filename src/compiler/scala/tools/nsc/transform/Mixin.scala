@@ -215,51 +215,59 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
           case NoSymbol =>
             val isMemberOfClazz = clazz.info.findMember(member.name, 0, 0L, stableOnly = false).alternatives.contains(member)
             if (isMemberOfClazz) {
-              def genForwarder(): Unit = {
-                cloneAndAddMixinMember(mixinClass, member).asInstanceOf[TermSymbol] setAlias member
+              def genForwarder(required: Boolean): Unit = {
+                val owner = member.owner
+                if (owner.isJavaDefined && owner.isInterface && !clazz.parentSymbols.contains(owner)) {
+                  val text = s"Unable to implement a mixin forwarder for $member in $clazz unless interface ${owner.name} is directly extended by $clazz."
+                  if (required) reporter.error(clazz.pos, text)
+                  else warning(clazz.pos, text)
+                } else
+                  cloneAndAddMixinMember(mixinClass, member).asInstanceOf[TermSymbol] setAlias member
               }
 
-              if (settings.XgenMixinForwarders) genForwarder()
-              else {
+              // `member` is a concrete method defined in `mixinClass`, which is a base class of
+              // `clazz`, and the method is not overridden in `clazz`. A forwarder is needed if:
+              //
+              //   - A non-trait base class of `clazz` defines a matching method. Example:
+              //       class C {def f: Int}; trait T extends C {def f = 1}; class D extends T
+              //     Even if C.f is abstract, the forwarder in D is needed, otherwise the JVM would
+              //     resolve `D.f` to `C.f`, see jvms-6.5.invokevirtual.
+              //
+              //   - There exists another concrete, matching method in a parent interface `p` of
+              //     `clazz`, and the `mixinClass` does not itself extend `p`. In this case the
+              //     forwarder is needed to disambiguate. Example:
+              //       trait T1 {def f = 1}; trait T2 extends T1 {override def f = 2}; class C extends T2
+              //     In C we don't need a forwarder for f because T2 extends T1, so the JVM resolves
+              //     C.f to T2.f non-ambiguously. See jvms-5.4.3.3, "maximally-specific method".
+              //       trait U1 {def f = 1}; trait U2 {self:U1 => override def f = 2}; class D extends U2
+              //     In D the forwarder is needed, the interfaces U1 and U2 are unrelated at the JVM
+              //     level.
 
-                // `member` is a concrete method defined in `mixinClass`, which is a base class of
-                // `clazz`, and the method is not overridden in `clazz`. A forwarder is needed if:
-                //
-                //   - A non-trait base class of `clazz` defines a matching method. Example:
-                //       class C {def f: Int}; trait T extends C {def f = 1}; class D extends T
-                //     Even if C.f is abstract, the forwarder in D is needed, otherwise the JVM would
-                //     resolve `D.f` to `C.f`, see jvms-6.5.invokevirtual.
-                //
-                //   - There exists another concrete, matching method in a parent interface `p` of
-                //     `clazz`, and the `mixinClass` does not itself extend `p`. In this case the
-                //     forwarder is needed to disambiguate. Example:
-                //       trait T1 {def f = 1}; trait T2 extends T1 {override def f = 2}; class C extends T2
-                //     In C we don't need a forwarder for f because T2 extends T1, so the JVM resolves
-                //     C.f to T2.f non-ambiguously. See jvms-5.4.3.3, "maximally-specific method".
-                //       trait U1 {def f = 1}; trait U2 {self:U1 => override def f = 2}; class D extends U2
-                //     In D the forwarder is needed, the interfaces U1 and U2 are unrelated at the JVM
-                //     level.
+              @tailrec
+              def existsCompetingMethod(baseClasses: List[Symbol]): Boolean = baseClasses match {
+                case baseClass :: rest =>
+                  if (baseClass ne mixinClass) {
+                    val m = member.overriddenSymbol(baseClass)
+                    val isCompeting = m.exists && {
+                      !m.owner.isTraitOrInterface ||
+                        (!m.isDeferred && !mixinClass.isNonBottomSubClass(m.owner))
+                    }
+                    isCompeting || existsCompetingMethod(rest)
+                  } else existsCompetingMethod(rest)
 
-                @tailrec
-                def existsCompetingMethod(baseClasses: List[Symbol]): Boolean = baseClasses match {
-                  case baseClass :: rest =>
-                    if (baseClass ne mixinClass) {
-                      val m = member.overriddenSymbol(baseClass)
-                      val isCompeting = m.exists && {
-                        !m.owner.isTraitOrInterface ||
-                          (!m.isDeferred && !mixinClass.isNonBottomSubClass(m.owner))
-                      }
-                      isCompeting || existsCompetingMethod(rest)
-                    } else existsCompetingMethod(rest)
-
-                  case _ => false
-                }
-
-                if (existsCompetingMethod(clazz.baseClasses))
-                  genForwarder()
-                else if (!settings.nowarnDefaultJunitMethods && JUnitTestClass.exists && member.hasAnnotation(JUnitTestClass))
-                  warning(member.pos, "JUnit tests in traits that are compiled as default methods are not executed by JUnit 4. JUnit 5 will fix this issue.")
+                case _ => false
               }
+
+              def generateJUnitForwarder: Boolean = {
+                settings.mixinForwarderChoices.isJunit &&
+                  member.annotations.nonEmpty &&
+                  JUnitAnnotations.exists(annot => annot.exists && member.hasAnnotation(annot))
+              }
+
+              if (existsCompetingMethod(clazz.baseClasses) || generateJUnitForwarder)
+                genForwarder(required = true)
+              else if (settings.mixinForwarderChoices.isTruthy)
+                genForwarder(required = false)
             }
 
           case _        =>

@@ -9,7 +9,6 @@ import scala.collection.JavaConverters._
 import scala.tools.asm.Opcodes
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree.ClassNode
-import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
 import scala.tools.partest.ASMConverters._
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
@@ -237,7 +236,7 @@ class BytecodeTest extends BytecodeTesting {
         |class C extends T
       """.stripMargin
     val List(c1, _) = compileClasses(code)
-    val List(c2, _) = newCompiler(extraArgs = "-Xgen-mixin-forwarders").compileClasses(code)
+    val List(c2, _) = newCompiler(extraArgs = "-Xmixin-force-forwarders:true").compileClasses(code)
     assert(getMethods(c1, "f").isEmpty)
     assertSameCode(getMethod(c2, "f"),
       List(VarOp(ALOAD, 0), Invoke(INVOKESTATIC, "T", "f$", "(LT;)I", true), Op(IRETURN)))
@@ -245,7 +244,6 @@ class BytecodeTest extends BytecodeTesting {
 
   @Test
   def sd143(): Unit = {
-    // this tests the status quo, which is wrong.
     val code =
       """class A { def m = 1 }
         |class B extends A { override def m = 2 }
@@ -254,10 +252,96 @@ class BytecodeTest extends BytecodeTesting {
         |  override def m = super[T].m // should invoke A.m
         |}
       """.stripMargin
-    val List(_, _, c, _) = compileClasses(code)
-    // even though the bytecode refers to A.m, invokespecial will resolve to B.m
-    assertSameCode(getMethod(c, "m"),
-      List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "A", "m", "()I", false), Op(IRETURN)))
+
+    val err =
+      """cannot emit super call: the selected method m is declared in class A, which is not the direct superclass of class C.
+        |An unqualified super call (super.m) would be allowed.""".stripMargin
+    val cls = compileClasses(code, allowMessage = _.msg contains err)
+    assert(cls.isEmpty, cls.map(_.name))
+  }
+
+  @Test
+  def sd143b(): Unit = {
+    val jCode = List("interface A { default int m() { return 1; } }" -> "A.java")
+    val code =
+      """class B extends A { override def m = 2 }
+        |trait T extends A
+        |class C extends B with T {
+        |  override def m = super[T].m
+        |}
+      """.stripMargin
+
+    val err = "unable to emit super call unless interface A (which declares method m) is directly extended by class C"
+    val cls = compileClasses(code, jCode, allowMessage = _.msg contains err)
+    assert(cls.isEmpty, cls.map(_.name))
+  }
+
+  @Test
+  def sd210(): Unit = {
+    val forwardersCompiler = newCompiler(extraArgs = "-Xmixin-force-forwarders:true")
+    val jCode = List("interface A { default int m() { return 1; } }" -> "A.java")
+
+
+    // used to crash in the backend (SD-210) under `-Xmixin-force-forwarders:true`
+    val code1 =
+      """trait B1 extends A // called "B1" not "B" due to scala-dev#214
+        |class C extends B1
+      """.stripMargin
+
+    val List(_, c1a) = compileClasses(code1, jCode)
+    assert(getAsmMethods(c1a, "m").isEmpty) // ok, no forwarder
+
+    // here we test a warning. without `-Xmixin-force-forwarders:true`, the forwarder would not be
+    // generated, it is not necessary for correctness.
+    val warn = "Unable to implement a mixin forwarder for method m in class C unless interface A is directly extended by class C"
+    val List(_, c1b) = forwardersCompiler.compileClasses(code1, jCode, allowMessage = _.msg.contains(warn))
+    assert(getAsmMethods(c1a, "m").isEmpty) // no forwarder
+
+
+    val code2 =
+      """abstract class B { def m(): Int }
+        |trait T extends B with A
+        |class C extends T
+      """.stripMargin
+
+    // here we test a compilation error. the forwarder is required for correctness, but it cannot be generated.
+    val err = "Unable to implement a mixin forwarder for method m in class C unless interface A is directly extended by class C"
+    val cs = compileClasses(code2, jCode, allowMessage = _.msg contains err)
+    assert(cs.isEmpty, cs.map(_.name))
+
+
+    val code3 =
+      """abstract class B { def m: Int }
+        |class C extends B with A
+      """.stripMargin
+
+    val List(_, c3) = compileClasses(code3, jCode)
+    // invokespecial to A.m is correct here: A is an interface, so resolution starts at A.
+    // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokespecial
+    val ins3 = getMethod(c3, "m").instructions
+    assert(ins3 contains Invoke(INVOKESPECIAL, "A", "m", "()I", true), ins3.stringLines)
+
+
+    val code4 =
+      """trait B { self: A => override def m = 2 }
+        |class C extends A with B // forwarder, invokestatic B.m$
+      """.stripMargin
+
+    val List(_, c4) = compileClasses(code4, jCode)
+    val ins4 = getMethod(c4, "m").instructions
+    assert(ins4 contains Invoke(INVOKESTATIC, "B", "m$", "(LB;)I", true), ins4.stringLines)
+
+
+    // scala-only example
+    val code5 =
+      """trait AS { def m = 1 }
+        |abstract class B { def m: Int }
+        |class C extends B with AS // forwarder, invokestatic AS.m$
+      """.stripMargin
+
+    val List(_, _, c5) = compileClasses(code5)
+    val ins5 = getMethod(c5, "m").instructions
+    assert(ins5 contains Invoke(INVOKESTATIC, "AS", "m$", "(LAS;)I", true), ins5.stringLines)
   }
 }
 

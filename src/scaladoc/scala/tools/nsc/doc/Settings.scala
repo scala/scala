@@ -22,7 +22,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
   val docformat = ChoiceSetting (
     "-doc-format",
     "format",
-    "Selects in which format documentation is rendered",
+    "Selects in which format documentation is rendered.",
     List("html"),
     "html"
   )

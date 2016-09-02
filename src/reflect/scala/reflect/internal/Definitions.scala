@@ -1154,7 +1154,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ElidableMethodClass        = requiredClass[scala.annotation.elidable]
     lazy val ImplicitNotFoundClass      = requiredClass[scala.annotation.implicitNotFound]
     lazy val ImplicitAmbiguousClass     = getClassIfDefined("scala.annotation.implicitAmbiguous")
-    lazy val JUnitTestClass             = getClassIfDefined("org.junit.Test")
     lazy val MigrationAnnotationClass   = requiredClass[scala.annotation.migration]
     lazy val ScalaStrictFPAttr          = requiredClass[scala.annotation.strictfp]
     lazy val SwitchClass                = requiredClass[scala.annotation.switch]
@@ -1195,6 +1194,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ClassTargetClass           = requiredClass[meta.companionClass]
     lazy val MethodTargetClass          = requiredClass[meta.companionMethod]    // TODO: module, moduleClass? package, packageObject?
     lazy val LanguageFeatureAnnot       = requiredClass[meta.languageFeature]
+
+    lazy val JUnitAnnotations = List("Test", "Ignore", "Before", "After", "BeforeClass", "AfterClass").map(n => getClassIfDefined("org.junit." + n))
 
     // Language features
     lazy val languageFeatureModule      = getRequiredModule("scala.languageFeature")
