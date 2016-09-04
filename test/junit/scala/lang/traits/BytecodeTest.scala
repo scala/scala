@@ -277,6 +277,29 @@ class BytecodeTest extends BytecodeTesting {
   }
 
   @Test
+  def sd143c(): Unit = {
+    // Allow super calls to class methods of indirect super classes
+    val code =
+      """class A { def f = 1 }
+        |class B extends A
+        |trait T extends A { override def f = 2 }
+        |class C extends B with T {
+        |  def t1 = super[B].f
+        |  def t2 = super.f
+        |  def t3 = super[T].f
+        |}
+      """.stripMargin
+    val List(_, _, c, _) = compileClasses(code)
+    val t1 = getInstructions(c, "t1")
+    assert(t1 contains Invoke(INVOKESPECIAL, "A", "f", "()I", false), t1.stringLines)
+    val t2 = getInstructions(c, "t2")
+    val invStat = Invoke(INVOKESTATIC, "T", "f$", "(LT;)I", true)
+    assert(t2 contains invStat, t2.stringLines)
+    val t3 = getInstructions(c, "t3")
+    assert(t3 contains invStat, t3.stringLines)
+  }
+
+  @Test
   def sd210(): Unit = {
     val forwardersCompiler = newCompiler(extraArgs = "-Xmixin-force-forwarders:true")
     val jCode = List("interface A { default int m() { return 1; } }" -> "A.java")
