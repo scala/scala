@@ -210,6 +210,18 @@ abstract class SymbolTable extends macros.Universe
   /** The run identifier of the given period. */
   final def runId(period: Period): RunId = period >> 8
 
+  trait RunSettings {
+    val runSettings: PerRunSettings = PerRunSettings
+  }
+
+  type PerRunSettings <: PerRunSettingsBase
+  protected def PerRunSettings: PerRunSettings
+  abstract class PerRunSettingsBase {
+    def isScala211: Boolean
+    def isScala212: Boolean
+  }
+  def currentRun: RunSettings with RunReporting
+
   /** The phase identifier of the given period. */
   final def phaseId(period: Period): Phase#Id = period & 0xFF
 
