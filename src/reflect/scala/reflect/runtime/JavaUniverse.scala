@@ -28,11 +28,16 @@ class JavaUniverse extends InternalSymbolTable with JavaUniverseForce with Refle
   }
 
   // minimal Run to get Reporting wired
-  def currentRun = new RunReporting {}
+  def currentRun = new RunReporting with RunSettings{}
   class PerRunReporting extends PerRunReportingBase {
     def deprecationWarning(pos: Position, msg: String, since: String): Unit = reporter.warning(pos, msg)
   }
   protected def PerRunReporting = new PerRunReporting
+  class PerRunSettings extends PerRunSettingsBase {
+    override def isScala211: Boolean = settings.isScala211
+    override def isScala212: Boolean = settings.isScala212
+  }
+  protected def PerRunSettings = new PerRunSettings
 
 
   type TreeCopier = InternalTreeCopierOps

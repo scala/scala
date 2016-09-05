@@ -1075,7 +1075,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** A Run is a single execution of the compiler on a set of units.
    */
-  class Run extends RunContextApi with RunReporting with RunParsing {
+  class Run extends RunContextApi with RunReporting with RunParsing with RunSettings {
     /** Have been running into too many init order issues with Run
      *  during erroneous conditions.  Moved all these vals up to the
      *  top of the file so at least they're not trivially null.
@@ -1540,6 +1540,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
   } // class Run
 
+
+  class PerRunSettings extends PerRunSettingsBase {
+    override val isScala211: Boolean = settings.isScala211
+    override val isScala212: Boolean = settings.isScala212
+  }
+  override protected def PerRunSettings: PerRunSettings = new PerRunSettings
   def printAllUnits() {
     print("[[syntax trees at end of %25s]]".format(phase))
     exitingPhase(phase)(currentRun.units foreach { unit =>
