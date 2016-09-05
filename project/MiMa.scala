@@ -4,7 +4,7 @@
 //   both forwards and backwards incompatibilities (possibly fixed as of
 //   https://github.com/typesafehub/migration-manager/commit/2844ffa48b6d2255aa64bd687703aec21dadd55e)
 // * ability to pass a filter file (https://github.com/typesafehub/migration-manager/issues/102)
-// So we invoke the MiMa CLI directly; it's also what the Ant build did.
+// So we invoke the MiMa CLI directly.
 
 import sbt._
 import sbt.Keys._
@@ -29,8 +29,7 @@ object MiMa {
               prev = if (isForward) curr else prev,
               curr = if (isForward) prev else curr,
               // TODO: it would be nicer if each subproject had its own whitelist, but for now
-              // for compatibility with how Ant did things, there's just one at the root.
-              // once Ant is gone we'd be free to split it up.
+              // there's just one at the root. with the Ant build gone, we would be free now to split it.
               filter = (baseDirectory in ThisBuild).value / s"bincompat-$direction.whitelist.conf",
               log)
           }

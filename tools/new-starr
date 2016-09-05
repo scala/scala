@@ -1,6 +1,0 @@
-#!/bin/bash
-
-ant -Dscalac.args.optimise="-optimise" locker.done
-cp -R src/starr/* src/
-ant build-opt
-ant starr.done

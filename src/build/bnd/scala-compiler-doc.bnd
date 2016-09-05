@@ -1,8 +1,0 @@
-Bundle-Name: Scala Documentation Generator
-Bundle-SymbolicName: org.scala-lang.modules.scala-compiler-doc_@SCALA_BINARY_VERSION@
-ver: @SCALA_COMPILER_DOC_VERSION@
-Bundle-Version: ${ver}
-Export-Package: *;version=${ver}
-Import-Package: scala.*;version="${range;[==,=+);@VERSION@}",*
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
-Include-Resource: @@SOURCE_JARNAME@
