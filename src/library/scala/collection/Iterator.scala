@@ -688,12 +688,12 @@ trait Iterator[+A] extends TraversableOnce[A] {
         }
         else {
           if (status == 1) store(hd)
+          status = -1
           while (self.hasNext) {
             val a = self.next()
             if (p(a)) store(a)
             else {
               hd = a
-              status = -1
               return true
             }
           }
