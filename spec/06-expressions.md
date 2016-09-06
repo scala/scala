@@ -175,7 +175,9 @@ in the least proper supertype of the innermost template containing the
 reference.  It evaluates to the member $m'$ in the actual supertype of
 that template which is equal to $m$ or which overrides $m$.  The
 statically referenced member $m$ must be a type or a
-method.  <!-- explanation: so that we need not create several fields for overriding vals -->
+method.
+
+<!-- explanation: so that we need not create several fields for overriding vals -->
 
 If it is
 a method, it must be concrete, or the template
