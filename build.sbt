@@ -649,17 +649,26 @@ lazy val test = project
         def isModule = true
         def annotationName = "partest"
       }, true, Array()
-    )
+    ),
+    executeTests in IntegrationTest := {
+      val result = (executeTests in IntegrationTest).value
+      if (result.overall != TestResult.Error && result.events.isEmpty) {
+        // workaround for https://github.com/sbt/sbt/issues/2722
+        val result = (executeTests in Test).value
+        (streams.value.log.error("No test events found"))
+        result.copy(overall = TestResult.Error)
+      }
+      else result
+    }
   )
 
 lazy val manual = configureAsSubproject(project)
   .settings(disableDocs: _*)
   .settings(disablePublishing: _*)
   .settings(
-    libraryDependencies ++= Seq(scalaXmlDep, antDep),
+    libraryDependencies ++= Seq(scalaXmlDep, antDep, "org.scala-lang" % "scala-library" % scalaVersion.value),
     classDirectory in Compile := (target in Compile).value / "classes"
   )
-  .dependsOn(library)
 
 lazy val libraryAll = Project("library-all", file(".") / "target" / "library-all-src-dummy")
   .settings(commonSettings: _*)

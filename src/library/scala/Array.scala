@@ -496,16 +496,6 @@ object Array extends FallbackArrayBuilding {
  *  @hideImplicitConversion scala.Predef.refArrayOps
  *  @hideImplicitConversion scala.Predef.shortArrayOps
  *  @hideImplicitConversion scala.Predef.unitArrayOps
- *  @hideImplicitConversion scala.Predef._booleanArrayOps
- *  @hideImplicitConversion scala.Predef._byteArrayOps
- *  @hideImplicitConversion scala.Predef._charArrayOps
- *  @hideImplicitConversion scala.Predef._doubleArrayOps
- *  @hideImplicitConversion scala.Predef._floatArrayOps
- *  @hideImplicitConversion scala.Predef._intArrayOps
- *  @hideImplicitConversion scala.Predef._longArrayOps
- *  @hideImplicitConversion scala.Predef._refArrayOps
- *  @hideImplicitConversion scala.Predef._shortArrayOps
- *  @hideImplicitConversion scala.Predef._unitArrayOps
  *  @hideImplicitConversion scala.LowPriorityImplicits.wrapRefArray
  *  @hideImplicitConversion scala.LowPriorityImplicits.wrapIntArray
  *  @hideImplicitConversion scala.LowPriorityImplicits.wrapDoubleArray
