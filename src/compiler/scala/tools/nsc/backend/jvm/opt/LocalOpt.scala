@@ -47,7 +47,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *   note that eliminating empty handlers and stale local variable descriptors is required for
  *   correctness, see the comment in the body of `methodOptimizations`.
  *
- * box-unbox elimination (eliminates box-unbox pairs withing the same method)
+ * box-unbox elimination (eliminates box-unbox pairs within the same method)
  *   + enables UPSTREAM:
  *     - nullness optimizations (a box extraction operation (unknown nullness) may be rewritten to
  *       a read of a non-null local. example in doc comment of box-unbox implementation)

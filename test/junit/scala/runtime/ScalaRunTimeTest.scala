@@ -9,7 +9,7 @@ import org.junit.runners.JUnit4
 @RunWith(classOf[JUnit4])
 class ScalaRunTimeTest {
   @Test
-  def testStingOf() {
+  def testStringOf() {
     import ScalaRunTime.stringOf
     import scala.collection._
     import parallel.ParIterable

@@ -149,7 +149,7 @@ object VersionUtil {
       s"https://repo.lightbend.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap/$sha/$path/$libName.jar"
   }
 
-  /** Copy a boostrap dependency JAR that is on the classpath to a file */
+  /** Copy a bootstrap dependency JAR that is on the classpath to a file */
   def copyBootstrapJar(cp: Seq[Attributed[File]], baseDir: File, path: String, libName: String): Unit = {
     val org = bootstrapOrganization(path)
     val resolved = cp.find { a =>
