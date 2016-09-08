@@ -633,8 +633,21 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       val synthAccessorInClass = new SynthLazyAccessorsIn(clazz)
       def superLazy(getter: Symbol): List[ValOrDefDef] = {
         assert(!clazz.isTrait)
-        // this contortion was the only way I can get the super select to be type checked correctly.. TODO: why does SelectSuper not work?
-        val rhs = Apply(Select(Super(This(clazz), tpnme.EMPTY), getter.name), Nil)
+        // this contortion was the only way I can get the super select to be type checked correctly..
+        // TODO: why does SelectSuper not work?
+        val selectSuper = Select(Super(This(clazz), tpnme.EMPTY), getter.name)
+
+        // scala/scala-dev#219
+        // Type check the super-call to the trait's lazy accessor before our own phase,
+        // so that we don't see other accessor symbols we mix into the class.
+        // The lazy var's info will not refer to symbols created during our info transformer,
+        // so if its type depends on a val that is now implemented after the info transformer,
+        // we'll get a mismatch when assigning `rhs` to `lazyVarOf(getter)`,
+        // unless we also run before our own phase (like when we were creating the info for the lazy var).
+        //
+        // TODO: are there other spots where we may get a mismatch like this?
+        val rhs = exitingUncurry(typedPos(getter.pos.focus)(Apply(selectSuper, Nil)))
+
         explodeThicket(synthAccessorInClass.expandLazyClassMember(lazyVarOf(getter), getter, rhs, Map.empty)).asInstanceOf[List[ValOrDefDef]]
       }
 
