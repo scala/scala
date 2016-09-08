@@ -8,7 +8,7 @@ package tools.nsc
 package symtab
 package classfile
 
-import java.io.{File, IOException}
+import java.io.{ByteArrayInputStream, DataInputStream, File, IOException}
 import java.lang.Integer.toHexString
 import scala.collection.{immutable, mutable}
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
@@ -206,9 +206,13 @@ abstract class ClassfileParser {
         case name: Name => name
         case _          =>
           val start = firstExpecting(index, CONSTANT_UTF8)
-          recordAtIndex(newTermName(in.buf, start + 2, in.getChar(start).toInt), index)
+          val len   = in.getChar(start).toInt
+          recordAtIndex(TermName(fromMUTF8(in.buf, start, len + 2)), index)
       }
     )
+
+    private def fromMUTF8(bytes: Array[Byte], offset: Int, len: Int): String =
+      new DataInputStream(new ByteArrayInputStream(bytes, offset, len)).readUTF
 
     /** Return the name found at given index in the constant pool, with '/' replaced by '.'. */
     def getExternalName(index: Int): Name = {
