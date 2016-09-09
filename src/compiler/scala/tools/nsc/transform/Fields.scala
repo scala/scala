@@ -207,9 +207,8 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
     moduleVar
   }
 
-  private def moduleInit(module: Symbol) = {
+  private def moduleInit(module: Symbol, moduleVar: Symbol) = {
 //    println(s"moduleInit for $module in ${module.ownerChain} --> ${moduleVarOf.get(module)}")
-    val moduleVar = moduleOrLazyVarOf(module)
     def moduleVarRef = gen.mkAttributedRef(moduleVar)
 
     // for local modules, we synchronize on the owner of the method that owns the module
@@ -238,7 +237,8 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       */
     val computeName = nme.newLazyValSlowComputeName(module.name)
     val computeMethod = DefDef(NoMods, computeName, Nil, ListOfNil, TypeTree(UnitTpe), gen.mkSynchronized(monitorHolder)(If(needsInit, init, EmptyTree)))
-    Block(computeMethod :: If(needsInit, Apply(Ident(computeName), Nil), EmptyTree) :: Nil, moduleVarRef)
+    Block(computeMethod :: If(needsInit, Apply(Ident(computeName), Nil), EmptyTree) :: Nil,
+      gen.mkCast(moduleVarRef, module.info.resultType))
   }
 
   // NoSymbol for lazy accessor sym with unit result type
@@ -590,75 +590,81 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
     }
 
     // synth trees for accessors/fields and trait setters when they are mixed into a class
-    def fieldsAndAccessors(clazz: Symbol): List[ValOrDefDef] = {
-      def fieldAccess(accessor: Symbol): List[Tree] = {
-        val fieldName = accessor.localName
-        val field = clazz.info.decl(fieldName)
-        // The `None` result denotes an error, but it's refchecks' job to report it (this fallback is for robustness).
-        // This is the result of overriding a val with a def, so that no field is found in the subclass.
-        if (field.exists) List(Select(This(clazz), field))
-        else Nil
-      }
+    def fieldsAndAccessors(clazz: Symbol): List[Tree] = {
+      // scala/scala-dev#219
+      // Cast to avoid spurious mismatch in paths containing trait vals that have
+      // not been rebound to accessors in the subclass we're in now.
+      // For example, for a lazy val mixed into a class, the lazy var's info
+      // will not refer to symbols created during our info transformer,
+      // so if its type depends on a val that is now implemented after the info transformer,
+      // we'll get a mismatch when assigning `rhs` to `lazyVarOf(getter)`.
+      // TODO: could we rebind more aggressively? consider overriding in type equality?
+      def cast(tree: Tree, pt: Type) = gen.mkAsInstanceOf(tree, pt)
 
-      def getterBody(getter: Symbol): List[Tree] = {
+      // Could be NoSymbol, which denotes an error, but it's refchecks' job to report it (this fallback is for robustness).
+      // This is the result of overriding a val with a def, so that no field is found in the subclass.
+      def fieldAccess(accessor: Symbol): Symbol =
+        afterOwnPhase { clazz.info.decl(accessor.localName) }
+
+      def getterBody(getter: Symbol): Tree =
         // accessor created by newMatchingModuleAccessor for a static module that does need an accessor
         // (because there's a matching member in a super class)
-        if (getter.asTerm.referenced.isModule) {
-          List(gen.mkAttributedRef(clazz.thisType, getter.asTerm.referenced))
-        } else {
+        if (getter.asTerm.referenced.isModule)
+          mkAccessor(getter)(cast(Select(This(clazz), getter.asTerm.referenced), getter.info.resultType))
+        else {
           val fieldMemoization = fieldMemoizationIn(getter, clazz)
-          if (fieldMemoization.constantTyped) List(gen.mkAttributedQualifier(fieldMemoization.tp)) // TODO: drop when we no longer care about producing identical bytecode
-          else fieldAccess(getter)
+          // TODO: drop getter for constant? (when we no longer care about producing identical bytecode?)
+          if (fieldMemoization.constantTyped) mkAccessor(getter)(gen.mkAttributedQualifier(fieldMemoization.tp))
+          else fieldAccess(getter) match {
+            case NoSymbol => EmptyTree
+            case fieldSel => mkAccessor(getter)(cast(Select(This(clazz), fieldSel), getter.info.resultType))
+          }
         }
-      }
 
       //      println(s"accessorsAndFieldsNeedingTrees for $templateSym: $accessorsAndFieldsNeedingTrees")
-      def setterBody(setter: Symbol): List[Tree] = {
+      def setterBody(setter: Symbol): Tree =
         // trait setter in trait
-        if (clazz.isTrait) List(EmptyTree)
+        if (clazz.isTrait) mkAccessor(setter)(EmptyTree)
         // trait setter for overridden val in class
-        else if (checkAndClearOverriddenTraitSetter(setter)) List(mkTypedUnit(setter.pos))
+        else if (checkAndClearOverriddenTraitSetter(setter)) mkAccessor(setter)(mkTypedUnit(setter.pos))
         // trait val/var setter mixed into class
-        else fieldAccess(setter) map (fieldSel => Assign(fieldSel, Ident(setter.firstParam)))
-      }
+        else fieldAccess(setter) match {
+          case NoSymbol => EmptyTree
+          case fieldSel => afterOwnPhase { // the assign only type checks after our phase (assignment to val)
+            mkAccessor(setter)(Assign(Select(This(clazz), fieldSel), cast(Ident(setter.firstParam), fieldSel.info)))
+          }
+        }
 
-      def moduleAccessorBody(module: Symbol): List[Tree] = List(
+      def moduleAccessorBody(module: Symbol): Tree =
         // added during synthFieldsAndAccessors using newModuleAccessor
         // a module defined in a trait by definition can't be static (it's a member of the trait and thus gets a new instance for every outer instance)
-        if (clazz.isTrait) EmptyTree
+        if (clazz.isTrait) mkAccessor(module)(EmptyTree)
         // symbol created by newModuleAccessor for a (non-trait) class
-        else moduleInit(module)
-      )
+        else {
+          mkAccessor(module)(moduleInit(module, moduleOrLazyVarOf(module)))
+        }
 
       val synthAccessorInClass = new SynthLazyAccessorsIn(clazz)
-      def superLazy(getter: Symbol): List[ValOrDefDef] = {
+      def superLazy(getter: Symbol): Tree = {
         assert(!clazz.isTrait)
         // this contortion was the only way I can get the super select to be type checked correctly..
         // TODO: why does SelectSuper not work?
         val selectSuper = Select(Super(This(clazz), tpnme.EMPTY), getter.name)
 
-        // scala/scala-dev#219
-        // Type check the super-call to the trait's lazy accessor before our own phase,
-        // so that we don't see other accessor symbols we mix into the class.
-        // The lazy var's info will not refer to symbols created during our info transformer,
-        // so if its type depends on a val that is now implemented after the info transformer,
-        // we'll get a mismatch when assigning `rhs` to `lazyVarOf(getter)`,
-        // unless we also run before our own phase (like when we were creating the info for the lazy var).
-        //
-        // TODO: are there other spots where we may get a mismatch like this?
-        val rhs = exitingUncurry(typedPos(getter.pos.focus)(Apply(selectSuper, Nil)))
+        val lazyVar = lazyVarOf(getter)
+        val rhs = cast(Apply(selectSuper, Nil), lazyVar.info)
 
-        explodeThicket(synthAccessorInClass.expandLazyClassMember(lazyVarOf(getter), getter, rhs, Map.empty)).asInstanceOf[List[ValOrDefDef]]
+        synthAccessorInClass.expandLazyClassMember(lazyVar, getter, rhs, Map.empty)
       }
 
-      clazz.info.decls.toList.filter(checkAndClearNeedsTrees) flatMap {
-        case module if module hasAllFlags (MODULE | METHOD) => moduleAccessorBody(module) map mkAccessor(module)
+      (afterOwnPhase { clazz.info.decls } toList) filter checkAndClearNeedsTrees map {
+        case module if module hasAllFlags (MODULE | METHOD) => moduleAccessorBody(module)
         case getter if getter hasAllFlags (LAZY | METHOD)   => superLazy(getter)
-        case setter if setter.isSetter                      => setterBody(setter) map mkAccessor(setter)
-        case getter if getter.hasFlag(ACCESSOR)             => getterBody(getter) map mkAccessor(getter)
-        case field  if !(field hasFlag METHOD)              => Some(mkTypedValDef(field)) // vals/vars and module vars (cannot have flags PACKAGE | JAVA since those never receive NEEDS_TREES)
-        case _ => None
-      }
+        case setter if setter.isSetter                      => setterBody(setter)
+        case getter if getter.hasFlag(ACCESSOR)             => getterBody(getter)
+        case field  if !(field hasFlag METHOD)              => mkTypedValDef(field) // vals/vars and module vars (cannot have flags PACKAGE | JAVA since those never receive NEEDS_TREES)
+        case _ => EmptyTree
+      } filterNot (_ == EmptyTree) // there will likely be many EmptyTrees, but perhaps no thicket blocks that need expanding
     }
 
     def rhsAtOwner(stat: ValOrDefDef, newOwner: Symbol): Tree =
@@ -718,7 +724,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
           if (currOwner.isClass) cd
           else { // local module -- symbols cannot be generated by info transformer, so do it all here
             val moduleVar = newModuleVarSymbol(currOwner, statSym, statSym.info.resultType)
-            Thicket(cd :: mkTypedValDef(moduleVar) :: mkAccessor(statSym)(moduleInit(statSym)) :: Nil)
+            Thicket(cd :: mkTypedValDef(moduleVar) :: mkAccessor(statSym)(moduleInit(statSym, moduleVar)) :: Nil)
           }
 
         case tree =>
@@ -737,7 +743,12 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val addedStats =
         if (!currentOwner.isClass || currentOwner.isPackageClass) Nil
-        else afterOwnPhase { fieldsAndAccessors(currentOwner) }
+        else {
+          val thickets = fieldsAndAccessors(currentOwner)
+          if (thickets exists mustExplodeThicket)
+            thickets flatMap explodeThicket
+          else thickets
+        }
 
       val inRealClass = currentOwner.isClass && !(currentOwner.isPackageClass || currentOwner.isTrait)
       if (inRealClass)
