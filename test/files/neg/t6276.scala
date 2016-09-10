@@ -41,4 +41,10 @@ object Test {
       }
     }
   }
+
+  class F {
+    g()
+    var f: String = f
+    def g() = this.f = "hi"
+  }
 }
