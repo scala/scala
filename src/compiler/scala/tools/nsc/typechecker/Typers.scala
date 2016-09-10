@@ -1060,8 +1060,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           @inline def tpdPos(transformed: Tree) = typedPos(tree.pos, mode, pt)(transformed)
           @inline def tpd(transformed: Tree)    = typed(transformed, mode, pt)
 
-          @inline def warnValueDiscard(): Unit =
-            if (!isPastTyper && settings.warnValueDiscard) context.warning(tree.pos, "discarded non-Unit value")
+          @inline def warnValueDiscard(): Unit = if (!isPastTyper && settings.warnValueDiscard) {
+            def isThisTypeResult = (tree, tree.tpe) match {
+              case (Apply(Select(receiver, _), _), SingleType(_, sym)) => sym == receiver.symbol
+              case _ => false
+            }
+            if (!isThisTypeResult) context.warning(tree.pos, "discarded non-Unit value")
+          }
           @inline def warnNumericWiden(): Unit =
             if (!isPastTyper && settings.warnNumericWiden) context.warning(tree.pos, "implicit numeric widening")
 
