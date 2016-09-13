@@ -8,7 +8,7 @@ package tools.nsc
 package transform
 
 import symtab._
-import Flags.{ CASE => _, _ }
+import Flags.{CASE => _, _}
 import scala.collection.mutable.ListBuffer
 
 /** This class ...
