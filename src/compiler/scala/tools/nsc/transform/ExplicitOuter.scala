@@ -8,7 +8,7 @@ package tools.nsc
 package transform
 
 import symtab._
-import Flags.{ CASE => _, _ }
+import Flags.{CASE => _, _}
 import scala.collection.mutable.ListBuffer
 
 /** This class ...
@@ -263,7 +263,10 @@ abstract class ExplicitOuter extends InfoTransform
      */
     protected def outerPath(base: Tree, from: Symbol, to: Symbol): Tree = {
       //Console.println("outerPath from "+from+" to "+to+" at "+base+":"+base.tpe)
-      if (from == to) base
+      if (from == to) {
+        if (base.tpe.typeSymbol.isNonBottomSubClass(to)) base
+        else atPos(base.pos)(gen.mkAttributedCast(base, to.tpe_*))
+      }
       else outerPath(outerSelect(base), from.outerClass, to)
     }
 
