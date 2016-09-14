@@ -463,7 +463,7 @@ lazy val replJlineEmbedded = Project("repl-jline-embedded", file(".") / "target"
       import collection.JavaConverters._
       val inputs: Iterator[JarJar.Entry] = {
         val repljlineClasses = (products in Compile in replJline).value.flatMap(base => Path.allSubpaths(base).map(x => (base, x._1)))
-        val jlineJAR = (dependencyClasspath in Compile).value.find(_.get(moduleID.key) == Some(jlineDep)).get.data
+        val jlineJAR = findJar((dependencyClasspath in Compile).value, jlineDep).get.data
         val jarFile = new JarFile(jlineJAR)
         val jarEntries = jarFile.entries.asScala.filterNot(_.isDirectory).map(entry => JarJar.JarEntryInput(jarFile, entry))
         def compiledClasses = repljlineClasses.iterator.map { case (base, file) => JarJar.FileInput(base, file) }
@@ -854,7 +854,7 @@ lazy val dist = (project in file("dist"))
       val extraJars = (externalDependencyClasspath in Compile).value.map(a => (a.get(moduleID.key), a.data)).collect {
         case (Some(m), f) if extraModules contains uniqueModule(m) => f
       }
-      val jlineJAR = (dependencyClasspath in Compile).value.find(_.get(moduleID.key) == Some(jlineDep)).get.data
+      val jlineJAR = findJar((dependencyClasspath in Compile).value, jlineDep).get.data
       val mappings = extraJars.map(f => (f, targetDir / f.getName)) :+ ((jlineJAR, targetDir / "jline.jar"))
       IO.copy(mappings, overwrite = true)
       targetDir
@@ -1125,4 +1125,10 @@ intellijToSample := {
     IO.copy(copies)
   } else
     s.log.info("Aborting.")
+}
+
+/** Find a specific module's JAR in a classpath, comparing only organization and name */
+def findJar(files: Seq[Attributed[File]], dep: ModuleID): Option[Attributed[File]] = {
+  def extract(m: ModuleID) = (m.organization, m.name)
+  files.find(_.get(moduleID.key).map(extract _) == Some(extract(dep)))
 }
