@@ -425,6 +425,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.hijackedCoreClasses
     definitions.symbolsNotPresentInBytecode
     definitions.isPossibleSyntheticParent
+    definitions.ShowAsInfixAnnotationClass
     definitions.abbrvTag
     definitions.numericWeight
     definitions.boxedModule
