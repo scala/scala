@@ -721,7 +721,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val addedStats =
-        if (!currentOwner.isClass) Nil // TODO: || currentOwner.isPackageClass
+        if (!currentOwner.isClass || currentOwner.isPackageClass) Nil
         else afterOwnPhase { fieldsAndAccessors(currentOwner) }
 
       val inRealClass = currentOwner.isClass && !(currentOwner.isPackageClass || currentOwner.isTrait)
