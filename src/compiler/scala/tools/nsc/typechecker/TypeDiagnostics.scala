@@ -464,7 +464,9 @@ trait TypeDiagnostics {
       context.warning(pos, "imported `%s' is permanently hidden by definition of %s".format(hidden, defn.fullLocationString))
 
     object checkUnused {
-      val ignoreNames: Set[TermName] = Set(TermName("readResolve"), TermName("readObject"), TermName("writeObject"), TermName("writeReplace"))
+      val ignoreNames: Set[TermName] = Set(
+        "readResolve", "readObject", "writeObject", "writeReplace"
+      ).map(TermName(_))
 
       class UnusedPrivates extends Traverser {
         val defnTrees = ListBuffer[MemberDef]()
@@ -523,8 +525,12 @@ trait TypeDiagnostics {
           && (m.isPrivate || m.isLocalToBlock)
           && !(treeTypes.exists(tp => tp exists (t => t.typeSymbolDirect == m)))
         )
+        def isSyntheticWarnable(sym: Symbol) = (
+          sym.isDefaultGetter 
+        )
         def isUnusedTerm(m: Symbol): Boolean = (
              (m.isTerm)
+          && (!m.isSynthetic || isSyntheticWarnable(m))
           && (m.isPrivate || m.isLocalToBlock)
           && !targets(m)
           && !(m.name == nme.WILDCARD)              // e.g. val _ = foo
@@ -533,7 +539,13 @@ trait TypeDiagnostics {
           && !treeTypes.exists(_ contains m)        // e.g. val a = new Foo ; new a.Bar
         )
         def unusedTypes = defnTrees.toList filter (t => isUnusedType(t.symbol))
-        def unusedTerms = defnTrees.toList filter (v => isUnusedTerm(v.symbol))
+        def unusedTerms = {
+          val all = defnTrees.toList.filter(v => isUnusedTerm(v.symbol))
+          // filter out setters if already warning for getter, indicated by position
+          if (all.exists(_.symbol.isSetter))
+            all.filterNot(v => v.symbol.isSetter && all.exists(g => g.symbol.isGetter && g.symbol.pos.point == v.symbol.pos.point))
+          else all
+        }
         // local vars which are never set, except those already returned in unused
         def unsetVars = localVars filter (v => !setVars(v) && !isUnusedTerm(v))
       }
@@ -556,11 +568,18 @@ trait TypeDiagnostics {
           val what = (
             if (sym.isDefaultGetter) "default argument"
             else if (sym.isConstructor) "constructor"
-            else if (sym.isVar || sym.isGetter && (sym.accessed.isVar || (sym.owner.isTrait && !sym.hasFlag(STABLE)))) "var"
-            else if (sym.isVal || sym.isGetter && (sym.accessed.isVal || (sym.owner.isTrait && sym.hasFlag(STABLE))) || sym.isLazy) "val"
-            else if (sym.isSetter) "setter"
-            else if (sym.isMethod) "method"
-            else if (sym.isModule) "object"
+            else if (
+                sym.isVar
+             || sym.isGetter && (sym.accessed.isVar || (sym.owner.isTrait && !sym.hasFlag(STABLE)))
+            ) s"var ${sym.name.getterName.decoded}"
+            else if (
+                sym.isVal
+             || sym.isGetter && (sym.accessed.isVal || (sym.owner.isTrait && sym.hasFlag(STABLE)))
+             || sym.isLazy
+            ) s"val ${sym.name.decoded}"
+            else if (sym.isSetter) s"setter of ${sym.name.getterName.decoded}"
+            else if (sym.isMethod) s"method ${sym.name.decoded}"
+            else if (sym.isModule) s"object ${sym.name.decoded}"
             else "term"
           )
           reporter.warning(pos, s"$why $what in ${sym.owner} is never used")

@@ -52,12 +52,30 @@ trait Accessors {
   }
 }
 
+class StableAccessors {
+  private var s1: Int = 0 // warn
+  private var s2: Int = 0 // warn, never set
+  private var s3: Int = 0 // warn, never got
+  private var s4: Int = 0 // no warn
+
+  def bippy(): Int = {
+    s3 = 5
+    s4 = 6
+    s2 + s4
+  }
+}
+
 trait DefaultArgs {
   // warn about default getters for x2 and x3
   private def bippy(x1: Int, x2: Int = 10, x3: Int = 15): Int = x1 + x2 + x3
 
   def boppy() = bippy(5, 100, 200)
 }
+
+/* SI-7707 Both usages warn default arg because using PrivateRyan.apply, not new.
+case class PrivateRyan private (ryan: Int = 42) { def f = PrivateRyan() }
+object PrivateRyan { def f = PrivateRyan() }
+*/
 
 class Outer {
   class Inner
@@ -103,4 +121,22 @@ object Types {
     type OtherThing = String // warn
     (new Bippy): Something
   }
+}
+
+trait Underwarn {
+  def f(): Seq[Int]
+
+  def g() = {
+    val Seq(_, _) = f()  // no warn
+    true
+  }
+}
+
+class OtherNames {
+  private def x_=(i: Int): Unit = ???
+  private def x: Int = 42
+  private def y_=(i: Int): Unit = ???
+  private def y: Int = 42
+
+  def f = y
 }
