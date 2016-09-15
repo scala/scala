@@ -140,3 +140,35 @@ class OtherNames {
 
   def f = y
 }
+
+case class C(a: Int, b: String, c: Option[String])
+case class D(a: Int)
+
+trait Boundings {
+
+  def c = C(42, "hello", Some("world"))
+  def d = D(42)
+
+  def f() = {
+    val C(x, y, Some(z)) = c              // warn
+    17
+  }
+  def g() = {
+    val C(x @ _, y @ _, Some(z @ _)) = c  // no warn
+    17
+  }
+  def h() = {
+    val C(x @ _, y @ _, z @ Some(_)) = c  // warn?
+    17
+  }
+
+  def v() = {
+    val D(x) = d                          // warn
+    17
+  }
+  def w() = {
+    val D(x @ _) = d                      // fixme
+    17
+  }
+
+}

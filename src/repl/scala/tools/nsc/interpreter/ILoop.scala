@@ -958,17 +958,19 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     def withSuppressedSettings[A](body: => A): A = {
       val ss = this.settings
       import ss._
-      val noisy = List(Xprint, Ytyperdebug)
+      val noisy = List(Xprint, Ytyperdebug, browse)
       val noisesome = noisy.exists(!_.isDefault)
-      val current = (Xprint.value, Ytyperdebug.value)
+      val current = (Xprint.value, Ytyperdebug.value, browse.value)
       if (isReplDebug || !noisesome) body
       else {
         this.settings.Xprint.value = List.empty
+        this.settings.browse.value = List.empty
         this.settings.Ytyperdebug.value = false
         try body
         finally {
           Xprint.value       = current._1
           Ytyperdebug.value  = current._2
+          browse.value      = current._3
           intp.global.printTypings = current._2
         }
       }

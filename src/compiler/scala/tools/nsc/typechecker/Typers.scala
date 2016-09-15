@@ -4266,7 +4266,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val name = tree.name
         val body = tree.body
         name match {
-          case name: TypeName  => assert(body == EmptyTree, context.unit + " typedBind: " + name.debugString + " " + body + " " + body.getClass)
+          case name: TypeName  =>
+            assert(body == EmptyTree, s"${context.unit} typedBind: ${name.debugString} ${body} ${body.getClass}")
             val sym =
               if (tree.symbol != NoSymbol) tree.symbol
               else {

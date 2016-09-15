@@ -61,6 +61,24 @@ warn-unused-privates.scala:137: warning: private method x in class OtherNames is
 warn-unused-privates.scala:138: warning: private method y_= in class OtherNames is never used
   private def y_=(i: Int): Unit = ???
               ^
+warn-unused-privates.scala:153: warning: local val x in method f is never used
+    val C(x, y, Some(z)) = c              // warn
+          ^
+warn-unused-privates.scala:153: warning: local val y in method f is never used
+    val C(x, y, Some(z)) = c              // warn
+             ^
+warn-unused-privates.scala:153: warning: local val z in method f is never used
+    val C(x, y, Some(z)) = c              // warn
+                     ^
+warn-unused-privates.scala:161: warning: local val z in method h is never used
+    val C(x @ _, y @ _, z @ Some(_)) = c  // warn?
+                        ^
+warn-unused-privates.scala:166: warning: local val x in method v is never used
+    val D(x) = d                          // warn
+         ^
+warn-unused-privates.scala:170: warning: local val x in method w is never used
+    val D(x @ _) = d                      // fixme
+         ^
 warn-unused-privates.scala:97: warning: local var x in method f2 is never set - it could be a val
     var x = 100 // warn about it being a var
         ^
@@ -80,5 +98,5 @@ warn-unused-privates.scala:121: warning: local type OtherThing is never used
     type OtherThing = String // warn
          ^
 error: No warnings can be incurred under -Xfatal-warnings.
-27 warnings found
+33 warnings found
 one error found

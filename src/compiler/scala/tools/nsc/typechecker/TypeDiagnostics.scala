@@ -33,7 +33,7 @@ import scala.annotation.tailrec
  *  @version 1.0
  */
 trait TypeDiagnostics {
-  self: Analyzer =>
+  self: Analyzer with StdAttachments =>
 
   import global._
   import definitions._
@@ -78,6 +78,8 @@ trait TypeDiagnostics {
     )
     prefix + name.decode
   }
+
+  private def atBounded(t: Tree) = t.hasAttachment[AtBoundIdentifierAttachment.type]
 
   /** Does the positioned line assigned to t1 precede that of t2?
    */
@@ -473,6 +475,7 @@ trait TypeDiagnostics {
         val targets   = mutable.Set[Symbol]()
         val setVars   = mutable.Set[Symbol]()
         val treeTypes = mutable.Set[Type]()
+        val atBounds  = mutable.Set[Symbol]()
 
         def defnSymbols = defnTrees.toList map (_.symbol)
         def localVars   = defnSymbols filter (t => t.isLocalToBlock && t.isVar)
@@ -496,6 +499,7 @@ trait TypeDiagnostics {
             case t: MemberDef if qualifies(t.symbol)   => defnTrees += t
             case t: RefTree if t.symbol ne null        => targets += t.symbol
             case Assign(lhs, _) if lhs.symbol != null  => setVars += lhs.symbol
+            case Bind(n, _) if atBounded(t)            => atBounds += t.symbol
             case _                                     =>
           }
           // Only record type references which don't originate within the
@@ -541,10 +545,13 @@ trait TypeDiagnostics {
         def unusedTypes = defnTrees.toList filter (t => isUnusedType(t.symbol))
         def unusedTerms = {
           val all = defnTrees.toList.filter(v => isUnusedTerm(v.symbol))
-          // filter out setters if already warning for getter, indicated by position
-          if (all.exists(_.symbol.isSetter))
-            all.filterNot(v => v.symbol.isSetter && all.exists(g => g.symbol.isGetter && g.symbol.pos.point == v.symbol.pos.point))
-          else all
+
+          // filter out setters if already warning for getter, indicated by position.
+          // also documentary names in patterns.
+          all.filterNot(v =>
+              v.symbol.isSetter && all.exists(g => g.symbol.isGetter && g.symbol.pos.point == v.symbol.pos.point)
+           || atBounds.exists(x => v.symbol.pos.point == x.pos.point)
+          )
         }
         // local vars which are never set, except those already returned in unused
         def unsetVars = localVars filter (v => !setVars(v) && !isUnusedTerm(v))
