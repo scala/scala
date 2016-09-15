@@ -696,7 +696,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
         // drop the val for (a) constant (pure & not-stored) and (b) not-stored (but still effectful) fields
         case ValDef(mods, _, _, rhs) if (rhs ne EmptyTree) && !excludedAccessorOrFieldByFlags(statSym)
-                                        && fieldMemoizationIn(statSym, currOwner).constantTyped =>
+                                        && currOwner.isClass && fieldMemoizationIn(statSym, currOwner).constantTyped =>
           EmptyThicket
 
         case ModuleDef(_, _, impl) =>
