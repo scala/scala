@@ -71,13 +71,13 @@ warn-unused-privates.scala:153: warning: local val z in method f is never used
     val C(x, y, Some(z)) = c              // warn
                      ^
 warn-unused-privates.scala:161: warning: local val z in method h is never used
-    val C(x @ _, y @ _, z @ Some(_)) = c  // warn?
+    val C(x @ _, y @ _, z @ Some(_)) = c  // warn for z?
                         ^
 warn-unused-privates.scala:166: warning: local val x in method v is never used
     val D(x) = d                          // warn
          ^
 warn-unused-privates.scala:170: warning: local val x in method w is never used
-    val D(x @ _) = d                      // fixme
+    val D(x @ _) = d                      // warn, fixme (valdef pos is different)
          ^
 warn-unused-privates.scala:97: warning: local var x in method f2 is never set - it could be a val
     var x = 100 // warn about it being a var

@@ -158,7 +158,7 @@ trait Boundings {
     17
   }
   def h() = {
-    val C(x @ _, y @ _, z @ Some(_)) = c  // warn?
+    val C(x @ _, y @ _, z @ Some(_)) = c  // warn for z?
     17
   }
 
@@ -167,8 +167,25 @@ trait Boundings {
     17
   }
   def w() = {
-    val D(x @ _) = d                      // fixme
+    val D(x @ _) = d                      // warn, fixme (valdef pos is different)
     17
   }
 
+}
+
+trait Forever {
+  def f = {
+    val t = Option((17, 42))
+    for {
+      ns <- t
+      (i, j) = ns                        // no warn
+    } yield (i + j)
+  }
+  def g = {
+    val t = Option((17, 42))
+    for {
+      ns <- t
+      (i, j) = ns                        // warn, fixme
+    } yield 42                           // val emitted only if needed, hence nothing unused
+  }
 }
