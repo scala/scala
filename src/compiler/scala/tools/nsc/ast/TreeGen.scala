@@ -371,4 +371,6 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
         Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
     }
   }
+
+  override def isPatVarWarnable = settings.warnUnusedPatVars
 }

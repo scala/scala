@@ -505,7 +505,7 @@ trait TypeDiagnostics {
           // Only record type references which don't originate within the
           // definition of the class being referenced.
           if (t.tpe ne null) {
-            for (tp <- t.tpe ; if !treeTypes(tp) && !currentOwner.ownerChain.contains(tp.typeSymbol)) {
+            for (tp <- t.tpe if !treeTypes(tp) && !currentOwner.ownerChain.contains(tp.typeSymbol)) {
               tp match {
                 case NoType | NoPrefix    =>
                 case NullaryMethodType(_) =>
@@ -557,12 +557,17 @@ trait TypeDiagnostics {
         def unsetVars = localVars filter (v => !setVars(v) && !isUnusedTerm(v))
       }
 
-      def apply(unit: CompilationUnit) = {
+      private def warningsEnabled: Boolean = {
+        val ss = settings
+        import ss._
+        warnUnusedPatVars || warnUnusedPrivates || warnUnusedLocals || warnUnusedParams || warnUnusedImplicits
+      }
+
+      def apply(unit: CompilationUnit): Unit = if (warningsEnabled) {
         val p = new UnusedPrivates
         p traverse unit.body
-        val unused = p.unusedTerms
-        unused foreach { defn: DefTree =>
-          val sym             = defn.symbol
+        for (defn: DefTree <- p.unusedTerms) {
+          val sym = defn.symbol
           val pos = (
             if (defn.pos.isDefined) defn.pos
             else if (sym.pos.isDefined) sym.pos
@@ -591,10 +596,10 @@ trait TypeDiagnostics {
           )
           reporter.warning(pos, s"$why $what in ${sym.owner} is never used")
         }
-        p.unsetVars foreach { v =>
+        for (v <- p.unsetVars) {
           reporter.warning(v.pos, s"local var ${v.name} in ${v.owner} is never set - it could be a val")
         }
-        p.unusedTypes foreach { t =>
+        for (t <- p.unusedTypes) {
           val sym = t.symbol
           val why = if (sym.isPrivate) "private" else "local"
           reporter.warning(t.pos, s"$why ${sym.fullLocationString} is never used")

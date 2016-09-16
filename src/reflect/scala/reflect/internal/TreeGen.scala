@@ -899,8 +899,8 @@ abstract class TreeGen {
       case Ident(name) if treeInfo.isVarPattern(tree) && name != nme.WILDCARD =>
         atPos(tree.pos) {
           val b = Bind(name, atPos(tree.pos.focus) (Ident(nme.WILDCARD)))
-          if (forFor) b updateAttachment AtBoundIdentifierAttachment
-          else b
+          if (!forFor && isPatVarWarnable) b
+          else b updateAttachment AtBoundIdentifierAttachment
         }
       case Typed(id @ Ident(name), tpt) if treeInfo.isVarPattern(id) && name != nme.WILDCARD =>
         atPos(tree.pos.withPoint(id.pos.point)) {
@@ -922,7 +922,13 @@ abstract class TreeGen {
         tree
     }
   }
+
+  /** Can be overridden to depend on settings.warnUnusedPatvars. */
+  def isPatVarWarnable: Boolean = true
+
+  /** Not in for comprehensions, whether to warn unused pat vars depends on flag. */
   object patvarTransformer       extends PatvarTransformer(forFor = false)
+
   /** Tag pat vars in for comprehensions. */
   object patvarTransformerForFor extends PatvarTransformer(forFor = true)
 

@@ -1950,7 +1950,7 @@ self =>
       def pattern2(): Tree = {
         val p = pattern3()
 
-        if (in.token != AT) p
+        if (in.token != AT) p             // var pattern upgraded later to x @ _
         else p match {
           case Ident(nme.WILDCARD) =>
             in.nextToken()
@@ -1962,6 +1962,7 @@ self =>
               val t = Bind(name, body)
               body match {
                 case Ident(nme.WILDCARD) => t updateAttachment AtBoundIdentifierAttachment
+                case _ if !settings.warnUnusedPatVars => t updateAttachment AtBoundIdentifierAttachment
                 case _ => t
               }
             }

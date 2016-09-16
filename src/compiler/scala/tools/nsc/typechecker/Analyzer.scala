@@ -104,7 +104,7 @@ trait Analyzer extends AnyRef
           for (workItem <- unit.toCheck) workItem()
           if (settings.warnUnusedImport)
             warnUnusedImports(unit)
-          if (settings.warnUnused)
+          if (settings.warnUnused.isSetByUser)
             typer checkUnused unit
         }
         finally {
