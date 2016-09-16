@@ -1,17 +1,36 @@
-#!/bin/bash -e
+#!/bin/bash -e -v -x
+
+baseDir=${WORKSPACE-`pwd`}
+scriptsDir="$baseDir/scripts"
+. $scriptsDir/common
 
 case $prDryRun in
+
   yep)
     echo "DRY RUN"
     ;;
+
   *)
-    ./pull-binary-libs.sh
 
     # build quick using STARR built upstream, as specified by scalaVersion
-    # (in that sense it's locker, since it was built with starr by that upstream job)
-    ant -Dstarr.version=$scalaVersion \
-       -Dscalac.args.optimise=-optimise \
-       -Dlocker.skip=1 -Dextra.repo.url=$prRepoUrl \
-       $testExtraArgs ${testTarget-test.core docs.done}
+    # (in that sense it's locker, since it was built with starr by that upstream job);
+    # and run JUnit tests, partest, OSGi tests, MiMa and scaladoc
+    $SBT_CMD \
+       -Dstarr.version=$scalaVersion \
+       --warn \
+       "setupValidateTest $prRepoUrl" \
+       $testExtraArgs \
+       "test" \
+       "partest run pos neg jvm" \
+       "partest res scalap specialized scalacheck" \
+       "partest instrumented presentation" \
+       "partest --srcpath scaladoc" \
+       osgiTestFelix/test \
+       osgiTestEclipse/test \
+       library/mima \
+       reflect/mima \
+       doc
+
     ;;
+
 esac

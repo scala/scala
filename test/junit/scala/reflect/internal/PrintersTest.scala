@@ -86,6 +86,14 @@ trait BasePrintTests {
 
   @Test def testConstantLong = assertTreeCode(Literal(Constant(42l)))("42L")
 
+  @Test def testConstantMultiline = assertTreeCode(Literal(Constant("hello\nworld")))("\"\"\"hello\nworld\"\"\"")
+
+  val sq  = "\""
+  val teq = "\\\"" * 3
+  val tq  = "\"" * 3
+
+  @Test def testConstantEmbeddedTriple = assertTreeCode(Literal(Constant(s"${tq}hello${tq}\nworld")))(s"${sq}${teq}hello${teq}\\nworld${sq}")
+
   @Test def testOpExpr = assertPrintedCode("(5).+(4)", checkTypedTree = false)
 
   @Test def testName1 = assertPrintedCode("class test")

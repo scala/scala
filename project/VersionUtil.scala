@@ -1,12 +1,11 @@
 import sbt._
 import Keys._
 import java.util.Properties
-import java.io.FileInputStream
+import java.io.{File, FileInputStream}
 import scala.collection.JavaConverters._
+import BuildSettings.autoImport._
 
 object VersionUtil {
-  lazy val baseVersion = settingKey[String]("The base version number from which all others are derived")
-  lazy val baseVersionSuffix = settingKey[String]("Identifies the kind of version to build")
   lazy val copyrightString = settingKey[String]("Copyright string.")
   lazy val versionProperties = settingKey[Versions]("Version properties.")
   lazy val generateVersionPropertiesFile = taskKey[File]("Generating version properties file.")
@@ -123,4 +122,33 @@ object VersionUtil {
   /** Get a subproject version number from `versionProps` */
   def versionNumber(name: String): String =
     versionProps(s"$name.version.number")
+
+  /** Build a dependency to a Scala module with the given group and artifact ID */
+  def scalaDep(group: String, artifact: String, versionProp: String = null, scope: String = null, compatibility: String = "binary") = {
+    val vp = if(versionProp eq null) artifact else versionProp
+    val m = group % (artifact + "_" + versionProps(s"scala.$compatibility.version")) % versionNumber(vp)
+    val m2 = if(scope eq null) m else m % scope
+    // exclusion of the scala-library transitive dependency avoids eviction warnings during `update`:
+    m2.exclude("org.scala-lang", "*")
+  }
+
+  private def bootstrapOrganization(path: String) =
+    "org.scala-lang.scala-sha-bootstrap." + path.replace('/', '.')
+
+  /** Build a dependency to a JAR file in the bootstrap repository */
+  def bootstrapDep(baseDir: File, path: String, libName: String): ModuleID = {
+    val sha = IO.read(baseDir / path / s"$libName.jar.desired.sha1").split(' ')(0)
+    bootstrapOrganization(path) % libName % sha from
+      s"https://dl.bintray.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap/$sha/$path/$libName.jar"
+  }
+
+  /** Copy a boostrap dependency JAR that is on the classpath to a file */
+  def copyBootstrapJar(cp: Seq[Attributed[File]], baseDir: File, path: String, libName: String): Unit = {
+    val org = bootstrapOrganization(path)
+    val resolved = cp.find { a =>
+      val mod = a.get(moduleID.key)
+      mod.map(_.organization) == Some(org) && mod.map(_.name) == Some(libName)
+    }.map(_.data).get
+    IO.copyFile(resolved, baseDir / path / s"$libName.jar")
+  }
 }

@@ -44,7 +44,7 @@ object Y {
 
 // Exiting paste mode, now interpreting.
 
-<console>:13: error: double definition:
+<pastie>:13: error: double definition:
 def f[A](a: => A): Int at line 12 and
 def f[A](a: => Either[Exception,A]): Int at line 13
 have same type after erasure: (a: Function0)Int

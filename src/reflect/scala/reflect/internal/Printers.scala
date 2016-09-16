@@ -1050,7 +1050,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           x match {
             case Constant(v: String) if {
               val strValue = x.stringValue
-              strValue.contains(LF) && strValue.contains("\"\"\"") && strValue.size > 1
+              strValue.contains(LF) && !strValue.contains("\"\"\"") && strValue.size > 1
             } =>
               val splitValue = x.stringValue.split(s"$LF").toList
               val multilineStringValue = if (x.stringValue.endsWith(s"$LF")) splitValue :+ "" else splitValue

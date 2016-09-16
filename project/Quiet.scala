@@ -28,6 +28,4 @@ object Quiet {
       case x => x
     }
   }
-
-  def silenceIvyUpdateInfoLogging = logLevel in update := Level.Warn
 }

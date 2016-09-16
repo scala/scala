@@ -21,9 +21,15 @@ class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
 
   val loadfiles =
     MultiStringSetting(
+      "-I",
+      "file",
+      "load a file line-by-line")
+
+  val pastefiles =
+    MultiStringSetting(
       "-i",
       "file",
-      "load a file (assumes the code is given interactively)")
+      "paste a file")
 
   val execute =
     StringSetting(

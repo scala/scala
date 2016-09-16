@@ -1,8 +1,6 @@
-import scala.tools.nsc.interpreter.IMain
-
 object Test extends App {
-  val engine = new IMain.Factory getScriptEngine()
-  engine.asInstanceOf[IMain].settings.usejavacp.value = true
+  val m = new javax.script.ScriptEngineManager()
+  val engine = m.getEngineByName("scala")
   val res2 = engine.asInstanceOf[javax.script.Compilable]
   res2 compile "8" eval()
   val res5 = res2 compile """println("hello") ; 8"""
