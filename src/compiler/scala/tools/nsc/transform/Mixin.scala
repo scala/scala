@@ -139,7 +139,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
     // This attachment is used to instruct the backend about which methids in traits require
     // a static trait impl method. We remove this from the new symbol created for the method
     // mixed into the subclass.
-    member.removeAttachment[NeedStaticImpl.type]
     clazz.info.decls enter member setFlag MIXEDIN resetFlag JAVA_DEFAULTMETHOD
   }
   def cloneAndAddMember(mixinClass: Symbol, mixinMember: Symbol, clazz: Symbol): Symbol =
@@ -476,11 +475,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
 
           // add all new definitions to current class or interface
           val statsWithNewDefs = addNewDefs(currentOwner, body)
-          statsWithNewDefs foreach {
-            case dd: DefDef if isTraitMethodRequiringStaticImpl(dd) =>
-              dd.symbol.updateAttachment(NeedStaticImpl)
-            case _ =>
-          }
           treeCopy.Template(tree, parents1, self, statsWithNewDefs)
 
         case Select(qual, name) if sym.owner.isTrait && !sym.isMethod =>
@@ -517,14 +511,4 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
       finally localTyper = saved
     }
   }
-
-  private def isTraitMethodRequiringStaticImpl(dd: DefDef): Boolean = {
-    val sym = dd.symbol
-    dd.rhs.nonEmpty &&
-      sym.owner.isTrait &&
-      !sym.isPrivate && // no need to put implementations of private methods into a static method
-      !sym.hasFlag(Flags.STATIC)
-  }
-
-  case object NeedStaticImpl extends PlainAttachment
 }

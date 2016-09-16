@@ -50,14 +50,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     }
   }
 
-  def needsStaticImplMethod(sym: Symbol) = sym.hasAttachment[global.mixer.NeedStaticImpl.type]
-
-  final def traitSuperAccessorName(sym: Symbol): Name = {
-    val name = sym.javaSimpleName
-    if (sym.isMixinConstructor) name
-    else name.append(nme.NAME_JOIN_STRING)
-  }
-
   /**
    * True if `classSym` is an anonymous class or a local class. I.e., false if `classSym` is a
    * member class. This method is used to decide if we should emit an EnclosingMethod attribute.

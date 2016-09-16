@@ -167,6 +167,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             s"cannot emit super call: the selected $sym is declared in $owner, which is not the direct superclass of $clazz.\n" +
             s"An unqualified super call (super.${sym.name}) would be allowed.")
         } else if (owner.isInterface && owner.isJavaDefined && !clazz.parentSymbols.contains(owner)) {
+          // TODO: this restriction could be lifted again because we're again adding late interfaces in the backend
           reporter.error(sel.pos, s"unable to emit super call unless interface ${owner.name} (which declares $sym) is directly extended by $clazz.")
         }
       }

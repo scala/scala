@@ -173,18 +173,15 @@ class BytecodeTest extends BytecodeTesting {
   def sd186_traitLineNumber(): Unit = {
     val code =
       """trait T {
-        |  def t(): Unit = {
-        |    toString
-        |    toString
-        |  }
+        |  val x = 1
         |}
       """.stripMargin
     val t = compileClass(code)
-    val tMethod = getMethod(t, "t$")
-    val invoke = Invoke(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false)
+    val tMethod = getMethod(t, "$init$")
     // ths static accessor is positioned at the line number of the accessed method.
     assertSameCode(tMethod.instructions,
-      List(Label(0), LineNumber(2, Label(0)), VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "T", "t", "()V", true), Op(RETURN), Label(4))
-    )
+      List(
+        Label(0), LineNumber(2, Label(0)), VarOp(ALOAD, 0), Op(ICONST_1), Invoke(INVOKEINTERFACE, "T", "T$_setter_$x_$eq", "(I)V", true),
+        Label(5), LineNumber(1, Label(5)), Op(RETURN), Label(8)))
   }
 }

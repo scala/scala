@@ -217,6 +217,15 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
     nonOverloadedConstructors(tupleClassSymbols)
   }
 
+  lazy val jlObjectMethods: Set[MethodNameAndType] = {
+    def m(name: Name) = methodNameAndType(ObjectClass, name)
+    Set(
+      m(nme.toString_),
+      m(nme.hashCode_),
+      m(nme.equals_),
+      m(nme.clone_))
+  }
+
   lazy val typeOfArrayOp: Map[Int, BType] = {
     import scalaPrimitives._
     Map(
@@ -341,6 +350,8 @@ trait CoreBTypesProxyGlobalIndependent[BTS <: BTypes] {
   def srRefConstructors        : Map[InternalName, MethodNameAndType]
   def tupleClassConstructors   : Map[InternalName, MethodNameAndType]
 
+  def jlObjectMethods : Set[MethodNameAndType]
+
   def lambdaMetaFactoryMetafactoryHandle    : asm.Handle
   def lambdaMetaFactoryAltMetafactoryHandle : asm.Handle
   def lambdaDeserializeBootstrapHandle      : asm.Handle
@@ -407,6 +418,8 @@ final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: 
   def primitiveBoxConstructors : Map[InternalName, MethodNameAndType] = _coreBTypes.primitiveBoxConstructors
   def srRefConstructors        : Map[InternalName, MethodNameAndType] = _coreBTypes.srRefConstructors
   def tupleClassConstructors   : Map[InternalName, MethodNameAndType] = _coreBTypes.tupleClassConstructors
+
+  def jlObjectMethods : Set[MethodNameAndType] = _coreBTypes.jlObjectMethods
 
   def srSymbolLiteral           : ClassBType = _coreBTypes.srSymbolLiteral
   def srStructuralCallSite      : ClassBType = _coreBTypes.srStructuralCallSite

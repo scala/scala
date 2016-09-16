@@ -1,4 +1,3 @@
 public static void C.$init$(C)
 public default java.lang.Object C.bar(java.lang.Object)
-public static java.lang.Object C.bar$(C,java.lang.Object)
 public abstract java.lang.Object C.foo(java.lang.Object)

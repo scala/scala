@@ -9,7 +9,7 @@ package tools.nsc
 package backend
 package jvm
 
-import scala.annotation.switch
+import scala.annotation.{switch, tailrec}
 import scala.reflect.internal.Flags
 import scala.tools.asm
 import GenBCode._
@@ -1031,66 +1031,142 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
      */
     def genCallMethod(method: Symbol, style: InvokeStyle, pos: Position, specificReceiver: Symbol = null): BType = {
       val methodOwner = method.owner
-      // the class used in the invocation's method descriptor in the classfile
-      val receiverClass = {
-        if (specificReceiver != null)
-          assert(style.isVirtual || specificReceiver == methodOwner, s"specificReceiver can only be specified for virtual calls. $method - $specificReceiver")
 
-        val useSpecificReceiver = specificReceiver != null && !specificReceiver.isBottomClass
-        val receiver = if (useSpecificReceiver) specificReceiver else methodOwner
-
-        // workaround for a JVM bug: https://bugs.openjdk.java.net/browse/JDK-8154587
-        // when an interface method overrides a member of Object (note that all interfaces implicitly
-        // have superclass Object), the receiver needs to be the interface declaring the override (and
-        // not a sub-interface that inherits it). example:
-        //   trait T { override def clone(): Object = "" }
-        //   trait U extends T
-        //   class C extends U
-        //   class D { def f(u: U) = u.clone() }
-        // The invocation `u.clone()` needs `T` as a receiver:
-        //   - using Object is illegal, as Object.clone is protected
-        //   - using U results in a `NoSuchMethodError: U.clone. This is the JVM bug.
-        // Note that a mixin forwarder is generated, so the correct method is executed in the end:
-        //   class C { override def clone(): Object = super[T].clone() }
-        val isTraitMethodOverridingObjectMember = {
-          receiver != methodOwner && // fast path - the boolean is used to pick either of these two, if they are the same it does not matter
-            style.isVirtual &&
-            receiver.isTraitOrInterface &&
-            ObjectTpe.decl(method.name).exists && // fast path - compute overrideChain on the next line only if necessary
-            method.overrideChain.last.owner == ObjectClass
-        }
-        if (isTraitMethodOverridingObjectMember) methodOwner else receiver
-      }
-
-      receiverClass.info // ensure types the type is up to date; erasure may add lateINTERFACE to traits
-      val receiverBType = classBTypeFromSymbol(receiverClass)
-      val receiverName = receiverBType.internalName
-
-      def needsInterfaceCall(sym: Symbol) = {
-        sym.isTraitOrInterface ||
-          sym.isJavaDefined && sym.isNonBottomSubClass(definitions.ClassfileAnnotationClass)
-      }
+      if (specificReceiver != null)
+        assert(style.isVirtual || specificReceiver == methodOwner, s"specificReceiver can only be specified for virtual calls. $method - $specificReceiver")
 
       val jname  = method.javaSimpleName.toString
       val bmType = methodBTypeFromSymbol(method)
       val mdescr = bmType.descriptor
 
-      val isInterface = receiverBType.isInterface.get
       import InvokeStyle._
       if (style == Super) {
-        assert(receiverClass == methodOwner, s"for super call, expecting $receiverClass == $methodOwner")
-        if (receiverClass.isTrait && !receiverClass.isJavaDefined) {
+        if (method.isMixinConstructor) {
           val staticDesc = MethodBType(typeToBType(method.owner.info) :: bmType.argumentTypes, bmType.returnType).descriptor
-          val staticName = traitSuperAccessorName(method).toString
-          bc.invokestatic(receiverName, staticName, staticDesc, isInterface, pos)
+          val staticName = method.javaSimpleName.toString
+          val receiver = classBTypeFromSymbol(methodOwner)
+          bc.invokestatic(receiver.internalName, staticName, staticDesc, receiver.isInterface.get, pos)
         } else {
-          if (receiverClass.isTraitOrInterface) {
-            // An earlier check in Mixin reports an error in this case, so it doesn't reach the backend
-            assert(cnode.interfaces.contains(receiverName), s"cannot invokespecial $receiverName.$jname, the interface is not a direct parent.")
+          // Super calls to interface members are only allowed if the receiver interface in the
+          // invocation's method descriptor is a direct parent of the class.
+          // If this is not the case, we try to find an existing direct parent that resolves
+          // correctly. Example:
+          //   trait T { def f = 1 }; trait U extends T; class C extends U { super.f }
+          // Here, methodOwner is T, but we can emit invokespecial U.f.
+          // If f is overriding a method in java.lang.Object we have to use T as receiver, using U
+          // would resolve to the method in jlO.
+          // If no valid direct parent can be found, methodOwner is added as a direct parent.
+          // See scala-dev#228, scala-dev#143.
+
+          // val log = new mutable.StringBuilder()
+
+          def isCommonJLOMethod = jlObjectMethods.contains(MethodNameAndType(jname, bmType))
+
+          def methodOwnerName = classBTypeFromSymbol(methodOwner).internalName
+
+          val receiverClass =
+            if (method.isConstructor || !methodOwner.isTraitOrInterface || cnode.interfaces.contains(methodOwnerName) || isCommonJLOMethod) {
+              methodOwner
+            } else {
+              def isValidInvokespecialReceiver(parent: Symbol) = {
+                def isMaximallySpecific = {
+                  val checked = mutable.Set.empty[Symbol]
+
+                  @tailrec def noConflictingAncestor(ancestors: List[Symbol]): Boolean = ancestors match {
+                    case Nil => true
+                    case a :: as =>
+                      if (a == methodOwner) {
+                        noConflictingAncestor(as)
+                      } else {
+                        checked += a
+                        val memberInA = a.info.member(method.name)
+                        if (memberInA == NoSymbol) {
+                          noConflictingAncestor(as)
+                        } else if (memberInA == method) {
+                          noConflictingAncestor(a.parentSymbols.filterNot(checked) ::: as)
+                        } else {
+                          // log.append(s":conflicting method, defined in ${memberInA.owner.javaClassName}")
+                          false
+                        }
+                      }
+                  }
+
+                  noConflictingAncestor(parent.parentSymbols)
+                }
+
+                /*
+                log.append(s":${parent.javaClassName}")
+                if (!cnode.interfaces.contains(classBTypeFromSymbol(parent).internalName))
+                  log.append(s":not a parent (minimizeParents)")
+                else {
+                  val m = parent.info.member(method.name)
+                  if (m == NoSymbol) log.append(s":no method")
+                  else if (m != method) log.append(s":different method, defined in ${m.owner.javaClassName}")
+                }
+                */
+
+                // There is a mismatch between the parent symbols of the current class symbol and
+                // the interfaces in the cnode: interfaces are minimized by erasure.minimizeParents.
+                // The first condition here makes sure to only consider interfaces that are actually
+                // listed as direct parents.
+                cnode.interfaces.contains(classBTypeFromSymbol(parent).internalName) &&
+                  parent.info.member(method.name) == method &&
+                  isMaximallySpecific
+              }
+
+              // `.tail` drops the superclass, we are looking for an interface
+              claszSymbol.parentSymbols.tail.find(isValidInvokespecialReceiver).getOrElse(methodOwner)
+            }
+
+          val receiverBType = classBTypeFromSymbol(receiverClass)
+          val receiverName = receiverBType.internalName
+          if (receiverClass.isTraitOrInterface && !cnode.interfaces.contains(receiverName)) {
+            /*
+            val parentWasThere = if (claszSymbol.parentSymbols.contains(receiverClass)) " (removed by minimizeParents)" else ""
+            val superAcc = if (methSymbol.name.toString contains "super$") " (super accessor)" else ""
+            val jlo = if (isCommonJLOMethod) " (JLO method)" else ""
+            println(s"${claszSymbol.javaClassName}:${methodOwner.javaClassName}:${methSymbol.name}:add parent$parentWasThere$superAcc$jlo:${receiverClass.javaClassName}${log.toString}")
+            */
+            cnode.interfaces.add(receiverName)
           }
-          bc.invokespecial(receiverName, jname, mdescr, isInterface, pos)
+          /* else if (receiverClass != methodOwner) {
+            println(s"${claszSymbol.javaClassName}:${methodOwner.javaClassName}:${methSymbol.name}:rewrite receiver:${receiverClass.javaClassName}")
+          } */
+
+          bc.invokespecial(receiverName, jname, mdescr, receiverBType.isInterface.get, pos)
         }
       } else {
+        // the class used in the invocation's method descriptor in the classfile
+        val receiverClass = {
+          val useSpecificReceiver = specificReceiver != null && !specificReceiver.isBottomClass
+          val receiver = if (useSpecificReceiver) specificReceiver else methodOwner
+
+          // workaround for a JVM bug: https://bugs.openjdk.java.net/browse/JDK-8154587
+          // when an interface method overrides a member of Object (note that all interfaces implicitly
+          // have superclass Object), the receiver needs to be the interface declaring the override (and
+          // not a sub-interface that inherits it). example:
+          //   trait T { override def clone(): Object = "" }
+          //   trait U extends T
+          //   class C extends U
+          //   class D { def f(u: U) = u.clone() }
+          // The invocation `u.clone()` needs `T` as a receiver:
+          //   - using Object is illegal, as Object.clone is protected
+          //   - using U results in a `NoSuchMethodError: U.clone. This is the JVM bug.
+          // Note that a mixin forwarder is generated, so the correct method is executed in the end:
+          //   class C { override def clone(): Object = super[T].clone() }
+          val isTraitMethodOverridingObjectMember = {
+            receiver != methodOwner && // fast path - the boolean is used to pick either of these two, if they are the same it does not matter
+              style.isVirtual &&
+              receiver.isTraitOrInterface &&
+              ObjectTpe.decl(method.name).exists && // fast path - compute overrideChain on the next line only if necessary
+              method.overrideChain.last.owner == ObjectClass
+          }
+          if (isTraitMethodOverridingObjectMember) methodOwner else receiver
+        }
+
+        val receiverBType = classBTypeFromSymbol(receiverClass)
+        val receiverName = receiverBType.internalName
+        val isInterface = receiverBType.isInterface.get
         val opc = style match {
           case Static => Opcodes.INVOKESTATIC
           case Special => Opcodes.INVOKESPECIAL

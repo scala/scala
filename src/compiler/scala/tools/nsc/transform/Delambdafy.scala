@@ -284,7 +284,6 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         // delambdafy targets are excluded as they are made static by `transformFunction`.
         if (!dd.symbol.hasFlag(STATIC) && !methodReferencesThis(dd.symbol)) {
           dd.symbol.setFlag(STATIC)
-          dd.symbol.removeAttachment[mixer.NeedStaticImpl.type]
         }
         super.transform(tree)
       case Apply(fun, outer :: rest) if shouldElideOuterArg(fun.symbol, outer) =>

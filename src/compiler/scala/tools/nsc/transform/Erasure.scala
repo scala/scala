@@ -189,8 +189,12 @@ abstract class Erasure extends InfoTransform
 
   /* Drop redundant types (ones which are implemented by some other parent) from the immediate parents.
    * This is important on Android because there is otherwise an interface explosion.
+   * It may also help on the JVM: TODO: Link to jason's benchmark.
+   *
    * This is now restricted to Scala defined ancestors: a Java defined ancestor may need to be listed
    * as an immediate parent to support an `invokespecial`.
+   *
+   * TODO: since we are now again adding late interfaces, could minimize java parents
    */
   def minimizeParents(parents: List[Type]): List[Type] = if (parents.isEmpty) parents else {
     def isRedundantParent(sym: Symbol) = sym.isInterface || sym.isTrait

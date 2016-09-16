@@ -11,5 +11,5 @@ object Test extends App {
   }
   check(classOf[C], "foo - @org.junit.Test()")
   // TODO scala-dev#213: should `foo$` really carry the @Test annotation?
-  check(classOf[T], "$init$ - ;foo - @org.junit.Test();foo$ - @org.junit.Test()")
+  check(classOf[T], "$init$ - ;foo - @org.junit.Test()")
 }

@@ -19,7 +19,7 @@ class BytecodeTest extends BytecodeTesting {
 
   def checkForwarder(classes: Map[String, ClassNode], clsName: Symbol, target: String) = {
     val f = getMethod(classes(clsName.name), "f")
-    assertSameCode(f, List(VarOp(ALOAD, 0), Invoke(INVOKESTATIC, target, "f$", s"(L$target;)I", true), Op(IRETURN)))
+    assertSameCode(f, List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, target, "f", s"()I", true), Op(IRETURN)))
   }
 
   @Test
@@ -88,7 +88,7 @@ class BytecodeTest extends BytecodeTesting {
     assertSameSummary(getMethod(c("C18"), "f"), List(BIPUSH, IRETURN))
     checkForwarder(c, 'C19, "T7")
     assertSameCode(getMethod(c("C19"), "T7$$super$f"), List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "C18", "f", "()I", false), Op(IRETURN)))
-    assertInvoke(getMethod(c("C20"), "clone"), "T8", "clone$") // mixin forwarder
+    assertInvoke(getMethod(c("C20"), "clone"), "T8", "clone") // mixin forwarder
   }
 
   @Test
@@ -141,7 +141,7 @@ class BytecodeTest extends BytecodeTesting {
   def invocationReceivers(): Unit = {
     val List(c1, c2, t, u) = compileClasses(invocationReceiversTestCode.definitions("Object"))
     // mixin forwarder in C1
-    assertSameCode(getMethod(c1, "clone"), List(VarOp(ALOAD, 0), Invoke(INVOKESTATIC, "T", "clone$", "(LT;)Ljava/lang/Object;", true), Op(ARETURN)))
+    assertSameCode(getMethod(c1, "clone"), List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "T", "clone", "()Ljava/lang/Object;", true), Op(ARETURN)))
     assertInvoke(getMethod(c1, "f1"), "T", "clone")
     assertInvoke(getMethod(c1, "f2"), "T", "clone")
     assertInvoke(getMethod(c1, "f3"), "C1", "clone")
@@ -239,7 +239,7 @@ class BytecodeTest extends BytecodeTesting {
     val List(c2, _) = newCompiler(extraArgs = "-Xmixin-force-forwarders:true").compileClasses(code)
     assert(getMethods(c1, "f").isEmpty)
     assertSameCode(getMethod(c2, "f"),
-      List(VarOp(ALOAD, 0), Invoke(INVOKESTATIC, "T", "f$", "(LT;)I", true), Op(IRETURN)))
+      List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "T", "f", "()I", true), Op(IRETURN)))
   }
 
   @Test
@@ -265,9 +265,9 @@ class BytecodeTest extends BytecodeTesting {
     val jCode = List("interface A { default int m() { return 1; } }" -> "A.java")
     val code =
       """class B extends A { override def m = 2 }
-        |trait T extends A
-        |class C extends B with T {
-        |  override def m = super[T].m
+        |trait T1 extends A // called "T1" not "T" due to scala-dev#214
+        |class C extends B with T1 {
+        |  override def m = super[T1].m
         |}
       """.stripMargin
 
@@ -293,10 +293,10 @@ class BytecodeTest extends BytecodeTesting {
     val t1 = getInstructions(c, "t1")
     assert(t1 contains Invoke(INVOKESPECIAL, "A", "f", "()I", false), t1.stringLines)
     val t2 = getInstructions(c, "t2")
-    val invStat = Invoke(INVOKESTATIC, "T", "f$", "(LT;)I", true)
-    assert(t2 contains invStat, t2.stringLines)
+    val superT = Invoke(INVOKESPECIAL, "T", "f", "()I", true)
+    assert(t2 contains superT, t2.stringLines)
     val t3 = getInstructions(c, "t3")
-    assert(t3 contains invStat, t3.stringLines)
+    assert(t3 contains superT, t3.stringLines)
   }
 
   @Test
@@ -339,32 +339,224 @@ class BytecodeTest extends BytecodeTesting {
       """.stripMargin
 
     val List(_, c3) = compileClasses(code3, jCode)
-    // invokespecial to A.m is correct here: A is an interface, so resolution starts at A.
-    // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokespecial
+    // invokespecial to A.m is correct here: A is an interface, so resolution starts at A (not at
+    // the superclass B). https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokespecial
     val ins3 = getMethod(c3, "m").instructions
     assert(ins3 contains Invoke(INVOKESPECIAL, "A", "m", "()I", true), ins3.stringLines)
 
 
     val code4 =
       """trait B { self: A => override def m = 2 }
-        |class C extends A with B // forwarder, invokestatic B.m$
+        |class C extends A with B // forwarder, invokespecial B.m
       """.stripMargin
 
     val List(_, c4) = compileClasses(code4, jCode)
     val ins4 = getMethod(c4, "m").instructions
-    assert(ins4 contains Invoke(INVOKESTATIC, "B", "m$", "(LB;)I", true), ins4.stringLines)
+    assert(ins4 contains Invoke(INVOKESPECIAL, "B", "m", "()I", true), ins4.stringLines)
 
 
     // scala-only example
     val code5 =
       """trait AS { def m = 1 }
         |abstract class B { def m: Int }
-        |class C extends B with AS // forwarder, invokestatic AS.m$
+        |class C extends B with AS // forwarder, invokespecial AS.m
       """.stripMargin
 
     val List(_, _, c5) = compileClasses(code5)
     val ins5 = getMethod(c5, "m").instructions
-    assert(ins5 contains Invoke(INVOKESTATIC, "AS", "m$", "(LAS;)I", true), ins5.stringLines)
+    assert(ins5 contains Invoke(INVOKESPECIAL, "AS", "m", "()I", true), ins5.stringLines)
+  }
+
+  def ifs(c: ClassNode, expected: List[String]) = assertEquals(expected, c.interfaces.asScala.toList.sorted)
+  def invSp(m: Method, receiver: String, method: String = "f", sig: String = "()I", itf: Boolean = true): Unit =
+    assert(m.instructions contains Invoke(INVOKESPECIAL, receiver, method, sig, itf), m.instructions.stringLines)
+
+  @Test
+  def superCalls1(): Unit = {
+    val code =
+      """trait T { def f = 1 }
+        |trait U extends T
+        |class C extends U { def t = super.f }
+      """.stripMargin
+    val List(c, _*) = compileClasses(code)
+    ifs(c, List("U"))
+    invSp(getMethod(c, "t"), "U")
+    assertEquals(getMethods(c, "f"), Nil)
+  }
+
+  @Test
+  def superCalls2(): Unit = {
+    val code =
+      """class A { def f = 1 }
+        |trait T extends A { override def f = 2 }
+        |class B extends A
+        |class C extends B with T {
+        |  def t1 = super.f
+        |  def t2 = super[T].f
+        |  def t3 = super[B].f
+        |}
+      """.stripMargin
+    val List(_, _, c, _) = compileClasses(code)
+    invSp(getMethod(c, "f"), "T")
+    invSp(getMethod(c, "t1"), "T")
+    invSp(getMethod(c, "t2"), "T")
+    invSp(getMethod(c, "t3"), "A", itf = false)
+  }
+
+  @Test
+  def superCalls3(): Unit = {
+    val code =
+      """class A { def f = 1 }
+        |trait T extends A
+        |class B extends A { override def f = 2 }
+        |class C extends B with T {
+        |  def t1 = super.f
+        |  // def t2 = super[T].f // error: cannot emit super call. tested in sd143
+        |  def t3 = super[B].f
+        |}
+      """.stripMargin
+    val List(_, _, c, _) = compileClasses(code)
+    invSp(getMethod(c, "t1"), "B", itf = false)
+    invSp(getMethod(c, "t3"), "B", itf = false)
+    assertEquals(getMethods(c, "f"), Nil)
+  }
+
+  @Test
+  def superCalls4(): Unit = {
+    val code =
+      """trait T1 { def f = 1 }
+        |trait T2 { self: T1 => override def f = 2 }
+        |trait U extends T1 with T2
+        |class C extends U {
+        |  def t1 = super.f
+        |  def t2 = super[U].f
+        |}
+      """.stripMargin
+    val List(c, _*) = compileClasses(code)
+    ifs(c, List("T2", "U"))
+    invSp(getMethod(c, "f"), "T2")
+    invSp(getMethod(c, "t1"), "T2")
+    invSp(getMethod(c, "t2"), "T2")
+  }
+
+  @Test
+  def superCalls5(): Unit = {
+    val code =
+      """trait T1 { def f = 1 }
+        |trait T2 { self: T1 => override def f = 2 }
+        |trait U extends T1 with T2
+        |class C extends U with T1 with T2
+      """.stripMargin
+    val List(c, _*) = compileClasses(code)
+    ifs(c, List("T2", "U")) // T1, T2 removed by minimizeParents, T2 re-added for the super call
+    invSp(getMethod(c, "f"), "T2")
+  }
+
+  @Test
+  def superCalls6(): Unit = {
+    val code =
+      """trait T { override def hashCode = -1 }
+        |trait U extends T
+        |class C extends U {
+        |  def t1 = super[U].hashCode
+        |  def t2 = super.hashCode
+        |}
+      """.stripMargin
+    val List(c, _*) = compileClasses(code)
+    ifs(c, List("T", "U"))
+    invSp(getMethod(c, "hashCode"), "T", "hashCode")
+    invSp(getMethod(c, "t1"), "T", "hashCode")
+    invSp(getMethod(c, "t2"), "T", "hashCode")
+  }
+
+  @Test
+  def superCalls7(): Unit = {
+    val code =
+      """trait T { def f = 1 }
+        |trait U1 extends T { override def f = 2 }
+        |trait U2 extends T { override def f = 3 }
+        |class C1 extends T with U1 with U2 {
+        |  def t1 = super.f
+        |  def t2 = super[T].f
+        |  def t3 = super[U1].f
+        |  def t4 = super[U2].f
+        |}
+        |class C2 extends T with U2 with U1 {
+        |  def t1 = super.f
+        |}
+      """.stripMargin
+    val List(c1, c2, _*) = compileClasses(code)
+    ifs(c1, List("T", "U1", "U2"))
+    ifs(c2, List("U1", "U2"))
+    invSp(getMethod(c1, "f"), "U2")
+    invSp(getMethod(c1, "t1"), "U2")
+    invSp(getMethod(c1, "t2"), "T")
+    invSp(getMethod(c1, "t3"), "U1")
+    invSp(getMethod(c1, "t4"), "U2")
+    invSp(getMethod(c2, "f"), "U1")
+    invSp(getMethod(c2, "t1"), "U1")
+  }
+
+  @Test
+  def superCalls8(): Unit = {
+    val code =
+      """trait T1 { def f = 1 }
+        |trait T2 { _: T1 => override def f = 2 }
+        |trait U extends T1 with T2
+        |trait V extends U with T2
+        |class C extends V {
+        |  def t1 = super.f
+        |  def t2 = super[V].f
+        |}
+      """.stripMargin
+    val List(c, _*) = compileClasses(code)
+    ifs(c, List("T2", "V"))
+    invSp(getMethod(c, "f"), "T2")
+    invSp(getMethod(c, "t1"), "T2")
+    invSp(getMethod(c, "t2"), "T2")
+  }
+
+  @Test
+  def superCalls9(): Unit = {
+    val code =
+      """trait T { def f: Int }
+        |trait U1 extends T { def f = 0 }
+        |trait U2 extends T { override def f = 1 }
+        |trait V extends U1
+        |
+        |trait W1 extends V with U2
+        |class C1 extends W1 with U2
+        |
+        |trait W2 extends V with U2 { override def f = super[U2].f }
+        |class C2 extends W2 with U2
+        |
+        |trait W3 extends V with U2 { override def f = super.f }
+        |class C3 extends W3 with U2
+      """.stripMargin
+    val List(c1, c2, c3, _*) = compileClasses(code)
+
+    ifs(c1, List("U2", "W1"))
+    invSp(getMethod(c1, "f"), "U2")
+
+    ifs(c2, List("W2"))
+    assertEquals(getMethods(c2, "f"), Nil)
+
+    ifs(c3, List("U2", "W3"))
+    invSp(getMethod(c3, "W3$$super$f"), "U2")
+    assertEquals(getMethods(c3, "f"), Nil)
+  }
+
+  @Test
+  def superCalls10(): Unit = {
+    val jCode = List("interface T { default int f() { return 1; } }" -> "T.java")
+    val code =
+      """trait U extends T
+        |class C extends U { def t = super.f }
+      """.stripMargin
+    val List(c, _) = compileClasses(code, jCode)
+    ifs(c, List("U"))
+    invSp(getMethod(c, "t"), "U")
+    assertEquals(getMethods(c, "f"), Nil)
   }
 }
 
