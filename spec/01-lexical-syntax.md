@@ -55,7 +55,7 @@ plainid  ::=  upper idrest
            |  varid
            |  op
 id       ::=  plainid
-           |  ‘`’ stringLiteral ‘`’
+           |  ‘`’ { charNoBackQuoteOrNewline | UnicodeEscape | charEscapeSeq } ‘`’
 idrest   ::=  {letter | digit} [‘_’ op]
 ```
 
