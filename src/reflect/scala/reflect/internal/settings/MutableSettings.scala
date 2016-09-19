@@ -13,7 +13,7 @@ package settings
 abstract class MutableSettings extends AbsSettings {
 
   type Setting <: SettingValue
-  type BooleanSetting <: Setting { type T = Boolean }
+  type BooleanSetting <: Setting { type T = Boolean; def boolValue: Boolean }
   type IntSetting <: Setting { type T = Int }
   type MultiStringSetting <: Setting { type T = List[String] }
 

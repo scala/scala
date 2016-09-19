@@ -455,6 +455,7 @@ class MutableSettings(val errorFn: String => Unit)
     type T = Boolean
     protected var v: Boolean = false
     override def value: Boolean = v
+    def boolValue: Boolean = v
 
     def tryToSet(args: List[String]) = { value = true ; Some(args) }
     def unparse: List[String] = if (value) List(name) else Nil

@@ -807,7 +807,7 @@ trait Contexts { self: Analyzer =>
       isAccessible(sym, pre) &&
       !(imported && {
         val e = scope.lookupEntry(name)
-        (e ne null) && (e.owner == scope) && (!settings.isScala212 || e.sym.exists)
+        (e ne null) && (e.owner == scope) && (!currentRun.runSettings.isScala212 || e.sym.exists)
       })
 
     /** Do something with the symbols with name `name` imported via the import in `imp`,
