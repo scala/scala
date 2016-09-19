@@ -95,6 +95,9 @@ abstract class RefChecks extends Transform {
       )
   }
 
+  private val separatelyCompiledScalaSuperclass = perRunCaches.newAnyRefMap[Symbol, Unit]()
+  final def isSeparatelyCompiledScalaSuperclass(sym: Symbol) = separatelyCompiledScalaSuperclass.contains(sym)
+
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
 
     var localTyper: analyzer.Typer = typer
@@ -854,6 +857,8 @@ abstract class RefChecks extends Transform {
 //            println("validate base type "+tp)
         val baseClass = tp.typeSymbol
         if (baseClass.isClass) {
+          if (!baseClass.isTrait && !baseClass.isJavaDefined && !currentRun.compiles(baseClass) && !separatelyCompiledScalaSuperclass.contains(baseClass))
+            separatelyCompiledScalaSuperclass.update(baseClass, ())
           val index = clazz.info.baseTypeIndex(baseClass)
           if (index >= 0) {
             if (seenTypes(index) forall (tp1 => !(tp1 <:< tp)))

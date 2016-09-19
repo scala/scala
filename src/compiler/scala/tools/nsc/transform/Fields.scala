@@ -305,6 +305,10 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       lazyCallingSuper setInfo tp
     }
 
+    private def needsMixin(cls: Symbol): Boolean = {
+      !(cls.isPackageClass || cls.isJavaDefined) && (currentRun.compiles(cls) || refChecks.isSeparatelyCompiledScalaSuperclass(cls))
+    }
+
     def apply(tp0: Type): Type = tp0 match {
       // TODO: make less destructive (name changes, decl additions, flag setting --
       // none of this is actually undone when travelling back in time using atPhase)
@@ -360,9 +364,12 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
           ClassInfoType(parents, allDecls, clazz)
         } else tp
 
-      // mix in fields & accessors for all mixed in traits
 
-      case tp@ClassInfoType(parents, oldDecls, clazz) if !clazz.isPackageClass =>
+      case tp@ClassInfoType(parents, oldDecls, clazz) if !needsMixin(clazz) => tp
+
+      // mix in fields & accessors for all mixed in traits
+      case tp@ClassInfoType(parents, oldDecls, clazz) =>
+
         val site = clazz.thisType
 
         // setter conflicts cannot arise independently from a getter conflict, since a setter without a getter does not a val definition make
