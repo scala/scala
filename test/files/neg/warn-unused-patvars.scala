@@ -1,4 +1,6 @@
 
+// verify no warning when -Ywarn-unused:-patvars
+
 case class C(a: Int, b: String, c: Option[String])
 case class D(a: Int)
 

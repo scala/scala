@@ -189,3 +189,7 @@ trait Forever {
     } yield 42                           // val emitted only if needed, hence nothing unused
   }
 }
+
+trait Ignorance {
+  private val readResolve = 42      // ignore
+}
