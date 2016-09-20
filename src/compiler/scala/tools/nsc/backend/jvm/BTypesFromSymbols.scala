@@ -244,6 +244,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     val allParents = classParents ++ classSym.annotations.flatMap(newParentForAnnotation)
 
+    // Don't `minimizeParents` for java-defined classes: keeps their BTypes in synch with the
+    // classfile that javac produces (and saves unnecessary computation).
     val minimizedParents = if (classSym.isJavaDefined) allParents else erasure.minimizeParents(allParents)
     // We keep the superClass when computing minimizeParents to eliminate more interfaces.
     // Example: T can be eliminated from D
