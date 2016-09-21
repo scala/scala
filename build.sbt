@@ -795,25 +795,30 @@ lazy val root: Project = (project in file("."))
             k.scope.config.toOption.map(_.name + ":"),
             k.scope.task.toOption.map(_.label + "::")
           ).flatten.mkString + k.key
-        def logIncomplete(i: Incomplete, prefix: String): Unit = {
+        val loggedThis, loggedAny = new scala.collection.mutable.HashSet[String]
+        def findRootCauses(i: Incomplete, currentTask: String): Vector[(String, Option[Throwable])] = {
           val sk = i.node match {
             case Some(t: Task[_]) =>
               t.info.attributes.entries.collect { case e if e.key == Keys.taskDefinitionKey => e.value.asInstanceOf[Def.ScopedKey[_]] }
                 .headOption.map(showScopedKey)
             case _ => None
           }
-          val childCount = (if(i.directCause.isDefined) 1 else 0) + i.causes.length
-          val skip = childCount <= 1 && sk.isEmpty
-          if(!skip) log.error(s"$prefix- ${sk.getOrElse("?")}")
-          i.directCause match {
-            case Some(e) => log.error(s"$prefix  - $e")
-            case None => i.causes.foreach(i => logIncomplete(i, prefix + (if(skip) "" else "  ")))
+          val task = sk.getOrElse(currentTask)
+          val dup = sk.map(s => !loggedAny.add(s)).getOrElse(false)
+          if(sk.map(s => !loggedThis.add(s)).getOrElse(false)) Vector.empty
+          else i.directCause match {
+            case Some(e) => Vector((task, if(dup) None else Some(e)))
+            case None => i.causes.toVector.flatMap(ch => findRootCauses(ch, task))
           }
         }
         log.error(s"${failed.size} of ${results.length} test tasks failed:")
         failed.foreach { case (i, d) =>
           log.error(s"- $d")
-          logIncomplete(i, "  ")
+          loggedThis.clear
+          findRootCauses(i, "<unkown task>").foreach {
+            case (task, Some(ex)) => log.error(s"  - $task failed: $ex")
+            case (task, None)     => log.error(s"  - ($task failed)")
+          }
         }
         throw new RuntimeException
       }
