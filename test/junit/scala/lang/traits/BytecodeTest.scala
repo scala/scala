@@ -266,18 +266,37 @@ class BytecodeTest extends BytecodeTesting {
     val code =
       """class B extends A { override def m = 2 }
         |trait T1 extends A // called "T1" not "T" due to scala-dev#214
-        |class C extends B with T1 {
-        |  override def m = super[T1].m
-        |}
+        |class C extends B with T1 { def t = super[T1].m }
       """.stripMargin
 
-    val err = "unable to emit super call unless interface A (which declares method m) is directly extended by class C"
-    val cls = compileClasses(code, jCode, allowMessage = _.msg contains err)
-    assert(cls.isEmpty, cls.map(_.name))
+    val List(_, c, _) = compileClasses(code, jCode)
+    val t = getInstructions(c, "t")
+    // T.m is correct here, it resolves to A.m
+    assert(t contains Invoke(INVOKESPECIAL, "T1", "m", "()I", true), t.stringLines)
   }
 
   @Test
   def sd143c(): Unit = {
+    val jCode = List("interface A { default int hashCode() { return 1; } }" -> "A.java")
+    val code =
+      """trait T extends A
+        |class C extends T { def t = super[T].hashCode }
+      """.stripMargin
+
+    val List(c, _) = compileClasses(code, jCode)
+    assert(c.interfaces.asScala.contains("A"), c.interfaces.asScala.toList) // A is added as direct interface
+
+    val t = getInstructions(c, "t")
+    // A.hashCode required, as T.hashCode would resolve to Object.hashCode (T's superclass)
+    assert(t contains Invoke(INVOKESPECIAL, "A", "hashCode", "()I", true), t.stringLines)
+
+    // mixin forwarder is required
+    val hc = getInstructions(c, "hashCode")
+    assert(hc contains Invoke(INVOKESPECIAL, "A", "hashCode", "()I", true), t.stringLines)
+  }
+
+  @Test
+  def sd143d(): Unit = {
     // Allow super calls to class methods of indirect super classes
     val code =
       """class A { def f = 1 }
@@ -314,11 +333,10 @@ class BytecodeTest extends BytecodeTesting {
     val List(_, c1a) = compileClasses(code1, jCode)
     assert(getAsmMethods(c1a, "m").isEmpty) // ok, no forwarder
 
-    // here we test a warning. without `-Xmixin-force-forwarders:true`, the forwarder would not be
-    // generated, it is not necessary for correctness.
-    val warn = "Unable to implement a mixin forwarder for method m in class C unless interface A is directly extended by class C"
-    val List(_, c1b) = forwardersCompiler.compileClasses(code1, jCode, allowMessage = _.msg.contains(warn))
-    assert(getAsmMethods(c1a, "m").isEmpty) // no forwarder
+    val List(_, c1b) = forwardersCompiler.compileClasses(code1, jCode)
+    // forwarder is generated, invoking B1.m is correct, it resolves to A.m
+    val ins1 = getInstructions(c1b, "m")
+    assert(ins1 contains Invoke(INVOKESPECIAL, "B1", "m", "()I", true), ins1.stringLines)
 
 
     val code2 =
@@ -327,10 +345,12 @@ class BytecodeTest extends BytecodeTesting {
         |class C extends T
       """.stripMargin
 
-    // here we test a compilation error. the forwarder is required for correctness, but it cannot be generated.
-    val err = "Unable to implement a mixin forwarder for method m in class C unless interface A is directly extended by class C"
-    val cs = compileClasses(code2, jCode, allowMessage = _.msg contains err)
-    assert(cs.isEmpty, cs.map(_.name))
+    val List(_, c, _) = compileClasses(code2, jCode)
+    val itfs = c.interfaces.asScala.toList
+    assert(itfs == List("T"), itfs)
+    // forwarder is generated, invokes T.m
+    val ins2 = getInstructions(c, "m")
+    assert(ins2 contains Invoke(INVOKESPECIAL, "T", "m", "()I", true), ins2.stringLines)
 
 
     val code3 =
