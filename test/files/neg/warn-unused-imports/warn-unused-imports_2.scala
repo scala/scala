@@ -153,3 +153,7 @@ trait Outsiders {
     //Future("abc".bippy)
   }
 }
+
+class MacroClient {
+  def x = Macro.f  // warn, not crash
+}

@@ -51,5 +51,8 @@ warn-unused-imports_2.scala:149: warning: Unused import
 warn-unused-imports_2.scala:150: warning: Unused import
     import p1.A                         // warn
               ^
-16 warnings found
+warn-unused-imports_2.scala:158: warning: Unused import
+  def x = Macro.f  // warn, not crash
+                ^
+17 warnings found
 one error found

@@ -64,10 +64,8 @@ trait Contexts { self: Analyzer =>
     for (imps <- allImportInfos.remove(unit)) {
       for (imp <- imps.distinct.reverse) {
         val used = allUsedSelectors(imp)
-
-        imp.tree.selectors filterNot (s => isMaskImport(s) || used(s)) foreach { sel =>
-          reporter.warning(imp posOf sel, "Unused import")
-        }
+        for (sel <- imp.tree.selectors if !isMaskImport(sel) && !used(sel))
+          reporter.warning(imp.posOf(sel), "Unused import")
       }
       allUsedSelectors --= imps
     }
@@ -825,7 +823,6 @@ trait Contexts { self: Analyzer =>
     private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = {
       val qual = imp.qual
 
-      val qualSym = qual.tpe.typeSymbol
       val pre = qual.tpe
       def collect(sels: List[ImportSelector]): List[ImplicitInfo] = sels match {
         case List() =>
@@ -1412,7 +1409,8 @@ trait Contexts { self: Analyzer =>
 
   class ImportInfo(val tree: Import, val depth: Int) {
     def pos = tree.pos
-    def posOf(sel: ImportSelector) = tree.pos withPoint sel.namePos
+    def posOf(sel: ImportSelector) =
+      if (sel.namePos >= 0) tree.pos withPoint sel.namePos else tree.pos
 
     /** The prefix expression */
     def qual: Tree = tree.symbol.info match {
