@@ -1947,27 +1947,22 @@ self =>
        *                |   Pattern3
        *  }}}
        */
-      def pattern2(): Tree = {
-        val p = pattern3()
-
-        if (in.token != AT) p             // var pattern upgraded later to x @ _
-        else p match {
-          case Ident(nme.WILDCARD) =>
-            in.nextToken()
-            pattern3()
-          case Ident(name) =>
-            in.nextToken()
-            val body = pattern3()
-            atPos(p.pos.start, p.pos.start, body.pos.end) {
-              val t = Bind(name, body)
-              body match {
-                case Ident(nme.WILDCARD) => t updateAttachment AtBoundIdentifierAttachment
-                case _ if !settings.warnUnusedPatVars => t updateAttachment AtBoundIdentifierAttachment
-                case _ => t
-              }
+      def pattern2(): Tree = (pattern3(), in.token) match {
+        case (Ident(nme.WILDCARD), AT) =>
+          in.nextToken()
+          pattern3()
+        case (p @ Ident(name), AT) =>
+          in.nextToken()
+          val body = pattern3()
+          atPos(p.pos.start, p.pos.start, body.pos.end) {
+            val t = Bind(name, body)
+            body match {
+              case Ident(nme.WILDCARD) => t updateAttachment AtBoundIdentifierAttachment
+              case _ if !settings.warnUnusedPatVars => t updateAttachment AtBoundIdentifierAttachment
+              case _ => t
             }
-          case _ => p
-        }
+          }
+        case (p, _) => p
       }
 
       /** {{{

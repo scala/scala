@@ -477,6 +477,7 @@ trait TypeDiagnostics {
         val treeTypes = mutable.Set[Type]()
         val atBounds  = mutable.Set[Symbol]()
         val params    = mutable.Set[Symbol]()
+        val patvars   = mutable.Set[Symbol]()
 
         def defnSymbols = defnTrees.toList map (_.symbol)
         def localVars   = defnSymbols filter (t => t.isLocalToBlock && t.isVar)
@@ -506,6 +507,11 @@ trait TypeDiagnostics {
                     for (vs <- vparamss) params ++= vs.map(_.symbol)
                 case _ =>
               }
+            case CaseDef(pat, guard@_, rhs@_) if settings.warnUnusedPatVars
+                                                       => pat.foreach {
+                                                            case b @ Bind(_, _) if !atBounded(b) => patvars += b.symbol
+                                                            case _ =>
+                                                          }
             case _: RefTree if t.symbol ne null        => targets += t.symbol
             case Assign(lhs, _) if lhs.symbol != null  => setVars += lhs.symbol
             case Bind(n, _) if atBounded(t)            => atBounds += t.symbol
@@ -570,6 +576,7 @@ trait TypeDiagnostics {
         // local vars which are never set, except those already returned in unused
         def unsetVars = localVars.filter(v => !setVars(v) && !isUnusedTerm(v)).sortBy(sympos)
         def unusedParams = params.toList.filter(isUnusedTerm).sortBy(sympos)
+        def unusedPatVars = patvars.toList.filter(isUnusedTerm).sortBy(sympos)
       }
 
       private def warningsEnabled: Boolean = {
@@ -613,7 +620,7 @@ trait TypeDiagnostics {
             reporter.warning(pos, s"$why $what in ${sym.owner} is never used")
           }
           for (v <- p.unsetVars) {
-            reporter.warning(v.pos, s"local var ${v.name} in ${v.owner} is never set - it could be a val")
+            reporter.warning(v.pos, s"local var ${v.name} in ${v.owner} is never set: consider using immutable val")
           }
           for (t <- p.unusedTypes) {
             val sym = t.symbol
@@ -623,6 +630,10 @@ trait TypeDiagnostics {
               reporter.warning(t.pos, s"$why ${sym.fullLocationString} is never used")
             }
           }
+        }
+        if (settings.warnUnusedPatVars) {
+          for (v <- p.unusedPatVars)
+            reporter.warning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used; `${v.name}@_' suppresses this warning")
         }
         if (settings.warnUnusedParams || settings.warnUnusedImplicits) {
           def classOf(s: Symbol): Symbol = if (s.isClass || s == NoSymbol) s else classOf(s.owner)

@@ -79,7 +79,7 @@ warn-unused-privates.scala:166: warning: local val x in method v is never used
 warn-unused-privates.scala:170: warning: local val x in method w is never used
     val D(x @ _) = d                      // warn, fixme (valdef pos is different)
          ^
-warn-unused-privates.scala:97: warning: local var x in method f2 is never set - it could be a val
+warn-unused-privates.scala:97: warning: local var x in method f2 is never set: consider using immutable val
     var x = 100 // warn about it being a var
         ^
 warn-unused-privates.scala:104: warning: private class Bar1 in object Types is never used
@@ -97,6 +97,12 @@ warn-unused-privates.scala:118: warning: local class DingDongDoobie is never use
 warn-unused-privates.scala:121: warning: local type OtherThing is never used
     type OtherThing = String // warn
          ^
+warn-unused-privates.scala:201: warning: pattern var z in method f is never used; `z@_' suppresses this warning
+    case z => "warn"
+         ^
+warn-unused-privates.scala:208: warning: pattern var z in method f is never used; `z@_' suppresses this warning
+    case Some(z) => "warn"
+              ^
 error: No warnings can be incurred under -Xfatal-warnings.
-33 warnings found
+35 warnings found
 one error found

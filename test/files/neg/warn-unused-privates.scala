@@ -193,3 +193,19 @@ trait Forever {
 trait Ignorance {
   private val readResolve = 42      // ignore
 }
+
+trait CaseyKasem {
+  def f = 42 match {
+    case x if x < 25 => "no warn"
+    case y if toString.nonEmpty => "no warn" + y
+    case z => "warn"
+  }
+}
+trait CaseyAtTheBat {
+  def f = Option(42) match {
+    case Some(x) if x < 25 => "no warn"
+    case Some(y @ _) if toString.nonEmpty => "no warn"
+    case Some(z) => "warn"
+    case None => "no warn"
+  }
+}
