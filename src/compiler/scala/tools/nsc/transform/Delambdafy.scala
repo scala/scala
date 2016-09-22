@@ -267,7 +267,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         def pretransform(tree: Tree): Tree = tree match {
           case dd: DefDef if dd.symbol.isDelambdafyTarget =>
             if (!dd.symbol.hasFlag(STATIC) && methodReferencesThis(dd.symbol)) {
-              gen.mkStatic(dd, dd.symbol.name, sym => sym)
+              gen.mkStatic(dd)
             } else {
               dd.symbol.setFlag(STATIC)
               dd

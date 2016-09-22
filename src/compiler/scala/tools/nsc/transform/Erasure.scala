@@ -396,7 +396,7 @@ abstract class Erasure extends InfoTransform
       */
     private def addMixinConstructorCalls(tree: Tree, clazz: Symbol): Tree = {
       def mixinConstructorCall(mc: Symbol): Tree = atPos(tree.pos) {
-        Apply(SuperSelect(clazz, mc.primaryConstructor), Nil)
+        Apply(gen.mkAttributedRef(mc.primaryConstructor), List(This(clazz)))
       }
       val mixinConstructorCalls: List[Tree] = {
         for (mc <- clazz.mixinClasses.reverse
@@ -423,6 +423,8 @@ abstract class Erasure extends InfoTransform
     override def transform(tree: Tree): Tree = {
       val sym = tree.symbol
       val tree1 = tree match {
+        case dd: DefDef if sym.isMixinConstructor =>
+          gen.mkStatic(dd)
         case DefDef(_,_,_,_,_,_) if sym.isClassConstructor && sym.isPrimaryConstructor && sym.owner != ArrayClass =>
           deriveDefDef(tree)(addMixinConstructorCalls(_, sym.owner)) // (3)
         case Template(parents, self, body) =>

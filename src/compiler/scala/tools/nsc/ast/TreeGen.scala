@@ -312,39 +312,6 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     newDefDef(methSym, moveToMethod(useMethodParams(fun.body)))(tpt = TypeTree(resTp))
   }
 
-  /**
-    * Create a new `DefDef` based on `orig` with an explicit self parameter.
-    *
-    * Details:
-    *   - Must by run after erasure
-    *   - If `maybeClone` is the identity function, this runs "in place"
-    *     and mutates the symbol of `orig`. `orig` should be discarded
-    *   - Symbol owners and returns are substituted, as are parameter symbols
-    *   - Recursive calls are not rewritten. This is correct if we assume
-    *     that we either:
-    *       - are in "in-place" mode, but can guarantee that no recursive calls exists
-    *       - are associating the RHS with a cloned symbol, but intend for the original
-    *         method to remain and for recursive calls to target it.
-    */
-  final def mkStatic(orig: DefDef, newName: Name, maybeClone: Symbol => Symbol): DefDef = {
-    assert(phase.erasedTypes, phase)
-    assert(!orig.symbol.hasFlag(SYNCHRONIZED), orig.symbol.defString)
-    val origSym = orig.symbol
-    val origParams = orig.symbol.info.params
-    val newSym = maybeClone(orig.symbol)
-    newSym.setName(newName)
-    newSym.setFlag(STATIC)
-    // Add an explicit self parameter
-    val selfParamSym = newSym.newSyntheticValueParam(newSym.owner.typeConstructor, nme.SELF).setFlag(ARTIFACT)
-    newSym.updateInfo(newSym.info match {
-      case mt @ MethodType(params, res) => copyMethodType(mt, selfParamSym :: params, res)
-    })
-    val selfParam = ValDef(selfParamSym)
-    val rhs = orig.rhs.substituteThis(newSym.owner, gen.mkAttributedIdent(selfParamSym)) // SD-186 intentionally leaving Ident($this) is unpositioned
-      .substituteSymbols(origParams, newSym.info.params.drop(1)).changeOwner(origSym -> newSym)
-    treeCopy.DefDef(orig, orig.mods, orig.name, orig.tparams, (selfParam :: orig.vparamss.head) :: Nil, orig.tpt, rhs).setSymbol(newSym)
-  }
-
   def expandFunction(localTyper: analyzer.Typer)(fun: Function, inConstructorFlag: Long): Tree = {
     val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag)
     val parents = if (isFunctionType(fun.tpe)) {

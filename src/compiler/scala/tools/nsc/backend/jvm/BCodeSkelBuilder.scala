@@ -487,28 +487,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
         case ValDef(mods, name, tpt, rhs) => () // fields are added in `genPlainClass()`, via `addClassFields()`
 
-        case dd : DefDef =>
-          val sym = dd.symbol
-          if (sym.isMixinConstructor) {
-            // easier to make $init$ static only here. it is generated at parsers, emitting the
-            // correct parameter type is hard (also: hygiene). trait T[X <: B] { def $init$(self: ..) }
-            val statified = global.gen.mkStatic(dd, sym.name, _.cloneSymbol)
-            genDefDef(statified)
-          } /*else if (needsStaticImplMethod(sym)) {
-            val forwarderDefDef = {
-              val dd1 = global.gen.mkStatic(deriveDefDef(dd)(_ => EmptyTree), traitSuperAccessorName(sym), _.cloneSymbol)
-              dd1.symbol.setFlag(Flags.ARTIFACT).resetFlag(Flags.OVERRIDE)
-              val selfParam :: realParams = dd1.vparamss.head.map(_.symbol)
-              deriveDefDef(dd1)(_ =>
-                atPos(dd1.pos)(
-                  Apply(Select(global.gen.mkAttributedIdent(selfParam).setType(sym.owner.typeConstructor), dd.symbol),
-                  realParams.map(global.gen.mkAttributedIdent)).updateAttachment(UseInvokeSpecial))
-              )
-            }
-            genDefDef(forwarderDefDef)
-            genDefDef(dd)
-          }*/ else
-            genDefDef(dd)
+        case dd : DefDef => genDefDef(dd)
 
         case Template(_, _, body) => body foreach gen
 

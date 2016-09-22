@@ -1041,100 +1041,88 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
       import InvokeStyle._
       if (style == Super) {
-        if (method.isMixinConstructor) {
-          val staticDesc = MethodBType(typeToBType(method.owner.info) :: bmType.argumentTypes, bmType.returnType).descriptor
-          val staticName = method.javaSimpleName.toString
-          val receiver = classBTypeFromSymbol(methodOwner)
-          bc.invokestatic(receiver.internalName, staticName, staticDesc, receiver.isInterface.get, pos)
-        } else {
-          // Super calls to interface members are only allowed if the receiver interface in the
-          // invocation's method descriptor is a direct parent of the class.
-          // If this is not the case, we try to find an existing direct parent that resolves
-          // correctly. Example:
-          //   trait T { def f = 1 }; trait U extends T; class C extends U { super.f }
-          // Here, methodOwner is T, but we can emit invokespecial U.f.
-          // If f is overriding a method in java.lang.Object we have to use T as receiver, using U
-          // would resolve to the method in jlO.
-          // If no valid direct parent can be found, methodOwner is added as a direct parent.
-          // See scala-dev#228, scala-dev#143.
+        // Super calls to interface members are only allowed if the receiver interface in the
+        // invocation's method descriptor is a direct parent of the class.
+        // If this is not the case, we try to find an existing direct parent that resolves
+        // correctly. Example:
+        //   trait T { def f = 1 }; trait U extends T; class C extends U { super.f }
+        // Here, methodOwner is T, but we can emit invokespecial U.f.
+        // If f is overriding a method in java.lang.Object we have to use T as receiver, using U
+        // would resolve to the method in jlO.
+        // If no valid direct parent can be found, methodOwner is added as a direct parent.
+        // See scala-dev#228, scala-dev#143.
 
-          // val log = new mutable.StringBuilder()
+        // val log = new mutable.StringBuilder()
 
-          def isCommonJLOMethod = jlObjectMethods.contains(MethodNameAndType(jname, bmType))
-
-          def methodOwnerName = classBTypeFromSymbol(methodOwner).internalName
-
-          val receiverClass =
-            if (method.isConstructor || !methodOwner.isTraitOrInterface || cnode.interfaces.contains(methodOwnerName) || isCommonJLOMethod) {
-              methodOwner
-            } else {
-              def isValidInvokespecialReceiver(parent: Symbol) = {
-                def isMaximallySpecific = {
-                  val checked = mutable.Set.empty[Symbol]
-
-                  @tailrec def noConflictingAncestor(ancestors: List[Symbol]): Boolean = ancestors match {
-                    case Nil => true
-                    case a :: as =>
-                      if (a == methodOwner) {
+        def isCommonJLOMethod = jlObjectMethods.contains(MethodNameAndType(jname, bmType))
+        def methodOwnerName = classBTypeFromSymbol(methodOwner).internalName
+        val receiverClass =
+          if (method.isConstructor || !methodOwner.isTraitOrInterface || cnode.interfaces.contains(methodOwnerName) || isCommonJLOMethod) {
+            methodOwner
+          } else {
+            def isValidInvokespecialReceiver(parent: Symbol) = {
+              def isMaximallySpecific = {
+                val checked = mutable.Set.empty[Symbol]
+                @tailrec def noConflictingAncestor(ancestors: List[Symbol]): Boolean = ancestors match {
+                  case Nil => true
+                  case a :: as =>
+                    if (a == methodOwner) {
+                      noConflictingAncestor(as)
+                    } else {
+                      checked += a
+                      val memberInA = a.info.member(method.name)
+                      if (memberInA == NoSymbol) {
                         noConflictingAncestor(as)
+                      } else if (memberInA == method) {
+                        noConflictingAncestor(a.parentSymbols.filterNot(checked) ::: as)
                       } else {
-                        checked += a
-                        val memberInA = a.info.member(method.name)
-                        if (memberInA == NoSymbol) {
-                          noConflictingAncestor(as)
-                        } else if (memberInA == method) {
-                          noConflictingAncestor(a.parentSymbols.filterNot(checked) ::: as)
-                        } else {
-                          // log.append(s":conflicting method, defined in ${memberInA.owner.javaClassName}")
-                          false
-                        }
+                        // log.append(s":conflicting method, defined in ${memberInA.owner.javaClassName}")
+                        false
                       }
-                  }
-
-                  noConflictingAncestor(parent.parentSymbols)
+                    }
                 }
-
-                /*
-                log.append(s":${parent.javaClassName}")
-                if (!cnode.interfaces.contains(classBTypeFromSymbol(parent).internalName))
-                  log.append(s":not a parent (minimizeParents)")
-                else {
-                  val m = parent.info.member(method.name)
-                  if (m == NoSymbol) log.append(s":no method")
-                  else if (m != method) log.append(s":different method, defined in ${m.owner.javaClassName}")
-                }
-                */
-
-                // There is a mismatch between the parent symbols of the current class symbol and
-                // the interfaces in the cnode: interfaces are minimized by erasure.minimizeParents.
-                // The first condition here makes sure to only consider interfaces that are actually
-                // listed as direct parents.
-                cnode.interfaces.contains(classBTypeFromSymbol(parent).internalName) &&
-                  parent.info.member(method.name) == method &&
-                  isMaximallySpecific
+                noConflictingAncestor(parent.parentSymbols)
               }
 
-              // `.tail` drops the superclass, we are looking for an interface
-              claszSymbol.parentSymbols.tail.find(isValidInvokespecialReceiver).getOrElse(methodOwner)
+              /*
+              log.append(s":${parent.javaClassName}")
+              if (!cnode.interfaces.contains(classBTypeFromSymbol(parent).internalName))
+                log.append(s":not a parent (minimizeParents)")
+              else {
+                val m = parent.info.member(method.name)
+                if (m == NoSymbol) log.append(s":no method")
+                else if (m != method) log.append(s":different method, defined in ${m.owner.javaClassName}")
+              }
+              */
+
+              // There is a mismatch between the parent symbols of the current class symbol and
+              // the interfaces in the cnode: interfaces are minimized by erasure.minimizeParents.
+              // The first condition here makes sure to only consider interfaces that are actually
+              // listed as direct parents.
+              cnode.interfaces.contains(classBTypeFromSymbol(parent).internalName) &&
+                parent.info.member(method.name) == method &&
+                isMaximallySpecific
             }
 
-          val receiverBType = classBTypeFromSymbol(receiverClass)
-          val receiverName = receiverBType.internalName
-          if (receiverClass.isTraitOrInterface && !cnode.interfaces.contains(receiverName)) {
-            /*
-            val parentWasThere = if (claszSymbol.parentSymbols.contains(receiverClass)) " (removed by minimizeParents)" else ""
-            val superAcc = if (methSymbol.name.toString contains "super$") " (super accessor)" else ""
-            val jlo = if (isCommonJLOMethod) " (JLO method)" else ""
-            println(s"${claszSymbol.javaClassName}:${methodOwner.javaClassName}:${methSymbol.name}:add parent$parentWasThere$superAcc$jlo:${receiverClass.javaClassName}${log.toString}")
-            */
-            cnode.interfaces.add(receiverName)
+            // `.tail` drops the superclass, we are looking for an interface
+            claszSymbol.parentSymbols.tail.find(isValidInvokespecialReceiver).getOrElse(methodOwner)
           }
-          /* else if (receiverClass != methodOwner) {
-            println(s"${claszSymbol.javaClassName}:${methodOwner.javaClassName}:${methSymbol.name}:rewrite receiver:${receiverClass.javaClassName}")
-          } */
 
-          bc.invokespecial(receiverName, jname, mdescr, receiverBType.isInterface.get, pos)
-        }
+        val receiverBType = classBTypeFromSymbol(receiverClass)
+        val receiverName = receiverBType.internalName
+        if (receiverClass.isTraitOrInterface && !cnode.interfaces.contains(receiverName)) {
+          /*
+          val parentWasThere = if (claszSymbol.parentSymbols.contains(receiverClass)) " (removed by minimizeParents)" else ""
+          val superAcc = if (methSymbol.name.toString contains "super$") " (super accessor)" else ""
+          val jlo = if (isCommonJLOMethod) " (JLO method)" else ""
+          println(s"${claszSymbol.javaClassName}:${methodOwner.javaClassName}:${methSymbol.name}:add parent$parentWasThere$superAcc$jlo:${receiverClass.javaClassName}${log.toString}")
+          */
+          cnode.interfaces.add(receiverName)
+        } /* else if (receiverClass != methodOwner) {
+          println(s"${claszSymbol.javaClassName}:${methodOwner.javaClassName}:${methSymbol.name}:rewrite receiver:${receiverClass.javaClassName}")
+        } */
+
+        bc.invokespecial(receiverName, jname, mdescr, receiverBType.isInterface.get, pos)
       } else {
         // the class used in the invocation's method descriptor in the classfile
         val receiverClass = {

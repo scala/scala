@@ -555,7 +555,8 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
     // Assign `rhs` to class field / trait setter `assignSym`
     def mkAssign(assignSym: Symbol, rhs: Tree): Tree =
       localTyper.typedPos(assignSym.pos) {
-        val qual = Select(This(clazz), assignSym)
+        val self = if (clazz.isTrait) Ident(primaryConstrParams.head) else This(clazz)
+        val qual = Select(self, assignSym)
         if (assignSym.isSetter) Apply(qual, List(rhs))
         else Assign(qual, rhs)
       }
@@ -752,10 +753,15 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
       // Assemble final constructor
       val primaryConstructor = deriveDefDef(primaryConstr)(_ => {
-        treeCopy.Block(
+        val rhs = treeCopy.Block(
           primaryConstrBody,
           paramInits ::: constructorPrefix ::: uptoSuperStats ::: guardSpecializedInitializer(remainingConstrStatsDelayedInit),
           primaryConstrBody.expr)
+
+        if (clazz.isTrait) {
+          val selfParm = primaryConstrParams.head
+          rhs.substituteThis(clazz, gen.mkAttributedIdent(selfParm))
+        } else rhs
       })
 
       if (omittableAccessor.exists(_.isOuterField) && !constructorStats.exists(_.exists { case i: Ident if i.symbol.isOuterParam => true; case _ => false}))

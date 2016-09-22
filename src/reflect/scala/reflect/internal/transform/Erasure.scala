@@ -387,10 +387,33 @@ trait Erasure {
       // since the erasure type map gets applied to every symbol, we have to catch the
       // symbol here
       tp
+    } else if (sym.isMixinConstructor) {
+      // it's generally not a good idea to set a flag in an info transformer, as the effect is only
+      // performed once the info is forced after the transformer's phase. flags should really be
+      // part of the phase-indexed info.
+      // in the particular case, i verified that we only check the flag after `.info` is called
+      // (in erasure's tree transform, generating the static DefDef, running afterErasure; also in
+      // constructors).
+      sym.setFlag(Flags.STATIC)
+      specialErasure(sym)(staticMethodType(sym))
     } else {
       // TODO OPT: altogether, there are 9 symbols that we special-case.
       // Could we get to the common case more quickly by looking them up in a set?
       specialErasure(sym)(tp)
+    }
+  }
+
+  /**
+   * A method type derived from `method`s type with an additional `self` parameter at the head of
+   * the parameter list.
+   *
+   * Note: the type assigned to the `self` parameter is erased.
+   */
+  def staticMethodType(method: Symbol): Type = {
+    // the argument type is erased, but we don't assert(phase.erasedTypes), as it's not true during erasure itself
+    val selfParamSym = method.newSyntheticValueParam(method.owner.typeConstructor, nme.SELF).setFlag(Flags.ARTIFACT)
+    method.info match {
+      case mt @ MethodType(params, res) => copyMethodType(mt, selfParamSym :: params, res)
     }
   }
 }
