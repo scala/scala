@@ -1117,6 +1117,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           val jlo = if (isCommonJLOMethod) " (JLO method)" else ""
           println(s"${claszSymbol.javaClassName}:${methodOwner.javaClassName}:${methSymbol.name}:add parent$parentWasThere$superAcc$jlo:${receiverClass.javaClassName}${log.toString}")
           */
+          thisBType.info.get.inlineInfo.lateInterfaces += receiverName
           cnode.interfaces.add(receiverName)
         } /* else if (receiverClass != methodOwner) {
           println(s"${claszSymbol.javaClassName}:${methodOwner.javaClassName}:${methSymbol.name}:rewrite receiver:${receiverClass.javaClassName}")

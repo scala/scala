@@ -83,9 +83,7 @@ class BTypesFromClassfileTest extends BytecodeTesting {
     sameBType(fromSymbol, fromClassfile)
   }
 
-  // Can be enabled when using 2.12.0-M5 as starr. This test works under a full boostrap, but not
-  // when compiled with M4.
-  @Test @Ignore
+  @Test
   def compareClassBTypes(): Unit = {
     // Note that not only these classes are tested, but also all their parents and all nested
     // classes in their InnerClass attributes.
