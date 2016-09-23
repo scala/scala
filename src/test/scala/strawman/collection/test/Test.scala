@@ -1,11 +1,10 @@
-package strawman.collections.test
+package strawman.collection.test
 
 import scala.Predef.{augmentString => _, booleanArrayOps => _, genericArrayOps => _, genericWrapArray => _, intArrayOps => _, refArrayOps => _, wrapBooleanArray => _, wrapIntArray => _, wrapRefArray => _, wrapString => _, _}
-import strawman.collections._
-import CollectionStrawMan6._
+import strawman.collection._
 import org.junit.Test
 
-class Strawman6Test {
+class StrawmanTest {
 
   def seqOps(xs: Seq[Int]): Unit = {
     val x1 = xs.foldLeft("")(_ + _)
@@ -161,7 +160,6 @@ class Strawman6Test {
   }
 
   def arrayOps(xs: Array[Int]): Unit = {
-    import CollectionStrawMan6.ArrayOps
     val x1 = xs.foldLeft("")(_ + _)
     val y1: String = x1
     val x2 = xs.foldRight("")(_ + _)
