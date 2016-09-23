@@ -143,7 +143,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     rawatt = initPos
 
     val id = nextId() // identity displayed when -uniqid
-    //assert(id != 3390, initName)
+    // dump a stack trace if this id is being traced
+    if (settings.Ytraceidsdebug.value.contains(id)) {
+      println(s"Created symbol ${initName }#${id} with initial owner ${initOwner} and position ${initPos}")
+      java.lang.Thread.dumpStack();
+    }
 
     private[this] var _validTo: Period = NoPeriod
 

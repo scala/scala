@@ -197,6 +197,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Yposdebug               = BooleanSetting("-Ypos-debug", "Trace position validation.")
   val Yreifydebug             = BooleanSetting("-Yreify-debug", "Trace reification.")
   val Yrepldebug              = BooleanSetting("-Yrepl-debug", "Trace all repl activity.") andThen (interpreter.replProps.debug setValue _)
+  val Ytraceidsdebug          = MultiIntSetting("-Ytraceids-debug", "id(s)", "Print a stack trace at the creation point of identifiers with the given unique id(s) (see also -uniqid)")
   val Ytyperdebug             = BooleanSetting("-Ytyper-debug", "Trace all type assignments.")
   val Ypatmatdebug            = BooleanSetting("-Ypatmat-debug", "Trace pattern matching translation.")
 

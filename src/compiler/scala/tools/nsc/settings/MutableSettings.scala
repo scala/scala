@@ -218,6 +218,7 @@ class MutableSettings(val errorFn: String => Unit)
     add(new ChoiceSetting(name, helpArg, descr, choices, default))
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) = add(new IntSetting(name, descr, default, range, parser))
   def MultiStringSetting(name: String, arg: String, descr: String) = add(new MultiStringSetting(name, arg, descr))
+  def MultiIntSetting(name: String, arg: String, descr: String) = add(new MultiIntSetting(name, arg, descr))
   def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
   def StringSetting(name: String, arg: String, descr: String, default: String) = add(new StringSetting(name, arg, descr, default))
@@ -547,20 +548,25 @@ class MutableSettings(val errorFn: String => Unit)
       }
   }
 
-  /** A setting that accumulates all strings supplied to it,
-   *  until it encounters one starting with a '-'. */
-  class MultiStringSetting private[nsc](
+  /** Base class for a setting that accumulates all Xs supplied to it,
+   *  until it encounters one starting with a '-'. This class takes care of
+   *  breaking up the arguments into pieces, but subclasses need to specify
+   *  a parsing function to apply to each argument */
+  abstract class MultiSetting[X] private[nsc](
     name: String,
     val arg: String,
-    descr: String)
-  extends Setting(name, descr) {
-    type T = List[String]
+    descr: String) extends Setting(name, descr) {
+    
+    type T = List[X]
+    
+    // function used to transform an individual argument into an X
+    def parseFunction : String => X
+    
     protected var v: T = Nil
-    def appendToValue(str: String) { value ++= List(str) }
-
+    
     def tryToSet(args: List[String]) = {
       val (strings, rest) = args span (x => !x.startsWith("-"))
-      strings foreach appendToValue
+      value ++= (strings map parseFunction)
 
       Some(rest)
     }
@@ -569,6 +575,27 @@ class MutableSettings(val errorFn: String => Unit)
     def unparse: List[String] = value map (name + ":" + _)
 
     withHelpSyntax(name + ":<" + arg + ">")
+  }
+    
+  /** A setting that accumulates all strings supplied to it,
+   *  until it encounters one starting with a '-'. */
+  class MultiStringSetting private[nsc](
+    name: String,
+    arg: String,
+    descr: String)
+  extends MultiSetting[String](name, arg, descr) {
+    def parseFunction = identity
+  }
+
+  /** A setting that accumulates all ints supplied to it,
+   *  until it encounters one starting with a '-'. Because '-' is special
+   *  negative ints must be represented using '~', e.g. ~12 is -12*/
+  class MultiIntSetting private[nsc](
+    name: String,
+    arg: String,
+    descr: String)
+  extends MultiSetting[Int](name, arg, descr) {    
+    def parseFunction = _.replace('~', '-').toInt
   }
 
   /** A setting represented by a string in a given set of `choices`,

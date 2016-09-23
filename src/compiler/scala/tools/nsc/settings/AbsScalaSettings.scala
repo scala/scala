@@ -14,6 +14,7 @@ trait AbsScalaSettings {
   type BooleanSetting     <: Setting { type T = Boolean }
   type ChoiceSetting      <: Setting { type T = String }
   type IntSetting         <: Setting { type T = Int }
+  type MultiIntSetting    <: Setting { type T = List[Int] }
   type MultiStringSetting <: Setting { type T = List[String] }
   type PathSetting        <: Setting { type T = String }
   type PhasesSetting      <: Setting { type T = List[String] }
@@ -26,6 +27,7 @@ trait AbsScalaSettings {
   def BooleanSetting(name: String, descr: String): BooleanSetting
   def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String): ChoiceSetting
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]): IntSetting
+  def MultiIntSetting(name: String, helpArg: String, descr: String): MultiIntSetting
   def MultiStringSetting(name: String, helpArg: String, descr: String): MultiStringSetting
   def OutputSetting(outputDirs: OutputDirs, default: String): OutputSetting
   def PathSetting(name: String, descr: String, default: String): PathSetting

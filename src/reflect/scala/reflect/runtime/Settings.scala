@@ -23,6 +23,12 @@ private[reflect] class Settings extends MutableSettings {
     override def value: Int = v
   }
 
+  class MultiIntSetting(xs: List[Int]) extends Setting {
+    type T = List[Int]
+    protected var v: List[Int] = xs
+    override def value: List[Int] = v
+  }
+
   class MultiStringSetting(xs: List[String]) extends Setting {
     type T = List[String]
     protected var v: List[String] = xs
@@ -42,6 +48,7 @@ private[reflect] class Settings extends MutableSettings {
   val overrideObjects   = new BooleanSetting(false)
   val printtypes        = new BooleanSetting(false)
   val uniqid            = new BooleanSetting(false)
+  val Ytraceidsdebug    = new MultiIntSetting(Nil)
   val verbose           = new BooleanSetting(false)
 
   val Yrecursion        = new IntSetting(0)
