@@ -613,7 +613,10 @@ trait Scanners extends ScannersCommon {
       if (ch == '`') {
         nextChar()
         finishNamed(BACKQUOTED_IDENT)
-        if (name.length == 0) syntaxError("empty quoted identifier")
+        if (name.length == 0)
+          syntaxError("empty quoted identifier")
+        else if (name == nme.WILDCARD)
+          syntaxError("wildcard invalid as backquoted identifier")
       }
       else syntaxError("unclosed quoted identifier")
     }
