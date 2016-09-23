@@ -4,10 +4,6 @@ import Predef.{augmentString => _, wrapString => _, _}
 import scala.reflect.ClassTag
 
 package object collection extends LowPriority {
-  type IndexedSeq[+A] = Seq[A] {
-    def view: IndexedView[A]
-  }
-
   // ------------------ Decorators to add collection ops to existing types -----------------------
 
   /** Decorator to add collection operations to strings.

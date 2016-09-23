@@ -149,6 +149,13 @@ trait LinearSeq[+A] extends Seq[A] with LinearSeqLike[A, LinearSeq] { self =>
   }
 }
 
+trait IndexedSeq[+A] extends Seq[A] { self =>
+  override def view: IndexedView[A] = new IndexedView[A] {
+    def length: Int = self.length
+    def apply(i: Int): A = self(i)
+  }
+}
+
 /** Base trait for strict collections that can be built using a builder.
  *  @param  A    the element type of the collection
  *  @param Repr  the type of the underlying collection
