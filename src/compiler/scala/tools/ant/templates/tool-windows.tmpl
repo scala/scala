@@ -128,8 +128,29 @@ if not "%_LINE_TOOLCP%"=="" call :add_cpath "%_LINE_TOOLCP%"
 
 set _PROPS=-Dscala.home="!_SCALA_HOME!" -Denv.emacs="%EMACS%" -Dscala.usejavacp=true @properties@
 
-rem echo "%_JAVACMD%" %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %*
-"%_JAVACMD%" %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %*
+rem break out -D and -J options and add them to JAVA_OPTS as well
+rem so they reach the underlying JVM in time to do some good.  The
+rem -D options will be available as system properties.
+rem use nextTok to handle = and " chars
+set text=%*
+set java_args=
+setlocal EnableDelayedExpansion
+:start
+call:nextTok token text
+if "!token!" == "'" (goto :main)
+if "!token:~0,3!" == "'-D" (
+  set "java_args=!java_args! !token:~1!"
+)
+if "!token:~0,3!" == "'-J" (
+  set "java_args=!java_args! !token:~3!"
+)
+goto :start
+:main
+
+rem echo "%_JAVACMD%" %_JAVA_OPTS% %_PROPS% !java_args! -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %*
+"%_JAVACMD%" %_JAVA_OPTS% %_PROPS% !java_args! -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %*
+endlocal
+
 goto end
 
 rem ##########################################################################
@@ -151,6 +172,45 @@ rem set _SCALA_HOME=%~dps0..
   for %%i in (%~sf0) do set _BIN_DIR=%_BIN_DIR%%%~dpsi
   set _SCALA_HOME=%_BIN_DIR%..
 goto :eof
+
+rem parse command line arguments that can contain -Dprop="some text"
+rem usage: call:nextTok varName1 varName2
+
+:nextTok
+rem %~1 var name which receives the token, prefixed with '
+rem %~2 var name which receives the remaining text
+rem SHIFT was not used as it treats = as a delimiter
+rem unable to find a solution based on FOR
+SETLOCAL EnableDelayedExpansion
+set varText=%~2
+set text=!%varText%!__END
+set /a inQuote=0
+set /a dropWS=1
+set /a escapeNext=0
+set acc=0
+
+:nextTokTestEnd
+if "!text!" == "__END" goto nextTokEnd
+rem due to possible escape error we verify we are not going into endless loop
+if "1!text!" == "1" goto nextTokEnd
+set char=!text:~0,1!
+set text=!text:~1!
+if "!char!" == " " (set /a isSpace=1) else (set /a isSpace=0)
+if "%char:"=%" == "" (if %escapeNext% == 0 (set /a inQuote="1-%inQuote%"))
+if %dropWS% == 1 (if %isSpace% == 1 goto nextTokTestEnd)
+if %dropWS% == 1 (if %isSpace% == 0 set /a dropWS=0)
+if "!acc!" == "0" (set /a done=0) else (set /a done="%isSpace%&(1-%inQuote%)")
+if %done% == 1 goto nextTokEnd
+set acc=%acc%%char%
+if "!char!" == "\" (set /a escapeNext="1-%escapeNext%") else (set /a escapeNext=0)
+goto nextTokTestEnd
+
+:nextTokEnd
+(ENDLOCAL
+  set %~1='%acc:~1%
+  set %~2=%text:~0,-5%
+)
+goto:eof
 
 :end
 @@endlocal
