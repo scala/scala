@@ -22,7 +22,7 @@ import symtab.Flags._
   * in the first (closest in the subclassing lattice) subclass (not a trait) of a trait.
   *
   * For lazy vals and modules, we emit accessors that using double-checked locking (DCL) to balance thread safety
-  * and performance. A lazy val gets a compute method for the DCL's slow path, for a module it's all done in the accessor.
+  * and performance. For both lazy vals and modules, the a compute method contains the DCL's slow path.
   *
   * Local lazy vals do not receive bitmaps, but use a Lazy*Holder that has the volatile init bit and the computed value.
   * See `mkLazyLocalDef`.
@@ -236,7 +236,9 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       *
       * TODO: optimize using local variable?
       */
-    Block(If(needsInit, gen.mkSynchronized(monitorHolder)(If(needsInit, init, EmptyTree)), EmptyTree) :: Nil, moduleVarRef)
+    val computeName = nme.newLazyValSlowComputeName(module.name)
+    val computeMethod = DefDef(NoMods, computeName, Nil, ListOfNil, TypeTree(UnitTpe), gen.mkSynchronized(monitorHolder)(If(needsInit, init, EmptyTree)))
+    Block(computeMethod :: If(needsInit, Apply(Ident(computeName), Nil), EmptyTree) :: Nil, moduleVarRef)
   }
 
   // NoSymbol for lazy accessor sym with unit result type
@@ -694,7 +696,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
         // drop the val for (a) constant (pure & not-stored) and (b) not-stored (but still effectful) fields
         case ValDef(mods, _, _, rhs) if (rhs ne EmptyTree) && !excludedAccessorOrFieldByFlags(statSym)
-                                        && fieldMemoizationIn(statSym, currOwner).constantTyped =>
+                                        && currOwner.isClass && fieldMemoizationIn(statSym, currOwner).constantTyped =>
           EmptyThicket
 
         case ModuleDef(_, _, impl) =>
@@ -721,7 +723,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val addedStats =
-        if (!currentOwner.isClass) Nil // TODO: || currentOwner.isPackageClass
+        if (!currentOwner.isClass || currentOwner.isPackageClass) Nil
         else afterOwnPhase { fieldsAndAccessors(currentOwner) }
 
       val inRealClass = currentOwner.isClass && !(currentOwner.isPackageClass || currentOwner.isTrait)

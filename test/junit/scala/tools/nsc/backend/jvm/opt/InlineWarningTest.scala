@@ -198,7 +198,9 @@ class InlineWarningTest extends BytecodeTesting {
         |Note that class A is defined in a Java source (mixed compilation), no bytecode is available.""".stripMargin
     )
     var c = 0
-    compileClasses(sCode, javaCode = List((jCode, "A.java")), allowMessage = i => { c += 1; warns.exists(i.msg.contains)})
+    compileClasses(sCode, javaCode = List((jCode, "A.java")), allowMessage = i => { c += 1;
+      warns.exists(i.msg.contains)
+    })
     assert(c == 2)
   }
 }
