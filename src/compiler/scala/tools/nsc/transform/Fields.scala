@@ -305,7 +305,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       lazyCallingSuper setInfo tp
     }
 
-    private def needsMixin(cls: Symbol): Boolean = {
+    private def classNeedsInfoTransform(cls: Symbol): Boolean = {
       !(cls.isPackageClass || cls.isJavaDefined) && (currentRun.compiles(cls) || refChecks.isSeparatelyCompiledScalaSuperclass(cls))
     }
 
@@ -365,7 +365,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         } else tp
 
 
-      case tp@ClassInfoType(parents, oldDecls, clazz) if !needsMixin(clazz) => tp
+      case tp@ClassInfoType(parents, oldDecls, clazz) if !classNeedsInfoTransform(clazz) => tp
 
       // mix in fields & accessors for all mixed in traits
       case tp@ClassInfoType(parents, oldDecls, clazz) =>

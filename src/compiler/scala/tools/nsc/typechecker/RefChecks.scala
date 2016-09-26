@@ -96,7 +96,13 @@ abstract class RefChecks extends Transform {
   }
 
   private val separatelyCompiledScalaSuperclass = perRunCaches.newAnyRefMap[Symbol, Unit]()
-  final def isSeparatelyCompiledScalaSuperclass(sym: Symbol) = separatelyCompiledScalaSuperclass.contains(sym)
+  final def isSeparatelyCompiledScalaSuperclass(sym: Symbol) = if (globalPhase.refChecked){
+    separatelyCompiledScalaSuperclass.contains(sym)
+  } else {
+    // conservative approximation in case someone in pre-refchecks phase asks for `exitingFields(someClass.info)`
+    // and we haven't run the refchecks tree transform which populates `separatelyCompiledScalaSuperclass`
+    false
+  }
 
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
 
