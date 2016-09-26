@@ -114,7 +114,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     if (classSym == NothingClass) srNothingRef
     else if (classSym == NullClass) srNullRef
     else {
-      val internalName = classSym.javaBinaryName.toString
+      val internalName = classSym.javaBinaryNameString
       classBTypeFromInternalName.getOrElse(internalName, {
         // The new ClassBType is added to the map in its constructor, before we set its info. This
         // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
@@ -625,7 +625,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
    */
   def mirrorClassClassBType(moduleClassSym: Symbol): ClassBType = {
     assert(isTopLevelModuleClass(moduleClassSym), s"not a top-level module class: $moduleClassSym")
-    val internalName = moduleClassSym.javaBinaryName.dropModule.toString
+    val internalName = moduleClassSym.javaBinaryNameString.stripSuffix(nme.MODULE_SUFFIX_STRING)
     classBTypeFromInternalName.getOrElse(internalName, {
       val c = ClassBType(internalName)
       // class info consistent with BCodeHelpers.genMirrorClass
@@ -642,7 +642,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   }
 
   def beanInfoClassClassBType(mainClass: Symbol): ClassBType = {
-    val internalName = mainClass.javaBinaryName.toString + "BeanInfo"
+    val internalName = mainClass.javaBinaryNameString + "BeanInfo"
     classBTypeFromInternalName.getOrElse(internalName, {
       val c = ClassBType(internalName)
       c.info = Right(ClassInfo(
