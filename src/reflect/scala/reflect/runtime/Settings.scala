@@ -14,6 +14,7 @@ private[reflect] class Settings extends MutableSettings {
 
   class BooleanSetting(x: Boolean) extends Setting {
     type T = Boolean
+    def boolValue = x
     protected var v: Boolean = x
     override def value: Boolean = v
   }

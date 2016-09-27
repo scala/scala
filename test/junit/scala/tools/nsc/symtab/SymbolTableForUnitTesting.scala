@@ -82,8 +82,14 @@ class SymbolTableForUnitTesting extends SymbolTable {
     protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = println(msg)
   }
 
+  class PerRunSettings extends PerRunSettingsBase {
+    def isScala211: Boolean = true
+    def isScala212: Boolean = true
+  }
+  protected def PerRunSettings: PerRunSettings = new PerRunSettings
+
   // minimal Run to get Reporting wired
-  def currentRun = new RunReporting {}
+  def currentRun = new RunReporting with RunSettings {}
   class PerRunReporting extends PerRunReportingBase {
     def deprecationWarning(pos: Position, msg: String, since: String): Unit = reporter.warning(pos, msg)
   }
