@@ -4507,15 +4507,30 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val opeqStart = if (Statistics.canEnable) Statistics.startTimer(failedOpEqNanos) else null
 
         def onError(reportError: => Tree): Tree = fun match {
-          case Select(qual, name) if !mode.inPatternMode && nme.isOpAssignmentName(newTermName(name.decode)) =>
+          case Select(qual, name) if !mode.inPatternMode && nme.isOpAssignmentName(TermName(name.decode)) =>
             val qual1 = typedQualifier(qual)
             if (treeInfo.isVariableOrGetter(qual1)) {
               if (Statistics.canEnable) Statistics.stopTimer(failedOpEqNanos, opeqStart)
-              convertToAssignment(fun, qual1, name, args)
+              val erred = qual1.isErroneous || args.exists(_.isErroneous)
+              if (erred) reportError else {
+                val convo = convertToAssignment(fun, qual1, name, args)
+                silent(op = _.typed1(convo, mode, pt)) match {
+                  case SilentResultValue(t) => t
+                  case err: SilentTypeError =>
+                    val t = reportError
+                    context.reporter.echo("Expression does not convert to assignment because:")
+                    err.errors foreach (e => context.reporter.echo(s" -- ${e.errMsg}"))
+                    t
+                }
+              }
             }
             else {
               if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
-                reportError
+              val t = reportError
+              val Apply(Select(qual2, _), args2) = t
+              if (!qual2.isErroneous && !args2.exists(_.isErroneous))
+                context.reporter.echo("Expression does not convert to assignment because receiver is not assignable.")
+              t
             }
           case _ =>
             if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
@@ -4545,12 +4560,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             else
               doTypedApply(tree, fun2, args, mode, pt)
           case err: SilentTypeError =>
-            onError({
+            onError {
               err.reportableErrors foreach context.issue
               err.warnings foreach { case (p, m) => context.warning(p, m) }
               args foreach (arg => typed(arg, mode, ErrorType))
               setError(tree)
-            })
+            }
         }
       }
 
@@ -4593,7 +4608,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               Select(vble.duplicate, prefix) setPos fun.pos.focus, args) setPos tree.pos.makeTransparent
           ) setPos tree.pos
 
-        def mkUpdate(table: Tree, indices: List[Tree]) = {
+        def mkUpdate(table: Tree, indices: List[Tree]) =
           gen.evalOnceAll(table :: indices, context.owner, context.unit) {
             case tab :: is =>
               def mkCall(name: Name, extraArgs: Tree*) = (
@@ -4608,9 +4623,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               )
             case _ => EmptyTree
           }
-        }
 
-        val tree1 = qual match {
+        val assignment = qual match {
           case Ident(_) =>
             mkAssign(qual)
 
@@ -4626,7 +4640,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case _  => UnexpectedTreeAssignmentConversionError(qual)
             }
         }
-        typed1(tree1, mode, pt)
+        assignment
       }
 
       def typedSuper(tree: Super) = {

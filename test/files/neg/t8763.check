@@ -1,0 +1,6 @@
+t8763.scala:9: error: type mismatch;
+ found   : Char
+ required: String
+    names_times(fields(0)) += fields(1).toLong
+                      ^
+one error found
