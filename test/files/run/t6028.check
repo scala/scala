@@ -38,7 +38,7 @@ package <empty> {
       <synthetic> <paramaccessor> private[this] val methodLocal$1: Int = _
     };
     abstract trait MethodLocalTrait$1 extends Object {
-      def /*MethodLocalTrait$1*/$init$(barParam$1: Int): Unit = {
+      <static> def /*MethodLocalTrait$1*/$init$($this: T#MethodLocalTrait$1, barParam$1: Int): Unit = {
         ()
       };
       scala.Predef.print(scala.Int.box(barParam$1));
@@ -47,7 +47,7 @@ package <empty> {
     object MethodLocalObject$2 extends Object with T#MethodLocalTrait$1 {
       def <init>($outer: T, barParam$1: Int): T#MethodLocalObject$2.type = {
         MethodLocalObject$2.super.<init>();
-        MethodLocalObject$2.super./*MethodLocalTrait$1*/$init$(barParam$1);
+        MethodLocalTrait$1.this./*MethodLocalTrait$1*/$init$(MethodLocalObject$2.this, barParam$1);
         ()
       };
       <synthetic> <paramaccessor> <artifact> private[this] val $outer: T = _;

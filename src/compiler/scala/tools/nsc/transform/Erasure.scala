@@ -189,8 +189,8 @@ abstract class Erasure extends InfoTransform
 
   /* Drop redundant types (ones which are implemented by some other parent) from the immediate parents.
    * This is important on Android because there is otherwise an interface explosion.
-   * This is now restricted to Scala defined ancestors: a Java defined ancestor may need to be listed
-   * as an immediate parent to support an `invokespecial`.
+   * Redundant interfaces also have a negative impact on class loading time:
+   * https://github.com/scala/scala-dev/issues/98#issuecomment-194602923
    */
   def minimizeParents(parents: List[Type]): List[Type] = if (parents.isEmpty) parents else {
     def isRedundantParent(sym: Symbol) = sym.isInterface || sym.isTrait
@@ -199,13 +199,10 @@ abstract class Erasure extends InfoTransform
     var leaves = collection.mutable.ListBuffer.empty[Type] += parents.head
     while(rest.nonEmpty) {
       val candidate = rest.head
-      if (candidate.typeSymbol.isJavaDefined && candidate.typeSymbol.isInterface) leaves += candidate
-      else {
-        val nonLeaf = leaves exists { t => t.typeSymbol isSubClass candidate.typeSymbol }
-        if (!nonLeaf) {
-          leaves = leaves filterNot { t => isRedundantParent(t.typeSymbol) && (candidate.typeSymbol isSubClass t.typeSymbol) }
-          leaves += candidate
-        }
+      val nonLeaf = leaves exists { t => t.typeSymbol isSubClass candidate.typeSymbol }
+      if (!nonLeaf) {
+        leaves = leaves filterNot { t => isRedundantParent(t.typeSymbol) && (candidate.typeSymbol isSubClass t.typeSymbol) }
+        leaves += candidate
       }
       rest = rest.tail
     }
@@ -392,7 +389,7 @@ abstract class Erasure extends InfoTransform
       */
     private def addMixinConstructorCalls(tree: Tree, clazz: Symbol): Tree = {
       def mixinConstructorCall(mc: Symbol): Tree = atPos(tree.pos) {
-        Apply(SuperSelect(clazz, mc.primaryConstructor), Nil)
+        Apply(gen.mkAttributedRef(mc.primaryConstructor), List(This(clazz)))
       }
       val mixinConstructorCalls: List[Tree] = {
         for (mc <- clazz.mixinClasses.reverse
@@ -419,6 +416,8 @@ abstract class Erasure extends InfoTransform
     override def transform(tree: Tree): Tree = {
       val sym = tree.symbol
       val tree1 = tree match {
+        case dd: DefDef if sym.isMixinConstructor =>
+          gen.mkStatic(dd)
         case DefDef(_,_,_,_,_,_) if sym.isClassConstructor && sym.isPrimaryConstructor && sym.owner != ArrayClass =>
           deriveDefDef(tree)(addMixinConstructorCalls(_, sym.owner)) // (3)
         case Template(parents, self, body) =>

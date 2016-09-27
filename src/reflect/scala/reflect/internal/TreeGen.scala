@@ -931,4 +931,26 @@ abstract class TreeGen {
 
   def mkCast(tree: Tree, pt: Type): Tree =
     atPos(tree.pos)(mkAsInstanceOf(tree, pt, any = true, wrapInApply = false))
+
+  /**
+   * Create a new `DefDef` based on `orig` with an explicit self parameter.
+   *
+   * Details:
+   *   - Assumes erased types
+   *   - If `orig.symbol` is not static, the `STATIC` flag is set and the type is updated to include
+   *     a `self` parameter
+   *   - Recursive calls are not rewritten: we assume no recursive calls exists
+   */
+  final def mkStatic(orig: DefDef): DefDef = {
+    val sym = orig.symbol
+    assert(!sym.hasFlag(SYNCHRONIZED), sym.defString)
+    if (!sym.hasFlag(STATIC)) {
+      sym.setFlag(STATIC)
+      sym.updateInfo(erasure.staticMethodType(sym))
+    }
+    val selfParamSym = sym.info.params.head
+    val selfParam = ValDef(selfParamSym)
+    val rhs = orig.rhs.substituteThis(sym.owner, gen.mkAttributedIdent(selfParamSym)) // SD-186 intentionally leaving Ident($this) is unpositioned
+    treeCopy.DefDef(orig, orig.mods, orig.name, orig.tparams, (selfParam :: orig.vparamss.head) :: Nil, orig.tpt, rhs).setSymbol(sym)
+  }
 }

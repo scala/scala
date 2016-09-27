@@ -244,6 +244,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     val allParents = classParents ++ classSym.annotations.flatMap(newParentForAnnotation)
 
+    // Don't `minimizeParents` for java-defined classes: keeps their BTypes in synch with the
+    // classfile that javac produces (and saves unnecessary computation).
     val minimizedParents = if (classSym.isJavaDefined) allParents else erasure.minimizeParents(allParents)
     // We keep the superClass when computing minimizeParents to eliminate more interfaces.
     // Example: T can be eliminated from D
@@ -595,23 +597,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
             annotatedInline   = methodSym.hasAnnotation(ScalaInlineClass),
             annotatedNoInline = methodSym.hasAnnotation(ScalaNoInlineClass))
 
-          if (needsStaticImplMethod(methodSym)) {
-            val staticName = traitSuperAccessorName(methodSym).toString
-            val selfParam = methodSym.newSyntheticValueParam(methodSym.owner.typeConstructor, nme.SELF)
-            val staticMethodType = methodSym.info match {
-              case mt @ MethodType(params, res) => copyMethodType(mt, selfParam :: params, res)
-            }
-            val staticMethodSignature = staticName + methodBTypeFromMethodType(staticMethodType, isConstructor = false)
-            val staticMethodInfo = MethodInlineInfo(
-              effectivelyFinal  = true,
-              annotatedInline   = info.annotatedInline,
-              annotatedNoInline = info.annotatedNoInline)
-            if (methodSym.isMixinConstructor)
-              List((staticMethodSignature, staticMethodInfo))
-            else
-              List((signature, info), (staticMethodSignature, staticMethodInfo))
-          } else
-            List((signature, info))
+          List((signature, info))
         }
     }).toMap
 

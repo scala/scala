@@ -487,27 +487,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
         case ValDef(mods, name, tpt, rhs) => () // fields are added in `genPlainClass()`, via `addClassFields()`
 
-        case dd : DefDef =>
-          val sym = dd.symbol
-          if (needsStaticImplMethod(sym)) {
-            if (sym.isMixinConstructor) {
-              val statified = global.gen.mkStatic(dd, sym.name, _.cloneSymbol)
-              genDefDef(statified)
-            } else {
-              val forwarderDefDef = {
-                val dd1 = global.gen.mkStatic(deriveDefDef(dd)(_ => EmptyTree), traitSuperAccessorName(sym), _.cloneSymbol)
-                dd1.symbol.setFlag(Flags.ARTIFACT).resetFlag(Flags.OVERRIDE)
-                val selfParam :: realParams = dd1.vparamss.head.map(_.symbol)
-                deriveDefDef(dd1)(_ =>
-                  atPos(dd1.pos)(
-                    Apply(Select(global.gen.mkAttributedIdent(selfParam).setType(sym.owner.typeConstructor), dd.symbol),
-                    realParams.map(global.gen.mkAttributedIdent)).updateAttachment(UseInvokeSpecial))
-                )
-              }
-              genDefDef(forwarderDefDef)
-              genDefDef(dd)
-            }
-          } else genDefDef(dd)
+        case dd : DefDef => genDefDef(dd)
 
         case Template(_, _, body) => body foreach gen
 

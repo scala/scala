@@ -235,7 +235,8 @@ abstract class BTypes {
 
     val inlineInfo = inlineInfoFromClassfile(classNode)
 
-    val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(classBTypeFromParsedClassfile)(collection.breakOut)
+    val classfileInterfaces: List[ClassBType] = classNode.interfaces.asScala.map(classBTypeFromParsedClassfile)(collection.breakOut)
+    val interfaces = classfileInterfaces.filterNot(i => inlineInfo.lateInterfaces.contains(i.internalName))
 
     classBType.info = Right(ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo, inlineInfo))
     classBType
@@ -1045,8 +1046,10 @@ abstract class BTypes {
    * The type info for a class. Used for symboltable-independent subtype checks in the backend.
    *
    * @param superClass    The super class, not defined for class java/lang/Object.
-   * @param interfaces    All transitively implemented interfaces, except for those inherited
-   *                      through the superclass.
+   * @param interfaces    Interfaces directly implemented by this class.
+   *                      Note that during code generation, additional redundant (supertypes of
+   *                      existing parents) interfaces may be added to a class. These are recorded
+   *                      in the [[InlineInfo.lateInterfaces]] field.
    * @param flags         The java flags, obtained through `javaFlags`. Used also to derive
    *                      the flags for InnerClass entries.
    * @param nestedClasses Classes nested in this class. Those need to be added to the
@@ -1155,7 +1158,27 @@ object BTypes {
   final case class InlineInfo(isEffectivelyFinal: Boolean,
                               sam: Option[String],
                               methodInfos: Map[String, MethodInlineInfo],
-                              warning: Option[ClassInlineInfoWarning])
+                              warning: Option[ClassInlineInfoWarning]) {
+    /**
+     * A super call (invokespecial) to a default method T.m is only allowed if the interface T is
+     * a direct parent of the class. Super calls are introduced for example in Mixin when generating
+     * forwarder methods:
+     *
+     *   trait T { override def clone(): Object = "hi" }
+     *   trait U extends T
+     *   class C extends U
+     *
+     * The class C gets a forwarder that invokes T.clone(). During code generation the interface T
+     * is added as direct parent to class C. Note that T is not a (direct) parent in the frontend
+     * type of class C.
+     *
+     * All interfaces that are added to a class during code generation are added to this buffer and
+     * stored in the InlineInfo classfile attribute. This ensures that the ClassBTypes for a
+     * specific class is the same no matter if it's constructed from a Symbol or from a classfile.
+     * This is tested in BTypesFromClassfileTest.
+     */
+    val lateInterfaces: ListBuffer[InternalName] = ListBuffer.empty
+  }
 
   val EmptyInlineInfo = InlineInfo(false, None, Map.empty, None)
 

@@ -147,7 +147,7 @@ trait ScalaSettings extends AbsScalaSettings
 
   object mixinForwarderChoices {
     def isTruthy = XmixinForceForwarders.value == "true"
-    def isJunit = isTruthy || XmixinForceForwarders.value == "junit"
+    def isAtLeastJunit = isTruthy || XmixinForceForwarders.value == "junit"
   }
 
   // XML parsing options

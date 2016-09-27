@@ -139,7 +139,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
     // This attachment is used to instruct the backend about which methids in traits require
     // a static trait impl method. We remove this from the new symbol created for the method
     // mixed into the subclass.
-    member.removeAttachment[NeedStaticImpl.type]
     clazz.info.decls enter member setFlag MIXEDIN resetFlag JAVA_DEFAULTMETHOD
   }
   def cloneAndAddMember(mixinClass: Symbol, mixinMember: Symbol, clazz: Symbol): Symbol =
@@ -215,15 +214,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
           case NoSymbol =>
             val isMemberOfClazz = clazz.info.findMember(member.name, 0, 0L, stableOnly = false).alternatives.contains(member)
             if (isMemberOfClazz) {
-              def genForwarder(required: Boolean): Unit = {
-                val owner = member.owner
-                if (owner.isJavaDefined && owner.isInterface && !clazz.parentSymbols.contains(owner)) {
-                  val text = s"Unable to implement a mixin forwarder for $member in $clazz unless interface ${owner.name} is directly extended by $clazz."
-                  if (required) reporter.error(clazz.pos, text)
-                  else warning(clazz.pos, text)
-                } else
-                  cloneAndAddMixinMember(mixinClass, member).asInstanceOf[TermSymbol] setAlias member
-              }
 
               // `member` is a concrete method defined in `mixinClass`, which is a base class of
               // `clazz`, and the method is not overridden in `clazz`. A forwarder is needed if:
@@ -259,15 +249,13 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
               }
 
               def generateJUnitForwarder: Boolean = {
-                settings.mixinForwarderChoices.isJunit &&
+                settings.mixinForwarderChoices.isAtLeastJunit &&
                   member.annotations.nonEmpty &&
                   JUnitAnnotations.exists(annot => annot.exists && member.hasAnnotation(annot))
               }
 
-              if (existsCompetingMethod(clazz.baseClasses) || generateJUnitForwarder)
-                genForwarder(required = true)
-              else if (settings.mixinForwarderChoices.isTruthy)
-                genForwarder(required = false)
+              if (existsCompetingMethod(clazz.baseClasses) || generateJUnitForwarder || settings.mixinForwarderChoices.isTruthy)
+                cloneAndAddMixinMember(mixinClass, member).asInstanceOf[TermSymbol] setAlias member
             }
 
           case _        =>
@@ -476,11 +464,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
 
           // add all new definitions to current class or interface
           val statsWithNewDefs = addNewDefs(currentOwner, body)
-          statsWithNewDefs foreach {
-            case dd: DefDef if isTraitMethodRequiringStaticImpl(dd) =>
-              dd.symbol.updateAttachment(NeedStaticImpl)
-            case _ =>
-          }
           treeCopy.Template(tree, parents1, self, statsWithNewDefs)
 
         case Select(qual, name) if sym.owner.isTrait && !sym.isMethod =>
@@ -517,14 +500,4 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
       finally localTyper = saved
     }
   }
-
-  private def isTraitMethodRequiringStaticImpl(dd: DefDef): Boolean = {
-    val sym = dd.symbol
-    dd.rhs.nonEmpty &&
-      sym.owner.isTrait &&
-      !sym.isPrivate && // no need to put implementations of private methods into a static method
-      !sym.hasFlag(Flags.STATIC)
-  }
-
-  case object NeedStaticImpl extends PlainAttachment
 }
