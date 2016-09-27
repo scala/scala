@@ -160,7 +160,7 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
         <developers>
           <developer>
             <id>lamp</id>
-            <name>EPFL LAMP</name>
+            <name>LAMP/EPFL</name>
           </developer>
           <developer>
             <id>Lightbend</id>

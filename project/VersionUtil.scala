@@ -18,7 +18,7 @@ object VersionUtil {
   )
 
   lazy val generatePropertiesFileSettings = Seq[Setting[_]](
-    copyrightString := "Copyright 2002-2016, LAMP/EPFL",
+    copyrightString := "Copyright 2002-2016, LAMP/EPFL and Lightbend, Inc.",
     resourceGenerators in Compile += generateVersionPropertiesFile.map(file => Seq(file)).taskValue,
     generateVersionPropertiesFile := generateVersionPropertiesFileImpl.value
   )
