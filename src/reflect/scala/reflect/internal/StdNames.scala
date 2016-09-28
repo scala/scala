@@ -92,14 +92,15 @@ trait StdNames {
     def flattenedName(segments: Name*): NameType =
       compactify(segments mkString NAME_JOIN_STRING)
 
-    val NAME_JOIN_STRING: String              = NameTransformer.NAME_JOIN_STRING
-    val MODULE_SUFFIX_STRING: String          = NameTransformer.MODULE_SUFFIX_STRING
-    val LOCAL_SUFFIX_STRING: String           = NameTransformer.LOCAL_SUFFIX_STRING
-    val LAZY_LOCAL_SUFFIX_STRING: String      = NameTransformer.LAZY_LOCAL_SUFFIX_STRING
-
-    val TRAIT_SETTER_SEPARATOR_STRING: String = NameTransformer.TRAIT_SETTER_SEPARATOR_STRING
-
-    val SINGLETON_SUFFIX: String     = ".type"
+    // TODO: what is the purpose of all this duplication!?!?!
+    // I made these constants because we cannot change them without bumping our major version anyway.
+    final val NAME_JOIN_STRING                 = NameTransformer.NAME_JOIN_STRING
+    final val MODULE_SUFFIX_STRING             = NameTransformer.MODULE_SUFFIX_STRING
+    final val MODULE_VAR_SUFFIX_STRING         = NameTransformer.MODULE_VAR_SUFFIX_STRING
+    final val LOCAL_SUFFIX_STRING              = NameTransformer.LOCAL_SUFFIX_STRING
+    final val LAZY_LOCAL_SUFFIX_STRING         = NameTransformer.LAZY_LOCAL_SUFFIX_STRING
+    final val TRAIT_SETTER_SEPARATOR_STRING    = NameTransformer.TRAIT_SETTER_SEPARATOR_STRING
+    final val SINGLETON_SUFFIX                 = ".type"
 
     val ANON_CLASS_NAME: NameType              = "$anon"
     val DELAMBDAFY_LAMBDA_CLASS_NAME: NameType = "$lambda"
@@ -108,7 +109,7 @@ trait StdNames {
     val EMPTY_PACKAGE_NAME: NameType           = "<empty>"
     val IMPORT: NameType                       = "<import>"
     val MODULE_SUFFIX_NAME: NameType           = MODULE_SUFFIX_STRING
-    val MODULE_VAR_SUFFIX: NameType            = "$module"
+    val MODULE_VAR_SUFFIX: NameType            = MODULE_VAR_SUFFIX_STRING
     val PACKAGE: NameType                      = "package"
     val ROOT: NameType                         = "<root>"
     val SPECIALIZED_SUFFIX: NameType           = "$sp"
