@@ -73,9 +73,11 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
       /* ------ (4) exception-handler version of monitor-exit code.
        *            Reached upon abrupt termination of (2).
        *            Protected by whatever protects the whole synchronized expression.
+       *            null => "any" exception in bytecode, like we emit for finally.
+       *            Important not to use j/l/Throwable which dooms the method to a life of interpretation! (SD-233)
        * ------
        */
-      protect(startProtected, endProtected, currProgramPoint(), jlThrowableRef)
+      protect(startProtected, endProtected, currProgramPoint(), null)
       locals.load(monitor)
       emit(asm.Opcodes.MONITOREXIT)
       emit(asm.Opcodes.ATHROW)

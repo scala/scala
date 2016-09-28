@@ -337,7 +337,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
       bTypes.initializeCoreBTypes()
       bTypes.javaDefinedClasses.clear()
       bTypes.javaDefinedClasses ++= currentRun.symSource collect {
-        case (sym, _) if sym.isJavaDefined => sym.javaBinaryName.toString
+        case (sym, _) if sym.isJavaDefined => sym.javaBinaryNameString
       }
       Statistics.stopTimer(BackendStats.bcodeInitTimer, initStart)
 
