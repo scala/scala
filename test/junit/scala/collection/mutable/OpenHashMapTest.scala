@@ -1,13 +1,10 @@
 package scala.collection.mutable
 
-import org.junit.{Ignore, Test}
 import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.openjdk.jol.info.GraphLayout
-import org.openjdk.jol.info.GraphWalker
-import org.openjdk.jol.info.GraphVisitor
-import org.openjdk.jol.info.GraphPathRecord
+import org.openjdk.jol.info.{GraphPathRecord, GraphVisitor, GraphWalker}
 
 /** Tests for [[OpenHashMap]]. */
 @RunWith(classOf[JUnit4])
