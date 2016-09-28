@@ -527,7 +527,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
             super.transform(tree)
           else if (canBeSupplanted(tree.symbol))
             gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
-          else if (tree.symbol.outerSource == clazz)
+          else if (tree.symbol.outerSource == clazz && !isDelayedInitSubclass)
             gen.mkAttributedIdent(parameterNamed(nme.OUTER)) setPos tree.pos
           else
             super.transform(tree)
