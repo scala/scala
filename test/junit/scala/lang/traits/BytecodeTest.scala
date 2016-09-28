@@ -366,6 +366,18 @@ class BytecodeTest extends BytecodeTesting {
     val ins5 = getMethod(c5, "m").instructions
     assert(ins5 contains Invoke(INVOKESTATIC, "AS", "m$", "(LAS;)I", true), ins5.stringLines)
   }
+
+  @Test
+  def sd224(): Unit = {
+    val jCode = List("interface T { default int f() { return 1; } }" -> "T.java")
+    val code =
+      """trait U extends T
+        |class C extends U { def t = super.f }
+      """.stripMargin
+    val msg = "unable to emit super call unless interface T (which declares method f) is directly extended by class C"
+    val cls = compileClasses(code, jCode, allowMessage = _.msg contains msg)
+    assertEquals(cls, Nil)
+  }
 }
 
 object invocationReceiversTestCode {

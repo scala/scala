@@ -148,7 +148,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           absSym =>
             reporter.error(sel.pos, s"${sym.fullLocationString} cannot be directly accessed from $clazz because ${absSym.owner} redeclares it as abstract")
         }
-      } else if (mix != tpnme.EMPTY) {
+      } else {
         // SD-143: a call super[T].m that resolves to A.m cannot be translated to correct bytecode if
         //   - A is a class (not a trait / interface), but not the direct superclass. Invokespecial
         //     would select an overriding method in the direct superclass, rather than A.m.
@@ -162,7 +162,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           else hasClassOverride(member, subclass.superClass)
         }
         val owner = sym.owner
-        if (!owner.isTrait && owner != clazz.superClass && hasClassOverride(sym, clazz.superClass)) {
+        if (mix != tpnme.EMPTY && !owner.isTrait && owner != clazz.superClass && hasClassOverride(sym, clazz.superClass)) {
           reporter.error(sel.pos,
             s"cannot emit super call: the selected $sym is declared in $owner, which is not the direct superclass of $clazz.\n" +
             s"An unqualified super call (super.${sym.name}) would be allowed.")
