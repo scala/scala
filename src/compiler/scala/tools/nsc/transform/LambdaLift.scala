@@ -319,7 +319,14 @@ abstract class LambdaLift extends InfoTransform {
           else if (clazz.isStaticOwner) gen.mkAttributedQualifier(clazz.thisType)
           else outerValue match {
             case EmptyTree => prematureSelfReference()
-            case o         => outerPath(o, currentClass.outerClass, clazz)
+            case o         =>
+              val path = outerPath(o, currentClass.outerClass, clazz)
+              if (path.tpe <:< clazz.tpeHK) path
+              else {
+                // SI-9920 The outer accessor might have an erased type of the self type of a trait,
+                //         rather than the trait itself. Add a cast if necessary.
+                gen.mkAttributedCast(path, clazz.tpeHK)
+              }
           }
         }
 
