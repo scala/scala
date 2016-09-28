@@ -59,7 +59,7 @@ package <empty> {
     final <stable> private[this] def MethodLocalObject$1(barParam$1: Int, MethodLocalObject$module$1: runtime.VolatileObjectRef): T#MethodLocalObject$2.type = {
       if (MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type]().eq(null))
         T.this.MethodLocalObject$lzycompute$1(barParam$1, MethodLocalObject$module$1);
-      MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type]()
+      (MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type](): T#MethodLocalObject$2.type)
     };
     @SerialVersionUID(value = 0) final <synthetic> class $anonfun$tryy$1 extends scala.runtime.AbstractFunction0$mcV$sp with Serializable {
       def <init>($outer: T, tryyParam$1: Int, tryyLocal$1: runtime.IntRef): <$anon: Function0> = {

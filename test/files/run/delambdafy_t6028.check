@@ -47,7 +47,7 @@ package <empty> {
     final <stable> private[this] def MethodLocalObject$1(barParam$1: String, MethodLocalObject$module$1: runtime.VolatileObjectRef): T#MethodLocalObject$2.type = {
       if (MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type]().eq(null))
         T.this.MethodLocalObject$lzycompute$1(barParam$1, MethodLocalObject$module$1);
-      MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type]()
+      (MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type](): T#MethodLocalObject$2.type)
     };
     final <artifact> private[this] def $anonfun$tryy$1(tryyParam$1: String, tryyLocal$1: runtime.ObjectRef): Unit = try {
       tryyLocal$1.elem = tryyParam$1
