@@ -525,7 +525,8 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
     def mkTypedValDef(sym: Symbol, rhs: Tree = EmptyTree) = typedPos(sym.pos)(ValDef(sym, rhs)).asInstanceOf[ValDef]
 
     /**
-      * Desugar a local `lazy val x: Int = rhs` or a local object into
+      * Desugar a local `lazy val x: Int = rhs`
+      * or a local `object x { ...}` (the rhs will be instantiating the module's class) into:
       *
       * ```
       * val x$lzy = new scala.runtime.LazyInt()
@@ -538,22 +539,22 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       * ```
       *
       * The expansion is the same for local lazy vals and local objects,
-      * except for the name of the val ($lzy or
+      * except for the suffix of the underlying val's name ($lzy or $module)
       */
-    private def mkLazyLocalDef(lazyVal: Symbol, rhs: Tree): Tree = {
+    private def mkLazyLocalDef(lazySym: Symbol, rhs: Tree): Tree = {
       import CODE._
       import scala.reflect.{NameTransformer => nx}
-      val owner = lazyVal.owner
+      val owner = lazySym.owner
 
-      val lazyValType = lazyVal.tpe.resultType
+      val lazyValType = lazySym.tpe.resultType
       val refClass    = lazyHolders.getOrElse(lazyValType.typeSymbol, LazyRefClass)
       val isUnit      = refClass == LazyUnitClass
       val refTpe      = if (refClass != LazyRefClass) refClass.tpe else appliedType(refClass.typeConstructor, List(lazyValType))
 
-      val lazyName  = lazyVal.name.toTermName
-      val pos       = lazyVal.pos.focus
+      val lazyName  = lazySym.name.toTermName
+      val pos       = lazySym.pos.focus
 
-      val localLazyName = lazyName append (if (lazyVal.isModule) nx.MODULE_VAR_SUFFIX_STRING else nx.LAZY_LOCAL_SUFFIX_STRING)
+      val localLazyName = lazyName append (if (lazySym.isModule) nx.MODULE_VAR_SUFFIX_STRING else nx.LAZY_LOCAL_SUFFIX_STRING)
 
       // The lazy holder val need not be mutable, as we write to its field.
       // In fact, it MUST not be mutable to avoid capturing it as an ObjectRef in lambdalift
@@ -573,14 +574,14 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       val computerSym =
         owner.newMethod(lazyName append nme.LAZY_SLOW_SUFFIX, pos, ARTIFACT | PRIVATE) setInfo MethodType(Nil, lazyValType)
 
-      val rhsAtComputer = rhs.changeOwner(lazyVal -> computerSym)
+      val rhsAtComputer = rhs.changeOwner(lazySym -> computerSym)
 
       val computer = mkAccessor(computerSym)(gen.mkSynchronized(Ident(holderSym))(
         If(initialized, getValue,
           if (isUnit) Block(rhsAtComputer :: Nil, Apply(initialize, Nil))
           else Apply(initialize, rhsAtComputer :: Nil))))
 
-      val accessor = mkAccessor(lazyVal)(
+      val accessor = mkAccessor(lazySym)(
         If(initialized, getValue,
           Apply(Ident(computerSym), Nil)))
 
@@ -588,7 +589,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       // remove STABLE: prevent replacing accessor call of type Unit by BoxedUnit.UNIT in erasure
       // remove ACCESSOR: prevent constructors from eliminating the method body if the lazy val is
       // lifted into a trait (TODO: not sure about the details here)
-      lazyVal.resetFlag(STABLE | ACCESSOR)
+      lazySym.resetFlag(STABLE | ACCESSOR)
 
       Thicket(mkTypedValDef(holderSym, New(refTpe)) :: computer :: accessor :: Nil)
     }
