@@ -633,6 +633,8 @@ lazy val test = project
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
     testFrameworks -= new TestFramework("org.scalacheck.ScalaCheckFramework"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M -XX:MaxPermSize=128M"),
+    testOptions in IntegrationTest += Tests.Argument(s"-Dpartest.threads=${java.lang.Runtime.getRuntime.availableProcessors().min(8)}"),
+    // More than 8 seems to overwhelm the 2G heap we allocate to the process that compiles partest test sources in parallel
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.scalac_opts=" + (scalacOptions in Compile).value.mkString(" ")),
     testOptions in IntegrationTest += Tests.Setup { () =>
       val cp = (dependencyClasspath in Test).value
