@@ -95,13 +95,15 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
   /**
    * Projects this `Either` as a `Left`.
    */
-  @deprecated("use swap instead", "2.12.0")
   def left = Either.LeftProjection(this)
 
   /**
    * Projects this `Either` as a `Right`.
+   *
+   * Because `Either` is right-biased, this method is not normally needed.
+   * (It is retained in the API for now for easy cross-compilation between Scala
+   * 2.11 and 2.12.)
    */
-  @deprecated("Either is now right-biased", "2.12.0")
   def right = Either.RightProjection(this)
 
   /**
@@ -245,7 +247,7 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
 
   /**
    * Returns `true` if `Left` or returns the result of the application of
-   * the given function to the `Right` value.
+   * the given predicate to the `Right` value.
    *
    * {{{
    * Right(12).forall(_ > 10) // true
@@ -260,7 +262,7 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
 
   /**
    * Returns `false` if `Left` or returns the result of the application of
-   * the given function to the `Right` value.
+   * the given predicate to the `Right` value.
    *
    * {{{
    * Right(12).exists(_ > 10) // true
@@ -426,7 +428,10 @@ object Either {
   /**
    * Projects an `Either` into a `Left`.
    *
-   * This allows for-comprehensions over Either instances - for example {{{
+   * This allows for-comprehensions over the left side of Either instances,
+   * reversing Either's usual right-bias.
+   *
+   * For example {{{
    * for (s <- Left("flower").left) yield s.length // Left(6)
    * }}}
    *
@@ -472,7 +477,6 @@ object Either {
    * @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
    * @version 1.0, 11/10/2008
    */
-  @deprecated("use swap instead", "2.12.0")
   final case class LeftProjection[+A, +B](e: Either[A, B]) {
     /**
      * Returns the value from this `Left` or throws `java.util.NoSuchElementException`
@@ -624,19 +628,13 @@ object Either {
   /**
    * Projects an `Either` into a `Right`.
    *
-   * This allows for-comprehensions over Either instances - for example {{{
-   * for (s <- Right("flower").right) yield s.length // Right(6)
-   * }}}
-   *
-   * Continuing the analogy with [[scala.Option]], a `RightProjection` declares
-   * that `Right` should be analogous to `Some` in some code.
-   *
-   * Analogous to `LeftProjection`, see example usage in its documentation above.
+   * Because `Either` is already right-biased, this class is not normally needed.
+   * (It is retained in the library for now for easy cross-compilation between Scala
+   * 2.11 and 2.12.)
    *
    * @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
    * @version 1.0, 11/10/2008
    */
-  @deprecated("Either is now right-biased", "2.12.0")
   final case class RightProjection[+A, +B](e: Either[A, B]) {
 
     /**
