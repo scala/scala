@@ -88,7 +88,7 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
 globalVersionSettings
 baseVersion in Global := "2.12.0"
 baseVersionSuffix in Global := "SNAPSHOT"
-mimaReferenceVersion in Global := None
+mimaReferenceVersion in Global := Some("2.12.0-RC1")
 
 lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings ++ Seq[Setting[_]](
   organization := "org.scala-lang",
