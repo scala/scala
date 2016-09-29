@@ -41,7 +41,4 @@ extends GenSetLike[T, Repr]
     _ union that
   }
 
-  def diff(that: GenSet[T]): Repr = sequentially {
-    _ diff that
-  }
 }
