@@ -614,7 +614,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       pickler                 -> "serialize symbol tables",
       refChecks               -> "reference/override checking, translate nested objects",
       uncurry                 -> "uncurry, translate function values to anonymous classes",
-      fields                  -> "synthesize accessors and fields, including bitmaps for lazy vals",
+      fields                  -> "synthesize accessors and fields, add bitmaps for lazy vals",
       tailCalls               -> "replace tail calls by jumps",
       specializeTypes         -> "@specialized-driven class and method specialization",
       explicitOuter           -> "this refs to outer pointers",
