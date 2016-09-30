@@ -218,9 +218,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
               def genForwarder(required: Boolean): Unit = {
                 val owner = member.owner
                 if (owner.isJavaDefined && owner.isInterface && !clazz.parentSymbols.contains(owner)) {
-                  val text = s"Unable to implement a mixin forwarder for $member in $clazz unless interface ${owner.name} is directly extended by $clazz."
-                  if (required) reporter.error(clazz.pos, text)
-                  else warning(clazz.pos, text)
+                  if (required) {
+                    val text = s"Unable to implement a mixin forwarder for $member in $clazz unless interface ${owner.name} is directly extended by $clazz."
+                    reporter.error(clazz.pos, text)
+                  }
                 } else
                   cloneAndAddMixinMember(mixinClass, member).asInstanceOf[TermSymbol] setAlias member
               }
@@ -259,7 +260,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
               }
 
               def generateJUnitForwarder: Boolean = {
-                settings.mixinForwarderChoices.isJunit &&
+                settings.mixinForwarderChoices.isAtLeastJunit &&
                   member.annotations.nonEmpty &&
                   JUnitAnnotations.exists(annot => annot.exists && member.hasAnnotation(annot))
               }

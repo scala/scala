@@ -475,7 +475,7 @@ class InlinerTest extends BytecodeTesting {
         |  def t2 = this.f
         |}
       """.stripMargin
-    val warn = "T::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden"
+    val warn = "::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden"
     var count = 0
     val List(c, t) = compile(code, allowMessage = i => {count += 1; i.msg contains warn})
     assert(count == 2, count)

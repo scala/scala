@@ -17,6 +17,8 @@ import scala.tools.testing.BytecodeTesting._
 class BytecodeTest extends BytecodeTesting {
   import compiler._
 
+  val noForwardersCompiler = newCompiler(extraArgs = "-Xmixin-force-forwarders:false")
+
   def checkForwarder(classes: Map[String, ClassNode], clsName: Symbol, target: String) = {
     val f = getMethod(classes(clsName.name), "f")
     assertSameCode(f, List(VarOp(ALOAD, 0), Invoke(INVOKESTATIC, target, "f$", s"(L$target;)I", true), Op(IRETURN)))
@@ -73,7 +75,7 @@ class BytecodeTest extends BytecodeTesting {
         |class C20 extends T8
       """.stripMargin
 
-    val c = compileClasses(code).map(c => (c.name, c)).toMap
+    val c = noForwardersCompiler.compileClasses(code).map(c => (c.name, c)).toMap
 
     val noForwarder = List('C1, 'C2, 'C3, 'C4, 'C10, 'C11, 'C12, 'C13, 'C16, 'C17)
     for (cn <- noForwarder) assertEquals(getMethods(c(cn.name), "f"), Nil)
@@ -98,7 +100,7 @@ class BytecodeTest extends BytecodeTesting {
         |trait T2 { def f(x: String) = 1 }
         |class C extends T1 with T2
       """.stripMargin
-    val List(c, t1, t2) = compileClasses(code)
+    val List(c, t1, t2) = noForwardersCompiler.compileClasses(code)
     assertEquals(getMethods(c, "f"), Nil)
   }
 
@@ -129,7 +131,7 @@ class BytecodeTest extends BytecodeTesting {
         |
         |class K12 extends J2 with T2
       """.stripMargin
-    val c = compileClasses(code, List(j1, j2, j3, j4)).map(c => (c.name, c)).toMap
+    val c = noForwardersCompiler.compileClasses(code, List(j1, j2, j3, j4)).map(c => (c.name, c)).toMap
 
     val noForwarder = List('K1, 'K2, 'K3, 'K4, 'K5, 'K6, 'K7, 'K8, 'K9, 'K10, 'K11)
     for (cn <- noForwarder) assertEquals(getMethods(c(cn.name), "f"), Nil)
@@ -139,7 +141,7 @@ class BytecodeTest extends BytecodeTesting {
 
   @Test
   def invocationReceivers(): Unit = {
-    val List(c1, c2, t, u) = compileClasses(invocationReceiversTestCode.definitions("Object"))
+    val List(c1, c2, t, u) = noForwardersCompiler.compileClasses(invocationReceiversTestCode.definitions("Object"))
     // mixin forwarder in C1
     assertSameCode(getMethod(c1, "clone"), List(VarOp(ALOAD, 0), Invoke(INVOKESTATIC, "T", "clone$", "(LT;)Ljava/lang/Object;", true), Op(ARETURN)))
     assertInvoke(getMethod(c1, "f1"), "T", "clone")
@@ -149,7 +151,7 @@ class BytecodeTest extends BytecodeTesting {
     assertInvoke(getMethod(c2, "f2"), "T", "clone")
     assertInvoke(getMethod(c2, "f3"), "C1", "clone")
 
-    val List(c1b, c2b, tb, ub) = compileClasses(invocationReceiversTestCode.definitions("String"))
+    val List(c1b, c2b, tb, ub) = noForwardersCompiler.compileClasses(invocationReceiversTestCode.definitions("String"))
     def ms(c: ClassNode, n: String) = c.methods.asScala.toList.filter(_.name == n)
     assert(ms(tb, "clone").length == 1)
     assert(ms(ub, "clone").isEmpty)
@@ -235,8 +237,8 @@ class BytecodeTest extends BytecodeTesting {
       """trait T { def f = 1 }
         |class C extends T
       """.stripMargin
-    val List(c1, _) = compileClasses(code)
-    val List(c2, _) = newCompiler(extraArgs = "-Xmixin-force-forwarders:true").compileClasses(code)
+    val List(c1, _) = noForwardersCompiler.compileClasses(code)
+    val List(c2, _) = compileClasses(code)
     assert(getMethods(c1, "f").isEmpty)
     assertSameCode(getMethod(c2, "f"),
       List(VarOp(ALOAD, 0), Invoke(INVOKESTATIC, "T", "f$", "(LT;)I", true), Op(IRETURN)))
@@ -301,7 +303,6 @@ class BytecodeTest extends BytecodeTesting {
 
   @Test
   def sd210(): Unit = {
-    val forwardersCompiler = newCompiler(extraArgs = "-Xmixin-force-forwarders:true")
     val jCode = List("interface A { default int m() { return 1; } }" -> "A.java")
 
 
@@ -311,14 +312,13 @@ class BytecodeTest extends BytecodeTesting {
         |class C extends B1
       """.stripMargin
 
-    val List(_, c1a) = compileClasses(code1, jCode)
+    val List(_, c1a) = noForwardersCompiler.compileClasses(code1, jCode)
     assert(getAsmMethods(c1a, "m").isEmpty) // ok, no forwarder
 
     // here we test a warning. without `-Xmixin-force-forwarders:true`, the forwarder would not be
     // generated, it is not necessary for correctness.
-    val warn = "Unable to implement a mixin forwarder for method m in class C unless interface A is directly extended by class C"
-    val List(_, c1b) = forwardersCompiler.compileClasses(code1, jCode, allowMessage = _.msg.contains(warn))
-    assert(getAsmMethods(c1a, "m").isEmpty) // no forwarder
+    val List(_, c1b) = compileClasses(code1, jCode)
+    assert(getAsmMethods(c1b, "m").isEmpty) // no forwarder: it cannot be implemented because A is not a direct parent of C
 
 
     val code2 =
