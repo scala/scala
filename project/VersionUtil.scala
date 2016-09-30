@@ -146,7 +146,7 @@ object VersionUtil {
   def bootstrapDep(baseDir: File, path: String, libName: String): ModuleID = {
     val sha = IO.read(baseDir / path / s"$libName.jar.desired.sha1").split(' ')(0)
     bootstrapOrganization(path) % libName % sha from
-      s"https://dl.bintray.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap/$sha/$path/$libName.jar"
+      s"https://repo.lightbend.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap/$sha/$path/$libName.jar"
   }
 
   /** Copy a boostrap dependency JAR that is on the classpath to a file */
