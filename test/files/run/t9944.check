@@ -1,0 +1,12 @@
+[[syntax trees at end of                    parser]] // newSource1.scala
+package <empty> {
+  class C extends scala.AnyRef {
+    def <init>() = {
+      super.<init>();
+      ()
+    };
+    def g = 42;
+    def f = StringContext("123\r\n", "\r\n123\r\n").s(g)
+  }
+}
+

@@ -246,6 +246,14 @@ trait Scanners extends ScannersCommon {
     private def inMultiLineInterpolation =
       inStringInterpolation && sepRegions.tail.nonEmpty && sepRegions.tail.head == STRINGPART
 
+    /** Are we in a `${ }` block? such that RBRACE exits back into multiline string. */
+    private def inMultiLineInterpolatedExpression = {
+      sepRegions match {
+        case RBRACE :: STRINGLIT :: STRINGPART :: rest => true
+        case _ => false
+      }
+    }
+
     /** read next token and return last offset
      */
     def skipToken(): Offset = {
@@ -312,7 +320,7 @@ trait Scanners extends ScannersCommon {
           lastOffset -= 1
         }
         if (inStringInterpolation) fetchStringPart() else fetchToken()
-        if(token == ERROR) {
+        if (token == ERROR) {
           if (inMultiLineInterpolation)
             sepRegions = sepRegions.tail.tail
           else if (inStringInterpolation)
@@ -547,7 +555,8 @@ trait Scanners extends ScannersCommon {
         case ')' =>
           nextChar(); token = RPAREN
         case '}' =>
-          nextChar(); token = RBRACE
+          if (inMultiLineInterpolatedExpression) nextRawChar() else nextChar()
+          token = RBRACE
         case '[' =>
           nextChar(); token = LBRACKET
         case ']' =>
