@@ -11,7 +11,7 @@ The following descriptions of Scala tokens uses literal characters `‘c’` whe
 _Unicode escapes_ are used to represent the Unicode character with the given hexadecimal code:
 
 ```ebnf
-UnicodeEscape ::= ‘\‘ ‘u‘ {‘u‘} hexDigit hexDigit hexDigit hexDigit
+UnicodeEscape ::= ‘\’ ‘u’ {‘u’} hexDigit hexDigit hexDigit hexDigit
 hexDigit      ::= ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
 ```
 
@@ -30,7 +30,7 @@ delim            ::=  ‘`’ | ‘'’ | ‘"’ | ‘.’ | ‘;’ | ‘,’
 opchar           ::= // printableChar not matched by (whiteSpace | upper | lower |
                      // letter | digit | paren | delim | opchar | Unicode_Sm | Unicode_So)
 printableChar    ::= // all characters in [\u0020, \u007F] inclusive
-charEscapeSeq    ::= ‘\‘ (‘b‘ | ‘t‘ | ‘n‘ | ‘f‘ | ‘r‘ | ‘"‘ | ‘'‘ | ‘\‘)
+charEscapeSeq    ::= ‘\’ (‘b’ | ‘t’ | ‘n’ | ‘f’ | ‘r’ | ‘"’ | ‘'’ | ‘\’)
 
 op               ::=  opchar {opchar}
 varid            ::=  lower idrest
