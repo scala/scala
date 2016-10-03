@@ -7,9 +7,9 @@ chapter: 5
 # Classes and Objects
 
 ```ebnf
-TmplDef          ::= [`case'] `class' ClassDef
-                  |  [`case'] `object' ObjectDef
-                  |  `trait' TraitDef
+TmplDef          ::= [‘case’] ‘class’ ClassDef
+                  |  [‘case’] ‘object’ ObjectDef
+                  |  ‘trait’ TraitDef
 ```
 
 [Classes](#class-definitions) and [objects](#object-definitions)
@@ -20,11 +20,11 @@ are both defined in terms of _templates_.
 ```ebnf
 ClassTemplate   ::=  [EarlyDefs] ClassParents [TemplateBody]
 TraitTemplate   ::=  [EarlyDefs] TraitParents [TemplateBody]
-ClassParents    ::=  Constr {`with' AnnotType}
-TraitParents    ::=  AnnotType {`with' AnnotType}
-TemplateBody    ::=  [nl] `{' [SelfType] TemplateStat {semi TemplateStat} `}'
-SelfType        ::=  id [`:' Type] `=>'
-                 |   this `:' Type `=>'
+ClassParents    ::=  Constr {‘with’ AnnotType}
+TraitParents    ::=  AnnotType {‘with’ AnnotType}
+TemplateBody    ::=  [nl] ‘{’ [SelfType] TemplateStat {semi TemplateStat} ‘}’
+SelfType        ::=  id [‘:’ Type] ‘=>’
+                 |   this ‘:’ Type ‘=>’
 ```
 
 A _template_ defines the type signature, behavior and initial state of a
@@ -145,7 +145,7 @@ def delayedInit(body: => Unit)
 ### Constructor Invocations
 
 ```ebnf
-Constr  ::=  AnnotType {`(' [Exprs] `)'}
+Constr  ::=  AnnotType {‘(’ [Exprs] ‘)’}
 ```
 
 Constructor invocations define the type, members, and initial state of
@@ -410,7 +410,7 @@ necessary to make subtyping decidable[^kennedy]).
 ### Early Definitions
 
 ```ebnf
-EarlyDefs         ::= `{' [EarlyDef {semi EarlyDef}] `}' `with'
+EarlyDefs         ::= ‘{’ [EarlyDef {semi EarlyDef}] ‘}’ ‘with’
 EarlyDef          ::=  {Annotation} {Modifier} PatVarDef
 ```
 
@@ -478,14 +478,14 @@ body, it would be initialized after the constructor of
 ```ebnf
 Modifier          ::=  LocalModifier
                     |  AccessModifier
-                    |  `override'
-LocalModifier     ::=  `abstract'
-                    |  `final'
-                    |  `sealed'
-                    |  `implicit'
-                    |  `lazy'
-AccessModifier    ::=  (`private' | `protected') [AccessQualifier]
-AccessQualifier   ::=  `[' (id | `this') `]'
+                    |  ‘override’
+LocalModifier     ::=  ‘abstract’
+                    |  ‘final’
+                    |  ‘sealed’
+                    |  ‘implicit’
+                    |  ‘lazy’
+AccessModifier    ::=  (‘private’ | ‘protected’) [AccessQualifier]
+AccessQualifier   ::=  ‘[’ (id | ‘this’) ‘]’
 ```
 
 Member definitions may be preceded by modifiers which affect the
@@ -668,16 +668,16 @@ constructor `private` ([example](#example-private-constructor)).
 ## Class Definitions
 
 ```ebnf
-TmplDef           ::=  `class' ClassDef
+TmplDef           ::=  ‘class’ ClassDef
 ClassDef          ::=  id [TypeParamClause] {Annotation}
                        [AccessModifier] ClassParamClauses ClassTemplateOpt
 ClassParamClauses ::=  {ClassParamClause}
-                       [[nl] `(' implicit ClassParams `)']
-ClassParamClause  ::=  [nl] `(' [ClassParams] ')'
-ClassParams       ::=  ClassParam {`,' ClassParam}
-ClassParam        ::=  {Annotation} {Modifier} [(`val' | `var')]
-                       id [`:' ParamType] [`=' Expr]
-ClassTemplateOpt  ::=  `extends' ClassTemplate | [[`extends'] TemplateBody]
+                       [[nl] ‘(’ implicit ClassParams ‘)’]
+ClassParamClause  ::=  [nl] ‘(’ [ClassParams] ‘)’
+ClassParams       ::=  ClassParam {‘,’ ClassParam}
+ClassParam        ::=  {Annotation} {Modifier} [(‘val’ | ‘var’)]
+                       id [‘:’ ParamType] [‘=’ Expr]
+ClassTemplateOpt  ::=  ‘extends’ ClassTemplate | [[‘extends’] TemplateBody]
 ```
 
 The most general form of class definition is
@@ -768,12 +768,12 @@ class Sensitive private () {
 ### Constructor Definitions
 
 ```ebnf
-FunDef         ::= `this' ParamClause ParamClauses
-                   (`=' ConstrExpr | [nl] ConstrBlock)
+FunDef         ::= ‘this’ ParamClause ParamClauses
+                   (‘=’ ConstrExpr | [nl] ConstrBlock)
 ConstrExpr     ::= SelfInvocation
                 |  ConstrBlock
-ConstrBlock    ::= `{' SelfInvocation {semi BlockStat} `}'
-SelfInvocation ::= `this' ArgumentExprs {ArgumentExprs}
+ConstrBlock    ::= ‘{’ SelfInvocation {semi BlockStat} ‘}’
+SelfInvocation ::= ‘this’ ArgumentExprs {ArgumentExprs}
 ```
 
 A class may have additional constructors besides the primary
@@ -836,7 +836,7 @@ third one constructs a list with a given head and tail.
 ### Case Classes
 
 ```ebnf
-TmplDef  ::=  `case' `class' ClassDef
+TmplDef  ::=  ‘case’ ‘class’ ClassDef
 ```
 
 If a class definition is prefixed with `case`, the class is said
@@ -967,9 +967,9 @@ directly extend `Expr` must be in the same source file as
 ## Traits
 
 ```ebnf
-TmplDef          ::=  `trait' TraitDef
+TmplDef          ::=  ‘trait’ TraitDef
 TraitDef         ::=  id [TypeParamClause] TraitTemplateOpt
-TraitTemplateOpt ::=  `extends' TraitTemplate | [[`extends'] TemplateBody]
+TraitTemplateOpt ::=  ‘extends’ TraitTemplate | [[‘extends’] TemplateBody]
 ```
 
 A _trait_ is a class that is meant to be added to some other class

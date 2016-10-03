@@ -129,18 +129,18 @@ grammar:
 
   Expr              ::=  (Bindings | [‘implicit’] id | ‘_’) ‘=>’ Expr
                       |  Expr1
-  Expr1             ::=  `if' `(' Expr `)' {nl} Expr [[semi] `else' Expr]
-                      |  `while' `(' Expr `)' {nl} Expr
-                      |  `try' (`{' Block `}' | Expr) [`catch' `{' CaseClauses `}'] [`finally' Expr]
-                      |  `do' Expr [semi] `while' `(' Expr `)'
-                      |  `for' (`(' Enumerators `)' | `{' Enumerators `}') {nl} [`yield'] Expr
-                      |  `throw' Expr
-                      |  `return' [Expr]
-                      |  [SimpleExpr `.'] id `=' Expr
-                      |  SimpleExpr1 ArgumentExprs `=' Expr
+  Expr1             ::=  ‘if’ ‘(’ Expr ‘)’ {nl} Expr [[semi] ‘else’ Expr]
+                      |  ‘while’ ‘(’ Expr ‘)’ {nl} Expr
+                      |  ‘try’ (‘{’ Block ‘}’ | Expr) [‘catch’ ‘{’ CaseClauses ‘}’] [‘finally’ Expr]
+                      |  ‘do’ Expr [semi] ‘while’ ‘(’ Expr ‘)’
+                      |  ‘for’ (‘(’ Enumerators ‘)’ | ‘{’ Enumerators ‘}’) {nl} [‘yield’] Expr
+                      |  ‘throw’ Expr
+                      |  ‘return’ [Expr]
+                      |  [SimpleExpr ‘.’] id ‘=’ Expr
+                      |  SimpleExpr1 ArgumentExprs ‘=’ Expr
                       |  PostfixExpr
                       |  PostfixExpr Ascription
-                      |  PostfixExpr `match' `{' CaseClauses `}'
+                      |  PostfixExpr ‘match’ ‘{’ CaseClauses ‘}’
   PostfixExpr       ::=  InfixExpr [id [nl]]
   InfixExpr         ::=  PrefixExpr
                       |  InfixExpr id [nl] InfixExpr
@@ -213,7 +213,7 @@ grammar:
                          [[nl] ‘(’ ‘implicit’ ClassParams ‘)’]
   ClassParamClause  ::=  [nl] ‘(’ [ClassParams] ‘)’
   ClassParams       ::=  ClassParam {‘,’ ClassParam}
-  ClassParam        ::=  {Annotation} {Modifier} [(`val' | `var')]
+  ClassParam        ::=  {Annotation} {Modifier} [(‘val’ | ‘var’)]
                          id ‘:’ ParamType [‘=’ Expr]
   Bindings          ::=  ‘(’ Binding {‘,’ Binding} ‘)’
   Binding           ::=  (id | ‘_’) [‘:’ Type]
