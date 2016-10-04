@@ -31,7 +31,7 @@
 
 <body>
   <header>
-    <nav id="chapters"><a id="github" href="https://github.com/scala/scala/tree/2.11.x/spec"><img src="public/images/github-logo@2x.png" alt="Edit at Github"></a>{% assign sorted_pages = site.pages | sort:"name" %}{% for post in sorted_pages %}{% if post.chapter >= 0 %}<a href="{{site.baseurl}}{{ post.url }}">{{post.chapter}} {{ post.title }}</a>{% endif %}{% endfor %}</nav>
+    <nav id="chapters"><a id="github" href="https://github.com/scala/scala/tree/2.12.x/spec"><img src="public/images/github-logo@2x.png" alt="Edit at GitHub"></a>{% assign sorted_pages = site.pages | sort:"name" %}{% for post in sorted_pages %}{% if post.chapter >= 0 %}<a href="{{site.baseurl}}{{ post.url }}">{{post.chapter}} {{ post.title }}</a>{% endif %}{% endfor %}</nav>
   </header>
   <aside class="left"><nav id="toc"></nav></aside>
 

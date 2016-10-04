@@ -12,7 +12,7 @@ We use Jekyll 2 and [Redcarpet](https://github.com/vmg/redcarpet) to generate th
 
 ## Building
 
-Travis CI builds the spec automatically on every commit to master and publishes to http://www.scala-lang.org/files/archive/spec/2.11/.
+Travis CI builds the spec automatically after every merged pull release and publishes to http://www.scala-lang.org/files/archive/spec/2.12/.
 
 To preview locally, run `bundle exec jekyll serve -d build/spec/ -s spec/ -w --baseurl=""` (in the root of your checkout of scala/scala),
 and open http://0.0.0.0:4000/. Jekyll will rebuild as you edit the markdown, but make sure to restart it when you change `_config.yml`.
