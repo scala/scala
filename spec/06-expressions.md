@@ -1361,6 +1361,7 @@ Note that a function literal that targets a SAM is not necessarily compiled to t
 
 It follows that:
   - if class `C` defines a constructor, it must be accessible and must define exactly one, empty, argument list;
+  - class `C` cannot be `final` or `sealed` (for simplicity we ignore the possibility of SAM conversion in the same compilation unit as the sealed class);
   - `m` cannot be polymorphic;
   - it must be possible to derive a fully-defined type `U` from `S` by inferring any unknown type parameters of `C`.
 
