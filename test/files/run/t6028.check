@@ -15,7 +15,7 @@ package <empty> {
       }
     };
     def bar(barParam: Int): Object = {
-      @volatile var MethodLocalObject$module: runtime.VolatileObjectRef = scala.runtime.VolatileObjectRef.zero();
+      lazy <artifact> val MethodLocalObject$module: scala.runtime.LazyRef = new scala.runtime.LazyRef();
       T.this.MethodLocalObject$1(barParam, MethodLocalObject$module)
     };
     def tryy(tryyParam: Int): Function0 = {
@@ -54,12 +54,14 @@ package <empty> {
       <synthetic> <stable> <artifact> def $outer(): T = MethodLocalObject$2.this.$outer;
       <synthetic> <stable> <artifact> def $outer(): T = MethodLocalObject$2.this.$outer
     };
-    final <stable> private[this] def MethodLocalObject$1(barParam$1: Int, MethodLocalObject$module$1: runtime.VolatileObjectRef): T#MethodLocalObject$2.type = {
-      if (MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type]().eq(null))
-        T.this.synchronized[Unit](if (MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type]().eq(null))
-          MethodLocalObject$module$1.elem = new T#MethodLocalObject$2.type(T.this, barParam$1));
-      MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type]()
-    };
+    final <artifact> private[this] def MethodLocalObject$lzycompute$1(barParam$1: Int, MethodLocalObject$module$1: scala.runtime.LazyRef): T#MethodLocalObject$2.type = MethodLocalObject$module$1.synchronized[T#MethodLocalObject$2.type](if (MethodLocalObject$module$1.initialized())
+      MethodLocalObject$module$1.value().$asInstanceOf[T#MethodLocalObject$2.type]()
+    else
+      MethodLocalObject$module$1.initialize(new T#MethodLocalObject$2.type(T.this, barParam$1)).$asInstanceOf[T#MethodLocalObject$2.type]());
+    final private[this] def MethodLocalObject$1(barParam$1: Int, MethodLocalObject$module$1: scala.runtime.LazyRef): T#MethodLocalObject$2.type = if (MethodLocalObject$module$1.initialized())
+      MethodLocalObject$module$1.value().$asInstanceOf[T#MethodLocalObject$2.type]()
+    else
+      T.this.MethodLocalObject$lzycompute$1(barParam$1, MethodLocalObject$module$1);
     @SerialVersionUID(value = 0) final <synthetic> class $anonfun$tryy$1 extends scala.runtime.AbstractFunction0$mcV$sp with Serializable {
       def <init>($outer: T, tryyParam$1: Int, tryyLocal$1: runtime.IntRef): <$anon: Function0> = {
         $anonfun$tryy$1.super.<init>();

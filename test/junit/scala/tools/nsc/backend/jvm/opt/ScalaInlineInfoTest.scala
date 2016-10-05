@@ -105,9 +105,11 @@ class ScalaInlineInfoTest extends BytecodeTesting {
         ("x4$(LT;)I",                                                  MethodInlineInfo(true ,false,false)),
         ("x5()I",                                                     MethodInlineInfo(true, false,false)),
         ("x5$(LT;)I",                                                  MethodInlineInfo(true ,false,false)),
-        ("L$1(Lscala/runtime/VolatileObjectRef;)LT$L$2$;",            MethodInlineInfo(true, false,false)),
+        ("L$1(Lscala/runtime/LazyRef;)LT$L$2$;",                      MethodInlineInfo(true, false,false)),
         ("nest$1()I",                                                 MethodInlineInfo(true, false,false)),
-        ("$init$(LT;)V",                                              MethodInlineInfo(true,false,false))),
+        ("$init$(LT;)V",                                              MethodInlineInfo(true,false,false)),
+        ("L$lzycompute$1(Lscala/runtime/LazyRef;)LT$L$2$;",           MethodInlineInfo(true,false,false))
+      ),
       None // warning
     )
 
@@ -128,7 +130,9 @@ class ScalaInlineInfoTest extends BytecodeTesting {
       "x4()I"                                 -> MethodInlineInfo(false,false,false),
 //      "x5()I"                                 -> MethodInlineInfo(true ,false,false), -- there is no x5 in the class as it's implemented fully in the interface
       "T$$super$toString()Ljava/lang/String;" -> MethodInlineInfo(true ,false,false),
-      "<init>()V"                             -> MethodInlineInfo(false,false,false)),
+      "<init>()V"                             -> MethodInlineInfo(false,false,false),
+      "O$lzycompute$1()V"                     -> MethodInlineInfo(true,false,false)
+    ),
       None)
 
     assert(infoC == expectC, mapDiff(expectC.methodInfos, infoC.methodInfos) + infoC)
@@ -179,6 +183,7 @@ class ScalaInlineInfoTest extends BytecodeTesting {
     val infoC = inlineInfo(c)
     val expected = Map(
       "<init>()V"            -> MethodInlineInfo(false,false,false),
+      "O$lzycompute$1()V"    -> MethodInlineInfo(true,false,false),
       "O()LC$O$;"            -> MethodInlineInfo(true,false,false))
     assert(infoC.methodInfos == expected, mapDiff(infoC.methodInfos, expected))
     assertSameMethods(c, expected.keySet)

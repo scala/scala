@@ -2166,7 +2166,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def logicallyEnclosingMember: Symbol =
       if (isLocalDummy) enclClass.primaryConstructor
       else if (isMethod || isClass || this == NoSymbol) this
-      else if (this == NoSymbol) { devWarningDumpStack("NoSymbol.logicallyEnclosingMember", 15); this }
       else owner.logicallyEnclosingMember
 
     /** The top-level class containing this symbol. */

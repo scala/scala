@@ -104,8 +104,31 @@ abstract class LambdaLift extends InfoTransform {
     /** Buffers for lifted out classes and methods */
     private val liftedDefs = new LinkedHashMap[Symbol, List[Tree]]
 
+    val delayedInitDummies = new mutable.HashMap[Symbol, Symbol]
+
+    /**
+     * For classes capturing locals, LambdaLift uses `local.logicallyEnclosingMember` to decide
+     * whether an access to the local is re-written to the field or constructor parameter. If the
+     * access is in a constructor statement, the constructor parameter is used.
+     *
+     * For DelayedInit subclasses, constructor statements end up in the synthetic init method
+     * instead of the constructor itself, so the access should go to the field. This method changes
+     * `logicallyEnclosingMember` in this case to return a temprorary symbol corresponding to that
+     * method.
+     */
+    private def logicallyEnclosingMember(sym: Symbol): Symbol = {
+      if (sym.isLocalDummy) {
+        val enclClass = sym.enclClass
+        if (enclClass.isSubClass(DelayedInitClass))
+          delayedInitDummies.getOrElseUpdate(enclClass, enclClass.newMethod(nme.delayedInit))
+        else
+          enclClass.primaryConstructor
+      } else if (sym.isMethod || sym.isClass || sym == NoSymbol) sym
+      else logicallyEnclosingMember(sym.owner)
+    }
+
     private def isSameOwnerEnclosure(sym: Symbol) =
-      sym.owner.logicallyEnclosingMember == currentOwner.logicallyEnclosingMember
+      logicallyEnclosingMember(sym.owner) == logicallyEnclosingMember(currentOwner)
 
     /** Mark symbol `sym` as being free in `enclosure`, unless `sym`
      *  is defined in `enclosure` or there is a class between `enclosure`s owner
@@ -139,9 +162,9 @@ abstract class LambdaLift extends InfoTransform {
      */
     private def markFree(sym: Symbol, enclosure: Symbol): Boolean = {
 //      println(s"mark free: ${sym.fullLocationString} marked free in $enclosure")
-      (enclosure == sym.owner.logicallyEnclosingMember) || {
-        debuglog("%s != %s".format(enclosure, sym.owner.logicallyEnclosingMember))
-        if (enclosure.isPackageClass || !markFree(sym, enclosure.skipConstructor.owner.logicallyEnclosingMember)) false
+      (enclosure == logicallyEnclosingMember(sym.owner)) || {
+        debuglog("%s != %s".format(enclosure, logicallyEnclosingMember(sym.owner)))
+        if (enclosure.isPackageClass || !markFree(sym, logicallyEnclosingMember(enclosure.skipConstructor.owner))) false
         else {
           val ss = symSet(free, enclosure)
           if (!ss(sym)) {
@@ -184,14 +207,14 @@ abstract class LambdaLift extends InfoTransform {
             if (sym == NoSymbol) {
               assert(name == nme.WILDCARD)
             } else if (sym.isLocalToBlock) {
-              val owner = currentOwner.logicallyEnclosingMember
+              val owner = logicallyEnclosingMember(currentOwner)
               if (sym.isTerm && !sym.isMethod) markFree(sym, owner)
               else if (sym.isMethod) markCalled(sym, owner)
                 //symSet(called, owner) += sym
             }
           case Select(_, _) =>
             if (sym.isConstructor && sym.owner.isLocalToBlock)
-              markCalled(sym, currentOwner.logicallyEnclosingMember)
+              markCalled(sym, logicallyEnclosingMember(currentOwner))
           case _ =>
         }
         super.traverse(tree)
@@ -283,17 +306,18 @@ abstract class LambdaLift extends InfoTransform {
 
     private def proxy(sym: Symbol) = {
       def searchIn(enclosure: Symbol): Symbol = {
-        if (enclosure eq NoSymbol) throw new IllegalArgumentException("Could not find proxy for "+ sym.defString +" in "+ sym.ownerChain +" (currentOwner= "+ currentOwner +" )")
-        debuglog("searching for " + sym + "(" + sym.owner + ") in " + enclosure + " " + enclosure.logicallyEnclosingMember)
+        if (enclosure eq NoSymbol)
+          throw new IllegalArgumentException("Could not find proxy for "+ sym.defString +" in "+ sym.ownerChain +" (currentOwner= "+ currentOwner +" )")
+        debuglog("searching for " + sym + "(" + sym.owner + ") in " + enclosure + " " + logicallyEnclosingMember(enclosure))
 
         val proxyName = proxyNames.getOrElse(sym, sym.name)
-        val ps = (proxies get enclosure.logicallyEnclosingMember).toList.flatten find (_.name == proxyName)
+        val ps = (proxies get logicallyEnclosingMember(enclosure)).toList.flatten find (_.name == proxyName)
         ps getOrElse searchIn(enclosure.skipConstructor.owner)
       }
       debuglog("proxy %s from %s has logical enclosure %s".format(
         sym.debugLocationString,
         currentOwner.debugLocationString,
-        sym.owner.logicallyEnclosingMember.debugLocationString)
+        logicallyEnclosingMember(sym.owner).debugLocationString)
       )
 
       if (isSameOwnerEnclosure(sym)) sym
@@ -319,7 +343,14 @@ abstract class LambdaLift extends InfoTransform {
           else if (clazz.isStaticOwner) gen.mkAttributedQualifier(clazz.thisType)
           else outerValue match {
             case EmptyTree => prematureSelfReference()
-            case o         => outerPath(o, currentClass.outerClass, clazz)
+            case o         =>
+              val path = outerPath(o, currentClass.outerClass, clazz)
+              if (path.tpe <:< clazz.tpeHK) path
+              else {
+                // SI-9920 The outer accessor might have an erased type of the self type of a trait,
+                //         rather than the trait itself. Add a cast if necessary.
+                gen.mkAttributedCast(path, clazz.tpeHK)
+              }
           }
         }
 

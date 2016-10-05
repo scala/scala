@@ -187,4 +187,12 @@ class BytecodeTest extends BytecodeTesting {
       List(Label(0), LineNumber(2, Label(0)), VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "T", "t", "()V", true), Op(RETURN), Label(4))
     )
   }
+
+  @Test
+  def sd233(): Unit = {
+    val code = "def f = { println(1); synchronized(println(2)) }"
+    val m = compileMethod(code)
+    val List(ExceptionHandler(_, _, _, desc)) = m.handlers
+    assert(desc == None, desc)
+  }
 }

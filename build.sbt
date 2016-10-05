@@ -88,7 +88,7 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
 globalVersionSettings
 baseVersion in Global := "2.12.0"
 baseVersionSuffix in Global := "SNAPSHOT"
-mimaReferenceVersion in Global := None
+mimaReferenceVersion in Global := Some("2.12.0-RC1")
 
 lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings ++ Seq[Setting[_]](
   organization := "org.scala-lang",
@@ -160,7 +160,7 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
         <developers>
           <developer>
             <id>lamp</id>
-            <name>EPFL LAMP</name>
+            <name>LAMP/EPFL</name>
           </developer>
           <developer>
             <id>Lightbend</id>
@@ -406,7 +406,7 @@ lazy val compiler = configureAsSubproject(project)
     ),
     // Generate the ScriptEngineFactory service definition. The Ant build does this when building
     // the JAR but sbt has no support for it and it is easier to do as a resource generator:
-    generateServiceProviderResources("javax.script.ScriptEngineFactory" -> "scala.tools.nsc.interpreter.IMain$Factory"),
+    generateServiceProviderResources("javax.script.ScriptEngineFactory" -> "scala.tools.nsc.interpreter.Scripted$Factory"),
     managedResourceDirectories in Compile := Seq((resourceManaged in Compile).value),
     fixPom(
       "/project/name" -> <name>Scala Compiler</name>,
@@ -510,8 +510,10 @@ lazy val scalap = configureAsSubproject(project)
   )
   .dependsOn(compiler)
 
-lazy val partestExtras = configureAsSubproject(Project("partest-extras", file(".") / "src" / "partest-extras"))
+lazy val partestExtras = Project("partest-extras", file(".") / "src" / "partest-extras")
   .dependsOn(replJlineEmbedded)
+  .settings(commonSettings: _*)
+  .settings(generatePropertiesFileSettings: _*)
   .settings(clearSourceAndResourceDirectories: _*)
   .settings(disableDocs: _*)
   .settings(disablePublishing: _*)
@@ -597,8 +599,6 @@ lazy val partestJavaAgent = Project("partest-javaagent", file(".") / "src" / "pa
     // Setting name to "scala-partest-javaagent" so that the jar file gets that name, which the Runner relies on
     name := "scala-partest-javaagent",
     description := "Scala Compiler Testing Tool (compiler-specific java agent)",
-    // writing jar file to $buildDirectory/pack/lib because that's where it's expected to be found
-    setJarLocation,
     // add required manifest entry - previously included from file
     packageOptions in (Compile, packageBin) +=
       Package.ManifestAttributes( "Premain-Class" -> "scala.tools.partest.javaagent.ProfilingAgent" ),
@@ -834,7 +834,7 @@ lazy val root: Project = (project in file("."))
   )
 
 // The following subprojects' binaries are required for building "pack":
-lazy val distDependencies = Seq(replJline, replJlineEmbedded, compiler, library, partestExtras, partestJavaAgent, reflect, scalap, scaladoc)
+lazy val distDependencies = Seq(replJline, replJlineEmbedded, compiler, library, reflect, scalap, scaladoc)
 
 lazy val dist = (project in file("dist"))
   .settings(commonSettings)
