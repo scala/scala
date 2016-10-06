@@ -380,7 +380,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
                 case tree: RefTree if tree.symbol != NoSymbol =>
                   val sym = tree.symbol
                   // println(s"$sym in ${sym.owner} from $currentOwner ($tree)")
-                  if ((sym.hasAccessorFlag || (sym.isTerm && !sym.isMethod)) && sym.isPrivate && !sym.isLazy // non-lazy private field or its accessor
+                  if ((sym.hasAccessorFlag || (sym.isTerm && !sym.isMethod)) && sym.isPrivate && !sym.isLazy && !sym.isModule // non-lazy private field or its accessor
                     && !definitions.isPrimitiveValueClass(sym.tpe.resultType.typeSymbol) // primitives don't hang on to significant amounts of heap
                     && sym.owner == currentOwner.enclClass && !(currentOwner.isGetter && currentOwner.accessed == sym)) {
 
