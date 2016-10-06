@@ -110,7 +110,7 @@ trait TypeDebugging {
         val hi_s = if (noPrint(hi)) "" else " <: " + ptTree(hi)
         lo_s + hi_s
       case _ if (t.symbol eq null) || (t.symbol eq NoSymbol) => to_s(t)
-      case _                                                 => "" + t.symbol.tpe
+      case _                                                 => if (t.symbol.hasCompleteInfo) "" + t.symbol.tpe else "<?>"
     }
     def ptTypeParam(td: TypeDef): String = {
       val TypeDef(_, name, tparams, rhs) = td
