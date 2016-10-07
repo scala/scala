@@ -392,11 +392,16 @@ sealed abstract class List[+A] extends AbstractSeq[A]
 
   override def reverseIterator = {
     val arraySeq = new mutable.ArraySeq[A](size)
-    var i = 0
-    for (x <- this) {
-      arraySeq(i) = x
-      i += 1
+    @annotation.tailrec
+    def loop(i: Int, list: List[A]): Unit = {
+      list match {
+        case Nil =>
+        case head :: tail =>
+          arraySeq(i) = head
+          loop(i + 1, tail)
+      }
     }
+    loop(0, this)
     arraySeq.reverseIterator
   }
 
