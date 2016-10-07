@@ -390,6 +390,8 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     result
   }
 
+  override def reverseIterator = to[mutable.ArrayBuffer].reverseIterator
+
   override def foldRight[B](z: B)(op: (A, B) => B): B =
     reverse.foldLeft(z)((right, left) => op(left, right))
 
