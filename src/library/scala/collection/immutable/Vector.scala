@@ -217,6 +217,13 @@ override def companion: GenericCompanion[Vector] = Vector
 
   override /*IterableLike*/ def splitAt(n: Int): (Vector[A], Vector[A]) = (take(n), drop(n))
 
+  override def ++:[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Vector[A], B, That]): That = {
+    if (isDefaultCBF(bf)) {
+      that.foldRight(this: Vector[B])(_ +: _).asInstanceOf[That]
+    } else {
+      super.++:(that)
+    }
+  }
 
   // concat (suboptimal but avoids worst performance gotchas)
   override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Vector[A], B, That]): That = {
