@@ -390,7 +390,15 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     result
   }
 
-  override def reverseIterator = to[mutable.ArrayBuffer].reverseIterator
+  override def reverseIterator = {
+    val arraySeq = new mutable.ArraySeq[A](size)
+    var i = 0
+    for (x <- this) {
+      arraySeq(i) = x
+      i += 1
+    }
+    arraySeq.reverseIterator
+  }
 
   override def foldRight[B](z: B)(op: (A, B) => B): B =
     reverse.foldLeft(z)((right, left) => op(left, right))
