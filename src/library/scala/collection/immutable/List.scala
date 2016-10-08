@@ -391,18 +391,18 @@ sealed abstract class List[+A] extends AbstractSeq[A]
   }
 
   override def reverseIterator = {
-    val arraySeq = new mutable.ArraySeq[A](size)
+    val array = new Array[AnyRef](size)
     @annotation.tailrec
     def loop(i: Int, list: List[A]): Unit = {
       list match {
         case Nil =>
         case head :: tail =>
-          arraySeq(i) = head
+          array(i) = head.asInstanceOf[AnyRef]
           loop(i + 1, tail)
       }
     }
     loop(0, this)
-    arraySeq.reverseIterator
+    array.reverseIterator.asInstanceOf[Iterator[A]]
   }
 
   override def foldRight[B](z: B)(op: (A, B) => B): B =
