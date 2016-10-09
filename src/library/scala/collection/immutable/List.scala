@@ -392,7 +392,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
 
   override def reverseIterator = {
     val array = new Array[Any](size)
-    copyToArray[Any](array, 0, size)
+    copyToArray[Any](array, 0)
     array.reverseIterator.asInstanceOf[Iterator[A]]
   }
 
