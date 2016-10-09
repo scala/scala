@@ -247,7 +247,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       if (context.unit.exists &&
           result.pos.isOpaqueRange &&
           (result.pos includes context.unit.targetPos)) {
-        var located = new TypedLocator(context.unit.targetPos) locateIn result
+        var located = (new TypedLocator(context.unit.targetPos) locateIn result)
         if (located == EmptyTree) {
           println("something's wrong: no "+context.unit+" in "+result+result.pos)
           located = result
@@ -715,8 +715,10 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     toBeRemovedAfterRun ++= sources map (_.file)
   }
 
-  /** A fully attributed tree located at position `pos` */
-  private def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
+  /** Collects all trees enclosing `pos`.
+   *  Note that only the tree in the list's head is guaranteed to be fully attributed.
+   */
+  private def typedTreeAt(pos: Position): List[Tree] = getUnit(pos.source) match {
     case None =>
       reloadSources(List(pos.source))
       try typedTreeAt(pos)
@@ -724,25 +726,27 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     case Some(unit) =>
       informIDE("typedTreeAt " + pos)
       parseAndEnter(unit)
-      val tree = locateTree(pos)
-      debugLog("at pos "+pos+" was found: "+tree.getClass+" "+tree.pos.show)
-      tree match {
+      val trees = enclosedTrees(pos)
+      // only the innermost tree is guaranteed to be fully attributed
+      val innermost = trees.head
+      debugLog("at pos "+pos+" was found: "+innermost.getClass+" "+innermost.pos.show)
+      innermost match {
         case Import(expr, _) =>
           debugLog("import found"+expr.tpe+(if (expr.tpe == null) "" else " "+expr.tpe.members))
         case _ =>
       }
-      if (stabilizedType(tree) ne null) {
-        debugLog("already attributed: "+tree.symbol+" "+tree.tpe)
-        tree
+      if (stabilizedType(innermost) ne null) {
+        debugLog("already attributed: "+innermost.symbol+" "+innermost.tpe)
+        trees
       } else {
         unit.targetPos = pos
         try {
           debugLog("starting targeted type check")
           typeCheck(unit)
 //          println("tree not found at "+pos)
-          EmptyTree
+          List(EmptyTree)
         } catch {
-          case ex: TyperResult => new Locator(pos) locateIn ex.tree
+          case ex: TyperResult => new Locator(pos) enclosedIn ex.tree
         } finally {
           unit.targetPos = NoPosition
         }
@@ -760,7 +764,13 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** Set sync var `response` to a fully attributed tree located at position `pos`  */
+  @deprecated("Should be removed together with `CompilerControl`'s `askTypeAt` and `AskTypeAtItem`", "2.10.5")
   private[interactive] def getTypedTreeAt(pos: Position, response: Response[Tree]) {
+    respond(response)(typedTreeAt(pos).head)
+  }
+
+  /** Set sync var `response` to the innermost enclosing tree up to the root */
+  private[interactive] def getEnclosingTreesAt(pos: Position, response: Response[List[Tree]]) {
     respond(response)(typedTreeAt(pos))
   }
 
@@ -999,7 +1009,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   private def typeMembers(pos: Position): Stream[List[TypeMember]] = {
-    var tree = typedTreeAt(pos)
+    var tree = typedTreeAt(pos).head
 
     // if tree consists of just x. or x.fo where fo is not yet a full member name
     // ignore the selection and look in just x.
