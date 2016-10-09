@@ -391,17 +391,8 @@ sealed abstract class List[+A] extends AbstractSeq[A]
   }
 
   override def reverseIterator = {
-    val array = new Array[AnyRef](size)
-    @annotation.tailrec
-    def loop(i: Int, list: List[A]): Unit = {
-      list match {
-        case Nil =>
-        case head :: tail =>
-          array(i) = head.asInstanceOf[AnyRef]
-          loop(i + 1, tail)
-      }
-    }
-    loop(0, this)
+    val array = new Array[Any](size)
+    copyToArray[Any](array, 0, size)
     array.reverseIterator.asInstanceOf[Iterator[A]]
   }
 
