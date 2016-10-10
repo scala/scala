@@ -326,16 +326,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
         *
         * This way the inliner should optimize the fast path because the method body is small enough.
         */
-      def expandLazyClassMember(lazyVar: Symbol, lazyAccessor: Symbol, transformedRhs: Tree, nullables: Map[Symbol, List[Symbol]]): Tree = {
-        // use cast so that specialization can turn null.asInstanceOf[T] into null.asInstanceOf[Long]
-        def nullify(sym: Symbol) =
-          Select(thisRef, sym.accessedOrSelf) === gen.mkAsInstanceOf(NULL, sym.info.resultType)
-
-        val nulls = nullables.getOrElse(lazyAccessor, Nil) map nullify
-
-        if (nulls.nonEmpty)
-          log("nulling fields inside " + lazyAccessor + ": " + nulls)
-
+      def expandLazyClassMember(lazyVar: global.Symbol, lazyAccessor: global.Symbol, transformedRhs: global.Tree): Tree = {
         val slowPathSym  = slowPathFor(lazyAccessor)
         val rhsAtSlowDef = transformedRhs.changeOwner(lazyAccessor -> slowPathSym)
 
@@ -346,7 +337,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
         def needsInit = mkTest(lazyAccessor)
         val doInit = Block(List(storeRes), mkSetFlag(lazyAccessor))
         // the slow part of double-checked locking (TODO: is this the most efficient pattern? https://github.come/scala/scala-dev/issues/204)
-        val slowPathRhs = Block(gen.mkSynchronized(thisRef)(If(needsInit, doInit, EmptyTree)) :: nulls, selectVar)
+        val slowPathRhs = Block(gen.mkSynchronized(thisRef)(If(needsInit, doInit, EmptyTree)) :: Nil, selectVar)
 
         // The lazy accessor delegates to the compute method if needed, otherwise just accesses the var (it was initialized previously)
         // `if ((bitmap&n & MASK) == 0) this.l$compute() else l$`
@@ -357,59 +348,6 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
         }
       }
     }
-
-    /** Map lazy values to the fields they should null after initialization. */
-    // TODO: fix
-    def lazyValNullables(clazz: Symbol, templStats: List[Tree]): Map[Symbol, List[Symbol]] = {
-      // if there are no lazy fields, take the fast path and save a traversal of the whole AST
-      if (!clazz.info.decls.exists(_.isLazy)) Map()
-      else {
-        // A map of single-use fields to the lazy value that uses them during initialization.
-        // Each field has to be private and defined in the enclosing class, and there must
-        // be exactly one lazy value using it.
-        //
-        // Such fields will be nulled after the initializer has memoized the lazy value.
-        val singleUseFields: Map[Symbol, List[Symbol]] = {
-          val usedIn = mutable.HashMap[Symbol, List[Symbol]]() withDefaultValue Nil
-
-          object SingleUseTraverser extends Traverser {
-            override def traverse(tree: Tree) {
-              tree match {
-                // assignment targets don't count as a dereference -- only check the rhs
-                case Assign(_, rhs) => traverse(rhs)
-                case tree: RefTree if tree.symbol != NoSymbol =>
-                  val sym = tree.symbol
-                  // println(s"$sym in ${sym.owner} from $currentOwner ($tree)")
-                  if ((sym.hasAccessorFlag || (sym.isTerm && !sym.isMethod)) && sym.isPrivate && !sym.isLazy // non-lazy private field or its accessor
-                    && !definitions.isPrimitiveValueClass(sym.tpe.resultType.typeSymbol) // primitives don't hang on to significant amounts of heap
-                    && sym.owner == currentOwner.enclClass && !(currentOwner.isGetter && currentOwner.accessed == sym)) {
-
-                    // println("added use in: " + currentOwner + " -- " + tree)
-                    usedIn(sym) ::= currentOwner
-                  }
-                  super.traverse(tree)
-                case _ => super.traverse(tree)
-              }
-            }
-          }
-          templStats foreach SingleUseTraverser.apply
-          // println("usedIn: " + usedIn)
-
-          // only consider usages from non-transient lazy vals (SI-9365)
-          val singlyUsedIn = usedIn filter { case (_, member :: Nil) => member.isLazy && !member.accessed.hasAnnotation(TransientAttr) case _ => false } toMap
-
-          // println("singlyUsedIn: " + singlyUsedIn)
-          singlyUsedIn
-        }
-
-        val map = mutable.Map[Symbol, Set[Symbol]]() withDefaultValue Set()
-        // invert the map to see which fields can be nulled for each non-transient lazy val
-        for ((field, users) <- singleUseFields; lazyFld <- users) map(lazyFld) += field
-
-        map.mapValues(_.toList sortBy (_.id)).toMap
-      }
-    }
-
 
     class SynthInitCheckedAccessorsIn(protected val clazz: Symbol) extends SynthCheckedAccessorsTreesInClass with CheckInitAccessorSymbolSynth {
       private object addInitBitsTransformer extends Transformer {
