@@ -7,7 +7,7 @@
         $treecreator1.super.<init>();
         ()
       };
-      def apply[U >: Nothing <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.api.Mirror[U]): U#Tree = {
+      def apply[U <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.api.Mirror[U]): U#Tree = {
         val $u: U = $m$untyped.universe;
         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
         $u.Literal.apply($u.Constant.apply(2))
@@ -20,7 +20,7 @@
         $typecreator2.super.<init>();
         ()
       };
-      def apply[U >: Nothing <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.api.Mirror[U]): U#Type = {
+      def apply[U <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.api.Mirror[U]): U#Type = {
         val $u: U = $m$untyped.universe;
         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
         $u.ConstantType.apply($u.Constant.apply(2))

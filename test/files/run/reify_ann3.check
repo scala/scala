@@ -1,5 +1,5 @@
 {
-  class Tree[A >: Nothing <: Any, B >: Nothing <: Any] extends AnyRef {
+  class Tree[A, B] extends AnyRef {
     @new inline @getter() final <paramaccessor> val key: A = _;
     def <init>(key: A) = {
       super.<init>();
