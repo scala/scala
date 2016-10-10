@@ -6788,6 +6788,29 @@ trait Types extends api.Types { self: SymbolTable =>
   private val lubResults = new mutable.HashMap[(Int, List[Type]), Type]
   private val glbResults = new mutable.HashMap[(Int, List[Type]), Type]
 
+  /** Some types cannot be represented at runtime in a manner which is
+   *  consistent with the meaning of the type. When such a type participates
+   *  in a lub calculation, there is a risk that the calculated lub
+   *  (according to scala type rules) will leaves us in violation of
+   *  jvm requirements without our realizing it. For instance,
+   *     List(Array[Int](), Array[Nothing]())
+   *
+   *  Without intervention this would infer a list type of Array[Int] - but
+   *  Array[Nothing] appears at runtime as Array[Object]. So here we map these
+   *  types to their runtime representation, so a weaker lub is calculated,
+   *  one to which all participants can conform.
+   *
+   *  TODO: another player in this category is contravariance, because the
+   *  jvm has no notion of the idea that sometimes in order to be a subtype
+   *  one's type parameter must be a supertype. See SI-4388.
+   */
+  private def preLub(t: Type): Type = t.dealias match {
+    case TypeRef(_, ArrayClass, elem :: Nil) if elem.typeSymbol.isBottomClass =>
+      log(s"Mapping $t to Array[Object] for lub calculation.")
+      ObjectArray
+    case _ => t
+  }
+
   def lub(ts: List[Type]): Type = ts match {
     case List() => NothingClass.tpe
     case List(t) => t
@@ -6795,7 +6818,7 @@ trait Types extends api.Types { self: SymbolTable =>
       if (Statistics.canEnable) Statistics.incCounter(lubCount)
       val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, lubNanos) else null
       try {
-         lub(ts, lubDepth(ts))
+         lub(ts mapConserve preLub, lubDepth(ts))
       } finally {
         lubResults.clear()
         glbResults.clear()
