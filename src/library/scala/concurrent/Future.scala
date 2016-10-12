@@ -494,7 +494,7 @@ object Future {
   def apply[T](body: =>T)(implicit @deprecatedName('execctx) executor: ExecutionContext): Future[T] = impl.Future(body)
 
   /** Simple version of `Future.traverse`. Transforms a `TraversableOnce[Future[A]]` into a `Future[TraversableOnce[A]]`.
-   *  Useful for reducing many `Future`s into a single `Future`.
+   *  Useful for reducing many `Future`s into a single `Future`. Does not preserve order.
    */
   def sequence[A, M[X] <: TraversableOnce[X]](in: M[Future[A]])(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]], executor: ExecutionContext): Future[M[A]] = {
     in.foldLeft(successful(cbf(in))) {
