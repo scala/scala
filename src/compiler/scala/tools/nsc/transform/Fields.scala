@@ -359,12 +359,12 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         val site = clazz.thisType
 
         // setter conflicts cannot arise independently from a getter conflict, since a setter without a getter does not a val definition make
-        def accessorConflictsExistingVal(accessor: Symbol): Boolean = {
-          val existingGetter = oldDecls.lookup(accessor.name.getterName)
-//          println(s"$existingGetter from $accessor to ${accessor.name.getterName}")
-          val tp = fieldTypeOfAccessorIn(accessor, site)
-          (existingGetter ne NoSymbol) && (tp matches (site memberInfo existingGetter).resultType) // !existingGetter.isDeferred && -- see (3)
-        }
+        def getterConflictsExistingVal(getter: Symbol): Boolean =
+          getter.isGetter && {
+            val existingGetter = oldDecls.lookup(getter.name)
+            (existingGetter ne NoSymbol) &&
+              ((site memberInfo existingGetter) matches (site memberInfo getter))
+          }
 
         def newModuleVarMember(module: Symbol): TermSymbol = {
           val moduleVar =
@@ -443,7 +443,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
           }
           // don't cause conflicts, skip overridden accessors contributed by supertraits (only act on the last overriding one)
           // see pos/trait_fields_dependent_conflict.scala and neg/t1960.scala
-          else if (accessorConflictsExistingVal(member) || isOverriddenAccessor(member, clazz)) Nil
+          else if (getterConflictsExistingVal(member) || isOverriddenAccessor(member, clazz)) Nil
           else if (member hasFlag MODULE) {
             val moduleVar = newModuleVarMember(member)
             List(moduleVar, newModuleAccessor(member, clazz, moduleVar))

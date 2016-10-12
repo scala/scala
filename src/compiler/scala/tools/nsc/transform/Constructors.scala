@@ -710,13 +710,19 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
       // Initialize all parameters fields that must be kept.
       val paramInits = paramAccessors filterNot omittableSym map { acc =>
-        // Check for conflicting symbol amongst parents: see bug #1960.
-        // It would be better to mangle the constructor parameter name since
-        // it can only be used internally, but I think we need more robust name
-        // mangling before we introduce more of it.
-        val conflict = clazz.info.nonPrivateMember(acc.name) filter (s => (s ne acc) && s.isGetter && !s.isOuterField && s.enclClass.isTrait)
-        if (conflict ne NoSymbol)
-          reporter.error(acc.pos, "parameter '%s' requires field but conflicts with %s".format(acc.name, conflict.fullLocationString))
+        // Check for conflicting field mixed in for a val/var defined in a parent trait (neg/t1960.scala).
+        // Since the fields phase has already mixed in fields, we can just look for
+        // an existing decl with the local variant of our paramaccessor's name.
+        //
+        // TODO: mangle the constructor parameter name (it can only be used internally), though we probably first need more robust name mangling
+
+        // sometimes acc is a field with a local name (when it's a val/var constructor param) --> exclude the `acc` itself when looking for conflicting decl
+        // sometimes it's not (just a constructor param) --> any conflicting decl is a problem
+        val conflict = clazz.info.decl(acc.name.localName).filter(sym => sym ne acc)
+        if (conflict ne NoSymbol) {
+          val orig = exitingTyper(clazz.info.nonPrivateMember(acc.name).filter(_ hasFlag ACCESSOR))
+          reporter.error(acc.pos, s"parameter '${acc.name}' requires field but conflicts with ${(orig orElse conflict).fullLocationString}")
+        }
 
         val accSetter =
           if (clazz.isTrait) acc.setterIn(clazz, hasExpandedName = true)
