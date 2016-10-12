@@ -215,7 +215,6 @@ trait ContextErrors {
         }
         assert(!foundType.isErroneous, s"AdaptTypeError - foundType is Erroneous: $foundType")
         assert(!req.isErroneous, s"AdaptTypeError - req is Erroneous: $req")
-
         issueNormalTypeError(callee, withAddendum(callee.pos)(typeErrorMsg(foundType, req)))
         infer.explainTypes(foundType, req)
       }
@@ -681,6 +680,38 @@ trait ContextErrors {
 
       def MissingTypeParametersError(tree: Tree) = {
         issueNormalTypeError(tree, tree.symbol+" takes type parameters")
+        setError(tree)
+      }
+
+      def InferredReturnTypeError(tree: Tree, pt: Type) = {
+        issueNormalTypeError(tree, s"inferred result type ($pt) takes type parameters")
+        setError(tree)
+      }
+
+      def AnyKindTypeError(tree: Tree) = {
+        issueNormalTypeError(tree, s"AnyKind can't be used as a real type")
+        setError(tree)
+      }
+
+      def KindPolymorphicKindArityMismatchError(tree: Tree, pt: Type, targs: List[Type], badTParamArgs: List[(Symbol, Type)], appliedType: Type) = {
+        def typeKindStr(tp: Type): String = {
+          if(tp.typeParams.isEmpty) "*"
+          else tp.typeParams.map(p => symKindStr(p)+"->").mkString("(", "", "*)")
+        }
+
+        def symKindStr(tp: Symbol): String = {
+          if(tp.typeParams.isEmpty) "*"
+          else tp.typeParams.map(p => symKindStr(p)+"->").mkString("(", "", "*)")
+        }
+
+        issueNormalTypeError(tree, {
+          val kindStrs = badTParamArgs.map { case (tparam, targ) =>
+            val kind1 = symKindStr(tparam)
+            val kind2 = typeKindStr(targ)
+            s"${tparam}[$kind1]<=>$targ[$kind2]"
+          }
+          s"[Kind-Polymorphic Error] $tree inferred to type ${pt} with illegally kinded type arguments ${targs.mkString(", ")} applied to type ${appliedType} ${if(kindStrs.nonEmpty) kindStrs.mkString("(kind errors: ", ", ", ")") else ""}"
+        })
         setError(tree)
       }
 

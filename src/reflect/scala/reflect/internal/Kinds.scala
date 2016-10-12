@@ -151,7 +151,10 @@ trait Kinds {
         log("checkKindBoundsHK under params: "+ underHKParams +" with args "+ withHKArgs)
       }
 
-      if (!sameLength(hkargs, hkparams)) {
+      def isAnyKind = settings.YkindPolymorphism && param.tpe.typeSymbol.isNonBottomSubClass(definitions.AnyKindClass)
+
+      // if using Kind Polymorphism, let it pass now and let inference happen a bit later
+      if (!sameLength(hkargs, hkparams) && !isAnyKind) {
         // Any and Nothing are kind-overloaded
         if (arg == AnyClass || arg == NothingClass) NoKindErrors
         // shortcut: always set error, whether explainTypesOrNot

@@ -165,7 +165,11 @@ trait TypeComparers {
     // corresponds does not check length of two sequences before checking the predicate,
     // but SubstMap assumes it has been checked (SI-2956)
     (     sameLength(tparams1, tparams2)
-      && (tparams1 corresponds tparams2)((p1, p2) => methodHigherOrderTypeParamsSameVariance(p1, p2) && p1.info =:= subst(p2.info))
+      && (tparams1 corresponds tparams2) { (p1, p2) =>
+        // if p2 <: AnyKind, we can let it pass
+        if(settings.YkindPolymorphism && p2.tpe.typeSymbol.isNonBottomSubClass(definitions.AnyKindClass)) true
+        else (methodHigherOrderTypeParamsSameVariance(p1, p2) && (p1.info =:= subst(p2.info)))
+      }
       && (res1 =:= subst(res2))
     )
   }
@@ -278,7 +282,6 @@ trait TypeComparers {
         isSubType1(tp1, tp2, depth)
       }
     } finally if (!result) undoLog.undoTo(before)
-
     result
   } finally {
     subsametypeRecursions -= 1
@@ -339,6 +342,21 @@ trait TypeComparers {
       (tparams1 corresponds tparams2)(cmp) && (sub1(res1) <:< sub2(res2))
     }
   }
+
+  private def KPSubTypeHi(tv: TypeVar, tp: PolyType): Boolean = {
+    if (settings.YkindPolymorphism && tv.typeSymbol.isNonBottomSubClass(definitions.AnyKindClass)) {
+      tv.addHiBound(tp)
+      true
+    } else false
+  }
+
+  private def KPSubTypeLo(tp: PolyType, tv: TypeVar): Boolean = {
+    if (settings.YkindPolymorphism && tv.typeSymbol.isNonBottomSubClass(definitions.AnyKindClass)) {
+      tv.addLoBound(tp)
+      true
+    } else false
+  }
+
   // This is looking for situations such as B.this.x.type <:< B.super.x.type.
   // If it's a ThisType on the lhs and a SuperType on the right, and they originate
   // in the same class, and the 'x' in the ThisType has in its override chain
@@ -355,6 +373,25 @@ trait TypeComparers {
       case (_, TypeRef(_, NothingClass, _))                                 => false
       case (pt1: PolyType, pt2: PolyType)                                   => isPolySubType(pt1, pt2)  // @assume both .isHigherKinded (both normalized to PolyType)
       case (_: PolyType, MethodType(ps, _)) if ps exists (_.tpe.isWildcard) => false                    // don't warn on HasMethodMatching on right hand side
+      // when manipulating TypeVar with PolyType, might be Kind Polymorphic case...
+      case (tv: TypeVar, pt2:PolyType)                                      => KPSubTypeHi(tv, pt2)
+      case (pt1: PolyType, tv: TypeVar)                                     => KPSubTypeLo(pt1, tv)
+      // if pt1 is AnyKind, might be Kind Polymorphic case...
+      case (pt1, pt2: PolyType) if (settings.YkindPolymorphism && pt1.bounds.hi.typeSymbol.isNonBottomSubClass(definitions.AnyKindClass)) =>
+        true
+      case (PolyType(tparams, _), rt2: RefinedType) if (settings.YkindPolymorphism && (rt2.typeSymbol.isNonBottomSubClass(definitions.AnyKindClass))) =>
+        // removes AnyKind and polytype parents to check subtyping
+        val parents =
+          rt2.parents
+          .filter(tp => !tp.typeSymbol.isNonBottomSubClass(definitions.AnyKindClass))
+          .map { par =>
+            val newParams = cloneSymbols(tparams)
+            PolyType(newParams, par)
+          }
+        (parents forall (isSubType(tp1, _, depth))) &&
+          (rt2.decls forall (specializesSym(tp1, _, depth)))
+      case (pt1: PolyType, pt2) if (settings.YkindPolymorphism && (pt2.bounds.hi.typeSymbol.isNonBottomSubClass(definitions.AnyKindClass))) =>
+        true
       case _                                                                =>                          // @assume !(both .isHigherKinded) thus cannot be subtypes
         def tp_s(tp: Type): String = f"$tp%-20s ${util.shortClassOfInstance(tp)}%s"
         devWarning(s"HK subtype check on $tp1 and $tp2, but both don't normalize to polytypes:\n  tp1=${tp_s(ntp1)}\n  tp2=${tp_s(ntp2)}")
@@ -371,7 +408,7 @@ trait TypeComparers {
   private def isSubType2(tp1: Type, tp2: Type, depth: Depth): Boolean = {
     def retry(lhs: Type, rhs: Type) = ((lhs ne tp1) || (rhs ne tp2)) && isSubType(lhs, rhs, depth)
 
-    if (isSingleType(tp1) && isSingleType(tp2) || isConstantType(tp1) && isConstantType(tp2))
+    if (isSingleType(tp1) && isSingleType(tp2) || isConstantType(tp1) && isConstantType(tp2)) 
       return (tp1 =:= tp2) || isThisAndSuperSubtype(tp1, tp2) || retry(tp1.underlying, tp2)
 
     if (tp1.isHigherKinded || tp2.isHigherKinded)
@@ -408,7 +445,10 @@ trait TypeComparers {
                 (base ne tr1) && (base ne NoType) && isSubType(base, tr2, depth)
               }
               ||
-              thirdTryRef(tr1, tr2))
+              thirdTryRef(tr1, tr2)
+              ||
+              // anything is <: AnyKind
+              (settings.YkindPolymorphism && (sym2 eq definitions.AnyKindClass)))
           case _ =>
             secondTry
         }
@@ -427,6 +467,7 @@ trait TypeComparers {
       case _ =>
         secondTry
     }
+
 
     /* Second try, on the left:
      *   - unwrap AnnotatedTypes, BoundedWildcardTypes,
@@ -519,6 +560,7 @@ trait TypeComparers {
      *   - handle typerefs, refined types, and singleton types.
      */
     def fourthTry = {
+
       def retry(lhs: Type, rhs: Type)  = ((tp1 ne lhs) || (tp2 ne rhs)) && isSubType(lhs, rhs, depth)
       def abstractTypeOnLeft(hi: Type) = isDifferentTypeConstructor(tp1, hi) && retry(hi, tp2)
 
@@ -535,8 +577,17 @@ trait TypeComparers {
             case _: ClassSymbol if isRawType(tp1)         => retry(normalizePlus(tp1), normalizePlus(tp2))
             case _: ClassSymbol if sym1.isModuleClass     => retry(normalizePlus(tp1), normalizePlus(tp2))
             case _: ClassSymbol if sym1.isRefinementClass => retry(sym1.info, tp2)
-            case _: TypeSymbol if sym1.isDeferred         => abstractTypeOnLeft(tp1.bounds.hi)
-            case _: TypeSymbol                            => retry(normalizePlus(tp1), normalizePlus(tp2))
+            case _: TypeSymbol if sym1.isDeferred         =>
+              // if sym1 is typesymbol <: AnyKind then no need to check further
+              if (settings.YkindPolymorphism && tp1.bounds.hi.typeSymbol.isNonBottomSubClass(definitions.AnyKindClass)) {                
+                true
+              }
+              else abstractTypeOnLeft(tp1.bounds.hi)
+            case _: TypeSymbol                            =>
+              // if sym2 is typesymbol <: AnyKind then no need to check further
+              if (settings.YkindPolymorphism && tp2.bounds.hi.typeSymbol.isNonBottomSubClass(definitions.AnyKindClass)) {                
+                true
+              } else retry(normalizePlus(tp1), normalizePlus(tp2))
             case _                                        => false
           }
         case RefinedType(parents, _) => parents exists (retry(_, tp2))

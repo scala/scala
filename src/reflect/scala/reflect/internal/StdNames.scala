@@ -256,6 +256,7 @@ trait StdNames {
     final val Singleton: NameType       = "Singleton"
     final val Throwable: NameType       = "Throwable"
     final val unchecked: NameType       = "unchecked"
+    final val AnyKind: NameType         = "AnyKind"
 
     final val api: NameType                 = "api"
     final val Annotation: NameType          = "Annotation"
