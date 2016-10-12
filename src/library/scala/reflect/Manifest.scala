@@ -87,6 +87,7 @@ object ManifestFactory {
   def valueManifests: List[AnyValManifest[_]] =
     List(Byte, Short, Char, Int, Long, Float, Double, Boolean, Unit)
 
+  @SerialVersionUID(1L)
   private class ByteManifest extends AnyValManifest[scala.Byte]("Byte") {
     def runtimeClass = java.lang.Byte.TYPE
     override def newArray(len: Int): Array[Byte] = new Array[Byte](len)
@@ -96,6 +97,7 @@ object ManifestFactory {
   }
   val Byte: AnyValManifest[Byte] = new ByteManifest
 
+  @SerialVersionUID(1L)
   private class ShortManifest extends AnyValManifest[scala.Short]("Short") {
     def runtimeClass = java.lang.Short.TYPE
     override def newArray(len: Int): Array[Short] = new Array[Short](len)
@@ -105,6 +107,7 @@ object ManifestFactory {
   }
   val Short: AnyValManifest[Short] = new ShortManifest
 
+  @SerialVersionUID(1L)
   private class CharManifest extends AnyValManifest[scala.Char]("Char") {
     def runtimeClass = java.lang.Character.TYPE
     override def newArray(len: Int): Array[Char] = new Array[Char](len)
@@ -114,6 +117,7 @@ object ManifestFactory {
   }
   val Char: AnyValManifest[Char] = new CharManifest
 
+  @SerialVersionUID(1L)
   private class IntManifest extends AnyValManifest[scala.Int]("Int") {
     def runtimeClass = java.lang.Integer.TYPE
     override def newArray(len: Int): Array[Int] = new Array[Int](len)
@@ -123,6 +127,7 @@ object ManifestFactory {
   }
   val Int: AnyValManifest[Int] = new IntManifest
 
+  @SerialVersionUID(1L)
   private class LongManifest extends AnyValManifest[scala.Long]("Long") {
     def runtimeClass = java.lang.Long.TYPE
     override def newArray(len: Int): Array[Long] = new Array[Long](len)
@@ -132,6 +137,7 @@ object ManifestFactory {
   }
   val Long: AnyValManifest[Long] = new LongManifest
 
+  @SerialVersionUID(1L)
   private class FloatManifest extends AnyValManifest[scala.Float]("Float") {
     def runtimeClass = java.lang.Float.TYPE
     override def newArray(len: Int): Array[Float] = new Array[Float](len)
@@ -141,6 +147,7 @@ object ManifestFactory {
   }
   val Float: AnyValManifest[Float] = new FloatManifest
 
+  @SerialVersionUID(1L)
   private class DoubleManifest extends AnyValManifest[scala.Double]("Double") {
     def runtimeClass = java.lang.Double.TYPE
     override def newArray(len: Int): Array[Double] = new Array[Double](len)
@@ -150,6 +157,7 @@ object ManifestFactory {
   }
   val Double: AnyValManifest[Double] = new DoubleManifest
 
+  @SerialVersionUID(1L)
   private class BooleanManifest extends AnyValManifest[scala.Boolean]("Boolean") {
     def runtimeClass = java.lang.Boolean.TYPE
     override def newArray(len: Int): Array[Boolean] = new Array[Boolean](len)
@@ -159,6 +167,7 @@ object ManifestFactory {
   }
   val Boolean: AnyValManifest[Boolean] = new BooleanManifest
 
+  @SerialVersionUID(1L)
   private class UnitManifest extends AnyValManifest[scala.Unit]("Unit") {
     def runtimeClass = java.lang.Void.TYPE
     override def newArray(len: Int): Array[Unit] = new Array[Unit](len)
@@ -175,6 +184,7 @@ object ManifestFactory {
   private val NothingTYPE = classOf[scala.runtime.Nothing$]
   private val NullTYPE = classOf[scala.runtime.Null$]
 
+  @SerialVersionUID(1L)
   private class AnyManifest extends PhantomManifest[scala.Any](ObjectTYPE, "Any") {
     override def newArray(len: Int) = new Array[scala.Any](len)
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this)
@@ -182,6 +192,7 @@ object ManifestFactory {
   }
   val Any: Manifest[scala.Any] = new AnyManifest
 
+  @SerialVersionUID(1L)
   private class ObjectManifest extends PhantomManifest[java.lang.Object](ObjectTYPE, "Object") {
     override def newArray(len: Int) = new Array[java.lang.Object](len)
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
@@ -191,6 +202,7 @@ object ManifestFactory {
 
   val AnyRef: Manifest[scala.AnyRef] = Object.asInstanceOf[Manifest[scala.AnyRef]]
 
+  @SerialVersionUID(1L)
   private class AnyValPhantomManifest extends PhantomManifest[scala.AnyVal](ObjectTYPE, "AnyVal") {
     override def newArray(len: Int) = new Array[scala.AnyVal](len)
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
@@ -198,6 +210,7 @@ object ManifestFactory {
   }
   val AnyVal: Manifest[scala.AnyVal] = new AnyValPhantomManifest
 
+  @SerialVersionUID(1L)
   private class NullManifest extends PhantomManifest[scala.Null](NullTYPE, "Null") {
     override def newArray(len: Int) = new Array[scala.Null](len)
     override def <:<(that: ClassManifest[_]): Boolean =
@@ -206,6 +219,7 @@ object ManifestFactory {
   }
   val Null: Manifest[scala.Null] = new NullManifest
 
+  @SerialVersionUID(1L)
   private class NothingManifest extends PhantomManifest[scala.Nothing](NothingTYPE, "Nothing") {
     override def newArray(len: Int) = new Array[scala.Nothing](len)
     override def <:<(that: ClassManifest[_]): Boolean = (that ne null)
@@ -213,6 +227,7 @@ object ManifestFactory {
   }
   val Nothing: Manifest[scala.Nothing] = new NothingManifest
 
+  @SerialVersionUID(1L)
   private class SingletonTypeManifest[T <: AnyRef](value: AnyRef) extends Manifest[T] {
     lazy val runtimeClass = value.getClass
     override lazy val toString = value.toString + ".type"
@@ -243,6 +258,7 @@ object ManifestFactory {
   def classType[T](prefix: Manifest[_], clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     new ClassTypeManifest[T](Some(prefix), clazz, args.toList)
 
+  @SerialVersionUID(1L)
   private abstract class PhantomManifest[T](_runtimeClass: Predef.Class[_],
                                             override val toString: String) extends ClassTypeManifest[T](None, _runtimeClass, Nil) {
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
@@ -252,6 +268,7 @@ object ManifestFactory {
 
   /** Manifest for the class type `clazz[args]`, where `clazz` is
     * a top-level or static class. */
+  @SerialVersionUID(1L)
   private class ClassTypeManifest[T](prefix: Option[Manifest[_]],
                                      val runtimeClass: Predef.Class[_],
                                      override val typeArguments: List[Manifest[_]]) extends Manifest[T] {
@@ -264,6 +281,7 @@ object ManifestFactory {
   def arrayType[T](arg: Manifest[_]): Manifest[Array[T]] =
     arg.asInstanceOf[Manifest[T]].arrayManifest
 
+  @SerialVersionUID(1L)
   private class AbstractTypeManifest[T](prefix: Manifest[_], name: String, upperBound: Predef.Class[_], args: Seq[Manifest[_]]) extends Manifest[T] {
     def runtimeClass = upperBound
     override val typeArguments = args.toList
@@ -276,6 +294,7 @@ object ManifestFactory {
   def abstractType[T](prefix: Manifest[_], name: String, upperBound: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     new AbstractTypeManifest[T](prefix, name, upperBound, args)
 
+  @SerialVersionUID(1L)
   private class WildcardManifest[T](lowerBound: Manifest[_], upperBound: Manifest[_]) extends Manifest[T] {
     def runtimeClass = upperBound.runtimeClass
     override def toString =
@@ -289,6 +308,7 @@ object ManifestFactory {
   def wildcardType[T](lowerBound: Manifest[_], upperBound: Manifest[_]): Manifest[T] =
     new WildcardManifest[T](lowerBound, upperBound)
 
+  @SerialVersionUID(1L)
   private class IntersectionTypeManifest[T](parents: Seq[Manifest[_]]) extends Manifest[T] {
     def runtimeClass = parents.head.runtimeClass
     override def toString = parents.mkString(" with ")

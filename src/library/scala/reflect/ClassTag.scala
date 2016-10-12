@@ -119,6 +119,7 @@ object ClassTag {
   val Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
   val Null    : ClassTag[scala.Null]       = Manifest.Null
 
+  @SerialVersionUID(1L)
   private class GenericClassTag[T](val runtimeClass: jClass[_]) extends ClassTag[T]
 
   def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =

@@ -139,7 +139,7 @@ trait ScalaSettings extends AbsScalaSettings
     helpArg = "mode",
     descr   = "Generate forwarder methods in classes inhering concrete methods from traits.",
     choices = List("true", "junit", "false"),
-    default = "junit",
+    default = "true",
     choicesHelp = List(
       "Always generate mixin forwarders.",
       "Generate mixin forwarders for JUnit-annotated methods (JUnit 4 does not support default methods).",
@@ -147,7 +147,7 @@ trait ScalaSettings extends AbsScalaSettings
 
   object mixinForwarderChoices {
     def isTruthy = XmixinForceForwarders.value == "true"
-    def isJunit = isTruthy || XmixinForceForwarders.value == "junit"
+    def isAtLeastJunit = isTruthy || XmixinForceForwarders.value == "junit"
   }
 
   // XML parsing options

@@ -65,6 +65,7 @@ object Set extends ImmutableSetFactory[Set] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] = setCanBuildFrom[A]
 
   /** An optimized representation for immutable empty sets */
+  @SerialVersionUID(-2443710944435909512L)
   private object EmptySet extends AbstractSet[Any] with Set[Any] with Serializable {
     override def size: Int = 0
     def contains(elem: Any): Boolean = false
