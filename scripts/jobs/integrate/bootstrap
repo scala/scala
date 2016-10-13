@@ -90,7 +90,7 @@ publishSonatypeTaskModules=${publishSonatypeTaskModules-"publishSigned"}
 
 forceRebuild=${forceRebuild-no}
 
-sbtBuildTask="testAll" # TESTING leave empty to avoid the sanity check
+sbtBuildTask=${sbtBuildTask-"testAll"} # TESTING leave empty to avoid the sanity check
 clean="clean" # TESTING leave empty to speed up testing
 
 baseDir=${WORKSPACE-`pwd`}
