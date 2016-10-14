@@ -1,5 +1,2 @@
-object ClassFormatErrorExample extends App { new Aclass(1) }
-
-trait TBase { var p:Int = 0; def f(p1: Int) {} }
-
-class Aclass (p: Int) extends TBase { def g() { f(p) } }
+trait T { var vr: Int = 0 ; val vl: Int = 0 }
+class C(vr: Int, vl: Int) extends T { def ref = vr + vl }

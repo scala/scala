@@ -90,7 +90,9 @@ publishSonatypeTaskModules=${publishSonatypeTaskModules-"publishSigned"}
 
 forceRebuild=${forceRebuild-no}
 
-sbtBuildTask="testAll" # TESTING leave empty to avoid the sanity check
+sbtBuildTask=${sbtBuildTask-"testAll"} # TESTING leave empty to avoid the sanity check
+testStability=${testStability-yes}
+
 clean="clean" # TESTING leave empty to speed up testing
 
 baseDir=${WORKSPACE-`pwd`}
@@ -529,6 +531,15 @@ bootstrap() {
   # clear ivy cache (and to be sure, local as well), so the next round of sbt builds sees the fresh scala
   rm -rf $baseDir/ivy2
 
+  # TODO: create PR with following commit (note that release will have been tagged already)
+  # git commit versions.properties -m"Bump versions.properties for $SCALA_VER."
+}
+
+testStability() {
+  echo "### Testing stability"
+
+  cd $baseDir
+
   # Run stability tests using the just built version as "quick" and a new version as "strap"
   mv build/quick quick1
   rm -rf build/
@@ -542,9 +553,6 @@ bootstrap() {
   mv build/quick build/strap
   mv quick1 build/quick
   $scriptsDir/stability-test.sh
-
-  # TODO: create PR with following commit (note that release will have been tagged already)
-  # git commit versions.properties -m"Bump versions.properties for $SCALA_VER."
 }
 
 # assumes we just bootstrapped, and current directory is $baseDir
@@ -590,6 +598,10 @@ deriveModuleVersions
 removeExistingBuilds
 
 bootstrap
+
+if [ "$testStability" == "yes" ]
+  then testStability
+fi
 
 if [ "$publishToSonatype" == "yes" ]
   then publishSonatype

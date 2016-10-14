@@ -10,6 +10,7 @@ package transform
 import symtab._
 import Flags._
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 
 abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthesis {
@@ -218,9 +219,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
               def genForwarder(required: Boolean): Unit = {
                 val owner = member.owner
                 if (owner.isJavaDefined && owner.isInterface && !clazz.parentSymbols.contains(owner)) {
-                  val text = s"Unable to implement a mixin forwarder for $member in $clazz unless interface ${owner.name} is directly extended by $clazz."
-                  if (required) reporter.error(clazz.pos, text)
-                  else warning(clazz.pos, text)
+                  if (required) {
+                    val text = s"Unable to implement a mixin forwarder for $member in $clazz unless interface ${owner.name} is directly extended by $clazz."
+                    reporter.error(clazz.pos, text)
+                  }
                 } else
                   cloneAndAddMixinMember(mixinClass, member).asInstanceOf[TermSymbol] setAlias member
               }
@@ -259,7 +261,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
               }
 
               def generateJUnitForwarder: Boolean = {
-                settings.mixinForwarderChoices.isJunit &&
+                settings.mixinForwarderChoices.isAtLeastJunit &&
                   member.annotations.nonEmpty &&
                   JUnitAnnotations.exists(annot => annot.exists && member.hasAnnotation(annot))
               }
@@ -363,11 +365,13 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
     private val rootContext =
       erasure.NoContext.make(EmptyTree, rootMirror.RootClass, newScope)
 
+    private val nullables = mutable.AnyRefMap[Symbol, Map[Symbol, List[Symbol]]]()
 
     /** The first transform; called in a pre-order traversal at phase mixin
      *  (that is, every node is processed before its children).
      *  What transform does:
      *   - For every non-trait class, add all mixed in members to the class info.
+     *  - For every non-trait class, assign null to singly used private fields after use in lazy initialization.
      */
     private def preTransform(tree: Tree): Tree = {
       val sym = tree.symbol
@@ -381,12 +385,86 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
           else if (currentOwner.isTrait)
             publicizeTraitMethods(currentOwner)
 
+          if (!currentOwner.isTrait)
+            nullables(currentOwner) = lazyValNullables(currentOwner, body)
+
           tree
+        case dd: DefDef if dd.symbol.name.endsWith(nme.LAZY_SLOW_SUFFIX) =>
+          val fieldsToNull = nullables.getOrElse(sym.enclClass, Map()).getOrElse(sym, Nil)
+          if (fieldsToNull.isEmpty) dd
+          else {
+            deriveDefDef(dd) {
+              case blk@Block(stats, expr) =>
+                assert(dd.symbol.originalOwner.isClass, dd.symbol)
+                def nullify(sym: Symbol) =
+                  Select(gen.mkAttributedThis(sym.enclClass), sym.accessedOrSelf) === NULL
+                val stats1 = stats ::: fieldsToNull.map(nullify)
+                treeCopy.Block(blk, stats1, expr)
+              case tree =>
+                devWarning("Unexpected tree shape in lazy slow path")
+                tree
+            }
+          }
 
         case _ => tree
       }
     }
 
+    /** Map lazy values to the fields they should null after initialization. */
+    def lazyValNullables(clazz: Symbol, templStats: List[Tree]): Map[Symbol, List[Symbol]] = {
+      // if there are no lazy fields, take the fast path and save a traversal of the whole AST
+      if (!clazz.info.decls.exists(_.isLazy)) Map()
+      else {
+        // A map of single-use fields to the lazy value that uses them during initialization.
+        // Each field has to be private and defined in the enclosing class, and there must
+        // be exactly one lazy value using it.
+        //
+        // Such fields will be nulled after the initializer has memoized the lazy value.
+        val singleUseFields: Map[Symbol, List[Symbol]] = {
+          val usedIn = mutable.HashMap[Symbol, List[Symbol]]() withDefaultValue Nil
+
+          object SingleUseTraverser extends Traverser {
+            override def traverse(tree: Tree) {
+              tree match {
+                // assignment targets don't count as a dereference -- only check the rhs
+                case Assign(_, rhs) => traverse(rhs)
+                case tree: RefTree if tree.symbol != NoSymbol =>
+                  val sym = tree.symbol
+                  // println(s"$sym in ${sym.owner} from $currentOwner ($tree)")
+                  if ((sym.hasAccessorFlag || (sym.isTerm && !sym.isMethod)) && sym.isPrivate && !sym.isLazy && !sym.isModule // non-lazy private field or its accessor
+                    && !definitions.isPrimitiveValueClass(sym.tpe.resultType.typeSymbol) // primitives don't hang on to significant amounts of heap
+                    && sym.owner == currentOwner.enclClass && !(currentOwner.isGetter && currentOwner.accessed == sym)) {
+
+                    // println("added use in: " + currentOwner + " -- " + tree)
+                    usedIn(sym) ::= currentOwner
+                  }
+                  super.traverse(tree)
+                case _ => super.traverse(tree)
+              }
+            }
+          }
+          templStats foreach SingleUseTraverser.apply
+          // println("usedIn: " + usedIn)
+
+          // only consider usages from non-transient lazy vals (SI-9365)
+          val singlyUsedIn = usedIn.filter {
+            case (_, member :: Nil) if member.name.endsWith(nme.LAZY_SLOW_SUFFIX) =>
+              val lazyAccessor = member.owner.info.decl(member.name.stripSuffix(nme.LAZY_SLOW_SUFFIX))
+              !lazyAccessor.accessedOrSelf.hasAnnotation(TransientAttr)
+            case _ => false
+          }.toMap
+
+          // println("singlyUsedIn: " + singlyUsedIn)
+          singlyUsedIn
+        }
+
+        val map = mutable.Map[Symbol, Set[Symbol]]() withDefaultValue Set()
+        // invert the map to see which fields can be nulled for each non-transient lazy val
+        for ((field, users) <- singleUseFields; lazyFld <- users) map(lazyFld) += field
+
+        map.mapValues(_.toList sortBy (_.id)).toMap
+      }
+    }
 
     /** Add all new definitions to a non-trait class
       *

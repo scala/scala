@@ -205,15 +205,18 @@ object ClassManifestFactory {
     case m: ClassManifest[_] => m.asInstanceOf[ClassManifest[T]].arrayManifest
   }
 
+  @SerialVersionUID(1L)
+  private class AbstractTypeClassManifest[T](prefix: OptManifest[_], name: String, clazz: jClass[_], args: OptManifest[_]*) extends ClassManifest[T] {
+    override def runtimeClass = clazz
+    override val typeArguments = args.toList
+    override def toString = prefix.toString+"#"+name+argString
+  }
+
   /** ClassManifest for the abstract type `prefix # name`. `upperBound` is not
     * strictly necessary as it could be obtained by reflection. It was
     * added so that erasure can be calculated without reflection. */
   def abstractType[T](prefix: OptManifest[_], name: String, clazz: jClass[_], args: OptManifest[_]*): ClassManifest[T] =
-    new ClassManifest[T] {
-      override def runtimeClass = clazz
-      override val typeArguments = args.toList
-      override def toString = prefix.toString+"#"+name+argString
-    }
+    new AbstractTypeClassManifest(prefix, name, clazz)
 
   /** ClassManifest for the abstract type `prefix # name`. `upperBound` is not
     * strictly necessary as it could be obtained by reflection. It was
@@ -221,15 +224,12 @@ object ClassManifestFactory {
     * todo: remove after next bootstrap
     */
   def abstractType[T](prefix: OptManifest[_], name: String, upperbound: ClassManifest[_], args: OptManifest[_]*): ClassManifest[T] =
-    new ClassManifest[T] {
-      override def runtimeClass = upperbound.runtimeClass
-      override val typeArguments = args.toList
-      override def toString = prefix.toString+"#"+name+argString
-    }
+    new AbstractTypeClassManifest(prefix, name, upperbound.runtimeClass)
 }
 
 /** Manifest for the class type `clazz[args]`, where `clazz` is
   * a top-level or static class */
+@SerialVersionUID(1L)
 private class ClassTypeManifest[T](
   prefix: Option[OptManifest[_]],
   val runtimeClass: jClass[_],
