@@ -840,14 +840,14 @@ trait Definitions extends api.StandardDefinitions {
      *
      * The method must be monomorphic and have exactly one parameter list.
      * The class defining the method is a supertype of `tp` that
-     * has a public no-arg primary constructor.
+     * has a public no-arg primary constructor and it can be subclassed (not final or sealed).
      */
     def samOf(tp: Type): Symbol = if (!doSam) NoSymbol else if (!isNonRefinementClassType(unwrapToClass(tp))) NoSymbol else {
       // look at erased type because we (only) care about what ends up in bytecode
       // (e.g., an alias type is fine as long as is compiles to a single-abstract-method)
       val tpSym: Symbol = erasure.javaErasure(tp).typeSymbol
 
-      if (tpSym.exists && tpSym.isClass
+      if (tpSym.exists && tpSym.isClass && !(tpSym hasFlag (FINAL | SEALED))
           // if tp has a constructor (its class is not a trait), it must be public and must not take any arguments
           // (implementation restriction: implicit argument lists are excluded to simplify type inference in adaptToSAM)
           && { val ctor = tpSym.primaryConstructor

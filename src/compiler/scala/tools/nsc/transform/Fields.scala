@@ -359,12 +359,12 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         val site = clazz.thisType
 
         // setter conflicts cannot arise independently from a getter conflict, since a setter without a getter does not a val definition make
-        def accessorConflictsExistingVal(accessor: Symbol): Boolean = {
-          val existingGetter = oldDecls.lookup(accessor.name.getterName)
-//          println(s"$existingGetter from $accessor to ${accessor.name.getterName}")
-          val tp = fieldTypeOfAccessorIn(accessor, site)
-          (existingGetter ne NoSymbol) && (tp matches (site memberInfo existingGetter).resultType) // !existingGetter.isDeferred && -- see (3)
-        }
+        def getterConflictsExistingVal(getter: Symbol): Boolean =
+          getter.isGetter && {
+            val existingGetter = oldDecls.lookup(getter.name)
+            (existingGetter ne NoSymbol) &&
+              ((site memberInfo existingGetter) matches (site memberInfo getter))
+          }
 
         def newModuleVarMember(module: Symbol): TermSymbol = {
           val moduleVar =
@@ -443,7 +443,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
           }
           // don't cause conflicts, skip overridden accessors contributed by supertraits (only act on the last overriding one)
           // see pos/trait_fields_dependent_conflict.scala and neg/t1960.scala
-          else if (accessorConflictsExistingVal(member) || isOverriddenAccessor(member, clazz)) Nil
+          else if (getterConflictsExistingVal(member) || isOverriddenAccessor(member, clazz)) Nil
           else if (member hasFlag MODULE) {
             val moduleVar = newModuleVarMember(member)
             List(moduleVar, newModuleAccessor(member, clazz, moduleVar))
@@ -659,7 +659,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         val lazyVar = lazyVarOf(getter)
         val rhs = cast(Apply(selectSuper, Nil), lazyVar.info)
 
-        synthAccessorInClass.expandLazyClassMember(lazyVar, getter, rhs, Map.empty)
+        synthAccessorInClass.expandLazyClassMember(lazyVar, getter, rhs)
       }
 
       (afterOwnPhase { clazz.info.decls } toList) filter checkAndClearNeedsTrees map {
@@ -715,7 +715,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
             // note that `LazyAccessorTreeSynth` is pretty lightweight
             // (it's just a bunch of methods that all take a `clazz` parameter, which is thus stored as a field)
             val synthAccessorInClass = new SynthLazyAccessorsIn(currOwner)
-            synthAccessorInClass.expandLazyClassMember(lazyVarOf(statSym), statSym, transformedRhs, nullables.getOrElse(currOwner, Map.empty))
+            synthAccessorInClass.expandLazyClassMember(lazyVarOf(statSym), statSym, transformedRhs)
           }
 
         // drop the val for (a) constant (pure & not-stored) and (b) not-stored (but still effectful) fields
@@ -744,8 +744,6 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       if (stat.isTerm) atOwner(exprOwner)(transform(stat))
       else transform(stat)
 
-    private val nullables = perRunCaches.newMap[Symbol, Map[Symbol, List[Symbol]]]
-
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val addedStats =
         if (!currentOwner.isClass || currentOwner.isPackageClass) Nil
@@ -755,10 +753,6 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
             thickets flatMap explodeThicket
           else thickets
         }
-
-      val inRealClass = currentOwner.isClass && !(currentOwner.isPackageClass || currentOwner.isTrait)
-      if (inRealClass)
-        nullables(currentOwner) = lazyValNullables(currentOwner, stats)
 
       val newStats =
         stats mapConserve (if (exprOwner != currentOwner) transformTermsAtExprOwner(exprOwner) else transform)

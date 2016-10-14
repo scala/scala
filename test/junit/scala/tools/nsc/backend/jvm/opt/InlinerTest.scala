@@ -3,7 +3,7 @@ package backend.jvm
 package opt
 
 import org.junit.Assert._
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
@@ -475,7 +475,7 @@ class InlinerTest extends BytecodeTesting {
         |  def t2 = this.f
         |}
       """.stripMargin
-    val warn = "T::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden"
+    val warn = "::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden"
     var count = 0
     val List(c, t) = compile(code, allowMessage = i => {count += 1; i.msg contains warn})
     assert(count == 2, count)
@@ -1486,9 +1486,7 @@ class InlinerTest extends BytecodeTesting {
     assertSameSummary(getMethod(c, "t"), List(NEW, "<init>", ICONST_1, IRETURN))  // ICONST_1, U.f is inlined (not T.f)
   }
 
-  // Can be enabled when using 2.12.0-M5 as starr. This test works under a full boostrap, but not
-  // when compiled with M4.
-  @Test @Ignore
+  @Test
   def inlineArrayForeach(): Unit = {
     val code =
       """class C {

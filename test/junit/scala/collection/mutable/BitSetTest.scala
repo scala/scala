@@ -1,8 +1,8 @@
 package scala.collection.mutable
 
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.{Test, Ignore}
 
 @RunWith(classOf[JUnit4])
 class BitSetTest {

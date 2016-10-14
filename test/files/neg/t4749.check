@@ -26,7 +26,7 @@ t4749.scala:26: warning: Fail6 has a main method with parameter type Array[Strin
   object Fail6 {
          ^
 t4749.scala:42: warning: Win3 has a main method with parameter type Array[String], but bippy.Win3 will not be a runnable program.
-  Reason: main methods cannot refer to type parameters or abstract types.
+  Reason: main method must have exact signature (Array[String])Unit
   object Win3 extends WinBippy[Unit] { }
          ^
 error: No warnings can be incurred under -Xfatal-warnings.
