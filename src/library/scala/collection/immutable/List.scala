@@ -86,6 +86,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
                                   with Product
                                   with GenericTraversableTemplate[A, List]
                                   with LinearSeqOptimized[A, List[A]]
+                                  with FilteredTraversableInternal[A, List[A]]
                                   with Serializable {
   override def companion: GenericCompanion[List] = List
 
@@ -416,6 +417,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
   // Create a proxy for Java serialization that allows us to avoid mutation
   // during de-serialization.  This is the Serialization Proxy Pattern.
   protected final def writeReplace(): AnyRef = new List.SerializationProxy(this)
+
 }
 
 /** The empty list.
