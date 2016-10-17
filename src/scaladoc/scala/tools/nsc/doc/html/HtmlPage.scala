@@ -145,8 +145,12 @@ abstract class HtmlPage extends Page { thisPage =>
         <span class="extmbr" name={ mbr.qualifiedName }>{ inlineToHtml(text) }</span>
     case Tooltip(tooltip) =>
       <span class="extype" name={ tooltip }>{ inlineToHtml(text) }</span>
-    case LinkToExternal(name, url) =>
-      <a href={ url } class="extype" target="_top">{ inlineToHtml(text) }</a>
+    case LinkToExternalTpl(name, baseUrl, dtpl: TemplateEntity) =>
+      def url = Page.makeUrl(baseUrl, Page.templateToPath(dtpl))
+      if (hasLinks)
+        <a href={ url } class="extype" name={ dtpl.qualifiedName }>{ inlineToHtml(text) }</a>
+      else
+        <span class="extype" name={ dtpl.qualifiedName }>{ inlineToHtml(text) }</span>
     case _ =>
       inlineToHtml(text)
   }

@@ -40,7 +40,7 @@ object Test extends ScaladocModelTest {
 
     val a = rootPackage._package("scala")._package("test")._package("scaladoc")._package("T8857")._class("A")
 
-    val links = countLinks(a.comment.get, _.link.isInstanceOf[LinkToExternal])
+    val links = countLinks(a.comment.get, _.link.isInstanceOf[LinkToExternalTpl])
     assert(links == 1, links + " ==  1 (the links to external in class A)")
   }
 }

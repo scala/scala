@@ -15,7 +15,7 @@ trait MemberLookupBase {
   def internalLink(sym: Symbol, site: Symbol): Option[LinkTo]
   def chooseLink(links: List[LinkTo]): LinkTo
   def toString(link: LinkTo): String
-  def findExternalLink(sym: Symbol, name: String): Option[LinkToExternal]
+  def findExternalLink(sym: Symbol, name: String): Option[LinkTo]
   def warnNoLink: Boolean
 
   import global._
