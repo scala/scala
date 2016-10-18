@@ -33,10 +33,13 @@ class InteractiveReader(completer: () => Completion) extends interpreter.Interac
   private val consoleReader = {
     val reader = new JLineConsoleReader()
 
-    reader setPaginationEnabled interpreter.`package`.isPaged
+    reader setPaginationEnabled interpreter.isPaged
 
-    // ASAP
+    // turn off magic !
     reader setExpandEvents false
+
+    // enable detecting pasted tab char (when next char is immediately available) which is taken raw, not completion
+    reader setCopyPasteDetection true
 
     reader setHistory history.asInstanceOf[JHistory]
 
