@@ -25,7 +25,7 @@ package scala.sys {
     *
     * {{{
     * import scala.sys.process._
-    * "ls" #| "grep .scala" #&& Seq("sh", "-c", "scalac *.scala") #|| "echo nothing found" lines
+    * "ls" #| "grep .scala" #&& Seq("sh", "-c", "scalac *.scala") #|| "echo nothing found" lineStream
     * }}}
     *
     * We describe below the general concepts and architecture of the package,
@@ -92,7 +92,7 @@ package scala.sys {
     *
     *   - Return status of the process (`!` methods)
     *   - Output of the process as a `String` (`!!` methods)
-    *   - Continuous output of the process as a `Stream[String]` (`lines` methods)
+    *   - Continuous output of the process as a `Stream[String]` (`lineStream` methods)
     *   - The `Process` representing it (`run` methods)
     *
     * Some simple examples of these methods:
@@ -109,7 +109,7 @@ package scala.sys {
     * // a Stream[String]
     * def sourceFilesAt(baseDir: String): Stream[String] = {
     *   val cmd = Seq("find", baseDir, "-name", "*.scala", "-type", "f")
-    *   cmd.lines
+    *   cmd.lineStream
     * }
     * }}}
     *
@@ -167,8 +167,8 @@ package scala.sys {
     * def sourceFilesAt(baseDir: String): (Stream[String], StringBuffer) = {
     *   val buffer = new StringBuffer()
     *   val cmd = Seq("find", baseDir, "-name", "*.scala", "-type", "f")
-    *   val lines = cmd lines_! ProcessLogger(buffer append _)
-    *   (lines, buffer)
+    *   val lineStream = cmd lineStream_! ProcessLogger(buffer append _)
+    *   (lineStream, buffer)
     * }
     * }}}
     *
