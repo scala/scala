@@ -110,7 +110,7 @@ trait Namers extends MethodSynthesis {
     protected def owner       = context.owner
     def contextFile = context.unit.source.file
     def typeErrorHandler[T](tree: Tree, alt: T): PartialFunction[Throwable, T] = {
-      case ex: TypeError =>
+      case ex: TypeError if !global.propagateCyclicReferences =>
         // H@ need to ensure that we handle only cyclic references
         TypeSigError(tree, ex)
         alt
@@ -912,12 +912,33 @@ trait Namers extends MethodSynthesis {
 
     private def templateSig(templ: Template): Type = {
       val clazz = context.owner
+
+      val parentTrees = typer.typedParentTypes(templ)
+
+      val pending = mutable.ListBuffer[AbsTypeError]()
+      parentTrees foreach { tpt =>
+        val ptpe = tpt.tpe
+        if(!ptpe.isError) {
+          val psym = ptpe.typeSymbol
+          val sameSourceFile = context.unit.source.file == psym.sourceFile
+
+          if (psym.isSealed && !phase.erasedTypes)
+            if (sameSourceFile)
+              psym addChild context.owner
+            else
+              pending += ParentSealedInheritanceError(tpt, psym)
+          if (psym.isLocalToBlock && !phase.erasedTypes)
+            psym addChild context.owner
+        }
+      }
+      pending.foreach(ErrorUtils.issueTypeError)
+
       def checkParent(tpt: Tree): Type = {
         if (tpt.tpe.isError) AnyRefTpe
         else tpt.tpe
       }
 
-      val parents = typer.typedParentTypes(templ) map checkParent
+      val parents = parentTrees map checkParent
 
       enterSelf(templ.self)
 
@@ -1678,6 +1699,12 @@ trait Namers extends MethodSynthesis {
 
   abstract class TypeCompleter extends LazyType {
     val tree: Tree
+    override def forceDirectSuperclasses: Unit = {
+      tree.foreach {
+        case dt: DefTree => global.withPropagateCyclicReferences(Option(dt.symbol).map(_.maybeInitialize))
+        case _ =>
+      }
+    }
   }
 
   def mkTypeCompleter(t: Tree)(c: Symbol => Unit) = new LockingTypeCompleter with FlagAgnosticCompleter {

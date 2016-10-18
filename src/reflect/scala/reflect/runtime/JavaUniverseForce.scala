@@ -41,6 +41,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.ForAttachment
     this.SyntheticUnitAttachment
     this.SubpatternsAttachment
+    this.KnownDirectSubclassesCalled
     this.noPrint
     this.typeDebug
     this.Range

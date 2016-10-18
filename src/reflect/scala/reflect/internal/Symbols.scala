@@ -110,6 +110,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def knownDirectSubclasses = {
       // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
       if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
+
+      enclosingPackage.info.decls.foreach { sym =>
+        if(sourceFile == sym.sourceFile) {
+          sym.rawInfo.forceDirectSuperclasses
+        }
+      }
+
+      if(!isPastTyper)
+        updateAttachment(KnownDirectSubclassesCalled)
+
       children
     }
 
@@ -3351,7 +3361,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     private[this] var childSet: Set[Symbol] = Set()
     override def children = childSet
-    override def addChild(sym: Symbol) { childSet = childSet + sym }
+    override def addChild(sym: Symbol) {
+      if(!isPastTyper && hasAttachment[KnownDirectSubclassesCalled.type] && !childSet.contains(sym))
+        globalError(s"knownDirectSubclasses of ${this.name} observed before subclass ${sym.name} registered")
+
+      childSet = childSet + sym
+    }
 
     def anonOrRefinementString = {
       if (hasCompleteInfo) {

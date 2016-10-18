@@ -11,7 +11,7 @@ object Test extends MemoryTest {
     cm.mkToolBox()
   }
 
-  override def maxDelta = 10
+  override def maxDelta = 12
   override def calcsPerIter = 8
   override def calc() {
     var snippet = """
