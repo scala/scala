@@ -744,11 +744,19 @@ class MutableSettings(val errorFn: String => Unit)
     def isHelping: Boolean = sawHelp
 
     def help: String = {
-      val choiceLength = choices.map(_.length).max + 1
-      val formatStr = s"  %-${choiceLength}s %s"
-      choices.zipAll(descriptions, "", "").map {
-        case (arg, descr) => formatStr.format(arg, descr)
-      } mkString (f"$descr%n", f"%n", "")
+      val describe: ((String, String)) => String = {
+        val choiceWidth = choices.map(_.length).max + 1
+        val formatStr   = s"  %-${choiceWidth}s %s"
+        locally {
+          case (choice, description) => formatStr.format(choice, description)
+        }
+      }
+      val verboseDefault = default match {
+        case Some("_" :: Nil) => Some("All choices are enabled by default." :: Nil)
+        case _ => default
+      }
+      val orelse = verboseDefault.map(_.mkString(f"%nDefault: ", ", ", f"%n")).getOrElse("")
+      choices.zipAll(descriptions, "", "").map(describe).mkString(f"${descr}%n", f"%n", orelse)
     }
 
     def clear(): Unit         = {
