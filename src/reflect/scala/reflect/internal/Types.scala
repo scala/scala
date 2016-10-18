@@ -307,6 +307,9 @@ trait Types
     /** Is this type completed (i.e. not a lazy type)? */
     def isComplete: Boolean = true
 
+    /** Should this be printed as an infix type (@showAsInfix class &&[T, U])? */
+    def isShowAsInfixType: Boolean = false
+
     /** If this is a lazy type, assign a new type to `sym`. */
     def complete(sym: Symbol) {}
 
@@ -2133,6 +2136,9 @@ trait Types
         trivial = fromBoolean(!sym.isTypeParameter && pre.isTrivial && areTrivialTypes(args))
       toBoolean(trivial)
     }
+
+    override def isShowAsInfixType: Boolean = sym.hasAnnotation(ShowAsInfixAnnotationClass)
+
     private[scala] def invalidateCaches(): Unit = {
       parentsPeriod = NoPeriod
       baseTypeSeqPeriod = NoPeriod
@@ -2298,6 +2304,14 @@ trait Types
               xs.init.mkString("(", ", ", ")") + " => " + xs.last
           }
         }
+        else if (isShowAsInfixType && args.length == 2)
+          args(0) + " " + sym.decodedName + " " +
+            (
+              if (args(1).isShowAsInfixType)
+                "(" + args(1) + ")"
+              else
+                args(1)
+            )
         else if (isTupleTypeDirect(this))
           tupleTypeString
         else if (sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic) && (this ne dealias))
