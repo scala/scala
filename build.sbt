@@ -632,7 +632,7 @@ lazy val test = project
     javaOptions in IntegrationTest += "-Xmx2G",
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
     testFrameworks -= new TestFramework("org.scalacheck.ScalaCheckFramework"),
-    testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M -XX:MaxPermSize=128M"),
+    testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.scalac_opts=" + (scalacOptions in Compile).value.mkString(" ")),
     testOptions in IntegrationTest += Tests.Setup { () =>
       val cp = (dependencyClasspath in Test).value
