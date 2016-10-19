@@ -97,6 +97,9 @@ warn-unused-privates.scala:118: warning: local class DingDongDoobie is never use
 warn-unused-privates.scala:121: warning: local type OtherThing is never used
     type OtherThing = String // warn
          ^
+warn-unused-privates.scala:216: warning: private class for your eyes only in object not even using companion privates is never used
+  private implicit class `for your eyes only`(i: Int) {  // warn
+                         ^
 warn-unused-privates.scala:201: warning: pattern var z in method f is never used; `z@_' suppresses this warning
     case z => "warn"
          ^
@@ -104,5 +107,5 @@ warn-unused-privates.scala:208: warning: pattern var z in method f is never used
     case Some(z) => "warn"
               ^
 error: No warnings can be incurred under -Xfatal-warnings.
-35 warnings found
+36 warnings found
 one error found

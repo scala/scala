@@ -355,7 +355,10 @@ trait TypeDiagnostics {
 
     // functions to manipulate the name
     def preQualify()   = modifyName(trueOwner.fullName + "." + _)
-    def postQualify()  = if (!(postQualifiedWith contains trueOwner)) { postQualifiedWith ::= trueOwner; modifyName(_ + "(in " + trueOwner + ")") }
+    def postQualify()  = if (!(postQualifiedWith contains trueOwner)) {
+      postQualifiedWith ::= trueOwner
+      modifyName(s => s"$s(in $trueOwner)")
+    }
     def typeQualify()  = if (sym.isTypeParameterOrSkolem) postQualify()
     def nameQualify()  = if (trueOwner.isPackageClass) preQualify() else postQualify()
 
@@ -498,11 +501,13 @@ trait TypeDiagnostics {
 
         override def traverse(t: Tree): Unit = {
           t match {
-            case m: MemberDef if qualifies(t.symbol)   => defnTrees += m
+            case m: MemberDef if qualifies(t.symbol)   =>
+              defnTrees += m
               t match {
                 case DefDef(mods@_, name@_, tparams@_, vparamss, tpt@_, rhs@_) if !t.symbol.isAbstract && !t.symbol.isDeprecated =>
                   if (t.symbol.isPrimaryConstructor)
                     for (cpa <- t.symbol.owner.constrParamAccessors if cpa.isPrivateLocal) params += cpa
+                  else if (t.symbol.isSynthetic && t.symbol.isImplicit) return
                   else if (!t.symbol.isConstructor)
                     for (vs <- vparamss) params ++= vs.map(_.symbol)
                 case _ =>
@@ -525,6 +530,7 @@ trait TypeDiagnostics {
                 case NoType | NoPrefix    =>
                 case NullaryMethodType(_) =>
                 case MethodType(_, _)     =>
+                case SingleType(_, _)     =>
                 case _                    =>
                   log(s"$tp referenced from $currentOwner")
                   treeTypes += tp
@@ -547,6 +553,7 @@ trait TypeDiagnostics {
         def isSyntheticWarnable(sym: Symbol) = (
           sym.isDefaultGetter 
         )
+        
         def isUnusedTerm(m: Symbol): Boolean = (
              (m.isTerm)
           && (!m.isSynthetic || isSyntheticWarnable(m))
@@ -562,7 +569,7 @@ trait TypeDiagnostics {
         def treepos(t: Tree): Int =
           if (t.pos.isDefined) t.pos.point else sympos(t.symbol)
 
-        def unusedTypes = defnTrees.toList filter (t => isUnusedType(t.symbol)) sortBy treepos
+        def unusedTypes = defnTrees.toList.filter(t => isUnusedType(t.symbol)).sortBy(treepos)
         def unusedTerms = {
           val all = defnTrees.toList.filter(v => isUnusedTerm(v.symbol))
 
