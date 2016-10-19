@@ -577,27 +577,37 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       }
     }
 
-    protected def putCommentChar(): Unit = in.next()
+    // Hooks for ScaladocJavaUnitScanner
+    protected def beginDocComment(): Unit = {}
+    protected def processCommentChar(): Unit = {}
+    protected def finishDocComment(): Unit = {}
 
-    protected def skipBlockComment(isDoc: Boolean): Unit = in.ch match {
-      case SU  => incompleteInputError("unclosed comment")
-      case '*' => putCommentChar() ; if (in.ch == '/') putCommentChar() else skipBlockComment(isDoc)
-      case _   => putCommentChar() ; skipBlockComment(isDoc)
+    final protected def putCommentChar(): Unit = { processCommentChar(); in.next() }
+
+    @tailrec final protected def skipBlockComment(isDoc: Boolean): Unit = {
+      if (isDoc) beginDocComment()
+
+      in.ch match {
+        case SU  => incompleteInputError("unclosed comment")
+        case '*' => putCommentChar() ; if (in.ch == '/') putCommentChar() else skipBlockComment(isDoc)
+        case _   => putCommentChar() ; skipBlockComment(isDoc)
+      }
     }
 
-    protected def skipLineComment(): Unit = in.ch match {
+    @tailrec final protected def skipLineComment(): Unit = in.ch match {
       case CR | LF | SU =>
       case _            => putCommentChar() ; skipLineComment()
     }
 
-    protected def skipComment(): Boolean = in.ch match {
-      case '/' => putCommentChar() ; skipLineComment() ; true
+    final protected def skipComment(): Boolean = in.ch match {
+      case '/' => putCommentChar() ; skipLineComment() ; finishDocComment() ; true
       case '*' =>
         putCommentChar()
         in.ch match {
           case '*' => skipBlockComment(isDoc = true)
           case _ => skipBlockComment(isDoc = false)
         }
+        finishDocComment()
         true
       case _   => false
     }

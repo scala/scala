@@ -215,51 +215,32 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
   }
 
   class ScaladocJavaUnitScanner(unit: CompilationUnit) extends JavaUnitScanner(unit) {
-
-    private var docBuffer: StringBuilder = _
-    private var inDocComment = false
+    // When `docBuffer == null`, we're not in a doc comment.
+    private var docBuffer: StringBuilder = null
     private var docStart: Int = 0
     private var lastDoc: DocComment = null
-
-    override def init() = {
-      docBuffer = new StringBuilder
-      super.init()
-    }
 
     // get last doc comment
     def flushDoc(): DocComment = try lastDoc finally lastDoc = null
 
-    override protected def putCommentChar(): Unit = {
-      if (inDocComment) docBuffer append in.ch
-      in.next
-    }
-
-    override protected def skipBlockComment(isDoc: Boolean): Unit = {
-      // condition is true when comment is entered the first time,
-      // i.e. immediately after "/*" and when current character is "*"
-      if (!inDocComment && isDoc) {
-        docBuffer append "/*"
+    override protected def beginDocComment(): Unit =
+      if (docBuffer == null) {
+        // Comment is entered the first time, i.e. immediately after "/*" and when current character is "*"
+        docBuffer = new StringBuilder("/*")
         docStart = currentPos.start
-        inDocComment = true
       }
-      super.skipBlockComment(isDoc)
-    }
 
-    override protected def skipComment(): Boolean = {
-      val skipped = super.skipComment()
-      if (skipped && inDocComment) {
+    override protected def processCommentChar(): Unit =
+      if (docBuffer != null) docBuffer append in.ch
+
+    override protected def finishDocComment(): Unit =
+      if (docBuffer != null) {
         val raw = docBuffer.toString
         val position = Position.range(unit.source, docStart, docStart, in.cpos)
         lastDoc = DocComment(raw, position)
         signalParsedDocComment(raw, position)
-        docBuffer.setLength(0) // clear buffer
-        inDocComment = false
-        true
-      } else {
-        skipped
+        docBuffer = null
       }
-    }
-
   }
 
   class ScaladocJavaUnitParser(unit: CompilationUnit) extends {
