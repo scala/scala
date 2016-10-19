@@ -87,16 +87,16 @@ abstract class BrowsingLoaders extends GlobalSymbolLoaders {
           if (packagePrefix == root.fullName) {
             enterClass(root, name.toString, new SourcefileLoader(src))
             entered += 1
-          } else println("prefixes differ: "+packagePrefix+","+root.fullName)
+          } else log("prefixes differ: "+packagePrefix+","+root.fullName)
         case ModuleDef(_, name, _) =>
           if (packagePrefix == root.fullName) {
             val module = enterModule(root, name.toString, new SourcefileLoader(src))
             entered += 1
             if (name == nme.PACKAGEkw) {
-              println("open package module: "+module)
+              log("open package module: "+module)
               openPackageModule(module, root)
             }
-          } else println("prefixes differ: "+packagePrefix+","+root.fullName)
+          } else log("prefixes differ: "+packagePrefix+","+root.fullName)
         case _ =>
       }
     }
@@ -121,7 +121,7 @@ abstract class BrowsingLoaders extends GlobalSymbolLoaders {
         browseTopLevel(root, src)
     } catch {
       case ex: syntaxAnalyzer.MalformedInput =>
-        println("[%s] caught malformed input exception at offset %d: %s".format(src, ex.offset, ex.msg))
+        log(s"[$src] caught malformed input exception at offset ${ex.offset}: ${ex.msg}")
         super.enterToplevelsFromSource(root, name, src)
     }
   }
