@@ -181,6 +181,12 @@ class SettingsTest {
     assertThrows[IllegalArgumentException](check(expected = "2.11", "-Xsource:2.invalid"), _ contains "There was a problem parsing 2.invalid")
   }
 
+  // equal with stripped margins and normalized line endings
+  private def marginallyEquals(s1: String, s2: String): Boolean = {
+    def normally(s: String): String = s.stripMargin.lines.mkString("\n")
+    normally(s1) == normally(s2)
+  }
+
   @Test def helpHasDefault(): Unit = {
     val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
     object mChoices extends s.MultiChoiceEnumeration {
@@ -201,15 +207,14 @@ class SettingsTest {
 
     assertTrue(check("-m")(_.value == Set(b)))
     assertTrue(check("-m") { _ =>
-      assertEquals(
-      """magic sauce
-        |  a  help a
-        |  b  help b
-        |  c  help c
-        |Default: b
-        |""".stripMargin,
-        m.help)
-      true
+      val expected =
+        """|magic sauce
+           |  a  help a
+           |  b  help b
+           |  c  help c
+           |Default: b
+           |"""
+      marginallyEquals(expected, m.help)
     })
   }
   @Test def helpHasDefaultAll(): Unit = {
@@ -232,15 +237,14 @@ class SettingsTest {
 
     assertTrue(check("-m")(_.value == Set(a, b, c)))
     assertTrue(check("-m") { _ =>
-      assertEquals(
-      """magic sauce
-        |  a  help a
-        |  b  help b
-        |  c  help c
-        |Default: All choices are enabled by default.
-        |""".stripMargin,
-        m.help)
-      true
+      val expected =
+        """|magic sauce
+           |  a  help a
+           |  b  help b
+           |  c  help c
+           |Default: All choices are enabled by default.
+           |"""
+      marginallyEquals(expected, m.help)
     })
   }
 }
