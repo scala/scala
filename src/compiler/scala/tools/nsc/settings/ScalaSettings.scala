@@ -39,7 +39,7 @@ trait ScalaSettings extends AbsScalaSettings
   def infoSettings = List[Setting](version, help, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph)
 
   /** Any -option:help? */
-  private def multihelp = allSettings exists { case s => s.isHelping case _ => false }
+  private def multihelp = allSettings exists (_.isHelping)
 
   /** Is an info setting set? */
   def isInfo = (infoSettings exists (_.isSetByUser)) || multihelp
