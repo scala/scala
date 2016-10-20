@@ -38,8 +38,8 @@ trait ScannersCommon {
     def deprecationWarning(off: Offset, msg: String, since: String): Unit
   }
 
+  // Hooks for ScaladocUnitScanner and ScaladocJavaUnitScanner
   trait DocScanner {
-    // Hooks for ScaladocJavaUnitScanner
     protected def beginDocComment(prefix: String): Unit = {}
     protected def processCommentChar(): Unit = {}
     protected def finishDocComment(): Unit = {}

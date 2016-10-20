@@ -101,10 +101,26 @@ trait ScaladocAnalyzer extends Analyzer {
 abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends SyntaxAnalyzer {
   import global._
 
-  class ScaladocUnitScanner(unit0: CompilationUnit, patches0: List[BracePatch]) extends UnitScanner(unit0, patches0) {
+  trait ScaladocScanner extends DocScanner {
     // When `docBuffer == null`, we're not in a doc comment.
     private var docBuffer: StringBuilder = null
 
+    override protected def beginDocComment(prefix: String): Unit =
+      if (docBuffer == null) docBuffer = new StringBuilder(prefix)
+
+    protected def ch: Char
+    override protected def processCommentChar(): Unit =
+      if (docBuffer != null) docBuffer append ch
+
+    protected def docPosition: Position
+    override protected def finishDocComment(): Unit =
+      if (docBuffer != null) {
+        registerDocComment(docBuffer.toString, docPosition)
+        docBuffer = null
+      }
+  }
+
+  class ScaladocUnitScanner(unit0: CompilationUnit, patches0: List[BracePatch]) extends UnitScanner(unit0, patches0) with ScaladocScanner {
     private object unmooredParser extends {                // minimalist comment parser
       val global: Global = ScaladocSyntaxAnalyzer.this.global
     }
@@ -146,18 +162,7 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
         reporter.warning(doc.pos, "discarding unmoored doc comment")
     }
 
-    override protected def beginDocComment(prefix: String): Unit =
-      if (docBuffer == null) docBuffer = new StringBuilder(prefix)
-
-    override protected def processCommentChar(): Unit =
-      if (docBuffer != null) docBuffer append ch
-
-    override protected def finishDocComment(): Unit =
-      if (docBuffer != null) {
-        registerDocComment(docBuffer.toString, Position.range(unit.source, offset, offset, charOffset - 2))
-        docBuffer = null
-      }
-
+    protected def docPosition: Position = Position.range(unit.source, offset, offset, charOffset - 2)
   }
   class ScaladocUnitParser(unit: CompilationUnit, patches: List[BracePatch]) extends UnitParser(unit, patches) {
     override def newScanner() = new ScaladocUnitScanner(unit, patches)
@@ -190,26 +195,17 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
     }
   }
 
-  class ScaladocJavaUnitScanner(unit: CompilationUnit) extends JavaUnitScanner(unit) {
-    // When `docBuffer == null`, we're not in a doc comment.
-    private var docBuffer: StringBuilder = null
+  class ScaladocJavaUnitScanner(unit: CompilationUnit) extends JavaUnitScanner(unit) with ScaladocScanner {
     private var docStart: Int = 0
 
-    override protected def beginDocComment(prefix: String): Unit =
-      if (docBuffer == null) {
-        // Comment is entered the first time, i.e. immediately after "/*" and when current character is "*"
-        docBuffer = new StringBuilder(prefix)
-        docStart = currentPos.start
-      }
+    override protected def beginDocComment(prefix: String): Unit = {
+      super.beginDocComment(prefix)
+      docStart = currentPos.start
+    }
 
-    override protected def processCommentChar(): Unit =
-      if (docBuffer != null) docBuffer append in.ch
+    protected def ch = in.ch
 
-    override protected def finishDocComment(): Unit =
-      if (docBuffer != null) {
-        registerDocComment(docBuffer.toString, Position.range(unit.source, docStart, docStart, in.cpos))
-        docBuffer = null
-      }
+    override protected def docPosition = Position.range(unit.source, docStart, docStart, in.cpos)
   }
 
   class ScaladocJavaUnitParser(unit: CompilationUnit) extends {
