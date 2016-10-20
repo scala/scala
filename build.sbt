@@ -136,6 +136,11 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
     }
   },
   scalaVersion := (scalaVersion in bootstrap).value,
+  // As of sbt 0.13.12 (sbt/sbt#2634) sbt endeavours to align both scalaOrganization and scalaVersion
+  // in the Scala artefacts, for example scala-library and scala-compiler.
+  // This doesn't work in the scala/scala build because the version of scala-library and the scalaVersion of
+  // scala-library are correct to be different. So disable overriding.
+  ivyScala ~= (_ map (_ copy (overrideScalaVersion = false))),
   // we always assume that Java classes are standalone and do not have any dependency
   // on Scala classes
   compileOrder := CompileOrder.JavaThenScala,
