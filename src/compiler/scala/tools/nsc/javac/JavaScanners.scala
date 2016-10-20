@@ -215,7 +215,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
    *
    *  @author     Martin Odersky
    */
-  abstract class JavaScanner extends AbstractJavaScanner with JavaTokenData with Cloneable with ScannerCommon {
+  abstract class JavaScanner extends AbstractJavaScanner with JavaTokenData with Cloneable with ScannerCommon with DocScanner {
     override def intVal = super.intVal// todo: needed?
     override def floatVal = super.floatVal
     def currentPos: Position = g2p(pos - 1)
@@ -577,15 +577,10 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       }
     }
 
-    // Hooks for ScaladocJavaUnitScanner
-    protected def beginDocComment(): Unit = {}
-    protected def processCommentChar(): Unit = {}
-    protected def finishDocComment(): Unit = {}
-
     final protected def putCommentChar(): Unit = { processCommentChar(); in.next() }
 
     @tailrec final protected def skipBlockComment(isDoc: Boolean): Unit = {
-      if (isDoc) beginDocComment()
+      if (isDoc) beginDocComment("/*") // the second '*' is the current character
 
       in.ch match {
         case SU  => incompleteInputError("unclosed comment")

@@ -102,10 +102,8 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
   import global._
 
   class ScaladocUnitScanner(unit0: CompilationUnit, patches0: List[BracePatch]) extends UnitScanner(unit0, patches0) {
-
-    private var docBuffer: StringBuilder = null        // buffer for comments (non-null while scanning)
-    private var inDocComment             = false       // if buffer contains double-star doc comment
-    private var lastDoc: DocComment      = null        // last comment if it was double-star doc
+    // When `docBuffer == null`, we're not in a doc comment.
+    private var docBuffer: StringBuilder = null
 
     private object unmooredParser extends {                // minimalist comment parser
       val global: Global = ScaladocSyntaxAnalyzer.this.global
@@ -148,40 +146,18 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
         reporter.warning(doc.pos, "discarding unmoored doc comment")
     }
 
-    override def flushDoc(): DocComment = (try lastDoc finally lastDoc = null)
+    override protected def beginDocComment(prefix: String): Unit =
+      if (docBuffer == null) docBuffer = new StringBuilder(prefix)
 
-    override protected def putCommentChar() {
-      if (inDocComment)
-        docBuffer append ch
+    override protected def processCommentChar(): Unit =
+      if (docBuffer != null) docBuffer append ch
 
-      nextChar()
-    }
-    override def skipDocComment(): Unit = {
-      inDocComment = true
-      docBuffer = new StringBuilder("/**")
-      super.skipDocComment()
-    }
-    override def skipBlockComment(): Unit = {
-      inDocComment = false // ??? this means docBuffer won't receive contents of this comment???
-      docBuffer = new StringBuilder("/*")
-      super.skipBlockComment()
-    }
-    override def skipComment(): Boolean = {
-      // emit a block comment; if it's double-star, make Doc at this pos
-      def foundStarComment(start: Int, end: Int) = try {
-        val str = docBuffer.toString
-        val pos = Position.range(unit.source, start, start, end)
-        if (inDocComment) {
-          signalParsedDocComment(str, pos)
-          lastDoc = DocComment(str, pos)
-        }
-        true
-      } finally {
-        docBuffer    = null
-        inDocComment = false
+    override protected def finishDocComment(): Unit =
+      if (docBuffer != null) {
+        registerDocComment(docBuffer.toString, Position.range(unit.source, offset, offset, charOffset - 2))
+        docBuffer = null
       }
-      super.skipComment() && ((docBuffer eq null) || foundStarComment(offset, charOffset - 2))
-    }
+
   }
   class ScaladocUnitParser(unit: CompilationUnit, patches: List[BracePatch]) extends UnitParser(unit, patches) {
     override def newScanner() = new ScaladocUnitScanner(unit, patches)
@@ -218,15 +194,11 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
     // When `docBuffer == null`, we're not in a doc comment.
     private var docBuffer: StringBuilder = null
     private var docStart: Int = 0
-    private var lastDoc: DocComment = null
 
-    // get last doc comment
-    def flushDoc(): DocComment = try lastDoc finally lastDoc = null
-
-    override protected def beginDocComment(): Unit =
+    override protected def beginDocComment(prefix: String): Unit =
       if (docBuffer == null) {
         // Comment is entered the first time, i.e. immediately after "/*" and when current character is "*"
-        docBuffer = new StringBuilder("/*")
+        docBuffer = new StringBuilder(prefix)
         docStart = currentPos.start
       }
 
@@ -235,10 +207,7 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
 
     override protected def finishDocComment(): Unit =
       if (docBuffer != null) {
-        val raw = docBuffer.toString
-        val position = Position.range(unit.source, docStart, docStart, in.cpos)
-        lastDoc = DocComment(raw, position)
-        signalParsedDocComment(raw, position)
+        registerDocComment(docBuffer.toString, Position.range(unit.source, docStart, docStart, in.cpos))
         docBuffer = null
       }
   }
