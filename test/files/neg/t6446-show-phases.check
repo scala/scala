@@ -10,7 +10,7 @@ superaccessors   6  add super accessors in traits and nested classes
        pickler   8  serialize symbol tables
      refchecks   9  reference/override checking, translate nested objects
        uncurry  10  uncurry, translate function values to anonymous classes
-        fields  11  synthesize accessors and fields, including bitmaps for la...
+        fields  11  synthesize accessors and fields, add bitmaps for lazy vals
      tailcalls  12  replace tail calls by jumps
     specialize  13  @specialized-driven class and method specialization
  explicitouter  14  this refs to outer pointers

@@ -614,7 +614,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       pickler                 -> "serialize symbol tables",
       refChecks               -> "reference/override checking, translate nested objects",
       uncurry                 -> "uncurry, translate function values to anonymous classes",
-      fields                  -> "synthesize accessors and fields, including bitmaps for lazy vals",
+      fields                  -> "synthesize accessors and fields, add bitmaps for lazy vals",
       tailCalls               -> "replace tail calls by jumps",
       specializeTypes         -> "@specialized-driven class and method specialization",
       explicitOuter           -> "this refs to outer pointers",
@@ -676,7 +676,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   }
 
   /** A description of the phases that will run in this configuration, or all if -Ydebug. */
-  def phaseDescriptions: String = phaseHelp("description", elliptically = true, phasesDescMap)
+  def phaseDescriptions: String = phaseHelp("description", elliptically = !settings.debug, phasesDescMap)
 
   /** Summary of the per-phase values of nextFlags and newFlags, shown under -Xshow-phases -Ydebug. */
   def phaseFlagDescriptions: String = {
@@ -687,7 +687,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       else if (ph.phaseNewFlags != 0L && ph.phaseNextFlags != 0L) fstr1 + " " + fstr2
       else fstr1 + fstr2
     }
-    phaseHelp("new flags", elliptically = false, fmt)
+    phaseHelp("new flags", elliptically = !settings.debug, fmt)
   }
 
   /** Emit a verbose phase table.
@@ -699,7 +699,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
    *  @param elliptically whether to truncate the description with an ellipsis (...)
    *  @param describe how to describe a component
    */
-  def phaseHelp(title: String, elliptically: Boolean, describe: SubComponent => String) = {
+  private def phaseHelp(title: String, elliptically: Boolean, describe: SubComponent => String): String = {
     val Limit   = 16    // phase names should not be absurdly long
     val MaxCol  = 80    // because some of us edit on green screens
     val maxName = phaseNames map (_.length) max
@@ -714,13 +714,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     // built-in string precision merely truncates
     import java.util.{ Formattable, FormattableFlags, Formatter }
     def dotfmt(s: String) = new Formattable {
-      def elliptically(s: String, max: Int) = (
+      def foreshortened(s: String, max: Int) = (
         if (max < 0 || s.length <= max) s
         else if (max < 4) s.take(max)
         else s.take(max - 3) + "..."
       )
       override def formatTo(formatter: Formatter, flags: Int, width: Int, precision: Int) {
-        val p = elliptically(s, precision)
+        val p = foreshortened(s, precision)
         val w = if (width > 0 && p.length < width) {
           import FormattableFlags.LEFT_JUSTIFY
           val leftly = (flags & LEFT_JUSTIFY) == LEFT_JUSTIFY
@@ -746,7 +746,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
                          else (p.phaseName, describe(p))
       fmt.format(name, idOf(p), text)
     }
-    line1 :: line2 :: (phaseDescriptors map mkText) mkString
+    (line1 :: line2 :: (phaseDescriptors map mkText)).mkString
   }
 
   /** Returns List of (phase, value) pairs, including only those
