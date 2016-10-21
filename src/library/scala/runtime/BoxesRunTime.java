@@ -73,10 +73,20 @@ public final class BoxesRunTime
         return java.lang.Float.valueOf(f);
     }
 
+    private static final Double DOUBLE_ZERO = java.lang.Double.valueOf(0.0);
+    private static final Double DOUBLE_NEG_ZERO = java.lang.Double.valueOf(-0.0);
+    private static final Double DOUBLE_UNIT = java.lang.Double.valueOf(1.0);
+    private static final Double DOUBLE_NEG_UNIT = java.lang.Double.valueOf(-1.0);
+
     public static java.lang.Double boxToDouble(double d) {
-        // System.out.println("box " + d);
-        // (new Throwable()).printStackTrace();
-        return java.lang.Double.valueOf(d);
+        // Double can detect negative zeros, but primitive == cannot
+        // also note that Double.NaN.equals(Double.NaN) is true, unlike primitive
+        Double value = java.lang.Double.valueOf(d);
+        if (value.equals(DOUBLE_ZERO)) return DOUBLE_ZERO;
+        else if (value.equals(DOUBLE_NEG_ZERO)) return DOUBLE_NEG_ZERO;
+        else if (value.equals(DOUBLE_UNIT)) return DOUBLE_UNIT;
+        else if (value.equals(DOUBLE_NEG_UNIT)) return DOUBLE_NEG_UNIT;
+        else return value;
     }
 
 /* UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING */
