@@ -56,7 +56,7 @@ patterns.
 ### Variable Patterns
 
 ```ebnf
-  SimplePattern   ::=  `_'
+  SimplePattern   ::=  ‘_’
                     |  varid
 ```
 
@@ -69,8 +69,8 @@ which is treated as if it was a fresh variable on each occurrence.
 ### Typed Patterns
 
 ```ebnf
-  Pattern1        ::=  varid `:' TypePat
-                    |  `_' `:' TypePat
+  Pattern1        ::=  varid ‘:’ TypePat
+                    |  ‘_’ ‘:’ TypePat
 ```
 
 A _typed pattern_ $x: T$ consists of a pattern variable $x$ and a
@@ -83,7 +83,7 @@ that value.
 ### Pattern Binders
 
 ```ebnf
-  Pattern2        ::=  varid `@' Pattern3
+  Pattern2        ::=  varid ‘@’ Pattern3
 ```
 
 A _pattern binder_ `$x$@$p$` consists of a pattern variable $x$ and a
@@ -144,7 +144,7 @@ argument of `f` are equal.
 ### Constructor Patterns
 
 ```ebnf
-SimplePattern   ::=  StableId `(' [Patterns] `)
+SimplePattern   ::=  StableId ‘(’ [Patterns] ‘)’
 ```
 
 A _constructor pattern_ is of the form $c(p_1 , \ldots , p_n)$ where $n
@@ -170,7 +170,7 @@ repeated parameter. This is further discussed [here](#pattern-sequences).
 ### Tuple Patterns
 
 ```ebnf
-  SimplePattern   ::=  `(' [Patterns] `)'
+  SimplePattern   ::=  ‘(’ [Patterns] ‘)’
 ```
 
 A _tuple pattern_ `($p_1 , \ldots , p_n$)` is an alias
@@ -181,7 +181,7 @@ where $n \geq 2$. The empty tuple
 ### Extractor Patterns
 
 ```ebnf
-  SimplePattern   ::=  StableId `(' [Patterns] `)'
+  SimplePattern   ::=  StableId ‘(’ [Patterns] ‘)’
 ```
 
 An _extractor pattern_ $x(p_1 , \ldots , p_n)$ where $n \geq 0$ is of
@@ -241,7 +241,7 @@ val y = x match {
 ### Pattern Sequences
 
 ```ebnf
-SimplePattern ::= StableId `(' [Patterns `,'] [varid `@'] `_' `*' `)'
+SimplePattern ::= StableId ‘(’ [Patterns ‘,’] [varid ‘@’] ‘_’ ‘*’ ‘)’
 ```
 
 A _pattern sequence_ $p_1 , \ldots , p_n$ appears in two contexts.
@@ -277,7 +277,7 @@ shorthand for the constructor or extractor pattern $\mathit{op}(p, q_1
 ### Pattern Alternatives
 
 ```ebnf
-  Pattern   ::=  Pattern1 { `|' Pattern1 }
+  Pattern   ::=  Pattern1 { ‘|’ Pattern1 }
 ```
 
 A _pattern alternative_ `$p_1$ | $\ldots$ | $p_n$`
@@ -521,9 +521,9 @@ function's declared result type, `Number`.
 ## Pattern Matching Expressions
 
 ```ebnf
-  Expr            ::=  PostfixExpr `match' `{' CaseClauses `}'
+  Expr            ::=  PostfixExpr ‘match’ ‘{’ CaseClauses ‘}’
   CaseClauses     ::=  CaseClause {CaseClause}
-  CaseClause      ::=  `case' Pattern [Guard] `=>' Block
+  CaseClause      ::=  ‘case’ Pattern [Guard] ‘=>’ Block
 ```
 
 A _pattern matching expression_
@@ -638,7 +638,7 @@ conforms to its expected type, `T`.
 ## Pattern Matching Anonymous Functions
 
 ```ebnf
-  BlockExpr ::= `{' CaseClauses `}'
+  BlockExpr ::= ‘{’ CaseClauses ‘}’
 ```
 
 An anonymous function can be defined by a sequence of cases
