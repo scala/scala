@@ -47,17 +47,15 @@ trait Names extends api.Names {
   /** Hashtable for finding type names quickly. */
   private val typeHashtable = new Array[TypeName](HASH_SIZE)
 
-  /**
-   * The hashcode of a name depends on the first, the last and the middle character,
-   * and the length of the name.
-   */
-  private def hashValue(cs: Array[Char], offset: Int, len: Int): Int =
-    if (len > 0)
-      (len * (41 * 41 * 41) +
-       cs(offset) * (41 * 41) +
-       cs(offset + len - 1) * 41 +
-       cs(offset + (len >> 1)))
-    else 0
+  private def hashValue(cs: Array[Char], offset: Int, len: Int): Int = {
+    var h = 0
+    var i = 0
+    while (i < len) {
+      h = 31 * h + cs(i + offset)
+      i += 1
+    }
+    h
+  }
 
   /** Is (the ASCII representation of) name at given index equal to
    *  cs[offset..offset+len-1]?
