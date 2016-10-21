@@ -386,6 +386,25 @@ final class ListBuffer[A]
     this
   }
 
+  /** Selects the last element.
+   *
+   *  Runs in constant time.
+   *
+   *  @return the last element of this buffer.
+   *  @throws NoSuchElementException if this buffer is empty.
+   */
+  override def last: A =
+    if (last0 eq null) throw new NoSuchElementException("last of empty ListBuffer")
+    else last0.head
+
+  /** Optionally selects the last element.
+   *
+   *  Runs in constant time.
+   *
+   *  @return `Some` of the last element of this buffer if the buffer is nonempty, `None` if it is empty.
+   */
+  override def lastOption: Option[A] = if (last0 eq null) None else Some(last0.head)
+
   /** Returns an iterator over this `ListBuffer`.  The iterator will reflect
    *  changes made to the underlying `ListBuffer` beyond the next element;
    *  the next element's value is cached so that `hasNext` and `next` are
