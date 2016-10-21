@@ -94,11 +94,19 @@ private class JLineConsoleReader extends jconsole.ConsoleReader with interpreter
     printColumns_(items: List[String])
   }
 
+  // Workaround for JLine weirdness. (See https://github.com/scala/scala-dev/issues/240)
+  // Emit control characters as-is, instead of representing them as e.g. "^J" (for '\n').
+  // `rawPrint` is package protected in jline.console.ConsoleReader, while `rawPrintln` is private
+  // Copy/paste part of it as `_rawPrint` (to avoid name clash);
+  // the super class impl also sets `cursorOk`, but that's out of reach for us.
+  private def _rawPrint(str: String) = getOutput.write(str)
+  private def rawPrintln(str: String) = { _rawPrint(str); println() }
+
   private def printColumns_(items: List[String]): Unit = if (items exists (_ != "")) {
     val grouped = tabulate(items)
     var linesLeft = if (isPaginationEnabled()) height - 1 else Int.MaxValue
     grouped foreach { xs =>
-      println(xs.mkString)
+      rawPrintln(xs.mkString)
       linesLeft -= 1
       if (linesLeft <= 0) {
         linesLeft = emulateMore()
@@ -109,7 +117,7 @@ private class JLineConsoleReader extends jconsole.ConsoleReader with interpreter
   }
 
   def readOneKey(prompt: String) = {
-    this.print(prompt)
+    _rawPrint(prompt)
     this.flush()
     this.readCharacter()
   }
