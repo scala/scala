@@ -90,19 +90,19 @@ import ProcessBuilder._
   *
   * If not specified, the input of the external commands executed with `run` or
   * `!` will not be tied to anything, and the output will be redirected to the
-  * stdout and stderr of the Scala process. For the methods `!!` and `lines`, no
+  * stdout and stderr of the Scala process. For the methods `!!` and `lineStream`, no
   * input will be provided, and the output will be directed according to the
   * semantics of these methods.
   *
   * Some methods will cause stdin to be used as input. Output can be controlled
-  * with a [[scala.sys.process.ProcessLogger]] -- `!!` and `lines` will only
+  * with a [[scala.sys.process.ProcessLogger]] -- `!!` and `lineStream` will only
   * redirect error output when passed a `ProcessLogger`. If one desires full
   * control over input and output, then a [[scala.sys.process.ProcessIO]] can be
   * used with `run`.
   *
-  * For example, we could silence the error output from `lines_!` like this:
+  * For example, we could silence the error output from `lineStream_!` like this:
   * {{{
-  * val etcFiles = "find /etc" lines_! ProcessLogger(line => ())
+  * val etcFiles = "find /etc" lineStream_! ProcessLogger(line => ())
   * }}}
   *
   * ==Extended Example==

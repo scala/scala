@@ -139,6 +139,7 @@ self =>
 
   /** Returns this string with first character converted to upper case.
    * If the first character of the string is capitalized, it is returned unchanged.
+   * This method does not convert characters outside the Basic Multilingual Plane (BMP).
    */
   def capitalize: String =
     if (toString == null) null
