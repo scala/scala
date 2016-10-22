@@ -74,19 +74,23 @@ public final class BoxesRunTime
     }
 
     private static final Double DOUBLE_ZERO = java.lang.Double.valueOf(0.0);
+    private static final long DOUBLE_ZERO_BITS = java.lang.Double.doubleToLongBits(0.0);
     private static final Double DOUBLE_NEG_ZERO = java.lang.Double.valueOf(-0.0);
+    private static final long DOUBLE_NEG_ZERO_BITS = java.lang.Double.doubleToLongBits(-0.0);
     private static final Double DOUBLE_UNIT = java.lang.Double.valueOf(1.0);
+    private static final long DOUBLE_UNIT_BITS = java.lang.Double.doubleToLongBits(1.0);
     private static final Double DOUBLE_NEG_UNIT = java.lang.Double.valueOf(-1.0);
+    private static final long DOUBLE_NEG_UNIT_BITS = java.lang.Double.doubleToLongBits(-1.0);
 
     public static java.lang.Double boxToDouble(double d) {
         // Double can detect negative zeros, but primitive == cannot
         // also note that Double.NaN.equals(Double.NaN) is true, unlike primitive
-        Double value = java.lang.Double.valueOf(d);
-        if (value.equals(DOUBLE_ZERO)) return DOUBLE_ZERO;
-        else if (value.equals(DOUBLE_NEG_ZERO)) return DOUBLE_NEG_ZERO;
-        else if (value.equals(DOUBLE_UNIT)) return DOUBLE_UNIT;
-        else if (value.equals(DOUBLE_NEG_UNIT)) return DOUBLE_NEG_UNIT;
-        else return value;
+        long bits = java.lang.Double.doubleToLongBits(d);
+        if (bits == DOUBLE_ZERO_BITS) return DOUBLE_ZERO;
+        else if (bits == DOUBLE_NEG_ZERO_BITS) return DOUBLE_NEG_ZERO;
+        else if (bits == DOUBLE_UNIT_BITS) return DOUBLE_UNIT;
+        else if (bits == DOUBLE_NEG_UNIT_BITS) return DOUBLE_NEG_UNIT;
+        else return java.lang.Double.valueOf(d);
     }
 
 /* UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING */
