@@ -1,8 +1,10 @@
 package scala.reflect
 package runtime
 
-import scala.collection.mutable.WeakHashMap
 import java.lang.ref.WeakReference
+import java.util.{Collections, WeakHashMap}
+
+import scala.collection.convert.decorateAsScala._
 
 /** A cache that maintains a bijection between Java reflection type `J`
  *  and Scala reflection type `S`.
@@ -14,10 +16,10 @@ import java.lang.ref.WeakReference
 private[runtime] trait TwoWayCaches { self: SymbolTable =>
   class TwoWayCache[J, S] {
 
-    private val toScalaMap = new WeakHashMap[J, WeakReference[S]]
-    private val toJavaMap = new WeakHashMap[S, WeakReference[J]]
+    private val toScalaMap = Collections.synchronizedMap(new WeakHashMap[J, WeakReference[S]]()).asScala
+    private val toJavaMap = Collections.synchronizedMap(new WeakHashMap[S, WeakReference[J]]()).asScala
 
-    def enter(j: J, s: S) = gilSynchronized {
+    def enter(j: J, s: S) = {
       // debugInfo("cached: "+j+"/"+s)
       toScalaMap(j) = new WeakReference(s)
       toJavaMap(s) = new WeakReference(j)
@@ -30,7 +32,7 @@ private[runtime] trait TwoWayCaches { self: SymbolTable =>
         } else None
     }
 
-    def toScala(key: J)(body: => S): S = gilSynchronized {
+    def toScala(key: J)(body: => S): S = {
       toScalaMap get key match {
         case SomeRef(v) =>
           v
@@ -41,7 +43,7 @@ private[runtime] trait TwoWayCaches { self: SymbolTable =>
       }
     }
 
-    def toJava(key: S)(body: => J): J = gilSynchronized {
+    def toJava(key: S)(body: => J): J = {
       toJavaMap get key match {
         case SomeRef(v) =>
           v
@@ -52,7 +54,7 @@ private[runtime] trait TwoWayCaches { self: SymbolTable =>
       }
     }
 
-    def toJavaOption(key: S)(body: => Option[J]): Option[J] = gilSynchronized {
+    def toJavaOption(key: S)(body: => Option[J]): Option[J] = {
       toJavaMap get key match {
         case SomeRef(v) =>
           Some(v)
@@ -64,4 +66,5 @@ private[runtime] trait TwoWayCaches { self: SymbolTable =>
     }
   }
 }
+
 
