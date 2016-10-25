@@ -441,7 +441,7 @@ complexity.
 
 ### Type parameter inference for constructor patterns
 Assume a constructor pattern $C(p_1 , \ldots , p_n)$ where class $C$
-has type type parameters $a_1 , \ldots , a_n$.  These type parameters
+has type parameters $a_1 , \ldots , a_n$.  These type parameters
 are inferred in the same way as for the typed pattern
 `(_: $C[a_1 , \ldots , a_n]$)`.
 

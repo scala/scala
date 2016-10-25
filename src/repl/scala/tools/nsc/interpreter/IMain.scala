@@ -1203,7 +1203,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
 /** Utility methods for the Interpreter. */
 object IMain {
-  /** Dummy identifier fragement inserted at the cursor before presentation compilation. Needed to support completion of `global.def<TAB>` */
+  /** Dummy identifier fragment inserted at the cursor before presentation compilation. Needed to support completion of `global.def<TAB>` */
   val DummyCursorFragment = "_CURSOR_"
 
   // The two name forms this is catching are the two sides of this assignment:

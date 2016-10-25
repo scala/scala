@@ -29,7 +29,7 @@ package scala
  * }
  * }}}
  *
- * Note: parentheses are required when annotating a callsite withing a larger expression.
+ * Note: parentheses are required when annotating a callsite within a larger expression.
  *
  * {{{
  * def t1 = f1(1) + f1(1): @noinline   // equivalent to (f1(1) + f1(1)): @noinline

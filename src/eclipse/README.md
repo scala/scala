@@ -57,10 +57,10 @@ If it doesn’t compile
 =====================
 
 The likely reason is that the build path of the imported projects isn’t correct. This can happen for instance
-when the [version.properties](https://github.com/scala/scala/blob/master/versions.properties) file is updated,
+when the [versions.properties](https://github.com/scala/scala/blob/master/versions.properties) file is updated,
 and Eclipse .classpath of the different projects isn’t updated accordingly. The fix is simple, manually inspect
 the build path of each project and make sure the version of the declared dependencies is in sync with the version
-declared in the `version.properties` file. If it isn’t, update it manually and, when done, don’t forget to share
+declared in the `versions.properties` file. If it isn’t, update it manually and, when done, don’t forget to share
 your changes via a pull request.
 (We are aware this is cumbersome. If you feel like scripting the process, pull requests are of course welcome.)
 

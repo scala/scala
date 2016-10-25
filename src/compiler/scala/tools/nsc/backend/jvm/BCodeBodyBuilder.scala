@@ -297,14 +297,14 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         case app : Apply =>
           generatedType = genApply(app, expectedType)
 
-        case app @ ApplyDynamic(qual, Literal(Constant(boostrapMethodRef: Symbol)) :: staticAndDynamicArgs) =>
-          val numStaticArgs = boostrapMethodRef.paramss.head.size - 3 /*JVM provided args*/
+        case app @ ApplyDynamic(qual, Literal(Constant(bootstrapMethodRef: Symbol)) :: staticAndDynamicArgs) =>
+          val numStaticArgs = bootstrapMethodRef.paramss.head.size - 3 /*JVM provided args*/
           val (staticArgs, dynamicArgs) = staticAndDynamicArgs.splitAt(numStaticArgs)
-          val boostrapDescriptor = staticHandleFromSymbol(boostrapMethodRef)
+          val bootstrapDescriptor = staticHandleFromSymbol(bootstrapMethodRef)
           val bootstrapArgs = staticArgs.map({case t @ Literal(c: Constant) => bootstrapMethodArg(c, t.pos)})
           val descriptor = methodBTypeFromMethodType(qual.symbol.info, false)
           genLoadArguments(dynamicArgs, qual.symbol.info.params.map(param => typeToBType(param.info)))
-          mnode.visitInvokeDynamicInsn(qual.symbol.name.encoded, descriptor.descriptor, boostrapDescriptor, bootstrapArgs : _*)
+          mnode.visitInvokeDynamicInsn(qual.symbol.name.encoded, descriptor.descriptor, bootstrapDescriptor, bootstrapArgs : _*)
 
         case ApplyDynamic(qual, args) => sys.error("No invokedynamic support yet.")
 
@@ -613,7 +613,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               }
               argsSize match {
                 case 1 => bc newarray elemKind
-                case _ => // this is currently dead code is Scalac, unlike in Dotty
+                case _ => // this is currently dead code in Scalac, unlike in Dotty
                   val descr = ("[" * argsSize) + elemKind.descriptor // denotes the same as: arrayN(elemKind, argsSize).descriptor
                   mnode.visitMultiANewArrayInsn(descr, argsSize)
               }

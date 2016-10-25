@@ -1093,7 +1093,7 @@ abstract class Erasure extends InfoTransform
                 //    See SI-5568.
                 tree setSymbol Object_getClass
               } else {
-                devWarning(s"The symbol '${fn.symbol}' was interecepted but didn't match any cases, that means the intercepted methods set doesn't match the code")
+                devWarning(s"The symbol '${fn.symbol}' was intercepted but didn't match any cases, that means the intercepted methods set doesn't match the code")
                 tree
               }
             } else qual match {
@@ -1209,7 +1209,7 @@ abstract class Erasure extends InfoTransform
 
               try super.transform(tree1).clearType()
               finally tpt setType specialErasure(tree1.symbol)(tree1.symbol.tpe).resultType
-            case ApplyDynamic(qual, Literal(Constant(boostrapMethodRef: Symbol)) :: _) =>
+            case ApplyDynamic(qual, Literal(Constant(bootstrapMethodRef: Symbol)) :: _) =>
               tree
             case _ =>
               super.transform(tree1).clearType()

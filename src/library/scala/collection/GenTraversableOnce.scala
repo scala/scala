@@ -96,7 +96,7 @@ trait GenTraversableOnce[+A] extends Any {
    */
   def size: Int
 
-   /** The size of this $coll if it is can be cheaply computed
+   /** The size of this $coll, if it can be cheaply computed
    *
    *  @return    the number of elements in this $coll, or -1 if the size cannot be determined cheaply
    */

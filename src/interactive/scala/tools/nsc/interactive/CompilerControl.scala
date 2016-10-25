@@ -101,11 +101,11 @@ trait CompilerControl { self: Global =>
    *  the given sources at the head of the list of to-be-compiled sources.
    */
   def askReload(sources: List[SourceFile], response: Response[Unit]) = {
-    val superseeded = scheduler.dequeueAll {
+    val superseded = scheduler.dequeueAll {
       case ri: ReloadItem if ri.sources == sources => Some(ri)
       case _ => None
     }
-    superseeded.foreach(_.response.set(()))
+    superseded.foreach(_.response.set(()))
     postWorkItem(new ReloadItem(sources, response))
   }
 

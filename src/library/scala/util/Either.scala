@@ -55,31 +55,31 @@ package util
  *  val left23: Left[Double, Int]  = Left(23.0)
  *  val left42                     = Left(42.0)
  *
- *  for (
- *    a <- right1;
- *    b <- right2;
+ *  for {
+ *    a <- right1
+ *    b <- right2
  *    c <- right3
- *  ) yield a + b + c // Right(6)
+ *  } yield a + b + c // Right(6)
  *
- *  for (
- *    a <- right1;
- *    b <- right2;
+ *  for {
+ *    a <- right1
+ *    b <- right2
  *    c <- left23
- *  ) yield a + b + c // Left(23.0)
+ *  } yield a + b + c // Left(23.0)
  *
- *  for (
- *    a <- right1;
- *    b <- left23;
+ *  for {
+ *    a <- right1
+ *    b <- left23
  *    c <- right2
- *  ) yield a + b + c // Left(23.0)
+ *  } yield a + b + c // Left(23.0)
  *
  *  // It is advisable to provide the type of the “missing” value (especially the right value for `Left`)
  *  // as otherwise that type might be infered as `Nothing` without context:
- *  for (
- *    a <- left23;
- *    b <- right1;
+ *  for {
+ *    a <- left23
+ *    b <- right1
  *    c <- left42  // type at this position: Either[Double, Nothing]
- *  ) yield a + b + c
+ *  } yield a + b + c
  *  //            ^
  *  // error: ambiguous reference to overloaded definition,
  *  // both method + in class Int of type (x: Char)Int
@@ -136,10 +136,10 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    * @example {{{
    * val right = Right(2)
    * val left  = Left(3)
-   * for (
-   *   r1 <- right;
+   * for {
+   *   r1 <- right
    *   r2 <- left.swap
-   * ) yield r1 * r2 // Right(6)
+   * } yield r1 * r2 // Right(6)
    * }}}
    */
   def swap: Either[B, A] = this match {

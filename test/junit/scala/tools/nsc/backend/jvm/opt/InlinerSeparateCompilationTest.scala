@@ -13,7 +13,7 @@ class InlinerSeparateCompilationTest {
   val args = "-opt:l:classpath"
 
   @Test
-  def inlnieMixedinMember(): Unit = {
+  def inlineMixedinMember(): Unit = {
     val codeA =
       """trait T {
         |  @inline def f = 0

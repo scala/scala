@@ -27,7 +27,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    *
    * Indexing the call graph by the containing MethodNode and the invocation MethodInsnNode allows
    * finding callsites efficiently. For example, an inlining heuristic might want to know all
-   * callsites withing a callee method.
+   * callsites within a callee method.
    *
    * Note that the call graph is not guaranteed to be complete: callsites may be missing. In
    * particular, if a method is very large, all of its callsites might not be in the hash map.

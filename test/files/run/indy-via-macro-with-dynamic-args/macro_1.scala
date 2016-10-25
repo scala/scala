@@ -24,8 +24,8 @@ object Macro {
     import c.universe._
     pat match {
       case l @ Literal(Constant(pat: String)) =>
-        val boostrapSym = typeOf[test.Bootstrap].companion.member(TermName("bootstrap"))
-        Indy(boostrapSym, l :: Nil, text :: Nil)
+        val bootstrapSym = typeOf[test.Bootstrap].companion.member(TermName("bootstrap"))
+        Indy(bootstrapSym, l :: Nil, text :: Nil)
       case _ =>
         q"_root_.java.util.regex.Pattern.compile($pat).matcher($text)"
     }
