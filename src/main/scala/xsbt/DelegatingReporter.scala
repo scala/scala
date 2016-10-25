@@ -62,7 +62,7 @@ private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, priv
       val offset = pos.point
       val pointer = offset - src.lineToOffset(src.offsetToLine(offset))
       val pointerSpace = ((lineContent: Seq[Char]).take(pointer).map { case '\t' => '\t'; case x => ' ' }).mkString
-      position(Some(sourcePath), Some(sourceFile), Some(line), lineContent, Some(offset), Some(pointer), Some(pointerSpace))
+      position(Option(sourcePath), Option(sourceFile), Some(line), lineContent, Some(offset), Some(pointer), Some(pointerSpace))
     }
   private[this] def position(sourcePath0: Option[String], sourceFile0: Option[File], line0: Option[Int], lineContent0: String, offset0: Option[Int], pointer0: Option[Int], pointerSpace0: Option[String]) =
     new xsbti.Position {
