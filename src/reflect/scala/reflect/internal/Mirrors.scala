@@ -91,7 +91,6 @@ trait Mirrors extends api.Mirrors {
 
     private def ensureClassSymbol(fullname: String, sym: Symbol): ClassSymbol = {
       var result = sym
-      while (result.isAliasType) result = result.info.typeSymbol
       result match {
         case x: ClassSymbol => x
         case _              => MissingRequirementError.notFound("class " + fullname)
