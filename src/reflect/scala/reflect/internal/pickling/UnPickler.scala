@@ -294,10 +294,11 @@ abstract class UnPickler {
         case Right(sym)  => sym -> readNat()
       }
 
-      def isModuleFlag = (flags & MODULE) != 0L
-      def isClassRoot  = (name == classRoot.name) && (owner == classRoot.owner)
-      def isModuleRoot = (name == moduleRoot.name) && (owner == moduleRoot.owner)
-      def pflags       = flags & PickledFlags
+      def isModuleFlag      = (flags & MODULE) != 0L
+      def isClassRoot       = (name == classRoot.name) && (owner == classRoot.owner)
+      def isModuleRoot      = (name == moduleRoot.name) && (owner == moduleRoot.owner)
+      def isModuleClassRoot = (name == moduleRoot.name.toTypeName) && (owner == moduleRoot.owner)
+      def pflags            = flags & PickledFlags
 
       def finishSym(sym: Symbol): Symbol = {
         /**
@@ -342,18 +343,17 @@ abstract class UnPickler {
       finishSym(tag match {
         case TYPEsym  | ALIASsym =>
           owner.newNonClassSymbol(name.toTypeName, NoPosition, pflags)
+
         case CLASSsym =>
-          val sym = (
-            if (isClassRoot) {
-              if (isModuleFlag) moduleRoot.moduleClass setFlag pflags
-              else classRoot setFlag pflags
-            }
+          val sym = {
+            if (isModuleFlag && isModuleClassRoot) moduleRoot.moduleClass setFlag pflags
+            else if (!isModuleFlag && isClassRoot) classRoot setFlag pflags
             else owner.newClassSymbol(name.toTypeName, NoPosition, pflags)
-          )
+          }
           if (!atEnd)
             sym.typeOfThis = newLazyTypeRef(readNat())
-
           sym
+
         case MODULEsym =>
           val clazz = at(inforef, () => readType()).typeSymbol // after NMT_TRANSITION, we can leave off the () => ... ()
           if (isModuleRoot) moduleRoot setFlag pflags
