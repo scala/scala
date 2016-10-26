@@ -12,6 +12,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.control.Exception.ignoring
 
 // Each test normally ends in a moment, but for failure cases, waits until one second.
+// SI-7350, SI-8768
 
 @RunWith(classOf[JUnit4])
 class PipedProcessTest {
