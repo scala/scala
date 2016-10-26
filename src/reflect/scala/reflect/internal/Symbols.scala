@@ -2223,7 +2223,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  to the class.  As presently implemented this potentially returns class for
      *  any symbol except NoSymbol.
      */
-    def companionClass: Symbol = flatOwnerInfo.decl(name.toTypeName).suchThat(_ isCoDefinedWith this)
+    def companionClass: Symbol = flatOwnerInfo.decl(name.toTypeName).suchThat(d => d.isClass && d.isCoDefinedWith(this))
 
     /** For a class: the module or case class factory with the same name in the same package.
      *  For all others: NoSymbol
@@ -2860,8 +2860,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def associatedFile_=(f: AbstractFile) { moduleClass.associatedFile = f }
 
     override def moduleClass = referenced
-    override def companionClass =
-      flatOwnerInfo.decl(name.toTypeName).suchThat(sym => sym.isClass && (sym isCoDefinedWith this))
 
     override def owner = {
       if (Statistics.hotEnabled) Statistics.incCounter(ownerCount)
