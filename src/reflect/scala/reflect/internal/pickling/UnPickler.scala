@@ -29,12 +29,13 @@ abstract class UnPickler {
    *  from an array of bytes.
    *  @param bytes      bytearray from which we unpickle
    *  @param offset     offset from which unpickling starts
-   *  @param classRoot  the top-level class which is unpickled, or NoSymbol if inapplicable
-   *  @param moduleRoot the top-level module which is unpickled, or NoSymbol if inapplicable
+   *  @param classRoot  the top-level class which is unpickled
+   *  @param moduleRoot the top-level module which is unpickled
    *  @param filename   filename associated with bytearray, only used for error messages
    */
   def unpickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) {
     try {
+      assert(classRoot != NoSymbol && moduleRoot != NoSymbol, s"The Unpickler expects a class and module symbol: $classRoot - $moduleRoot")
       new Scan(bytes, offset, classRoot, moduleRoot, filename).run()
     } catch {
       case ex: IOException =>

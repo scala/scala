@@ -132,17 +132,12 @@ abstract class ClassfileParser {
     finally loaders.parentsLevel -= 1
   }
 
-  def parse(file: AbstractFile, root: Symbol): Unit = {
-    debuglog("[class] >> " + root.fullName)
-
+  def parse(file: AbstractFile, clazz: Symbol, module: Symbol): Unit = {
     this.file = file
-    pushBusy(root) {
+    pushBusy(clazz) {
       this.in           = new AbstractFileReader(file)
-      this.clazz        = if (root.isModule) root.companionClass else root
-      // WARNING! do no use clazz.companionModule to find staticModule.
-      // In a situation where root can be defined, but its companionClass not,
-      // this would give incorrect results (see SI-5031 in separate compilation scenario)
-      this.staticModule = if (root.isModule) root else root.companionModule
+      this.clazz        = clazz
+      this.staticModule = module
       this.isScala      = false
 
       parseHeader()
@@ -1020,7 +1015,6 @@ abstract class ClassfileParser {
 
     def enterClassAndModule(entry: InnerClassEntry, file: AbstractFile) {
       def jflags      = entry.jflags
-      val completer   = new loaders.ClassfileLoader(file)
       val name        = entry.originalName
       val sflags      = jflags.toScalaFlags
       val owner       = ownerForFlags(jflags)
@@ -1031,8 +1025,11 @@ abstract class ClassfileParser {
       val (innerClass, innerModule) = if (file == NoAbstractFile) {
         (newStub(name.toTypeName), newStub(name.toTermName))
       } else {
-        val cls = owner.newClass(name.toTypeName, NoPosition, sflags) setInfo completer
-        val mod = owner.newModule(name.toTermName, NoPosition, sflags) setInfo completer
+        val cls = owner.newClass(name.toTypeName, NoPosition, sflags)
+        val mod = owner.newModule(name.toTermName, NoPosition, sflags)
+        val completer = new loaders.ClassfileLoader(file, cls, mod)
+        cls setInfo completer
+        mod setInfo completer
         mod.moduleClass setInfo loaders.moduleClassLoader
         List(cls, mod.moduleClass) foreach (_.associatedFile = file)
         (cls, mod)
