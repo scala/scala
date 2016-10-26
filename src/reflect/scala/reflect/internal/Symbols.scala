@@ -302,9 +302,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def newClassConstructor(pos: Position): MethodSymbol =
       newConstructor(pos) setInfo MethodType(Nil, this.tpe)
 
-    def newLinkedModule(clazz: Symbol, newFlags: Long = 0L): ModuleSymbol = {
-      val m = newModuleSymbol(clazz.name.toTermName, clazz.pos, MODULE | newFlags)
-      connectModuleToClass(m, clazz.asInstanceOf[ClassSymbol])
+    def newLinkedModule(moduleClass: Symbol, newFlags: Long = 0L): ModuleSymbol = {
+      val m = newModuleSymbol(moduleClass.name.toTermName, moduleClass.pos, MODULE | newFlags)
+      connectModuleToClass(m, moduleClass.asInstanceOf[ClassSymbol])
     }
     final def newModule(name: TermName, pos: Position = NoPosition, newFlags0: Long = 0L): ModuleSymbol = {
       val newFlags = newFlags0 | MODULE
@@ -1063,7 +1063,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           // parent LowPriorityImplicits. See comment in c5441dc for more elaboration.
           // Since the fix for SI-7335 Predef parents must be defined in Predef.scala, and we should not
           // get here anymore.
-          devWarning(s"calling Symbol#exists with sourcefile based symbol loader may give incorrect results.");
+          devWarning(s"calling Symbol#exists with sourcefile based symbol loader may give incorrect results.")
       }
 
       rawInfo load this

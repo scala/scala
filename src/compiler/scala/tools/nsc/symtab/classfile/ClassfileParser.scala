@@ -266,7 +266,7 @@ abstract class ClassfileParser {
      *  arrays are considered to be class types, they might
      *  appear as entries in 'newarray' or 'cast' opcodes.
      */
-    def getClassOrArrayType(index: Int): Type = (
+    def getClassOrArrayType(index: Int): Type = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       else values(index) match {
         case tp: Type    => tp
@@ -278,7 +278,7 @@ abstract class ClassfileParser {
             case _         => recordAtIndex(classNameToSymbol(name), index).tpe_*
           }
       }
-    )
+    }
 
     def getType(index: Int): Type              = getType(null, index)
     def getType(sym: Symbol, index: Int): Type = sigToType(sym, getExternalName(index))
@@ -1140,10 +1140,10 @@ abstract class ClassfileParser {
     private def innerSymbol(entry: InnerClassEntry): Symbol = {
       val name      = entry.originalName.toTypeName
       val enclosing = entry.enclosing
-      val member = (
+      val member = {
         if (enclosing == clazz) entry.scope lookup name
         else lookupMemberAtTyperPhaseIfPossible(enclosing, name)
-      )
+      }
       def newStub = enclosing.newStubSymbol(name, s"Unable to locate class corresponding to inner class entry for $name in owner ${entry.outerName}")
       member.orElse(newStub)
     }

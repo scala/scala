@@ -38,10 +38,6 @@ abstract class UnPickler {
       assert(classRoot != NoSymbol && moduleRoot != NoSymbol, s"The Unpickler expects a class and module symbol: $classRoot - $moduleRoot")
       new Scan(bytes, offset, classRoot, moduleRoot, filename).run()
     } catch {
-      case ex: IOException =>
-        throw ex
-      case ex: MissingRequirementError =>
-        throw ex
       case ex: Throwable =>
         /*if (settings.debug.value)*/ ex.printStackTrace()
         throw new RuntimeException("error reading Scala signature of "+filename+": "+ex.getMessage())
@@ -355,9 +351,10 @@ abstract class UnPickler {
           sym
 
         case MODULEsym =>
-          val clazz = at(inforef, () => readType()).typeSymbol // after NMT_TRANSITION, we can leave off the () => ... ()
+          val moduleClass = at(inforef, () => readType()).typeSymbol // after NMT_TRANSITION, we can leave off the () => ... ()
           if (isModuleRoot) moduleRoot setFlag pflags
-          else owner.newLinkedModule(clazz, pflags)
+          else owner.newLinkedModule(moduleClass, pflags)
+
         case VALsym =>
           if (isModuleRoot) { abort(s"VALsym at module root: owner = $owner, name = $name") }
           else owner.newTermSymbol(name.toTermName, NoPosition, pflags)
