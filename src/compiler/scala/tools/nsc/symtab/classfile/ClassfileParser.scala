@@ -356,63 +356,43 @@ abstract class ClassfileParser {
       abort(s"bad constant pool tag ${in.buf(start)} at byte $start")
   }
 
-  private def loadClassSymbol(name: Name): Symbol = {
-    val file = classPath findClassFile name.toString getOrElse {
-      // SI-5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
-      // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
-      // that are not in their correct place (see bug for details)
+  def stubClassSymbol(name: Name): Symbol = {
+    // SI-5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
+    // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
+    // that are not in their correct place (see bug for details)
 
-      // TODO More consistency with use of stub symbols in `Unpickler`
-      //   - better owner than `NoSymbol`
-      //   - remove eager warning
-      val msg = s"Class $name not found - continuing with a stub."
-      if ((!settings.isScaladoc) && (settings.verbose || settings.developer)) warning(msg)
-      return NoSymbol.newStubSymbol(name.toTypeName, msg)
-    }
-    val completer     = new loaders.ClassfileLoader(file)
-    var owner: Symbol = rootMirror.RootClass
-    var sym: Symbol   = NoSymbol
-    var ss: Name      = null
-    var start         = 0
-    var end           = name indexOf '.'
-
-    while (end > 0) {
-      ss = name.subName(start, end)
-      sym = owner.info.decls lookup ss
-      if (sym == NoSymbol) {
-        sym = owner.newPackage(ss.toTermName) setInfo completer
-        sym.moduleClass setInfo completer
-        owner.info.decls enter sym
-      }
-      owner = sym.moduleClass
-      start = end + 1
-      end = name.indexOf('.', start)
-    }
-    ss = name.subName(0, start)
-    owner.info.decls lookup ss orElse {
-      sym = owner.newClass(ss.toTypeName) setInfoAndEnter completer
-      debuglog("loaded "+sym+" from file "+file)
-      sym
-    }
+    // TODO More consistency with use of stub symbols in `Unpickler`
+    //   - better owner than `NoSymbol`
+    //   - remove eager warning
+    val msg = s"Class $name not found - continuing with a stub."
+    if ((!settings.isScaladoc) && (settings.verbose || settings.developer)) warning(msg)
+    NoSymbol.newStubSymbol(name.toTypeName, msg)
   }
 
-  /** FIXME - we shouldn't be doing ad hoc lookups in the empty package.
-   *  The method called "getClassByName" should either return the class or not.
-   */
-  private def lookupClass(name: Name) = (
+  private def lookupClass(name: Name) = try {
     if (name containsChar '.')
-      rootMirror getClassByName name // see tickets #2464, #3756
+      rootMirror getClassByName name
     else
+      // FIXME - we shouldn't be doing ad hoc lookups in the empty package, getClassByName should return the class
       definitions.getMember(rootMirror.EmptyPackageClass, name.toTypeName)
-  )
+  } catch {
+    // The handler
+    //   - prevents crashes with deficient InnerClassAttributes (SI-2464, 0ce0ad5)
+    //   - was referenced in the bugfix commit for SI-3756 (4fb0d53), not sure why
+    //   - covers the case when a type alias in a package object shadows a class symbol,
+    //     getClassByName throws a MissingRequirementError (scala-dev#248)
+    case _: FatalError =>
+      // getClassByName can throw a MissingRequirementError (which extends FatalError)
+      // definitions.getMember can throw a FatalError, for example in pos/t5165b
+      stubClassSymbol(name)
+  }
 
   /** Return the class symbol of the given name. */
   def classNameToSymbol(name: Name): Symbol = {
     if (innerClasses contains name)
       innerClasses innerSymbol name
     else
-      try lookupClass(name)
-      catch { case _: FatalError => loadClassSymbol(name) }
+      lookupClass(name)
   }
 
   def parseClass() {
