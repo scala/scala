@@ -421,13 +421,10 @@ abstract class ClassfileParser {
     }
 
     val isTopLevel = !(currentClass containsChar '$') // Java class name; *don't* try to to use Scala name decoding (SI-7532)
-
-    val c = if (isTopLevel) pool.getClassSymbol(nameIdx) else clazz
     if (isTopLevel) {
-      if (c != clazz) {
-        if ((clazz eq NoSymbol) && (c ne NoSymbol)) clazz = c
-        else mismatchError(c)
-      }
+      val c = pool.getClassSymbol(nameIdx)
+      // scala-dev#248: when a type alias (in a package object) shadows a class symbol, getClassSymbol returns a stub
+      if (!c.isInstanceOf[StubSymbol] && c != clazz) mismatchError(c)
     }
 
     addEnclosingTParams(clazz)
