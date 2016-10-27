@@ -378,6 +378,7 @@ lazy val reflect = configureAsSubproject(project)
 
 lazy val compiler = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings: _*)
+  .settings(generateBuildCharacterFileSettings: _*)
   .settings(Osgi.settings: _*)
   .settings(
     name := "scala-compiler",
@@ -385,6 +386,8 @@ lazy val compiler = configureAsSubproject(project)
     libraryDependencies ++= Seq(antDep, asmDep),
     // These are only needed for the POM:
     libraryDependencies ++= Seq(scalaXmlDep, jlineDep % "optional"),
+    buildCharacterPropertiesFile := (resourceManaged in Compile).value / "scala-buildcharacter.properties",
+    resourceGenerators in Compile += generateBuildCharacterPropertiesFile.map(file => Seq(file)).taskValue,
     // this a way to make sure that classes from interactive and scaladoc projects
     // end up in compiler jar. note that we need to use LocalProject references
     // (with strings) to deal with mutual recursion
@@ -751,6 +754,18 @@ lazy val root: Project = (project in file("."))
     publish := {},
     publishLocal := {},
     commands ++= ScriptCommands.all,
+    extractBuildCharacterPropertiesFile := {
+      val jar = (scalaInstance in bootstrap).value.compilerJar
+      val bc = buildCharacterPropertiesFile.value
+      val packagedName = "scala-buildcharacter.properties"
+      IO.withTemporaryDirectory { tmp =>
+        val extracted = IO.unzip(jar, tmp, new SimpleFilter(_ == packagedName)).headOption.getOrElse {
+          throw new RuntimeException(s"No file $packagedName found in bootstrap compiler $jar")
+        }
+        IO.copyFile(extracted, bc)
+        bc
+      }
+    },
     // Generate (Product|TupleN|Function|AbstractFunction)*.scala files and scaladoc stubs for all AnyVal sources.
     // They should really go into a managedSources dir instead of overwriting sources checked into git but scaladoc
     // source links (could be fixed by shipping these sources with the scaladoc bundles) and scala-js source maps
