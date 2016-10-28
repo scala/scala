@@ -17,6 +17,7 @@ import PickleFormat._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.annotation.switch
+import scala.util.control.NonFatal
 
 /** @author Martin Odersky
  *  @version 1.0
@@ -33,18 +34,18 @@ abstract class UnPickler {
    *  @param moduleRoot the top-level module which is unpickled
    *  @param filename   filename associated with bytearray, only used for error messages
    */
-  def unpickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) {
+  def unpickle(bytes: Array[Byte], offset: Int, classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String) {
     try {
       assert(classRoot != NoSymbol && moduleRoot != NoSymbol, s"The Unpickler expects a class and module symbol: $classRoot - $moduleRoot")
       new Scan(bytes, offset, classRoot, moduleRoot, filename).run()
     } catch {
-      case ex: Throwable =>
+      case NonFatal(ex) =>
         /*if (settings.debug.value)*/ ex.printStackTrace()
         throw new RuntimeException("error reading Scala signature of "+filename+": "+ex.getMessage())
     }
   }
 
-  class Scan(_bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) extends PickleBuffer(_bytes, offset, -1) {
+  class Scan(_bytes: Array[Byte], offset: Int, classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String) extends PickleBuffer(_bytes, offset, -1) {
     //println("unpickle " + classRoot + " and " + moduleRoot)//debug
 
     protected def debug = settings.debug.value

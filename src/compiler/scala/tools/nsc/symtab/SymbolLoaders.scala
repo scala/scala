@@ -52,7 +52,7 @@ abstract class SymbolLoaders {
     })
   }
 
-  def newClass(owner: Symbol, name: String): Symbol = owner.newClass(newTypeName(name))
+  def newClass(owner: Symbol, name: String): ClassSymbol = owner.newClass(newTypeName(name))
 
   /** Enter class with given `name` into scope of `root`
    *  and give them `completer` as type.
@@ -60,12 +60,12 @@ abstract class SymbolLoaders {
   def enterClass(owner: Symbol, name: String, completer: SymbolLoader): Symbol =
     enterClass(owner, newClass(owner, name), completer)
 
-  def enterClass(owner: Symbol, clazz: Symbol, completer: SymbolLoader): Symbol = {
+  def enterClass(owner: Symbol, clazz: ClassSymbol, completer: SymbolLoader): Symbol = {
     clazz setInfo completer
     enterIfNew(owner, clazz, completer)
   }
 
-  def newModule(owner: Symbol, name: String): Symbol = owner.newModule(newTermName(name))
+  def newModule(owner: Symbol, name: String): ModuleSymbol = owner.newModule(newTermName(name))
 
   /** Enter module with given `name` into scope of `root`
    *  and give them `completer` as type.
@@ -73,7 +73,7 @@ abstract class SymbolLoaders {
   def enterModule(owner: Symbol, name: String, completer: SymbolLoader): Symbol =
     enterModule(owner, newModule(owner, name), completer)
 
-  def enterModule(owner: Symbol, module: Symbol, completer: SymbolLoader): Symbol = {
+  def enterModule(owner: Symbol, module: ModuleSymbol, completer: SymbolLoader): Symbol = {
     module setInfo completer
     module.moduleClass setInfo moduleClassLoader
     enterIfNew(owner, module, completer)
@@ -121,7 +121,7 @@ abstract class SymbolLoaders {
   /** Enter class and module with given `name` into scope of `root`
    *  and give them `completer` as type.
    */
-  def enterClassAndModule(root: Symbol, name: String, getCompleter: (Symbol, Symbol) => SymbolLoader) {
+  def enterClassAndModule(root: Symbol, name: String, getCompleter: (ClassSymbol, ModuleSymbol) => SymbolLoader) {
     val clazz = newClass(root, name)
     val module = newModule(root, name)
     val completer = getCompleter(clazz, module)
@@ -281,7 +281,7 @@ abstract class SymbolLoaders {
     }
   }
 
-  class ClassfileLoader(val classfile: AbstractFile, clazz: Symbol, module: Symbol) extends SymbolLoader with FlagAssigningCompleter {
+  class ClassfileLoader(val classfile: AbstractFile, clazz: ClassSymbol, module: ModuleSymbol) extends SymbolLoader with FlagAssigningCompleter {
     private object classfileParser extends {
       val symbolTable: SymbolLoaders.this.symbolTable.type = SymbolLoaders.this.symbolTable
     } with ClassfileParser {
@@ -308,13 +308,7 @@ abstract class SymbolLoaders {
 
     protected def doComplete(root: Symbol) {
       val start = if (Statistics.canEnable) Statistics.startTimer(classReadNanos) else null
-
-      // Running the classfile parser after refchecks can lead to "illegal class file dependency"
-      // errors. More concretely, the classfile parser calls "sym.companionModule", which calls
-      // "isModuleNotMethod" on the companion. After refchecks, this method forces the info, which
-      // may run the classfile parser. This produces the error.
-      enteringPhase(phaseBeforeRefchecks)(classfileParser.parse(classfile, clazz, module))
-
+      classfileParser.parse(classfile, clazz, module)
       if (root.associatedFile eq NoAbstractFile) {
         root match {
           // In fact, the ModuleSymbol forwards its setter to the module class

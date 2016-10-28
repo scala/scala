@@ -10,6 +10,7 @@ package classfile
 
 import java.io.{File, IOException}
 import java.lang.Integer.toHexString
+
 import scala.collection.{immutable, mutable}
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.annotation.switch
@@ -18,6 +19,7 @@ import scala.reflect.internal.pickling.{ByteCodecs, PickleBuffer}
 import scala.reflect.io.NoAbstractFile
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.AbstractFile
+import scala.util.control.NonFatal
 
 /** This abstract class implements a class file parser.
  *
@@ -53,18 +55,18 @@ abstract class ClassfileParser {
   protected type ThisConstantPool <: ConstantPool
   protected def newConstantPool: ThisConstantPool
 
-  protected var file: AbstractFile     = _  // the class file
-  protected var in: AbstractFileReader = _  // the class file reader
-  protected var clazz: Symbol = _           // the class symbol containing dynamic members
-  protected var staticModule: Symbol = _    // the module symbol containing static members
-  protected var instanceScope: Scope = _    // the scope of all instance definitions
-  protected var staticScope: Scope = _      // the scope of all static definitions
-  protected var pool: ThisConstantPool = _  // the classfile's constant pool
-  protected var isScala: Boolean = _        // does class file describe a scala class?
-  protected var isScalaAnnot: Boolean = _   // does class file describe a scala class with its pickled info in an annotation?
-  protected var isScalaRaw: Boolean = _     // this class file is a scala class with no pickled info
-  protected var busy: Symbol = _            // lock to detect recursive reads
-  protected var currentClass: Name = _      // JVM name of the current class
+  protected var file: AbstractFile     = _     // the class file
+  protected var in: AbstractFileReader = _     // the class file reader
+  protected var clazz: ClassSymbol = _         // the class symbol containing dynamic members
+  protected var staticModule: ModuleSymbol = _ // the module symbol containing static members
+  protected var instanceScope: Scope = _       // the scope of all instance definitions
+  protected var staticScope: Scope = _         // the scope of all static definitions
+  protected var pool: ThisConstantPool = _     // the classfile's constant pool
+  protected var isScala: Boolean = _           // does class file describe a scala class?
+  protected var isScalaAnnot: Boolean = _      // does class file describe a scala class with its pickled info in an annotation?
+  protected var isScalaRaw: Boolean = _        // this class file is a scala class with no pickled info
+  protected var busy: Symbol = _               // lock to detect recursive reads
+  protected var currentClass: Name = _         // JVM name of the current class
   protected var classTParams = Map[Name,Symbol]()
   protected var srcfile0 : Option[AbstractFile] = None
   protected def moduleClass: Symbol = staticModule.moduleClass
@@ -132,7 +134,16 @@ abstract class ClassfileParser {
     finally loaders.parentsLevel -= 1
   }
 
-  def parse(file: AbstractFile, clazz: Symbol, module: Symbol): Unit = {
+  /**
+   * `clazz` and `module` are the class and module symbols corresponding to the classfile being
+   * parsed. Note that the ClassfileLoader unconditionally creates both of these symbols, they may
+   * may get invalidated later on (.exists).
+   *
+   * Note that using `companionModule` / `companionClass` does not always work to navigate between
+   * those two symbols, namely when they are shadowed by a type / value in the a package object
+   * (scala-dev#248).
+   */
+  def parse(file: AbstractFile, clazz: ClassSymbol, module: ModuleSymbol): Unit = {
     this.file = file
     pushBusy(clazz) {
       this.in           = new AbstractFileReader(file)
@@ -973,11 +984,9 @@ abstract class ClassfileParser {
       }
       if (hasError) None
       else Some(AnnotationInfo(attrType, List(), nvpairs.toList))
-    }
-    catch {
-      case f: FatalError       => throw f  // don't eat fatal errors, they mean a class was not found
-      case ex: java.lang.Error => throw ex
-      case ex: Throwable       =>
+    } catch {
+      case f: FatalError => throw f  // don't eat fatal errors, they mean a class was not found
+      case NonFatal(ex)  =>
         // We want to be robust when annotations are unavailable, so the very least
         // we can do is warn the user about the exception
         // There was a reference to ticket 1135, but that is outdated: a reference to a class not on
@@ -986,7 +995,6 @@ abstract class ClassfileParser {
         // and that should never be swallowed silently.
         warning(s"Caught: $ex while parsing annotations in ${in.file}")
         if (settings.debug) ex.printStackTrace()
-
         None // ignore malformed annotations
     }
 
@@ -1093,8 +1101,6 @@ abstract class ClassfileParser {
       val attrName = readTypeName()
       val attrLen = u4
       attrName match {
-        case tpnme.SignatureATTR =>
-          in.skip(attrLen)
         case tpnme.ScalaSignatureATTR =>
           isScala = true
           val pbuf = new PickleBuffer(in.buf, in.bp, in.bp + attrLen)

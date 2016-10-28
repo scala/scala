@@ -14,7 +14,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
    *  by unpickling information from the corresponding Java class. If no Java class
    *  is found, a package is created instead.
    */
-  class TopClassCompleter(clazz: Symbol, module: Symbol) extends SymLoader with FlagAssigningCompleter {
+  class TopClassCompleter(clazz: ClassSymbol, module: ModuleSymbol) extends SymLoader with FlagAssigningCompleter {
     markFlagsCompleted(clazz, module)(mask = ~TopLevelPickledFlags)
     override def complete(sym: Symbol) = {
       debugInfo("completing "+sym+"/"+clazz.fullName)
@@ -36,7 +36,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
    *  @param name    The simple name of the newly created class
    *  @param completer  The completer to be used to set the info of the class and the module
    */
-  protected def initAndEnterClassAndModule(owner: Symbol, name: TypeName, completer: (Symbol, Symbol) => LazyType) = {
+  protected def initAndEnterClassAndModule(owner: Symbol, name: TypeName, completer: (ClassSymbol, ModuleSymbol) => LazyType) = {
     assert(!(name.toString endsWith "[]"), name)
     val clazz = owner.newClass(name)
     val module = owner.newModule(name.toTermName)
