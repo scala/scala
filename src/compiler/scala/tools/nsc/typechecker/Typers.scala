@@ -3140,13 +3140,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // SI-5877 The decls of a package include decls of the package object. But we don't want to add
           //         the corresponding synthetics to the package class, only to the package object class.
           // SI-6734 Locality test below is meaningless if we're not even in the correct tree.
+          //         For modules that are synthetic case companions, check that case class is defined here.
           def shouldAdd(sym: Symbol): Boolean = {
             def shouldAddAsModule: Boolean =
               sym.moduleClass.attachments.get[ClassForCaseCompanionAttachment] match {
                 case Some(att) =>
                   val cdef = att.caseClass
                   stats.exists {
-                    case t @ ClassDef(_, _, _, _) => t.symbol == cdef.symbol
+                    case t @ ClassDef(_, _, _, _) => t.symbol == cdef.symbol   // cdef ne t
                     case _ => false
                   }
                 case _ => true

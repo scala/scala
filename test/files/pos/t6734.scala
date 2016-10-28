@@ -1,23 +1,17 @@
 
-//single file badimp.scala
-// adding package object gives not found: type SortedMap
-package object badimp
+// desugars to package p { object `package` }
+// previously, synthetic p.C was incorrectly added to this tree
+// This only matters because synthetics are not hygienic
+package object p
 
-package badimp {
-
-  // move before package object works
-  import scala.collection.immutable.SortedMap
-
-  case class Nodal private[badimp] (value: String, children: SortedMap[String, Int])
-
-  // adding target object restores sanity
-  // but adding it before the import does not
-  //object Nodal
+package p {
+  import scala.concurrent.Future
+  case class C private[p] (value: Future[Int])   // private to avoid rewriting C.apply to new C
 }
 
 package client {
   trait X {
-    import scala.collection.immutable.SortedMap
-    def f = badimp.Nodal("test", SortedMap[String, Int]())   // ensure Nodal.apply was created
+    import scala.concurrent.Future
+    def f = p.C(Future(42)(null))  // ensure synthetics were generated, i.e., p.C.apply
   }
 }
