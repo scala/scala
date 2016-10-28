@@ -570,48 +570,32 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
       /** Tries to detect final static literals syntactically and returns a constant type replacement */
       def optConstantTpe(): Tree = {
-        in.nextToken()
+        def constantTpe(const: Constant): Tree = TypeTree(ConstantType(const))
 
-        def constantTpe(lit: Any): Tree =
-          try TypeTree(ConstantType(Constant(lit)))
-          finally in.nextToken()
-
-        def byType(value: Long): Tree =
-          tpt.tpe match {
-            case ByteTpe => constantTpe(value.toByte)
-            case CharTpe => constantTpe(value.toChar)
-            case ShortTpe => constantTpe(value.toShort)
-            case IntTpe => constantTpe(value.toInt)
-            case LongTpe => constantTpe(value.toLong)
-            case _ => tpt1
+        def forConst(const: Constant): Tree = {
+          if (in.token != SEMI) tpt1
+          else {
+            def isStringTyped = tpt1 match {
+              case Ident(TypeName("String")) => true
+              case _ => false
+            }
+            if (const.tag == StringTag && isStringTyped) constantTpe(const)
+            else if (tpt1.tpe != null && (const.tag == BooleanTag || const.isNumeric)) {
+              // for example, literal 'a' is ok for float. 127 is ok for byte, but 128 is not.
+              val converted = const.convertTo(tpt1.tpe)
+              if (converted == null) tpt1
+              else constantTpe(converted)
+            } else tpt1
           }
+        }
 
+        in.nextToken() // EQUALS
         if (mods.hasFlag(Flags.STATIC) && mods.isFinal) {
-          def lit(negate: Boolean): Tree =
-            if (in.lookaheadToken == SEMI)
-              in.token match {
-                case TRUE if tpt.tpe == BooleanTpe => constantTpe(!negate)
-                case FALSE if tpt.tpe == BooleanTpe => constantTpe(negate)
-                case CHARLIT => byType(in.name.charAt(0))
-                case INTLIT => byType(in.intVal(negate))
-                case LONGLIT if tpt.tpe == LongTpe => constantTpe(in.intVal(negate))
-                case FLOATLIT if tpt.tpe == FloatTpe => constantTpe(in.floatVal(negate).toFloat)
-                case DOUBLELIT if tpt.tpe == DoubleTpe => constantTpe(in.floatVal(negate))
-                case STRINGLIT =>
-                  tpt match {
-                    case Ident(TypeName("String")) => constantTpe(in.name.toString)
-                    case _ => tpt1
-                  }
-                case _ => tpt1
-              }
-            else tpt1
-
-          in.token match {
-            case MINUS | BANG =>
-              in.nextToken()
-              lit(negate = true)
-            case other => lit(negate = false)
+          val neg = in.token match {
+            case MINUS | BANG => in.nextToken(); true
+            case _ => false
           }
+          tryLiteral(neg).map(forConst).getOrElse(tpt1)
         } else tpt1
       }
 
@@ -895,6 +879,25 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       case AT        => annotationDecl(mods)
       case CLASS     => classDecl(mods)
       case _         => in.nextToken(); syntaxError("illegal start of type declaration", skipIt = true); List(errorTypeTree)
+    }
+
+    def tryLiteral(negate: Boolean = false): Option[Constant] = {
+      val l = in.token match {
+        case TRUE      => !negate
+        case FALSE     => negate
+        case CHARLIT   => in.name.charAt(0)
+        case INTLIT    => in.intVal(negate).toInt
+        case LONGLIT   => in.intVal(negate)
+        case FLOATLIT  => in.floatVal(negate).toFloat
+        case DOUBLELIT => in.floatVal(negate)
+        case STRINGLIT => in.name.toString
+        case _         => null
+      }
+      if (l == null) None
+      else {
+        in.nextToken()
+        Some(Constant(l))
+      }
     }
 
     /** CompilationUnit ::= [package QualId semi] TopStatSeq
