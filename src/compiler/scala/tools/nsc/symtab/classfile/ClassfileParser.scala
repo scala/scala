@@ -820,16 +820,19 @@ abstract class ClassfileParser {
         // Java annotations on classes / methods / fields with RetentionPolicy.RUNTIME
         case tpnme.RuntimeAnnotationATTR =>
           if (isScalaAnnot || !isScala) {
-            val scalaSigAnnot = parseAnnotations(attrLen)
-            if (isScalaAnnot)
-              scalaSigAnnot match {
-                case Some(san: AnnotationInfo) =>
-                  val bytes =
-                    san.assocs.find({ _._1 == nme.bytes }).get._2.asInstanceOf[ScalaSigBytes].bytes
-                  unpickler.unpickle(bytes, 0, clazz, staticModule, in.file.name)
-                case None =>
-                  throw new RuntimeException("Scala class file does not contain Scala annotation")
-              }
+            // For Scala classfiles we are only interested in the scala signature annotations. Other
+            // annotations should be skipped (the pickle contains the symbol's annotations).
+            // Skipping them also prevents some spurious warnings / errors related to SI-7014,
+            // SI-7551, pos/5165b
+            val scalaSigAnnot = parseAnnotations(onlyScalaSig = isScalaAnnot)
+            if (isScalaAnnot) scalaSigAnnot match {
+              case Some(san: AnnotationInfo) =>
+                val bytes =
+                  san.assocs.find({ _._1 == nme.bytes }).get._2.asInstanceOf[ScalaSigBytes].bytes
+                unpickler.unpickle(bytes, 0, clazz, staticModule, in.file.name)
+              case None =>
+                throw new RuntimeException("Scala class file does not contain Scala annotation")
+            }
             debuglog("[class] << " + sym.fullName + sym.annotationsString)
           }
           else
@@ -860,6 +863,24 @@ abstract class ClassfileParser {
           in.skip(attrLen)
         case _ =>
           in.skip(attrLen)
+      }
+    }
+
+    def skipAnnotArg(): Unit = {
+      u1 match {
+        case STRING_TAG | BOOL_TAG | BYTE_TAG | CHAR_TAG | SHORT_TAG |
+             INT_TAG | LONG_TAG | FLOAT_TAG | DOUBLE_TAG | CLASS_TAG =>
+          in.skip(2)
+
+        case ENUM_TAG =>
+          in.skip(4)
+
+        case ARRAY_TAG =>
+          val num = u2
+          for (i <- 0 until num) skipAnnotArg()
+
+        case ANNOTATION_TAG =>
+          parseAnnotation(u2, onlyScalaSig = true)
       }
     }
 
@@ -896,7 +917,7 @@ abstract class ClassfileParser {
           if (hasError) None
           else Some(ArrayAnnotArg(arr.toArray))
         case ANNOTATION_TAG =>
-          parseAnnotation(index) map (NestedAnnotArg(_))
+          parseAnnotation(index, onlyScalaSig = false) map (NestedAnnotArg(_))
       }
     }
 
@@ -923,7 +944,7 @@ abstract class ClassfileParser {
     /* Parse and return a single annotation.  If it is malformed,
      * return None.
      */
-    def parseAnnotation(attrNameIndex: Int): Option[AnnotationInfo] = try {
+    def parseAnnotation(attrNameIndex: Int, onlyScalaSig: Boolean): Option[AnnotationInfo] = try {
       val attrType = pool.getType(attrNameIndex)
       val nargs = u2
       val nvpairs = new ListBuffer[(Name, ClassfileAnnotArg)]
@@ -944,7 +965,8 @@ abstract class ClassfileParser {
             case None => hasError = true
           }
         else
-          parseAnnotArg match {
+          if (onlyScalaSig) skipAnnotArg()
+          else parseAnnotArg match {
             case Some(c) => nvpairs += ((name, c))
             case None => hasError = true
           }
@@ -986,19 +1008,18 @@ abstract class ClassfileParser {
 
     /* Parse a sequence of annotations and attaches them to the
      * current symbol sym, except for the ScalaSignature annotation that it returns, if it is available. */
-    def parseAnnotations(len: Int): Option[AnnotationInfo] =  {
+    def parseAnnotations(onlyScalaSig: Boolean): Option[AnnotationInfo] = {
       val nAttr = u2
       var scalaSigAnnot: Option[AnnotationInfo] = None
-      for (n <- 0 until nAttr)
-        parseAnnotation(u2) match {
-          case Some(scalaSig) if (scalaSig.atp == ScalaSignatureAnnotation.tpe) =>
-            scalaSigAnnot = Some(scalaSig)
-          case Some(scalaSig) if (scalaSig.atp == ScalaLongSignatureAnnotation.tpe) =>
-            scalaSigAnnot = Some(scalaSig)
-          case Some(annot) =>
-            sym.addAnnotation(annot)
-          case None =>
-        }
+      for (n <- 0 until nAttr) parseAnnotation(u2, onlyScalaSig) match {
+        case Some(scalaSig) if scalaSig.atp == ScalaSignatureAnnotation.tpe =>
+          scalaSigAnnot = Some(scalaSig)
+        case Some(scalaSig) if scalaSig.atp == ScalaLongSignatureAnnotation.tpe =>
+          scalaSigAnnot = Some(scalaSig)
+        case Some(annot) =>
+          sym.addAnnotation(annot)
+        case None =>
+      }
       scalaSigAnnot
     }
 
