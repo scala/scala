@@ -578,7 +578,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
      *  @param   jclazz  The Java class which contains the unpickled information in a
      *                   ScalaSignature or ScalaLongSignature annotation.
      */
-    def unpickleClass(clazz: Symbol, module: Symbol, jclazz: jClass[_]): Unit = {
+    def unpickleClass(clazz: ClassSymbol, module: ModuleSymbol, jclazz: jClass[_]): Unit = {
       def markAbsent(tpe: Type) = setAllInfos(clazz, module, tpe)
       def handleError(ex: Exception) = {
         markAbsent(ErrorType)

@@ -10,6 +10,7 @@ package classfile
 
 import java.io.{File, IOException}
 import java.lang.Integer.toHexString
+
 import scala.collection.{immutable, mutable}
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.annotation.switch
@@ -18,6 +19,7 @@ import scala.reflect.internal.pickling.{ByteCodecs, PickleBuffer}
 import scala.reflect.io.NoAbstractFile
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.AbstractFile
+import scala.util.control.NonFatal
 
 /** This abstract class implements a class file parser.
  *
@@ -53,18 +55,18 @@ abstract class ClassfileParser {
   protected type ThisConstantPool <: ConstantPool
   protected def newConstantPool: ThisConstantPool
 
-  protected var file: AbstractFile     = _  // the class file
-  protected var in: AbstractFileReader = _  // the class file reader
-  protected var clazz: Symbol = _           // the class symbol containing dynamic members
-  protected var staticModule: Symbol = _    // the module symbol containing static members
-  protected var instanceScope: Scope = _    // the scope of all instance definitions
-  protected var staticScope: Scope = _      // the scope of all static definitions
-  protected var pool: ThisConstantPool = _  // the classfile's constant pool
-  protected var isScala: Boolean = _        // does class file describe a scala class?
-  protected var isScalaAnnot: Boolean = _   // does class file describe a scala class with its pickled info in an annotation?
-  protected var isScalaRaw: Boolean = _     // this class file is a scala class with no pickled info
-  protected var busy: Symbol = _            // lock to detect recursive reads
-  protected var currentClass: Name = _      // JVM name of the current class
+  protected var file: AbstractFile     = _     // the class file
+  protected var in: AbstractFileReader = _     // the class file reader
+  protected var clazz: ClassSymbol = _         // the class symbol containing dynamic members
+  protected var staticModule: ModuleSymbol = _ // the module symbol containing static members
+  protected var instanceScope: Scope = _       // the scope of all instance definitions
+  protected var staticScope: Scope = _         // the scope of all static definitions
+  protected var pool: ThisConstantPool = _     // the classfile's constant pool
+  protected var isScala: Boolean = _           // does class file describe a scala class?
+  protected var isScalaAnnot: Boolean = _      // does class file describe a scala class with its pickled info in an annotation?
+  protected var isScalaRaw: Boolean = _        // this class file is a scala class with no pickled info
+  protected var busy: Symbol = _               // lock to detect recursive reads
+  protected var currentClass: Name = _         // JVM name of the current class
   protected var classTParams = Map[Name,Symbol]()
   protected var srcfile0 : Option[AbstractFile] = None
   protected def moduleClass: Symbol = staticModule.moduleClass
@@ -132,17 +134,21 @@ abstract class ClassfileParser {
     finally loaders.parentsLevel -= 1
   }
 
-  def parse(file: AbstractFile, root: Symbol): Unit = {
-    debuglog("[class] >> " + root.fullName)
-
+  /**
+   * `clazz` and `module` are the class and module symbols corresponding to the classfile being
+   * parsed. Note that the ClassfileLoader unconditionally creates both of these symbols, they may
+   * may get invalidated later on (.exists).
+   *
+   * Note that using `companionModule` / `companionClass` does not always work to navigate between
+   * those two symbols, namely when they are shadowed by a type / value in the a package object
+   * (scala-dev#248).
+   */
+  def parse(file: AbstractFile, clazz: ClassSymbol, module: ModuleSymbol): Unit = {
     this.file = file
-    pushBusy(root) {
+    pushBusy(clazz) {
       this.in           = new AbstractFileReader(file)
-      this.clazz        = if (root.isModule) root.companionClass else root
-      // WARNING! do no use clazz.companionModule to find staticModule.
-      // In a situation where root can be defined, but its companionClass not,
-      // this would give incorrect results (see SI-5031 in separate compilation scenario)
-      this.staticModule = if (root.isModule) root else root.companionModule
+      this.clazz        = clazz
+      this.staticModule = module
       this.isScala      = false
 
       parseHeader()
@@ -271,7 +277,7 @@ abstract class ClassfileParser {
      *  arrays are considered to be class types, they might
      *  appear as entries in 'newarray' or 'cast' opcodes.
      */
-    def getClassOrArrayType(index: Int): Type = (
+    def getClassOrArrayType(index: Int): Type = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       else values(index) match {
         case tp: Type    => tp
@@ -283,7 +289,7 @@ abstract class ClassfileParser {
             case _         => recordAtIndex(classNameToSymbol(name), index).tpe_*
           }
       }
-    )
+    }
 
     def getType(index: Int): Type              = getType(null, index)
     def getType(sym: Symbol, index: Int): Type = sigToType(sym, getExternalName(index))
@@ -356,63 +362,43 @@ abstract class ClassfileParser {
       abort(s"bad constant pool tag ${in.buf(start)} at byte $start")
   }
 
-  private def loadClassSymbol(name: Name): Symbol = {
-    val file = classPath findClassFile name.toString getOrElse {
-      // SI-5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
-      // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
-      // that are not in their correct place (see bug for details)
+  def stubClassSymbol(name: Name): Symbol = {
+    // SI-5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
+    // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
+    // that are not in their correct place (see bug for details)
 
-      // TODO More consistency with use of stub symbols in `Unpickler`
-      //   - better owner than `NoSymbol`
-      //   - remove eager warning
-      val msg = s"Class $name not found - continuing with a stub."
-      if ((!settings.isScaladoc) && (settings.verbose || settings.developer)) warning(msg)
-      return NoSymbol.newStubSymbol(name.toTypeName, msg)
-    }
-    val completer     = new loaders.ClassfileLoader(file)
-    var owner: Symbol = rootMirror.RootClass
-    var sym: Symbol   = NoSymbol
-    var ss: Name      = null
-    var start         = 0
-    var end           = name indexOf '.'
-
-    while (end > 0) {
-      ss = name.subName(start, end)
-      sym = owner.info.decls lookup ss
-      if (sym == NoSymbol) {
-        sym = owner.newPackage(ss.toTermName) setInfo completer
-        sym.moduleClass setInfo completer
-        owner.info.decls enter sym
-      }
-      owner = sym.moduleClass
-      start = end + 1
-      end = name.indexOf('.', start)
-    }
-    ss = name.subName(0, start)
-    owner.info.decls lookup ss orElse {
-      sym = owner.newClass(ss.toTypeName) setInfoAndEnter completer
-      debuglog("loaded "+sym+" from file "+file)
-      sym
-    }
+    // TODO More consistency with use of stub symbols in `Unpickler`
+    //   - better owner than `NoSymbol`
+    //   - remove eager warning
+    val msg = s"Class $name not found - continuing with a stub."
+    if ((!settings.isScaladoc) && (settings.verbose || settings.developer)) warning(msg)
+    NoSymbol.newStubSymbol(name.toTypeName, msg)
   }
 
-  /** FIXME - we shouldn't be doing ad hoc lookups in the empty package.
-   *  The method called "getClassByName" should either return the class or not.
-   */
-  private def lookupClass(name: Name) = (
+  private def lookupClass(name: Name) = try {
     if (name containsChar '.')
-      rootMirror getClassByName name // see tickets #2464, #3756
+      rootMirror getClassByName name
     else
+      // FIXME - we shouldn't be doing ad hoc lookups in the empty package, getClassByName should return the class
       definitions.getMember(rootMirror.EmptyPackageClass, name.toTypeName)
-  )
+  } catch {
+    // The handler
+    //   - prevents crashes with deficient InnerClassAttributes (SI-2464, 0ce0ad5)
+    //   - was referenced in the bugfix commit for SI-3756 (4fb0d53), not sure why
+    //   - covers the case when a type alias in a package object shadows a class symbol,
+    //     getClassByName throws a MissingRequirementError (scala-dev#248)
+    case _: FatalError =>
+      // getClassByName can throw a MissingRequirementError (which extends FatalError)
+      // definitions.getMember can throw a FatalError, for example in pos/t5165b
+      stubClassSymbol(name)
+  }
 
   /** Return the class symbol of the given name. */
   def classNameToSymbol(name: Name): Symbol = {
     if (innerClasses contains name)
       innerClasses innerSymbol name
     else
-      try lookupClass(name)
-      catch { case _: FatalError => loadClassSymbol(name) }
+      lookupClass(name)
   }
 
   def parseClass() {
@@ -441,13 +427,10 @@ abstract class ClassfileParser {
     }
 
     val isTopLevel = !(currentClass containsChar '$') // Java class name; *don't* try to to use Scala name decoding (SI-7532)
-
-    val c = if (isTopLevel) pool.getClassSymbol(nameIdx) else clazz
     if (isTopLevel) {
-      if (c != clazz) {
-        if ((clazz eq NoSymbol) && (c ne NoSymbol)) clazz = c
-        else mismatchError(c)
-      }
+      val c = pool.getClassSymbol(nameIdx)
+      // scala-dev#248: when a type alias (in a package object) shadows a class symbol, getClassSymbol returns a stub
+      if (!c.isInstanceOf[StubSymbol] && c != clazz) mismatchError(c)
     }
 
     addEnclosingTParams(clazz)
@@ -848,16 +831,19 @@ abstract class ClassfileParser {
         // Java annotations on classes / methods / fields with RetentionPolicy.RUNTIME
         case tpnme.RuntimeAnnotationATTR =>
           if (isScalaAnnot || !isScala) {
-            val scalaSigAnnot = parseAnnotations(attrLen)
-            if (isScalaAnnot)
-              scalaSigAnnot match {
-                case Some(san: AnnotationInfo) =>
-                  val bytes =
-                    san.assocs.find({ _._1 == nme.bytes }).get._2.asInstanceOf[ScalaSigBytes].bytes
-                  unpickler.unpickle(bytes, 0, clazz, staticModule, in.file.name)
-                case None =>
-                  throw new RuntimeException("Scala class file does not contain Scala annotation")
-              }
+            // For Scala classfiles we are only interested in the scala signature annotations. Other
+            // annotations should be skipped (the pickle contains the symbol's annotations).
+            // Skipping them also prevents some spurious warnings / errors related to SI-7014,
+            // SI-7551, pos/5165b
+            val scalaSigAnnot = parseAnnotations(onlyScalaSig = isScalaAnnot)
+            if (isScalaAnnot) scalaSigAnnot match {
+              case Some(san: AnnotationInfo) =>
+                val bytes =
+                  san.assocs.find({ _._1 == nme.bytes }).get._2.asInstanceOf[ScalaSigBytes].bytes
+                unpickler.unpickle(bytes, 0, clazz, staticModule, in.file.name)
+              case None =>
+                throw new RuntimeException("Scala class file does not contain Scala annotation")
+            }
             debuglog("[class] << " + sym.fullName + sym.annotationsString)
           }
           else
@@ -888,6 +874,24 @@ abstract class ClassfileParser {
           in.skip(attrLen)
         case _ =>
           in.skip(attrLen)
+      }
+    }
+
+    def skipAnnotArg(): Unit = {
+      u1 match {
+        case STRING_TAG | BOOL_TAG | BYTE_TAG | CHAR_TAG | SHORT_TAG |
+             INT_TAG | LONG_TAG | FLOAT_TAG | DOUBLE_TAG | CLASS_TAG =>
+          in.skip(2)
+
+        case ENUM_TAG =>
+          in.skip(4)
+
+        case ARRAY_TAG =>
+          val num = u2
+          for (i <- 0 until num) skipAnnotArg()
+
+        case ANNOTATION_TAG =>
+          parseAnnotation(u2, onlyScalaSig = true)
       }
     }
 
@@ -924,7 +928,7 @@ abstract class ClassfileParser {
           if (hasError) None
           else Some(ArrayAnnotArg(arr.toArray))
         case ANNOTATION_TAG =>
-          parseAnnotation(index) map (NestedAnnotArg(_))
+          parseAnnotation(index, onlyScalaSig = false) map (NestedAnnotArg(_))
       }
     }
 
@@ -951,7 +955,7 @@ abstract class ClassfileParser {
     /* Parse and return a single annotation.  If it is malformed,
      * return None.
      */
-    def parseAnnotation(attrNameIndex: Int): Option[AnnotationInfo] = try {
+    def parseAnnotation(attrNameIndex: Int, onlyScalaSig: Boolean): Option[AnnotationInfo] = try {
       val attrType = pool.getType(attrNameIndex)
       val nargs = u2
       val nvpairs = new ListBuffer[(Name, ClassfileAnnotArg)]
@@ -972,18 +976,17 @@ abstract class ClassfileParser {
             case None => hasError = true
           }
         else
-          parseAnnotArg match {
+          if (onlyScalaSig) skipAnnotArg()
+          else parseAnnotArg match {
             case Some(c) => nvpairs += ((name, c))
             case None => hasError = true
           }
       }
       if (hasError) None
       else Some(AnnotationInfo(attrType, List(), nvpairs.toList))
-    }
-    catch {
-      case f: FatalError       => throw f  // don't eat fatal errors, they mean a class was not found
-      case ex: java.lang.Error => throw ex
-      case ex: Throwable       =>
+    } catch {
+      case f: FatalError => throw f  // don't eat fatal errors, they mean a class was not found
+      case NonFatal(ex)  =>
         // We want to be robust when annotations are unavailable, so the very least
         // we can do is warn the user about the exception
         // There was a reference to ticket 1135, but that is outdated: a reference to a class not on
@@ -992,7 +995,6 @@ abstract class ClassfileParser {
         // and that should never be swallowed silently.
         warning(s"Caught: $ex while parsing annotations in ${in.file}")
         if (settings.debug) ex.printStackTrace()
-
         None // ignore malformed annotations
     }
 
@@ -1014,19 +1016,18 @@ abstract class ClassfileParser {
 
     /* Parse a sequence of annotations and attaches them to the
      * current symbol sym, except for the ScalaSignature annotation that it returns, if it is available. */
-    def parseAnnotations(len: Int): Option[AnnotationInfo] =  {
+    def parseAnnotations(onlyScalaSig: Boolean): Option[AnnotationInfo] = {
       val nAttr = u2
       var scalaSigAnnot: Option[AnnotationInfo] = None
-      for (n <- 0 until nAttr)
-        parseAnnotation(u2) match {
-          case Some(scalaSig) if (scalaSig.atp == ScalaSignatureAnnotation.tpe) =>
-            scalaSigAnnot = Some(scalaSig)
-          case Some(scalaSig) if (scalaSig.atp == ScalaLongSignatureAnnotation.tpe) =>
-            scalaSigAnnot = Some(scalaSig)
-          case Some(annot) =>
-            sym.addAnnotation(annot)
-          case None =>
-        }
+      for (n <- 0 until nAttr) parseAnnotation(u2, onlyScalaSig) match {
+        case Some(scalaSig) if scalaSig.atp == ScalaSignatureAnnotation.tpe =>
+          scalaSigAnnot = Some(scalaSig)
+        case Some(scalaSig) if scalaSig.atp == ScalaLongSignatureAnnotation.tpe =>
+          scalaSigAnnot = Some(scalaSig)
+        case Some(annot) =>
+          sym.addAnnotation(annot)
+        case None =>
+      }
       scalaSigAnnot
     }
 
@@ -1043,7 +1044,6 @@ abstract class ClassfileParser {
 
     def enterClassAndModule(entry: InnerClassEntry, file: AbstractFile) {
       def jflags      = entry.jflags
-      val completer   = new loaders.ClassfileLoader(file)
       val name        = entry.originalName
       val sflags      = jflags.toScalaFlags
       val owner       = ownerForFlags(jflags)
@@ -1054,8 +1054,11 @@ abstract class ClassfileParser {
       val (innerClass, innerModule) = if (file == NoAbstractFile) {
         (newStub(name.toTypeName), newStub(name.toTermName))
       } else {
-        val cls = owner.newClass(name.toTypeName, NoPosition, sflags) setInfo completer
-        val mod = owner.newModule(name.toTermName, NoPosition, sflags) setInfo completer
+        val cls = owner.newClass(name.toTypeName, NoPosition, sflags)
+        val mod = owner.newModule(name.toTermName, NoPosition, sflags)
+        val completer = new loaders.ClassfileLoader(file, cls, mod)
+        cls setInfo completer
+        mod setInfo completer
         mod.moduleClass setInfo loaders.moduleClassLoader
         List(cls, mod.moduleClass) foreach (_.associatedFile = file)
         (cls, mod)
@@ -1098,8 +1101,6 @@ abstract class ClassfileParser {
       val attrName = readTypeName()
       val attrLen = u4
       attrName match {
-        case tpnme.SignatureATTR =>
-          in.skip(attrLen)
         case tpnme.ScalaSignatureATTR =>
           isScala = true
           val pbuf = new PickleBuffer(in.buf, in.bp, in.bp + attrLen)
@@ -1166,10 +1167,10 @@ abstract class ClassfileParser {
     private def innerSymbol(entry: InnerClassEntry): Symbol = {
       val name      = entry.originalName.toTypeName
       val enclosing = entry.enclosing
-      val member = (
+      val member = {
         if (enclosing == clazz) entry.scope lookup name
         else lookupMemberAtTyperPhaseIfPossible(enclosing, name)
-      )
+      }
       def newStub = enclosing.newStubSymbol(name, s"Unable to locate class corresponding to inner class entry for $name in owner ${entry.outerName}")
       member.orElse(newStub)
     }
