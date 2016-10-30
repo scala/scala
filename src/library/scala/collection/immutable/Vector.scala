@@ -735,8 +735,7 @@ final class VectorBuilder[A]() extends ReusableBuilder[A,Vector[A]] with VectorP
     super.++=(xs)
 
   def result: Vector[A] = {
-    val size = blockIndex + lo
-    if (size == 0)
+    if (isEmpty)
       return Vector.empty
     val s = new Vector[A](0, size, 0) // should focus front or back?
     s.initFrom(this)
@@ -750,6 +749,12 @@ final class VectorBuilder[A]() extends ReusableBuilder[A,Vector[A]] with VectorP
     blockIndex = 0
     lo = 0
   }
+
+  def size: Int = blockIndex + lo
+
+  def isEmpty: Boolean = size == 0
+
+  def nonEmpty: Boolean = size != 0
 }
 
 
