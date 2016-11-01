@@ -317,8 +317,6 @@ scalaVerToBinary() {
 determineScalaVersion() {
   cd $WORKSPACE
   parseScalaProperties "versions.properties"
-  echo "repo_ref=2.12.x" >> $baseDir/jenkins.properties # for the -dist downstream jobs that build the actual archives
-
 
   # each of the branches below defines the following vars: SCALA_VER_BASE, SCALA_VER_SUFFIX, SCALADOC_SOURCE_LINKS_VER, publishToSonatype
   if [ -z "$SCALA_VER_BASE" ]; then
