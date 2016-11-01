@@ -183,7 +183,7 @@ You may also want to check out the following resources:
 
 # Scala CI
 
-Once you submit a PR your commits will are automatically tested by the Scala CI.
+Once you submit a PR your commits will be automatically tested by the Scala CI.
 
 If you see a spurious build failure, you can post `/rebuild` as a PR comment.
 The [scabot README](https://github.com/scala/scabot) lists all available commands.
