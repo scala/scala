@@ -143,7 +143,7 @@ trait MemberHandlers {
 
         val nameString = colorName(prettyName) + vidString
         val typeString = colorType(req typeOf name)
-        s""" + "$nameString: $typeString = " + $resultString"""
+        s""" + "${member.keyword} $nameString: $typeString = " + $resultString"""
       }
     }
   }
