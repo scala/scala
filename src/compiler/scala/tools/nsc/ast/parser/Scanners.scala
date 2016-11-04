@@ -38,6 +38,27 @@ trait ScannersCommon {
     def deprecationWarning(off: Offset, msg: String, since: String): Unit
   }
 
+  // Hooks for ScaladocUnitScanner and ScaladocJavaUnitScanner
+  trait DocScanner {
+    protected def beginDocComment(prefix: String): Unit = {}
+    protected def processCommentChar(): Unit = {}
+    protected def finishDocComment(): Unit = {}
+
+    private var lastDoc: DocComment = null
+    // get last doc comment
+    def flushDoc(): DocComment = try lastDoc finally lastDoc = null
+    def registerDocComment(raw: String, pos: Position) = {
+      lastDoc = DocComment(raw, pos)
+      signalParsedDocComment(raw, pos)
+    }
+
+    /** To prevent doc comments attached to expressions from leaking out of scope
+      *  onto the next documentable entity, they are discarded upon passing a right
+      *  brace, bracket, or parenthesis.
+      */
+    def discardDocBuffer(): Unit = {}
+  }
+
   def createKeywordArray(keywords: Seq[(Name, Token)], defaultToken: Token): (Token, Array[Token]) = {
     val names = keywords sortBy (_._1.start) map { case (k, v) => (k.start, v) }
     val low   = names.head._1
@@ -103,11 +124,11 @@ trait Scanners extends ScannersCommon {
     }
   }
 
-  abstract class Scanner extends CharArrayReader with TokenData with ScannerData with ScannerCommon {
+  abstract class Scanner extends CharArrayReader with TokenData with ScannerData with ScannerCommon with DocScanner {
     private def isDigit(c: Char) = java.lang.Character isDigit c
 
     private var openComments = 0
-    protected def putCommentChar(): Unit = nextChar()
+    final protected def putCommentChar(): Unit = { processCommentChar(); nextChar() }
 
     @tailrec private def skipLineComment(): Unit = ch match {
       case SU | CR | LF =>
@@ -134,8 +155,6 @@ trait Scanners extends ScannersCommon {
       case SU  => incompleteInputError("unclosed comment")
       case _   => putCommentChar() ; skipNestedComments()
     }
-    def skipDocComment(): Unit = skipNestedComments()
-    def skipBlockComment(): Unit = skipNestedComments()
 
     private def skipToCommentEnd(isLineComment: Boolean): Unit = {
       nextChar()
@@ -147,27 +166,23 @@ trait Scanners extends ScannersCommon {
           // Check for the amazing corner case of /**/
           if (ch == '/')
             nextChar()
-          else
-            skipDocComment()
+          else {
+            beginDocComment("/**")
+            skipNestedComments()
+          }
         }
-        else skipBlockComment()
+        else skipNestedComments()
       }
     }
 
     /** @pre ch == '/'
      *  Returns true if a comment was skipped.
      */
-    def skipComment(): Boolean = ch match {
-      case '/' | '*' => skipToCommentEnd(isLineComment = ch == '/') ; true
+    final def skipComment(): Boolean = ch match {
+      case '/' | '*' => skipToCommentEnd(isLineComment = ch == '/') ; finishDocComment(); true
       case _         => false
     }
-    def flushDoc(): DocComment = null
 
-    /** To prevent doc comments attached to expressions from leaking out of scope
-     *  onto the next documentable entity, they are discarded upon passing a right
-     *  brace, bracket, or parenthesis.
-     */
-    def discardDocBuffer(): Unit = ()
 
     def isAtEnd = charOffset >= buf.length
 

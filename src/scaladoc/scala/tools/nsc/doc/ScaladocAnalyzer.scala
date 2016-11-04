@@ -101,12 +101,26 @@ trait ScaladocAnalyzer extends Analyzer {
 abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends SyntaxAnalyzer {
   import global._
 
-  class ScaladocUnitScanner(unit0: CompilationUnit, patches0: List[BracePatch]) extends UnitScanner(unit0, patches0) {
+  trait ScaladocScanner extends DocScanner {
+    // When `docBuffer == null`, we're not in a doc comment.
+    private var docBuffer: StringBuilder = null
 
-    private var docBuffer: StringBuilder = null        // buffer for comments (non-null while scanning)
-    private var inDocComment             = false       // if buffer contains double-star doc comment
-    private var lastDoc: DocComment      = null        // last comment if it was double-star doc
+    override protected def beginDocComment(prefix: String): Unit =
+      if (docBuffer == null) docBuffer = new StringBuilder(prefix)
 
+    protected def ch: Char
+    override protected def processCommentChar(): Unit =
+      if (docBuffer != null) docBuffer append ch
+
+    protected def docPosition: Position
+    override protected def finishDocComment(): Unit =
+      if (docBuffer != null) {
+        registerDocComment(docBuffer.toString, docPosition)
+        docBuffer = null
+      }
+  }
+
+  class ScaladocUnitScanner(unit0: CompilationUnit, patches0: List[BracePatch]) extends UnitScanner(unit0, patches0) with ScaladocScanner {
     private object unmooredParser extends {                // minimalist comment parser
       val global: Global = ScaladocSyntaxAnalyzer.this.global
     }
@@ -148,40 +162,7 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
         reporter.warning(doc.pos, "discarding unmoored doc comment")
     }
 
-    override def flushDoc(): DocComment = (try lastDoc finally lastDoc = null)
-
-    override protected def putCommentChar() {
-      if (inDocComment)
-        docBuffer append ch
-
-      nextChar()
-    }
-    override def skipDocComment(): Unit = {
-      inDocComment = true
-      docBuffer = new StringBuilder("/**")
-      super.skipDocComment()
-    }
-    override def skipBlockComment(): Unit = {
-      inDocComment = false // ??? this means docBuffer won't receive contents of this comment???
-      docBuffer = new StringBuilder("/*")
-      super.skipBlockComment()
-    }
-    override def skipComment(): Boolean = {
-      // emit a block comment; if it's double-star, make Doc at this pos
-      def foundStarComment(start: Int, end: Int) = try {
-        val str = docBuffer.toString
-        val pos = Position.range(unit.source, start, start, end)
-        if (inDocComment) {
-          signalParsedDocComment(str, pos)
-          lastDoc = DocComment(str, pos)
-        }
-        true
-      } finally {
-        docBuffer    = null
-        inDocComment = false
-      }
-      super.skipComment() && ((docBuffer eq null) || foundStarComment(offset, charOffset - 2))
-    }
+    protected def docPosition: Position = Position.range(unit.source, offset, offset, charOffset - 2)
   }
   class ScaladocUnitParser(unit: CompilationUnit, patches: List[BracePatch]) extends UnitParser(unit, patches) {
     override def newScanner() = new ScaladocUnitScanner(unit, patches)
@@ -214,52 +195,17 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
     }
   }
 
-  class ScaladocJavaUnitScanner(unit: CompilationUnit) extends JavaUnitScanner(unit) {
-
-    private var docBuffer: StringBuilder = _
-    private var inDocComment = false
+  class ScaladocJavaUnitScanner(unit: CompilationUnit) extends JavaUnitScanner(unit) with ScaladocScanner {
     private var docStart: Int = 0
-    private var lastDoc: DocComment = null
 
-    override def init() = {
-      docBuffer = new StringBuilder
-      super.init()
+    override protected def beginDocComment(prefix: String): Unit = {
+      super.beginDocComment(prefix)
+      docStart = currentPos.start
     }
 
-    // get last doc comment
-    def flushDoc(): DocComment = try lastDoc finally lastDoc = null
+    protected def ch = in.ch
 
-    override protected def putCommentChar(): Unit = {
-      if (inDocComment) docBuffer append in.ch
-      in.next
-    }
-
-    override protected def skipBlockComment(isDoc: Boolean): Unit = {
-      // condition is true when comment is entered the first time,
-      // i.e. immediately after "/*" and when current character is "*"
-      if (!inDocComment && isDoc) {
-        docBuffer append "/*"
-        docStart = currentPos.start
-        inDocComment = true
-      }
-      super.skipBlockComment(isDoc)
-    }
-
-    override protected def skipComment(): Boolean = {
-      val skipped = super.skipComment()
-      if (skipped && inDocComment) {
-        val raw = docBuffer.toString
-        val position = Position.range(unit.source, docStart, docStart, in.cpos)
-        lastDoc = DocComment(raw, position)
-        signalParsedDocComment(raw, position)
-        docBuffer.setLength(0) // clear buffer
-        inDocComment = false
-        true
-      } else {
-        skipped
-      }
-    }
-
+    override protected def docPosition = Position.range(unit.source, docStart, docStart, in.cpos)
   }
 
   class ScaladocJavaUnitParser(unit: CompilationUnit) extends {
