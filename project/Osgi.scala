@@ -41,7 +41,7 @@ object Osgi {
       bundleTask(headers.value.toMap, jarlist.value, (products in Compile in packageBin).value,
         (artifactPath in (Compile, packageBin)).value, res, streams.value)
     }.value,
-    packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), bundle).identityMap,
+    packagedArtifact in (Compile, packageBin) := (((artifact in (Compile, packageBin)).value, bundle.value)),
     // Also create OSGi source bundles:
     packageOptions in (Compile, packageSrc) += Package.ManifestAttributes(
       "Bundle-Name" -> (description.value + " Sources"),

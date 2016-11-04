@@ -876,7 +876,7 @@ lazy val dist = (project in file("dist"))
       IO.write(props, null, propsFile)
       (buildDirectory in ThisBuild).value / "quick"
     }.dependsOn((distDependencies.map(products in Runtime in _) :+ mkBin): _*).value,
-    mkPack <<= Def.task { (buildDirectory in ThisBuild).value / "pack" } dependsOn (packagedArtifact in (Compile, packageBin), mkBin),
+    mkPack := Def.task { (buildDirectory in ThisBuild).value / "pack" }.dependsOn(packagedArtifact in (Compile, packageBin), mkBin).value,
     target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id,
     packageBin in Compile := {
       val extraDeps = Set(scalaSwingDep, scalaParserCombinatorsDep, scalaXmlDep)
