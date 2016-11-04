@@ -36,11 +36,11 @@ object Osgi {
       )
     },
     jarlist := false,
-    bundle <<= Def.task {
+    bundle := Def.task {
       val res = (products in Compile in packageBin).value
       bundleTask(headers.value.toMap, jarlist.value, (products in Compile in packageBin).value,
         (artifactPath in (Compile, packageBin)).value, res, streams.value)
-    },
+    }.value,
     packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), bundle).identityMap,
     // Also create OSGi source bundles:
     packageOptions in (Compile, packageSrc) += Package.ManifestAttributes(

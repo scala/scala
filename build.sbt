@@ -147,7 +147,7 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
     "-sourcepath", (baseDirectory in ThisBuild).value.toString,
     "-doc-source-url", s"https://github.com/scala/scala/tree/${versionProperties.value.githubTree}€{FILE_PATH}.scala#L1"
   ),
-  incOptions <<= (incOptions in LocalProject("root")),
+  incOptions := (incOptions in LocalProject("root")).value,
   homepage := Some(url("http://www.scala-lang.org")),
   startYear := Some(2002),
   licenses += (("BSD 3-Clause", url("http://www.scala-lang.org/license.html"))),
@@ -304,7 +304,7 @@ def filterDocSources(ff: FileFilter): Seq[Setting[_]] = Seq(
   // binaries of the library on the classpath. Specifically, we get this error:
   // (library/compile:doc) scala.reflect.internal.FatalError: package class scala does not have a member Int
   dependencyClasspath in (Compile, doc) += (classDirectory in Compile).value,
-  doc in Compile <<= doc in Compile dependsOn (compile in Compile)
+  doc in Compile := (doc in Compile).dependsOn(compile in Compile).value
 )
 
 def regexFileFilter(s: String): FileFilter = new FileFilter {
@@ -450,7 +450,7 @@ lazy val repl = configureAsSubproject(project)
   .settings(disablePublishing: _*)
   .settings(
     connectInput in run := true,
-    run <<= (run in Compile).partialInput(" -usejavacp") // Automatically add this so that `repl/run` works without additional arguments.
+    run := (run in Compile).partialInput(" -usejavacp").evaluated // Automatically add this so that `repl/run` works without additional arguments.
   )
   .dependsOn(compiler, interactive)
 
@@ -473,7 +473,7 @@ lazy val replJlineEmbedded = Project("repl-jline-embedded", file(".") / "target"
     // quick/repl-jline and quick/repl-jline-shaded on the classpath for quick/bin scripts.
     // This is different from the Ant build where all parts are combined into quick/repl, but
     // it is cleaner because it avoids circular dependencies.
-    compile in Compile <<= (compile in Compile).dependsOn(Def.task {
+    compile in Compile := (compile in Compile).dependsOn(Def.task {
       import java.util.jar._
       import collection.JavaConverters._
       val inputs: Iterator[JarJar.Entry] = {
@@ -495,7 +495,7 @@ lazy val replJlineEmbedded = Project("repl-jline-embedded", file(".") / "target"
       )
       val outdir = (classDirectory in Compile).value
       JarJar(inputs, outdir, config)
-    }),
+    }).value,
     connectInput in run := true
 
   )
@@ -587,7 +587,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
         framework % "test"
       )
     },
-    Keys.test in Test <<= Keys.test in Test dependsOn (packageBin in Compile),
+    Keys.test in Test := (Keys.test in Test).dependsOn(packageBin in Compile).value,
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-q"),
     unmanagedSourceDirectories in Test := List((baseDirectory in ThisBuild).value / "test" / "osgi" / "src"),
     unmanagedResourceDirectories in Compile := (unmanagedSourceDirectories in Test).value,
@@ -868,14 +868,14 @@ lazy val dist = (project in file("dist"))
   .settings(
     libraryDependencies ++= Seq(scalaSwingDep, jlineDep),
     mkBin := mkBinImpl.value,
-    mkQuick <<= Def.task {
+    mkQuick := Def.task {
       val cp = (fullClasspath in IntegrationTest in LocalProject("test")).value
       val propsFile = (buildDirectory in ThisBuild).value / "quick" / "partest.properties"
       val props = new java.util.Properties()
       props.setProperty("partest.classpath", cp.map(_.data.getAbsolutePath).mkString(sys.props("path.separator")))
       IO.write(props, null, propsFile)
       (buildDirectory in ThisBuild).value / "quick"
-    } dependsOn ((distDependencies.map(products in Runtime in _) :+ mkBin): _*),
+    }.dependsOn((distDependencies.map(products in Runtime in _) :+ mkBin): _*).value,
     mkPack <<= Def.task { (buildDirectory in ThisBuild).value / "pack" } dependsOn (packagedArtifact in (Compile, packageBin), mkBin),
     target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id,
     packageBin in Compile := {
@@ -893,7 +893,10 @@ lazy val dist = (project in file("dist"))
     },
     cleanFiles += (buildDirectory in ThisBuild).value / "quick",
     cleanFiles += (buildDirectory in ThisBuild).value / "pack",
-    packagedArtifact in (Compile, packageBin) <<= (packagedArtifact in (Compile, packageBin)).dependsOn(distDependencies.map(packagedArtifact in (Compile, packageBin) in _): _*)
+    packagedArtifact in (Compile, packageBin) :=
+      (packagedArtifact in (Compile, packageBin))
+        .dependsOn(distDependencies.map(packagedArtifact in (Compile, packageBin) in _): _*)
+        .value
   )
   .dependsOn(distDependencies.map(p => p: ClasspathDep[ProjectReference]): _*)
 
