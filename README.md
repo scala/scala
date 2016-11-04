@@ -135,7 +135,7 @@ To perform a bootstrap using sbt
   - then a separate invocation of sbt (using the previously built version as `starr`)
     is used to build / publish the actual build.
 
-Assume the current `starr` version is `2.12.0-M4` (defined in
+Assume the current `starr` version is `2.12.0` (defined in
 [versions.properties](versions.properties)) and the current version is `2.12.0-SNAPSHOT`
 (defined in [build.sbt](build.sbt)). To perform a local bootstrap:
   - Run `publishLocal` (you may want to specify a custom version suffix and skip
