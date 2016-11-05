@@ -587,7 +587,7 @@ corresponding function type.
 
 The declarations
 
-```
+```scala
 def a: Int
 def b (x: Int): Boolean
 def c (x: Int) (y: String, z: String): String
@@ -642,7 +642,7 @@ the corresponding type parameter clause.
 
 Consider this fragment of the `Iterable[+X]` class:
 
-```
+```scala
 trait Iterable[+X] {
   def flatMap[newType[+X] <: Iterable[X], S](f: X => newType[S]): newType[S]
 }
@@ -979,7 +979,7 @@ after applying [eta-expansion](06-expressions.html#eta-expansion). If $T$ is a m
 
 Given the definitions
 
-```
+```scala
 def foo(x: Int => String): Unit
 def foo(x: ToString): Unit
 
