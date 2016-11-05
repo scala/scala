@@ -655,7 +655,7 @@ precedence, with characters on the same line having the same precedence.
 ```
 
 That is, operators starting with a letter have lowest precedence,
-followed by operators starting with ``|`', etc.
+followed by operators starting with ‘`|`’, etc.
 
 There's one exception to this rule, which concerns
 [_assignment operators_](#assignment-operators).
@@ -664,7 +664,7 @@ of simple assignment `(=)`. That is, it is lower than the
 precedence of any other operator.
 
 The _associativity_ of an operator is determined by the operator's
-last character.  Operators ending in a colon ``:`' are
+last character.  Operators ending in a colon ‘`:`’ are
 right-associative. All other operators are left-associative.
 
 Precedence and associativity of operators determine the grouping of
