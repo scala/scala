@@ -56,7 +56,7 @@ Java platform, the following annotations have a standard meaning.
     This is equivalent to a the following field
     definition in Java:
 
-    ```
+    ```java
     private final static SerialVersionUID = <longlit>
     ```
 
