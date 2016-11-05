@@ -945,7 +945,7 @@ comprehensions have been eliminated.
     `$e$.foreach { case $p$ => $e'$ }`.
   - A for comprehension
 
-    ```
+    ```scala
     for ($p$ <- $e$; $p'$ <- $e'; \ldots$) yield $e''$
     ```
 
@@ -953,13 +953,13 @@ comprehensions have been eliminated.
     sequence of generators, definitions, or guards,
     is translated to
 
-    ```
+    ```scala
     $e$.flatMap { case $p$ => for ($p'$ <- $e'; \ldots$) yield $e''$ }
     ```
 
   - A for loop
 
-    ```
+    ```scala
     for ($p$ <- $e$; $p'$ <- $e'; \ldots$) $e''$
     ```
 
@@ -967,7 +967,7 @@ comprehensions have been eliminated.
     sequence of generators, definitions, or guards,
     is translated to
 
-    ```
+    ```scala
     $e$.foreach { case $p$ => for ($p'$ <- $e'; \ldots$) $e''$ }
     ```
 
@@ -980,7 +980,7 @@ comprehensions have been eliminated.
     `$p'$ = $e'$` is translated to the following generator of pairs of values, where
     $x$ and $x'$ are fresh names:
 
-    ```
+    ```scala
     ($p$, $p'$) <- for ($x @ p$ <- $e$) yield { val $x' @ p'$ = $e'$; ($x$, $x'$) }
     ```
 
