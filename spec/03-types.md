@@ -660,7 +660,7 @@ same name, we model
 An overloaded type consisting of type alternatives $T_1 \commadots T_n (n \geq 2)$ is denoted internally $T_1 \overload \ldots \overload T_n$.
 
 ###### Example
-```
+```scala
 def println: Unit
 def println(s: String): Unit = $\ldots$
 def println(x: Float): Unit = $\ldots$
@@ -678,7 +678,7 @@ println:  => Unit $\overload$
 ```
 
 ###### Example
-```
+```scala
 def f(x: T): T = $\ldots$
 val f = 0
 ```
