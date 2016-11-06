@@ -152,8 +152,10 @@ trait MemberHandlers {
     override def definesValue = flattensToEmpty(member.vparamss) // true if 0-arity
     override def resultExtractionCode(req: Request) = {
       val nameString = colorName(name)
-      val typeString = colorType(req typeOf name)
-      if (mods.isPublic) s""" + "$nameString: $typeString\\n"""" else ""
+      val defType = req.typesOfDefinedTerms(name)
+      val typeString = colorType(s"${paramString(defType)}: ${defType.resultType}")
+
+      if (mods.isPublic) s""" + "${member.keyword} $nameString$typeString\\n"""" else ""
     }
   }
 
