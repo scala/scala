@@ -153,7 +153,11 @@ trait MemberHandlers {
     override def resultExtractionCode(req: Request) = {
       val nameString = colorName(name)
       val defType = req.typesOfDefinedTerms(name)
-      val typeString = colorType(s"${paramString(defType)}: ${defType.resultType}")
+      val paramsTypeString =
+        if (!defType.params.isEmpty) paramString(defType)
+        else ""
+
+      val typeString = colorType(s"$paramsTypeString: ${defType.resultType}")
 
       if (mods.isPublic) s""" + "${member.keyword} $nameString$typeString\\n"""" else ""
     }
