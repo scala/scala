@@ -104,7 +104,11 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
     // sbt claims that s.isManagedVersion is false even though s was resolved by Ivy
     // We create a managed copy to prevent sbt from putting it on the classpath where we don't want it
     if(s.isManagedVersion) s else {
-      val s2 = new ScalaInstance(s.version, s.loader, s.libraryJar, s.compilerJar, s.extraJars, Some(s.actualVersion))
+      val jars = s.jars
+      val libraryJar = jars.find(_.getName contains "-library").get
+      val compilerJar = jars.find(_.getName contains "-compiler").get
+      val extraJars = jars.filter(f => (f ne libraryJar) && (f ne compilerJar))
+      val s2 = new ScalaInstance(s.version, s.loader, libraryJar, compilerJar, extraJars, Some(s.actualVersion))
       assert(s2.isManagedVersion)
       s2
     }
@@ -756,7 +760,7 @@ lazy val root: Project = (project in file("."))
     publishLocal := {},
     commands ++= ScriptCommands.all,
     extractBuildCharacterPropertiesFile := {
-      val jar = (scalaInstance in bootstrap).value.compilerJar
+      val jar = (scalaInstance in bootstrap).value.allJars.find(_.getName contains "-compiler").get
       val bc = buildCharacterPropertiesFile.value
       val packagedName = "scala-buildcharacter.properties"
       IO.withTemporaryDirectory { tmp =>
