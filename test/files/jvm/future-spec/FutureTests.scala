@@ -123,7 +123,7 @@ class FutureTests extends MinimalScalaTest {
       assert(f.mapTo[String] eq f, "Future.mapTo must be the same instance as Future.mapTo")
       assert(f.zip(f) eq f, "Future.zip must be the same instance as Future.zip")
       assert(f.flatten eq f, "Future.flatten must be the same instance as Future.flatten")
-      assert(f.failed eq f, "Future.failed must be the same instance as Future.failed")
+      assert(f.failed.value == Some(Success(e)), "Future.failed.failed must become successful") // SI-10034
 
               ECNotUsed(ec => f.foreach(_ => fail("foreach should not have been called"))(ec))
               ECNotUsed(ec => f.onSuccess({ case _ => fail("onSuccess should not have been called") })(ec))
