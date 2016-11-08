@@ -686,15 +686,15 @@ trait Iterator[+A] extends TraversableOnce[A] {
      * handling of structural calls. It's not what's intended here.
      */
     class Leading extends AbstractIterator[A] {
-      var lookahead: mutable.Queue[A] = null
-      var hd: A = _
+      private[this] var lookahead: mutable.Queue[A] = null
+      private[this] var hd: A = _
       /* Status is kept with magic numbers
        *   1 means next element is in hd and we're still reading into this iterator
        *   0 means we're still reading but haven't found a next element
        *   -1 means we are done reading into the iterator, so we must rely on lookahead
        *   -2 means we are done but have saved hd for the other iterator to use as its first element
        */
-      var status = 0
+      private[this] var status = 0
       private def store(a: A) {
         if (lookahead == null) lookahead = new mutable.Queue[A]
         lookahead += a
@@ -718,26 +718,23 @@ trait Iterator[+A] extends TraversableOnce[A] {
         }
         else empty.next()
       }
-      def finish(): Boolean = {
-        if (status == -1) false
-        else if (status == -2) {
+      def finish(): Boolean = status match {
+        case -2 => status = -1 ; true
+        case -1 => false
+        case  1 => store(hd) ; status = 0 ; finish()
+        case  0 => 
           status = -1
-          true
-        }
-        else {
-          if (status == 1) store(hd)
           while (self.hasNext) {
             val a = self.next()
             if (p(a)) store(a)
             else {
               hd = a
-              status = -1
               return true
             }
           }
           false
-        }
       }
+      def trailer: A = hd
     }
 
     val leading = new Leading
@@ -770,7 +767,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
           if (status > 0) self.next()
           else {
             status = 1
-            val ans = myLeading.hd
+            val ans = myLeading.trailer
             myLeading = null
             ans
           }
