@@ -6,7 +6,11 @@ object Test {
   def check(chars: CharSequence) {
     println("\n[check '" + chars + "'] len = " + chars.length)
     chars match {
-      case x: Predef.ArrayCharSequence  => assert(x.__arrayOfChars eq arr, ((x.__arrayOfChars, arr)))
+      case x: Predef.ArrayCharSequence  =>
+        val arrayOfCharsMethod = classOf[Predef.ArrayCharSequence].getDeclaredMethod("arrayOfChars")
+        arrayOfCharsMethod.setAccessible(true)
+        val arrayOfChars = arrayOfCharsMethod.invoke(x).asInstanceOf[Array[Char]]
+        assert(arrayOfChars eq arr, ((arrayOfChars, arr)))
       case x: runtime.ArrayCharSequence => assert(x.xs eq arr, ((x.xs, arr)))
       case x                            => assert(false, x)
     }

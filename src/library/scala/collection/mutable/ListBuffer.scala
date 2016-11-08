@@ -47,7 +47,6 @@ final class ListBuffer[A]
          with GenericTraversableTemplate[A, ListBuffer]
          with BufferLike[A, ListBuffer[A]]
          with ReusableBuilder[A, List[A]]
-         with SeqForwarder[A]
          with Serializable
 {
   override def companion: GenericCompanion[ListBuffer] = ListBuffer
@@ -119,11 +118,13 @@ final class ListBuffer[A]
   // Don't use the inherited size, which forwards to a List and is O(n).
   override def size = length
 
+  override def lengthCompare(len: Int): Int = this.len - len
+
   // Implementations of abstract methods in Buffer
 
   override def apply(n: Int): A =
     if (n < 0 || n >= len) throw new IndexOutOfBoundsException(n.toString())
-    else super.apply(n)
+    else underlying.apply(n)
 
   /** Replaces element at index `n` with the new element
    *  `newelem`. Takes time linear in the buffer size. (except the
