@@ -1,6 +1,3 @@
-
-
-
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.concurrent.duration.Duration.Inf
@@ -296,10 +293,3 @@ class PromiseTests extends MinimalScalaTest {
     }
   }
 }
-
-
-
-
-
-
-

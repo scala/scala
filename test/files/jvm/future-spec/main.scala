@@ -1,6 +1,3 @@
-
-
-
 import scala.collection._
 import scala.concurrent._
 import scala.concurrent.duration.Duration
@@ -113,4 +110,3 @@ class TestLatch(count: Int = 1) extends Awaitable[Unit] {
   }
 
 }
-

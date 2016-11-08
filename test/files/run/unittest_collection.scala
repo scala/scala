@@ -1,14 +1,10 @@
 object Test {
 
-  import scala.collection.mutable.{ArrayBuffer, Buffer, BufferProxy, ListBuffer}
+  import scala.collection.mutable.{ArrayBuffer, Buffer, ListBuffer}
 
   def main(args: Array[String]) {
     test(collection.mutable.ArrayBuffer[String]())
     test(collection.mutable.ListBuffer[String]())
-    class BBuf(z:ListBuffer[String]) extends BufferProxy[String] {
-      def self = z
-    }
-    test(new BBuf(collection.mutable.ListBuffer[String]()))
   }
 
   def test(x: Buffer[String]) {
