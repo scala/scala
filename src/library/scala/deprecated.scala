@@ -41,8 +41,9 @@ import scala.annotation.meta._
  *  A deprecated element of the Scala language or a definition in the Scala standard library will
  *  be preserved or at least another major version.
  *
- *  This means that an element deprecated since 2.12 will be preserved in 2.13, but will very likely
- *  not be part of 2.14. Sometimes a deprecated element might be kept for more than a major
+ *  This means that an element deprecated since 2.12 will be preserved in all minor releases of 2.12,
+ *  but will very likely not be part of 2.13.
+ *  Sometimes a deprecated element might be kept for more than a major
  *  release to ease migration and upgrades from older Scala versions.<br/>
  *  Developers should not rely on this.
  *
