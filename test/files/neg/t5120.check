@@ -6,7 +6,7 @@ t5120.scala:11: error: type mismatch;
 t5120.scala:25: error: type mismatch;
  found   : Thread
  required: h.T
-    (which expands to)  _2
+    (which expands to)  _1
   List(str, num).foreach(h => h.f1 = new Thread())
                                      ^
 two errors found

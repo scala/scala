@@ -10,7 +10,9 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
   private lazy val atomicIds = new java.util.concurrent.atomic.AtomicInteger(0)
   override protected def nextId() = atomicIds.incrementAndGet()
 
+  @deprecated("Global existential IDs no longer used", "2.12.1")
   private lazy val atomicExistentialIds = new java.util.concurrent.atomic.AtomicInteger(0)
+  @deprecated("Global existential IDs no longer used", "2.12.1")
   override protected def nextExistentialId() = atomicExistentialIds.incrementAndGet()
 
   private lazy val _recursionTable = mkThreadLocalStorage(immutable.Map.empty[Symbol, Int])
