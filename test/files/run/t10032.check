@@ -1,0 +1,49 @@
+t10032.scala:72: warning: Return statement found in finally-clause, discarding its return-value in favor of that of a more deeply nested return.
+      finally { return i2 }
+                ^
+t1
+ i1
+ a1
+t2
+ i1
+ a1
+ a2
+ a3
+t3
+ i1
+ a1
+ a3
+t3
+ e1
+ a1
+ i2
+ a2
+ a3
+t4
+ i1
+ i2
+t5
+ i1
+ a1
+ a3
+t5
+ e1
+ a1
+ i2
+ a3
+t6
+ i1
+ i2
+ i3
+t7
+ i1
+ a1
+t7
+ e1
+ i2
+ a1
+t8
+ i1
+ i2
+ a1
+ a2
