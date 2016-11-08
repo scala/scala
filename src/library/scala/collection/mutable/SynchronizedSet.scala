@@ -11,8 +11,6 @@ package scala
 package collection
 package mutable
 
-import script._
-
 /** This class should be used as a mixin. It synchronizes the `Set`
  *  functions of the class into which it is mixed in.
  *
@@ -24,8 +22,9 @@ import script._
  *  @define Coll `SynchronizedSet`
  *  @define coll synchronized set
  */
+// Still used in scala.tools.nsc.interactive.Global
 @deprecated("Synchronization via traits is deprecated as it is inherently unreliable. Consider java.util.concurrent.ConcurrentHashMap[A,Unit] as an alternative.", "2.11.0")
-trait SynchronizedSet[A] extends Set[A] {
+private[scala] trait SynchronizedSet[A] extends Set[A] {
   abstract override def size: Int = synchronized {
     super.size
   }
@@ -92,11 +91,6 @@ trait SynchronizedSet[A] extends Set[A] {
 
   override def toString = synchronized {
     super.toString
-  }
-
-  @deprecated("scripting is deprecated", "2.11.0")
-  override def <<(cmd: Message[A]): Unit = synchronized {
-    super.<<(cmd)
   }
 
   override def clone(): Self = synchronized {

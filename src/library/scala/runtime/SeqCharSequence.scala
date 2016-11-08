@@ -9,14 +9,6 @@
 package scala
 package runtime
 
-@deprecated("use Predef.SeqCharSequence", "2.11.0")
-final class SeqCharSequence(val xs: scala.collection.IndexedSeq[Char]) extends CharSequence {
-  def length: Int                                     = xs.length
-  def charAt(index: Int): Char                        = xs(index)
-  def subSequence(start: Int, end: Int): CharSequence = new SeqCharSequence(xs.slice(start, end))
-  override def toString = xs.mkString("")
-}
-
 // Still need this one since the implicit class ArrayCharSequence only converts
 // a single argument.
 final class ArrayCharSequence(val xs: Array[Char], start: Int, end: Int) extends CharSequence {

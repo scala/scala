@@ -24,8 +24,9 @@ import scala.annotation.migration
  *  @define Coll `SynchronizedMap`
  *  @define coll synchronized map
  */
+// Still used in scala.reflect.internal.util.Statistics.QuantMap
 @deprecated("Synchronization via traits is deprecated as it is inherently unreliable. Consider java.util.concurrent.ConcurrentHashMap as an alternative.", "2.11.0")
-trait SynchronizedMap[A, B] extends Map[A, B] {
+private[scala] trait SynchronizedMap[A, B] extends Map[A, B] {
 
   abstract override def get(key: A): Option[B] = synchronized { super.get(key) }
   abstract override def iterator: Iterator[(A, B)] = synchronized { super.iterator }
@@ -60,4 +61,3 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
 
   // !!! todo: also add all other methods
 }
-

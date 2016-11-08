@@ -81,14 +81,6 @@ package parallel {
         def otherwise(notbody: => R) = if (isParallel) isbody(asParSeq) else notbody
       }
     }
-    implicit def throwable2ops(self: Throwable) = new ThrowableOps {
-      def alongWith(that: Throwable) = (self, that) match {
-        case (self: CompositeThrowable, that: CompositeThrowable) => new CompositeThrowable(self.throwables ++ that.throwables)
-        case (self: CompositeThrowable, _) => new CompositeThrowable(self.throwables + that)
-        case (_, that: CompositeThrowable) => new CompositeThrowable(that.throwables + self)
-        case _ => new CompositeThrowable(Set(self, that))
-      }
-    }
   }
 
   trait FactoryOps[From, Elem, To] {
@@ -114,12 +106,6 @@ package parallel {
     def ifParSeq[R](isbody: ParSeq[T] => R): Otherwise[R]
   }
 
-  @deprecated("this trait will be removed", "2.11.0")
-  trait ThrowableOps {
-    @deprecated("this method will be removed", "2.11.0")
-    def alongWith(that: Throwable): Throwable
-  }
-
   /* classes */
 
   trait CombinerFactory[U, Repr] {
@@ -133,14 +119,6 @@ package parallel {
      */
     def doesShareCombiners: Boolean
   }
-
-  /** Composite throwable - thrown when multiple exceptions are thrown at the same time. */
-  @deprecated("this class will be removed.", "2.11.0")
-  final case class CompositeThrowable(throwables: Set[Throwable]) extends Exception(
-    "Multiple exceptions thrown during a parallel computation: " +
-      throwables.map(t => t + "\n" + t.getStackTrace.take(10).++("...").mkString("\n")).mkString("\n\n")
-  )
-
 
   /** A helper iterator for iterating very small array buffers.
    *  Automatically forwards the signal delegate when splitting.
