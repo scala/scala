@@ -411,6 +411,16 @@ lazy val compiler = configureAsSubproject(project)
         (unmanagedResourceDirectories in Compile in LocalProject("repl")).value
       base ** ((includeFilter in unmanagedResources in Compile).value || "*.scala" || "*.psd" || "*.ai" || "*.java") pair relativeTo(base)
     },
+    // Include the additional projects in the scaladoc JAR:
+    sources in Compile in doc ++= {
+      val base =
+        (unmanagedSourceDirectories in Compile in LocalProject("interactive")).value ++
+        (unmanagedSourceDirectories in Compile in LocalProject("scaladoc")).value ++
+        (unmanagedSourceDirectories in Compile in LocalProject("repl")).value
+      ((base ** ("*.scala" || "*.java"))
+        --- (base ** "Scaladoc*ModelTest.scala") // exclude test classes that depend on partest
+      ).get
+    },
     scalacOptions in Compile in doc ++= Seq(
       "-doc-root-content", (sourceDirectory in Compile).value + "/rootdoc.txt"
     ),
