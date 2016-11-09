@@ -348,13 +348,10 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
       // `shouldEmitCleanup` can be set, and at the same time this try expression may lack a finally-clause.
       // In other words, all combinations of (hasFinally, shouldEmitCleanup) are valid.
       if (hasFinally && currentFinallyBlockNeedsCleanup) {
-        val savedInsideCleanup = insideCleanupBlock
-        insideCleanupBlock = true
         markProgramPoint(finCleanup)
         // regarding return value, the protocol is: in place of a `return-stmt`, a sequence of `adapt, store, jump` are inserted.
         emitFinalizer(finalizer, null, isDuplicate = true)
         pendingCleanups()
-        insideCleanupBlock = savedInsideCleanup
       }
 
       /* ------ (4) finally-clause-for-normal-nonEarlyReturn-exit

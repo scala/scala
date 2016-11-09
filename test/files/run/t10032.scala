@@ -24,7 +24,8 @@ object Test extends App {
       try { return i1 }
       finally { a1() }
     } finally {
-      try { a2() } finally { a3() }
+      try { a2() }
+      finally { a3() }
     }
   }
 
@@ -42,10 +43,10 @@ object Test extends App {
     }
   }
 
-  def t4: Int = {
+  def t4(i: => Int): Int = {
     println("t4")
     try {
-      return i1
+      return i
     } finally {
       return i2
     }
@@ -65,10 +66,10 @@ object Test extends App {
     }
   }
 
-  def t6: Int = {
+  def t6(i: => Int): Int = {
     println("t6")
     try {
-      try { return i1 }
+      try { return i }
       finally { return i2 }
     } finally {
       return i3
@@ -86,10 +87,10 @@ object Test extends App {
     }
   }
 
-  def t8(): Int = {
+  def t8(i: => Int): Int = {
     println("t8")
     try {
-      try { i1 }
+      try { i }
       finally {           // no cleanup version
         try { return i2 }
         finally { a1() }  // cleanup version required
@@ -99,15 +100,65 @@ object Test extends App {
     }
   }
 
+  def t9(i: => Int): Int = {
+    println("t9")
+    try {
+      return i
+    } finally {
+      try { return i2 }
+      finally { a1() }
+    }
+  }
+
+  def t10(i: => Int): Int = {
+    println("t10")
+    try {
+      return i
+    } finally {
+      try { return i2 }
+      finally { return i3 }
+    }
+  }
+
+  // this changed semantics between 2.12.0 and 2.12.1, see https://github.com/scala/scala/pull/5509#issuecomment-259291609
+  def t11(i: => Int): Int = {
+    println("t11")
+    try {
+      try { return i }
+      finally { return i2 }
+    } finally {
+      a1()
+    }
+  }
+
   assert(t1 == 1)
+
   assert(t2 == 1)
+
   assert(t3(i1) == 1)
   assert(t3(e1) == 2)
-  assert(t4 == 2)
+
+  assert(t4(i1) == 2)
+  assert(t4(e1) == 2)
+
   assert(t5(i1) == 1)
   assert(t5(e1) == 2)
-  assert(t6 == 3)
+
+  assert(t6(i1) == 3)
+  assert(t6(e1) == 3)
+
   assert(t7(i1) == 1)
   assert(t7(e1) == 2)
-  assert(t8 == 2)
+
+  assert(t8(i1) == 2)
+  assert(t8(e1) == 2)
+
+  assert(t9(i1) == 2)
+  assert(t9(e1) == 2)
+
+  assert(t10(i1) == 3)
+  assert(t10(e1) == 3)
+
+  assert(t11(i1) == 2)
+  assert(t11(e1) == 2)
 }
