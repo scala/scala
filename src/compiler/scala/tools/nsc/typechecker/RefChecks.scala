@@ -472,7 +472,7 @@ abstract class RefChecks extends Transform {
             checkOverrideTypes()
             checkOverrideDeprecated()
             if (settings.warnNullaryOverride) {
-              if (other.paramss.isEmpty && !member.paramss.isEmpty) {
+              if (other.paramss.isEmpty && !member.paramss.isEmpty && !member.isJavaDefined) {
                 reporter.warning(member.pos, "non-nullary method overrides nullary method")
               }
             }
