@@ -3139,10 +3139,25 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val initElems = scope.elems
           // SI-5877 The decls of a package include decls of the package object. But we don't want to add
           //         the corresponding synthetics to the package class, only to the package object class.
-          def shouldAdd(sym: Symbol) =
-            inBlock || !context.isInPackageObject(sym, context.owner)
+          // SI-6734 Locality test below is meaningless if we're not even in the correct tree.
+          //         For modules that are synthetic case companions, check that case class is defined here.
+          def shouldAdd(sym: Symbol): Boolean = {
+            def shouldAddAsModule: Boolean =
+              sym.moduleClass.attachments.get[ClassForCaseCompanionAttachment] match {
+                case Some(att) =>
+                  val cdef = att.caseClass
+                  stats.exists {
+                    case t @ ClassDef(_, _, _, _) => t.symbol == cdef.symbol   // cdef ne t
+                    case _ => false
+                  }
+                case _ => true
+              }
+
+            (!sym.isModule || shouldAddAsModule) && (inBlock || !context.isInPackageObject(sym, context.owner))
+          }
           for (sym <- scope)
-            for (tree <- context.unit.synthetics get sym if shouldAdd(sym)) { // OPT: shouldAdd is usually true. Call it here, rather than in the outer loop
+            // OPT: shouldAdd is usually true. Call it here, rather than in the outer loop
+            for (tree <- context.unit.synthetics.get(sym) if shouldAdd(sym)) {
               newStats += typedStat(tree) // might add even more synthetics to the scope
               context.unit.synthetics -= sym
             }
