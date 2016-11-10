@@ -255,7 +255,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     // used by genLoadTry() and genSynchronized()
     var earlyReturnVar: Symbol     = null
     var shouldEmitCleanup          = false
-    var insideCleanupBlock         = false
     // line numbers
     var lastEmittedLineNr          = -1
 
