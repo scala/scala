@@ -100,7 +100,7 @@ trait BaseTypeSeqs {
 
     def copy(head: Type, offset: Int): BaseTypeSeq = {
       val arr = new Array[Type](elems.length + offset)
-      scala.compat.Platform.arraycopy(elems, 0, arr, offset, elems.length)
+      java.lang.System.arraycopy(elems, 0, arr, offset, elems.length)
       arr(0) = head
       newBaseTypeSeq(parents, arr)
     }

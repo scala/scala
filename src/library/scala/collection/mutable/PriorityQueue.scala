@@ -331,8 +331,8 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     val pq = new PriorityQueue[A]
     val n = resarr.p_size0
     pq.resarr.p_ensureSize(n)
+    java.lang.System.arraycopy(resarr.p_array, 1, pq.resarr.p_array, 1, n-1)
     pq.resarr.p_size0 = n
-    scala.compat.Platform.arraycopy(resarr.p_array, 1, pq.resarr.p_array, 1, n-1)
     pq
   }
 }

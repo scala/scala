@@ -101,7 +101,7 @@ trait ResizableArray[A] extends IndexedSeq[A]
       if (newSize > Int.MaxValue) newSize = Int.MaxValue
 
       val newArray: Array[AnyRef] = new Array(newSize.toInt)
-      scala.compat.Platform.arraycopy(array, 0, newArray, 0, size0)
+      java.lang.System.arraycopy(array, 0, newArray, 0, size0)
       array = newArray
     }
   }
