@@ -210,7 +210,7 @@ trait Primitives { self: ICodes =>
       case LSL =>  "LSL"
       case ASR =>  "ASR"
       case LSR =>  "LSR"
-      case _  => throw new RuntimeException("ShitOp unknown case")
+      case _  => throw new RuntimeException("ShiftOp unknown case")
     }
   }
 
