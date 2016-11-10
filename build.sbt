@@ -104,7 +104,11 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
     // sbt claims that s.isManagedVersion is false even though s was resolved by Ivy
     // We create a managed copy to prevent sbt from putting it on the classpath where we don't want it
     if(s.isManagedVersion) s else {
-      val s2 = new ScalaInstance(s.version, s.loader, s.libraryJar, s.compilerJar, s.extraJars, Some(s.actualVersion))
+      val jars = s.jars
+      val libraryJar = jars.find(_.getName contains "-library").get
+      val compilerJar = jars.find(_.getName contains "-compiler").get
+      val extraJars = jars.filter(f => (f ne libraryJar) && (f ne compilerJar))
+      val s2 = new ScalaInstance(s.version, s.loader, libraryJar, compilerJar, extraJars, Some(s.actualVersion))
       assert(s2.isManagedVersion)
       s2
     }
@@ -147,7 +151,7 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
     "-sourcepath", (baseDirectory in ThisBuild).value.toString,
     "-doc-source-url", s"https://github.com/scala/scala/tree/${versionProperties.value.githubTree}€{FILE_PATH}.scala#L1"
   ),
-  incOptions <<= (incOptions in LocalProject("root")),
+  incOptions := (incOptions in LocalProject("root")).value,
   homepage := Some(url("http://www.scala-lang.org")),
   startYear := Some(2002),
   licenses += (("BSD 3-Clause", url("http://www.scala-lang.org/license.html"))),
@@ -304,7 +308,7 @@ def filterDocSources(ff: FileFilter): Seq[Setting[_]] = Seq(
   // binaries of the library on the classpath. Specifically, we get this error:
   // (library/compile:doc) scala.reflect.internal.FatalError: package class scala does not have a member Int
   dependencyClasspath in (Compile, doc) += (classDirectory in Compile).value,
-  doc in Compile <<= doc in Compile dependsOn (compile in Compile)
+  doc in Compile := (doc in Compile).dependsOn(compile in Compile).value
 )
 
 def regexFileFilter(s: String): FileFilter = new FileFilter {
@@ -318,8 +322,8 @@ lazy val bootstrap = (project in file("target/bootstrap")).settings(
 )
 
 lazy val library = configureAsSubproject(project)
-  .settings(generatePropertiesFileSettings: _*)
-  .settings(Osgi.settings: _*)
+  .settings(generatePropertiesFileSettings)
+  .settings(Osgi.settings)
   .settings(
     name := "scala-library",
     description := "Scala Standard Library",
@@ -353,12 +357,12 @@ lazy val library = configureAsSubproject(project)
   )
   .settings(filterDocSources("*.scala" -- (regexFileFilter(".*/runtime/.*\\$\\.scala") ||
                                            regexFileFilter(".*/runtime/ScalaRunTime\\.scala") ||
-                                           regexFileFilter(".*/runtime/StringAdd\\.scala"))): _*)
-  .settings(MiMa.settings: _*)
+                                           regexFileFilter(".*/runtime/StringAdd\\.scala"))))
+  .settings(MiMa.settings)
 
 lazy val reflect = configureAsSubproject(project)
-  .settings(generatePropertiesFileSettings: _*)
-  .settings(Osgi.settings: _*)
+  .settings(generatePropertiesFileSettings)
+  .settings(Osgi.settings)
   .settings(
     name := "scala-reflect",
     description := "Scala Reflection Library",
@@ -378,13 +382,13 @@ lazy val reflect = configureAsSubproject(project)
       "/project/packaging" -> <packaging>jar</packaging>
     )
   )
-  .settings(MiMa.settings: _*)
+  .settings(MiMa.settings)
   .dependsOn(library)
 
 lazy val compiler = configureAsSubproject(project)
-  .settings(generatePropertiesFileSettings: _*)
-  .settings(generateBuildCharacterFileSettings: _*)
-  .settings(Osgi.settings: _*)
+  .settings(generatePropertiesFileSettings)
+  .settings(generateBuildCharacterFileSettings)
+  .settings(Osgi.settings)
   .settings(
     name := "scala-compiler",
     description := "Scala Compiler",
@@ -441,8 +445,8 @@ lazy val compiler = configureAsSubproject(project)
   .dependsOn(library, reflect)
 
 lazy val interactive = configureAsSubproject(project)
-  .settings(disableDocs: _*)
-  .settings(disablePublishing: _*)
+  .settings(disableDocs)
+  .settings(disablePublishing)
   .settings(
     name := "scala-compiler-interactive",
     description := "Scala Interactive Compiler"
@@ -450,17 +454,17 @@ lazy val interactive = configureAsSubproject(project)
   .dependsOn(compiler)
 
 lazy val repl = configureAsSubproject(project)
-  .settings(disableDocs: _*)
-  .settings(disablePublishing: _*)
+  .settings(disableDocs)
+  .settings(disablePublishing)
   .settings(
     connectInput in run := true,
-    run <<= (run in Compile).partialInput(" -usejavacp") // Automatically add this so that `repl/run` works without additional arguments.
+    run := (run in Compile).partialInput(" -usejavacp").evaluated // Automatically add this so that `repl/run` works without additional arguments.
   )
   .dependsOn(compiler, interactive)
 
 lazy val replJline = configureAsSubproject(Project("repl-jline", file(".") / "src" / "repl-jline"))
-  .settings(disableDocs: _*)
-  .settings(disablePublishing: _*)
+  .settings(disableDocs)
+  .settings(disablePublishing)
   .settings(
     libraryDependencies += jlineDep,
     name := "scala-repl-jline"
@@ -468,8 +472,8 @@ lazy val replJline = configureAsSubproject(Project("repl-jline", file(".") / "sr
   .dependsOn(repl)
 
 lazy val replJlineEmbedded = Project("repl-jline-embedded", file(".") / "target" / "repl-jline-embedded-src-dummy")
-  .settings(scalaSubprojectSettings: _*)
-  .settings(disablePublishing: _*)
+  .settings(scalaSubprojectSettings)
+  .settings(disablePublishing)
   .settings(
     name := "scala-repl-jline-embedded",
     // There is nothing to compile for this project. Instead we use the compile task to create
@@ -477,7 +481,7 @@ lazy val replJlineEmbedded = Project("repl-jline-embedded", file(".") / "target"
     // quick/repl-jline and quick/repl-jline-shaded on the classpath for quick/bin scripts.
     // This is different from the Ant build where all parts are combined into quick/repl, but
     // it is cleaner because it avoids circular dependencies.
-    compile in Compile <<= (compile in Compile).dependsOn(Def.task {
+    compile in Compile := (compile in Compile).dependsOn(Def.task {
       import java.util.jar._
       import collection.JavaConverters._
       val inputs: Iterator[JarJar.Entry] = {
@@ -499,15 +503,15 @@ lazy val replJlineEmbedded = Project("repl-jline-embedded", file(".") / "target"
       )
       val outdir = (classDirectory in Compile).value
       JarJar(inputs, outdir, config)
-    }),
+    }).value,
     connectInput in run := true
 
   )
   .dependsOn(replJline)
 
 lazy val scaladoc = configureAsSubproject(project)
-  .settings(disableDocs: _*)
-  .settings(disablePublishing: _*)
+  .settings(disableDocs)
+  .settings(disablePublishing)
   .settings(
     name := "scala-compiler-doc",
     description := "Scala Documentation Generator",
@@ -531,11 +535,11 @@ lazy val scalap = configureAsSubproject(project)
 
 lazy val partestExtras = Project("partest-extras", file(".") / "src" / "partest-extras")
   .dependsOn(replJlineEmbedded)
-  .settings(commonSettings: _*)
-  .settings(generatePropertiesFileSettings: _*)
-  .settings(clearSourceAndResourceDirectories: _*)
-  .settings(disableDocs: _*)
-  .settings(disablePublishing: _*)
+  .settings(commonSettings)
+  .settings(generatePropertiesFileSettings)
+  .settings(clearSourceAndResourceDirectories)
+  .settings(disableDocs)
+  .settings(disablePublishing)
   .settings(
     name := "scala-partest-extras",
     description := "Scala Compiler Testing Tool (compiler-specific extras)",
@@ -545,10 +549,10 @@ lazy val partestExtras = Project("partest-extras", file(".") / "src" / "partest-
 
 lazy val junit = project.in(file("test") / "junit")
   .dependsOn(library, reflect, compiler, partestExtras, scaladoc)
-  .settings(clearSourceAndResourceDirectories: _*)
-  .settings(commonSettings: _*)
-  .settings(disableDocs: _*)
-  .settings(disablePublishing: _*)
+  .settings(clearSourceAndResourceDirectories)
+  .settings(commonSettings)
+  .settings(disableDocs)
+  .settings(disablePublishing)
   .settings(
     fork in Test := true,
     javaOptions in Test += "-Xss1M",
@@ -568,10 +572,10 @@ lazy val osgiTestEclipse = osgiTestProject(
 
 def osgiTestProject(p: Project, framework: ModuleID) = p
   .dependsOn(library, reflect, compiler)
-  .settings(clearSourceAndResourceDirectories: _*)
-  .settings(commonSettings: _*)
-  .settings(disableDocs: _*)
-  .settings(disablePublishing: _*)
+  .settings(clearSourceAndResourceDirectories)
+  .settings(commonSettings)
+  .settings(disableDocs)
+  .settings(disablePublishing)
   .settings(
     fork in Test := true,
     parallelExecution in Test := false,
@@ -591,7 +595,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
         framework % "test"
       )
     },
-    Keys.test in Test <<= Keys.test in Test dependsOn (packageBin in Compile),
+    Keys.test in Test := (Keys.test in Test).dependsOn(packageBin in Compile).value,
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-q"),
     unmanagedSourceDirectories in Test := List((baseDirectory in ThisBuild).value / "test" / "osgi" / "src"),
     unmanagedResourceDirectories in Compile := (unmanagedSourceDirectories in Test).value,
@@ -608,9 +612,9 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
   )
 
 lazy val partestJavaAgent = Project("partest-javaagent", file(".") / "src" / "partest-javaagent")
-  .settings(commonSettings: _*)
-  .settings(generatePropertiesFileSettings: _*)
-  .settings(disableDocs: _*)
+  .settings(commonSettings)
+  .settings(generatePropertiesFileSettings)
+  .settings(disableDocs)
   .settings(
     libraryDependencies += asmDep,
     publishLocal := {},
@@ -628,10 +632,10 @@ lazy val partestJavaAgent = Project("partest-javaagent", file(".") / "src" / "pa
 lazy val test = project
   .dependsOn(compiler, interactive, replJlineEmbedded, scalap, partestExtras, partestJavaAgent, scaladoc)
   .configs(IntegrationTest)
-  .settings(commonSettings: _*)
-  .settings(disableDocs: _*)
-  .settings(disablePublishing: _*)
-  .settings(Defaults.itSettings: _*)
+  .settings(commonSettings)
+  .settings(disableDocs)
+  .settings(disablePublishing)
+  .settings(Defaults.itSettings)
   .settings(
     libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep, scalacheckDep),
     libraryDependencies ++= {
@@ -682,16 +686,16 @@ lazy val test = project
   )
 
 lazy val manual = configureAsSubproject(project)
-  .settings(disableDocs: _*)
-  .settings(disablePublishing: _*)
+  .settings(disableDocs)
+  .settings(disablePublishing)
   .settings(
     libraryDependencies ++= Seq(scalaXmlDep, antDep, "org.scala-lang" % "scala-library" % scalaVersion.value),
     classDirectory in Compile := (target in Compile).value / "classes"
   )
 
 lazy val libraryAll = Project("library-all", file(".") / "target" / "library-all-src-dummy")
-  .settings(commonSettings: _*)
-  .settings(disableDocs: _*)
+  .settings(commonSettings)
+  .settings(disableDocs)
   .settings(
     name := "scala-library-all",
     publishArtifact in (Compile, packageBin) := false,
@@ -706,8 +710,8 @@ lazy val libraryAll = Project("library-all", file(".") / "target" / "library-all
   .dependsOn(library, reflect)
 
 lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-dist-src-dummy")
-  .settings(commonSettings: _*)
-  .settings(disableDocs: _*)
+  .settings(commonSettings)
+  .settings(disableDocs)
   .settings(
     mappings in Compile in packageBin ++= {
       val binBaseDir = buildDirectory.value / "pack"
@@ -752,15 +756,15 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
   .dependsOn(libraryAll, compiler, scalap)
 
 lazy val root: Project = (project in file("."))
-  .settings(disableDocs: _*)
-  .settings(disablePublishing: _*)
-  .settings(generateBuildCharacterFileSettings: _*)
+  .settings(disableDocs)
+  .settings(disablePublishing)
+  .settings(generateBuildCharacterFileSettings)
   .settings(
     publish := {},
     publishLocal := {},
     commands ++= ScriptCommands.all,
     extractBuildCharacterPropertiesFile := {
-      val jar = (scalaInstance in bootstrap).value.compilerJar
+      val jar = (scalaInstance in bootstrap).value.allJars.find(_.getName contains "-compiler").get
       val bc = buildCharacterPropertiesFile.value
       val packagedName = "scala-buildcharacter.properties"
       IO.withTemporaryDirectory { tmp =>
@@ -872,15 +876,15 @@ lazy val dist = (project in file("dist"))
   .settings(
     libraryDependencies ++= Seq(scalaSwingDep, jlineDep),
     mkBin := mkBinImpl.value,
-    mkQuick <<= Def.task {
+    mkQuick := Def.task {
       val cp = (fullClasspath in IntegrationTest in LocalProject("test")).value
       val propsFile = (buildDirectory in ThisBuild).value / "quick" / "partest.properties"
       val props = new java.util.Properties()
       props.setProperty("partest.classpath", cp.map(_.data.getAbsolutePath).mkString(sys.props("path.separator")))
       IO.write(props, null, propsFile)
       (buildDirectory in ThisBuild).value / "quick"
-    } dependsOn ((distDependencies.map(products in Runtime in _) :+ mkBin): _*),
-    mkPack <<= Def.task { (buildDirectory in ThisBuild).value / "pack" } dependsOn (packagedArtifact in (Compile, packageBin), mkBin),
+    }.dependsOn((distDependencies.map(products in Runtime in _) :+ mkBin): _*).value,
+    mkPack := Def.task { (buildDirectory in ThisBuild).value / "pack" }.dependsOn(packagedArtifact in (Compile, packageBin), mkBin).value,
     target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id,
     packageBin in Compile := {
       val extraDeps = Set(scalaSwingDep, scalaParserCombinatorsDep, scalaXmlDep)
@@ -897,7 +901,10 @@ lazy val dist = (project in file("dist"))
     },
     cleanFiles += (buildDirectory in ThisBuild).value / "quick",
     cleanFiles += (buildDirectory in ThisBuild).value / "pack",
-    packagedArtifact in (Compile, packageBin) <<= (packagedArtifact in (Compile, packageBin)).dependsOn(distDependencies.map(packagedArtifact in (Compile, packageBin) in _): _*)
+    packagedArtifact in (Compile, packageBin) :=
+      (packagedArtifact in (Compile, packageBin))
+        .dependsOn(distDependencies.map(packagedArtifact in (Compile, packageBin) in _): _*)
+        .value
   )
   .dependsOn(distDependencies.map(p => p: ClasspathDep[ProjectReference]): _*)
 
@@ -915,8 +922,8 @@ lazy val dist = (project in file("dist"))
 def configureAsSubproject(project: Project): Project = {
   val base = file(".") / "src" / project.id
   (project in base)
-    .settings(scalaSubprojectSettings: _*)
-    .settings(generatePropertiesFileSettings: _*)
+    .settings(scalaSubprojectSettings)
+    .settings(generatePropertiesFileSettings)
 }
 
 lazy val buildDirectory = settingKey[File]("The directory where all build products go. By default ./build")
