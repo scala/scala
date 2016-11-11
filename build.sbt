@@ -91,6 +91,8 @@ baseVersion in Global := "2.12.1"
 baseVersionSuffix in Global := "SNAPSHOT"
 mimaReferenceVersion in Global := Some("2.12.0-RC1")
 
+scalaVersion in Global := versionProps("starr.version")
+
 lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings ++ Seq[Setting[_]](
   organization := "org.scala-lang",
   // we don't cross build Scala itself
@@ -113,7 +115,6 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
       s2
     }
   },
-  scalaVersion := (scalaVersion in bootstrap).value,
   // As of sbt 0.13.12 (sbt/sbt#2634) sbt endeavours to align both scalaOrganization and scalaVersion
   // in the Scala artefacts, for example scala-library and scala-compiler.
   // This doesn't work in the scala/scala build because the version of scala-library and the scalaVersion of
@@ -317,9 +318,7 @@ def regexFileFilter(s: String): FileFilter = new FileFilter {
 }
 
 // This project provides the STARR scalaInstance for bootstrapping
-lazy val bootstrap = (project in file("target/bootstrap")).settings(
-  scalaVersion := versionProps("starr.version")
-)
+lazy val bootstrap = project in file("target/bootstrap")
 
 lazy val library = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
@@ -760,8 +759,6 @@ lazy val root: Project = (project in file("."))
   .settings(disablePublishing)
   .settings(generateBuildCharacterFileSettings)
   .settings(
-    publish := {},
-    publishLocal := {},
     commands ++= ScriptCommands.all,
     extractBuildCharacterPropertiesFile := {
       val jar = (scalaInstance in bootstrap).value.allJars.find(_.getName contains "-compiler").get
