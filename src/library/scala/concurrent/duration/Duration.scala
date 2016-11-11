@@ -47,7 +47,7 @@ object Duration {
    * whitespace is allowed before, between and after the parts. Infinities are
    * designated by `"Inf"`, `"PlusInf"`, `"+Inf"` and `"-Inf"` or `"MinusInf"`.
    *
-   * @throws NumberFormatException if format is not parseable
+   * @throws NumberFormatException if format is not parsable
    */
   def apply(s: String): Duration = {
     val s1: String = s filterNot (_.isWhitespace)
@@ -285,7 +285,7 @@ object Duration {
    * whitespace is allowed before, between and after the parts. Infinities are
    * designated by `"Inf"`, `"PlusInf"`, `"+Inf"` and `"-Inf"` or `"MinusInf"`.
    *
-   * @throws NumberFormatException if format is not parseable
+   * @throws NumberFormatException if format is not parsable
    */
   def create(s: String): Duration                          = apply(s)
 

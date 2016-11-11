@@ -160,8 +160,8 @@ final class BigInt(val bigInteger: BigInteger)
       }
     ) && !bitLengthOverflow
   }
-  /** Some implementations of java.math.BigInteger allow huge values with bit length greater than Int.MaxValue .
-   * The BigInteger.bitLength method returns truncated bit length in this case .
+  /** Some implementations of java.math.BigInteger allow huge values with bit length greater than Int.MaxValue.
+   * The BigInteger.bitLength method returns truncated bit length in this case.
    * This method tests if result of bitLength is valid.
    * This method will become unnecessary if BigInt constructors reject huge BigIntegers.
    */

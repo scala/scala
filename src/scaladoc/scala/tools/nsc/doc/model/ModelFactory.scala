@@ -886,8 +886,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           // units.filter should return only one element
           (currentRun.units filter (_.source.file == aSym.sourceFile)).toList match {
             case List(unit) =>
-              // SI-4922 `sym == aSym` is insufficent if `aSym` is a clone of symbol
-              //         of the parameter in the tree, as can happen with type parametric methods.
+              // SI-4922 `sym == aSym` is insufficient if `aSym` is a clone of symbol
+              //         of the parameter in the tree, as can happen with type parameterized methods.
               def isCorrespondingParam(sym: Symbol) = (
                 sym != null &&
                 sym != NoSymbol &&

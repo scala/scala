@@ -117,7 +117,7 @@ class SplashLoop(reader: InteractiveReader, prompt: String) extends Runnable {
     thread = null
   }
 
-  /** Block for the result line, or null on ctl-D. */
+  /** Block for the result line, or null on ctrl-D. */
   def line: String = result.take getOrElse null
 }
 object SplashLoop {

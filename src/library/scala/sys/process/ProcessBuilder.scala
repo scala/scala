@@ -342,7 +342,7 @@ object ProcessBuilder extends ProcessBuilderImpl {
     /** Writes the output stream of this process to a [[scala.sys.process.ProcessBuilder]]. */
     def #>(b: ProcessBuilder): ProcessBuilder = new PipedBuilder(toSource, b, false)
 
-    /** Returnes a [[scala.sys.process.ProcessBuilder]] representing this `Source`. */
+    /** Returns a [[scala.sys.process.ProcessBuilder]] representing this `Source`. */
     def cat = toSource
     private def toFile(f: File, append: Boolean) = #> (new FileOutput(f, append))
   }

@@ -211,7 +211,7 @@ class DotDiagramGenerator(settings: doc.Settings, dotRunner: DotRunner) extends 
     // escape HTML characters in node names
     def escape(name: String) = name.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
-    // assemble node attribues in a map
+    // assemble node attributes in a map
     val attr = scala.collection.mutable.Map[String, String]()
 
     // link

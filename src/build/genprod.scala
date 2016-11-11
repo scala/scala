@@ -380,7 +380,7 @@ object {className} {{
     Some(x)
 }}
 
-/** {className} is a cartesian product of {i} component{s}.
+/** {className} is a Cartesian product of {i} component{s}.
  *  @since 2.3
  */
 trait {className}{covariantArgs} extends Any with Product {{

@@ -142,7 +142,7 @@ trait Namers extends MethodSynthesis {
       val ownerHasEnumFlag =
         // Necessary to check because scalac puts Java's static members into the companion object
         // while Scala's enum constants live directly in the class.
-        // We don't check for clazz.superClass == JavaEnumClass, because this causes a illegal
+        // We don't check for clazz.superClass == JavaEnumClass, because this causes an illegal
         // cyclic reference error. See the commit message for details.
         if (context.unit.isJava) owner.companionClass.hasJavaEnumFlag else owner.hasJavaEnumFlag
       vd.mods.hasAllFlags(JAVA_ENUM | STABLE | STATIC) && ownerHasEnumFlag

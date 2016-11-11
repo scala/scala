@@ -741,8 +741,8 @@ trait Iterator[+A] extends TraversableOnce[A] {
 
     val trailing = new AbstractIterator[A] {
       private[this] var myLeading = leading
-      /* Status flags meanings:
-       *   -1 not yet accesssed
+      /* Status flag meanings:
+       *   -1 not yet accessed
        *   0 single element waiting in leading
        *   1 defer to self
        */

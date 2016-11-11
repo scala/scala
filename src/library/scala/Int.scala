@@ -439,10 +439,10 @@ final abstract class Int private extends AnyVal {
 }
 
 object Int extends AnyValCompanion {
-  /** The smallest value representable as a Int. */
+  /** The smallest value representable as an Int. */
   final val MinValue = java.lang.Integer.MIN_VALUE
 
-  /** The largest value representable as a Int. */
+  /** The largest value representable as an Int. */
   final val MaxValue = java.lang.Integer.MAX_VALUE
 
   /** Transform a value type into a boxed reference type.

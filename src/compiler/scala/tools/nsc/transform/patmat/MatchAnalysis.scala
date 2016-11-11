@@ -736,7 +736,7 @@ trait MatchAnalysis extends MatchApproximation {
       if (expanded.isEmpty) {
         List(varAssignment)
       } else {
-        // we need the cartesian product here,
+        // we need the Cartesian product here,
         // since we want to report all missing cases
         // (i.e., combinations)
         val cartesianProd = expanded.reduceLeft((xs, ys) =>

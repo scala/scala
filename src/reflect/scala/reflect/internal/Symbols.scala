@@ -1932,7 +1932,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       result
     }
 
-// ------ cloneing -------------------------------------------------------------------
+// ------ cloning -------------------------------------------------------------------
 
     /** A clone of this symbol. */
     final def cloneSymbol: TypeOfClonedSymbol =

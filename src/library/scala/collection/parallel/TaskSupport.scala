@@ -16,7 +16,7 @@ import scala.concurrent.ExecutionContext
 /** A trait implementing the scheduling of a parallel collection operation.
  *
  *  Parallel collections are modular in the way operations are scheduled. Each
- *  parallel collection is parametrized with a task support object which is
+ *  parallel collection is parameterized with a task support object which is
  *  responsible for scheduling and load-balancing tasks to processors.
  *
  *  A task support object can be changed in a parallel collection after it has
@@ -71,7 +71,7 @@ extends TaskSupport with AdaptiveWorkStealingThreadPoolTasks
  *  forkjoin based task support or a thread pool executor one, depending on
  *  what the execution context uses.
  *
- *  By default, parallel collections are parametrized with this task support
+ *  By default, parallel collections are parameterized with this task support
  *  object, so parallel collections share the same execution context backend
  *  as the rest of the `scala.concurrent` package.
  *

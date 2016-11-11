@@ -35,7 +35,7 @@ trait ReusableBuilder[-Elem, +To] extends Builder[Elem, To] {
    *  If executed immediately after a call to `result`, this allows a new
    *  instance of the same type of collection to be built.
    */
-  override def clear(): Unit    // Note: overriding for scaladoc only!
+  override def clear(): Unit    // Note: overriding for Scaladoc only!
 
   /** Produces a collection from the added elements.
    *
@@ -45,5 +45,5 @@ trait ReusableBuilder[-Elem, +To] extends Builder[Elem, To] {
    *
    *  @return a collection containing the elements added to this builder.
    */
-  override def result(): To    // Note: overriding for scaladoc only!
+  override def result(): To    // Note: overriding for Scaladoc only!
 }

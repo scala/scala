@@ -9,7 +9,7 @@ package interpreter
 import scala.language.implicitConversions
 
 /** Mix this into an object and use it as a phasing
- *  swiss army knife.
+ *  Swiss Army knife.
  */
 trait Phased {
   val global: Global

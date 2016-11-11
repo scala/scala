@@ -1012,7 +1012,7 @@ trait Internals { self: Universe =>
      */
     def origin: String
 
-    /** The valus this symbol refers to
+    /** The value this symbol refers to
      *
      *  @group FreeTerm
      */
