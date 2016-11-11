@@ -65,7 +65,7 @@ function Scheduler() {
             scheduler.queues[idx].push(new scheduler.work(fn, self, args));
             if (scheduler.timeout == undefined) doWork();
         } else {
-            throw("queue for add is non existant");
+            throw("queue for add is non-existent");
         }
     }
 
@@ -86,7 +86,7 @@ function Scheduler() {
         if (idx != -1)
             return scheduler.queues[idx].length == 0;
         else
-            throw("queue for label '" + label  + "' is non existant");
+            throw("queue for label '" + label  + "' is non-existent");
     }
 
     this.scheduleLast = function(label, fn) {

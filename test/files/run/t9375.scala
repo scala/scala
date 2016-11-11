@@ -18,7 +18,7 @@ object SerDes {
 
 import SerDes._
 
-// tests to make sure that de-serializing an object does not run its constructor
+// tests to make sure that deserializing an object does not run its constructor
 
 trait S extends Serializable {
   println("  konstruktor: " + this.getClass)

@@ -8,7 +8,7 @@ import java.lang.System.{out => sysout}
  */
 abstract class JavapTest extends ReplTest {
 
-  /** Your Assertion Here, whatever you want to bejahen.
+  /** Your Assertion Here, whatever you want to affirm.
    *  Assertions must be satisfied by all flavors of javap
    *  and should not be fragile with respect to compiler output.
    */

@@ -180,7 +180,7 @@ object scalac extends Command {
           Mono(Bold("@") & Argument("file")),
           "A text file containing compiler arguments (options and source files)")
 
-        // TODO - Add macros an dsuch here.
+        // TODO - Add macros and such here.
       )
     ),
 

@@ -1103,8 +1103,8 @@ Note that the value defined by an object definition is instantiated
 lazily.  The `new $m$\$cls` constructor is evaluated
 not at the point of the object definition, but is instead evaluated
 the first time $m$ is dereferenced during execution of the program
-(which might be never at all). An attempt to dereference $m$ again in
-the course of evaluation of the constructor leads to a infinite loop
+(which might be never at all). An attempt to dereference $m$ again
+during evaluation of the constructor will lead to an infinite loop
 or run-time error.
 Other threads trying to dereference $m$ while the
 constructor is being evaluated block until evaluation is complete.

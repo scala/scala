@@ -185,8 +185,8 @@ package scala.sys {
     * new URL("http://www.scala-lang.org/") #> new File("scala-lang.html") !
     * }}}
     *
-    * More information about the other ways of controlling I/O can be looked at
-    * in the scaladoc for the associated objects, traits and classes.
+    * More information about the other ways of controlling I/O can be found
+    * in the Scaladoc for the associated objects, traits and classes.
     *
     * ==Running the Process==
     *

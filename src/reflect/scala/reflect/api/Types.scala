@@ -734,7 +734,7 @@ trait Types {
    */
   val MethodType: MethodTypeExtractor
 
-  /** An extractor class to create and pattern match with syntax `MethodType(params, respte)`
+  /** An extractor class to create and pattern match with syntax `MethodType(params, restpe)`
    *  Here, `params` is a potentially empty list of parameter symbols of the method,
    *  and `restpe` is the result type of the method. If the method is curried, `restpe` would
    *  be another `MethodType`.

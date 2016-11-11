@@ -64,7 +64,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
 // --------- helper functions -----------------------------------------------
 
   /** A member of a trait is implemented statically if its implementation after the
-   *  mixin transform is RHS of the method body (destined to be in a interface default method)
+   *  mixin transform is RHS of the method body (destined to be in an interface default method)
    *
    *  To be statically implemented, a member must be a method that belonged to the trait's implementation class
    *  before (i.e. it is not abstract). Not statically implemented are

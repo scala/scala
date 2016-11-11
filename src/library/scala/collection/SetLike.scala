@@ -213,9 +213,9 @@ self =>
     }
   }
 
-  /** An Iterator include all subsets containing exactly len elements.
+  /** An Iterator including all subsets containing exactly len elements.
    *  If the elements in 'This' type is ordered, then the subsets will also be in the same order.
-   *  ListSet(1,2,3).subsets => {1},{2},{3},{1,2},{1,3},{2,3},{1,2,3}}
+   *  ListSet(1,2,3).subsets => {{1},{2},{3},{1,2},{1,3},{2,3},{1,2,3}}
    *
    *  @author Eastsun
    *  @date 2010.12.6
