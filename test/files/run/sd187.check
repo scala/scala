@@ -6,8 +6,8 @@
       [9]()
     };
     [107]def commonSubPattern([124]x: [127]<type: [127]scala.Any>): [107]AnyVal = [205]{
-      [412]<synthetic> var rc6: [412]Boolean = [412]false;
-      [412]<synthetic> var x3: [412]String = [412][412][412]null.asInstanceOf[[412]String];
+      [205]<synthetic> var rc6: [205]Boolean = [205]false;
+      [205]<synthetic> var x3: [205]String = [205][205][205]null.asInstanceOf[[205]String];
       [205]{
         [205]case <synthetic> val x1: [205]Any = [205]x;
         [205]case8(){
@@ -30,10 +30,10 @@
             [412][412]case10()
         };
         [205]case10(){
-          [205]if ([205][205]rc6.&&([627][627]x3.==([630]"6")))
+          [612]if ([612][612]rc6.&&([627][627]x3.==([630]"6")))
             [712][712]matchEnd7([712][712]x3.hashCode())
           else
-            [205][205]case11()
+            [612][612]case11()
         };
         [205]case11(){
           [205][205]matchEnd7([205]throw [205][205][205]new [205]MatchError([205]x1))
@@ -74,7 +74,7 @@
       [1607][1607][1607]C.this.toString()
     } catch {
       [1505]case [1505](ex6 @ [1505]_) => [1505]{
-        [1505]<synthetic> val x4: [1505]Throwable = [1505]ex6;
+        [1812]<synthetic> val x4: [1812]Throwable = [1812]ex6;
         [1505]case9(){
           [1812]if ([1812][1812]x4.ne([1812]null))
             [1812]{

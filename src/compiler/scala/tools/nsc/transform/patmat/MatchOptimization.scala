@@ -31,7 +31,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
      * the variable is floated up so that its scope includes all of the program that shares it
      * we generalize sharing to implication, where b reuses a if a => b and priors(a) => priors(b) (the priors of a sub expression form the path through the decision tree)
      */
-    def doCSE(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[List[TreeMaker]] = {
+    def doCSE(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, selectorPos: Position): List[List[TreeMaker]] = {
       debug.patmat("before CSE:")
       showTreeMakers(cases)
 
@@ -112,7 +112,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
           if (sharedPrefix.isEmpty) None
           else { // even sharing prefixes of length 1 brings some benefit (overhead-percentage for compiler: 26->24%, lib: 19->16%)
             for (test <- sharedPrefix; reusedTest <- test.reuses) reusedTest.treeMaker match {
-              case reusedCTM: CondTreeMaker => reused(reusedCTM) = ReusedCondTreeMaker(reusedCTM)
+              case reusedCTM: CondTreeMaker => reused(reusedCTM) = ReusedCondTreeMaker(reusedCTM, selectorPos)
               case _ =>
             }
 
@@ -139,13 +139,14 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
     }
 
     object ReusedCondTreeMaker {
-      def apply(orig: CondTreeMaker) = new ReusedCondTreeMaker(orig.prevBinder, orig.nextBinder, orig.cond, orig.res, orig.pos)
+      def apply(orig: CondTreeMaker, selectorPos: Position) = new ReusedCondTreeMaker(orig.prevBinder, orig.nextBinder, orig.cond, orig.res, selectorPos, orig.pos)
     }
-    class ReusedCondTreeMaker(prevBinder: Symbol, val nextBinder: Symbol, cond: Tree, res: Tree, val pos: Position) extends TreeMaker {
+    class ReusedCondTreeMaker(prevBinder: Symbol, val nextBinder: Symbol, cond: Tree, res: Tree, selectorPos: Position, val pos: Position) extends TreeMaker {
       lazy val localSubstitution        = Substitution(List(prevBinder), List(CODE.REF(nextBinder)))
-      lazy val storedCond               = freshSym(pos, BooleanTpe, "rc") setFlag MUTABLE
+      lazy val storedCond               = freshSym(selectorPos, BooleanTpe, "rc") setFlag MUTABLE
       lazy val treesToHoist: List[Tree] = {
         nextBinder setFlag MUTABLE
+        nextBinder.setPos(selectorPos)
         List(storedCond, nextBinder) map (b => ValDef(b, codegen.mkZero(b.info)))
       }
 
@@ -190,7 +191,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       def chainBefore(next: Tree)(casegen: Casegen): Tree = {
         // TODO: finer-grained duplication -- MUST duplicate though, or we'll get VerifyErrors since sharing trees confuses lambdalift,
         // and in its confusion it emits illegal casts (diagnosed by Grzegorz: checkcast T ; invokevirtual S.m, where T not a subtype of S)
-        casegen.ifThenElseZero(REF(lastReusedTreeMaker.storedCond), substitution(next).duplicate)
+        atPos(pos)(casegen.ifThenElseZero(REF(lastReusedTreeMaker.storedCond), substitution(next).duplicate))
       }
       override def toString = "R"+((lastReusedTreeMaker.storedCond.name, substitution))
     }
@@ -584,9 +585,9 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
   trait MatchOptimizer extends OptimizedCodegen
                           with SwitchEmission
                           with CommonSubconditionElimination {
-    override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): (List[List[TreeMaker]], List[Tree]) = {
+    override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, selectorPos: Position): (List[List[TreeMaker]], List[Tree]) = {
       // TODO: do CSE on result of doDCE(prevBinder, cases, pt)
-      val optCases = doCSE(prevBinder, cases, pt)
+      val optCases = doCSE(prevBinder, cases, pt, selectorPos)
       val toHoist = (
         for (treeMakers <- optCases)
           yield treeMakers.collect{case tm: ReusedCondTreeMaker => tm.treesToHoist}
