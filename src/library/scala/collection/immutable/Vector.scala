@@ -11,7 +11,6 @@ package collection
 package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.compat.Platform
 import scala.collection.generic._
 import scala.collection.mutable.{Builder, ReusableBuilder}
 import scala.collection.parallel.immutable.ParVector
@@ -478,12 +477,12 @@ override def companion: GenericCompanion[Vector] = Vector
 //    if (array eq null)
 //      println("OUCH!!! " + right + "/" + depth + "/"+startIndex + "/" + endIndex + "/" + focus)
     val a2 = new Array[AnyRef](array.length)
-    Platform.arraycopy(array, 0, a2, 0, right)
+    java.lang.System.arraycopy(array, 0, a2, 0, right)
     a2
   }
   private def copyRight(array: Array[AnyRef], left: Int): Array[AnyRef] = {
     val a2 = new Array[AnyRef](array.length)
-    Platform.arraycopy(array, left, a2, left, a2.length - left)
+    java.lang.System.arraycopy(array, left, a2, left, a2.length - left)
     a2
   }
 
@@ -955,7 +954,7 @@ private[immutable] trait VectorPointer[T] {
 
     private[immutable] final def copyOf(a: Array[AnyRef]) = {
       val b = new Array[AnyRef](a.length)
-      Platform.arraycopy(a, 0, b, 0, a.length)
+      java.lang.System.arraycopy(a, 0, b, 0, a.length)
       b
     }
 
@@ -1119,7 +1118,7 @@ private[immutable] trait VectorPointer[T] {
 
     private[immutable] final def copyRange(array: Array[AnyRef], oldLeft: Int, newLeft: Int) = {
       val elems = new Array[AnyRef](32)
-      Platform.arraycopy(array, oldLeft, elems, newLeft, 32 - math.max(newLeft,oldLeft))
+      java.lang.System.arraycopy(array, oldLeft, elems, newLeft, 32 - math.max(newLeft,oldLeft))
       elems
     }
 
