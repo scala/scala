@@ -106,7 +106,7 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
    * The sequence of temporary files corresponding to passed snippets and analysis
    * callback is returned as a result.
    */
-  private def compileSrcs(
+  private[xsbt] def compileSrcs(
     groupedSrcs: List[List[String]],
     reuseCompilerInstance: Boolean
   ): (Seq[File], TestCallback) = {
