@@ -36,9 +36,9 @@ trait InfoTransform extends Transform {
         val pid = id
         val changesBaseClasses = InfoTransform.this.changesBaseClasses
         def transform(sym: Symbol, tpe: Type): Type = transformInfo(sym, tpe)
+        override def toString = InfoTransform.this.getClass.toString
       }
       infoTransformers insert infoTransformer
     }
   }
 }
-

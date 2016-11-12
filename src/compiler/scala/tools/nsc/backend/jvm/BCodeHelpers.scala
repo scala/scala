@@ -385,18 +385,16 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
   /*
    *  must-single-thread
    */
-  def fieldSymbols(cls: Symbol): List[Symbol] = {
+  def fieldSymbols(cls: Symbol): List[Symbol] =
     for (f <- cls.info.decls.toList ;
          if !f.isMethod && f.isTerm && !f.isModule
     ) yield f
-  }
 
   /*
    * can-multi-thread
    */
-  def methodSymbols(cd: ClassDef): List[Symbol] = {
+  def methodSymbols(cd: ClassDef): List[Symbol] =
     cd.impl.body collect { case dd: DefDef => dd.symbol }
-  }
 
   /*
    *  must-single-thread

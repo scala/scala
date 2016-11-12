@@ -5,8 +5,7 @@ abstract class Statics extends Transform with ast.TreeDSL {
   import global._
 
   trait StaticsTransformer extends Transformer {
-    /** generate a static constructor with symbol fields inits, or an augmented existing static ctor
-      */
+    /** generate a static constructor with symbol fields inits, or an augmented existing static ctor */
     def staticConstructor(body: List[Tree], localTyper: analyzer.Typer, pos: Position)(newStaticInits: List[Tree]): Tree =
       body.collectFirst {
         // If there already was a static ctor - augment existing one

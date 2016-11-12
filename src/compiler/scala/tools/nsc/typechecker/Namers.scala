@@ -665,9 +665,14 @@ trait Namers extends MethodSynthesis {
       if (isScala && deriveAccessors(tree)) enterGetterSetter(tree)
       else assignAndEnterFinishedSymbol(tree)
 
+      val sym = tree.symbol
+
       if (isEnumConstant(tree)) {
-        tree.symbol setInfo ConstantType(Constant(tree.symbol))
-        tree.symbol.owner.linkedClassOfClass addChild tree.symbol
+        sym setInfo ConstantType(Constant(sym))
+        if (sym.isJavaDefined)
+          sym.owner.linkedClassOfClass addChild sym
+        else
+          sym.owner addChild sym
       }
     }
 
