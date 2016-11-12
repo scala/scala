@@ -10,6 +10,7 @@ package scala
 package math
 
 import scala.language.implicitConversions
+import scala.util.Try
 
 /**
  * @since 2.8
@@ -37,6 +38,7 @@ object Numeric {
     def rem(x: BigInt, y: BigInt): BigInt = x % y
     def negate(x: BigInt): BigInt = -x
     def fromInt(x: Int): BigInt = BigInt(x)
+    def parseString(str: String): Option[BigInt] = Try(BigInt(str)).toOption
     def toInt(x: BigInt): Int = x.intValue
     def toLong(x: BigInt): Long = x.longValue
     def toFloat(x: BigInt): Float = x.floatValue
@@ -52,6 +54,7 @@ object Numeric {
     def rem(x: Int, y: Int): Int = x % y
     def negate(x: Int): Int = -x
     def fromInt(x: Int): Int = x
+    def parseString(str: String): Option[Int] = Try(str.toInt).toOption
     def toInt(x: Int): Int = x
     def toLong(x: Int): Long = x.toLong
     def toFloat(x: Int): Float = x.toFloat
@@ -67,6 +70,7 @@ object Numeric {
     def rem(x: Short, y: Short): Short = (x % y).toShort
     def negate(x: Short): Short = (-x).toShort
     def fromInt(x: Int): Short = x.toShort
+    def parseString(str: String): Option[Short] = Try(str.toShort).toOption
     def toInt(x: Short): Int = x.toInt
     def toLong(x: Short): Long = x.toLong
     def toFloat(x: Short): Float = x.toFloat
@@ -82,6 +86,7 @@ object Numeric {
     def rem(x: Byte, y: Byte): Byte = (x % y).toByte
     def negate(x: Byte): Byte = (-x).toByte
     def fromInt(x: Int): Byte = x.toByte
+    def parseString(str: String): Option[Byte] = Try(str.toByte).toOption
     def toInt(x: Byte): Int = x.toInt
     def toLong(x: Byte): Long = x.toLong
     def toFloat(x: Byte): Float = x.toFloat
@@ -97,6 +102,7 @@ object Numeric {
     def rem(x: Char, y: Char): Char = (x % y).toChar
     def negate(x: Char): Char = (-x).toChar
     def fromInt(x: Int): Char = x.toChar
+    def parseString(str: String): Option[Char] = Try(str.toInt.toChar).toOption
     def toInt(x: Char): Int = x.toInt
     def toLong(x: Char): Long = x.toLong
     def toFloat(x: Char): Float = x.toFloat
@@ -112,6 +118,7 @@ object Numeric {
     def rem(x: Long, y: Long): Long = x % y
     def negate(x: Long): Long = -x
     def fromInt(x: Int): Long = x.toLong
+    def parseString(str: String): Option[Long] = Try(str.toLong).toOption
     def toInt(x: Long): Int = x.toInt
     def toLong(x: Long): Long = x
     def toFloat(x: Long): Float = x.toFloat
@@ -125,6 +132,7 @@ object Numeric {
     def times(x: Float, y: Float): Float = x * y
     def negate(x: Float): Float = -x
     def fromInt(x: Int): Float = x.toFloat
+    def parseString(str: String): Option[Float] = Try(str.toFloat).toOption
     def toInt(x: Float): Int = x.toInt
     def toLong(x: Float): Long = x.toLong
     def toFloat(x: Float): Float = x
@@ -149,6 +157,7 @@ object Numeric {
     def times(x: Double, y: Double): Double = x * y
     def negate(x: Double): Double = -x
     def fromInt(x: Int): Double = x.toDouble
+    def parseString(str: String): Option[Double] = Try(str.toDouble).toOption
     def toInt(x: Double): Int = x.toInt
     def toLong(x: Double): Long = x.toLong
     def toFloat(x: Double): Float = x.toFloat
@@ -170,6 +179,7 @@ object Numeric {
     def times(x: BigDecimal, y: BigDecimal): BigDecimal = x * y
     def negate(x: BigDecimal): BigDecimal = -x
     def fromInt(x: Int): BigDecimal = BigDecimal(x)
+    def parseString(str: String): Option[BigDecimal] = Try(BigDecimal(str)).toOption
     def toInt(x: BigDecimal): Int = x.intValue
     def toLong(x: BigDecimal): Long = x.longValue
     def toFloat(x: BigDecimal): Float = x.floatValue
@@ -199,6 +209,7 @@ trait Numeric[T] extends Ordering[T] {
   def times(x: T, y: T): T
   def negate(x: T): T
   def fromInt(x: Int): T
+  def parseString(str: String): Option[T]
   def toInt(x: T): Int
   def toLong(x: T): Long
   def toFloat(x: T): Float
