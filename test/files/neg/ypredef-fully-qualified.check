@@ -1,0 +1,2 @@
+error: Unable to find 'Predef' for setting '-Ypredef scala._,Predef._'. Note: These imports must be fully qualified.
+error: Unable to find 'Predef' for setting '-Ypredef scala._,Predef._'. Note: These imports must be fully qualified.

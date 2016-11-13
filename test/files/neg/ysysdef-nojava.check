@@ -1,0 +1,4 @@
+ysysdef-nojava.scala:3: error: not found: value Thread
+  Thread.sleep(100) // this should fail
+  ^
+one error found

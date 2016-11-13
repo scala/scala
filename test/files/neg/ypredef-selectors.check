@@ -1,0 +1,4 @@
+ypredef-selectors.scala:3: error: value + is not a member of type parameter T
+  def f[T](x: T) = x + 5
+                     ^
+one error found
