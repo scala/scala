@@ -1,0 +1,14 @@
+
+scala> import bug._
+import bug._
+
+scala> import Wrap._
+import Wrap._
+
+scala> object Bar extends Foo
+defined object Bar
+
+scala> Bar.foo
+ok
+
+scala> :quit
