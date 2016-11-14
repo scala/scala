@@ -474,7 +474,7 @@ object scalac extends Command {
 
   val exitStatus = Section("EXIT STATUS",
 
-    MBold(command) & " returns a zero exist status if it succeeds to " &
+    MBold(command) & " returns a zero exit status if it succeeds to " &
     "compile the specified input files. Non zero is returned in case " &
     "of failure.")
 
