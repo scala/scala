@@ -115,14 +115,14 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
 
   override def min[T1 >: T](implicit ord: Ordering[T1]): T =
     if (ord eq defaultOrdering(num)) {
-      if (num.signum(step) > 0) start
+      if (num.signum(step) > 0) head
       else last
     } else super.min(ord)
 
   override def max[T1 >: T](implicit ord: Ordering[T1]): T =
     if (ord eq defaultOrdering(num)) {
       if (num.signum(step) > 0) last
-      else start
+      else head
     } else super.max(ord)
 
   // Motivated by the desire for Double ranges with BigDecimal precision,
