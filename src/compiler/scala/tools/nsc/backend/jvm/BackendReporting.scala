@@ -185,53 +185,61 @@ object BackendReporting {
     def name: String
     def descriptor: String
 
+    /** Either the callee or the callsite is annotated @inline */
+    def annotatedInline: Boolean
+
     def calleeMethodSig = BackendReporting.methodSignature(calleeDeclarationClass, name, descriptor)
 
-    override def toString = this match {
-      case IllegalAccessInstruction(_, _, _, callsiteClass, instruction) =>
-        s"The callee $calleeMethodSig contains the instruction ${AsmUtils.textify(instruction)}" +
-          s"\nthat would cause an IllegalAccessError when inlined into class $callsiteClass."
+    override def toString = {
+      val annotWarn = if (annotatedInline) " is annotated @inline but" else ""
+      val warning = s"$calleeMethodSig$annotWarn could not be inlined:\n"
+      val reason = this match {
+        case CalleeNotFinal(_, _, _, _) =>
+          s"The method is not final and may be overridden."
+        case IllegalAccessInstruction(_, _, _, _, callsiteClass, instruction) =>
+          s"The callee $calleeMethodSig contains the instruction ${AsmUtils.textify(instruction)}" +
+            s"\nthat would cause an IllegalAccessError when inlined into class $callsiteClass."
 
-      case IllegalAccessCheckFailed(_, _, _, callsiteClass, instruction, cause) =>
-        s"Failed to check if $calleeMethodSig can be safely inlined to $callsiteClass without causing an IllegalAccessError. Checking instruction ${AsmUtils.textify(instruction)} failed:\n" + cause
+        case IllegalAccessCheckFailed(_, _, _, _, callsiteClass, instruction, cause) =>
+          s"Failed to check if $calleeMethodSig can be safely inlined to $callsiteClass without causing an IllegalAccessError. Checking instruction ${AsmUtils.textify(instruction)} failed:\n" + cause
 
-      case MethodWithHandlerCalledOnNonEmptyStack(_, _, _, callsiteClass, callsiteName, callsiteDesc) =>
-        s"""The operand stack at the callsite in ${BackendReporting.methodSignature(callsiteClass, callsiteName, callsiteDesc)} contains more values than the
-           |arguments expected by the callee $calleeMethodSig. These values would be discarded
-           |when entering an exception handler declared in the inlined method.""".stripMargin
+        case MethodWithHandlerCalledOnNonEmptyStack(_, _, _, _, callsiteClass, callsiteName, callsiteDesc) =>
+          s"""The operand stack at the callsite in ${BackendReporting.methodSignature(callsiteClass, callsiteName, callsiteDesc)} contains more values than the
+             |arguments expected by the callee $calleeMethodSig. These values would be discarded
+             |when entering an exception handler declared in the inlined method.""".stripMargin
 
-      case SynchronizedMethod(_, _, _) =>
-        s"Method $calleeMethodSig cannot be inlined because it is synchronized."
+        case SynchronizedMethod(_, _, _, _) =>
+          s"Method $calleeMethodSig cannot be inlined because it is synchronized."
 
-      case StrictfpMismatch(_, _, _, callsiteClass, callsiteName, callsiteDesc) =>
-        s"""The callsite method ${BackendReporting.methodSignature(callsiteClass, callsiteName, callsiteDesc)}
-           |does not have the same strictfp mode as the callee $calleeMethodSig.
+        case StrictfpMismatch(_, _, _, _, callsiteClass, callsiteName, callsiteDesc) =>
+          s"""The callsite method ${BackendReporting.methodSignature(callsiteClass, callsiteName, callsiteDesc)}
+             |does not have the same strictfp mode as the callee $calleeMethodSig.
          """.stripMargin
 
-      case ResultingMethodTooLarge(_, _, _, callsiteClass, callsiteName, callsiteDesc) =>
-        s"""The size of the callsite method ${BackendReporting.methodSignature(callsiteClass, callsiteName, callsiteDesc)}
-           |would exceed the JVM method size limit after inlining $calleeMethodSig.
+        case ResultingMethodTooLarge(_, _, _, _, callsiteClass, callsiteName, callsiteDesc) =>
+          s"""The size of the callsite method ${BackendReporting.methodSignature(callsiteClass, callsiteName, callsiteDesc)}
+             |would exceed the JVM method size limit after inlining $calleeMethodSig.
          """.stripMargin
+      }
+      warning + reason
     }
 
-    def emitWarning(settings: ScalaSettings): Boolean = this match {
-      case _: IllegalAccessInstruction | _: MethodWithHandlerCalledOnNonEmptyStack | _: SynchronizedMethod | _: StrictfpMismatch | _: ResultingMethodTooLarge =>
-        settings.optWarnings.contains(settings.optWarningsChoices.anyInlineFailed)
-
-      case IllegalAccessCheckFailed(_, _, _, _, _, cause) =>
-        cause.emitWarning(settings)
+    def emitWarning(settings: ScalaSettings): Boolean = {
+      settings.optWarnings.contains(settings.optWarningsChoices.anyInlineFailed) ||
+        annotatedInline && settings.optWarningEmitAtInlineFailed
     }
   }
-  case class IllegalAccessInstruction(calleeDeclarationClass: InternalName, name: String, descriptor: String,
+  case class CalleeNotFinal(calleeDeclarationClass: InternalName, name: String, descriptor: String,  annotatedInline: Boolean) extends CannotInlineWarning
+  case class IllegalAccessInstruction(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
                                       callsiteClass: InternalName, instruction: AbstractInsnNode) extends CannotInlineWarning
-  case class IllegalAccessCheckFailed(calleeDeclarationClass: InternalName, name: String, descriptor: String,
+  case class IllegalAccessCheckFailed(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
                                       callsiteClass: InternalName, instruction: AbstractInsnNode, cause: OptimizerWarning) extends CannotInlineWarning
-  case class MethodWithHandlerCalledOnNonEmptyStack(calleeDeclarationClass: InternalName, name: String, descriptor: String,
+  case class MethodWithHandlerCalledOnNonEmptyStack(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
                                                     callsiteClass: InternalName, callsiteName: String, callsiteDesc: String) extends CannotInlineWarning
-  case class SynchronizedMethod(calleeDeclarationClass: InternalName, name: String, descriptor: String) extends CannotInlineWarning
-  case class StrictfpMismatch(calleeDeclarationClass: InternalName, name: String, descriptor: String,
+  case class SynchronizedMethod(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean) extends CannotInlineWarning
+  case class StrictfpMismatch(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
                               callsiteClass: InternalName, callsiteName: String, callsiteDesc: String) extends CannotInlineWarning
-  case class ResultingMethodTooLarge(calleeDeclarationClass: InternalName, name: String, descriptor: String,
+  case class ResultingMethodTooLarge(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
                                      callsiteClass: InternalName, callsiteName: String, callsiteDesc: String) extends CannotInlineWarning
 
   // TODO: this should be a subtype of CannotInlineWarning

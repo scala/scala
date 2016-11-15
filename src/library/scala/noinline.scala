@@ -23,7 +23,7 @@ package scala
  *  def t2 = f2(1)              // not inlined
  *  def t3 = f3(1)              // may be inlined (heuristics)
  *  def t4 = f1(1): @noinline   // not inlined (override at callsite)
- *  def t5 = f2(1): @inline     // not inlined (cannot override the @noinline at f2's definition)
+ *  def t5 = f2(1): @inline     // inlined if possible (override at callsite)
  *  def t6 = f3(1): @inline     // inlined if possible
  *  def t7 = f3(1): @noinline   // not inlined
  * }

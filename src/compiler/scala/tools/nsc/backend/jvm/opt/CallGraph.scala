@@ -137,7 +137,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
               Callee(
                 callee = method,
                 calleeDeclarationClass = declarationClassBType,
-                safeToInline = safeToInline,
+                isStaticallyResolved = isStaticallyResolved,
                 sourceFilePath = sourceFilePath,
                 annotatedInline = annotatedInline,
                 annotatedNoInline = annotatedNoInline,
@@ -256,7 +256,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
   /**
    * Just a named tuple used as return type of `analyzeCallsite`.
    */
-  private case class CallsiteInfo(safeToInline: Boolean, sourceFilePath: Option[String],
+  private case class CallsiteInfo(isStaticallyResolved: Boolean, sourceFilePath: Option[String],
                                   annotatedInline: Boolean, annotatedNoInline: Boolean,
                                   samParamTypes: IntMap[ClassBType],
                                   warning: Option[CalleeInfoWarning])
@@ -293,7 +293,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           // TODO: type analysis can render more calls statically resolved. Example:
           //   new A.f  // can be inlined, the receiver type is known to be exactly A.
           val isStaticallyResolved: Boolean = {
-            isNonVirtualCall(call) || // SD-86: super calls (invokespecial) can be inlined
+            isNonVirtualCall(call) || // SD-86: super calls (invokespecial) can be inlined -- TODO: check if that's still needed, and if it's correct: scala-dev#143
             methodInlineInfo.effectivelyFinal ||
               receiverType.info.orThrow.inlineInfo.isEffectivelyFinal // (1)
           }
@@ -301,22 +301,13 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
           val warning = calleeDeclarationClassBType.info.orThrow.inlineInfo.warning.map(
             MethodInlineInfoIncomplete(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, _))
 
-          // (1) For invocations of final trait methods, the callee isStaticallyResolved but also
-          //     abstract. Such a callee is not safe to inline - it needs to be re-written to the
-          //     static impl method first (safeToRewrite).
           CallsiteInfo(
-            safeToInline      =
-              inlinerHeuristics.canInlineFromSource(calleeSourceFilePath) &&
-                isStaticallyResolved &&  // (1)
-                !isAbstract &&
-                !BytecodeUtils.isConstructor(calleeMethodNode) &&
-                !BytecodeUtils.isNativeMethod(calleeMethodNode) &&
-                !BytecodeUtils.hasCallerSensitiveAnnotation(calleeMethodNode),
-            sourceFilePath      = calleeSourceFilePath,
-            annotatedInline     = methodInlineInfo.annotatedInline,
-            annotatedNoInline   = methodInlineInfo.annotatedNoInline,
-            samParamTypes       = samParamTypes(calleeMethodNode, receiverType),
-            warning             = warning)
+            isStaticallyResolved = isStaticallyResolved,
+            sourceFilePath       = calleeSourceFilePath,
+            annotatedInline      = methodInlineInfo.annotatedInline,
+            annotatedNoInline    = methodInlineInfo.annotatedNoInline,
+            samParamTypes        = samParamTypes(calleeMethodNode, receiverType),
+            warning              = warning)
 
         case None =>
           val warning = MethodInlineInfoMissing(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, calleeDeclarationClassBType.info.orThrow.inlineInfo.warning)
@@ -353,6 +344,10 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
      */
     val inlinedClones = mutable.Set.empty[ClonedCallsite]
 
+    // an annotation at the callsite takes precedence over an annotation at the definition site
+    def isInlineAnnotated = annotatedInline || (callee.get.annotatedInline && !annotatedNoInline)
+    def isNoInlineAnnotated = annotatedNoInline || (callee.get.annotatedNoInline && !annotatedInline)
+
     override def toString =
       "Invocation of" +
         s" ${callee.map(_.calleeDeclarationClass.internalName).getOrElse("?")}.${callsiteInstruction.name + callsiteInstruction.desc}" +
@@ -378,8 +373,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    *                               virtual calls, an override of the callee might be invoked. Also,
    *                               the callee can be abstract.
    * @param calleeDeclarationClass The class in which the callee is declared
-   * @param safeToInline           True if the callee can be safely inlined: it cannot be overridden,
-   *                               and the inliner settings (project / global) allow inlining it.
+   * @param isStaticallyResolved   True if the callee cannot be overridden
    * @param annotatedInline        True if the callee is annotated @inline
    * @param annotatedNoInline      True if the callee is annotated @noinline
    * @param samParamTypes          A map from parameter positions to SAM parameter types
@@ -387,11 +381,17 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
    *                               gathering the information about this callee.
    */
   final case class Callee(callee: MethodNode, calleeDeclarationClass: btypes.ClassBType,
-                          safeToInline: Boolean, sourceFilePath: Option[String],
+                          isStaticallyResolved: Boolean, sourceFilePath: Option[String],
                           annotatedInline: Boolean, annotatedNoInline: Boolean,
                           samParamTypes: IntMap[btypes.ClassBType],
                           calleeInfoWarning: Option[CalleeInfoWarning]) {
     override def toString = s"Callee($calleeDeclarationClass.${callee.name})"
+
+    def canInlineFromSource = inlinerHeuristics.canInlineFromSource(sourceFilePath)
+    def isAbstract = isAbstractMethod(callee)
+    def isSpecialMethod = isConstructor(callee) || isNativeMethod(callee) || hasCallerSensitiveAnnotation(callee)
+
+    def safeToInline = isStaticallyResolved && canInlineFromSource && !isAbstract && !isSpecialMethod
   }
 
   /**
