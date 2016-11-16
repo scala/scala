@@ -1103,7 +1103,7 @@ abstract class RefChecks extends Transform {
         // better to have lubbed and lost
         def warnIfLubless(): Unit = {
           val common = global.lub(List(actual.tpe, receiver.tpe))
-          if (ObjectTpe <:< common && !(ObjectTpe <:< actual.tpe && ObjectTpe <:< receiver.tpe))
+          if (ObjectTpe <:< common && !(ObjectTpe <:< actual.tpe) && !(ObjectTpe <:< receiver.tpe))
             unrelatedTypes()
         }
         // warn if actual has a case parent that is not same as receiver's;
