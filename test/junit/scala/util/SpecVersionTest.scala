@@ -33,8 +33,6 @@ class SpecVersionTest {
     assert(sut9 isJavaAtLeast "1.8")
     assert(sut9 isJavaAtLeast "8")
     assert(sut9 isJavaAtLeast "9")
-    assert(sut9.isJavaAtLeast(9))
-    assertFalse(sut9.isJavaAtLeast(10))
     assertFalse(sut9.isJavaAtLeast("10"))
   }
 
@@ -47,8 +45,8 @@ class SpecVersionTest {
     assert(sut7 isJavaAtLeast "5")
     assert(sut7 isJavaAtLeast "1.6")
     assert(sut7 isJavaAtLeast "1.7")
-    assert(sut7.isJavaAtLeast(7))
-    assertFalse(sut7.isJavaAtLeast(9))
+    assert(sut7.isJavaAtLeast("7"))
+    assertFalse(sut7.isJavaAtLeast("9"))
     assertFalse(sut7 isJavaAtLeast "1.8")
     assertFalse(sut7 isJavaAtLeast "9")
     assertFalse(sut7 isJavaAtLeast "10")
@@ -69,7 +67,6 @@ class SpecVersionTest {
 
   @Test def `spec has minor or more`(): Unit = {
     val sut = new TestProperties("9.2.5")
-    assert(sut.isJavaAtLeast(9))
     assert(sut.isJavaAtLeast("9"))
     assert(sut.isJavaAtLeast("9.0.1"))
     assert(sut.isJavaAtLeast("9.2.1"))
@@ -81,7 +78,6 @@ class SpecVersionTest {
 
   @Test def `compares only major minor security`(): Unit = {
     val sut = new TestProperties("9.2.5.1.2.3")
-    assert(sut.isJavaAtLeast(9))
     assert(sut.isJavaAtLeast("9"))
     assert(sut.isJavaAtLeast("9.0.1"))
     assert(sut.isJavaAtLeast("9.2.5.9.9.9"))
@@ -90,8 +86,7 @@ class SpecVersionTest {
 
   @Test def `futurely proofed`(): Unit = {
     val sut = new TestProperties("10.2.5")
-    assert(sut.isJavaAtLeast(9))
-    assert(sut.isJavaAtLeast(10))
+    assert(sut.isJavaAtLeast("10"))
     assert(sut.isJavaAtLeast("9"))
     assert(sut.isJavaAtLeast("9.0.1"))
     assert(sut.isJavaAtLeast("9.2.1"))

@@ -217,12 +217,6 @@ private[scala] trait PropertiesTrait {
     }
   }
 
-  /** Tests whether the major version of the platform specification is at least the given value.
-   *
-   *  @param version a major version number
-   */
-  def isJavaAtLeast(version: Int): Boolean = isJavaAtLeast(version.toString)
-
   // provide a main method so version info can be obtained by running this
   def main(args: Array[String]) {
     val writer = new PrintWriter(Console.err, true)
