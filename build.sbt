@@ -89,7 +89,7 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
 globalVersionSettings
 baseVersion in Global := "2.12.1"
 baseVersionSuffix in Global := "SNAPSHOT"
-mimaReferenceVersion in Global := Some("2.12.0-RC1")
+mimaReferenceVersion in Global := Some("2.12.0")
 
 scalaVersion in Global := versionProps("starr.version")
 
