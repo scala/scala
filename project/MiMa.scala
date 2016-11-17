@@ -24,7 +24,7 @@ object MiMa {
           def runOnce(prev: java.io.File, curr: java.io.File, isForward: Boolean): Unit = {
             val direction = if (isForward) "forward" else "backward"
             log.info(s"Checking $direction binary compatibility")
-            log.debug(s"prev = $prev, curr = $curr")
+            log.info(s"prev = $prev, curr = $curr")
             runMima(
               prev = if (isForward) curr else prev,
               curr = if (isForward) prev else curr,
@@ -48,7 +48,11 @@ object MiMa {
       "--prev", prev.getAbsolutePath,
       "--curr", curr.getAbsolutePath,
       "--filters", filter.getAbsolutePath,
-      "--generate-filters"
+      "--generate-filters",
+      // !!! Command line MiMa (which we call rathan the SBT Plugin for reasons alluded to in f2d0f1e85) incorrectly
+      //     defaults to no checking (!) if this isn't specified. Fixed in https://github.com/typesafehub/migration-manager/pull/138
+      //     TODO: Try out the new "--direction both" mode of MiMa
+      "--direction", "backwards"
     )
     val exitCode = TrapExit(com.typesafe.tools.mima.cli.Main.main(args), log)
     if (exitCode != 0)
