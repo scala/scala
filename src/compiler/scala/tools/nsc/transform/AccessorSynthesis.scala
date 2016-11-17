@@ -332,7 +332,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
 
         val isUnit    = isUnitGetter(lazyAccessor)
         val selectVar = if (isUnit) UNIT         else Select(thisRef, lazyVar)
-        val storeRes  = if (isUnit) rhsAtSlowDef else Assign(selectVar, rhsAtSlowDef)
+        val storeRes  = if (isUnit) rhsAtSlowDef else Assign(selectVar, fields.castHack(rhsAtSlowDef, lazyVar.info))
 
         def needsInit = mkTest(lazyAccessor)
         val doInit = Block(List(storeRes), mkSetFlag(lazyAccessor))

@@ -510,6 +510,16 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
   def nonStaticModuleToMethod(module: Symbol): Unit =
     if (!module.isStatic) module setFlag METHOD | STABLE
 
+  // scala/scala-dev#219, scala/scala-dev#268
+  // Cast to avoid spurious mismatch in paths containing trait vals that have
+  // not been rebound to accessors in the subclass we're in now.
+  // For example, for a lazy val mixed into a class, the lazy var's info
+  // will not refer to symbols created during our info transformer,
+  // so if its type depends on a val that is now implemented after the info transformer,
+  // we'll get a mismatch when assigning `rhs` to `lazyVarOf(getter)`.
+  // TODO: could we rebind more aggressively? consider overriding in type equality?
+  def castHack(tree: Tree, pt: Type) = gen.mkAsInstanceOf(tree, pt)
+
   class FieldsTransformer(unit: CompilationUnit) extends TypingTransformer(unit) with CheckedAccessorTreeSynthesis {
     protected def typedPos(pos: Position)(tree: Tree): Tree = localTyper.typedPos(pos)(tree)
 
@@ -596,15 +606,6 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
     // synth trees for accessors/fields and trait setters when they are mixed into a class
     def fieldsAndAccessors(clazz: Symbol): List[Tree] = {
-      // scala/scala-dev#219
-      // Cast to avoid spurious mismatch in paths containing trait vals that have
-      // not been rebound to accessors in the subclass we're in now.
-      // For example, for a lazy val mixed into a class, the lazy var's info
-      // will not refer to symbols created during our info transformer,
-      // so if its type depends on a val that is now implemented after the info transformer,
-      // we'll get a mismatch when assigning `rhs` to `lazyVarOf(getter)`.
-      // TODO: could we rebind more aggressively? consider overriding in type equality?
-      def cast(tree: Tree, pt: Type) = gen.mkAsInstanceOf(tree, pt)
 
       // Could be NoSymbol, which denotes an error, but it's refchecks' job to report it (this fallback is for robustness).
       // This is the result of overriding a val with a def, so that no field is found in the subclass.
@@ -615,14 +616,14 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         // accessor created by newMatchingModuleAccessor for a static module that does need an accessor
         // (because there's a matching member in a super class)
         if (getter.asTerm.referenced.isModule)
-          mkAccessor(getter)(cast(Select(This(clazz), getter.asTerm.referenced), getter.info.resultType))
+          mkAccessor(getter)(castHack(Select(This(clazz), getter.asTerm.referenced), getter.info.resultType))
         else {
           val fieldMemoization = fieldMemoizationIn(getter, clazz)
           // TODO: drop getter for constant? (when we no longer care about producing identical bytecode?)
           if (fieldMemoization.constantTyped) mkAccessor(getter)(gen.mkAttributedQualifier(fieldMemoization.tp))
           else fieldAccess(getter) match {
             case NoSymbol => EmptyTree
-            case fieldSel => mkAccessor(getter)(cast(Select(This(clazz), fieldSel), getter.info.resultType))
+            case fieldSel => mkAccessor(getter)(castHack(Select(This(clazz), fieldSel), getter.info.resultType))
           }
         }
 
@@ -636,7 +637,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         else fieldAccess(setter) match {
           case NoSymbol => EmptyTree
           case fieldSel => afterOwnPhase { // the assign only type checks after our phase (assignment to val)
-            mkAccessor(setter)(Assign(Select(This(clazz), fieldSel), cast(Ident(setter.firstParam), fieldSel.info)))
+            mkAccessor(setter)(Assign(Select(This(clazz), fieldSel), castHack(Ident(setter.firstParam), fieldSel.info)))
           }
         }
 
@@ -657,7 +658,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         val selectSuper = Select(Super(This(clazz), tpnme.EMPTY), getter.name)
 
         val lazyVar = lazyVarOf(getter)
-        val rhs = cast(Apply(selectSuper, Nil), lazyVar.info)
+        val rhs = castHack(Apply(selectSuper, Nil), lazyVar.info)
 
         synthAccessorInClass.expandLazyClassMember(lazyVar, getter, rhs)
       }
@@ -708,7 +709,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
           val transformedRhs = atOwner(statSym)(transform(rhs))
 
           if (rhs == EmptyTree) mkAccessor(statSym)(EmptyTree)
-          else if (currOwner.isTrait) mkAccessor(statSym)(transformedRhs)
+          else if (currOwner.isTrait) mkAccessor(statSym)(castHack(transformedRhs, statSym.info.resultType))
           else if (!currOwner.isClass) mkLazyLocalDef(vd.symbol, transformedRhs)
           else {
             // TODO: make `synthAccessorInClass` a field and update it in atOwner?
