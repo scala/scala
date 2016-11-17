@@ -282,6 +282,35 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       }
     }
 
+    final def lookupSymbolEntry(sym: Symbol): ScopeEntry = {
+      var e = lookupEntry(sym.name)
+      while (e ne null) {
+        if (e.sym == sym) return e
+        e = lookupNextEntry(e)
+      }
+      null
+    }
+
+    final def lookupCompanion(original: Symbol): Symbol = {
+      lookupSymbolEntry(original) match {
+        case null =>
+        case entry if entry.sym == original =>
+          var e = lookupEntry(original.name.companionName)
+          while (e != null) {
+            // 1) Must be owned by the same Scope, to ensure that in
+            //   `{ class C; { ...; object C } }`, the class is not seen as a comaniopn of the object.
+            // 2) Must be in exactly the same scope, so that `{ class C; def C }` are not companions
+            // TODO Exclude type aliases as companions of terms?
+            if ((e.owner eq entry.owner) && (original.isTerm || e.sym.hasModuleFlag)) {
+              return e.sym
+            }
+            e = lookupNextEntry(e)
+          }
+        case _ =>
+      }
+      NoSymbol
+    }
+
     /** lookup a symbol entry matching given name.
      *  @note from Martin: I believe this is a hotspot or will be one
      *  in future versions of the type system. I have reverted the previous
