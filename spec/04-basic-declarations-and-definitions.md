@@ -88,7 +88,7 @@ The class definition `case class X(), Y(n: Int) extends Z` expands to
 `case class X extends Z; case class Y(n: Int) extends Z`.
 - The object definition `case object Red, Green, Blue extends Color`~
 expands to
-```
+```scala
 case object Red extends Color
 case object Green extends Color
 case object Blue extends Color .

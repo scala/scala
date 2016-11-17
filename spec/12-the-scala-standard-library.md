@@ -777,7 +777,7 @@ The available high-priority implicits include definitions falling into the follo
   * An implicit wrapper that adds `ensuring` methods
     with the following overloaded variants to type `Any`.
 
-    ```
+    ```scala
     def ensuring(cond: Boolean): A = { assert(cond); x }
     def ensuring(cond: Boolean, msg: Any): A = { assert(cond, msg); x }
     def ensuring(cond: A => Boolean): A = { assert(cond(x)); x }
@@ -787,7 +787,7 @@ The available high-priority implicits include definitions falling into the follo
   * An implicit wrapper that adds a `->` method with the following implementation
     to type `Any`.
 
-    ```
+    ```scala
     def -> [B](y: B): (A, B) = (x, y)
     ```
 
@@ -801,7 +801,7 @@ The available high-priority implicits include definitions falling into the follo
   * An implicit wrapper that adds `+` and `formatted` method with the following
     implementations to type `Any`.
 
-    ```
+    ```scala
     def +(other: String) = String.valueOf(self) + other
     def formatted(fmtstr: String): String = fmtstr format self
     ```
@@ -835,7 +835,7 @@ The available high-priority implicits include definitions falling into the follo
   * An implicit definition that generates instances of type `T <:< T`, for
     any type `T`. Here, `<:<` is a class defined as follows.
 
-    ```
+    ```scala
     sealed abstract class <:<[-From, +To] extends (From => To)
     ```
 

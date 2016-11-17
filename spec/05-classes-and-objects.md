@@ -725,7 +725,7 @@ Here,
 
   - $t$ is a [template](#templates) of the form
 
-    ```
+    ```scala
     $sc$ with $mt_1$ with $\ldots$ with $mt_m$ { $\mathit{stats}$ } // $m \geq 0$
     ```
 
