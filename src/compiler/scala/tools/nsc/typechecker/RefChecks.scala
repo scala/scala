@@ -1412,6 +1412,12 @@ abstract class RefChecks extends Transform {
         transformTrees(annots flatMap (_.args))
       }
 
+      def checkIsElisible(sym: Symbol) = if (sym ne null) sym.elisionLevel.foreach { level =>
+        if (!sym.isMethod || sym.isAccessor || sym.isLazy || sym.isDeferred)
+          reporter.error(sym.pos, s"${sym.name}: Only methods can be marked @elidable.")
+      }
+      if (settings.isScala213) checkIsElisible(tree.symbol)
+
       tree match {
         case m: MemberDef =>
           val sym = m.symbol
@@ -1425,7 +1431,7 @@ abstract class RefChecks extends Transform {
           analyzer.ImplicitAmbiguousMsg.check(sym) foreach messageWarning("implicitAmbiguous")
 
         case tpt@TypeTree() =>
-          if(tpt.original != null) {
+          if (tpt.original != null) {
             tpt.original foreach {
               case dc@TypeTreeWithDeferredRefCheck() =>
                 applyRefchecksToAnnotations(dc.check()) // #2416
