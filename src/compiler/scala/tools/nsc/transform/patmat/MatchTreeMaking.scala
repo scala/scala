@@ -351,6 +351,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           }
 
           if ((expectedPrefix eq NoPrefix)
+            || expectedTp.typeSymbol.isJava
             || definedInStaticLocation(expectedTp)
             || testedPrefix =:= expectedPrefix) orig
           else gen.mkAttributedQualifierIfPossible(expectedPrefix) match {
