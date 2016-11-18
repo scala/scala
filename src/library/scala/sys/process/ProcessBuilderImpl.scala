@@ -53,12 +53,14 @@ private[process] trait ProcessBuilderImpl {
 
     override def run(io: ProcessIO): Process = {
       val success = new SyncVar[Boolean]
-      success put false
-      val t = Spawn({
-        runImpl(io)
-        success.put(true)
-      }, io.daemonizeThreads)
-
+      def go(): Unit = {
+        var ok = false
+        try {
+          runImpl(io)
+          ok = true
+        } finally success.put(ok)
+      }
+      val t = Spawn(go(), io.daemonizeThreads)
       new ThreadProcess(t, success)
     }
   }

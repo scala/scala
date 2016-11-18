@@ -86,17 +86,20 @@ private[process] trait ProcessImpl {
   private[process] abstract class CompoundProcess extends BasicProcess {
     def isAlive()   = processThread.isAlive()
     def destroy()   = destroyer()
-    def exitValue() = getExitValue._2() getOrElse scala.sys.error("No exit code: process destroyed.")
-    def start()     = getExitValue
+    def exitValue() = futureValue() getOrElse scala.sys.error("No exit code: process destroyed.")
+    def start()     = { futureThread ;() }
 
-    protected lazy val (processThread, getExitValue, destroyer) = {
+    protected lazy val (processThread, (futureThread, futureValue), destroyer) = {
       val code = new SyncVar[Option[Int]]()
-      code.put(None)
-      val thread = Spawn(code.put(runAndExitValue()))
+      val thread = Spawn {
+        var value: Option[Int] = None
+        try value = runAndExitValue()
+        finally code.put(value)
+      }
 
       (
         thread,
-        Future { thread.join(); code.get },
+        Future(code.get),          // thread.join()
         () => thread.interrupt()
       )
     }
@@ -215,13 +218,15 @@ private[process] trait ProcessImpl {
   }
 
   /** A thin wrapper around a java.lang.Process.  `ioThreads` are the Threads created to do I/O.
-  * The implementation of `exitValue` waits until these threads die before returning. */
+   *  The implementation of `exitValue` waits until these threads die before returning.
+   */
   private[process] class DummyProcess(action: => Int) extends Process {
-    private[this] val exitCode = Future(action)
-    override def isAlive() = exitCode._1.isAlive()
-    override def exitValue() = exitCode._2()
+    private[this] val (thread, value) = Future(action)
+    override def isAlive() = thread.isAlive()
+    override def exitValue() = value()
     override def destroy() { }
   }
+
   /** A thin wrapper around a java.lang.Process.  `outputThreads` are the Threads created to read from the
   * output and error streams of the process.  `inputThread` is the Thread created to write to the input stream of
   * the process.
@@ -245,11 +250,8 @@ private[process] trait ProcessImpl {
     }
   }
   private[process] final class ThreadProcess(thread: Thread, success: SyncVar[Boolean]) extends Process {
-    override def isAlive() = thread.isAlive()
-    override def exitValue() = {
-      thread.join()
-      if (success.get) 0 else 1
-    }
-    override def destroy() { thread.interrupt() }
+    override def isAlive()   = thread.isAlive()
+    override def exitValue() = if (success.get) 0 else 1   // thread.join()
+    override def destroy()   = thread.interrupt()
   }
 }
