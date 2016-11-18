@@ -253,7 +253,7 @@ override def companion: GenericCompanion[Vector] = Vector
     s.initFrom(this)
     s.dirty = dirty
     s.gotoPosWritable(focus, idx, focus ^ idx)  // if dirty commit changes; go to new pos and prepare for writing
-    s.display0(idx & 0x1f) = elem.asInstanceOf[AnyRef]
+    s.display0(idx & 31) = elem.asInstanceOf[AnyRef]
     s
   }
 
@@ -519,33 +519,33 @@ override def companion: GenericCompanion[Vector] = Vector
       zeroLeft(display0, cutIndex)
     } else
     if (cutIndex < (1 << 10)) {
-      zeroLeft(display0, cutIndex & 0x1f)
+      zeroLeft(display0, cutIndex & 31)
       display1 = copyRight(display1, (cutIndex >>>  5))
     } else
     if (cutIndex < (1 << 15)) {
-      zeroLeft(display0, cutIndex & 0x1f)
-      display1 = copyRight(display1, (cutIndex >>>  5) & 0x1f)
+      zeroLeft(display0, cutIndex & 31)
+      display1 = copyRight(display1, (cutIndex >>>  5) & 31)
       display2 = copyRight(display2, (cutIndex >>> 10))
     } else
     if (cutIndex < (1 << 20)) {
-      zeroLeft(display0, cutIndex & 0x1f)
-      display1 = copyRight(display1, (cutIndex >>>  5) & 0x1f)
-      display2 = copyRight(display2, (cutIndex >>> 10) & 0x1f)
+      zeroLeft(display0, cutIndex & 31)
+      display1 = copyRight(display1, (cutIndex >>>  5) & 31)
+      display2 = copyRight(display2, (cutIndex >>> 10) & 31)
       display3 = copyRight(display3, (cutIndex >>> 15))
     } else
     if (cutIndex < (1 << 25)) {
-      zeroLeft(display0, cutIndex & 0x1f)
-      display1 = copyRight(display1, (cutIndex >>>  5) & 0x1f)
-      display2 = copyRight(display2, (cutIndex >>> 10) & 0x1f)
-      display3 = copyRight(display3, (cutIndex >>> 15) & 0x1f)
+      zeroLeft(display0, cutIndex & 31)
+      display1 = copyRight(display1, (cutIndex >>>  5) & 31)
+      display2 = copyRight(display2, (cutIndex >>> 10) & 31)
+      display3 = copyRight(display3, (cutIndex >>> 15) & 31)
       display4 = copyRight(display4, (cutIndex >>> 20))
     } else
     if (cutIndex < (1 << 30)) {
-      zeroLeft(display0, cutIndex & 0x1f)
-      display1 = copyRight(display1, (cutIndex >>>  5) & 0x1f)
-      display2 = copyRight(display2, (cutIndex >>> 10) & 0x1f)
-      display3 = copyRight(display3, (cutIndex >>> 15) & 0x1f)
-      display4 = copyRight(display4, (cutIndex >>> 20) & 0x1f)
+      zeroLeft(display0, cutIndex & 31)
+      display1 = copyRight(display1, (cutIndex >>>  5) & 31)
+      display2 = copyRight(display2, (cutIndex >>> 10) & 31)
+      display3 = copyRight(display3, (cutIndex >>> 15) & 31)
+      display4 = copyRight(display4, (cutIndex >>> 20) & 31)
       display5 = copyRight(display5, (cutIndex >>> 25))
     } else {
       throw new IllegalArgumentException()
@@ -562,33 +562,33 @@ override def companion: GenericCompanion[Vector] = Vector
       zeroRight(display0, cutIndex)
     } else
     if (cutIndex <= (1 << 10)) {
-      zeroRight(display0, ((cutIndex-1) & 0x1f) + 1)
+      zeroRight(display0, ((cutIndex-1) & 31) + 1)
       display1 = copyLeft(display1, (cutIndex >>>  5))
     } else
     if (cutIndex <= (1 << 15)) {
-      zeroRight(display0, ((cutIndex-1) & 0x1f) + 1)
-      display1 = copyLeft(display1, (((cutIndex-1) >>>  5) & 0x1f) + 1)
+      zeroRight(display0, ((cutIndex-1) & 31) + 1)
+      display1 = copyLeft(display1, (((cutIndex-1) >>>  5) & 31) + 1)
       display2 = copyLeft(display2, (cutIndex >>> 10))
     } else
     if (cutIndex <= (1 << 20)) {
-      zeroRight(display0, ((cutIndex-1) & 0x1f) + 1)
-      display1 = copyLeft(display1, (((cutIndex-1) >>>  5) & 0x1f) + 1)
-      display2 = copyLeft(display2, (((cutIndex-1) >>> 10) & 0x1f) + 1)
+      zeroRight(display0, ((cutIndex-1) & 31) + 1)
+      display1 = copyLeft(display1, (((cutIndex-1) >>>  5) & 31) + 1)
+      display2 = copyLeft(display2, (((cutIndex-1) >>> 10) & 31) + 1)
       display3 = copyLeft(display3, (cutIndex >>> 15))
     } else
     if (cutIndex <= (1 << 25)) {
-      zeroRight(display0, ((cutIndex-1) & 0x1f) + 1)
-      display1 = copyLeft(display1, (((cutIndex-1) >>>  5) & 0x1f) + 1)
-      display2 = copyLeft(display2, (((cutIndex-1) >>> 10) & 0x1f) + 1)
-      display3 = copyLeft(display3, (((cutIndex-1) >>> 15) & 0x1f) + 1)
+      zeroRight(display0, ((cutIndex-1) & 31) + 1)
+      display1 = copyLeft(display1, (((cutIndex-1) >>>  5) & 31) + 1)
+      display2 = copyLeft(display2, (((cutIndex-1) >>> 10) & 31) + 1)
+      display3 = copyLeft(display3, (((cutIndex-1) >>> 15) & 31) + 1)
       display4 = copyLeft(display4, (cutIndex >>> 20))
     } else
     if (cutIndex <= (1 << 30)) {
-      zeroRight(display0, ((cutIndex-1) & 0x1f) + 1)
-      display1 = copyLeft(display1, (((cutIndex-1) >>>  5) & 0x1f) + 1)
-      display2 = copyLeft(display2, (((cutIndex-1) >>> 10) & 0x1f) + 1)
-      display3 = copyLeft(display3, (((cutIndex-1) >>> 15) & 0x1f) + 1)
-      display4 = copyLeft(display4, (((cutIndex-1) >>> 20) & 0x1f) + 1)
+      zeroRight(display0, ((cutIndex-1) & 31) + 1)
+      display1 = copyLeft(display1, (((cutIndex-1) >>>  5) & 31) + 1)
+      display2 = copyLeft(display2, (((cutIndex-1) >>> 10) & 31) + 1)
+      display3 = copyLeft(display3, (((cutIndex-1) >>> 15) & 31) + 1)
+      display4 = copyLeft(display4, (((cutIndex-1) >>> 20) & 31) + 1)
       display5 = copyLeft(display5, (cutIndex >>> 25))
     } else {
       throw new IllegalArgumentException()
