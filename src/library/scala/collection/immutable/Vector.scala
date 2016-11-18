@@ -1020,29 +1020,29 @@ private[immutable] trait VectorPointer[T] {
     private[immutable] final def gotoPosWritable0(newIndex: Int, xor: Int): Unit = (depth - 1) match {
       case 5 =>
         display5 = copyOf(display5)
-        display4 = nullSlotAndCopy(display5, (newIndex >> 25) & 31).asInstanceOf[Array[AnyRef]]
-        display3 = nullSlotAndCopy(display4, (newIndex >> 20) & 31).asInstanceOf[Array[AnyRef]]
-        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31).asInstanceOf[Array[AnyRef]]
-        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+        display4 = nullSlotAndCopy(display5, (newIndex >> 25) & 31)
+        display3 = nullSlotAndCopy(display4, (newIndex >> 20) & 31)
+        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31)
+        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31)
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31)
       case 4 =>
         display4 = copyOf(display4)
-        display3 = nullSlotAndCopy(display4, (newIndex >> 20) & 31).asInstanceOf[Array[AnyRef]]
-        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31).asInstanceOf[Array[AnyRef]]
-        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+        display3 = nullSlotAndCopy(display4, (newIndex >> 20) & 31)
+        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31)
+        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31)
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31)
       case 3 =>
         display3 = copyOf(display3)
-        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31).asInstanceOf[Array[AnyRef]]
-        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31)
+        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31)
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31)
       case 2 =>
         display2 = copyOf(display2)
-        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31)
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31)
       case 1 =>
         display1 = copyOf(display1)
-        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31)
       case 0 =>
         display0 = copyOf(display0)
     }
@@ -1064,8 +1064,8 @@ private[immutable] trait VectorPointer[T] {
         display2 = copyOf(display2)
         display1((oldIndex >>  5) & 31) = display0
         display2((oldIndex >> 10) & 31) = display1
-        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31)
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31)
       } else
       if (xor < (1 << 20)) { // level = 3
         display1 = copyOf(display1)
@@ -1074,9 +1074,9 @@ private[immutable] trait VectorPointer[T] {
         display1((oldIndex >>  5) & 31) = display0
         display2((oldIndex >> 10) & 31) = display1
         display3((oldIndex >> 15) & 31) = display2
-        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31).asInstanceOf[Array[AnyRef]]
-        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31)
+        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31)
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31)
       } else
       if (xor < (1 << 25)) { // level = 4
         display1 = copyOf(display1)
@@ -1087,10 +1087,10 @@ private[immutable] trait VectorPointer[T] {
         display2((oldIndex >> 10) & 31) = display1
         display3((oldIndex >> 15) & 31) = display2
         display4((oldIndex >> 20) & 31) = display3
-        display3 = nullSlotAndCopy(display4, (newIndex >> 20) & 31).asInstanceOf[Array[AnyRef]]
-        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31).asInstanceOf[Array[AnyRef]]
-        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+        display3 = nullSlotAndCopy(display4, (newIndex >> 20) & 31)
+        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31)
+        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31)
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31)
       } else
       if (xor < (1 << 30)) { // level = 5
         display1 = copyOf(display1)
@@ -1103,11 +1103,11 @@ private[immutable] trait VectorPointer[T] {
         display3((oldIndex >> 15) & 31) = display2
         display4((oldIndex >> 20) & 31) = display3
         display5((oldIndex >> 25) & 31) = display4
-        display4 = nullSlotAndCopy(display5, (newIndex >> 25) & 31).asInstanceOf[Array[AnyRef]]
-        display3 = nullSlotAndCopy(display4, (newIndex >> 20) & 31).asInstanceOf[Array[AnyRef]]
-        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31).asInstanceOf[Array[AnyRef]]
-        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+        display4 = nullSlotAndCopy(display5, (newIndex >> 25) & 31)
+        display3 = nullSlotAndCopy(display4, (newIndex >> 20) & 31)
+        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31)
+        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31)
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31)
       } else { // level = 6
         throw new IllegalArgumentException()
       }
