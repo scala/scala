@@ -168,7 +168,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       } else if (scalaPrimitives.isArraySet(code)) {
         val List(a1, a2) = args
         genLoad(a1, INT)
-        genLoad(a2)
+        genLoad(a2, elementType)
         generatedType = UNIT
         bc.astore(elementType)
       } else {
@@ -630,7 +630,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           generatedType = methodBTypeFromSymbol(fun.symbol).returnType
 
         case Apply(fun, List(expr)) if currentRun.runDefinitions.isBox(fun.symbol) =>
-          val nativeKind = tpeTK(expr)
+          val nativeKind = typeToBType(fun.symbol.firstParam.info)
           genLoad(expr, nativeKind)
           val MethodNameAndType(mname, methodType) = srBoxesRuntimeBoxToMethods(nativeKind)
           bc.invokestatic(srBoxesRunTimeRef.internalName, mname, methodType.descriptor, itf = false, app.pos)
