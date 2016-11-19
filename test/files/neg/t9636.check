@@ -1,0 +1,6 @@
+t9636.scala:11: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
+    if (signature.sameElements(Array(0x1F, 0x8B))) {
+                  ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

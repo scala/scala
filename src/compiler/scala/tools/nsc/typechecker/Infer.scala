@@ -495,21 +495,22 @@ trait Infer extends Checkable {
     }
 
     /** Return inferred type arguments, given type parameters, formal parameters,
-    *  argument types, result type and expected result type.
-    *  If this is not possible, throw a `NoInstance` exception.
-    *  Undetermined type arguments are represented by `definitions.NothingTpe`.
-    *  No check that inferred parameters conform to their bounds is made here.
-    *
-    *  @param   tparams         the type parameters of the method
-    *  @param   formals         the value parameter types of the method
-    *  @param   restpe          the result type of the method
-    *  @param   argtpes         the argument types of the application
-    *  @param   pt              the expected return type of the application
-    *  @return  @see adjustTypeArgs
-    *
-    *  @throws                  NoInstance
-    */
-    def methTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
+     *  argument types, result type and expected result type.
+     *  If this is not possible, throw a `NoInstance` exception.
+     *  Undetermined type arguments are represented by `definitions.NothingTpe`.
+     *  No check that inferred parameters conform to their bounds is made here.
+     *
+     *  @param   fn              the function for reporting, may be empty
+     *  @param   tparams         the type parameters of the method
+     *  @param   formals         the value parameter types of the method
+     *  @param   restpe          the result type of the method
+     *  @param   argtpes         the argument types of the application
+     *  @param   pt              the expected return type of the application
+     *  @return  @see adjustTypeArgs
+     *
+     *  @throws                  NoInstance
+     */
+    def methTypeArgs(fn: Tree, tparams: List[Symbol], formals: List[Type], restpe: Type,
                      argtpes: List[Type], pt: Type): AdjustedTypeArgs.Result = {
       val tvars = tparams map freshVar
       if (!sameLength(formals, argtpes))
@@ -559,21 +560,12 @@ trait Infer extends Checkable {
         val hasAny = pt :: restpe :: formals ::: argtpes ::: loBounds exists (_.dealiasWidenChain exists containsAny)
         !hasAny
       }
-      def argumentPosition(idx: Int): Position = context.tree match {
-        case x: ValOrDefDef => x.rhs match {
-          case Apply(fn, args) if idx < args.size => args(idx).pos
-          case _                                  => context.tree.pos
-        }
-        case _ => context.tree.pos
-      }
-      if (settings.warnInferAny && context.reportErrors && canWarnAboutAny) {
-        foreachWithIndex(targs) ((targ, idx) =>
-          targ.typeSymbol match {
-            case sym @ (AnyClass | AnyValClass) =>
-              reporter.warning(argumentPosition(idx), s"a type was inferred to be `${sym.name}`; this may indicate a programming error.")
-            case _ =>
-          }
-        )
+      if (settings.warnInferAny && context.reportErrors && !fn.isEmpty && canWarnAboutAny) {
+        targs.foreach(_.typeSymbol match {
+          case sym @ (AnyClass | AnyValClass) =>
+            reporter.warning(fn.pos, s"a type was inferred to be `${sym.name}`; this may indicate a programming error.")
+          case _ =>
+        })
       }
       adjustTypeArgs(tparams, tvars, targs, restpe)
     }
@@ -735,7 +727,7 @@ trait Infer extends Checkable {
       )
       def tryInstantiating(args: List[Type]) = falseIfNoInstance {
         val restpe = mt resultType args
-        val AdjustedTypeArgs.Undets(okparams, okargs, leftUndet) = methTypeArgs(undetparams, formals, restpe, args, pt)
+        val AdjustedTypeArgs.Undets(okparams, okargs, leftUndet) = methTypeArgs(EmptyTree, undetparams, formals, restpe, args, pt)
         val restpeInst = restpe.instantiateTypeParams(okparams, okargs)
         // #2665: must use weak conformance, not regular one (follow the monomorphic case above)
         exprTypeArgs(leftUndet, restpeInst, pt, useWeaklyCompatible = true) match {
@@ -989,7 +981,7 @@ trait Infer extends Checkable {
           val restpe  = fn.tpe.resultType(argtpes)
 
           val AdjustedTypeArgs.AllArgsAndUndets(okparams, okargs, allargs, leftUndet) =
-            methTypeArgs(undetparams, formals, restpe, argtpes, pt)
+            methTypeArgs(fn, undetparams, formals, restpe, argtpes, pt)
 
           if (checkBounds(fn, NoPrefix, NoSymbol, undetparams, allargs, "inferred ")) {
             val treeSubst = new TreeTypeSubstituter(okparams, okargs)
