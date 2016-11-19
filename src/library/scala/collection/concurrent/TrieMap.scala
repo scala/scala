@@ -261,7 +261,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
           clean(parent, ct, lev - 5)
           RESTART // used to be throw RestartException
         } else {
-          if (tn.hc == hc && tn.k == k) tn.v.asInstanceOf[AnyRef]
+          if (tn.hc == hc && equal(tn.k, k, ct)) tn.v.asInstanceOf[AnyRef]
           else null
         }
         cleanReadOnly(tn)
