@@ -198,9 +198,20 @@ sealed abstract class Try[+T] extends Product with Serializable {
    */
   def fold[U](fa: Throwable => U, fb: T => U): U
 
+  /** Returns a singleton list containing the $try's value
+    * if it is nonempty, or the empty list if the $try is empty.
+    */
+  def toList: List[T] =
+    if (isFailure) List() else List(this.get)
+
 }
 
 object Try {
+
+  /** An implicit conversion that converts a `Try` to an iterable value
+    */
+  implicit def try2Iterable[T](xo: Try[T]): Iterable[T] = xo.toList
+
   /** Constructs a `Try` using the by-name parameter.  This
    * method will ensure any non-fatal exception is caught and a
    * `Failure` object is returned.
