@@ -1189,5 +1189,4 @@ abstract class Erasure extends AddInterfaces
   }
 
   private class TypeRefAttachment(val tpe: TypeRef)
-  class TypeParamVarargsAttachment(val typeParamRef: Type)
 }

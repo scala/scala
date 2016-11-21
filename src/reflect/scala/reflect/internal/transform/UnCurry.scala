@@ -4,12 +4,19 @@ package internal
 package transform
 
 import Flags._
+import scala.collection.mutable
 
 trait UnCurry {
 
   val global: SymbolTable
   import global._
   import definitions._
+
+  /**
+   * The synthetic Java vararg method symbol corresponding to a Scala vararg method
+   * annotated with @varargs.
+   */
+  case class VarargsSymbolAttachment(varargMethod: Symbol)
 
   /** Note: changing tp.normalize to tp.dealias in this method leads to a single
    *  test failure: run/t5688.scala, where instead of the expected output
@@ -67,14 +74,85 @@ trait UnCurry {
       tp match {
         case ClassInfoType(parents, decls, clazz) =>
           val parents1 = parents mapConserve uncurry
-          if (parents1 eq parents) tp
-          else ClassInfoType(parents1, decls, clazz) // @MAT normalize in decls??
+          val varargOverloads = mutable.ListBuffer.empty[Symbol]
+
+          // Not using `hasAnnotation` here because of dreaded cyclic reference errors:
+          // it may happen that VarargsClass has not been initialized yet and we get here
+          // while processing one of its superclasses (such as java.lang.Object). Since we
+          // don't need the more precise `matches` semantics, we only check the symbol, which
+          // is anyway faster and safer
+          for (decl <- decls if decl.annotations.exists(_.symbol == VarargsClass)) {
+            if (mexists(decl.paramss)(sym => definitions.isRepeatedParamType(sym.tpe))) {
+              val forwarderSym = varargForwarderSym(clazz, decl, exitingPhase(phase)(decl.info))
+              varargOverloads += forwarderSym
+            }
+          }
+          if ((parents1 eq parents) && varargOverloads.isEmpty) tp
+          else {
+            val newDecls = decls.cloneScope
+            varargOverloads.foreach(newDecls.enter)
+            ClassInfoType(parents1, newDecls, clazz)
+          } // @MAT normalize in decls??
         case PolyType(_, _) =>
           mapOver(tp)
         case _ =>
           tp
       }
     }
+  }
+
+  private def varargForwarderSym(currentClass: Symbol, origSym: Symbol, newInfo: Type): Symbol = {
+    val forwSym = currentClass.newMethod(origSym.name.toTermName, origSym.pos, VARARGS | SYNTHETIC | origSym.flags & ~DEFERRED)
+
+    // we are using `origSym.info`, which contains the type *before* the transformation
+    // so we still see repeated parameter types (uncurry replaces them with Seq)
+    val isRepeated = origSym.info.paramss.flatten.map(sym => definitions.isRepeatedParamType(sym.tpe))
+    val oldPs = newInfo.paramss.head
+
+    val forwTpe = {
+      val (oldTps, tps) = newInfo match {
+        case PolyType(oldTps, _) =>
+          val newTps = oldTps.map(_.cloneSymbol(forwSym))
+          (oldTps, newTps)
+
+        case _ => (Nil, Nil)
+      }
+
+      def toArrayType(tp: Type, newParam: Symbol): Type = {
+        val arg = elementType(SeqClass, tp)
+        val elem = if (arg.typeSymbol.isTypeParameterOrSkolem && !(arg <:< AnyRefTpe)) {
+          // To prevent generation of an `Object` parameter from `Array[T]` parameter later
+          // as this would crash the Java compiler which expects an `Object[]` array for varargs
+          //   e.g.        def foo[T](a: Int, b: T*)
+          //   becomes     def foo[T](a: Int, b: Array[Object])
+          //   instead of  def foo[T](a: Int, b: Array[T]) ===> def foo[T](a: Int, b: Object)
+          //
+          // In order for the forwarder method to type check we need to insert a cast:
+          //   def foo'[T'](a: Int, b: Array[Object]) = foo[T'](a, wrapRefArray(b).asInstanceOf[Seq[T']])
+          // The target element type for that cast (T') is stored in the  TypeParamVarargsAttachment
+          val originalArg = arg.substSym(oldTps, tps)
+          // Store the type parameter that was replaced by Object to emit the correct generic signature
+          newParam.updateAttachment(new TypeParamVarargsAttachment(originalArg))
+          ObjectTpe
+        } else
+          arg
+        arrayType(elem)
+      }
+
+      val ps = map2(oldPs, isRepeated)((oldParam, isRep) => {
+        val newParam = oldParam.cloneSymbol(forwSym)
+        val tp = if (isRep) toArrayType(oldParam.tpe, newParam) else oldParam.tpe
+        newParam.setInfo(tp)
+      })
+
+      val resTp = newInfo.finalResultType.substSym(oldPs, ps)
+      val mt = MethodType(ps, resTp)
+      val r = if (tps.isEmpty) mt else PolyType(tps, mt)
+      r.substSym(oldTps, tps)
+    }
+
+    origSym.updateAttachment(VarargsSymbolAttachment(forwSym))
+    forwSym.setInfo(forwTpe)
   }
 
   /** - return symbol's transformed type,
