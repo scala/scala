@@ -293,7 +293,6 @@ override def companion: GenericCompanion[Vector] = Vector
         //println("----- appendFront " + value + " at " + (startIndex - 1) + " reached block start")
         if (shift != 0) {
           // case A: we can shift right on the top level
-          debug()
           //println("shifting right by " + shiftBlocks + " at level " + (depth-1) + " (had "+freeSpace+" free space)")
 
           if (depth > 1) {
@@ -303,7 +302,6 @@ override def companion: GenericCompanion[Vector] = Vector
             s.initFrom(this)
             s.dirty = dirty
             s.shiftTopLevel(0, shiftBlocks) // shift right by n blocks
-            s.debug()
             s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // maybe create pos; prepare for writing
             s.display0(lo) = value.asInstanceOf[AnyRef]
             //assert(depth == s.depth)
@@ -321,7 +319,6 @@ override def companion: GenericCompanion[Vector] = Vector
             s.shiftTopLevel(0, shiftBlocks) // shift right by n elements
             s.gotoPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // prepare for writing
             s.display0(shift-1) = value.asInstanceOf[AnyRef]
-            s.debug()
             s
           }
         } else if (blockIndex < 0) {
@@ -336,10 +333,8 @@ override def companion: GenericCompanion[Vector] = Vector
           val s = new Vector(startIndex - 1 + move, endIndex + move, newBlockIndex)
           s.initFrom(this)
           s.dirty = dirty
-          s.debug()
           s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // could optimize: we know it will create a whole branch
           s.display0(lo) = value.asInstanceOf[AnyRef]
-          s.debug()
           //assert(s.depth == depth+1)
           s
         } else {
@@ -389,7 +384,6 @@ override def companion: GenericCompanion[Vector] = Vector
         //println("----- appendBack " + value + " at " + endIndex + " reached block end")
 
         if (shift != 0) {
-          debug()
           //println("shifting left by " + shiftBlocks + " at level " + (depth-1) + " (had "+startIndex+" free space)")
           if (depth > 1) {
             val newBlockIndex = blockIndex - shift
@@ -398,10 +392,8 @@ override def companion: GenericCompanion[Vector] = Vector
             s.initFrom(this)
             s.dirty = dirty
             s.shiftTopLevel(shiftBlocks, 0) // shift left by n blocks
-            s.debug()
             s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
             s.display0(lo) = value.asInstanceOf[AnyRef]
-            s.debug()
             //assert(depth == s.depth)
             s
           } else {
@@ -417,7 +409,6 @@ override def companion: GenericCompanion[Vector] = Vector
             s.shiftTopLevel(shiftBlocks, 0) // shift right by n elements
             s.gotoPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
             s.display0(32 - shift) = value.asInstanceOf[AnyRef]
-            s.debug()
             s
           }
         } else {
@@ -430,10 +421,6 @@ override def companion: GenericCompanion[Vector] = Vector
           s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
           s.display0(lo) = value.asInstanceOf[AnyRef]
           //assert(s.depth == depth+1) might or might not create new level!
-          if (s.depth == depth+1) {
-            //println("creating new level " + s.depth + " (had "+0+" free space)")
-            s.debug()
-          }
           s
         }
       }
@@ -1205,30 +1192,5 @@ private[immutable] trait VectorPointer[T] {
       stabilize(oldIndex)
       gotoFreshPosWritable0(oldIndex, newIndex, xor)
     }
-
-
-
-
-    // DEBUG STUFF
-
-    private[immutable] def debug(): Unit = {
-      return
-/*
-      //println("DISPLAY 5: " + display5 + " ---> " + (if (display5 ne null) display5.map(x=> if (x eq null) "." else x + "->" +x.asInstanceOf[Array[AnyRef]].mkString("")).mkString(" ") else "null"))
-      //println("DISPLAY 4: " + display4 + " ---> " + (if (display4 ne null) display4.map(x=> if (x eq null) "." else x + "->" +x.asInstanceOf[Array[AnyRef]].mkString("")).mkString(" ") else "null"))
-      //println("DISPLAY 3: " + display3 + " ---> " + (if (display3 ne null) display3.map(x=> if (x eq null) "." else x + "->" +x.asInstanceOf[Array[AnyRef]].mkString("")).mkString(" ") else "null"))
-      //println("DISPLAY 2: " + display2 + " ---> " + (if (display2 ne null) display2.map(x=> if (x eq null) "." else x + "->" +x.asInstanceOf[Array[AnyRef]].mkString("")).mkString(" ") else "null"))
-      //println("DISPLAY 1: " + display1 + " ---> " + (if (display1 ne null) display1.map(x=> if (x eq null) "." else x + "->" +x.asInstanceOf[Array[AnyRef]].mkString("")).mkString(" ") else "null"))
-      //println("DISPLAY 0: " + display0 + " ---> " + (if (display0 ne null) display0.map(x=> if (x eq null) "." else x.toString).mkString(" ") else "null"))
-*/
-      //println("DISPLAY 5: " + (if (display5 ne null) display5.map(x=> if (x eq null) "." else x.asInstanceOf[Array[AnyRef]].deepMkString("[","","]")).mkString(" ") else "null"))
-      //println("DISPLAY 4: " + (if (display4 ne null) display4.map(x=> if (x eq null) "." else x.asInstanceOf[Array[AnyRef]].deepMkString("[","","]")).mkString(" ") else "null"))
-      //println("DISPLAY 3: " + (if (display3 ne null) display3.map(x=> if (x eq null) "." else x.asInstanceOf[Array[AnyRef]].deepMkString("[","","]")).mkString(" ") else "null"))
-      //println("DISPLAY 2: " + (if (display2 ne null) display2.map(x=> if (x eq null) "." else x.asInstanceOf[Array[AnyRef]].deepMkString("[","","]")).mkString(" ") else "null"))
-      //println("DISPLAY 1: " + (if (display1 ne null) display1.map(x=> if (x eq null) "." else x.asInstanceOf[Array[AnyRef]].deepMkString("[","","]")).mkString(" ") else "null"))
-      //println("DISPLAY 0: " + (if (display0 ne null) display0.map(x=> if (x eq null) "." else x.toString).mkString(" ") else "null"))
-    }
-
-
 }
 
