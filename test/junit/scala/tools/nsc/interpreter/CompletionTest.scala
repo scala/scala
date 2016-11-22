@@ -174,6 +174,14 @@ class CompletionTest {
     checkExact(completer, "case class D(a: Int, b: Int) { this.a")("a", "asInstanceOf")
   }
 
+  @Test
+  def performanceOfLenientMatch(): Unit = {
+    val intp = newIMain()
+    val completer = new PresentationCompilerCompleter(intp)
+    val ident: String = "thisIsAReallyLongMethodNameWithManyManyManyManyChunks"
+    checkExact(completer, s"($ident: Int) => tia")(ident)
+  }
+
   def checkExact(completer: PresentationCompilerCompleter, before: String, after: String = "")(expected: String*): Unit = {
     assertEquals(expected.toSet, completer.complete(before, after).candidates.toSet)
   }
