@@ -360,14 +360,14 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   protected def elemEquals(key1: A, key2: A): Boolean = (key1 == key2)
 
-  // Note:
-  // we take the most significant bits of the hashcode, not the lower ones
-  // this is of crucial importance when populating the table in parallel
-  protected final def index(hcode: Int) = {
+  /**
+    * Note: we take the most significant bits of the hashcode, not the lower ones
+    * this is of crucial importance when populating the table in parallel
+    */
+  protected final def index(hcode: Int): Int = {
     val ones = table.length - 1
-    val improved = improve(hcode, seedvalue)
-    val shifted = (improved >> (32 - java.lang.Integer.bitCount(ones))) & ones
-    shifted
+    val exponent = Integer.numberOfLeadingZeros(ones)
+    (improve(hcode, seedvalue) >>> exponent) & ones
   }
 
   protected def initWithContents(c: HashTable.Contents[A, Entry]) = {
