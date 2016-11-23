@@ -246,12 +246,12 @@ scala> case class Bingo()
 defined class Bingo
 
 scala> List(BippyBups(), PuppyPups(), Bingo()) // show
-class $read extends _root_.java.io.Serializable {
+sealed class $read extends _root_.java.io.Serializable {
   def <init>() = {
     super.<init>;
     ()
   };
-  class $iw extends _root_.java.io.Serializable {
+  sealed class $iw extends _root_.java.io.Serializable {
     def <init>() = {
       super.<init>;
       ()
@@ -262,7 +262,7 @@ class $read extends _root_.java.io.Serializable {
     import $line45.$read.INSTANCE.$iw.$iw.PuppyPups;
     import $line46.$read.INSTANCE.$iw.$iw.Bingo;
     import $line46.$read.INSTANCE.$iw.$iw.Bingo;
-    class $iw extends _root_.java.io.Serializable {
+    sealed class $iw extends _root_.java.io.Serializable {
       def <init>() = {
         super.<init>;
         ()
