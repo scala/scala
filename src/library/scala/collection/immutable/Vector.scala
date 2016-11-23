@@ -277,9 +277,9 @@ extends AbstractSeq[A]
         s
       } else {
 
-        val freeSpace   = (1 << (5 * depth)) - endIndex               // free space at the right given the current tree-structure depth
-        val shift       = freeSpace & ~((1 << (5 * (depth - 1))) - 1) // number of elements by which we'll shift right (only move at top level)
-        val shiftBlocks = freeSpace >>> (5 * (depth - 1))             // number of top-level blocks
+        val freeSpace = (1 << (5 * depth)) - endIndex           // free space at the right given the current tree-structure depth
+        val shift = freeSpace & ~((1 << (5 * (depth - 1))) - 1) // number of elements by which we'll shift right (only move at top level)
+        val shiftBlocks = freeSpace >>> (5 * (depth - 1))       // number of top-level blocks
 
         if (shift != 0) {
           // case A: we can shift right on the top level
@@ -354,13 +354,14 @@ extends AbstractSeq[A]
         s.display0(lo) = value.asInstanceOf[AnyRef]
         s
       } else {
-        val shift       = startIndex & ~((1 << (5 * (depth - 1))) - 1)
+        val shift = startIndex & ~((1 << (5 * (depth - 1))) - 1)
         val shiftBlocks = startIndex >>> (5 * (depth - 1))
 
         if (shift != 0) {
           if (depth > 1) {
             val newBlockIndex = blockIndex - shift
             val newFocus = focus - shift
+
             val s = new Vector(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
             s.initFrom(this)
             s.dirty = dirty
@@ -371,6 +372,7 @@ extends AbstractSeq[A]
           } else {
             val newBlockIndex = blockIndex - 32
             val newFocus = focus
+
             val s = new Vector(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
             s.initFrom(this)
             s.dirty = dirty
@@ -405,18 +407,12 @@ extends AbstractSeq[A]
   // low-level implementation (needs cleanup, maybe move to util class)
 
   private def shiftTopLevel(oldLeft: Int, newLeft: Int) = (depth - 1) match {
-    case 0 =>
-      display0 = copyRange(display0, oldLeft, newLeft)
-    case 1 =>
-      display1 = copyRange(display1, oldLeft, newLeft)
-    case 2 =>
-      display2 = copyRange(display2, oldLeft, newLeft)
-    case 3 =>
-      display3 = copyRange(display3, oldLeft, newLeft)
-    case 4 =>
-      display4 = copyRange(display4, oldLeft, newLeft)
-    case 5 =>
-      display5 = copyRange(display5, oldLeft, newLeft)
+    case 0 => display0 = copyRange(display0, oldLeft, newLeft)
+    case 1 => display1 = copyRange(display1, oldLeft, newLeft)
+    case 2 => display2 = copyRange(display2, oldLeft, newLeft)
+    case 3 => display3 = copyRange(display3, oldLeft, newLeft)
+    case 4 => display4 = copyRange(display4, oldLeft, newLeft)
+    case 5 => display5 = copyRange(display5, oldLeft, newLeft)
   }
 
   private def zeroLeft(array: Array[AnyRef], index: Int): Unit = {
@@ -588,9 +584,9 @@ extends AbstractSeq[A]
 }
 
 class VectorIterator[+A](_startIndex: Int, endIndex: Int)
-  extends AbstractIterator[A]
-    with Iterator[A]
-    with VectorPointer[A @uncheckedVariance] {
+extends AbstractIterator[A]
+   with Iterator[A]
+   with VectorPointer[A @uncheckedVariance] {
 
   private var blockIndex: Int = _startIndex & ~31
   private var lo: Int = _startIndex & 31
@@ -728,17 +724,38 @@ private[immutable] trait VectorPointer[T] {
     // requires structure is at pos oldIndex = xor ^ index
     private[immutable] final def getElem(index: Int, xor: Int): T = {
       if        (xor < (1 <<  5)) { // level = 0
-        display0(index & 31).asInstanceOf[T]
+        (display0
+          (index           & 31).asInstanceOf[T])
       } else if (xor < (1 << 10)) { // level = 1
-        display1((index >>>  5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[T]
+        (display1
+          ((index >>>  5)  & 31).asInstanceOf[Array[AnyRef]]
+          (index & 31).asInstanceOf[T])
       } else if (xor < (1 << 15)) { // level = 2
-        display2((index >>> 10) & 31).asInstanceOf[Array[AnyRef]]((index >>>  5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[T]
+        (display2
+          ((index >>> 10)  & 31).asInstanceOf[Array[AnyRef]]
+          ((index >>>  5)  & 31).asInstanceOf[Array[AnyRef]]
+          (index           & 31).asInstanceOf[T])
       } else if (xor < (1 << 20)) { // level = 3
-        display3((index >>> 15) & 31).asInstanceOf[Array[AnyRef]]((index >>> 10) & 31).asInstanceOf[Array[AnyRef]]((index >>>  5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[T]
+        (display3
+          ((index >>> 15)  & 31).asInstanceOf[Array[AnyRef]]
+          ((index >>> 10)  & 31).asInstanceOf[Array[AnyRef]]
+          ((index >>>  5)  & 31).asInstanceOf[Array[AnyRef]]
+           (index          & 31).asInstanceOf[T])
       } else if (xor < (1 << 25)) { // level = 4
-        display4((index >>> 20) & 31).asInstanceOf[Array[AnyRef]]((index >>> 15) & 31).asInstanceOf[Array[AnyRef]]((index >>> 10) & 31).asInstanceOf[Array[AnyRef]]((index >>>  5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[T]
+        (display4
+          ((index >>> 20)  & 31).asInstanceOf[Array[AnyRef]]
+          ((index >>> 15)  & 31).asInstanceOf[Array[AnyRef]]
+          ((index >>> 10)  & 31).asInstanceOf[Array[AnyRef]]
+          ((index >>>  5)  & 31).asInstanceOf[Array[AnyRef]]
+           (index          & 31).asInstanceOf[T])
       } else if (xor < (1 << 30)) { // level = 5
-        display5((index >>> 25) & 31).asInstanceOf[Array[AnyRef]]((index >>> 20) & 31).asInstanceOf[Array[AnyRef]]((index >>> 15) & 31).asInstanceOf[Array[AnyRef]]((index >>> 10) & 31).asInstanceOf[Array[AnyRef]]((index >>> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[T]
+        (display5
+          ((index >>> 25)  & 31).asInstanceOf[Array[AnyRef]]
+          ((index >>> 20)  & 31).asInstanceOf[Array[AnyRef]]
+          ((index >>> 15)  & 31).asInstanceOf[Array[AnyRef]]
+          ((index >>> 10)  & 31).asInstanceOf[Array[AnyRef]]
+          ((index >>>  5)  & 31).asInstanceOf[Array[AnyRef]]
+           (index          & 31).asInstanceOf[T])
       } else {                      // level = 6
         throw new IllegalArgumentException()
       }
@@ -809,55 +826,45 @@ private[immutable] trait VectorPointer[T] {
     // xor: oldIndex ^ index
     private[immutable] final def gotoNextBlockStartWritable(index: Int, xor: Int): Unit = { // goto block start pos
       if        (xor < (1 << 10)) { // level = 1
-        if (depth == 1) {
-          display1 = new Array(32); display1(0) = display0; depth += 1
-        }
+        if (depth == 1) { display1 = new Array(32); display1(0) = display0; depth += 1 }
         display0 = new Array(32)
-        display1((index >>>  5) & 31) = display0
+        display1((index >>>   5) & 31) = display0
       } else if (xor < (1 << 15)) { // level = 2
-        if (depth == 2) {
-          display2 = new Array(32); display2(0) = display1; depth += 1
-        }
+        if (depth == 2) { display2 = new Array(32); display2(0) = display1; depth += 1 }
         display0 = new Array(32)
         display1 = new Array(32)
-        display1((index >>>  5) & 31) = display0
-        display2((index >>> 10) & 31) = display1
+        display1((index >>>   5) & 31) = display0
+        display2((index >>>  10) & 31) = display1
       } else if (xor < (1 << 20)) { // level = 3
-        if (depth == 3) {
-          display3 = new Array(32); display3(0) = display2; depth += 1
-        }
+        if (depth == 3) { display3 = new Array(32); display3(0) = display2; depth += 1 }
         display0 = new Array(32)
         display1 = new Array(32)
         display2 = new Array(32)
-        display1((index >>>  5) & 31) = display0
-        display2((index >>> 10) & 31) = display1
-        display3((index >>> 15) & 31) = display2
+        display1((index >>>   5) & 31) = display0
+        display2((index >>>  10) & 31) = display1
+        display3((index >>>  15) & 31) = display2
       } else if (xor < (1 << 25)) { // level = 4
-        if (depth == 4) {
-          display4 = new Array(32); display4(0) = display3; depth += 1
-        }
+        if (depth == 4) { display4 = new Array(32); display4(0) = display3; depth += 1 }
         display0 = new Array(32)
         display1 = new Array(32)
         display2 = new Array(32)
         display3 = new Array(32)
-        display1((index >>>  5) & 31) = display0
-        display2((index >>> 10) & 31) = display1
-        display3((index >>> 15) & 31) = display2
-        display4((index >>> 20) & 31) = display3
+        display1((index >>>   5) & 31) = display0
+        display2((index >>>  10) & 31) = display1
+        display3((index >>>  15) & 31) = display2
+        display4((index >>>  20) & 31) = display3
       } else if (xor < (1 << 30)) { // level = 5
-        if (depth == 5) {
-          display5 = new Array(32); display5(0) = display4; depth += 1
-        }
+        if (depth == 5) { display5 = new Array(32); display5(0) = display4; depth += 1 }
         display0 = new Array(32)
         display1 = new Array(32)
         display2 = new Array(32)
         display3 = new Array(32)
         display4 = new Array(32)
-        display1((index >>>  5) & 31) = display0
-        display2((index >>> 10) & 31) = display1
-        display3((index >>> 15) & 31) = display2
-        display4((index >>> 20) & 31) = display3
-        display5((index >>> 25) & 31) = display4
+        display1((index >>>   5) & 31) = display0
+        display2((index >>>  10) & 31) = display1
+        display3((index >>>  15) & 31) = display2
+        display4((index >>>  20) & 31) = display3
+        display5((index >>>  25) & 31) = display4
       } else {                      // level = 6
         throw new IllegalArgumentException()
       }
