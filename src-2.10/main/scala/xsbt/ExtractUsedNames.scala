@@ -87,6 +87,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
      *     https://github.com/sbt/sbt/issues/1544
      */
     private val inspectedOriginalTrees = collection.mutable.Set.empty[Tree]
+    private val inspectedTypeTrees = collection.mutable.Set.empty[Tree]
 
     override def traverse(tree: Tree): Unit = tree match {
       case MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
@@ -106,9 +107,11 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       val nameAsString = name.decode.trim
       if (enclosingNonLocalClass == NoSymbol || enclosingNonLocalClass.isPackage) {
         namesUsedAtTopLevel += nameAsString
+        ()
       } else {
         val className = ExtractUsedNames.this.className(enclosingNonLocalClass)
         namesUsedInClasses(className) += nameAsString
+        ()
       }
     }
 
@@ -136,7 +139,9 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       // to types but that might be a bad thing because it might expand aliases eagerly which
       // not what we need
       case t: TypeTree if t.original != null =>
-        t.original.foreach(traverse)
+        if (inspectedTypeTrees.add(t.original)) {
+          t.original.foreach(traverse)
+        }
       case t if t.hasSymbol =>
         addSymbol(t.symbol)
         if (t.tpe != null)
