@@ -132,7 +132,11 @@ trait MethodSynthesis {
 
       // only one symbol can have `tree.pos`, the others must focus their position
       // normally the field gets the range position, but if there is none, give it to the getter
+      //
+      // SI-10009 the tree's modifiers can be temporarily out of sync with the new symbol's flags.
+      //          typedValDef corrects this later on.
       tree.symbol = fieldSym orElse (getterSym setPos tree.pos)
+
       val namer = namerOf(tree.symbol)
 
       // the valdef gets the accessor symbol for a lazy val (too much going on in its RHS)
