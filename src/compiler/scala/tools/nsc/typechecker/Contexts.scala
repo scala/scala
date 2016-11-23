@@ -60,7 +60,7 @@ trait Contexts { self: Analyzer =>
   private lazy val allImportInfos =
     mutable.Map[CompilationUnit, List[ImportInfo]]() withDefaultValue Nil
 
-  def warnUnusedImports(unit: CompilationUnit) = {
+  def warnUnusedImports(unit: CompilationUnit) = if (!unit.isJava) {
     for (imps <- allImportInfos.remove(unit)) {
       for (imp <- imps.reverse.distinct) {
         val used = allUsedSelectors(imp)
