@@ -56,7 +56,7 @@ trait LinearSeq[+A] extends Seq[A] with LinearSeqLike[A, LinearSeq] { self =>
     def next = { val r = current.head; current = current.tail; r }
   }
 
-  /** `length is defined in terms of `iterator` */
+  /** `length` is defined in terms of `iterator` */
   def length: Int = iterator.length
 
   /** `apply` is defined in terms of `drop`, which is in turn defined in
