@@ -72,7 +72,7 @@ trait UnCurry {
     def apply(tp0: Type): Type = {
       val tp = expandAlias(tp0)
       tp match {
-        case ClassInfoType(parents, decls, clazz) =>
+        case ClassInfoType(parents, decls, clazz) if !clazz.isJavaDefined =>
           val parents1 = parents mapConserve uncurry
           val varargOverloads = mutable.ListBuffer.empty[Symbol]
 
@@ -83,8 +83,7 @@ trait UnCurry {
           // is anyway faster and safer
           for (decl <- decls if decl.annotations.exists(_.symbol == VarargsClass)) {
             if (mexists(decl.paramss)(sym => definitions.isRepeatedParamType(sym.tpe))) {
-              val forwarderSym = varargForwarderSym(clazz, decl, exitingPhase(phase)(decl.info))
-              varargOverloads += forwarderSym
+              varargOverloads += varargForwarderSym(clazz, decl, exitingPhase(phase)(decl.info))
             }
           }
           if ((parents1 eq parents) && varargOverloads.isEmpty) tp
@@ -93,8 +92,10 @@ trait UnCurry {
             varargOverloads.foreach(newDecls.enter)
             ClassInfoType(parents1, newDecls, clazz)
           } // @MAT normalize in decls??
+
         case PolyType(_, _) =>
           mapOver(tp)
+
         case _ =>
           tp
       }
