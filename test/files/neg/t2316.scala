@@ -1,14 +1,12 @@
-object test {
-  case class T1(val source: String)
-
+object Test extends App {
+  case class T1(source: String)
 
   object T1 {
     implicit def T1FromT2(implicit t2: T2): T1 = T1("implicit def T1FromT2")
     implicit def T1FromT3(implicit t3: T3): T1 = T1("implicit def T1FromT3")
   }
 
-  trait T2 {
-  }
+  trait T2
 
   object T2 {
     implicit val t2: T2 = new T2 {}
@@ -18,15 +16,15 @@ object test {
 
   def requireT1(implicit t1: T1) = t1
 
-  {
-      val t1 = requireT1
-      assert(t1.source == "implicit def T1FromT2")
+  locally {
+    val t1 = requireT1
+    assert(t1.source == "implicit def T1FromT2")
   }
 
-  {
-      implicit def t3: T3 = new T3 {}
-      val t1 = requireT1
-      assert(t1.source == "implicit def T1FromT2")
+  locally {
+    implicit def t3: T3 = new T3 {}
+    val t1 = requireT1
+    assert(t1.source == "implicit def T1FromT2")
 
       // Expected a compile error here, but because T1.T1FromT2(T2.t2) was cached as a non-local implicit
       // expression for type T1, this is not checked!

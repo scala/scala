@@ -3,9 +3,9 @@ reference to i2s is ambiguous;
 it is imported twice in the same scope by
 import C._
 and import B._
-	1.isEmpty
-        ^
+  1.isEmpty
+  ^
 implicit-shadow.scala:4: error: value isEmpty is not a member of Int
-	1.isEmpty
-          ^
+  1.isEmpty
+    ^
 one error found

@@ -91,21 +91,16 @@ trait ContextErrors {
   }
 
 
-  case class PosAndMsgTypeError(errPos: Position, errMsg: String)
-    extends AbsTypeError
+  case class PosAndMsgTypeError(errPos: Position, errMsg: String) extends AbsTypeError
 
   object ErrorUtils {
-    def issueNormalTypeError(tree: Tree, msg: String)(implicit context: Context) {
-      issueTypeError(NormalTypeError(tree, msg))
-    }
+    def issueNormalTypeError(tree: Tree, msg: String)(implicit ctx: Context): Unit  = issueTypeError(NormalTypeError(tree, msg))
 
-    def issueSymbolTypeError(sym: Symbol, msg: String)(implicit context: Context) {
-      issueTypeError(SymbolTypeError(sym, msg))
-    }
+    def issueSymbolTypeError(sym: Symbol, msg: String)(implicit ctx: Context): Unit = issueTypeError(SymbolTypeError(sym, msg))
 
-    def issueTypeError(err: AbsTypeError)(implicit context: Context) { context.issue(err) }
+    def issueTypeError(err: AbsTypeError)(implicit context: Context): Unit          = context.issue(err)
 
-    def typeErrorMsg(found: Type, req: Type) = "type mismatch" + foundReqMsg(found, req)
+    def typeErrorMsg(found: Type, req: Type) = s"type mismatch${ foundReqMsg(found, req) }"
   }
 
   def notAnyRefMessage(found: Type): String = {
@@ -243,7 +238,7 @@ trait ContextErrors {
 
       // typedIdent
       def AmbiguousIdentError(tree: Tree, name: Name, msg: String) =
-        NormalTypeError(tree, "reference to " + name + " is ambiguous;\n" + msg)
+        NormalTypeError(tree, s"reference to $name is ambiguous;\n$msg")
 
       def SymbolNotFoundError(tree: Tree, name: Name, owner: Symbol, startingIdentCx: Context) = {
         NormalTypeError(tree, "not found: "+decodeWithKind(name, owner))

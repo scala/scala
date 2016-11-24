@@ -5054,18 +5054,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
       }
 
-      /* A symbol qualifies if:
-       *  - it exists
-       *  - it is not stale (stale symbols are made to disappear here)
-       *  - if we are in a constructor pattern, method definitions do not qualify
-       *    unless they are stable.  Otherwise, 'case x :: xs' would find the :: method.
-       */
-      def qualifies(sym: Symbol) = (
-           sym.hasRawInfo
-        && reallyExists(sym)
-        && !(mode.typingConstructorPattern && sym.isMethod && !sym.isStable)
-      )
-
       /* Attribute an identifier consisting of a simple name or an outer reference.
        *
        * @param tree      The tree representing the identifier.
@@ -5085,7 +5073,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           setError(tree)
         }
-          // ignore current variable scope in patterns to enforce linearity
+        /* A symbol qualifies if:
+         *  - it exists
+         *  - it is not stale (stale symbols are made to disappear here)
+         *  - if we are in a constructor pattern, method definitions do not qualify
+         *    unless they are stable.  Otherwise, 'case x :: xs' would find the :: method.
+         */
+        def qualifies(sym: Symbol) = (
+             sym.hasRawInfo
+          && reallyExists(sym)
+          && !(mode.typingConstructorPattern && sym.isMethod && !sym.isStable)
+        )
+        // ignore current variable scope in patterns to enforce linearity
         val startContext = if (mode.typingPatternOrTypePat) context.outer else context
         val nameLookup   = tree.symbol match {
           case NoSymbol   => startContext.lookupSymbol(name, qualifies)
