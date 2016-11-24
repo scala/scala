@@ -103,57 +103,41 @@ trait UnCurry {
   }
 
   private def varargForwarderSym(currentClass: Symbol, origSym: Symbol, newInfo: Type): Symbol = {
-    val forwSym = currentClass.newMethod(origSym.name.toTermName, origSym.pos, VARARGS | SYNTHETIC | origSym.flags & ~DEFERRED)
+    val forwSym = origSym.cloneSymbol(currentClass, VARARGS | SYNTHETIC | origSym.flags & ~DEFERRED, origSym.name.toTermName).withoutAnnotations
 
     // we are using `origSym.info`, which contains the type *before* the transformation
     // so we still see repeated parameter types (uncurry replaces them with Seq)
     val isRepeated = origSym.info.paramss.flatten.map(sym => definitions.isRepeatedParamType(sym.tpe))
     val oldPs = newInfo.paramss.head
-
-    val forwTpe = {
-      val (oldTps, tps) = newInfo match {
-        case PolyType(oldTps, _) =>
-          val newTps = oldTps.map(_.cloneSymbol(forwSym))
-          (oldTps, newTps)
-
-        case _ => (Nil, Nil)
-      }
-
-      def toArrayType(tp: Type, newParam: Symbol): Type = {
-        val arg = elementType(SeqClass, tp)
-        val elem = if (arg.typeSymbol.isTypeParameterOrSkolem && !(arg <:< AnyRefTpe)) {
-          // To prevent generation of an `Object` parameter from `Array[T]` parameter later
-          // as this would crash the Java compiler which expects an `Object[]` array for varargs
-          //   e.g.        def foo[T](a: Int, b: T*)
-          //   becomes     def foo[T](a: Int, b: Array[Object])
-          //   instead of  def foo[T](a: Int, b: Array[T]) ===> def foo[T](a: Int, b: Object)
-          //
-          // In order for the forwarder method to type check we need to insert a cast:
-          //   def foo'[T'](a: Int, b: Array[Object]) = foo[T'](a, wrapRefArray(b).asInstanceOf[Seq[T']])
-          // The target element type for that cast (T') is stored in the  TypeParamVarargsAttachment
-          val originalArg = arg.substSym(oldTps, tps)
-          // Store the type parameter that was replaced by Object to emit the correct generic signature
-          newParam.updateAttachment(new TypeParamVarargsAttachment(originalArg))
-          ObjectTpe
-        } else
-          arg
-        arrayType(elem)
-      }
-
-      val ps = map2(oldPs, isRepeated)((oldParam, isRep) => {
-        val newParam = oldParam.cloneSymbol(forwSym)
-        val tp = if (isRep) toArrayType(oldParam.tpe, newParam) else oldParam.tpe
-        newParam.setInfo(tp)
-      })
-
-      val resTp = newInfo.finalResultType.substSym(oldPs, ps)
-      val mt = MethodType(ps, resTp)
-      val r = if (tps.isEmpty) mt else PolyType(tps, mt)
-      r.substSym(oldTps, tps)
+    def toArrayType(tp: Type, newParam: Symbol): Type = {
+      val arg = elementType(SeqClass, tp)
+      val elem = if (arg.typeSymbol.isTypeParameterOrSkolem && !(arg <:< AnyRefTpe)) {
+        // To prevent generation of an `Object` parameter from `Array[T]` parameter later
+        // as this would crash the Java compiler which expects an `Object[]` array for varargs
+        //   e.g.        def foo[T](a: Int, b: T*)
+        //   becomes     def foo[T](a: Int, b: Array[Object])
+        //   instead of  def foo[T](a: Int, b: Array[T]) ===> def foo[T](a: Int, b: Object)
+        //
+        // In order for the forwarder method to type check we need to insert a cast:
+        //   def foo'[T'](a: Int, b: Array[Object]) = foo[T'](a, wrapRefArray(b).asInstanceOf[Seq[T']])
+        // The target element type for that cast (T') is stored in the  TypeParamVarargsAttachment
+//        val originalArg = arg.substSym(oldTps, tps)
+        // Store the type parameter that was replaced by Object to emit the correct generic signature
+        newParam.updateAttachment(new TypeParamVarargsAttachment(arg))
+        ObjectTpe
+      } else
+        arg
+      arrayType(elem)
     }
 
+    foreach2(forwSym.paramss.flatten, isRepeated)((p, isRep) =>
+      if (isRep) {
+        p.setInfo(toArrayType(p.info, p))
+      }
+    )
+
     origSym.updateAttachment(VarargsSymbolAttachment(forwSym))
-    forwSym.setInfo(forwTpe)
+    forwSym
   }
 
   /** - return symbol's transformed type,
