@@ -78,4 +78,7 @@ trait StdAttachments {
   case object OuterArgCanBeElided extends PlainAttachment
 
   case object UseInvokeSpecial extends PlainAttachment
+
+  /** An attachment carrying information between uncurry and erasure */
+  case class TypeParamVarargsAttachment(val typeParamRef: Type)
 }

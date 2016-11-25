@@ -1278,5 +1278,4 @@ abstract class Erasure extends InfoTransform
   }
 
   private class TypeRefAttachment(val tpe: TypeRef)
-  class TypeParamVarargsAttachment(val typeParamRef: Type)
 }

@@ -47,6 +47,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.InlineCallsiteAttachment
     this.OuterArgCanBeElided
     this.UseInvokeSpecial
+    this.TypeParamVarargsAttachment
     this.noPrint
     this.typeDebug
     this.Range
@@ -458,6 +459,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ScalaValueClassesNoUnit
     definitions.ScalaValueClasses
 
+    uncurry.VarargsSymbolAttachment
     uncurry.DesugaredParameterType
     erasure.GenericArray
     erasure.scalaErasure
