@@ -4510,11 +4510,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           args foreach (arg => typed(arg, mode, ErrorType))
           setError(tree)
         }
-        def advice1(errors: List[AbsTypeError], err: SilentTypeError): List[AbsTypeError] =
+        def advice1(convo: Tree, errors: List[AbsTypeError], err: SilentTypeError): List[AbsTypeError] =
           errors.map { e =>
             if (e.errPos == tree.pos) {
               val header = f"${e.errMsg}%n  Expression does not convert to assignment because:%n    "
-              NormalTypeError(tree, err.errors.flatMap(_.errMsg.lines.toList).mkString(header, f"%n    ", ""))
+              val expansion = f"%n    expansion: ${show(convo)}"
+              NormalTypeError(tree, err.errors.flatMap(_.errMsg.lines.toList).mkString(header, f"%n    ", expansion))
             } else e
           }
         def advice2(errors: List[AbsTypeError]): List[AbsTypeError] =
@@ -4534,7 +4535,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 val convo = convertToAssignment(fun, qual1, name, args)
                 silent(op = _.typed1(convo, mode, pt)) match {
                   case SilentResultValue(t) => t
-                  case err: SilentTypeError => reportError(SilentTypeError(advice1(error.errors, err), error.warnings))
+                  case err: SilentTypeError => reportError(SilentTypeError(advice1(convo, error.errors, err), error.warnings))
                 }
               }
             }
