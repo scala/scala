@@ -330,8 +330,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // to create it on that side.  For this one my strategy is a constant def at the file
   // where I need it, and then an override in Global with the setting.
   override protected val etaExpandKeepsStar = settings.etaExpandKeepsStar.value
-  // Here comes another one...
-  override protected val enableTypeVarExperimentals = settings.Xexperimental.value
 
   def getSourceFile(f: AbstractFile): BatchSourceFile = new BatchSourceFile(f, reader read f)
 

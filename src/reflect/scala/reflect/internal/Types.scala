@@ -99,8 +99,6 @@ trait Types
   private final val propagateParameterBoundsToTypeVars = sys.props contains "scalac.debug.prop-constraints"
   private final val sharperSkolems = sys.props contains "scalac.experimental.sharper-skolems"
 
-  protected val enableTypeVarExperimentals = settings.Xexperimental.value
-
   /** Caching the most recent map has a 75-90% hit rate. */
   private object substTypeMapCache {
     private[this] var cached: SubstTypeMap = new SubstTypeMap(Nil, Nil)
@@ -3010,7 +3008,7 @@ trait Types
     // EXPERIMENTAL: value will not be considered unless enableTypeVarExperimentals is true
     // see SI-5729 for why this is still experimental
     private var encounteredHigherLevel = false
-    private def shouldRepackType = enableTypeVarExperimentals && encounteredHigherLevel
+    private def shouldRepackType = encounteredHigherLevel
 
     // <region name="constraint mutators + undoLog">
     // invariant: before mutating constr, save old state in undoLog
@@ -3205,7 +3203,8 @@ trait Types
         checkSubtype(tp, origin)
       else if (instValid)  // type var is already set
         checkSubtype(tp, inst)
-      else isRelatable(tp) && {
+      else {
+        trackHigherLevel(tp)
         unifySimple || unifyFull(tp) || (
           // only look harder if our gaze is oriented toward Any
           isLowerBound && (
@@ -3228,7 +3227,8 @@ trait Types
 
       if (suspended) tp =:= origin
       else if (instValid) checkIsSameType(tp)
-      else isRelatable(tp) && {
+      else {
+        trackHigherLevel(tp)
         val newInst = wildcardToTypeVarMap(tp)
         (constr isWithinBounds newInst) && {
           setInst(newInst)
@@ -3251,19 +3251,10 @@ trait Types
       case ts: TypeSkolem => ts.level > level
       case _              => false
     }
-    // side-effects encounteredHigherLevel
-    private def containsSkolemAboveLevel(tp: Type) =
-      (tp exists isSkolemAboveLevel) && { encounteredHigherLevel = true ; true }
 
-     /** Can this variable be related in a constraint to type `tp`?
-      *  This is not the case if `tp` contains type skolems whose
-      *  skolemization level is higher than the level of this variable.
-      */
-    def isRelatable(tp: Type) = (
-         shouldRepackType               // short circuit if we already know we've seen higher levels
-      || !containsSkolemAboveLevel(tp)  // side-effects tracking boolean
-      || enableTypeVarExperimentals     // -Xexperimental: always say we're relatable, track consequences
-    )
+    private def trackHigherLevel(tp: Type): Unit =
+      if(!shouldRepackType && tp.exists(isSkolemAboveLevel))
+        encounteredHigherLevel = true
 
     override def normalize: Type = (
       if (instValid) inst
