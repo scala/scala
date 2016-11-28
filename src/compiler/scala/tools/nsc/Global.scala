@@ -341,12 +341,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       s"[search path for class files: ${classPath.asClassPathString}]"
     )
 
-  // The current division between scala.reflect.* and scala.tools.nsc.* is pretty
-  // clunky.  It is often difficult to have a setting influence something without having
-  // to create it on that side.  For this one my strategy is a constant def at the file
-  // where I need it, and then an override in Global with the setting.
-  override protected val etaExpandKeepsStar = settings.etaExpandKeepsStar.value
-
   def getSourceFile(f: AbstractFile): BatchSourceFile = new BatchSourceFile(f, reader read f)
 
   def getSourceFile(name: String): SourceFile = {

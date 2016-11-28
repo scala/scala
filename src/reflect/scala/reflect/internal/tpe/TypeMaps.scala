@@ -53,14 +53,6 @@ private[internal] trait TypeMaps {
     }
   }
 
-  // Set to true for A* => Seq[A]
-  //   (And it will only rewrite A* in method result types.)
-  //   This is the pre-existing behavior.
-  // Or false for Seq[A] => Seq[A]
-  //   (It will rewrite A* everywhere but method parameters.)
-  //   This is the specified behavior.
-  protected def etaExpandKeepsStar = false
-
   /** Turn any T* types into Seq[T] except when
     *  in method parameter position.
     */
@@ -74,7 +66,7 @@ private[internal] trait TypeMaps {
       case TypeRef(_, RepeatedParamClass, arg :: Nil) =>
         seqType(arg)
       case _ =>
-        if (etaExpandKeepsStar) tp else mapOver(tp)
+        mapOver(tp)
     }
   }
 
