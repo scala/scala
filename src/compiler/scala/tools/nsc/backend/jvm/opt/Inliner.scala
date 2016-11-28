@@ -214,37 +214,33 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   }
 
   class UndoLog(active: Boolean = true) {
+    import java.util.{ ArrayList => JArrayList }
+
     private var actions = List.empty[() => Unit]
     private var methodStateSaved = false
 
     def apply(a: => Unit): Unit = if (active) actions = (() => a) :: actions
-    def run(): Unit = if (active) actions.foreach(_.apply())
-
-    private def arr[T: reflect.ClassTag](l: java.util.List[T]): Array[T] = {
-      val a: Array[T] = new Array[T](l.size)
-      l.toArray(a.asInstanceOf[Array[T with Object]]).asInstanceOf[Array[T]]
-    }
-    private def lst[T](a: Array[T]): java.util.List[T] = java.util.Arrays.asList(a: _*)
+    def rollback(): Unit = if (active) actions.foreach(_.apply())
 
     def saveMethodState(methodNode: MethodNode): Unit = if (active && !methodStateSaved) {
       methodStateSaved = true
       val currentInstructions = methodNode.instructions.toArray
-      val currentLocalVariables = arr(methodNode.localVariables)
-      val currentTryCatchBlocks = arr(methodNode.tryCatchBlocks)
+      val currentLocalVariables = new JArrayList(methodNode.localVariables)
+      val currentTryCatchBlocks = new JArrayList(methodNode.tryCatchBlocks)
       val currentMaxLocals = methodNode.maxLocals
       val currentMaxStack = methodNode.maxStack
 
       apply {
-        // this doesn't work: it doesn't reset the `prev` / `next` / `index` of individual instruction nodes
-        // methodNode.instructions.clear()
+        // `methodNode.instructions.clear()` doesn't work: it keeps the `prev` / `next` / `index` of
+        // instruction nodes. `instructions.removeAll(true)` would work, but is not public.
         methodNode.instructions.iterator.asScala.toList.foreach(methodNode.instructions.remove)
         for (i <- currentInstructions) methodNode.instructions.add(i)
 
         methodNode.localVariables.clear()
-        methodNode.localVariables.addAll(lst(currentLocalVariables))
+        methodNode.localVariables.addAll(currentLocalVariables)
 
         methodNode.tryCatchBlocks.clear()
-        methodNode.tryCatchBlocks.addAll(lst(currentTryCatchBlocks))
+        methodNode.tryCatchBlocks.addAll(currentTryCatchBlocks)
 
         methodNode.maxLocals = currentMaxLocals
         methodNode.maxStack = currentMaxStack
@@ -269,16 +265,19 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       postRequests.flatMap(inline(_, undo))
     }
 
+    def inlinedByPost(insns: List[AbstractInsnNode]): Boolean =
+      insns.nonEmpty && insns.forall(ins => request.post.exists(_.callsite.callsiteInstruction == ins))
+
     canInlineCallsite(request.callsite) match {
       case None =>
         doInline(undo)
 
-      case Some((w, illegalAccessInsns)) if illegalAccessInsns.nonEmpty && illegalAccessInsns.forall(ins => request.post.exists(_.callsite.callsiteInstruction == ins)) =>
+      case Some((_, illegalAccessInsns)) if inlinedByPost(illegalAccessInsns) =>
         // speculatively inline, roll back if an illegalAccessInsn cannot be eliminated
         if (undo == NoUndoLogging) {
           val undoLog = new UndoLog()
           val warnings = doInline(undoLog)
-          if (warnings.nonEmpty) undoLog.run()
+          if (warnings.nonEmpty) undoLog.rollback()
           warnings
         } else doInline(undo)
 
