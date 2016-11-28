@@ -237,12 +237,12 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
       override def toString = s"T${id}C($prop)"
     }
 
-    class TreeMakersToPropsIgnoreNullChecks(root: Symbol) extends TreeMakersToProps(root) {
+    class TreeMakersToPropsIgnoreNullChecks(scrutinee: Scrutinee) extends TreeMakersToProps(scrutinee) {
       override def uniqueNonNullProp(p: Tree): Prop = True
     }
 
     // returns (tree, tests), where `tree` will be used to refer to `root` in `tests`
-    class TreeMakersToProps(val root: Symbol) {
+    class TreeMakersToProps(val scrutinee: Scrutinee) {
       prepareNewAnalysis() // reset hash consing for Var and Const
 
       private[this] val uniqueEqualityProps = new mutable.HashMap[(Tree, Tree), Eq]
@@ -260,7 +260,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
         uniqueTypeProps getOrElseUpdate((testedPath, pt), Eq(Var(testedPath), TypeConst(checkableType(pt))))
 
       // a variable in this set should never be replaced by a tree that "does not consist of a selection on a variable in this set" (intuitively)
-      private val pointsToBound = mutable.HashSet(root)
+      private val pointsToBound = mutable.HashSet(scrutinee.syms : _*)
       private val trees         = mutable.HashSet.empty[Tree]
 
       // the substitution that renames variables to variables in pointsToBound
@@ -407,8 +407,8 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
       }
     }
 
-    def approximateMatchConservative(root: Symbol, cases: List[List[TreeMaker]]): List[List[Test]] =
-      (new TreeMakersToProps(root)).approximateMatch(cases)
+    def approximateMatchConservative(scrutinee: Scrutinee, cases: List[List[TreeMaker]]): List[List[Test]] =
+      (new TreeMakersToProps(scrutinee)).approximateMatch(cases)
 
     // turns a case (represented as a list of abstract tests)
     // into a proposition that is satisfiable if the case may match
@@ -446,13 +446,13 @@ trait MatchAnalysis extends MatchApproximation {
     // the case is reachable if there is a model for -P /\ C,
     // thus, the case is unreachable if there is no model for -(-P /\ C),
     // or, equivalently, P \/ -C, or C => P
-    def unreachableCase(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Int] = {
+    def unreachableCase(scrutinee: Scrutinee, cases: List[List[TreeMaker]], pt: Type): Option[Int] = {
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaReach) else null
 
       // use the same approximator so we share variables,
       // but need different conditions depending on whether we're conservatively looking for failure or success
       // don't rewrite List-like patterns, as List() and Nil need to distinguished for unreachability
-      val approx = new TreeMakersToProps(prevBinder)
+      val approx = new TreeMakersToProps(scrutinee)
       def approximate(default: Prop) = approx.approximateMatch(cases, approx.onUnknown { tm =>
         approx.refutableRewrite.applyOrElse(tm, (_: TreeMaker) => default )
       })
@@ -501,14 +501,14 @@ trait MatchAnalysis extends MatchApproximation {
         if (reachable) None else Some(caseIndex)
       } catch {
         case ex: AnalysisBudget.Exception =>
-          warn(prevBinder.pos, ex, "unreachability")
+          warn(scrutinee.pos, ex, "unreachability")
           None // CNF budget exceeded
       }
     }
 
     // exhaustivity
 
-    def exhaustive(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[String] = if (uncheckableType(prevBinder.info)) Nil else {
+    def exhaustive(scrutinee: Scrutinee, cases: List[List[TreeMaker]], pt: Type): List[String] = if (uncheckableType(scrutinee.info)) Nil else {
       // customize TreeMakersToProps (which turns a tree of tree makers into a more abstract DAG of tests)
       // - approximate the pattern `List()` (unapplySeq on List with empty length) as `Nil`,
       //   otherwise the common (xs: List[Any]) match { case List() => case x :: xs => } is deemed unexhaustive
@@ -518,7 +518,7 @@ trait MatchAnalysis extends MatchApproximation {
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaExhaust) else null
       var backoff = false
 
-      val approx = new TreeMakersToPropsIgnoreNullChecks(prevBinder)
+      val approx = new TreeMakersToPropsIgnoreNullChecks(scrutinee)
       val symbolicCases = approx.approximateMatch(cases, approx.onUnknown { tm =>
         approx.fullRewrite.applyOrElse[TreeMaker, Prop](tm, {
           case BodyTreeMaker(_, _) => True // irrelevant -- will be discarded by symbolCase later
@@ -529,8 +529,6 @@ trait MatchAnalysis extends MatchApproximation {
       }) map caseWithoutBodyToProp
 
       if (backoff) Nil else {
-        val prevBinderTree = approx.binderToUniqueTree(prevBinder)
-
         // TODO: null tests generate too much noise, so disabled them -- is there any way to bring them back?
         // assuming we're matching on a non-null scrutinee (prevBinder), when does the match fail?
         // val nonNullScrutineeCond =
@@ -553,27 +551,34 @@ trait MatchAnalysis extends MatchApproximation {
 
         try {
           // find the models (under which the match fails)
-          val matchFailModels = findAllModelsFor(propToSolvable(matchFails), prevBinder.pos)
+          val matchFailModels = findAllModelsFor(propToSolvable(matchFails), scrutinee.pos)
 
-          val scrutVar = Var(prevBinderTree)
-          val counterExamples = {
-            matchFailModels.flatMap {
-              model =>
-                val varAssignments = expandModel(model)
-                varAssignments.flatMap(modelToCounterExample(scrutVar) _)
+          val counterExamples =
+            if (matchFailModels.isEmpty) Nil
+            else {
+              def toCounter(varAssignment: VarAssignment): Option[CounterExample] = {
+                import scala.reflect.internal.util.Collections.sequence
+                def exampleFor(sym: Symbol) =
+                  modelToCounterExample(Var(approx.binderToUniqueTree(sym)))(varAssignment)
+
+                // is there a single scrutinee? or did we de-tuple (reconstitute it to a TupleExample)
+                if (scrutinee.sym.exists) exampleFor(scrutinee.sym)
+                else sequence(scrutinee.syms map exampleFor) map TupleExample
+              }
+
+              val counterExamples = matchFailModels.flatMap(model => expandModel(model) flatMap toCounter)
+
+              // sorting before pruning is important here in order to
+              // keep neg/t7020.scala stable
+              // since e.g. List(_, _) would cover List(1, _)
+              CounterExample.prune(counterExamples.sortBy(_.toString)).map(_.toString)
             }
-          }
-
-          // sorting before pruning is important here in order to
-          // keep neg/t7020.scala stable
-          // since e.g. List(_, _) would cover List(1, _)
-          val pruned = CounterExample.prune(counterExamples.sortBy(_.toString)).map(_.toString)
 
           if (Statistics.canEnable) Statistics.stopTimer(patmatAnaExhaust, start)
-          pruned
+          counterExamples
         } catch {
           case ex: AnalysisBudget.Exception =>
-            warn(prevBinder.pos, ex, "exhaustivity")
+            warn(scrutinee.pos, ex, "exhaustivity")
             Nil // CNF budget exceeded
         }
       }
@@ -640,16 +645,18 @@ trait MatchAnalysis extends MatchApproximation {
     case object WildcardExample extends CounterExample { override def toString = "_" }
     case object NoExample extends CounterExample { override def toString = "??" }
 
+    type VarAssignment = Map[Var, (Seq[Const], Seq[Const])]
+
     // returns a mapping from variable to
     // equal and notEqual symbols
-    def modelToVarAssignment(model: Model): Map[Var, (Seq[Const], Seq[Const])] =
+    def modelToVarAssignment(model: Model): VarAssignment =
       model.toSeq.groupBy{f => f match {case (sym, value) => sym.variable} }.mapValues{ xs =>
         val (trues, falses) = xs.partition(_._2)
         (trues map (_._1.const), falses map (_._1.const))
         // should never be more than one value in trues...
       }
 
-    def varAssignmentString(varAssignment: Map[Var, (Seq[Const], Seq[Const])]) =
+    def varAssignmentString(varAssignment: VarAssignment) =
       varAssignment.toSeq.sortBy(_._1.toString).map { case (v, (trues, falses)) =>
          val assignment = "== "+ (trues mkString("(", ", ", ")")) +"  != ("+ (falses mkString(", ")) +")"
          v +"(="+ v.path +": "+ v.staticTpCheckable +") "+ assignment
@@ -685,8 +692,7 @@ trait MatchAnalysis extends MatchApproximation {
      * Only one of these symbols can be set to true,
      * since `V2` can at most be equal to one of {2,6,5,4,7}.
      */
-    def expandModel(solution: Solution): List[Map[Var, (Seq[Const], Seq[Const])]] = {
-
+    def expandModel(solution: Solution): List[VarAssignment] = {
       val model = solution.model
 
       // x1 = ...
@@ -758,7 +764,7 @@ trait MatchAnalysis extends MatchApproximation {
     // (the variables don't take into account type information derived from other variables,
     //  so, naively, you might try to construct a counter example like _ :: Nil(_ :: _, _ :: _),
     //  since we didn't realize the tail of the outer cons was a Nil)
-    def modelToCounterExample(scrutVar: Var)(varAssignment: Map[Var, (Seq[Const], Seq[Const])]): Option[CounterExample] = {
+    def modelToCounterExample(scrutVar: Var)(varAssignment: VarAssignment): Option[CounterExample] = {
       // chop a path into a list of symbols
       def chop(path: Tree): List[Symbol] = path match {
         case Ident(_) => List(path.symbol)
@@ -905,16 +911,16 @@ trait MatchAnalysis extends MatchApproximation {
       VariableAssignment(scrutVar).toCounterExample()
     }
 
-    def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit = {
+    def analyzeCases(scrutinee: Scrutinee, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit = {
       if (!suppression.suppressUnreachable) {
-        unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
+        unreachableCase(scrutinee, cases, pt) foreach { caseIndex =>
           reportUnreachable(cases(caseIndex).last.pos)
         }
       }
       if (!suppression.suppressExhaustive) {
-        val counterExamples = exhaustive(prevBinder, cases, pt)
+        val counterExamples = exhaustive(scrutinee, cases, pt)
         if (counterExamples.nonEmpty)
-          reportMissingCases(prevBinder.pos, counterExamples)
+          reportMissingCases(scrutinee.pos, counterExamples)
       }
     }
   }

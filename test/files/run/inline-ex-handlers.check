@@ -32,8 +32,8 @@
      92	LOAD_LOCAL(value x1)
 @@ -390,5 +386,5 @@
    def main(args: Array[String] (ARRAY[REF(class String)])): Unit {
--  locals: value args, variable result, value ex6, value x4, value x5, value message, value x
-+  locals: value args, variable result, value ex6, value x4, value x5, value x
+-  locals: value args, variable result, value ex4, value x5, value x6, value message, value x
++  locals: value args, variable result, value ex4, value x5, value x6, value x
    startBlock: 1
 -  blocks: [1,2,3,4,5,8,10,11,13]
 +  blocks: [1,2,3,5,8,10,11,13,14]
@@ -41,33 +41,33 @@
 @@ -416,4 +412,13 @@
      103	CALL_METHOD MyException.<init> (static-instance)
 -    103	THROW(MyException)
-+    ?	STORE_LOCAL(value ex6)
++    ?	STORE_LOCAL(value ex4)
 +    ?	JUMP 14
      
 +  14: 
-+    101	LOAD_LOCAL(value ex6)
-+    101	STORE_LOCAL(value x4)
-+    101	SCOPE_ENTER value x4
-+    106	LOAD_LOCAL(value x4)
++    101	LOAD_LOCAL(value ex4)
++    101	STORE_LOCAL(value x5)
++    101	SCOPE_ENTER value x5
++    106	LOAD_LOCAL(value x5)
 +    106	IS_INSTANCE REF(class MyException)
 +    106	CZJUMP (BOOL)NE ? 5 : 8
 +    
    13: 
 @@ -429,5 +434,2 @@
-     101	SCOPE_ENTER value x4
+     101	SCOPE_ENTER value x5
 -    101	JUMP 4
 -    
 -  4: 
-     106	LOAD_LOCAL(value x4)
+     106	LOAD_LOCAL(value x5)
 @@ -441,8 +443,5 @@
-     106	SCOPE_ENTER value x5
--    106	LOAD_LOCAL(value x5)
+     106	SCOPE_ENTER value x6
+-    106	LOAD_LOCAL(value x6)
 -    106	CALL_METHOD MyException.message (dynamic)
 -    106	STORE_LOCAL(value message)
 -    106	SCOPE_ENTER value message
      106	LOAD_MODULE object Predef
 -    106	LOAD_LOCAL(value message)
-+    ?	LOAD_LOCAL(value x5)
++    101	LOAD_LOCAL(value x6)
 +    106	CALL_METHOD MyException.message (dynamic)
      106	CALL_METHOD scala.Predef.println (dynamic)
 @@ -518,3 +517,3 @@
@@ -176,8 +176,8 @@
        consisting of blocks: List(3)
 @@ -714,5 +754,5 @@
    def main(args: Array[String] (ARRAY[REF(class String)])): Unit {
--  locals: value args, variable result, value ex6, variable exc2, value x4, value x5, value message, value x, value ex6, value x4, value x5, value message, value x
-+  locals: value args, variable result, value ex6, variable exc2, value x4, value x5, value x, value ex6, value x4, value x5, value x
+-  locals: value args, variable result, value ex4, variable exc2, value x5, value x6, value message, value x, value ex4, value x5, value x6, value message, value x
++  locals: value args, variable result, value ex4, variable exc2, value x5, value x6, value x, value ex4, value x5, value x6, value x
    startBlock: 1
 -  blocks: [1,3,4,5,6,9,13,14,15,18,20,21,23,24]
 +  blocks: [1,3,4,5,6,9,13,14,15,18,20,21,23,24,25,26,27]
@@ -185,67 +185,67 @@
 @@ -740,4 +780,11 @@
      172	CALL_METHOD MyException.<init> (static-instance)
 -    172	THROW(MyException)
-+    ?	STORE_LOCAL(value ex6)
++    ?	STORE_LOCAL(value ex4)
 +    ?	JUMP 25
      
 +  25: 
-+    170	LOAD_LOCAL(value ex6)
-+    170	STORE_LOCAL(value x4)
-+    170	SCOPE_ENTER value x4
++    170	LOAD_LOCAL(value ex4)
++    170	STORE_LOCAL(value x5)
++    170	SCOPE_ENTER value x5
 +    170	JUMP 14
 +    
    23: 
 @@ -780,8 +827,5 @@
-     175	SCOPE_ENTER value x5
--    175	LOAD_LOCAL(value x5)
+     175	SCOPE_ENTER value x6
+-    175	LOAD_LOCAL(value x6)
 -    175	CALL_METHOD MyException.message (dynamic)
 -    175	STORE_LOCAL(value message)
 -    175	SCOPE_ENTER value message
      176	LOAD_MODULE object Predef
 -    176	LOAD_LOCAL(value message)
-+    ?	LOAD_LOCAL(value x5)
++    170	LOAD_LOCAL(value x6)
 +    176	CALL_METHOD MyException.message (dynamic)
      176	CALL_METHOD scala.Predef.println (dynamic)
 @@ -789,5 +833,7 @@
      177	DUP(REF(class MyException))
 -    177	LOAD_LOCAL(value message)
-+    ?	LOAD_LOCAL(value x5)
++    170	LOAD_LOCAL(value x6)
 +    177	CALL_METHOD MyException.message (dynamic)
      177	CALL_METHOD MyException.<init> (static-instance)
 -    177	THROW(MyException)
-+    ?	STORE_LOCAL(value ex6)
++    ?	STORE_LOCAL(value ex4)
 +    ?	JUMP 26
      
 @@ -795,3 +841,4 @@
-     170	LOAD_LOCAL(value ex6)
+     170	LOAD_LOCAL(value ex4)
 -    170	THROW(Throwable)
-+    ?	STORE_LOCAL(value ex6)
++    ?	STORE_LOCAL(value ex4)
 +    ?	JUMP 26
      
 @@ -805,2 +852,8 @@
      
 +  26: 
-+    169	LOAD_LOCAL(value ex6)
-+    169	STORE_LOCAL(value x4)
-+    169	SCOPE_ENTER value x4
++    169	LOAD_LOCAL(value ex4)
++    169	STORE_LOCAL(value x5)
++    169	SCOPE_ENTER value x5
 +    169	JUMP 5
 +    
    5: 
 @@ -815,8 +868,5 @@
-     180	SCOPE_ENTER value x5
--    180	LOAD_LOCAL(value x5)
+     180	SCOPE_ENTER value x6
+-    180	LOAD_LOCAL(value x6)
 -    180	CALL_METHOD MyException.message (dynamic)
 -    180	STORE_LOCAL(value message)
 -    180	SCOPE_ENTER value message
      181	LOAD_MODULE object Predef
 -    181	LOAD_LOCAL(value message)
-+    ?	LOAD_LOCAL(value x5)
++    169	LOAD_LOCAL(value x6)
 +    181	CALL_METHOD MyException.message (dynamic)
      181	CALL_METHOD scala.Predef.println (dynamic)
 @@ -824,5 +874,7 @@
      182	DUP(REF(class MyException))
 -    182	LOAD_LOCAL(value message)
-+    ?	LOAD_LOCAL(value x5)
++    169	LOAD_LOCAL(value x6)
 +    182	CALL_METHOD MyException.message (dynamic)
      182	CALL_METHOD MyException.<init> (static-instance)
 -    182	THROW(MyException)
@@ -253,7 +253,7 @@
 +    ?	JUMP 27
      
 @@ -830,3 +882,4 @@
-     169	LOAD_LOCAL(value ex6)
+     169	LOAD_LOCAL(value ex4)
 -    169	THROW(Throwable)
 +    ?	STORE_LOCAL(variable exc2)
 +    ?	JUMP 27
@@ -285,8 +285,8 @@
        consisting of blocks: List(3)
 @@ -879,5 +945,5 @@
    def main(args: Array[String] (ARRAY[REF(class String)])): Unit {
--  locals: value args, variable result, value e, value ex6, value x4, value x5, value message, value x
-+  locals: value args, variable result, value e, value ex6, value x4, value x5, value x
+-  locals: value args, variable result, value e, value ex4, value x5, value x6, value message, value x
++  locals: value args, variable result, value e, value ex4, value x5, value x6, value x
    startBlock: 1
 -  blocks: [1,2,3,6,7,8,11,13,14,16]
 +  blocks: [1,2,3,6,7,8,11,13,14,16,17]
@@ -294,25 +294,25 @@
 @@ -905,4 +971,11 @@
      124	CALL_METHOD MyException.<init> (static-instance)
 -    124	THROW(MyException)
-+    ?	STORE_LOCAL(value ex6)
++    ?	STORE_LOCAL(value ex4)
 +    ?	JUMP 17
      
 +  17: 
-+    122	LOAD_LOCAL(value ex6)
-+    122	STORE_LOCAL(value x4)
-+    122	SCOPE_ENTER value x4
++    122	LOAD_LOCAL(value ex4)
++    122	STORE_LOCAL(value x5)
++    122	SCOPE_ENTER value x5
 +    122	JUMP 7
 +    
    16: 
 @@ -930,8 +1003,5 @@
-     127	SCOPE_ENTER value x5
--    127	LOAD_LOCAL(value x5)
+     127	SCOPE_ENTER value x6
+-    127	LOAD_LOCAL(value x6)
 -    127	CALL_METHOD MyException.message (dynamic)
 -    127	STORE_LOCAL(value message)
 -    127	SCOPE_ENTER value message
      127	LOAD_MODULE object Predef
 -    127	LOAD_LOCAL(value message)
-+    ?	LOAD_LOCAL(value x5)
++    122	LOAD_LOCAL(value x6)
 +    127	CALL_METHOD MyException.message (dynamic)
      127	CALL_METHOD scala.Predef.println (dynamic)
 @@ -964,3 +1034,3 @@
@@ -322,8 +322,8 @@
        consisting of blocks: List(3)
 @@ -988,5 +1058,5 @@
    def main(args: Array[String] (ARRAY[REF(class String)])): Unit {
--  locals: value args, variable result, value ex6, value x4, value x5, value message, value x, value e
-+  locals: value args, variable result, value ex6, value x4, value x5, value x, value e
+-  locals: value args, variable result, value ex4, value x5, value x6, value message, value x, value e
++  locals: value args, variable result, value ex4, value x5, value x6, value x, value e
    startBlock: 1
 -  blocks: [1,2,3,4,5,8,12,13,14,16]
 +  blocks: [1,2,3,5,8,12,13,14,16,17]
@@ -331,33 +331,33 @@
 @@ -1014,4 +1084,13 @@
      148	CALL_METHOD MyException.<init> (static-instance)
 -    148	THROW(MyException)
-+    ?	STORE_LOCAL(value ex6)
++    ?	STORE_LOCAL(value ex4)
 +    ?	JUMP 17
      
 +  17: 
-+    145	LOAD_LOCAL(value ex6)
-+    145	STORE_LOCAL(value x4)
-+    145	SCOPE_ENTER value x4
-+    154	LOAD_LOCAL(value x4)
++    145	LOAD_LOCAL(value ex4)
++    145	STORE_LOCAL(value x5)
++    145	SCOPE_ENTER value x5
++    154	LOAD_LOCAL(value x5)
 +    154	IS_INSTANCE REF(class MyException)
 +    154	CZJUMP (BOOL)NE ? 5 : 8
 +    
    16: 
 @@ -1035,5 +1114,2 @@
-     145	SCOPE_ENTER value x4
+     145	SCOPE_ENTER value x5
 -    145	JUMP 4
 -    
 -  4: 
-     154	LOAD_LOCAL(value x4)
+     154	LOAD_LOCAL(value x5)
 @@ -1047,8 +1123,5 @@
-     154	SCOPE_ENTER value x5
--    154	LOAD_LOCAL(value x5)
+     154	SCOPE_ENTER value x6
+-    154	LOAD_LOCAL(value x6)
 -    154	CALL_METHOD MyException.message (dynamic)
 -    154	STORE_LOCAL(value message)
 -    154	SCOPE_ENTER value message
      154	LOAD_MODULE object Predef
 -    154	LOAD_LOCAL(value message)
-+    ?	LOAD_LOCAL(value x5)
++    145	LOAD_LOCAL(value x6)
 +    154	CALL_METHOD MyException.message (dynamic)
      154	CALL_METHOD scala.Predef.println (dynamic)
 @@ -1269,3 +1342,3 @@
@@ -380,8 +380,8 @@
    7: 
 @@ -1340,5 +1420,5 @@
    def main(args: Array[String] (ARRAY[REF(class String)])): Unit {
--  locals: value args, variable result, value ex6, value x4, value x5, value message, value x
-+  locals: value args, variable result, value ex6, value x4, value x5, value x
+-  locals: value args, variable result, value ex4, value x5, value x6, value message, value x
++  locals: value args, variable result, value ex4, value x5, value x6, value x
    startBlock: 1
 -  blocks: [1,2,3,4,5,8,10,11,13,14,16]
 +  blocks: [1,2,3,5,8,10,11,13,14,16,17]
@@ -389,39 +389,39 @@
 @@ -1366,3 +1446,4 @@
      203	CALL_METHOD MyException.<init> (static-instance)
 -    203	THROW(MyException)
-+    ?	STORE_LOCAL(value ex6)
++    ?	STORE_LOCAL(value ex4)
 +    ?	JUMP 17
      
 @@ -1386,4 +1467,13 @@
      209	CALL_METHOD MyException.<init> (static-instance)
 -    209	THROW(MyException)
-+    ?	STORE_LOCAL(value ex6)
++    ?	STORE_LOCAL(value ex4)
 +    ?	JUMP 17
      
 +  17: 
-+    200	LOAD_LOCAL(value ex6)
-+    200	STORE_LOCAL(value x4)
-+    200	SCOPE_ENTER value x4
-+    212	LOAD_LOCAL(value x4)
++    200	LOAD_LOCAL(value ex4)
++    200	STORE_LOCAL(value x5)
++    200	SCOPE_ENTER value x5
++    212	LOAD_LOCAL(value x5)
 +    212	IS_INSTANCE REF(class MyException)
 +    212	CZJUMP (BOOL)NE ? 5 : 8
 +    
    16: 
 @@ -1399,5 +1489,2 @@
-     200	SCOPE_ENTER value x4
+     200	SCOPE_ENTER value x5
 -    200	JUMP 4
 -    
 -  4: 
-     212	LOAD_LOCAL(value x4)
+     212	LOAD_LOCAL(value x5)
 @@ -1411,8 +1498,5 @@
-     212	SCOPE_ENTER value x5
--    212	LOAD_LOCAL(value x5)
+     212	SCOPE_ENTER value x6
+-    212	LOAD_LOCAL(value x6)
 -    212	CALL_METHOD MyException.message (dynamic)
 -    212	STORE_LOCAL(value message)
 -    212	SCOPE_ENTER value message
      213	LOAD_MODULE object Predef
 -    213	LOAD_LOCAL(value message)
-+    ?	LOAD_LOCAL(value x5)
++    200	LOAD_LOCAL(value x6)
 +    213	CALL_METHOD MyException.message (dynamic)
      213	CALL_METHOD scala.Predef.println (dynamic)
 @@ -1460,3 +1544,3 @@

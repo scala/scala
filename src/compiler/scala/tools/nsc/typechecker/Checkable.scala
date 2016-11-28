@@ -116,7 +116,7 @@ trait Checkable {
        uncheckedOk(arg)                                 // @unchecked T
     || isUnwarnableTypeArgSymbol(arg.typeSymbolDirect)  // has to be direct: see pos/t1439
   )
-  private def uncheckedOk(tp: Type) = tp hasAnnotation UncheckedClass
+  private def uncheckedOk(tp: Type) = treeInfo isUncheckedAnnotation tp
 
   private def typeArgsInTopLevelType(tp: Type): List[Type] = {
     val tps = tp match {

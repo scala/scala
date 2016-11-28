@@ -530,6 +530,8 @@ abstract class TreeInfo {
   /** a Match(Typed(_, tpt), _) must be translated into a switch if isSwitchAnnotation(tpt.tpe) */
   def isSwitchAnnotation(tpe: Type) = tpe hasAnnotation definitions.SwitchClass
 
+  def isUncheckedAnnotation(tpe: Type) = tpe hasAnnotation definitions.UncheckedClass
+
   /** can this type be a type pattern */
   def mayBeTypePat(tree: Tree): Boolean = tree match {
     case CompoundTypeTree(Template(tps, _, Nil)) => tps exists mayBeTypePat
@@ -821,6 +823,37 @@ abstract class TreeInfo {
       case Apply(fun, _) => unapply(fun)
       case _             => None
     }
+  }
+
+  // match a tree that's a tuple creation (it will be optimized away if all cases immediately destruct the tuple again)
+  object TupledScrutinee {
+    import definitions.{tupleType, isTupleFactory}
+    private def tupleTypeFor(elems: Seq[Tree]): Type = tupleType(elems.map(_.tpe.deconst).toList)
+
+    def unapplySeq(tree: Tree): Option[Seq[Tree]] =
+      tree match {
+        case Applied(fun, _, List(args))
+          if isTupleFactory(fun.symbol, args.length) && isSafeToElide(fun) => Some(args)
+        case Typed(TupledScrutinee(elems @ _*), tpt)
+          if tpt.tpe <:< tupleTypeFor(elems) => Some(elems)
+        case _ => None
+      }
+
+    private def isSafeToElide(fun: Tree): Boolean = fun match {
+      // must be TupleN constructor given isTupleFactory(fun.symbol)
+      case Select(New(_), _) => true
+      case Select(qual, _)   => isQualifierSafeToElide(qual) // qual == TupleN module
+      case _                 => isQualifierSafeToElide(fun)
+    }
+  }
+
+  object UnboundTuplePattern {
+    def unapplySeq(tree: Tree): Option[Seq[Tree]] =
+      tree match {
+        case Apply(fun, args) if args.nonEmpty && fun.isTyped && definitions.isTupleType(fun.tpe.finalResultType) => Some(args)
+        case Bind(nme.WILDCARD, UnboundTuplePattern(elems @ _*)) => Some(elems)
+        case _ => None
+      }
   }
 
   /** Is this file the body of a compilation unit which should not
