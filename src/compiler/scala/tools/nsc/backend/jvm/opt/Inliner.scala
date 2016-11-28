@@ -25,8 +25,99 @@ class Inliner[BT <: BTypes](val btypes: BT) {
   import inlinerHeuristics._
   import backendUtils._
 
-  case class InlineLog(request: InlineRequest, sizeBefore: Int, sizeAfter: Int, sizeInlined: Int, warning: Option[CannotInlineWarning])
-  var inlineLog: List[InlineLog] = Nil
+  sealed trait InlineLog {
+    def request: InlineRequest
+  }
+  final case class InlineLogSuccess(request: InlineRequest, sizeBefore: Int, sizeInlined: Int) extends InlineLog {
+    var downstreamLog: mutable.Buffer[InlineLog] = mutable.ListBuffer.empty
+  }
+  final case class InlineLogFail(request: InlineRequest, warning: CannotInlineWarning) extends InlineLog
+  final case class InlineLogRollback(request: InlineRequest, warnings: List[CannotInlineWarning]) extends InlineLog
+
+  object InlineLog {
+    private def shouldLog(request: InlineRequest): Boolean = {
+      def logEnabled = compilerSettings.YoptLogInline.isSetByUser
+      def matchesName = {
+        val prefix = compilerSettings.YoptLogInline.value match {
+          case "_" => ""
+          case p => p
+        }
+        val name: String = request.callsite.callsiteClass.internalName + "." + request.callsite.callsiteMethod.name
+        name startsWith prefix
+      }
+      logEnabled && (upstream != null || (isTopLevel && matchesName))
+    }
+
+    // indexed by callsite method
+    private val logs = mutable.Map.empty[MethodNode, mutable.LinkedHashSet[InlineLog]]
+
+    private var upstream: InlineLogSuccess = _
+    private var isTopLevel = true
+
+    def withInlineLogging[T](request: InlineRequest)(inlineRequest: => Unit)(inlinePost: => T): T = {
+      def doInlinePost(): T = {
+        val savedIsTopLevel = isTopLevel
+        isTopLevel = false
+        try inlinePost
+        finally isTopLevel = savedIsTopLevel
+      }
+      if (shouldLog(request)) {
+        val sizeBefore = request.callsite.callsiteMethod.instructions.size
+        inlineRequest
+        val log = InlineLogSuccess(request, sizeBefore, request.callsite.callee.get.callee.instructions.size)
+        apply(log)
+
+        val savedUpstream = upstream
+        upstream = log
+        try doInlinePost()
+        finally upstream = savedUpstream
+      } else {
+        inlineRequest
+        doInlinePost()
+      }
+    }
+
+    def apply(log: => InlineLog): Unit = if (shouldLog(log.request)) {
+      if (upstream != null) upstream.downstreamLog += log
+      else {
+        val methodLogs = logs.getOrElseUpdate(log.request.callsite.callsiteMethod, mutable.LinkedHashSet.empty)
+        methodLogs += log
+      }
+    }
+
+    def entryString(log: InlineLog, indent: Int = 0): String = {
+      val callee = log.request.callsite.callee.get
+      val calleeString = callee.calleeDeclarationClass.internalName + "." + callee.callee.name
+      val indentString = " " * indent
+      log match {
+        case s @ InlineLogSuccess(_, sizeBefore, sizeInlined) =>
+          val self = s"${indentString}inlined $calleeString. Before: $sizeBefore ins, inlined: $sizeInlined ins."
+          if (s.downstreamLog.isEmpty) self
+          else s.downstreamLog.iterator.map(entryString(_, indent + 2)).mkString(self + "\n", "\n", "")
+
+        case InlineLogFail(_, w) =>
+          s"${indentString}failed $calleeString. ${w.toString.replace('\n', ' ')}"
+
+        case InlineLogRollback(_, _) =>
+          s"${indentString}rolling back, nested inline failed."
+      }
+    }
+
+    def print(): Unit = if (compilerSettings.YoptLogInline.isSetByUser) {
+      val byClassAndMethod: List[(InternalName, mutable.Map[MethodNode, mutable.LinkedHashSet[InlineLog]])] = {
+        logs.
+          groupBy(_._2.head.request.callsite.callsiteClass.internalName).
+          toList.sortBy(_._1)
+      }
+      for {
+        (c, methodLogs) <- byClassAndMethod
+        (m, mLogs) <- methodLogs.toList.sortBy(_._1.name)
+        mLog <- mLogs // insertion order
+      } {
+        println(s"Inline into $c.${m.name}: ${entryString(mLog)}")
+      }
+    }
+  }
 
   def runInliner(): Unit = {
     for (request <- collectAndOrderInlineRequests) {
@@ -37,29 +128,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
           backendReporting.inlinerWarning(request.callsite.callsitePosition, warning.toString)
       }
     }
-
-    if (compilerSettings.YoptLogInline.isSetByUser) {
-      val methodPrefix = { val p = compilerSettings.YoptLogInline.value; if (p == "_") "" else p }
-      val byCallsiteMethod = inlineLog.groupBy(_.request.callsite.callsiteMethod).toList.sortBy(_._2.head.request.callsite.callsiteClass.internalName)
-      for ((m, mLogs) <- byCallsiteMethod) {
-        val initialSize = mLogs.minBy(_.sizeBefore).sizeBefore
-        val firstLog = mLogs.head
-        val methodName = s"${firstLog.request.callsite.callsiteClass.internalName}.${m.name}"
-        if (methodName.startsWith(methodPrefix)) {
-          println(s"Inlining into $methodName (initially $initialSize instructions, ultimately ${m.instructions.size}):")
-          val byCallee = mLogs.groupBy(_.request.callsite.callee.get).toList.sortBy(_._2.length).reverse
-          for ((c, cLogs) <- byCallee) {
-            val first = cLogs.head
-            if (first.warning.isEmpty) {
-              val num = if (cLogs.tail.isEmpty) "" else s" ${cLogs.length} times"
-              println(s"  - Inlined ${c.calleeDeclarationClass.internalName}.${c.callee.name} (${first.sizeInlined} instructions)$num: ${first.request.reason}")
-            } else
-              println(s"  - Failed to inline ${c.calleeDeclarationClass.internalName}.${c.callee.name} (${first.request.reason}): ${first.warning.get}")
-          }
-          println()
-        }
-      }
-    }
+    InlineLog.print()
   }
 
   /**
@@ -256,13 +325,18 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    * @return An inliner warning for each callsite that could not be inlined.
    */
   def inline(request: InlineRequest, undo: UndoLog = NoUndoLogging): List[CannotInlineWarning] = {
-    def doInline(undo: UndoLog): List[CannotInlineWarning] = {
-      val sizeBefore = request.callsite.callsiteMethod.instructions.size
-      inlineCallsite(request.callsite, undo)
-      if (compilerSettings.YoptLogInline.isSetByUser)
-        inlineLog ::= InlineLog(request, sizeBefore, request.callsite.callsiteMethod.instructions.size, request.callsite.callee.get.callee.instructions.size, None)
-      val postRequests = request.post.flatMap(adaptPostRequestForMainCallsite(_, request.callsite))
-      postRequests.flatMap(inline(_, undo))
+    def doInline(undo: UndoLog, callRollback: Boolean = false): List[CannotInlineWarning] = {
+      InlineLog.withInlineLogging(request) {
+        inlineCallsite(request.callsite, undo)
+      } {
+        val postRequests = request.post.flatMap(adaptPostRequestForMainCallsite(_, request.callsite))
+        val warnings = postRequests.flatMap(inline(_, undo))
+        if (callRollback && warnings.nonEmpty) {
+          undo.rollback()
+          InlineLog(InlineLogRollback(request, warnings))
+        }
+        warnings
+      }
     }
 
     def inlinedByPost(insns: List[AbstractInsnNode]): Boolean =
@@ -274,18 +348,11 @@ class Inliner[BT <: BTypes](val btypes: BT) {
 
       case Some((_, illegalAccessInsns)) if inlinedByPost(illegalAccessInsns) =>
         // speculatively inline, roll back if an illegalAccessInsn cannot be eliminated
-        if (undo == NoUndoLogging) {
-          val undoLog = new UndoLog()
-          val warnings = doInline(undoLog)
-          if (warnings.nonEmpty) undoLog.rollback()
-          warnings
-        } else doInline(undo)
+        if (undo == NoUndoLogging) doInline(new UndoLog(), callRollback = true)
+        else doInline(undo)
 
       case Some((w, _)) =>
-        if (compilerSettings.YoptLogInline.isSetByUser) {
-          val size = request.callsite.callsiteMethod.instructions.size
-          inlineLog ::= InlineLog(request, size, size, 0, Some(w))
-        }
+        InlineLog(InlineLogFail(request, w))
         List(w)
     }
   }
