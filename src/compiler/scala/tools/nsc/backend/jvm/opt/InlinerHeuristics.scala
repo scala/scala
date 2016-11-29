@@ -65,12 +65,13 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
   }
 
   private def isTraitStaticSuperAccessorName(s: String) = s.endsWith("$")
+  private def traitStaticSuperAccessorName(s: String) = s + "$"
 
   private def isTraitSuperAccessor(method: MethodNode, owner: ClassBType): Boolean = {
     owner.isInterface == Right(true) && BytecodeUtils.isStaticMethod(method) && isTraitStaticSuperAccessorName(method.name)
   }
 
-  private def findCall(method: MethodNode, such: MethodInsnNode => Boolean): Option[MethodInsnNode] = {
+  private def findSingleCall(method: MethodNode, such: MethodInsnNode => Boolean): Option[MethodInsnNode] = {
     @tailrec def noMoreInvoke(insn: AbstractInsnNode): Boolean = {
       insn == null || (!insn.isInstanceOf[MethodInsnNode] && noMoreInvoke(insn.getNext))
     }
@@ -87,12 +88,15 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
     find(method.instructions.getFirst)
   }
   private def superAccessorInvocation(method: MethodNode): Option[MethodInsnNode] =
-    findCall(method, mi => mi.itf && mi.getOpcode == Opcodes.INVOKESTATIC && isTraitStaticSuperAccessorName(mi.name))
+    findSingleCall(method, mi => mi.itf && mi.getOpcode == Opcodes.INVOKESTATIC && isTraitStaticSuperAccessorName(mi.name))
 
   private def isMixinForwarder(method: MethodNode, owner: ClassBType): Boolean = {
     owner.isInterface == Right(false) &&
       !BytecodeUtils.isStaticMethod(method) &&
-      superAccessorInvocation(method).nonEmpty
+      (superAccessorInvocation(method) match {
+        case Some(mi) => mi.name == traitStaticSuperAccessorName(method.name)
+        case _ => false
+      })
   }
 
   private def isTraitSuperAccessorOrMixinForwarder(method: MethodNode, owner: ClassBType): Boolean = {
@@ -138,7 +142,7 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
               if (isTraitSuperAccessor(callee.callee, callee.calleeDeclarationClass)) {
                 // scala-dev#259: when inlining a trait super accessor, also inline the callsite to the default method
                 val implName = callee.callee.name.dropRight(1)
-                findCall(callee.callee, mi => mi.itf && mi.getOpcode == Opcodes.INVOKESPECIAL && mi.name == implName)
+                findSingleCall(callee.callee, mi => mi.itf && mi.getOpcode == Opcodes.INVOKESPECIAL && mi.name == implName)
               } else {
                 // scala-dev#259: when inlining a mixin forwarder, also inline the callsite to the static super accessor
                 superAccessorInvocation(callee.callee)
