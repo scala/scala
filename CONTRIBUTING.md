@@ -1,20 +1,20 @@
 # Welcome! Thank you for contributing to Scala!
 We follow the standard GitHub [fork & pull](https://help.github.com/articles/using-pull-requests/#fork--pull) approach to pull requests. Just fork the official repo, develop in a branch, and submit a PR!
 
-You're always welcome to submit your PR straight away and start the discussion (without reading the rest of this wonderful doc, or the `READMEnot^H^H^H.md`). The goal of these notes is to make your experience contributing to Scala as smooth and pleasant as possible. We're happy to guide you through the process once you've submitted your PR.
+You're always welcome to submit your PR straight away and start the discussion (without reading the rest of this wonderful doc, or the [`README.md`](README.md). The goal of these notes is to make your experience contributing to Scala as smooth and pleasant as possible. We're happy to guide you through the process once you've submitted your PR.
 
 ## The Scala Community
-In 2014, you -- the Scala community -- matched the core team at EPFL in number of commits contributed to Scala 2.11, doubling the percentage of commits from outside EPFL/Typesafe since 2.10. Excellent work! (The split was roughly 25/25/50 for you/EPFL/Typesafe.)
+In 2014, you -- the Scala community -- matched the core team at EPFL in number of commits contributed to Scala 2.11, doubling the percentage of commits from outside EPFL/Lightbend since 2.10. Excellent work! (The split was roughly 25/25/50 for you/EPFL/Lightbend.)
 
 We are super happy about this, and are eager to make your experience contributing to Scala productive and satisfying, so that we can keep up this growth. We can't do this alone (nor do we want to)!
 
-This is why we're collecting these notes on how to contribute, and we hope you'll share your experience to improve the process for the next contributor! (Feel free to send a PR for this note, send your thoughts to scala-internals, or tweet about it to @adriaanm.)
+This is why we're collecting these notes on how to contribute, and we hope you'll share your experience to improve the process for the next contributor! (Feel free to send a PR for this note, send your thoughts to gitter, scala-internals, or tweet about it to @adriaanm.)
 
-By the way, the team at Typesafe is: @adriaanm, @lrytz, @retronym, and @SethTisue.
+By the way, the team at Lightbend is: @adriaanm, @lrytz, @retronym, @SethTisue, and @szeiger.
 
 ## What kind of PR are you submitting?
 
-Regardless of the nature of your Pull Request, we have to ask you to digitally sign the [Scala CLA](http://typesafe.com/contribute/cla/scala), to protect the OSS nature of the code base.
+Regardless of the nature of your Pull Request, we have to ask you to digitally sign the [Scala CLA](http://www.lightbend.com/contribute/cla/scala), to protect the OSS nature of the code base.
 
 You don't need to submit separate PRs for 2.11.x, 2.12.x, and 2.13.x. Any changes accepted on one of these branches will, in time, be merged into the later branches.
 
@@ -117,14 +117,32 @@ See the [scala-jenkins-infra repo](https://github.com/scala/scala-jenkins-infra)
 
 ### Pass code review
 
-Your PR will need to be assigned to one or more reviewers.  You can suggest reviewers yourself; if you're not sure, see the list in [README.md](README.md) or ask on scala-internals.
+Your PR will need to be assigned to one or more reviewers. You can suggest reviewers
+yourself; if you're not sure, see the list in [README.md](README.md) or ask on gitter
+or scala-internals.
 
-To assign a reviewer, add a "review by @reviewer" to your PR description.
+To assign a reviewer, add a "review by @reviewer" to the PR description or in a
+comment on your PR.
 
 NOTE: it's best not to @mention in commit messages, as github pings you every time a commit with your @name on it shuffles through the system (even in other repos, on merges,...).
 
 A reviewer gives the green light by commenting "LGTM" (looks good to me).
 
-A review feedback may be addressed by pushing new commits to the request, if these commits stand on their own.
+When including review feedback, we typically amend the changes into the existing commit(s)
+and `push -f` to the branch. This is to keep the git history clean. Additional commits
+are OK if they stand on their own.
 
-Once all these conditions are met, and we agree with the change (we are available on scala-internals to discuss this beforehand, before you put in the coding work!), we will merge your changes.
+Once all these conditions are met, and we agree with the change (we are available on
+gitter or scala-internals to discuss this beforehand, before you put in the coding work!),
+we will merge your changes.
+
+We use the following labels:
+
+Label                    | Description
+-------------------------|:-----------
+`reviewed`               | automatically added by scabot when a comment prefixed with LGTM is posted
+`welcome`                | added by reviewer / queue curator to welcome someone's first PR (for highlighting in the release notes)
+`release-notes`          | added by reviewer / queue curator to make sure this PR is highlighted in the release notes
+`on-hold`                | added when this PR should not yet be merged, even though CI is green
+`WIP`                    | added by the author if a PR is submitted for CI testing, needs more work to be complete
+`assistance-appreciated` | added by the author if help by the community is appreciated to move a change forward

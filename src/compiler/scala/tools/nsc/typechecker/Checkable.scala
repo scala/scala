@@ -241,9 +241,7 @@ trait Checkable {
     private def isSealedOrFinal(sym: Symbol) = sym.isSealed || sym.isFinal
     private def isEffectivelyFinal(sym: Symbol): Boolean = (
       // initialization important
-      sym.initialize.isEffectivelyFinalOrNotOverridden || (
-        settings.future && isTupleSymbol(sym) // SI-7294 step into the future and treat TupleN as final.
-      )
+      sym.initialize.isEffectivelyFinalOrNotOverridden
     )
 
     def isNeverSubClass(sym1: Symbol, sym2: Symbol) = areIrreconcilableAsParents(sym1, sym2)

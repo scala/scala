@@ -7,7 +7,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.annotation.switch
-import scala.collection.{mutable, concurrent}
+import scala.collection.{concurrent, mutable}
 import scala.collection.concurrent.TrieMap
 import scala.reflect.internal.util.Position
 import scala.tools.asm
@@ -17,7 +17,8 @@ import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt._
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.settings.ScalaSettings
 
 /**
@@ -121,7 +122,26 @@ abstract class BTypes {
    * inlining: when inlining an indyLambda instruction into a class, we need to make sure the class
    * has the method.
    */
-  val indyLambdaHosts: mutable.Set[InternalName] = recordPerRunCache(mutable.Set.empty)
+  val indyLambdaImplMethods: mutable.AnyRefMap[InternalName, mutable.LinkedHashSet[asm.Handle]] = recordPerRunCache(mutable.AnyRefMap())
+  def addIndyLambdaImplMethod(hostClass: InternalName, handle: Seq[asm.Handle]): Seq[asm.Handle] = {
+    if (handle.isEmpty) Nil else {
+      val set = indyLambdaImplMethods.getOrElseUpdate(hostClass, mutable.LinkedHashSet())
+      val added = handle.filterNot(set)
+      set ++= handle
+      added
+    }
+  }
+  def removeIndyLambdaImplMethod(hostClass: InternalName, handle: Seq[asm.Handle]): Unit = {
+    if (handle.nonEmpty)
+      indyLambdaImplMethods.getOrElseUpdate(hostClass, mutable.LinkedHashSet()) --= handle
+  }
+
+  def getIndyLambdaImplMethods(hostClass: InternalName): Iterable[asm.Handle] = {
+    indyLambdaImplMethods.getOrNull(hostClass) match {
+      case null => Nil
+      case xs => xs
+    }
+  }
 
   /**
    * Obtain the BType for a type descriptor or internal name. For class descriptors, the ClassBType
@@ -180,8 +200,6 @@ abstract class BTypes {
         Some(classBTypeFromParsedClassfile(superName))
     }
 
-    val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(classBTypeFromParsedClassfile)(collection.breakOut)
-
     val flags = classNode.access
 
     /**
@@ -226,6 +244,8 @@ abstract class BTypes {
 
     val inlineInfo = inlineInfoFromClassfile(classNode)
 
+    val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(classBTypeFromParsedClassfile)(collection.breakOut)
+
     classBType.info = Right(ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo, inlineInfo))
     classBType
   }
@@ -255,13 +275,11 @@ abstract class BTypes {
       val methodInfos = classNode.methods.asScala.map(methodNode => {
         val info = MethodInlineInfo(
           effectivelyFinal                    = BytecodeUtils.isFinalMethod(methodNode),
-          traitMethodWithStaticImplementation = false,
           annotatedInline                     = false,
           annotatedNoInline                   = false)
         (methodNode.name + methodNode.desc, info)
       }).toMap
       InlineInfo(
-        traitImplClassSelfType = None,
         isEffectivelyFinal = BytecodeUtils.isFinalClass(classNode),
         sam = inlinerHeuristics.javaSam(classNode.name),
         methodInfos = methodInfos,
@@ -271,7 +289,7 @@ abstract class BTypes {
     // The InlineInfo is built from the classfile (not from the symbol) for all classes that are NOT
     // being compiled. For those classes, the info is only needed if the inliner is enabled, othewise
     // we can save the memory.
-    if (!compilerSettings.YoptInlinerEnabled) BTypes.EmptyInlineInfo
+    if (!compilerSettings.optInlinerEnabled) BTypes.EmptyInlineInfo
     else fromClassfileAttribute getOrElse fromClassfileWithoutAttribute
   }
 
@@ -792,25 +810,16 @@ abstract class BTypes {
    *   }
    *
    *
-   * Traits Members
-   * --------------
+   * Specialized Classes, Delambdafy:method closure classes
+   * ------------------------------------------------------
    *
-   * Some trait methods don't exist in the generated interface, but only in the implementation class
-   * (private methods in traits for example). Since EnclosingMethod expresses a source-level property,
-   * but the source-level enclosing method doesn't exist in the classfile, we the enclosing method
-   * is null (the enclosing class is still emitted).
-   * See BCodeAsmCommon.considerAsTopLevelImplementationArtifact
-   *
-   *
-   * Implementation Classes, Specialized Classes, Delambdafy:method closure classes
-   * ------------------------------------------------------------------------------
-   *
-   * Trait implementation classes and specialized classes are always considered top-level. Again,
-   * the InnerClass / EnclosingMethod attributes describe a source-level properties. The impl
-   * classes are compilation artifacts.
+   * Specialized classes are always considered top-level, as the InnerClass / EnclosingMethod
+   * attributes describe a source-level properties.
    *
    * The same is true for delambdafy:method closure classes. These classes are generated at
    * top-level in the delambdafy phase, no special support is required in the backend.
+   *
+   * See also BCodeHelpers.considerAsTopLevelImplementationArtifact.
    *
    *
    * Mirror Classes
@@ -1139,22 +1148,8 @@ object BTypes {
    * Note that this class should contain information that can only be obtained from the ClassSymbol.
    * Information that can be computed from the ClassNode should be added to the call graph instead.
    *
-   * @param traitImplClassSelfType `Some(tp)` if this InlineInfo describes a trait, and the `self`
-   *                               parameter type of the methods in the implementation class is not
-   *                               the trait itself. Example:
-   *                                 trait T { self: U => def f = 1 }
-   *                               Generates something like:
-   *                                 class T$class { static def f(self: U) = 1 }
-   *
-   *                               In order to inline a trat method call, the INVOKEINTERFACE is
-   *                               rewritten to an INVOKESTATIC of the impl class, so we need the
-   *                               self type (U) to get the right signature.
-   *
-   *                               `None` if the self type is the interface type, or if this
-   *                               InlineInfo does not describe a trait.
-   *
    * @param isEffectivelyFinal     True if the class cannot have subclasses: final classes, module
-   *                               classes, trait impl classes.
+   *                               classes.
    *
    * @param sam                    If this class is a SAM type, the SAM's "$name$descriptor".
    *
@@ -1166,30 +1161,28 @@ object BTypes {
    *                               InlineInfo, for example if some classfile could not be found on
    *                               the classpath. This warning can be reported later by the inliner.
    */
-  final case class InlineInfo(traitImplClassSelfType: Option[InternalName],
-                              isEffectivelyFinal: Boolean,
+  final case class InlineInfo(isEffectivelyFinal: Boolean,
                               sam: Option[String],
                               methodInfos: Map[String, MethodInlineInfo],
                               warning: Option[ClassInlineInfoWarning])
 
-  val EmptyInlineInfo = InlineInfo(None, false, None, Map.empty, None)
+  val EmptyInlineInfo = InlineInfo(false, None, Map.empty, None)
 
   /**
    * Metadata about a method, used by the inliner.
    *
    * @param effectivelyFinal                    True if the method cannot be overridden (in Scala)
-   * @param traitMethodWithStaticImplementation True if the method is an interface method method of
-   *                                            a trait method and has a static counterpart in the
-   *                                            implementation class.
    * @param annotatedInline                     True if the method is annotated `@inline`
    * @param annotatedNoInline                   True if the method is annotated `@noinline`
    */
   final case class MethodInlineInfo(effectivelyFinal: Boolean,
-                                    traitMethodWithStaticImplementation: Boolean,
                                     annotatedInline: Boolean,
                                     annotatedNoInline: Boolean)
 
   // no static way (without symbol table instance) to get to nme.ScalaATTR / ScalaSignatureATTR
   val ScalaAttributeName    = "Scala"
   val ScalaSigAttributeName = "ScalaSig"
+
+  // when inlining, local variable names of the callee are prefixed with the name of the callee method
+  val InlinedLocalVariablePrefixMaxLenght = 128
 }

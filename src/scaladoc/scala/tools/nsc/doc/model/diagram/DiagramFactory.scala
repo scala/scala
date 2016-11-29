@@ -63,7 +63,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
             case d: TemplateImpl if !classExcluded(d) => NormalNode(makeType(d.sym.tpe, tpl), Some(d))()
           }.sortBy(_.tpl.get.name)(implicitly[Ordering[String]].reverse)
 
-        // outgoing implicit coversions
+        // outgoing implicit conversions
         lazy val outgoingImplicitNodes = tpl.outgoingImplicitlyConvertedClasses.map {
           case (outgoingTpl, outgoingType, conv) =>
             ImplicitNode(outgoingType, Some(outgoingTpl))(implicitTooltip(from=tpl, to=tpl, conv=conv))
@@ -248,7 +248,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
                 case _ => Nil
               })
 
-            // Only show the the non-isolated nodes
+            // Only show the non-isolated nodes
             // TODO: Decide if we really want to hide package members, I'm not sure that's a good idea (!!!)
             // TODO: Does .distinct cause any stability issues?
             val sourceNodes = edges.map(_._1)

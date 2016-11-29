@@ -8,17 +8,16 @@ package backend.jvm
 package opt
 
 import scala.annotation.switch
-import scala.collection.{mutable, immutable}
+import scala.collection.mutable
 import scala.collection.immutable.IntMap
 import scala.reflect.internal.util.NoPosition
-import scala.tools.asm.{Handle, Type, Opcodes}
+import scala.tools.asm.{Type, Opcodes}
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import BytecodeUtils._
 import BackendReporting._
 import Opcodes._
-import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository.CompilationUnit
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 
 class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
   import btypes._
@@ -75,10 +74,10 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
   def rewriteClosureApplyInvocations(): Unit = {
 
     // sort all closure invocations to rewrite to ensure bytecode stability
-    val toRewrite = new java.util.TreeMap[ClosureInstantiation, mutable.ArrayBuffer[(MethodInsnNode, Int)]](closureInitOrdering)
+    val toRewrite = mutable.TreeMap.empty[ClosureInstantiation, mutable.ArrayBuffer[(MethodInsnNode, Int)]](closureInitOrdering)
     def addRewrite(init: ClosureInstantiation, invocation: MethodInsnNode, stackHeight: Int): Unit = {
-      if (!toRewrite.containsKey(init)) toRewrite.put(init, mutable.ArrayBuffer.empty[(MethodInsnNode, Int)])
-      toRewrite.get(init) += ((invocation, stackHeight))
+      val callsites = toRewrite.getOrElseUpdate(init, mutable.ArrayBuffer.empty[(MethodInsnNode, Int)])
+      callsites += ((invocation, stackHeight))
     }
 
     // For each closure instantiation find callsites of the closure and add them to the toRewrite
@@ -113,9 +112,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
       case _ =>
     }
 
-    for (entry <- toRewrite.entrySet.iterator().asScala) {
-      val closureInit = entry.getKey
-      val invocations = entry.getValue
+    for ((closureInit, invocations) <- toRewrite) {
       // Local variables that hold the captured values and the closure invocation arguments.
       val (localsForCapturedValues, argumentLocalsList) = localsForClosureRewrite(closureInit)
       for ((invocation, stackHeight) <- invocations)
@@ -158,7 +155,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
         // TODO: This is maybe over-cautious.
         // We are checking if the closure body method is accessible at the closure callsite.
         // If the closure allocation has access to the body method, then the callsite (in the same
-        // method as the alloction) should have access too.
+        // method as the allocation) should have access too.
         val bodyAccessible: Either[OptimizerWarning, Boolean] = for {
           (bodyMethodNode, declClass) <- byteCodeRepository.methodNode(lambdaBodyHandle.getOwner, lambdaBodyHandle.getName, lambdaBodyHandle.getDesc): Either[OptimizerWarning, (MethodNode, InternalName)]
           isAccessible                <- inliner.memberIsAccessible(bodyMethodNode.access, classBTypeFromParsedClassfile(declClass), classBTypeFromParsedClassfile(lambdaBodyHandle.getOwner), ownerClass)
@@ -328,8 +325,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
         insns.insertBefore(invocation, new InsnNode(DUP))
         INVOKESPECIAL
     }
-    val isInterface = bodyOpcode == INVOKEINTERFACE
-    val bodyInvocation = new MethodInsnNode(bodyOpcode, lambdaBodyHandle.getOwner, lambdaBodyHandle.getName, lambdaBodyHandle.getDesc, isInterface)
+    val bodyInvocation = new MethodInsnNode(bodyOpcode, lambdaBodyHandle.getOwner, lambdaBodyHandle.getName, lambdaBodyHandle.getDesc, lambdaBodyHandle.isInterface)
     ownerMethod.instructions.insertBefore(invocation, bodyInvocation)
 
     val bodyReturnType = Type.getReturnType(lambdaBodyHandle.getDesc)
@@ -356,15 +352,15 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
 
     // the method node is needed for building the call graph entry
     val bodyMethod = byteCodeRepository.methodNode(lambdaBodyHandle.getOwner, lambdaBodyHandle.getName, lambdaBodyHandle.getDesc)
-    def bodyMethodIsBeingCompiled = byteCodeRepository.classNodeAndSource(lambdaBodyHandle.getOwner).map(_._2 == CompilationUnit).getOrElse(false)
+    val sourceFilePath = byteCodeRepository.compilingClasses.get(lambdaBodyHandle.getOwner).map(_._2)
     val callee = bodyMethod.map({
       case (bodyMethodNode, bodyMethodDeclClass) =>
         val bodyDeclClassType = classBTypeFromParsedClassfile(bodyMethodDeclClass)
         Callee(
           callee = bodyMethodNode,
           calleeDeclarationClass = bodyDeclClassType,
-          safeToInline = compilerSettings.YoptInlineGlobal || bodyMethodIsBeingCompiled,
-          safeToRewrite = false, // the lambda body method is not a trait interface method
+          isStaticallyResolved = true,
+          sourceFilePath = sourceFilePath,
           annotatedInline = false,
           annotatedNoInline = false,
           samParamTypes = callGraph.samParamTypes(bodyMethodNode, bodyDeclClassType),
@@ -396,7 +392,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     // (x: T) => ??? has return type Nothing$, and an ATHROW is added (see fixLoadedNothingOrNullValue).
     unreachableCodeEliminated -= ownerMethod
 
-    if (hasAdaptedImplMethod(closureInit) && inliner.canInlineBody(bodyMethodCallsite).isEmpty)
+    if (hasAdaptedImplMethod(closureInit) && inliner.canInlineCallsite(bodyMethodCallsite).isEmpty)
       inliner.inlineCallsite(bodyMethodCallsite)
   }
 

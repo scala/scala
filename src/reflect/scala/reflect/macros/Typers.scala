@@ -53,7 +53,7 @@ trait Typers {
 
   /** @see `Typers.typecheck`
    */
-  @deprecated("Use `c.typecheck` instead", "2.11.0")
+  @deprecated("use `c.typecheck` instead", "2.11.0")
   def typeCheck(tree: Tree, pt: Type = universe.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree =
     typecheck(tree, TERMmode, pt, silent, withImplicitViewsDisabled, withMacrosDisabled)
 
@@ -101,7 +101,7 @@ trait Typers {
   /** Recursively resets locally defined symbols and types in a given tree.
    *  WARNING: Don't use this API, go for [[untypecheck]] instead.
    */
-  @deprecated("Use `c.untypecheck` instead", "2.11.0")
+  @deprecated("use `c.untypecheck` instead", "2.11.0")
   def resetLocalAttrs(tree: Tree): Tree
 
   /** In the current implementation of Scala's reflection API, untyped trees (also known as parser trees or unattributed trees)

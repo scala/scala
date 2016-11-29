@@ -25,7 +25,7 @@ package scala.sys {
     *
     * {{{
     * import scala.sys.process._
-    * "ls" #| "grep .scala" #&& Seq("sh", "-c", "scalac *.scala") #|| "echo nothing found" lines
+    * "ls" #| "grep .scala" #&& Seq("sh", "-c", "scalac *.scala") #|| "echo nothing found" lineStream
     * }}}
     *
     * We describe below the general concepts and architecture of the package,
@@ -92,7 +92,7 @@ package scala.sys {
     *
     *   - Return status of the process (`!` methods)
     *   - Output of the process as a `String` (`!!` methods)
-    *   - Continuous output of the process as a `Stream[String]` (`lines` methods)
+    *   - Continuous output of the process as a `Stream[String]` (`lineStream` methods)
     *   - The `Process` representing it (`run` methods)
     *
     * Some simple examples of these methods:
@@ -109,7 +109,7 @@ package scala.sys {
     * // a Stream[String]
     * def sourceFilesAt(baseDir: String): Stream[String] = {
     *   val cmd = Seq("find", baseDir, "-name", "*.scala", "-type", "f")
-    *   cmd.lines
+    *   cmd.lineStream
     * }
     * }}}
     *
@@ -167,8 +167,8 @@ package scala.sys {
     * def sourceFilesAt(baseDir: String): (Stream[String], StringBuffer) = {
     *   val buffer = new StringBuffer()
     *   val cmd = Seq("find", baseDir, "-name", "*.scala", "-type", "f")
-    *   val lines = cmd lines_! ProcessLogger(buffer append _)
-    *   (lines, buffer)
+    *   val lineStream = cmd lineStream_! ProcessLogger(buffer append _)
+    *   (lineStream, buffer)
     * }
     * }}}
     *
@@ -185,8 +185,8 @@ package scala.sys {
     * new URL("http://www.scala-lang.org/") #> new File("scala-lang.html") !
     * }}}
     *
-    * More information about the other ways of controlling I/O can be looked at
-    * in the scaladoc for the associated objects, traits and classes.
+    * More information about the other ways of controlling I/O can be found
+    * in the Scaladoc for the associated objects, traits and classes.
     *
     * ==Running the Process==
     *
@@ -203,9 +203,9 @@ package scala.sys {
   package object process extends ProcessImplicits {
     /** The arguments passed to `java` when creating this process */
     def javaVmArguments: List[String] = {
-      import scala.collection.JavaConversions._
+      import scala.collection.JavaConverters._
 
-      java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments().toList
+      java.lang.management.ManagementFactory.getRuntimeMXBean.getInputArguments.asScala.toList
     }
     /** The input stream of this process */
     def stdin  = java.lang.System.in

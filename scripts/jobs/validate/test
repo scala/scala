@@ -1,17 +1,30 @@
-#!/bin/bash -e
+#!/bin/bash -e -v -x
+
+baseDir=${WORKSPACE-`pwd`}
+scriptsDir="$baseDir/scripts"
+. $scriptsDir/common
+
+generateRepositoriesConfig $prRepoUrl
+SBT="$SBT_CMD -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
 
 case $prDryRun in
+
   yep)
     echo "DRY RUN"
     ;;
+
   *)
-    ./pull-binary-libs.sh
 
     # build quick using STARR built upstream, as specified by scalaVersion
-    # (in that sense it's locker, since it was built with starr by that upstream job)
-    ant -Dstarr.version=$scalaVersion \
-       -Dscalac.args.optimise=-Yopt:l:classpath \
-       -Dlocker.skip=1 -Dextra.repo.url=$prRepoUrl \
-       $testExtraArgs ${testTarget-test.core docs.done}
+    # (in that sense it's locker, since it was built with starr by that upstream job);
+    # and run JUnit tests, partest, OSGi tests, MiMa and scaladoc
+    $SBT \
+       -Dstarr.version=$scalaVersion \
+       --warn \
+       "setupValidateTest $prRepoUrl" \
+       $testExtraArgs \
+       testAll
+
     ;;
+
 esac

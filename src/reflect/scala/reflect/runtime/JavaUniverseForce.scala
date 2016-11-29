@@ -37,12 +37,17 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.FixedMirrorTreeCreator
     this.FixedMirrorTypeCreator
     this.CompoundTypeTreeOriginalAttachment
+    this.SAMFunction
+    this.DelambdafyTarget
     this.BackquotedIdentifierAttachment
     this.ForAttachment
     this.SyntheticUnitAttachment
     this.SubpatternsAttachment
     this.NoInlineCallsiteAttachment
     this.InlineCallsiteAttachment
+    this.OuterArgCanBeElided
+    this.UseInvokeSpecial
+    this.TypeParamVarargsAttachment
     this.noPrint
     this.typeDebug
     this.Range
@@ -244,7 +249,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.SymbolModule
     definitions.StringAddClass
     definitions.ScalaNumberClass
-    definitions.TraitSetterAnnotationClass
     definitions.DelayedInitClass
     definitions.TypeConstraintClass
     definitions.SingletonClass
@@ -266,7 +270,9 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.IterableClass
     definitions.ListClass
     definitions.SeqClass
-    definitions.StringBuilderClass
+    definitions.JavaStringBuilderClass
+    definitions.JavaStringBufferClass
+    definitions.JavaCharSequenceClass
     definitions.TraversableClass
     definitions.ListModule
     definitions.NilModule
@@ -282,6 +288,9 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.MethodClass
     definitions.EmptyMethodCacheClass
     definitions.MethodCacheClass
+    definitions.StructuralCallSite
+    definitions.StructuralCallSite_dummy
+    definitions.SymbolLiteral
     definitions.ScalaXmlTopScope
     definitions.ScalaXmlPackage
     definitions.ReflectPackage
@@ -408,6 +417,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ClassTargetClass
     definitions.MethodTargetClass
     definitions.LanguageFeatureAnnot
+    definitions.JUnitAnnotations
     definitions.languageFeatureModule
     definitions.metaAnnotations
     definitions.AnnotationDefaultAttr
@@ -423,6 +433,9 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.boxedClass
     definitions.refClass
     definitions.volatileRefClass
+    definitions.lazyHolders
+    definitions.LazyRefClass
+    definitions.LazyUnitClass
     definitions.allRefClasses
     definitions.UnitClass
     definitions.ByteClass
@@ -446,6 +459,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ScalaValueClassesNoUnit
     definitions.ScalaValueClasses
 
+    uncurry.VarargsSymbolAttachment
     uncurry.DesugaredParameterType
     erasure.GenericArray
     erasure.scalaErasure

@@ -10,9 +10,13 @@
 
 [[ $# -eq 0 ]] || cd "$1"
 
-# printf %016s is not portable for 0-padding, has to be a digit.
-# so we're stuck disassembling it.
-hash=$(git log -1 --format="%H" HEAD)
-hash=${hash#g}
-hash=${hash:0:10}
+if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+	# printf %016s is not portable for 0-padding, has to be a digit.
+	# so we're stuck disassembling it.
+	hash=$(git log -1 --format="%H" HEAD)
+	hash=${hash#g}
+	hash=${hash:0:10}
+else
+	hash="unknown"
+fi
 echo "$hash"

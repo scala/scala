@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module external.linked.project.id="scala-build" external.linked.project.path="$MODULE_DIR$/../../project" external.root.project.path="$MODULE_DIR$/../.." external.system.id="SBT" sbt.imports="sbt._, Keys._, dsl._, _root_.sbt.plugins.IvyPlugin, _root_.sbt.plugins.JvmPlugin, _root_.sbt.plugins.CorePlugin, _root_.sbt.plugins.JUnitXmlReportPlugin" sbt.resolvers="https://repo1.maven.org/maven2/|maven|public, https://oss.sonatype.org/content/repositories/snapshots|maven|sonatype-snapshots, https://scala-ci.typesafe.com/artifactory/scala-release-temp/|maven|private-repo, $USER_HOME$/.ivy2/cache|ivy|Local cache" type="SBT_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../../project">
+      <sourceFolder url="file://$MODULE_DIR$/../../project" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../project/target/scala-2.10/sbt-0.13/src_managed/main" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/../../project/project/project/target" />
+      <excludeFolder url="file://$MODULE_DIR$/../../project/project/target" />
+      <excludeFolder url="file://$MODULE_DIR$/../../project/target/config-classes" />
+      <excludeFolder url="file://$MODULE_DIR$/../../project/target/resolution-cache" />
+      <excludeFolder url="file://$MODULE_DIR$/../../project/target/scala-2.10/classes" />
+      <excludeFolder url="file://$MODULE_DIR$/../../project/target/scala-2.10/sbt-0.13/classes" />
+      <excludeFolder url="file://$MODULE_DIR$/../../project/target/streams" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="scala-build-deps" level="project" />
+  </component>
+</module>

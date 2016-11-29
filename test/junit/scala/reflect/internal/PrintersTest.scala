@@ -8,14 +8,6 @@ import scala.reflect.runtime.{currentMirror=>cm}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-@RunWith(classOf[JUnit4])
-class PrintersTest extends BasePrintTests
-  with ClassPrintTests
-  with TraitPrintTests
-  with ValAndDefPrintTests
-  with QuasiTreesPrintTests
-  with PackagePrintTests
-
 object PrinterHelper {
   val toolbox = cm.mkToolBox()
 
@@ -73,7 +65,8 @@ object PrinterHelper {
 
 import PrinterHelper._
 
-trait BasePrintTests {
+@RunWith(classOf[JUnit4])
+class BasePrintTest {
   @Test def testIdent = assertTreeCode(Ident("*"))("*")
 
   @Test def testConstant1 = assertTreeCode(Literal(Constant("*")))("\"*\"")
@@ -85,6 +78,22 @@ trait BasePrintTests {
   @Test def testConstantDouble = assertTreeCode(Literal(Constant(42d)))("42.0")
 
   @Test def testConstantLong = assertTreeCode(Literal(Constant(42l)))("42L")
+
+  val sq  = "\""
+  val tq  = "\"" * 3
+  val teq = "\"\"\\\""
+
+  @Test def testConstantMultiline = assertTreeCode(Literal(Constant("hello\nworld")))(s"${tq}hello\nworld${tq}")
+
+  @Test def testConstantFormfeed = assertTreeCode(Literal(Constant("hello\fworld")))(s"${sq}hello\\fworld${sq}")
+
+  @Test def testConstantControl = assertTreeCode(Literal(Constant("hello\u0003world")))(s"${sq}hello\\u0003world${sq}")
+
+  @Test def testConstantFormfeedChar = assertTreeCode(Literal(Constant('\f')))("'\\f'")
+
+  @Test def testConstantControlChar = assertTreeCode(Literal(Constant(3.toChar)))("'\\u0003'")
+
+  @Test def testConstantEmbeddedTriple = assertTreeCode(Literal(Constant(s"${tq}hello${tq}\nworld")))(s"${tq}${teq}hello${teq}\nworld${tq}")
 
   @Test def testOpExpr = assertPrintedCode("(5).+(4)", checkTypedTree = false)
 
@@ -348,7 +357,8 @@ trait BasePrintTests {
   @Test def testImport4 = assertPrintedCode("import scala.collection._")
 }
 
-trait ClassPrintTests {
+@RunWith(classOf[JUnit4])
+class ClassPrintTest {
   @Test def testClass = assertPrintedCode("class *")
 
   @Test def testClassWithBody = assertPrintedCode(sm"""
@@ -833,7 +843,8 @@ trait ClassPrintTests {
     |}""")
 }
 
-trait TraitPrintTests {
+@RunWith(classOf[JUnit4])
+class TraitPrintTest {
   @Test def testTrait = assertPrintedCode("trait *")
 
   @Test def testTraitWithBody = assertPrintedCode(sm"""
@@ -892,7 +903,7 @@ trait TraitPrintTests {
     |  type Foo;
     |  type XString = scala.Predef.String
     |} with scala.Serializable {
-    |  val z = 7
+    |  val z: scala.Int = 7
     |}""")
 
   @Test def testTraitWithSingletonTypeTree = assertPrintedCode(sm"""
@@ -953,7 +964,8 @@ trait TraitPrintTests {
     |}""")  
 }
 
-trait ValAndDefPrintTests {
+@RunWith(classOf[JUnit4])
+class ValAndDefPrintTest {
   @Test def testVal1 = assertPrintedCode("val a: scala.Unit = ()")
 
   @Test def testVal2 = assertPrintedCode("val * : scala.Unit = ()")
@@ -996,23 +1008,16 @@ trait ValAndDefPrintTests {
 
   @Test def testDef9 = assertPrintedCode("def a(x: scala.Int)(implicit z: scala.Double, y: scala.Float): scala.Unit = ()")
 
-  @Test def testDefWithLazyVal1 = assertResultCode(
-    code = "def a = { lazy val test: Int = 42 }")(
-    parsedCode = sm"""
-    |def a = {
-    |  lazy val test: Int = 42;
-    |  ()
-    |}
-    """,
-    typedCode = sm"""
+  @Test def testDefWithLazyVal1 = assertPrintedCode(sm"""
     |def a = {
     |  lazy val test: scala.Int = 42;
     |  ()
-    |}""")
+    |}
+    """)
 
   @Test def testDefWithLazyVal2 = assertPrintedCode(sm"""
     |def a = {
-    |  lazy val test: Unit = {
+    |  lazy val test: scala.Unit = {
     |    scala.Predef.println();
     |    scala.Predef.println()
     |  };
@@ -1093,7 +1098,8 @@ trait ValAndDefPrintTests {
     |}""", wrapCode = true)
 }
 
-trait PackagePrintTests {
+@RunWith(classOf[JUnit4])
+class PackagePrintTest {
   @Test def testPackage1 = assertPrintedCode(sm"""
     |package foo.bar {
     |  
@@ -1131,7 +1137,8 @@ trait PackagePrintTests {
     |}""", checkTypedTree = false)
 }
 
-trait QuasiTreesPrintTests {
+@RunWith(classOf[JUnit4])
+class QuasiTreesPrintTest {
   @Test def testQuasiIdent = assertTreeCode(q"*")("*")
 
   @Test def testQuasiVal = assertTreeCode(q"val * : Unit = null")("val * : Unit = null")

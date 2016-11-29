@@ -1,0 +1,14 @@
+Range 1 to 10
+Range 1 to 10
+inexact Range 1 to 10 by 2
+Range 1 to 10 by 3
+inexact Range 1 until 10 by 2
+Range 100 to 100
+empty Range 100 until 100
+NumericRange 1 to 10
+NumericRange 1 to 10 by 2
+NumericRange 0.1 until 1.0 by 0.1
+NumericRange 0.1 until 1.0 by 0.1
+NumericRange 0.1 until 1.0 by 0.1 (using NumericRange 0.1 until 1.0 by 0.1 of BigDecimal)
+NumericRange 0 days until 10 seconds by 1 second
+empty NumericRange 0 days until 0 days by 1 second

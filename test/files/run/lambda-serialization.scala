@@ -1,25 +1,54 @@
-import java.io.{ByteArrayInputStream, ObjectInputStream, ObjectOutputStream, ByteArrayOutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
+import java.lang.invoke.{MethodHandleInfo, SerializedLambda}
+
+import scala.tools.nsc.util
+
+class C extends java.io.Serializable {
+  val fs = List(
+    () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => (),
+    () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => (),
+    () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => (),
+    () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => (),
+    () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => (),
+    () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => (),
+    () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => (),
+    () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => (),
+    () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => (),
+    () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => (),
+    () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => (),
+    () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => (),
+    () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => (),
+    () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => (),
+    () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => ()
+  )
+  private def foo(): Unit = {
+    assert(false, "should not be called!!!")
+  }
+}
+
+trait FakeSam { def apply(): Unit }
 
 object Test {
   def main(args: Array[String]): Unit = {
-    roundTrip
+    allRealLambdasRoundTrip()
+    fakeLambdaFailsToDeserialize()
   }
 
-  def roundTrip(): Unit = {
-    val c = new Capture("Capture")
-    val lambda = (p: Param) => ("a", p, c)
-    val reconstituted1 = serializeDeserialize(lambda).asInstanceOf[Object => Any]
-    val p = new Param
-    assert(reconstituted1.apply(p) == ("a", p, c))
-    val reconstituted2 = serializeDeserialize(lambda).asInstanceOf[Object => Any]
-    assert(reconstituted1.getClass == reconstituted2.getClass)
+  def allRealLambdasRoundTrip(): Unit = {
+    new C().fs.map(x => serializeDeserialize(x).apply())
+  }
 
-    val reconstituted3 = serializeDeserialize(reconstituted1)
-    assert(reconstituted3.apply(p) == ("a", p, c))
-
-    val specializedLambda = (p: Int) => List(p, c).length
-    assert(serializeDeserialize(specializedLambda).apply(42) == 2)
-    assert(serializeDeserialize(serializeDeserialize(specializedLambda)).apply(42) == 2)
+  def fakeLambdaFailsToDeserialize(): Unit = {
+    val fake = new SerializedLambda(classOf[C], classOf[FakeSam].getName, "apply", "()V",
+      MethodHandleInfo.REF_invokeVirtual, classOf[C].getName, "foo", "()V", "()V", Array(new C))
+    try {
+      serializeDeserialize(fake).asInstanceOf[FakeSam].apply()
+      assert(false)
+    } catch {
+      case ex: Exception =>
+        val stackTrace = util.stackTraceString(ex)
+        assert(stackTrace.contains("Illegal lambda deserialization"), stackTrace)
+    }
   }
 
   def serializeDeserialize[T <: AnyRef](obj: T) = {
@@ -31,5 +60,3 @@ object Test {
   }
 }
 
-case class Capture(s: String) extends Serializable
-class Param

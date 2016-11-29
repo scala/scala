@@ -31,8 +31,7 @@ import scala.annotation.tailrec
  *  @define coll immutable hash set
  */
 @SerialVersionUID(2L)
-@deprecatedInheritance("The implementation details of immutable hash sets make inheriting from them unwise.", "2.11.0")
-class HashSet[A] extends AbstractSet[A]
+sealed class HashSet[A] extends AbstractSet[A]
                     with Set[A]
                     with GenericSetTemplate[A, HashSet]
                     with SetLike[A, HashSet[A]]
@@ -162,6 +161,8 @@ class HashSet[A] extends AbstractSet[A]
   def - (e: A): HashSet[A] =
     nullToEmpty(removed0(e, computeHash(e), 0))
 
+  override def tail: HashSet[A] = this - head
+
   override def filter(p: A => Boolean) = {
     val buffer = new Array[HashSet[A]](bufferSize(size))
     nullToEmpty(filter0(p, false, 0, buffer, 0))
@@ -213,7 +214,10 @@ object HashSet extends ImmutableSetFactory[HashSet] {
   /** $setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, HashSet[A]] = setCanBuildFrom[A]
 
-  private object EmptyHashSet extends HashSet[Any] { }
+  private object EmptyHashSet extends HashSet[Any] {
+    override def head: Any = throw new NoSuchElementException("Empty Set")
+    override def tail: HashSet[Any] = throw new NoSuchElementException("Empty Set")
+  }
   private[collection] def emptyInstance: HashSet[Any] = EmptyHashSet
 
   // utility method to create a HashTrieSet from two leaf HashSets (HashSet1 or HashSetCollision1) with non-colliding hash code)

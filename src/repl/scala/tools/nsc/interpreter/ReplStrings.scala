@@ -11,13 +11,21 @@ import scala.reflect.internal.Chars
 trait ReplStrings {
   /** Convert a string into code that can recreate the string.
    *  This requires replacing all special characters by escape
-   *  codes. It does not add the surrounding " marks.  */
+   *  codes. It does not add the surrounding " marks.
+   */
   def string2code(str: String): String = {
     val res = new StringBuilder
     for (c <- str) c match {
-      case '"' | '\'' | '\\'  => res += '\\' ; res += c
-      case _ if c.isControl   => res ++= Chars.char2uescape(c)
-      case _                  => res += c
+      case '"'  => res ++= """\""""
+      case '\'' => res ++= """\'"""
+      case '\\' => res ++= """\\"""
+      case '\b' => res ++= """\b"""
+      case '\t' => res ++= """\t"""
+      case '\n' => res ++= """\n"""
+      case '\f' => res ++= """\f"""
+      case '\r' => res ++= """\r"""
+      case _ if c.isControl => res ++= Chars.char2uescape(c)
+      case _    => res += c
     }
     res.toString
   }
@@ -26,7 +34,7 @@ trait ReplStrings {
     "\"" + string2code(str) + "\""
 
   def any2stringOf(x: Any, maxlen: Int) =
-    "scala.runtime.ScalaRunTime.replStringOf(%s, %s)".format(x, maxlen)
+    "_root_.scala.runtime.ScalaRunTime.replStringOf(%s, %s)".format(x, maxlen)
 
   // no escaped or nested quotes
   private[this] val inquotes = """(['"])(.*?)\1""".r

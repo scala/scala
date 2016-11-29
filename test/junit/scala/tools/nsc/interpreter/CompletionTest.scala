@@ -1,10 +1,11 @@
 package scala.tools.nsc.interpreter
 
-import java.io.{StringWriter, PrintWriter}
+import java.io.{PrintWriter, StringWriter}
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
+import scala.reflect.internal.util.BatchSourceFile
 import scala.tools.nsc.Settings
 
 class CompletionTest {
@@ -172,6 +173,24 @@ class CompletionTest {
     checkExact(completer, "class C(val a: Int, val b: Int) { this.")("a", "b")
     assert(Set("asInstanceOf", "==").diff(completer.complete("class C(val a: Int, val b: Int) { this.").candidates.toSet).isEmpty)
     checkExact(completer, "case class D(a: Int, b: Int) { this.a")("a", "asInstanceOf")
+  }
+
+  @Test
+  def replGeneratedCodeDeepPackages(): Unit = {
+    val intp = newIMain()
+    val completer = new PresentationCompilerCompleter(intp)
+    intp.compileSources(new BatchSourceFile("<paste>", "package p1.p2.p3; object Ping { object Pong }"))
+    checkExact(completer, "p1.p2.p")("p3")
+    checkExact(completer, "p1.p2.p3.P")("Ping")
+    checkExact(completer, "p1.p2.p3.Ping.Po")("Pong")
+  }
+
+  @Test
+  def performanceOfLenientMatch(): Unit = {
+    val intp = newIMain()
+    val completer = new PresentationCompilerCompleter(intp)
+    val ident: String = "thisIsAReallyLongMethodNameWithManyManyManyManyChunks"
+    checkExact(completer, s"($ident: Int) => tia")(ident)
   }
 
   def checkExact(completer: PresentationCompilerCompleter, before: String, after: String = "")(expected: String*): Unit = {

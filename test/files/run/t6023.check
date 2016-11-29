@@ -1,12 +1,12 @@
 {
   abstract trait Foo extends AnyRef {
-    <stable> <accessor> def a: Int
+    val a: Int
   };
   ()
 }
 {
   abstract trait Foo extends AnyRef {
-    <stable> <accessor> def a: Int
+    <stable> <accessor> val a: Int
   };
   ()
 }

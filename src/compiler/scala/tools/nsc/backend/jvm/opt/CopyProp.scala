@@ -13,7 +13,7 @@ import scala.tools.asm.Type
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.collection.mutable
-import scala.collection.convert.decorateAsScala._
+import scala.collection.JavaConverters._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.analysis._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
@@ -52,7 +52,7 @@ class CopyProp[BT <: BTypes](val btypes: BT) {
           var r = init
           while (it.hasNext) {
             val n = it.next()
-            // knownUsed.lenght is the number of locals, `n` may be a stack slot
+            // knownUsed.length is the number of locals, `n` may be a stack slot
             if (n < knownUsed.length && knownUsed(n)) return n
             if (n < r) r = n
           }
@@ -171,7 +171,7 @@ class CopyProp[BT <: BTypes](val btypes: BT) {
    *
    * A special case eliminates the creation of unused objects with side-effect-free constructors:
    *   NEW scala/Tuple1; DUP; ALOAD 0; INVOKESPECIAL scala/Tuple1.<init>; POP
-   * The POP has a signle producer (the DUP), it's easy to eliminate these two. A special case
+   * The POP has a single producer (the DUP), it's easy to eliminate these two. A special case
    * is needed to eliminate the INVOKESPECIAL and NEW.
    */
   def eliminatePushPop(method: MethodNode, owner: InternalName): Boolean = {
@@ -295,18 +295,12 @@ class CopyProp[BT <: BTypes](val btypes: BT) {
       }
 
       /**
-       * Eliminate the closure value produced by `indy`. If the SAM type is known to construct
-       * without side-effects (e.g. scala/runtime/java8/JFunctionN), the `indy` and its inputs
-       * are eliminated, otherwise a POP is inserted.
+       * Eliminate LMF `indy` and its inputs.
        */
       def handleClosureInst(indy: InvokeDynamicInsnNode): Unit = {
-        if (isrJFunctionType(Type.getReturnType(indy.desc).getInternalName)) {
-          toRemove += indy
-          callGraph.removeClosureInstantiation(indy, method)
-          handleInputs(indy, Type.getArgumentTypes(indy.desc).length)
-        } else {
-          toInsertAfter(indy) = getPop(1)
-        }
+        toRemove += indy
+        callGraph.removeClosureInstantiation(indy, method)
+        handleInputs(indy, Type.getArgumentTypes(indy.desc).length)
       }
 
       def runQueue(): Unit = while (queue.nonEmpty) {
@@ -533,7 +527,7 @@ class CopyProp[BT <: BTypes](val btypes: BT) {
     }
 
     /**
-     * Try to pair `insn` with its correspondant on the stack
+     * Try to pair `insn` with its correspondent on the stack
      *   - if the stack top is a store and `insn` is a corresponding load, create a pair
      *   - otherwise, check the two top stack values for `null; store`. if it matches, create
      *     a pair and continue pairing `insn` on the remaining stack

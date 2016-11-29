@@ -6,7 +6,6 @@ import scala.tools.reflect.ToolBox
 import scala.reflect.api._
 import scala.reflect.api.Trees
 import scala.reflect.internal.Types
-import scala.util.matching.Regex
 
 object Test extends App {
   //val output = new ByteArrayOutputStream()

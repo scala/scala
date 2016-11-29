@@ -176,12 +176,10 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
    */
   class InternalInfo[T](value: Option[T] = None)(implicit typeEvidence: ru.TypeTag[T], runtimeClassEvidence: ClassTag[T]) {
     private def isSpecialized(s: Symbol) = s.name.toString contains "$mc"
-    private def isImplClass(s: Symbol)   = s.name.toString endsWith "$class"
 
     /** Standard noise reduction filter. */
     def excludeMember(s: Symbol) = (
          isSpecialized(s)
-      || isImplClass(s)
       || s.isAnonOrRefinementClass
       || s.isAnonymousFunction
     )

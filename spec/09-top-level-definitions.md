@@ -23,7 +23,7 @@ A compilation unit consists of a sequence of packagings, import
 clauses, and class and object definitions, which may be preceded by a
 package clause.
 
-A compilation unit
+A _compilation unit_
 
 ```scala
 package $p_1$;
@@ -59,7 +59,7 @@ The exception to the implicit import of `scala.Predef` can be useful to hide, e.
 Packaging       ::=  ‘package’ QualId [nl] ‘{’ TopStatSeq ‘}’
 ```
 
-A package is a special object which defines a set of member classes,
+A _package_ is a special object which defines a set of member classes,
 objects and packages.  Unlike other objects, packages are not introduced
 by a definition.  Instead, the set of members of a package is determined by
 packagings.
@@ -100,7 +100,7 @@ are visible to each other without qualification.
 PackageObject   ::=  ‘package’ ‘object’ ObjectDef
 ```
 
-A package object `package object $p$ extends $t$` adds the
+A _package object_ `package object $p$ extends $t$` adds the
 members of template $t$ to the package $p$. There can be only one
 package object per package. The standard naming convention is to place
 the definition above in a file named `package.scala` that's

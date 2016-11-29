@@ -14,7 +14,7 @@ object Product6 {
     Some(x)
 }
 
-/** Product6 is a cartesian product of 6 components.
+/** Product6 is a Cartesian product of 6 components.
  *  @since 2.3
  */
 trait Product6[+T1, +T2, +T3, +T4, +T5, +T6] extends Any with Product {
@@ -24,7 +24,7 @@ trait Product6[+T1, +T2, +T3, +T4, +T5, +T6] extends Any with Product {
   override def productArity = 6
 
   
-  /** Returns the n-th projection of this product if 0 < n <= productArity,
+  /** Returns the n-th projection of this product if 0 <= n < productArity,
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
    *  @param n number of the projection to be returned

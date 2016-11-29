@@ -7,8 +7,8 @@
 \*                                                                      */
 
 // DO NOT EDIT, CHANGES WILL BE LOST
-// This auto-generated code can be modified in scala.tools.cmd.gen.
-// Afterwards, running tools/codegen-anyvals regenerates this source file.
+// This auto-generated code can be modified in "project/GenerateAnyVals.scala".
+// Afterwards, running "sbt generateSources" regenerates this source file.
 
 package scala
 
@@ -79,8 +79,8 @@ final abstract class Char private extends AnyVal {
   */
   def >>>(x: Long): Int
   /**
-  * Returns this value bit-shifted left by the specified number of bits,
-  *         filling in the right bits with the same value as the left-most bit of this.
+  * Returns this value bit-shifted right by the specified number of bits,
+  *         filling in the left bits with the same value as the left-most bit of this.
   *         The effect of this is to retain the sign of the value.
   * @example {{{
   * -21 >> 3 == -3
@@ -90,8 +90,8 @@ final abstract class Char private extends AnyVal {
   */
   def >>(x: Int): Int
   /**
-  * Returns this value bit-shifted left by the specified number of bits,
-  *         filling in the right bits with the same value as the left-most bit of this.
+  * Returns this value bit-shifted right by the specified number of bits,
+  *         filling in the left bits with the same value as the left-most bit of this.
   *         The effect of this is to retain the sign of the value.
   * @example {{{
   * -21 >> 3 == -3
@@ -434,7 +434,8 @@ final abstract class Char private extends AnyVal {
   /** Returns the remainder of the division of this value by `x`. */
   def %(x: Double): Double
 
-  override def getClass(): Class[Char] = null
+  // Provide a more specific return type for Scaladoc
+  override def getClass(): Class[Char] = ???
 }
 
 object Char extends AnyValCompanion {
@@ -451,7 +452,7 @@ object Char extends AnyValCompanion {
    *  @param  x   the Char to be boxed
    *  @return     a java.lang.Character offering `x` as its underlying value.
    */
-  def box(x: Char): java.lang.Character = java.lang.Character.valueOf(x)
+  def box(x: Char): java.lang.Character = ???
 
   /** Transform a boxed type into a value type.  Note that this
    *  method is not typesafe: it accepts any Object, but will throw
@@ -463,7 +464,7 @@ object Char extends AnyValCompanion {
    *  @throws     ClassCastException  if the argument is not a java.lang.Character
    *  @return     the Char resulting from calling charValue() on `x`
    */
-  def unbox(x: java.lang.Object): Char = x.asInstanceOf[java.lang.Character].charValue()
+  def unbox(x: java.lang.Object): Char = ???
 
   /** The String representation of the scala.Char companion object. */
   override def toString = "object scala.Char"

@@ -146,7 +146,28 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         val intermediateClasses = clazz.info.baseClasses.tail.takeWhile(_ != sym.owner)
         intermediateClasses.map(sym.overridingSymbol).find(s => s.isDeferred && !s.isAbstractOverride && !s.owner.isTrait).foreach {
           absSym =>
-            reporter.error(sel.pos, s"${sym.fullLocationString} cannot be directly accessed from ${clazz} because ${absSym.owner} redeclares it as abstract")
+            reporter.error(sel.pos, s"${sym.fullLocationString} cannot be directly accessed from $clazz because ${absSym.owner} redeclares it as abstract")
+        }
+      } else {
+        // SD-143: a call super[T].m that resolves to A.m cannot be translated to correct bytecode if
+        //   - A is a class (not a trait / interface), but not the direct superclass. Invokespecial
+        //     would select an overriding method in the direct superclass, rather than A.m.
+        //     We allow this if there are statically no intervening overrides.
+        //     https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokespecial
+        //   - A is a java-defined interface and not listed as direct parent of the class. In this
+        //     case, `invokespecial A.m` would be invalid.
+        def hasClassOverride(member: Symbol, subclass: Symbol): Boolean = {
+          if (subclass == ObjectClass || subclass == member.owner) false
+          else if (member.overridingSymbol(subclass) != NoSymbol) true
+          else hasClassOverride(member, subclass.superClass)
+        }
+        val owner = sym.owner
+        if (mix != tpnme.EMPTY && !owner.isTrait && owner != clazz.superClass && hasClassOverride(sym, clazz.superClass)) {
+          reporter.error(sel.pos,
+            s"cannot emit super call: the selected $sym is declared in $owner, which is not the direct superclass of $clazz.\n" +
+            s"An unqualified super call (super.${sym.name}) would be allowed.")
+        } else if (owner.isInterface && owner.isJavaDefined && !clazz.parentSymbols.contains(owner)) {
+          reporter.error(sel.pos, s"unable to emit super call unless interface ${owner.name} (which declares $sym) is directly extended by $clazz.")
         }
       }
 
@@ -293,11 +314,12 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                 /*
                  * A trait which extends a class and accesses a protected member
                  *  of that class cannot implement the necessary accessor method
-                 *  because its implementation is in an implementation class (e.g.
-                 *  Foo$class) which inherits nothing, and jvm access restrictions
-                 *  require the call site to be in an actual subclass. So non-trait
-                 *  classes inspect their ancestors for any such situations and
-                 *  generate the accessors.  See SI-2296.
+                 *  because jvm access restrictions require the call site to be
+                 *  in an actual subclass, and an interface cannot extenda class.
+                 *  So, non-trait classes inspect their ancestors for any such situations
+                 *  and generate the accessors.  See SI-2296.
+                 *
+                 *  TODO: anything we can improve here now that a trait compiles 1:1 to an interface?
                  */
                 // FIXME - this should be unified with needsProtectedAccessor, but some
                 // subtlety which presently eludes me is foiling my attempts.

@@ -40,7 +40,7 @@ abstract class BCodeIdiomatic extends SubComponent {
     if (emitStackMapFrame) asm.ClassWriter.COMPUTE_FRAMES else 0
   )
 
-  val StringBuilderClassName = "scala/collection/mutable/StringBuilder"
+  lazy val JavaStringBuilderClassName = jlStringBuilderRef.internalName
 
   val EMPTY_STRING_ARRAY   = Array.empty[String]
   val EMPTY_INT_ARRAY      = Array.empty[Int]
@@ -184,12 +184,13 @@ abstract class BCodeIdiomatic extends SubComponent {
      * can-multi-thread
      */
     final def genStartConcat(pos: Position): Unit = {
-      jmethod.visitTypeInsn(Opcodes.NEW, StringBuilderClassName)
+      jmethod.visitTypeInsn(Opcodes.NEW, JavaStringBuilderClassName)
       jmethod.visitInsn(Opcodes.DUP)
       invokespecial(
-        StringBuilderClassName,
+        JavaStringBuilderClassName,
         INSTANCE_CONSTRUCTOR_NAME,
         "()V",
+        itf = false,
         pos
       )
     }
@@ -197,22 +198,27 @@ abstract class BCodeIdiomatic extends SubComponent {
     /*
      * can-multi-thread
      */
-    final def genStringConcat(el: BType, pos: Position): Unit = {
-
-      val jtype =
-        if (el.isArray || el.isClass) ObjectRef
-        else el
-
-      val bt = MethodBType(List(jtype), jlStringBuilderRef)
-
-      invokevirtual(StringBuilderClassName, "append", bt.descriptor, pos)
+    def genConcat(elemType: BType, pos: Position): Unit = {
+      val paramType = elemType match {
+        case ct: ClassBType if ct.isSubtypeOf(StringRef).get          => StringRef
+        case ct: ClassBType if ct.isSubtypeOf(jlStringBufferRef).get  => jlStringBufferRef
+        case ct: ClassBType if ct.isSubtypeOf(jlCharSequenceRef).get  => jlCharSequenceRef
+        // Don't match for `ArrayBType(CHAR)`, even though StringBuilder has such an overload:
+        // `"a" + Array('b')` should NOT be "ab", but "a[C@...".
+        case _: RefBType                                              => ObjectRef
+        // jlStringBuilder does not have overloads for byte and short, but we can just use the int version
+        case BYTE | SHORT                                             => INT
+        case pt: PrimitiveBType                                       => pt
+      }
+      val bt = MethodBType(List(paramType), jlStringBuilderRef)
+      invokevirtual(JavaStringBuilderClassName, "append", bt.descriptor, pos)
     }
 
     /*
      * can-multi-thread
      */
     final def genEndConcat(pos: Position): Unit = {
-      invokevirtual(StringBuilderClassName, "toString", "()Ljava/lang/String;", pos)
+      invokevirtual(JavaStringBuilderClassName, "toString", "()Ljava/lang/String;", pos)
     }
 
     /*
@@ -368,29 +374,26 @@ abstract class BCodeIdiomatic extends SubComponent {
     final def rem(tk: BType) { emitPrimitive(JCodeMethodN.remOpcodes, tk) } // can-multi-thread
 
     // can-multi-thread
-    final def invokespecial(owner: String, name: String, desc: String, pos: Position) {
-      addInvoke(Opcodes.INVOKESPECIAL, owner, name, desc, false, pos)
+    final def invokespecial(owner: String, name: String, desc: String, itf: Boolean, pos: Position): Unit = {
+      emitInvoke(Opcodes.INVOKESPECIAL, owner, name, desc, itf, pos)
     }
     // can-multi-thread
-    final def invokestatic(owner: String, name: String, desc: String, pos: Position) {
-      addInvoke(Opcodes.INVOKESTATIC, owner, name, desc, false, pos)
+    final def invokestatic(owner: String, name: String, desc: String, itf: Boolean, pos: Position): Unit = {
+      emitInvoke(Opcodes.INVOKESTATIC, owner, name, desc, itf, pos)
     }
     // can-multi-thread
-    final def invokeinterface(owner: String, name: String, desc: String, pos: Position) {
-      addInvoke(Opcodes.INVOKEINTERFACE, owner, name, desc, true, pos)
+    final def invokeinterface(owner: String, name: String, desc: String, pos: Position): Unit = {
+      emitInvoke(Opcodes.INVOKEINTERFACE, owner, name, desc, itf = true, pos)
     }
     // can-multi-thread
-    final def invokevirtual(owner: String, name: String, desc: String, pos: Position) {
-      addInvoke(Opcodes.INVOKEVIRTUAL, owner, name, desc, false, pos)
+    final def invokevirtual(owner: String, name: String, desc: String, pos: Position): Unit = {
+      emitInvoke(Opcodes.INVOKEVIRTUAL, owner, name, desc, itf = false, pos)
     }
 
-    private def addInvoke(opcode: Int, owner: String, name: String, desc: String, itf: Boolean, pos: Position) = {
+    def emitInvoke(opcode: Int, owner: String, name: String, desc: String, itf: Boolean, pos: Position): Unit = {
       val node = new MethodInsnNode(opcode, owner, name, desc, itf)
       jmethod.instructions.add(node)
-      if (settings.YoptInlinerEnabled) callsitePositions(node) = pos
-    }
-    final def invokedynamic(owner: String, name: String, desc: String) {
-      jmethod.visitMethodInsn(Opcodes.INVOKEDYNAMIC, owner, name, desc)
+      if (settings.optInlinerEnabled) callsitePositions(node) = pos
     }
 
     // can-multi-thread

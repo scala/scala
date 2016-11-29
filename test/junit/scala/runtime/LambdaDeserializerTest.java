@@ -4,9 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.Serializable;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.SerializedLambda;
+import java.lang.invoke.*;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -85,19 +83,20 @@ public final class LambdaDeserializerTest {
     public void implMethodNameChanged() {
         F1<Boolean, String> f1 = lambdaHost.lambdaBackedByStaticImplMethod();
         SerializedLambda sl = writeReplace(f1);
-        checkIllegalAccess(copySerializedLambda(sl, sl.getImplMethodName() + "___", sl.getImplMethodSignature()));
+        checkIllegalAccess(sl, copySerializedLambda(sl, sl.getImplMethodName() + "___", sl.getImplMethodSignature()));
     }
 
     @Test
     public void implMethodSignatureChanged() {
         F1<Boolean, String> f1 = lambdaHost.lambdaBackedByStaticImplMethod();
         SerializedLambda sl = writeReplace(f1);
-        checkIllegalAccess(copySerializedLambda(sl, sl.getImplMethodName(), sl.getImplMethodSignature().replace("Boolean", "Integer")));
+        checkIllegalAccess(sl, copySerializedLambda(sl, sl.getImplMethodName(), sl.getImplMethodSignature().replace("Boolean", "Integer")));
     }
 
-    private void checkIllegalAccess(SerializedLambda serialized) {
+    private void checkIllegalAccess(SerializedLambda allowed, SerializedLambda requested) {
         try {
-            LambdaDeserializer.deserializeLambda(MethodHandles.lookup(), null, serialized);
+            HashMap<String, MethodHandle> allowedMap = createAllowedMap(LambdaHost.lookup(), allowed);
+            LambdaDeserializer.deserializeLambda(MethodHandles.lookup(), null, allowedMap, requested);
             throw new AssertionError();
         } catch (IllegalArgumentException iae) {
             if (!iae.getMessage().contains("Illegal lambda deserialization")) {
@@ -123,6 +122,7 @@ public final class LambdaDeserializerTest {
             throw new RuntimeException(e);
         }
     }
+
     private <A, B> A reconstitute(A f1) {
         return reconstitute(f1, null);
     }
@@ -130,11 +130,56 @@ public final class LambdaDeserializerTest {
     @SuppressWarnings("unchecked")
     private <A, B> A reconstitute(A f1, java.util.HashMap<String, MethodHandle> cache) {
         try {
-            return (A) LambdaDeserializer.deserializeLambda(LambdaHost.lookup(), cache, writeReplace(f1));
+            return deserizalizeLambdaCreatingAllowedMap(f1, cache, LambdaHost.lookup());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
+
+    @SuppressWarnings("unchecked")
+    private <A> A deserizalizeLambdaCreatingAllowedMap(A f1, HashMap<String, MethodHandle> cache, MethodHandles.Lookup lookup) {
+        SerializedLambda serialized = writeReplace(f1);
+        HashMap<String, MethodHandle> allowed = createAllowedMap(lookup, serialized);
+        return (A) LambdaDeserializer.deserializeLambda(lookup, cache, allowed, serialized);
+    }
+
+    private HashMap<String, MethodHandle> createAllowedMap(MethodHandles.Lookup lookup, SerializedLambda serialized) {
+        Class<?> implClass = classForName(serialized.getImplClass().replace("/", "."), lookup.lookupClass().getClassLoader());
+        MethodHandle implMethod = findMember(lookup, serialized.getImplMethodKind(), implClass, serialized.getImplMethodName(), MethodType.fromMethodDescriptorString(serialized.getImplMethodSignature(), lookup.lookupClass().getClassLoader()));
+        HashMap<String, MethodHandle> allowed = new HashMap<>();
+        allowed.put(LambdaDeserialize.nameAndDescriptorKey(serialized.getImplMethodName(), serialized.getImplMethodSignature()), implMethod);
+        return allowed;
+    }
+
+    private Class<?> classForName(String className, ClassLoader classLoader) {
+        try {
+            return Class.forName(className, true, classLoader);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private MethodHandle findMember(MethodHandles.Lookup lookup, int kind, Class<?> owner,
+                                    String name, MethodType signature) {
+        try {
+            switch (kind) {
+                case MethodHandleInfo.REF_invokeStatic:
+                    return lookup.findStatic(owner, name, signature);
+                case MethodHandleInfo.REF_newInvokeSpecial:
+                    return lookup.findConstructor(owner, signature);
+                case MethodHandleInfo.REF_invokeVirtual:
+                case MethodHandleInfo.REF_invokeInterface:
+                    return lookup.findVirtual(owner, name, signature);
+                case MethodHandleInfo.REF_invokeSpecial:
+                    return lookup.findSpecial(owner, name, signature, owner);
+                default:
+                    throw new IllegalArgumentException();
+            }
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     private <A> SerializedLambda writeReplace(A f1) {
         try {
@@ -189,5 +234,7 @@ class LambdaHost {
 }
 
 interface I {
-    default String i() { return "i"; };
+    default String i() {
+        return "i";
+    }
 }

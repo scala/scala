@@ -3,7 +3,7 @@ reload: Completions.scala
 askScopeCompletion at Completions.scala(75,2)
 ================================================================================
 [response] askScopeCompletion at (75,2)
-retrieved 37 members
+retrieved 38 members
 abstract class Base1 extends AnyRef
 abstract trait Trait1 extends AnyRef
 class Cb1 extends AnyRef
@@ -14,6 +14,8 @@ def <init>(): test.Completion1
 def fb1: Int
 def fc1: Int
 def ft1: Int
+def rt1: Int
+def rt1_=(x$1: Int): Unit
 object Completion2
 object Ob1
 object Oc1
@@ -30,23 +32,22 @@ private[this] val vb1: Int
 private[this] val vb3: Int
 private[this] val vc1: Int
 private[this] val vc2: Int
-private[this] val vt1: Int
 private[this] val vt3: Int
 private[this] var rb1: Int
 private[this] var rb3: Int
 private[this] var rc1: Int
 private[this] var rc2: Int
-private[this] var rt1: Int
 private[this] var rt3: Int
 type tb1 = Completion1.this.tb1
 type tc1 = Completion1.this.tc1
 type tt1 = Completion1.this.tt1
+val vt1: Int
 ================================================================================
 
 askScopeCompletion at Completions.scala(104,2)
 ================================================================================
 [response] askScopeCompletion at (104,2)
-retrieved 37 members
+retrieved 38 members
 abstract class Base1 extends AnyRef
 abstract trait Trait1 extends AnyRef
 class Cb1 extends AnyRef
@@ -57,6 +58,8 @@ def <init>(): test.Completion2.type
 def fb1: Int
 def fo1: Int
 def ft1: Int
+def rt1: Int
+def rt1_=(x$1: Int): Unit
 object Completion2
 object Ob1
 object Oo1
@@ -73,15 +76,14 @@ private[this] val vb1: Int
 private[this] val vb3: Int
 private[this] val vo1: Int
 private[this] val vo2: Int
-private[this] val vt1: Int
 private[this] val vt3: Int
 private[this] var rb1: Int
 private[this] var rb3: Int
 private[this] var ro1: Int
 private[this] var ro2: Int
-private[this] var rt1: Int
 private[this] var rt3: Int
 type tb1 = test.Completion2.tb1
 type to1 = test.Completion2.to1
 type tt1 = test.Completion2.tt1
+val vt1: Int
 ================================================================================

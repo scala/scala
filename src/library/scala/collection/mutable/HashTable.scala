@@ -183,6 +183,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
         table(h) = e.next
         tableSize = tableSize - 1
         nnSizeMapRemove(h)
+        e.next = null
         return e
       } else {
         var e1 = e.next
@@ -194,6 +195,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
           e.next = e1.next
           tableSize = tableSize - 1
           nnSizeMapRemove(h)
+          e1.next = null
           return e1
         }
       }
@@ -227,8 +229,9 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     var es        = iterTable(idx)
 
     while (es != null) {
+      val next = es.next // Cache next in case f removes es.
       f(es.asInstanceOf[Entry])
-      es = es.next
+      es = next
 
       while (es == null && idx > 0) {
         idx -= 1
@@ -393,7 +396,7 @@ private[collection] object HashTable {
   /** The load factor for the hash table (in 0.001 step).
    */
   private[collection] final def defaultLoadFactor: Int = 750 // corresponds to 75%
-  private[collection] final def loadFactorDenum = 1000
+  private[collection] final def loadFactorDenum = 1000 // should be loadFactorDenom, but changing that isn't binary compatible
 
   private[collection] final def newThreshold(_loadFactor: Int, size: Int) = ((size.toLong * _loadFactor) / loadFactorDenum).toInt
 

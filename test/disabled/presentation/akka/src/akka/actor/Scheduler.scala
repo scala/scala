@@ -15,8 +15,6 @@
  */
 package akka.actor
 
-import scala.collection.JavaConversions
-
 import java.util.concurrent._
 
 import akka.event.EventHandler

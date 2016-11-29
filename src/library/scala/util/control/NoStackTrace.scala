@@ -14,6 +14,8 @@ package util.control
  *  on a global basis via a system property wrapper in
  *  [[scala.sys.SystemProperties]].
  *
+ *  @note Since JDK 1.7, a similar effect can be achieved with `class Ex extends Throwable(..., writableStackTrace = false)`
+ *
  *  @author   Paul Phillips
  *  @since    2.8
  */

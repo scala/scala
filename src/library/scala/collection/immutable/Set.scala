@@ -65,6 +65,7 @@ object Set extends ImmutableSetFactory[Set] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] = setCanBuildFrom[A]
 
   /** An optimized representation for immutable empty sets */
+  @SerialVersionUID(-2443710944435909512L)
   private object EmptySet extends AbstractSet[Any] with Set[Any] with Serializable {
     override def size: Int = 0
     def contains(elem: Any): Boolean = false
@@ -103,10 +104,11 @@ object Set extends ImmutableSetFactory[Set] {
       if (p(elem1)) Some(elem1)
       else None
     }
+    override def head: A = elem1
+    override def tail: Set[A] = Set.empty
     // Why is Set1 non-final?  Need to fix that!
     @deprecatedOverriding("This immutable set should do nothing on toSet but cast itself to a Set with a wider element type.", "2.11.8")
     override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set1[B]]
-
   }
 
   /** An optimized representation for immutable sets of size 2 */
@@ -138,6 +140,8 @@ object Set extends ImmutableSetFactory[Set] {
       else if (p(elem2)) Some(elem2)
       else None
     }
+    override def head: A = elem1
+    override def tail: Set[A] = new Set1(elem2)
     // Why is Set2 non-final?  Need to fix that!
     @deprecatedOverriding("This immutable set should do nothing on toSet but cast itself to a Set with a wider element type.", "2.11.8")
     override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set2[B]]
@@ -174,6 +178,8 @@ object Set extends ImmutableSetFactory[Set] {
       else if (p(elem3)) Some(elem3)
       else None
     }
+    override def head: A = elem1
+    override def tail: Set[A] = new Set2(elem2, elem3)
     // Why is Set3 non-final?  Need to fix that!
     @deprecatedOverriding("This immutable set should do nothing on toSet but cast itself to a Set with a wider element type.", "2.11.8")
     override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set3[B]]
@@ -212,6 +218,8 @@ object Set extends ImmutableSetFactory[Set] {
       else if (p(elem4)) Some(elem4)
       else None
     }
+    override def head: A = elem1
+    override def tail: Set[A] = new Set3(elem2, elem3, elem4)
     // Why is Set4 non-final?  Need to fix that!
     @deprecatedOverriding("This immutable set should do nothing on toSet but cast itself to a Set with a wider element type.", "2.11.8")
     override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set4[B]]

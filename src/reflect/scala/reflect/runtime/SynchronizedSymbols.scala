@@ -176,9 +176,6 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     override protected def createRefinementClassSymbol(pos: Position, newFlags: Long): RefinementClassSymbol =
       new RefinementClassSymbol(this, pos) with SynchronizedClassSymbol initFlags newFlags
 
-    override protected def createImplClassSymbol(name: TypeName, pos: Position, newFlags: Long): ClassSymbol =
-      new ClassSymbol(this, pos, name) with ImplClassSymbol with SynchronizedClassSymbol initFlags newFlags
-
     override protected def createPackageObjectClassSymbol(pos: Position, newFlags: Long): PackageObjectClassSymbol =
       new PackageObjectClassSymbol(this, pos) with SynchronizedClassSymbol initFlags newFlags
 
@@ -202,12 +199,7 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
 
   trait SynchronizedTermSymbol extends SynchronizedSymbol
 
-  trait SynchronizedMethodSymbol extends MethodSymbol with SynchronizedTermSymbol {
-    // we can keep this lock fine-grained, because it's just a cache over asSeenFrom, which makes deadlocks impossible
-    // unfortunately we cannot elide this lock, because the cache depends on `pre`
-    private lazy val typeAsMemberOfLock = new Object
-    override def typeAsMemberOf(pre: Type): Type = gilSynchronizedIfNotThreadsafe { typeAsMemberOfLock.synchronized { super.typeAsMemberOf(pre) } }
-  }
+  trait SynchronizedMethodSymbol extends MethodSymbol with SynchronizedTermSymbol
 
   trait SynchronizedModuleSymbol extends ModuleSymbol with SynchronizedTermSymbol
 

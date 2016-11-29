@@ -1,1 +1,1 @@
--Ybackend:GenBCode -Yopt:unreachable-code
+-opt:unreachable-code

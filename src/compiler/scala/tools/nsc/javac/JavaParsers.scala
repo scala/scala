@@ -27,7 +27,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def freshName(prefix: String): Name = freshTermName(prefix)
     def freshTermName(prefix: String): TermName = unit.freshTermName(prefix)
     def freshTypeName(prefix: String): TypeName = unit.freshTypeName(prefix)
-    def deprecationWarning(off: Int, msg: String) = currentRun.reporting.deprecationWarning(off, msg)
+    def deprecationWarning(off: Int, msg: String, since: String) = currentRun.reporting.deprecationWarning(off, msg, since)
     implicit def i2p(offset : Int) : Position = Position.offset(unit.source, offset)
     def warning(pos : Int, msg : String) : Unit = reporter.warning(pos, msg)
     def syntaxError(pos: Int, msg: String) : Unit = reporter.error(pos, msg)
@@ -111,17 +111,14 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def arrayOf(tpt: Tree) =
       AppliedTypeTree(scalaDot(tpnme.Array), List(tpt))
 
-    def blankExpr = Ident(nme.WILDCARD)
+    def blankExpr = EmptyTree
 
     def makePackaging(pkg: RefTree, stats: List[Tree]): PackageDef =
       atPos(pkg.pos) {  PackageDef(pkg, stats) }
 
     def makeTemplate(parents: List[Tree], stats: List[Tree]) =
-      Template(
-        parents,
-        noSelfType,
-        if (treeInfo.firstConstructor(stats) == EmptyTree) makeConstructor(List()) :: stats
-        else stats)
+      Template(parents, noSelfType, if (treeInfo.firstConstructor(stats) == EmptyTree)
+        makeConstructor(Nil) :: stats else stats)
 
     def makeSyntheticParam(count: Int, tpt: Tree): ValDef =
       makeParam(nme.syntheticParamName(count), tpt)
@@ -134,6 +131,11 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val vparams = mapWithIndex(formals)((p, i) => makeSyntheticParam(i + 1, p))
       DefDef(Modifiers(Flags.JAVA), nme.CONSTRUCTOR, List(), List(vparams), TypeTree(), blankExpr)
     }
+
+    /** A hook for joining the comment associated with a definition.
+      * Overridden by scaladoc.
+      */
+    def joinComment(trees: => List[Tree]): List[Tree] = trees
 
     // ------------- general parsing ---------------------------
 
@@ -264,7 +266,8 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         }
       }
 
-    def typ(): Tree =
+    def typ(): Tree = {
+      annotations()
       optArrayBrackets {
         if (in.token == FINAL) in.nextToken()
         if (in.token == IDENTIFIER) {
@@ -287,6 +290,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           basicType()
         }
       }
+    }
 
     def typeArgs(t: Tree): Tree = {
       val wildcards = new ListBuffer[TypeDef]
@@ -404,6 +408,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
     def typeParam(): TypeDef =
       atPos(in.currentPos) {
+        annotations()
         val name = identForType()
         val hi = if (in.token == EXTENDS) { in.nextToken() ; bound() } else EmptyTree
         TypeDef(Modifiers(Flags.JAVA | Flags.DEFERRED | Flags.PARAM), name, Nil, TypeBoundsTree(EmptyTree, hi))
@@ -509,7 +514,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
                 EmptyTree
               }
             }
-          // for abstract methods (of classes), the `DEFERRED` flag is alredy set.
+          // for abstract methods (of classes), the `DEFERRED` flag is already set.
           // here we also set it for interface methods that are not static and not default.
           if (!isConcreteInterfaceMethod) mods1 |= Flags.DEFERRED
           List {
@@ -592,26 +597,8 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         Import(Ident(cdef.name.toTermName), ImportSelector.wildList)
       }
 
-    // Importing the companion object members cannot be done uncritically: see
-    // ticket #2377 wherein a class contains two static inner classes, each of which
-    // has a static inner class called "Builder" - this results in an ambiguity error
-    // when each performs the import in the enclosing class's scope.
-    //
-    // To address this I moved the import Companion._ inside the class, as the first
-    // statement.  This should work without compromising the enclosing scope, but may (?)
-    // end up suffering from the same issues it does in scala - specifically that this
-    // leaves auxiliary constructors unable to access members of the companion object
-    // as unqualified identifiers.
-    def addCompanionObject(statics: List[Tree], cdef: ClassDef): List[Tree] = {
-      def implWithImport(importStmt: Tree) = deriveTemplate(cdef.impl)(importStmt :: _)
-      // if there are no statics we can use the original cdef, but we always
-      // create the companion so import A._ is not an error (see ticket #1700)
-      val cdefNew =
-        if (statics.isEmpty) cdef
-        else deriveClassDef(cdef)(_ => implWithImport(importCompanionObject(cdef)))
-
-      List(makeCompanionObject(cdefNew, statics), cdefNew)
-    }
+    def addCompanionObject(statics: List[Tree], cdef: ClassDef): List[Tree] =
+      List(makeCompanionObject(cdef, statics), cdef)
 
     def importDecl(): List[Tree] = {
       accept(IMPORT)
@@ -718,8 +705,15 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           in.nextToken()
         } else {
           if (in.token == ENUM || definesInterface(in.token)) mods |= Flags.STATIC
-          val decls = memberDecl(mods, parentToken)
-          (if (mods.hasStaticFlag || inInterface && !(decls exists (_.isInstanceOf[DefDef])))
+          val decls = joinComment(memberDecl(mods, parentToken))
+
+          def isDefDef(tree: Tree): Boolean = tree match {
+            case _: DefDef => true
+            case DocDef(_, defn) => isDefDef(defn)
+            case _ => false
+          }
+
+          (if (mods.hasStaticFlag || inInterface && !(decls exists isDefDef))
              statics
            else
              members) ++= decls
@@ -830,10 +824,10 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     }
 
     def typeDecl(mods: Modifiers): List[Tree] = in.token match {
-      case ENUM      => enumDecl(mods)
-      case INTERFACE => interfaceDecl(mods)
+      case ENUM      => joinComment(enumDecl(mods))
+      case INTERFACE => joinComment(interfaceDecl(mods))
       case AT        => annotationDecl(mods)
-      case CLASS     => classDecl(mods)
+      case CLASS     => joinComment(classDecl(mods))
       case _         => in.nextToken(); syntaxError("illegal start of type declaration", skipIt = true); List(errorTypeTree)
     }
 

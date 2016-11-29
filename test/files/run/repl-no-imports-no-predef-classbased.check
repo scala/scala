@@ -1,0 +1,23 @@
+
+scala> case class K(s: java.lang.String)
+defined class K
+
+scala> class C { implicit val k: K = K("OK?"); override def toString = "C(" + k.toString + ")" }
+defined class C
+
+scala> val c = new C
+c: C = C(K(OK?))
+
+scala> import c.k
+import c.k
+
+scala> scala.Predef.implicitly[K]
+res0: K = K(OK?)
+
+scala> val k = 42
+k: Int = 42
+
+scala> k                 // was K(OK?)
+res1: Int = 42
+
+scala> :quit

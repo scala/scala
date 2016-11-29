@@ -263,6 +263,12 @@ abstract class TreeInfo {
     true
   }
 
+  def isFunctionMissingParamType(tree: Tree): Boolean = tree match {
+    case Function(vparams, _) => vparams.exists(_.tpt.isEmpty)
+    case _ => false
+  }
+
+
   /** Is symbol potentially a getter of a variable?
    */
   def mayBeVarGetter(sym: Symbol): Boolean = sym.info match {
@@ -286,6 +292,26 @@ abstract class TreeInfo {
       case _                                      => false
     }
   }
+
+
+  // No field for these vals, which means the ValDef carries the symbol of the getter (and not the field symbol)
+  //   - abstract vals have no value we could store (until they become concrete, potentially)
+  //   - lazy vals: the ValDef carries the symbol of the lazy accessor.
+  //     The sausage factory will spew out the inner workings during the fields phase (actual bitmaps won't follow
+  //     until lazyvals & mixins, though we should move this stuff from mixins to lazyvals now that fields takes care of mixing in lazy vals)
+  //   - concrete vals in traits don't yield a field here either (their getter's RHS has the initial value)
+  //     Constructors will move the assignment to the constructor, abstracting over the field using the field setter,
+  //     and Fields will add a field to the class that mixes in the trait, implementing the accessors in terms of it
+  //
+  // The following case does receive a field symbol (until it's eliminated during the fields phase):
+  //   - a concrete val with a statically known value (ConstantType)
+  //     performs its side effect according to lazy/strict semantics, but doesn't need to store its value
+  //     each access will "evaluate" the RHS (a literal) again
+  //
+  // We would like to avoid emitting unnecessary fields, but the required knowledge isn't available until after typer.
+  // The only way to avoid emitting & suppressing, is to not emit at all until we are sure to need the field, as dotty does.
+  def noFieldFor(vd: ValDef, owner: Symbol) = vd.mods.isDeferred || vd.mods.isLazy || (owner.isTrait && !vd.mods.hasFlag(PRESUPER))
+
 
   def isDefaultGetter(tree: Tree) = {
     tree.symbol != null && tree.symbol.isDefaultGetter

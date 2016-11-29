@@ -49,10 +49,6 @@ class MainGenericRunner {
       def isI   = !settings.loadfiles.isDefault
       def dashi = settings.loadfiles.value
 
-      // Deadlocks on startup under -i unless we disable async.
-      if (isI)
-        settings.Yreplsync.value = true
-
       def combinedCode  = {
         val files   = if (isI) dashi map (file => File(file).slurp()) else Nil
         val str     = if (isE) List(dashe) else Nil
@@ -71,6 +67,11 @@ class MainGenericRunner {
           Right(false)
         case _  =>
           // We start the repl when no arguments are given.
+          // If user is agnostic about both -feature and -deprecation, turn them on.
+          if (settings.deprecation.isDefault && settings.feature.isDefault) {
+            settings.deprecation.value = true
+            settings.feature.value = true
+          }
           Right(new interpreter.ILoop process settings)
       }
 
@@ -93,7 +94,7 @@ class MainGenericRunner {
     if (!command.ok)
       errorFn(f"%n$shortUsageMsg")
     else if (shouldStopWithInfo)
-      errorFn(command getInfoMessage sampleCompiler, isFailure = false)
+      errorFn(command.getInfoMessage(sampleCompiler), isFailure = false)
     else
       run()
   }

@@ -15,39 +15,29 @@ import symtab.Flags._
  *  @version 1.0
  */
 trait EtaExpansion { self: Analyzer =>
-
   import global._
 
-  object etaExpansion {
-    private def isMatch(vparam: ValDef, arg: Tree) = arg match {
-      case Ident(name)  => vparam.name == name
-      case _            => false
-    }
-
-    def unapply(tree: Tree): Option[(List[ValDef], Tree, List[Tree])] = tree match {
-      case Function(vparams, Apply(fn, args)) if (vparams corresponds args)(isMatch) =>
-        Some((vparams, fn, args))
-      case _ =>
-        None
-    }
-  }
-
-  /** <p>
-   *    Expand partial function applications of type `type`.
-   *  </p><pre>
-   *  p.f(es_1)...(es_n)
-   *     ==>  {
-   *            <b>private synthetic val</b> eta$f   = p.f   // if p is not stable
-   *            ...
-   *            <b>private synthetic val</b> eta$e_i = e_i    // if e_i is not stable
-   *            ...
-   *            (ps_1 => ... => ps_m => eta$f([es_1])...([es_m])(ps_1)...(ps_m))
-   *          }</pre>
-   *  <p>
-   *    tree is already attributed
-   *  </p>
-   */
-  def etaExpand(unit : CompilationUnit, tree: Tree, typer: Typer): Tree = {
+  /** Expand partial method application `p.f(es_1)...(es_n)`.
+    *
+    * We expand this to the following block, which evaluates
+    * the target of the application and its supplied arguments if needed (they are not stable),
+    * and then wraps a Function that abstracts over the missing arguments.
+    *
+    * ```
+    * {
+    *   private synthetic val eta$f   = p.f   // if p is not stable
+    *   ...
+    *   private synthetic val eta$e_i = e_i   // if e_i is not stable
+    *   ...
+    *   (ps_1 => ... => ps_m => eta$f([es_1])...([es_m])(ps_1)...(ps_m))
+    * }
+    * ```
+    *
+    * This is called from instantiateToMethodType after type checking `tree`,
+    * and we realize we have a method type, where a function type (builtin or SAM) is expected.
+    *
+    **/
+  def etaExpand(unit: CompilationUnit, tree: Tree, typer: Typer): Tree = {
     val tpe = tree.tpe
     var cnt = 0 // for NoPosition
     def freshName() = {

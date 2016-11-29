@@ -1,5 +1,5 @@
-t200.scala:7: error: method foo is defined twice
-  conflicting symbols both originated in file 't200.scala'
+t200.scala:7: error: method foo is defined twice;
+  the conflicting method foo was defined at line 6:7
   def foo: Int;
       ^
 one error found

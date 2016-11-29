@@ -76,8 +76,8 @@ AttValue      ::=    ‘"’ {CharQ | CharRef} ‘"’
 
 ScalaExpr     ::=    Block
 
-CharData      ::=   { CharNoRef } $\textit{ without}$ {CharNoRef}`{'CharB {CharNoRef}
-                                  $\textit{ and without}$ {CharNoRef}`]]>'{CharNoRef}
+CharData      ::=   { CharNoRef } $\textit{ without}$ {CharNoRef}‘{’CharB {CharNoRef}
+                                  $\textit{ and without}$ {CharNoRef}‘]]>’{CharNoRef}
 ```
 
 <!-- {% raw  %} stupid liquid borks on the double brace below; brace yourself, liquid! -->

@@ -1,6 +1,3 @@
-/*
- * filter: inliner warnings; re-run with
- */
 import annotation._
 import elidable._
 
@@ -83,6 +80,5 @@ object Test {
         Class.forName(className).getMethod(methodName)
       }
     }
-    Class.forName("T$class").getMethod("f3", classOf[T])
   }
 }

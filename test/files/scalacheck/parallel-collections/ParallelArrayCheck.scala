@@ -44,7 +44,7 @@ abstract class ParallelArrayCheck[T](tp: String) extends ParallelSeqCheck[T]("Pa
     pa
   }
 
-  property("array mappings must be equal") = forAll(collectionPairs) { case (t, coll) =>
+  property("array mappings must be equal") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     val results = for ((f, ind) <- mapFunctions.zipWithIndex)
       yield ("op index: " + ind) |: t.map(f) == coll.map(f)
     results.reduceLeft(_ && _)

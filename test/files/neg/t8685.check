@@ -1,0 +1,45 @@
+t8685.scala:6: warning: constructor D in class D is deprecated (since now): ctor D is depr
+case class D @deprecated("ctor D is depr", since="now") (i: Int)
+           ^
+t8685.scala:35: warning: class C is deprecated (since now): class C is depr
+  def f = C(42)
+          ^
+t8685.scala:37: warning: object E is deprecated (since now): module E is depr
+  def h = E(42)
+          ^
+t8685.scala:37: warning: class E is deprecated (since now): class E is depr
+  def h = E(42)
+          ^
+t8685.scala:38: warning: object F is deprecated (since now): module F is depr
+  def i = F.G(42)
+          ^
+t8685.scala:39: warning: object F in object Extra is deprecated (since now): Extra module F is depr
+  def j = Extra.F.G(42)
+                ^
+t8685.scala:43: warning: value gg in trait Applies is deprecated (since now): member gg
+  def k = this.gg.H(0)
+               ^
+t8685.scala:45: warning: class K in object J is deprecated (since now): Inner K is depr
+  def l = J.K(42)
+            ^
+t8685.scala:48: warning: class C is deprecated (since now): class C is depr
+  def f = new C(42)
+              ^
+t8685.scala:49: warning: constructor D in class D is deprecated (since now): ctor D is depr
+  def g = new D(42)
+          ^
+t8685.scala:50: warning: class E is deprecated (since now): class E is depr
+  def h = new E(42)
+              ^
+t8685.scala:51: warning: object F is deprecated (since now): module F is depr
+  def i = new F.G(42)
+              ^
+t8685.scala:52: warning: object F in object Extra is deprecated (since now): Extra module F is depr
+  def j = new Extra.F.G(42)
+                    ^
+t8685.scala:53: warning: class K in object J is deprecated (since now): Inner K is depr
+  def l = new J.K(42)
+                ^
+error: No warnings can be incurred under -Xfatal-warnings.
+14 warnings found
+one error found

@@ -15,7 +15,6 @@ package mutable
 import generic._
 
 import TraversableView.NoBuilder
-import scala.language.implicitConversions
 
 /** A non-strict view of a mutable `IndexedSeq`.
  *  $viewInfo

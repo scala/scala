@@ -24,6 +24,7 @@ abstract class ParallelSeqCheck[T](collName: String) extends ParallelIterableChe
   def fromSeq(s: Seq[T]): CollType
 
   override def instances(vals: Seq[Gen[T]]): Gen[Seq[T]] = oneOf(
+    Gen.const(ofSize(vals, 1)),
     sized(
       sz =>
       ofSize(vals, sz)
@@ -74,7 +75,7 @@ abstract class ParallelSeqCheck[T](collName: String) extends ParallelIterableChe
     coll.patch(updateStart, coll, howMany)
   }
 
-  property("segmentLengths must be equal") = forAll(collectionPairsWithLengths) { case (s, coll, len) =>
+  property("segmentLengths must be equal") = forAllNoShrink(collectionPairsWithLengths) { case (s, coll, len) =>
     (for ((pred, ind) <- segmentLengthPredicates.zipWithIndex) yield {
       val slen = s.segmentLength(pred, if (len < 0) 0 else len)
       val clen = coll.segmentLength(pred, len)
@@ -88,13 +89,13 @@ abstract class ParallelSeqCheck[T](collName: String) extends ParallelIterableChe
     }).reduceLeft(_ && _)
   }
 
-  property("prefixLengths must be equal") = forAll(collectionPairs) { case (s, coll) =>
+  property("prefixLengths must be equal") = forAllNoShrink(collectionPairs) { case (s, coll) =>
     (for ((pred, ind) <- segmentLengthPredicates.zipWithIndex) yield {
       ("operator " + ind) |: s.prefixLength(pred) == coll.prefixLength(pred)
     }).reduceLeft(_ && _)
   }
 
-  property("indexWheres must be equal") = forAll(collectionPairsWithLengths) { case (s, coll, len) =>
+  property("indexWheres must be equal") = forAllNoShrink(collectionPairsWithLengths) { case (s, coll, len) =>
     (for ((pred, ind) <- indexWherePredicates.zipWithIndex) yield {
       val sind = s.indexWhere(pred, len)
       val cind = coll.indexWhere(pred, len)
@@ -109,7 +110,7 @@ abstract class ParallelSeqCheck[T](collName: String) extends ParallelIterableChe
     }).reduceLeft(_ && _)
   }
 
-  property("lastIndexWheres must be equal") = forAll(collectionPairsWithLengths) { case (s, coll, len) =>
+  property("lastIndexWheres must be equal") = forAllNoShrink(collectionPairsWithLengths) { case (s, coll, len) =>
     (for ((pred, ind) <- lastIndexWherePredicates.zipWithIndex) yield {
       val end = if (len >= s.size) s.size - 1 else len
       val sind = s.lastIndexWhere(pred, end)
@@ -118,7 +119,7 @@ abstract class ParallelSeqCheck[T](collName: String) extends ParallelIterableChe
     }).reduceLeft(_ && _)
   }
 
-  property("reverses must be equal") = forAll(collectionPairs) { case (s, coll) =>
+  property("reverses must be equal") = forAllNoShrink(collectionPairs) { case (s, coll) =>
     (s.length == 0 && s.getClass == classOf[collection.immutable.Range]) ||
     {
       val sr = s.reverse
@@ -133,13 +134,13 @@ abstract class ParallelSeqCheck[T](collName: String) extends ParallelIterableChe
     }
   }
 
-  property("reverseMaps must be equal") = forAll(collectionPairs) { case (s, coll) =>
+  property("reverseMaps must be equal") = forAllNoShrink(collectionPairs) { case (s, coll) =>
     (for ((f, ind) <- reverseMapFunctions.zipWithIndex) yield {
       ("operator " + ind) |: s.reverseMap(f) == coll.reverseMap(f)
     }).reduceLeft(_ && _)
   }
 
-  property("sameElements must be equal") = forAll(collectionPairsWithModifiedWithLengths) {
+  property("sameElements must be equal") = forAllNoShrink(collectionPairsWithModifiedWithLengths) {
   case (s, coll, collmodif, len) =>
     val pos = if (len < 0) 0 else len
     val scm = s.sameElements(collmodif)
@@ -171,7 +172,7 @@ abstract class ParallelSeqCheck[T](collName: String) extends ParallelIterableChe
     }).reduceLeft(_ && _)
   }
 
-  property("startsWiths must be equal") = forAll(collectionPairsWithModifiedWithLengths) {
+  property("startsWiths must be equal") = forAllNoShrink(collectionPairsWithModifiedWithLengths) {
   case (s, coll, collmodif, len) =>
     val pos = if (len < 0) 0 else len
     ("start with self" |: s.startsWith(s) == coll.startsWith(coll)) &&
@@ -195,7 +196,7 @@ abstract class ParallelSeqCheck[T](collName: String) extends ParallelIterableChe
     }).reduceLeft(_ && _)
   }
 
-  property("endsWiths must be equal") = forAll(collectionPairsWithModified) {
+  property("endsWiths must be equal") = forAllNoShrink(collectionPairsWithModified) {
   case (s, coll, collmodif) =>
     ("ends with self" |: s.endsWith(s) == coll.endsWith(s)) &&
     ("ends with tail" |: (s.length == 0 || s.endsWith(s.tail) == coll.endsWith(coll.tail))) &&
@@ -214,7 +215,7 @@ abstract class ParallelSeqCheck[T](collName: String) extends ParallelIterableChe
     }).reduceLeft(_ && _)
   }
 
-  property("unions must be equal") = forAll(collectionPairsWithModified) { case (s, coll, collmodif) =>
+  property("unions must be equal") = forAllNoShrink(collectionPairsWithModified) { case (s, coll, collmodif) =>
     ("modified" |: s.union(collmodif.seq) == coll.union(collmodif)) &&
     ("empty" |: s.union(Nil) == coll.union(fromSeq(Nil)))
   }
@@ -233,7 +234,7 @@ abstract class ParallelSeqCheck[T](collName: String) extends ParallelIterableChe
     ("with one" |: (s.length == 0 || s.patch(from, List(s(0)), 1) == coll.patch(from, fromSeq(List(coll(0))), 1)))
   }
 
-  if (!isCheckingViews) property("updates must be equal") = forAll(collectionPairsWithLengths) { case (s, coll, len) =>
+  if (!isCheckingViews) property("updates must be equal") = forAllNoShrink(collectionPairsWithLengths) { case (s, coll, len) =>
     val pos = if (len >= s.length) s.length - 1 else len
     if (s.length > 0) {
       val supd = s.updated(pos, s(0))
@@ -248,15 +249,15 @@ abstract class ParallelSeqCheck[T](collName: String) extends ParallelIterableChe
     } else "trivially" |: true
   }
 
-  property("prepends must be equal") = forAll(collectionPairs) { case (s, coll) =>
+  property("prepends must be equal") = forAllNoShrink(collectionPairs) { case (s, coll) =>
     s.length == 0 || s(0) +: s == coll(0) +: coll
   }
 
-  property("appends must be equal") = forAll(collectionPairs) { case (s, coll) =>
+  property("appends must be equal") = forAllNoShrink(collectionPairs) { case (s, coll) =>
     s.length == 0 || s :+ s(0) == coll :+ coll(0)
   }
 
-  property("padTos must be equal") = forAll(collectionPairsWithLengths) { case (s, coll, len) =>
+  property("padTos must be equal") = forAllNoShrink(collectionPairsWithLengths) { case (s, coll, len) =>
     val someValue = sampleValue
     val sdoub = s.padTo(len * 2, someValue)
     val cdoub = coll.padTo(len * 2, someValue)
@@ -267,10 +268,10 @@ abstract class ParallelSeqCheck[T](collName: String) extends ParallelIterableChe
       println(cdoub)
     }
     ("smaller" |: s.padTo(len / 2, someValue) == coll.padTo(len / 2, someValue)) &&
-    ("bigger" |: sdoub == cdoub)
+      ("bigger" |: sdoub == cdoub)
   }
 
-  property("corresponds must be equal") = forAll(collectionPairsWithModified) { case (s, coll, modified) =>
+  property("corresponds must be equal") = forAllNoShrink(collectionPairsWithModified) { case (s, coll, modified) =>
     val modifcut = modified.toSeq.slice(0, modified.length)
     ("self" |: s.corresponds(s)(_ == _) == coll.corresponds(coll)(_ == _)) &&
     ("modified" |: s.corresponds(modified.seq)(_ == _) == coll.corresponds(modified)(_ == _)) &&

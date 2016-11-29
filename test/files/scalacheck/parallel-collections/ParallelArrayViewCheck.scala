@@ -46,7 +46,7 @@
 //     pa.view
 //   }
 
-//   property("forces must be equal") = forAll(collectionPairs) { case (s, coll) =>
+//   property("forces must be equal") = forAllNoShrink(collectionPairs) { case (s, coll) =>
 //     val smodif = (s ++ s).reverse.take(s.length).reverse.zip(s).drop(s.length / 2)
 //     val cmodif = (coll ++ s).reverse.take(s.length).reverse.zip(s).drop(s.length / 2).force
 //     smodif == cmodif

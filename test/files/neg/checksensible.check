@@ -97,7 +97,7 @@ checksensible.scala:84: warning: comparing values of types EqEqRefTest.this.C3 a
 checksensible.scala:95: warning: comparing values of types Unit and Int using `!=' will always yield true
     while ((c = in.read) != -1)
                          ^
-warning: there were three deprecation warnings; re-run with -deprecation for details
+warning: there were three deprecation warnings (since 2.11.0); re-run with -deprecation for details
 error: No warnings can be incurred under -Xfatal-warnings.
 34 warnings found
 one error found

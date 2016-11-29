@@ -5,19 +5,11 @@
       C.super.<init>();
       ()
     };
-    lazy private[this] val x: Int = _;
-    <stable> <accessor> lazy def x: Int = {
-      C.this.x = 2;
-      C.this.x
-    };
-    lazy private[this] val y: Int = _;
-    implicit <stable> <accessor> lazy def y: Int = {
-      C.this.y = 3;
-      C.this.y
-    }
+    <stable> <accessor> lazy val x: Int = 2;
+    implicit <stable> <accessor> lazy val y: Int = 3
   };
   val c: C = new C();
   import c._;
   c.x.*(Predef.implicitly[Int](c.y))
 }
-error!
+6

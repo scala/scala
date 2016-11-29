@@ -204,6 +204,27 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
   def subsetOf(other: BitSet): Boolean =
     (0 until nwords) forall (idx => (this.word(idx) & ~ other.word(idx)) == 0L)
 
+  override def head: Int = {
+    val n = nwords
+    var i = 0
+    while (i < n) {
+      val wi = word(i)
+      if (wi != 0L) return WordLength*i + java.lang.Long.numberOfTrailingZeros(wi)
+      i += 1
+    }
+    throw new NoSuchElementException("Empty BitSet")
+  }
+
+  override def last: Int = {
+    var i = nwords - 1
+    while (i >= 0) {
+      val wi = word(i)
+      if (wi != 0L) return WordLength*i + 63 - java.lang.Long.numberOfLeadingZeros(wi)
+      i += 1
+    }
+    throw new NoSuchElementException("Empty BitSet")
+  }
+
   override def addString(sb: StringBuilder, start: String, sep: String, end: String) = {
     sb append start
     var pre = ""

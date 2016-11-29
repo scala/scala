@@ -6,8 +6,6 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.language.postfixOps
-
 trait MatchWarnings {
   self: PatternMatching =>
 

@@ -1,0 +1,24 @@
+outer-ref-checks.scala:5: warning: The outer reference in this type test cannot be checked at run time.
+  final case class Inner(val s: String) // unchecked warning
+                   ^
+outer-ref-checks.scala:8: warning: The outer reference in this type test cannot be checked at run time.
+    case Inner(s) => // unchecked warning
+              ^
+outer-ref-checks.scala:18: warning: The outer reference in this type test cannot be checked at run time.
+    case Inner(s) => // unchecked warning
+              ^
+outer-ref-checks.scala:19: warning: The outer reference in this type test cannot be checked at run time.
+    case O.Inner(s) => // unchecked warning
+                ^
+outer-ref-checks.scala:41: warning: The outer reference in this type test cannot be checked at run time.
+    case Inner(s) => // unchecked warning
+              ^
+outer-ref-checks.scala:46: warning: The outer reference in this type test cannot be checked at run time.
+    case _: Inner => // unchecked warning
+          ^
+outer-ref-checks.scala:56: warning: The outer reference in this type test cannot be checked at run time.
+    case _: (Inner @uncheckedVariance) => // unchecked warning
+          ^
+error: No warnings can be incurred under -Xfatal-warnings.
+7 warnings found
+one error found

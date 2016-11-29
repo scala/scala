@@ -10,7 +10,8 @@ package scala
 package collection
 
 import mutable.ArrayBuffer
-import scala.annotation.migration
+import scala.annotation.{tailrec, migration}
+import scala.annotation.unchecked.{uncheckedVariance => uV}
 import immutable.Stream
 
 /** The `Iterator` object provides various functions for creating specialized iterators.
@@ -160,39 +161,79 @@ object Iterator {
     def next = elem
   }
 
-  /** Avoid stack overflows when applying ++ to lots of iterators by
-   *  flattening the unevaluated iterators out into a vector of closures.
+  /** Creates an iterator to which other iterators can be appended efficiently.
+   *  Nested ConcatIterators are merged to avoid blowing the stack.
    */
-  private[scala] final class ConcatIterator[+A](private[this] var current: Iterator[A], initial: Vector[() => Iterator[A]]) extends Iterator[A] {
-    @deprecated def this(initial: Vector[() => Iterator[A]]) = this(Iterator.empty, initial) // for binary compatibility
-    private[this] var queue: Vector[() => Iterator[A]] = initial
+  private final class ConcatIterator[+A](private var current: Iterator[A @uV]) extends Iterator[A] {
+    private var tail: ConcatIteratorCell[A @uV] = null
+    private var last: ConcatIteratorCell[A @uV] = null
+    private var currentHasNextChecked = false
+
     // Advance current to the next non-empty iterator
     // current is set to null when all iterators are exhausted
+    @tailrec
     private[this] def advance(): Boolean = {
-      if (queue.isEmpty) {
+      if (tail eq null) {
         current = null
+        last = null
         false
       }
       else {
-        current = queue.head()
-        queue = queue.tail
-        current.hasNext || advance()
+        current = tail.headIterator
+        tail = tail.tail
+        merge()
+        if (currentHasNextChecked) true
+        else if (current.hasNext) {
+          currentHasNextChecked = true
+          true
+        } else advance()
       }
     }
-    def hasNext = (current ne null) && (current.hasNext || advance())
-    def next()  = if (hasNext) current.next() else Iterator.empty.next()
 
-    override def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] =
-      new ConcatIterator(current, queue :+ (() => that.toIterator))
+    // If the current iterator is a ConcatIterator, merge it into this one
+    @tailrec
+    private[this] def merge(): Unit =
+      if (current.isInstanceOf[ConcatIterator[_]]) {
+        val c = current.asInstanceOf[ConcatIterator[A]]
+        current = c.current
+        currentHasNextChecked = c.currentHasNextChecked
+        if (c.tail ne null) {
+          c.last.tail = tail
+          tail = c.tail
+        }
+        merge()
+      }
+
+    def hasNext =
+      if (currentHasNextChecked) true
+      else if (current eq null) false
+      else if (current.hasNext) {
+        currentHasNextChecked = true
+        true
+      } else advance()
+
+    def next()  =
+      if (hasNext) {
+        currentHasNextChecked = false
+        current.next()
+      } else Iterator.empty.next()
+
+    override def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] = {
+      val c = new ConcatIteratorCell[B](that, null).asInstanceOf[ConcatIteratorCell[A]]
+      if(tail eq null) {
+        tail = c
+        last = c
+      } else {
+        last.tail = c
+        last = c
+      }
+      if(current eq null) current = Iterator.empty
+      this
+    }
   }
 
-  private[scala] final class JoinIterator[+A](lhs: Iterator[A], that: => GenTraversableOnce[A]) extends Iterator[A] {
-    private[this] lazy val rhs: Iterator[A] = that.toIterator
-    def hasNext = lhs.hasNext || rhs.hasNext
-    def next()  = if (lhs.hasNext) lhs.next() else rhs.next()
-
-    override def ++[B >: A](that: => GenTraversableOnce[B]) =
-      new ConcatIterator(this, Vector(() => that.toIterator))
+  private[this] final class ConcatIteratorCell[A](head: => GenTraversableOnce[A], var tail: ConcatIteratorCell[A]) {
+    def headIterator: Iterator[A] = head.toIterator
   }
 
   /** Creates a delegating iterator capped by a limit count. Negative limit means unbounded.
@@ -417,7 +458,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @usecase def ++(that: => Iterator[A]): Iterator[A]
    *    @inheritdoc
    */
-  def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] = new Iterator.JoinIterator(self, that)
+  def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] = new Iterator.ConcatIterator(self) ++ that
 
   /** Creates a new iterator by applying a function to all values produced by this iterator
    *  and concatenating the results.
@@ -645,15 +686,15 @@ trait Iterator[+A] extends TraversableOnce[A] {
      * handling of structural calls. It's not what's intended here.
      */
     class Leading extends AbstractIterator[A] {
-      var lookahead: mutable.Queue[A] = null
-      var hd: A = _
+      private[this] var lookahead: mutable.Queue[A] = null
+      private[this] var hd: A = _
       /* Status is kept with magic numbers
        *   1 means next element is in hd and we're still reading into this iterator
        *   0 means we're still reading but haven't found a next element
        *   -1 means we are done reading into the iterator, so we must rely on lookahead
        *   -2 means we are done but have saved hd for the other iterator to use as its first element
        */
-      var status = 0
+      private[this] var status = 0
       private def store(a: A) {
         if (lookahead == null) lookahead = new mutable.Queue[A]
         lookahead += a
@@ -677,34 +718,31 @@ trait Iterator[+A] extends TraversableOnce[A] {
         }
         else empty.next()
       }
-      def finish(): Boolean = {
-        if (status == -1) false
-        else if (status == -2) {
+      def finish(): Boolean = status match {
+        case -2 => status = -1 ; true
+        case -1 => false
+        case  1 => store(hd) ; status = 0 ; finish()
+        case  0 => 
           status = -1
-          true
-        }
-        else {
-          if (status == 1) store(hd)
           while (self.hasNext) {
             val a = self.next()
             if (p(a)) store(a)
             else {
               hd = a
-              status = -1
               return true
             }
           }
           false
-        }
       }
+      def trailer: A = hd
     }
 
     val leading = new Leading
 
     val trailing = new AbstractIterator[A] {
       private[this] var myLeading = leading
-      /* Status flags meanings:
-       *   -1 not yet accesssed
+      /* Status flag meanings:
+       *   -1 not yet accessed
        *   0 single element waiting in leading
        *   1 defer to self
        */
@@ -729,7 +767,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
           if (status > 0) self.next()
           else {
             status = 1
-            val ans = myLeading.hd
+            val ans = myLeading.trailer
             myLeading = null
             ans
           }

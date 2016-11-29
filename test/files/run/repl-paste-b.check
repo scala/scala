@@ -1,0 +1,14 @@
+
+scala> :paste < EOF
+// Entering paste mode (EOF to finish)
+
+object X
+EOF
+
+// Exiting paste mode, now interpreting.
+
+defined object X
+
+scala> assert(X.getClass.getName.contains("line"))
+
+scala> :quit

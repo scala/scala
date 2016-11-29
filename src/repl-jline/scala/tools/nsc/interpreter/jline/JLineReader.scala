@@ -11,9 +11,8 @@ import java.util.{Collection => JCollection, List => JList}
 
 import _root_.jline.{console => jconsole}
 import jline.console.ConsoleReader
-import jline.console.completer.{CompletionHandler, Completer}
+import jline.console.completer.{CandidateListCompletionHandler, Completer, CompletionHandler}
 import jconsole.history.{History => JHistory}
-
 
 import scala.tools.nsc.interpreter
 import scala.tools.nsc.interpreter.{Completion, NoCompletion}
@@ -33,10 +32,13 @@ class InteractiveReader(completer: () => Completion) extends interpreter.Interac
   private val consoleReader = {
     val reader = new JLineConsoleReader()
 
-    reader setPaginationEnabled interpreter.`package`.isPaged
+    reader setPaginationEnabled interpreter.isPaged
 
-    // ASAP
+    // turn off magic !
     reader setExpandEvents false
+
+    // enable detecting pasted tab char (when next char is immediately available) which is taken raw, not completion
+    reader setCopyPasteDetection true
 
     reader setHistory history.asInstanceOf[JHistory]
 
@@ -92,11 +94,19 @@ private class JLineConsoleReader extends jconsole.ConsoleReader with interpreter
     printColumns_(items: List[String])
   }
 
+  // Workaround for JLine weirdness. (See https://github.com/scala/scala-dev/issues/240)
+  // Emit control characters as-is, instead of representing them as e.g. "^J" (for '\n').
+  // `rawPrint` is package protected in jline.console.ConsoleReader, while `rawPrintln` is private
+  // Copy/paste part of it as `_rawPrint` (to avoid name clash);
+  // the super class impl also sets `cursorOk`, but that's out of reach for us.
+  private def _rawPrint(str: String) = getOutput.write(str)
+  private def rawPrintln(str: String) = { _rawPrint(str); println() }
+
   private def printColumns_(items: List[String]): Unit = if (items exists (_ != "")) {
     val grouped = tabulate(items)
     var linesLeft = if (isPaginationEnabled()) height - 1 else Int.MaxValue
     grouped foreach { xs =>
-      println(xs.mkString)
+      rawPrintln(xs.mkString)
       linesLeft -= 1
       if (linesLeft <= 0) {
         linesLeft = emulateMore()
@@ -107,7 +117,7 @@ private class JLineConsoleReader extends jconsole.ConsoleReader with interpreter
   }
 
   def readOneKey(prompt: String) = {
-    this.print(prompt)
+    _rawPrint(prompt)
     this.flush()
     this.readCharacter()
   }
@@ -133,32 +143,15 @@ private class JLineConsoleReader extends jconsole.ConsoleReader with interpreter
           newCursor
         }
       }
+    getCompletionHandler match {
+      case clch: CandidateListCompletionHandler => clch.setPrintSpaceAfterFullCompletion(false)
+    }
 
     completion match {
       case NoCompletion       => ()
       case _                  => this addCompleter completer
     }
 
-    // This is a workaround for https://github.com/jline/jline2/issues/208
-    // and should not be necessary once we upgrade to JLine 2.13.1
-    ///
-    // Test by:
-    // scala> {" ".char}<LEFT><TAB>
-    //
-    // And checking we don't get an extra } on the line.
-    ///
-    val handler = getCompletionHandler
-    setCompletionHandler(new CompletionHandler {
-      override def complete(consoleReader: ConsoleReader, list: JList[CharSequence], i: Int): Boolean = {
-        try {
-          handler.complete(consoleReader, list, i)
-        } finally if (getCursorBuffer.cursor != getCursorBuffer.length()) {
-          print(" ")
-          getCursorBuffer.write(' ')
-          backspace()
-        }
-      }
-    })
     setAutoprintThreshold(400) // max completion candidates without warning
   }
 }

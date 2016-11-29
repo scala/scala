@@ -1,0 +1,4 @@
+sammy_disabled.scala:3: error: missing parameter type
+class C { val f: F = x => "a" }
+                     ^
+one error found

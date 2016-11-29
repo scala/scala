@@ -1,0 +1,7 @@
+sammy_overload.scala:14: error: overloaded method value m with alternatives:
+  (x: ToString)Int <and>
+  (x: Int => String)Int
+ cannot be applied to (Int => Int)
+  O.m(x => x) // error expected: m cannot be applied to Int => Int
+    ^
+one error found

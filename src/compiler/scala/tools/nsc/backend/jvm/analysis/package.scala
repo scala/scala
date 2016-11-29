@@ -43,7 +43,7 @@ package scala.tools.nsc.backend.jvm
  *   - Stores a frame for each instruction
  *   - `merge` function takes an instruction and a frame, merges the existing frame for that instr
  *     (from the frames array) with the new frame passed as argument.
- *     if the frame changed, puts the instruction on the work queue (fixpiont).
+ *     if the frame changed, puts the instruction on the work queue (fixpoint).
  *   - initial frame: initialized for first instr by calling interpreter.new[...]Value
  *     for each slot (locals and params), stored in frames[firstInstr] by calling `merge`
  *   - work queue of instructions (`queue` array, `top` index for next instruction to analyze)
@@ -191,7 +191,7 @@ package scala.tools.nsc.backend.jvm
  * I measured nullness analysis (which tracks aliases) and a SimpleValue analysis. Nullness runs
  * roughly 5x slower (because of alias tracking) at every problem size - this factor doesn't change.
  *
- * The numbers below are for nullness. Note that the the last column is constant, i.e., the running
+ * The numbers below are for nullness. Note that the last column is constant, i.e., the running
  * time is proportional to #ins * #loc^2. Therefore we use this factor when limiting the maximal
  * method size for running an analysis.
  *

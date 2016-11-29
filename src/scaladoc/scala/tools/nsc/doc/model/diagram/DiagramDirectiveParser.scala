@@ -163,7 +163,7 @@ trait DiagramDirectiveParser {
     case Nil =>
       defaultFilter
 
-    // compute the exact filters. By including the annotation, the diagram is autmatically added
+    // compute the exact filters. By including the annotation, the diagram is automatically added
     case _ =>
       tFilter -= System.currentTimeMillis
       var hideDiagram0: Boolean = false

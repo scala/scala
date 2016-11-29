@@ -2,23 +2,21 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import scala.tools.asm.Opcodes._
-import org.junit.Assert._
 
-import CodeGenTools._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
+import scala.tools.partest.ASMConverters._
+import scala.tools.testing.BytecodeTesting._
+import scala.tools.testing.ClearAfterClass
 
 @RunWith(classOf[JUnit4])
-class CompactLocalVariablesTest {
-
+class CompactLocalVariablesTest extends ClearAfterClass {
   // recurse-unreachable-jumps is required for eliminating catch blocks, in the first dce round they
   // are still live.only after eliminating the empty handler the catch blocks become unreachable.
-  val methodOptCompiler     = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:unreachable-code,compact-locals")
-  val noCompactVarsCompiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:unreachable-code")
+  val methodOptCompiler     = cached("methodOptCompiler",     () => newCompiler(extraArgs = "-opt:unreachable-code,compact-locals"))
+  val noCompactVarsCompiler = cached("noCompactVarsCompiler", () => newCompiler(extraArgs = "-opt:unreachable-code"))
 
   @Test
   def compactUnused(): Unit = {
@@ -58,8 +56,8 @@ class CompactLocalVariablesTest {
         |}
         |""".stripMargin
 
-    val List(noCompact)   = compileMethods(noCompactVarsCompiler)(code)
-    val List(withCompact) = compileMethods(methodOptCompiler)(code)
+    val noCompact   = noCompactVarsCompiler.compileAsmMethod(code)
+    val withCompact = methodOptCompiler.compileAsmMethod(code)
 
     // code is the same, except for local var indices
     assertTrue(noCompact.instructions.size == withCompact.instructions.size)

@@ -39,7 +39,7 @@ trait ParsersCommon extends ScannersCommon { self =>
    */
   abstract class ParserCommon {
     val in: ScannerCommon
-    def deprecationWarning(off: Offset, msg: String): Unit
+    def deprecationWarning(off: Offset, msg: String, since: String): Unit
     def accept(token: Token): Int
 
     /** Methods inParensOrError and similar take a second argument which, should
@@ -154,7 +154,7 @@ self =>
 
     // suppress warnings; silent abort on errors
     def warning(offset: Offset, msg: String): Unit = ()
-    def deprecationWarning(offset: Offset, msg: String): Unit = ()
+    def deprecationWarning(offset: Offset, msg: String, since: String): Unit = ()
 
     def syntaxError(offset: Offset, msg: String): Unit = throw new MalformedInput(offset, msg)
     def incompleteInputError(msg: String): Unit = throw new MalformedInput(source.content.length - 1, msg)
@@ -206,8 +206,8 @@ self =>
     override def warning(offset: Offset, msg: String): Unit =
       reporter.warning(o2p(offset), msg)
 
-    override def deprecationWarning(offset: Offset, msg: String): Unit =
-      currentRun.reporting.deprecationWarning(o2p(offset), msg)
+    override def deprecationWarning(offset: Offset, msg: String, since: String): Unit =
+      currentRun.reporting.deprecationWarning(o2p(offset), msg, since)
 
     private var smartParsing = false
     @inline private def withSmartParsing[T](body: => T): T = {
@@ -364,12 +364,15 @@ self =>
       val stmts = parseStats()
 
       def mainModuleName = newTermName(settings.script.value)
+
       /* If there is only a single object template in the file and it has a
        * suitable main method, we will use it rather than building another object
        * around it.  Since objects are loaded lazily the whole script would have
        * been a no-op, so we're not taking much liberty.
        */
-      def searchForMain(): Option[Tree] = {
+      def searchForMain(): Tree = {
+        import PartialFunction.cond
+
         /* Have to be fairly liberal about what constitutes a main method since
          * nothing has been typed yet - for instance we can't assume the parameter
          * type will look exactly like "Array[String]" as it could have been renamed
@@ -379,11 +382,15 @@ self =>
           case DefDef(_, nme.main, Nil, List(_), _, _)  => true
           case _                                        => false
         }
-        /* For now we require there only be one top level object. */
+        def isApp(t: Tree) = t match {
+          case Template(parents, _, _) => parents.exists(cond(_) { case Ident(tpnme.App) => true })
+          case _ => false
+        }
+        /* We allow only one main module. */
         var seenModule = false
-        val newStmts = stmts collect {
-          case t @ Import(_, _) => t
-          case md @ ModuleDef(mods, name, template) if !seenModule && (md exists isMainMethod) =>
+        var disallowed = EmptyTree: Tree
+        val newStmts = stmts.map {
+          case md @ ModuleDef(mods, name, template) if !seenModule && (isApp(template) || md.exists(isMainMethod)) =>
             seenModule = true
             /* This slightly hacky situation arises because we have no way to communicate
              * back to the scriptrunner what the name of the program is.  Even if we were
@@ -394,50 +401,63 @@ self =>
              */
             if (name == mainModuleName) md
             else treeCopy.ModuleDef(md, mods, mainModuleName, template)
-          case _ =>
+          case md @ ModuleDef(_, _, _)   => md
+          case cd @ ClassDef(_, _, _, _) => cd
+          case t  @ Import(_, _)         => t
+          case t =>
             /* If we see anything but the above, fail. */
-            return None
+            if (disallowed.isEmpty) disallowed = t
+            EmptyTree
         }
-        Some(makeEmptyPackage(0, newStmts))
+        if (disallowed.isEmpty) makeEmptyPackage(0, newStmts)
+        else {
+          if (seenModule)
+            warning(disallowed.pos.point, "Script has a main object but statement is disallowed")
+          EmptyTree
+        }
       }
 
-      if (mainModuleName == newTermName(ScriptRunner.defaultScriptMain))
-        searchForMain() foreach { return _ }
+      def mainModule: Tree =
+        if (mainModuleName == newTermName(ScriptRunner.defaultScriptMain)) searchForMain() else EmptyTree
 
-      /*  Here we are building an AST representing the following source fiction,
-       *  where `moduleName` is from -Xscript (defaults to "Main") and <stmts> are
-       *  the result of parsing the script file.
-       *
-       *  {{{
-       *  object moduleName {
-       *    def main(args: Array[String]): Unit =
-       *      new AnyRef {
-       *        stmts
-       *      }
-       *  }
-       *  }}}
-       */
-      def emptyInit   = DefDef(
-        NoMods,
-        nme.CONSTRUCTOR,
-        Nil,
-        ListOfNil,
-        TypeTree(),
-        Block(List(Apply(gen.mkSuperInitCall, Nil)), literalUnit)
-      )
+      def repackaged: Tree = {
+        /*  Here we are building an AST representing the following source fiction,
+         *  where `moduleName` is from -Xscript (defaults to "Main") and <stmts> are
+         *  the result of parsing the script file.
+         *
+         *  {{{
+         *  object moduleName {
+         *    def main(args: Array[String]): Unit =
+         *      new AnyRef {
+         *        stmts
+         *      }
+         *  }
+         *  }}}
+         */
+        def emptyInit   = DefDef(
+          NoMods,
+          nme.CONSTRUCTOR,
+          Nil,
+          ListOfNil,
+          TypeTree(),
+          Block(List(Apply(gen.mkSuperInitCall, Nil)), literalUnit)
+        )
 
-      // def main
-      def mainParamType = AppliedTypeTree(Ident(tpnme.Array), List(Ident(tpnme.String)))
-      def mainParameter = List(ValDef(Modifiers(Flags.PARAM), nme.args, mainParamType, EmptyTree))
-      def mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(tpnme.Unit), gen.mkAnonymousNew(stmts))
+        // def main
+        def mainParamType = AppliedTypeTree(Ident(tpnme.Array), List(Ident(tpnme.String)))
+        def mainParameter = List(ValDef(Modifiers(Flags.PARAM), nme.args, mainParamType, EmptyTree))
+        def mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(tpnme.Unit), gen.mkAnonymousNew(stmts))
 
-      // object Main
-      def moduleName  = newTermName(ScriptRunner scriptMain settings)
-      def moduleBody  = Template(atInPos(scalaAnyRefConstr) :: Nil, noSelfType, List(emptyInit, mainDef))
-      def moduleDef   = ModuleDef(NoMods, moduleName, moduleBody)
+        // object Main
+        def moduleName  = newTermName(ScriptRunner scriptMain settings)
+        def moduleBody  = Template(atInPos(scalaAnyRefConstr) :: Nil, noSelfType, List(emptyInit, mainDef))
+        def moduleDef   = ModuleDef(NoMods, moduleName, moduleBody)
 
-      // package <empty> { ... }
-      makeEmptyPackage(0, moduleDef :: Nil)
+        // package <empty> { ... }
+        makeEmptyPackage(0, moduleDef :: Nil)
+      }
+
+      mainModule orElse repackaged
     }
 
 /* --------------- PLACEHOLDERS ------------------------------------------- */
@@ -774,7 +794,58 @@ self =>
     @inline final def caseSeparated[T](part: => T): List[T] = tokenSeparated(CASE, sepFirst = true, part)
     def readAnnots(part: => Tree): List[Tree] = tokenSeparated(AT, sepFirst = true, part)
 
-/* --------- OPERAND/OPERATOR STACK --------------------------------------- */
+    /** Create a tuple type Tree. If the arity is not supported, a syntax error is emitted. */
+    def makeSafeTupleType(elems: List[Tree], offset: Offset) = {
+      if (checkTupleSize(elems, offset)) makeTupleType(elems)
+      else makeTupleType(Nil) // create a dummy node; makeTupleType(elems) would fail
+    }
+
+    /** Create a tuple term Tree. If the arity is not supported, a syntax error is emitted. */
+    def makeSafeTupleTerm(elems: List[Tree], offset: Offset) = {
+      checkTupleSize(elems, offset)
+      makeTupleTerm(elems)
+    }
+
+    private[this] def checkTupleSize(elems: List[Tree], offset: Offset): Boolean =
+      if (elems.lengthCompare(definitions.MaxTupleArity) > 0) {
+        syntaxError(offset, "too many elements for tuple: "+elems.length+", allowed: "+definitions.MaxTupleArity, skipIt = false)
+        false
+      } else true
+
+    /** Strip the artifitial `Parens` node to create a tuple term Tree. */
+    def stripParens(t: Tree) = t match {
+      case Parens(ts) => atPos(t.pos) { makeSafeTupleTerm(ts, t.pos.point) }
+      case _ => t
+    }
+
+    /** Create tree representing (unencoded) binary operation expression or pattern. */
+    def makeBinop(isExpr: Boolean, left: Tree, op: TermName, right: Tree, opPos: Position, targs: List[Tree] = Nil): Tree = {
+      require(isExpr || targs.isEmpty || targs.exists(_.isErroneous), s"Incompatible args to makeBinop: !isExpr but targs=$targs")
+
+      def mkSelection(t: Tree) = {
+        def sel = atPos(opPos union t.pos)(Select(stripParens(t), op.encode))
+        if (targs.isEmpty) sel else atPos(left.pos)(TypeApply(sel, targs))
+      }
+      def mkNamed(args: List[Tree]) = if (isExpr) args map treeInfo.assignmentToMaybeNamedArg else args
+      val arguments = right match {
+        case Parens(args) => mkNamed(args)
+        case _            => List(right)
+      }
+      if (isExpr) {
+        if (treeInfo.isLeftAssoc(op)) {
+          Apply(mkSelection(left), arguments)
+        } else {
+          val x = freshTermName()
+          Block(
+            List(ValDef(Modifiers(symtab.Flags.SYNTHETIC | symtab.Flags.ARTIFACT), x, TypeTree(), stripParens(left))),
+            Apply(mkSelection(right), List(Ident(x))))
+        }
+      } else {
+        Apply(Ident(op.encode), stripParens(left) :: arguments)
+      }
+    }
+
+    /* --------- OPERAND/OPERATOR STACK --------------------------------------- */
 
     /** Modes for infix types. */
     object InfixMode extends Enumeration {
@@ -878,7 +949,7 @@ self =>
             atPos(start, in.skipToken()) { makeFunctionTypeTree(ts, typ()) }
           else {
             ts foreach checkNotByNameOrVarargs
-            val tuple = atPos(start) { makeTupleType(ts) }
+            val tuple = atPos(start) { makeSafeTupleType(ts, start) }
             infixTypeRest(
               compoundTypeRest(
                 annotTypeRest(
@@ -945,7 +1016,7 @@ self =>
       def simpleType(): Tree = {
         val start = in.offset
         simpleTypeRest(in.token match {
-          case LPAREN   => atPos(start)(makeTupleType(inParens(types())))
+          case LPAREN   => atPos(start)(makeSafeTupleType(inParens(types()), start))
           case USCORE   => wildcardType(in.skipToken())
           case _        =>
             path(thisOK = false, typeOK = true) match {
@@ -1662,9 +1733,7 @@ self =>
           }
           simpleExprRest(app, canApply = true)
         case USCORE =>
-          atPos(t.pos.start, in.skipToken()) {
-            Typed(stripParens(t), Function(Nil, EmptyTree))
-          }
+          atPos(t.pos.start, in.skipToken()) { makeMethodValue(stripParens(t)) }
         case _ =>
           t
       }
@@ -1773,7 +1842,7 @@ self =>
       val hasEq = in.token == EQUALS
 
       if (hasVal) {
-        if (hasEq) deprecationWarning(in.offset, "val keyword in for comprehension is deprecated")
+        if (hasEq) deprecationWarning(in.offset, "val keyword in for comprehension is deprecated", "2.10.0")
         else syntaxError(in.offset, "val in for comprehension must be followed by assignment")
       }
 
@@ -1852,19 +1921,20 @@ self =>
       }
 
       /** {{{
-       *  Pattern1    ::= varid `:' TypePat
+       *  Pattern1    ::= boundvarid `:' TypePat
        *                |  `_' `:' TypePat
        *                |  Pattern2
-       *  SeqPattern1 ::= varid `:' TypePat
+       *  SeqPattern1 ::= boundvarid `:' TypePat
        *                |  `_' `:' TypePat
        *                |  [SeqPattern2]
        *  }}}
        */
       def pattern1(): Tree = pattern2() match {
         case p @ Ident(name) if in.token == COLON =>
-          if (treeInfo.isVarPattern(p))
+          if (nme.isVariableName(name)) {
+            p.removeAttachment[BackquotedIdentifierAttachment.type]
             atPos(p.pos.start, in.skipToken())(Typed(p, compoundType()))
-          else {
+          } else {
             syntaxError(in.offset, "Pattern variables must start with a lower-case letter. (SLS 8.1.1.)")
             p
           }
@@ -1872,10 +1942,9 @@ self =>
       }
 
       /** {{{
-       *  Pattern2    ::=  varid [ @ Pattern3 ]
+       *  Pattern2    ::=  id  @ Pattern3
+       *                |  `_' @ Pattern3
        *                |   Pattern3
-       *  SeqPattern2 ::=  varid [ @ SeqPattern3 ]
-       *                |   SeqPattern3
        *  }}}
        */
       def pattern2(): Tree = {
@@ -1886,7 +1955,7 @@ self =>
           case Ident(nme.WILDCARD) =>
             in.nextToken()
             pattern3()
-          case Ident(name) if treeInfo.isVarPattern(p) =>
+          case Ident(name) =>
             in.nextToken()
             atPos(p.pos.start) { Bind(name, pattern3()) }
           case _ => p
@@ -1915,8 +1984,8 @@ self =>
           case _ => EmptyTree
         }
         def loop(top: Tree): Tree = reducePatternStack(base, top) match {
-          case next if isIdentExcept(raw.BAR) => pushOpInfo(next) ; loop(simplePattern(badPattern3))
-          case next                           => next
+          case next if isIdent && !isRawBar => pushOpInfo(next) ; loop(simplePattern(badPattern3))
+          case next                         => next
         }
         checkWildStar orElse stripParens(loop(top))
       }
@@ -2309,7 +2378,7 @@ self =>
           while (in.token == VIEWBOUND) {
             val msg = "Use an implicit parameter instead.\nExample: Instead of `def f[A <% Int](a: A)` use `def f[A](a: A)(implicit ev: A => Int)`."
             if (settings.future)
-              deprecationWarning(in.offset, s"View bounds are deprecated. $msg")
+              deprecationWarning(in.offset, s"View bounds are deprecated. $msg", "2.12.0")
             contextBoundBuf += atPos(in.skipToken())(makeFunctionTypeTree(List(Ident(pname)), typ()))
           }
           while (in.token == COLON) {
@@ -2603,14 +2672,14 @@ self =>
           if (isStatSep || in.token == RBRACE) {
             if (restype.isEmpty) {
               if (settings.future)
-                deprecationWarning(in.lastOffset, s"Procedure syntax is deprecated. Convert procedure `$name` to method by adding `: Unit`.")
+                deprecationWarning(in.lastOffset, s"Procedure syntax is deprecated. Convert procedure `$name` to method by adding `: Unit`.", "2.12.0")
               restype = scalaUnitConstr
             }
             newmods |= Flags.DEFERRED
             EmptyTree
           } else if (restype.isEmpty && in.token == LBRACE) {
             if (settings.future)
-              deprecationWarning(in.offset, s"Procedure syntax is deprecated. Convert procedure `$name` to method by adding `: Unit =`.")
+              deprecationWarning(in.offset, s"Procedure syntax is deprecated. Convert procedure `$name` to method by adding `: Unit =`.", "2.12.0")
             restype = scalaUnitConstr
             blockExpr()
           } else {
@@ -2760,11 +2829,6 @@ self =>
             if (mods.isTrait) (Modifiers(Flags.TRAIT), List())
             else (accessModifierOpt(), paramClauses(name, classContextBounds, ofCaseClass = mods.isCase))
           var mods1 = mods
-          if (mods.isTrait) {
-            if (settings.YvirtClasses && in.token == SUBTYPE) mods1 |= Flags.DEFERRED
-          } else if (in.token == SUBTYPE) {
-            syntaxError("classes are not allowed to be virtual", skipIt = false)
-          }
           val template = templateOpt(mods1, name, constrMods withAnnotations constrAnnots, vparamss, tstart)
           val result = gen.mkClassDef(mods1, name, tparams, template)
           // Context bounds generate implicit parameters (part of the template) with types
@@ -2877,7 +2941,7 @@ self =>
       case vdef @ ValDef(mods, _, _, _) if !mods.isDeferred =>
         copyValDef(vdef)(mods = mods | Flags.PRESUPER)
       case tdef @ TypeDef(mods, name, tparams, rhs) =>
-        deprecationWarning(tdef.pos.point, "early type members are deprecated. Move them to the regular body: the semantics are the same.")
+        deprecationWarning(tdef.pos.point, "early type members are deprecated. Move them to the regular body: the semantics are the same.", "2.11.0")
         treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs)
       case docdef @ DocDef(comm, rhs) =>
         treeCopy.DocDef(docdef, comm, rhs)

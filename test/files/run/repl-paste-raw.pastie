@@ -1,8 +1,8 @@
 
+package brown_paper
+
 // a raw paste is not a script
 // hence it can be packaged
-
-package brown_paper
 
 // these are a few of my favorite things
 case class Gift (hasString: Boolean)

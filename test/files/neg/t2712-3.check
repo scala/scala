@@ -1,0 +1,6 @@
+t2712-3.scala:17: error: type mismatch;
+ found   : test.One[test.X3]
+ required: test.Two[test.X1,test.X2]
+  test1(foo): Two[X1, X2] // fails without -Ypartial-unification
+       ^
+one error found

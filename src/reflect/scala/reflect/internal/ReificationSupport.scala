@@ -285,8 +285,11 @@ trait ReificationSupport { self: SymbolTable =>
           val (gvdefs, etdefs) = rawEdefs.partition(treeInfo.isEarlyValDef)
           val (fieldDefs, UnCtor(ctorMods, ctorVparamss, lvdefs) :: body) = rest.splitAt(indexOfCtor(rest))
           val evdefs = gvdefs.zip(lvdefs).map {
+            // TODO: in traits, early val defs are defdefs
             case (gvdef @ ValDef(_, _, tpt: TypeTree, _), ValDef(_, _, _, rhs)) =>
               copyValDef(gvdef)(tpt = tpt.original, rhs = rhs)
+            case (tr1, tr2) =>
+              throw new MatchError((tr1, tr2))
           }
           val edefs = evdefs ::: etdefs
           if (ctorMods.isTrait)
@@ -723,6 +726,7 @@ trait ReificationSupport { self: SymbolTable =>
     }
 
     // match call to either withFilter or filter
+    // TODO: now that we no longer rewrite `filter` to `withFilter`, maybe this extractor should only look for `withFilter`?
     protected object FilterCall {
       def unapply(tree: Tree): Option[(Tree,Tree)] = tree match {
         case Apply(Select(obj, nme.withFilter | nme.filter), arg :: Nil) =>

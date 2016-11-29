@@ -1,0 +1,4 @@
+sammy_error.scala:6: error: missing parameter type
+  foo(x => x) // should result in only one error (the second one stemmed from adapting to SAM when the tree was erroneous)
+      ^
+one error found

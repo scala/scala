@@ -5,12 +5,12 @@
 package scala.tools.nsc.interpreter
 
 import scala.reflect.internal.util.RangePosition
+import scala.reflect.io.AbstractFile
 import scala.tools.nsc.backend.JavaPlatform
+import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.{interactive, Settings}
-import scala.tools.nsc.io._
 import scala.tools.nsc.reporters.StoreReporter
-import scala.tools.nsc.util.ClassPath.DefaultJavaContext
-import scala.tools.nsc.util.{DirectoryClassPath, MergedClassPath}
+import scala.tools.nsc.classpath._
 
 trait PresentationCompilation {
   self: IMain =>
@@ -55,8 +55,10 @@ trait PresentationCompilation {
     * You may downcast the `reporter` to `StoreReporter` to access type errors.
     */
   def newPresentationCompiler(): interactive.Global = {
-    val replOutClasspath: DirectoryClassPath = new DirectoryClassPath(replOutput.dir, DefaultJavaContext)
-    val mergedClasspath = new MergedClassPath[AbstractFile](replOutClasspath :: global.platform.classPath :: Nil, DefaultJavaContext)
+    def mergedFlatClasspath = {
+      val replOutClasspath = ClassPathFactory.newClassPath(replOutput.dir, settings)
+      AggregateClassPath(replOutClasspath :: global.platform.classPath :: Nil)
+    }
     def copySettings: Settings = {
       val s = new Settings(_ => () /* ignores "bad option -nc" errors, etc */)
       s.processArguments(global.settings.recreateArgs, processAll = false)
@@ -65,10 +67,11 @@ trait PresentationCompilation {
     }
     val storeReporter: StoreReporter = new StoreReporter
     val interactiveGlobal = new interactive.Global(copySettings, storeReporter) { self =>
-      override lazy val platform: ThisPlatform = new JavaPlatform {
-        val global: self.type = self
-
-        override def classPath: PlatformClassPath = mergedClasspath
+      override lazy val platform: ThisPlatform = {
+        new JavaPlatform {
+          lazy val global: self.type = self
+          override private[nsc] lazy val classPath: ClassPath = mergedFlatClasspath
+        }
       }
     }
     new interactiveGlobal.TyperRun()
@@ -78,7 +81,7 @@ trait PresentationCompilation {
   abstract class PresentationCompileResult {
     val compiler: scala.tools.nsc.interactive.Global
     def unit: compiler.RichCompilationUnit
-    /** The length of synthetic code the precedes the user writtn code */
+    /** The length of synthetic code the precedes the user written code */
     def preambleLength: Int
     def cleanup(): Unit = {
       compiler.askShutdown()

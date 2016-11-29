@@ -22,13 +22,13 @@ package collection
  *  A map is a collection of bindings from keys to values, where there are
  *  no duplicate keys.
  */
-trait GenMapLike[A, +B, +Repr] extends GenIterableLike[(A, B), Repr] with Equals with Parallelizable[(A, B), parallel.ParMap[A, B]] {
-  def default(key: A): B
-  def get(key: A): Option[B]
-  def apply(key: A): B
-  def seq: Map[A, B]
-  def +[B1 >: B](kv: (A, B1)): GenMap[A, B1]
-  def - (key: A): Repr
+trait GenMapLike[K, +V, +Repr] extends GenIterableLike[(K, V), Repr] with Equals with Parallelizable[(K, V), parallel.ParMap[K, V]] {
+  def default(key: K): V
+  def get(key: K): Option[V]
+  def apply(key: K): V
+  def seq: Map[K, V]
+  def +[V1 >: V](kv: (K, V1)): GenMap[K, V1]
+  def - (key: K): Repr
 
   // This hash code must be symmetric in the contents but ought not
   // collide trivially.
@@ -41,17 +41,17 @@ trait GenMapLike[A, +B, +Repr] extends GenIterableLike[(A, B), Repr] with Equals
    *   @tparam  B1       the result type of the default computation.
    *   @return  the value associated with `key` if it exists,
    *            otherwise the result of the `default` computation.
-   *   @usecase def getOrElse(key: A, default: => B): B
+   *   @usecase def getOrElse(key: K, default: => V): V
    *     @inheritdoc
    */
-  def getOrElse[B1 >: B](key: A, default: => B1): B1
+  def getOrElse[V1 >: V](key: K, default: => V1): V1
 
   /** Tests whether this map contains a binding for a key.
    *
    *  @param key the key
    *  @return    `true` if there is a binding for `key` in this map, `false` otherwise.
    */
-  def contains(key: A): Boolean
+  def contains(key: K): Boolean
 
   /** Tests whether this map contains a binding for a key. This method,
    *  which implements an abstract method of trait `PartialFunction`,
@@ -60,47 +60,47 @@ trait GenMapLike[A, +B, +Repr] extends GenIterableLike[(A, B), Repr] with Equals
    *  @param key the key
    *  @return    `true` if there is a binding for `key` in this map, `false` otherwise.
    */
-  def isDefinedAt(key: A): Boolean
+  def isDefinedAt(key: K): Boolean
 
-  def keySet: GenSet[A]
+  def keySet: GenSet[K]
 
   /** Collects all keys of this map in an iterable collection.
    *
    *  @return the keys of this map as an iterable.
    */
-  def keys: GenIterable[A]
+  def keys: GenIterable[K]
 
   /** Collects all values of this map in an iterable collection.
    *
    *  @return the values of this map as an iterable.
    */
-  def values: GenIterable[B]
+  def values: GenIterable[V]
 
   /** Creates an iterator for all keys.
    *
    *  @return an iterator over all keys.
    */
-  def keysIterator: Iterator[A]
+  def keysIterator: Iterator[K]
 
   /** Creates an iterator for all values in this map.
    *
    *  @return an iterator over all values that are associated with some key in this map.
    */
-  def valuesIterator: Iterator[B]
+  def valuesIterator: Iterator[V]
 
   /** Filters this map by retaining only keys satisfying a predicate.
    *  @param  p   the predicate used to test keys
    *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
    *          the predicate `p`. The resulting map wraps the original map without copying any elements.
    */
-  def filterKeys(p: A => Boolean): GenMap[A, B]
+  def filterKeys(p: K => Boolean): GenMap[K, V]
 
   /** Transforms this map by applying a function to every retrieved value.
    *  @param  f   the function used to transform values of this map.
    *  @return a map view which maps every key of this map
    *          to `f(this(key))`. The resulting map wraps the original map without copying any elements.
    */
-  def mapValues[C](f: B => C): GenMap[A, C]
+  def mapValues[W](f: V => W): GenMap[K, W]
 
   /** Compares two maps structurally; i.e., checks if all mappings
    *  contained in this map are also contained in the other map,

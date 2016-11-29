@@ -9,13 +9,14 @@ import scala.collection.Seq
 import scala.reflect.io.AbstractFile
 import scala.reflect.io.FileZipArchive
 import FileUtils.AbstractFileOps
+import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 
 /**
  * A trait allowing to look for classpath entries of given type in zip and jar files.
  * It provides common logic for classes handling class and source files.
  * It's aware of things like e.g. META-INF directory which is correctly skipped.
  */
-trait ZipArchiveFileLookup[FileEntryType <: ClassRepClassPathEntry] extends FlatClassPath {
+trait ZipArchiveFileLookup[FileEntryType <: ClassRepresentation] extends ClassPath {
   val zipFile: File
 
   assert(zipFile != null, "Zip file in ZipArchiveFileLookup cannot be null")
@@ -39,7 +40,7 @@ trait ZipArchiveFileLookup[FileEntryType <: ClassRepClassPathEntry] extends Flat
       entry <- dirEntry.iterator if isRequiredFileType(entry)
     } yield createFileEntry(entry)
 
-  override private[nsc] def list(inPackage: String): FlatClassPathEntries = {
+  override private[nsc] def list(inPackage: String): ClassPathEntries = {
     val foundDirEntry = findDirEntry(inPackage)
 
     foundDirEntry map { dirEntry =>
@@ -53,11 +54,11 @@ trait ZipArchiveFileLookup[FileEntryType <: ClassRepClassPathEntry] extends Flat
         else if (isRequiredFileType(entry))
           fileBuf += createFileEntry(entry)
       }
-      FlatClassPathEntries(pkgBuf, fileBuf)
-    } getOrElse FlatClassPathEntries(Seq.empty, Seq.empty)
+      ClassPathEntries(pkgBuf, fileBuf)
+    } getOrElse ClassPathEntries(Seq.empty, Seq.empty)
   }
 
-  private def findDirEntry(pkg: String) = {
+  private def findDirEntry(pkg: String): Option[archive.DirEntry] = {
     val dirName = s"${FileUtils.dirPath(pkg)}/"
     archive.allDirs.get(dirName)
   }

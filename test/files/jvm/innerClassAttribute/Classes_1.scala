@@ -186,7 +186,7 @@ trait A24 extends A24Base {
   }
 }
 
-class SI_9105 {    
+class SI_9105 {
                                        //      outerClass       enclMeth
   val fun = (s: String) => {
     class A                            //        SI_9105           null
@@ -222,7 +222,7 @@ trait SI_9124 {
 
   def f = new A { def f2 = 0 } // enclosing method is f in the interface SI_9124
 
-  private def g = new A { def f3 = 0 } // only encl class (SI_9124), encl meth is null because the interface SI_9124 doesn't have a method g
+  private def g: Object = new A { def f3 = 0 } // only encl class (SI_9124), encl meth can be g in 2.12 because the interface SI_9124 now has the method g
 
   object O { // member, no encl meth attribute
     new A { def f4 = 0 } // enclosing class is O$, no enclosing method
@@ -269,6 +269,23 @@ class SpecializedClassesAreTopLevel {
   // }
 }
 
+object AnonymousClassesMayBeNestedInSpecialized {
+  abstract class A
+  class C[@specialized(Int) T] {
+    def foo(t: T): A = new A { }
+  }
+
+  // specialization duplicates the anonymous class, one copy is nested in the specialized subclass of C
+
+  // class C$mcI$sp extends C[Int] {
+  //   override def foo(t: Int): A = C$mcI$sp.this.foo$mcI$sp(t);
+  //   override def foo$mcI$sp(t: Int): A = {
+  //     final class $anon extends A { }
+  //     new <$anon: A>()
+  //   }
+  // }
+}
+
 object NestedInValueClass {
   // note that we can only test anonymous functions, nested classes are not allowed inside value classes
   class A(val arg: String) extends AnyVal {
@@ -284,5 +301,42 @@ object NestedInValueClass {
     // A$ has InnerClass entries for B, C, A, A$. Also for the closures above, because they are referenced in A$'s bytecode.
     class B // member class of A$
     def f = { class C; new C } // outer class A$, outer method f
+  }
+}
+
+object LocalAndAnonymousInLazyInitializer {
+  abstract class A
+  class C {
+    lazy val a: A = new A { }
+    lazy val b: A = {
+      class AA extends A
+      new AA
+    }
+    lazy val c: A = {
+      object AA extends A
+      AA
+    }
+  }
+  object O {
+    lazy val a: A = new A { }
+    lazy val b: A = {
+      class AA extends A
+      new AA
+    }
+    lazy val c: A = {
+      object AA extends A
+      AA
+    }
+  }
+  trait T {
+    lazy val a: A = new A { }
+    lazy val b: A = {
+      class AA extends A
+      new AA
+    }
+    lazy val c: A = {
+      object AA extends A
+      AA
+    }
   }
 }

@@ -1,6 +1,6 @@
 // See comment in BCodeBodyBuilder
 
-// -Ybackend:GenBCode -Yopt:unreachable-code
+// -opt:unreachable-code
 
 class C {
   // can't just emit a call to ???, that returns value of type Nothing$ (not Int).

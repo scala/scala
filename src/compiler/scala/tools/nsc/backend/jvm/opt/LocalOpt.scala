@@ -8,12 +8,13 @@ package backend.jvm
 package opt
 
 import scala.annotation.{tailrec, switch}
+
 import scala.tools.asm.Type
 import scala.tools.asm.tree.analysis.Frame
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
-import scala.collection.{mutable, immutable}
-import scala.collection.convert.decorateAsScala._
+import scala.collection.mutable
+import scala.collection.JavaConverters._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.analysis._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
@@ -46,7 +47,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *   note that eliminating empty handlers and stale local variable descriptors is required for
  *   correctness, see the comment in the body of `methodOptimizations`.
  *
- * box-unbox elimination (eliminates box-unbox pairs withing the same method)
+ * box-unbox elimination (eliminates box-unbox pairs within the same method)
  *   + enables UPSTREAM:
  *     - nullness optimizations (a box extraction operation (unknown nullness) may be rewritten to
  *       a read of a non-null local. example in doc comment of box-unbox implementation)
@@ -190,7 +191,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
    * @return      `true` if unreachable code was eliminated in some method, `false` otherwise.
    */
   def methodOptimizations(clazz: ClassNode): Boolean = {
-    !compilerSettings.YoptNone && clazz.methods.asScala.foldLeft(false) {
+    !compilerSettings.optNone && clazz.methods.asScala.foldLeft(false) {
       case (changed, method) => methodOptimizations(method, clazz.name) || changed
     }
   }
@@ -230,7 +231,8 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
     // for local variables in dead blocks. Maybe that's a bug in the ASM framework.
 
     var currentTrace: String = null
-    val doTrace = compilerSettings.YoptTrace.isSetByUser && compilerSettings.YoptTrace.value == ownerClassName + "." + method.name
+    val methodPrefix = {val p = compilerSettings.YoptTrace.value; if (p == "_") "" else p }
+    val doTrace = compilerSettings.YoptTrace.isSetByUser && s"$ownerClassName.${method.name}".startsWith(methodPrefix)
     def traceIfChanged(optName: String): Unit = if (doTrace) {
       val after = AsmUtils.textify(method)
       if (currentTrace != after) {
@@ -260,46 +262,46 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
       traceIfChanged("beforeMethodOpt")
 
       // NULLNESS OPTIMIZATIONS
-      val runNullness = compilerSettings.YoptNullnessTracking && requestNullness
+      val runNullness = compilerSettings.optNullnessTracking && requestNullness
       val nullnessOptChanged = runNullness && nullnessOptimizations(method, ownerClassName)
       traceIfChanged("nullness")
 
       // UNREACHABLE CODE
       // Both AliasingAnalyzer (used in copyProp) and ProdConsAnalyzer (used in eliminateStaleStores,
       // boxUnboxElimination) require not having unreachable instructions (null frames).
-      val runDCE = (compilerSettings.YoptUnreachableCode && (requestDCE || nullnessOptChanged)) ||
-        compilerSettings.YoptBoxUnbox ||
-        compilerSettings.YoptCopyPropagation
+      val runDCE = (compilerSettings.optUnreachableCode && (requestDCE || nullnessOptChanged)) ||
+        compilerSettings.optBoxUnbox ||
+        compilerSettings.optCopyPropagation
       val (codeRemoved, liveLabels) = if (runDCE) removeUnreachableCodeImpl(method, ownerClassName) else (false, Set.empty[LabelNode])
       traceIfChanged("dce")
 
       // BOX-UNBOX
-      val runBoxUnbox = compilerSettings.YoptBoxUnbox && (requestBoxUnbox || nullnessOptChanged)
+      val runBoxUnbox = compilerSettings.optBoxUnbox && (requestBoxUnbox || nullnessOptChanged)
       val boxUnboxChanged = runBoxUnbox && boxUnboxElimination(method, ownerClassName)
       traceIfChanged("boxUnbox")
 
       // COPY PROPAGATION
-      val runCopyProp = compilerSettings.YoptCopyPropagation && (firstIteration || boxUnboxChanged)
+      val runCopyProp = compilerSettings.optCopyPropagation && (firstIteration || boxUnboxChanged)
       val copyPropChanged = runCopyProp && copyPropagation(method, ownerClassName)
       traceIfChanged("copyProp")
 
       // STALE STORES
-      val runStaleStores = compilerSettings.YoptCopyPropagation && (requestStaleStores || nullnessOptChanged || codeRemoved || boxUnboxChanged || copyPropChanged)
+      val runStaleStores = compilerSettings.optCopyPropagation && (requestStaleStores || nullnessOptChanged || codeRemoved || boxUnboxChanged || copyPropChanged)
       val storesRemoved = runStaleStores && eliminateStaleStores(method, ownerClassName)
       traceIfChanged("staleStores")
 
       // REDUNDANT CASTS
-      val runRedundantCasts = compilerSettings.YoptRedundantCasts && (firstIteration || boxUnboxChanged)
+      val runRedundantCasts = compilerSettings.optRedundantCasts && (firstIteration || boxUnboxChanged)
       val castRemoved = runRedundantCasts && eliminateRedundantCasts(method, ownerClassName)
       traceIfChanged("redundantCasts")
 
       // PUSH-POP
-      val runPushPop = compilerSettings.YoptCopyPropagation && (requestPushPop || firstIteration || storesRemoved || castRemoved)
+      val runPushPop = compilerSettings.optCopyPropagation && (requestPushPop || firstIteration || storesRemoved || castRemoved)
       val pushPopRemoved = runPushPop && eliminatePushPop(method, ownerClassName)
       traceIfChanged("pushPop")
 
       // STORE-LOAD PAIRS
-      val runStoreLoad = compilerSettings.YoptCopyPropagation && (requestStoreLoad || boxUnboxChanged || copyPropChanged || pushPopRemoved)
+      val runStoreLoad = compilerSettings.optCopyPropagation && (requestStoreLoad || boxUnboxChanged || copyPropChanged || pushPopRemoved)
       val storeLoadRemoved = runStoreLoad && eliminateStoreLoad(method)
       traceIfChanged("storeLoadPairs")
 
@@ -311,7 +313,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
 
       // SIMPLIFY JUMPS
       // almost all of the above optimizations enable simplifying more jumps, so we just run it in every iteration
-      val runSimplifyJumps = compilerSettings.YoptSimplifyJumps
+      val runSimplifyJumps = compilerSettings.optSimplifyJumps
       val jumpsChanged = runSimplifyJumps && simplifyJumps(method)
       traceIfChanged("simplifyJumps")
 
@@ -357,21 +359,21 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
         requestPushPop = true,
         requestStoreLoad = true,
         firstIteration = true)
-      if (compilerSettings.YoptUnreachableCode) unreachableCodeEliminated += method
+      if (compilerSettings.optUnreachableCode) unreachableCodeEliminated += method
       r
     } else (false, false)
 
     // (*) Removing stale local variable descriptors is required for correctness, see comment in `methodOptimizations`
     val localsRemoved =
-      if (compilerSettings.YoptCompactLocals) compactLocalVariables(method) // also removes unused
+      if (compilerSettings.optCompactLocals) compactLocalVariables(method) // also removes unused
       else if (requireEliminateUnusedLocals) removeUnusedLocalVariableNodes(method)() // (*)
       else false
     traceIfChanged("localVariables")
 
-    val lineNumbersRemoved = if (compilerSettings.YoptUnreachableCode) removeEmptyLineNumbers(method) else false
+    val lineNumbersRemoved = if (compilerSettings.optUnreachableCode) removeEmptyLineNumbers(method) else false
     traceIfChanged("lineNumbers")
 
-    val labelsRemoved = if (compilerSettings.YoptUnreachableCode) removeEmptyLabelNodes(method) else false
+    val labelsRemoved = if (compilerSettings.optUnreachableCode) removeEmptyLabelNodes(method) else false
     traceIfChanged("labels")
 
     // assert that local variable annotations are empty (we don't emit them) - otherwise we'd have
@@ -395,7 +397,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
    */
   def nullnessOptimizations(method: MethodNode, ownerClassName: InternalName): Boolean = {
     AsmAnalyzer.sizeOKForNullness(method) && {
-      lazy val nullnessAnalyzer = new AsmAnalyzer(method, ownerClassName, new NullnessAnalyzer(btypes))
+      lazy val nullnessAnalyzer = new AsmAnalyzer(method, ownerClassName, new NullnessAnalyzer(btypes, method))
 
       // When running nullness optimizations the method may still have unreachable code. Analyzer
       // frames of unreachable instructions are `null`.
@@ -504,7 +506,7 @@ class LocalOpt[BT <: BTypes](val btypes: BT) {
 
         case v: VarInsnNode if isLive =>
           val longSize = if (isSize2LoadOrStore(v.getOpcode)) 1 else 0
-          maxLocals = math.max(maxLocals, v.`var` + longSize + 1) // + 1 becauase local numbers are 0-based
+          maxLocals = math.max(maxLocals, v.`var` + longSize + 1) // + 1 because local numbers are 0-based
 
         case i: IincInsnNode if isLive =>
           maxLocals = math.max(maxLocals, i.`var` + 1)
@@ -771,154 +773,181 @@ object LocalOptImpls {
     // A set of all exception handlers that guard the current instruction, required for simplifyGotoReturn
     var activeHandlers = Set.empty[TryCatchBlockNode]
 
-    // Instructions that need to be removed. simplifyBranchOverGoto returns an instruction to be
-    // removed. It cannot remove it itself because the instruction may be the successor of the current
-    // instruction of the iterator, which is not supported in ASM.
-    var instructionsToRemove = Set.empty[AbstractInsnNode]
+    val jumpInsns = mutable.LinkedHashMap.empty[JumpInsnNode, Boolean]
 
-    val iterator = method.instructions.iterator()
-    while (iterator.hasNext) {
-      val instruction = iterator.next()
+    for (insn <- method.instructions.iterator().asScala) insn match {
+      case l: LabelNode =>
+        activeHandlers ++= allHandlers.filter(_.start == l)
+        activeHandlers = activeHandlers.filter(_.end != l)
 
-      instruction match {
-        case l: LabelNode =>
-          activeHandlers ++= allHandlers.filter(_.start == l)
-          activeHandlers = activeHandlers.filter(_.end != l)
-        case _ =>
+      case ji: JumpInsnNode =>
+        jumpInsns(ji) = activeHandlers.nonEmpty
+
+      case _ =>
+    }
+
+    var _jumpTargets: Set[AbstractInsnNode] = null
+    def jumpTargets = {
+      if (_jumpTargets == null) {
+        _jumpTargets = jumpInsns.keysIterator.map(_.label).toSet
       }
+      _jumpTargets
+    }
 
-      if (instructionsToRemove(instruction)) {
-        iterator.remove()
-        instructionsToRemove -= instruction
-      } else if (isJumpNonJsr(instruction)) { // fast path - all of the below only treat jumps
-        var jumpRemoved = simplifyThenElseSameTarget(method, instruction)
+    def removeJumpFromMap(jump: JumpInsnNode) = {
+      jumpInsns.remove(jump)
+      _jumpTargets = null
+    }
+
+    def replaceJumpByPop(jump: JumpInsnNode) = {
+      removeJumpAndAdjustStack(method, jump)
+      removeJumpFromMap(jump)
+    }
+
+    /**
+     * Removes a conditional jump if it is followed by a GOTO to the same destination.
+     *
+     *      CondJump l;  [nops];  GOTO l;  [...]
+     *      POP*;        [nops];  GOTO l;  [...]
+     *
+     * Introduces 1 or 2 POP instructions, depending on the number of values consumed by the CondJump.
+     */
+    def simplifyThenElseSameTarget(insn: AbstractInsnNode): Boolean = insn match {
+      case ConditionalJump(jump) =>
+        nextExecutableInstruction(insn) match {
+          case Some(Goto(elseJump)) if sameTargetExecutableInstruction(jump, elseJump) =>
+            replaceJumpByPop(jump)
+            true
+
+          case _ => false
+        }
+
+      case _ => false
+    }
+
+    /**
+     * Replace jumps to a sequence of GOTO instructions by a jump to the final destination.
+     *
+     * {{{
+     *      Jump l;  [any ops];  l: GOTO m;  [any ops];  m: GOTO n;  [any ops];   n: NotGOTO; [...]
+     *   => Jump n;  [rest unchanged]
+     * }}}
+     *
+     * If there's a loop of GOTOs, the initial jump is replaced by one of the labels in the loop.
+     */
+    def collapseJumpChains(insn: AbstractInsnNode): Boolean = insn match {
+      case JumpNonJsr(jump) =>
+        val target = finalJumpTarget(jump)
+        if (jump.label == target) false else {
+          jump.label = target
+          _jumpTargets = null
+          true
+        }
+
+      case _ => false
+    }
+
+    /**
+     * Eliminates unnecessary jump instructions
+     *
+     * {{{
+     *      Jump l;  [nops];  l: [...]
+     *   => POP*;    [nops];  l: [...]
+     * }}}
+     *
+     * Introduces 0, 1 or 2 POP instructions, depending on the number of values consumed by the Jump.
+     */
+    def removeJumpToSuccessor(insn: AbstractInsnNode): Boolean = insn match {
+      case JumpNonJsr(jump) if nextExecutableInstruction(jump, alsoKeep = Set(jump.label)) contains jump.label =>
+        replaceJumpByPop(jump)
+        true
+
+      case _ => false
+    }
+
+    /**
+     * If the "else" part of a conditional branch is a simple GOTO, negates the conditional branch
+     * and eliminates the GOTO.
+     *
+     * {{{
+     *      CondJump l;         [nops, no jump targets];  GOTO m;  [nops];  l: [...]
+     *   => NegatedCondJump m;  [nops, no jump targets];           [nops];  l: [...]
+     * }}}
+     *
+     * Note that no jump targets are allowed in the first [nops] section. Otherwise, there could
+     * be some other jump to the GOTO, and eliminating it would change behavior.
+     */
+    def simplifyBranchOverGoto(insn: AbstractInsnNode, inTryBlock: Boolean): Boolean = insn match {
+      case ConditionalJump(jump) =>
+        // don't skip over jump targets, see doc comment
+        nextExecutableInstruction(jump, alsoKeep = jumpTargets) match {
+          case Some(Goto(goto)) =>
+            if (nextExecutableInstruction(goto, alsoKeep = Set(jump.label)) contains jump.label) {
+              val newJump = new JumpInsnNode(negateJumpOpcode(jump.getOpcode), goto.label)
+              method.instructions.set(jump, newJump)
+              removeJumpFromMap(jump)
+              jumpInsns(newJump) = inTryBlock
+              replaceJumpByPop(goto)
+              true
+            } else false
+
+          case _ => false
+        }
+      case _ => false
+    }
+
+    /**
+     * Inlines xRETURN and ATHROW
+     *
+     * {{{
+     *      GOTO l;            [any ops];  l: xRETURN/ATHROW
+     *   => xRETURN/ATHROW;    [any ops];  l: xRETURN/ATHROW
+     * }}}
+     *
+     * inlining is only done if the GOTO instruction is not part of a try block, otherwise the
+     * rewrite might change the behavior. For xRETURN, the reason is that return instructions may throw
+     * an IllegalMonitorStateException, as described here:
+     *   http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.return
+     */
+    def simplifyGotoReturn(instruction: AbstractInsnNode, inTryBlock: Boolean): Boolean = !inTryBlock && (instruction match {
+      case Goto(jump) =>
+        nextExecutableInstruction(jump.label) match {
+          case Some(target) =>
+            if (isReturn(target) || target.getOpcode == ATHROW) {
+              method.instructions.set(jump, target.clone(null))
+              removeJumpFromMap(jump)
+              true
+            } else false
+
+          case _ => false
+        }
+      case _ => false
+    })
+
+    def run(): Boolean = {
+      var changed = false
+
+      // `.toList` because we're modifying the map while iterating over it
+      for ((jumpInsn, inTryBlock) <- jumpInsns.toList if jumpInsns.contains(jumpInsn) && isJumpNonJsr(jumpInsn)) {
+        var jumpRemoved = simplifyThenElseSameTarget(jumpInsn)
 
         if (!jumpRemoved) {
-          changed = collapseJumpChains(instruction) || changed
-          jumpRemoved = removeJumpToSuccessor(method, instruction)
+          changed = collapseJumpChains(jumpInsn) || changed
+          jumpRemoved = removeJumpToSuccessor(jumpInsn)
 
           if (!jumpRemoved) {
-            val staleGoto = simplifyBranchOverGoto(method, instruction)
-            instructionsToRemove ++= staleGoto
-            changed ||= staleGoto.nonEmpty
-            changed = simplifyGotoReturn(method, instruction, inTryBlock = activeHandlers.nonEmpty) || changed
+            changed = simplifyBranchOverGoto(jumpInsn, inTryBlock) || changed
+            changed = simplifyGotoReturn(jumpInsn, inTryBlock) || changed
           }
         }
+
         changed ||= jumpRemoved
       }
+
+      if (changed) run()
+      changed
     }
-    assert(instructionsToRemove.isEmpty, "some optimization required removing a previously traversed instruction. add `instructionsToRemove.foreach(method.instructions.remove)`")
-    changed
+
+    run()
   }
-
-  /**
-   * Removes a conditional jump if it is followed by a GOTO to the same destination.
-   *
-   *      CondJump l;  [nops];  GOTO l;  [...]
-   *      POP*;        [nops];  GOTO l;  [...]
-   *
-   * Introduces 1 or 2 POP instructions, depending on the number of values consumed by the CondJump.
-   */
-  private def simplifyThenElseSameTarget(method: MethodNode, instruction: AbstractInsnNode): Boolean = instruction match {
-    case ConditionalJump(jump) =>
-      nextExecutableInstruction(instruction) match {
-        case Some(Goto(elseJump)) if sameTargetExecutableInstruction(jump, elseJump) =>
-          removeJumpAndAdjustStack(method, jump)
-          true
-
-        case _ => false
-      }
-    case _ => false
-  }
-
-  /**
-   * Replace jumps to a sequence of GOTO instructions by a jump to the final destination.
-   *
-   *      Jump l;  [any ops];  l: GOTO m;  [any ops];  m: GOTO n;  [any ops];   n: NotGOTO; [...]
-   *   => Jump n;  [rest unchanged]
-   *
-   * If there's a loop of GOTOs, the initial jump is replaced by one of the labels in the loop.
-   */
-  private def collapseJumpChains(instruction: AbstractInsnNode): Boolean = instruction match {
-    case JumpNonJsr(jump) =>
-      val target = finalJumpTarget(jump)
-      if (jump.label == target) false else {
-        jump.label = target
-        true
-      }
-
-    case _ => false
-  }
-
-  /**
-   * Eliminates unnecessary jump instructions
-   *
-   *      Jump l;  [nops];  l: [...]
-   *   => POP*;    [nops];  l: [...]
-   *
-   * Introduces 0, 1 or 2 POP instructions, depending on the number of values consumed by the Jump.
-   */
-  private def removeJumpToSuccessor(method: MethodNode, instruction: AbstractInsnNode) = instruction match {
-    case JumpNonJsr(jump) if nextExecutableInstruction(jump, alsoKeep = Set(jump.label)) == Some(jump.label) =>
-      removeJumpAndAdjustStack(method, jump)
-      true
-    case _ => false
-  }
-
-  /**
-   * If the "else" part of a conditional branch is a simple GOTO, negates the conditional branch
-   * and eliminates the GOTO.
-   *
-   *      CondJump l;         [nops, no labels];  GOTO m;  [nops];  l: [...]
-   *   => NegatedCondJump m;  [nops, no labels];           [nops];  l: [...]
-   *
-   * Note that no label definitions are allowed in the first [nops] section. Otherwise, there could
-   * be some other jump to the GOTO, and eliminating it would change behavior.
-   *
-   * For technical reasons, we cannot remove the GOTO here (*).Instead this method returns an Option
-   * containing the GOTO that needs to be eliminated.
-   *
-   * (*) The ASM instruction iterator (used in the caller [[simplifyJumps]]) has an undefined
-   *     behavior if the successor of the current instruction is removed, which may be the case here
-   */
-  private def simplifyBranchOverGoto(method: MethodNode, instruction: AbstractInsnNode): Option[JumpInsnNode] = instruction match {
-    case ConditionalJump(jump) =>
-      // don't skip over labels, see doc comment
-      nextExecutableInstructionOrLabel(jump) match {
-        case Some(Goto(goto)) =>
-          if (nextExecutableInstruction(goto, alsoKeep = Set(jump.label)) == Some(jump.label)) {
-            val newJump = new JumpInsnNode(negateJumpOpcode(jump.getOpcode), goto.label)
-            method.instructions.set(jump, newJump)
-            Some(goto)
-          } else None
-
-        case _ => None
-      }
-    case _ => None
-  }
-
-  /**
-   * Inlines xRETURN and ATHROW
-   *
-   *      GOTO l;            [any ops];  l: xRETURN/ATHROW
-   *   => xRETURN/ATHROW;    [any ops];  l: xRETURN/ATHROW
-   *
-   * inlining is only done if the GOTO instruction is not part of a try block, otherwise the
-   * rewrite might change the behavior. For xRETURN, the reason is that return instructions may throw
-   * an IllegalMonitorStateException, as described here:
-   *   http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.return
-   */
-  private def simplifyGotoReturn(method: MethodNode, instruction: AbstractInsnNode, inTryBlock: Boolean): Boolean = !inTryBlock && (instruction match {
-    case Goto(jump) =>
-      nextExecutableInstruction(jump.label) match {
-        case Some(target) =>
-          if (isReturn(target) || target.getOpcode == ATHROW) {
-            method.instructions.set(jump, target.clone(null))
-            true
-          } else false
-
-        case _ => false
-      }
-    case _ => false
-  })
 }

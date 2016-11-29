@@ -101,58 +101,26 @@ trait ScaladocAnalyzer extends Analyzer {
 abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends SyntaxAnalyzer {
   import global._
 
-  class ScaladocJavaUnitParser(unit: CompilationUnit) extends {
-    override val in = new ScaladocJavaUnitScanner(unit)
-  } with JavaUnitParser(unit) { }
+  trait ScaladocScanner extends DocScanner {
+    // When `docBuffer == null`, we're not in a doc comment.
+    private var docBuffer: StringBuilder = null
 
-  class ScaladocJavaUnitScanner(unit: CompilationUnit) extends JavaUnitScanner(unit) {
-    /** buffer for the documentation comment
-     */
-    var docBuffer: StringBuilder = null
+    override protected def beginDocComment(prefix: String): Unit =
+      if (docBuffer == null) docBuffer = new StringBuilder(prefix)
 
-    /** add the given character to the documentation buffer
-     */
-    protected def putDocChar(c: Char) {
-      if (docBuffer ne null) docBuffer.append(c)
-    }
+    protected def ch: Char
+    override protected def processCommentChar(): Unit =
+      if (docBuffer != null) docBuffer append ch
 
-    override protected def skipComment(): Boolean = {
-      if (in.ch == '/') {
-        do {
-          in.next
-        } while ((in.ch != CR) && (in.ch != LF) && (in.ch != SU))
-        true
-      } else if (in.ch == '*') {
+    protected def docPosition: Position
+    override protected def finishDocComment(): Unit =
+      if (docBuffer != null) {
+        registerDocComment(docBuffer.toString, docPosition)
         docBuffer = null
-        in.next
-        val scaladoc = ("/**", "*/")
-        if (in.ch == '*')
-          docBuffer = new StringBuilder(scaladoc._1)
-        do {
-          do {
-            if (in.ch != '*' && in.ch != SU) {
-              in.next; putDocChar(in.ch)
-            }
-          } while (in.ch != '*' && in.ch != SU)
-          while (in.ch == '*') {
-            in.next; putDocChar(in.ch)
-          }
-        } while (in.ch != '/' && in.ch != SU)
-        if (in.ch == '/') in.next
-        else incompleteInputError("unclosed comment")
-        true
-      } else {
-        false
       }
-    }
   }
 
-  class ScaladocUnitScanner(unit0: CompilationUnit, patches0: List[BracePatch]) extends UnitScanner(unit0, patches0) {
-
-    private var docBuffer: StringBuilder = null        // buffer for comments (non-null while scanning)
-    private var inDocComment             = false       // if buffer contains double-star doc comment
-    private var lastDoc: DocComment      = null        // last comment if it was double-star doc
-
+  class ScaladocUnitScanner(unit0: CompilationUnit, patches0: List[BracePatch]) extends UnitScanner(unit0, patches0) with ScaladocScanner {
     private object unmooredParser extends {                // minimalist comment parser
       val global: Global = ScaladocSyntaxAnalyzer.this.global
     }
@@ -194,40 +162,7 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
         reporter.warning(doc.pos, "discarding unmoored doc comment")
     }
 
-    override def flushDoc(): DocComment = (try lastDoc finally lastDoc = null)
-
-    override protected def putCommentChar() {
-      if (inDocComment)
-        docBuffer append ch
-
-      nextChar()
-    }
-    override def skipDocComment(): Unit = {
-      inDocComment = true
-      docBuffer = new StringBuilder("/**")
-      super.skipDocComment()
-    }
-    override def skipBlockComment(): Unit = {
-      inDocComment = false // ??? this means docBuffer won't receive contents of this comment???
-      docBuffer = new StringBuilder("/*")
-      super.skipBlockComment()
-    }
-    override def skipComment(): Boolean = {
-      // emit a block comment; if it's double-star, make Doc at this pos
-      def foundStarComment(start: Int, end: Int) = try {
-        val str = docBuffer.toString
-        val pos = Position.range(unit.source, start, start, end)
-        if (inDocComment) {
-          signalParsedDocComment(str, pos)
-          lastDoc = DocComment(str, pos)
-        }
-        true
-      } finally {
-        docBuffer    = null
-        inDocComment = false
-      }
-      super.skipComment() && ((docBuffer eq null) || foundStarComment(offset, charOffset - 2))
-    }
+    protected def docPosition: Position = Position.range(unit.source, offset, offset, charOffset - 2)
   }
   class ScaladocUnitParser(unit: CompilationUnit, patches: List[BracePatch]) extends UnitParser(unit, patches) {
     override def newScanner() = new ScaladocUnitScanner(unit, patches)
@@ -257,6 +192,49 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
         joined
       }
       else trees
+    }
+  }
+
+  class ScaladocJavaUnitScanner(unit: CompilationUnit) extends JavaUnitScanner(unit) with ScaladocScanner {
+    private var docStart: Int = 0
+
+    override protected def beginDocComment(prefix: String): Unit = {
+      super.beginDocComment(prefix)
+      docStart = currentPos.start
+    }
+
+    protected def ch = in.ch
+
+    override protected def docPosition = Position.range(unit.source, docStart, docStart, in.cpos)
+  }
+
+  class ScaladocJavaUnitParser(unit: CompilationUnit) extends {
+    override val in = new ScaladocJavaUnitScanner(unit)
+  } with JavaUnitParser(unit) {
+
+    override def joinComment(trees: => List[Tree]): List[Tree] = {
+      val doc = in.flushDoc()
+
+      if ((doc ne null) && doc.raw.length > 0) {
+        log(s"joinComment(doc=$doc)")
+        val joined = trees map { t =>
+          DocDef(doc, t) setPos {
+            if (t.pos.isDefined) {
+              val pos = doc.pos.withEnd(t.pos.end)
+              pos.makeTransparent
+            } else {
+              t.pos
+            }
+          }
+        }
+        joined.find(_.pos.isOpaqueRange) foreach { main =>
+          val mains = List(main)
+          joined foreach { t => if (t ne main) ensureNonOverlapping(t, mains) }
+        }
+        joined
+      } else {
+        trees
+      }
     }
   }
 }

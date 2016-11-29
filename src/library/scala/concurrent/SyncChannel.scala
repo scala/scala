@@ -31,10 +31,10 @@ class SyncChannel[A] {
         pendingReads = pendingReads.tail
 
         // let reader continue
-        readReq set data
+        readReq put data
 
         // resolve write request
-        writeReq set true
+        writeReq put true
       }
       else {
         // enqueue write request
@@ -57,10 +57,10 @@ class SyncChannel[A] {
         pendingWrites = pendingWrites.tail
 
         // let writer continue
-        writeReq set true
+        writeReq.put(true)
 
         // resolve read request
-        readReq set data
+        readReq.put (data)
       }
       else {
         // enqueue read request

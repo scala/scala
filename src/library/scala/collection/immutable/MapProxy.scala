@@ -23,7 +23,7 @@ package immutable
  *  @version 2.0, 31/12/2006
  *  @since   2.8
  */
-@deprecated("Proxying is deprecated due to lack of use and compiler-level support.", "2.11.0")
+@deprecated("proxying is deprecated due to lack of use and compiler-level support", "2.11.0")
 trait MapProxy[A, +B] extends Map[A, B] with MapProxyLike[A, B, Map[A, B]] {
   override def repr = this
   private def newProxy[B1 >: B](newSelf: Map[A, B1]): MapProxy[A, B1] =

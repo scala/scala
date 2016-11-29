@@ -1,3 +1,2 @@
 reload: NodeScalaSuite.scala
-open package module: package object nodescala
 Test OK

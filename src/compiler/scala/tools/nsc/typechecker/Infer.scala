@@ -164,7 +164,9 @@ trait Infer extends Checkable {
                      |  was: $restpe
                      |  now""")(normalize(restpe))
     case mt @ MethodType(_, restpe) if mt.isImplicit             => normalize(restpe)
-    case mt @ MethodType(_, restpe) if !mt.isDependentMethodType => functionType(mt.paramTypes, normalize(restpe))
+    case mt @ MethodType(_, restpe) if !mt.isDependentMethodType =>
+      if (phase.erasedTypes) FunctionClass(mt.params.length).tpe
+      else functionType(mt.paramTypes, normalize(restpe))
     case NullaryMethodType(restpe)                               => normalize(restpe)
     case ExistentialType(tparams, qtpe)                          => newExistentialType(tparams, normalize(qtpe))
     case _                                                       => tp // @MAT aliases already handled by subtyping
@@ -295,7 +297,7 @@ trait Infer extends Checkable {
         && !isByNameParamType(tp)
         && isCompatible(tp, dropByName(pt))
       )
-      def isCompatibleSam(tp: Type, pt: Type): Boolean = {
+      def isCompatibleSam(tp: Type, pt: Type): Boolean = (definitions.isFunctionType(tp) || tp.isInstanceOf[MethodType] || tp.isInstanceOf[PolyType]) &&  {
         val samFun = typer.samToFunctionType(pt)
         (samFun ne NoType) && isCompatible(tp, samFun)
       }
@@ -729,7 +731,7 @@ trait Infer extends Checkable {
       // If args eq the incoming arg types, fail; otherwise recurse with these args.
       def tryWithArgs(args: List[Type]) = (
            (args ne argtpes0)
-        && isApplicable(undetparams, mt, args, pt)
+        && isApplicableToMethod(undetparams, mt, args, pt) // used to be isApplicable(undetparams, mt, args, pt), knowing mt: MethodType
       )
       def tryInstantiating(args: List[Type]) = falseIfNoInstance {
         val restpe = mt resultType args
@@ -1218,7 +1220,7 @@ trait Infer extends Checkable {
     }
 
     def inferModulePattern(pat: Tree, pt: Type) =
-      if (!(pat.tpe <:< pt)) {
+      if ((pat.symbol ne null) && pat.symbol.isModule && !(pat.tpe <:< pt)) {
         val ptparams = freeTypeParamsOfTerms(pt)
         debuglog("free type params (2) = " + ptparams)
         val ptvars = ptparams map freshVar
@@ -1255,7 +1257,6 @@ trait Infer extends Checkable {
       def isFreeTypeParamOfTerm(sym: Symbol) = (
         sym.isAbstractType
           && sym.owner.isTerm
-          && !sym.info.bounds.exists(_.typeParams.nonEmpty)
         )
 
       // Intentionally *not* using `Type#typeSymbol` here, which would normalize `tp`

@@ -109,7 +109,7 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     println("cf == tf - " + (cf == tf))
   }
 
-  property("reductions must be equal for assoc. operators") = forAll(collectionPairs) { case (t, coll) =>
+  property("reductions must be equal for assoc. operators") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     if (t.size != 0) {
       val results = for ((op, ind) <- reduceOperators.zipWithIndex) yield {
         val tr = t.reduceLeft(op)
@@ -127,7 +127,7 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     } else "has size 0" |: true
   }
 
-  property("counts must be equal") = forAll(collectionPairs) { case (t, coll) =>
+  property("counts must be equal") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     val results = for ((pred, ind) <- countPredicates.zipWithIndex) yield {
       val tc = t.count(pred)
       val cc = coll.count(pred)
@@ -143,19 +143,19 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     results.reduceLeft(_ && _)
   }
 
-  property("forall must be equal") = forAll(collectionPairs) { case (t, coll) =>
+  property("forall must be equal") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     val results = for ((pred, ind) <- forallPredicates.zipWithIndex)
       yield ("op index: " + ind) |: t.forall(pred) == coll.forall(pred)
     results.reduceLeft(_ && _)
   }
 
-  property("exists must be equal") = forAll(collectionPairs) { case (t, coll) =>
+  property("exists must be equal") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     val results = for ((pred, ind) <- existsPredicates.zipWithIndex)
       yield ("op index: " + ind) |: t.exists(pred) == coll.exists(pred)
     results.reduceLeft(_ && _)
   }
 
-  property("both must find or not find an element") = forAll(collectionPairs) { case (t, coll) =>
+  property("both must find or not find an element") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     val results = for ((pred, ind) <- findPredicates.zipWithIndex) yield {
       val ft = t.find(pred)
       val fcoll = coll.find(pred)
@@ -164,7 +164,7 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     results.reduceLeft(_ && _)
   }
 
-  property("mappings must be equal") = forAll(collectionPairs) { case (t, coll) =>
+  property("mappings must be equal") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     val results = for ((f, ind) <- mapFunctions.zipWithIndex) yield {
       val ms = t.map(f)
       val mp = coll.map(f)
@@ -185,7 +185,7 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     results.reduceLeft(_ && _)
   }
 
-  property("collects must be equal") = forAll(collectionPairs) { case (t, coll) =>
+  property("collects must be equal") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     val results = for ((f, ind) <- partialMapFunctions.zipWithIndex) yield {
       val ps = t.collect(f)
       val pp = coll.collect(f)
@@ -201,12 +201,12 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     results.reduceLeft(_ && _)
   }
 
-  property("flatMaps must be equal") = forAll(collectionPairs) { case (t, coll) =>
+  property("flatMaps must be equal") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     (for ((f, ind) <- flatMapFunctions.zipWithIndex)
       yield ("op index: " + ind) |: areEqual(t.flatMap(f), coll.flatMap(f))).reduceLeft(_ && _)
   }
 
-  property("filters must be equal") = forAll(collectionPairs) { case (t, coll) =>
+  property("filters must be equal") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     (for ((p, ind) <- filterPredicates.zipWithIndex) yield {
       val tf = t.filter(p)
       val cf = coll.filter(p)
@@ -235,7 +235,7 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     }).reduceLeft(_ && _)
   }
 
-  property("filterNots must be equal") = forAll(collectionPairs) { case (t, coll) =>
+  property("filterNots must be equal") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     (for ((p, ind) <- filterNotPredicates.zipWithIndex) yield {
       val tf = t.filterNot(p)
       val cf = coll.filterNot(p)
@@ -244,7 +244,7 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     }).reduceLeft(_ && _)
   }
 
-  if (!isCheckingViews) property("partitions must be equal") = forAll(collectionPairs) { case (t, coll) =>
+  if (!isCheckingViews) property("partitions must be equal") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     (for ((p, ind) <- partitionPredicates.zipWithIndex) yield {
       val tpart = t.partition(p)
       val cpart = coll.partition(p)
@@ -258,15 +258,15 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     }).reduceLeft(_ && _)
   }
 
-  if (hasStrictOrder) property("takes must be equal") = forAll(collectionPairsWithLengths) { case (t, coll, n) =>
+  if (hasStrictOrder) property("takes must be equal") = forAllNoShrink(collectionPairsWithLengths) { case (t, coll, n) =>
     ("take " + n + " elements") |: t.take(n) == coll.take(n)
   }
 
-  if (hasStrictOrder) property("drops must be equal") = forAll(collectionPairsWithLengths) { case (t, coll, n) =>
+  if (hasStrictOrder) property("drops must be equal") = forAllNoShrink(collectionPairsWithLengths) { case (t, coll, n) =>
     ("drop " + n + " elements") |: t.drop(n) == coll.drop(n)
   }
 
-  if (hasStrictOrder) property("slices must be equal") = forAll(collectionPairsWith2Indices)
+  if (hasStrictOrder) property("slices must be equal") = forAllNoShrink(collectionPairsWith2Indices)
   { case (t, coll, fr, slicelength) =>
     val from = if (fr < 0) 0 else fr
     val until = if (from + slicelength > t.size) t.size else from + slicelength
@@ -290,7 +290,7 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     ("slice from " + from + " until " + until) |: tsl == collsl
   }
 
-  if (hasStrictOrder) property("splits must be equal") = forAll(collectionPairsWithLengths) { case (t, coll, n) =>
+  if (hasStrictOrder) property("splits must be equal") = forAllNoShrink(collectionPairsWithLengths) { case (t, coll, n) =>
     val tspl = t.splitAt(n)
     val cspl = coll.splitAt(n)
     if (tspl != cspl) {
@@ -303,7 +303,7 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     ("splitAt " + n) |: tspl == cspl
   }
 
-  if (hasStrictOrder) property("takeWhiles must be equal") = forAll(collectionPairs) { case (t, coll) =>
+  if (hasStrictOrder) property("takeWhiles must be equal") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     (for ((pred, ind) <- takeWhilePredicates.zipWithIndex) yield {
       val tt = t.takeWhile(pred)
       val ct = coll.takeWhile(pred)
@@ -318,7 +318,7 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     }).reduceLeft(_ && _)
   }
 
-  if (hasStrictOrder) property("spans must be equal") = forAll(collectionPairs) { case (t, coll) =>
+  if (hasStrictOrder) property("spans must be equal") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     (for ((pred, ind) <- spanPredicates.zipWithIndex) yield {
       val tsp = t.span(pred)
       val csp = coll.span(pred)
@@ -336,13 +336,13 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     }).reduceLeft(_ && _)
   }
 
-  if (hasStrictOrder) property("dropWhiles must be equal") = forAll(collectionPairs) { case (t, coll) =>
+  if (hasStrictOrder) property("dropWhiles must be equal") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     (for ((pred, ind) <- dropWhilePredicates.zipWithIndex) yield {
       ("operator " + ind) |: t.dropWhile(pred) == coll.dropWhile(pred)
     }).reduceLeft(_ && _)
   }
 
-  property("folds must be equal for assoc. operators") = forAll(collectionPairs) { case (t, coll) =>
+  property("folds must be equal for assoc. operators") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     (for (((first, op), ind) <- foldArguments.zipWithIndex) yield {
       val tres = t.foldLeft(first)(op)
       val cres = coll.fold(first)(op)
@@ -389,7 +389,7 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     }
   }
 
-  if (hasStrictOrder) property("copies to array must be equal") = forAll(collectionPairs) { case (t, coll) =>
+  if (hasStrictOrder) property("copies to array must be equal") = forAllNoShrink(collectionPairs) { case (t, coll) =>
     val tarr = newArray(t.size)
     val collarr = newArray(coll.size)
     t.copyToArray(tarr, 0, t.size)
@@ -403,7 +403,7 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     tarr.toSeq == collarr.toSeq
   }
 
-  if (hasStrictOrder) property("scans must be equal") = forAll(collectionPairs) {
+  if (hasStrictOrder) property("scans must be equal") = forAllNoShrink(collectionPairs) {
     case (t, coll) =>
       (for (((first, op), ind) <- foldArguments.zipWithIndex) yield {
         val tscan = t.scanLeft(first)(op)
@@ -419,7 +419,7 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
       }).reduceLeft(_ && _)
   }
 
-  property("groupBy must be equal") = forAll(collectionPairs) {
+  property("groupBy must be equal") = forAllNoShrink(collectionPairs) {
     case (t, coll) =>
       (for ((f, ind) <- groupByFunctions.zipWithIndex) yield {
         val tgroup = t.groupBy(f)

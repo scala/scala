@@ -13,16 +13,17 @@ package collection
 package mutable
 
 import scala.reflect.ClassTag
-import scala.runtime.ScalaRunTime._
 
 /** A builder class for arrays.
+ *
+ *  This builder can be reused.
  *
  *  @tparam A   type of elements that can be added to this builder.
  *  @param tag  class tag for objects of type `A`.
  *
  *  @since 2.8
  */
-class WrappedArrayBuilder[A](tag: ClassTag[A]) extends Builder[A, WrappedArray[A]] {
+class WrappedArrayBuilder[A](tag: ClassTag[A]) extends ReusableBuilder[A, WrappedArray[A]] {
 
   @deprecated("use tag instead", "2.10.0")
   val manifest: ClassTag[A] = tag
@@ -32,7 +33,7 @@ class WrappedArrayBuilder[A](tag: ClassTag[A]) extends Builder[A, WrappedArray[A
   private var size: Int = 0
 
   private def mkArray(size: Int): WrappedArray[A] = {
-    val runtimeClass = arrayElementClass(tag)
+    val runtimeClass = tag.runtimeClass
     val newelems = runtimeClass match {
       case java.lang.Byte.TYPE      => new WrappedArray.ofByte(new Array[Byte](size)).asInstanceOf[WrappedArray[A]]
       case java.lang.Short.TYPE     => new WrappedArray.ofShort(new Array[Short](size)).asInstanceOf[WrappedArray[A]]
@@ -73,12 +74,13 @@ class WrappedArrayBuilder[A](tag: ClassTag[A]) extends Builder[A, WrappedArray[A
     this
   }
 
-  def clear() {
-    size = 0
-  }
+  def clear() { size = 0 }
 
   def result() = {
-    if (capacity != 0 && capacity == size) elems
+    if (capacity != 0 && capacity == size) {
+      capacity = 0
+      elems
+    }
     else mkArray(size)
   }
 

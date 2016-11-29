@@ -1,0 +1,45 @@
+t9847.scala:4: warning: discarded non-Unit value
+  def f(): Unit = 42
+                  ^
+t9847.scala:4: warning: a pure expression does nothing in statement position
+  def f(): Unit = 42
+                  ^
+t9847.scala:5: warning: discarded non-Unit value
+  def g = (42: Unit)
+           ^
+t9847.scala:5: warning: a pure expression does nothing in statement position
+  def g = (42: Unit)
+           ^
+t9847.scala:7: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
+    1
+    ^
+t9847.scala:12: warning: discarded non-Unit value
+  + 1
+  ^
+t9847.scala:12: warning: a pure expression does nothing in statement position
+  + 1
+  ^
+t9847.scala:11: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
+    1
+    ^
+t9847.scala:12: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
+  + 1
+  ^
+t9847.scala:16: warning: discarded non-Unit value
+    x + 1
+      ^
+t9847.scala:19: warning: discarded non-Unit value
+  def j(): Unit = x + 1
+                    ^
+t9847.scala:21: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  class C { 42 }
+            ^
+t9847.scala:22: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  class D { 42 ; 17 }
+            ^
+t9847.scala:22: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  class D { 42 ; 17 }
+                 ^
+error: No warnings can be incurred under -Xfatal-warnings.
+14 warnings found
+one error found

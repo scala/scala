@@ -1,5 +1,6 @@
 import annotation.unchecked.{ uncheckedVariance=> uV }
-import scala.collection.immutable.{ListMap, HashMap, ListSet, HashSet}
+import scala.collection.immutable.{ListMap, ListSet}
+import scala.collection.mutable.{HashMap, HashSet}
 
 object Test {
   class HashMapCollision1[A, +B](var hash: Int, var kvs: ListMap[A, B @uV]) extends HashMap[A, B @uV]

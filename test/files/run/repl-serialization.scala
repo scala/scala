@@ -36,7 +36,7 @@ object Test {
         |extract(() => new AA(x + getX() + y + z + zz + O.apply + u.x))
       """.stripMargin
 
-    imain = new IMain(settings)
+    imain = IMain(settings)
     println("== evaluating lines")
     imain.directBind("extract", "(AnyRef => Unit)", extract)
     code.lines.foreach(imain.interpret)

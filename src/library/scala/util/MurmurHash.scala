@@ -10,7 +10,7 @@ package scala
 package util
 
 /** An implementation of Austin Appleby's MurmurHash 3.0 algorithm
- *  (32 bit version); reference: http://code.google.com/p/smhasher
+ *  (32 bit version); reference: https://github.com/aappleby/smhasher
  *
  *  This is the hash used by collections and case classes (including
  *  tuples).
@@ -28,7 +28,7 @@ import scala.collection.Iterator
  *  or can take individual hash values with append.  Its own hash code is
  *  set equal to the hash code of whatever it is hashing.
  */
-@deprecated("Use the object MurmurHash3 instead.", "2.10.0")
+@deprecated("use the object MurmurHash3 instead", "2.10.0")
 class MurmurHash[@specialized(Int,Long,Float,Double) T](seed: Int) extends (T => Unit) {
   import MurmurHash._
 
@@ -81,7 +81,7 @@ class MurmurHash[@specialized(Int,Long,Float,Double) T](seed: Int) extends (T =>
  *  incorporate a new integer) to update the values.  Only one method
  *  needs to be called to finalize the hash.
  */
-@deprecated("Use the object MurmurHash3 instead.", "2.10.0")
+@deprecated("use the object MurmurHash3 instead", "2.10.0")
 // NOTE: Used by SBT 0.13.0-M2 and below
 object MurmurHash {
   // Magic values used for MurmurHash's 32 bit hash.

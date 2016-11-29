@@ -31,17 +31,14 @@ object Test extends Properties("IndexScript") {
 
   def createIndexScript(path: String) =
     docFactory.makeUniverse(Left(List(path))) match {
-      case Some(universe) => {
-        val index = new IndexScript(universe,
-                                    indexModelFactory.makeIndex(universe))
-        Some(index)
-      }
+      case Some(universe) =>
+        Some(new IndexScript(universe))
       case _ =>
         None
     }
 
   property("allPackages") = {
-    createIndexScript("src/scaladoc/scala/tools/nsc/doc/html/page/Index.scala") match {
+    createIndexScript("src/scaladoc/scala/tools/nsc/doc/html/page/IndexScript.scala") match {
       case Some(index) =>
         index.allPackages.map(_.toString) == List(
           "scala",

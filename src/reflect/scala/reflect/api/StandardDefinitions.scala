@@ -214,7 +214,7 @@ trait StandardDefinitions {
     /** The module symbol of module `scala.Some`. */
     def SomeModule: ModuleSymbol
 
-    /** Function-like api that lets you acess symbol
+    /** Function-like api that lets you access symbol
      *  of the definition with given arity and also look
      *  through all known symbols via `seq`.
      */

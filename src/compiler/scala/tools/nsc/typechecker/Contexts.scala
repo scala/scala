@@ -60,7 +60,7 @@ trait Contexts { self: Analyzer =>
   private lazy val allImportInfos =
     mutable.Map[CompilationUnit, List[ImportInfo]]() withDefaultValue Nil
 
-  def warnUnusedImports(unit: CompilationUnit) = {
+  def warnUnusedImports(unit: CompilationUnit) = if (!unit.isJava) {
     for (imps <- allImportInfos.remove(unit)) {
       for (imp <- imps.reverse.distinct) {
         val used = allUsedSelectors(imp)
@@ -387,8 +387,10 @@ trait Contexts { self: Analyzer =>
     @inline final def withImplicitsEnabled[T](op: => T): T                 = withMode(enabled = ImplicitsEnabled)(op)
     @inline final def withImplicitsDisabled[T](op: => T): T                = withMode(disabled = ImplicitsEnabled | EnrichmentEnabled)(op)
     @inline final def withImplicitsDisabledAllowEnrichment[T](op: => T): T = withMode(enabled = EnrichmentEnabled, disabled = ImplicitsEnabled)(op)
+    @inline final def withImplicits[T](enabled: Boolean)(op: => T): T      = if (enabled) withImplicitsEnabled(op) else withImplicitsDisabled(op)
     @inline final def withMacrosEnabled[T](op: => T): T                    = withMode(enabled = MacrosEnabled)(op)
     @inline final def withMacrosDisabled[T](op: => T): T                   = withMode(disabled = MacrosEnabled)(op)
+    @inline final def withMacros[T](enabled: Boolean)(op: => T): T         = if (enabled) withMacrosEnabled(op) else withMacrosDisabled(op)
     @inline final def withinStarPatterns[T](op: => T): T                   = withMode(enabled = StarPatterns)(op)
     @inline final def withinSuperInit[T](op: => T): T                      = withMode(enabled = SuperInit)(op)
     @inline final def withinSecondTry[T](op: => T): T                      = withMode(enabled = SecondTry)(op)
@@ -584,8 +586,8 @@ trait Contexts { self: Analyzer =>
     }
 
 
-    def deprecationWarning(pos: Position, sym: Symbol, msg: String): Unit =
-      currentRun.reporting.deprecationWarning(fixPosition(pos), sym, msg)
+    def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String): Unit =
+      currentRun.reporting.deprecationWarning(fixPosition(pos), sym, msg, since)
     def deprecationWarning(pos: Position, sym: Symbol): Unit =
       currentRun.reporting.deprecationWarning(fixPosition(pos), sym) // TODO: allow this to escalate to an error, and implicit search will ignore deprecated implicits
 
@@ -723,7 +725,6 @@ trait Contexts { self: Analyzer =>
         (  (ab.isTerm || ab == rootMirror.RootClass)
         || (accessWithin(ab) || accessWithinLinked(ab)) &&
              (  !sym.isLocalToThis
-             || sym.owner.isImplClass // allow private local accesses to impl classes
              || sym.isProtected && isSubThisType(pre, sym.owner)
              || pre =:= sym.owner.thisType
              )
@@ -978,7 +979,7 @@ trait Contexts { self: Analyzer =>
      */
     def isInPackageObject(sym: Symbol, pkg: Symbol): Boolean = {
       if (sym.isOverloaded) sym.alternatives.exists(alt => isInPackageObject(alt, pkg))
-      else pkg.isPackage && sym.owner != pkg && requiresQualifier(sym)
+      else pkg.hasPackageFlag && sym.owner != pkg && requiresQualifier(sym)
     }
 
     def isNameInScope(name: Name) = lookupSymbol(name, _ => true).isSuccess
@@ -1015,7 +1016,16 @@ trait Contexts { self: Analyzer =>
           || unit.exists && s.sourceFile != unit.source.file
         )
       )
-      def lookupInPrefix(name: Name)    = pre member name filter qualifies
+      def lookupInPrefix(name: Name)    = {
+        val sym = pre.member(name).filter(qualifies)
+        def isNonPackageNoModuleClass(sym: Symbol) =
+          sym.isClass && !sym.isModuleClass && !sym.isPackageClass
+        if (!sym.exists && unit.isJava && isNonPackageNoModuleClass(pre.typeSymbol)) {
+          // TODO factor out duplication with Typer::inCompanionForJavaStatic
+          val pre1 = companionSymbolOf(pre.typeSymbol, this).typeOfThis
+          pre1.member(name).filter(qualifies).andAlso(_ => pre = pre1)
+        } else sym
+      }
       def accessibleInPrefix(s: Symbol) = isAccessible(s, pre, superAccess = false)
 
       def searchPrefix = {

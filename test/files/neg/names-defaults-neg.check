@@ -1,7 +1,3 @@
-names-defaults-neg.scala:65: error: not enough arguments for method apply: (a: Int, b: String)(c: Int*)Fact in object Fact.
-Unspecified value parameter b.
-  val fac = Fact(1)(2, 3)
-                ^
 names-defaults-neg.scala:5: error: type mismatch;
  found   : String("#")
  required: Int
@@ -81,6 +77,10 @@ and  method f in object t8 of type (a: Int, b: Object)String
 match argument types (a: Int,b: String) and expected result type Any
   println(t8.f(a = 0, b = "1")) // ambiguous reference
              ^
+names-defaults-neg.scala:65: error: not enough arguments for method apply: (a: Int, b: String)(c: Int*)Fact in object Fact.
+Unspecified value parameter b.
+  val fac = Fact(1)(2, 3)
+                ^
 names-defaults-neg.scala:69: error: wrong number of arguments for pattern A1(x: Int,y: String)
   A1() match { case A1(_) => () }
                       ^
@@ -112,16 +112,16 @@ names-defaults-neg.scala:90: error: deprecated parameter name x has to be distin
 names-defaults-neg.scala:91: error: deprecated parameter name a has to be distinct from any other parameter name (deprecated or not).
   def deprNam2(a: String)(@deprecatedName('a) b: Int) = 1
                                               ^
-names-defaults-neg.scala:93: warning: the parameter name y has been deprecated. Use b instead.
+names-defaults-neg.scala:93: warning: the parameter name y is deprecated: use b instead
   deprNam3(y = 10, b = 2)
              ^
 names-defaults-neg.scala:93: error: parameter 'b' is already specified at parameter position 1
   deprNam3(y = 10, b = 2)
                      ^
-names-defaults-neg.scala:96: warning: naming parameter deprNam4Arg has been deprecated.
+names-defaults-neg.scala:96: warning: naming parameter deprNam4Arg is deprecated.
   deprNam4(deprNam4Arg = null)
                        ^
-names-defaults-neg.scala:98: warning: naming parameter deprNam5Arg has been deprecated.
+names-defaults-neg.scala:98: warning: naming parameter deprNam5Arg is deprecated.
   deprNam5(deprNam5Arg = null)
                        ^
 names-defaults-neg.scala:102: error: unknown parameter name: m
@@ -130,7 +130,7 @@ names-defaults-neg.scala:102: error: unknown parameter name: m
 names-defaults-neg.scala:135: error: reference to var2 is ambiguous; it is both a method parameter and a variable in scope.
   delay(var2 = 40)
              ^
-names-defaults-neg.scala:138: error: missing parameter type for expanded function ((x$1) => a = x$1)
+names-defaults-neg.scala:138: error: missing parameter type for expanded function ((x$1: <error>) => a = x$1)
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                          ^
 names-defaults-neg.scala:138: error: not found: value a
@@ -142,10 +142,10 @@ names-defaults-neg.scala:138: error: not found: value get
 names-defaults-neg.scala:139: error: parameter 'a' is already specified at parameter position 1
   val taf3 = testAnnFun(b = _: String, a = get(8))
                                          ^
-names-defaults-neg.scala:140: error: missing parameter type for expanded function ((x$3) => testAnnFun(x$3, ((x$4) => b = x$4)))
+names-defaults-neg.scala:140: error: missing parameter type for expanded function ((x$3: <error>) => testAnnFun(x$3, ((x$4) => b = x$4)))
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                ^
-names-defaults-neg.scala:140: error: missing parameter type for expanded function ((x$4) => b = x$4)
+names-defaults-neg.scala:140: error: missing parameter type for expanded function ((x$4: <error>) => b = x$4)
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                       ^
 names-defaults-neg.scala:140: error: not found: value b

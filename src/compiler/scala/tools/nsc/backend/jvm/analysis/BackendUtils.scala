@@ -2,19 +2,18 @@ package scala.tools.nsc
 package backend.jvm
 package analysis
 
+import java.lang.invoke.LambdaMetafactory
+
 import scala.annotation.switch
-import scala.tools.asm.{Handle, Type, Label}
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis.{Frame, BasicInterpreter, Analyzer, Value}
-import GenBCode._
+import scala.tools.asm.tree.analysis._
+import scala.tools.asm.{Handle, Type}
 import scala.tools.nsc.backend.jvm.BTypes._
-import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
+import scala.tools.nsc.backend.jvm.GenBCode._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
-import java.lang.invoke.LambdaMetafactory
-import scala.collection.mutable
-import scala.collection.convert.decorateAsJava._
-import scala.collection.convert.decorateAsScala._
 
 /**
  * This component hosts tools and utilities used in the backend that require access to a `BTypes`
@@ -34,7 +33,12 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
    */
   class AsmAnalyzer[V <: Value](methodNode: MethodNode, classInternalName: InternalName, val analyzer: Analyzer[V] = new Analyzer(new BasicInterpreter)) {
     computeMaxLocalsMaxStack(methodNode)
-    analyzer.analyze(classInternalName, methodNode)
+    try {
+      analyzer.analyze(classInternalName, methodNode)
+    } catch {
+      case ae: AnalyzerException =>
+        throw new AnalyzerException(null, "While processing " + classInternalName + "." + methodNode.name, ae)
+    }
     def frameAt(instruction: AbstractInsnNode): Frame[V] = analyzer.frameAt(instruction, methodNode)
   }
 
@@ -64,17 +68,15 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
 
   /**
    * Add:
-   * private static java.util.Map $deserializeLambdaCache$ = null
    * private static Object $deserializeLambda$(SerializedLambda l) {
-   *   var cache = $deserializeLambdaCache$
-   *   if (cache eq null) {
-   *     cache = new java.util.HashMap()
-   *     $deserializeLambdaCache$ = cache
-   *   }
-   *   return scala.runtime.LambdaDeserializer.deserializeLambda(MethodHandles.lookup(), cache, l);
+   *   return indy[scala.runtime.LambdaDeserialize.bootstrap](l)
    * }
+   *
+   * We use invokedynamic here to enable caching within the deserializer without needing to
+   * host a static field in the enclosing class. This allows us to add this method to interfaces
+   * that define lambdas in default methods.
    */
-  def addLambdaDeserialize(classNode: ClassNode): Unit = {
+  def addLambdaDeserialize(classNode: ClassNode, implMethods: Iterable[Handle]): Unit = {
     val cw = classNode
 
     // Make sure to reference the ClassBTypes of all types that are used in the code generated
@@ -83,37 +85,14 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     // stack map frames and invokes the `getCommonSuperClass` method. This method expects all
     // ClassBTypes mentioned in the source code to exist in the map.
 
-    val mapDesc = juMapRef.descriptor
     val nilLookupDesc = MethodBType(Nil, jliMethodHandlesLookupRef).descriptor
     val serlamObjDesc = MethodBType(jliSerializedLambdaRef :: Nil, ObjectRef).descriptor
-    val lookupMapSerlamObjDesc = MethodBType(jliMethodHandlesLookupRef :: juMapRef :: jliSerializedLambdaRef :: Nil, ObjectRef).descriptor
-
-    {
-      val fv = cw.visitField(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambdaCache$", mapDesc, null, null)
-      fv.visitEnd()
-    }
 
     {
       val mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambda$", serlamObjDesc, null, null)
       mv.visitCode()
-      // javaBinaryName returns the internal name of a class. Also used in BTypesFromsymbols.classBTypeFromSymbol.
-      mv.visitFieldInsn(GETSTATIC, classNode.name, "$deserializeLambdaCache$", mapDesc)
-      mv.visitVarInsn(ASTORE, 1)
-      mv.visitVarInsn(ALOAD, 1)
-      val l0 = new Label()
-      mv.visitJumpInsn(IFNONNULL, l0)
-      mv.visitTypeInsn(NEW, juHashMapRef.internalName)
-      mv.visitInsn(DUP)
-      mv.visitMethodInsn(INVOKESPECIAL, juHashMapRef.internalName, "<init>", "()V", false)
-      mv.visitVarInsn(ASTORE, 1)
-      mv.visitVarInsn(ALOAD, 1)
-      mv.visitFieldInsn(PUTSTATIC, classNode.name, "$deserializeLambdaCache$", mapDesc)
-      mv.visitLabel(l0)
-      mv.visitFieldInsn(GETSTATIC, srLambdaDeserializerRef.internalName, "MODULE$", srLambdaDeserializerRef.descriptor)
-      mv.visitMethodInsn(INVOKESTATIC, jliMethodHandlesRef.internalName, "lookup", nilLookupDesc, false)
-      mv.visitVarInsn(ALOAD, 1)
       mv.visitVarInsn(ALOAD, 0)
-      mv.visitMethodInsn(INVOKEVIRTUAL, srLambdaDeserializerRef.internalName, "deserializeLambda", lookupMapSerlamObjDesc, false)
+      mv.visitInvokeDynamicInsn("lambdaDeserialize", serlamObjDesc, lambdaDeserializeBootstrapHandle, implMethods.toArray: _*)
       mv.visitInsn(ARETURN)
       mv.visitEnd()
     }
@@ -122,35 +101,36 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
   /**
    * Clone the instructions in `methodNode` into a new [[InsnList]], mapping labels according to
    * the `labelMap`. Returns the new instruction list and a map from old to new instructions, and
-   * a boolean indicating if the instruction list contains an instantiation of a serializable SAM
-   * type.
+   * a list of lambda implementation methods references by invokedynamic[LambdaMetafactory] for a
+   * serializable SAM types.
    */
-  def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode]): (InsnList, Map[AbstractInsnNode, AbstractInsnNode], Boolean) = {
+  def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], keepLineNumbers: Boolean): (InsnList, Map[AbstractInsnNode, AbstractInsnNode], List[Handle]) = {
     val javaLabelMap = labelMap.asJava
     val result = new InsnList
     var map = Map.empty[AbstractInsnNode, AbstractInsnNode]
-    var hasSerializableClosureInstantiation = false
+    var inlinedTargetHandles = mutable.ListBuffer[Handle]()
     for (ins <- methodNode.instructions.iterator.asScala) {
-      if (!hasSerializableClosureInstantiation) ins match {
+      ins match {
         case callGraph.LambdaMetaFactoryCall(indy, _, _, _) => indy.bsmArgs match {
-          case Array(_, _, _, flags: Integer, xs@_*) if (flags.intValue & LambdaMetafactory.FLAG_SERIALIZABLE) != 0 =>
-            hasSerializableClosureInstantiation = true
+          case Array(_, targetHandle: Handle, _, flags: Integer, xs@_*) if (flags.intValue & LambdaMetafactory.FLAG_SERIALIZABLE) != 0 =>
+            inlinedTargetHandles += targetHandle
           case _ =>
         }
         case _ =>
       }
-      val cloned = ins.clone(javaLabelMap)
-      result add cloned
-      map += ((ins, cloned))
+      if (keepLineNumbers || !ins.isInstanceOf[LineNumberNode]) {
+        val cloned = ins.clone(javaLabelMap)
+        result add cloned
+        map += ((ins, cloned))
+      }
     }
-    (result, map, hasSerializableClosureInstantiation)
+    (result, map, inlinedTargetHandles.toList)
   }
 
   def getBoxedUnit: FieldInsnNode = new FieldInsnNode(GETSTATIC, srBoxedUnitRef.internalName, "UNIT", srBoxedUnitRef.descriptor)
 
-  private val anonfunAdaptedName = """.*\$anonfun\$\d+\$adapted""".r
+  private val anonfunAdaptedName = """.*\$anonfun\$.*\$\d+\$adapted""".r
   def hasAdaptedImplMethod(closureInit: ClosureInstantiation): Boolean = {
-    isrJFunctionType(Type.getReturnType(closureInit.lambdaMetaFactoryCall.indy.desc).getInternalName) &&
     anonfunAdaptedName.pattern.matcher(closureInit.lambdaMetaFactoryCall.implMethod.getName).matches
   }
 
@@ -275,8 +255,6 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     }
   }
 
-  def isrJFunctionType(internalName: InternalName): Boolean = srJFunctionRefs(internalName)
-
   /**
    * Visit the class node and collect all referenced nested classes.
    */
@@ -298,7 +276,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     }
 
     // we are only interested in the class references in the descriptor, so we can skip over
-    // primitves and the brackets of array descriptors
+    // primitives and the brackets of array descriptors
     def visitDescriptor(desc: String): Unit = (desc.charAt(0): @switch) match {
       case '(' =>
         val internalNames = mutable.ListBuffer.empty[String]
@@ -480,7 +458,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
           insn match {
             case v: VarInsnNode =>
               val longSize = if (isSize2LoadOrStore(v.getOpcode)) 1 else 0
-              maxLocals = math.max(maxLocals, v.`var` + longSize + 1) // + 1 becauase local numbers are 0-based
+              maxLocals = math.max(maxLocals, v.`var` + longSize + 1) // + 1 because local numbers are 0-based
 
             case i: IincInsnNode =>
               maxLocals = math.max(maxLocals, i.`var` + 1)

@@ -21,7 +21,7 @@ abstract class Comment {
   /** The main body of the comment that describes what the entity does and is.  */
   def body: Body
 
-  private def closeHtmlTags(inline: Inline) = {
+  private def closeHtmlTags(inline: Inline): Inline = {
     val stack = mutable.ListBuffer.empty[HtmlTag]
     def scan(i: Inline) {
       i match {
@@ -47,9 +47,10 @@ abstract class Comment {
     Chain(List(inline) ++ stack.reverse)
   }
 
-  /** A shorter version of the body. Usually, this is the first sentence of the body. */
+  /** A shorter version of the body. Either from `@shortDescription` or the
+   *  first sentence of the body. */
   def short: Inline = {
-    body.summary match {
+    shortDescription orElse body.summary match {
       case Some(s) =>
         closeHtmlTags(s)
       case _ =>
@@ -62,7 +63,7 @@ abstract class Comment {
 
   /** A list of other resources to see, including links to other entities or
     * to external documentation. The empty list is used when no other resource
-    * is mentionned. */
+    * is mentioned. */
   def see: List[Body]
 
   /** A description of the result of the entity. Typically, this provides additional
@@ -122,6 +123,12 @@ abstract class Comment {
 
   /** Member group priorities */
   def groupPrio: Map[String,Int]
+
+  /** A list of implicit conversions to hide */
+  def hideImplicitConversions: List[String]
+
+  /** A short description used in the entity-view and search results */
+  def shortDescription: Option[Text]
 
   override def toString =
     body.toString + "\n" +

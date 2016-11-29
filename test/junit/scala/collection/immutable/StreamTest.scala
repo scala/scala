@@ -108,19 +108,13 @@ class StreamTest {
     assertStreamOpLazyInTail(_.withFilter(_ % 2 == 0).map(identity), List(1, 2))
   }
 
-  @Test
-  def test_si9379() {
-    class Boom {
-      private var i = -1
-      def inc = {
-        i += 1
-        if (i > 1000) throw new NoSuchElementException("Boom! Too many elements!")
-        i
-      }
-    }
-    val b = new Boom
-    val s = Stream.continually(b.inc)
-    // zipped.toString must allow s to short-circuit evaluation
-    assertTrue((s, s).zipped.toString contains s.toString)
+  @Test // SI-6881
+  def test_reference_equality: Unit = {
+    // Make sure we're tested with reference equality
+    val s = Stream.from(0)
+    assert(s == s, "Referentially identical streams should be equal (==)")
+    assert(s equals s, "Referentially identical streams should be equal (equals)")
+    assert((0 #:: 1 #:: s) == (0 #:: 1 #:: s), "Cons of referentially identical streams should be equal (==)")
+    assert((0 #:: 1 #:: s) equals (0 #:: 1 #:: s), "Cons of referentially identical streams should be equal (equals)")
   }
 }

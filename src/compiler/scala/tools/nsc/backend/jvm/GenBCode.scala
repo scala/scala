@@ -77,15 +77,16 @@ abstract class GenBCode extends BCodeSyncAndTry {
 
     /* ---------------- q2 ---------------- */
 
-    case class Item2(arrivalPos:   Int,
-                     mirror:       asm.tree.ClassNode,
-                     plain:        asm.tree.ClassNode,
-                     bean:         asm.tree.ClassNode,
-                     outFolder:    scala.tools.nsc.io.AbstractFile) {
+    case class Item2(arrivalPos:     Int,
+                     mirror:         asm.tree.ClassNode,
+                     plain:          asm.tree.ClassNode,
+                     bean:           asm.tree.ClassNode,
+                     sourceFilePath: String,
+                     outFolder:      scala.tools.nsc.io.AbstractFile) {
       def isPoison = { arrivalPos == Int.MaxValue }
     }
 
-    private val poison2 = Item2(Int.MaxValue, null, null, null, null)
+    private val poison2 = Item2(Int.MaxValue, null, null, null, null, null)
     private val q2 = new _root_.java.util.LinkedList[Item2]
 
     /* ---------------- q3 ---------------- */
@@ -135,7 +136,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
             return
           }
           else {
-            try   { withCurrentUnit(item.cunit)(visit(item)) }
+            try   { withCurrentUnitNoLog(item.cunit)(visit(item)) }
             catch {
               case ex: Throwable =>
                 ex.printStackTrace()
@@ -187,7 +188,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
         // -------------- "plain" class --------------
         val pcb = new PlainClassBuilder(cunit)
         pcb.genPlainClass(cd)
-        val outF = if (needsOutFolder) getOutFolder(claszSymbol, pcb.thisName, cunit) else null
+        val outF = if (needsOutFolder) getOutFolder(claszSymbol, pcb.thisBType.internalName, cunit) else null
         val plainC = pcb.cnode
 
         // -------------- bean info class, if needed --------------
@@ -205,6 +206,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
         val item2 =
           Item2(arrivalPos,
                 mirrorC, plainC, beanC,
+                cunit.source.file.canonicalPath,
                 outF)
 
         q2 add item2 // at the very end of this method so that no Worker2 thread starts mutating before we're done.
@@ -221,23 +223,24 @@ abstract class GenBCode extends BCodeSyncAndTry {
      */
     class Worker2 {
       def runGlobalOptimizations(): Unit = {
-        import scala.collection.convert.decorateAsScala._
+        import scala.collection.JavaConverters._
 
         // add classes to the bytecode repo before building the call graph: the latter needs to
         // look up classes and methods in the code repo.
-        if (settings.YoptAddToBytecodeRepository) q2.asScala foreach {
-          case Item2(_, mirror, plain, bean, _) =>
-            if (mirror != null) byteCodeRepository.add(mirror, ByteCodeRepository.CompilationUnit)
-            if (plain != null)  byteCodeRepository.add(plain, ByteCodeRepository.CompilationUnit)
-            if (bean != null)   byteCodeRepository.add(bean, ByteCodeRepository.CompilationUnit)
+        if (settings.optAddToBytecodeRepository) q2.asScala foreach {
+          case Item2(_, mirror, plain, bean, sourceFilePath, _) =>
+            val someSourceFilePath = Some(sourceFilePath)
+            if (mirror != null) byteCodeRepository.add(mirror, someSourceFilePath)
+            if (plain != null)  byteCodeRepository.add(plain, someSourceFilePath)
+            if (bean != null)   byteCodeRepository.add(bean, someSourceFilePath)
         }
-        if (settings.YoptBuildCallGraph) q2.asScala foreach { item =>
+        if (settings.optBuildCallGraph) q2.asScala foreach { item =>
           // skip call graph for mirror / bean: wd don't inline into tem, and they are not used in the plain class
           if (item.plain != null) callGraph.addClass(item.plain)
         }
-        if (settings.YoptInlinerEnabled)
+        if (settings.optInlinerEnabled)
           bTypes.inliner.runInliner()
-        if (settings.YoptClosureInvocations)
+        if (settings.optClosureInvocations)
           closureOptimizer.rewriteClosureApplyInvocations()
       }
 
@@ -263,6 +266,9 @@ abstract class GenBCode extends BCodeSyncAndTry {
             try {
               localOptimizations(item.plain)
               setInnerClasses(item.plain)
+              val lambdaImplMethods = getIndyLambdaImplMethods(item.plain.name)
+              if (lambdaImplMethods.nonEmpty)
+                backendUtils.addLambdaDeserialize(item.plain, lambdaImplMethods)
               setInnerClasses(item.mirror)
               setInnerClasses(item.bean)
               addToQ3(item)
@@ -286,7 +292,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
           cw.toByteArray
         }
 
-        val Item2(arrivalPos, mirror, plain, bean, outFolder) = item
+        val Item2(arrivalPos, mirror, plain, bean, _, outFolder) = item
 
         val mirrorC = if (mirror == null) null else SubItem3(mirror.name, getByteArray(mirror))
         val plainC  = SubItem3(plain.name, getByteArray(plain))
@@ -331,7 +337,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
       bTypes.initializeCoreBTypes()
       bTypes.javaDefinedClasses.clear()
       bTypes.javaDefinedClasses ++= currentRun.symSource collect {
-        case (sym, _) if sym.isJavaDefined => sym.javaBinaryName.toString
+        case (sym, _) if sym.isJavaDefined => sym.javaBinaryNameString
       }
       Statistics.stopTimer(BackendStats.bcodeInitTimer, initStart)
 

@@ -2,52 +2,38 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
+
+import scala.collection.JavaConverters._
 import scala.collection.generic.Clearable
 import scala.collection.immutable.IntMap
-import scala.tools.asm.Opcodes._
-import org.junit.Assert._
-
 import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis._
+import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.reporters.StoreReporter
-import scala.tools.testing.AssertUtil._
-
-import CodeGenTools._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import AsmUtils._
-import BackendReporting._
-
-import scala.collection.convert.decorateAsScala._
-import scala.tools.testing.ClearAfterClass
-
-object CallGraphTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:inline-global -Yopt-warnings")
-  def clear(): Unit = { compiler = null }
-
-  // allows inspecting the caches after a compilation run
-  val notPerRun: List[Clearable] = List(
-    compiler.genBCode.bTypes.classBTypeFromInternalName,
-    compiler.genBCode.bTypes.byteCodeRepository.compilingClasses,
-    compiler.genBCode.bTypes.byteCodeRepository.parsedClasses,
-    compiler.genBCode.bTypes.callGraph.callsites)
-  notPerRun foreach compiler.perRunCaches.unrecordCache
-}
+import scala.tools.testing.BytecodeTesting
+import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
-class CallGraphTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = CallGraphTest
+class CallGraphTest extends BytecodeTesting {
+  override def compilerArgs = "-opt:inline-global -opt-warnings"
+  import compiler._
+  import global.genBCode.bTypes
+  val notPerRun: List[Clearable] = List(
+    bTypes.classBTypeFromInternalName,
+    bTypes.byteCodeRepository.compilingClasses,
+    bTypes.byteCodeRepository.parsedClasses,
+    bTypes.callGraph.callsites)
+  notPerRun foreach global.perRunCaches.unrecordCache
 
-  val compiler = CallGraphTest.compiler
-  import compiler.genBCode.bTypes._
+  import global.genBCode.bTypes._
   import callGraph._
 
   def compile(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
-    CallGraphTest.notPerRun.foreach(_.clear())
-    compileClasses(compiler)(code, allowMessage = allowMessage).map(c => byteCodeRepository.classNode(c.name).get)
+    notPerRun.foreach(_.clear())
+    compileClasses(code, allowMessage = allowMessage).map(c => byteCodeRepository.classNode(c.name).get)
   }
 
   def callsInMethod(methodNode: MethodNode): List[MethodInsnNode] = methodNode.instructions.iterator.asScala.collect({
@@ -86,7 +72,7 @@ class CallGraphTest extends ClearAfterClass {
         |  @noinline def f5         = try { 0 } catch { case _: Throwable => 1 }
         |  @noinline final def f6   = try { 0 } catch { case _: Throwable => 1 }
         |
-        |  @inline @noinline def f7 = try { 0 } catch { case _: Throwable => 1 }
+        |  @inline @noinline def f7 = try { 0 } catch { case _: Throwable => 1 } // no warning, @noinline takes precedence
         |}
         |class D extends C {
         |  @inline override def f1  = try { 0 } catch { case _: Throwable => 1 }
@@ -105,23 +91,22 @@ class CallGraphTest extends ClearAfterClass {
     // The callGraph.callsites map is indexed by instructions of those ClassNodes.
 
     val ok = Set(
-      "D::f1()I is annotated @inline but cannot be inlined: the method is not final and may be overridden", // only one warning for D.f1: C.f1 is not annotated @inline
-      "C::f3()I is annotated @inline but cannot be inlined: the method is not final and may be overridden", // only one warning for C.f3: D.f3 does not have @inline (and it would also be safe to inline)
-      "C::f7()I is annotated @inline but cannot be inlined: the method is not final and may be overridden", // two warnings (the error message mentions C.f7 even if the receiver type is D, because f7 is inherited from C)
-      "operand stack at the callsite in Test::t1(LC;)I contains more values",
-      "operand stack at the callsite in Test::t2(LD;)I contains more values")
+      "D::f1()I is annotated @inline but could not be inlined:\nThe method is not final and may be overridden.", // only one warning for D.f1: C.f1 is not annotated @inline
+      "C::f3()I is annotated @inline but could not be inlined:\nThe method is not final and may be overridden.", // only one warning for C.f3: D.f3 does not have @inline (and it would also be safe to inline)
+      "C::f4()I is annotated @inline but could not be inlined:\nThe operand stack at the callsite in Test::t1(LC;)I contains more values",
+      "C::f4()I is annotated @inline but could not be inlined:\nThe operand stack at the callsite in Test::t2(LD;)I contains more values")
     var msgCount = 0
     val checkMsg = (m: StoreReporter#Info) => {
       msgCount += 1
       ok exists (m.msg contains _)
     }
     val List(cCls, cMod, dCls, testCls) = compile(code, checkMsg)
-    assert(msgCount == 6, msgCount)
+    assert(msgCount == 4, msgCount)
 
-    val List(cf1, cf2, cf3, cf4, cf5, cf6, cf7) = findAsmMethods(cCls, _.startsWith("f"))
-    val List(df1, df3) = findAsmMethods(dCls, _.startsWith("f"))
-    val g1 = findAsmMethod(cMod, "g1")
-    val List(t1, t2) = findAsmMethods(testCls, _.startsWith("t"))
+    val List(cf1, cf2, cf3, cf4, cf5, cf6, cf7) = getAsmMethods(cCls, _.startsWith("f"))
+    val List(df1, df3) = getAsmMethods(dCls, _.startsWith("f"))
+    val g1 = getAsmMethod(cMod, "g1")
+    val List(t1, t2) = getAsmMethods(testCls, _.startsWith("t"))
 
     val List(cf1Call, cf2Call, cf3Call, cf4Call, cf5Call, cf6Call, cf7Call, cg1Call) = callsInMethod(t1)
     val List(df1Call, df2Call, df3Call, df4Call, df5Call, df6Call, df7Call, dg1Call) = callsInMethod(t2)
@@ -157,7 +142,7 @@ class CallGraphTest extends ClearAfterClass {
         |}
       """.stripMargin
     val List(c) = compile(code)
-    val m = findAsmMethod(c, "m")
+    val m = getAsmMethod(c, "m")
     val List(fn) = callsInMethod(m)
     val forNameMeth = byteCodeRepository.methodNode("java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;").get._1
     val classTp = classBTypeFromInternalName("java/lang/Class")
@@ -174,7 +159,7 @@ class CallGraphTest extends ClearAfterClass {
         |  def t2(i: Int, f: Int => Int, z: Int) = h(f) + i - z
         |  def t3(f: Int => Int) = h(x => f(x + 1))
         |}
-        |abstract class D {
+        |trait D {
         |  def iAmASam(x: Int): Int
         |  def selfSamCall = iAmASam(10)
         |}

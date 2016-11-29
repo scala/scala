@@ -7,17 +7,17 @@ package scala
 package tools
 package nsc
 
-import java.io.{ File, IOException, FileNotFoundException }
+import java.io.{File, FileNotFoundException, IOException}
 import java.net.URL
-import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
-import scala.collection.{ mutable, immutable }
-import io.{ SourceReader, AbstractFile, Path }
+import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException}
+import scala.collection.{immutable, mutable}
+import io.{AbstractFile, Path, SourceReader}
 import reporters.Reporter
-import util.{ ClassFileLookup, ClassPath, MergedClassPath, StatisticsInfo, returning }
+import util.{ClassPath, StatisticsInfo, returning}
 import scala.reflect.ClassTag
-import scala.reflect.internal.util.{ ScalaClassLoader, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
+import scala.reflect.internal.util.{BatchSourceFile, NoSourceFile, ScalaClassLoader, ScriptSourceFile, SourceFile}
 import scala.reflect.internal.pickling.PickleBuffer
-import symtab.{ Flags, SymbolTable, SymbolTrackers }
+import symtab.{Flags, SymbolTable, SymbolTrackers}
 import symtab.classfile.Pickler
 import plugins.Plugins
 import ast._
@@ -25,12 +25,11 @@ import ast.parser._
 import typechecker._
 import transform.patmat.PatternMatching
 import transform._
-import backend.{ ScalaPrimitives, JavaPlatform }
+import backend.{JavaPlatform, ScalaPrimitives}
 import backend.jvm.GenBCode
 import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
-import scala.tools.nsc.classpath.FlatClassPath
-import scala.tools.nsc.settings.ClassPathRepresentationType
+import scala.tools.nsc.classpath._
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
     extends SymbolTable
@@ -54,12 +53,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: self.type = self
-    def rootLoader: LazyType = {
-      settings.YclasspathImpl.value match {
-        case ClassPathRepresentationType.Flat => new loaders.PackageLoaderUsingFlatClassPath(FlatClassPath.RootPackage, flatClassPath)
-        case ClassPathRepresentationType.Recursive => new loaders.PackageLoader(recursiveClassPath)
-      }
-    }
+    def rootLoader: LazyType = new loaders.PackageLoader(ClassPath.RootPackage, classPath)
     override def toString = "compiler mirror"
   }
   implicit val MirrorTag: ClassTag[Mirror] = ClassTag[Mirror](classOf[GlobalMirror])
@@ -101,18 +95,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   type ThisPlatform = JavaPlatform { val global: Global.this.type }
   lazy val platform: ThisPlatform  = new GlobalPlatform
+  /* A hook for the REPL to add a classpath entry containing products of previous runs to inliner's bytecode repository*/
+  // Fixes SI-8779
+  def optimizerClassPath(base: ClassPath): ClassPath = base
 
-  type PlatformClassPath = ClassPath[AbstractFile]
-  type OptClassPath = Option[PlatformClassPath]
-
-  def classPath: ClassFileLookup[AbstractFile] = settings.YclasspathImpl.value match {
-    case ClassPathRepresentationType.Flat => flatClassPath
-    case ClassPathRepresentationType.Recursive => recursiveClassPath
-  }
-
-  private def recursiveClassPath: ClassPath[AbstractFile] = platform.classPath
-
-  private def flatClassPath: FlatClassPath = platform.flatClassPath
+  def classPath: ClassPath = platform.classPath
 
   // sub-components --------------------------------------------------
 
@@ -286,7 +273,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // Over 200 closure objects are eliminated by inlining this.
   @inline final def log(msg: => AnyRef) {
     if (shouldLogAtThisPhase)
-      inform("[log %s%s] %s".format(globalPhase, atPhaseStackMessage, msg))
+      inform(s"[log $globalPhase$atPhaseStackMessage] $msg")
   }
 
   @inline final override def debuglog(msg: => String) {
@@ -308,10 +295,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       try Some(Charset.forName(name))
       catch {
         case _: IllegalCharsetNameException =>
-          globalError("illegal charset name '" + name + "'")
+          globalError(s"illegal charset name '$name'")
           None
         case _: UnsupportedCharsetException =>
-          globalError("unsupported charset '" + name + "'")
+          globalError(s"unsupported charset '$name'")
           None
       }
 
@@ -397,15 +384,18 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
       if (settings.debug && (settings.verbose || currentRun.size < 5))
         inform("[running phase " + name + " on " + unit + "]")
+      if (!cancelled(unit)) {
+        currentRun.informUnitStarting(this, unit)
+        try withCurrentUnitNoLog(unit)(task)
+        finally currentRun.advanceUnit()
+      }
+    }
 
+    final def withCurrentUnitNoLog(unit: CompilationUnit)(task: => Unit) {
       val unit0 = currentUnit
       try {
         currentRun.currentUnit = unit
-        if (!cancelled(unit)) {
-          currentRun.informUnitStarting(this, unit)
-          task
-        }
-        currentRun.advanceUnit()
+        task
       } finally {
         //assert(currentUnit == unit)
         currentRun.currentUnit = unit0
@@ -424,7 +414,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     override val initial = true
   }
 
-  import syntaxAnalyzer.{ UnitScanner, UnitParser }
+  import syntaxAnalyzer.{ UnitScanner, UnitParser, JavaUnitParser }
 
   // !!! I think we're overdue for all these phase objects being lazy vals.
   // There's no way for a Global subclass to provide a custom typer
@@ -469,7 +459,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   } with Pickler
 
   // phaseName = "refchecks"
-  override object refChecks extends {
+  object refChecks extends {
     val global: Global.this.type = Global.this
     val runsAfter = List("pickler")
     val runsRightAfter = None
@@ -489,10 +479,22 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val runsRightAfter = None
   } with TailCalls
 
+  // phaseName = "fields"
+  object fields extends {
+    val global: Global.this.type = Global.this
+    // after refchecks, so it doesn't have to make weird exceptions for synthetic accessors
+    // after uncurry as it produces more work for the fields phase as well as being confused by it:
+    //   - sam expansion synthesizes classes, which may need trait fields mixed in
+    //   - the fields phase adds synthetic abstract methods to traits that should not disqualify them from being a SAM type
+    // before erasure: correct signatures & bridges for accessors
+    val runsAfter = List("uncurry")
+    val runsRightAfter = None
+  } with Fields
+
   // phaseName = "explicitouter"
   object explicitOuter extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("tailcalls")
+    val runsAfter = List("fields")
     val runsRightAfter = None
   } with ExplicitOuter
 
@@ -517,17 +519,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val runsRightAfter = Some("erasure")
   } with PostErasure
 
-  // phaseName = "lazyvals"
-  object lazyVals extends {
-    val global: Global.this.type = Global.this
-    val runsAfter = List("erasure")
-    val runsRightAfter = None
-  } with LazyVals
 
   // phaseName = "lambdalift"
   object lambdaLift extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("lazyvals")
+    val runsAfter = List("erasure")
     val runsRightAfter = None
   } with LambdaLift
 
@@ -608,7 +604,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
    *  This implementation creates a description map at the same time.
    */
   protected def computeInternalPhases(): Unit = {
-    // Note: this fits -Xshow-phases into 80 column width, which it is
+    // Note: this fits -Xshow-phases into 80 column width, which is
     // desirable to preserve.
     val phs = List(
       syntaxAnalyzer          -> "parse source into ASTs, perform simple desugaring",
@@ -621,12 +617,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       pickler                 -> "serialize symbol tables",
       refChecks               -> "reference/override checking, translate nested objects",
       uncurry                 -> "uncurry, translate function values to anonymous classes",
+      fields                  -> "synthesize accessors and fields, add bitmaps for lazy vals",
       tailCalls               -> "replace tail calls by jumps",
       specializeTypes         -> "@specialized-driven class and method specialization",
       explicitOuter           -> "this refs to outer pointers",
       erasure                 -> "erase types, add interfaces for traits",
       postErasure             -> "clean up erased inline classes",
-      lazyVals                -> "allocate bitmaps, translate lazy vals into lazified defs",
       lambdaLift              -> "move nested functions to top level",
       constructors            -> "move field definitions into constructors",
       mixer                   -> "mixin composition",
@@ -683,7 +679,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   }
 
   /** A description of the phases that will run in this configuration, or all if -Ydebug. */
-  def phaseDescriptions: String = phaseHelp("description", elliptically = true, phasesDescMap)
+  def phaseDescriptions: String = phaseHelp("description", elliptically = !settings.debug, phasesDescMap)
 
   /** Summary of the per-phase values of nextFlags and newFlags, shown under -Xshow-phases -Ydebug. */
   def phaseFlagDescriptions: String = {
@@ -694,7 +690,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       else if (ph.phaseNewFlags != 0L && ph.phaseNextFlags != 0L) fstr1 + " " + fstr2
       else fstr1 + fstr2
     }
-    phaseHelp("new flags", elliptically = false, fmt)
+    phaseHelp("new flags", elliptically = !settings.debug, fmt)
   }
 
   /** Emit a verbose phase table.
@@ -706,7 +702,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
    *  @param elliptically whether to truncate the description with an ellipsis (...)
    *  @param describe how to describe a component
    */
-  def phaseHelp(title: String, elliptically: Boolean, describe: SubComponent => String) = {
+  private def phaseHelp(title: String, elliptically: Boolean, describe: SubComponent => String): String = {
     val Limit   = 16    // phase names should not be absurdly long
     val MaxCol  = 80    // because some of us edit on green screens
     val maxName = phaseNames map (_.length) max
@@ -721,13 +717,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     // built-in string precision merely truncates
     import java.util.{ Formattable, FormattableFlags, Formatter }
     def dotfmt(s: String) = new Formattable {
-      def elliptically(s: String, max: Int) = (
+      def foreshortened(s: String, max: Int) = (
         if (max < 0 || s.length <= max) s
         else if (max < 4) s.take(max)
         else s.take(max - 3) + "..."
       )
       override def formatTo(formatter: Formatter, flags: Int, width: Int, precision: Int) {
-        val p = elliptically(s, precision)
+        val p = foreshortened(s, precision)
         val w = if (width > 0 && p.length < width) {
           import FormattableFlags.LEFT_JUSTIFY
           val leftly = (flags & LEFT_JUSTIFY) == LEFT_JUSTIFY
@@ -753,7 +749,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
                          else (p.phaseName, describe(p))
       fmt.format(name, idOf(p), text)
     }
-    line1 :: line2 :: (phaseDescriptors map mkText) mkString
+    (line1 :: line2 :: (phaseDescriptors map mkText)).mkString
   }
 
   /** Returns List of (phase, value) pairs, including only those
@@ -771,12 +767,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** Extend classpath of `platform` and rescan updated packages. */
   def extendCompilerClassPath(urls: URL*): Unit = {
-    if (settings.YclasspathImpl.value == ClassPathRepresentationType.Flat)
-      throw new UnsupportedOperationException("Flat classpath doesn't support extending the compiler classpath")
-
-    val newClassPath = platform.classPath.mergeUrlsIntoClassPath(urls: _*)
+    val urlClasspaths = urls.map(u => ClassPathFactory.newClassPath(AbstractFile.getURL(u), settings))
+    val newClassPath = AggregateClassPath.createAggregate(platform.classPath +: urlClasspaths : _*)
     platform.currentClassPath = Some(newClassPath)
-    // Reload all specified jars into this compiler instance
     invalidateClassPathEntries(urls.map(_.getPath): _*)
   }
 
@@ -809,43 +802,54 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
    *                entries on the classpath.
    */
   def invalidateClassPathEntries(paths: String*): Unit = {
-    if (settings.YclasspathImpl.value == ClassPathRepresentationType.Flat)
-      throw new UnsupportedOperationException("Flat classpath doesn't support the classpath invalidation")
-
-    implicit object ClassPathOrdering extends Ordering[PlatformClassPath] {
-      def compare(a:PlatformClassPath, b:PlatformClassPath) = a.asClassPathString compare b.asClassPathString
+    implicit object ClassPathOrdering extends Ordering[ClassPath] {
+      def compare(a: ClassPath, b: ClassPath): Int = a.asClassPathString compareTo b.asClassPathString
     }
     val invalidated, failed = new mutable.ListBuffer[ClassSymbol]
-    classPath match {
-      case cp: MergedClassPath[_] =>
-        def assoc(path: String): List[(PlatformClassPath, PlatformClassPath)] = {
-          val dir = AbstractFile.getDirectory(path)
-          val canonical = dir.canonicalPath
-          def matchesCanonical(e: ClassPath[_]) = e.origin match {
-            case Some(opath) =>
-              AbstractFile.getDirectory(opath).canonicalPath == canonical
-            case None =>
-              false
-          }
-          cp.entries find matchesCanonical match {
-            case Some(oldEntry) =>
-              List(oldEntry -> cp.context.newClassPath(dir))
-            case None =>
-              error(s"Error adding entry to classpath. During invalidation, no entry named $path in classpath $classPath")
-              List()
-          }
-        }
-        val subst = immutable.TreeMap(paths flatMap assoc: _*)
-        if (subst.nonEmpty) {
-          platform updateClassPath subst
-          informProgress(s"classpath updated on entries [${subst.keys mkString ","}]")
-          def mkClassPath(elems: Iterable[PlatformClassPath]): PlatformClassPath =
-            if (elems.size == 1) elems.head
-            else new MergedClassPath(elems, recursiveClassPath.context)
-          val oldEntries = mkClassPath(subst.keys)
-          val newEntries = mkClassPath(subst.values)
-          mergeNewEntries(newEntries, RootClass, Some(recursiveClassPath), Some(oldEntries), invalidated, failed)
-        }
+
+    def assoc(path: String): Option[(ClassPath, ClassPath)] = {
+      def origin(lookup: ClassPath): Option[String] = lookup match {
+        case cp: JFileDirectoryLookup[_] => Some(cp.dir.getPath)
+        case cp: ZipArchiveFileLookup[_] => Some(cp.zipFile.getPath)
+        case _ => None
+      }
+
+      def entries(lookup: ClassPath): Seq[ClassPath] = lookup match {
+        case cp: AggregateClassPath => cp.aggregates
+        case cp: ClassPath => Seq(cp)
+      }
+
+      val dir = AbstractFile.getDirectory(path) // if path is a `jar`, this is a FileZipArchive (isDirectory is true)
+      val canonical = dir.canonicalPath         // this is the canonical path of the .jar
+      def matchesCanonical(e: ClassPath) = origin(e) match {
+        case Some(opath) =>
+          AbstractFile.getDirectory(opath).canonicalPath == canonical
+        case None =>
+          false
+      }
+      entries(classPath) find matchesCanonical match {
+        case Some(oldEntry) =>
+          Some(oldEntry -> ClassPathFactory.newClassPath(dir, settings))
+        case None =>
+          error(s"Error adding entry to classpath. During invalidation, no entry named $path in classpath $classPath")
+          None
+      }
+    }
+    val subst = immutable.TreeMap(paths flatMap assoc: _*)
+    if (subst.nonEmpty) {
+      platform updateClassPath subst
+      informProgress(s"classpath updated on entries [${subst.keys mkString ","}]")
+      def mkClassPath(elems: Iterable[ClassPath]): ClassPath =
+        if (elems.size == 1) elems.head
+        else AggregateClassPath.createAggregate(elems.toSeq: _*)
+      val oldEntries = mkClassPath(subst.keys)
+      val newEntries = mkClassPath(subst.values)
+      classPath match {
+        case cp: ClassPath => mergeNewEntries(
+          RootClass, "",
+          oldEntries, newEntries, cp,
+          invalidated, failed)
+      }
     }
     def show(msg: String, syms: scala.collection.Traversable[Symbol]) =
       if (syms.nonEmpty)
@@ -854,66 +858,61 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     show("could not invalidate system packages", failed)
   }
 
-  /** Merges new classpath entries into the symbol table
+  /**
+   * Merges new classpath entries into the symbol table
    *
-   *  @param newEntries   The new classpath entries
-   *  @param root         The root symbol to be resynced (a package class)
-   *  @param allEntries   Optionally, the corresponding package in the complete current classpath
-   *  @param oldEntries   Optionally, the corresponding package in the old classpath entries
-   *  @param invalidated  A listbuffer collecting the invalidated package classes
-   *  @param failed       A listbuffer collecting system package classes which could not be invalidated
+   * @param packageClass    The ClassSymbol for the package being updated
+   * @param fullPackageName The full name of the package being updated
+   * @param oldEntries      The classpath that was removed, it is no longer part of fullClasspath
+   * @param newEntries      The classpath that was added, it is already part of fullClasspath
+   * @param fullClasspath   The full classpath, equivalent to global.classPath
+   * @param invalidated     A ListBuffer collecting the invalidated package classes
+   * @param failed          A ListBuffer collecting system package classes which could not be invalidated
    *
-   * The merging strategy is determined by the absence or presence of classes and packages.
+   * If either oldEntries or newEntries contains classes in the current package, the package symbol
+   * is re-initialized to a fresh package loader, provided that a corresponding package exists in
+   * fullClasspath. Otherwise it is removed.
    *
-   * If either oldEntries or newEntries contains classes, root is invalidated provided that a corresponding package
-   * exists in allEntries. Otherwise it is removed.
-   * Otherwise, the action is determined by the following matrix, with columns:
-   *
-   *      old sym   action
-   *       +   +    recurse into all child packages of newEntries
-   *       -   +    invalidate root
-   *       -   -    create and enter root
-   *
-   *  Here, old means classpath, and sym means symboltable. + is presence of an entry in its column, - is absence.
+   * Otherwise, sub-packages in newEntries are looked up in the symbol table (created if
+   * non-existent) and the merge function is called recursively.
    */
-  private def mergeNewEntries(newEntries: PlatformClassPath, root: ClassSymbol,
-             allEntries: OptClassPath, oldEntries: OptClassPath,
-             invalidated: mutable.ListBuffer[ClassSymbol], failed: mutable.ListBuffer[ClassSymbol]) {
-    ifDebug(informProgress(s"syncing $root, $oldEntries -> $newEntries"))
+  private def mergeNewEntries(packageClass: ClassSymbol, fullPackageName: String,
+                              oldEntries: ClassPath, newEntries: ClassPath, fullClasspath: ClassPath,
+                              invalidated: mutable.ListBuffer[ClassSymbol], failed: mutable.ListBuffer[ClassSymbol]): Unit = {
+    ifDebug(informProgress(s"syncing $packageClass, $oldEntries -> $newEntries"))
 
-    val getName: ClassPath[AbstractFile] => String = (_.name)
-    def hasClasses(cp: OptClassPath) = cp.isDefined && cp.get.classes.nonEmpty
-    def invalidateOrRemove(root: ClassSymbol) = {
-      allEntries match {
-        case Some(cp) => root setInfo new loaders.PackageLoader(cp)
-        case None => root.owner.info.decls unlink root.sourceModule
-      }
-      invalidated += root
+    def packageExists(cp: ClassPath): Boolean = {
+      val (parent, _) = PackageNameUtils.separatePkgAndClassNames(fullPackageName)
+      cp.packages(parent).exists(_.name == fullPackageName)
     }
-    def subPackage(cp: PlatformClassPath, name: String): OptClassPath =
-      cp.packages find (cp1 => getName(cp1) == name)
 
-    val classesFound = hasClasses(oldEntries) || newEntries.classes.nonEmpty
-    if (classesFound && !isSystemPackageClass(root)) {
-      invalidateOrRemove(root)
-    } else {
-      if (classesFound) {
-        if (root.isRoot) invalidateOrRemove(EmptyPackageClass)
-        else failed += root
-      }
-      if (!oldEntries.isDefined) invalidateOrRemove(root)
+    def invalidateOrRemove(pkg: ClassSymbol) = {
+      if (packageExists(fullClasspath))
+        pkg setInfo new loaders.PackageLoader(fullPackageName, fullClasspath)
       else
-        for (pstr <- newEntries.packages.map(getName)) {
-          val pname = newTermName(pstr)
-          val pkg = (root.info decl pname) orElse {
-            // package does not exist in symbol table, create symbol to track it
-            assert(!subPackage(oldEntries.get, pstr).isDefined)
-            loaders.enterPackage(root, pstr, new loaders.PackageLoader(allEntries.get))
-          }
-          mergeNewEntries(subPackage(newEntries, pstr).get, pkg.moduleClass.asClass,
-                          subPackage(allEntries.get, pstr), subPackage(oldEntries.get, pstr),
-                          invalidated, failed)
+        pkg.owner.info.decls unlink pkg.sourceModule
+      invalidated += pkg
+    }
+
+    val classesFound = oldEntries.classes(fullPackageName).nonEmpty || newEntries.classes(fullPackageName).nonEmpty
+    if (classesFound) {
+      // if the package contains classes either in oldEntries or newEntries, the package is invalidated (or removed if there are no more classes in it)
+      if (!isSystemPackageClass(packageClass)) invalidateOrRemove(packageClass)
+      else if (packageClass.isRoot) invalidateOrRemove(EmptyPackageClass)
+      else failed += packageClass
+    } else {
+      // no new or removed classes in the current package
+      for (p <- newEntries.packages(fullPackageName)) {
+        val (_, subPackageName) = PackageNameUtils.separatePkgAndClassNames(p.name)
+        val subPackage = packageClass.info.decl(newTermName(subPackageName)) orElse {
+          // package does not exist in symbol table, create a new symbol
+          loaders.enterPackage(packageClass, subPackageName, new loaders.PackageLoader(p.name, fullClasspath))
         }
+        mergeNewEntries(
+          subPackage.moduleClass.asClass, p.name,
+          oldEntries, newEntries, fullClasspath,
+          invalidated, failed)
+      }
     }
   }
 
@@ -1052,6 +1051,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def newUnitParser(code: String, filename: String = "<console>"): UnitParser =
     newUnitParser(newCompilationUnit(code, filename))
 
+  def newJavaUnitParser(unit: CompilationUnit): JavaUnitParser = new JavaUnitParser(unit)
+
   /** A Run is a single execution of the compiler on a set of units.
    */
   class Run extends RunContextApi with RunReporting with RunParsing {
@@ -1064,9 +1065,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     var currentUnit: CompilationUnit = NoCompilationUnit
 
     // used in sbt
-    def uncheckedWarnings: List[(Position, String)] = reporting.uncheckedWarnings
+    def uncheckedWarnings: List[(Position, String)]   = reporting.uncheckedWarnings.map{case (pos, (msg, since)) => (pos, msg)}
     // used in sbt
-    def deprecationWarnings: List[(Position, String)] = reporting.deprecationWarnings
+    def deprecationWarnings: List[(Position, String)] = reporting.deprecationWarnings.map{case (pos, (msg, since)) => (pos, msg)}
 
     private class SyncedCompilationBuffer { self =>
       private val underlying = new mutable.ArrayBuffer[CompilationUnit]
@@ -1247,12 +1248,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val picklerPhase                 = phaseNamed("pickler")
     val refchecksPhase               = phaseNamed("refchecks")
     val uncurryPhase                 = phaseNamed("uncurry")
+    // val fieldsPhase                  = phaseNamed("fields")
     // val tailcallsPhase               = phaseNamed("tailcalls")
     val specializePhase              = phaseNamed("specialize")
     val explicitouterPhase           = phaseNamed("explicitouter")
     val erasurePhase                 = phaseNamed("erasure")
     val posterasurePhase             = phaseNamed("posterasure")
-    // val lazyvalsPhase                = phaseNamed("lazyvals")
     val lambdaliftPhase              = phaseNamed("lambdalift")
     // val constructorsPhase            = phaseNamed("constructors")
     val flattenPhase                 = phaseNamed("flatten")
@@ -1277,11 +1278,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     private def warnDeprecatedAndConflictingSettings(unit: CompilationUnit) {
       // issue warnings for any usage of deprecated settings
       settings.userSetSettings filter (_.isDeprecated) foreach { s =>
-        currentRun.reporting.deprecationWarning(NoPosition, s.name + " is deprecated: " + s.deprecationMessage.get)
+        currentRun.reporting.deprecationWarning(NoPosition, s.name + " is deprecated: " + s.deprecationMessage.get, "")
       }
       val supportedTarget = "jvm-1.8"
       if (settings.target.value != supportedTarget) {
-        currentRun.reporting.deprecationWarning(NoPosition, settings.target.name + ":" + settings.target.value + " is deprecated and has no effect, setting to " + supportedTarget)
+        currentRun.reporting.deprecationWarning(NoPosition, settings.target.name + ":" + settings.target.value + " is deprecated and has no effect, setting to " + supportedTarget, "2.12.0")
         settings.target.value = supportedTarget
       }
       settings.conflictWarning.foreach(reporter.warning(NoPosition, _))
@@ -1299,7 +1300,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
     /** does this run compile given class, module, or case factory? */
     // NOTE: Early initialized members temporarily typechecked before the enclosing class, see typedPrimaryConstrBody!
-    //       Here we work around that wrinkle by claiming that a early-initialized member is compiled in
+    //       Here we work around that wrinkle by claiming that a pre-initialized member is compiled in
     //       *every* run. This approximation works because this method is exclusively called with `this` == `currentRun`.
     def compiles(sym: Symbol): Boolean =
       if (sym == NoSymbol) false

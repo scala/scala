@@ -1,6 +1,6 @@
 sabin2.scala:22: error: type mismatch;
  found   : Test.Base#T
- required: _7.T where val _7: Test.Base
+ required: _5.T where val _5: Test.Base
    a.set(b.get()) // Error
               ^
 one error found

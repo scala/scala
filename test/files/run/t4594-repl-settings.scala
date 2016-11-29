@@ -9,13 +9,13 @@ object Test extends SessionTest {
    |depp: String
    |
    |scala> def a = depp
-   |warning: there was one deprecation warning; re-run with -deprecation for details
+   |warning: there was one deprecation warning (since Time began.); for details, enable `:setting -deprecation' or `:replay -deprecation'
    |a: String
    |
    |scala> :settings -deprecation
    |
    |scala> def b = depp
-   |<console>:12: warning: method depp is deprecated: Please don't do that.
+   |<console>:12: warning: method depp is deprecated (since Time began.): Please don't do that.
    |       def b = depp
    |               ^
    |b: String

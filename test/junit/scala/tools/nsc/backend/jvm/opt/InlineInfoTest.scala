@@ -2,42 +2,33 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
+
+import scala.collection.JavaConverters._
 import scala.collection.generic.Clearable
-import org.junit.Assert._
-
-import CodeGenTools._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import AsmUtils._
-import scala.tools.testing.ClearAfterClass
-
-import BackendReporting._
-
-import scala.collection.convert.decorateAsScala._
-
-object InlineInfoTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:classpath")
-  def clear(): Unit = { compiler = null }
-
-  def notPerRun: List[Clearable] = List(
-    compiler.genBCode.bTypes.classBTypeFromInternalName,
-    compiler.genBCode.bTypes.byteCodeRepository.compilingClasses,
-    compiler.genBCode.bTypes.byteCodeRepository.parsedClasses)
-  notPerRun foreach compiler.perRunCaches.unrecordCache
-}
+import scala.tools.nsc.backend.jvm.BTypes.MethodInlineInfo
+import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.testing.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
-class InlineInfoTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = InlineInfoTest
+class InlineInfoTest extends BytecodeTesting {
+  import compiler._
+  import global.genBCode.bTypes
 
-  val compiler = InlineInfoTest.compiler
+  override def compilerArgs = "-opt:l:classpath"
+
+  def notPerRun: List[Clearable] = List(
+    bTypes.classBTypeFromInternalName,
+    bTypes.byteCodeRepository.compilingClasses,
+    bTypes.byteCodeRepository.parsedClasses)
+  notPerRun foreach global.perRunCaches.unrecordCache
 
   def compile(code: String) = {
-    InlineInfoTest.notPerRun.foreach(_.clear())
-    compileClasses(compiler)(code)
+    notPerRun.foreach(_.clear())
+    compiler.compileClasses(code)
   }
 
   @Test
@@ -60,13 +51,30 @@ class InlineInfoTest extends ClearAfterClass {
         |class C extends T with U
       """.stripMargin
     val classes = compile(code)
-    val fromSyms = classes.map(c => compiler.genBCode.bTypes.classBTypeFromInternalName(c.name).info.get.inlineInfo)
+
+    val fromSyms = classes.map(c => global.genBCode.bTypes.classBTypeFromInternalName(c.name).info.get.inlineInfo)
 
     val fromAttrs = classes.map(c => {
       assert(c.attrs.asScala.exists(_.isInstanceOf[InlineInfoAttribute]), c.attrs)
-      compiler.genBCode.bTypes.inlineInfoFromClassfile(c)
+      global.genBCode.bTypes.inlineInfoFromClassfile(c)
     })
 
     assert(fromSyms == fromAttrs)
+  }
+
+  @Test // scala-dev#20
+  def javaStaticMethodsInlineInfoInMixedCompilation(): Unit = {
+    val jCode =
+      """public class A {
+        |  public static final int bar() { return 100; }
+        |  public final int baz() { return 100; }
+        |}
+      """.stripMargin
+    compileClasses("class C { new A }", javaCode = List((jCode, "A.java")))
+    val info = global.genBCode.bTypes.classBTypeFromInternalName("A").info.get.inlineInfo
+    assertEquals(info.methodInfos, Map(
+      "bar()I"    -> MethodInlineInfo(true,false,false),
+      "<init>()V" -> MethodInlineInfo(false,false,false),
+      "baz()I"    -> MethodInlineInfo(true,false,false)))
   }
 }

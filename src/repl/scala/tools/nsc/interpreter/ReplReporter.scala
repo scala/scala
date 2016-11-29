@@ -68,4 +68,7 @@ class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, Console.i
     else super.displayPrompt()
   }
 
+  override def rerunWithDetails(setting: reflect.internal.settings.MutableSettings#Setting, name: String) =
+    s"; for details, enable `:setting $name' or `:replay $name'"
+
 }

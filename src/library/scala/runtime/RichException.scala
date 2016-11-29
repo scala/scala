@@ -11,7 +11,7 @@ package runtime
 
 import scala.compat.Platform.EOL
 
-@deprecated("Use Throwable#getStackTrace", "2.11.0")
+@deprecated("use Throwable#getStackTrace", "2.11.0")
 final class RichException(exc: Throwable) {
   def getStackTraceString = exc.getStackTrace().mkString("", EOL, EOL)
 }

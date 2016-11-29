@@ -100,7 +100,7 @@ private[concurrent] object ExecutionContextImpl {
     val numThreads = getInt("scala.concurrent.context.numThreads", "x1")
     // The hard limit on the number of active threads that the thread factory will produce
     // SI-8955 Deadlocks can happen if maxNoOfThreads is too low, although we're currently not sure
-    //         about what the exact threshhold is. numThreads + 256 is conservatively high.
+    //         about what the exact threshold is. numThreads + 256 is conservatively high.
     val maxNoOfThreads = getInt("scala.concurrent.context.maxThreads", "x1")
 
     val desiredParallelism = range(

@@ -43,8 +43,7 @@ import scala.reflect.ClassTag
  *
  */
 @SerialVersionUID(1L)
-@deprecatedInheritance("UnrolledBuffer is not designed to enable meaningful subclassing.", "2.11.0")
-class UnrolledBuffer[T](implicit val tag: ClassTag[T])
+sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
 extends scala.collection.mutable.AbstractBuffer[T]
    with scala.collection.mutable.Buffer[T]
    with scala.collection.mutable.BufferLike[T, UnrolledBuffer[T]]
@@ -349,4 +348,12 @@ object UnrolledBuffer extends ClassTagTraversableFactory[UnrolledBuffer] {
     override def toString = array.take(size).mkString("Unrolled@%08x".format(System.identityHashCode(this)) + "[" + size + "/" + array.length + "](", ", ", ")") + " -> " + (if (next ne null) next.toString else "")
   }
 
+}
+
+
+// This is used by scala.collection.parallel.mutable.UnrolledParArrayCombiner:
+// Todo -- revisit whether inheritance is the best way to achieve this functionality
+private[collection] class DoublingUnrolledBuffer[T](implicit t: ClassTag[T]) extends UnrolledBuffer[T]()(t) {
+  override def calcNextLength(sz: Int) = if (sz < 10000) sz * 2 else sz
+  protected override def newUnrolled = new UnrolledBuffer.Unrolled[T](0, new Array[T](4), null, this)
 }

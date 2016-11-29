@@ -1,4 +1,4 @@
-t4460b.scala:7: error: called constructor's definition must precede calling constructor's definition
+t4460b.scala:7: error: constructor invokes itself
 	  def this() = this() // was binding to Predef.<init> !!
                        ^
 one error found

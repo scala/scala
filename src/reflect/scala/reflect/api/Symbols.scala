@@ -260,9 +260,6 @@ trait Symbols { self: Universe =>
      *  with an object definition (module class in scala compiler parlance)?
      *  If yes, `isType` is also guaranteed to be true.
      *
-     *  Note to compiler developers: During the "mixin" phase, trait implementation class symbols
-     *  receive the `lateMODULE` flag, hence `isImplClass && isModuleClass` becomes true.
-     *
      *  @group Tests
      */
     def isModuleClass: Boolean = false
@@ -283,7 +280,7 @@ trait Symbols { self: Universe =>
      *
      *  @group Basics
      */
-    @deprecated("Use `pos.source.file` instead", "2.11.0")
+    @deprecated("use `pos.source.file` instead", "2.11.0")
     def associatedFile: scala.reflect.io.AbstractFile
 
     /** A list of annotations attached to this Symbol.
@@ -301,7 +298,7 @@ trait Symbols { self: Universe =>
      *
      *  @group Basics
      */
-    @deprecated("Use `companion` instead, but beware of possible changes in behavior", "2.11.0")
+    @deprecated("use `companion` instead, but beware of possible changes in behavior", "2.11.0")
     def companionSymbol: Symbol
 
     /** For a class: its companion object if exists.
@@ -336,7 +333,7 @@ trait Symbols { self: Universe =>
     def info: Type
 
     /** @see [[overrides]] */
-    @deprecated("Use `overrides` instead", "2.11.0")
+    @deprecated("use `overrides` instead", "2.11.0")
     def allOverriddenSymbols: List[Symbol]
 
     /** Returns all symbols overridden by this symbol.
@@ -354,8 +351,7 @@ trait Symbols { self: Universe =>
     /******************* tests *******************/
 
     /** Does this symbol represent a synthetic (i.e. a compiler-generated) entity?
-     *  Examples of synthetic entities are accessors for vals and vars
-     *  or mixin constructors in trait implementation classes.
+     *  Examples of synthetic entities are accessors for vals and vars.
      *
      *  @group Tests
      */
@@ -730,7 +726,7 @@ trait Symbols { self: Universe =>
      *
      *  @group Type
      */
-    @deprecated("Use isAbstract instead", "2.11.0")
+    @deprecated("use isAbstract instead", "2.11.0")
     def isAbstractType : Boolean
 
     /** Does this symbol represent an existentially bound type?
@@ -771,7 +767,7 @@ trait Symbols { self: Universe =>
     /** @see [[paramLists]]
      *
      * The name ending with "ss" indicates that the result type is a list of lists. */
-    @deprecated("Use `paramLists` instead", "2.11.0")
+    @deprecated("use `paramLists` instead", "2.11.0")
     def paramss: List[List[Symbol]]
 
     /** All parameter lists of the method.
@@ -868,7 +864,7 @@ trait Symbols { self: Universe =>
      *
      *  @group Class
      */
-    @deprecated("Use isAbstract instead", "2.11.0")
+    @deprecated("use isAbstract instead", "2.11.0")
     def isAbstractClass: Boolean
 
     /** Does this symbol represent a case class?

@@ -2,15 +2,15 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import scala.tools.asm.Opcodes._
-import org.junit.Assert._
 
-import CodeGenTools._
+import scala.tools.asm.Opcodes._
 import scala.tools.partest.ASMConverters
-import ASMConverters._
+import scala.tools.partest.ASMConverters._
+import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class SimplifyJumpsTest {
@@ -96,10 +96,22 @@ class SimplifyJumpsTest {
       instructionsFromMethod(method),
       List(VarOp(ILOAD, 1), Jump(IFLT, Label(3))) ::: rest.tail )
 
-    // no label allowed between begin and rest. if there's another label, then there could be a
-    // branch that label. eliminating the  GOTO would change the behavior.
-    val nonOptMethod = genMethod()(begin ::: Label(22) :: rest: _*)
-    assertFalse(LocalOptImpls.simplifyJumps(nonOptMethod))
+    // branch over goto is OK even if there's a label in between, if that label is not a jump target
+    val withNonJumpTargetLabel = genMethod()(begin ::: Label(22) :: rest: _*)
+    assertTrue(LocalOptImpls.simplifyJumps(withNonJumpTargetLabel))
+    assertSameCode(
+      instructionsFromMethod(withNonJumpTargetLabel),
+      List(VarOp(ILOAD, 1), Jump(IFLT, Label(3)), Label(22)) ::: rest.tail )
+
+    // if the Label(22) between IFGE and GOTO is the target of some jump, we cannot rewrite the IFGE
+    // and remove the GOTO: removing the GOTO would change semantics. However, the jump that targets
+    // Label(22) will be re-written (jump-chain collapsing), so in a second round, the IFGE is still
+    // rewritten to IFLT
+    val twoRounds = genMethod()(List(VarOp(ILOAD, 1), Jump(IFLE, Label(22))) ::: begin ::: Label(22) :: rest: _*)
+    assertTrue(LocalOptImpls.simplifyJumps(twoRounds))
+    assertSameCode(
+      instructionsFromMethod(twoRounds),
+      List(VarOp(ILOAD, 1), Jump(IFLE, Label(3)), VarOp(ILOAD, 1), Jump(IFLT, Label(3)), Label(22)) ::: rest.tail )
   }
 
   @Test
@@ -166,6 +178,9 @@ class SimplifyJumpsTest {
     def ops(target: Int) = List(
       VarOp(ILOAD, 1),
       Jump(IFGE, Label(target)),
+
+      VarOp(ILOAD, 1), // some code to prevent rewriting the conditional jump
+      Op(IRETURN),
 
       Label(4),
       Jump(GOTO, Label(3)),

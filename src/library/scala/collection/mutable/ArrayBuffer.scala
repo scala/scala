@@ -67,7 +67,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   override def sizeHint(len: Int) {
     if (len > size && len >= 1) {
       val newarray = new Array[AnyRef](len)
-      scala.compat.Platform.arraycopy(array, 0, newarray, 0, size0)
+      java.lang.System.arraycopy(array, 0, newarray, 0, size0)
       array = newarray
     }
   }

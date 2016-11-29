@@ -12,12 +12,12 @@ package reflect
 import scala.collection.mutable.{ WrappedArray, ArrayBuilder }
 import java.lang.{ Class => jClass }
 
-@deprecated("Use scala.reflect.ClassTag instead", "2.10.0")
+@deprecated("use scala.reflect.ClassTag instead", "2.10.0")
 trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
   self: ClassManifest[T] =>
 
   // Still in use in target test.junit.comp.
-  @deprecated("Use runtimeClass instead", "2.10.0")
+  @deprecated("use runtimeClass instead", "2.10.0")
   def erasure: jClass[_] = runtimeClass
 
   private def subtype(sub: jClass[_], sup: jClass[_]): Boolean = {
@@ -44,7 +44,7 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
     * of the type represented by `that` manifest, subject to the limitations
     * described in the header.
     */
-  @deprecated("Use scala.reflect.runtime.universe.TypeTag for subtype checking instead", "2.10.0")
+  @deprecated("use scala.reflect.runtime.universe.TypeTag for subtype checking instead", "2.10.0")
   def <:<(that: ClassManifest[_]): Boolean = {
     // All types which could conform to these types will override <:<.
     def cannotMatch = {
@@ -78,7 +78,7 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
     * of the type represented by `that` manifest, subject to the limitations
     * described in the header.
     */
-  @deprecated("Use scala.reflect.runtime.universe.TypeTag for subtype checking instead", "2.10.0")
+  @deprecated("use scala.reflect.runtime.universe.TypeTag for subtype checking instead", "2.10.0")
   def >:>(that: ClassManifest[_]): Boolean =
     that <:< this
 
@@ -90,44 +90,44 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
   protected def arrayClass[T](tp: jClass[_]): jClass[Array[T]] =
     java.lang.reflect.Array.newInstance(tp, 0).getClass.asInstanceOf[jClass[Array[T]]]
 
-  @deprecated("Use wrap instead", "2.10.0")
+  @deprecated("use wrap instead", "2.10.0")
   def arrayManifest: ClassManifest[Array[T]] =
     ClassManifest.classType[Array[T]](arrayClass[T](runtimeClass), this)
 
   override def newArray(len: Int): Array[T] =
     java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
 
-  @deprecated("Use wrap.newArray instead", "2.10.0")
+  @deprecated("use wrap.newArray instead", "2.10.0")
   def newArray2(len: Int): Array[Array[T]] =
     java.lang.reflect.Array.newInstance(arrayClass[T](runtimeClass), len)
       .asInstanceOf[Array[Array[T]]]
 
-  @deprecated("Use wrap.wrap.newArray instead", "2.10.0")
+  @deprecated("use wrap.wrap.newArray instead", "2.10.0")
   def newArray3(len: Int): Array[Array[Array[T]]] =
     java.lang.reflect.Array.newInstance(arrayClass[Array[T]](arrayClass[T](runtimeClass)), len)
       .asInstanceOf[Array[Array[Array[T]]]]
 
-  @deprecated("Use wrap.wrap.wrap.newArray instead", "2.10.0")
+  @deprecated("use wrap.wrap.wrap.newArray instead", "2.10.0")
   def newArray4(len: Int): Array[Array[Array[Array[T]]]] =
     java.lang.reflect.Array.newInstance(arrayClass[Array[Array[T]]](arrayClass[Array[T]](arrayClass[T](runtimeClass))), len)
       .asInstanceOf[Array[Array[Array[Array[T]]]]]
 
-  @deprecated("Use wrap.wrap.wrap.wrap.newArray instead", "2.10.0")
+  @deprecated("use wrap.wrap.wrap.wrap.newArray instead", "2.10.0")
   def newArray5(len: Int): Array[Array[Array[Array[Array[T]]]]] =
     java.lang.reflect.Array.newInstance(arrayClass[Array[Array[Array[T]]]](arrayClass[Array[Array[T]]](arrayClass[Array[T]](arrayClass[T](runtimeClass)))), len)
       .asInstanceOf[Array[Array[Array[Array[Array[T]]]]]]
 
-  @deprecated("Create WrappedArray directly instead", "2.10.0")
+  @deprecated("create WrappedArray directly instead", "2.10.0")
   def newWrappedArray(len: Int): WrappedArray[T] =
     // it's safe to assume T <: AnyRef here because the method is overridden for all value type manifests
     new WrappedArray.ofRef[T with AnyRef](newArray(len).asInstanceOf[Array[T with AnyRef]]).asInstanceOf[WrappedArray[T]]
 
-  @deprecated("Use ArrayBuilder.make(this) instead", "2.10.0")
+  @deprecated("use ArrayBuilder.make(this) instead", "2.10.0")
   def newArrayBuilder(): ArrayBuilder[T] =
     // it's safe to assume T <: AnyRef here because the method is overridden for all value type manifests
     new ArrayBuilder.ofRef[T with AnyRef]()(this.asInstanceOf[ClassManifest[T with AnyRef]]).asInstanceOf[ArrayBuilder[T]]
 
-  @deprecated("Use scala.reflect.runtime.universe.TypeTag to capture type structure instead", "2.10.0")
+  @deprecated("use scala.reflect.runtime.universe.TypeTag to capture type structure instead", "2.10.0")
   def typeArguments: List[OptManifest[_]] = List()
 
   protected def argString =
@@ -143,8 +143,8 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
  *  This is done to prevent avalanches of deprecation warnings in the code that calls methods with manifests.
  *
  *  In a perfect world, we would just remove the @deprecated annotation from `ClassManifest` the object
- *  and then delete it in 2.11. After all, that object is explicitly marked as internal, so noone should use it.
- *  However a lot of existing libraries disregarded the scaladoc that comes with `ClassManifest`,
+ *  and then delete it in 2.11. After all, that object is explicitly marked as internal, so no one should use it.
+ *  However a lot of existing libraries disregarded the Scaladoc that comes with `ClassManifest`,
  *  so we need to somehow nudge them into migrating prior to removing stuff out of the blue.
  *  Hence we've introduced this design decision as the lesser of two evils.
  */
@@ -205,15 +205,18 @@ object ClassManifestFactory {
     case m: ClassManifest[_] => m.asInstanceOf[ClassManifest[T]].arrayManifest
   }
 
+  @SerialVersionUID(1L)
+  private class AbstractTypeClassManifest[T](prefix: OptManifest[_], name: String, clazz: jClass[_], args: OptManifest[_]*) extends ClassManifest[T] {
+    override def runtimeClass = clazz
+    override val typeArguments = args.toList
+    override def toString = prefix.toString+"#"+name+argString
+  }
+
   /** ClassManifest for the abstract type `prefix # name`. `upperBound` is not
     * strictly necessary as it could be obtained by reflection. It was
     * added so that erasure can be calculated without reflection. */
   def abstractType[T](prefix: OptManifest[_], name: String, clazz: jClass[_], args: OptManifest[_]*): ClassManifest[T] =
-    new ClassManifest[T] {
-      override def runtimeClass = clazz
-      override val typeArguments = args.toList
-      override def toString = prefix.toString+"#"+name+argString
-    }
+    new AbstractTypeClassManifest(prefix, name, clazz)
 
   /** ClassManifest for the abstract type `prefix # name`. `upperBound` is not
     * strictly necessary as it could be obtained by reflection. It was
@@ -221,15 +224,12 @@ object ClassManifestFactory {
     * todo: remove after next bootstrap
     */
   def abstractType[T](prefix: OptManifest[_], name: String, upperbound: ClassManifest[_], args: OptManifest[_]*): ClassManifest[T] =
-    new ClassManifest[T] {
-      override def runtimeClass = upperbound.runtimeClass
-      override val typeArguments = args.toList
-      override def toString = prefix.toString+"#"+name+argString
-    }
+    new AbstractTypeClassManifest(prefix, name, upperbound.runtimeClass)
 }
 
 /** Manifest for the class type `clazz[args]`, where `clazz` is
   * a top-level or static class */
+@SerialVersionUID(1L)
 private class ClassTypeManifest[T](
   prefix: Option[OptManifest[_]],
   val runtimeClass: jClass[_],

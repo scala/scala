@@ -469,8 +469,7 @@ trait NamesDefaults { self: Analyzer =>
       else {
         // isClass also works for methods in objects, owner is the ModuleClassSymbol
         if (param.owner.owner.isClass) {
-          // .toInterface: otherwise we get the method symbol of the impl class
-          param.owner.owner.toInterface.info.member(defGetterName)
+          param.owner.owner.info.member(defGetterName)
         } else {
           // the owner of the method is another method. find the default
           // getter in the context.
@@ -560,20 +559,22 @@ trait NamesDefaults { self: Analyzer =>
   def removeNames(typer: Typer)(args: List[Tree], params: List[Symbol]): (List[Tree], Array[Int]) = {
     implicit val context0 = typer.context
     def matchesName(param: Symbol, name: Name, argIndex: Int) = {
-      def warn(w: String) = context0.deprecationWarning(args(argIndex).pos, param, w)
+      def warn(msg: String, since: String) = context0.deprecationWarning(args(argIndex).pos, param, msg, since)
       def checkDeprecation(anonOK: Boolean) =
         when (param.deprecatedParamName) {
           case Some(`name`)      => true
           case Some(nme.NO_NAME) => anonOK
         }
+      def version = param.deprecatedParamVersion.getOrElse("")
+      def since   = if (version.isEmpty) version else s" (since $version)"
       def checkName = {
         val res = param.name == name
-        if (res && checkDeprecation(true)) warn(s"naming parameter $name has been deprecated.")
+        if (res && checkDeprecation(true)) warn(s"naming parameter $name is deprecated$since.", version)
         res
       }
       def checkAltName = {
         val res = checkDeprecation(false)
-        if (res) warn(s"the parameter name $name has been deprecated. Use ${param.name} instead.")
+        if (res) warn(s"the parameter name $name is deprecated$since: use ${param.name} instead", version)
         res
       }
       !param.isSynthetic && (checkName || checkAltName)

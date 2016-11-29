@@ -215,7 +215,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
    *
    *  @author     Martin Odersky
    */
-  abstract class JavaScanner extends AbstractJavaScanner with JavaTokenData with Cloneable with ScannerCommon {
+  abstract class JavaScanner extends AbstractJavaScanner with JavaTokenData with Cloneable with ScannerCommon with DocScanner {
     override def intVal = super.intVal// todo: needed?
     override def floatVal = super.floatVal
     def currentPos: Position = g2p(pos - 1)
@@ -577,21 +577,34 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       }
     }
 
-    protected def skipComment(): Boolean = {
-      @tailrec def skipLineComment(): Unit = in.ch match {
-        case CR | LF | SU =>
-        case _            => in.next; skipLineComment()
-      }
-      @tailrec def skipJavaComment(): Unit = in.ch match {
-        case SU  => incompleteInputError("unclosed comment")
-        case '*' => in.next; if (in.ch == '/') in.next else skipJavaComment()
-        case _   => in.next; skipJavaComment()
-      }
+    final protected def putCommentChar(): Unit = { processCommentChar(); in.next() }
+
+    @tailrec final protected def skipBlockComment(isDoc: Boolean): Unit = {
+      if (isDoc) beginDocComment("/*") // the second '*' is the current character
+
       in.ch match {
-        case '/' => in.next ; skipLineComment() ; true
-        case '*' => in.next ; skipJavaComment() ; true
-        case _   => false
+        case SU  => incompleteInputError("unclosed comment")
+        case '*' => putCommentChar() ; if (in.ch == '/') putCommentChar() else skipBlockComment(isDoc)
+        case _   => putCommentChar() ; skipBlockComment(isDoc)
       }
+    }
+
+    @tailrec final protected def skipLineComment(): Unit = in.ch match {
+      case CR | LF | SU =>
+      case _            => putCommentChar() ; skipLineComment()
+    }
+
+    final protected def skipComment(): Boolean = in.ch match {
+      case '/' => putCommentChar() ; skipLineComment() ; finishDocComment() ; true
+      case '*' =>
+        putCommentChar()
+        in.ch match {
+          case '*' => skipBlockComment(isDoc = true)
+          case _ => skipBlockComment(isDoc = false)
+        }
+        finishDocComment()
+        true
+      case _   => false
     }
 
 // Identifiers ---------------------------------------------------------------
@@ -860,9 +873,9 @@ trait JavaScanners extends ast.parser.ScannersCommon {
   class JavaUnitScanner(unit: CompilationUnit) extends JavaScanner {
     in = new JavaCharArrayReader(unit.source.content, !settings.nouescape.value, syntaxError)
     init()
-    def error  (pos: Int, msg: String) = reporter.error(pos, msg)
+    def error(pos: Int, msg: String) = reporter.error(pos, msg)
     def incompleteInputError(pos: Int, msg: String) = currentRun.parsing.incompleteInputError(pos, msg)
-    def deprecationWarning(pos: Int, msg: String) = currentRun.reporting.deprecationWarning(pos, msg)
+    def deprecationWarning(pos: Int, msg: String, since: String) = currentRun.reporting.deprecationWarning(pos, msg, since)
     implicit def g2p(pos: Int): Position = Position.offset(unit.source, pos)
   }
 }

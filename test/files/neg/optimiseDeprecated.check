@@ -1,0 +1,4 @@
+warning: -optimise is deprecated: In 2.12, -optimise enables -opt:l:classpath. Check -opt:help for using the Scala 2.12 optimizer.
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

@@ -14,10 +14,7 @@ import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import WrapAsScala._
 import WrapAsJava._
 
-/** Don't put the implementations in the same scope as the implicits
- *  which utilize them, or they will stow away into every scope which
- *  extends one of those implementations.  See SI-5580.
- */
+/** Adapters for Java/Scala collections API. */
 private[collection] trait Wrappers {
   trait IterableWrapperTrait[A] extends ju.AbstractCollection[A] {
     val underlying: Iterable[A]
@@ -31,7 +28,7 @@ private[collection] trait Wrappers {
     def next() = underlying.next()
     def hasMoreElements = underlying.hasNext
     def nextElement() = underlying.next()
-    def remove() = throw new UnsupportedOperationException
+    override def remove() = throw new UnsupportedOperationException
   }
 
   class ToIteratorWrapper[A](underlying : Iterator[A]) {
@@ -116,7 +113,7 @@ private[collection] trait Wrappers {
       var prev: Option[A] = None
       def hasNext = ui.hasNext
       def next = { val e = ui.next(); prev = Some(e); e }
-      def remove = prev match {
+      override def remove() = prev match {
         case Some(e) =>
           underlying match {
             case ms: mutable.Set[a] =>
@@ -203,7 +200,7 @@ private[collection] trait Wrappers {
           }
         }
 
-        def remove() {
+        override def remove() {
           prev match {
             case Some(k) =>
               underlying match {
@@ -296,24 +293,24 @@ private[collection] trait Wrappers {
 
   class ConcurrentMapWrapper[A, B](override val underlying: concurrent.Map[A, B]) extends MutableMapWrapper[A, B](underlying) with juc.ConcurrentMap[A, B] {
 
-    def putIfAbsent(k: A, v: B) = underlying.putIfAbsent(k, v) match {
+    override def putIfAbsent(k: A, v: B) = underlying.putIfAbsent(k, v) match {
       case Some(v) => v
       case None => null.asInstanceOf[B]
     }
 
-    def remove(k: AnyRef, v: AnyRef) = try {
+    override def remove(k: AnyRef, v: AnyRef) = try {
       underlying.remove(k.asInstanceOf[A], v.asInstanceOf[B])
     } catch {
       case ex: ClassCastException =>
         false
     }
 
-    def replace(k: A, v: B): B = underlying.replace(k, v) match {
+    override def replace(k: A, v: B): B = underlying.replace(k, v) match {
       case Some(v) => v
       case None => null.asInstanceOf[B]
     }
 
-    def replace(k: A, oldval: B, newval: B) = underlying.replace(k, oldval, newval)
+    override def replace(k: A, oldval: B, newval: B) = underlying.replace(k, oldval, newval)
   }
 
   /** Wraps a concurrent Java map as a Scala one.  Single-element concurrent

@@ -7,9 +7,11 @@ package scala
 package reflect
 package internal
 
+import settings.MutableSettings
+
 /** Provides delegates to the reporter doing the actual work.
  *  All forwarding methods should be marked final,
- *  but some subclasses out of our reach stil override them.
+ *  but some subclasses out of our reach still override them.
  *
  *  Eventually, this interface should be reduced to one method: `reporter`,
  *  and clients should indirect themselves (reduce duplication of forwarders).
@@ -25,7 +27,7 @@ trait Reporting { self : Positions =>
   type PerRunReporting <: PerRunReportingBase
   protected def PerRunReporting: PerRunReporting
   abstract class PerRunReportingBase {
-    def deprecationWarning(pos: Position, msg: String): Unit
+    def deprecationWarning(pos: Position, msg: String, since: String): Unit
 
     /** Have we already supplemented the error message of a compiler crash? */
     private[this] var supplementedError = false
@@ -105,6 +107,13 @@ abstract class Reporter {
 
   /** Finish reporting: print summaries, release resources. */
   def finish(): Unit = ()
+
+  /** After reporting, offer advice on getting more details. */
+  def rerunWithDetails(setting: MutableSettings#Setting, name: String): String =
+    setting.value match {
+      case b: Boolean if !b => s"; re-run with ${name} for details"
+      case _ => s"; re-run enabling ${name} for details, or try -help"
+    }
 }
 
 // TODO: move into superclass once partest cuts tie on Severity

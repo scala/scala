@@ -1,1 +1,1 @@
--Yopt:l:classpath -Yopt-inline-heuristics:everything -Yopt-warnings:_ -Xfatal-warnings
+-opt:l:classpath -Yopt-inline-heuristics:everything -opt-warnings:_ -Xfatal-warnings

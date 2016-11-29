@@ -542,7 +542,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
          *
          * (0) A or B must be in the domain to draw any conclusions.
          *
-         *     For example, knowing the the scrutinee is *not* true does not
+         *     For example, knowing the scrutinee is *not* true does not
          *     statically exclude it from being `X`, because that is an opaque
          *     Boolean.
          *
@@ -691,7 +691,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
           // if X is mutable.
           freshExistentialSubtype(t.tpe)
         }
-        else trees find (a => a.correspondsStructure(t)(sameValue)) match {
+        else trees find (a => equivalentTree(a, t)) match {
           case Some(orig) =>
             debug.patmat("unique tp for tree: " + ((orig, orig.tpe)))
             orig.tpe

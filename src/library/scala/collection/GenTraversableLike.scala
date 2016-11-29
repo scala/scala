@@ -24,7 +24,7 @@ import scala.annotation.migration
  *    is found.
  *  @define bfinfo an implicit value of class `CanBuildFrom` which determines
  *    the result class `That` from the current representation type `Repr` and
- *    and the new element type `B`.
+ *    the new element type `B`.
  *  @define orderDependent
  *
  *    Note: might return different results for different runs, unless the

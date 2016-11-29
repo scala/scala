@@ -240,12 +240,12 @@ private[util] trait DeprecatedPosition {
   @deprecated("use `lineCaret`", since="2.11.0")
   def lineWithCarat(maxWidth: Int): (String, String) = ("", "")
 
-  @deprecated("Use `withSource(source)` and `withShift`", "2.11.0")
+  @deprecated("use `withSource(source)` and `withShift`", "2.11.0")
   def withSource(source: SourceFile, shift: Int): Position = this withSource source withShift shift
 
-  @deprecated("Use `start` instead", "2.11.0")
+  @deprecated("use `start` instead", "2.11.0")
   def startOrPoint: Int = if (isRange) start else point
 
-  @deprecated("Use `end` instead", "2.11.0")
+  @deprecated("use `end` instead", "2.11.0")
   def endOrPoint: Int = if (isRange) end else point
 }

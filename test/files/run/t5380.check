@@ -1,7 +1,7 @@
-t5380.scala:3: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+t5380.scala:3: warning: a pure expression does nothing in statement position
     val f = () => return try { 1 } catch { case _: Throwable => 0 }
                                ^
-t5380.scala:3: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+t5380.scala:3: warning: a pure expression does nothing in statement position
     val f = () => return try { 1 } catch { case _: Throwable => 0 }
                                                                 ^
 t5380.scala:3: warning: enclosing method main has result type Unit: return value discarded

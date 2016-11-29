@@ -37,7 +37,7 @@ Notable packages include:
   - [[scala.sys           `scala.sys`]]    - Interaction with other processes and the operating system
   - [[scala.util.matching `scala.util.matching`]] - [[scala.util.matching.Regex Regular expressions]]
 
-Other packages exist.  See the complete list on the left.
+Other packages exist.  See the complete list on the right.
 
 Additional parts of the standard library are shipped as separate libraries. These include:
 

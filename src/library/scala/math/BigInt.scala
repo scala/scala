@@ -109,7 +109,12 @@ object BigInt {
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
  */
-final class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericConversions with Serializable {
+final class BigInt(val bigInteger: BigInteger)
+  extends ScalaNumber
+    with ScalaNumericConversions
+    with Serializable
+    with Ordered[BigInt]
+{
   /** Returns the hash code for this BigInt. */
   override def hashCode(): Int =
     if (isValidLong) unifiedPrimitiveHashcode()
@@ -155,8 +160,8 @@ final class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNum
       }
     ) && !bitLengthOverflow
   }
-  /** Some implementations of java.math.BigInteger allow huge values with bit length greater than Int.MaxValue .
-   * The BigInteger.bitLength method returns truncated bit length in this case .
+  /** Some implementations of java.math.BigInteger allow huge values with bit length greater than Int.MaxValue.
+   * The BigInteger.bitLength method returns truncated bit length in this case.
    * This method tests if result of bitLength is valid.
    * This method will become unnecessary if BigInt constructors reject huge BigIntegers.
    */
@@ -175,22 +180,6 @@ final class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNum
   /** Compares this BigInt with the specified BigInt
    */
   def compare (that: BigInt): Int = this.bigInteger.compareTo(that.bigInteger)
-
-  /** Less-than-or-equals comparison of BigInts
-   */
-  def <= (that: BigInt): Boolean = compare(that) <= 0
-
-  /** Greater-than-or-equals comparison of BigInts
-   */
-  def >= (that: BigInt): Boolean = compare(that) >= 0
-
-  /** Less-than of BigInts
-   */
-  def <  (that: BigInt): Boolean = compare(that) <  0
-
-  /** Greater-than comparison of BigInts
-   */
-  def >  (that: BigInt): Boolean = compare(that) > 0
 
   /** Addition of BigInts
    */

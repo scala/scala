@@ -2,32 +2,23 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
+
 import scala.tools.asm.Opcodes._
-import org.junit.Assert._
+import scala.tools.partest.ASMConverters._
+import scala.tools.testing.BytecodeTesting
+import scala.tools.testing.BytecodeTesting._
 
-import CodeGenTools._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import scala.tools.testing.ClearAfterClass
-
-object EmptyExceptionHandlersTest extends ClearAfterClass.Clearable {
-  var noOptCompiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:none")
-  var dceCompiler   = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:unreachable-code")
-  def clear(): Unit = {
-    noOptCompiler = null
-    dceCompiler = null
-  }
-}
 
 @RunWith(classOf[JUnit4])
-class EmptyExceptionHandlersTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = EmptyExceptionHandlersTest
+class EmptyExceptionHandlersTest extends BytecodeTesting {
+  override def compilerArgs = "-opt:unreachable-code"
+  def dceCompiler = compiler
 
-  val noOptCompiler = EmptyExceptionHandlersTest.noOptCompiler
-  val dceCompiler   = EmptyExceptionHandlersTest.dceCompiler
+  val noOptCompiler = cached("noOptCompiler", () => newCompiler(extraArgs = "-opt:l:none"))
 
   val exceptionDescriptor = "java/lang/Exception"
 
@@ -69,8 +60,8 @@ class EmptyExceptionHandlersTest extends ClearAfterClass {
   def eliminateUnreachableHandler(): Unit = {
     val code = "def f: Unit = try { } catch { case _: Exception => println(0) }; println(1)"
 
-    assertTrue(singleMethod(noOptCompiler)(code).handlers.length == 1)
-    val optMethod = singleMethod(dceCompiler)(code)
+    assertTrue(noOptCompiler.compileMethod(code).handlers.length == 1)
+    val optMethod = dceCompiler.compileMethod(code)
     assertTrue(optMethod.handlers.isEmpty)
 
     val code2 =
@@ -82,7 +73,7 @@ class EmptyExceptionHandlersTest extends ClearAfterClass {
         |  println(2)
         |}""".stripMargin
 
-    assertTrue(singleMethod(dceCompiler)(code2).handlers.isEmpty)
+    assertTrue(dceCompiler.compileMethod(code2).handlers.isEmpty)
   }
 
   @Test
@@ -94,6 +85,6 @@ class EmptyExceptionHandlersTest extends ClearAfterClass {
         |  catch { case _: Exception => 2 }
         |}""".stripMargin
 
-    assertTrue(singleMethod(dceCompiler)(code).handlers.length == 1)
+    assertTrue(dceCompiler.compileMethod(code).handlers.length == 1)
   }
 }

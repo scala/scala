@@ -34,12 +34,16 @@ object ZippedTraversable3 {
 final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](val colls: (TraversableLike[El1, Repr1], IterableLike[El2, Repr2], IterableLike[El3, Repr3]))
         extends AnyVal with ZippedTraversable3[El1, El2, El3] {
 
-  def map[B, To](f: (El1, El2, El3) => B)(implicit cbf: CBF[Repr1, B, To]): To = {
-    val b = cbf(colls._1.repr)
-    val elems2 = colls._2.iterator
-    val elems3 = colls._3.iterator
+  private def coll1 = colls._1
+  private def coll2 = colls._2
+  private def coll3 = colls._3
 
-    for (el1 <- colls._1) {
+  def map[B, To](f: (El1, El2, El3) => B)(implicit cbf: CBF[Repr1, B, To]): To = {
+    val b = cbf(coll1.repr)
+    val elems2 = coll2.iterator
+    val elems3 = coll3.iterator
+
+    for (el1 <- coll1) {
       if (elems2.hasNext && elems3.hasNext)
         b += f(el1, elems2.next(), elems3.next())
       else
@@ -49,11 +53,11 @@ final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](val colls: (Travers
   }
 
   def flatMap[B, To](f: (El1, El2, El3) => TraversableOnce[B])(implicit cbf: CBF[Repr1, B, To]): To = {
-    val b = cbf(colls._1.repr)
-    val elems2 = colls._2.iterator
-    val elems3 = colls._3.iterator
+    val b = cbf(coll1.repr)
+    val elems2 = coll2.iterator
+    val elems3 = coll3.iterator
 
-    for (el1 <- colls._1) {
+    for (el1 <- coll1) {
       if (elems2.hasNext && elems3.hasNext)
         b ++= f(el1, elems2.next(), elems3.next())
       else
@@ -66,14 +70,14 @@ final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](val colls: (Travers
                implicit cbf1: CBF[Repr1, El1, To1],
                         cbf2: CBF[Repr2, El2, To2],
                         cbf3: CBF[Repr3, El3, To3]): (To1, To2, To3) = {
-    val b1 = cbf1(colls._1.repr)
-    val b2 = cbf2(colls._2.repr)
-    val b3 = cbf3(colls._3.repr)
-    val elems2 = colls._2.iterator
-    val elems3 = colls._3.iterator
+    val b1 = cbf1(coll1.repr)
+    val b2 = cbf2(coll2.repr)
+    val b3 = cbf3(coll3.repr)
+    val elems2 = coll2.iterator
+    val elems3 = coll3.iterator
     def result = (b1.result(), b2.result(), b3.result())
 
-    for (el1 <- colls._1) {
+    for (el1 <- coll1) {
       if (elems2.hasNext && elems3.hasNext) {
         val el2 = elems2.next()
         val el3 = elems3.next()
@@ -91,10 +95,10 @@ final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](val colls: (Travers
   }
 
   def exists(@deprecatedName('f) p: (El1, El2, El3) => Boolean): Boolean = {
-    val elems2 = colls._2.iterator
-    val elems3 = colls._3.iterator
+    val elems2 = coll2.iterator
+    val elems3 = coll3.iterator
 
-    for (el1 <- colls._1) {
+    for (el1 <- coll1) {
       if (elems2.hasNext && elems3.hasNext) {
         if (p(el1, elems2.next(), elems3.next()))
           return true
@@ -108,10 +112,10 @@ final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](val colls: (Travers
     !exists((x, y, z) => !p(x, y, z))
 
   def foreach[U](f: (El1, El2, El3) => U): Unit = {
-    val elems2 = colls._2.iterator
-    val elems3 = colls._3.iterator
+    val elems2 = coll2.iterator
+    val elems3 = coll3.iterator
 
-    for (el1 <- colls._1) {
+    for (el1 <- coll1) {
       if (elems2.hasNext && elems3.hasNext)
         f(el1, elems2.next(), elems3.next())
       else
@@ -119,11 +123,11 @@ final class Tuple3Zipped[El1, Repr1, El2, Repr2, El3, Repr3](val colls: (Travers
     }
   }
 
-  override def toString: String = "(%s, %s, %s).zipped".format(colls._1.toString, colls._2.toString, colls._3.toString)
+  override def toString = s"($coll1, $coll2, $coll3).zipped"
 }
 
 object Tuple3Zipped {
-  final class Ops[T1, T2, T3](val x: (T1, T2, T3)) extends AnyVal {
+  final class Ops[T1, T2, T3](private val x: (T1, T2, T3)) extends AnyVal {
     def invert[El1, CC1[X] <: TraversableOnce[X], El2, CC2[X] <: TraversableOnce[X], El3, CC3[X] <: TraversableOnce[X], That]
       (implicit w1: T1 <:< CC1[El1],
                 w2: T2 <:< CC2[El2],

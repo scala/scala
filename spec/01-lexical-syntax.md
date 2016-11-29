@@ -41,7 +41,7 @@ classes (Unicode general category given in parentheses):
 1. Parentheses `‘(’ | ‘)’ | ‘[’ | ‘]’ | ‘{’ | ‘}’ `.
 1. Delimiter characters ``‘`’ | ‘'’ | ‘"’ | ‘.’ | ‘;’ | ‘,’ ``.
 1. Operator characters. These consist of all printable ASCII characters
-   `\u0020` - `\u007F` which are in none of the sets above, mathematical
+   (`\u0020` - `\u007E`) that are in none of the sets above, mathematical
    symbols (`Sm`) and other symbols (`So`).
 
 ## Identifiers
@@ -49,6 +49,8 @@ classes (Unicode general category given in parentheses):
 ```ebnf
 op       ::=  opchar {opchar}
 varid    ::=  lower idrest
+boundvarid ::=  varid
+             | ‘`’ varid ‘`’
 plainid  ::=  upper idrest
            |  varid
            |  op

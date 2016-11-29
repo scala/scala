@@ -1,1 +1,1 @@
--Yinline-warnings -Yopt:l:classpath
+-opt-warnings -opt:l:classpath

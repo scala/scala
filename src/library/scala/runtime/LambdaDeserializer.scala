@@ -31,10 +31,13 @@ object LambdaDeserializer {
    *                    member of the anonymous class created by `LambdaMetaFactory`.
    * @return            An instance of the functional interface
    */
-  def deserializeLambda(lookup: MethodHandles.Lookup, cache: java.util.Map[String, MethodHandle], serialized: SerializedLambda): AnyRef = {
+  def deserializeLambda(lookup: MethodHandles.Lookup, cache: java.util.Map[String, MethodHandle],
+                        targetMethodMap: java.util.Map[String, MethodHandle], serialized: SerializedLambda): AnyRef = {
+    assert(targetMethodMap != null)
     def slashDot(name: String) = name.replaceAll("/", ".")
     val loader = lookup.lookupClass().getClassLoader
     val implClass = loader.loadClass(slashDot(serialized.getImplClass))
+    val key = LambdaDeserialize.nameAndDescriptorKey(serialized.getImplMethodName, serialized.getImplMethodSignature)
 
     def makeCallSite: CallSite = {
       import serialized._
@@ -69,7 +72,11 @@ object LambdaDeserializer {
 
       // Lookup the implementation method
       val implMethod: MethodHandle = try {
-        findMember(lookup, getImplMethodKind, implClass, getImplMethodName, implMethodSig)
+        if (targetMethodMap.containsKey(key)) {
+          targetMethodMap.get(key)
+        } else {
+          throw new IllegalArgumentException("Illegal lambda deserialization")
+        }
       } catch {
         case e: ReflectiveOperationException => throw new IllegalArgumentException("Illegal lambda deserialization", e)
       }
@@ -91,16 +98,17 @@ object LambdaDeserializer {
       )
     }
 
-    val key = serialized.getImplMethodName + " : " + serialized.getImplMethodSignature
     val factory: MethodHandle = if (cache == null) {
       makeCallSite.getTarget
-    } else cache.get(key) match {
-      case null =>
-        val callSite = makeCallSite
-        val temp = callSite.getTarget
-        cache.put(key, temp)
-        temp
-      case target => target
+    } else cache.synchronized{
+      cache.get(key) match {
+        case null =>
+          val callSite = makeCallSite
+          val temp = callSite.getTarget
+          cache.put(key, temp)
+          temp
+        case target => target
+      }
     }
 
     val captures = Array.tabulate(serialized.getCapturedArgCount)(n => serialized.getCapturedArg(n))
@@ -114,19 +122,5 @@ object LambdaDeserializer {
     // the FLAG_SERIALIZABLE is set and of the provided markers extend it. But the code
     // is cleaner if we uniformly add a single marker, so I'm leaving it in place.
     "java.io.Serializable"
-  }
-
-  private def findMember(lookup: MethodHandles.Lookup, kind: Int, owner: Class[_],
-                         name: String, signature: MethodType): MethodHandle = {
-    kind match {
-      case MethodHandleInfo.REF_invokeStatic =>
-        lookup.findStatic(owner, name, signature)
-      case MethodHandleInfo.REF_newInvokeSpecial =>
-        lookup.findConstructor(owner, signature)
-      case MethodHandleInfo.REF_invokeVirtual | MethodHandleInfo.REF_invokeInterface =>
-        lookup.findVirtual(owner, name, signature)
-      case MethodHandleInfo.REF_invokeSpecial =>
-        lookup.findSpecial(owner, name, signature, owner)
-    }
   }
 }

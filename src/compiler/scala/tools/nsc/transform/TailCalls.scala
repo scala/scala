@@ -69,7 +69,7 @@ abstract class TailCalls extends Transform {
    *   are optimized. Since 'this' is not a local variable, a dummy local val
    *   is added and used as a label parameter. The backend knows to load
    *   the corresponding argument in the 'this' (local at index 0). This dummy local
-   *   is never used and should be cleand up by dead code elimination (when enabled).
+   *   is never used and should be cleaned up by dead code elimination (when enabled).
    * </p>
    * <p>
    *   This phase has been moved before pattern matching to catch more
@@ -274,10 +274,8 @@ abstract class TailCalls extends Transform {
       import runDefinitions.{Boolean_or, Boolean_and}
 
       tree match {
-        case ValDef(_, _, _, _) =>
-          if (tree.symbol.isLazy && tree.symbol.hasAnnotation(TailrecClass))
-            reporter.error(tree.pos, "lazy vals are not tailcall transformed")
-
+        case dd: DefDef if tree.symbol.isLazy && tree.symbol.hasAnnotation(TailrecClass) =>
+          reporter.error(tree.pos, "lazy vals are not tailcall transformed")
           super.transform(tree)
 
         case dd @ DefDef(_, name, _, vparamss0, _, rhs0) if isEligible(dd) =>

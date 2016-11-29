@@ -7,8 +7,8 @@
 \*                                                                      */
 
 // DO NOT EDIT, CHANGES WILL BE LOST
-// This auto-generated code can be modified in scala.tools.cmd.gen.
-// Afterwards, running tools/codegen-anyvals regenerates this source file.
+// This auto-generated code can be modified in "project/GenerateAnyVals.scala".
+// Afterwards, running "sbt generateSources" regenerates this source file.
 
 package scala
 
@@ -102,7 +102,8 @@ final abstract class Boolean private extends AnyVal {
     */
   def ^(x: Boolean): Boolean
 
-  override def getClass(): Class[Boolean] = null
+  // Provide a more specific return type for Scaladoc
+  override def getClass(): Class[Boolean] = ???
 }
 
 object Boolean extends AnyValCompanion {
@@ -114,7 +115,7 @@ object Boolean extends AnyValCompanion {
    *  @param  x   the Boolean to be boxed
    *  @return     a java.lang.Boolean offering `x` as its underlying value.
    */
-  def box(x: Boolean): java.lang.Boolean = java.lang.Boolean.valueOf(x)
+  def box(x: Boolean): java.lang.Boolean = ???
 
   /** Transform a boxed type into a value type.  Note that this
    *  method is not typesafe: it accepts any Object, but will throw
@@ -126,7 +127,7 @@ object Boolean extends AnyValCompanion {
    *  @throws     ClassCastException  if the argument is not a java.lang.Boolean
    *  @return     the Boolean resulting from calling booleanValue() on `x`
    */
-  def unbox(x: java.lang.Object): Boolean = x.asInstanceOf[java.lang.Boolean].booleanValue()
+  def unbox(x: java.lang.Object): Boolean = ???
 
   /** The String representation of the scala.Boolean companion object. */
   override def toString = "object scala.Boolean"

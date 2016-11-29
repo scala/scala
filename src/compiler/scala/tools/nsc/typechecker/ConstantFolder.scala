@@ -40,9 +40,10 @@ abstract class ConstantFolder {
       if ((x ne null) && x.tag != UnitTag) tree setType ConstantType(x)
       else tree
     } catch {
-      case _: ArithmeticException => tree   // the code will crash at runtime,
-                                           // but that is better than the
-                                           // compiler itself crashing
+      case e: ArithmeticException =>
+        if (settings.warnConstant)
+          warning(tree.pos, s"Evaluation of a constant expression results in an arithmetic error: ${e.getMessage}")
+        tree
     }
 
   private def foldUnop(op: Name, x: Constant): Constant = (op, x.tag) match {
@@ -158,7 +159,7 @@ abstract class ConstantFolder {
       else if (x.isNumeric && y.isNumeric) math.max(x.tag, y.tag)
       else NoTag
 
-    try optag match {
+    optag match {
       case BooleanTag                               => foldBooleanOp(op, x, y)
       case ByteTag | ShortTag | CharTag | IntTag    => foldSubrangeOp(op, x, y)
       case LongTag                                  => foldLongOp(op, x, y)
@@ -166,9 +167,6 @@ abstract class ConstantFolder {
       case DoubleTag                                => foldDoubleOp(op, x, y)
       case StringTag if op == nme.ADD               => Constant(x.stringValue + y.stringValue)
       case _                                        => null
-    }
-    catch {
-      case _: ArithmeticException => null
     }
   }
 }

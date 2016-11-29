@@ -154,7 +154,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       }
       def apply(schemaAndValue: (jClass[_], Any)): ClassfileAnnotArg = schemaAndValue match {
         case ConstantArg(value)                      => LiteralAnnotArg(Constant(value))
-        case (clazz @ ArrayClass(), value: Array[_]) => ArrayAnnotArg(value map (x => apply(ScalaRunTime.arrayElementClass(clazz) -> x)))
+        case (clazz @ ArrayClass(), value: Array[_]) => ArrayAnnotArg(value map (x => apply(clazz.getComponentType -> x)))
         case (AnnotationClass(), value: jAnnotation) => NestedAnnotArg(JavaAnnotationProxy(value))
         case _                                       => UnmappableAnnotArg
       }
@@ -475,9 +475,9 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         }
 
         symbol match {
-          case Any_== | Object_==                     => ScalaRunTime.inlinedEquals(objReceiver, objArg0)
-          case Any_!= | Object_!=                     => !ScalaRunTime.inlinedEquals(objReceiver, objArg0)
-          case Any_## | Object_##                     => ScalaRunTime.hash(objReceiver)
+          case Any_== | Object_==                     => objReceiver == objArg0
+          case Any_!= | Object_!=                     => objReceiver != objArg0
+          case Any_## | Object_##                     => objReceiver.##
           case Any_equals                             => receiver.equals(objArg0)
           case Any_hashCode                           => receiver.hashCode
           case Any_toString                           => receiver.toString
@@ -578,7 +578,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
      *  @param   jclazz  The Java class which contains the unpickled information in a
      *                   ScalaSignature or ScalaLongSignature annotation.
      */
-    def unpickleClass(clazz: Symbol, module: Symbol, jclazz: jClass[_]): Unit = {
+    def unpickleClass(clazz: ClassSymbol, module: ModuleSymbol, jclazz: jClass[_]): Unit = {
       def markAbsent(tpe: Type) = setAllInfos(clazz, module, tpe)
       def handleError(ex: Exception) = {
         markAbsent(ErrorType)
@@ -613,7 +613,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         loadBytes[String]("scala.reflect.ScalaSignature") match {
           case Some(ssig) =>
             info(s"unpickling Scala $clazz and $module, owner = ${clazz.owner}")
-            val bytes = ssig.getBytes
+            val bytes = ssig.getBytes(java.nio.charset.StandardCharsets.UTF_8)
             val len = ByteCodecs.decode(bytes)
             assignAssociatedFile(clazz, module, jclazz)
             unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
@@ -622,7 +622,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
             loadBytes[Array[String]]("scala.reflect.ScalaLongSignature") match {
               case Some(slsig) =>
                 info(s"unpickling Scala $clazz and $module with long Scala signature")
-                val encoded = slsig flatMap (_.getBytes)
+                val encoded = slsig flatMap (_.getBytes(java.nio.charset.StandardCharsets.UTF_8))
                 val len = ByteCodecs.decode(encoded)
                 val decoded = encoded.take(len)
                 assignAssociatedFile(clazz, module, jclazz)
@@ -999,9 +999,9 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         }
 
         val cls =
-          if (jclazz.isMemberClass && !nme.isImplClassName(jname))
+          if (jclazz.isMemberClass)
             lookupClass
-          else if (jclazz.isLocalClass0 || scalacShouldntLoadClass(jname))
+          else if (jclazz.isLocalClass0)
             // local classes and implementation classes not preserved by unpickling - treat as Java
             //
             // upd. but only if they cannot be loaded as top-level classes
@@ -1161,6 +1161,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       propagatePackageBoundary(jmeth.javaFlags, meth)
       copyAnnotations(meth, jmeth)
       if (jmeth.javaFlags.isVarargs) meth modifyInfo arrayToRepeated
+      if (jmeth.getDefaultValue != null) meth.addAnnotation(AnnotationDefaultAttr)
       markAllCompleted(meth)
       meth
     }

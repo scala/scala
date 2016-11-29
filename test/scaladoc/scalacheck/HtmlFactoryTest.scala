@@ -26,10 +26,9 @@ object Test extends Properties("HtmlFactory") {
 
   final val RESOURCES = "test/scaladoc/resources/"
 
+  import scala.tools.nsc.ScalaDocReporter
   import scala.tools.nsc.doc.{DocFactory, Settings}
-  import scala.tools.nsc.doc.model.IndexModelFactory
   import scala.tools.nsc.doc.html.HtmlFactory
-  import scala.tools.nsc.doc.html.page.ReferenceIndex
 
   def getClasspath = {
     // these things can be tricky
@@ -58,8 +57,7 @@ object Test extends Properties("HtmlFactory") {
 
     createFactory.makeUniverse(Left(List(RESOURCES+basename))) match {
       case Some(universe) => {
-        val index = IndexModelFactory.makeIndex(universe)
-        (new HtmlFactory(universe, index)).writeTemplates((page) => {
+        new HtmlFactory(universe, new ScalaDocReporter(universe.settings)).writeTemplates((page) => {
           result += (page.absoluteLinkTo(page.path) -> page.body)
         })
       }
@@ -67,23 +65,6 @@ object Test extends Properties("HtmlFactory") {
     }
 
     result
-  }
-
-  def createReferenceIndex(basename: String) = {
-    createFactory.makeUniverse(Left(List(RESOURCES+basename))) match {
-      case Some(universe) => {
-        val index = IndexModelFactory.makeIndex(universe)
-        val pages = index.firstLetterIndex.map({
-          case (key, value) => {
-            val page = new ReferenceIndex(key, index, universe)
-            page.absoluteLinkTo(page.path) -> page.body
-          }
-        })
-        Some(pages)
-      }
-      case _ =>
-        None
-    }
   }
 
   def createTemplate(scala: String) = {
@@ -332,27 +313,6 @@ object Test extends Properties("HtmlFactory") {
     createTemplate("Trac4452.scala") match {
       case node: scala.xml.Node =>
         ! node.toString.contains(">*")
-      case _ => false
-    }
-  }
-
-  property("Trac #4471") = {
-    createReferenceIndex("Trac4471.scala") match {
-      case Some(pages) =>
-        (pages.get("index/index-f.html") match {
-          case Some(node) => node.toString.contains(">A</a></strike>")
-          case _ => false
-        }) && (pages.get("index/index-b.html") match {
-          case Some(node) => node.toString.contains(">bar</strike>")
-          case _ => false
-        })
-      case _ => false
-    }
-  }
-
-  property("SI-4641") = {
-    createReferenceIndex("SI_4641.scala") match {
-      case Some(pages) => pages.contains("index/index-_.html")
       case _ => false
     }
   }
@@ -723,9 +683,9 @@ object Test extends Properties("HtmlFactory") {
       }
       case _ => false
     }
-    property("package") = files.get("com/example/p1/package.html") != None
+    property("package") = files.get("com/example/p1/index.html") != None
 
-    property("package object") = files("com/example/p1/package.html") match {
+    property("package object") = files("com/example/p1/index.html") match {
       case node: scala.xml.Node =>
         node.toString contains "com.example.p1#packageObjectMethod"
       case _ => false
@@ -743,13 +703,13 @@ object Test extends Properties("HtmlFactory") {
 
     property("SI-8514: No inconsistencies") =
       checkText("SI-8514.scala")(
-        (Some("a/package"),
+        (Some("a/index"),
          """class A extends AnyRef
             Some doc here
             Some doc here
             Annotations @DeveloperApi()
          """, true),
-        (Some("a/package"),
+        (Some("a/index"),
          """class B extends AnyRef
             Annotations @DeveloperApi()
          """, true)
@@ -771,17 +731,17 @@ object Test extends Properties("HtmlFactory") {
 
       def assertTypeLink(expectedUrl: String): Boolean = {
         val linkElement: NodeSeq = node \\ "div" \@ ("id", "definition") \\ "span" \@ ("class", "permalink") \ "a"
-        linkElement \@ "href" == expectedUrl && linkElement \@ "target" == "_top"
+        linkElement \@ "href" == expectedUrl
       }
 
       def assertMemberLink(group: String)(memberName: String, expectedUrl: String): Boolean = {
         val linkElement: NodeSeq = node \\ "div" \@ ("id", group) \\ "li" \@ ("name", memberName) \\ "span" \@ ("class", "permalink") \ "a"
-        linkElement \@ "href" == expectedUrl && linkElement \@ "target" == "_top"
+        linkElement \@ "href" == expectedUrl
       }
 
       def assertValuesLink(memberName: String, expectedUrl: String): Boolean = {
         val linkElement: NodeSeq = node \\ "div" \@ ("class", "values members") \\ "li" \@ ("name", memberName) \\ "span" \@ ("class", "permalink") \ "a"
-        linkElement \@ "href" == expectedUrl && linkElement \@ "target" == "_top"
+        linkElement \@ "href" == expectedUrl
       }
 
     }
@@ -794,29 +754,31 @@ object Test extends Properties("HtmlFactory") {
         case _ => false
       }
 
-    property("SI-8144: Members' permalink - package") = check("some/package.html") { node =>
-      ("type link" |: node.assertTypeLink("../index.html#some.package")) &&
-        ("member: some.pack" |: node.assertValuesLink("some.pack", "../index.html#some.package@pack"))
-    }
-
-    property("SI-8144: Members' permalink - inner package") = check("some/pack/package.html") { node =>
-      ("type link" |: node.assertTypeLink("../../index.html#some.pack.package")) &&
-        ("member: SomeType (object)" |: node.assertValuesLink("some.pack.SomeType", "../../index.html#some.pack.package@SomeType")) &&
-        ("member: SomeType (class)" |: node.assertMemberLink("types")("some.pack.SomeType", "../../index.html#some.pack.package@SomeTypeextendsAnyRef"))
+    property("SI-8144: Members' permalink - inner package") = check("some/pack/index.html") { node =>
+      ("type link" |: node.assertTypeLink("../../some/pack/index.html")) &&
+        ("member: SomeType (object)" |: node.assertValuesLink("some.pack.SomeType", "../../some/pack/index.html#SomeType")) &&
+        ("member: SomeType (class)" |: node.assertMemberLink("types")("some.pack.SomeType", "../../some/pack/index.html#SomeTypeextendsAnyRef"))
     }
 
     property("SI-8144: Members' permalink - companion object") = check("some/pack/SomeType$.html") { node =>
-      ("type link" |: node.assertTypeLink("../../index.html#some.pack.SomeType$")) &&
-        ("member: someVal" |: node.assertMemberLink("allMembers")("some.pack.SomeType#someVal", "../../index.html#some.pack.SomeType$@someVal:String"))
+      ("type link" |: node.assertTypeLink("../../some/pack/SomeType$.html")) &&
+        ("member: someVal" |: node.assertMemberLink("allMembers")("some.pack.SomeType#someVal", "../../some/pack/SomeType$.html#someVal:String"))
     }
 
     property("SI-8144: Members' permalink - class") = check("some/pack/SomeType.html") { node =>
-      ("type link" |: node.assertTypeLink("../../index.html#some.pack.SomeType")) &&
-      ("constructor " |: node.assertMemberLink("constructors")("some.pack.SomeType#<init>", "../../index.html#some.pack.SomeType@<init>(arg:String):some.pack.SomeType")) &&
-        ( "member: type TypeAlias" |: node.assertMemberLink("types")("some.pack.SomeType.TypeAlias", "../../index.html#some.pack.SomeType@TypeAlias=String")) &&
-        ( "member: def >#<():Int " |: node.assertValuesLink("some.pack.SomeType#>#<", "../../index.html#some.pack.SomeType@>#<():Int")) &&
-        ( "member: def >@<():TypeAlias " |: node.assertValuesLink("some.pack.SomeType#>@<", "../../index.html#some.pack.SomeType@>@<():SomeType.this.TypeAlias"))
+      ("type link" |: node.assertTypeLink("../../some/pack/SomeType.html")) &&
+      ("constructor " |: node.assertMemberLink("constructors")("some.pack.SomeType#<init>", "../../some/pack/SomeType.html#<init>(arg:String):some.pack.SomeType")) &&
+        ( "member: type TypeAlias" |: node.assertMemberLink("types")("some.pack.SomeType.TypeAlias", "../../some/pack/SomeType.html#TypeAlias=String")) &&
+        ( "member: def >#<():Int " |: node.assertValuesLink("some.pack.SomeType#>#<", "../../some/pack/SomeType.html#>#<():Int")) &&
+        ( "member: def >@<():TypeAlias " |: node.assertValuesLink("some.pack.SomeType#>@<", "../../some/pack/SomeType.html#>@<():SomeType.this.TypeAlias"))
     }
 
+  }
+
+  property("SI-9599 Multiple @todo formatted with comma on separate line") = {
+    createTemplates("SI-9599.scala")("X.html") match {
+      case node: scala.xml.Node => node.text.contains("todo3todo2todo1")
+      case _ => false
+    }
   }
 }

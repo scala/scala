@@ -11,7 +11,6 @@ package collection
 package mutable
 
 import scala.reflect.ClassTag
-import scala.runtime.ScalaRunTime._
 import parallel.mutable.ParArray
 
 /** This class serves as a wrapper for `Array`s with all the operations found in
@@ -32,19 +31,29 @@ import parallel.mutable.ParArray
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@deprecatedInheritance("ArrayOps will be sealed to facilitate greater flexibility with array/collections integration in future releases.", "2.11.0")
-trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParallelizable[T, ParArray[T]] {
+sealed trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParallelizable[T, ParArray[T]] {
 
   private def elementClass: Class[_] =
-    arrayElementClass(repr.getClass)
+    repr.getClass.getComponentType
 
   override def copyToArray[U >: T](xs: Array[U], start: Int, len: Int) {
     val l = len min repr.length min (xs.length - start)
     if (l > 0) Array.copy(repr, 0, xs, start, l)
   }
 
+  override def slice(from: Int, until: Int): Array[T] = {
+     val lo = math.max(from, 0)
+     val hi = math.min(math.max(until, 0), repr.length)
+     val size = math.max(hi - lo, 0)
+     val result = java.lang.reflect.Array.newInstance(elementClass, size)
+     if (size > 0) {
+      Array.copy(repr, lo, result, 0, size)
+     }
+     result.asInstanceOf[Array[T]]
+  }
+
   override def toArray[U >: T : ClassTag]: Array[U] = {
-    val thatElementClass = arrayElementClass(implicitly[ClassTag[U]])
+    val thatElementClass = implicitly[ClassTag[U]].runtimeClass
     if (elementClass eq thatElementClass)
       repr.asInstanceOf[Array[U]]
     else
@@ -92,7 +101,7 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
     val bb: Builder[Array[U], Array[Array[U]]] = Array.newBuilder(ClassTag[Array[U]](elementClass))
     if (isEmpty) bb.result()
     else {
-      def mkRowBuilder() = Array.newBuilder(ClassTag[U](arrayElementClass(elementClass)))
+      def mkRowBuilder() = Array.newBuilder(ClassTag[U](elementClass.getComponentType))
       val bs = asArray(head) map (_ => mkRowBuilder())
       for (xs <- this) {
         var i = 0
@@ -185,7 +194,7 @@ object ArrayOps {
 
     override protected[this] def thisCollection: WrappedArray[T] = new WrappedArray.ofRef[T](repr)
     override protected[this] def toCollection(repr: Array[T]): WrappedArray[T] = new WrappedArray.ofRef[T](repr)
-    override protected[this] def newBuilder = new ArrayBuilder.ofRef[T]()(ClassTag[T](arrayElementClass(repr.getClass)))
+    override protected[this] def newBuilder = new ArrayBuilder.ofRef[T]()(ClassTag[T](repr.getClass.getComponentType))
 
     def length: Int = repr.length
     def apply(index: Int): T = repr(index)

@@ -1,0 +1,273 @@
+trait_fields_conflicts.scala:5: error: overriding value x in trait Val of type Int;
+ value x needs `override' modifier
+trait ValForVal extends Val { val x: Int = 1 } // needs override
+                                  ^
+trait_fields_conflicts.scala:6: error: overriding value x in trait Val of type Int;
+ variable x needs `override' modifier
+trait VarForVal extends Val { var x: Int = 1 } // needs override
+                                  ^
+trait_fields_conflicts.scala:7: error: overriding value x in trait Val of type Int;
+ method x needs `override' modifier
+trait DefForVal extends Val { def x: Int = 1 } // needs override
+                                  ^
+trait_fields_conflicts.scala:8: error: overriding variable x in trait Var of type Int;
+ value x needs `override' modifier
+trait ValForVar extends Var { val x: Int = 1 } // needs override
+                                  ^
+trait_fields_conflicts.scala:9: error: overriding variable x in trait Var of type Int;
+ variable x needs `override' modifier
+trait VarForVar extends Var { var x: Int = 1 } // needs override
+                                  ^
+trait_fields_conflicts.scala:10: error: overriding variable x in trait Var of type Int;
+ method x needs `override' modifier
+trait DefForVar extends Var { def x: Int = 1 } // needs override
+                                  ^
+trait_fields_conflicts.scala:11: error: overriding lazy value x in trait Lazy of type Int;
+ value x needs `override' modifier
+trait ValForLazy extends Lazy { val x: Int = 1 } // needs override
+                                    ^
+trait_fields_conflicts.scala:12: error: overriding lazy value x in trait Lazy of type Int;
+ variable x needs `override' modifier
+trait VarForLazy extends Lazy { var x: Int = 1 } // needs override
+                                    ^
+trait_fields_conflicts.scala:13: error: overriding lazy value x in trait Lazy of type Int;
+ method x needs `override' modifier
+trait DefForLazy extends Lazy { def x: Int = 1 } // needs override
+                                    ^
+trait_fields_conflicts.scala:16: error: overriding value x in trait Val of type Int;
+ variable x needs to be a stable, immutable value
+trait VarForValOvr extends Val { override var x: Int = 1 } // bad override
+                                              ^
+trait_fields_conflicts.scala:17: error: overriding value x in trait Val of type Int;
+ method x needs to be a stable, immutable value
+trait DefForValOvr extends Val { override def x: Int = 1 } // bad override
+                                              ^
+trait_fields_conflicts.scala:18: error: overriding variable x in trait Var of type Int;
+ value x cannot override a mutable variable
+trait ValForVarOvr extends Var { override val x: Int = 1 } // bad override -- unsound if used in path and var changes
+                                              ^
+trait_fields_conflicts.scala:19: error: overriding variable x in trait Var of type Int;
+ variable x cannot override a mutable variable
+trait VarForVarOvr extends Var { override var x: Int = 1 } // bad override -- why?
+                                              ^
+trait_fields_conflicts.scala:20: error: overriding variable x in trait Var of type Int;
+ method x cannot override a mutable variable
+trait DefForVarOvr extends Var { override def x: Int = 1 } // bad override -- why?
+                                              ^
+trait_fields_conflicts.scala:21: error: overriding lazy value x in trait Lazy of type Int;
+ value x must be declared lazy to override a concrete lazy value
+trait ValForLazyOvr extends Lazy { override val x: Int = 1 } // bad override -- why?
+                                                ^
+trait_fields_conflicts.scala:22: error: overriding lazy value x in trait Lazy of type Int;
+ variable x needs to be a stable, immutable value
+trait VarForLazyOvr extends Lazy { override var x: Int = 1 } // bad override -- why?
+                                                ^
+trait_fields_conflicts.scala:23: error: overriding lazy value x in trait Lazy of type Int;
+ method x needs to be a stable, immutable value
+trait DefForLazyOvr extends Lazy { override def x: Int = 1 } // bad override -- why?
+                                                ^
+trait_fields_conflicts.scala:25: error: overriding value x in trait Val of type Int;
+ value x needs `override' modifier
+class CValForVal extends Val { val x: Int = 1 } // needs override
+                                   ^
+trait_fields_conflicts.scala:26: error: overriding value x in trait Val of type Int;
+ variable x needs `override' modifier
+class CVarForVal extends Val { var x: Int = 1 } // needs override
+                                   ^
+trait_fields_conflicts.scala:27: error: overriding value x in trait Val of type Int;
+ method x needs `override' modifier
+class CDefForVal extends Val { def x: Int = 1 } // needs override
+                                   ^
+trait_fields_conflicts.scala:28: error: overriding variable x in trait Var of type Int;
+ value x needs `override' modifier
+class CValForVar extends Var { val x: Int = 1 } // needs override
+                                   ^
+trait_fields_conflicts.scala:29: error: overriding variable x in trait Var of type Int;
+ variable x needs `override' modifier
+class CVarForVar extends Var { var x: Int = 1 } // needs override
+                                   ^
+trait_fields_conflicts.scala:30: error: overriding variable x in trait Var of type Int;
+ method x needs `override' modifier
+class CDefForVar extends Var { def x: Int = 1 } // needs override
+                                   ^
+trait_fields_conflicts.scala:31: error: overriding lazy value x in trait Lazy of type Int;
+ value x needs `override' modifier
+class CValForLazy extends Lazy { val x: Int = 1 } // needs override
+                                     ^
+trait_fields_conflicts.scala:32: error: overriding lazy value x in trait Lazy of type Int;
+ variable x needs `override' modifier
+class CVarForLazy extends Lazy { var x: Int = 1 } // needs override
+                                     ^
+trait_fields_conflicts.scala:33: error: overriding lazy value x in trait Lazy of type Int;
+ method x needs `override' modifier
+class CDefForLazy extends Lazy { def x: Int = 1 } // needs override
+                                     ^
+trait_fields_conflicts.scala:36: error: overriding value x in trait Val of type Int;
+ variable x needs to be a stable, immutable value
+class CVarForValOvr extends Val { override var x: Int = 1 } // bad override
+                                               ^
+trait_fields_conflicts.scala:37: error: overriding value x in trait Val of type Int;
+ method x needs to be a stable, immutable value
+class CDefForValOvr extends Val { override def x: Int = 1 } // bad override
+                                               ^
+trait_fields_conflicts.scala:38: error: overriding variable x in trait Var of type Int;
+ value x cannot override a mutable variable
+class CValForVarOvr extends Var { override val x: Int = 1 } // bad override -- unsound if used in path and var changes
+                                               ^
+trait_fields_conflicts.scala:39: error: overriding variable x in trait Var of type Int;
+ variable x cannot override a mutable variable
+class CVarForVarOvr extends Var { override var x: Int = 1 } // bad override -- why?
+                                               ^
+trait_fields_conflicts.scala:40: error: overriding variable x in trait Var of type Int;
+ method x cannot override a mutable variable
+class CDefForVarOvr extends Var { override def x: Int = 1 } // bad override -- why?
+                                               ^
+trait_fields_conflicts.scala:41: error: overriding lazy value x in trait Lazy of type Int;
+ value x must be declared lazy to override a concrete lazy value
+class CValForLazyOvr extends Lazy { override val x: Int = 1 } // bad override -- why?
+                                                 ^
+trait_fields_conflicts.scala:42: error: overriding lazy value x in trait Lazy of type Int;
+ variable x needs to be a stable, immutable value
+class CVarForLazyOvr extends Lazy { override var x: Int = 1 } // bad override -- why?
+                                                 ^
+trait_fields_conflicts.scala:43: error: overriding lazy value x in trait Lazy of type Int;
+ method x needs to be a stable, immutable value
+class CDefForLazyOvr extends Lazy { override def x: Int = 1 } // bad override -- why?
+                                                 ^
+trait_fields_conflicts.scala:49: error: overriding value x in class CVal of type Int;
+ value x needs `override' modifier
+trait ValForCVal extends CVal { val x: Int = 1 } // needs override
+                                    ^
+trait_fields_conflicts.scala:50: error: overriding value x in class CVal of type Int;
+ variable x needs `override' modifier
+trait VarForCVal extends CVal { var x: Int = 1 } // needs override
+                                    ^
+trait_fields_conflicts.scala:51: error: overriding value x in class CVal of type Int;
+ method x needs `override' modifier
+trait DefForCVal extends CVal { def x: Int = 1 } // needs override
+                                    ^
+trait_fields_conflicts.scala:52: error: overriding variable x in class CVar of type Int;
+ value x needs `override' modifier
+trait ValForCVar extends CVar { val x: Int = 1 } // needs override
+                                    ^
+trait_fields_conflicts.scala:53: error: overriding variable x in class CVar of type Int;
+ variable x needs `override' modifier
+trait VarForCVar extends CVar { var x: Int = 1 } // needs override
+                                    ^
+trait_fields_conflicts.scala:54: error: overriding variable x in class CVar of type Int;
+ method x needs `override' modifier
+trait DefForCVar extends CVar { def x: Int = 1 } // needs override
+                                    ^
+trait_fields_conflicts.scala:55: error: overriding lazy value x in class CLazy of type Int;
+ value x needs `override' modifier
+trait ValForCLazy extends CLazy { val x: Int = 1 } // needs override
+                                      ^
+trait_fields_conflicts.scala:56: error: overriding lazy value x in class CLazy of type Int;
+ variable x needs `override' modifier
+trait VarForCLazy extends CLazy { var x: Int = 1 } // needs override
+                                      ^
+trait_fields_conflicts.scala:57: error: overriding lazy value x in class CLazy of type Int;
+ method x needs `override' modifier
+trait DefForCLazy extends CLazy { def x: Int = 1 } // needs override
+                                      ^
+trait_fields_conflicts.scala:60: error: overriding value x in class CVal of type Int;
+ variable x needs to be a stable, immutable value
+trait VarForCValOvr extends CVal { override var x: Int = 1 } // bad override
+                                                ^
+trait_fields_conflicts.scala:61: error: overriding value x in class CVal of type Int;
+ method x needs to be a stable, immutable value
+trait DefForCValOvr extends CVal { override def x: Int = 1 } // bad override
+                                                ^
+trait_fields_conflicts.scala:62: error: overriding variable x in class CVar of type Int;
+ value x cannot override a mutable variable
+trait ValForCVarOvr extends CVar { override val x: Int = 1 } // bad override -- unsound if used in path and var changes
+                                                ^
+trait_fields_conflicts.scala:63: error: overriding variable x in class CVar of type Int;
+ variable x cannot override a mutable variable
+trait VarForCVarOvr extends CVar { override var x: Int = 1 } // bad override -- why?
+                                                ^
+trait_fields_conflicts.scala:64: error: overriding variable x in class CVar of type Int;
+ method x cannot override a mutable variable
+trait DefForCVarOvr extends CVar { override def x: Int = 1 } // bad override -- why?
+                                                ^
+trait_fields_conflicts.scala:65: error: overriding lazy value x in class CLazy of type Int;
+ value x must be declared lazy to override a concrete lazy value
+trait ValForCLazyOvr extends CLazy { override val x: Int = 1 } // bad override -- why?
+                                                  ^
+trait_fields_conflicts.scala:66: error: overriding lazy value x in class CLazy of type Int;
+ variable x needs to be a stable, immutable value
+trait VarForCLazyOvr extends CLazy { override var x: Int = 1 } // bad override -- why?
+                                                  ^
+trait_fields_conflicts.scala:67: error: overriding lazy value x in class CLazy of type Int;
+ method x needs to be a stable, immutable value
+trait DefForCLazyOvr extends CLazy { override def x: Int = 1 } // bad override -- why?
+                                                  ^
+trait_fields_conflicts.scala:69: error: overriding value x in class CVal of type Int;
+ value x needs `override' modifier
+class CValForCVal extends CVal { val x: Int = 1 } // needs override
+                                     ^
+trait_fields_conflicts.scala:70: error: overriding value x in class CVal of type Int;
+ variable x needs `override' modifier
+class CVarForCVal extends CVal { var x: Int = 1 } // needs override
+                                     ^
+trait_fields_conflicts.scala:71: error: overriding value x in class CVal of type Int;
+ method x needs `override' modifier
+class CDefForCVal extends CVal { def x: Int = 1 } // needs override
+                                     ^
+trait_fields_conflicts.scala:72: error: overriding variable x in class CVar of type Int;
+ value x needs `override' modifier
+class CValForCVar extends CVar { val x: Int = 1 } // needs override
+                                     ^
+trait_fields_conflicts.scala:73: error: overriding variable x in class CVar of type Int;
+ variable x needs `override' modifier
+class CVarForCVar extends CVar { var x: Int = 1 } // needs override
+                                     ^
+trait_fields_conflicts.scala:74: error: overriding variable x in class CVar of type Int;
+ method x needs `override' modifier
+class CDefForCVar extends CVar { def x: Int = 1 } // needs override
+                                     ^
+trait_fields_conflicts.scala:75: error: overriding lazy value x in class CLazy of type Int;
+ value x needs `override' modifier
+class CValForCLazy extends CLazy { val x: Int = 1 } // needs override
+                                       ^
+trait_fields_conflicts.scala:76: error: overriding lazy value x in class CLazy of type Int;
+ variable x needs `override' modifier
+class CVarForCLazy extends CLazy { var x: Int = 1 } // needs override
+                                       ^
+trait_fields_conflicts.scala:77: error: overriding lazy value x in class CLazy of type Int;
+ method x needs `override' modifier
+class CDefForCLazy extends CLazy { def x: Int = 1 } // needs override
+                                       ^
+trait_fields_conflicts.scala:80: error: overriding value x in class CVal of type Int;
+ variable x needs to be a stable, immutable value
+class CVarForCValOvr extends CVal { override var x: Int = 1 } // bad override
+                                                 ^
+trait_fields_conflicts.scala:81: error: overriding value x in class CVal of type Int;
+ method x needs to be a stable, immutable value
+class CDefForCValOvr extends CVal { override def x: Int = 1 } // bad override
+                                                 ^
+trait_fields_conflicts.scala:82: error: overriding variable x in class CVar of type Int;
+ value x cannot override a mutable variable
+class CValForCVarOvr extends CVar { override val x: Int = 1 } // bad override -- unsound if used in path and var changes
+                                                 ^
+trait_fields_conflicts.scala:83: error: overriding variable x in class CVar of type Int;
+ variable x cannot override a mutable variable
+class CVarForCVarOvr extends CVar { override var x: Int = 1 } // bad override -- why?
+                                                 ^
+trait_fields_conflicts.scala:84: error: overriding variable x in class CVar of type Int;
+ method x cannot override a mutable variable
+class CDefForCVarOvr extends CVar { override def x: Int = 1 } // bad override -- why?
+                                                 ^
+trait_fields_conflicts.scala:85: error: overriding lazy value x in class CLazy of type Int;
+ value x must be declared lazy to override a concrete lazy value
+class CValForCLazyOvr extends CLazy { override val x: Int = 1 } // bad override -- why?
+                                                   ^
+trait_fields_conflicts.scala:86: error: overriding lazy value x in class CLazy of type Int;
+ variable x needs to be a stable, immutable value
+class CVarForCLazyOvr extends CLazy { override var x: Int = 1 } // bad override -- why?
+                                                   ^
+trait_fields_conflicts.scala:87: error: overriding lazy value x in class CLazy of type Int;
+ method x needs to be a stable, immutable value
+class CDefForCLazyOvr extends CLazy { override def x: Int = 1 } // bad override -- why?
+                                                   ^
+68 errors found

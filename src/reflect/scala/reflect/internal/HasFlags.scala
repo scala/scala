@@ -84,7 +84,7 @@ trait HasFlags {
   def hasDefault            = hasFlag(DEFAULTPARAM) && hasFlag(METHOD | PARAM) // Second condition disambiguates with TRAIT
   def hasJavaEnumFlag       = hasFlag(JAVA_ENUM)
   def hasJavaAnnotationFlag = hasFlag(JAVA_ANNOTATION)
-  @deprecated("Use isLocalToThis instead", "2.11.0")
+  @deprecated("use isLocalToThis instead", "2.11.0")
   def hasLocalFlag          = hasFlag(LOCAL)
   def isLocalToThis         = hasFlag(LOCAL)
   def hasModuleFlag         = hasFlag(MODULE)
@@ -109,7 +109,7 @@ trait HasFlags {
   def isOverride            = hasFlag(OVERRIDE)
   def isParamAccessor       = hasFlag(PARAMACCESSOR)
   def isPrivate             = hasFlag(PRIVATE)
-  @deprecated ("Use `hasPackageFlag` instead", "2.11.0")
+  @deprecated ("use `hasPackageFlag` instead", "2.11.0")
   def isPackage             = hasFlag(PACKAGE)
   def isPrivateLocal        = hasAllFlags(PrivateLocal)
   def isProtected           = hasFlag(PROTECTED)
@@ -120,9 +120,7 @@ trait HasFlags {
   def isSuperAccessor       = hasFlag(SUPERACCESSOR)
   def isSynthetic           = hasFlag(SYNTHETIC)
   def isTrait               = hasFlag(TRAIT) && !hasFlag(PARAM)
-
-  def isDeferredOrJavaDefault  = hasFlag(DEFERRED | JAVA_DEFAULTMETHOD)
-  def isDeferredNotJavaDefault = isDeferred && !hasFlag(JAVA_DEFAULTMETHOD)
+  def isTraitOrInterface    = isTrait || isInterface
 
   def flagBitsToString(bits: Long): String = {
     // Fast path for common case

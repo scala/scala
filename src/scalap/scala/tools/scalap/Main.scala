@@ -8,17 +8,12 @@
 package scala
 package tools.scalap
 
-import java.io.{ PrintStream, OutputStreamWriter, ByteArrayOutputStream }
+import java.io.{ByteArrayOutputStream, OutputStreamWriter, PrintStream}
 import scala.reflect.NameTransformer
 import scala.tools.nsc.Settings
-import scala.tools.nsc.classpath.AggregateFlatClassPath
-import scala.tools.nsc.classpath.FlatClassPathFactory
-import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.settings.ClassPathRepresentationType
-import scala.tools.nsc.util.ClassFileLookup
-import scala.tools.nsc.util.ClassPath.DefaultJavaContext
-import scala.tools.nsc.util.JavaClassPath
-import scala.tools.util.PathResolverFactory
+import scala.tools.nsc.classpath.{AggregateClassPath, ClassPathFactory}
+import scala.tools.nsc.util.ClassPath
+import scala.tools.util.PathResolver
 import scalax.rules.scalasig._
 
 /**The main object used to execute scalap on the command-line.
@@ -101,7 +96,7 @@ class Main {
   /** Executes scalap with the given arguments and classpath for the
    *  class denoted by `classname`.
    */
-  def process(args: Arguments, path: ClassFileLookup[AbstractFile])(classname: String): Unit = {
+  def process(args: Arguments, path: ClassPath)(classname: String): Unit = {
     // find the classfile
     val encName = classname match {
       case "scala.AnyRef" => "java.lang.Object"
@@ -145,7 +140,6 @@ object Main extends Main {
     val verbose = "-verbose"
     val version = "-version"
 
-    val classPathImplType = "-YclasspathImpl"
     val disableFlatClassPathCaching = "-YdisableFlatCpCaching"
     val logClassPath = "-Ylog-classpath"
   }
@@ -183,7 +177,6 @@ object Main extends Main {
 
       val settings = new Settings()
 
-      arguments getArgument opts.classPathImplType foreach settings.YclasspathImpl.tryToSetFromPropertyValue
       settings.YdisableFlatCpCaching.value = arguments contains opts.disableFlatClassPathCaching
       settings.Ylogcp.value = arguments contains opts.logClassPath
 
@@ -205,21 +198,16 @@ object Main extends Main {
       .withOption(opts.help)
       .withOptionalArg(opts.classpath)
       .withOptionalArg(opts.cp)
-      // TODO three temporary, hidden options to be able to test different classpath representations
-      .withOptionalArg(opts.classPathImplType)
+      // TODO two temporary, hidden options to be able to test different classpath representations
       .withOption(opts.disableFlatClassPathCaching)
       .withOption(opts.logClassPath)
       .parse(args)
 
   private def createClassPath(cpArg: Option[String], settings: Settings) = cpArg match {
-    case Some(cp) => settings.YclasspathImpl.value match {
-      case ClassPathRepresentationType.Flat =>
-        AggregateFlatClassPath(new FlatClassPathFactory(settings).classesInExpandedPath(cp))
-      case ClassPathRepresentationType.Recursive =>
-        new JavaClassPath(DefaultJavaContext.classesInExpandedPath(cp), DefaultJavaContext)
-    }
+    case Some(cp) =>
+      AggregateClassPath(new ClassPathFactory(settings).classesInExpandedPath(cp))
     case _ =>
       settings.classpath.value = "." // include '.' in the default classpath SI-6669
-      PathResolverFactory.create(settings).result
+      new PathResolver(settings).result
   }
 }

@@ -14,7 +14,7 @@ object Product4 {
     Some(x)
 }
 
-/** Product4 is a cartesian product of 4 components.
+/** Product4 is a Cartesian product of 4 components.
  *  @since 2.3
  */
 trait Product4[+T1, +T2, +T3, +T4] extends Any with Product {
@@ -24,7 +24,7 @@ trait Product4[+T1, +T2, +T3, +T4] extends Any with Product {
   override def productArity = 4
 
   
-  /** Returns the n-th projection of this product if 0 < n <= productArity,
+  /** Returns the n-th projection of this product if 0 <= n < productArity,
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
    *  @param n number of the projection to be returned

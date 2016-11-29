@@ -1,15 +1,19 @@
-#!/bin/bash -x
+#!/bin/bash
 
-./pull-binary-libs.sh
+baseDir=${WORKSPACE-`pwd`}
+scriptsDir="$baseDir/scripts"
+. $scriptsDir/common
 
-export ANT_OPTS="-Dfile.encoding=UTF-8 -server -XX:+AggressiveOpts -XX:+UseParNewGC -Xmx2G -Xss1M -XX:MaxPermSize=512M -XX:ReservedCodeCacheSize=128M"
+java -version
+javac -version
 
-# TODO: don't hardcode this path, which is just where we currently have
-# ant manually installed on jenkins-worker-windows-publish.
-PATH=/cygdrive/c/apache-ant-1.9.6/bin:$PATH
+generateRepositoriesConfig
 
-ant \
-  -Dstarr.version=2.11.7 \
-  -Dscalac.args.optimise=-optimise \
-  -Dlocker.skip=1 \
-  test
+SBT="java $JAVA_OPTS -Dsbt.ivy.home=$WORKSPACE/.ivy2 -jar $sbtLauncher -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
+
+# Build locker with STARR
+$SBT --warn "setupPublishCore" generateBuildCharacterPropertiesFile publishLocal
+
+# Build quick and run the tests
+parseScalaProperties buildcharacter.properties
+$SBT -Dstarr.version=$maven_version_number --warn "setupValidateTest" testAll

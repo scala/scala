@@ -1,8 +1,11 @@
 package scala.reflect.macros
 package runtime
 
+import java.net.URLClassLoader
+
 import scala.reflect.internal.Flags._
 import scala.reflect.runtime.ReflectionUtils
+import scala.reflect.internal.util.AbstractFileClassLoader
 
 trait MacroRuntimes extends JavaReflectionRuntimes {
   self: scala.tools.nsc.typechecker.Analyzer =>
@@ -44,7 +47,15 @@ trait MacroRuntimes extends JavaReflectionRuntimes {
    *  which compiles implementations into a virtual directory (very much like REPL does) and then conjures
    *  a classloader mapped to that virtual directory.
    */
-  lazy val defaultMacroClassloader: ClassLoader = findMacroClassLoader()
+  private lazy val defaultMacroClassloaderCache = {
+    def attemptClose(loader: ClassLoader): Unit = loader match {
+      case u: URLClassLoader => debuglog("Closing macro runtime classloader"); u.close()
+      case afcl: AbstractFileClassLoader => attemptClose(afcl.getParent)
+      case _ => ???
+    }
+    perRunCaches.newGeneric(findMacroClassLoader, attemptClose _)
+  }
+  def defaultMacroClassloader: ClassLoader = defaultMacroClassloaderCache()
 
   /** Abstracts away resolution of macro runtimes.
    */

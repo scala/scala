@@ -2,31 +2,23 @@ package scala.tools.nsc
 package backend.jvm
 package analysis
 
+import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Assert._
 
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.AbstractInsnNode
+import scala.tools.nsc.backend.jvm.AsmUtils._
 import scala.tools.partest.ASMConverters._
-import scala.tools.testing.ClearAfterClass
-import CodeGenTools._
-import AsmUtils._
-
-object ProdConsAnalyzerTest extends ClearAfterClass.Clearable {
-  var noOptCompiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:none")
-
-  def clear(): Unit = {
-    noOptCompiler = null
-  }
-}
+import scala.tools.testing.BytecodeTesting
+import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
-class ProdConsAnalyzerTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = ProdConsAnalyzerTest
-  val noOptCompiler = ProdConsAnalyzerTest.noOptCompiler
-  import noOptCompiler.genBCode.bTypes.backendUtils._
+class ProdConsAnalyzerTest extends BytecodeTesting {
+  override def compilerArgs = "-opt:l:none"
+  import compiler._
+  import global.genBCode.bTypes.backendUtils._
 
   def prodToString(producer: AbstractInsnNode) = producer match {
     case p: InitialProducer => p.toString
@@ -57,9 +49,9 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
 
   @Test
   def parameters(): Unit = {
-    val List(m) = compileMethods(noOptCompiler)("def f = this.toString")
+    val m = compileAsmMethod("def f = this.toString")
     val a = new ProdConsAnalyzer(m, "C")
-    val call = findInstr(m, "INVOKEVIRTUAL").head
+    val call = findInstr(m, "INVOKEVIRTUAL")
 
     testSingleInsn(a.producersForValueAt(call, 1), "ALOAD 0") // producer of stack value
     testSingleInsn(a.producersForInputsOf(call), "ALOAD 0")
@@ -92,55 +84,55 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
     m.maxStack = 1
     val a = new ProdConsAnalyzer(m, "C")
 
-    val ifne = findInstr(m, "IFNE").head
+    val ifne = findInstr(m, "IFNE")
     testSingleInsn(a.producersForValueAt(ifne, 1), "ParameterProducer")
 
-    val ret = findInstr(m, "IRETURN").head
+    val ret = findInstr(m, "IRETURN")
     testMultiInsns(a.producersForValueAt(ret, 1), List("ParameterProducer", "ISTORE 1"))
   }
 
   @Test
   def branching(): Unit = {
-    val List(m) = compileMethods(noOptCompiler)("def f(x: Int) = { var a = x; if (a == 0) a = 12; a }")
+    val m = compileAsmMethod("def f(x: Int) = { var a = x; if (a == 0) a = 12; a }")
     val a = new ProdConsAnalyzer(m, "C")
 
-    val List(ret) = findInstr(m, "IRETURN")
+    val ret = findInstr(m, "IRETURN")
     testMultiInsns(a.producersForValueAt(ret, 2), List("ISTORE 2", "ISTORE 2"))
     testMultiInsns(a.initialProducersForValueAt(ret, 2), List("BIPUSH 12", "ParameterProducer"))
 
-    val List(bipush) = findInstr(m, "BIPUSH 12")
+    val bipush = findInstr(m, "BIPUSH 12")
     testSingleInsn(a.consumersOfOutputsFrom(bipush), "ISTORE 2")
     testSingleInsn(a.ultimateConsumersOfValueAt(bipush.getNext, 3), "IRETURN")
   }
 
   @Test
   def checkCast(): Unit = {
-    val List(m) = compileMethods(noOptCompiler)("def f(o: Object) = o.asInstanceOf[String]")
+    val m = compileAsmMethod("def f(o: Object) = o.asInstanceOf[String]")
     val a = new ProdConsAnalyzer(m, "C")
-    assert(findInstr(m, "CHECKCAST java/lang/String").length == 1)
+    assert(findInstrs(m, "CHECKCAST java/lang/String").length == 1)
 
-    val List(ret) = findInstr(m, "ARETURN")
+    val ret = findInstr(m, "ARETURN")
     testSingleInsn(a.initialProducersForInputsOf(ret), "ParameterProducer(1)")
   }
 
   @Test
   def instanceOf(): Unit = {
-    val List(m) = compileMethods(noOptCompiler)("def f(o: Object) = o.isInstanceOf[String]")
+    val m = compileAsmMethod("def f(o: Object) = o.isInstanceOf[String]")
     val a = new ProdConsAnalyzer(m, "C")
-    assert(findInstr(m, "INSTANCEOF java/lang/String").length == 1)
+    assert(findInstrs(m, "INSTANCEOF java/lang/String").length == 1)
 
-    val List(ret) = findInstr(m, "IRETURN")
+    val ret = findInstr(m, "IRETURN")
     testSingleInsn(a.initialProducersForInputsOf(ret), "INSTANCEOF")
   }
 
   @Test
   def unInitLocal(): Unit = {
-    val List(m) = compileMethods(noOptCompiler)("def f(b: Boolean) = { if (b) { var a = 0; println(a) }; 1 }")
+    val m = compileAsmMethod("def f(b: Boolean) = { if (b) { var a = 0; println(a) }; 1 }")
     val a = new ProdConsAnalyzer(m, "C")
 
-    val List(store) = findInstr(m, "ISTORE")
-    val List(call)  = findInstr(m, "INVOKEVIRTUAL")
-    val List(ret)   = findInstr(m, "IRETURN")
+    val store = findInstr(m, "ISTORE")
+    val call  = findInstr(m, "INVOKEVIRTUAL")
+    val ret   = findInstr(m, "IRETURN")
 
     testSingleInsn(a.producersForValueAt(store, 2), "UninitializedLocalProducer(2)")
     testSingleInsn(a.producersForValueAt(call, 2), "ISTORE")
@@ -149,11 +141,11 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
 
   @Test
   def dupCopying(): Unit = {
-    val List(m) = compileMethods(noOptCompiler)("def f = new Object")
+    val m = compileAsmMethod("def f = new Object")
     val a = new ProdConsAnalyzer(m, "C")
 
-    val List(newO)   = findInstr(m, "NEW")
-    val List(constr) = findInstr(m, "INVOKESPECIAL")
+    val newO   = findInstr(m, "NEW")
+    val constr = findInstr(m, "INVOKESPECIAL")
 
     testSingleInsn(a.producersForInputsOf(constr), "DUP")
     testSingleInsn(a.initialProducersForInputsOf(constr), "NEW")
@@ -178,11 +170,11 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
     m.maxStack = 4
     val a = new ProdConsAnalyzer(m, "C")
 
-    val List(dup2)  = findInstr(m, "DUP2")
-    val List(add)   = findInstr(m, "IADD")
-    val List(swap)  = findInstr(m, "SWAP")
-    val List(store) = findInstr(m, "ISTORE")
-    val List(ret)   = findInstr(m, "IRETURN")
+    val dup2  = findInstr(m, "DUP2")
+    val add   = findInstr(m, "IADD")
+    val swap  = findInstr(m, "SWAP")
+    val store = findInstr(m, "ISTORE")
+    val ret   = findInstr(m, "IRETURN")
 
     testMultiInsns(a.producersForInputsOf(dup2), List("ILOAD", "ILOAD"))
     testSingleInsn(a.consumersOfValueAt(dup2.getNext, 4), "IADD")
@@ -213,9 +205,9 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
     m.maxStack = 1
     val a = new ProdConsAnalyzer(m, "C")
 
-    val List(inc) = findInstr(m, "IINC")
-    val List(load) = findInstr(m, "ILOAD")
-    val List(ret) = findInstr(m, "IRETURN")
+    val inc = findInstr(m, "IINC")
+    val load = findInstr(m, "ILOAD")
+    val ret = findInstr(m, "IRETURN")
 
     testSingleInsn(a.producersForInputsOf(inc), "ParameterProducer(1)")
     testSingleInsn(a.consumersOfOutputsFrom(inc), "ILOAD")
@@ -231,12 +223,12 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
 
   @Test
   def copyingInsns(): Unit = {
-    val List(m) = compileMethods(noOptCompiler)("def f = 0l.asInstanceOf[Int]")
+    val m = compileAsmMethod("def f = 0l.asInstanceOf[Int]")
     val a = new ProdConsAnalyzer(m, "C")
 
-    val List(cnst) = findInstr(m, "LCONST_0")
-    val List(l2i)  = findInstr(m, "L2I") // l2i is not a copying instruction
-    val List(ret)  = findInstr(m, "IRETURN")
+    val cnst = findInstr(m, "LCONST_0")
+    val l2i  = findInstr(m, "L2I") // l2i is not a copying instruction
+    val ret  = findInstr(m, "IRETURN")
 
     testSingleInsn(a.consumersOfOutputsFrom(cnst), "L2I")
     testSingleInsn(a.ultimateConsumersOfOutputsFrom(cnst), "L2I")
@@ -272,10 +264,10 @@ class ProdConsAnalyzerTest extends ClearAfterClass {
     m.maxStack = 2
     val a = new ProdConsAnalyzer(m, "C")
 
-    val List(iadd) = findInstr(m, "IADD")
+    val iadd = findInstr(m, "IADD")
     val firstLoad = iadd.getPrevious.getPrevious
     assert(firstLoad.getOpcode == ILOAD)
-    val secondLoad = findInstr(m, "ISTORE").head.getPrevious
+    val secondLoad = findInstr(m, "ISTORE").getPrevious
     assert(secondLoad.getOpcode == ILOAD)
 
     testSingleInsn(a.producersForValueAt(iadd, 2), "ILOAD")

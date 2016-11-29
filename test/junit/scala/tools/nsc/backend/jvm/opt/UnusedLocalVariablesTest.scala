@@ -2,28 +2,20 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.Test
-import scala.tools.asm.Opcodes._
-import org.junit.Assert._
+
 import scala.collection.JavaConverters._
-
-import CodeGenTools._
-import scala.tools.partest.ASMConverters
-import ASMConverters._
-import scala.tools.testing.ClearAfterClass
-
-object UnusedLocalVariablesTest extends ClearAfterClass.Clearable {
-  var dceCompiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:unreachable-code")
-  def clear(): Unit = { dceCompiler = null }
-}
+import scala.tools.partest.ASMConverters._
+import scala.tools.testing.BytecodeTesting
+import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
-class UnusedLocalVariablesTest extends ClearAfterClass {
-  ClearAfterClass.stateToClear = UnusedLocalVariablesTest
-
-  val dceCompiler = UnusedLocalVariablesTest.dceCompiler
+class UnusedLocalVariablesTest extends BytecodeTesting {
+  override def compilerArgs = "-opt:unreachable-code"
+  import compiler._
 
   @Test
   def removeUnusedVar(): Unit = {
@@ -56,7 +48,7 @@ class UnusedLocalVariablesTest extends ClearAfterClass {
                  |  }
                  |}
                  |""".stripMargin
-    val cls = compileClasses(dceCompiler)(code).head
+    val cls = compileClass(code)
     val m = convertMethod(cls.methods.asScala.toList.find(_.desc == "(I)V").get)
     assertTrue(m.localVars.length == 2) // this, a, but not y
 
@@ -77,19 +69,14 @@ class UnusedLocalVariablesTest extends ClearAfterClass {
         |}
       """.stripMargin
 
-    val clss2 = compileClasses(dceCompiler)(code2)
-    val cls2 = clss2.find(_.name == "C").get
-    val companion2 = clss2.find(_.name == "C$").get
+    val List(cls2, companion2) = compileClasses(code2)
 
-    val clsConstr = convertMethod(cls2.methods.asScala.toList.find(_.name == "<init>").get)
-    val companionConstr = convertMethod(companion2.methods.asScala.toList.find(_.name == "<init>").get)
-
-    assertTrue(clsConstr.localVars.length == 1) // this
-    assertTrue(companionConstr.localVars.length == 1) // this
+    assertTrue(getMethod(cls2, "<init>").localVars.length == 1) // this
+    assertTrue(getMethod(companion2, "<init>").localVars.length == 1) // this
   }
 
   def assertLocalVarCount(code: String, numVars: Int): Unit = {
-    assertTrue(singleMethod(dceCompiler)(code).localVars.length == numVars)
+    assertTrue(compileMethod(code).localVars.length == numVars)
   }
 
 }

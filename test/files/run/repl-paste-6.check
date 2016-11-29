@@ -1,0 +1,17 @@
+
+scala> :paste < EOF
+// Entering paste mode (EOF to finish)
+
+case class C(i: Int)
+val c = C(42)
+EOF
+
+// Exiting paste mode, now interpreting.
+
+defined class C
+c: C = C(42)
+
+scala> val d: C = c // shew
+d: C = C(42)
+
+scala> :quit

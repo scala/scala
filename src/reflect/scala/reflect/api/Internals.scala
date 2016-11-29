@@ -116,7 +116,7 @@ trait Internals { self: Universe =>
     /** Substitute given tree `to` for occurrences of nodes that represent
      *  `C.this`, where `C` refers to the given class `clazz`.
      */
-    def substituteThis(tree: Tree, clazz: Symbol, to: Tree): Tree
+    def substituteThis(tree: Tree, clazz: Symbol, to: => Tree): Tree
 
     /** A factory method for `ClassDef` nodes.
      */
@@ -391,7 +391,7 @@ trait Internals { self: Universe =>
         def substituteTypes(from: List[Symbol], to: List[Type]): Tree = internal.substituteTypes(tree, from, to)
 
         /** @see [[internal.substituteThis]] */
-        def substituteThis(clazz: Symbol, to: Tree): Tree = internal.substituteThis(tree, clazz, to)
+        def substituteThis(clazz: Symbol, to: => Tree): Tree = internal.substituteThis(tree, clazz, to)
       }
 
       /** Extension methods for symbols */
@@ -841,10 +841,10 @@ trait Internals { self: Universe =>
     }
   }
 
-  @deprecated("Use `internal.reificationSupport` instead", "2.11.0")
+  @deprecated("use `internal.reificationSupport` instead", "2.11.0")
   val build: ReificationSupportApi
 
-  @deprecated("Use `internal.ReificationSupportApi` instead", "2.11.0")
+  @deprecated("use `internal.ReificationSupportApi` instead", "2.11.0")
   type BuildApi = ReificationSupportApi
 
   /** This trait provides support for importers, a facility to migrate reflection artifacts between universes.
@@ -934,7 +934,7 @@ trait Internals { self: Universe =>
     def importPosition(pos: from.Position): Position
   }
 
-  @deprecated("Use `internal.createImporter` instead", "2.11.0")
+  @deprecated("use `internal.createImporter` instead", "2.11.0")
   def mkImporter(from0: Universe): Importer { val from: from0.type } = internal.createImporter(from0)
 
   /** Marks underlying reference to id as boxed.
@@ -1012,7 +1012,7 @@ trait Internals { self: Universe =>
      */
     def origin: String
 
-    /** The valus this symbol refers to
+    /** The value this symbol refers to
      *
      *  @group FreeTerm
      */
@@ -1078,72 +1078,72 @@ trait Internals { self: Universe =>
     implicit val token = new CompatToken
 
     /** @see [[InternalApi.typeTagToManifest]] */
-    @deprecated("Use `internal.typeTagToManifest` instead", "2.11.0")
+    @deprecated("use `internal.typeTagToManifest` instead", "2.11.0")
     def typeTagToManifest[T: ClassTag](mirror: Any, tag: Universe#TypeTag[T]): Manifest[T] =
       internal.typeTagToManifest(mirror, tag)
 
     /** @see [[InternalApi.manifestToTypeTag]] */
-    @deprecated("Use `internal.manifestToTypeTag` instead", "2.11.0")
+    @deprecated("use `internal.manifestToTypeTag` instead", "2.11.0")
     def manifestToTypeTag[T](mirror: Any, manifest: Manifest[T]): Universe#TypeTag[T] =
       internal.manifestToTypeTag(mirror, manifest)
 
     /** @see [[InternalApi.newScopeWith]] */
-    @deprecated("Use `internal.newScopeWith` instead", "2.11.0")
+    @deprecated("use `internal.newScopeWith` instead", "2.11.0")
     def newScopeWith(elems: Symbol*): Scope =
       internal.newScopeWith(elems: _*)
 
     /** Scala 2.10 compatibility enrichments for BuildApi. */
     implicit class CompatibleBuildApi(api: BuildApi) {
       /** @see [[BuildApi.setInfo]] */
-      @deprecated("Use `internal.reificationSupport.setInfo` instead", "2.11.0")
+      @deprecated("use `internal.reificationSupport.setInfo` instead", "2.11.0")
       def setTypeSignature[S <: Symbol](sym: S, tpe: Type): S = internal.reificationSupport.setInfo(sym, tpe)
 
       /** @see [[BuildApi.FlagsRepr]] */
-      @deprecated("Use `internal.reificationSupport.FlagsRepr` instead", "2.11.0")
+      @deprecated("use `internal.reificationSupport.FlagsRepr` instead", "2.11.0")
       def flagsFromBits(bits: Long): FlagSet = internal.reificationSupport.FlagsRepr(bits)
 
       /** @see [[BuildApi.noSelfType]] */
-      @deprecated("Use `noSelfType` instead", "2.11.0")
+      @deprecated("use `noSelfType` instead", "2.11.0")
       def emptyValDef: ValDef = noSelfType
 
       /** @see [[BuildApi.mkThis]] */
-      @deprecated("Use `internal.reificationSupport.mkThis` instead", "2.11.0")
+      @deprecated("use `internal.reificationSupport.mkThis` instead", "2.11.0")
       def This(sym: Symbol): Tree = internal.reificationSupport.mkThis(sym)
 
       /** @see [[BuildApi.mkSelect]] */
-      @deprecated("Use `internal.reificationSupport.mkSelect` instead", "2.11.0")
+      @deprecated("use `internal.reificationSupport.mkSelect` instead", "2.11.0")
       def Select(qualifier: Tree, sym: Symbol): Select = internal.reificationSupport.mkSelect(qualifier, sym)
 
       /** @see [[BuildApi.mkIdent]] */
-      @deprecated("Use `internal.reificationSupport.mkIdent` instead", "2.11.0")
+      @deprecated("use `internal.reificationSupport.mkIdent` instead", "2.11.0")
       def Ident(sym: Symbol): Ident = internal.reificationSupport.mkIdent(sym)
 
       /** @see [[BuildApi.mkTypeTree]] */
-      @deprecated("Use `internal.reificationSupport.mkTypeTree` instead", "2.11.0")
+      @deprecated("use `internal.reificationSupport.mkTypeTree` instead", "2.11.0")
       def TypeTree(tp: Type): TypeTree = internal.reificationSupport.mkTypeTree(tp)
     }
 
     /** Scala 2.10 compatibility enrichments for Tree. */
     implicit class CompatibleTree(tree: Tree) {
       /** @see [[InternalApi.freeTerms]] */
-      @deprecated("Use `internal.freeTerms` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("use `internal.freeTerms` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def freeTerms: List[FreeTermSymbol] = internal.freeTerms(tree)
 
       /** @see [[InternalApi.freeTypes]] */
-      @deprecated("Use `internal.freeTerms` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("use `internal.freeTerms` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def freeTypes: List[FreeTypeSymbol] = internal.freeTypes(tree)
 
       /** @see [[InternalApi.substituteSymbols]] */
-      @deprecated("Use `internal.substituteSymbols` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("use `internal.substituteSymbols` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def substituteSymbols(from: List[Symbol], to: List[Symbol]): Tree = internal.substituteSymbols(tree, from, to)
 
       /** @see [[InternalApi.substituteTypes]] */
-      @deprecated("Use `internal.substituteTypes` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("use `internal.substituteTypes` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def substituteTypes(from: List[Symbol], to: List[Type]): Tree = internal.substituteTypes(tree, from, to)
 
       /** @see [[InternalApi.substituteThis]] */
-      @deprecated("Use `internal.substituteThis` instead or import `internal.decorators._` for infix syntax", "2.11.0")
-      def substituteThis(clazz: Symbol, to: Tree): Tree = internal.substituteThis(tree, clazz, to)
+      @deprecated("use `internal.substituteThis` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      def substituteThis(clazz: Symbol, to: => Tree): Tree = internal.substituteThis(tree, clazz, to)
     }
 
     /** Scala 2.10 compatibility enrichments for Tree. */
@@ -1155,84 +1155,84 @@ trait Internals { self: Universe =>
       def isOverride: Boolean = symbol.asInstanceOf[scala.reflect.internal.Symbols#Symbol].isOverride
 
       /** @see [[InternalApi.isFreeTerm]] */
-      @deprecated("Use `internal.isFreeTerm` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("use `internal.isFreeTerm` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def isFreeTerm: Boolean = internal.isFreeTerm(symbol)
 
       /** @see [[InternalApi.asFreeTerm]] */
-      @deprecated("Use `internal.asFreeTerm` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("use `internal.asFreeTerm` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def asFreeTerm: FreeTermSymbol = internal.asFreeTerm(symbol)
 
       /** @see [[InternalApi.isFreeType]] */
-      @deprecated("Use `internal.isFreeType` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("use `internal.isFreeType` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def isFreeType: Boolean = internal.isFreeType(symbol)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.asFreeType` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("use `internal.asFreeType` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def asFreeType: FreeTypeSymbol = internal.asFreeType(symbol)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.newTermSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("use `internal.newTermSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def newTermSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TermSymbol = internal.newTermSymbol(symbol, name, pos, flags)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.newModuleAndClassSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("use `internal.newModuleAndClassSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def newModuleAndClassSymbol(name: Name, pos: Position = NoPosition, flags: FlagSet = NoFlags): (ModuleSymbol, ClassSymbol) = internal.newModuleAndClassSymbol(symbol, name, pos, flags)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.newMethodSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("use `internal.newMethodSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def newMethodSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): MethodSymbol = internal.newMethodSymbol(symbol, name, pos, flags)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.newTypeSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("use `internal.newTypeSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def newTypeSymbol(name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TypeSymbol = internal.newTypeSymbol(symbol, name, pos, flags)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.newClassSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("use `internal.newClassSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def newClassSymbol(name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): ClassSymbol = internal.newClassSymbol(symbol, name, pos, flags)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.isErroneous` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("use `internal.isErroneous` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def isErroneous: Boolean = internal.isErroneous(symbol)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.isSkolem` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("use `internal.isSkolem` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def isSkolem: Boolean = internal.isSkolem(symbol)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.deSkolemize` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("use `internal.deSkolemize` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def deSkolemize: Symbol = internal.deSkolemize(symbol)
     }
 
     /** @see [[InternalApi.singleType]] */
-    @deprecated("Use `internal.singleType` instead", "2.11.0")
+    @deprecated("use `internal.singleType` instead", "2.11.0")
     def singleType(pre: Type, sym: Symbol): Type = internal.singleType(pre, sym)
 
     /** @see [[InternalApi.refinedType]] */
-    @deprecated("Use `internal.refinedType` instead", "2.11.0")
+    @deprecated("use `internal.refinedType` instead", "2.11.0")
     def refinedType(parents: List[Type], owner: Symbol, decls: Scope, pos: Position): Type = internal.refinedType(parents, owner, decls, pos)
 
     /** @see [[InternalApi.refinedType]] */
-    @deprecated("Use `internal.refinedType` instead", "2.11.0")
+    @deprecated("use `internal.refinedType` instead", "2.11.0")
     def refinedType(parents: List[Type], owner: Symbol): Type = internal.refinedType(parents, owner)
 
     /** @see [[InternalApi.typeRef]] */
-    @deprecated("Use `internal.typeRef` instead", "2.11.0")
+    @deprecated("use `internal.typeRef` instead", "2.11.0")
     def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = internal.typeRef(pre, sym, args)
 
     /** @see [[InternalApi.intersectionType]] */
-    @deprecated("Use `internal.intersectionType` instead", "2.11.0")
+    @deprecated("use `internal.intersectionType` instead", "2.11.0")
     def intersectionType(tps: List[Type]): Type = internal.intersectionType(tps)
 
     /** @see [[InternalApi.intersectionType]] */
-    @deprecated("Use `internal.intersectionType` instead", "2.11.0")
+    @deprecated("use `internal.intersectionType` instead", "2.11.0")
     def intersectionType(tps: List[Type], owner: Symbol): Type = internal.intersectionType(tps, owner)
 
     /** @see [[InternalApi.polyType]] */
-    @deprecated("Use `internal.polyType` instead", "2.11.0")
+    @deprecated("use `internal.polyType` instead", "2.11.0")
     def polyType(tparams: List[Symbol], tpe: Type): Type = internal.polyType(tparams, tpe)
 
     /** @see [[InternalApi.existentialAbstraction]] */
-    @deprecated("Use `internal.existentialAbstraction` instead", "2.11.0")
+    @deprecated("use `internal.existentialAbstraction` instead", "2.11.0")
     def existentialAbstraction(tparams: List[Symbol], tpe0: Type): Type = internal.existentialAbstraction(tparams, tpe0)
   }
 }

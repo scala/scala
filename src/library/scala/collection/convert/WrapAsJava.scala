@@ -13,7 +13,27 @@ package convert
 import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
 import scala.language.implicitConversions
 
-trait WrapAsJava {
+@deprecated("use JavaConverters or consider ToJavaImplicits", since="2.12.0")
+trait WrapAsJava extends LowPriorityWrapAsJava {
+  // provide higher-priority implicits with names that don't exist in JavaConverters for the case
+  // when importing both JavaConverters._ and JavaConversions._. otherwise implicit conversions
+  // would not apply, see https://github.com/scala/scala/pull/5109#issuecomment-212417789
+  implicit def `deprecated asJavaIterator`[A](it: Iterator[A]): ju.Iterator[A] = asJavaIterator(it)
+  implicit def `deprecated asJavaEnumeration`[A](it: Iterator[A]): ju.Enumeration[A] = asJavaEnumeration(it)
+  implicit def `deprecated asJavaIterable`[A](i: Iterable[A]): jl.Iterable[A] = asJavaIterable(i)
+  implicit def `deprecated asJavaCollection`[A](it: Iterable[A]): ju.Collection[A] = asJavaCollection(it)
+  implicit def `deprecated bufferAsJavaList`[A](b: mutable.Buffer[A]): ju.List[A] = bufferAsJavaList(b)
+  implicit def `deprecated mutableSeqAsJavaList`[A](seq: mutable.Seq[A]): ju.List[A] = mutableSeqAsJavaList(seq)
+  implicit def `deprecated seqAsJavaList`[A](seq: Seq[A]): ju.List[A] = seqAsJavaList(seq)
+  implicit def `deprecated mutableSetAsJavaSet`[A](s: mutable.Set[A]): ju.Set[A] = mutableSetAsJavaSet(s)
+  implicit def `deprecated setAsJavaSet`[A](s: Set[A]): ju.Set[A] = setAsJavaSet(s)
+  implicit def `deprecated mutableMapAsJavaMap`[A, B](m: mutable.Map[A, B]): ju.Map[A, B] = mutableMapAsJavaMap(m)
+  implicit def `deprecated asJavaDictionary`[A, B](m: mutable.Map[A, B]): ju.Dictionary[A, B] = asJavaDictionary(m)
+  implicit def `deprecated mapAsJavaMap`[A, B](m: Map[A, B]): ju.Map[A, B] = mapAsJavaMap(m)
+  implicit def `deprecated mapAsJavaConcurrentMap`[A, B](m: concurrent.Map[A, B]): juc.ConcurrentMap[A, B] = mapAsJavaConcurrentMap(m)
+}
+
+private[convert] trait LowPriorityWrapAsJava {
   import Wrappers._
 
   /**
@@ -266,4 +286,5 @@ trait WrapAsJava {
   }
 }
 
-object WrapAsJava extends WrapAsJava { }
+@deprecated("use JavaConverters or consider ImplicitConversionsToJava", since="2.12.0")
+object WrapAsJava extends WrapAsJava

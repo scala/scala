@@ -9,15 +9,20 @@ rvm:
 script: bundle exec jekyll build -s spec/ -d build/spec
 install: bundle install
 
-# https://gist.github.com/kzap/5819745, http://docs.travis-ci.com/user/travis-pro/
+# cat /dev/urandom | head -c 10000 | openssl sha1 > ./secret
+# openssl aes-256-cbc -pass "file:./secret" -in id_dsa_spec212_b4096 -out spec/id_dsa_travis.enc -a
+# travis encrypt "PRIV_KEY_SECRET=`cat ./secret`"
 env:
-  - secure: "WWU490z7DWAI8MidMyTE+i+Ppgjg46mdr7PviF6P6ulrPlRRKOtKXpLvzgJoQmluwzEK6/+iH7D5ybCUYMLdKkQM9kSqaXJ0jeqjOelaaa1LmuOQ8IbuT8O9DwHzjjp/n4Lj/KRvvN4nGxCMI7HLla4gunvPA7M6WK7FA+YKCOU=" # set PRIV_KEY_SECRET to password used to encrypt spec/id_dsa_travis.enc
+  - secure: "TuJOUtALynPd+MV1AuMeIpVb8BUBHr7Ul7FS48XhS2PyuTRpEBkSWybYcNg3AXyzmWDAuOjUxbaNMQBvP8vvehTbIYls5H5wTGKvj0D0TNVaPIXjF8bA8KyNat9xGNzhnWm2/2BMaWpKBJWRF7Jb+zHhijMYCJEbkMtoiE5R/mY="
 
-# using S3 would be simpler, but we want to upload to scala-lang.org
-# after_success: bundle exec s3_website push --headless
+# ^^^ set PRIV_KEY_SECRET to password used to encrypt spec/id_dsa_travis.enc
+
 # the key is restricted using forced commands so that it can only upload to the directory we need here
 after_success:
   - openssl aes-256-cbc -pass "pass:$PRIV_KEY_SECRET" -in spec/id_dsa_travis.enc -out spec/id_dsa_travis -d -a
   - chmod 600 spec/id_dsa_travis
   - eval "$(ssh-agent)"
-  - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && ssh-add -D && ssh-add spec/id_dsa_travis && rsync -e "ssh -o StrictHostKeyChecking=no" -rzv build/spec/ scalatest@chara.epfl.ch:/home/linuxsoft/archives/scala/spec/2.11/'
+  - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && ssh-add -D && ssh-add spec/id_dsa_travis && rsync -e "ssh -o StrictHostKeyChecking=no" -rzv build/spec/ scalatest@chara.epfl.ch:/home/linuxsoft/archives/scala/spec/2.12/'
+
+# using S3 would be simpler, but we want to upload to scala-lang.org
+# after_success: bundle exec s3_website push --headless

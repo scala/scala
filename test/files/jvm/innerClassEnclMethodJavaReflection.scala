@@ -25,12 +25,13 @@ object Test extends App {
 
   def testClasses(jarOrDirectory: String): Unit = {
     val classPath = AbstractFile.getDirectory(new java.io.File(jarOrDirectory))
+    val basePath = classPath.path + "/"
 
-    def flatten(f: AbstractFile): Iterator[AbstractFile] =
-      if (f.isClassContainer) f.iterator.flatMap(flatten)
-      else Iterator(f)
+    def flatten(f: AbstractFile, s: String): Iterator[(AbstractFile, String)] =
+      if (f.isClassContainer) f.iterator.map(ch => (ch, (if(s.isEmpty) "" else s + "/") + ch.name)).flatMap((flatten _).tupled)
+      else Iterator((f, s))
 
-    val classFullNames = flatten(classPath).filter(_.hasExtension("class")).map(_.path.replace("/", ".").replaceAll(".class$", ""))
+    val classFullNames = flatten(classPath, "").filter(_._1.hasExtension("class")).map(_._2.replace("/", ".").replaceAll(".class$", ""))
 
     // it seems that Class objects can only be GC'd together with their class loader
     //   (http://stackoverflow.com/questions/2433261/when-and-how-are-classes-garbage-collected-in-java)

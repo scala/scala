@@ -10,4 +10,7 @@ trait T {
   val x = f
   val y = g
   val z = h
+
+  def +(i: Int) = i + 42
+  val p = +
 }

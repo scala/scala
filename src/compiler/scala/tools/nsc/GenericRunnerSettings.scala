@@ -6,10 +6,10 @@
 package scala.tools.nsc
 
 import java.net.URL
-import scala.tools.util.PathResolverFactory
+import scala.tools.util.PathResolver
 
 class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
-  lazy val classpathURLs: Seq[URL] = PathResolverFactory.create(this).resultAsURLs
+  lazy val classpathURLs: Seq[URL] = new PathResolver(this).resultAsURLs
 
   val howtorun =
     ChoiceSetting(
@@ -21,9 +21,15 @@ class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
 
   val loadfiles =
     MultiStringSetting(
+      "-I",
+      "file",
+      "load a file line-by-line")
+
+  val pastefiles =
+    MultiStringSetting(
       "-i",
       "file",
-      "load a file (assumes the code is given interactively)")
+      "paste a file")
 
   val execute =
     StringSetting(

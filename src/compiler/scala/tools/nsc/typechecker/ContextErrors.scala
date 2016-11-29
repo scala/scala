@@ -13,6 +13,7 @@ import scala.reflect.macros.runtime.AbortMacroException
 import scala.util.control.NonFatal
 import scala.tools.nsc.util.stackTraceString
 import scala.reflect.io.NoAbstractFile
+import scala.reflect.internal.util.NoSourceFile
 
 trait ContextErrors {
   self: Analyzer =>
@@ -198,7 +199,7 @@ trait ContextErrors {
         val foundType: Type = req.dealiasWiden match {
           case RefinedType(parents, decls) if !decls.isEmpty && found.typeSymbol.isAnonOrRefinementClass =>
             val retyped    = typed (tree.duplicate.clearType())
-            val foundDecls = retyped.tpe.decls filter (sym => !sym.isConstructor && !sym.isSynthetic)
+            val foundDecls = retyped.tpe.decls filter (sym => !sym.isConstructor && !sym.isSynthetic && !sym.isErroneous)
             if (foundDecls.isEmpty || (found.typeSymbol eq NoSymbol)) found
             else {
               // The members arrive marked private, presumably because there was no
@@ -212,7 +213,8 @@ trait ContextErrors {
           case _ =>
             found
         }
-        assert(!foundType.isErroneous && !req.isErroneous, (foundType, req))
+        assert(!foundType.isErroneous, s"AdaptTypeError - foundType is Erroneous: $foundType")
+        assert(!req.isErroneous, s"AdaptTypeError - req is Erroneous: $req")
 
         issueNormalTypeError(callee, withAddendum(callee.pos)(typeErrorMsg(foundType, req)))
         infer.explainTypes(foundType, req)
@@ -469,6 +471,11 @@ trait ContextErrors {
         setError(tree)
       }
 
+      def ConstructorRecursesError(tree: Tree) = {
+        issueNormalTypeError(tree, "constructor invokes itself")
+        setError(tree)
+      }
+
       def OnlyDeclarationsError(tree: Tree) = {
         issueNormalTypeError(tree, "only declarations allowed here")
         setError(tree)
@@ -533,8 +540,43 @@ trait ContextErrors {
       def NamedAndDefaultArgumentsNotSupportedForMacros(tree: Tree, fun: Tree) =
         NormalTypeError(tree, "macro applications do not support named and/or default arguments")
 
-      def TooManyArgsNamesDefaultsError(tree: Tree, fun: Tree) =
-        NormalTypeError(tree, "too many arguments for "+treeSymTypeMsg(fun))
+      def TooManyArgsNamesDefaultsError(tree: Tree, fun: Tree, formals: List[Type], args: List[Tree], namelessArgs: List[Tree], argPos: Array[Int]) = {
+        val expected = formals.size
+        val supplied = args.size
+        // pick a caret. For f(k=1,i=2,j=3), argPos[0,-1,1] b/c `k=1` taken as arg0
+        val excessive = {
+          val i = argPos.indexWhere(_ >= expected)
+          if (i < 0) tree else args(i min (supplied - 1))
+        }
+        val msg = {
+          val badappl = {
+            val excess = supplied - expected
+            val target = treeSymTypeMsg(fun)
+
+            if (expected == 0) s"no arguments allowed for nullary $target"
+            else if (excess < 3 && expected <= 5) s"too many arguments ($supplied) for $target"
+            else if (expected > 10) s"$supplied arguments but expected $expected for $target"
+            else {
+              val more =
+                if (excess == 1) "one more argument"
+                else if (excess > 0) s"$excess more arguments"
+                else "too many arguments"
+              s"$more than can be applied to $target"
+            }
+          }
+          val unknowns = (namelessArgs zip args) collect {
+            case (_: Assign, AssignOrNamedArg(Ident(name), _)) => name
+          }
+          val suppl = 
+            unknowns.size match {
+              case 0 => ""
+              case 1 => s"\nNote that '${unknowns.head}' is not a parameter name of the invoked method."
+              case _ => unknowns.mkString("\nNote that '", "', '", "' are not parameter names of the invoked method.")
+            }
+          s"${badappl}${suppl}"
+        }
+        NormalTypeError(excessive, msg)
+      }
 
       // can it still happen? see test case neg/overloaded-unapply.scala
       def OverloadedUnapplyError(tree: Tree) =
@@ -546,7 +588,7 @@ trait ContextErrors {
       def MultipleVarargError(tree: Tree) =
         NormalTypeError(tree, "when using named arguments, the vararg parameter has to be specified exactly once")
 
-      def ModuleUsingCompanionClassDefaultArgsErrror(tree: Tree) =
+      def ModuleUsingCompanionClassDefaultArgsError(tree: Tree) =
         NormalTypeError(tree, "module extending its companion class cannot use default constructor arguments")
 
       def NotEnoughArgsError(tree: Tree, fun: Tree, missing: List[Symbol]) = {
@@ -626,7 +668,7 @@ trait ContextErrors {
 
       //adapt
       def MissingArgsForMethodTpeError(tree: Tree, meth: Symbol) = {
-        val f = meth.name
+        val f = meth.name.decoded
         val paf = s"$f(${ meth.asMethod.paramLists map (_ map (_ => "_") mkString ",") mkString ")(" })"
         val advice = s"""
           |Unapplied methods are only converted to functions when a function type is expected.
@@ -716,22 +758,18 @@ trait ContextErrors {
       }
 
       def DefDefinedTwiceError(sym0: Symbol, sym1: Symbol) = {
+        val addPref = s";\n  the conflicting $sym1 was defined"
+        val bugNote = "\n  Note: this may be due to a bug in the compiler involving wildcards in package objects"
+
         // Most of this hard work is associated with SI-4893.
         val isBug = sym0.isAbstractType && sym1.isAbstractType && (sym0.name startsWith "_$")
-        val addendums = List(
-          if (sym0.associatedFile eq sym1.associatedFile)
-            Some("conflicting symbols both originated in file '%s'".format(sym0.associatedFile.canonicalPath))
-          else if ((sym0.associatedFile ne NoAbstractFile) && (sym1.associatedFile ne NoAbstractFile))
-            Some("conflicting symbols originated in files '%s' and '%s'".format(sym0.associatedFile.canonicalPath, sym1.associatedFile.canonicalPath))
-          else None ,
-          if (isBug) Some("Note: this may be due to a bug in the compiler involving wildcards in package objects") else None
-        )
-        val addendum = addendums.flatten match {
-          case Nil    => ""
-          case xs     => xs.mkString("\n  ", "\n  ", "")
-        }
+        val addendum = (
+          if (sym0.pos.source eq sym1.pos.source)   s"$addPref at line ${sym1.pos.line}:${sym1.pos.column}"
+          else if (sym1.pos.source ne NoSourceFile) s"$addPref at line ${sym1.pos.line}:${sym1.pos.column} of '${sym1.pos.source.path}'"
+          else if (sym1.associatedFile ne NoAbstractFile) s"$addPref in '${sym1.associatedFile.canonicalPath}'"
+          else "") + (if (isBug) bugNote else "")
 
-        issueSymbolTypeError(sym0, sym1+" is defined twice" + addendum)
+        issueSymbolTypeError(sym0, s"$sym0 is defined twice$addendum")
       }
 
       // cyclic errors

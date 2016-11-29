@@ -14,7 +14,7 @@ object Product1 {
     Some(x)
 }
 
-/** Product1 is a cartesian product of 1 component.
+/** Product1 is a Cartesian product of 1 component.
  *  @since 2.3
  */
 trait Product1[@specialized(Int, Long, Double) +T1] extends Any with Product {
@@ -24,7 +24,7 @@ trait Product1[@specialized(Int, Long, Double) +T1] extends Any with Product {
   override def productArity = 1
 
   
-  /** Returns the n-th projection of this product if 0 < n <= productArity,
+  /** Returns the n-th projection of this product if 0 <= n < productArity,
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
    *  @param n number of the projection to be returned

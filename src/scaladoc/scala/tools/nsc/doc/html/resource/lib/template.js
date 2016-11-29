@@ -1,40 +1,26 @@
 // © 2009–2010 EPFL/LAMP
 // code by Gilles Dubochet with contributions by Pedro Furlanetto, Marcin Kubala and Felix Mulder
 
+var $panzoom = undefined;
 $(document).ready(function() {
-
-    $("#template > div > div > ol > li > span > a").click(function(e) {
-        $("#template > div > div > ol > li").removeClass("selected");
-        $(this).parent().parent().addClass("selected");
-        var defHeight = $("#definition").height() + $("#signature").height() + 50;
-        $('html,body').animate({scrollTop: $(this).offset().top - defHeight}, 500);
+    // Add zoom functionality to type inheritance diagram
+    $panzoom = $(".diagram-container > .diagram").panzoom({
+        increment: 0.1,
+        minScale: 1,
+        maxScale: 7,
+        transition: true,
+        duration: 200,
+        contain: 'invert',
+        easing: "ease-in-out",
+        $zoomIn: $('#diagram-zoom-in'),
+        $zoomOut: $('#diagram-zoom-out'),
     });
 
-    /* Handle dynamic size of signature and offset the fullcommenttop div
-     * appropriately
-     *
-     * Some mobile devices render quite slowly, delay the margin-top
-     * calculation if mobile
-     */
-    if(/Android|webOS|Mobi|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        setTimeout(function() {
-            $("div.fullcommenttop").css({
-                "margin-top": $("#definition").height() + $("#signature").height() + 15
-            });
-        }, 1000);
-    } else {
-        $("div.fullcommenttop").css({
-            "margin-top": $("#definition").height() + $("#signature").height() + 15
-        });
-    }
-
-    /* When the window is resized, adjust the fullcommenttop div's offset */
-    $(window).resize(function() {
-        $("div.fullcommenttop").css({
-            "margin-top": $("#definition").height() + $("#signature").height() + 15
-        });
+    var oldWidth = $("div#subpackage-spacer").width() + 1 + "px";
+    $("div#packages > ul > li.current").click(function() {
+        $("div#subpackage-spacer").css({ "width": oldWidth });
+        $("li.current-entities").toggle();
     });
-
 
     var controls = {
         visibility: {
@@ -67,23 +53,22 @@ $(document).ready(function() {
     function exposeMember(jqElem) {
         var jqElemParent = jqElem.parent(),
             parentName = jqElemParent.attr("name"),
-            linearizationName = /^([^#]*)(#.*)?$/gi.exec(parentName)[1];
+            ancestorName = /^([^#]*)(#.*)?$/gi.exec(parentName)[1];
 
         // switch visibility filter if necessary
         if (jqElemParent.attr("visbl") == "prt") {
             toggleVisibilityFilter(controls.visibility.all, controls.visibility.publicOnly);
         }
 
-        // toggle appropriate linearization buttons
-        if (linearizationName) {
-            $("#linearization li.out[name='" + linearizationName + "']").removeClass("out").addClass("in");
+        // toggle appropriate ancestor filter buttons
+        if (ancestorName) {
+            $("#filterby li.out[name='" + ancestorName + "']").removeClass("out").addClass("in");
         }
 
         filter();
-        window.scrollTo(0, 0);
-        var defHeight = $("#definition").height() + $("#signature").height() + 50;
         jqElemParent.addClass("selected");
-        $('html,body').animate({scrollTop: jqElemParent.offset().top - defHeight}, 1000);
+        commentToggleFct(jqElemParent);
+        $("#content-scroll-container").animate({scrollTop: $("#content-scroll-container").scrollTop() + jqElemParent.offset().top - $("#search").height() - 23 }, 1000);
     }
 
     var isHiddenClass = function (name) {
@@ -103,7 +88,8 @@ $(document).ready(function() {
         return isHidden(this);
     }).removeClass("in").addClass("out");
 
-    $("#mbrsel > div.toggle").click(function() {
+    $("#memberfilter > i.arrow").click(function() {
+        $(this).toggleClass("rotate");
         $("#filterby").toggle();
     });
 
@@ -111,7 +97,7 @@ $(document).ready(function() {
     filter();
 
     // Member filter box
-    var input = $("#textfilter input");
+    var input = $("#memberfilter input");
     input.bind("keyup", function(event) {
 
         switch ( event.keyCode ) {
@@ -148,12 +134,12 @@ $(document).ready(function() {
     input.focus(function(event) {
         input.select();
     });
-    $("#textfilter > .clear").click(function() {
-        $("#textfilter input").attr("value", "");
+    $("#memberfilter > .clear").click(function() {
+        $("#memberfilter input").attr("value", "");
+        $(this).hide();
         filter();
     });
     $(document).keydown(function(event) {
-
         if (event.keyCode == 9) { // tab
             $("#index-input", window.parent.document).focus();
             input.attr("value", "");
@@ -165,8 +151,7 @@ $(document).ready(function() {
         if ($(this).hasClass("in")) {
             $(this).removeClass("in");
             $(this).addClass("out");
-        }
-        else if ($(this).hasClass("out")) {
+        } else if ($(this).hasClass("out")) {
             $(this).removeClass("out");
             $(this).addClass("in");
         }
@@ -177,8 +162,7 @@ $(document).ready(function() {
         if ($(this).hasClass("in")) {
             $(this).removeClass("in");
             $(this).addClass("out");
-        }
-        else if ($(this).hasClass("out")) {
+        } else if ($(this).hasClass("out")) {
             $(this).removeClass("out");
             $(this).addClass("in");
         }
@@ -218,19 +202,16 @@ $(document).ready(function() {
         filter();
     });
     $("#order > ol > li.alpha").click(function() {
-        if ($(this).hasClass("out")) {
+        if ($(this).hasClass("out"))
             orderAlpha();
-        }
     })
     $("#order > ol > li.inherit").click(function() {
-        if ($(this).hasClass("out")) {
+        if ($(this).hasClass("out"))
             orderInherit();
-        }
     });
     $("#order > ol > li.group").click(function() {
-        if ($(this).hasClass("out")) {
+        if ($(this).hasClass("out"))
             orderGroup();
-        }
     });
     $("#groupedMembers").hide();
 
@@ -247,48 +228,61 @@ $(document).ready(function() {
     });
 
     /* Add toggle arrows */
-    //var docAllSigs = $("#template li").has(".fullcomment").find(".signature");
-    // trying to speed things up a little bit
-    var docAllSigs = $("#template li[fullComment=yes] .signature");
+    $("#template li[fullComment=yes] .modifier_kind").addClass("closed");
 
-    function commentToggleFct(signature){
-        var parent = signature.parent();
-        var shortComment = $(".shortcomment", parent);
-        var fullComment = $(".fullcomment", parent);
+    function commentToggleFct(element){
+        $("#template li.selected").removeClass("selected");
+        element.toggleClass("open");
+        var signature = element.find(".modifier_kind")
+        var shortComment = element.find(".shortcomment");
+        var fullComment = element.find(".fullcomment");
         var vis = $(":visible", fullComment);
         signature.toggleClass("closed").toggleClass("opened");
         if (vis.length > 0) {
-            shortComment.slideDown(100);
-            fullComment.slideUp(100);
+            if (!isMobile()) {
+                shortComment.slideDown(100);
+                fullComment.slideUp(100);
+            } else {
+                fullComment.hide();
+                shortComment.show();
+            }
         }
         else {
-            shortComment.slideUp(100);
-            fullComment.slideDown(100);
+            if (!isMobile()) {
+                shortComment.slideUp(100);
+                fullComment.slideDown(100);
+            } else {
+                shortComment.hide();
+                fullComment.show();
+            }
         }
     };
-    docAllSigs.addClass("closed");
-    docAllSigs.click(function() {
+
+    $("#template li[fullComment=yes]").click(function() {
         commentToggleFct($(this));
     });
 
     /* Linear super types and known subclasses */
     function toggleShowContentFct(e){
       e.toggleClass("open");
-      var content = $(".hiddenContent", e.parent().get(0));
-      if (content.is(':visible')) {
-        content.slideUp(100);
-      }
-      else {
-        content.slideDown(100);
+      var content = $(".hiddenContent", e);
+      if(content.is(':visible')) {
+          if (!isMobile()) content.slideUp(100);
+          else content.hide();
+      } else {
+          if (!isMobile()) content.slideDown(100);
+          else content.show();
       }
     };
 
-    $(".toggle:not(.diagram-link)").click(function() {
+    $(".toggleContainer:not(.diagram-container):not(.full-signature-block)").click(function() {
       toggleShowContentFct($(this));
     });
 
-    // Set parent window title
-    windowTitle();
+    $(".toggleContainer.full-signature-block").click(function() {
+      toggleShowContentFct($(this));
+      return false;
+    });
 
     if ($("#order > ol > li.group").length == 1) { orderGroup(); };
 
@@ -298,20 +292,34 @@ $(document).ready(function() {
         return $(memberSelector);
     }
 
-    // highlight and jump to selected member
+    // highlight and jump to selected member if an anchor is provided
     if (window.location.hash) {
         var jqElem = findElementByHash(window.location.hash);
-        if (jqElem.length > 0) {
+        if (jqElem.length > 0)
             exposeMember(jqElem);
-        }
     }
 
-    $("#mbrsel-input").on("focus", function() {
-        $("#textfilter > .clear").show();
+    $("#template span.permalink").click(function(e) {
+        e.preventDefault();
+        var href = $("a", this).attr("href");
+        if (href.indexOf("#") != -1) {
+            var hash = href.split("#").pop()
+            try {
+                window.history.pushState({}, "", "#" + hash)
+            } catch (e) {
+                // fallback for file:// URLs, has worse scrolling behavior
+                location.hash = hash;
+            }
+            exposeMember(findElementByHash(hash))
+        }
+        return false;
     });
 
-    $("#mbrsel-input").on("blur", function() {
-        $("#textfilter > .clear").hide();
+    $("#mbrsel-input").on("input", function() {
+        if ($(this).val().length > 0)
+            $("#memberfilter > .clear").show();
+        else
+            $("#memberfilter > .clear").hide();
     });
 });
 
@@ -439,7 +447,7 @@ function initInherit() {
 
 /* filter used to take boolean scrollToMember */
 function filter() {
-    var query = $.trim($("#textfilter input").val()).toLowerCase();
+    var query = $.trim($("#memberfilter input").val()).toLowerCase();
     query = query.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&").replace(/\s+/g, "|");
     var queryRegExp = new RegExp(query, "i");
     var privateMembersHidden = $("#visbl > ol > li.public").hasClass("in");
@@ -526,21 +534,15 @@ function filter() {
       });
 
       if (membersVisible)
-        members.show();
+          members.show();
       else
-        members.hide();
+          members.hide();
     };
 
     return false;
 };
 
-function windowTitle()
-{
-    try {
-        parent.document.title=document.title;
-    }
-    catch(e) {
-      // Chrome doesn't allow settings the parent's title when
-      // used on the local file system.
-    }
-};
+/** Check if user agent is associated with a known mobile browser */
+function isMobile() {
+    return /Android|webOS|Mobi|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}

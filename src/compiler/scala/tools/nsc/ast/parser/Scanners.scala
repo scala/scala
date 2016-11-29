@@ -35,7 +35,28 @@ trait ScannersCommon {
     // things to fill in, in addition to buf, decodeUni which come from CharArrayReader
     def error(off: Offset, msg: String): Unit
     def incompleteInputError(off: Offset, msg: String): Unit
-    def deprecationWarning(off: Offset, msg: String): Unit
+    def deprecationWarning(off: Offset, msg: String, since: String): Unit
+  }
+
+  // Hooks for ScaladocUnitScanner and ScaladocJavaUnitScanner
+  trait DocScanner {
+    protected def beginDocComment(prefix: String): Unit = {}
+    protected def processCommentChar(): Unit = {}
+    protected def finishDocComment(): Unit = {}
+
+    private var lastDoc: DocComment = null
+    // get last doc comment
+    def flushDoc(): DocComment = try lastDoc finally lastDoc = null
+    def registerDocComment(raw: String, pos: Position) = {
+      lastDoc = DocComment(raw, pos)
+      signalParsedDocComment(raw, pos)
+    }
+
+    /** To prevent doc comments attached to expressions from leaking out of scope
+      *  onto the next documentable entity, they are discarded upon passing a right
+      *  brace, bracket, or parenthesis.
+      */
+    def discardDocBuffer(): Unit = {}
   }
 
   def createKeywordArray(keywords: Seq[(Name, Token)], defaultToken: Token): (Token, Array[Token]) = {
@@ -103,11 +124,11 @@ trait Scanners extends ScannersCommon {
     }
   }
 
-  abstract class Scanner extends CharArrayReader with TokenData with ScannerData with ScannerCommon {
+  abstract class Scanner extends CharArrayReader with TokenData with ScannerData with ScannerCommon with DocScanner {
     private def isDigit(c: Char) = java.lang.Character isDigit c
 
     private var openComments = 0
-    protected def putCommentChar(): Unit = nextChar()
+    final protected def putCommentChar(): Unit = { processCommentChar(); nextChar() }
 
     @tailrec private def skipLineComment(): Unit = ch match {
       case SU | CR | LF =>
@@ -134,8 +155,6 @@ trait Scanners extends ScannersCommon {
       case SU  => incompleteInputError("unclosed comment")
       case _   => putCommentChar() ; skipNestedComments()
     }
-    def skipDocComment(): Unit = skipNestedComments()
-    def skipBlockComment(): Unit = skipNestedComments()
 
     private def skipToCommentEnd(isLineComment: Boolean): Unit = {
       nextChar()
@@ -147,27 +166,23 @@ trait Scanners extends ScannersCommon {
           // Check for the amazing corner case of /**/
           if (ch == '/')
             nextChar()
-          else
-            skipDocComment()
+          else {
+            beginDocComment("/**")
+            skipNestedComments()
+          }
         }
-        else skipBlockComment()
+        else skipNestedComments()
       }
     }
 
     /** @pre ch == '/'
      *  Returns true if a comment was skipped.
      */
-    def skipComment(): Boolean = ch match {
-      case '/' | '*' => skipToCommentEnd(isLineComment = ch == '/') ; true
+    final def skipComment(): Boolean = ch match {
+      case '/' | '*' => skipToCommentEnd(isLineComment = ch == '/') ; finishDocComment(); true
       case _         => false
     }
-    def flushDoc(): DocComment = null
 
-    /** To prevent doc comments attached to expressions from leaking out of scope
-     *  onto the next documentable entity, they are discarded upon passing a right
-     *  brace, bracket, or parenthesis.
-     */
-    def discardDocBuffer(): Unit = ()
 
     def isAtEnd = charOffset >= buf.length
 
@@ -208,7 +223,7 @@ trait Scanners extends ScannersCommon {
             if (name == nme.MACROkw)
               syntaxError(s"$name is now a reserved word; usage as an identifier is disallowed")
             else if (emitIdentifierDeprecationWarnings)
-              deprecationWarning(s"$name is now a reserved word; usage as an identifier is deprecated")
+              deprecationWarning(s"$name is a reserved word (since 2.10.0); usage as an identifier is deprecated", "2.10.0")
           }
         }
       }
@@ -245,6 +260,14 @@ trait Scanners extends ScannersCommon {
      */
     private def inMultiLineInterpolation =
       inStringInterpolation && sepRegions.tail.nonEmpty && sepRegions.tail.head == STRINGPART
+
+    /** Are we in a `${ }` block? such that RBRACE exits back into multiline string. */
+    private def inMultiLineInterpolatedExpression = {
+      sepRegions match {
+        case RBRACE :: STRINGLIT :: STRINGPART :: rest => true
+        case _ => false
+      }
+    }
 
     /** read next token and return last offset
      */
@@ -312,7 +335,7 @@ trait Scanners extends ScannersCommon {
           lastOffset -= 1
         }
         if (inStringInterpolation) fetchStringPart() else fetchToken()
-        if(token == ERROR) {
+        if (token == ERROR) {
           if (inMultiLineInterpolation)
             sepRegions = sepRegions.tail.tail
           else if (inStringInterpolation)
@@ -547,7 +570,8 @@ trait Scanners extends ScannersCommon {
         case ')' =>
           nextChar(); token = RPAREN
         case '}' =>
-          nextChar(); token = RBRACE
+          if (inMultiLineInterpolatedExpression) nextRawChar() else nextChar()
+          token = RBRACE
         case '[' =>
           nextChar(); token = LBRACKET
         case ']' =>
@@ -824,7 +848,7 @@ trait Scanners extends ScannersCommon {
           if (settings.future)
             syntaxError(start, msg("unsupported"))
           else
-            deprecationWarning(start, msg("deprecated"))
+            deprecationWarning(start, msg("deprecated"), "2.11.0")
           putChar(oct.toChar)
         } else {
           ch match {
@@ -1034,7 +1058,7 @@ trait Scanners extends ScannersCommon {
     /** generate an error at the current token offset */
     def syntaxError(msg: String): Unit = syntaxError(offset, msg)
 
-    def deprecationWarning(msg: String): Unit = deprecationWarning(offset, msg)
+    def deprecationWarning(msg: String, since: String): Unit = deprecationWarning(offset, msg, since)
 
     /** signal an error where the input ended in the middle of a token */
     def incompleteInputError(msg: String): Unit = {
@@ -1204,8 +1228,8 @@ trait Scanners extends ScannersCommon {
     override val decodeUni: Boolean = !settings.nouescape
 
     // suppress warnings, throw exception on errors
-    def deprecationWarning(off: Offset, msg: String): Unit = ()
-    def error  (off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
+    def deprecationWarning(off: Offset, msg: String, since: String): Unit = ()
+    def error(off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
     def incompleteInputError(off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
   }
 
@@ -1214,9 +1238,9 @@ trait Scanners extends ScannersCommon {
   class UnitScanner(val unit: CompilationUnit, patches: List[BracePatch]) extends SourceFileScanner(unit.source) {
     def this(unit: CompilationUnit) = this(unit, List())
 
-    override def deprecationWarning(off: Offset, msg: String)   = currentRun.reporting.deprecationWarning(unit.position(off), msg)
-    override def error  (off: Offset, msg: String)              = reporter.error(unit.position(off), msg)
-    override def incompleteInputError(off: Offset, msg: String) = currentRun.parsing.incompleteInputError(unit.position(off), msg)
+    override def deprecationWarning(off: Offset, msg: String, since: String) = currentRun.reporting.deprecationWarning(unit.position(off), msg, since)
+    override def error(off: Offset, msg: String)                             = reporter.error(unit.position(off), msg)
+    override def incompleteInputError(off: Offset, msg: String)              = currentRun.parsing.incompleteInputError(unit.position(off), msg)
 
     private var bracePatches: List[BracePatch] = patches
 

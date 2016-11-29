@@ -8,6 +8,7 @@ package backend.jvm
 package opt
 
 import scala.annotation.{tailrec, switch}
+
 import scala.collection.mutable
 import scala.reflect.internal.util.Collections._
 import scala.tools.asm.commons.CodeSizeEvaluator
@@ -16,8 +17,7 @@ import scala.tools.asm.{Label, Type}
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import GenBCode._
-import scala.collection.convert.decorateAsScala._
-import scala.tools.nsc.backend.jvm.BTypes.InternalName
+import scala.collection.JavaConverters._
 import scala.tools.nsc.backend.jvm.analysis.InstructionStackEffect
 
 object BytecodeUtils {
@@ -88,11 +88,29 @@ object BytecodeUtils {
 
   def isLoadOrStore(instruction: AbstractInsnNode): Boolean = isLoad(instruction) || isStore(instruction)
 
+  def isNonVirtualCall(instruction: AbstractInsnNode): Boolean = {
+    val op = instruction.getOpcode
+    op == INVOKESPECIAL || op == INVOKESTATIC
+  }
+
+  def isVirtualCall(instruction: AbstractInsnNode): Boolean = {
+    val op = instruction.getOpcode
+    op == INVOKEVIRTUAL || op == INVOKEINTERFACE
+  }
+
+  def isCall(instruction: AbstractInsnNode): Boolean = {
+    isNonVirtualCall(instruction) || isVirtualCall(instruction)
+  }
+
   def isExecutable(instruction: AbstractInsnNode): Boolean = instruction.getOpcode >= 0
 
   def isConstructor(methodNode: MethodNode): Boolean = {
     methodNode.name == INSTANCE_CONSTRUCTOR_NAME || methodNode.name == CLASS_CONSTRUCTOR_NAME
   }
+
+  def isPublicMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_PUBLIC) != 0
+
+  def isPrivateMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_PRIVATE) != 0
 
   def isStaticMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_STATIC) != 0
 
@@ -102,9 +120,11 @@ object BytecodeUtils {
 
   def isNativeMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_NATIVE) != 0
 
-  def hasCallerSensitiveAnnotation(methodNode: MethodNode) = methodNode.visibleAnnotations != null && methodNode.visibleAnnotations.asScala.exists(_.desc == "Lsun/reflect/CallerSensitive;")
+  def hasCallerSensitiveAnnotation(methodNode: MethodNode): Boolean = methodNode.visibleAnnotations != null && methodNode.visibleAnnotations.asScala.exists(_.desc == "Lsun/reflect/CallerSensitive;")
 
   def isFinalClass(classNode: ClassNode): Boolean = (classNode.access & ACC_FINAL) != 0
+
+  def isInterface(classNode: ClassNode): Boolean = (classNode.access & ACC_INTERFACE) != 0
 
   def isFinalMethod(methodNode: MethodNode): Boolean = (methodNode.access & (ACC_FINAL | ACC_PRIVATE | ACC_STATIC)) != 0
 
@@ -125,7 +145,7 @@ object BytecodeUtils {
   }
 
   def sameTargetExecutableInstruction(a: JumpInsnNode, b: JumpInsnNode): Boolean = {
-    // Compare next executable instead of the the labels. Identifies a, b as the same target:
+    // Compare next executable instead of the labels. Identifies a, b as the same target:
     //   LabelNode(a)
     //   LabelNode(b)
     //   Instr
@@ -304,15 +324,33 @@ object BytecodeUtils {
    * Clone the local variable descriptors of `methodNode` and map their `start` and `end` labels
    * according to the `labelMap`.
    */
-  def cloneLocalVariableNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], prefix: String, shift: Int): List[LocalVariableNode] = {
-    methodNode.localVariables.iterator().asScala.map(localVariable => new LocalVariableNode(
-      prefix + localVariable.name,
-      localVariable.desc,
-      localVariable.signature,
-      labelMap(localVariable.start),
-      labelMap(localVariable.end),
-      localVariable.index + shift
-    )).toList
+  def cloneLocalVariableNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], calleeMethodName: String, shift: Int): List[LocalVariableNode] = {
+    methodNode.localVariables.iterator().asScala.map(localVariable => {
+      val name =
+        if (calleeMethodName.length + localVariable.name.length < BTypes.InlinedLocalVariablePrefixMaxLenght) {
+          calleeMethodName + "_" + localVariable.name
+        } else {
+          val parts = localVariable.name.split("_").toVector
+          val (methNames, varName) = (calleeMethodName +: parts.init, parts.last)
+          // keep at least 5 characters per method name
+          val maxNumMethNames = BTypes.InlinedLocalVariablePrefixMaxLenght / 5
+          val usedMethNames =
+            if (methNames.length < maxNumMethNames) methNames
+            else {
+              val half = maxNumMethNames / 2
+              methNames.take(half) ++ methNames.takeRight(half)
+            }
+          val charsPerMethod = BTypes.InlinedLocalVariablePrefixMaxLenght / usedMethNames.length
+          usedMethNames.foldLeft("")((res, methName) => res + methName.take(charsPerMethod) + "_") + varName
+        }
+      new LocalVariableNode(
+        name,
+        localVariable.desc,
+        localVariable.signature,
+        labelMap(localVariable.start),
+        labelMap(localVariable.end),
+        localVariable.index + shift)
+    }).toList
   }
 
   /**

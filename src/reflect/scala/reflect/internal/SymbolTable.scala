@@ -63,7 +63,7 @@ abstract class SymbolTable extends macros.Universe
   def isPastTyper = false
   protected def isDeveloper: Boolean = settings.debug
 
-  @deprecated("Use devWarning if this is really a warning; otherwise use log", "2.11.0")
+  @deprecated("use devWarning if this is really a warning; otherwise use log", "2.11.0")
   def debugwarn(msg: => String): Unit = devWarning(msg)
 
   /** Override with final implementation for inlining. */
@@ -375,20 +375,30 @@ abstract class SymbolTable extends macros.Universe
     def newWeakSet[K <: AnyRef]() = recordCache(new WeakHashSet[K]())
 
     def newAnyRefMap[K <: AnyRef, V]() = recordCache(mutable.AnyRefMap[K, V]())
-    def newGeneric[T](f: => T): () => T = {
+    /**
+      * Register a cache specified by a factory function and (optionally) a cleanup function.
+      *
+      * @return A function that will return cached value, or create a fresh value when a new run is started.
+      */
+    def newGeneric[T](f: => T, cleanup: T => Unit = (x: Any) => ()): () => T = {
       val NoCached: T = null.asInstanceOf[T]
       var cached: T = NoCached
       var cachedRunId = NoRunId
-      recordCache(new Clearable {
-        def clear(): Unit = cached = NoCached
-      })
-      () => {
-        if (currentRunId != cachedRunId || cached == NoCached) {
-          cached = f
-          cachedRunId = currentRunId
+      val clearable = new Clearable with (() => T)  {
+        def clear(): Unit = {
+          if (cached != NoCached)
+            cleanup(cached)
+          cached = NoCached
         }
-        cached
+        def apply(): T = {
+          if (currentRunId != cachedRunId || cached == NoCached) {
+            cached = f
+            cachedRunId = currentRunId
+          }
+          cached
+        }
       }
+      recordCache(clearable)
     }
   }
 
@@ -406,7 +416,7 @@ abstract class SymbolTable extends macros.Universe
    */
   def isCompilerUniverse = false
 
-  @deprecated("Use enteringPhase", "2.10.0") // Used in SBT 0.12.4
+  @deprecated("use enteringPhase", "2.10.0") // Used in SBT 0.12.4
   @inline final def atPhase[T](ph: Phase)(op: => T): T = enteringPhase(ph)(op)
 
 

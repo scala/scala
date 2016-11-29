@@ -10,8 +10,13 @@
 
 [[ $# -eq 0 ]] || cd "$1"
 
-lastcommitdate=$(git log --format="%ci" HEAD | head -n 1 | cut -d ' ' -f 1)
-lastcommithours=$(git log --format="%ci" HEAD | head -n 1 | cut -d ' ' -f 2)
+if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+	lastcommitdate=$(git log --format="%ci" HEAD | head -n 1 | cut -d ' ' -f 1)
+	lastcommithours=$(git log --format="%ci" HEAD | head -n 1 | cut -d ' ' -f 2)
+else
+	lastcommitdate=$(date +%Y-%m-%d)
+	lastcommithours=$(date +%H:%M:%S)
+fi
 
 # 20120324
 echo "${lastcommitdate//-/}-${lastcommithours//:/}"

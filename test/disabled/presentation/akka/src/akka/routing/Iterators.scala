@@ -5,7 +5,7 @@
 package akka.routing
 
 import akka.actor.ActorRef
-import scala.collection.JavaConversions._
+import scala.collection.convert.wrapAsScala._
 import scala.collection.immutable.Seq
 
 /**

@@ -14,7 +14,7 @@ object Product22 {
     Some(x)
 }
 
-/** Product22 is a cartesian product of 22 components.
+/** Product22 is a Cartesian product of 22 components.
  *  @since 2.3
  */
 trait Product22[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10, +T11, +T12, +T13, +T14, +T15, +T16, +T17, +T18, +T19, +T20, +T21, +T22] extends Any with Product {
@@ -24,7 +24,7 @@ trait Product22[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10, +T11, +T12, +
   override def productArity = 22
 
   
-  /** Returns the n-th projection of this product if 0 < n <= productArity,
+  /** Returns the n-th projection of this product if 0 <= n < productArity,
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
    *  @param n number of the projection to be returned
