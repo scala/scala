@@ -216,18 +216,6 @@ abstract class UnPickler {
             }
             adjust(decl)
         }
-        def nestedObjectSymbol: Symbol = {
-          // If the owner is overloaded (i.e. a method), it's not possible to select the
-          // right member, so return NoSymbol. This can only happen when unpickling a tree.
-          // the "case Apply" in readTree() takes care of selecting the correct alternative
-          //  after parsing the arguments.
-          if (owner.isOverloaded)
-            return NoSymbol
-
-          if (tag == EXTMODCLASSref && !owner.isInstanceOf[StubSymbol])
-            owner.info.decl(nme.moduleVarName(name.toTermName))
-          else NoSymbol
-        }
 
         def moduleAdvice(missing: String): String = {
           val module =
@@ -254,21 +242,18 @@ abstract class UnPickler {
           // symbols are read from outside: for instance when checking the children
           // of a class.  See #1722.
           fromName(nme.expandedName(name.toTermName, owner)) orElse {
-            // (3) Try as a nested object symbol.
-            nestedObjectSymbol orElse {
-              // (4) Call the mirror's "missing" hook.
-              adjust(mirrorThatLoaded(owner).missingHook(owner, name)) orElse {
-                // (5) Create a stub symbol to defer hard failure a little longer.
-                val advice = moduleAdvice(s"${owner.fullName}.$name")
-                val missingMessage =
-                  s"""|missing or invalid dependency detected while loading class file '$filename'.
-                      |Could not access ${name.longString} in ${owner.kindString} ${owner.fullName},
-                      |because it (or its dependencies) are missing. Check your build definition for
-                      |missing or conflicting dependencies. (Re-run with `-Ylog-classpath` to see the problematic classpath.)
-                      |A full rebuild may help if '$filename' was compiled against an incompatible version of ${owner.fullName}.$advice""".stripMargin
-                val stubName = if (tag == EXTref) name else name.toTypeName
-                owner.newStubSymbol(stubName, missingMessage)
-              }
+            // (3) Call the mirror's "missing" hook.
+            adjust(mirrorThatLoaded(owner).missingHook(owner, name)) orElse {
+              // (4) Create a stub symbol to defer hard failure a little longer.
+              val advice = moduleAdvice(s"${owner.fullName}.$name")
+              val missingMessage =
+                s"""|missing or invalid dependency detected while loading class file '$filename'.
+                    |Could not access ${name.longString} in ${owner.kindString} ${owner.fullName},
+                    |because it (or its dependencies) are missing. Check your build definition for
+                    |missing or conflicting dependencies. (Re-run with `-Ylog-classpath` to see the problematic classpath.)
+                    |A full rebuild may help if '$filename' was compiled against an incompatible version of ${owner.fullName}.$advice""".stripMargin
+              val stubName = if (tag == EXTref) name else name.toTypeName
+              owner.newStubSymbol(stubName, missingMessage)
             }
           }
         }
