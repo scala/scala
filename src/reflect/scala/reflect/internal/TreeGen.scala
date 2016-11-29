@@ -393,12 +393,29 @@ abstract class TreeGen {
     }
     val lvdefs = evdefs collect { case vdef: ValDef => copyValDef(vdef)(mods = vdef.mods | PRESUPER) }
 
+    var enumFieldDefs: List[ValDef] = Nil
+
     val constr = {
       if (constrMods.isTrait) {
         if (body forall treeInfo.isInterfaceMember) None
         else Some(
           atPos(wrappingPos(superPos, lvdefs)) (
             DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(lvdefs, mkLiteralUnit))))
+      }
+      else if (constrMods.hasFlag(JAVA_ENUM)) {
+        val nameParam    = ValDef(Modifiers(PRIVATE | LOCAL | PARAM | PARAMACCESSOR), "name", TypeTree(StringTpe), EmptyTree)
+        val ordinalParam = ValDef(Modifiers(PRIVATE | LOCAL | PARAM | PARAMACCESSOR), "ordinal", TypeTree(IntTpe), EmptyTree)
+        enumFieldDefs = List(nameParam, ordinalParam)
+
+        val enumConstructor =
+          DefDef(
+              mods     = Modifiers(PRIVATE),
+              name     = nme.CONSTRUCTOR.toTermName,
+              tparams  = Nil,
+              vparamss = List(nameParam :: ordinalParam :: vparamss.flatten),
+              tpt      = TypeTree(),
+              rhs      = Block(Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List(Ident("name"), Ident("ordinal"))), mkLiteralUnit))
+        Some(enumConstructor)
       }
       else {
         // convert (implicit ... ) to ()(implicit ... ) if it's the only parameter section
@@ -418,7 +435,7 @@ abstract class TreeGen {
     constr foreach (ensureNonOverlapping(_, parents ::: gvdefs, focus = false))
     // Field definitions for the class - remove defaults.
 
-    val fieldDefs = vparamss.flatten map (vd => {
+    val fieldDefs = (enumFieldDefs ::: vparamss.flatten) map (vd => {
       val field = copyValDef(vd)(mods = vd.mods &~ DEFAULTPARAM, rhs = EmptyTree)
       // Prevent overlapping of `field` end's position with default argument's start position.
       // This is needed for `Positions.Locator(pos).traverse` to return the correct tree when
@@ -458,18 +475,18 @@ abstract class TreeGen {
       val app = treeInfo.dissectApplied(parents.head)
       atPos(npos union cpos) { New(app.callee, app.argss) }
     } else {
-      val x = tpnme.ANON_CLASS_NAME
+      val anon = tpnme.ANON_CLASS_NAME
       atPos(npos union cpos) {
         Block(
           List(
             atPos(cpos) {
               ClassDef(
-                Modifiers(FINAL), x, Nil,
+                Modifiers(FINAL), anon, Nil,
                 mkTemplate(parents, self, NoMods, ListOfNil, stats, cpos.focus))
             }),
           atPos(npos) {
             New(
-              Ident(x) setPos npos.focus,
+              Ident(anon) setPos npos.focus,
               Nil)
           }
         )

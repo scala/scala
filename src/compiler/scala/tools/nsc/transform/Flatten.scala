@@ -17,8 +17,7 @@ abstract class Flatten extends InfoTransform {
   /** the following two members override abstract members in Transform */
   val phaseName: String = "flatten"
 
-  /** Updates the owning scope with the given symbol, unlinking any others.
-   */
+  /** Updates the owning scope with the given symbol, unlinking any others. */
   private def replaceSymbolInCurrentScope(sym: Symbol): Unit = exitingFlatten {
     removeSymbolInCurrentScope(sym)
     sym.owner.info.decls enter sym

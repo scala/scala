@@ -107,24 +107,6 @@ trait StdAttachments {
       })
     )
 
-  /** After being synthesized by the parser, primary constructors aren't fully baked yet.
-   *  A call to super in such constructors is just a fill-me-in-later dummy resolved later
-   *  by `parentTypes`. This attachment coordinates `parentTypes` and `typedTemplate` and
-   *  allows them to complete the synthesis.
-   */
-  case class SuperArgsAttachment(argss: List[List[Tree]])
-
-  /** Convenience method for `SuperArgsAttachment`.
-   *  Compared with `MacroRuntimeAttachment` this attachment has different a usage pattern,
-   *  so it really benefits from a dedicated extractor.
-   */
-  def superArgs(tree: Tree): Option[List[List[Tree]]] =
-    tree.attachments.get[SuperArgsAttachment] collect { case SuperArgsAttachment(argss) => argss }
-
-  /** Determines whether the given tree has an associated SuperArgsAttachment.
-   */
-  def hasSuperArgs(tree: Tree): Boolean = superArgs(tree).nonEmpty
-
   /** @see markMacroImplRef
    */
   case object MacroImplRefAttachment
@@ -151,6 +133,39 @@ trait StdAttachments {
    *  because someone has put MacroImplRefAttachment on it.
    */
   def isMacroImplRef(tree: Tree): Boolean = tree.hasAttachment[MacroImplRefAttachment.type]
+
+  /** After being synthesized by the parser, primary constructors aren't fully baked yet.
+   *  A call to super in such constructors is just a fill-me-in-later dummy resolved later
+   *  by `parentTypes`. This attachment coordinates `parentTypes` and `typedTemplate` and
+   *  allows them to complete the synthesis.
+   */
+  case class SuperArgsAttachment(argss: List[List[Tree]])
+
+  /** Convenience method for `SuperArgsAttachment`.
+   *  Compared with `MacroRuntimeAttachment` this attachment has different a usage pattern,
+   *  so it really benefits from a dedicated extractor.
+   */
+  def superArgs(tree: Tree): Option[List[List[Tree]]] =
+    tree.attachments.get[SuperArgsAttachment] collect { case SuperArgsAttachment(argss) => argss }
+
+  /** Determines whether the given tree has an associated SuperArgsAttachment.
+   */
+  def hasSuperArgs(tree: Tree): Boolean = superArgs(tree).nonEmpty
+
+
+  /** In the typeCompleter (templateSig) of a case class (resp it's module),
+   *  synthetic `copy` (reps `apply`, `unapply`) methods are added. To compute
+   *  their signatures, the corresponding ClassDef is needed. During naming (in
+   *  `enterClassDef`), the case class ClassDef is added as an attachment to the
+   *  moduleClass symbol of the companion module.
+   */
+  case class ClassForCaseCompanionAttachment(caseClass: ClassDef)
+
+  /** We need to pass the tree of the class to the companion object as the methods there need to know which methods where defined. */
+  case class EnumConstantsAttachment(constants: List[TermName])
+
+  /** We use this to keep track of the right ordinal value in typedStat as we read one enum constant after another. */
+  case class EnumConstantOrdinalAttachment(value: Int)
 
   /** Since mkInvoke, the applyDynamic/selectDynamic/etc desugarer, is disconnected
    *  from typedNamedApply, the applyDynamicNamed argument rewriter, the latter

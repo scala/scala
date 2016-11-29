@@ -10,16 +10,13 @@ import symtab.Flags._
 import scala.reflect.internal.util.StringOps.ojoin
 import scala.reflect.internal.util.ListOfNil
 
-/** Logic related to method synthesis which involves cooperation between
- *  Namer and Typer.
- */
+/** Logic related to method synthesis which involves cooperation between Namer and Typer. */
 trait MethodSynthesis {
   self: Analyzer =>
 
   import global._
   import definitions._
   import CODE._
-
 
   class ClassMethodSynthesis(val clazz: Symbol, localTyper: Typer) {
     def mkThis = This(clazz) setPos clazz.pos.focus

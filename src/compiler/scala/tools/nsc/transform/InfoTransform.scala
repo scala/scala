@@ -33,6 +33,7 @@ trait InfoTransform extends Transform {
     if (infoTransformers.nextFrom(id).pid != id) {
       // this phase is not yet in the infoTransformers
       val infoTransformer = new InfoTransformer {
+        override def toString = InfoTransform.this.getClass.toString
         val pid = id
         val changesBaseClasses = InfoTransform.this.changesBaseClasses
         def transform(sym: Symbol, tpe: Type): Type = transformInfo(sym, tpe)

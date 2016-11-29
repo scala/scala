@@ -3595,8 +3595,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     creator(syms1, tpe.substSym(syms, syms1))
   }
 
-  /** A deep map on a symbol's paramss.
-   */
+  /** A deep map on a symbol's paramss. */
   def mapParamss[T](sym: Symbol)(f: Symbol => T): List[List[T]] = mmap(sym.info.paramss)(f)
 
   def existingSymbols(syms: List[Symbol]): List[Symbol] =
