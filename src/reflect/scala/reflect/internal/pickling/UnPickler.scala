@@ -224,10 +224,9 @@ abstract class UnPickler {
           if (owner.isOverloaded)
             return NoSymbol
 
-          if (tag == EXTMODCLASSref) {
+          if (tag == EXTMODCLASSref && !owner.isInstanceOf[StubSymbol])
             owner.info.decl(nme.moduleVarName(name.toTermName))
-          }
-          NoSymbol
+          else NoSymbol
         }
 
         def moduleAdvice(missing: String): String = {
