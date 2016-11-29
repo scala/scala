@@ -359,7 +359,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
         Callee(
           callee = bodyMethodNode,
           calleeDeclarationClass = bodyDeclClassType,
-          safeToInline = inlinerHeuristics.canInlineFromSource(sourceFilePath),
+          isStaticallyResolved = true,
           sourceFilePath = sourceFilePath,
           annotatedInline = false,
           annotatedNoInline = false,
@@ -392,7 +392,7 @@ class ClosureOptimizer[BT <: BTypes](val btypes: BT) {
     // (x: T) => ??? has return type Nothing$, and an ATHROW is added (see fixLoadedNothingOrNullValue).
     unreachableCodeEliminated -= ownerMethod
 
-    if (hasAdaptedImplMethod(closureInit) && inliner.canInlineBody(bodyMethodCallsite).isEmpty)
+    if (hasAdaptedImplMethod(closureInit) && inliner.canInlineCallsite(bodyMethodCallsite).isEmpty)
       inliner.inlineCallsite(bodyMethodCallsite)
   }
 

@@ -35,9 +35,9 @@ class InlineWarningTest extends BytecodeTesting {
       """.stripMargin
     var count = 0
     val warns = Set(
-      "C::m1()I is annotated @inline but cannot be inlined: the method is not final and may be overridden",
-      "T::m2()I is annotated @inline but cannot be inlined: the method is not final and may be overridden",
-      "D::m2()I is annotated @inline but cannot be inlined: the method is not final and may be overridden")
+      "C::m1()I is annotated @inline but could not be inlined:\nThe method is not final and may be overridden.",
+      "T::m2()I is annotated @inline but could not be inlined:\nThe method is not final and may be overridden.",
+      "D::m2()I is annotated @inline but could not be inlined:\nThe method is not final and may be overridden.")
     compileToBytes(code, allowMessage = i => {count += 1; warns.exists(i.msg contains _)})
     assert(count == 4, count)
   }
