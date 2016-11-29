@@ -294,19 +294,18 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     final def lookupCompanion(original: Symbol): Symbol = {
       lookupSymbolEntry(original) match {
         case null =>
-        case entry if entry.sym == original =>
+        case entry =>
           var e = lookupEntry(original.name.companionName)
           while (e != null) {
             // 1) Must be owned by the same Scope, to ensure that in
             //   `{ class C; { ...; object C } }`, the class is not seen as a comaniopn of the object.
-            // 2) Must be in exactly the same scope, so that `{ class C; def C }` are not companions
-            // TODO Exclude type aliases as companions of terms?
-            if ((e.owner eq entry.owner) && (original.isTerm || e.sym.hasModuleFlag)) {
-              return e.sym
+            // 2) Must be a class and module symbol, so that `{ class C; def C }` or `{ type T; object T }` are not companions.
+            def isClassAndModule(sym1: Symbol, sym2: Symbol) = sym1.isClass && sym2.isModule
+            if ((e.owner eq entry.owner) && (isClassAndModule(original, e.sym) || isClassAndModule(e.sym, original))) {
+              return if (e.sym.isCoDefinedWith(original)) e.sym else NoSymbol
             }
             e = lookupNextEntry(e)
           }
-        case _ =>
       }
       NoSymbol
     }

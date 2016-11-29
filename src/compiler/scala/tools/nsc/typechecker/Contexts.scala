@@ -1196,7 +1196,7 @@ trait Contexts { self: Analyzer =>
     final def lookupCompanionOf(original: Symbol): Symbol = {
       lookupScopeEntry(original) match {
         case null => NoSymbol
-        case entry => entry.owner.lookupCompanion(original).filter(_.isCoDefinedWith(original))
+        case entry => entry.owner.lookupCompanion(original)
       }
     }
 
