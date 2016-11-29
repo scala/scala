@@ -1202,7 +1202,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
             case Nil => entered.isEmpty && matchCount > 0
             case head :: tail =>
               val enteredAlternatives = Set(entered, entered.capitalize)
-              head.inits.filter(_.length <= entered.length).exists(init =>
+              val n = (head, entered).zipped.count {case (c, e) => c == e || (c.isUpper && c == e.toUpper)}
+              head.take(n).inits.exists(init =>
                 enteredAlternatives.exists(entered =>
                   lenientMatch(entered.stripPrefix(init), tail, matchCount + (if (init.isEmpty) 0 else 1))
                 )
