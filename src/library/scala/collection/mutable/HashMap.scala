@@ -72,35 +72,15 @@ extends AbstractMap[A, B]
     else Some(e.value)
   }
 
-  override def getOrElseUpdate(key: A, defaultValue: => B): B = {
+  override def getOrElseUpdate(key: A, value: => B): B = {
     val i = index(elemHashCode(key))
-    val entry = findEntry(key, i)
-    if (entry != null) entry.value
-    else addEntry(createNewEntry(key, defaultValue), i)
-  }
-
-  /* inlined HashTable.findEntry0 to preserve its visibility */
-  private[this] def findEntry(key: A, h: Int): Entry = {
-    var e = table(h).asInstanceOf[Entry]
-    while (notFound(key, e))
-      e = e.next
-    e
-  }
-  private[this] def notFound(key: A, e: Entry): Boolean = (e != null) && !elemEquals(e.key, key)
-
-  /* inlined HashTable.addEntry0 to preserve its visibility */
-  private[this] def addEntry(e: Entry, h: Int): B = {
-    if (tableSize >= threshold) addEntry(e)
-    else addEntry0(e, h)
-    e.value
-  }
-
-  /* extracted to make addEntry inlinable */
-  private[this] def addEntry0(e: Entry, h: Int) {
-    e.next = table(h).asInstanceOf[Entry]
-    table(h) = e
-    tableSize += 1
-    nnSizeMapAdd(h)
+    val e = findEntry0(key, i)
+    if (e ne null) e.value
+    else {
+      val newEntry = createNewEntry(key, value)
+      addEntry0(newEntry, i)
+      newEntry.value
+    }
   }
 
   override def put(key: A, value: B): Option[B] = {
