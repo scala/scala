@@ -13,11 +13,12 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.collection.{mutable, immutable}
-import scala.reflect.internal.util.{ Statistics, ListOfNil }
+import scala.collection.{immutable, mutable}
+import scala.reflect.internal.util.{ListOfNil, Statistics}
 import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
+import scala.reflect.macros.whitebox
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
 // like the IDE does.
@@ -2020,7 +2021,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     // use typedValDef instead. this version is called after creating a new context for the ValDef
     private def typedValDefImpl(vdef: ValDef) = {
       val sym = vdef.symbol.initialize
-      val typedMods = typedModifiers(vdef.mods)
+      val typedMods = if (nme.isLocalName(sym.name) && sym.isPrivateThis && !vdef.mods.isPrivateLocal) {
+        // SI-10009 This tree has been given a field symbol by `enterGetterSetter`, patch up the
+        // modifiers accordingly so that we can survive resetAttrs and retypechecking.
+        // Similarly, we use `sym.name` rather than `vdef.name` below to use the local name.
+        typedModifiers(vdef.mods.copy(flags = sym.flags, privateWithin = tpnme.EMPTY))
+      } else typedModifiers(vdef.mods)
 
       sym.annotations.map(_.completeInfo())
       val tpt1 = checkNoEscaping.privates(sym, typedType(vdef.tpt))
@@ -2055,7 +2061,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           } else tpt1.tpe
           transformedOrTyped(vdef.rhs, EXPRmode | BYVALmode, tpt2)
         }
-      treeCopy.ValDef(vdef, typedMods, vdef.name, tpt1, checkDead(rhs1)) setType NoType
+      treeCopy.ValDef(vdef, typedMods, sym.name, tpt1, checkDead(rhs1)) setType NoType
     }
 
     /** Enter all aliases of local parameter accessors.
