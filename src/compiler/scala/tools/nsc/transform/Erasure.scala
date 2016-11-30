@@ -1205,7 +1205,9 @@ abstract class Erasure extends InfoTransform
               treeCopy.ArrayValue(
                 tree1, elemtpt setType specialScalaErasure.applyInArray(elemtpt.tpe), trees map transform).clearType()
             case DefDef(_, _, _, _, tpt, _) =>
-              fields.dropFieldAnnotationsFromGetter(tree.symbol) // TODO: move this in some post-processing transform in the fields phase?
+              // TODO: move this in some post-processing transform in the fields phase?
+              if (fields.symbolAnnotationsTargetFieldAndGetter(tree.symbol))
+                fields.dropFieldAnnotationsFromGetter(tree.symbol)
 
               try super.transform(tree1).clearType()
               finally tpt setType specialErasure(tree1.symbol)(tree1.symbol.tpe).resultType

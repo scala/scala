@@ -902,9 +902,10 @@ trait Namers extends MethodSynthesis {
     // Annotations on ValDefs can be targeted towards the following: field, getter, setter, beanGetter, beanSetter, param.
     // The defaults are:
     //   - (`val`-, `var`- or plain) constructor parameter annotations end up on the parameter, not on any other entity.
-    //   - val/var member annotations solely end up on the underlying field, except in traits (@since 2.12),
+    //   - val/var member annotations solely end up on the underlying field, except in traits and for all lazy vals (@since 2.12),
     //     where there is no field, and the getter thus holds annotations targeting both getter & field.
-    //     As soon as there is a field/getter (in subclasses mixing in the trait), we triage the annotations.
+    //     As soon as there is a field/getter (in subclasses mixing in the trait, or after expanding the lazy val during the fields phase),
+    //     we triage the annotations.
     //
     // TODO: these defaults can be surprising for annotations not meant for accessors/fields -- should we revisit?
     // (In order to have `@foo val X` result in the X getter being annotated with `@foo`, foo needs to be meta-annotated with @getter)
@@ -918,15 +919,17 @@ trait Namers extends MethodSynthesis {
           BeanPropertyAnnotationLimitationError(tree)
       }
 
+      val canTriageAnnotations = isSetter || !fields.getterTreeAnnotationsTargetFieldAndGetter(owner, mods)
+
       def filterAccessorAnnotations: AnnotationInfo => Boolean =
-        if (isSetter || !owner.isTrait)
+        if (canTriageAnnotations)
           annotationFilter(if (isSetter) SetterTargetClass else GetterTargetClass, defaultRetention = false)
         else (ann =>
           annotationFilter(FieldTargetClass, defaultRetention = true)(ann) ||
             annotationFilter(GetterTargetClass, defaultRetention = true)(ann))
 
       def filterBeanAccessorAnnotations: AnnotationInfo => Boolean =
-        if (isSetter || !owner.isTrait)
+        if (canTriageAnnotations)
           annotationFilter(if (isSetter) BeanSetterTargetClass else BeanGetterTargetClass, defaultRetention = false)
         else (ann =>
           annotationFilter(FieldTargetClass, defaultRetention = true)(ann) ||
