@@ -13,8 +13,12 @@ package collection
 package mutable
 
 import scala.reflect.ClassTag
+import scala.runtime.BoxedUnit
 import scala.collection.generic._
 import scala.collection.parallel.mutable.ParArray
+import scala.util.hashing.MurmurHash3
+
+import java.util.Arrays
 
 /**
  *  A class representing `Array[T]`.
@@ -125,6 +129,11 @@ object WrappedArray {
     def length: Int = array.length
     def apply(index: Int): T = array(index).asInstanceOf[T]
     def update(index: Int, elem: T) { array(index) = elem }
+    override def hashCode = MurmurHash3.wrappedArrayHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofRef[_] => Arrays.equals(array.asInstanceOf[Array[AnyRef]], that.array.asInstanceOf[Array[AnyRef]])
+      case _ => super.equals(that)
+    }
   }
 
   final class ofByte(val array: Array[Byte]) extends WrappedArray[Byte] with Serializable {
@@ -132,6 +141,11 @@ object WrappedArray {
     def length: Int = array.length
     def apply(index: Int): Byte = array(index)
     def update(index: Int, elem: Byte) { array(index) = elem }
+    override def hashCode = MurmurHash3.wrappedBytesHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofByte => Arrays.equals(array, that.array)
+      case _ => super.equals(that)
+    }
   }
 
   final class ofShort(val array: Array[Short]) extends WrappedArray[Short] with Serializable {
@@ -139,6 +153,11 @@ object WrappedArray {
     def length: Int = array.length
     def apply(index: Int): Short = array(index)
     def update(index: Int, elem: Short) { array(index) = elem }
+    override def hashCode = MurmurHash3.wrappedArrayHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofShort => Arrays.equals(array, that.array)
+      case _ => super.equals(that)
+    }
   }
 
   final class ofChar(val array: Array[Char]) extends WrappedArray[Char] with Serializable {
@@ -146,6 +165,11 @@ object WrappedArray {
     def length: Int = array.length
     def apply(index: Int): Char = array(index)
     def update(index: Int, elem: Char) { array(index) = elem }
+    override def hashCode = MurmurHash3.wrappedArrayHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofChar => Arrays.equals(array, that.array)
+      case _ => super.equals(that)
+    }
   }
 
   final class ofInt(val array: Array[Int]) extends WrappedArray[Int] with Serializable {
@@ -153,6 +177,11 @@ object WrappedArray {
     def length: Int = array.length
     def apply(index: Int): Int = array(index)
     def update(index: Int, elem: Int) { array(index) = elem }
+    override def hashCode = MurmurHash3.wrappedArrayHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofInt => Arrays.equals(array, that.array)
+      case _ => super.equals(that)
+    }
   }
 
   final class ofLong(val array: Array[Long]) extends WrappedArray[Long] with Serializable {
@@ -160,6 +189,11 @@ object WrappedArray {
     def length: Int = array.length
     def apply(index: Int): Long = array(index)
     def update(index: Int, elem: Long) { array(index) = elem }
+    override def hashCode = MurmurHash3.wrappedArrayHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofLong => Arrays.equals(array, that.array)
+      case _ => super.equals(that)
+    }
   }
 
   final class ofFloat(val array: Array[Float]) extends WrappedArray[Float] with Serializable {
@@ -167,6 +201,11 @@ object WrappedArray {
     def length: Int = array.length
     def apply(index: Int): Float = array(index)
     def update(index: Int, elem: Float) { array(index) = elem }
+    override def hashCode = MurmurHash3.wrappedArrayHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofFloat => Arrays.equals(array, that.array)
+      case _ => super.equals(that)
+    }
   }
 
   final class ofDouble(val array: Array[Double]) extends WrappedArray[Double] with Serializable {
@@ -174,6 +213,11 @@ object WrappedArray {
     def length: Int = array.length
     def apply(index: Int): Double = array(index)
     def update(index: Int, elem: Double) { array(index) = elem }
+    override def hashCode = MurmurHash3.wrappedArrayHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofDouble => Arrays.equals(array, that.array)
+      case _ => super.equals(that)
+    }
   }
 
   final class ofBoolean(val array: Array[Boolean]) extends WrappedArray[Boolean] with Serializable {
@@ -181,6 +225,11 @@ object WrappedArray {
     def length: Int = array.length
     def apply(index: Int): Boolean = array(index)
     def update(index: Int, elem: Boolean) { array(index) = elem }
+    override def hashCode = MurmurHash3.wrappedArrayHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofBoolean => Arrays.equals(array, that.array)
+      case _ => super.equals(that)
+    }
   }
 
   final class ofUnit(val array: Array[Unit]) extends WrappedArray[Unit] with Serializable {
@@ -188,5 +237,10 @@ object WrappedArray {
     def length: Int = array.length
     def apply(index: Int): Unit = array(index)
     def update(index: Int, elem: Unit) { array(index) = elem }
+    override def hashCode = MurmurHash3.wrappedArrayHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofUnit => array.length == that.array.length
+      case _ => super.equals(that)
+    }
   }
 }
