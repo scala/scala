@@ -1738,4 +1738,19 @@ class InlinerTest extends BytecodeTesting {
     val List(a, c, t) = compile(code, allowMessage = _.msg contains warn)
     assertInvoke(getMethod(c, "t"), "T", "m$")
   }
+
+  @Test
+  def sd259d(): Unit = {
+    val code =
+      """trait T {
+        |  @inline final def m = 1
+        |}
+        |class C extends T {
+        |  def t = super.m // inline call to T.m$ here, we're not in the mixin forwarder C.m
+        |}
+      """.stripMargin
+    val List(c, t) = compileClasses(code)
+    assertNoInvoke(getMethod(c, "t"))
+    assertInvoke(getMethod(c, "m"), "T", "m$")
+  }
 }
