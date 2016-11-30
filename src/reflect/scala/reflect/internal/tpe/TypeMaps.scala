@@ -512,6 +512,8 @@ private[internal] trait TypeMaps {
         && isBaseClassOfEnclosingClass(sym.owner)
       )
 
+    private var capturedThisIds= 0
+    private def nextCapturedThisId() = { capturedThisIds += 1; capturedThisIds }
     /** Creates an existential representing a type parameter which appears
       *  in the prefix of a ThisType.
       */
@@ -519,7 +521,7 @@ private[internal] trait TypeMaps {
       capturedParams find (_.owner == clazz) match {
         case Some(p) => p.tpe
         case _       =>
-          val qvar = clazz freshExistential nme.SINGLETON_SUFFIX setInfo singletonBounds(pre)
+          val qvar = clazz.freshExistential(nme.SINGLETON_SUFFIX, nextCapturedThisId()) setInfo singletonBounds(pre)
           _capturedParams ::= qvar
           debuglog(s"Captured This(${clazz.fullNameString}) seen from $seenFromPrefix: ${qvar.defString}")
           qvar.tpe

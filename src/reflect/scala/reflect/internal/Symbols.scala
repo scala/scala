@@ -34,9 +34,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   def recursionTable = _recursionTable
   def recursionTable_=(value: immutable.Map[Symbol, Int]) = _recursionTable = value
 
+  @deprecated("Global existential IDs no longer used", "2.12.1")
   private var existentialIds = 0
+  @deprecated("Global existential IDs no longer used", "2.12.1")
   protected def nextExistentialId() = { existentialIds += 1; existentialIds }
-  protected def freshExistentialName(suffix: String) = newTypeName("_" + nextExistentialId() + suffix)
+  @deprecated("Use overload that accepts an id", "2.12.1")
+  protected def freshExistentialName(suffix: String): TypeName = freshExistentialName(suffix, nextExistentialId())
+  protected def freshExistentialName(suffix: String, id: Int): TypeName = newTypeName("_" + id + suffix)
 
   // Set the fields which point companions at one another.  Returns the module.
   def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): ModuleSymbol = {
@@ -440,8 +444,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def newGADTSkolem(name: TypeName, origin: Symbol, info: Type): TypeSkolem =
       newTypeSkolemSymbol(name, origin, origin.pos, origin.flags & ~(EXISTENTIAL | PARAM) | GADT_SKOLEM_FLAGS) setInfo info
 
+    @deprecated("Use overload that accepts an id", "2.12.1")
     final def freshExistential(suffix: String): TypeSymbol =
       newExistential(freshExistentialName(suffix), pos)
+    final def freshExistential(suffix: String, id: Int): TypeSymbol =
+      newExistential(freshExistentialName(suffix, id), pos)
 
     /** Type skolems are type parameters ''seen from the inside''
      *  Assuming a polymorphic method m[T], its type is a PolyType which has a TypeParameter

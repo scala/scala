@@ -4487,6 +4487,7 @@ trait Types
               debuglog(s"transposed irregular matrix!? tps=$tps argss=$argss")
               NoType
             case Some(argsst) =>
+              var capturedParamIds = 0
               val args = map2(sym.typeParams, argsst) { (tparam, as0) =>
                 val as = as0.distinct
                 if (as.size == 1) as.head
@@ -4508,8 +4509,10 @@ trait Types
                     else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
                       // just err on the conservative side, i.e. with a bound that is too high.
                       // if(!(tparam.info.bounds contains tparam))   //@M can't deal with f-bounds, see #2251
+                      capturedParamIds += 1
+                      val capturedParamId = capturedParamIds
 
-                      val qvar = commonOwner(as) freshExistential "" setInfo TypeBounds(g, l)
+                      val qvar = commonOwner(as).freshExistential("", capturedParamId) setInfo TypeBounds(g, l)
                       capturedParams += qvar
                       qvar.tpe
                     }
