@@ -113,7 +113,9 @@ abstract class FormatInterpolator {
           }
           def badOctal = {
             def msg(what: String) = s"Octal escape literals are $what$alt."
-            if (settings.future) {
+            //if (settings.language contains settings.languageFeatures.syntax)
+            //if (settings.language containsChoice settings.language.domain.syntax) {
+            if (settings.future) {  // checkFeature
               c.error(errPoint, msg("unsupported"))
               s0
             } else {

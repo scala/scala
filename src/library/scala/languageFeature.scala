@@ -43,5 +43,14 @@ object languageFeature {
     sealed trait macros
     object macros extends macros
   }
-}
 
+  object future {
+    @meta.languageFeature("future language syntax", enableRequired = true)
+    sealed trait syntax
+    object syntax extends syntax
+
+    @meta.languageFeature("no string plus", enableRequired = true)
+    sealed trait noStringPlus
+    object noStringPlus extends noStringPlus
+  }
+}

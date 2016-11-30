@@ -639,19 +639,29 @@ class MutableSettings(val errorFn: String => Unit)
     }
 
     type T = domain.ValueSet
-    protected var v: T = domain.ValueSet.empty
+    protected var v: T = emptyChoices
+
+    private def emptyChoices = domain.ValueSet.empty
 
     // Explicitly enabled or disabled. Yeas may contain expanding options, nays may not.
-    private var yeas = domain.ValueSet.empty
-    private var nays = domain.ValueSet.empty
+    private var yeas = emptyChoices
+    private var nays = emptyChoices
 
     // Asked for help
     private var sawHelp = false
     // Wildcard _ encountered
     private var sawAll  = false
+    private val wildPrefixes = collection.mutable.Set.empty[String]
+
+    // A wildcard has an optional prefix: "_", "experimental._"
+    private val wild = raw"([^.]*\.)?_".r
 
     private def badChoice(s: String) = errorFn(s"'$s' is not a valid choice for '$name'")
-    private def isChoice(s: String) = (s == "_") || (choices contains pos(s))
+    private def isChoice(s: String) = s match {
+      case wild(null)   => true
+      case wild(prefix) => choices exists (_.startsWith(prefix))
+      case _            => choices contains pos(s)
+    }
 
     private def pos(s: String) = s stripPrefix "-"
     private def isPos(s: String) = !(s startsWith "-")
@@ -668,13 +678,14 @@ class MutableSettings(val errorFn: String => Unit)
 
     /** (Re)compute from current yeas, nays, wildcard status. */
     def compute() = {
+      /** Is non-expanding. */
       def simple(v: domain.Value) = v match {
         case ChoiceOrVal(_, _, Nil) => true
         case _ => false
       }
 
       /**
-       * Expand an expanding option, if necessary recursively. Expanding options are not included in
+       * Recursively expand an expanding option, if necessary. Expanding options are not included in
        * the result (consistent with "_", which is not in `value` either).
        *
        * Note: by precondition, options in nays are not expanding, they can only be leaves.
@@ -685,7 +696,13 @@ class MutableSettings(val errorFn: String => Unit)
       }
 
       // yeas from _ or expansions are weak: an explicit nay will disable them
-      val weakYeas = if (sawAll) domain.values filter simple else expand(yeas filterNot simple)
+      val weakYeas = {
+        val wild     = if (sawAll) domain.values.filter(v => simple(v) && !v.toString.contains('.')) else emptyChoices
+        val prefixed = domain.values.filter(v => simple(v) && wildPrefixes.exists(v.toString.startsWith))
+        val expanded = expand(yeas.filterNot(simple))
+        (wild | prefixed | expanded)
+      }
+
       value = (yeas filter simple) | (weakYeas &~ nays)
     }
 
@@ -693,8 +710,11 @@ class MutableSettings(val errorFn: String => Unit)
     def add(arg: String) = arg match {
       case _ if !isChoice(arg) =>
         badChoice(arg)
-      case "_" =>
+      case wild(null) =>
         sawAll = true
+        compute()
+      case wild(prefix) =>
+        wildPrefixes += prefix
         compute()
       case _ if isPos(arg) =>
         yeas += domain withName arg
@@ -747,6 +767,11 @@ class MutableSettings(val errorFn: String => Unit)
     }
 
     def contains(choice: domain.Value): Boolean = value contains choice
+
+    // avoid overloading
+    def containsChoice(choice: domain.Value): Boolean = contains(choice)
+
+    def isChoiceSetByUser(choice: domain.Value): Boolean = yeas(choice) || nays(choice)
 
     override def isHelping: Boolean = sawHelp
 

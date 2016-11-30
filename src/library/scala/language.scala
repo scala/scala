@@ -32,6 +32,7 @@ package scala
  *  @groupname production   Language Features
  *  @groupname experimental Experimental Language Features
  *  @groupprio experimental 10
+ *  @groupname future Future Language Features
  */
 object language {
 
@@ -179,5 +180,42 @@ object language {
      *  to debug and understand.
      */
     implicit lazy val macros: macros = languageFeature.experimental.macros
+  }
+
+  /** The future object contains features that will be added to the Scala language
+   *  in an unspecified future release.
+   *
+   *  Future features are expected to enter the language in the form and
+   *  implementation enabled here. These features broadly conform to
+   *  the `-Xfuture` compiler option, which allows programmers to future-proof
+   *  their code.
+   *
+   *  @group future
+   */
+  object future {
+
+    import languageFeature.future._
+
+    /** Language syntax evolves slowly after long deprecation cycles.
+     *  This language control enables checks against future syntax.
+     *
+     *  '''Why enable the feature?''' This feature allows programmers to embrace
+     *  future language changes without negotiating deprecation warnings.
+     *
+     *  '''Why control it?''' In the absence of code rewriting and migration tools,
+     *  language changes must be introduced slowly to accommodate existing codebases.
+     *  The implicit control enables local migration of code.
+     */
+    implicit lazy val syntax: syntax = languageFeature.future.syntax
+
+    /** Disable the `+` operator for concatenating to `String` objects.
+     *
+     *  '''Why enable the feature?''' There are better uses for `+`.
+     *
+     *  '''Why control it?''' The conventional `+` for String concatentation has
+     *  a history on various platforms. But string interpolation is preferred
+     *  for new code.
+     */
+    implicit lazy val noStringPlus: noStringPlus = languageFeature.future.noStringPlus
   }
 }
