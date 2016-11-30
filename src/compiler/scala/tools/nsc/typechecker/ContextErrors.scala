@@ -952,9 +952,30 @@ trait ContextErrors {
       // side-effect on the tree, break the overloaded type cycle in infer
       private def setErrorOnLastTry(lastTry: Boolean, tree: Tree) = if (lastTry) setError(tree)
 
+      def widenArgs(argtpes: List[Type], params0: List[Symbol], params1: List[Symbol]): List[Type] =
+        argtpes.zipWithIndex map {
+          case (nt@NamedType(name, tp), _) => // a named argument
+            (tp, params0.find(_.name == name).map(_.tpe), params1.find(_.name == name).map(_.tpe)) match {
+              case (ConstantType(_), Some(ConstantType(_)), _) => nt
+              case (ConstantType(_), _, Some(ConstantType(_))) => nt
+              case (ct: ConstantType, _, _) => NamedType(name, ct.widen)
+              case _ => nt
+            }
+          case (ct: ConstantType, pos) =>
+            (params0.lift(pos).map(_.tpe), params1.lift(pos).map(_.tpe)) match {
+              case (Some(ConstantType(_)), _) => ct
+              case (_, Some(ConstantType(_))) => ct
+              case _ => ct.widen
+            }
+          case (tpe, _) => tpe
+        }
+
       def NoBestMethodAlternativeError(tree: Tree, argtpes: List[Type], pt: Type, lastTry: Boolean) = {
+        val alts = alternatives(tree)
+        val widenedArgtpes = widenArgs(argtpes, alts.head.params, alts.tail.head.params)
+
         issueNormalTypeError(tree,
-          applyErrorMsg(tree, " cannot be applied to ", argtpes, pt))
+          applyErrorMsg(tree, " cannot be applied to ", widenedArgtpes, pt))
         // since inferMethodAlternative modifies the state of the tree
         // we have to set the type of tree to ErrorType only in the very last
         // fallback action that is done in the inference.
@@ -966,8 +987,9 @@ trait ContextErrors {
             firstCompeting: Symbol, argtpes: List[Type], pt: Type, lastTry: Boolean) = {
 
         if (!(argtpes exists (_.isErroneous)) && !pt.isErroneous) {
+          val widenedArgtpes = widenArgs(argtpes, best.asMethod.tpe.params, firstCompeting.asMethod.tpe.params)
           val msg0 =
-            "argument types " + argtpes.mkString("(", ",", ")") +
+            "argument types " + widenedArgtpes.mkString("(", ",", ")") +
            (if (pt == WildcardType) "" else " and expected result type " + pt)
           issueAmbiguousTypeErrorUnlessErroneous(tree.pos, pre, best, firstCompeting, msg0)
           setErrorOnLastTry(lastTry, tree)

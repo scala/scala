@@ -1,0 +1,12 @@
+sip23-singleton-isas.scala:13: warning: fruitless type test: a value of non-singleton type String cannot be a Singleton
+  assert(!(foo: String).isInstanceOf[Singleton])
+                                    ^
+sip23-singleton-isas.scala:19: warning: fruitless type test: a value of non-singleton type String cannot be a Singleton
+  assert(!(bar: String).isInstanceOf[Singleton])
+                                    ^
+sip23-singleton-isas.scala:25: warning: fruitless type test: a value of non-singleton type String cannot be a Singleton
+  assert(!(baz: String).isInstanceOf[Singleton])
+                                    ^
+sip23-singleton-isas.scala:30: warning: fruitless type test: a value of non-singleton type String cannot be a Singleton
+  assert(!("foo": String).isInstanceOf[Singleton])
+                                      ^

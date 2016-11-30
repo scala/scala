@@ -8,7 +8,16 @@ class Bad[X, Y](val v: Int) extends AnyVal {
     {(); new Bad[X, Y](0)}.differentReceiver
   }
 
-  @annotation.tailrec final def dependent[Z](a: Int)(b: String): b.type = {
+  // The original test case fails with the new is/asInstanceOf semantics
+  // introduced along with -Yliteral-types because the method has a
+  // singleton result type which cannot be erased correctly.
+  // See: neg/sip23-tailrec-singleton.scala
+  //@annotation.tailrec final def dependent[Z](a: Int)(b: String): b.type = {
+  //  this.dependent[Z](a)(b)
+  //}
+
+  // Replacement test case
+  @annotation.tailrec final def dependent[Z](a: Int)(b: String): Option[b.type] = {
     this.dependent[Z](a)(b)
   }
 }
