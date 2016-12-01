@@ -48,6 +48,7 @@ private[reflect] class Settings extends MutableSettings {
   val uniqid            = new BooleanSetting(false)
   val verbose           = new BooleanSetting(false)
   val YpartialUnification = new BooleanSetting(false)
+  val Yvirtpatmat       = new BooleanSetting(false)
 
   val Yrecursion        = new IntSetting(0)
   val maxClassfileName  = new IntSetting(255)
