@@ -1678,7 +1678,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           supertpts mapConserve (tpt => checkNoEscaping.privates(context.owner, tpt))
         }
         catch {
-          case ex: TypeError =>
+          case ex: TypeError if !global.propagateCyclicReferences =>
             // fallback in case of cyclic errors
             // @H none of the tests enter here but I couldn't rule it out
             // upd. @E when a definition inherits itself, we end up here
@@ -1739,13 +1739,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             context.deprecationWarning(parent.pos, psym, report, version)
           }
 
-          if (psym.isSealed && !phase.erasedTypes)
-            if (sameSourceFile)
-              psym addChild context.owner
-            else
-              pending += ParentSealedInheritanceError(parent, psym)
-          if (psym.isLocalToBlock && !phase.erasedTypes)
-            psym addChild context.owner
           val parentTypeOfThis = parent.tpe.dealias.typeOfThis
 
           if (!(selfType <:< parentTypeOfThis) &&
@@ -5554,6 +5547,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       try runTyper() catch {
+        case ex: CyclicReference if global.propagateCyclicReferences =>
+          throw ex
         case ex: TypeError =>
           tree.clearType()
           // The only problematic case are (recoverable) cyclic reference errors which can pop up almost anywhere.

@@ -48,6 +48,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.OuterArgCanBeElided
     this.UseInvokeSpecial
     this.TypeParamVarargsAttachment
+    this.KnownDirectSubclassesCalled
     this.noPrint
     this.typeDebug
     this.Range

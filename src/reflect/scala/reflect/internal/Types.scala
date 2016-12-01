@@ -313,6 +313,11 @@ trait Types
     /** If this is a lazy type, assign a new type to `sym`. */
     def complete(sym: Symbol) {}
 
+    /** If this is a lazy type corresponding to a subclass add it to its
+     *  parents children
+     */
+    def forceDirectSuperclasses: Unit = ()
+
     /** The term symbol associated with the type
       * Note that the symbol of the normalized type is returned (@see normalize)
       */
