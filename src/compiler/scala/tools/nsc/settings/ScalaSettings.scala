@@ -103,7 +103,7 @@ trait ScalaSettings extends AbsScalaSettings
   val logReflectiveCalls = BooleanSetting      ("-Xlog-reflective-calls", "Print a message when a reflective method call is generated")
   val logFreeTerms       = BooleanSetting      ("-Xlog-free-terms", "Print a message when reification creates a free term.")
   val logFreeTypes       = BooleanSetting      ("-Xlog-free-types", "Print a message when reification resorts to generating a free type.")
-  val maxClassfileName   = IntSetting          ("-Xmax-classfile-name", "Maximum filename length for generated classes", 255, Some((72, 255)), _ => None)
+  val maxClassfileName   = IntSetting          ("-Xmax-classfile-name", "Maximum filename length for generated classes", 128, Some((72, 255)), _ => None)
   val Xmigration         = ScalaVersionSetting ("-Xmigration", "version", "Warn about constructs whose behavior may have changed since version.", initial = NoScalaVersion, default = Some(AnyScalaVersion))
   val nouescape          = BooleanSetting      ("-Xno-uescape", "Disable handling of \\u unicode escapes.")
   val Xnojline           = BooleanSetting      ("-Xnojline", "Do not use JLine for editing.")
