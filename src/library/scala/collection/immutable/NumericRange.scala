@@ -116,13 +116,13 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
   import NumericRange.defaultOrdering
 
   override def min[T1 >: T](implicit ord: Ordering[T1]): T =
-    if (ord eq defaultOrdering(num)) {
+    if ((ord eq num) || defaultOrdering.get(num).exists(ord eq _)) {
       if (num.signum(step) > 0) start
       else last
     } else super.min(ord)
 
   override def max[T1 >: T](implicit ord: Ordering[T1]): T =
-    if (ord eq defaultOrdering(num)) {
+    if ((ord eq num) || defaultOrdering.get(num).exists(ord eq _)) {
       if (num.signum(step) > 0) last
       else start
     } else super.max(ord)
