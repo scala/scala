@@ -91,7 +91,6 @@ trait Types
   private var explainSwitch = false
   private final val emptySymbolSet = immutable.Set.empty[Symbol]
 
-  private final val traceTypeVars = sys.props contains "scalac.debug.tvar"
   private final val breakCycles = settings.breakCycles.value
   /** In case anyone wants to turn on type parameter bounds being used
    *  to seed type constraints.
@@ -2826,13 +2825,13 @@ trait Types
   // now, pattern-matching returns the most recent constr
   object TypeVar {
     @inline final def trace[T](action: String, msg: => String)(value: T): T = {
-      if (traceTypeVars) {
-        val s = msg match {
-          case ""   => ""
-          case str  => "( " + str + " )"
-        }
-        Console.err.println("[%10s] %-25s%s".format(action, value, s))
-      }
+      // Uncomment the following for a compiler that has some diagnostics about type inference
+      // I doubt this is ever useful in the wild, so a recompile will be needed
+//    val s = msg match {
+//      case ""   => ""
+//      case str  => "( " + str + " )"
+//    }
+//    Console.err.println("[%10s] %-25s%s".format(action, value, s))
       value
     }
 
@@ -2853,7 +2852,9 @@ trait Types
         val exclude = bounds.isEmptyBounds || (bounds exists typeIsNonClassType)
 
         if (exclude) new TypeConstraint
-        else TypeVar.trace("constraint", "For " + tparam.fullLocationString)(new TypeConstraint(bounds))
+        else TypeVar.trace("constraint", "For " + tparam.fullLocationString)(
+          new TypeConstraint(bounds)
+        )
       }
       else new TypeConstraint
     }
@@ -2882,7 +2883,9 @@ trait Types
         else throw new Error("Invalid TypeVar construction: " + ((origin, constr, args, params)))
       )
 
-      trace("create", "In " + tv.originLocation)(tv)
+      trace("create", "In " + tv.originLocation)(
+        tv
+      )
     }
     private def createTypeVar(tparam: Symbol, untouchable: Boolean): TypeVar =
       createTypeVar(tparam.tpeHK, deriveConstraint(tparam), Nil, tparam.typeParams, untouchable)
@@ -2986,7 +2989,9 @@ trait Types
       else if (newArgs.size == params.size) {
         val tv = TypeVar(origin, constr, newArgs, params)
         tv.linkSuspended(this)
-        TypeVar.trace("applyArgs", "In " + originLocation + ", apply args " + newArgs.mkString(", ") + " to " + originName)(tv)
+        TypeVar.trace("applyArgs", s"In $originLocation, apply args ${newArgs.mkString(", ")} to $originName")(
+          tv
+        )
       }
       else
         TypeVar(typeSymbol).setInst(ErrorType)
@@ -3005,31 +3010,20 @@ trait Types
     // only one of them is in the set of tvars that need to be solved, but
     // they share the same TypeConstraint instance
 
-    // When comparing to types containing skolems, remember the highest level
-    // of skolemization. If that highest level is higher than our initial
-    // skolemizationLevel, we can't re-use those skolems as the solution of this
-    // typevar, which means we'll need to repack our inst into a fresh existential.
-    // were we compared to skolems at a higher skolemizationLevel?
-    // EXPERIMENTAL: value will not be considered unless enableTypeVarExperimentals is true
-    // see SI-5729 for why this is still experimental
-    private var encounteredHigherLevel = false
-    private def shouldRepackType = encounteredHigherLevel
-
     // <region name="constraint mutators + undoLog">
     // invariant: before mutating constr, save old state in undoLog
     // (undoLog is used to reset constraints to avoid piling up unrelated ones)
-    def setInst(tp: Type): this.type = {
-      if (tp eq this) {
+    def setInst(tp: Type): this.type =
+      if (tp ne this) {
+        undoLog record this
+        constr.inst = TypeVar.trace("setInst", s"In $originLocation, $originName=$tp")(
+          tp
+        )
+        this
+      } else {
         log(s"TypeVar cycle: called setInst passing $this to itself.")
-        return this
+        this
       }
-      undoLog record this
-      // if we were compared against later typeskolems, repack the existential,
-      // because skolems are only compatible if they were created at the same level
-      val res = if (shouldRepackType) repackExistential(tp) else tp
-      constr.inst = TypeVar.trace("setInst", "In " + originLocation + ", " + originName + "=" + res)(res)
-      this
-    }
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false) {
       assert(tp != this, tp) // implies there is a cycle somewhere (?)
@@ -3208,8 +3202,7 @@ trait Types
         checkSubtype(tp, origin)
       else if (instValid)  // type var is already set
         checkSubtype(tp, inst)
-      else {
-        trackHigherLevel(tp)
+      else isRelatable(tp) && {
         unifySimple || unifyFull(tp) || (
           // only look harder if our gaze is oriented toward Any
           isLowerBound && (
@@ -3232,8 +3225,7 @@ trait Types
 
       if (suspended) tp =:= origin
       else if (instValid) checkIsSameType(tp)
-      else {
-        trackHigherLevel(tp)
+      else isRelatable(tp) && {
         val newInst = wildcardToTypeVarMap(tp)
         (constr isWithinBounds newInst) && {
           setInst(newInst)
@@ -3257,9 +3249,12 @@ trait Types
       case _              => false
     }
 
-    private def trackHigherLevel(tp: Type): Unit =
-      if(!shouldRepackType && tp.exists(isSkolemAboveLevel))
-        encounteredHigherLevel = true
+
+    /** Can this variable be related in a constraint to type `tp`?
+      *  This is not the case if `tp` contains type skolems whose
+      *  skolemization level is higher than the level of this variable.
+      */
+    def isRelatable(tp: Type) = !(tp exists isSkolemAboveLevel)
 
     override def normalize: Type = (
       if (instValid) inst
@@ -3307,7 +3302,7 @@ trait Types
       // to never be resumed with the current implementation
       assert(!suspended, this)
       TypeVar.trace("clone", originLocation)(
-        TypeVar(origin, constr.cloneInternal, typeArgs, params) // @M TODO: clone args/params?
+        TypeVar(origin, constr.cloneInternal, typeArgs, params)
       )
     }
   }
