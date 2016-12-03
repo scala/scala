@@ -69,6 +69,16 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
    *  from this random number generator's sequence.
    */
   def nextLong(): Long = self.nextLong()
+  
+  def nextLong(n: Long): Long = {
+    if (n <= 0) throw new java.lang.IllegalArgumentException("bound must be positive")
+    if (n <= Int.MaxValue) nextInt(n.toInt).toLong
+    else {
+      val RAND_MAX = Long.MaxValue     // 2^63-1
+      val x = nextLong() >>> 1         // [0, 2^63), strip the sign bit
+      if (x < (RAND_MAX - (RAND_MAX % n))) x % n else nextLong(n)
+    }
+  }
 
   /** Returns a pseudorandomly generated String.  This routine does
    *  not take any measures to preserve the randomness of the distribution
