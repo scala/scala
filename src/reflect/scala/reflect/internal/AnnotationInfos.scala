@@ -412,7 +412,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
   /** Extracts the type of the thrown exception from an AnnotationInfo.
     *
     * Supports both “old-style” `@throws(classOf[Exception])`
-    * as well as “new-stye” `@throws[Exception]("cause")` annotations.
+    * as well as “new-style” `@throws[Exception]("cause")` annotations.
     */
   object ThrownException {
     def unapply(ann: AnnotationInfo): Option[Type] = {

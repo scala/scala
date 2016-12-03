@@ -125,9 +125,9 @@ trait FindMembers {
     /* Add this member to the final result, unless an already-found member matches it. */
     protected def addMemberIfNew(sym: Symbol): Unit
 
-    // Is `sym` a potentially member of `baseClass`?
+    // Is `sym` potentially a member of `baseClass`?
     //
-    // Q. When does a potential member fail to be a an actual member?
+    // Q. When does a potential member fail to be an actual member?
     // A. if it is subsumed by an member in a subclass.
     private def isPotentialMember(sym: Symbol, flags: Long, owner: Symbol,
                                   seenFirstNonRefinementClass: Boolean, refinementParents: List[Symbol]): Boolean = {

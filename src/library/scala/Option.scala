@@ -107,7 +107,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
   def isDefined: Boolean = !isEmpty
 
   /** Returns the option's value.
-   *  @note The option must be nonEmpty.
+   *  @note The option must be nonempty.
    *  @throws java.util.NoSuchElementException if the option is empty.
    */
   def get: A

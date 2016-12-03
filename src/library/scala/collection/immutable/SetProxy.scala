@@ -12,8 +12,7 @@ package scala
 package collection
 package immutable
 
-/** This is a simple wrapper class for <a href="Set.html"
- *  target="contentFrame">`scala.collection.immutable.Set`</a>.
+/** This is a simple wrapper class for [[scala.collection.immutable.Set]].
  *
  *  It is most useful for assembling customized set abstractions
  *  dynamically using object composition and forwarding.

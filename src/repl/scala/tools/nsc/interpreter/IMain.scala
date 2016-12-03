@@ -889,7 +889,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     }
 
     class ClassBasedWrapper extends Wrapper {
-      def preambleHeader = "class %s extends _root_.java.io.Serializable { "
+      def preambleHeader = "sealed class %s extends _root_.java.io.Serializable { "
 
       /** Adds an object that instantiates the outer wrapping class. */
       def postamble  = s"""

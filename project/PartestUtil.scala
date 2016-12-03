@@ -86,7 +86,10 @@ object PartestUtil {
         srcPath = path
         opt + " " + path
     }
-    val P = oneOf(knownUnaryOptions.map(x => token(x))) | SrcPath | TestPathParser | Grep
+
+    val ScalacOptsParser = (token("-Dpartest.scalac_opts=") ~ token(NotSpace)) map { case opt ~ v => opt + v }
+
+    val P = oneOf(knownUnaryOptions.map(x => token(x))) | SrcPath | TestPathParser | Grep | ScalacOptsParser
     (Space ~> repsep(P, oneOrMore(Space))).map(_.mkString(" ")).?.map(_.getOrElse("")) <~ OptSpace
   }
 }

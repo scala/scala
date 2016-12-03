@@ -95,6 +95,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   type ThisPlatform = JavaPlatform { val global: Global.this.type }
   lazy val platform: ThisPlatform  = new GlobalPlatform
+  /* A hook for the REPL to add a classpath entry containing products of previous runs to inliner's bytecode repository*/
+  // Fixes SI-8779
+  def optimizerClassPath(base: ClassPath): ClassPath = base
 
   def classPath: ClassPath = platform.classPath
 
@@ -1297,7 +1300,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
     /** does this run compile given class, module, or case factory? */
     // NOTE: Early initialized members temporarily typechecked before the enclosing class, see typedPrimaryConstrBody!
-    //       Here we work around that wrinkle by claiming that a early-initialized member is compiled in
+    //       Here we work around that wrinkle by claiming that a pre-initialized member is compiled in
     //       *every* run. This approximation works because this method is exclusively called with `this` == `currentRun`.
     def compiles(sym: Symbol): Boolean =
       if (sym == NoSymbol) false

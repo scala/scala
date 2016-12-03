@@ -59,7 +59,7 @@ object Source {
   def fromFile(name: String, enc: String): BufferedSource =
     fromFile(name)(Codec(enc))
 
-  /** creates `ource` from file with given file `URI`.
+  /** creates `source` from file with given file `URI`.
    */
   def fromFile(uri: URI)(implicit codec: Codec): BufferedSource =
     fromFile(new JFile(uri))(codec)

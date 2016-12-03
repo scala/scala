@@ -76,7 +76,7 @@ object scalap extends Command {
 
   val exitStatus = Section("EXIT STATUS",
 
-    MBold(command) & " returns a zero exist status if it succeeds to process " &
+    MBold(command) & " returns a zero exit status if it succeeds to process " &
     "the specified input files. Non zero is returned in case of failure.")
 
   override val authors = Section("AUTHOR",

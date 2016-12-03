@@ -14,7 +14,7 @@ object Product19 {
     Some(x)
 }
 
-/** Product19 is a cartesian product of 19 components.
+/** Product19 is a Cartesian product of 19 components.
  *  @since 2.3
  */
 trait Product19[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10, +T11, +T12, +T13, +T14, +T15, +T16, +T17, +T18, +T19] extends Any with Product {

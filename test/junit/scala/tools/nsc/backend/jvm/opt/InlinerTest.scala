@@ -67,7 +67,7 @@ class InlinerTest extends BytecodeTesting {
 
   def canInlineTest(code: String, mod: ClassNode => Unit = _ => ()): Option[OptimizerWarning] = {
     val cs = gMethAndFCallsite(code, mod)._2
-    inliner.earlyCanInlineCheck(cs) orElse inliner.canInlineBody(cs)
+    inliner.earlyCanInlineCheck(cs) orElse inliner.canInlineCallsite(cs).map(_._1)
   }
 
   def inlineTest(code: String, mod: ClassNode => Unit = _ => ()): MethodNode = {
@@ -199,8 +199,8 @@ class InlinerTest extends BytecodeTesting {
     val List(c, d) = compile(code)
     val hMeth = getAsmMethod(d, "h")
     val gCall = getCallsite(hMeth, "g")
-    val r = inliner.canInlineBody(gCall)
-    assert(r.nonEmpty && r.get.isInstanceOf[IllegalAccessInstruction], r)
+    val r = inliner.canInlineCallsite(gCall)
+    assert(r.nonEmpty && r.get._1.isInstanceOf[IllegalAccessInstruction], r)
   }
 
   @Test
@@ -340,7 +340,7 @@ class InlinerTest extends BytecodeTesting {
     val fMeth = getAsmMethod(c, "f")
     val call = getCallsite(fMeth, "lowestOneBit")
 
-    val warning = inliner.canInlineBody(call)
+    val warning = inliner.canInlineCallsite(call)
     assert(warning.isEmpty, warning)
 
     inliner.inline(InlineRequest(call, Nil, null))
@@ -475,7 +475,7 @@ class InlinerTest extends BytecodeTesting {
         |  def t2 = this.f
         |}
       """.stripMargin
-    val warn = "::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden"
+    val warn = "::f()I is annotated @inline but could not be inlined:\nThe method is not final and may be overridden."
     var count = 0
     val List(c, t) = compile(code, allowMessage = i => {count += 1; i.msg contains warn})
     assert(count == 2, count)
@@ -513,7 +513,7 @@ class InlinerTest extends BytecodeTesting {
         |  def t3(t: T) = t.f // no inlining here
         |}
       """.stripMargin
-    val warn = "T::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden"
+    val warn = "T::f()I is annotated @inline but could not be inlined:\nThe method is not final and may be overridden."
     var count = 0
     val List(c, oMirror, oModule, t) = compile(code, allowMessage = i => {count += 1; i.msg contains warn})
     assert(count == 1, count)
@@ -617,7 +617,7 @@ class InlinerTest extends BytecodeTesting {
         |}
       """.stripMargin
 
-    val warning = "T1::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden"
+    val warning = "T1::f()I is annotated @inline but could not be inlined:\nThe method is not final and may be overridden."
     var count = 0
     val List(ca, cb, t1, t2a, t2b) = compile(code, allowMessage = i => {count += 1; i.msg contains warning})
     assert(count == 4, count) // see comments, f is not inlined 4 times
@@ -698,7 +698,7 @@ class InlinerTest extends BytecodeTesting {
         |  def t1(c: C) = c.foo
         |}
       """.stripMargin
-    val warn = "C::foo()I is annotated @inline but cannot be inlined: the method is not final and may be overridden"
+    val warn = "C::foo()I is annotated @inline but could not be inlined:\nThe method is not final and may be overridden."
     var c = 0
     compile(code, allowMessage = i => {c += 1; i.msg contains warn})
     assert(c == 1, c)
@@ -762,7 +762,7 @@ class InlinerTest extends BytecodeTesting {
         |}
       """.stripMargin
 
-    val List(c, t, u) = compile(code, allowMessage = _.msg contains "i()I is annotated @inline but cannot be inlined")
+    val List(c, t, u) = compile(code, allowMessage = _.msg contains "::i()I is annotated @inline but could not be inlined:\nThe method is not final and may be overridden.")
     val m1 = getMethod(c, "m1")
     assertInvoke(m1, "T", "a")
     assertInvoke(m1, "T", "b")
@@ -969,7 +969,7 @@ class InlinerTest extends BytecodeTesting {
     val gCall = getCallsite(hMeth, "g")
     val hCall = getCallsite(iMeth, "h")
 
-    val warning = inliner.canInlineBody(gCall)
+    val warning = inliner.canInlineCallsite(gCall)
     assert(warning.isEmpty, warning)
 
     inliner.inline(InlineRequest(hCall,
@@ -1053,7 +1053,7 @@ class InlinerTest extends BytecodeTesting {
         |  def t1 = f1(1)             // inlined
         |  def t2 = f2(1)             // not inlined
         |  def t3 = f1(1): @noinline  // not inlined
-        |  def t4 = f2(1): @inline    // not inlined (cannot override the def-site @noinline)
+        |  def t4 = f2(1): @inline    // inlined
         |  def t5 = f3(1): @inline    // inlined
         |  def t6 = f3(1): @noinline  // not inlined
         |
@@ -1067,7 +1067,7 @@ class InlinerTest extends BytecodeTesting {
     assertNoInvoke(getMethod(c, "t1"))
     assertInvoke(getMethod(c, "t2"), "C", "f2")
     assertInvoke(getMethod(c, "t3"), "C", "f1")
-    assertInvoke(getMethod(c, "t4"), "C", "f2")
+    assertNoInvoke(getMethod(c, "t4"))
     assertNoInvoke(getMethod(c, "t5"))
     assertInvoke(getMethod(c, "t6"), "C", "f3")
     assertNoInvoke(getMethod(c, "t7"))
@@ -1469,8 +1469,8 @@ class InlinerTest extends BytecodeTesting {
         |class C extends T1 with T2
       """.stripMargin
     val List(c, t1, t2) = compile(code, allowMessage = _ => true)
-    // the forwarder C.f is inlined, so there's no invocation
-    assertSameSummary(getMethod(c, "f"), List(ICONST_1, IRETURN))
+    // we never inline into mixin forwarders, see scala-dev#259
+    assertInvoke(getMethod(c, "f"), "T2", "f$")
   }
 
   @Test
@@ -1621,5 +1621,136 @@ class InlinerTest extends BytecodeTesting {
       ("oneLastMethodWithVeryVeryLongNameAlmostLik_yetAnotherMethodWithVeryVeryLongNameAlmost_oneMoreMethodWithVeryVeryLongNameAlmostLik_param",9),
       ("oneLastMethodWithVeryVeryLongNam_yetAnotherMethodWithVeryVeryLong_oneMoreMethodWithVeryVeryLongNam_anotherMethodWithVeryVeryLongNam_param",10),
       ("oneLastMethodWithVeryVery_yetAnotherMethodWithVeryV_oneMoreMethodWithVeryVery_anotherMethodWithVeryVery_methodWithVeryVeryLongNam_param",11)))
+  }
+
+  @Test
+  def sd259(): Unit = {
+    // - trait methods are not inlined into their static super accessors, and also not into mixin forwarders.
+    // - inlining an invocation of a mixin forwarder also inlines the static accessor and the trait method body.
+    val code =
+      """trait T {
+        |        def m1a = 1
+        |  final def m1b = 1
+        |
+        |  @inline       def m2a = 2
+        |  @inline final def m2b = 2
+        |
+        |        def m3a(f: Int => Int) = f(1)
+        |  final def m3b(f: Int => Int) = f(1)
+        |}
+        |final class A extends T
+        |class C {
+        |  def t1(t: T) = t.m1a
+        |  def t2(t: T) = t.m1b
+        |  def t3(t: T) = t.m2a
+        |  def t4(t: T) = t.m2b
+        |  def t5(t: T) = t.m3a(x => x)
+        |  def t6(t: T) = t.m3b(x => x)
+        |
+        |  def t7(a: A) = a.m1a
+        |  def t8(a: A) = a.m1b
+        |  def t9(a: A) = a.m2a
+        |  def t10(a: A) = a.m2b
+        |  def t11(a: A) = a.m3a(x => x)
+        |  def t12(a: A) = a.m3b(x => x)
+        |}
+      """.stripMargin
+    val warn = "T::m2a()I is annotated @inline but could not be inlined:\nThe method is not final and may be overridden."
+    var count = 0
+    val List(a, c, t) = compile(code, allowMessage = i => {count += 1; i.msg contains warn})
+    assert(count == 1)
+
+    assertInvoke(getMethod(t, "m1a$"), "T", "m1a")
+    assertInvoke(getMethod(t, "m1b$"), "T", "m1b")
+    assertInvoke(getMethod(t, "m2a$"), "T", "m2a")
+    assertInvoke(getMethod(t, "m2b$"), "T", "m2b")
+    assertInvoke(getMethod(t, "m3a$"), "T", "m3a")
+    assertInvoke(getMethod(t, "m3b$"), "T", "m3b")
+
+    assertInvoke(getMethod(a, "m1a"), "T", "m1a$")
+    assertInvoke(getMethod(a, "m1b"), "T", "m1b$")
+    assertInvoke(getMethod(a, "m2a"), "T", "m2a$")
+    assertInvoke(getMethod(a, "m2b"), "T", "m2b$")
+    assertInvoke(getMethod(a, "m3a"), "T", "m3a$")
+    assertInvoke(getMethod(a, "m3b"), "T", "m3b$")
+
+    assertInvoke(getMethod(c, "t1"), "T", "m1a")
+    assertInvoke(getMethod(c, "t2"), "T", "m1b")
+
+    assertInvoke(getMethod(c, "t3"), "T", "m2a") // could not inline
+    assertNoInvoke(getMethod(c, "t4"))
+
+    assertInvoke(getMethod(c, "t5"), "T", "m3a") // could not inline
+    assertInvoke(getMethod(c, "t6"), "C", "$anonfun$t6$1") // both forwarders inlined, closure eliminated
+
+    assertInvoke(getMethod(c, "t7"), "A", "m1a")
+    assertInvoke(getMethod(c, "t8"), "A", "m1b")
+
+    assertNoInvoke(getMethod(c, "t9"))
+    assertNoInvoke(getMethod(c, "t10"))
+
+    assertInvoke(getMethod(c, "t11"), "C", "$anonfun$t11$1") // both forwarders inlined, closure eliminated
+    assertInvoke(getMethod(c, "t12"), "C", "$anonfun$t12$1") // both forwarders inlined, closure eliminated
+  }
+
+  @Test
+  def sd259b(): Unit = {
+    val code =
+      """trait T {
+        |  def get = 1
+        |  @inline final def m = try { get } catch { case _: Throwable => 1 }
+        |}
+        |class A extends T
+        |class C {
+        |  def t(a: A) = 1 + a.m // cannot inline a try block onto a non-empty stack
+        |}
+      """.stripMargin
+    val warn =
+      """T::m()I is annotated @inline but could not be inlined:
+        |The operand stack at the callsite in C::t(LA;)I contains more values than the
+        |arguments expected by the callee T::m()I. These values would be discarded
+        |when entering an exception handler declared in the inlined method.""".stripMargin
+    val List(a, c, t) = compile(code, allowMessage = _.msg contains warn)
+
+    // inlinig of m$ is rolled back, because <invokespecial T.m> is not legal in class C.
+    assertInvoke(getMethod(c, "t"), "T", "m$")
+  }
+
+  @Test
+  def sd259c(): Unit = {
+    val code =
+      """trait T {
+        |  def bar = 1
+        |  @inline final def m = {
+        |    def impl = bar // private, non-static method
+        |    impl
+        |  }
+        |}
+        |class A extends T
+        |class C {
+        |  def t(a: A) = a.m
+        |}
+      """.stripMargin
+    val warn =
+      """T::m()I is annotated @inline but could not be inlined:
+        |The callee T::m()I contains the instruction INVOKESPECIAL T.impl$1 ()I
+        |that would cause an IllegalAccessError when inlined into class C.""".stripMargin
+    val List(a, c, t) = compile(code, allowMessage = _.msg contains warn)
+    assertInvoke(getMethod(c, "t"), "T", "m$")
+  }
+
+  @Test
+  def sd259d(): Unit = {
+    val code =
+      """trait T {
+        |  @inline final def m = 1
+        |}
+        |class C extends T {
+        |  def t = super.m // inline call to T.m$ here, we're not in the mixin forwarder C.m
+        |}
+      """.stripMargin
+    val List(c, t) = compileClasses(code)
+    assertNoInvoke(getMethod(c, "t"))
+    assertInvoke(getMethod(c, "m"), "T", "m$")
   }
 }

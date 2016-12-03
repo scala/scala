@@ -36,12 +36,12 @@ object Osgi {
       )
     },
     jarlist := false,
-    bundle <<= Def.task {
-      val res = (products in Compile in packageBin).value
-      bundleTask(headers.value.toMap, jarlist.value, (products in Compile in packageBin).value,
-        (artifactPath in (Compile, packageBin)).value, res, streams.value)
-    },
-    packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), bundle).identityMap,
+    bundle := Def.task {
+      val cp = (products in Compile in packageBin).value
+      bundleTask(headers.value.toMap, jarlist.value, cp,
+        (artifactPath in (Compile, packageBin)).value, cp, streams.value)
+    }.value,
+    packagedArtifact in (Compile, packageBin) := (((artifact in (Compile, packageBin)).value, bundle.value)),
     // Also create OSGi source bundles:
     packageOptions in (Compile, packageSrc) += Package.ManifestAttributes(
       "Bundle-Name" -> (description.value + " Sources"),
@@ -57,7 +57,12 @@ object Osgi {
     val builder = new Builder
     builder.setClasspath(fullClasspath.toArray)
     headers foreach { case (k, v) => builder.setProperty(k, v) }
-    val includeRes = resourceDirectories.filter(_.exists).map(_.getAbsolutePath).mkString(",")
+
+    // https://github.com/scala/scala-dev/issues/254
+    // Must be careful not to include scala-asm.jar within scala-compiler.jar!
+    def resourceDirectoryRef(f: File) = (if (f.isDirectory) "" else "@") + f.getAbsolutePath
+
+    val includeRes = resourceDirectories.filter(_.exists).map(resourceDirectoryRef).mkString(",")
     if(!includeRes.isEmpty) builder.setProperty(INCLUDERESOURCE, includeRes)
     builder.getProperties.asScala.foreach { case (k, v) => log.debug(s"bnd: $k: $v") }
     // builder.build is not thread-safe because it uses a static SimpleDateFormat.  This ensures

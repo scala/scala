@@ -74,7 +74,7 @@ package util
  *  } yield a + b + c // Left(23.0)
  *
  *  // It is advisable to provide the type of the “missing” value (especially the right value for `Left`)
- *  // as otherwise that type might be infered as `Nothing` without context:
+ *  // as otherwise that type might be inferred as `Nothing` without context:
  *  for {
  *    a <- left23
  *    b <- right1

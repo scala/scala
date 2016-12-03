@@ -143,8 +143,8 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
  *  This is done to prevent avalanches of deprecation warnings in the code that calls methods with manifests.
  *
  *  In a perfect world, we would just remove the @deprecated annotation from `ClassManifest` the object
- *  and then delete it in 2.11. After all, that object is explicitly marked as internal, so noone should use it.
- *  However a lot of existing libraries disregarded the scaladoc that comes with `ClassManifest`,
+ *  and then delete it in 2.11. After all, that object is explicitly marked as internal, so no one should use it.
+ *  However a lot of existing libraries disregarded the Scaladoc that comes with `ClassManifest`,
  *  so we need to somehow nudge them into migrating prior to removing stuff out of the blue.
  *  Hence we've introduced this design decision as the lesser of two evils.
  */

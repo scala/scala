@@ -87,8 +87,8 @@ trait Constants extends api.Constants {
     }
 
     def isNaN = value match {
-      case f: Float  => f.isNaN
-      case d: Double => d.isNaN
+      case f: Float  => java.lang.Float.isNaN(f)
+      case d: Double => java.lang.Double.isNaN(d)
       case _ => false
     }
 

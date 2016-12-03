@@ -68,7 +68,7 @@ trait Names extends api.Names {
     while (i < len) {
       if (nc + i == chrs.length) {
         val newchrs = new Array[Char](chrs.length * 2)
-        scala.compat.Platform.arraycopy(chrs, 0, newchrs, 0, chrs.length)
+        java.lang.System.arraycopy(chrs, 0, newchrs, 0, chrs.length)
         chrs = newchrs
       }
       chrs(nc + i) = cs(offset + i)
@@ -220,7 +220,7 @@ trait Names extends api.Names {
 
     /** Copy bytes of this name to buffer cs, starting at position `offset`. */
     final def copyChars(cs: Array[Char], offset: Int) =
-      scala.compat.Platform.arraycopy(chrs, index, cs, offset, len)
+      java.lang.System.arraycopy(chrs, index, cs, offset, len)
 
     /** @return the ascii representation of this name */
     final def toChars: Array[Char] = {  // used by ide

@@ -10,7 +10,7 @@
 
 package scala
 
-/** A marker trait for all immutable datastructures such as immutable
+/** A marker trait for all immutable data structures such as immutable
  *  collections.
  *
  *  @since 2.8

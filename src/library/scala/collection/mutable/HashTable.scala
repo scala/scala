@@ -131,7 +131,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   protected def findEntry(key: A): Entry =
     findEntry0(key, index(elemHashCode(key)))
 
-  private[this] def findEntry0(key: A, h: Int): Entry = {
+  protected[this] final def findEntry0(key: A, h: Int): Entry = {
     var e = table(h).asInstanceOf[Entry]
     while (e != null && !elemEquals(e.key, key)) e = e.next
     e
@@ -145,7 +145,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     addEntry0(e, index(elemHashCode(e.key)))
   }
 
-  private[this] def addEntry0(e: Entry, h: Int) {
+  protected[this] final def addEntry0(e: Entry, h: Int) {
     e.next = table(h).asInstanceOf[Entry]
     table(h) = e
     tableSize = tableSize + 1
@@ -360,14 +360,14 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   protected def elemEquals(key1: A, key2: A): Boolean = (key1 == key2)
 
-  // Note:
-  // we take the most significant bits of the hashcode, not the lower ones
-  // this is of crucial importance when populating the table in parallel
-  protected final def index(hcode: Int) = {
+  /**
+    * Note: we take the most significant bits of the hashcode, not the lower ones
+    * this is of crucial importance when populating the table in parallel
+    */
+  protected final def index(hcode: Int): Int = {
     val ones = table.length - 1
-    val improved = improve(hcode, seedvalue)
-    val shifted = (improved >> (32 - java.lang.Integer.bitCount(ones))) & ones
-    shifted
+    val exponent = Integer.numberOfLeadingZeros(ones)
+    (improve(hcode, seedvalue) >>> exponent) & ones
   }
 
   protected def initWithContents(c: HashTable.Contents[A, Entry]) = {
@@ -396,7 +396,7 @@ private[collection] object HashTable {
   /** The load factor for the hash table (in 0.001 step).
    */
   private[collection] final def defaultLoadFactor: Int = 750 // corresponds to 75%
-  private[collection] final def loadFactorDenum = 1000
+  private[collection] final def loadFactorDenum = 1000 // should be loadFactorDenom, but changing that isn't binary compatible
 
   private[collection] final def newThreshold(_loadFactor: Int, size: Int) = ((size.toLong * _loadFactor) / loadFactorDenum).toInt
 
@@ -411,58 +411,23 @@ private[collection] object HashTable {
 
     protected def elemHashCode(key: KeyType) = key.##
 
-    protected final def improve(hcode: Int, seed: Int) = {
-      /* Murmur hash
-       *  m = 0x5bd1e995
-       *  r = 24
-       *  note: h = seed = 0 in mmix
-       *  mmix(h,k) = k *= m; k ^= k >> r; k *= m; h *= m; h ^= k; */
-      // var k = hcode * 0x5bd1e995
-      // k ^= k >> 24
-      // k *= 0x5bd1e995
-      // k
-
-      /* Another fast multiplicative hash
-       * by Phil Bagwell
-       *
-       * Comment:
-       * Multiplication doesn't affect all the bits in the same way, so we want to
-       * multiply twice, "once from each side".
-       * It would be ideal to reverse all the bits after the first multiplication,
-       * however, this is more costly. We therefore restrict ourselves only to
-       * reversing the bytes before final multiplication. This yields a slightly
-       * worse entropy in the lower 8 bits, but that can be improved by adding:
-       *
-       * `i ^= i >> 6`
-       *
-       * For performance reasons, we avoid this improvement.
-       * */
-      val i= scala.util.hashing.byteswap32(hcode)
-
-      /* Jenkins hash
-       * for range 0-10000, output has the msb set to zero */
-      // var h = hcode + (hcode << 12)
-      // h ^= (h >> 22)
-      // h += (h << 4)
-      // h ^= (h >> 9)
-      // h += (h << 10)
-      // h ^= (h >> 2)
-      // h += (h << 7)
-      // h ^= (h >> 12)
-      // h
-
-      /* OLD VERSION
-       * quick, but bad for sequence 0-10000 - little entropy in higher bits
-       * since 2003 */
-      // var h: Int = hcode + ~(hcode << 9)
-      // h = h ^ (h >>> 14)
-      // h = h + (h << 4)
-      // h ^ (h >>> 10)
-
-      // the rest of the computation is due to SI-5293
-      val rotation = seed % 32
-      val rotated = (i >>> rotation) | (i << (32 - rotation))
-      rotated
+    /**
+      * Defer to a high-quality hash in [[scala.util.hashing]].
+      * The goal is to distribute across bins as well as possible even if a hash code has low entropy at some bits.
+      * <p/>
+      * OLD VERSION - quick, but bad for sequence 0-10000 - little entropy in higher bits - since 2003
+      * {{{
+      * var h: Int = hcode + ~(hcode << 9)
+      * h = h ^ (h >>> 14)
+      * h = h + (h << 4)
+      * h ^ (h >>> 10)
+      * }}}
+      * the rest of the computation is due to SI-5293
+      */
+    protected final def improve(hcode: Int, seed: Int): Int = {
+      val hash = scala.util.hashing.byteswap32(hcode)
+      val shift = seed & ((1 << 5) - 1)
+      (hash >>> shift) | (hash << (32 - shift))
     }
   }
 

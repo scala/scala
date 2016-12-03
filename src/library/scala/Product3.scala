@@ -14,7 +14,7 @@ object Product3 {
     Some(x)
 }
 
-/** Product3 is a cartesian product of 3 components.
+/** Product3 is a Cartesian product of 3 components.
  *  @since 2.3
  */
 trait Product3[+T1, +T2, +T3] extends Any with Product {

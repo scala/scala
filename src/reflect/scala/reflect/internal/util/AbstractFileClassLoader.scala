@@ -12,6 +12,20 @@ import java.security.cert.Certificate
 import java.security.{ ProtectionDomain, CodeSource }
 import java.util.{ Collections => JCollections, Enumeration => JEnumeration }
 
+object AbstractFileClassLoader {
+  // should be a method on AbstractFile, but adding in `internal.util._` for now as we're in a minor release
+  private[scala] final def lookupPath(base: AbstractFile)(pathParts: Seq[String], directory: Boolean): AbstractFile = {
+    var file: AbstractFile = base
+    for (dirPart <- pathParts.init) {
+      file = file.lookupName(dirPart, directory = true)
+      if (file == null)
+        return null
+    }
+
+    file.lookupName(pathParts.last, directory = directory)
+  }
+}
+
 /** A class loader that loads files from a [[scala.reflect.io.AbstractFile]].
  *
  *  @author Lex Spoon
@@ -25,19 +39,7 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
     else s"${name.replace('.', '/')}.class"
 
   protected def findAbstractFile(name: String): AbstractFile = {
-    var file: AbstractFile = root
-    val pathParts          = name split '/'
-
-    for (dirPart <- pathParts.init) {
-      file = file.lookupName(dirPart, directory = true)
-      if (file == null)
-        return null
-    }
-
-    file.lookupName(pathParts.last, directory = false) match {
-      case null   => null
-      case file   => file
-    }
+    AbstractFileClassLoader.lookupPath(root)(name split '/', directory = false)
   }
 
   protected def dirNameToPath(name: String): String =

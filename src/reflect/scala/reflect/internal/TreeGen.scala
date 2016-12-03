@@ -122,7 +122,7 @@ abstract class TreeGen {
   //          val selType = testedBinder.info
   //
   //          // See the test for SI-7214 for motivation for dealias. Later `treeCondStrategy#outerTest`
-  //          // generates an outer test based on `patType.prefix` with automatically dealises.
+  //          // generates an outer test based on `patType.prefix` with automatically dealiases.
   //          // Prefixes can have all kinds of shapes SI-9110
   //          val patPre = expectedTp.dealiasWiden.prefix
   //          val selPre = selType.dealiasWiden.prefix

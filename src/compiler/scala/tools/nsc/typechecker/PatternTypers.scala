@@ -123,7 +123,7 @@ trait PatternTypers {
     }
 
     private def boundedArrayType(bound: Type): Type = {
-      val tparam = context.owner freshExistential "" setInfo (TypeBounds upper bound)
+      val tparam = context.owner.freshExistential("", 0) setInfo (TypeBounds upper bound)
       newExistentialType(tparam :: Nil, arrayType(tparam.tpe_*))
     }
 

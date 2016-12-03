@@ -682,7 +682,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       private[TreesAndTypesDomain] def uniqueTpForTree(t: Tree): Type = {
         def freshExistentialSubtype(tp: Type): Type = {
           // SI-8611 tp.narrow is tempting, but unsuitable. See `testRefinedTypeSI8611` for an explanation.
-          NoSymbol.freshExistential("").setInfo(TypeBounds.upper(tp)).tpe
+          NoSymbol.freshExistential("", 0).setInfo(TypeBounds.upper(tp)).tpe
         }
 
         if (!t.symbol.isStable) {

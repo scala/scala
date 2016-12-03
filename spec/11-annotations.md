@@ -56,7 +56,7 @@ Java platform, the following annotations have a standard meaning.
     This is equivalent to a the following field
     definition in Java:
 
-    ```
+    ```java
     private final static SerialVersionUID = <longlit>
     ```
 
@@ -103,7 +103,7 @@ Java platform, the following annotations have a standard meaning.
     matches which would otherwise be emitted. For instance, no warnings
     would be produced for the method definition below.
 
-    ```
+    ```scala
     def f(x: Option[Int]) = (x: @unchecked) match {
     case Some(y) => y
     }
@@ -117,7 +117,7 @@ Java platform, the following annotations have a standard meaning.
     value to appear in a path, even if its type is [volatile](03-types.html#volatile-types).
     For instance, the following member definitions are legal:
 
-    ```
+    ```scala
     type A { type T }
     type B
     @uncheckedStable val x: A with B // volatile type
@@ -140,7 +140,7 @@ Java platform, the following annotations have a standard meaning.
     For instance, the following code would generate specialized traits for
     `Unit`, `Int` and `Double`
 
-    ```
+    ```scala
     trait Function0[@specialized(Unit, Int, Double) T] {
       def apply: T
     }

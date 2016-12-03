@@ -74,7 +74,7 @@ abstract class SessionTest extends ReplTest  {
 
   /** Code is the command list culled from the session (or the expected session output).
    *  Would be nicer if code were lazy lines so you could generate arbitrarily long text.
-   *  Retain user input: prompt lines and continuations, without the prefix; or pasted text plus ctl-D.
+   *  Retain user input: prompt lines and continuations, without the prefix; or pasted text plus ctrl-D.
    */
   import SessionTest._
   lazy val pasted = input(prompt)

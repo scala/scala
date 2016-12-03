@@ -31,7 +31,7 @@ class InlinerSeparateCompilationTest {
         |}
       """.stripMargin
 
-    val warn = "T::f()I is annotated @inline but cannot be inlined: the method is not final and may be overridden"
+    val warn = "T::f()I is annotated @inline but could not be inlined:\nThe method is not final and may be overridden."
     val List(c, o, oMod, t) = compileClassesSeparately(List(codeA, codeB), args + " -opt-warnings", _.msg contains warn)
     assertInvoke(getMethod(c, "t1"), "T", "f")
     assertNoInvoke(getMethod(c, "t2"))

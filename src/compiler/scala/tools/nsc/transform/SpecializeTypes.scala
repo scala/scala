@@ -1049,7 +1049,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             }
           }
           debuglog(s"specialized overload $om for ${overriding.name.decode} in ${pp(env)}: ${om.info}")
-          if (overriding.isAbstractOverride) om.setFlag(ABSOVERRIDE)
+          om.setFlag(overriding.flags & (ABSOVERRIDE | SYNCHRONIZED))
+          om.withAnnotations(overriding.annotations.filter(_.symbol == ScalaStrictFPAttr))
           typeEnv(om) = env
           addConcreteSpecMethod(overriding)
           if (overriding.isDeferred) { // abstract override

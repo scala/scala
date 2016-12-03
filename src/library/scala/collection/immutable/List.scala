@@ -400,7 +400,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     else new Stream.Cons(head, tail.toStream)
 
   // Create a proxy for Java serialization that allows us to avoid mutation
-  // during de-serialization.  This is the Serialization Proxy Pattern.
+  // during deserialization.  This is the Serialization Proxy Pattern.
   protected final def writeReplace(): AnyRef = new List.SerializationProxy(this)
 }
 
@@ -468,7 +468,7 @@ object List extends SeqFactory[List] {
       out.writeObject(ListSerializeEnd)
     }
 
-    // Java serialization calls this before readResolve during de-serialization.
+    // Java serialization calls this before readResolve during deserialization.
     // Read the whole list and store it in `orig`.
     private def readObject(in: ObjectInputStream) {
       in.defaultReadObject()

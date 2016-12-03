@@ -186,6 +186,12 @@ class IteratorTest {
     assertEquals(1, y.next)
     assertFalse(x.hasNext)   // was true, after advancing underlying iterator
   }
+  // SI-9913
+  @Test def `span leading iterator finishes at state -1`(): Unit = {
+    val (yes, no) = Iterator(1, 2, 3).span(_ => true)
+    assertFalse(no.hasNext)
+    assertTrue(yes.hasNext)
+  }
   // SI-9623
   @Test def noExcessiveHasNextInJoinIterator: Unit = {
     var counter = 0

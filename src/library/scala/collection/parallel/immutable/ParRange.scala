@@ -107,6 +107,7 @@ self =>
     }
   }
 
+  override def toString = s"Par$range"
 }
 
 object ParRange {

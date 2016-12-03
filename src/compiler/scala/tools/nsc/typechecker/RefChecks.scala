@@ -472,7 +472,7 @@ abstract class RefChecks extends Transform {
             checkOverrideTypes()
             checkOverrideDeprecated()
             if (settings.warnNullaryOverride) {
-              if (other.paramss.isEmpty && !member.paramss.isEmpty) {
+              if (other.paramss.isEmpty && !member.paramss.isEmpty && !member.isJavaDefined) {
                 reporter.warning(member.pos, "non-nullary method overrides nullary method")
               }
             }
@@ -1103,7 +1103,7 @@ abstract class RefChecks extends Transform {
         // better to have lubbed and lost
         def warnIfLubless(): Unit = {
           val common = global.lub(List(actual.tpe, receiver.tpe))
-          if (ObjectTpe <:< common && !(ObjectTpe <:< actual.tpe && ObjectTpe <:< receiver.tpe))
+          if (ObjectTpe <:< common && !(ObjectTpe <:< actual.tpe) && !(ObjectTpe <:< receiver.tpe))
             unrelatedTypes()
         }
         // warn if actual has a case parent that is not same as receiver's;

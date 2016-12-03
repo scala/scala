@@ -72,7 +72,7 @@ class CallGraphTest extends BytecodeTesting {
         |  @noinline def f5         = try { 0 } catch { case _: Throwable => 1 }
         |  @noinline final def f6   = try { 0 } catch { case _: Throwable => 1 }
         |
-        |  @inline @noinline def f7 = try { 0 } catch { case _: Throwable => 1 }
+        |  @inline @noinline def f7 = try { 0 } catch { case _: Throwable => 1 } // no warning, @noinline takes precedence
         |}
         |class D extends C {
         |  @inline override def f1  = try { 0 } catch { case _: Throwable => 1 }
@@ -91,18 +91,17 @@ class CallGraphTest extends BytecodeTesting {
     // The callGraph.callsites map is indexed by instructions of those ClassNodes.
 
     val ok = Set(
-      "D::f1()I is annotated @inline but cannot be inlined: the method is not final and may be overridden", // only one warning for D.f1: C.f1 is not annotated @inline
-      "C::f3()I is annotated @inline but cannot be inlined: the method is not final and may be overridden", // only one warning for C.f3: D.f3 does not have @inline (and it would also be safe to inline)
-      "C::f7()I is annotated @inline but cannot be inlined: the method is not final and may be overridden", // two warnings (the error message mentions C.f7 even if the receiver type is D, because f7 is inherited from C)
-      "operand stack at the callsite in Test::t1(LC;)I contains more values",
-      "operand stack at the callsite in Test::t2(LD;)I contains more values")
+      "D::f1()I is annotated @inline but could not be inlined:\nThe method is not final and may be overridden.", // only one warning for D.f1: C.f1 is not annotated @inline
+      "C::f3()I is annotated @inline but could not be inlined:\nThe method is not final and may be overridden.", // only one warning for C.f3: D.f3 does not have @inline (and it would also be safe to inline)
+      "C::f4()I is annotated @inline but could not be inlined:\nThe operand stack at the callsite in Test::t1(LC;)I contains more values",
+      "C::f4()I is annotated @inline but could not be inlined:\nThe operand stack at the callsite in Test::t2(LD;)I contains more values")
     var msgCount = 0
     val checkMsg = (m: StoreReporter#Info) => {
       msgCount += 1
       ok exists (m.msg contains _)
     }
     val List(cCls, cMod, dCls, testCls) = compile(code, checkMsg)
-    assert(msgCount == 6, msgCount)
+    assert(msgCount == 4, msgCount)
 
     val List(cf1, cf2, cf3, cf4, cf5, cf6, cf7) = getAsmMethods(cCls, _.startsWith("f"))
     val List(df1, df3) = getAsmMethods(dCls, _.startsWith("f"))

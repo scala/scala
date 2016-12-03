@@ -655,7 +655,7 @@ precedence, with characters on the same line having the same precedence.
 ```
 
 That is, operators starting with a letter have lowest precedence,
-followed by operators starting with ``|`', etc.
+followed by operators starting with ‘`|`’, etc.
 
 There's one exception to this rule, which concerns
 [_assignment operators_](#assignment-operators).
@@ -664,7 +664,7 @@ of simple assignment `(=)`. That is, it is lower than the
 precedence of any other operator.
 
 The _associativity_ of an operator is determined by the operator's
-last character.  Operators ending in a colon ``:`' are
+last character.  Operators ending in a colon ‘`:`’ are
 right-associative. All other operators are left-associative.
 
 Precedence and associativity of operators determine the grouping of
@@ -945,7 +945,7 @@ comprehensions have been eliminated.
     `$e$.foreach { case $p$ => $e'$ }`.
   - A for comprehension
 
-    ```
+    ```scala
     for ($p$ <- $e$; $p'$ <- $e'; \ldots$) yield $e''$
     ```
 
@@ -953,13 +953,13 @@ comprehensions have been eliminated.
     sequence of generators, definitions, or guards,
     is translated to
 
-    ```
+    ```scala
     $e$.flatMap { case $p$ => for ($p'$ <- $e'; \ldots$) yield $e''$ }
     ```
 
   - A for loop
 
-    ```
+    ```scala
     for ($p$ <- $e$; $p'$ <- $e'; \ldots$) $e''$
     ```
 
@@ -967,7 +967,7 @@ comprehensions have been eliminated.
     sequence of generators, definitions, or guards,
     is translated to
 
-    ```
+    ```scala
     $e$.foreach { case $p$ => for ($p'$ <- $e'; \ldots$) $e''$ }
     ```
 
@@ -980,7 +980,7 @@ comprehensions have been eliminated.
     `$p'$ = $e'$` is translated to the following generator of pairs of values, where
     $x$ and $x'$ are fresh names:
 
-    ```
+    ```scala
     ($p$, $p'$) <- for ($x @ p$ <- $e$) yield { val $x' @ p'$ = $e'$; ($x$, $x'$) }
     ```
 

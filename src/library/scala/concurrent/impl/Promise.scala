@@ -384,7 +384,7 @@ private[concurrent] object Promise {
       private[this] final def thisAs[S]: Future[S] = future.asInstanceOf[Future[S]]
 
       override def onSuccess[U](pf: PartialFunction[T, U])(implicit executor: ExecutionContext): Unit = ()
-      override def failed: Future[Throwable] = thisAs[Throwable]
+      override def failed: Future[Throwable] = KeptPromise(Success(result.exception)).future
       override def foreach[U](f: T => U)(implicit executor: ExecutionContext): Unit = ()
       override def map[S](f: T => S)(implicit executor: ExecutionContext): Future[S] = thisAs[S]
       override def flatMap[S](f: T => Future[S])(implicit executor: ExecutionContext): Future[S] = thisAs[S]
