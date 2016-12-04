@@ -89,7 +89,9 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
 globalVersionSettings
 baseVersion in Global := "2.12.1"
 baseVersionSuffix in Global := "SNAPSHOT"
-mimaReferenceVersion in Global := Some("2.12.0")
+
+// to be locked down sometime around the time of 2.13.0-RC1
+mimaReferenceVersion in Global := None
 
 scalaVersion in Global := versionProps("starr.version")
 
