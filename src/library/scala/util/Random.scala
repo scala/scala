@@ -13,6 +13,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.generic.CanBuildFrom
 import scala.collection.immutable.{ List, Stream }
 import scala.language.{implicitConversions, higherKinds}
+import scala.annotation.tailrec
 
 /**
  *  @author Stephane Micheloud
@@ -69,6 +70,24 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
    *  from this random number generator's sequence.
    */
   def nextLong(): Long = self.nextLong()
+
+  /** Returns the next pseudorandom, uniformly distributed long value
+   *  between 0 (inclusive) and the specified value (exclusive), drawn
+   *  from this random number generator's sequence.
+   */
+  def nextLong(n: Long): Long = {
+    if (n <= 0) throw new java.lang.IllegalArgumentException("bound must be positive")
+    if (n <= Int.MaxValue) nextInt(n.toInt).toLong
+    else {
+      val RandMax = Long.MaxValue
+      val bound = RandMax - (RandMax % n)
+      @inline @tailrec def genValid(): Long = {
+        val x = nextLong() >>> 1
+        if (x < bound) x else genValid()
+      }
+      genValid() % n
+    }
+  }
 
   /** Returns a pseudorandomly generated String.  This routine does
    *  not take any measures to preserve the randomness of the distribution
