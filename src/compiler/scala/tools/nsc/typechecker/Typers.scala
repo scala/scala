@@ -2027,7 +2027,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // allow trait accessors: it's the only vehicle we have to hang on to annotations that must be passed down to
       // the field that's mixed into a subclass
-      if (sym.hasAnnotation(definitions.VolatileAttr) && !((sym hasFlag MUTABLE) || (sym hasFlag ACCESSOR) && sym.owner.isTrait))
+      if (sym.hasAnnotation(definitions.VolatileAttr) && !((sym hasFlag MUTABLE | LAZY) || (sym hasFlag ACCESSOR) && sym.owner.isTrait))
         VolatileValueError(vdef)
 
       val rhs1 =
