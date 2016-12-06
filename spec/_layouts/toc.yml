@@ -19,9 +19,9 @@
   <div id="header-main">
   <img id="scala-logo" src="public/images/scala-spiral-white.png" />
   <span id="title">Scala Language Specification</span>
-  <a id="github" href="https://github.com/scala/scala/tree/2.12.x/spec"><img src="public/images/github-logo@2x.png" alt="Edit at GitHub"></a>
+  <a id="github" href="https://github.com/scala/scala/tree/2.13.x/spec"><img src="public/images/github-logo@2x.png" alt="Edit at GitHub"></a>
   </div>
-  <div id="header-sub">Version 2.12</div>
+  <div id="header-sub">Version 2.13</div>
 </header>
 <main>
 {{ content }}
