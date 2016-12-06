@@ -12,7 +12,7 @@ package scala
 package collection
 package mutable
 
-import java.lang.Integer.rotateRight
+import java.lang.Integer.{numberOfLeadingZeros, rotateRight}
 import scala.util.hashing.byteswap32
 
 /** This class can be used to construct data structures that are based
@@ -367,11 +367,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     * Note: we take the most significant bits of the hashcode, not the lower ones
     * this is of crucial importance when populating the table in parallel
     */
-  protected final def index(hcode: Int): Int = {
-    val ones = table.length - 1
-    val exponent = Integer.numberOfLeadingZeros(ones)
-    (improve(hcode, seedvalue) >>> exponent) & ones
-  }
+  protected final def index(hcode: Int): Int = if (table.length == 1) 0 else improve(hcode, seedvalue) >>> numberOfLeadingZeros(table.length - 1)
 
   protected def initWithContents(c: HashTable.Contents[A, Entry]) = {
     if (c != null) {
