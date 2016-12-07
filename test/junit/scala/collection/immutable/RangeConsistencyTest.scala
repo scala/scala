@@ -189,7 +189,7 @@ class RangeConsistencyTest {
     case class A(v: Int)
 
     implicit object aIsIntegral extends scala.math.Integral[A] {
-      def compare(x: A, y: A): Int = x.v - y.v
+      def compare(x: A, y: A): Int = x.v.compare(y.v)
       def fromInt(x: Int): A = A(x)
       def minus(x: A, y: A): A = A(x.v - y.v)
       def negate(x: A): A = A(-x.v)
