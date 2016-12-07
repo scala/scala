@@ -2238,6 +2238,8 @@ self =>
     def paramClauses(owner: Name, contextBounds: List[Tree], ofCaseClass: Boolean): List[List[ValDef]] = {
       var implicitmod = 0
       var caseParam = ofCaseClass
+      val vds = new ListBuffer[List[ValDef]]
+      val start = in.offset
       def paramClause(): List[ValDef] = {
         if (in.token == RPAREN)
           return Nil
@@ -2248,18 +2250,21 @@ self =>
         }
         commaSeparated(param(owner, implicitmod, caseParam  ))
       }
-      val vds = new ListBuffer[List[ValDef]]
-      val start = in.offset
       newLineOptWhenFollowedBy(LPAREN)
-      if (ofCaseClass && in.token != LPAREN)
-        syntaxError(in.lastOffset, "case classes without a parameter list are not allowed;\n"+
-                                   "use either case objects or case classes with an explicit `()' as a parameter list.")
       while (implicitmod == 0 && in.token == LPAREN) {
         in.nextToken()
         vds += paramClause()
         accept(RPAREN)
         caseParam = false
         newLineOptWhenFollowedBy(LPAREN)
+      }
+      if (ofCaseClass) {
+        if (vds.isEmpty)
+          syntaxError(in.lastOffset, s"case classes must have a parameter list; try 'case class ${owner.encoded
+                                         }()' or 'case object ${owner.encoded}'")
+        else if (vds.head.nonEmpty && vds.head.head.mods.isImplicit)
+          syntaxError(in.lastOffset, s"case classes must have a non-implicit parameter list; try 'case class ${
+                                         owner.encoded}()${ vds.map(vs => "(...)").mkString }'")
       }
       val result = vds.toList
       if (owner == nme.CONSTRUCTOR && (result.isEmpty || (result.head take 1 exists (_.mods.isImplicit)))) {
