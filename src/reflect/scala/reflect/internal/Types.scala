@@ -2101,7 +2101,9 @@ trait Types
       toBoolean(trivial)
     }
 
-    override def isShowAsInfixType: Boolean = sym.hasAnnotation(ShowAsInfixAnnotationClass)
+    /* It only makes sense to show 2-ary type constructors infix. */
+    override def isShowAsInfixType: Boolean =
+      sym.hasAnnotation(ShowAsInfixAnnotationClass) && hasLength(args, 2)
 
     private[Types] def invalidateTypeRefCaches(): Unit = {
       parentsCache = null
@@ -2328,6 +2330,22 @@ trait Types
       case arg :: Nil => s"($arg,)"
       case _          => args.mkString("(", ", ", ")")
     }
+    private def infixTypeString: String = {
+      /* SLS 3.2.8: all infix types have the same precedence.
+       * In A op B op' C, op and op' need the same associativity.
+       * Therefore, if op is left associative, anything on its right
+       * needs to be parenthesized if it's an infix type, and vice versa. */
+      // we should only get here after `isShowInfixType` says we have 2 args
+      val l :: r :: Nil = args
+
+      val isRightAssoc = typeSymbol.decodedName endsWith ":"
+
+      val lstr = if (isRightAssoc && l.isShowAsInfixType) s"($l)" else l.toString
+
+      val rstr = if (!isRightAssoc && r.isShowAsInfixType) s"($r)" else r.toString
+
+      s"$lstr ${sym.decodedName} $rstr"
+    }
     private def customToString = sym match {
       case RepeatedParamClass | JavaRepeatedParamClass => args.head + "*"
       case ByNameParamClass   => "=> " + args.head
@@ -2351,14 +2369,8 @@ trait Types
               xs.init.mkString("(", ", ", ")") + " => " + xs.last
           }
         }
-        else if (isShowAsInfixType && args.length == 2)
-          args(0) + " " + sym.decodedName + " " +
-            (
-              if (args(1).isShowAsInfixType)
-                "(" + args(1) + ")"
-              else
-                args(1)
-            )
+        else if (isShowAsInfixType)
+          infixTypeString
         else if (isTupleTypeDirect(this))
           tupleTypeString
         else if (sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic) && (this ne dealias))
