@@ -1,21 +1,27 @@
 package scala.annotation
 
 /**
- * This annotation, used for two-parameter generic types makes Scala print
- * the type using infix notation:
- *
- * ```
- * scala> class &&[T, U]
- * defined class $amp$amp
- *
- * scala> def foo: Int && Int = ???
- * foo: &&[Int,Int]
- *
- * scala> @showAsInfix class &&[T, U]
- * defined class $amp$amp
- *
- * scala> def foo: Int && Int = ???
- * foo: Int && Int
- * ```
- */
-class showAsInfix extends annotation.StaticAnnotation
+ * This annotation configures how Scala prints two-parameter generic types.
+  *
+  * By default, types with symbolic names are printed infix; while types without
+  * them are printed using the regular generic type syntax.
+  *
+  * Example of usage:
+  {{{
+    scala> class Map[T, U]
+    defined class Map
+
+    scala> def foo: Int Map Int = ???
+    foo: Map[Int,Int]
+
+    scala> @showAsInfix class Map[T, U]
+    defined class Map
+
+    scala> def foo: Int Map Int = ???
+    foo: Int Map Int
+  }}}
+  *
+  * @param enabled whether to show this type as an infix type operator.
+  * @since 2.12.2
+  */
+class showAsInfix(enabled: Boolean = true) extends annotation.StaticAnnotation

@@ -2101,9 +2101,13 @@ trait Types
       toBoolean(trivial)
     }
 
-    /* It only makes sense to show 2-ary type constructors infix. */
+    /* It only makes sense to show 2-ary type constructors infix.
+     * By default we do only if it's a symbolic name. */
     override def isShowAsInfixType: Boolean =
-      sym.hasAnnotation(ShowAsInfixAnnotationClass) && hasLength(args, 2)
+      hasLength(args, 2) &&
+        sym.getAnnotation(ShowAsInfixAnnotationClass)
+         .map(_ booleanArg 0 getOrElse true)
+         .getOrElse(!Character.isUnicodeIdentifierStart(sym.decodedName.head))
 
     private[Types] def invalidateTypeRefCaches(): Unit = {
       parentsCache = null
