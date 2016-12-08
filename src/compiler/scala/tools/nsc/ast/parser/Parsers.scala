@@ -2272,6 +2272,12 @@ self =>
         syntaxError(implicitOffset, "an implicit parameter section must be last")
       if (warnAt != -1)
         syntaxError(warnAt, "multiple implicit parameter sections are not allowed")
+      else if (settings.warnExtraImplicit) {
+        // guard against anomalous class C(private implicit val x: Int)(implicit s: String)
+        val ttl = vds.count { case ValDef(mods, _, _, _) :: _ => mods.isImplicit ; case _ => false }
+        if (ttl > 1)
+          warning(in.offset, s"$ttl parameter sections are effectively implicit")
+      }
       val result = vds.toList
       if (owner == nme.CONSTRUCTOR && (result.isEmpty || (result.head take 1 exists (_.mods.isImplicit)))) {
         in.token match {
