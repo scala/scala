@@ -1,0 +1,7 @@
+t8704.scala:3: error: an implicit parameter section must be last
+class C(i: Int)(implicit j: Int)(implicit k: Int)(n: Int) {
+                ^
+t8704.scala:3: error: multiple implicit parameter sections are not allowed
+class C(i: Int)(implicit j: Int)(implicit k: Int)(n: Int) {
+                                 ^
+two errors found

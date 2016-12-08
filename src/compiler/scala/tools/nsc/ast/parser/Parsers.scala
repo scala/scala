@@ -2236,22 +2236,24 @@ self =>
      *  }}}
      */
     def paramClauses(owner: Name, contextBounds: List[Tree], ofCaseClass: Boolean): List[List[ValDef]] = {
-      var implicitmod = 0
-      var caseParam = ofCaseClass
-      val vds = new ListBuffer[List[ValDef]]
+      var implicitSection = -1
+      var implicitOffset  = -1
+      var warnAt          = -1
+      var caseParam       = ofCaseClass
+      val vds   = new ListBuffer[List[ValDef]]
       val start = in.offset
-      def paramClause(): List[ValDef] = {
-        if (in.token == RPAREN)
-          return Nil
-
-        if (in.token == IMPLICIT) {
-          in.nextToken()
-          implicitmod = Flags.IMPLICIT
-        }
-        commaSeparated(param(owner, implicitmod, caseParam  ))
+      def paramClause(): List[ValDef] = if (in.token == RPAREN) Nil else {
+        val implicitmod = 
+          if (in.token == IMPLICIT) {
+            if (implicitOffset == -1) { implicitOffset = in.offset ; implicitSection = vds.length }
+            else if (warnAt == -1) warnAt = in.offset
+            in.nextToken()
+            Flags.IMPLICIT
+          } else 0
+        commaSeparated(param(owner, implicitmod, caseParam))
       }
       newLineOptWhenFollowedBy(LPAREN)
-      while (implicitmod == 0 && in.token == LPAREN) {
+      while (in.token == LPAREN) {
         in.nextToken()
         vds += paramClause()
         accept(RPAREN)
@@ -2266,6 +2268,10 @@ self =>
           syntaxError(in.lastOffset, s"case classes must have a non-implicit parameter list; try 'case class ${
                                          owner.encoded}()${ vds.map(vs => "(...)").mkString }'")
       }
+      if (implicitSection != -1 && implicitSection != vds.length - 1)
+        syntaxError(implicitOffset, "an implicit parameter section must be last")
+      if (warnAt != -1)
+        syntaxError(warnAt, "multiple implicit parameter sections are not allowed")
       val result = vds.toList
       if (owner == nme.CONSTRUCTOR && (result.isEmpty || (result.head take 1 exists (_.mods.isImplicit)))) {
         in.token match {
