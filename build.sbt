@@ -87,7 +87,7 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
 // should not be set directly. It is the same as the Maven version and derived automatically from `baseVersion` and
 // `baseVersionSuffix`.
 globalVersionSettings
-baseVersion in Global := "2.12.1"
+baseVersion in Global := "2.13.0"
 baseVersionSuffix in Global := "SNAPSHOT"
 
 // to be locked down sometime around the time of 2.13.0-RC1
