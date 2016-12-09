@@ -2262,11 +2262,20 @@ self =>
       }
       if (ofCaseClass) {
         if (vds.isEmpty)
-          syntaxError(in.lastOffset, s"case classes must have a parameter list; try 'case class ${owner.encoded
+          syntaxError(start, s"case classes must have a parameter list; try 'case class ${owner.encoded
                                          }()' or 'case object ${owner.encoded}'")
-        else if (vds.head.nonEmpty && vds.head.head.mods.isImplicit)
-          syntaxError(in.lastOffset, s"case classes must have a non-implicit parameter list; try 'case class ${
+        else if (vds.head.nonEmpty && vds.head.head.mods.isImplicit) {
+          if (settings.isScala213)
+            syntaxError(start, s"case classes must have a non-implicit parameter list; try 'case class ${
                                          owner.encoded}()${ vds.map(vs => "(...)").mkString }'")
+          else {
+            deprecationWarning(start, s"case classes should have a non-implicit parameter list; adapting to 'case class ${
+                                         owner.encoded}()${ vds.map(vs => "(...)").mkString }'", "2.12.2")
+            vds.insert(0, List.empty[ValDef])
+            vds(1) = vds(1).map(vd => copyValDef(vd)(mods = vd.mods & ~Flags.CASEACCESSOR))
+            if (implicitSection != -1) implicitSection += 1
+          }
+        }
       }
       if (implicitSection != -1 && implicitSection != vds.length - 1)
         syntaxError(implicitOffset, "an implicit parameter section must be last")
