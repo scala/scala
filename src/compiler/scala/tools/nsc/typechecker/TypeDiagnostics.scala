@@ -557,7 +557,7 @@ trait TypeDiagnostics {
         def isUnusedTerm(m: Symbol): Boolean = (
              (m.isTerm)
           && (!m.isSynthetic || isSyntheticWarnable(m))
-          && (m.isPrivate || m.isLocalToBlock)
+          && ((m.isPrivate && !(m.isConstructor && m.owner.isAbstract))|| m.isLocalToBlock)
           && !targets(m)
           && !(m.name == nme.WILDCARD)              // e.g. val _ = foo
           && (m.isValueParameter || !ignoreNames(m.name.toTermName)) // serialization methods
@@ -594,7 +594,7 @@ trait TypeDiagnostics {
 
       def apply(unit: CompilationUnit): Unit = if (warningsEnabled) {
         val p = new UnusedPrivates
-        p traverse unit.body
+        p.traverse(unit.body)
         if (settings.warnUnusedLocals || settings.warnUnusedPrivates) {
           for (defn: DefTree <- p.unusedTerms) {
             val sym = defn.symbol
