@@ -386,6 +386,14 @@ trait Scanners extends ScannersCommon {
           next copyFrom this
           this copyFrom prev
         }
+      } else if (token == COMMA) {
+        // SIP-27 Trailing Comma (multi-line only) support
+        // If a comma is followed by a new line & then a closing paren, bracket or brace
+        // then it is a trailing comma and is ignored
+        val saved = new ScannerData {} copyFrom this
+        fetchToken()
+        if (token != RPAREN && token != RBRACKET && token != RBRACE || !afterLineEnd())
+          this copyFrom saved
       }
 
 //      print("["+this+"]")
