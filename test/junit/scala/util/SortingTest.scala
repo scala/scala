@@ -33,7 +33,7 @@ class SortingTest {
     val qxs = { val temp = xs.clone; Sorting.quickSort(temp); temp }
     val pxs = { val temp = xs.clone; Sorting.quickSort(temp)(backwardsN); temp }
     val sxs = { val temp = xs.clone; Sorting.stableSort(temp); temp }
-    val rxs = { val temp = xs.clone; Sorting.stableSort(temp)(implicitly[ClassTag[N]], backwardsN); temp }
+    val rxs = { val temp = xs.clone; Sorting.stableSort(temp)(backwardsN); temp }
     val sys = Sorting.stableSort(ys.clone: Seq[Int], (i: Int) => xs(i))
     
     assertTrue("Quicksort should be in order", isSorted(qxs))
