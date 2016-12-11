@@ -523,10 +523,57 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       }}
     }
 
-    override def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree], unchecked: Boolean): Option[Tree] = { import CODE._
+    class StringSwitchMaker(scrutSym: Symbol, matchFailGenOverride: Option[Tree => Tree], val unchecked: Boolean) extends SwitchMaker {
+      val switchableTpe = Set(StringTpe)
+      val alternativesSupported = true
+      val canJump = true
+
+      // TODO: Constant folding sets the type of a constant tree to `ConstantType(Constant(folded))`
+      // The tree itself can be a literal, an ident, a selection, ...
+      object SwitchablePattern { def unapply(pat: Tree): Option[Tree] = pat.tpe match {
+        case ConstantType(Constant(str: String)) => Some(Literal(Constant(str.hashCode))) 
+        case _ => None
+      }}
+
+      object SwitchableTreeMaker extends SwitchableTreeMakerExtractor {
+        def unapply(x: TreeMaker): Option[Tree] = x match {
+          case EqualityTestTreeMaker(_, SwitchablePattern(const), _) => Some(const)
+          case _ => None
+        }
+      }
+
+      def isDefault(x: CaseDef): Boolean = x match {
+        case CaseDef(Ident(nme.WILDCARD), EmptyTree, _) => true
+        case _ => false
+      }
+
+      def defaultSym: Symbol = scrutSym
+      def defaultBody: Tree  = { import CODE._; matchFailGenOverride map (gen => gen(REF(scrutSym))) getOrElse Throw(MatchErrorClass.tpe, REF(scrutSym)) }
+      def defaultCase(scrutSym: Symbol = defaultSym, guard: Tree = EmptyTree, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
+        (DEFAULT IF guard) ==> body
+      }}
+    }
+
+    override def emitSwitch(scrut1: Tree, scrutSym1: Symbol, cases1: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree], unchecked: Boolean): Option[Tree] = { import CODE._
+      val (scrut, scrutSym, cases) = None.getOrElse(scrut1, scrutSym1, cases1)
+      val stringSwitchMaker = new StringSwitchMaker(scrutSym, matchFailGenOverride, unchecked)
       val regularSwitchMaker = new RegularSwitchMaker(scrutSym, matchFailGenOverride, unchecked)
+
       // TODO: if patterns allow switch but the type of the scrutinee doesn't, cast (type-test) the scrutinee to the corresponding switchable type and switch on the result
-      if (regularSwitchMaker.switchableTpe(dealiasWiden(scrutSym.tpe))) {
+      if (stringSwitchMaker.switchableTpe(dealiasWiden(scrutSym.tpe))) {
+        val caseDefsWithDefault = stringSwitchMaker(cases map {c => (scrutSym, c)}, pt)
+        if (caseDefsWithDefault isEmpty) None // not worth emitting a switch.
+        else {
+          // match on the hashcode of scrutSym
+          val scrutToInt: Tree =
+            if (scrutSym.tpe =:= IntTpe) REF(scrutSym)
+            else (REF(scrutSym) DOT TermName("hashCode"))
+          Some(BLOCK(
+            ValDef(scrutSym, scrut),
+            Match(scrutToInt, caseDefsWithDefault) // a switch
+          ))
+        }
+      } else if (regularSwitchMaker.switchableTpe(dealiasWiden(scrutSym.tpe))) {
         val caseDefsWithDefault = regularSwitchMaker(cases map {c => (scrutSym, c)}, pt)
         if (caseDefsWithDefault isEmpty) None // not worth emitting a switch.
         else {
@@ -539,7 +586,9 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
             Match(scrutToInt, caseDefsWithDefault) // a switch
           ))
         }
-      } else None
+
+      }
+      else None
     }
 
     // for the catch-cases in a try/catch
