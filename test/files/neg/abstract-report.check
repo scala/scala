@@ -4,6 +4,9 @@ it has 12 unimplemented members.
  *  For convenience, these are usable as stub implementations.
  */
   // Members declared in scala.collection.GenTraversableOnce
+  def foreach[U](f: String => U): Unit = ???
+  def hasDefiniteSize: Boolean = ???
+  def isEmpty: Boolean = ???
   def isTraversableAgain: Boolean = ???
   def toIterator: Iterator[String] = ???
   def toStream: Stream[String] = ???
@@ -13,9 +16,6 @@ it has 12 unimplemented members.
   def exists(p: String => Boolean): Boolean = ???
   def find(p: String => Boolean): Option[String] = ???
   def forall(p: String => Boolean): Boolean = ???
-  def foreach[U](f: String => U): Unit = ???
-  def hasDefiniteSize: Boolean = ???
-  def isEmpty: Boolean = ???
   def seq: scala.collection.TraversableOnce[String] = ???
   def toTraversable: Traversable[String] = ???
 

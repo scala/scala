@@ -62,12 +62,6 @@ import scala.reflect.ClassTag
 trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   self =>
 
-  //TODO 2.12: Remove these methods. They are already defined in GenTraversableOnce
-  /* Self-documenting abstract methods. */
-  def foreach[U](f: A => U): Unit
-  def isEmpty: Boolean
-  def hasDefiniteSize: Boolean
-
   // Note: We could redefine this in TraversableLike to always return `repr`
   // of type `Repr`, only if `Repr` had type bounds, which it doesn't, because
   // not all `Repr` are a subtype `TraversableOnce[A]`.
