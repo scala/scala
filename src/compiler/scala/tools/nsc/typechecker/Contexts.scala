@@ -1192,6 +1192,27 @@ trait Contexts { self: Analyzer =>
       }
       res
     }
+
+    final def lookupCompanionOf(original: Symbol): Symbol = {
+      lookupScopeEntry(original) match {
+        case null => NoSymbol
+        case entry => entry.owner.lookupCompanion(original)
+      }
+    }
+
+    /** Search scopes in current and enclosing contexts for the definition of `symbol` */
+    private def lookupScopeEntry(symbol: Symbol): ScopeEntry = {
+      var res: ScopeEntry = null
+      var ctx = this
+      while (res == null && ctx.outer != ctx) {
+        val s = ctx.scope lookupSymbolEntry symbol
+        if (s != null)
+          res = s
+        else
+          ctx = ctx.outer
+      }
+      res
+    }
   } //class Context
 
   /** A `Context` focussed on an `Import` tree */

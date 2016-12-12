@@ -220,7 +220,10 @@ trait Namers extends MethodSynthesis {
 
     private def inCurrentScope(m: Symbol): Boolean = {
       if (owner.isClass) owner == m.owner
-      else m.owner.isClass && context.scope == m.owner.info.decls
+      else context.scope.lookupSymbolEntry(m) match {
+        case null => false
+        case entry => entry.owner eq context.scope
+      }
     }
 
     /** Enter symbol into context's scope and return symbol itself */
@@ -1953,10 +1956,7 @@ trait Namers extends MethodSynthesis {
     //         use the lower-level scan through the current Context as a fall back.
     if (!currentRun.compiles(owner)) owner.initialize
     original.companionSymbol orElse {
-      ctx.lookup(original.name.companionName, owner).suchThat(sym =>
-        (original.isTerm || sym.hasModuleFlag) &&
-        (sym isCoDefinedWith original)
-      )
+      ctx.lookupCompanionOf(original)
     }
   }
 
