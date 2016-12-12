@@ -153,7 +153,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
    */
   protected final def Value(i: Int, name: String): Value = new Val(i, name)
 
-  private def populateNameMap() {
+  private def populateNameMap(): Unit = {
     val fields: Array[JField] = getClass.getDeclaredFields
     def isValDef(m: JMethod): Boolean = fields exists (fd => fd.getName == m.getName && fd.getType == m.getReturnType)
 

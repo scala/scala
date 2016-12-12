@@ -66,11 +66,11 @@ extends AbstractSet[A]
 
   override def remove(elem: A): Boolean = removeElem(elem)
 
-  override def clear() { clearTable() }
+  override def clear(): Unit = clearTable()
 
   override def iterator: Iterator[A] = super[FlatHashTable].iterator
 
-  override def foreach[U](f: A => U) {
+  override def foreach[U](f: A => U): Unit = {
     var i = 0
     val len = table.length
     while (i < len) {
@@ -82,11 +82,11 @@ extends AbstractSet[A]
 
   override def clone() = new HashSet[A] ++= this
 
-  private def writeObject(s: java.io.ObjectOutputStream) {
+  private def writeObject(s: java.io.ObjectOutputStream): Unit = {
     serializeTo(s)
   }
 
-  private def readObject(in: java.io.ObjectInputStream) {
+  private def readObject(in: java.io.ObjectInputStream): Unit = {
     init(in, x => ())
   }
 

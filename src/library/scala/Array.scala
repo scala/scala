@@ -98,7 +98,7 @@ object Array extends FallbackArrayBuilding {
    *
    *  @see `java.lang.System#arraycopy`
    */
-  def copy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int) {
+  def copy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int): Unit = {
     val srcClass = src.getClass
     if (srcClass.isArray && dest.getClass.isAssignableFrom(srcClass))
       java.lang.System.arraycopy(src, srcPos, dest, destPos, length)
@@ -545,7 +545,7 @@ final class Array[T](_length: Int) extends java.io.Serializable with java.lang.C
    *  @param    x   the value to be written at index `i`
    *  @throws       ArrayIndexOutOfBoundsException if `i < 0` or `length <= i`
    */
-  def update(i: Int, x: T) { throw new Error() }
+  def update(i: Int, x: T): Unit = { throw new Error() }
 
   /** Clone the Array.
    *

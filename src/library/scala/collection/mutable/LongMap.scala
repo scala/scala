@@ -393,7 +393,7 @@ extends AbstractMap[Long, V]
     }
   }
 
-  override def foreach[U](f: ((Long,V)) => U) {
+  override def foreach[U](f: ((Long,V)) => U): Unit = {
     if ((extraKeys & 1) == 1) f((0L, zeroValue.asInstanceOf[V]))
     if ((extraKeys & 2) == 2) f((Long.MinValue, minValue.asInstanceOf[V]))
     var i,j = 0
@@ -434,7 +434,7 @@ extends AbstractMap[Long, V]
   }
 
   /** Applies a function to all keys of this map. */
-  def foreachKey[A](f: Long => A) {
+  def foreachKey[A](f: Long => A): Unit = {
     if ((extraKeys & 1) == 1) f(0L)
     if ((extraKeys & 2) == 2) f(Long.MinValue)
     var i,j = 0
@@ -449,7 +449,7 @@ extends AbstractMap[Long, V]
   }
 
   /** Applies a function to all values of this map. */
-  def foreachValue[A](f: V => A) {
+  def foreachValue[A](f: V => A): Unit = {
     if ((extraKeys & 1) == 1) f(zeroValue.asInstanceOf[V])
     if ((extraKeys & 2) == 2) f(minValue.asInstanceOf[V])
     var i,j = 0

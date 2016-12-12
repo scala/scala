@@ -141,7 +141,7 @@ extends scala.collection.mutable.AbstractBuffer[T]
   }
 
   // this should be faster than the iterator
-  override def foreach[U](f: T => U) = headptr.foreach(f)
+  override def foreach[U](f: T => U): Unit = headptr.foreach(f)
 
   def result = this
 
@@ -173,13 +173,13 @@ extends scala.collection.mutable.AbstractBuffer[T]
       sz += elems.size
     } else throw new IndexOutOfBoundsException(idx.toString)
 
-  private def writeObject(out: java.io.ObjectOutputStream) {
+  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
     out.defaultWriteObject
     out writeInt sz
     for (elem <- this) out writeObject elem
   }
 
-  private def readObject(in: java.io.ObjectInputStream) {
+  private def readObject(in: java.io.ObjectInputStream): Unit = {
     in.defaultReadObject
 
     val num = in.readInt
@@ -227,7 +227,7 @@ object UnrolledBuffer extends ClassTagTraversableFactory[UnrolledBuffer] {
       next = new Unrolled[T](0, new Array[T](nextlength), null, buff)
       next append elem
     }
-    def foreach[U](f: T => U) {
+    def foreach[U](f: T => U): Unit = {
       var unrolled = this
       var i = 0
       while (unrolled ne null) {

@@ -525,7 +525,7 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
    *  unless the `f` throws an exception.
    */
   @tailrec
-  override final def foreach[U](f: A => U) {
+  override final def foreach[U](f: A => U): Unit = {
     if (!this.isEmpty) {
       f(head)
       tail.foreach(f)

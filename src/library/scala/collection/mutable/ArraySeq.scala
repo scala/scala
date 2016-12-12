@@ -63,12 +63,12 @@ extends AbstractSeq[A]
     array(idx).asInstanceOf[A]
   }
 
-  def update(idx: Int, elem: A) {
+  def update(idx: Int, elem: A): Unit = {
     if (idx >= length) throw new IndexOutOfBoundsException(idx.toString)
     array(idx) = elem.asInstanceOf[AnyRef]
   }
 
-  override def foreach[U](f: A => U) {
+  override def foreach[U](f: A => U): Unit = {
     var i = 0
     while (i < length) {
       f(array(i).asInstanceOf[A])
@@ -85,7 +85,7 @@ extends AbstractSeq[A]
    *  @param  start starting index.
    *  @param  len number of elements to copy
    */
-  override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) {
+  override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Unit = {
     val len1 = len min (xs.length - start) min length
     if (len1 > 0) Array.copy(array, 0, xs, start, len1)
   }

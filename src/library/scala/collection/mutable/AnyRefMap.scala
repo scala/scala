@@ -314,7 +314,7 @@ extends AbstractMap[K, V]
     }
   }
 
-  override def foreach[U](f: ((K,V)) => U) {
+  override def foreach[U](f: ((K,V)) => U): Unit = {
     var i = 0
     var e = _size
     while (e > 0) {
@@ -355,7 +355,7 @@ extends AbstractMap[K, V]
     arm
   }
 
-  private[this] def foreachElement[A,B](elems: Array[AnyRef], f: A => B) {
+  private[this] def foreachElement[A,B](elems: Array[AnyRef], f: A => B): Unit = {
     var i,j = 0
     while (i < _hashes.length & j < _size) {
       val h = _hashes(i)
@@ -368,10 +368,10 @@ extends AbstractMap[K, V]
   }
 
   /** Applies a function to all keys of this map. */
-  def foreachKey[A](f: K => A) { foreachElement[K,A](_keys, f) }
+  def foreachKey[A](f: K => A): Unit = { foreachElement[K,A](_keys, f) }
 
   /** Applies a function to all values of this map. */
-  def foreachValue[A](f: V => A) { foreachElement[V,A](_values, f) }
+  def foreachValue[A](f: V => A): Unit = { foreachElement[V,A](_values, f) }
 
   /** Creates a new `AnyRefMap` with different values.
    *  Unlike `mapValues`, this method generates a new

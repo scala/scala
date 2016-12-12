@@ -149,7 +149,7 @@ trait TraversableViewLike[+A,
     // protected def newSliced(_endpoints: SliceInterval): Transformed[A] =
     //   self.newSliced(endpoints.recalculate(_endpoints))
 
-    def foreach[U](f: A => U) {
+    def foreach[U](f: A => U): Unit = {
       var index = 0
       for (x <- self) {
         if (from <= index) {
@@ -164,7 +164,7 @@ trait TraversableViewLike[+A,
 
   trait Mapped[B] extends Transformed[B] {
     protected[this] val mapping: A => B
-    def foreach[U](f: B => U) {
+    def foreach[U](f: B => U): Unit = {
       for (x <- self)
         f(mapping(x))
     }
@@ -173,7 +173,7 @@ trait TraversableViewLike[+A,
 
   trait FlatMapped[B] extends Transformed[B] {
     protected[this] val mapping: A => GenTraversableOnce[B]
-    def foreach[U](f: B => U) {
+    def foreach[U](f: B => U): Unit = {
       for (x <- self)
         for (y <- mapping(x).seq)
           f(y)
@@ -183,7 +183,7 @@ trait TraversableViewLike[+A,
 
   trait Appended[B >: A] extends Transformed[B] {
     protected[this] val rest: GenTraversable[B]
-    def foreach[U](f: B => U) {
+    def foreach[U](f: B => U): Unit = {
       self foreach f
       rest foreach f
     }
@@ -192,7 +192,7 @@ trait TraversableViewLike[+A,
   
   trait Prepended[B >: A] extends Transformed[B] {
     protected[this] val fst: GenTraversable[B]
-    def foreach[U](f: B => U) {
+    def foreach[U](f: B => U): Unit = {
       fst foreach f
       self foreach f
     }
@@ -201,7 +201,7 @@ trait TraversableViewLike[+A,
 
   trait Filtered extends Transformed[A] {
     protected[this] val pred: A => Boolean
-    def foreach[U](f: A => U) {
+    def foreach[U](f: A => U): Unit = {
       for (x <- self)
         if (pred(x)) f(x)
     }
@@ -210,7 +210,7 @@ trait TraversableViewLike[+A,
 
   trait TakenWhile extends Transformed[A] {
     protected[this] val pred: A => Boolean
-    def foreach[U](f: A => U) {
+    def foreach[U](f: A => U): Unit = {
       for (x <- self) {
         if (!pred(x)) return
         f(x)
@@ -221,7 +221,7 @@ trait TraversableViewLike[+A,
 
   trait DroppedWhile extends Transformed[A] {
     protected[this] val pred: A => Boolean
-    def foreach[U](f: A => U) {
+    def foreach[U](f: A => U): Unit = {
       var go = false
       for (x <- self) {
         if (!go && !pred(x)) go = true

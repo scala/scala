@@ -653,7 +653,7 @@ extends scala.collection.concurrent.Map[K, V]
 
   /* internal methods */
 
-  private def writeObject(out: java.io.ObjectOutputStream) {
+  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
     out.writeObject(hashingobj)
     out.writeObject(equalityobj)
 

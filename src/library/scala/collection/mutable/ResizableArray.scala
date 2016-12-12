@@ -44,12 +44,12 @@ trait ResizableArray[A] extends IndexedSeq[A]
     array(idx).asInstanceOf[A]
   }
 
-  def update(idx: Int, elem: A) {
+  def update(idx: Int, elem: A): Unit = {
     if (idx >= size0) throw new IndexOutOfBoundsException(idx.toString)
     array(idx) = elem.asInstanceOf[AnyRef]
   }
 
-  override def foreach[U](f: A => U) {
+  override def foreach[U](f: A => U): Unit = {
     var i = 0
     // size is cached here because profiling reports a lot of time spent calling
     // it on every iteration.  I think it's likely a profiler ghost but it doesn't
@@ -72,7 +72,7 @@ trait ResizableArray[A] extends IndexedSeq[A]
    *  @param  start starting index.
    *  @param  len number of elements to copy
    */
-   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) {
+   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Unit = {
      val len1 = len min (xs.length - start) min length
      if (len1 > 0) Array.copy(array, 0, xs, start, len1)
    }
@@ -81,7 +81,7 @@ trait ResizableArray[A] extends IndexedSeq[A]
 
   /** Remove elements of this array at indices after `sz`.
    */
-  def reduceToSize(sz: Int) {
+  def reduceToSize(sz: Int): Unit = {
     require(sz <= size0)
     while (size0 > sz) {
       size0 -= 1
@@ -90,7 +90,7 @@ trait ResizableArray[A] extends IndexedSeq[A]
   }
 
   /** Ensure that the internal array has at least `n` cells. */
-  protected def ensureSize(n: Int) {
+  protected def ensureSize(n: Int): Unit = {
     // Use a Long to prevent overflows
     val arrayLength: Long = array.length
     if (n > arrayLength) {
@@ -108,7 +108,7 @@ trait ResizableArray[A] extends IndexedSeq[A]
 
   /** Swap two elements of this array.
    */
-  protected def swap(a: Int, b: Int) {
+  protected def swap(a: Int, b: Int): Unit = {
     val h = array(a)
     array(a) = array(b)
     array(b) = h
@@ -116,7 +116,7 @@ trait ResizableArray[A] extends IndexedSeq[A]
 
   /** Move parts of the array.
    */
-  protected def copy(m: Int, n: Int, len: Int) {
+  protected def copy(m: Int, n: Int, len: Int): Unit = {
     scala.compat.Platform.arraycopy(array, m, array, n, len)
   }
 }

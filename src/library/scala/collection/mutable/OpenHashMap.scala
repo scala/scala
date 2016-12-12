@@ -251,7 +251,7 @@ extends AbstractMap[Key, Value]
    *  @tparam U  The return type of the specified function `f`, return result of which is ignored.
    *  @param f   The function to apply to each key, value mapping.
    */
-  override def foreach[U](f : ((Key, Value)) => U) {
+  override def foreach[U](f : ((Key, Value)) => U): Unit = {
     val startModCount = modCount
     foreachUndeletedEntry(entry => {
       if (modCount != startModCount) sys.error("Concurrent Modification")
@@ -259,7 +259,7 @@ extends AbstractMap[Key, Value]
     )
   }
 
-  private[this] def foreachUndeletedEntry(f : Entry => Unit){
+  private[this] def foreachUndeletedEntry(f : Entry => Unit): Unit = {
     table.foreach(entry => if (entry != null && entry.value != None) f(entry))
   }
 

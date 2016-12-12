@@ -81,11 +81,11 @@ extends ParSet[T]
     def newIterator(start: Int, until: Int, total: Int) = new ParHashSetIterator(start, until, total)
   }
 
-  private def writeObject(s: java.io.ObjectOutputStream) {
+  private def writeObject(s: java.io.ObjectOutputStream): Unit = {
     serializeTo(s)
   }
 
-  private def readObject(in: java.io.ObjectInputStream) {
+  private def readObject(in: java.io.ObjectInputStream): Unit = {
     init(in, x => ())
   }
 
