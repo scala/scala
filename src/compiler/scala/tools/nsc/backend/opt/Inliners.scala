@@ -161,6 +161,12 @@ abstract class Inliners extends SubComponent {
               val inc   = new IMethodInfo(callee)
               val pair  = new CallerCalleeInfo(caller, inc)
 
+              if(inc.hasHandlers && (info.stack == -1)) {
+                // no inlining is done, yet don't warn about it, info.stack == -1 indicates we're trying to inlineWithoutTFA.
+                // Shortly, a TFA will be computed and an error message reported if indeed inlining not possible.
+                return false
+              }
+
               if (pair isStampedForInlining info.stack) {
                 retry = true
                 inlined = true
