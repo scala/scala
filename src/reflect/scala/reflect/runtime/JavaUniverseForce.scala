@@ -323,7 +323,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.QuasiquoteClass_api_unapply
     definitions.ScalaSignatureAnnotation
     definitions.ScalaLongSignatureAnnotation
-    definitions.MethodHandle
+    definitions.MethodHandleClass
+    definitions.VarHandleClass
     definitions.OptionClass
     definitions.OptionModule
     definitions.SomeClass

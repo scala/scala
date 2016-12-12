@@ -537,7 +537,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaSignatureAnnotation = requiredClass[scala.reflect.ScalaSignature]
     lazy val ScalaLongSignatureAnnotation = requiredClass[scala.reflect.ScalaLongSignature]
 
-    lazy val MethodHandle = getClassIfDefined("java.lang.invoke.MethodHandle")
+    lazy val MethodHandleClass = getClassIfDefined("java.lang.invoke.MethodHandle")
+    lazy val VarHandleClass = getClassIfDefined("java.lang.invoke.VarHandle")
 
     // Option classes
     lazy val OptionClass: ClassSymbol   = requiredClass[Option[_]]
@@ -1567,9 +1568,12 @@ trait Definitions extends api.StandardDefinitions {
 
       lazy val PartialManifestClass  = getTypeMember(ReflectPackage, tpnme.ClassManifest)
       lazy val ManifestSymbols = Set[Symbol](PartialManifestClass, FullManifestClass, OptManifestClass)
+      private lazy val PolymorphicSignatureClass = MethodHandleClass.companionModule.info.decl(TypeName("PolymorphicSignature"))
 
-      def isPolymorphicSignature(sym: Symbol) = PolySigMethods(sym)
-      private lazy val PolySigMethods: Set[Symbol] = Set[Symbol](MethodHandle.info.decl(sn.Invoke), MethodHandle.info.decl(sn.InvokeExact)).filter(_.exists)
+      def isPolymorphicSignature(sym: Symbol) = sym != null && sym.isJavaDefined && {
+        val owner = sym.safeOwner
+        (owner == MethodHandleClass || owner == VarHandleClass) && sym.hasAnnotation(PolymorphicSignatureClass)
+      }
 
       lazy val Scala_Java8_CompatPackage = rootMirror.getPackageIfDefined("scala.runtime.java8")
     }

@@ -3401,7 +3401,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // governed by a) the argument types and b) the expected type
           val args1 = typedArgs(args, forArgMode(fun, mode))
           val pts = args1.map(_.tpe.deconst)
-          val clone = fun.symbol.cloneSymbol
+          val clone = fun.symbol.cloneSymbol.withoutAnnotations
           val cloneParams = pts map (pt => clone.newValueParameter(currentUnit.freshTermName()).setInfo(pt))
           val resultType = if (isFullyDefined(pt)) pt else ObjectTpe
           clone.modifyInfo(mt => copyMethodType(mt, cloneParams, resultType))
