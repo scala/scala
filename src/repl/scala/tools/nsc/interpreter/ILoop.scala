@@ -105,8 +105,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   class ILoopInterpreter extends IMain(settings, out) {
-    override protected def parentClassLoader =
-      settings.explicitParentLoader.getOrElse( classOf[ILoop].getClassLoader )
+    override protected def parentClassLoader = {
+      val replClassLoader = classOf[ILoop].getClassLoader // might be null if we're on the boot classpath
+      settings.explicitParentLoader.orElse(Option(replClassLoader)).getOrElse(ClassLoader.getSystemClassLoader)
+    }
   }
 
   /** Create a new interpreter. */

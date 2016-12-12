@@ -255,8 +255,10 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   }
 
   /** Parent classloader.  Overridable. */
-  protected def parentClassLoader: ClassLoader =
-    settings.explicitParentLoader.getOrElse( this.getClass.getClassLoader() )
+  protected def parentClassLoader: ClassLoader = {
+    val replClassLoader = this.getClass.getClassLoader() // might be null if we're on the boot classpath
+    settings.explicitParentLoader.orElse(Option(replClassLoader)).getOrElse(ClassLoader.getSystemClassLoader)
+  }
 
   /* A single class loader is used for all commands interpreted by this Interpreter.
      It would also be possible to create a new class loader for each command
