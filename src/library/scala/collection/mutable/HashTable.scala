@@ -12,7 +12,7 @@ package scala
 package collection
 package mutable
 
-import java.lang.Integer.rotateRight
+import java.lang.Integer.{numberOfLeadingZeros, rotateRight}
 import scala.util.hashing.byteswap32
 
 /** This class can be used to construct data structures that are based
@@ -405,7 +405,7 @@ private[collection] object HashTable {
 
   private[collection] final def sizeForThreshold(_loadFactor: Int, thr: Int) = ((thr.toLong * loadFactorDenum) / _loadFactor).toInt
 
-  private[collection] final def capacity(expectedSize: Int) = if (expectedSize == 0) 1 else powerOfTwo(expectedSize)
+  private[collection] final def capacity(expectedSize: Int) = nextPositivePowerOfTwo(expectedSize)
 
   trait HashUtils[KeyType] {
     protected final def sizeMapBucketBitSize = 5
@@ -433,16 +433,7 @@ private[collection] object HashTable {
   /**
    * Returns a power of two >= `target`.
    */
-  private[collection] def powerOfTwo(target: Int): Int = {
-    /* See http://bits.stephan-brumme.com/roundUpToNextPowerOfTwo.html */
-    var c = target - 1
-    c |= c >>>  1
-    c |= c >>>  2
-    c |= c >>>  4
-    c |= c >>>  8
-    c |= c >>> 16
-    c + 1
-  }
+  private[collection] def nextPositivePowerOfTwo(target: Int): Int = 1 << -numberOfLeadingZeros(target - 1)
 
   class Contents[A, Entry >: Null <: HashEntry[A, Entry]](
     val loadFactor: Int,

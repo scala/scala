@@ -47,9 +47,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
 
   @transient protected var seedvalue: Int = tableSizeSeed
 
-  import HashTable.powerOfTwo
-
-  protected def capacity(expectedSize: Int) = if (expectedSize == 0) 1 else powerOfTwo(expectedSize)
+  protected def capacity(expectedSize: Int) = HashTable.nextPositivePowerOfTwo(expectedSize)
 
   /** The initial size of the hash table.
    */
