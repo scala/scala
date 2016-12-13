@@ -936,10 +936,8 @@ trait Infer extends Checkable {
       def infer_s = map3(tparams, tvars, targs)((tparam, tvar, targ) => s"$tparam=$tvar/$targ") mkString ","
       printTyping(tree, s"infer expr instance from pt=$pt, $infer_s")
 
-      // SI-7899 inferring by-name types is unsound. The correct behaviour is conditional because the hole is
-      //         exploited in Scalaz (Free.scala), as seen in: run/t7899-regression.
-      def dropByNameIfStrict(tp: Type): Type = if (settings.inferByName) tp else dropByName(tp)
-      def targsStrict = if (targs eq null) null else targs mapConserve dropByNameIfStrict
+      // SI-7899 inferring by-name types is unsound
+      def targsStrict = if (targs eq null) null else targs mapConserve dropByName
 
       if (keepNothings || (targs eq null)) { //@M: adjustTypeArgs fails if targs==null, neg/t0226
         substExpr(tree, tparams, targsStrict, pt)
