@@ -13,6 +13,7 @@ import nsc.util.{ ClassPath, JavaClassPath, ScalaClassLoader }
 import nsc.io.{ File, Directory, Path, AbstractFile }
 import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt
+import scala.sys.SystemProperties
 import scala.language.postfixOps
 
 // Loosely based on the draft specification at:
@@ -39,9 +40,10 @@ object PathResolver {
   /** Values found solely by inspecting environment or property variables.
    */
   object Environment {
-    private def searchForBootClasspath = (
-      systemProperties find (_._1 endsWith ".boot.class.path") map (_._2) getOrElse ""
-    )
+    private def searchForBootClasspath = {
+      val ps = new SystemProperties
+      ps.names find (_ endsWith ".boot.class.path") flatMap (ps.get) getOrElse ""
+    }
 
     /** Environment variables which java pays attention to so it
      *  seems we do as well.

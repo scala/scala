@@ -34,6 +34,8 @@ extends mutable.AbstractMap[String, String]
 
   def iterator: Iterator[(String, String)] =
     wrapAccess(System.getProperties().asScala.iterator) getOrElse Iterator.empty
+  def names: Iterator[String] =
+    wrapAccess(System.getProperties().stringPropertyNames().asScala.iterator) getOrElse Iterator.empty
   def get(key: String) =
     wrapAccess(Option(System.getProperty(key))) flatMap (x => x)
   override def contains(key: String) =
