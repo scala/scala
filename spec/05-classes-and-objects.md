@@ -263,6 +263,8 @@ and $M'$ bind the same name, and one of following holds.
    equal number of argument types $\overline T$, $\overline T'$
    and equal numbers of type parameters
    $\overline t$, $\overline t'$, say, and  $\overline T' = [\overline t'/\overline t]\overline T$.
+5. $M$ is not a method definition and $M'$ defines a parameterless method or a method
+   with an empty parameter list `()` or _vice versa_.
 
 <!--
 every argument type
