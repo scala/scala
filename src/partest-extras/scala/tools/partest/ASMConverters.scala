@@ -25,14 +25,14 @@ object ASMConverters {
 
     private def referencedLabels(instruction: Instruction): Set[Instruction] = instruction match {
       case Jump(op, label)                         => Set(label)
-      case LookupSwitch(op, dflt, keys, labels)    => (dflt :: labels).toSet
-      case TableSwitch(op, min, max, dflt, labels) => (dflt :: labels).toSet
+      case LookupSwitch(op, dflt, keys, labels)    => (dflt :: labels).toSetUp
+      case TableSwitch(op, min, max, dflt, labels) => (dflt :: labels).toSetUp
       case LineNumber(line, start)                 => Set(start)
       case _ => Set.empty
     }
 
     def dropStaleLabels = {
-      val definedLabels: Set[Instruction] = self.filter(_.isInstanceOf[Label]).toSet
+      val definedLabels: Set[Instruction] = self.filter(_.isInstanceOf[Label]).toSetUp
       val usedLabels: Set[Instruction] = self.flatMap(referencedLabels)(collection.breakOut)
       self.filterNot(definedLabels diff usedLabels)
     }

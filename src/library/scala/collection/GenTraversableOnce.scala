@@ -626,11 +626,15 @@ trait GenTraversableOnce[+A] extends Any {
    */
   def toSeq: GenSeq[A]
 
+  @deprecated("use to[Set] or toSetUp instead","2.12.0")
+  @deprecatedOverriding("override toSetUp instead","2.12.0")
+  def toSet[A1 >: A]: GenSet[A1] = toSetUp
+
   /** Converts this $coll to a set.
    *  $willNotTerminateInf
    *  @return      a set containing all elements of this $coll.
    */
-  def toSet[A1 >: A]: GenSet[A1]
+  def toSetUp[A1 >: A]: GenSet[A1]
 
   /** Converts this $coll to a map.  This method is unavailable unless
    *  the elements are members of Tuple2, each ((T, U)) becoming a key-value

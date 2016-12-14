@@ -117,7 +117,7 @@ self =>
     // ImmutableDefaultKeySet is only protected, so we won't warn on override.
     // Someone could override in a way that makes widening not okay
     // (e.g. by overriding +, though the version in this class is fine)
-    override def toSet[B >: K]: Set[B] = this.asInstanceOf[Set[B]]
+    override def toSetUp[B >: K]: Set[B] = this.asInstanceOf[Set[B]]
   }
 
   /** This function transforms all the values of mappings contained

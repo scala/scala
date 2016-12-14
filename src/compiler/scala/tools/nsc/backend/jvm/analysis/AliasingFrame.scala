@@ -425,7 +425,7 @@ abstract class IntIterator extends Iterator[Int] {
 class AliasSet(var set: Object /*SmallBitSet | Array[Long]*/, var size: Int) {
   import AliasSet._
 
-  override def toString: String = iterator.toSet.mkString("<", ",", ">")
+  override def toString: String = iterator.toSetUp.mkString("<", ",", ">")
 
   /**
    * An iterator for the elements of this bit set. Note that only one iterator can be used at a

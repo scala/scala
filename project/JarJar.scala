@@ -77,7 +77,7 @@ object JarJar {
       }
       else None
     }
-    val processed = in.flatMap(entry => process(entry)).toSet
+    val processed = in.flatMap(entry => process(entry)).toSetUp
     val getter = processor.getClass.getDeclaredMethod("getExcludes")
     getter.setAccessible(true)
     val excludes = getter.invoke(processor).asInstanceOf[java.util.Set[String]].asScala

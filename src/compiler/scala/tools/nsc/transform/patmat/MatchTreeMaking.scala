@@ -137,7 +137,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       // sub patterns bound to wildcard (_) are never stored as they can't be referenced
       // dirty debuggers will have to get dirty to see the wildcards
       lazy val storedBinders: Set[Symbol] =
-        (if (debugInfoEmitVars) subPatBinders.toSet else Set.empty) ++ extraStoredBinders -- ignoredSubPatBinders
+        (if (debugInfoEmitVars) subPatBinders.toSetUp else Set.empty) ++ extraStoredBinders -- ignoredSubPatBinders
 
       // e.g., mutable fields of a case class in ProductExtractorTreeMaker
       def extraStoredBinders: Set[Symbol]
@@ -166,7 +166,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           // binders in `subPatBindersStored` that are referenced by tree `in`
           val usedBinders = new mutable.HashSet[Symbol]()
           // all potentially stored subpat binders
-          val potentiallyStoredBinders = stored.unzip._1.toSet
+          val potentiallyStoredBinders = stored.unzip._1.toSetUp
           def ref(sym: Symbol) =
             if (potentiallyStoredBinders(sym)) usedBinders += sym
           // compute intersection of all symbols in the tree `in` and all potentially stored subpat binders
@@ -271,7 +271,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       val nextBinder = prevBinder // just passing through
 
       // mutable binders must be stored to avoid unsoundness or seeing mutation of fields after matching (SI-5158, SI-6070)
-      def extraStoredBinders: Set[Symbol] = mutableBinders.toSet
+      def extraStoredBinders: Set[Symbol] = mutableBinders.toSetUp
 
       def chainBefore(next: Tree)(casegen: Casegen): Tree = {
         val nullCheck = REF(prevBinder) OBJ_NE NULL

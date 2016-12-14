@@ -52,7 +52,7 @@ self =>
       val map = self.rangeImpl(from, until)
       new map.DefaultKeySortedSet
     }
-    override def toSet[C >: A]: Set[C] = {
+    override def toSetUp[C >: A]: Set[C] = {
       // This way of building sets typically has the best benchmarks, surprisingly!
       val sb = Set.newBuilder[C]
       foreach(sb += _)

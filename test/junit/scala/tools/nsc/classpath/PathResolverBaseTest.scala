@@ -84,7 +84,7 @@ class PathResolverBaseTest {
       assertEquals(s"Methods list and sources for package '$inPackage' should return entries for the same source files",
         sourceFileNames, sourceFileNamesFromList)
 
-      val uniqueNamesOfClassAndSourceFiles = (classFileNames ++ sourceFileNames).toSet
+      val uniqueNamesOfClassAndSourceFiles = (classFileNames ++ sourceFileNames).toSetUp
       assertEquals(s"Class and source entries with the same name obtained via list for package '$inPackage' should be merged into one containing both files",
         uniqueNamesOfClassAndSourceFiles.size, classesAndSourcesFromList.length)
     }

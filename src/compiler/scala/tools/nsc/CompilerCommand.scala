@@ -56,7 +56,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
     }
     val debugs      = baseList filter (_.isForDebug)
     val deprecateds = baseList filter (_.isDeprecated)
-    val theRest     = baseList filterNot (debugs.toSet ++ deprecateds)
+    val theRest     = baseList filterNot (debugs.toSetUp ++ deprecateds)
 
     def sstring(msg: String, xs: List[Setting]) =
       if (xs.isEmpty) None else Some(msg :: xs.map(helpStr) mkString "\n  ")

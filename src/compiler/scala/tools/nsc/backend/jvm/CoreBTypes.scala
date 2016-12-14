@@ -63,7 +63,7 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
     FLOAT  -> classBTypeFromSymbol(BoxedFloatClass),
     DOUBLE -> classBTypeFromSymbol(BoxedDoubleClass))
 
-  lazy val boxedClasses: Set[ClassBType] = boxedClassOfPrimitive.values.toSet
+  lazy val boxedClasses: Set[ClassBType] = boxedClassOfPrimitive.values.toSetUp
 
   /**
    * Maps the method symbol for a box method to the boxed type of the result. For example, the

@@ -275,7 +275,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
       // we want something like x1, x1.hd, x1.hd.tl, x1.hd.tl.hd, so that we can easily recognize when
       // we're testing the same variable
       // TODO check:
-      //   pointsToBound -- accumSubst.from == Set(root) && (accumSubst.from.toSet -- pointsToBound) isEmpty
+      //   pointsToBound -- accumSubst.from == Set(root) && (accumSubst.from.toSetUp -- pointsToBound) isEmpty
       private var accumSubst: Substitution = EmptySubstitution
 
       // hashconsing trees (modulo value-equality)
@@ -823,7 +823,7 @@ trait MatchAnalysis extends MatchApproximation {
         }
 
         def allFieldAssignmentsLegal: Boolean =
-          (fields.keySet subsetOf caseFieldAccs.toSet) && fields.values.forall(_.allFieldAssignmentsLegal)
+          (fields.keySet subsetOf caseFieldAccs.toSetUp) && fields.values.forall(_.allFieldAssignmentsLegal)
 
         private lazy val nonTrivialNonEqualTo = notEqualTo.filterNot{c => c.isAny }
 

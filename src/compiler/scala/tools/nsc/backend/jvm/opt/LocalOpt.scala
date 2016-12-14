@@ -768,7 +768,7 @@ object LocalOptImpls {
   def simplifyJumps(method: MethodNode): Boolean = {
     var changed = false
 
-    val allHandlers = method.tryCatchBlocks.asScala.toSet
+    val allHandlers = method.tryCatchBlocks.asScala.toSetUp
 
     // A set of all exception handlers that guard the current instruction, required for simplifyGotoReturn
     var activeHandlers = Set.empty[TryCatchBlockNode]
@@ -789,7 +789,7 @@ object LocalOptImpls {
     var _jumpTargets: Set[AbstractInsnNode] = null
     def jumpTargets = {
       if (_jumpTargets == null) {
-        _jumpTargets = jumpInsns.keysIterator.map(_.label).toSet
+        _jumpTargets = jumpInsns.keysIterator.map(_.label).toSetUp
       }
       _jumpTargets
     }

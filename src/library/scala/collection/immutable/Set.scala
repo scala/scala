@@ -45,7 +45,7 @@ trait Set[A] extends Iterable[A]
    *  When in doubt, the set will be rebuilt.  Rebuilt sets never
    *  need to be rebuilt again.
    */
-  override def toSet[B >: A]: Set[B] = {
+  override def toSetUp[B >: A]: Set[B] = {
       // This way of building sets typically has the best benchmarks, surprisingly!
     val sb = Set.newBuilder[B]
     foreach(sb += _)
@@ -73,7 +73,7 @@ object Set extends ImmutableSetFactory[Set] {
     def - (elem: Any): Set[Any] = this
     def iterator: Iterator[Any] = Iterator.empty
     override def foreach[U](f: Any => U): Unit = ()
-    override def toSet[B >: Any]: Set[B] = this.asInstanceOf[Set[B]]
+    override def toSetUp[B >: Any]: Set[B] = this.asInstanceOf[Set[B]]
   }
   private[collection] def emptyInstance: Set[Any] = EmptySet
 
@@ -108,7 +108,7 @@ object Set extends ImmutableSetFactory[Set] {
     override def tail: Set[A] = Set.empty
     // Why is Set1 non-final?  Need to fix that!
     @deprecatedOverriding("This immutable set should do nothing on toSet but cast itself to a Set with a wider element type.", "2.11.8")
-    override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set1[B]]
+    override def toSetUp[B >: A]: Set[B] = this.asInstanceOf[Set1[B]]
   }
 
   /** An optimized representation for immutable sets of size 2 */
@@ -144,7 +144,7 @@ object Set extends ImmutableSetFactory[Set] {
     override def tail: Set[A] = new Set1(elem2)
     // Why is Set2 non-final?  Need to fix that!
     @deprecatedOverriding("This immutable set should do nothing on toSet but cast itself to a Set with a wider element type.", "2.11.8")
-    override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set2[B]]
+    override def toSetUp[B >: A]: Set[B] = this.asInstanceOf[Set2[B]]
   }
 
   /** An optimized representation for immutable sets of size 3 */
@@ -182,7 +182,7 @@ object Set extends ImmutableSetFactory[Set] {
     override def tail: Set[A] = new Set2(elem2, elem3)
     // Why is Set3 non-final?  Need to fix that!
     @deprecatedOverriding("This immutable set should do nothing on toSet but cast itself to a Set with a wider element type.", "2.11.8")
-    override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set3[B]]
+    override def toSetUp[B >: A]: Set[B] = this.asInstanceOf[Set3[B]]
   }
 
   /** An optimized representation for immutable sets of size 4 */
@@ -222,7 +222,7 @@ object Set extends ImmutableSetFactory[Set] {
     override def tail: Set[A] = new Set3(elem2, elem3, elem4)
     // Why is Set4 non-final?  Need to fix that!
     @deprecatedOverriding("This immutable set should do nothing on toSet but cast itself to a Set with a wider element type.", "2.11.8")
-    override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set4[B]]
+    override def toSetUp[B >: A]: Set[B] = this.asInstanceOf[Set4[B]]
   }
 }
 

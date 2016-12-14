@@ -32,7 +32,7 @@ abstract class Pasted(prompt: String) {
   def isPromptOnly(line: String) = line match { case anyPrompt() => true ; case _ => false }
 
   private val testBoth = PromptString != AltPromptString
-  private val spacey   = " \t".toSet
+  private val spacey   = " \t".toSetUp
 
   def matchesPrompt(line: String) = matchesString(line, PromptString) || testBoth && matchesString(line, AltPromptString)
   def matchesContinue(line: String) = matchesString(line, ContinueString)
@@ -52,7 +52,7 @@ abstract class Pasted(prompt: String) {
   private val resAssign    = """^val (res\d+).*""".r
 
   private class PasteAnalyzer(val lines: List[String]) {
-    val referenced = lines flatMap (resReference findAllIn _.trim.stripPrefix("res")) toSet
+    val referenced = lines flatMap (resReference findAllIn _.trim.stripPrefix("res")) toSetUp
     val ActualPromptString = lines find matchesPrompt map (s =>
       if (matchesString(s, PromptString)) PromptString else AltPromptString) getOrElse PromptString
     val cmds       = lines reduceLeft append split ActualPromptString filterNot (_.trim == "") toList

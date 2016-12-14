@@ -47,7 +47,7 @@ package scala.collection.mutable {
     property("--=") = forAll { (set: mutable.TreeSet[K], ks: Seq[K]) =>
       val oldElems = set.toList
       set --= ks
-      val deletedElems = ks.toSet
+      val deletedElems = ks.toSetUp
       oldElems.forall { e => set.contains(e) == !deletedElems(e) }
     }
 
@@ -139,7 +139,7 @@ package scala.collection.mutable {
     property("++=") = forAll { (set: mutable.TreeSet[K], ks: Seq[K], from: Option[K], until: Option[K]) =>
       val setView = set.rangeImpl(from, until)
       setView ++= ks
-      ks.toSet.forall { k =>
+      ks.toSetUp.forall { k =>
         set.contains(k) && setView.contains(k) == in(k, from, until)
       }
     }
@@ -158,7 +158,7 @@ package scala.collection.mutable {
     property("--=") = forAll { (set: mutable.TreeSet[K], ks: Seq[K], from: Option[K], until: Option[K]) =>
       val setView = set.rangeImpl(from, until)
       setView --= ks
-      ks.toSet.forall { k => !set.contains(k) && !setView.contains(k) }
+      ks.toSetUp.forall { k => !set.contains(k) && !setView.contains(k) }
     }
 
     property("iterator") = forAll { (ks: Set[K], from: Option[K], until: Option[K]) =>

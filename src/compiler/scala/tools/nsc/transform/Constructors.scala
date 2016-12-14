@@ -151,7 +151,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
    */
   private trait OmittablesHelper {
     def computeOmittableAccessors(clazz: Symbol, defs: List[Tree], auxConstructors: List[Tree]): Set[Symbol] = {
-      val decls = clazz.info.decls.toSet
+      val decls = clazz.info.decls.toSetUp
       val isEffectivelyFinal = clazz.isEffectivelyFinal
 
       // Initially populated with all elision candidates.
@@ -188,7 +188,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       if (omittables.nonEmpty)
         (defs.iterator ++ auxConstructors.iterator) foreach detectUsages.traverse
 
-      omittables.toSet
+      omittables.toSetUp
     }
   } // OmittablesHelper
 

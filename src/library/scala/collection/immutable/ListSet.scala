@@ -96,7 +96,7 @@ sealed class ListSet[A] extends AbstractSet[A]
   protected def elem: A = throw new NoSuchElementException("elem of empty set")
   protected def next: ListSet[A] = throw new NoSuchElementException("next of empty set")
 
-  override def toSet[B >: A]: Set[B] = this.asInstanceOf[ListSet[B]]
+  override def toSetUp[B >: A]: Set[B] = this.asInstanceOf[ListSet[B]]
 
   override def stringPrefix = "ListSet"
 

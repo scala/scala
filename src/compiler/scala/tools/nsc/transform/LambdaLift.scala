@@ -268,7 +268,7 @@ abstract class LambdaLift extends InfoTransform {
         }
       }
 
-      val allFree: Set[Symbol] = free.values.flatMap(_.iterator).toSet
+      val allFree: Set[Symbol] = free.values.flatMap(_.iterator).toSetUp
 
       for (sym <- renamable) {
         if (allFree(sym)) proxyNames(sym) = newName(sym)

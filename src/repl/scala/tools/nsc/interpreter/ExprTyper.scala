@@ -30,7 +30,7 @@ trait ExprTyper {
       }
     }
     def asDefn(): Symbol = {
-      val old = repl.definedSymbolList.toSet
+      val old = repl.definedSymbolList.toSetUp
 
       interpretSynthetic(code) match {
         case IR.Success =>

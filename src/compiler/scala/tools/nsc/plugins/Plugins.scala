@@ -83,7 +83,7 @@ trait Plugins { global: Global =>
       }
     }
 
-    val plugs = pick(roughPluginsList, Set(), (phasesSet map (_.phaseName)).toSet)
+    val plugs = pick(roughPluginsList, Set(), (phasesSet map (_.phaseName)).toSetUp)
 
     // Verify required plugins are present.
     for (req <- settings.require.value ; if !(plugs exists (_.name == req)))

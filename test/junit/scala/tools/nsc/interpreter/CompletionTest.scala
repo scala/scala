@@ -171,7 +171,7 @@ class CompletionTest {
     val intp = newIMain()
     val completer = new PresentationCompilerCompleter(intp)
     checkExact(completer, "class C(val a: Int, val b: Int) { this.")("a", "b")
-    assert(Set("asInstanceOf", "==").diff(completer.complete("class C(val a: Int, val b: Int) { this.").candidates.toSet).isEmpty)
+    assert(Set("asInstanceOf", "==").diff(completer.complete("class C(val a: Int, val b: Int) { this.").candidates.toSetUp).isEmpty)
     checkExact(completer, "case class D(a: Int, b: Int) { this.a")("a", "asInstanceOf")
   }
 
@@ -194,6 +194,6 @@ class CompletionTest {
   }
 
   def checkExact(completer: PresentationCompilerCompleter, before: String, after: String = "")(expected: String*): Unit = {
-    assertEquals(expected.toSet, completer.complete(before, after).candidates.toSet)
+    assertEquals(expected.toSetUp, completer.complete(before, after).candidates.toSetUp)
   }
 }

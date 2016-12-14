@@ -48,5 +48,5 @@ self =>
 
   def -(elem: T) = this.clone() -= elem
 
-  // note: should not override toSet
+  // note: should not override toSetUp
 }

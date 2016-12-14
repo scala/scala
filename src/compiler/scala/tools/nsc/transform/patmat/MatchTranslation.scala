@@ -401,7 +401,7 @@ trait MatchTranslation {
       lazy val subBoundTrees = (args, subPatTypes).zipped map newBoundTree
 
       // never store these in local variables (for PreserveSubPatBinders)
-      lazy val ignoredSubPatBinders: Set[Symbol] = subPatBinders zip args collect { case (b, PatternBoundToUnderscore()) => b } toSet
+      lazy val ignoredSubPatBinders: Set[Symbol] = subPatBinders zip args collect { case (b, PatternBoundToUnderscore()) => b } toSetUp
 
       // do repeated-parameter expansion to match up with the expected number of arguments (in casu, subpatterns)
       private def nonStarSubPatTypes = aligner.typedNonStarPatterns map (_.tpe)
@@ -552,7 +552,7 @@ trait MatchTranslation {
             Set.empty
           else
             // Ensures we capture unstable bound variables eagerly. These can arise under name based patmat or by indexing into mutable Seqs. See run t9003.scala
-            subPatBinders.toSet
+            subPatBinders.toSetUp
 
         ExtractorTreeMaker(extractorApply, lengthGuard(binder), binder)(
           subPatBinders,

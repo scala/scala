@@ -759,7 +759,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   private[interactive] def filesDeleted(sources: List[SourceFile], response: Response[Unit]) {
     informIDE("files deleted: " + sources)
-    val deletedFiles = sources.map(_.file).toSet
+    val deletedFiles = sources.map(_.file).toSetUp
     val deletedSyms = currentTopLevelSyms filter {sym => deletedFiles contains sym.sourceFile}
     for (d <- deletedSyms) {
       d.owner.info.decls unlink d
@@ -1178,7 +1178,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
     def camelMatch(entered: Name): Name => Boolean = {
       val enteredS = entered.toString
-      val enteredLowercaseSet = enteredS.toLowerCase().toSet
+      val enteredLowercaseSet = enteredS.toLowerCase().toSetUp
 
       (candidate: Name) => {
         def candidateChunks = camelComponents(candidate.toString)
@@ -1199,7 +1199,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         }
         val containsAllEnteredChars = {
           // Trying to rule out some candidates quickly before the more expensive `lenientMatch`
-          val candidateLowercaseSet = candidate.toString.toLowerCase().toSet
+          val candidateLowercaseSet = candidate.toString.toLowerCase().toSetUp
           enteredLowercaseSet.diff(candidateLowercaseSet).isEmpty
         }
         containsAllEnteredChars && lenientMatch(enteredS, candidateChunks, 0)

@@ -247,7 +247,7 @@ trait ModelFactoryTypeSupport {
               appendType0(typeRef(pre, sym, Nil))
               nameBuffer append "["
               var first = true
-              val qset = quantified.toSet
+              val qset = quantified.toSetUp
               for (arg <- args) {
                 if (!first) { nameBuffer append ", " } else first = false
                 arg match {

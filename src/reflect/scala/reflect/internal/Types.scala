@@ -2616,7 +2616,7 @@ trait Types
     override def isTrivial = false
     override def bounds = TypeBounds(maybeRewrap(underlying.bounds.lo), maybeRewrap(underlying.bounds.hi))
     override def parents = underlying.parents map maybeRewrap
-    override def boundSyms = quantified.toSet
+    override def boundSyms = quantified.toSetUp
     override def prefix = maybeRewrap(underlying.prefix)
     override def typeArgs = underlying.typeArgs map maybeRewrap
     override def params = underlying.params mapConserve { param =>
@@ -2707,7 +2707,7 @@ trait Types
      *   - the prefix is not quantified
      */
     def isRepresentableWithWildcards = {
-      val qset = quantified.toSet
+      val qset = quantified.toSetUp
       underlying match {
         case _: RefinementTypeRef => false
         case TypeRef(pre, sym, args) =>
@@ -2732,7 +2732,7 @@ trait Types
       }
       underlying match {
         case TypeRef(pre, sym, args) if !settings.debug && isRepresentableWithWildcards =>
-          "" + TypeRef(pre, sym, Nil) + wildcardArgsString(quantified.toSet, args).mkString("[", ", ", "]")
+          "" + TypeRef(pre, sym, Nil) + wildcardArgsString(quantified.toSetUp, args).mkString("[", ", ", "]")
         case MethodType(_, _) | NullaryMethodType(_) | PolyType(_, _) =>
           "(" + underlying + ")" + clauses
         case _ =>

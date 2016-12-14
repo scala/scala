@@ -111,12 +111,12 @@ trait Logic extends Debugging  {
     // but that requires typing relations like And(x: Tx, y: Ty) : (if(Tx == PureProp && Ty == PureProp) PureProp else Prop)
     final case class And(ops: Set[Prop]) extends Prop
     object And {
-      def apply(ops: Prop*) = new And(ops.toSet)
+      def apply(ops: Prop*) = new And(ops.toSetUp)
     }
 
     final case class Or(ops: Set[Prop]) extends Prop
     object Or {
-      def apply(ops: Prop*) = new Or(ops.toSet)
+      def apply(ops: Prop*) = new Or(ops.toSetUp)
     }
 
     final case class Not(a: Prop) extends Prop
@@ -272,7 +272,7 @@ trait Logic extends Debugging  {
       (new PropTraverser {
         override def applyVar(v: Var) = vars += v
       })(p)
-      vars.toSet
+      vars.toSetUp
     }
 
     def gatherSymbols(p: Prop): Set[Sym] = {
@@ -280,7 +280,7 @@ trait Logic extends Debugging  {
       (new PropTraverser {
         override def applySymbol(s: Sym) = syms += s
       })(p)
-      syms.toSet
+      syms.toSetUp
     }
 
     trait PropMap {
@@ -475,7 +475,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
         val subConsts =
           enumerateSubtypes(staticTp, grouped = false)
           .headOption.map { tps =>
-          tps.toSet[Type].map{ tp =>
+          tps.toSetUp[Type].map{ tp =>
             val domainC = TypeConst(tp)
             registerEquality(domainC)
             domainC
@@ -496,7 +496,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
         val subtypes = enumerateSubtypes(staticTp, grouped = true)
         subtypes.map {
           subTypes =>
-            val syms = subTypes.flatMap(tpe => symForEqualsTo.get(TypeConst(tpe))).toSet
+            val syms = subTypes.flatMap(tpe => symForEqualsTo.get(TypeConst(tpe))).toSetUp
             if (mayBeNull) syms + symForEqualsTo(NullConst) else syms
         }.filter(_.nonEmpty)
       }

@@ -1132,8 +1132,8 @@ trait Implicits {
           val start = if (Statistics.canEnable) Statistics.startTimer(subtypeETNanos) else null
           //        val implicitInfoss = companionImplicits(pt)
           val implicitInfoss1 = companionImplicitMap(pt).valuesIterator.toList
-          //        val is1 = implicitInfoss.flatten.toSet
-          //        val is2 = implicitInfoss1.flatten.toSet
+          //        val is1 = implicitInfoss.flatten.toSetUp
+          //        val is2 = implicitInfoss1.flatten.toSetUp
           //        for (i <- is1)
           //          if (!(is2 contains i)) println("!!! implicit infos of "+pt+" differ, new does not contain "+i+",\nold: "+implicitInfoss+",\nnew: "+implicitInfoss1)
           //        for (i <- is2)
@@ -1514,8 +1514,8 @@ trait Implicits {
       interpolate(msg, Map((typeParamNames zip typeArgs): _*)) // TODO: give access to the name and type of the implicit argument, etc?
 
     def validate: Option[String] = {
-      val refs  = Intersobralator.findAllMatchIn(msg).map(_ group 1).toSet
-      val decls = typeParamNames.toSet
+      val refs  = Intersobralator.findAllMatchIn(msg).map(_ group 1).toSetUp
+      val decls = typeParamNames.toSetUp
 
       (refs &~ decls) match {
         case s if s.isEmpty => None

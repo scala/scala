@@ -32,7 +32,7 @@ class SeqCoder(words: List[String]) {
   def encode(number: String): Set[Seq[String]] = 
     if (number.isEmpty) Set(Seq())
     else {
-      val splits = (1 to number.length).toSet
+      val splits = (1 to number.length).toSetUp
       // for {
       //   split <- splits
       //   word <- wordsForNum(number take split)
@@ -45,7 +45,7 @@ class SeqCoder(words: List[String]) {
           subsmemo += (number, number drop split, word) -> subsmapped
           subsmapped
         })
-        wfnmemo += (number, number take split) -> wfn.toSet
+        wfnmemo += (number, number take split) -> wfn.toSetUp
         wfn
       })
       memo += number -> r
@@ -85,7 +85,7 @@ class ParCoder(words: List[String]) {
   def encode(number: String): ParSet[ParSeq[String]] = 
     if (number.isEmpty) ParSet(ParSeq())
     else {
-      val splits = (1 to number.length).toSet.par
+      val splits = (1 to number.length).toSetUp.par
       // for {
       //   split <- splits
       //   word <- wordsForNum(number take split)
@@ -118,7 +118,7 @@ class ParCoder(words: List[String]) {
   
   def assertWfn(num: String, split: String, dropped: String, r: ParSeq[ParSeq[String]]) {
     val m = comparison.wfnmemo((num, split))
-    val rs = r.toSet.par
+    val rs = r.toSetUp.par
     val words: ParSeq[String] = wordsForNum(split)
     if (rs != m) {
       println("flatmap for number with split: " + num + ", " + split)
