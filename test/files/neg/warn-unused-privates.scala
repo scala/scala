@@ -217,3 +217,10 @@ object `not even using companion privates` {
     def f = i
   }
 }
+
+class `no warn in patmat anonfun isDefinedAt` {
+  def f(pf: PartialFunction[String, Int]) = pf("42")
+  def g = f {
+    case s => s.length        // no warn (used to warn case s => true in isDefinedAt)
+  }
+}

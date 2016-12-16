@@ -7,10 +7,10 @@ warn-unused-params.scala:32: warning: parameter value s in method i is never use
 warn-unused-params.scala:49: warning: parameter value u in class Unusing is never used
 class Unusing(u: Int) {       // warn
               ^
-warn-unused-params.scala:57: warning: parameter value s in class CaseyAtTheBat is never used
+warn-unused-params.scala:59: warning: parameter value s in class CaseyAtTheBat is never used
 case class CaseyAtTheBat(k: Int)(s: String)        // warn
                                  ^
-warn-unused-params.scala:60: warning: parameter value readResolve in method f is never used
+warn-unused-params.scala:62: warning: parameter value readResolve in method f is never used
   def f(readResolve: Int) = 42           // warn
         ^
 error: No warnings can be incurred under -Xfatal-warnings.

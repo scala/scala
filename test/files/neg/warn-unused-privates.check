@@ -106,6 +106,15 @@ warn-unused-privates.scala:201: warning: pattern var z in method f is never used
 warn-unused-privates.scala:208: warning: pattern var z in method f is never used; `z@_' suppresses this warning
     case Some(z) => "warn"
               ^
+warn-unused-privates.scala:20: warning: parameter value msg0 in class B3 is never used
+class B3(msg0: String) extends A("msg")
+         ^
+warn-unused-privates.scala:136: warning: parameter value i in method x_= is never used
+  private def x_=(i: Int): Unit = ???
+                  ^
+warn-unused-privates.scala:138: warning: parameter value i in method y_= is never used
+  private def y_=(i: Int): Unit = ???
+                  ^
 error: No warnings can be incurred under -Xfatal-warnings.
-36 warnings found
+39 warnings found
 one error found

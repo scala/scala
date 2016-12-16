@@ -500,26 +500,28 @@ trait TypeDiagnostics {
         )
 
         override def traverse(t: Tree): Unit = {
+          val sym = t.symbol
           t match {
             case m: MemberDef if qualifies(t.symbol)   =>
               defnTrees += m
               t match {
-                case DefDef(mods@_, name@_, tparams@_, vparamss, tpt@_, rhs@_) if !t.symbol.isAbstract && !t.symbol.isDeprecated =>
-                  if (t.symbol.isPrimaryConstructor)
-                    for (cpa <- t.symbol.owner.constrParamAccessors if cpa.isPrivateLocal) params += cpa
-                  else if (t.symbol.isSynthetic && t.symbol.isImplicit) return
-                  else if (!t.symbol.isConstructor)
+                case DefDef(mods@_, name@_, tparams@_, vparamss, tpt@_, rhs@_) if !sym.isAbstract && !sym.isDeprecated && !sym.isMacro =>
+                  if (sym.isPrimaryConstructor)
+                    for (cpa <- sym.owner.constrParamAccessors if cpa.isPrivateLocal) params += cpa
+                  else if (sym.isSynthetic && sym.isImplicit) return
+                  else if (!sym.isConstructor)
                     for (vs <- vparamss) params ++= vs.map(_.symbol)
                 case _ =>
               }
             case CaseDef(pat, guard@_, rhs@_) if settings.warnUnusedPatVars
                                                        => pat.foreach {
-                                                            case b @ Bind(_, _) if !atBounded(b) => patvars += b.symbol
+                                                            // TODO don't warn in isDefinedAt of $anonfun
+                                                            case b @ Bind(n, _) if !atBounded(b) && n != nme.DEFAULT_CASE => patvars += b.symbol
                                                             case _ =>
                                                           }
-            case _: RefTree if t.symbol ne null        => targets += t.symbol
+            case _: RefTree if sym ne null             => targets += sym
             case Assign(lhs, _) if lhs.symbol != null  => setVars += lhs.symbol
-            case Bind(n, _) if atBounded(t)            => atBounds += t.symbol
+            case Bind(_, _) if atBounded(t)            => atBounds += sym
             case _                                     =>
           }
           // Only record type references which don't originate within the
@@ -555,15 +557,20 @@ trait TypeDiagnostics {
         )
         
         def isUnusedTerm(m: Symbol): Boolean = (
-             (m.isTerm)
+             m.isTerm
           && (!m.isSynthetic || isSyntheticWarnable(m))
-          && ((m.isPrivate && !(m.isConstructor && m.owner.isAbstract))|| m.isLocalToBlock)
+          && ((m.isPrivate && !(m.isConstructor && m.owner.isAbstract)) || m.isLocalToBlock)
           && !targets(m)
           && !(m.name == nme.WILDCARD)              // e.g. val _ = foo
           && (m.isValueParameter || !ignoreNames(m.name.toTermName)) // serialization methods
           && !isConstantType(m.info.resultType)     // subject to constant inlining
           && !treeTypes.exists(_ contains m)        // e.g. val a = new Foo ; new a.Bar
+          //&& !(m.isVal && m.info.resultType =:= typeOf[Unit])      // Unit val is uninteresting
         )
+        def isUnusedParam(m: Symbol): Boolean = isUnusedTerm(m) && !(m.isParamAccessor && (
+          m.owner.isImplicit ||
+          targets.exists(s => s.isParameter && s.name == m.name && s.owner.isConstructor && s.owner.owner == m.owner) // exclude ctor params
+        ))
         def sympos(s: Symbol): Int =
           if (s.pos.isDefined) s.pos.point else if (s.isTerm) s.asTerm.referenced.pos.point else -1
         def treepos(t: Tree): Int =
@@ -582,8 +589,9 @@ trait TypeDiagnostics {
         }
         // local vars which are never set, except those already returned in unused
         def unsetVars = localVars.filter(v => !setVars(v) && !isUnusedTerm(v)).sortBy(sympos)
-        def unusedParams = params.toList.filter(isUnusedTerm).sortBy(sympos)
-        def unusedPatVars = patvars.toList.filter(isUnusedTerm).sortBy(sympos)
+        def unusedParams = params.toList.filter(isUnusedParam).sortBy(sympos)
+        def inDefinedAt(p: Symbol) = p.owner.isMethod && p.owner.name == nme.isDefinedAt && p.owner.owner.isAnonymousFunction
+        def unusedPatVars = patvars.toList.filter(p => isUnusedTerm(p) && !inDefinedAt(p)).sortBy(sympos)
       }
 
       private def warningsEnabled: Boolean = {
@@ -648,9 +656,13 @@ trait TypeDiagnostics {
             val opc = new overridingPairs.Cursor(classOf(m))
             opc.iterator.exists(pair => pair.low == m)
           }
+          def isConvention(p: Symbol): Boolean = {
+            p.name.decoded == "args" && p.owner.name.decoded == "main"
+          }
           def warnable(s: Symbol) = (
                (settings.warnUnusedParams || s.isImplicit)
             && !isImplementation(s.owner)
+            && !isConvention(s)
           )
           for (s <- p.unusedParams if warnable(s))
             reporter.warning(s.pos, s"parameter $s in ${s.owner} is never used")

@@ -52,10 +52,18 @@ class Unusing(u: Int) {       // warn
 
 class Valuing(val u: Int)        // no warn
 
+class Revaluing(u: Int) { def f = u } // no warn
+
 case class CaseyKasem(k: Int)        // no warn
 
 case class CaseyAtTheBat(k: Int)(s: String)        // warn
 
 trait Ignorance {
   def f(readResolve: Int) = 42           // warn
+}
+
+class Reusing(u: Int) extends Unusing(u)   // no warn
+
+class Main {
+  def main(args: Array[String]): Unit = println("hello, args")  // no warn
 }

@@ -15,7 +15,6 @@ import scala.collection.JavaConverters._
 import AsmUtils._
 import BytecodeUtils._
 import collection.mutable
-import scala.tools.asm.tree.analysis.{Analyzer, SourceInterpreter}
 import BackendReporting._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 

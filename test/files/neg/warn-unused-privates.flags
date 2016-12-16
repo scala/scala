@@ -1,1 +1,1 @@
--Ywarn-unused:privates,locals,patvars -Xfatal-warnings
+-Ywarn-unused -Xfatal-warnings
