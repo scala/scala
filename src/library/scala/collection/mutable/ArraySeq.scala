@@ -13,7 +13,6 @@ package collection
 package mutable
 
 import generic._
-import parallel.mutable.ParArray
 
 /** A class for polymorphic arrays of elements that's represented
  *  internally by an array of objects. This means that elements of
@@ -48,15 +47,12 @@ extends AbstractSeq[A]
    with IndexedSeq[A]
    with GenericTraversableTemplate[A, ArraySeq]
    with IndexedSeqOptimized[A, ArraySeq[A]]
-   with CustomParallelizable[A, ParArray[A]]
    with Serializable
 {
 
   override def companion: GenericCompanion[ArraySeq] = ArraySeq
 
   val array: Array[AnyRef] = new Array[AnyRef](length)
-
-  override def par = ParArray.handoff(array.asInstanceOf[Array[A]], length)
 
   def apply(idx: Int): A = {
     if (idx >= length) throw new IndexOutOfBoundsException(idx.toString)

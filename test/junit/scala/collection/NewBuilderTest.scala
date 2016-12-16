@@ -1,8 +1,7 @@
 package scala.collection
 
 import scala.{collection => sc}
-import scala.collection.{mutable => scm, immutable => sci, parallel => scp, concurrent => scc}
-import scala.collection.parallel.{mutable => scpm, immutable => scpi}
+import scala.collection.{mutable => scm, immutable => sci, concurrent => scc}
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -100,32 +99,6 @@ class NewBuilderTest {
     test[sci.HashSet[_]         ]((sci.HashSet(1):          sc.GenTraversable[Int]).map(x => x))
     test[sci.HashSet[_]         ]((sci.HashSet(1):          sc.Set[Int]           ).map(x => x))
 
-    test[scp.ParIterable[_]     ]((scp.ParIterable(1):      sc.GenTraversable[Int]).map(x => x))
-    test[scp.ParSeq[_]          ]((scp.ParSeq(1):           sc.GenTraversable[Int]).map(x => x))
-    test[scp.ParSeq[_]          ]((scp.ParSeq(1):           sc.GenSeq[Int]        ).map(x => x))
-    test[scp.ParSet[_]          ]((scp.ParSet(1):           sc.GenTraversable[Int]).map(x => x))
-    test[scp.ParSet[_]          ]((scp.ParSet(1):           sc.GenSet[Int]        ).map(x => x))
-
-    test[scpm.ParIterable[_]    ]((scpm.ParIterable(1):     sc.GenTraversable[Int]).map(x => x))
-    test[scpm.ParSeq[_]         ]((scpm.ParSeq(1):          sc.GenTraversable[Int]).map(x => x))
-    test[scpm.ParSeq[_]         ]((scpm.ParSeq(1):          sc.GenSeq[Int]        ).map(x => x))
-    test[scpm.ParArray[_]       ]((scpm.ParArray(1):        sc.GenTraversable[Int]).map(x => x))
-    test[scpm.ParArray[_]       ]((scpm.ParArray(1):        sc.GenSeq[Int]        ).map(x => x))
-    test[scpm.ParSet[_]         ]((scpm.ParSet(1):          sc.GenTraversable[Int]).map(x => x))
-    test[scpm.ParSet[_]         ]((scpm.ParSet(1):          sc.GenSet[Int]        ).map(x => x))
-    test[scpm.ParHashSet[_]     ]((scpm.ParHashSet(1):      sc.GenTraversable[Int]).map(x => x))
-    test[scpm.ParHashSet[_]     ]((scpm.ParHashSet(1):      sc.GenSet[Int]        ).map(x => x))
-
-    test[scpi.ParIterable[_]    ]((scpi.ParIterable(1):     sc.GenTraversable[Int]).map(x => x))
-    test[scpi.ParSeq[_]         ]((scpi.ParSeq(1):          sc.GenTraversable[Int]).map(x => x))
-    test[scpi.ParSeq[_]         ]((scpi.ParSeq(1):          sc.GenSeq[Int]        ).map(x => x))
-    test[scpi.ParVector[_]      ]((scpi.ParVector(1):       sc.GenTraversable[Int]).map(x => x))
-    test[scpi.ParVector[_]      ]((scpi.ParVector(1):       sc.GenSeq[Int]        ).map(x => x))
-    test[scpi.ParSet[_]         ]((scpi.ParSet(1):          sc.GenTraversable[Int]).map(x => x))
-    test[scpi.ParSet[_]         ]((scpi.ParSet(1):          sc.GenSet[Int]        ).map(x => x))
-    test[scpi.ParHashSet[_]     ]((scpi.ParHashSet(1):      sc.GenTraversable[Int]).map(x => x))
-    test[scpi.ParHashSet[_]     ]((scpi.ParHashSet(1):      sc.GenSet[Int]        ).map(x => x))
-
     // These go through `GenMap.canBuildFrom`. There is no simple fix for Map like there is for Set.
     // A Map does not provide access to its companion object at runtime. (The `companion` field
     // points to an inherited `GenericCompanion`, not the actual companion object). Therefore, the
@@ -144,12 +117,6 @@ class NewBuilderTest {
     //test[sci.SortedMap[_, _]    ]((sci.SortedMap(1 -> 1):     sc.GenMap[Int, Int]).map(x => x))
     //test[sci.TreeMap[_, _]      ]((sci.TreeMap(1 -> 1):       sc.GenMap[Int, Int]).map(x => x))
     //test[scc.TrieMap[_, _]      ]((scc.TrieMap(1 -> 1):       sc.GenMap[Int, Int]).map(x => x))
-    //test[scp.ParMap[_, _]       ]((scp.ParMap(1 -> 1):        sc.GenMap[Int, Int]).map(x => x))
-    //test[scpm.ParMap[_, _]      ]((scpm.ParMap(1 -> 1):       sc.GenMap[Int, Int]).map(x => x))
-    //test[scpm.ParHashMap[_, _]  ]((scpm.ParHashMap(1 -> 1):   sc.GenMap[Int, Int]).map(x => x))
-    //test[scpm.ParTrieMap[_, _]  ]((scpm.ParTrieMap(1 -> 1):   sc.GenMap[Int, Int]).map(x => x))
-    //test[scpi.ParMap[_, _]      ]((scpi.ParMap(1 -> 1):       sc.GenMap[Int, Int]).map(x => x))
-    //test[scpi.ParHashMap[_, _]  ]((scpi.ParHashMap(1 -> 1):   sc.GenMap[Int, Int]).map(x => x))
 
     // These cannot be expected to work. The static type information is lost, and `map` does not capture
     // a `ClassTag` of the result type, so there is no way for a `CanBuildFrom` to decide to build another

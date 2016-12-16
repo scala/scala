@@ -13,7 +13,6 @@ package mutable
 import java.util
 
 import scala.reflect.ClassTag
-import parallel.mutable.ParArray
 
 /** This class serves as a wrapper for `Array`s with all the operations found in
  *  indexed sequences. Where needed, instances of arrays are implicitly converted
@@ -33,7 +32,7 @@ import parallel.mutable.ParArray
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-sealed trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParallelizable[T, ParArray[T]] {
+sealed trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] {
 
   private def elementClass: Class[_] =
     repr.getClass.getComponentType
@@ -75,8 +74,6 @@ sealed trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomPara
     Array.copy(repr, 0, result, 1, repr.length)
     result
   }
-
-  override def par = ParArray.handoff(repr)
 
   /** Flattens a two-dimensional array by concatenating all its rows
    *  into a single array.

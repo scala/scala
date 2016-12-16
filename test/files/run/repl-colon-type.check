@@ -96,7 +96,7 @@ PolyType(
     params = List(TermSymbol(x: T), TermSymbol(y: U))
     resultType = TypeRef(
       TypeSymbol(
-        abstract trait Set[A] extends Iterable[A] with Set[A] with GenericSetTemplate[A,scala.collection.immutable.Set] with SetLike[A,scala.collection.immutable.Set[A]] with Parallelizable[A,scala.collection.parallel.immutable.ParSet[A]]
+        abstract trait Set[A] extends Iterable[A] with Set[A] with GenericSetTemplate[A,scala.collection.immutable.Set] with SetLike[A,scala.collection.immutable.Set[A]]
 
       )
       args = List(TypeRef(TypeSymbol(abstract class Any extends )))

@@ -13,7 +13,6 @@ package immutable
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic._
 import scala.collection.mutable.{Builder, ReusableBuilder}
-import scala.collection.parallel.immutable.ParVector
 
 /** Companion object to the Vector class
  */
@@ -68,7 +67,6 @@ extends AbstractSeq[A]
    with IndexedSeqLike[A, Vector[A]]
    with VectorPointer[A @uncheckedVariance]
    with Serializable
-   with CustomParallelizable[A, ParVector[A]]
 { self =>
 
   override def companion: GenericCompanion[Vector] = Vector
@@ -76,8 +74,6 @@ extends AbstractSeq[A]
   private[immutable] var dirty = false
 
   def length = endIndex - startIndex
-
-  override def par = new ParVector(this)
 
   override def toVector: Vector[A] = this
 

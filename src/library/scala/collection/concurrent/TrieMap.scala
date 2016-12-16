@@ -11,7 +11,6 @@ package collection
 package concurrent
 
 import java.util.concurrent.atomic._
-import scala.collection.parallel.mutable.ParTrieMap
 import scala.util.hashing.Hashing
 import scala.util.control.ControlThrowable
 import generic._
@@ -631,7 +630,6 @@ private[concurrent] case class RDCSS_Descriptor[K, V](old: INode[K, V], expected
 final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater[TrieMap[K, V], AnyRef], hashf: Hashing[K], ef: Equiv[K])
 extends scala.collection.concurrent.Map[K, V]
    with scala.collection.mutable.MapLike[K, V, TrieMap[K, V]]
-   with CustomParallelizable[(K, V), ParTrieMap[K, V]]
    with Serializable
 {
   private var hashingobj = if (hashf.isInstanceOf[Hashing.Default[_]]) new TrieMap.MangledHashing[K] else hashf
@@ -776,8 +774,6 @@ extends scala.collection.concurrent.Map[K, V]
   /* public methods */
 
   override def seq = this
-
-  override def par = new ParTrieMap(this)
 
   override def empty: TrieMap[K, V] = new TrieMap[K, V]
 

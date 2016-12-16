@@ -13,7 +13,6 @@ package collection
 package immutable
 
 import generic._
-import scala.collection.parallel.immutable.ParHashSet
 import scala.collection.GenSet
 import scala.annotation.tailrec
 
@@ -35,7 +34,6 @@ sealed class HashSet[A] extends AbstractSet[A]
                     with Set[A]
                     with GenericSetTemplate[A, HashSet]
                     with SetLike[A, HashSet[A]]
-                    with CustomParallelizable[A, ParHashSet[A]]
                     with Serializable
 {
   import HashSet.{nullToEmpty, bufferSize, LeafHashSet}
@@ -43,8 +41,6 @@ sealed class HashSet[A] extends AbstractSet[A]
   override def companion: GenericCompanion[HashSet] = HashSet
 
   //class HashSet[A] extends Set[A] with SetLike[A, HashSet[A]] {
-
-  override def par = ParHashSet.fromTrie(this)
 
   override def size: Int = 0
 

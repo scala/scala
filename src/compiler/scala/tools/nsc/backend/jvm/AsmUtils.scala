@@ -92,7 +92,7 @@ object AsmUtils {
     node
   }
 
-  def main(args: Array[String]): Unit = args.par.foreach { classFileName =>
+  def main(args: Array[String]): Unit = args /*.par*/.foreach { classFileName =>
     val node = zapScalaClassAttrs(sortClassMembers(classFromBytes(classBytes(classFileName))))
 
     val pw = new PrintWriter(classFileName + ".asm")
