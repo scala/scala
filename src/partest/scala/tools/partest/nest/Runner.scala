@@ -502,12 +502,10 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
   )
   def mixedCompileGroup(allFiles: List[File]): List[CompileRound] = {
     val (scalaFiles, javaFiles) = allFiles partition (_.isScala)
-    val isMixed                 = javaFiles.nonEmpty && scalaFiles.nonEmpty
     val round1                  = if (scalaFiles.isEmpty) None else Some(ScalaAndJava(allFiles))
     val round2                  = if (javaFiles.isEmpty) None else Some(OnlyJava(javaFiles))
-    val round3                  = if (!isMixed) None else Some(OnlyScala(scalaFiles))
 
-    List(round1, round2, round3).flatten
+    List(round1, round2).flatten
   }
 
   def runNegTest() = runInContext {
