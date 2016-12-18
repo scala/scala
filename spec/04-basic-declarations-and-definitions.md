@@ -404,7 +404,7 @@ function definitions.  In this section we consider only type parameter
 definitions with lower bounds `>: $L$` and upper bounds
 `<: $U$` whereas a discussion of context bounds
 `: $U$` and view bounds `<% $U$`
-is deferred to [here](07-implicit-parameters-and-views.html#context-bounds-and-view-bounds).
+is deferred to [here](07-implicits.html#context-bounds-and-view-bounds).
 
 The most general form of a first-order type parameter is
 `$@a_1 \ldots @a_n$ $\pm$ $t$ >: $L$ <: $U$`.
@@ -686,7 +686,7 @@ The by-name modifier is disallowed for parameters of classes that
 carry a `val` or `var` prefix, including parameters of case
 classes for which a `val` prefix is implicitly generated. The
 by-name modifier is also disallowed for
-[implicit parameters](07-implicit-parameters-and-views.html#implicit-parameters).
+[implicit parameters](07-implicits.html#implicit-parameters).
 
 ###### Example
 The declaration
