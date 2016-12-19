@@ -4,6 +4,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME) // must be exactly RUNTIME retention (those we parse)
-public @interface ThreadSafety {
-  ThreadSafetyLevel level();
+public @interface ThreadSafety_1 {
+  ThreadSafetyLevel_1 level();
 }
