@@ -410,8 +410,17 @@ abstract class UnCurry extends InfoTransform
       def isLiftedLambdaMethod(funSym: Symbol) =
         funSym.isArtifact && funSym.name.containsName(nme.ANON_FUN_NAME) && funSym.isLocalToBlock
 
+      def checkIsElisible(sym: Symbol): Boolean =
+        (sym ne null) && sym.elisionLevel.exists { level =>
+          if (sym.isMethod) level < settings.elidebelow.value
+          else {
+            if (settings.isScala213) reporter.error(sym.pos, s"${sym.name}: Only methods can be marked @elidable!")
+            false
+          }
+        }
+
       val result =
-        if ((sym ne null) && sym.elisionLevel.exists(_ < settings.elidebelow.value))
+        if (checkIsElisible(sym))
           replaceElidableTree(tree)
         else translateSynchronized(tree) match {
           case dd @ DefDef(mods, name, tparams, _, tpt, rhs) =>
