@@ -93,7 +93,7 @@ package object collection extends LowPriority {
      with ArrayLike[Char] {
 
     protected def coll = new StringView(s)
-    def iterator = coll.iterator
+    def iterator() = coll.iterator()
 
     protected def fromIterableWithSameElemType(coll: Iterable[Char]): String = {
       val sb = new StringBuilder
@@ -135,7 +135,7 @@ package object collection extends LowPriority {
      */
     def ++(xs: IterableOnce[Char]): String = {
       val sb = new StringBuilder() ++= s
-      for (ch <- xs.iterator) sb += ch
+      for (ch <- xs.iterator()) sb += ch
       sb.result
     }
 
@@ -152,7 +152,7 @@ package object collection extends LowPriority {
      with ArrayLike[A] {
 
     protected def coll = new ArrayView(xs)
-    def iterator = coll.iterator
+    def iterator() = coll.iterator()
 
     def length = xs.length
     def apply(i: Int) = xs.apply(i)

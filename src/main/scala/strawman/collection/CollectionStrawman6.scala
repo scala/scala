@@ -4,12 +4,13 @@ import Predef.{augmentString => _, wrapString => _, _}
 import scala.reflect.ClassTag
 import annotation.unchecked.uncheckedVariance
 import annotation.tailrec
+import scala.language.higherKinds
 
 /* ------------ Base Traits -------------------------------- */
 
 /** Iterator can be used only once */
 trait IterableOnce[+A] {
-  def iterator: Iterator[A]
+  def iterator(): Iterator[A]
 }
 
 /** Base trait for instances that can construct a collection from an iterable */
@@ -50,14 +51,14 @@ trait LinearSeq[+A] extends Seq[A] with LinearSeqLike[A, LinearSeq] { self =>
   def tail: LinearSeq[A]
 
   /** `iterator` is overridden in terms of `head` and `tail` */
-  def iterator = new Iterator[A] {
+  def iterator() = new Iterator[A] {
     private[this] var current: Seq[A] = self
     def hasNext = !current.isEmpty
-    def next = { val r = current.head; current = current.tail; r }
+    def next() = { val r = current.head; current = current.tail; r }
   }
 
   /** `length` is defined in terms of `iterator` */
-  def length: Int = iterator.length
+  def length: Int = iterator().length
 
   /** `apply` is defined in terms of `drop`, which is in turn defined in
    *  terms of `tail`.
@@ -78,8 +79,8 @@ trait IndexedSeq[+A] extends Seq[A] { self =>
 }
 
 /** Base trait for strict collections that can be built using a builder.
- *  @param  A    the element type of the collection
- *  @param Repr  the type of the underlying collection
+ *  @tparam  A    the element type of the collection
+ *  @tparam Repr  the type of the underlying collection
  */
 trait Buildable[+A, +Repr] extends Any with IterableMonoTransforms[A, Repr]  {
 
@@ -89,7 +90,7 @@ trait Buildable[+A, +Repr] extends Any with IterableMonoTransforms[A, Repr]  {
   /** Optimized, push-based version of `partition`. */
   override def partition(p: A => Boolean): (Repr, Repr) = {
     val l, r = newBuilder
-    coll.iterator.foreach(x => (if (p(x)) l else r) += x)
+    coll.iterator().foreach(x => (if (p(x)) l else r) += x)
     (l.result, r.result)
   }
 
@@ -108,7 +109,7 @@ trait Builder[-A, +To] { self =>
 
   /** Bulk append. Can be overridden if specialized implementations are available. */
   def ++=(xs: IterableOnce[A]): this.type = {
-    xs.iterator.foreach(+=)
+    xs.iterator().foreach(+=)
     this
   }
 
@@ -177,25 +178,25 @@ trait LinearSeqLike[+A, +C[X] <: LinearSeq[X]] extends SeqLike[A, C] {
  */
 trait IterableOps[+A] extends Any {
   protected def coll: Iterable[A]
-  private def iterator = coll.iterator
+  private def iterator() = coll.iterator()
 
   /** Apply `f` to each element for tis side effects */
-  def foreach(f: A => Unit): Unit = iterator.foreach(f)
+  def foreach(f: A => Unit): Unit = iterator().foreach(f)
 
   /** Fold left */
-  def foldLeft[B](z: B)(op: (B, A) => B): B = iterator.foldLeft(z)(op)
+  def foldLeft[B](z: B)(op: (B, A) => B): B = iterator().foldLeft(z)(op)
 
   /** Fold right */
-  def foldRight[B](z: B)(op: (A, B) => B): B = iterator.foldRight(z)(op)
+  def foldRight[B](z: B)(op: (A, B) => B): B = iterator().foldRight(z)(op)
 
   /** The index of the first element in this collection for which `p` holds. */
-  def indexWhere(p: A => Boolean): Int = iterator.indexWhere(p)
+  def indexWhere(p: A => Boolean): Int = iterator().indexWhere(p)
 
   /** Is the collection empty? */
-  def isEmpty: Boolean = !iterator.hasNext
+  def isEmpty: Boolean = !iterator().hasNext
 
   /** The first element of the collection. */
-  def head: A = iterator.next()
+  def head: A = iterator().next()
 
   /** The number of elements in this collection, if it can be cheaply computed,
    *  -1 otherwise. Cheaply usually means: Not requiring a collection traversal.
@@ -205,10 +206,10 @@ trait IterableOps[+A] extends Any {
   /** The number of elements in this collection. Does not terminate for
    *  infinite collections.
    */
-  def size: Int = if (knownSize >= 0) knownSize else iterator.length
+  def size: Int = if (knownSize >= 0) knownSize else iterator().length
 
   /** A view representing the elements of this collection. */
-  def view: View[A] = View.fromIterator(iterator)
+  def view: View[A] = View.fromIterator(iterator())
 
    /** Given a collection factory `fi` for collections of type constructor `C`,
    *  convert this collection to one of type `C[A]`. Example uses:
@@ -229,7 +230,7 @@ trait IterableOps[+A] extends Any {
   /** Copy all elements of this collection to array `xs`, starting at `start`. */
   def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = {
     var i = start
-    val it = iterator
+    val it = iterator()
     while (it.hasNext) {
       xs(i) = it.next()
       i += 1
@@ -320,7 +321,7 @@ trait SeqMonoTransforms[+A, +Repr] extends Any with IterableMonoTransforms[A, Re
     case v: IndexedView[A] => fromIterableWithSameElemType(v.reverse)
     case _ =>
       var xs: List[A] = Nil
-      var it = coll.iterator
+      var it = coll.iterator()
       while (it.hasNext) xs = it.next() :: xs
       fromIterableWithSameElemType(xs)
   }
@@ -386,7 +387,7 @@ extends Seq[A]
   private var aliased = false
   private var len = 0
 
-  def iterator = first.iterator
+  def iterator() = first.iterator()
 
   def fromIterable[B](coll: Iterable[B]) = ListBuffer.fromIterable(coll)
 
@@ -451,7 +452,7 @@ extends Seq[A]
 
   override def view = new ArrayBufferView(elems, start, end)
 
-  def iterator = view.iterator
+  def iterator() = view.iterator()
 
   def fromIterable[B](it: Iterable[B]): ArrayBuffer[B] =
     ArrayBuffer.fromIterable(it)
@@ -506,7 +507,7 @@ object ArrayBuffer extends IterableFactory[ArrayBuffer] {
   def fromIterable[B](coll: Iterable[B]): ArrayBuffer[B] =
     if (coll.knownSize >= 0) {
       val elems = new Array[AnyRef](coll.knownSize)
-      val it = coll.iterator
+      val it = coll.iterator()
       for (i <- 0 until elems.length) elems(i) = it.next().asInstanceOf[AnyRef]
       new ArrayBuffer[B](elems, elems.length)
     }
@@ -563,7 +564,7 @@ object LazyList extends IterableFactory[LazyList] {
 
   def fromIterable[B](coll: Iterable[B]): LazyList[B] = coll match {
     case coll: LazyList[B] => coll
-    case _ => fromIterator(coll.iterator)
+    case _ => fromIterator(coll.iterator())
   }
 
   def fromIterator[B](it: Iterator[B]): LazyList[B] =
@@ -600,12 +601,11 @@ case class ArrayView[A](xs: Array[A]) extends IndexedView[A] {
 /* ---------- Iterators ---------------------------------------------------*/
 
 /** A core Iterator class */
-trait Iterator[+A] extends IterableOnce[A] { self =>
+trait Iterator[+A] { self =>
   def hasNext: Boolean
   def next(): A
-  def iterator = this
   def foldLeft[B](z: B)(op: (B, A) => B): B =
-    if (hasNext) foldLeft(op(z, next))(op) else z
+    if (hasNext) foldLeft(op(z, next()))(op) else z
   def foldRight[B](z: B)(op: (A, B) => B): B =
     if (hasNext) op(next(), foldRight(z)(op)) else z
   def foreach(f: A => Unit): Unit =
@@ -652,7 +652,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     private var myCurrent: Iterator[B] = Iterator.empty
     private def current = {
       while (!myCurrent.hasNext && self.hasNext)
-        myCurrent = f(self.next()).iterator
+        myCurrent = f(self.next()).iterator()
       myCurrent
     }
     def hasNext = current.hasNext
@@ -663,7 +663,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     private var first = true
     private def current = {
       if (!myCurrent.hasNext && first) {
-        myCurrent = xs.iterator
+        myCurrent = xs.iterator()
         first = false
       }
       myCurrent
@@ -674,7 +674,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
   def take(n: Int): Iterator[A] = new Iterator[A] {
     private var i = 0
     def hasNext = self.hasNext && i < n
-    def next =
+    def next() =
       if (hasNext) {
         i += 1
         self.next()
@@ -690,7 +690,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     this
   }
   def zip[B](that: IterableOnce[B]): Iterator[(A, B)] = new Iterator[(A, B)] {
-    val thatIterator = that.iterator
+    val thatIterator = that.iterator()
     def hasNext = self.hasNext && thatIterator.hasNext
     def next() = (self.next(), thatIterator.next())
   }
@@ -699,10 +699,10 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
 object Iterator {
   val empty: Iterator[Nothing] = new Iterator[Nothing] {
     def hasNext = false
-    def next = throw new NoSuchElementException("next on empty iterator")
+    def next() = throw new NoSuchElementException("next on empty iterator")
   }
   def apply[A](xs: A*): Iterator[A] = new IndexedView[A] {
     val length = xs.length
     def apply(n: Int) = xs(n)
-  }.iterator
+  }.iterator()
 }

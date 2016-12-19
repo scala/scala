@@ -121,9 +121,9 @@ class StrawmanTest {
     val ys7: String = xs7
     val xs8 = xs.drop(2)
     val ys8: String = xs8
-    val xs9 = xs.map(_ + 1)  // !!! need a language change to make this work without the : Char
+    val xs9 = xs.map(_ + 1)
     val ys9: Seq[Int] = xs9
-    val xs9a = xs.map(_.toUpper) // !!! need a language change to make this work without the : Char
+    val xs9a = xs.map(_.toUpper)
     val ys9a: String = xs9a
     val xs10 = xs.flatMap((x: Char) => s"$x,$x")
     val ys10: String = xs10
@@ -133,7 +133,7 @@ class StrawmanTest {
     val ys11a: String = xs11a
     val xs12 = xs ++ Nil
     val ys12: String = xs12
-    val xs13 = Nil ++ xs.iterator
+    val xs13 = Nil ++ xs
     val ys13: List[Char] = xs13
     val xs14 = xs ++ List("xyz")
     val ys14: Seq[Any] = xs14
