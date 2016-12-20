@@ -423,7 +423,7 @@ lazy val compiler = configureAsSubproject(project)
     description := "Scala Compiler",
     libraryDependencies ++= Seq(antDep, asmDep),
     // These are only needed for the POM:
-    libraryDependencies ++= Seq(scalaXmlDep, scalaParserCombinatorsDep, jlineDep % "optional"),
+    libraryDependencies ++= Seq(scalaXmlDep % "provided", scalaParserCombinatorsDep, jlineDep % "optional"),
     // this a way to make sure that classes from interactive and scaladoc projects
     // end up in compiler jar (that's what Ant build does)
     // we need to use LocalProject references (with strings) to deal with mutual recursion
