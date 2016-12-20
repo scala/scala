@@ -1,0 +1,6 @@
+error: newSource1.scala:4: Symbol 'type stuberrors.A' is missing from the classpath.
+This symbol is required by 'value stuberrors.B.evidence$1'.
+Make sure that type A is in your classpath and check for conflicting dependencies with `-Ylog-classpath`.
+A full rebuild may help if 'B.class' was compiled against an incompatible version of stuberrors.
+    class C { println(new B(1)) }
+                          ^
