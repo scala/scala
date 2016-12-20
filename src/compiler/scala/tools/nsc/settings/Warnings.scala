@@ -48,7 +48,7 @@ trait Warnings {
 
   BooleanSetting("-Ywarn-unused-import", "Warn when imports are unused.") withPostSetHook { s =>
     warnUnused.add(s"${if (s) "" else "-"}imports")
-  } // withDeprecationMessage s"Enable -Ywarn-unused:imports"
+  } withDeprecationMessage s"Enable -Ywarn-unused:imports"
 
   val warnExtraImplicit    = BooleanSetting("-Ywarn-extra-implicit", "Warn when more than one implicit parameter section is defined.")
 
@@ -85,8 +85,7 @@ trait Warnings {
     val UnsoundMatch           = LintWarning("unsound-match",             "Pattern match may not be typesafe.")
     val StarsAlign             = LintWarning("stars-align",               "Pattern sequence wildcard must align with sequence component.")
     val Constant               = LintWarning("constant",                  "Evaluation of a constant arithmetic expression results in an error.")
-    //val Unused                 = LintWarning("unused",                    "Warn when private and local definitions are unused.")
-    val Unused                 = LintWarning("unused",                    "Use -Ywarn-unused to warn when private and local definitions are unused.")
+    val Unused                 = LintWarning("unused",                    "Enable -Ywarn-unused:-patvars,_.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -129,9 +128,8 @@ trait Warnings {
     helpArg = "warning",
     descr   = "Enable or disable specific warnings",
     domain  = LintWarnings,
-    default = Some(List("_"))) //.withPostSetHook (s => if (s contains Unused) warnUnused.add("_"))
-
-  // restore -Xlint:unused hook when SI-8040 is complete
+    default = Some(List("_"))
+  ).withPostSetHook { s => if (s contains Unused) List("-patvars","_").foreach(warnUnused.add) }
 
   allLintWarnings foreach {
     case w if w.yAliased =>
