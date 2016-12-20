@@ -1,7 +1,12 @@
 package strawman.collection.test
 
-import scala.Predef.{augmentString => _, booleanArrayOps => _, genericArrayOps => _, genericWrapArray => _, intArrayOps => _, refArrayOps => _, wrapBooleanArray => _, wrapIntArray => _, wrapRefArray => _, wrapString => _, _}
+import java.lang.String
+import scala.{Int, Unit, Array, StringContext, Boolean, Any, Char}
+import scala.Predef.{println, charWrapper}
+
 import strawman.collection._
+import strawman.collection.immutable._
+import strawman.collection.mutable._
 import org.junit.Test
 
 class StrawmanTest {
@@ -175,13 +180,13 @@ class StrawmanTest {
     val ys7: Array[Int] = xs7
     val xs8 = xs.drop(2)
     val ys8: Array[Int] = xs8
-    val xs9 = ArrayOps(xs).map(_ >= 0)
+    val xs9 = arrayToArrayOps(xs).map(_ >= 0)
     val ys9: Array[Boolean] = xs9
     val xs10 = xs.flatMap(x => List(x, -x))
     val ys10: Array[Int] = xs10
     val xs11 = xs ++ xs
     val ys11: Array[Int] = xs11
-    val xs12 = ArrayOps(xs) ++ Nil
+    val xs12 = arrayToArrayOps(xs) ++ Nil
     val ys12: Array[Int] = xs12
     val xs13 = Nil ++ xs
     val ys13: List[Int] = xs13

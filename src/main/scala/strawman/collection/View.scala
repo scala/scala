@@ -1,9 +1,8 @@
 package strawman.collection
 
-import Predef.{augmentString => _, wrapString => _, _}
-import scala.reflect.ClassTag
-import annotation.unchecked.uncheckedVariance
-import annotation.tailrec
+import scala.{Int, Boolean, Nothing, annotation}
+import scala.Predef.intWrapper
+import strawman.collection.mutable.Iterator
 
 /** Concrete collection type: View */
 trait View[+A] extends Iterable[A] with IterableLike[A, View] {
@@ -117,7 +116,7 @@ trait IndexedView[+A] extends View[A] with ArrayLike[A] { self =>
   def iterator(): Iterator[A] = new Iterator[A] {
     private var current = 0
     def hasNext = current < self.length
-    def next: A = {
+    def next(): A = {
       val r = apply(current)
       current += 1
       r

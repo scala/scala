@@ -6,7 +6,7 @@ version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.12.1"
 
-scalacOptions ++= Seq("-deprecation", "-unchecked")
+scalacOptions ++= Seq("-deprecation", "-unchecked", "-Yno-imports", "-language:higherKinds")
 
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v", "-s", "-a")
 
