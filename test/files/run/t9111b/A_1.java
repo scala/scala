@@ -8,4 +8,10 @@ public class A_1 {
       public int foo(T t) { return t.f(); }
     }
   }
+
+  public static void crossCheck() {
+    Inner i = new Inner();
+    Inner.Deeper d = i.new Deeper();
+    d.foo(new P.T());
+  }
 }

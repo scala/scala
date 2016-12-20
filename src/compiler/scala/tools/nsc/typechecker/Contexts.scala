@@ -6,8 +6,9 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.{ immutable, mutable }
+import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
+import scala.reflect.internal.Flags
 import scala.reflect.internal.util.shortClassOfInstance
 import scala.tools.nsc.reporters.Reporter
 
@@ -984,6 +985,10 @@ trait Contexts { self: Analyzer =>
 
     def isNameInScope(name: Name) = lookupSymbol(name, _ => true).isSuccess
 
+    def isPlainClassInJavaUnit(sym: Symbol): Boolean =
+      unit.isJava && sym.isJavaDefined && sym.isClass && !sym.isModuleClass && !sym.isPackageClass
+
+
     /** Find the symbol of a simple name starting from this context.
      *  All names are filtered through the "qualifies" predicate,
      *  the search continuing as long as no qualifying name is found.
@@ -1017,14 +1022,11 @@ trait Contexts { self: Analyzer =>
         )
       )
       def lookupInPrefix(name: Name)    = {
-        val sym = pre.member(name).filter(qualifies)
-        def isNonPackageNoModuleClass(sym: Symbol) =
-          sym.isClass && !sym.isModuleClass && !sym.isPackageClass
-        if (!sym.exists && unit.isJava && isNonPackageNoModuleClass(pre.typeSymbol)) {
-          // TODO factor out duplication with Typer::inCompanionForJavaStatic
-          val pre1 = companionSymbolOf(pre.typeSymbol, this).typeOfThis
-          pre1.member(name).filter(qualifies).andAlso(_ => pre = pre1)
-        } else sym
+        val searchCompanions = isPlainClassInJavaUnit(pre.typeSymbol)
+        val sym = pre.findMember(name, excludedFlags = Flags.BridgeFlags, requiredFlags = 0, stableOnly = false, searchCompanions).filter(qualifies)
+        if (searchCompanions && sym.owner.isModuleClass)
+          pre = sym.owner.typeOfThis
+        sym
       }
       def accessibleInPrefix(s: Symbol) = isAccessible(s, pre, superAccess = false)
 

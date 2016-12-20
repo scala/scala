@@ -1,6 +1,6 @@
-Test_1.scala:6: error: type mismatch;
- found   : A_1.P.T
- required: A_1.T
-  assert(j.foo(new A_1.P.T()) == 1) // TODO SI-9111: should compile without error (currently fails, required: A_1.T)
+Test_1.scala:5: error: type mismatch;
+ found   : A_1.T
+ required: A_1.P.T
+  assert(j.foo(new A_1.T()) == 1)   // type mismatch, required: A_1.P.T
                ^
 one error found

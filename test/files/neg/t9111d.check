@@ -1,0 +1,37 @@
+Test_1.scala:4: error: type T is not a member of object A_1.C
+  val f2: A_1.C.T = e.foo()  // error: T is not a member of A_1.C (it's a non-static class)
+                ^
+Test_1.scala:5: error: type mismatch;
+ found   : A_1.D.T
+ required: A_1.C#T
+  val f3: A_1.C#T = e.foo()  // mismatch, found: A_1.D.T
+                         ^
+Test_1.scala:8: error: type mismatch;
+ found   : A_1.C#T
+ required: Test.e.T
+  val b2: e.T     = e.bar()  // mismatch, bar returns A_1.C#T, not e.T - no path dependent types in Java
+                         ^
+Test_1.scala:9: error: type mismatch;
+ found   : A_1.C#T
+ required: A_1.D.T
+  val b3: A_1.D.T = e.bar()  // mismatch, found: A_1.C#T
+                         ^
+Test_1.scala:12: error: type T is not a member of object A_1.E
+  val m2: A_1.E.T = A_1.miz() // error: T is not a member of A_1.E - this selection is OK in Java, but not in Scala
+                ^
+Test_1.scala:13: error: type mismatch;
+ found   : A_1.D.T
+ required: A_1.C#T
+  val m3: A_1.C#T = A_1.miz() // mismatch, found: A_1.D.T
+                           ^
+Test_1.scala:16: error: type mismatch;
+ found   : A_1.D.T
+ required: A_1.C#T
+  val p2: A_1.C#T = A_1.paz() // mismatch, found: A_1.D.T
+                           ^
+Test_1.scala:19: error: type mismatch;
+ found   : A_1.C#T
+ required: A_1.D.T
+  val t2: A_1.D.T = A_1.tux() // mismatch, found: A_1.C#T
+                           ^
+8 errors found

@@ -668,8 +668,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case SuperType(clazz, _) if callSiteWithinClass(clazz.typeSymbol) => true
         case _                                                            => phase.next.erasedTypes
       }
-      if (includeLocals) qual.tpe member name
-      else qual.tpe nonLocalMember name
+      val excluded = BridgeFlags | (if (includeLocals) 0 else LOCAL)
+      val searchCompanions = context.isPlainClassInJavaUnit(qual.tpe.typeSymbol)
+      qual.tpe.findMember(name, excludedFlags = excluded, requiredFlags = 0, stableOnly = false, searchCompanions)
     }
 
     def silent[T](op: Typer => T,
@@ -4795,16 +4796,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (isStableContext(tree, mode, pt)) tree setType clazz.thisType else tree
         }
 
-
-      // For Java, instance and static members are in the same scope, but we put the static ones in the companion object
-      // so, when we can't find a member in the class scope, check the companion
-      def inCompanionForJavaStatic(pre: Type, cls: Symbol, name: Name): Symbol =
-        if (!(context.unit.isJava && cls.isClass && !cls.isModuleClass)) NoSymbol else {
-          val companion = companionSymbolOf(cls, context)
-          if (!companion.exists) NoSymbol
-          else member(gen.mkAttributedRef(pre, companion), name) // assert(res.isStatic, s"inCompanionJavaStatic($pre, $cls, $name) = $res ${res.debugFlagString}")
-        }
-
       /* Attribute a selection where `tree` is `qual.name`.
        * `qual` is already attributed.
        */
@@ -4831,7 +4822,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           dyna.wrapErrors(t, (_.typed1(t, mode, pt)))
         }
 
-        val sym = tree.symbol orElse member(qual, name) orElse inCompanionForJavaStatic(qual.tpe.prefix, qual.symbol, name) orElse {
+        val sym = tree.symbol orElse member(qual, name) orElse {
           // symbol not found? --> try to convert implicitly to a type that does have the required
           // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
           // xml member to StringContext, which in turn has an unapply[Seq] method)
