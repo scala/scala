@@ -337,17 +337,15 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         def eqTest(pat: Tree, testedBinder: Symbol)          = REF(testedBinder) OBJ_EQ pat
 
         def outerTest(testedBinder: Symbol, expectedTp: Type): Tree = {
-          val expectedOuter = expectedTp.prefix match {
-            case ThisType(clazz) => This(clazz)
-            case NoType          => mkTRUE // fallback for SI-6183
-            case pre             => REF(pre.prefix, pre.termSymbol)
+          val expectedPrefix = expectedTp.prefix
+          if (expectedPrefix eq NoType) mkTRUE // fallback for SI-6183
+          else {
+            // ExplicitOuter replaces `Select(q, outerSym) OBJ_EQ expectedPrefix` by `Select(q, outerAccessor(outerSym.owner)) OBJ_EQ expectedPrefix`
+            // if there's an outer accessor, otherwise the condition becomes `true` -- TODO: can we improve needsOuterTest so there's always an outerAccessor?
+            val outerFor = expectedTp.typeSymbol
+            val outerMarker = outerFor.newMethod(vpmName.outer, newFlags = SYNTHETIC | ARTIFACT) setInfo expectedPrefix
+            Select(codegen._asInstanceOf(testedBinder, expectedTp), outerMarker) OBJ_EQ gen.mkAttributedQualifier(expectedPrefix)
           }
-
-          // ExplicitOuter replaces `Select(q, outerSym) OBJ_EQ expectedPrefix` by `Select(q, outerAccessor(outerSym.owner)) OBJ_EQ expectedPrefix`
-          // if there's an outer accessor, otherwise the condition becomes `true` -- TODO: can we improve needsOuterTest so there's always an outerAccessor?
-          val outer = expectedTp.typeSymbol.newMethod(vpmName.outer, newFlags = SYNTHETIC | ARTIFACT) setInfo expectedTp.prefix
-
-          (Select(codegen._asInstanceOf(testedBinder, expectedTp), outer)) OBJ_EQ expectedOuter
         }
       }
 
