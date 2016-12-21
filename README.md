@@ -91,7 +91,7 @@ bootstrap build locally.
 For history on how the current scheme was arrived at, see
 https://groups.google.com/d/topic/scala-internals/gp5JsM1E0Fo/discussion.
 
-### Using the Sbt Build
+### Using the sbt Build
 
 Core commands:
 

@@ -2,7 +2,7 @@ import sbt._
 import Keys._
 
 object Quiet {
-  // Workaround SBT issue described:
+  // Workaround sbt issue described:
   //
   //   https://github.com/scala/scala-dev/issues/100
   def silenceScalaBinaryVersionWarning = ivyConfiguration := {
