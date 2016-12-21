@@ -5,7 +5,7 @@ import sbt.complete.Parsers._
 import sbt.complete._
 
 object ScalaOptionParser {
-  /** A SBT parser for the Scala command line runners (scala, scalac, etc) */
+  /** An sbt parser for the Scala command line runners (scala, scalac, etc) */
   def scalaParser(entryPoint: String, globalBase: File): Parser[String] = {
     def BooleanSetting(name: String): Parser[String] =
       token(name)

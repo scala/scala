@@ -35,7 +35,7 @@ object PartestUtil {
 
     // HACK: if we parse `--srcpath scaladoc`, we overwrite this var. The parser for test file paths
     // then lazily creates the examples based on the current value.
-    // TODO is there a cleaner way to do this with SBT's parser infrastructure?
+    // TODO is there a cleaner way to do this with sbt's parser infrastructure?
     var srcPath = "files"
     var _testFiles: TestFiles = null
     def testFiles = {
