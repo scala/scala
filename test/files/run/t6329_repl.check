@@ -4,7 +4,7 @@ import scala.reflect.classTag
 
 scala> classManifest[scala.List[_]]
 warning: there was one deprecation warning (since 2.10.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
-res0: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List[<?>]
+res0: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List[Any]
 
 scala> classTag[scala.List[_]]
 res1: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List
