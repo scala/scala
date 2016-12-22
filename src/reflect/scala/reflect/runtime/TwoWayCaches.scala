@@ -32,7 +32,7 @@ private[runtime] trait TwoWayCaches { self: SymbolTable =>
         } else None
     }
 
-    def toScala(key: J)(body: => S): S = {
+    def syncToScala(key: J)(body: => S): S = gilSynchronized {
       toScalaMap get key match {
         case SomeRef(v) =>
           v
@@ -43,7 +43,16 @@ private[runtime] trait TwoWayCaches { self: SymbolTable =>
       }
     }
 
-    def toJava(key: S)(body: => J): J = {
+    def toScala(key: J)(body: => S): S = {
+      toScalaMap get key match {
+        case SomeRef(v) =>
+          v
+        case _ =>
+          syncToScala(key)(body)
+      }
+    }
+
+    def syncToJava(key: S)(body: => J): J = gilSynchronized {
       toJavaMap get key match {
         case SomeRef(v) =>
           v
@@ -54,7 +63,16 @@ private[runtime] trait TwoWayCaches { self: SymbolTable =>
       }
     }
 
-    def toJavaOption(key: S)(body: => Option[J]): Option[J] = {
+    def toJava(key: S)(body: => J): J = {
+      toJavaMap get key match {
+        case SomeRef(v) =>
+          v
+        case _ =>
+          syncToJava(key)(body)
+      }
+    }
+
+    def syncToJavaOption(key: S)(body: => Option[J]): Option[J] = gilSynchronized {
       toJavaMap get key match {
         case SomeRef(v) =>
           Some(v)
@@ -62,6 +80,15 @@ private[runtime] trait TwoWayCaches { self: SymbolTable =>
           val result = body
           for (value <- result) enter(value, key)
           result
+      }
+    }
+
+    def toJavaOption(key: S)(body: => Option[J]): Option[J] = {
+      toJavaMap get key match {
+        case SomeRef(v) =>
+          Some(v)
+        case _ =>
+          syncToJavaOption(key)(body)
       }
     }
   }

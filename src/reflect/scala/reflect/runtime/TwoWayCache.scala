@@ -31,13 +31,33 @@ private[runtime] class TwoWayCache[J, S] {
       } else None
   }
 
-  def toScala(key: J)(body: => S): S = {
+  def syncToScala(key: J)(body: => S): S = synchronized {
     toScalaMap.get(key) match {
       case SomeRef(v) =>
         v
       case _ =>
         val result = body
         enter(key, result)
+        result
+    }
+  }
+
+  def toScala(key: J)(body: => S): S = {
+    toScalaMap.get(key) match {
+      case SomeRef(v) =>
+        v
+      case _ =>
+        syncToScala(key)(body)
+    }
+  }
+
+  def syncToJava(key: S)(body: => J): J = synchronized {
+    toJavaMap.get(key) match {
+      case SomeRef(v) =>
+        v
+      case _ =>
+        val result = body
+        enter(result, key)
         result
     }
   }
