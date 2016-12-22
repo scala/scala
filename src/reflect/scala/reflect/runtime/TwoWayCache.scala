@@ -67,9 +67,7 @@ private[runtime] class TwoWayCache[J, S] {
       case SomeRef(v) =>
         v
       case _ =>
-        val result = body
-        enter(result, key)
-        result
+        syncToJava(key)(body)
     }
   }
 }
