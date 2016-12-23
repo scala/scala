@@ -119,6 +119,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(src)
     val expectedNames = standardNames ++ Set("A", "foo", "Int")
     assert(usedNames === expectedNames)
+    ()
   }
 
   // test for https://github.com/gkossakowski/sbt/issues/4
@@ -133,6 +134,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(srcA, srcB)
     val expectedNames = standardNames ++ Set("B", "A", "a", "Int", "selectDynamic", "bla")
     assert(usedNames === expectedNames)
+    ()
   }
 
   /**

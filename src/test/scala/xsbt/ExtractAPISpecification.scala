@@ -114,6 +114,7 @@ class ExtractAPISpecification extends UnitSpec {
 				}""".stripMargin
     val fooMethodApi2 = compileAndGetFooMethodApi(src2)
     assert(SameAPI.apply(fooMethodApi1, fooMethodApi2), "APIs are not the same.")
+    ()
   }
 
   /**
