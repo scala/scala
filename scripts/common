@@ -21,6 +21,10 @@ rm -rf $IVY_CACHE/cache/org.scala-lang
 SBT_CMD=${sbtCmd-sbt}
 SBT_CMD="$SBT_CMD -sbt-version 0.13.12"
 
+# Possible workaround for SI-9264, an intermittent failure compiling quick on 2.11.x.
+JIT_OPTION="-J-XX:UnlockDiagnosticVMOptions -XX:CompileCommand=exclude,scala.tools.nsc.transform.patmat.MatchTreeMaking$TreeMakers$TypeTestTreeMaker.renderCondition"
+SBT_CMD="$SBT_CMD $JIT_OPTION"
+
 # temp dir where all 'non-build' operation are performed
 TMP_ROOT_DIR=$(mktemp -d -t pr-scala.XXXX)
 TMP_DIR="${TMP_ROOT_DIR}/tmp"
