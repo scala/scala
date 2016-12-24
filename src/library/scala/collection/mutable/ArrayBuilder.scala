@@ -104,7 +104,10 @@ object ArrayBuilder {
     }
 
     def result() = {
-      if (capacity != 0 && capacity == size) elems
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
       else mkArray(size)
     }
 
@@ -169,7 +172,10 @@ object ArrayBuilder {
     }
 
     def result() = {
-      if (capacity != 0 && capacity == size) elems
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
       else mkArray(size)
     }
 
@@ -234,7 +240,10 @@ object ArrayBuilder {
     }
 
     def result() = {
-      if (capacity != 0 && capacity == size) elems
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
       else mkArray(size)
     }
 
@@ -299,7 +308,10 @@ object ArrayBuilder {
     }
 
     def result() = {
-      if (capacity != 0 && capacity == size) elems
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
       else mkArray(size)
     }
 
@@ -364,7 +376,10 @@ object ArrayBuilder {
     }
 
     def result() = {
-      if (capacity != 0 && capacity == size) elems
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
       else mkArray(size)
     }
 
@@ -429,7 +444,10 @@ object ArrayBuilder {
     }
 
     def result() = {
-      if (capacity != 0 && capacity == size) elems
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
       else mkArray(size)
     }
 
@@ -494,7 +512,10 @@ object ArrayBuilder {
     }
 
     def result() = {
-      if (capacity != 0 && capacity == size) elems
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
       else mkArray(size)
     }
 
@@ -559,7 +580,10 @@ object ArrayBuilder {
     }
 
     def result() = {
-      if (capacity != 0 && capacity == size) elems
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
       else mkArray(size)
     }
 
@@ -623,7 +647,10 @@ object ArrayBuilder {
     }
 
     def result() = {
-      if (capacity != 0 && capacity == size) elems
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
       else mkArray(size)
     }
 
@@ -688,7 +715,10 @@ object ArrayBuilder {
     }
 
     def result() = {
-      if (capacity != 0 && capacity == size) elems
+      if (capacity != 0 && capacity == size) {
+        capacity = 0
+        elems
+      }
       else mkArray(size)
     }
 
