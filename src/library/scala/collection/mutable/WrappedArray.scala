@@ -132,7 +132,7 @@ object WrappedArray {
         ArrayBuilder.make[T]()(m) mapResult WrappedArray.make[T]
   }
 
-  def newBuilder[A]: Builder[A, IndexedSeq[A]] = new ArrayBuffer
+  def newBuilder[T](implicit t: ClassTag[T]): Builder[T, WrappedArray[T]] = new WrappedArrayBuilder[T](t)
 
   private val emptyWrappedByte = new ofByte(new Array[Byte](0))
   private val emptyWrappedShort = new ofShort(new Array[Short](0))
