@@ -112,7 +112,7 @@ abstract class TreeCheckers extends Analyzer {
       else if (prevTrees exists (t => (t eq tree) || (t.symbol == sym)))
         ()
       else {
-        val s1 = (prevTrees map wholetreestr).sorted.distinct
+        val s1 = (prevTrees map wholetreestr).distinct.sorted
         val s2 = wholetreestr(tree)
         if (s1 contains s2) ()
         else movedMsgs += ("\n** %s moved:\n** Previously:\n%s\n** Currently:\n%s".format(ownerstr(sym), s1 mkString ", ", s2))

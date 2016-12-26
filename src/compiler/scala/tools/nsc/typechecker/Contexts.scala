@@ -62,7 +62,7 @@ trait Contexts { self: Analyzer =>
 
   def warnUnusedImports(unit: CompilationUnit) = if (!unit.isJava) {
     for (imps <- allImportInfos.remove(unit)) {
-      for (imp <- imps.reverse.distinct) {
+      for (imp <- imps.distinct.reverse) {
         val used = allUsedSelectors(imp)
         def isMask(s: ImportSelector) = s.name != nme.WILDCARD && s.rename == nme.WILDCARD
 
