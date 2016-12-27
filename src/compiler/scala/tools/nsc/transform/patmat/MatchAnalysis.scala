@@ -511,7 +511,7 @@ trait MatchAnalysis extends MatchApproximation {
 
     // exhaustivity
 
-    def exhaustive(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[String] = if (uncheckableType(prevBinder.info)) Nil else {
+    def exhaustive(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[String] = if (!settings.warnStrictUnsealedPatMat && uncheckableType(prevBinder.info)) Nil else {
       // customize TreeMakersToProps (which turns a tree of tree makers into a more abstract DAG of tests)
       // - approximate the pattern `List()` (unapplySeq on List with empty length) as `Nil`,
       //   otherwise the common (xs: List[Any]) match { case List() => case x :: xs => } is deemed unexhaustive
@@ -893,7 +893,7 @@ trait MatchAnalysis extends MatchApproximation {
               // if uniqueEqualTo contains more than one symbol of the same domain
               // then we can safely ignore these counter examples since we will eventually encounter
               // both counter examples separately
-              case _ if inSameDomain => None
+              case _ if inSameDomain => Some(WildcardExample)
 
               // not a valid counter-example, possibly since we have a definite type but there was a field mismatch
               // TODO: improve reasoning -- in the mean time, a false negative is better than an annoying false positive
