@@ -37,6 +37,7 @@ class Reader private (
       reader.readLine(prompt)
     } catch {
       case _: EndOfFileException | _: UserInterruptException => reader.getBuffer.delete() ; null
+      case t: Throwable => throw t // TODO: fix
     }
   }
   def redrawLine(): Unit = ???
@@ -126,6 +127,7 @@ object Reader {
       case _: NumberFormatException =>
         backupHistory()
         history.attach(reader)
+      case t: Throwable => throw t // TODO: fix
     }
     new Reader(config, reader, accumulator, completer, jlineTerminal)
   }

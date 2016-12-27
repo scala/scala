@@ -60,6 +60,7 @@ object REPL {
           if (true || command.settings.debug) // !!!
             ex.printStackTrace()
           reporter.error(null, "fatal error: " + msg)
+        case t: Throwable => throw t // TODO: fix
       }
     }
   }

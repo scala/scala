@@ -1,0 +1,7 @@
+t5365c.scala:6: warning: match may not be exhaustive.
+It would fail on the following input: (x: C.Z forSome x not in C.Q)
+  def unsealedTrait(z: Z) = z match {
+                            ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

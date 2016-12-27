@@ -56,6 +56,7 @@ object InteractiveReader {
   def restartSysCalls[R](body: => R, reset: => Unit): R =
     try body catch {
       case e: IOException if e.getMessage == msgEINTR => reset ; body
+      case t: Throwable => throw t // TODO: fix
     }
 
   def apply(): InteractiveReader = SimpleReader()
