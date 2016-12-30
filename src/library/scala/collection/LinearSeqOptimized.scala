@@ -291,7 +291,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
 
   override /*SeqLike*/
   def indexWhere(p: A => Boolean, from: Int): Int = {
-    var i = from
+    var i = math.max(from, 0)
     var these = this drop from
     while (these.nonEmpty) {
       if (p(these.head))
