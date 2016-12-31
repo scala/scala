@@ -531,7 +531,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       // TODO: Constant folding sets the type of a constant tree to `ConstantType(Constant(folded))`
       // The tree itself can be a literal, an ident, a selection, ...
       object SwitchablePattern { def unapply(pat: Tree): Option[Tree] = pat.tpe match {
-        case ConstantType(Constant(str: String)) => Some(Literal(Constant(str.hashCode))) 
+        case ConstantType(Constant(str: String)) => Some(Literal(Constant(str))) 
         case _ => None
       }}
 
@@ -565,12 +565,10 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         if (caseDefsWithDefault isEmpty) None // not worth emitting a switch.
         else {
           // match on the hashcode of scrutSym
-          val scrutToInt: Tree =
-            if (scrutSym.tpe =:= IntTpe) REF(scrutSym)
-            else (REF(scrutSym) DOT TermName("hashCode"))
+          val scrutRef = REF(scrutSym)
           Some(BLOCK(
             ValDef(scrutSym, scrut),
-            Match(scrutToInt, caseDefsWithDefault) // a switch
+            Match(scrutRef, caseDefsWithDefault) // a switch
           ))
         }
       } else if (regularSwitchMaker.switchableTpe(dealiasWiden(scrutSym.tpe))) {
