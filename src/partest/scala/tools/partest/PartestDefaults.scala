@@ -22,10 +22,7 @@ object PartestDefaults {
 
   // probe for the named executable
   private def jdkexec(name: String): Option[String] = {
-    import scala.reflect.io.Path, Path._
-    Some(Path(jdkHome) / "bin") filter (_.isDirectory) flatMap { p =>
-      val candidates = (p walkFilter { e => (e.name == name || e.name.startsWith(s"$name.")) && e.jfile.canExecute }).toList
-      (candidates find (_.name == name) orElse candidates.headOption) map (_.path)
-    }
+    import scala.reflect.io.Path, Path._, scala.tools.nsc.Properties.isWin
+    (Path(jdkHome) / "bin").walk.find(e => e.name == name || isWin && e.name.equalsIgnoreCase(s"$name.exe")).map(_.path)
   }
 }
