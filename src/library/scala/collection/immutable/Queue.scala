@@ -110,7 +110,7 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
   /** Returns a new queue with all elements provided by an `Iterable` object
    *  added at the end of the queue.
    *
-   *  The elements are prepended in the order they are given out by the
+   *  The elements are appended in the order they are given out by the
    *  iterator.
    *
    *  @param  iter        an iterable object
