@@ -485,7 +485,7 @@ object MB {
   import Utils._;
 
 
-  trait Expr {
+  sealed trait Expr {
 
     private def count: Int = this match {
       case Lit(n)        => n

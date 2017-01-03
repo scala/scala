@@ -1859,7 +1859,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       clazz.annotations.map(_.completeInfo())
       if (templ.symbol == NoSymbol)
         templ setSymbol clazz.newLocalDummy(templ.pos)
-      val self1 = templ.self match {
+      val self1 = (templ.self: @unchecked) match {
         case vd @ ValDef(_, _, tpt, EmptyTree) =>
           val tpt1 = checkNoEscaping.privates(
             clazz.thisSym,
