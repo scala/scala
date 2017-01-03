@@ -550,11 +550,20 @@ trait Scanners extends ScannersCommon {
             else if (isOperatorPart(ch) && (ch != '\\'))
               charLitOr(getOperatorRest)
             else if (!isAtEnd && (ch != SU && ch != CR && ch != LF || isUnicodeEscape)) {
+              val isEmptyCharLit = (ch == '\'')
               getLitChar()
               if (ch == '\'') {
-                nextChar()
-                token = CHARLIT
-                setStrVal()
+                if (isEmptyCharLit && settings.isScala213)
+                  syntaxError("empty character literal (use '\\'' for single quote)")
+                else {
+                  if (isEmptyCharLit)
+                    deprecationWarning("deprecated syntax for character literal (use '\\'' for single quote)", "2.12.2")
+                  nextChar()
+                  token = CHARLIT
+                  setStrVal()
+                }
+              } else if (isEmptyCharLit) {
+                syntaxError("empty character literal")
               } else {
                 syntaxError("unclosed character literal")
               }

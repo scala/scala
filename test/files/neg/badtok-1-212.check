@@ -1,0 +1,17 @@
+badtok-1-212.scala:2: error: unclosed character literal
+'42'
+^
+badtok-1-212.scala:2: error: unclosed character literal
+'42'
+   ^
+badtok-1-212.scala:6: warning: deprecated syntax for character literal (use '\'' for single quote)
+'''
+^
+badtok-1-212.scala:8: error: empty character literal
+'';
+^
+badtok-1-212.scala:10: error: unclosed character literal
+'
+^
+one warning found
+four errors found
