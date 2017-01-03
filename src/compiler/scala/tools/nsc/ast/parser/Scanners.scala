@@ -538,6 +538,11 @@ trait Scanners extends ScannersCommon {
               charLitOr(getIdentRest)
             else if (isOperatorPart(ch) && (ch != '\\'))
               charLitOr(getOperatorRest)
+            else if (ch == '\'') {
+              nextChar()
+              val advice = if (ch == '\'') { do nextChar() while (ch == '\''); " (use '\\'' for single quote)" } else ""
+              syntaxError(s"empty character literal${advice}")
+            }
             else if (!isAtEnd && (ch != SU && ch != CR && ch != LF || isUnicodeEscape)) {
               getLitChar()
               if (ch == '\'') {
