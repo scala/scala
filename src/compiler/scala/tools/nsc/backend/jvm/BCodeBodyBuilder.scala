@@ -763,7 +763,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       //if the selector is a string, push the hash code of the string on the stack
       if(tree.selector.tpe == StringTpe) {
         val method = getMemberMethod(StringClass, TermName("hashCode"))
-        genCallMethod(method, InvokeStyle.Special, tree.selector.pos, null)
+        genCallMethod(method, InvokeStyle.Virtual, tree.selector.pos, null)
       }
       
       val generatedType = tpeTK(tree)
