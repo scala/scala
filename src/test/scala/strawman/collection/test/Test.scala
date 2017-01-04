@@ -2,7 +2,7 @@ package strawman.collection.test
 
 import java.lang.String
 import scala.{Int, Unit, Array, StringContext, Boolean, Any, Char}
-import scala.Predef.{println, charWrapper}
+import scala.Predef.{assert, println, charWrapper}
 
 import strawman.collection.immutable._
 import strawman.collection.mutable._
@@ -288,6 +288,19 @@ class StrawmanTest {
     println(xs17.to(List))
   }
 
+  def equality(): Unit = {
+    val list = List(1, 2, 3)
+    val lazyList = LazyList(1, 2, 3)
+    val buffer = ArrayBuffer(1, 2, 3)
+    assert(list == lazyList)
+    assert(list.## == lazyList.##)
+    assert(list == buffer)
+    assert(list.## == buffer.##)
+    buffer += 4
+    assert(list != buffer)
+    assert(list.## != buffer.##)
+  }
+
   @Test
   def mainTest: Unit = {
     val ints = List(1, 2, 3)
@@ -301,5 +314,6 @@ class StrawmanTest {
     stringOps("abc")
     arrayOps(Array(1, 2, 3))
     lazyListOps(LazyList(1, 2, 3))
+    equality()
   }
 }
