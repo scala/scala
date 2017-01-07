@@ -24,7 +24,8 @@ class ExtractUsedNamesPerformanceSpecification extends UnitSpec {
   }
 
   val TestResource = "/ExtractUsedNamesPerformance.scala.source"
-  val scala210diff = Set("Any", "Nothing", "_root_", "StringAdd")
+  // Some difference between 2.10, 2.11, and 2.12
+  val scalaDiff = Set("Any", "Nothing", "_root_", "StringAdd", "Option")
 
   it should "be executed in reasonable time" in {
     var zipfs: Option[FileSystem] = None
@@ -47,13 +48,13 @@ class ExtractUsedNamesPerformanceSpecification extends UnitSpec {
     val expectedNamesForDepFn1 = Set("DepFn1", "Out", "T", "AnyRef", "scala")
     val expectedNamesForHNil = Set("x", "package", "HNil", "ScalaRunTime", "T", "Iterator", "Boolean", "$" + "isInstanceOf", "::", "Nothing", "x$1", "acme", "typedProductIterator", "Int", "<init>", "apply", "Object", "IndexOutOfBoundsException", "scala", "HList", "toString", "H", "Serializable", "h", "Product", "Any", "runtime", "matchEnd3", "String")
     val expectedNamesForHList = Set("Tupler", "acme", "scala", "Serializable", "Product")
-    assert(usedNames("acme.Tupler") -- scala210diff === expectedNamesForTupler -- scala210diff)
-    assert(usedNames("acme.TuplerInstances") -- scala210diff === expectedNamesForTuplerInstances -- scala210diff)
-    assert(usedNames("acme.TuplerInstances.<refinement>") -- scala210diff === expectedNamesForRefinement -- scala210diff)
-    assert(usedNames("acme.$colon$colon") -- scala210diff === `expectedNamesFor::` -- scala210diff)
-    assert(usedNames("acme.DepFn1") -- scala210diff === expectedNamesForDepFn1 -- scala210diff)
-    assert(usedNames("acme.HNil") -- scala210diff === expectedNamesForHNil -- scala210diff)
-    assert(usedNames("acme.HList") -- scala210diff === expectedNamesForHList -- scala210diff)
+    assert(usedNames("acme.Tupler") -- scalaDiff === expectedNamesForTupler -- scalaDiff)
+    assert(usedNames("acme.TuplerInstances") -- scalaDiff === expectedNamesForTuplerInstances -- scalaDiff)
+    assert(usedNames("acme.TuplerInstances.<refinement>") -- scalaDiff === expectedNamesForRefinement -- scalaDiff)
+    assert(usedNames("acme.$colon$colon") -- scalaDiff === `expectedNamesFor::` -- scalaDiff)
+    assert(usedNames("acme.DepFn1") -- scalaDiff === expectedNamesForDepFn1 -- scalaDiff)
+    assert(usedNames("acme.HNil") -- scalaDiff === expectedNamesForHNil -- scalaDiff)
+    assert(usedNames("acme.HList") -- scalaDiff === expectedNamesForHList -- scalaDiff)
   }
 
   it should "correctly find Out0 (not stored in inspected trees) both in TuplerInstances and TuplerInstances.<refinement>" in {
@@ -70,8 +71,8 @@ class ExtractUsedNamesPerformanceSpecification extends UnitSpec {
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(src)
     val expectedNamesForTuplerInstances = Set("Tupler", "AnyRef", "L", "Out0", "scala", "HList")
     val expectedNamesForTuplerInstancesRefinement = Set("Out0")
-    assert(usedNames("TuplerInstances") -- scala210diff === expectedNamesForTuplerInstances -- scala210diff)
-    assert(usedNames("TuplerInstances.<refinement>") -- scala210diff === expectedNamesForTuplerInstancesRefinement -- scala210diff)
+    assert(usedNames("TuplerInstances") -- scalaDiff === expectedNamesForTuplerInstances -- scalaDiff)
+    assert(usedNames("TuplerInstances.<refinement>") -- scalaDiff === expectedNamesForTuplerInstancesRefinement -- scalaDiff)
   }
 
   it should "correctly collect used names from macro extension" in {
