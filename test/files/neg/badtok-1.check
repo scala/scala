@@ -13,7 +13,13 @@ badtok-1.scala:6: error: unclosed character literal
 badtok-1.scala:8: error: empty character literal
 '';
 ^
-badtok-1.scala:10: error: unclosed character literal
+badtok-1.scala:11: error: unclosed character literal (or use " for string literal "''abc")
+'abc'
+    ^
+badtok-1.scala:13: error: unclosed character literal
 '
 ^
-6 errors found
+badtok-1.scala:11: error: expected class or object definition
+'abc'
+^
+8 errors found

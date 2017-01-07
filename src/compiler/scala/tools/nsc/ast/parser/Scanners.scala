@@ -543,6 +543,14 @@ trait Scanners extends ScannersCommon {
           }
           fetchDoubleQuote()
         case '\'' =>
+          def unclosedCharLit() = {
+            val unclosed = "unclosed character literal"
+            // advise if previous token was Symbol contiguous with the orphan single quote at offset
+            val msg =
+              if (token == SYMBOLLIT && offset == lastOffset) s"""$unclosed (or use " for string literal "$strVal")"""
+              else unclosed
+            syntaxError(msg)
+          }
           def fetchSingleQuote() = {
             nextChar()
             if (isIdentifierStart(ch))
@@ -565,11 +573,10 @@ trait Scanners extends ScannersCommon {
               } else if (isEmptyCharLit) {
                 syntaxError("empty character literal")
               } else {
-                syntaxError("unclosed character literal")
+                unclosedCharLit()
               }
             }
-            else
-              syntaxError("unclosed character literal")
+            else unclosedCharLit()
           }
           fetchSingleQuote()
         case '.' =>
@@ -801,7 +808,7 @@ trait Scanners extends ScannersCommon {
             next.token = kwArray(idx)
           }
         } else {
-          syntaxError("invalid string interpolation: `$$', `$'ident or `$'BlockExpr expected")
+          syntaxError(s"invalid string interpolation $$$ch, expected: $$$$, $$identifier or $${expression}")
         }
       } else {
         val isUnclosedLiteral = !isUnicodeEscape && (ch == SU || (!multiLine && (ch == CR || ch == LF)))
