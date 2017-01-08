@@ -9,6 +9,13 @@ trait ArgumentExprs1 {
     Ev0,
     Ev1,
   )
+
+  // test arg exprs in the presence of varargs
+  def g(x: Int, y: Int*) = 1
+  g(1,2,
+  )
+  g(1,List(2, 3): _*,
+  )
 }
 
 trait ArgumentExprs2 {
@@ -39,6 +46,10 @@ trait ClassParams {
   )(implicit
     ev0: Ev0,
     ev1: Ev1,
+  )
+
+  // test class params in the precense of varargs
+  case class D(i: Int*,
   )
 }
 
@@ -100,6 +111,18 @@ trait SimplePattern {
     foo,
     bar,
   ) = null: Any
+
+  // test '@' syntax in patterns
+  Some(1) match {
+    case Some(x @ 1,
+    ) => x
+  }
+
+  // test ': _*' syntax in patterns
+  List(1, 2, 3) match {
+    case List(1, 2, _ @ _*,
+    ) => 1
+  }
 }
 
 trait ImportSelectors {
