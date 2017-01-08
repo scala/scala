@@ -392,8 +392,11 @@ trait Scanners extends ScannersCommon {
         // then it is a trailing comma and is ignored
         val saved = new ScannerData {} copyFrom this
         fetchToken()
-        if (token != RPAREN && token != RBRACKET && token != RBRACE || !afterLineEnd())
-          this copyFrom saved
+        if (afterLineEnd() && (token == RPAREN || token == RBRACKET || token == RBRACE)) {
+          /* skip the trailing comma */
+        } else if (token == EOF) { // e.g. when the REPL is parsing "val List(x, y, _*,"
+          /* skip the trailing comma */
+        } else this copyFrom saved
       }
 
 //      print("["+this+"]")

@@ -123,6 +123,10 @@ trait SimplePattern {
     case List(1, 2, _ @ _*,
     ) => 1
   }
+
+  // test varargs in patterns
+  val List(x, y, _*,
+  ) = 42 :: 17 :: Nil
 }
 
 trait ImportSelectors {
