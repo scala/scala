@@ -243,10 +243,17 @@ trait Typers extends Modes with Adaptations with Tags {
      *  @return     ...
      */
     def checkStable(tree: Tree): Tree = (
-      if (treeInfo.isExprSafeToInline(tree)) tree
-      else if (tree.isErrorTyped) tree
+      if (isStableOrErrorTyped(tree)) tree
       else UnstableTreeError(tree)
     )
+
+    def checkStableOrStableExceptVolatile(tree: Tree): Tree = (
+      if (isStableOrErrorTyped(tree) || isStableExceptVolatile(tree)) tree
+      else UnstableTreeError(tree)
+    )
+
+    private def isStableOrErrorTyped(tree: Tree) =
+      treeInfo.isExprSafeToInline(tree) || tree.isErrorTyped
 
     /** Would tree be a stable (i.e. a pure expression) if the type
      *  of its symbol was not volatile?
@@ -641,7 +648,7 @@ trait Typers extends Modes with Adaptations with Tags {
       if (tree.isErrorTyped) tree
       else if ((mode & (PATTERNmode | FUNmode)) == PATTERNmode && tree.isTerm) { // (1)
         if (sym.isValue) {
-          val tree1 = checkStable(tree)
+          val tree1 = checkStableOrStableExceptVolatile(tree) // SI-6815 volatile return type is okay, we're only calling ==, not selecting a type.
           // A module reference in a pattern has type Foo.type, not "object Foo"
           if (sym.isModule && !sym.isMethod) tree1 setType singleType(pre, sym)
           else tree1
