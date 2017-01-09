@@ -42,6 +42,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.SyntheticUnitAttachment
     this.SubpatternsAttachment
     this.KnownDirectSubclassesCalled
+    this.TypeParamVarargsAttachment
     this.noPrint
     this.typeDebug
     this.Range
@@ -444,6 +445,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ScalaValueClassesNoUnit
     definitions.ScalaValueClasses
 
+    uncurry.VarargsSymbolAttachment
     uncurry.DesugaredParameterType
     erasure.GenericArray
     erasure.scalaErasure

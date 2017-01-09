@@ -336,7 +336,18 @@ abstract class Erasure extends AddInterfaces
 
         case MethodType(params, restpe) =>
           val buf = new StringBuffer("(")
-          params foreach (p => buf append jsig(p.tpe))
+          params foreach (p => {
+            val tp = p.attachments.get[TypeParamVarargsAttachment] match {
+              case Some(att) =>
+                // For @varargs forwarders, a T* parameter has type Array[Object] in the forwarder
+                // instead of Array[T], as the latter would erase to Object (instead of Array[Object]).
+                // To make the generic signature correct ("[T", not "[Object"), an attachment on the
+                // parameter symbol stores the type T that was replaced by Object.
+                buf.append("["); att.typeParamRef
+              case _         => p.tpe
+            }
+            buf append jsig(tp)
+          })
           buf append ")"
           buf append (if (restpe.typeSymbol == UnitClass || sym0.isConstructor) VOID_TAG.toString else jsig(restpe))
           buf.toString
