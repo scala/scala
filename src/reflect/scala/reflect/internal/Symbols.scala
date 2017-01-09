@@ -2550,17 +2550,32 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  Do the same for any accessed symbols or setters/getters
      */
     override def expandName(base: Symbol) {
-      if (!hasFlag(EXPANDEDNAME)) {
-        setFlag(EXPANDEDNAME)
-        if (hasAccessorFlag && !isDeferred) {
-          accessed.expandName(base)
-        }
-        else if (hasGetter) {
-          getter(owner).expandName(base)
-          setter(owner).expandName(base)
-        }
-        name = nme.expandedName(name.toTermName, base)
+      def ignore(sym: Symbol): Boolean = (sym eq NoSymbol) || (sym hasFlag EXPANDEDNAME)
+      def expand(sym: Symbol) {
+        sym setFlag EXPANDEDNAME setName nme.expandedName(sym.name.toTermName, base)
       }
+      def cloneAndExpand(accessor: Symbol) {
+        val clone = accessor.cloneSymbol(accessor.owner, (accessor.flags | ARTIFACT) & ~ACCESSOR)
+        expand(accessor)
+        log(s"Expanded overriding accessor to $accessor, but cloned $clone to preserve override")
+        accessor.owner.info.decls enter clone
+      }
+      def expandAccessor(accessor: Symbol) {
+        if (!ignore(accessor)) {
+          if (accessor.isOverridingSymbol) cloneAndExpand(accessor) else expand(accessor)
+        }
+      }
+      def expandAll(sym: Symbol) {
+        if (!ignore(sym)) expand(sym)
+        if (sym.hasGetter) {
+          expandAccessor(sym.getter(owner))
+          expandAccessor(sym.setter(owner))
+        }
+      }
+
+      expandAll(this)
+      if (isAccessor)
+        expandAll(accessed)
     }
 
     protected def doCookJavaRawInfo() {
