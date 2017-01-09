@@ -30,7 +30,7 @@ package <empty> {
         ()
       };
       final def apply(): Int = $anonfun$foo$1.this.apply$mcI$sp();
-      <specialized> def apply$mcI$sp(): Int = $anonfun$foo$1.this.$outer.T$$classParam.+($anonfun$foo$1.this.$outer.field()).+($anonfun$foo$1.this.methodParam$1).+($anonfun$foo$1.this.methodLocal$1);
+      final <specialized> def apply$mcI$sp(): Int = $anonfun$foo$1.this.$outer.T$$classParam.+($anonfun$foo$1.this.$outer.field()).+($anonfun$foo$1.this.methodParam$1).+($anonfun$foo$1.this.methodLocal$1);
       <synthetic> <paramaccessor> private[this] val $outer: T = _;
       <synthetic> <stable> def T$$anonfun$$$outer(): T = $anonfun$foo$1.this.$outer;
       final <bridge> def apply(): Object = scala.Int.box($anonfun$foo$1.this.apply());
@@ -66,7 +66,7 @@ package <empty> {
         ()
       };
       final def apply(): Unit = $anonfun$tryy$1.this.apply$mcV$sp();
-      <specialized> def apply$mcV$sp(): Unit = try {
+      final <specialized> def apply$mcV$sp(): Unit = try {
         $anonfun$tryy$1.this.tryyLocal$1.elem = $anonfun$tryy$1.this.tryyParam$1
       } finally ();
       <synthetic> <paramaccessor> private[this] val $outer: T = _;
