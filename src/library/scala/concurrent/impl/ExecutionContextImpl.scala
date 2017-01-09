@@ -115,10 +115,16 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
           }
         }
       }
-      Thread.currentThread match {
-        case fjw: ForkJoinWorkerThread if fjw.getPool eq fj => fjt.fork()
-        case _ => fj execute fjt
-      }
+      // SI-7438 `fork` offers some performance benefits (it submits work to a local
+      //         queue), but is buggy in the version of Fork/Join that we redistributed
+      //         with Scala 2.10.{0, 1}.
+      //
+      //         TODO Restore this optimization once after updating to the latest JSR-166 sources.
+      // Thread.currentThread match {
+      //   case fjw: ForkJoinWorkerThread if fjw.getPool eq fj => fjt.fork()
+      //   case _ => fj execute fjt
+      // }
+      fj execute fjt
     case generic => generic execute runnable
   }
 
