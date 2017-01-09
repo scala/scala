@@ -78,7 +78,10 @@ class WrappedArrayBuilder[A](tag: ClassTag[A]) extends Builder[A, WrappedArray[A
   }
 
   def result() = {
-    if (capacity != 0 && capacity == size) elems
+    if (capacity != 0 && capacity == size) {
+      capacity = 0
+      elems
+    }
     else mkArray(size)
   }
 
