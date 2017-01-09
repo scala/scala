@@ -369,10 +369,19 @@ trait StdNames {
       name.endChar == '=' && name.startChar != '=' && isOperatorPart(name.startChar)
     }
 
+    private def fullNameForExpansion(sym: Symbol, separator: Char): Name =
+      if (sym.isRoot || sym.isRootPackage || sym.owner.isEffectiveRoot)
+        sym.name
+      else if (sym.isClass)
+        ((fullNameForExpansion(sym.effectiveOwner, separator) append separator): Name) append dropLocalSuffix(sym.name)
+      else
+        // SI-7202 non-class owners contribute separators.
+        fullNameForExpansion(sym.effectiveOwner, separator) append separator
+
     /** The expanded name of `name` relative to this class `base` with given `separator`
      */
     def expandedName(name: TermName, base: Symbol, separator: String = EXPAND_SEPARATOR_STRING): TermName =
-      newTermNameCached(base.fullName('$') + separator + name)
+      newTermNameCached(fullNameForExpansion(base, '$') + separator + name)
 
     /** The expanded setter name of `name` relative to this class `base`
     */
