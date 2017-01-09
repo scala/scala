@@ -1,0 +1,4 @@
+t7110.scala:2: error: A `try` without `catch` or `finally` has no effect.
+  try { ??? } // warn
+  ^
+one error found

@@ -5351,6 +5351,13 @@ trait Typers extends Modes with Adaptations with Tags {
       }
 
       def typedTry(tree: Try) = {
+        tree match {
+          case Try(_, Nil, EmptyTree) =>
+            if (!isPastTyper) context.warning(tree.pos,
+              "A `try` without `catch` or `finally` has no effect.")
+          case _ =>
+        }
+
         var block1 = typed(tree.block, pt)
         var catches1 = typedCases(tree.catches, ThrowableClass.tpe, pt)
 
