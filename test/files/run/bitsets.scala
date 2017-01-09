@@ -37,6 +37,19 @@ object TestMutable {
   Console.println("mi1 = " + ms1.toImmutable)
   Console.println("mi2 = " + ms2.toImmutable)
   Console.println
+
+  val N = 257
+  val gen = 3
+  val bs = BitSet((1 until N): _*)
+  (1 until N).foldLeft(gen) {
+    case (acc, i) =>
+      assert(bs.size == N-i, s"Bad size for $bs, expected ${N-i} actual ${bs.size}")
+      assert(!bs.isEmpty, s"Unexpected isEmpty for $bs")
+      bs -= acc
+      acc*gen % N
+  }
+  assert(bs.size == 0, s"Expected size == 0 for $bs")
+  assert(bs.isEmpty, s"Expected isEmpty for $bs")
 }
 
 object TestMutable2 {

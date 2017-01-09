@@ -70,6 +70,8 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     s
   }
 
+  override def isEmpty: Boolean = 0 until nwords forall (i => word(i) == 0)
+
   implicit def ordering: Ordering[Int] = Ordering.Int
 
   def rangeImpl(from: Option[Int], until: Option[Int]): This = {
