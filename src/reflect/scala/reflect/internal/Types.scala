@@ -3142,17 +3142,25 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false) {
-      assert(tp != this, tp) // implies there is a cycle somewhere (?)
-      //println("addLoBound: "+(safeToString, debugString(tp))) //DEBUG
-      undoLog record this
-      constr.addLoBound(tp, isNumericBound)
+      addBound(tp, isNumericBound, isHigh = false)
     }
 
     def addHiBound(tp: Type, isNumericBound: Boolean = false) {
-      // assert(tp != this)
-      //println("addHiBound: "+(safeToString, debugString(tp))) //DEBUG
-      undoLog record this
-      constr.addHiBound(tp, isNumericBound)
+      addBound(tp, isNumericBound, isHigh = true)
+    }
+
+    private def addBound(tp: Type, isNumericBound: Boolean, isHigh: Boolean) {
+      if (isHigherKinded && !tp.isHigherKinded) {
+        log(s"discarding non higher-kinded bound ${tp} for HK type variable $this")
+      } else {
+        // assert(tp != this)
+        //println("addBound: "+(safeToString, debugString(tp), isHigh)) //DEBUG
+        undoLog record this
+        if (isHigh)
+          constr.addHiBound(tp, isNumericBound)
+        else
+          constr.addLoBound(tp, isNumericBound)
+      }
     }
     // </region>
 
