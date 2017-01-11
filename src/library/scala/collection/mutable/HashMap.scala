@@ -81,8 +81,10 @@ extends AbstractMap[A, B]
 
   override def remove(key: A): Option[B] = {
     val e = removeEntry(key)
-    if (e ne null) Some(e.value)
-    else None
+    if (e ne null) {
+      e.next = null               // remove link into hashmap to help tracing gcs
+      Some(e.value)
+    } else None
   }
 
   def += (kv: (A, B)): this.type = {
@@ -91,7 +93,11 @@ extends AbstractMap[A, B]
     this
   }
 
-  def -=(key: A): this.type = { removeEntry(key); this }
+ def -=(key: A): this.type = {
+    val e = removeEntry(key);
+    if (e ne null) e.next = null  // remove link into hashmap to help tracing gcs
+    this
+ }
 
   def iterator = entriesIterator map {e => (e.key, e.value)}
 

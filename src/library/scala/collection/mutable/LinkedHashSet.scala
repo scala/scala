@@ -69,6 +69,11 @@ class LinkedHashSet[A] extends AbstractSet[A]
       else e.earlier.later = e.later
       if (e.later eq null) lastEntry = e.earlier
       else e.later.earlier = e.earlier
+
+      // remove links into hashset to help tracing gcs
+      e.later = null
+      e.earlier = null
+
       true
     }
   }
