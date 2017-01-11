@@ -1562,8 +1562,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           pw.toString
         } else ex.getClass.getName
         // ex.printStackTrace(Console.out) // DEBUG for fsc, note that error stacktraces do not print in fsc
-        globalError(supplementErrorMessage("uncaught exception during compilation: " + shown))
-        throw ex
+        if (!settings.ignoreCrashes.value) {
+          globalError(supplementErrorMessage("uncaught exception during compilation: " + shown))
+          throw ex
+        } else {
+          var msg = if (ex.getMessage != null) ex.getMessage else ex.getClass.toString
+          msg = msg.lines.take(1).mkString
+          println("crash: " + msg)
+        }
       }
     }
 
