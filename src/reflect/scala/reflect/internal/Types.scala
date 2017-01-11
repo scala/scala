@@ -4058,7 +4058,7 @@ trait Types
   }
 
   def isImplicitMethodType(tp: Type) = tp match {
-    case mt: MethodType => mt.isImplicit
+    case mt: MethodType => mt.isImplicit //
     case _              => false
   }
 
@@ -4252,7 +4252,7 @@ trait Types
         tp2 match {
           case mt2 @ MethodType(params2, res2) =>
             // sameLength(params1, params2) was used directly as pre-screening optimization (now done by matchesQuantified -- is that ok, performancewise?)
-            mt1.isImplicit == mt2.isImplicit &&
+            mt1.isImplicit == mt2.isImplicit && //
             matchingParams(params1, params2, mt1.isJava, mt2.isJava) &&
             matchesQuantified(params1, params2, res1, res2)
           case NullaryMethodType(res2) =>

@@ -1193,7 +1193,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           notifyUndetparamsAdded(tparams1)
           adapt(tree1 setType restpe.substSym(tparams, tparams1), mode, pt, original)
 
-        case mt: MethodType if mode.typingExprNotFunNotLhs && mt.isImplicit => // (4.1)
+        case mt: MethodType if mode.typingExprNotFunNotLhs && mt.isImplicit => // (4.1) //
           adaptToImplicitMethod(mt)
         case mt: MethodType if mode.typingExprNotFunNotLhs && !hasUndetsInMonoMode && !treeInfo.isMacroApplicationOrBlock(tree) =>
           instantiateToMethodType(mt)

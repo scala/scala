@@ -538,7 +538,7 @@ trait Implicits {
     private def checkCompatibility(fast: Boolean, tp0: Type, pt0: Type): Boolean = {
       @tailrec def loop(tp: Type, pt: Type): Boolean = tp match {
         case mt @ MethodType(params, restpe) =>
-          if (mt.isImplicit)
+          if (mt.isImplicit) //
             loop(restpe, pt)
           else pt match {
             case tr @ TypeRef(pre, sym, args) =>

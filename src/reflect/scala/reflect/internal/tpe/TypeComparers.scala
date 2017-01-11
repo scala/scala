@@ -157,7 +157,7 @@ trait TypeComparers {
   private def isSameMethodType(mt1: MethodType, mt2: MethodType) = (
        isSameTypes(mt1.paramTypes, mt2.paramTypes)
     && (mt1.resultType =:= mt2.resultType.substSym(mt2.params, mt1.params))
-    && (mt1.isImplicit == mt2.isImplicit)
+    && (mt1.isImplicit == mt2.isImplicit) //
   )
 
   private def equalTypeParamsAndResult(tparams1: List[Symbol], res1: Type, tparams2: List[Symbol], res2: Type) = {
@@ -489,7 +489,7 @@ trait TypeComparers {
             val params2 = mt2.params
             val res2 = mt2.resultType
             (sameLength(params1, params2) &&
-              mt1.isImplicit == mt2.isImplicit &&
+              mt1.isImplicit == mt2.isImplicit && //
               matchingParams(params1, params2, mt1.isJava, mt2.isJava) &&
               isSubType(res1.substSym(params1, params2), res2, depth))
           // TODO: if mt1.params.isEmpty, consider NullaryMethodType?

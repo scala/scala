@@ -1077,7 +1077,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     val context = doLocateContext(pos)
     val shouldTypeQualifier = tree0.tpe match {
       case null           => true
-      case mt: MethodType => mt.isImplicit
+      case mt: MethodType => mt.isImplicit //
       case _              => false
     }
 
