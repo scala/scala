@@ -209,6 +209,15 @@ sealed abstract class Option[+A] extends Product with Serializable {
     def withFilter(q: A => Boolean): WithFilter = new WithFilter(x => p(x) && q(x))
   }
 
+  /** Tests whether the option contains a given value as an element.
+   * 
+   *  @param elem the element to test.
+   *  @return `true` if the option has an element that is equal (as
+   *  determined by `==`) to `elem`, `false` otherwise.
+   */
+  @inline final def contains(elem: Any): Boolean =
+    !isEmpty && this.get == elem
+
   /** Returns true if this option is nonempty '''and''' the predicate
    * $p returns true when applied to this $option's value.
    * Otherwise, returns false.
