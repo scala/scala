@@ -4,9 +4,10 @@ import scala.{Boolean, Int, Unit, Nothing, NoSuchElementException}
 import strawman.collection.{IndexedView, IterableOnce}
 
 /** A core Iterator class */
-trait Iterator[+A] { self =>
+trait Iterator[+A] extends IterableOnce[A] { self =>
   def hasNext: Boolean
   def next(): A
+  def iterator() = this
   def foldLeft[B](z: B)(op: (B, A) => B): B =
     if (hasNext) foldLeft(op(z, next()))(op) else z
   def foldRight[B](z: B)(op: (A, B) => B): B =

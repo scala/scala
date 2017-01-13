@@ -1,4 +1,5 @@
-package strawman.collection
+package strawman
+package collection
 
 import strawman.collection.mutable.Iterator
 

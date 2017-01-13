@@ -92,6 +92,14 @@ package object collection extends LowPriority {
 
   /** Decorator to add collection operations to arrays. */
   implicit def arrayToArrayOps[A](as: Array[A]): ArrayOps[A] = new ArrayOps[A](as)
+
+  implicit class toNew[A](val s: scala.collection.Seq[A]) extends AnyVal {
+    def toStrawman: strawman.collection.Seq[A] = ???
+  }
+
+  implicit class toOld[A](val s: strawman.collection.Seq[A]) extends AnyVal {
+    def toClassic: scala.collection.Seq[A] = ???
+  }
 }
 
 class LowPriority {
