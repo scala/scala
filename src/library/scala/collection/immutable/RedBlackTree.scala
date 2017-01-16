@@ -486,23 +486,8 @@ object RedBlackTree {
       else findLeftMostOrPopOnEmpty(goLeft(tree))
 
     private[this] def pushNext(tree: Tree[A, B]) {
-      try {
-        stackOfNexts(index) = tree
-        index += 1
-      } catch {
-        case _: ArrayIndexOutOfBoundsException =>
-          /*
-           * Either the tree became unbalanced or we calculated the maximum height incorrectly.
-           * To avoid crashing the iterator we expand the path array. Obviously this should never
-           * happen...
-           *
-           * An exception handler is used instead of an if-condition to optimize the normal path.
-           * This makes a large difference in iteration speed!
-           */
-          assert(index >= stackOfNexts.length)
-          stackOfNexts :+= null
-          pushNext(tree)
-      }
+      stackOfNexts(index) = tree
+      index += 1
     }
     private[this] def popNext(): Tree[A, B] = if (index == 0) null else {
       index -= 1
