@@ -1,17 +1,24 @@
-package strawman
-package collection
-package mutable
+package strawman.collection.mutable
 
-trait Seq[A] extends strawman.collection.Seq[A] with Growable[A] {
+import java.lang.IndexOutOfBoundsException
+import scala.{Int, Long, Unit, Boolean, Array}
+import strawman.collection
+import strawman.collection.{IterableOnce, toNewSeq, toOldSeq}
+import scala.Predef.intWrapper
+
+trait Seq[A] extends strawman.collection.Seq[A] {
   def update(idx: Int, elem: A): Unit
+  def mapInPlace(f: A => A): this.type
+}
+
+trait GrowableSeq[A] extends Seq[A] with Growable[A] {
   def insert(idx: Int, elem: A): Unit
   def insertAll(idx: Int, elems: IterableOnce[A]): Unit
-  def remove(idx: Int): Option[A]
+  def remove(idx: Int): A
   def remove(from: Int, n: Int): Unit
-  def mapInPlace(f: A => A): this.type
   def flatMapInPlace(f: A => IterableOnce[A]): this.type
   def filterInPlace(p: A => Boolean): this.type
-  def patchInPlace(from: Int, patch: collection.Seq[Int], replaced: Int): this.type
+  def patchInPlace(from: Int, patch: collection.Seq[A], replaced: Int): this.type
 
   // +=, ++=, clear inherited from Growable
   def +=:(elem: A): this.type = { insert(0, elem); this }
@@ -23,6 +30,7 @@ trait Seq[A] extends strawman.collection.Seq[A] with Growable[A] {
   def takeInPlace(n: Int): this.type = { remove(n, length); this }
   def takeRightInPlace(n: Int): this.type = { remove(0, length - n); this }
   def sliceInPlace(start: Int, end: Int): this.type = takeInPlace(end).dropInPlace(start)
+
   def dropWhileInPlace(p: A => Boolean): this.type = {
     val idx = indexWhere(!p(_))
     if (idx < 0) { clear(); this } else dropInPlace(idx)
@@ -43,6 +51,9 @@ trait IndexedOptimizedSeq[A] extends Seq[A] {
     while (i < size) { this(i) = f(this(i)); i += 1 }
     this
   }
+}
+
+trait IndexedOptimizedGrowableSeq[A] extends IndexedOptimizedSeq[A] with GrowableSeq[A] {
   def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
     var i = 0
     val newElemss = new Array[IterableOnce[A]](size)
@@ -64,7 +75,7 @@ trait IndexedOptimizedSeq[A] extends Seq[A] {
     }
     takeInPlace(j)
   }
-  def patchInPlace(from: Int, patch: Seq[A], replaced: Int): this.type = {
+  def patchInPlace(from: Int, patch: collection.Seq[A], replaced: Int): this.type = {
     val n = patch.length min replaced
     var i = 0
     while (i < n) { update(from + i, patch(i)); i += 1 }

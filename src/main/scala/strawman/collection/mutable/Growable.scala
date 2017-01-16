@@ -6,11 +6,12 @@
 **                          |/                                          **
 \*                                                                      */
 
-package strawman
-package collection
-package mutable
+package strawman.collection.mutable
 
+import strawman.collection.IterableOnce
+import scala.Unit
 import scala.annotation.tailrec
+import strawman.collection.{toOldSeq, toNewSeq}
 
 /** This trait forms part of collections that can be augmented
  *  using a `+=` operator and that can be cleared of all elements using
@@ -40,7 +41,7 @@ trait Growable[-A] {
    *  @param elems the remaining elements to $add.
    *  @return the $coll itself
    */
-  def +=(elem1: A, elem2: A, elems: A*): this.type = this += elem1 += elem2 ++= elems.toStrawman
+  def +=(elem1: A, elem2: A, elems: A*): this.type = this += elem1 += elem2 ++= (elems.toStrawman: IterableOnce[A])
 
   /** ${Add}s all elements produced by a TraversableOnce to this $coll.
    *
@@ -56,7 +57,7 @@ trait Growable[-A] {
     }
     xs match {
       case xs: scala.collection.LinearSeq[_] => loop(xs.asInstanceOf[scala.collection.LinearSeq[A]])
-      case xs                                => xs.iterator() foreach += // Deviation: IterableOnce does not support Iterator.
+      case xs => xs.iterator() foreach += // Deviation: IterableOnce does not define `foreach`.
     }
     this
   }

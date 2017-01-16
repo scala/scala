@@ -1,4 +1,5 @@
-package strawman.collection
+package strawman
+package collection
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.reflect.ClassTag
@@ -54,8 +55,10 @@ trait IterableOps[+A] extends Any {
   protected def coll: Iterable[A]
   private def iterator() = coll.iterator()
 
-  /** Apply `f` to each element for tis side effects */
-  def foreach(f: A => Unit): Unit = iterator().foreach(f)
+  /** Apply `f` to each element for tis side effects
+   *  Note: [U] parameter needed to help scalac's type inference. 
+   */
+  def foreach[U](f: A => U): Unit = iterator().foreach(f)
 
   /** Fold left */
   def foldLeft[B](z: B)(op: (B, A) => B): B = iterator().foldLeft(z)(op)

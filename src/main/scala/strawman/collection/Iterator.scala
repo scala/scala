@@ -1,7 +1,6 @@
-package strawman.collection.mutable
+package strawman.collection
 
 import scala.{Boolean, Int, Unit, Nothing, NoSuchElementException}
-import strawman.collection.{IndexedView, IterableOnce}
 
 /** A core Iterator class */
 trait Iterator[+A] extends IterableOnce[A] { self =>
@@ -12,7 +11,7 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     if (hasNext) foldLeft(op(z, next()))(op) else z
   def foldRight[B](z: B)(op: (A, B) => B): B =
     if (hasNext) op(next(), foldRight(z)(op)) else z
-  def foreach(f: A => Unit): Unit =
+  def foreach[U](f: A => U): Unit =
     while (hasNext) f(next())
   def indexWhere(p: A => Boolean): Int = {
     var i = 0

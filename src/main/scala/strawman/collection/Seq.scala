@@ -1,7 +1,6 @@
 package strawman.collection
 
 import scala.{Any, Boolean, Int, IndexOutOfBoundsException}
-import strawman.collection.mutable.Iterator
 import strawman.collection.immutable.{List, Nil}
 
 import scala.annotation.unchecked.uncheckedVariance

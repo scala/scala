@@ -1,11 +1,13 @@
-package strawman
-package collection
-package mutable
+package strawman.collection.mutable
 
-import scala.{Int, Unit}
-import strawman.collection.{SeqLike, IterableFactory, Iterable, Seq, IterableOnce}
+import scala.{Int, Unit, Boolean}
+import scala.Int._
+import strawman.collection
+import strawman.collection.{Iterator, Iterable, IterableOnce, IterableFactory, SeqLike}
 import strawman.collection.immutable.{List, Nil, ::}
 import scala.annotation.tailrec
+import java.lang.IndexOutOfBoundsException
+import scala.Predef.{assert, intWrapper}
 
 /** Concrete collection type: ListBuffer */
 class ListBuffer[A]
@@ -130,7 +132,7 @@ class ListBuffer[A]
     nx.head
   }
 
-  def remove(idx: Int, n: Int): Unit = 
+  def remove(idx: Int, n: Int): Unit =
     if (n > 0) {
       ensureUnaliased()
       if (idx < 0 || idx + n > len) throw new IndexOutOfBoundsException

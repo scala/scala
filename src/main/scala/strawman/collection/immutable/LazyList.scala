@@ -1,8 +1,7 @@
 package strawman.collection.immutable
 
 import scala.{Option, Some, None, Nothing, StringContext}
-import strawman.collection.{IterableFactory, Iterable, LinearSeq, SeqLike}
-import strawman.collection.mutable.Iterator
+import strawman.collection.{IterableFactory, Iterable, LinearSeq, SeqLike, Iterator}
 
 class LazyList[+A](expr: => LazyList.Evaluated[A])
   extends LinearSeq[A] with SeqLike[A, LazyList] {

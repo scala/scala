@@ -2,7 +2,6 @@ package strawman.collection
 
 import scala.{Int, Boolean, Nothing, annotation}
 import scala.Predef.intWrapper
-import strawman.collection.mutable.Iterator
 
 /** Concrete collection type: View */
 trait View[+A] extends Iterable[A] with IterableLike[A, View] {

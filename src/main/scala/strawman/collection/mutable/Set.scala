@@ -1,6 +1,9 @@
-package strawman
-package collection
-package mutable
+package strawman.collection.mutable
+
+import strawman.collection
+import strawman.collection.IterableOnce
+import scala.{Int, Boolean, Unit, Option, Some, None}
+import scala.Predef.???
 
 trait Set[A] extends collection.Set[A] with Growable[A] {
 
