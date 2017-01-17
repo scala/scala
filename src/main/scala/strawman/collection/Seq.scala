@@ -47,7 +47,6 @@ trait IndexedSeq[+A] extends Seq[A] { self =>
   }
 }
 
-
 /** Base trait for Seq operations */
 trait SeqLike[+A, +C[X] <: Seq[X]]
   extends IterableLike[A, C]

@@ -4,8 +4,7 @@ package collection
 import scala.annotation.unchecked.uncheckedVariance
 import scala.reflect.ClassTag
 import scala.{Int, Boolean, Array, Any, Unit, StringContext}
-import java.lang.String
-
+import java.lang.{String, UnsupportedOperationException}
 import strawman.collection.mutable.{ArrayBuffer, StringBuilder}
 
 /** Base trait for generic collections */
@@ -56,7 +55,7 @@ trait IterableOps[+A] extends Any {
   private def iterator() = coll.iterator()
 
   /** Apply `f` to each element for tis side effects
-   *  Note: [U] parameter needed to help scalac's type inference. 
+   *  Note: [U] parameter needed to help scalac's type inference.
    */
   def foreach[U](f: A => U): Unit = iterator().foreach(f)
 
@@ -169,7 +168,9 @@ trait IterableMonoTransforms[+A, +Repr] extends Any {
   def drop(n: Int): Repr = fromIterableWithSameElemType(View.Drop(coll, n))
 
   /** The rest of the collection without its first element. */
-  def tail: Repr = drop(1)
+  def tail: Repr =
+    if (coll.isEmpty) drop(1)
+    else throw new UnsupportedOperationException
 }
 
 /** Transforms over iterables that can return collections of different element types.

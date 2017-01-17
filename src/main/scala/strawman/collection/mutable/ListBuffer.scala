@@ -3,7 +3,7 @@ package strawman.collection.mutable
 import scala.{Int, Unit, Boolean}
 import scala.Int._
 import strawman.collection
-import strawman.collection.{Iterator, Iterable, IterableOnce, IterableFactory, SeqLike}
+import strawman.collection.{Iterator, IterableOnce, IterableFactory, SeqLike}
 import strawman.collection.immutable.{List, Nil, ::}
 import scala.annotation.tailrec
 import java.lang.IndexOutOfBoundsException
@@ -25,7 +25,7 @@ class ListBuffer[A]
 
   def iterator() = first.iterator()
 
-  def fromIterable[B](coll: Iterable[B]) = ListBuffer.fromIterable(coll)
+  def fromIterable[B](coll: collection.Iterable[B]) = ListBuffer.fromIterable(coll)
 
   def apply(i: Int) = first.apply(i)
 
@@ -199,5 +199,5 @@ class ListBuffer[A]
 }
 
 object ListBuffer extends IterableFactory[ListBuffer] {
-  def fromIterable[B](coll: Iterable[B]): ListBuffer[B] = new ListBuffer[B] ++= coll
+  def fromIterable[B](coll: collection.Iterable[B]): ListBuffer[B] = new ListBuffer[B] ++= coll
 }

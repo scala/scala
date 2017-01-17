@@ -6,12 +6,16 @@ import strawman.collection
 import strawman.collection.{IterableOnce, toNewSeq, toOldSeq}
 import scala.Predef.intWrapper
 
-trait Seq[A] extends strawman.collection.Seq[A] {
+trait Seq[A] extends collection.Seq[A]
+                with collection.SeqLike[A, Seq]
+                with Iterable[A] {
   def update(idx: Int, elem: A): Unit
   def mapInPlace(f: A => A): this.type
 }
 
-trait GrowableSeq[A] extends Seq[A] with Growable[A] {
+trait GrowableSeq[A] extends Seq[A]
+                        with collection.SeqLike[A, Seq]
+                        with Growable[A] {
   def insert(idx: Int, elem: A): Unit
   def insertAll(idx: Int, elems: IterableOnce[A]): Unit
   def remove(idx: Int): A
