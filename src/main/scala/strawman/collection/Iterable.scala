@@ -168,9 +168,10 @@ trait IterableMonoTransforms[+A, +Repr] extends Any {
   def drop(n: Int): Repr = fromIterableWithSameElemType(View.Drop(coll, n))
 
   /** The rest of the collection without its first element. */
-  def tail: Repr =
-    if (coll.isEmpty) drop(1)
-    else throw new UnsupportedOperationException
+  def tail: Repr = {
+    if (coll.isEmpty) throw new UnsupportedOperationException
+    drop(1)
+  }
 }
 
 /** Transforms over iterables that can return collections of different element types.
