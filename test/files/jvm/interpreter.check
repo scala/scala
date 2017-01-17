@@ -278,13 +278,13 @@ scala> // both of the following should abort immediately:
 
 scala> def x => y => z
 <console>:1: error: '=' expected but '=>' found.
-def x => y => z
-      ^
+       def x => y => z
+             ^
 
 scala> [1,2,3]
 <console>:1: error: illegal start of definition
-[1,2,3]
-^
+       [1,2,3]
+       ^
 
 scala> 
 

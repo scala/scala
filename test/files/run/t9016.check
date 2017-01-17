@@ -4,7 +4,7 @@ scala> """a
 c"""
 res0: String =
 a
-| b
+ b
 c
 
 scala> :quit
