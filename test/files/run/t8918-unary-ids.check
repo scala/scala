@@ -5,3 +5,17 @@ Expected 41 lines, got 39
 -Type in expressions to have them evaluated.
 -Type :help for more information.
  
+@@ -14,4 +12,4 @@
+ <console>:1: error: illegal start of simple expression
+-- if (true) 1 else 2
+-  ^
++       - if (true) 1 else 2
++         ^
+ 
+@@ -19,4 +17,4 @@
+ <console>:1: error: ';' expected but integer literal found.
+-- - 1
+-    ^
++       - - 1
++           ^
+ 

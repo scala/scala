@@ -111,11 +111,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     try body finally label = saved
   }
 
-  // the expanded prompt but without color escapes and without leading newline, for purposes of indenting
-  lazy val formatting = Formatting.forPrompt(replProps.promptText)
   lazy val reporter: ReplReporter = new ReplReporter(this)
 
-  import formatting.indentCode
   import reporter.{ printMessage, printUntruncatedMessage }
 
   // This exists mostly because using the reporter too early leads to deadlock.
@@ -867,8 +864,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
         |${preambleHeader format lineRep.readName}
         |${envLines mkString ("  ", ";\n  ", ";\n")}
         |$importsPreamble
-        |${indentCode(toCompute)}""".stripMargin
-      def preambleLength = preamble.length - toCompute.length - 1
+        |${toCompute}""".stripMargin
+      def preambleLength = preamble.length - toCompute.length
 
       val generate = (m: MemberHandler) => m extraCodeToEvaluate Request.this
 
