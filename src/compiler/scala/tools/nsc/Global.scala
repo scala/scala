@@ -79,6 +79,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   def picklerPhase: Phase = if (currentRun.isDefined) currentRun.picklerPhase else NoPhase
 
+  def erasurePhase: Phase = if (currentRun.isDefined) currentRun.erasurePhase else NoPhase
+
   // platform specific elements
 
   type ThisPlatform = Platform { val global: Global.this.type }
@@ -567,7 +569,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   } with Erasure
 
   // phaseName = "posterasure"
-  object postErasure extends {
+  override object postErasure extends {
     val global: Global.this.type = Global.this
     val runsAfter = List("erasure")
     val runsRightAfter = Some("erasure")

@@ -330,13 +330,21 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       bytecodelessMethodOwners(meth.owner) && !bytecodefulObjectMethods(meth)
     }
 
+    private def isByNameParam(p: Type) = isByNameParamType(p)
+    private def isValueClassParam(p: Type) = p match {
+      case TypeRef(_, RepeatedParamClass, targ :: Nil) => targ.typeSymbol.isDerivedValueClass
+      case tpe => tpe.typeSymbol.isDerivedValueClass
+    }
+
     // unlike other mirrors, method mirrors are created by a factory
     // that's because we want to have decent performance
     // therefore we move special cases into separate subclasses
     // rather than have them on a hot path them in a unified implementation of the `apply` method
     private def mkJavaMethodMirror[T: ClassTag](receiver: T, symbol: MethodSymbol): JavaMethodMirror = {
+      def existsParam(pred: Type => Boolean) = symbol.paramss.flatten.map(_.info).exists(pred)
       if (isBytecodelessMethod(symbol)) new JavaBytecodelessMethodMirror(receiver, symbol)
-      else if (symbol.paramss.flatten exists (p => isByNameParamType(p.info))) new JavaByNameMethodMirror(receiver, symbol)
+      else if (existsParam(isByNameParam)) new JavaByNameMethodMirror(receiver, symbol)
+      else if (existsParam(isValueClassParam)) new JavaValueClassParamMethodMirror(receiver, symbol)
       else new JavaVanillaMethodMirror(receiver, symbol)
     }
 
@@ -362,11 +370,50 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       def apply(args: Any*): Any = jinvoke(jmeth, receiver, args)
     }
 
-    private class JavaByNameMethodMirror(val receiver: Any, symbol: MethodSymbol)
-            extends JavaMethodMirror(symbol) {
+    private abstract class JavaMethodMirrorWithTransform(val receiver: Any, symbol: MethodSymbol)
+                     extends JavaMethodMirror(symbol) {
+      def shouldTransform(arg: Any, param: Type, vararg: Boolean): Boolean
+      def transform(arg: Any, param: Type, vararg: Boolean): Any
+
       def apply(args: Any*): Any = {
-        val transformed = map2(args.toList, symbol.paramss.flatten)((arg, param) => if (isByNameParamType(param.info)) () => arg else arg)
+        // TODO: vararg is only supported in the last parameter list (SI-6182)
+        // so we don't need to worry about the rest for now
+        if (symbol.isVarargs && args.length + 1 < symbol.paramss.flatten.length) throw new IllegalArgumentException("argument count mismatch")
+        val params = symbol.paramss.flatten.map(_.info) match {
+          case params @ normals :+ TypeRef(_, _, varparam :: Nil) if symbol.isVarargs =>
+            normals ++ List.fill(args.length - params.length + 1)(varparam)
+          case params => params
+        }
+        var i = 0
+        val transformed = map2(args.toList, params)((arg, param) => {
+          val vararg = symbol.isVarargs && i >= symbol.paramss.flatten.length - 1
+          val arg1 = if (shouldTransform(arg, param, vararg)) transform(arg, param, vararg) else arg
+          i += 1
+          arg1
+        })
         jinvoke(jmeth, receiver, transformed)
+      }
+    }
+
+    private class JavaByNameMethodMirror(receiver: Any, symbol: MethodSymbol)
+            extends JavaMethodMirrorWithTransform(receiver, symbol) {
+      override def shouldTransform(arg: Any, param: Type, vararg: Boolean) = isByNameParam(param)
+      override def transform(arg: Any, param: Type, vararg: Boolean): Any = { assert(!vararg, symbol); () => arg }
+    }
+
+    private class JavaValueClassParamMethodMirror(receiver: Any, symbol: MethodSymbol)
+            extends JavaMethodMirrorWithTransform(receiver, symbol) {
+      override def shouldTransform(arg: Any, param: Type, vararg: Boolean) = !vararg && isValueClassParam(param)
+      override def transform(arg: Any, param: Type, vararg: Boolean): Any = {
+        if (arg == null) throw new IllegalArgumentException()
+        val expectedTpe = param.typeSymbol.asClass.toType
+        // transform is only called when shouldTransform returns true, which means that param has to be a value class
+        // therefore we don't need to use the isinstanceof check, but a simple equality test for getClass will be enough
+        if (runtimeClass(expectedTpe) != arg.getClass) throw new IllegalArgumentException("argument type mismatch")
+        val fields @ (field :: _) = expectedTpe.declarations.collect{ case ts: TermSymbol if ts.isParamAccessor && ts.isMethod => ts }.toList
+        assert(fields.length == 1, s"${param.typeSymbol}: $fields")
+        val jgetter = arg.getClass.getDeclaredMethod(field.name)
+        jgetter.invoke(arg)
       }
     }
 

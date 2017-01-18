@@ -13,6 +13,8 @@ class JavaUniverse extends internal.SymbolTable with ReflectSetup with runtime.S
 
   def picklerPhase = SomePhase
 
+  def erasurePhase = SomePhase
+
   lazy val settings = new Settings
   def forInteractive = false
   def forScaladoc = false
