@@ -248,7 +248,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   /** Prompt to print when awaiting input */
   def prompt = currentPrompt
 
-  import LoopCommand.{ cmd, nullary }
+  import LoopCommand.{ cmd, nullary, varargs }
 
   /** Standard commands **/
   lazy val standardCommands = List(
@@ -259,7 +259,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     cmd("imports", "[name name ...]", "show import history, identifying sources of names", importsCommand),
     cmd("implicits", "[-v]", "show the implicits in scope", implicitsCommand),
     cmd("javap", "<path|class>", "disassemble a file or class name", javapCommand),
-    cmd("load", "<path>", "load and interpret a Scala file", loadCommand),
+    varargs("load", "<path>", "load and interpret a Scala file", loadCommand),
     nullary("paste", "enter paste mode: all input up to ctrl-D compiled together", pasteCommand),
     nullary("power", "enable power user mode", powerCmd),
     nullary("quit", "exit the interpreter", () => Result(false, None)),
@@ -647,19 +647,18 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
   }
 
-  def withFile(filename: String)(action: File => Unit) {
-    val f = File(filename)
-
-    if (f.exists) action(f)
-    else echo("That file does not exist")
-  }
-
-  def loadCommand(arg: String) = {
-    var shouldReplay: Option[String] = None
-    withFile(arg)(f => {
-      interpretAllFrom(f)
-      shouldReplay = Some(":load " + arg)
-    })
+  def loadCommand(args: List[String]) = {
+    val files = args.map(filename => File(filename))
+    val badFiles = files.filter(file => !file.exists)
+    val shouldReplay =
+    if (badFiles.isEmpty) {
+      for (file <- files) interpretAllFrom(file)
+      Some(":load " + args)
+    }
+    else {
+      for (badFile <- badFiles) echo(s"$badFile does not exist")
+      None
+    }
     Result(true, shouldReplay)
   }
 
@@ -707,9 +706,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     * if any. */
   def command(line: String): Result = {
     if (line startsWith ":") {
-      val cmd = line.tail takeWhile (x => !x.isWhitespace)
+      val segments = line.tail splitLeft(1, ' ')
+      val cmd = segments(0)
       uniqueCommand(cmd) match {
-        case Some(lc) => lc(line.tail stripPrefix cmd dropWhile (_.isWhitespace))
+        case Some(lc) => lc(segments.applyOrElse(1, ""))
         case _        => ambiguousError(cmd)
       }
     }

@@ -206,6 +206,36 @@ self =>
     toString.split(re)
   }
 
+  def splitRight(count: Int, ch: Char): Seq[String] = {
+    val combine = (recurse: Seq[String], append: String) => recurse :+ append
+    val splitIndex = (s: String) => s.lastIndexOf(ch)
+    val order = (front: String, back: String) => (front, back)
+    split(count, splitIndex, order, combine)
+  }
+
+  def splitLeft(count: Int, ch: Char): Seq[String] = {
+    val combine = (recurse: Seq[String], append: String) => append +: recurse
+    val splitIndex = (s: String) => s.indexOf(ch)
+    val order = (front: String, back: String) => (back, front)
+    split(count, splitIndex, order, combine)
+  }
+
+  private def split(count: Int,
+                    splitIndexFunction: String => Int,
+                    order: (String, String) => (String, String),
+                    combine: (Seq[String], String) => Seq[String]): Seq[String] = {
+    if (count < 1) List(toString)
+    else {
+      val splitIndex = splitIndexFunction(toString)
+      if (splitIndex < 0) List(toString)
+      else {
+        val (first, second) = toString.splitAt(splitIndex)
+        val (recurse, append) = order(first, second.tail)
+        combine(recurse.split(count - 1, splitIndexFunction, order, combine), append)
+      }
+    }
+  }
+
   /** You can follow a string with `.r`, turning it into a `Regex`. E.g.
    *
    *  `"""A\w*""".r`   is the regular expression for identifiers starting with `A`.
