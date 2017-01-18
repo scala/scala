@@ -553,7 +553,17 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
     }
   }
 
-  private def macroContext(typer: Typer, prefixTree: Tree, expandeeTree: Tree): MacroContext =
+  /** Creates macro contexts to serve macro expansions.
+   *
+   *  `typer` is the typer at the callsite of a macro, `prefixTree` is the prefix of the macro application
+   *  (see the documentation for Context.prefix for more info), `expandeeTree` is the macro application itself.
+   *
+   *  This method is designed to be overridable, e.g. from an IDE, which would redirect
+   *  methods like c.echo or c.info to a custom GUI. To override this method, extend `Global` and provide
+   *  an overriden `analyzer` val with an overriden `newTyper` method, which produces a typer with an overriden
+   *  `macroContext` method.
+   */
+  def macroContext(typer: Typer, prefixTree: Tree, expandeeTree: Tree): MacroContext =
     new {
       val universe: self.global.type = self.global
       val callsiteTyper: universe.analyzer.Typer = typer.asInstanceOf[global.analyzer.Typer]
