@@ -3039,7 +3039,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     /** A symbol carrying the self type of the class as its type */
-    override def thisSym: Symbol = thissym
+    override def thisSym: Symbol = {
+      if (!isCompilerUniverse && needsInitialize(isFlagRelated = false, mask = 0)) initialize
+      thissym
+    }
 
     /** Sets the self type of the class */
     override def typeOfThis_=(tp: Type) {
