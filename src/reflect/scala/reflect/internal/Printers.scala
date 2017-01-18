@@ -67,12 +67,12 @@ trait Printers extends api.Printers { self: SymbolTable =>
     printIds = settings.uniqid.value
     printKinds = settings.Yshowsymkinds.value
     printMirrors = false // typically there's no point to print mirrors inside the compiler, as there is only one mirror there
-    protected def doPrintPositions = settings.Xprintpos.value
+    printPositions = settings.Xprintpos.value
 
     def indent() = indentMargin += indentStep
     def undent() = indentMargin -= indentStep
 
-    def printPosition(tree: Tree) = if (doPrintPositions) print(tree.pos.show)
+    def printPosition(tree: Tree) = if (printPositions) print(tree.pos.show)
 
     def println() {
       out.println()
@@ -389,7 +389,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           print(x.escapedStringValue)
 
         case tt: TypeTree =>
-          if ((tree.tpe eq null) || (doPrintPositions && tt.original != null)) {
+          if ((tree.tpe eq null) || (printPositions && tt.original != null)) {
             if (tt.original != null) print("<type: ", tt.original, ">")
             else print("<type ?>")
           } else if ((tree.tpe.typeSymbol ne null) && tree.tpe.typeSymbol.isAnonymousClass) {
@@ -550,6 +550,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           printProduct(
             tree,
             preamble = _ => {
+              if (printPositions) print(tree.pos.show)
               print(tree.productPrefix)
               if (printTypes && tree.tpe != null) print(tree.tpe)
             },
