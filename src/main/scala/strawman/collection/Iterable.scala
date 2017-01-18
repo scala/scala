@@ -45,6 +45,7 @@ trait FromIterable[+C[X] <: Iterable[X]] {
 trait IterableFactory[+C[X] <: Iterable[X]] extends FromIterable[C] {
   def empty[X]: C[X] = fromIterable(View.Empty)
   def apply[A](xs: A*): C[A] = fromIterable(View.Elems(xs: _*))
+  def fill[A](n: Int)(elem: => A): C[A] = fromIterable(View.Fill(n)(elem))
 }
 
 /** Operations over iterables. No operation defined here is generic in the
@@ -70,6 +71,9 @@ trait IterableOps[+A] extends Any {
 
   /** Is the collection empty? */
   def isEmpty: Boolean = !iterator().hasNext
+
+  /** Is the collection not empty? */
+  def nonEmpty: Boolean = iterator().hasNext
 
   /** The first element of the collection. */
   def head: A = iterator().next()

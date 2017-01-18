@@ -33,6 +33,20 @@ object View {
     override def knownSize = xs.length // should be: xs.knownSize, but A*'s are not sequences in this strawman.
   }
 
+  /** A view filled with `n` identical elements */
+  case class Fill[A](n: Int)(elem: => A) extends View[A] {
+    def iterator() =
+      new Iterator[A] {
+        private var i = 0
+        def hasNext: Boolean = i < n
+        def next(): A = {
+          i = i + 1
+          if (i <= n) elem else Iterator.empty.next()
+        }
+      }
+    override def knownSize: Int = n
+  }
+
   /** A view that filters an underlying collection. */
   case class Filter[A](underlying: Iterable[A], p: A => Boolean) extends View[A] {
     def iterator() = underlying.iterator().filter(p)

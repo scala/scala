@@ -1,0 +1,70 @@
+package strawman.collection.immutable
+
+import java.util.concurrent.TimeUnit
+
+import org.openjdk.jmh.annotations._
+
+import scala.{Any, AnyRef, Int, Unit}
+
+@BenchmarkMode(scala.Array(Mode.AverageTime))
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
+@Fork(1)
+@Warmup(iterations = 12)
+@Measurement(iterations = 12)
+@State(Scope.Benchmark)
+class ListBenchmark {
+
+  @Param(scala.Array("8", "64", "512", "4096", "32768", "262144"/*, "2097152"*/))
+  var size: Int = _
+
+  var xs: List[AnyRef] = _
+  var obj: Any = _
+
+  @Setup(Level.Trial)
+  def initData(): Unit = {
+    xs = List.fill(size)("")
+    obj = ""
+  }
+
+  @Benchmark
+  def cons(): Any = {
+    var ys = List.empty[Any]
+    var i = 0
+    while (i < size) {
+      ys = obj :: ys
+      i += 1
+    }
+    ys
+  }
+
+  @Benchmark
+  def uncons(): Any = xs.tail
+
+  @Benchmark
+  def concat(): Any = xs ++ xs
+
+  @Benchmark
+  def foreach(): Any = {
+    var n = 0
+    xs.foreach(x => if (x eq null) n += 1)
+    n
+  }
+
+  @Benchmark
+  def foreach_while(): Any = {
+    var n = 0
+    var ys = xs
+    while (ys.nonEmpty) {
+      if (ys.head eq null) n += 1
+      ys = ys.tail
+    }
+    n
+  }
+
+  @Benchmark
+  def lookup(): Any = xs(size - 1)
+
+  @Benchmark
+  def map(): Any = xs.map(x => if (x eq null) "foo" else "bar")
+
+}

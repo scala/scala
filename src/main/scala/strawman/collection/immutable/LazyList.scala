@@ -18,6 +18,7 @@ class LazyList[+A](expr: => LazyList.Evaluated[A])
   }
 
   override def isEmpty = force.isEmpty
+  override def nonEmpty = force.nonEmpty
   override def head = force.get._1
   override def tail = force.get._2
 
