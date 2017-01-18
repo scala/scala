@@ -1167,6 +1167,7 @@ trait Types extends api.Types { self: SymbolTable =>
       var excluded = excludedFlags | DEFERRED
       var continue = true
       var self: Type = null
+      val isConstructor = name == nme.CONSTRUCTOR
 
       while (continue) {
         continue = false
@@ -1237,7 +1238,7 @@ trait Types extends api.Types { self: SymbolTable =>
             entry = decls lookupNextEntry entry
           } // while (entry ne null)
           // excluded = excluded | LOCAL
-          bcs = if (name == nme.CONSTRUCTOR) Nil else bcs.tail
+          bcs = if (isConstructor) Nil else bcs.tail // constructors aren't inherited
         } // while (!bcs.isEmpty)
         required |= DEFERRED
         excluded &= ~(DEFERRED.toLong)

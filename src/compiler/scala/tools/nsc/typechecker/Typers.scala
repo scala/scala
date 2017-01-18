@@ -5025,7 +5025,8 @@ trait Typers extends Modes with Adaptations with Tags {
             }
             else {
               cx = cx.enclClass
-              val foundSym = pre.member(name) filter qualifies
+              val pre1 = if (name == nme.CONSTRUCTOR) pre.baseType(context.enclClass.owner) else pre // SI-6745, SI-4460
+              val foundSym = pre1.member(name) filter qualifies
               defSym = foundSym filter (context.isAccessible(_, pre, false))
               if (defSym == NoSymbol) {
                 if ((foundSym ne NoSymbol) && (inaccessibleSym eq NoSymbol)) {
