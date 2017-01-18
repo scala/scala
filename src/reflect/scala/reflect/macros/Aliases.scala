@@ -106,7 +106,17 @@ trait Aliases {
   def weakTypeOf[T](implicit attag: WeakTypeTag[T]): Type = attag.tpe
 
   /**
+   * Type of `x` as derived from a weak type tag.
+   */
+  def weakTypeOf[T: WeakTypeTag](x: T): Type = weakTypeOf[T]
+
+  /**
    * Shortcut for `implicitly[TypeTag[T]].tpe`
    */
   def typeOf[T](implicit ttag: TypeTag[T]): Type = ttag.tpe
+
+  /**
+   * Type of `x` as derived from a type tag.
+   */
+  def typeOf[T: TypeTag](x: T): Type = typeOf[T]
 }
