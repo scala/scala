@@ -1194,7 +1194,8 @@ trait Contexts { self: Analyzer =>
     }
 
     final def lookupCompanionOf(original: Symbol): Symbol = {
-      lookupScopeEntry(original) match {
+      if (original.isModuleClass) original.sourceModule
+      else lookupScopeEntry(original) match {
         case null => NoSymbol
         case entry => entry.owner.lookupCompanion(original)
       }
