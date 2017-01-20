@@ -630,11 +630,6 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
                   makeTemplate(List(), statics))
       }
 
-    def importCompanionObject(cdef: ClassDef): Tree =
-      atPos(cdef.pos) {
-        Import(Ident(cdef.name.toTermName), ImportSelector.wildList)
-      }
-
     def addCompanionObject(statics: List[Tree], cdef: ClassDef): List[Tree] =
       List(makeCompanionObject(cdef, statics), cdef)
 

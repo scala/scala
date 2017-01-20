@@ -1,5 +1,5 @@
 public class JavaClass {
-  public static <T> void varargz(int i, T... v) { }
+  @SafeVarargs public static <T> void varargz(int i, T... v) { }
 
   public static void callSomeAnnotations() {
       VaClass va = new VaClass();

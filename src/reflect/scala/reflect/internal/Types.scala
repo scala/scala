@@ -1022,8 +1022,8 @@ trait Types
      *  @param requiredFlags  Returned members do have these flags
      *  @param stableOnly     If set, return only members that are types or stable values
      */
-    def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean): Symbol = {
-      def findMemberInternal = new FindMember(this, name, excludedFlags, requiredFlags, stableOnly).apply()
+    def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean, searchCompanions: Boolean = false): Symbol = {
+      def findMemberInternal = new FindMember(this, name, excludedFlags, requiredFlags, stableOnly, searchCompanions).apply()
 
       if (this.isGround) findMemberInternal
       else suspendingTypeVars(typeVarsInType(this))(findMemberInternal)
@@ -1115,7 +1115,7 @@ trait Types
     // todo see whether we can do without
     override def isError: Boolean = true
     override def decls: Scope = new ErrorScope(NoSymbol)
-    override def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean): Symbol = {
+    override def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean, searchCompanion: Boolean): Symbol = {
       var sym = decls lookup name
       if (sym == NoSymbol) {
         sym = NoSymbol.newErrorSymbol(name)

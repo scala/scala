@@ -1,2 +1,0 @@
-@CAnnotation
-class C

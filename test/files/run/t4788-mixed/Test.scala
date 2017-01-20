@@ -28,6 +28,8 @@ object Test extends BytecodeTest {
     println(annotationsForClass("DJava"))
     println(annotationsForClass("DScala"))
 
+    // In mixed compilation, the `@Retention` annotation is not respected because the Java parser
+    // skips over it. All of the classes below have a runtime-visible annotaiton.
     println(annotationsForClass("S"))
     println(annotationsForClass("C"))
     println(annotationsForClass("R"))

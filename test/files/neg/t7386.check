@@ -1,0 +1,4 @@
+Test_1.scala:3: error: value m is not a member of object A_1.C
+  A_1.C.m() // C does not have a member m
+        ^
+one error found

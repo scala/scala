@@ -13,8 +13,18 @@ trait FindMembers {
   this: SymbolTable =>
 
   /** Implementation of `Type#{findMember, findMembers}` */
-  private[internal] abstract class FindMemberBase[T](tpe: Type, name: Name, excludedFlags: Long, requiredFlags: Long) {
-    protected val initBaseClasses: List[Symbol] = tpe.baseClasses
+  private[internal] abstract class FindMemberBase[T](tpe: Type, name: Name, excludedFlags: Long, requiredFlags: Long, searchCompanions: Boolean) {
+    protected val initBaseClasses: List[Symbol] = {
+      val bcs = tpe.baseClasses
+      // For Java compilation units, a `T` or `A.T` can refer to a static inner class `T`. In the Scala compiler,
+      // we model static members are members of the companion object. Under `searchCompanions`, we always check the
+      // companion before proceeding to the next base class. This follows Java's semantics of "inheriting" static
+      // members: `A.T` can resolve to a static member defined in a parent of `A`.
+      //   class C { class T }; class B extends C { static class T }; class A extends B
+      // Here, `A.T` resolves to the static class `B.T`, so we need to check B's companion before proceeding to C.
+      if (searchCompanions) bcs.flatMap(bc => List(bc, bc.companionModule.moduleClass))
+      else bcs
+    }
 
     // The first base class, or the symbol of the ThisType
     // e.g in:
@@ -191,7 +201,7 @@ trait FindMembers {
   }
 
   private[reflect] final class FindMembers(tpe: Type, excludedFlags: Long, requiredFlags: Long)
-    extends FindMemberBase[Scope](tpe, nme.ANYname, excludedFlags, requiredFlags) {
+    extends FindMemberBase[Scope](tpe, nme.ANYname, excludedFlags, requiredFlags, searchCompanions = false) {
     private[this] var _membersScope: Scope   = null
     private def membersScope: Scope = {
       if (_membersScope eq null) _membersScope = newFindMemberScope
@@ -215,8 +225,8 @@ trait FindMembers {
     }
   }
 
-  private[reflect] final class FindMember(tpe: Type, name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean)
-    extends FindMemberBase[Symbol](tpe, name, excludedFlags, requiredFlags) {
+  private[reflect] class FindMember(tpe: Type, name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean, searchCompanions: Boolean)
+    extends FindMemberBase[Symbol](tpe, name, excludedFlags, requiredFlags, searchCompanions) {
     // Gathering the results into a hand rolled ListBuffer
     // TODO Try just using a ListBuffer to see if this low-level-ness is worth it.
     private[this] var member0: Symbol       = NoSymbol

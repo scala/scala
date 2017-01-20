@@ -1,0 +1,6 @@
+Test_1.scala:5: error: type mismatch;
+ found   : A_1.T
+ required: A_1.P.T
+  assert(j.foo(new A_1.T()) == 1)   // type mismatch, required: A_1.P.T
+               ^
+one error found
