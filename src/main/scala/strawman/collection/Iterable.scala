@@ -1,10 +1,10 @@
-package strawman.collection
+package strawman
+package collection
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.reflect.ClassTag
 import scala.{Int, Boolean, Array, Any, Unit, StringContext}
-import java.lang.String
-
+import java.lang.{String, UnsupportedOperationException}
 import strawman.collection.mutable.{ArrayBuffer, StringBuilder}
 
 /** Base trait for generic collections */
@@ -54,8 +54,10 @@ trait IterableOps[+A] extends Any {
   protected def coll: Iterable[A]
   private def iterator() = coll.iterator()
 
-  /** Apply `f` to each element for tis side effects */
-  def foreach(f: A => Unit): Unit = iterator().foreach(f)
+  /** Apply `f` to each element for its side effects
+   *  Note: [U] parameter needed to help scalac's type inference.
+   */
+  def foreach[U](f: A => U): Unit = iterator().foreach(f)
 
   /** Fold left */
   def foldLeft[B](z: B)(op: (B, A) => B): B = iterator().foldLeft(z)(op)
@@ -166,7 +168,10 @@ trait IterableMonoTransforms[+A, +Repr] extends Any {
   def drop(n: Int): Repr = fromIterableWithSameElemType(View.Drop(coll, n))
 
   /** The rest of the collection without its first element. */
-  def tail: Repr = drop(1)
+  def tail: Repr = {
+    if (coll.isEmpty) throw new UnsupportedOperationException
+    drop(1)
+  }
 }
 
 /** Transforms over iterables that can return collections of different element types.

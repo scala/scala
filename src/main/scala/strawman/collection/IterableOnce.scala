@@ -1,6 +1,5 @@
-package strawman.collection
-
-import strawman.collection.mutable.Iterator
+package strawman
+package collection
 
 trait IterableOnce[+A] {
   /** Iterator can be used only once */

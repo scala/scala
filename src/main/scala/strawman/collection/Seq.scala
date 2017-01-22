@@ -1,7 +1,6 @@
 package strawman.collection
 
 import scala.{Any, Boolean, Int, IndexOutOfBoundsException}
-import strawman.collection.mutable.Iterator
 import strawman.collection.immutable.{List, Nil}
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -47,7 +46,6 @@ trait IndexedSeq[+A] extends Seq[A] { self =>
     def apply(i: Int): A = self(i)
   }
 }
-
 
 /** Base trait for Seq operations */
 trait SeqLike[+A, +C[X] <: Seq[X]]

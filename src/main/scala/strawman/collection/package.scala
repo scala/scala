@@ -3,8 +3,6 @@ package strawman
 import scala.{AnyVal, Array, Char, Int, Unit}
 import scala.Predef.String
 import scala.reflect.ClassTag
-import strawman.collection.immutable.List
-import strawman.collection.mutable.{ArrayBuffer, Buildable}
 
 /** A strawman architecture for new collections. It contains some
  *  example collection classes and methods with the intent to expose
@@ -92,6 +90,30 @@ package object collection extends LowPriority {
 
   /** Decorator to add collection operations to arrays. */
   implicit def arrayToArrayOps[A](as: Array[A]): ArrayOps[A] = new ArrayOps[A](as)
+
+  implicit class toNewIterator[A](val it: scala.Iterator[A]) extends AnyVal {
+    def toStrawman = new strawman.collection.Iterator[A] {
+      def hasNext = it.hasNext
+      def next() = it.next()
+    }
+  }
+
+  implicit class toOldIterator[A](val it: strawman.collection.Iterator[A]) extends AnyVal {
+    def toClassic = new scala.Iterator[A] {
+      def hasNext = it.hasNext
+      def next() = it.next()
+    }
+  }
+
+  implicit class toNewSeq[A](val s: scala.collection.Seq[A]) extends AnyVal {
+    def toStrawman: strawman.collection.Seq[A] =
+      new strawman.collection.mutable.ArrayBuffer() ++= s.iterator.toStrawman
+  }
+
+  implicit class toOldSeq[A](val s: strawman.collection.Seq[A]) extends AnyVal {
+    def toClassic: scala.collection.Seq[A] =
+      new scala.collection.mutable.ArrayBuffer ++= s.iterator().toClassic
+  }
 }
 
 class LowPriority {

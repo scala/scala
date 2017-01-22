@@ -1,11 +1,11 @@
 package strawman.collection.immutable
 
 import scala.{Option, Some, None, Nothing, StringContext}
-import strawman.collection.{IterableFactory, Iterable, LinearSeq, SeqLike}
-import strawman.collection.mutable.Iterator
+import strawman.collection
+import strawman.collection.{IterableFactory, LinearSeq, SeqLike, Iterator}
 
 class LazyList[+A](expr: => LazyList.Evaluated[A])
-  extends LinearSeq[A] with SeqLike[A, LazyList] {
+  extends Seq[A] with SeqLike[A, LazyList] with LinearSeq[A] {
   private[this] var evaluated = false
   private[this] var result: LazyList.Evaluated[A] = _
 
@@ -23,7 +23,7 @@ class LazyList[+A](expr: => LazyList.Evaluated[A])
 
   def #:: [B >: A](elem: => B): LazyList[B] = new LazyList(Some((elem, this)))
 
-  def fromIterable[B](c: Iterable[B]): LazyList[B] = LazyList.fromIterable(c)
+  def fromIterable[B](c: collection.Iterable[B]): LazyList[B] = LazyList.fromIterable(c)
 
   override def className = "LazyList"
 
@@ -46,7 +46,7 @@ object LazyList extends IterableFactory[LazyList] {
     def unapply[A](s: LazyList[A]): Evaluated[A] = s.force
   }
 
-  def fromIterable[B](coll: Iterable[B]): LazyList[B] = coll match {
+  def fromIterable[B](coll: collection.Iterable[B]): LazyList[B] = coll match {
     case coll: LazyList[B] => coll
     case _ => fromIterator(coll.iterator())
   }

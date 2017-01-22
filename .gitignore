@@ -10,3 +10,4 @@ target/
 .history
 .DS_Store
 /tmp/
+/bin/
