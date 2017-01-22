@@ -1,6 +1,5 @@
 package strawman.collection.mutable
 
-import java.lang.IndexOutOfBoundsException
 import scala.{Int, Long, Unit, Boolean, Array}
 import strawman.collection
 import strawman.collection.{IterableOnce, toNewSeq, toOldSeq}
@@ -25,9 +24,11 @@ trait GrowableSeq[A] extends Seq[A]
   def patchInPlace(from: Int, patch: collection.Seq[A], replaced: Int): this.type
 
   // +=, ++=, clear inherited from Growable
-  def +=:(elem: A): this.type = { insert(0, elem); this }
-  def +=:(elem1: A, elem2: A, elems: A*): this.type = elem1 +=: elem2 +=: elems.toStrawman ++=: this
-  def ++=:(elems: IterableOnce[A]): this.type = { insertAll(0, elems); this }
+  // Per remark of @ichoran, we should preferably not have these:
+  //
+  // def +=:(elem: A): this.type = { insert(0, elem); this }
+  // def +=:(elem1: A, elem2: A, elems: A*): this.type = elem1 +=: elem2 +=: elems.toStrawman ++=: this
+  // def ++=:(elems: IterableOnce[A]): this.type = { insertAll(0, elems); this }
 
   def dropInPlace(n: Int): this.type = { remove(0, n); this }
   def dropRightInPlace(n: Int): this.type = { remove(length - n, n); this }
@@ -52,13 +53,15 @@ trait GrowableSeq[A] extends Seq[A]
 trait IndexedOptimizedSeq[A] extends Seq[A] {
   def mapInPlace(f: A => A): this.type = {
     var i = 0
-    while (i < size) { this(i) = f(this(i)); i += 1 }
+    val siz = size
+    while (i < siz) { this(i) = f(this(i)); i += 1 }
     this
   }
 }
 
 trait IndexedOptimizedGrowableSeq[A] extends IndexedOptimizedSeq[A] with GrowableSeq[A] {
   def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
+    // There's scope for a better implementation which copies elements in place.
     var i = 0
     val newElemss = new Array[IterableOnce[A]](size)
     while (i < size) { newElemss(i) = f(this(i)); i += 1 }
@@ -69,7 +72,8 @@ trait IndexedOptimizedGrowableSeq[A] extends IndexedOptimizedSeq[A] with Growabl
   }
   def filterInPlace(p: A => Boolean): this.type = {
     var i = 0
-    var j = 0
+    while (i < size && p(apply(i))) i += 1
+    var j = 1
     while (i < size) {
       if (p(apply(i))) {
         this(j) = this(i)

@@ -1,11 +1,3 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
 package strawman.collection.mutable
 
 import strawman.collection.IterableOnce
@@ -16,14 +8,6 @@ import strawman.collection.{toOldSeq, toNewSeq}
 /** This trait forms part of collections that can be augmented
  *  using a `+=` operator and that can be cleared of all elements using
  *  a `clear` method.
- *
- *  @author   Martin Odersky
- *  @version 2.8
- *  @since   2.8
- *  @define coll growable collection
- *  @define Coll `Growable`
- *  @define add  add
- *  @define Add  add
  */
 trait Growable[-A] {
 
@@ -59,6 +43,8 @@ trait Growable[-A] {
       case xs: scala.collection.LinearSeq[_] => loop(xs.asInstanceOf[scala.collection.LinearSeq[A]])
       case xs => xs.iterator() foreach += // Deviation: IterableOnce does not define `foreach`.
     }
+    // @ichoran writes: Right now, this actually isn't any faster than using an iterator
+    // for List. Maybe we should just simplify the code by deferring to iterator foreach?
     this
   }
 

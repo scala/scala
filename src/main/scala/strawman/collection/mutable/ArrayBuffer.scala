@@ -28,6 +28,11 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
     end = n
   }
 
+  private def checkWithinBounds(lo: Int, hi: Int) = {
+    if (lo < 0) throw new IndexOutOfBoundsException(lo.toString)
+    if (hi > end) throw new IndexOutOfBoundsException(hi.toString)
+  }
+
   def apply(n: Int) = array(n).asInstanceOf[A]
 
   def update(n: Int, elem: A): Unit = array(n) = elem.asInstanceOf[AnyRef]
@@ -69,14 +74,14 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   def result = this
 
   def insert(idx: Int, elem: A): Unit = {
-    if (idx < 0 || idx > end) throw new IndexOutOfBoundsException
+    checkWithinBounds(idx, idx)
     ensureSize(end + 1)
     Array.copy(array, idx, array, idx + 1, end - idx)
     this(idx) = elem
   }
 
   def insertAll(idx: Int, elems: IterableOnce[A]): Unit = {
-    if (idx < 0 || idx > end) throw new IndexOutOfBoundsException
+    checkWithinBounds(idx, idx)
     elems match {
       case elems: collection.Iterable[A] =>
         val elemsLength = elems.size
@@ -100,7 +105,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   }
 
   def remove(idx: Int): A = {
-    if (idx < 0 || idx >= end) throw new IndexOutOfBoundsException
+    checkWithinBounds(idx, idx + 1)
     val res = this(idx)
     Array.copy(array, idx + 1, array, idx, end - (idx + 1))
     reduceToSize(end - 1)
@@ -109,7 +114,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
 
   def remove(from: Int, n: Int): Unit =
     if (n > 0) {
-      if (from < 0 || from + n > end) throw new IndexOutOfBoundsException
+      checkWithinBounds(from, from + n)
       Array.copy(array, from + n, array, from, end - (from + n))
       reduceToSize(end - n)
     }
@@ -158,6 +163,7 @@ object RefArrayUtils {
   /** Remove elements of this array at indices after `sz`.
    */
   def nullElems(array: Array[AnyRef], start: Int, end: Int): Unit = {
+    // Maybe use `fill` instead?
     var i = start
     while (i < end) {
       array(i) = null

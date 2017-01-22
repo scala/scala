@@ -54,7 +54,7 @@ trait IterableOps[+A] extends Any {
   protected def coll: Iterable[A]
   private def iterator() = coll.iterator()
 
-  /** Apply `f` to each element for tis side effects
+  /** Apply `f` to each element for its side effects
    *  Note: [U] parameter needed to help scalac's type inference.
    */
   def foreach[U](f: A => U): Unit = iterator().foreach(f)

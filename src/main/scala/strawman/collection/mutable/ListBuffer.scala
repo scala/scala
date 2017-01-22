@@ -66,7 +66,6 @@ class ListBuffer[A]
     if (i == 0) null
     else if (i == len) last
     else {
-      assert(i > 0 && i < len)
       var j = i - 1
       var p = first
       while (j > 0) {
@@ -188,7 +187,7 @@ class ListBuffer[A]
   def patchInPlace(from: Int, patch: collection.Seq[A], replaced: Int): this.type = {
     ensureUnaliased()
     val p = locate(from)
-    removeAfter(p, replaced `min` length - from)
+    removeAfter(p, replaced `min` (length - from))
     insertAfter(p, patch.iterator())
     this
   }
