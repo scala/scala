@@ -226,8 +226,9 @@ trait Implicits {
     }
 
     private[this] final def computeIsCyclicOrErroneous =
-      try sym.hasFlag(LOCKED) || containsError(tpe)
-      catch { case _: CyclicReference => true }
+      try global.withPropagateCyclicReferences {
+        sym.hasFlag(LOCKED) || containsError(tpe)
+      } catch { case _: CyclicReference => true }
 
     var useCountArg: Int = 0
     var useCountView: Int = 0
