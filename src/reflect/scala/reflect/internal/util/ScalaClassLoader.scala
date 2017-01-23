@@ -28,7 +28,7 @@ trait HasClassPath {
 trait ScalaClassLoader extends JClassLoader {
   /** Executing an action with this classloader as context classloader */
   def asContext[T](action: => T): T = {
-    val saved = contextLoader
+    val saved = Thread.currentThread.getContextClassLoader
     try { setContext(this) ; action }
     finally setContext(saved)
   }
