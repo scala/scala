@@ -3,7 +3,7 @@
  *
  * What you see below is very much work-in-progress. The following features are implemented:
  *   - Compiling all classses for the compiler and library ("compile" in the respective subprojects)
- *   - Running JUnit tests ("test") and partest ("test/it:test")
+ *   - Running JUnit ("junit/test"), ScalaCheck ("scalacheck/test"), and partest ("test/it:test") tests
  *   - Creating build/quick with all compiled classes and launcher scripts ("dist/mkQuick")
  *   - Creating build/pack with all JARs and launcher scripts ("dist/mkPack")
  *   - Building all scaladoc sets ("doc")
@@ -39,11 +39,11 @@ val scalaSwingDep                = scalaDep("org.scala-lang.modules", "scala-swi
 val scalaXmlDep                  = scalaDep("org.scala-lang.modules", "scala-xml")
 val scalaParserCombinatorsDep    = scalaDep("org.scala-lang.modules", "scala-parser-combinators")
 val partestDep                   = scalaDep("org.scala-lang.modules", "scala-partest",              versionProp = "partest")
-val scalacheckDep                = scalaDep("org.scalacheck",         "scalacheck",                 scope = "it")
 
 // Non-Scala dependencies:
 val junitDep          = "junit"                  % "junit"           % "4.11"
 val junitInterfaceDep = "com.novocode"           % "junit-interface" % "0.11"                            % "test"
+val scalacheckDep     = "org.scalacheck"         % "scalacheck_2.12" % "1.13.4"                          % "test"
 val jolDep            = "org.openjdk.jol"        % "jol-core"        % "0.5"
 val asmDep            = "org.scala-lang.modules" % "scala-asm"       % versionProps("scala-asm.version")
 val jlineDep          = "jline"                  % "jline"           % versionProps("jline.version")
@@ -567,7 +567,20 @@ lazy val junit = project.in(file("test") / "junit")
     javaOptions in Test += "-Xss1M",
     libraryDependencies ++= Seq(junitDep, junitInterfaceDep, jolDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
-    // testFrameworks -= new TestFramework("org.scalacheck.ScalaCheckFramework"),
+    unmanagedSourceDirectories in Compile := Nil,
+    unmanagedSourceDirectories in Test := List(baseDirectory.value)
+  )
+
+lazy val scalacheck = project.in(file("test") / "scalacheck")
+  .dependsOn(library, reflect, compiler, scaladoc)
+  .settings(clearSourceAndResourceDirectories)
+  .settings(commonSettings)
+  .settings(disableDocs)
+  .settings(disablePublishing)
+  .settings(
+    fork in Test := true,
+    javaOptions in Test += "-Xss1M",
+    libraryDependencies ++= Seq(scalacheckDep),
     unmanagedSourceDirectories in Compile := Nil,
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
   )
@@ -647,7 +660,7 @@ lazy val test = project
   .settings(disablePublishing)
   .settings(Defaults.itSettings)
   .settings(
-    libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep, scalacheckDep),
+    libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep),
     libraryDependencies ++= {
       // Resolve the JARs for all test/files/lib/*.jar.desired.sha1 files through Ivy
       val baseDir = (baseDirectory in ThisBuild).value
@@ -664,7 +677,6 @@ lazy val test = project
     fork in IntegrationTest := true,
     javaOptions in IntegrationTest += "-Xmx2G",
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
-    // testFrameworks -= new TestFramework("org.scalacheck.ScalaCheckFramework"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.scalac_opts=" + (scalacOptions in Compile).value.mkString(" ")),
     testOptions in IntegrationTest += Tests.Setup { () =>
@@ -796,9 +808,10 @@ lazy val root: Project = (project in file("."))
     testAll := {
       val results = ScriptCommands.sequence[Result[Unit]](List(
         (Keys.test in Test in junit).result,
+        (Keys.test in Test in scalacheck).result,
         (testOnly in IntegrationTest in testP).toTask(" -- run").result,
         (testOnly in IntegrationTest in testP).toTask(" -- pos neg jvm").result,
-        (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized scalacheck").result,
+        (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized").result,
         (testOnly in IntegrationTest in testP).toTask(" -- instrumented presentation").result,
         (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result,
         (Keys.test in Test in osgiTestFelix).result,
@@ -817,7 +830,7 @@ lazy val root: Project = (project in file("."))
         "junit/test",
         "partest run",
         "partest pos neg jvm",
-        "partest res scalap specialized scalacheck",
+        "partest res scalap specialized",
         "partest instrumented presentation",
         "partest --srcpath scaladoc",
         "osgiTestFelix/test",

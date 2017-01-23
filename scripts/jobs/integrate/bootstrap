@@ -250,7 +250,7 @@ buildSwing() {
 }
 
 # should only be called with publishTasks publishing to private-repo
-buildScalacheck(){
+buildScalaCheck(){
   if [ "$SCALACHECK_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scalacheck"  "scalacheck" $SCALACHECK_VER )
   then echo "Found scalacheck $SCALACHECK_VER; not building."
   else
@@ -261,14 +261,14 @@ buildScalacheck(){
   fi
 }
 
-# build modules, using ${buildTasks[@]} (except for Scalacheck, which is hard-coded to publish to private-repo)
+# build modules, using ${buildTasks[@]} (except for ScalaCheck, which is hard-coded to publish to private-repo)
 buildModules() {
   publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-private-repo")' "set every publishTo := Some(\"private-repo\" at \"$releaseTempRepoUrl\")")
   buildTasks=($publishPrivateTask)
   buildXML
   buildParsers
   buildSwing
-  # buildScalacheck
+  # buildScalaCheck
   buildPartest
 }
 

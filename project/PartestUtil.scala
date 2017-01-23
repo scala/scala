@@ -28,7 +28,7 @@ object PartestUtil {
   def partestParser(globalBase: File, testBase: File): Parser[String] = {
     val knownUnaryOptions = List(
       "--pos", "--neg", "--run", "--jvm", "--res", "--ant", "--scalap", "--specialized",
-      "--scalacheck", "--instrumented", "--presentation", "--failed", "--update-check",
+      "--instrumented", "--presentation", "--failed", "--update-check",
       "--show-diff", "--show-log", "--verbose", "--terse", "--debug", "--version", "--self-test", "--help")
     val srcPathOption = "--srcpath"
     val grepOption = "--grep"
