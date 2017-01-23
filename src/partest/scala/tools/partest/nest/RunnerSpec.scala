@@ -20,7 +20,6 @@ trait RunnerSpec extends Spec with Meta.StdOpts with Interpolation {
   val optAnt          = "ant"          / "run Ant tests"                     --?
   val optScalap       = "scalap"       / "run scalap tests"                  --?
   val optSpecialized  = "specialized"  / "run specialization tests"          --?
-  val optScalacheck   = "scalacheck"   / "run ScalaCheck tests"              --?
   val optInstrumented = "instrumented" / "run instrumented tests"            --?
   val optPresentation = "presentation" / "run presentation compiler tests"   --?
 

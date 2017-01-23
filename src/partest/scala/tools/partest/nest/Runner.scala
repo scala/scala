@@ -573,51 +573,6 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
     case _              => Array.empty[String]
   }
 
-  def runScalacheckTest() = runTestCommon {
-    nestUI.verbose(f"compilation of $testFile succeeded%n")
-
-    val logWriter = new PrintStream(new FileOutputStream(logFile), true)
-
-    def runInFramework(): Boolean = {
-      import org.scalatools.testing._
-      // getClass.getClassLoader.instantiate[Framework]("org.scalacheck.ScalaCheckFramework")
-      val f: Framework = new org.scalacheck.ScalaCheckFramework
-      val logger = new Logger {
-        def ansiCodesSupported  = false //params.env.isSet("colors")
-        def error(msg: String)  = logWriter println msg
-        def warn(msg: String)   = logWriter println msg
-        def info(msg: String)   = logWriter println msg
-        def debug(msg: String)  = logWriter println msg
-        def trace(t: Throwable) = t printStackTrace logWriter
-      }
-      var bad = 0
-      val handler = new EventHandler {
-        // testName, description, result, error
-        // Result =  Success, Failure, Error, Skipped
-        def handle(event: Event): Unit = event.result match {
-          case Result.Success =>
-          //case Result.Skipped =>   // an exhausted test is skipped, therefore bad
-          case _ => bad += 1
-        }
-      }
-      val loggers     = Array(logger)
-      val loader      = ScalaClassLoader.fromURLs(List(outDir.toURI.toURL), getClass.getClassLoader)
-      val r           = f.testRunner(loader, loggers).asInstanceOf[Runner2]  // cast to interface with the fingerprint we want
-      val claas       = "Test"
-      val fingerprint = f.tests collectFirst { case x: SubclassFingerprint if x.isModule => x }
-      val args        = toolArgs("scalacheck")
-      nestUI.vlog(s"Run $testFile with args $args")
-      // set the context class loader for scaladoc/scalacheck tests (FIX ME)
-      ScalaClassLoader(fileManager.testClassLoader).asContext {
-        r.run(claas, fingerprint.get, handler, args.toArray)    // synchronous?
-      }
-      val ok = (bad == 0)
-      if (!ok) _transcript append logFile.fileContents
-      ok
-    }
-    try nextTestActionExpectTrue("ScalaCheck test failed", runInFramework()) finally logWriter.close()
-  }
-
   def runResidentTest() = {
     // simulate resident compiler loop
     val prompt = "\nnsc> "
@@ -693,7 +648,6 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
     else kind match {
       case "pos"          => runTestCommon(true)
       case "ant"          => runAntTest()
-      case "scalacheck"   => runScalacheckTest()
       case "res"          => runResidentTest()
       case "scalap"       => runScalapTest()
       case "script"       => runScriptTest()
