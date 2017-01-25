@@ -56,7 +56,7 @@ class TestSealedExhaustive { // compile only
       case Ga =>
     }
 
-  def ma6()  = List(1,2) match { // give up
+  def ma6()  = List(1,2) match {
     case List(1,2) =>
     case x :: xs =>
   }

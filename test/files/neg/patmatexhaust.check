@@ -21,6 +21,10 @@ patmatexhaust.scala:53: warning: match may not be exhaustive.
 It would fail on the following input: Gp()
     def ma5(x:Deep) = x match {
                       ^
+patmatexhaust.scala:59: warning: match may not be exhaustive.
+It would fail on the following input: Nil
+  def ma6()  = List(1,2) match {
+                   ^
 patmatexhaust.scala:75: warning: match may not be exhaustive.
 It would fail on the following input: B()
   def ma9(x: B) = x match {
@@ -38,5 +42,5 @@ It would fail on the following input: C1()
     def ma10(x: C) = x match { // not exhaustive: C1 is not abstract.
                      ^
 error: No warnings can be incurred under -Xfatal-warnings.
-10 warnings found
+11 warnings found
 one error found
