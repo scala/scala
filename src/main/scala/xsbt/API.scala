@@ -21,7 +21,8 @@ final class API(val global: CallbackGlobal) {
     override def run(): Unit =
       {
         val start = System.currentTimeMillis
-        super.run
+        super.run()
+        callback.apiPhaseCompleted()
         val stop = System.currentTimeMillis
         debuglog("API phase took : " + ((stop - start) / 1000.0) + " s")
       }

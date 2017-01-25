@@ -4,9 +4,7 @@
 package xsbt
 
 import java.io.File
-import java.util.concurrent.{ TimeUnit, Executors }
 
-import xsbti.AnalysisCallback
 import xsbti.api.DependencyContext
 import DependencyContext._
 
@@ -39,23 +37,12 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
     override def description = "Extracts dependency information"
     def name = Dependency.name
 
-    val executor = Executors.newFixedThreadPool(1)
-
     override def run(): Unit = {
+      val start = System.currentTimeMillis
       super.run()
-      // Wait on all callback calls to finish
-      executor.shutdown()
-      executor.awaitTermination(20L, TimeUnit.MINUTES)
-      ()
-    }
-
-    private def withCallback(op: AnalysisCallback => Unit): Unit = {
-      executor.submit(new Runnable {
-        override def run(): Unit = {
-          op(callback)
-        }
-      })
-      ()
+      callback.dependencyPhaseCompleted()
+      val stop = System.currentTimeMillis
+      debuglog("Dependency phase took : " + ((stop - start) / 1000.0) + " s")
     }
 
     def apply(unit: CompilationUnit): Unit = {
@@ -105,7 +92,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
         def processDependency(context: DependencyContext)(dep: ClassDependency): Unit = {
           val fromClassName = className(dep.from)
           def binaryDependency(file: File, onBinaryClassName: String) =
-            withCallback(_.binaryDependency(file, onBinaryClassName, fromClassName, sourceFile, context))
+            callback.binaryDependency(file, onBinaryClassName, fromClassName, sourceFile, context)
           val onSource = dep.to.sourceFile
           if (onSource == null) {
             classFile(dep.to) match {
@@ -120,7 +107,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
             }
           } else if (onSource.file != sourceFile) {
             val onClassName = className(dep.to)
-            withCallback(_.classDependency(onClassName, fromClassName, context))
+            callback.classDependency(onClassName, fromClassName, context)
           }
         }
       }
