@@ -1,3 +1,5 @@
+package scala.tools.nsc.scaladoc
+
 import org.scalacheck._
 import org.scalacheck.Prop._
 
