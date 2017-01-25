@@ -524,7 +524,7 @@ lazy val scaladoc = configureAsSubproject(project)
   .settings(
     name := "scala-compiler-doc",
     description := "Scala Documentation Generator",
-    libraryDependencies ++= Seq(scalaXmlDep, partestDep),
+    libraryDependencies ++= Seq(scalaXmlDep),
     includeFilter in unmanagedResources in Compile := "*.html" | "*.css" | "*.gif" | "*.png" | "*.js" | "*.txt" | "*.svg" | "*.eot" | "*.woff" | "*.ttf"
   )
   .dependsOn(compiler)
@@ -543,7 +543,7 @@ lazy val scalap = configureAsSubproject(project)
   .dependsOn(compiler)
 
 lazy val partestExtras = Project("partest-extras", file(".") / "src" / "partest-extras")
-  .dependsOn(replJlineEmbedded)
+  .dependsOn(replJlineEmbedded, scaladoc)
   .settings(commonSettings)
   .settings(generatePropertiesFileSettings)
   .settings(clearSourceAndResourceDirectories)
