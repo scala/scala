@@ -3,7 +3,6 @@ package strawman.collection.mutable
 import java.util.concurrent.TimeUnit
 
 import org.openjdk.jmh.annotations._
-import strawman.collection.mutable.ArrayBuffer
 import scala.{Any, AnyRef, Int, Unit}
 
 @BenchmarkMode(scala.Array(Mode.AverageTime))
