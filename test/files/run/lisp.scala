@@ -66,7 +66,7 @@ object LispCaseClasses extends Lisp {
   case class STR(x: String) extends Data {
     override def toString() = "\"" + x + "\"";
   }
-  case class FUN(f: List[Data] => Data) extends Data {
+  case class FUN(f: PartialFunction[List[Data], Data]) extends Data {
     override def toString() = "<fn>";
   }
 
@@ -263,7 +263,7 @@ object LispAny extends Lisp {
 
   type Data = Any;
 
-  case class Lambda(f: List[Data] => Data);
+  case class Lambda(f: PartialFunction[List[Data], Data]);
 
   var curexp: Data = null;
   var trace: Boolean = false;

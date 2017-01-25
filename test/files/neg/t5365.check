@@ -6,6 +6,10 @@ t5365.scala:18: warning: match may not be exhaustive.
 It would fail on the following input: None
   def extractor(x: Option[Int]) = x match {
                                   ^
+t5365.scala:21: warning: match may not be exhaustive.
+It would fail on the following input: None
+  def repeatedExtractor(x: Option[Int]) = x match {
+                                          ^
 error: No warnings can be incurred under -Werror.
-2 warnings
+3 warnings
 1 error
