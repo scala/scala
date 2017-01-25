@@ -1036,7 +1036,7 @@ addCommandAlias("scalap",   "scalap/compile:runMain              scala.tools.sca
 
 lazy val intellij = taskKey[Unit]("Update the library classpaths in the IntelliJ project files.")
 
-def moduleDeps(p: Project) = (externalDependencyClasspath in Compile in p).map(a => (p.id, a.map(_.data)))
+def moduleDeps(p: Project, config: Configuration = Compile) = (externalDependencyClasspath in config in p).map(a => (p.id, a.map(_.data)))
 
 // aliases to projects to prevent name clashes
 def compilerP = compiler
@@ -1068,6 +1068,7 @@ intellij := {
       // moduleDeps(replJlineEmbedded).value,   // No sources
       // moduleDeps(root).value,                // No sources
       // moduleDeps(scalaDist).value,           // No sources
+      moduleDeps(scalacheck, config = Test).value,
       moduleDeps(scaladoc).value,
       moduleDeps(scalap).value,
       moduleDeps(testP).value)
