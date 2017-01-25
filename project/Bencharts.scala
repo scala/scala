@@ -5,8 +5,8 @@ import javax.imageio.ImageIO
 import org.jfree.chart.JFreeChart
 import org.jfree.chart.axis.{LogAxis, NumberAxis}
 import org.jfree.chart.plot.XYPlot
-import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer
-import org.jfree.data.xy.{XYSeries, XYSeriesCollection}
+import org.jfree.chart.renderer.xy.XYErrorRenderer
+import org.jfree.data.xy.{YIntervalSeries, YIntervalSeriesCollection}
 import play.api.libs.json.{JsObject, Json}
 import sbt._
 
@@ -36,16 +36,18 @@ object Bencharts {
             // group by concrete collection type
             .groupBy(result => (result \ "benchmark").as[String].stripSuffix(benchmark))
             .map { case (collectionType, iterations) =>
-              val xySeries = new XYSeries(collectionType)
+              val ySeries = new YIntervalSeries(collectionType)
               // each benchmark has been run with several collection sizes (8, 64, 512, etc.)
               // we add a point for each of these iterations
               for (iteration <- iterations) {
-                xySeries.add(
+                ySeries.add(
                   (iteration \ "params" \ "size").as[String].toDouble,
-                  (iteration \ "primaryMetric" \ "score").as[Double]
+                  (iteration \ "primaryMetric" \ "score").as[Double],
+                  (iteration \ "primaryMetric" \ "scoreConfidence").apply(0).as[Double],
+                  (iteration \ "primaryMetric" \ "scoreConfidence").apply(1).as[Double]
                 )
               }
-              xySeries
+              ySeries
             }
 
         val xAxis = new LogAxis("Size")
@@ -53,15 +55,17 @@ object Bencharts {
         xAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits())
         val yAxis = new LogAxis("Execution time (lower is better)")
 
-        val col = new XYSeriesCollection()
-        for (series <- seriess) {
+        val col = new YIntervalSeriesCollection()
+        val renderer = new XYErrorRenderer
+        for ((series, i) <- seriess.zipWithIndex) {
           col.addSeries(series)
+          renderer.setSeriesLinesVisible(i, true)
         }
 
         val plot = new XYPlot(
           col,
           xAxis, yAxis,
-          new XYLineAndShapeRenderer(true, true)
+          renderer
         )
 
         val chart = new JFreeChart(
@@ -72,7 +76,7 @@ object Bencharts {
         )
 
         ImageIO.write(
-          chart.createBufferedImage(640, 480),
+          chart.createBufferedImage(800, 600),
           "png",
           targetDir / s"$benchmark.png"
         )
