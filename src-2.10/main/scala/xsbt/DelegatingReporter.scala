@@ -5,12 +5,40 @@ package xsbt
 
 import xsbti.{ F0, Logger, Maybe }
 import java.io.File
-import sbt.util.InterfaceUtil.o2jo
 import java.util.Optional
 
 private object DelegatingReporter {
   def apply(settings: scala.tools.nsc.Settings, delegate: xsbti.Reporter): DelegatingReporter =
     new DelegatingReporter(Command.getWarnFatal(settings), Command.getNoWarn(settings), delegate)
+
+  class PositionImpl(sourcePath0: Option[String], sourceFile0: Option[File],
+    line0: Option[Int], lineContent0: String, offset0: Option[Int], pointer0: Option[Int], pointerSpace0: Option[String]) extends xsbti.Position {
+    val line = o2oi(line0)
+    val lineContent = lineContent0
+    val offset = o2oi(offset0)
+    val sourcePath = o2jo(sourcePath0)
+    val sourceFile = o2jo(sourceFile0)
+    val pointer = o2oi(pointer0)
+    val pointerSpace = o2jo(pointerSpace0)
+    override def toString =
+      (sourcePath0, line0) match {
+        case (Some(s), Some(l)) => s + ":" + l
+        case (Some(s), _)       => s + ":"
+        case _                  => ""
+      }
+  }
+
+  import java.lang.{ Integer => I }
+  private[xsbt] def o2oi(opt: Option[Int]): Optional[I] =
+    opt match {
+      case Some(s) => Optional.ofNullable[I](s: I)
+      case None    => Optional.empty[I]
+    }
+  private[xsbt] def o2jo[A](o: Option[A]): Optional[A] =
+    o match {
+      case Some(v) => Optional.ofNullable(v)
+      case None    => Optional.empty[A]()
+    }
 }
 
 // The following code is based on scala.tools.nsc.reporters.{AbstractReporter, ConsoleReporter}
@@ -18,7 +46,7 @@ private object DelegatingReporter {
 // Original author: Martin Odersky
 private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, private[this] var delegate: xsbti.Reporter) extends scala.tools.nsc.reporters.Reporter {
   import scala.tools.nsc.util.{ FakePos, NoPosition, Position }
-
+  import DelegatingReporter._
   def dropDelegate(): Unit = { delegate = null }
   def error(msg: String): Unit = error(FakePos("scalac"), msg)
 
@@ -42,16 +70,15 @@ private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, priv
   }
   def convert(posIn: Position): xsbti.Position =
     {
-      val pos =
-        posIn match {
-          case null | NoPosition => NoPosition
-          case x: FakePos        => x
-          case x =>
-            posIn.inUltimateSource(posIn.source)
+      val posOpt =
+        Option(posIn) match {
+          case None | Some(NoPosition) => None
+          case Some(x: FakePos)        => None
+          case x                       => Option(posIn.finalPosition)
         }
-      pos match {
-        case NoPosition | FakePos(_) => position(None, None, None, "", None, None, None)
-        case _                       => makePosition(pos)
+      posOpt match {
+        case None      => position(None, None, None, "", None, None, None)
+        case Some(pos) => makePosition(pos)
       }
     }
   private[this] def makePosition(pos: Position): xsbti.Position =
@@ -64,7 +91,7 @@ private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, priv
       val offset = getOffset(pos)
       val pointer = offset - src.lineToOffset(src.offsetToLine(offset))
       val pointerSpace = ((lineContent: Seq[Char]).take(pointer).map { case '\t' => '\t'; case x => ' ' }).mkString
-      position(Some(sourcePath), Some(sourceFile), Some(line), lineContent, Some(offset), Some(pointer), Some(pointerSpace))
+      position(Option(sourcePath), Option(sourceFile), Option(line), lineContent, Option(offset), Option(pointer), Option(pointerSpace))
     }
   private[this] def getOffset(pos: Position): Int =
     {
@@ -74,21 +101,7 @@ private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, priv
       pos.point
     }
   private[this] def position(sourcePath0: Option[String], sourceFile0: Option[File], line0: Option[Int], lineContent0: String, offset0: Option[Int], pointer0: Option[Int], pointerSpace0: Option[String]) =
-    new xsbti.Position {
-      val line = o2oi(line0)
-      val lineContent = lineContent0
-      val offset = o2oi(offset0)
-      val sourcePath = o2jo(sourcePath0)
-      val sourceFile = o2jo(sourceFile0)
-      val pointer = o2oi(pointer0)
-      val pointerSpace = o2jo(pointerSpace0)
-      override def toString =
-        (sourcePath0, line0) match {
-          case (Some(s), Some(l)) => s + ":" + l
-          case (Some(s), _)       => s + ":"
-          case _                  => ""
-        }
-    }
+    new PositionImpl(sourcePath0, sourceFile0, line0, lineContent0, offset0, pointer0, pointerSpace0)
 
   import xsbti.Severity.{ Info, Warn, Error }
   private[this] def convert(sev: Severity): xsbti.Severity =
@@ -97,7 +110,4 @@ private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, priv
       case WARNING => Warn
       case ERROR   => Error
     }
-
-  import java.lang.{ Integer => I }
-  private[this] def o2oi(opt: Option[Int]): Optional[I] = opt match { case None => Optional.empty[I]; case Some(s) => Optional.ofNullable[I](s) }
 }
