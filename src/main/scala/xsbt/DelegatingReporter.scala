@@ -7,8 +7,9 @@
 
 package xsbt
 
-import xsbti.{ F0, Logger, Maybe }
 import java.io.File
+import sbt.util.InterfaceUtil.o2jo
+import java.util.Optional
 
 private object DelegatingReporter {
   def apply(settings: scala.tools.nsc.Settings, delegate: xsbti.Reporter): DelegatingReporter =
@@ -70,13 +71,13 @@ private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, priv
     }
   private[this] def position(sourcePath0: Option[String], sourceFile0: Option[File], line0: Option[Int], lineContent0: String, offset0: Option[Int], pointer0: Option[Int], pointerSpace0: Option[String]) =
     new xsbti.Position {
-      val line = o2mi(line0)
+      val line = o2oi(line0)
       val lineContent = lineContent0
-      val offset = o2mi(offset0)
-      val sourcePath = o2m(sourcePath0)
-      val sourceFile = o2m(sourceFile0)
-      val pointer = o2mi(pointer0)
-      val pointerSpace = o2m(pointerSpace0)
+      val offset = o2oi(offset0)
+      val sourcePath = o2jo(sourcePath0)
+      val sourceFile = o2jo(sourceFile0)
+      val pointer = o2oi(pointer0)
+      val pointerSpace = o2jo(pointerSpace0)
       override def toString =
         (sourcePath0, line0) match {
           case (Some(s), Some(l)) => s + ":" + l
@@ -94,6 +95,5 @@ private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, priv
     }
 
   import java.lang.{ Integer => I }
-  private[this] def o2mi(opt: Option[Int]): Maybe[I] = opt match { case None => Maybe.nothing[I]; case Some(s) => Maybe.just[I](s) }
-  private[this] def o2m[S](opt: Option[S]): Maybe[S] = opt match { case None => Maybe.nothing[S]; case Some(s) => Maybe.just(s) }
+  private[this] def o2oi(opt: Option[Int]): Optional[I] = opt match { case None => Optional.empty[I]; case Some(s) => Optional.ofNullable[I](s) }
 }
