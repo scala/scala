@@ -163,30 +163,41 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     // Note to developers: there exists a duplication between this function and `reflect.internal.util.Collections#map2Conserve`.
     // If any successful optimization attempts or other changes are made, please rehash them there too.
     @tailrec
-    def loop(mapped: ListBuffer[B], unchanged: List[A], pending: List[A]): List[B] =
-      if (pending.isEmpty) {
-        if (mapped eq null) unchanged
-        else mapped.prependToList(unchanged)
-      }
+    def loop(mappedHead: List[B] = Nil, mappedLast: ::[B], unchanged: List[A], pending: List[A]): List[B] =
+    if (pending.isEmpty) {
+      if (mappedHead eq null) unchanged
       else {
-        val head0 = pending.head
-        val head1 = f(head0)
-
-        if (head1 eq head0.asInstanceOf[AnyRef])
-          loop(mapped, unchanged, pending.tail)
-        else {
-          val b = if (mapped eq null) new ListBuffer[B] else mapped
-          var xc = unchanged
-          while (xc ne pending) {
-            b += xc.head
-            xc = xc.tail
-          }
-          b += head1
-          val tail0 = pending.tail
-          loop(b, tail0, tail0)
-        }
+        mappedLast.tl = unchanged
+        mappedHead
       }
-    loop(null, this, this)
+    }
+    else {
+      val head0 = pending.head
+      val head1 = f(head0)
+
+      if (head1 eq head0.asInstanceOf[AnyRef])
+        loop(mappedHead, mappedLast, unchanged, pending.tail)
+      else {
+        var xc = unchanged
+        var mappedHead1: List[B] = mappedHead
+        var mappedLast1: ::[B] = mappedLast
+        while (xc ne pending) {
+          val next = new ::[B](xc.head, Nil)
+          if (mappedHead1 eq null) mappedHead1 = next
+          if (mappedLast1 ne null) mappedLast1.tl = next
+          mappedLast1 = next
+          xc = xc.tail
+        }
+        val next = new ::(head1, Nil)
+        if (mappedHead1 eq null) mappedHead1 = next
+        if (mappedLast1 ne null) mappedLast1.tl = next
+        mappedLast1 = next
+        val tail0 = pending.tail
+        loop(mappedHead1, mappedLast1, tail0, tail0)
+
+      }
+    }
+    loop(null, null, this, this)
   }
 
   // Overridden methods from IterableLike and SeqLike or overloaded variants of such methods
