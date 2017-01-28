@@ -1,7 +1,7 @@
 package strawman.collection.mutable
 
 import java.lang.IndexOutOfBoundsException
-import scala.{Array, Int, Long, Boolean, Unit, AnyRef}
+import scala.{Array, Exception, Int, Long, Boolean, math, StringContext, Unit, AnyRef}
 import strawman.collection
 import strawman.collection.{IterableFactory, IterableOnce, SeqLike, IndexedView}
 import scala.Predef.intWrapper
@@ -147,11 +147,14 @@ object RefArrayUtils {
     // Use a Long to prevent overflows
     val arrayLength: Long = array.length
     def growArray = {
-      var newSize: Long = arrayLength * 2
+      var newSize: Long = math.max(arrayLength * 2, 8)
       while (n > newSize)
         newSize = newSize * 2
       // Clamp newSize to Int.MaxValue
-      if (newSize > Int.MaxValue) newSize = Int.MaxValue
+      if (newSize > Int.MaxValue) {
+        if (end == Int.MaxValue) throw new Exception(s"Collections can not have more than ${Int.MaxValue} elements")
+        newSize = Int.MaxValue
+      }
 
       val newArray: Array[AnyRef] = new Array(newSize.toInt)
       Array.copy(array, 0, newArray, 0, end)

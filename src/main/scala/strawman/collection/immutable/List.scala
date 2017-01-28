@@ -39,12 +39,14 @@ sealed trait List[+A]
 case class :: [+A](x: A, private[collection] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
   extends List[A] {
   override def isEmpty = false
+  override def nonEmpty = true
   override def head = x
   override def tail = next
 }
 
 case object Nil extends List[Nothing] {
   override def isEmpty = true
+  override def nonEmpty = false
   override def head = ???
   override def tail = ???
 }
