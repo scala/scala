@@ -54,4 +54,19 @@ class ListBenchmark {
   @Benchmark def filter_only_last: Any = {
     values.filter(v => v.value == last.value)
   }
+
+  @Setup(Level.Trial) def initKeys(): Unit = {
+    values = List.tabulate(size)(n => if (n == size / 2) "mid" else "")
+  }
+
+  @Benchmark def mapConserve_identity: Any = {
+    values.mapConserve(x => x)
+  }
+
+  @Benchmark def mapConserve_modifyAll: Any = {
+    values.mapConserve(x => "replace")
+  }
+  @Benchmark def mapConserve_modifyMid: Any = {
+    values.mapConserve(x => if (x == "mid") "replace" else x)
+  }
 }
