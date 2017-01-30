@@ -1,9 +1,10 @@
 package strawman.collection
 
-import scala.{Any, Boolean, Int, IndexOutOfBoundsException}
+import scala.{Any, Boolean, Equals, IndexOutOfBoundsException, Int}
 import strawman.collection.immutable.{List, Nil}
 
 import scala.annotation.unchecked.uncheckedVariance
+import scala.util.hashing.MurmurHash3
 
 /** Base trait for sequence collections */
 trait Seq[+A] extends Iterable[A] with SeqLike[A, Seq] with ArrayLike[A]
@@ -51,7 +52,58 @@ trait IndexedSeq[+A] extends Seq[A] { self =>
 trait SeqLike[+A, +C[X] <: Seq[X]]
   extends IterableLike[A, C]
     with SeqMonoTransforms[A, C[A @uncheckedVariance]] // sound bcs of VarianceNote
-    with StableIterable[A]
+    with Equals {
+
+  protected def coll: C[A @uncheckedVariance]
+
+  /** Do the elements of this collection are the same (and in the same order)
+    * as those of `that`?
+    */
+  def sameElements[B >: A](that: IterableOnce[B]): Boolean = {
+    val these = coll.iterator()
+    val those = that.iterator()
+    while (these.hasNext && those.hasNext)
+      if (these.next() != those.next())
+        return false
+    // At that point we know that *at least one* iterator has no next element
+    // If *both* of them have no elements then the collections are the same
+    these.hasNext == those.hasNext
+  }
+
+  /** Method called from equality methods, so that user-defined subclasses can
+    *  refuse to be equal to other collections of the same kind.
+    *  @param   that   The object with which this $coll should be compared
+    *  @return  `true`, if this $coll can possibly equal `that`, `false` otherwise. The test
+    *           takes into consideration only the run-time types of objects but ignores their elements.
+    */
+  def canEqual(that: Any): Boolean = true
+
+  override def equals(o: scala.Any): Boolean =
+    o match {
+      case it: Seq[A] => (it canEqual this) && sameElements(it)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    Seq.stableIterableHash(coll)
+
+}
+
+// Temporary: TODO move to MurmurHash3.scala
+object Seq {
+
+  final def stableIterableHash(xs: Seq[_]): Int = {
+    var n = 0
+    var h = "Seq".##
+    val it = xs.iterator()
+    while (it.hasNext) {
+      h = MurmurHash3.mix(h, it.next().##)
+      n += 1
+    }
+    MurmurHash3.finalizeHash(h, n)
+  }
+
+}
 
 /** Base trait for linear Seq operations */
 trait LinearSeqLike[+A, +C[X] <: LinearSeq[X]] extends SeqLike[A, C] {
