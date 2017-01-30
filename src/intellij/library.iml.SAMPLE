@@ -9,7 +9,6 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="forkjoin" />
     <orderEntry type="library" name="starr" level="project" />
   </component>
 </module>

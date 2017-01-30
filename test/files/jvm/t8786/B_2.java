@@ -5,7 +5,7 @@ public class B_2 {
   public static void m(String a) { res += 100; }
   public static void m(Object a) { res += 1000; }
 
-  public static <T> T foo(int a, T... b) { return b[0]; }
+  @SafeVarargs public static <T> T foo(int a, T... b) { return b[0]; }
 
   public static <T> T bar(T b[]) { return b[0]; }
 
