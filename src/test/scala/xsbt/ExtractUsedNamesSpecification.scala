@@ -1,6 +1,7 @@
 package xsbt
 
 import sbt.internal.util.UnitSpec
+import xsbti.UseScope
 
 class ExtractUsedNamesSpecification extends UnitSpec {
 
@@ -194,6 +195,72 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     val expectedNames = standardNames ++ Set("B", "A", "a", "Int", "selectDynamic", "bla")
     assert(usedNames === expectedNames)
     ()
+  }
+
+  it should "extract sealed classes scope" in {
+    val sealedClassName = "Sealed"
+    val sealedClass =
+      s"""package base
+        |
+        |sealed class $sealedClassName
+        |object Usage extends $sealedClassName
+        |object Usage2 extends $sealedClassName
+      """.stripMargin
+
+    def findSealedUsages(in: String): Set[String] = {
+      val compilerForTesting = new ScalaCompilerForUnitTesting
+      val (_, callback) = compilerForTesting.compileSrcs(List(List(sealedClass, in)), reuseCompilerInstance = false)
+      val clientNames = callback.usedNamesAndScopes.filterNot(_._1.startsWith("base."))
+
+      val names: Set[String] = clientNames.flatMap {
+        case (_, usags) =>
+          usags.filter(_._2.contains(UseScope.PatMatTarget)).map(_._1)
+      }(collection.breakOut)
+
+      names
+    }
+
+    def clientClassSimple(tpe: String = sealedClassName) =
+      s"""package client
+        |import base._
+        |
+        |class test(a: $tpe) {
+        |  a match {
+        |   case _ => 1
+        |  }
+        |}
+      """.stripMargin
+
+    findSealedUsages(clientClassSimple()) shouldEqual Set(sealedClassName)
+    findSealedUsages(clientClassSimple(s"Option[$sealedClassName]")) shouldEqual Set(sealedClassName, "Option")
+    findSealedUsages(clientClassSimple(s"Seq[Set[$sealedClassName]]")) shouldEqual Set(sealedClassName)
+
+    def inNestedCase(tpe: String = sealedClassName) =
+      s"""package client
+          |import base._
+          |
+          |class test(a: Any) {
+          |  a match {
+          |   case _: $tpe => 1
+          |  }
+          |}
+      """.stripMargin
+
+    findSealedUsages(inNestedCase()) shouldEqual Set()
+
+    val notUsedInPatternMatch =
+      s"""package client
+          |import base._
+          |
+          |class test(a: Any) {
+          |  a match {
+          |   case _ => 1
+          |  }
+          |  val aa: $sealedClassName = ???
+          |}
+      """.stripMargin
+
+    findSealedUsages(notUsedInPatternMatch) shouldEqual Set()
   }
 
   /**

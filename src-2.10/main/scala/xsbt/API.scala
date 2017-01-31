@@ -1,11 +1,11 @@
-/*
- * Zinc - The incremental compiler for Scala.
- * Copyright 2011 - 2017, Lightbend, Inc.
- * Copyright 2008 - 2010, Mark Harrah
- * This software is released under the terms written in LICENSE.
+/* sbt -- Simple Build Tool
+ * Copyright 2008, 2009, 2010, 2011 Mark Harrah
  */
-
 package xsbt
+
+import java.util
+
+import xsbti.UseScope
 
 import scala.tools.nsc.Phase
 import scala.tools.nsc.symtab.Flags
@@ -15,7 +15,7 @@ object API {
   val name = "xsbt-api"
 }
 
-final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers {
+final class API(val global: CallbackGlobal) extends Compat {
   import global._
 
   def newPhase(prev: Phase) = new ApiPhase(prev)
@@ -25,27 +25,33 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers {
     override def run(): Unit =
       {
         val start = System.currentTimeMillis
-        super.run()
-        callback.apiPhaseCompleted()
+        super.run
         val stop = System.currentTimeMillis
         debuglog("API phase took : " + ((stop - start) / 1000.0) + " s")
       }
 
     def apply(unit: global.CompilationUnit): Unit = processUnit(unit)
 
-    private def processUnit(unit: CompilationUnit) = if (!unit.isJava) processScalaUnit(unit)
-
-    private def processScalaUnit(unit: CompilationUnit): Unit = {
+    def processUnit(unit: CompilationUnit) = if (!unit.isJava) processScalaUnit(unit)
+    def processScalaUnit(unit: CompilationUnit): Unit = {
       val sourceFile = unit.source.file.file
       debuglog("Traversing " + sourceFile)
       callback.startSource(sourceFile)
       val extractApi = new ExtractAPI[global.type](global, sourceFile)
       val traverser = new TopLevelHandler(extractApi)
       traverser.apply(unit.body)
-
-      val extractUsedNames = new ExtractUsedNames[global.type](global)
-      extractUsedNames.extractAndReport(unit)
-
+      if (global.callback.nameHashing) {
+        val extractUsedNames = new ExtractUsedNames[global.type](global)
+        val allUsedNames = extractUsedNames.extract(unit)
+        def showUsedNames(className: String, names: Set[String]): String =
+          s"$className:\n\t${names.mkString(", ")}"
+        debuglog("The " + sourceFile + " contains the following used names:\n" +
+          allUsedNames.map((showUsedNames _).tupled).mkString("\n"))
+        allUsedNames foreach {
+          case (className: String, names: Set[String]) =>
+            names foreach { (name: String) => callback.usedName(className, name, util.EnumSet.of(UseScope.Default)) }
+        }
+      }
       val classApis = traverser.allNonLocalClasses
 
       classApis.foreach(callback.api(sourceFile, _))
@@ -71,14 +77,9 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers {
         case _ =>
       }
     }
-    def isTopLevel(sym: Symbol): Boolean = {
-      !ignoredSymbol(sym) &&
-        sym.isStatic &&
-        !sym.isImplClass &&
-        !sym.hasFlag(Flags.SYNTHETIC) &&
-        !sym.hasFlag(Flags.JAVA) &&
-        !sym.isNestedClass
-    }
+    def isTopLevel(sym: Symbol): Boolean =
+      (sym ne null) && (sym != NoSymbol) && !sym.isImplClass && !sym.isNestedClass && sym.isStatic &&
+        !sym.hasFlag(Flags.SYNTHETIC) && !sym.hasFlag(Flags.JAVA)
   }
 
 }
