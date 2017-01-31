@@ -182,10 +182,17 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       }
     }
 
+    @inline
+    def ignoreType(tpe: Type) =
+      tpe == null ||
+        tpe == NoType ||
+        tpe.typeSymbol == EmptyPackageClass
+
     private def addTreeDependency(tree: Tree): Unit = {
       addDependency(tree.symbol)
-      if (tree.tpe != null)
-        foreachSymbolInType(tree.tpe)(addDependency)
+      val tpe = tree.tpe
+      if (!ignoreType(tpe))
+        foreachSymbolInType(tpe)(addDependency)
       ()
     }
     private def addDependency(dep: Symbol): Unit = {
@@ -269,7 +276,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
         traverseTrees(body)
 
       // In some cases (eg. macro annotations), `typeTree.tpe` may be null. See sbt/sbt#1593 and sbt/sbt#1655.
-      case typeTree: TypeTree if typeTree.tpe != null =>
+      case typeTree: TypeTree if !ignoreType(typeTree.tpe) =>
         symbolsInType(typeTree.tpe) foreach addDependency
       case m @ MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
         traverse(original)
