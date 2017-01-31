@@ -395,17 +395,16 @@ lazy val compiler = configureAsSubproject(project)
     description := "Scala Compiler",
     libraryDependencies ++= Seq(antDep, asmDep),
     // These are only needed for the POM:
-    libraryDependencies ++= Seq(scalaXmlDep, jlineDep % "optional"),
+    libraryDependencies ++= Seq(jlineDep % "optional"),
     buildCharacterPropertiesFile := (resourceManaged in Compile).value / "scala-buildcharacter.properties",
     resourceGenerators in Compile += generateBuildCharacterPropertiesFile.map(file => Seq(file)).taskValue,
-    // this a way to make sure that classes from interactive and scaladoc projects
+    // this a way to make sure that classes from interactive and repl projects
     // end up in compiler jar. note that we need to use LocalProject references
     // (with strings) to deal with mutual recursion
     products in Compile in packageBin :=
       (products in Compile in packageBin).value ++
         Seq((dependencyClasspath in Compile).value.find(_.get(moduleID.key) == Some(asmDep)).get.data) ++
         (products in Compile in packageBin in LocalProject("interactive")).value ++
-        (products in Compile in packageBin in LocalProject("scaladoc")).value ++
         (products in Compile in packageBin in LocalProject("repl")).value ++
         (products in Compile in packageBin in LocalProject("repl-jline")).value ++
         (products in Compile in packageBin in LocalProject("repl-jline-embedded")).value,
@@ -416,15 +415,13 @@ lazy val compiler = configureAsSubproject(project)
     mappings in Compile in packageSrc ++= {
       val base = (unmanagedResourceDirectories in Compile).value ++
         (unmanagedResourceDirectories in Compile in LocalProject("interactive")).value ++
-        (unmanagedResourceDirectories in Compile in LocalProject("scaladoc")).value ++
         (unmanagedResourceDirectories in Compile in LocalProject("repl")).value
       base ** ((includeFilter in unmanagedResources in Compile).value || "*.scala" || "*.psd" || "*.ai" || "*.java") pair relativeTo(base)
     },
-    // Include the additional projects in the scaladoc JAR:
+    // Include the additional projects in the compiler JAR:
     sources in Compile in doc ++= {
       val base =
         (unmanagedSourceDirectories in Compile in LocalProject("interactive")).value ++
-        (unmanagedSourceDirectories in Compile in LocalProject("scaladoc")).value ++
         (unmanagedSourceDirectories in Compile in LocalProject("repl")).value
       ((base ** ("*.scala" || "*.java"))
         --- (base ** "Scaladoc*ModelTest.scala") // exclude test classes that depend on partest
@@ -522,7 +519,7 @@ lazy val replJlineEmbedded = Project("repl-jline-embedded", file(".") / "target"
 
 lazy val scaladoc = configureAsSubproject(project)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(commonSettings)
   .settings(
     name := "scala-compiler-doc",
     description := "Scala Documentation Generator",
