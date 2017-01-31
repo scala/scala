@@ -1193,27 +1193,33 @@ trait Contexts { self: Analyzer =>
       res
     }
 
-    final def lookupCompanionOf(original: Symbol): Symbol = {
-      if (original.isModuleClass) original.sourceModule
-      else lookupScopeEntry(original) match {
+    final def lookupCompanionInIncompleteOwner(original: Symbol): Symbol = {
+      /* Search scopes in current and enclosing contexts for the definition of `symbol` */
+      def lookupScopeEntry(symbol: Symbol): ScopeEntry = {
+        var res: ScopeEntry = null
+        var ctx = this
+        while (res == null && ctx.outer != ctx) {
+          val s = ctx.scope lookupSymbolEntry symbol
+          if (s != null)
+            res = s
+          else
+            ctx = ctx.outer
+        }
+        res
+      }
+
+      // 1) Must be owned by the same Scope, to ensure that in
+      //   `{ class C; { ...; object C } }`, the class is not seen as a companion of the object.
+      // 2) Must be a class and module symbol, so that `{ class C; def C }` or `{ type T; object T }` are not companions.
+      lookupScopeEntry(original) match {
         case null => NoSymbol
-        case entry => entry.owner.lookupCompanion(original)
+        case entry =>
+          def isCompanion(sym: Symbol): Boolean =
+            (original.isModule && sym.isClass || sym.isModule && original.isClass) && sym.isCoDefinedWith(original)
+          entry.owner.lookupNameInSameScopeAs(original, original.name.companionName).filter(isCompanion)
       }
     }
 
-    /** Search scopes in current and enclosing contexts for the definition of `symbol` */
-    private def lookupScopeEntry(symbol: Symbol): ScopeEntry = {
-      var res: ScopeEntry = null
-      var ctx = this
-      while (res == null && ctx.outer != ctx) {
-        val s = ctx.scope lookupSymbolEntry symbol
-        if (s != null)
-          res = s
-        else
-          ctx = ctx.outer
-      }
-      res
-    }
   } //class Context
 
   /** A `Context` focussed on an `Import` tree */
