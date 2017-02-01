@@ -23,7 +23,7 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
     for (pr <- post) assert(pr.callsite.callsiteMethod == callsite.callee.get.callee, s"Callsite method mismatch: main $callsite - post ${pr.callsite}")
   }
 
-  def canInlineFromSource(sourceFilePath: Option[String]) = compilerSettings.optInlineGlobal || sourceFilePath.isDefined
+  def canInlineFromSource(sourceFilePath: Option[String]) = runSettings.optInlineGlobal || sourceFilePath.isDefined
 
   /**
    * Select callsites from the call graph that should be inlined, grouped by the containing method.
@@ -47,17 +47,17 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
             case Some(Right(req)) => requests += req
 
             case Some(Left(w)) =>
-              if (w.emitWarning(compilerSettings)) {
+              if (w.emitWarning(runSettings)) {
                 backendReporting.inlinerWarning(callsite.callsitePosition, w.toString)
               }
 
             case None =>
-              if (callsiteWarning.isDefined && callsiteWarning.get.emitWarning(compilerSettings))
+              if (callsiteWarning.isDefined && callsiteWarning.get.emitWarning(runSettings))
                 backendReporting.inlinerWarning(pos, s"there was a problem determining if method ${callee.name} can be inlined: \n"+ callsiteWarning.get)
           }
 
         case Callsite(ins, _, _, Left(warning), _, _, _, pos, _, _) =>
-          if (warning.emitWarning(compilerSettings))
+          if (warning.emitWarning(runSettings))
             backendReporting.inlinerWarning(pos, s"failed to determine if ${ins.name} should be inlined:\n$warning")
       }
       (methodNode, requests)
@@ -161,13 +161,13 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
     if (isTraitSuperAccessorOrMixinForwarder(callsite.callsiteMethod, callsite.callsiteClass)) None
     else {
       val callee = callsite.callee.get
-      compilerSettings.YoptInlineHeuristics.value match {
+      runSettings.YoptInlineHeuristics match {
         case "everything" =>
-          val reason = if (compilerSettings.YoptLogInline.isSetByUser) "the inline strategy is \"everything\"" else null
+          val reason = if (runSettings.YoptLogInline_isSetByUser) "the inline strategy is \"everything\"" else null
           requestIfCanInline(callsite, reason)
 
         case "at-inline-annotated" =>
-          def reason = if (!compilerSettings.YoptLogInline.isSetByUser) null else {
+          def reason = if (!runSettings.YoptLogInline_isSetByUser) null else {
             val what = if (callee.annotatedInline) "callee" else "callsite"
             s"the $what is annotated `@inline`"
           }
@@ -175,7 +175,7 @@ class InlinerHeuristics[BT <: BTypes](val bTypes: BT) {
           else None
 
         case "default" =>
-          def reason = if (!compilerSettings.YoptLogInline.isSetByUser) null else {
+          def reason = if (!runSettings.YoptLogInline_isSetByUser) null else {
             if (callsite.isInlineAnnotated) {
               val what = if (callee.annotatedInline) "callee" else "callsite"
               s"the $what is annotated `@inline`"

@@ -124,7 +124,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       val Right(callee) = request.callsite.callee // collectAndOrderInlineRequests returns callsites with a known callee
       val warnings = inline(request)
       for (warning <- warnings) {
-        if (warning.emitWarning(compilerSettings))
+        if (warning.emitWarning(runSettings))
           backendReporting.inlinerWarning(request.callsite.callsitePosition, warning.toString)
       }
     }

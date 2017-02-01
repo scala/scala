@@ -10,6 +10,7 @@ package nsc
 import java.io.{File, FileNotFoundException, IOException}
 import java.net.URL
 import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException}
+
 import scala.collection.{immutable, mutable}
 import io.{AbstractFile, Path, SourceReader}
 import reporters.Reporter
@@ -28,6 +29,8 @@ import transform._
 import backend.{JavaPlatform, ScalaPrimitives}
 import backend.jvm.GenBCode
 import scala.language.postfixOps
+import scala.reflect.internal.PerRunSettings
+import scala.tools.nsc
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath._
 
@@ -1541,11 +1544,67 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   } // class Run
 
 
-  class PerRunSettings extends PerRunSettingsBase {
+  class PerRunSettingsGlobal extends PerRunSettings {
     override val isScala211: Boolean = settings.isScala211
     override val isScala212: Boolean = settings.isScala212
+
+    val current = settings
+    //optimise settings
+    private def optEnabled(choice: current.optChoice) = {
+      !optNone && {
+        current.opt.value.contains(choice) ||
+          !settings.opt.isSetByUser && settings.optChoices.lDefault.expandsTo.contains(choice)
+      }
+    }
+
+    override val optNone: Boolean = current.opt.contains(current.optChoices.lNone)
+
+
+    override val optUnreachableCode         = optEnabled(current.optChoices.unreachableCode)
+    override val optSimplifyJumps           = optEnabled(current.optChoices.simplifyJumps)
+    override val optCompactLocals           = optEnabled(current.optChoices.compactLocals)
+    override val optCopyPropagation         = optEnabled(current.optChoices.copyPropagation)
+    override val optRedundantCasts          = optEnabled(current.optChoices.redundantCasts)
+    override val optBoxUnbox                = optEnabled(current.optChoices.boxUnbox)
+    override val optNullnessTracking        = optEnabled(current.optChoices.nullnessTracking)
+    override val optClosureInvocations      = optEnabled(current.optChoices.closureInvocations)
+
+    override val optInlineProject           = optEnabled(current.optChoices.inlineProject)
+    override val optInlineGlobal            = optEnabled(current.optChoices.inlineGlobal)
+    override val optInlinerEnabled          = optInlineProject || optInlineGlobal
+
+    override val optBuildCallGraph          = optInlinerEnabled || optClosureInvocations
+    override val optAddToBytecodeRepository = optBuildCallGraph || optInlinerEnabled || optClosureInvocations
+
+    override val YoptTrace_isSetByUser: Boolean = settings.YoptTrace.isSetByUser
+    override val YoptTrace: String =  settings.YoptTrace.value
+
+    //----
+
+
+    override val optWarningsSummaryOnly = {
+      val value = current.optWarnings.value
+        value == current.optWarningsChoices.none ||
+        value == current.optWarningsChoices.atInlineFailedSummary
+    }
+
+    override val optWarningEmitAtInlineFailed =
+      !current.optWarnings.isSetByUser ||
+        current.optWarnings.contains(current.optWarningsChoices.atInlineFailedSummary) ||
+        current.optWarnings.contains(current.optWarningsChoices.atInlineFailed) ||
+        current.optWarnings.contains(current.optWarningsChoices.anyInlineFailed)
+
+    override val optWarningNoInlineMixed                      = current.optWarnings.contains(current.optWarningsChoices.noInlineMixed)
+    override val optWarningNoInlineMissingBytecode            = current.optWarnings.contains(current.optWarningsChoices.noInlineMissingBytecode)
+    override val optWarningNoInlineMissingScalaInlineInfoAttr = current.optWarnings.contains(current.optWarningsChoices.noInlineMissingScalaInlineInfoAttr)
+
+    override val optWarningAnyInlineFailed: Boolean = current.optWarnings.contains(current.optWarningsChoices.anyInlineFailed)
+    //---
+    override val YoptLogInline = current.YoptLogInline.value
+    override val YoptLogInline_isSetByUser = current.YoptLogInline.isSetByUser
+    override val YoptInlineHeuristics = current.YoptInlineHeuristics.value
   }
-  override protected def PerRunSettings: PerRunSettings = new PerRunSettings
+  override protected def PerRunSettings = new PerRunSettingsGlobal
   def printAllUnits() {
     print("[[syntax trees at end of %25s]]".format(phase))
     exitingPhase(phase)(currentRun.units foreach { unit =>

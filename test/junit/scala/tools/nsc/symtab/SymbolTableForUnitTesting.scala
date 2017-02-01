@@ -2,7 +2,7 @@ package scala.tools.nsc
 package symtab
 
 import scala.reflect.ClassTag
-import scala.reflect.internal.{NoPhase, Phase, SomePhase}
+import scala.reflect.internal.{NoPhase, PerRunSettings, Phase, SimplePerRunSettings, SomePhase}
 import scala.tools.util.PathResolver
 import util.ClassPath
 import io.AbstractFile
@@ -82,11 +82,11 @@ class SymbolTableForUnitTesting extends SymbolTable {
     protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = println(msg)
   }
 
-  class PerRunSettings extends PerRunSettingsBase {
-    def isScala211: Boolean = true
-    def isScala212: Boolean = true
-  }
-  protected def PerRunSettings: PerRunSettings = new PerRunSettings
+  class PerRunSettingsUnitTest extends SimplePerRunSettings {
+    override def isScala211: Boolean = true
+    override def isScala212: Boolean = true
+ }
+  protected def PerRunSettings = new PerRunSettingsUnitTest
 
   // minimal Run to get Reporting wired
   def currentRun = new RunReporting with RunSettings {}

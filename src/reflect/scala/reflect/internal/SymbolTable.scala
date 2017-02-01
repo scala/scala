@@ -214,12 +214,8 @@ abstract class SymbolTable extends macros.Universe
     val runSettings: PerRunSettings = PerRunSettings
   }
 
-  type PerRunSettings <: PerRunSettingsBase
   protected def PerRunSettings: PerRunSettings
-  abstract class PerRunSettingsBase {
-    def isScala211: Boolean
-    def isScala212: Boolean
-  }
+
   def currentRun: RunSettings with RunReporting
 
   /** The phase identifier of the given period. */

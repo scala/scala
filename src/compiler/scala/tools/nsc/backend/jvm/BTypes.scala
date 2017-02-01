@@ -19,6 +19,7 @@ import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt._
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
+import scala.reflect.internal.PerRunSettings
 import scala.tools.nsc.settings.ScalaSettings
 
 /**
@@ -62,6 +63,8 @@ abstract class BTypes {
 
   // Allows access to the compiler settings for backend components that don't have a global in scope
   def compilerSettings: ScalaSettings
+
+  def runSettings : PerRunSettings
 
   /**
    * A map from internal names to ClassBTypes. Every ClassBType is added to this map on its
@@ -289,7 +292,7 @@ abstract class BTypes {
     // The InlineInfo is built from the classfile (not from the symbol) for all classes that are NOT
     // being compiled. For those classes, the info is only needed if the inliner is enabled, otherwise
     // we can save the memory.
-    if (!compilerSettings.optInlinerEnabled) BTypes.EmptyInlineInfo
+    if (!runSettings.optInlinerEnabled) BTypes.EmptyInlineInfo
     else fromClassfileAttribute getOrElse fromClassfileWithoutAttribute
   }
 

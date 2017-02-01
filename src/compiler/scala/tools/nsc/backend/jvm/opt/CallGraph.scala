@@ -102,7 +102,7 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
       // It is also used to get the stack height at the call site.
 
       val analyzer = {
-        if (compilerSettings.optNullnessTracking && AsmAnalyzer.sizeOKForNullness(methodNode)) {
+        if (runSettings.optNullnessTracking && AsmAnalyzer.sizeOKForNullness(methodNode)) {
           Some(new AsmAnalyzer(methodNode, definingClass.internalName, new NullnessAnalyzer(btypes, methodNode)))
         } else if (AsmAnalyzer.sizeOKForBasicValue(methodNode)) {
           Some(new AsmAnalyzer(methodNode, definingClass.internalName))

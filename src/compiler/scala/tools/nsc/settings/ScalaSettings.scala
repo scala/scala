@@ -223,6 +223,7 @@ trait ScalaSettings extends AbsScalaSettings
   val exposeEmptyPackage = BooleanSetting ("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
   val Ydelambdafy        = ChoiceSetting  ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "method")
 
+  type optChoice = optChoices.Value
   object optChoices extends MultiChoiceEnumeration {
     val unreachableCode         = Choice("unreachable-code",          "Eliminate unreachable code, exception handlers guarding no instructions, redundant metadata (debug information, line numbers).")
     val simplifyJumps           = Choice("simplify-jumps",            "Simplify branching instructions, eliminate unnecessary ones.")
@@ -260,29 +261,29 @@ trait ScalaSettings extends AbsScalaSettings
     descr = "Enable optimizations",
     domain = optChoices)
 
-  private def optEnabled(choice: optChoices.Choice) = {
-    !opt.contains(optChoices.lNone) && {
-      opt.contains(choice) ||
-      !opt.isSetByUser && optChoices.lDefault.expandsTo.contains(choice)
-    }
-  }
-
-  def optNone                    = opt.contains(optChoices.lNone)
-  def optUnreachableCode         = optEnabled(optChoices.unreachableCode)
-  def optSimplifyJumps           = optEnabled(optChoices.simplifyJumps)
-  def optCompactLocals           = optEnabled(optChoices.compactLocals)
-  def optCopyPropagation         = optEnabled(optChoices.copyPropagation)
-  def optRedundantCasts          = optEnabled(optChoices.redundantCasts)
-  def optBoxUnbox                = optEnabled(optChoices.boxUnbox)
-  def optNullnessTracking        = optEnabled(optChoices.nullnessTracking)
-  def optClosureInvocations      = optEnabled(optChoices.closureInvocations)
-
-  def optInlineProject           = optEnabled(optChoices.inlineProject)
-  def optInlineGlobal            = optEnabled(optChoices.inlineGlobal)
-  def optInlinerEnabled          = optInlineProject || optInlineGlobal
-
-  def optBuildCallGraph          = optInlinerEnabled || optClosureInvocations
-  def optAddToBytecodeRepository = optBuildCallGraph || optInlinerEnabled || optClosureInvocations
+//  private def optEnabled(choice: optChoices.Choice) = {
+//    !opt.contains(optChoices.lNone) && {
+//      opt.contains(choice) ||
+//      !opt.isSetByUser && optChoices.lDefault.expandsTo.contains(choice)
+//    }
+//  }
+//
+//  def optNone                    = opt.contains(optChoices.lNone)
+//  def optUnreachableCode         = optEnabled(optChoices.unreachableCode)
+//  def optSimplifyJumps           = optEnabled(optChoices.simplifyJumps)
+//  def optCompactLocals           = optEnabled(optChoices.compactLocals)
+//  def optCopyPropagation         = optEnabled(optChoices.copyPropagation)
+//  def optRedundantCasts          = optEnabled(optChoices.redundantCasts)
+//  def optBoxUnbox                = optEnabled(optChoices.boxUnbox)
+//  def optNullnessTracking        = optEnabled(optChoices.nullnessTracking)
+//  def optClosureInvocations      = optEnabled(optChoices.closureInvocations)
+//
+//  def optInlineProject           = optEnabled(optChoices.inlineProject)
+//  def optInlineGlobal            = optEnabled(optChoices.inlineGlobal)
+//  def optInlinerEnabled          = optInlineProject || optInlineGlobal
+//
+//  def optBuildCallGraph          = optInlinerEnabled || optClosureInvocations
+//  def optAddToBytecodeRepository = optBuildCallGraph || optInlinerEnabled || optClosureInvocations
 
   val YoptInlineHeuristics = ChoiceSetting(
     name = "-Yopt-inline-heuristics",
@@ -308,17 +309,18 @@ trait ScalaSettings extends AbsScalaSettings
     domain = optWarningsChoices,
     default = Some(List(optWarningsChoices.atInlineFailed.name)))
 
+  //FIXME - should be in currentRun - needed for reporting
   def optWarningsSummaryOnly = optWarnings.value subsetOf Set(optWarningsChoices.none, optWarningsChoices.atInlineFailedSummary)
-
-  def optWarningEmitAtInlineFailed =
-    !optWarnings.isSetByUser ||
-      optWarnings.contains(optWarningsChoices.atInlineFailedSummary) ||
-      optWarnings.contains(optWarningsChoices.atInlineFailed) ||
-      optWarnings.contains(optWarningsChoices.anyInlineFailed)
-
-  def optWarningNoInlineMixed                      = optWarnings.contains(optWarningsChoices.noInlineMixed)
-  def optWarningNoInlineMissingBytecode            = optWarnings.contains(optWarningsChoices.noInlineMissingBytecode)
-  def optWarningNoInlineMissingScalaInlineInfoAttr = optWarnings.contains(optWarningsChoices.noInlineMissingScalaInlineInfoAttr)
+//
+//  def optWarningEmitAtInlineFailed =
+//    !optWarnings.isSetByUser ||
+//      optWarnings.contains(optWarningsChoices.atInlineFailedSummary) ||
+//      optWarnings.contains(optWarningsChoices.atInlineFailed) ||
+//      optWarnings.contains(optWarningsChoices.anyInlineFailed)
+//
+//  def optWarningNoInlineMixed                      = optWarnings.contains(optWarningsChoices.noInlineMixed)
+//  def optWarningNoInlineMissingBytecode            = optWarnings.contains(optWarningsChoices.noInlineMissingBytecode)
+//  def optWarningNoInlineMissingScalaInlineInfoAttr = optWarnings.contains(optWarningsChoices.noInlineMissingScalaInlineInfoAttr)
 
   val YoptTrace = StringSetting("-Yopt-trace", "package/Class.method", "Trace the optimizer progress for methods; `_` to print all, prefix match to select.", "")
 

@@ -227,20 +227,20 @@ abstract class GenBCode extends BCodeSyncAndTry {
 
         // add classes to the bytecode repo before building the call graph: the latter needs to
         // look up classes and methods in the code repo.
-        if (settings.optAddToBytecodeRepository) q2.asScala foreach {
+        if (runSettings.optAddToBytecodeRepository) q2.asScala foreach {
           case Item2(_, mirror, plain, bean, sourceFilePath, _) =>
             val someSourceFilePath = Some(sourceFilePath)
             if (mirror != null) byteCodeRepository.add(mirror, someSourceFilePath)
             if (plain != null)  byteCodeRepository.add(plain, someSourceFilePath)
             if (bean != null)   byteCodeRepository.add(bean, someSourceFilePath)
         }
-        if (settings.optBuildCallGraph) q2.asScala foreach { item =>
+        if (runSettings.optBuildCallGraph) q2.asScala foreach { item =>
           // skip call graph for mirror / bean: wd don't inline into tem, and they are not used in the plain class
           if (item.plain != null) callGraph.addClass(item.plain)
         }
-        if (settings.optInlinerEnabled)
+        if (runSettings.optInlinerEnabled)
           bTypes.inliner.runInliner()
-        if (settings.optClosureInvocations)
+        if (runSettings.optClosureInvocations)
           closureOptimizer.rewriteClosureApplyInvocations()
       }
 
