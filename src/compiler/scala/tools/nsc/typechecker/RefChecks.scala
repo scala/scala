@@ -1130,7 +1130,7 @@ abstract class RefChecks extends Transform {
     }
     /** Sensibility check examines flavors of equals. */
     def checkSensible(pos: Position, fn: Tree, args: List[Tree]) = fn match {
-      case Select(qual, name @ (nme.EQ | nme.NE | nme.eq | nme.ne)) if args.length == 1 && isObjectOrAnyComparisonMethod(fn.symbol) && !currentOwner.isSynthetic =>
+      case Select(qual, name @ (nme.EQ | nme.NE | nme.eq | nme.ne)) if args.length == 1 && isObjectOrAnyComparisonMethod(fn.symbol) && (!currentOwner.isSynthetic || currentOwner.isAnonymousFunction) =>
         checkSensibleEquals(pos, qual, name, fn.symbol, args.head)
       case _ =>
     }
