@@ -54,21 +54,27 @@ import Compat._
 class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) extends Compat with ClassName with GlobalHelpers {
 
   import global._
+  import JavaUtils._
 
-  implicit class JavaForEach[T](interable: java.lang.Iterable[T]) {
-    def foreach(op: T => Unit): Unit = {
-      val iterator = interable.iterator()
-      while (iterator.hasNext) op(iterator.next())
-    }
-  }
+  class NamesUsedInClass {
+    // Default names and other scopes are separated for performance reasons
+    val defaultNames: JavaSet[Name] = new JavaSet[global.Name]()
+    val scopedNames: JavaMap[Name, EnumSet[UseScope]] = new JavaMap[Name, EnumSet[UseScope]]()
 
-  implicit class JavaMapForEach[K, V](map: java.util.Map[K, V]) {
-    def foreach(op: (K, V) => Unit): Unit = {
-      val iterator = map.keySet().iterator()
-      while (iterator.hasNext) {
-        val key = iterator.next()
-        op(key, map.get(key))
+    // We have to leave with commas on ends
+    override def toString() = {
+      val builder = new StringBuilder(": ")
+      defaultNames.foreach { name =>
+        builder.append(name.decoded.trim)
+        val otherScopes = scopedNames.get(name)
+        if (otherScopes != null) {
+          builder.append(" in [")
+          otherScopes.foreach(scope => builder.append(scope.name()).append(", "))
+          builder.append("]")
+        }
+        builder.append(", ")
       }
+      builder.toString()
     }
   }
 
@@ -143,27 +149,8 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
 
   private class ExtractUsedNamesTraverser extends Traverser {
 
-    class UsedInClass {
-      val defaultNames: JavaSet[Name] = new JavaSet[global.Name]()
-      val scopedNames: JavaMap[Name, EnumSet[UseScope]] = new JavaMap[Name, EnumSet[UseScope]]()
-
-      override def toString() = {
-        val builder = new StringBuilder(": ")
-        defaultNames.foreach { name =>
-          builder.append(name.decoded.trim).append(", ")
-          val otherScopes = scopedNames.get(name)
-          if (otherScopes != null) {
-            builder.append(" in [")
-            otherScopes.foreach(scope => builder.append(scope.name()).append(", "))
-            builder.append("]")
-          }
-        }
-        builder.toString()
-      }
-    }
-
-    val usedNamesFromClasses = new JavaMap[Name, UsedInClass]()
-    val namesUsedAtTopLevel = new UsedInClass
+    val usedNamesFromClasses = new JavaMap[Name, NamesUsedInClass]()
+    val namesUsedAtTopLevel = new NamesUsedInClass
 
     override def traverse(tree: Tree): Unit = {
       handleClassicTreeNode(tree)
@@ -183,10 +170,10 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
     }
 
     /** Returns mutable set with all names from given class used in current context */
-    def usedNamesFromClass(className: Name): UsedInClass =
+    def usedNamesFromClass(className: Name): NamesUsedInClass =
       usedNamesFromClasses.get(className) match {
         case null =>
-          val newOne = new UsedInClass
+          val newOne = new NamesUsedInClass
           usedNamesFromClasses.put(className, newOne)
           newOne
         case existing =>
@@ -214,12 +201,13 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       override def addDependency(symbol: global.Symbol): Unit = {
         if (!ignoredSymbol(symbol) && symbol.isSealed) {
           val name = symbol.name
-          if (!isEmptyName(name)) _currentScopedNamesCache get (name) match {
-            case null =>
-              _currentScopedNamesCache.put(name, EnumSet.of(UseScope.PatMatTarget))
-            case scopes =>
-              scopes.add(UseScope.PatMatTarget)
-          }
+          if (!isEmptyName(name))
+            _currentScopedNamesCache.get(name) match {
+              case null =>
+                _currentScopedNamesCache.put(name, EnumSet.of(UseScope.PatMatTarget))
+              case scopes =>
+                scopes.add(UseScope.PatMatTarget)
+            }
         }
         ()
       }
@@ -252,7 +240,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
     }
 
     private def handleClassicTreeNode(tree: Tree): Unit = tree match {
-      // Register types from pattern match target in pat mat scope
+      // Register names from pattern match target type in PatMatTarget scope
       case ValDef(mods, _, tpt, _) if mods.isCase && mods.isSynthetic =>
         updateCurrentOwner()
         PatMatDependencyTraverser.traverse(tpt.tpe)
@@ -305,11 +293,25 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       else localToNonLocalClass.resolveNonLocal(fromClass)
     }
 
-    @inline private def namesInClass(nonLocalClass: Symbol): UsedInClass = {
+    @inline private def namesInClass(nonLocalClass: Symbol): NamesUsedInClass = {
       if (nonLocalClass == NoSymbol) namesUsedAtTopLevel
       else usedNamesFromClass(ExtractUsedNames.this.className(nonLocalClass))
     }
 
+    /**
+     * Updates caches for closest non-local class owner
+     * of a tree given `currentOwner`, defined and updated by `Traverser`.
+     *
+     * This method modifies the state associated with the names variable
+     * `_currentNamesCache` and `_currentScopedNamesCache`, which is composed by `_currentOwner` and
+     * and `_currentNonLocalClass`.
+     *
+     * * The used caching strategy works as follows:
+     * 1. Do nothing if owners are referentially equal.
+     * 2. Otherwise, check if they resolve to the same non-local class.
+     *   1. If they do, do nothing
+     *   2. Otherwise, overwrite all the pertinent fields to be consistent.
+     */
     private def updateCurrentOwner(): Unit = {
       if (_currentOwner == null) {
         // Set the first state for the enclosing non-local class
@@ -335,15 +337,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
      * of a tree given `currentOwner`, defined and updated by `Traverser`.
      *
      * This method modifies the state associated with the names variable
-     * `_currentNamesCache`, which is composed by `_currentOwner` and
-     * and `_currentNonLocalClass`.
-     *
-     * The used caching strategy works as follows:
-     * 1. Return previous non-local class if owners are referentially equal.
-     * 2. Otherwise, check if they resolve to the same non-local class.
-     *   1. If they do, overwrite `_isLocalSource` and return
-     * `_currentNonLocalClass`.
-     *   2. Otherwise, overwrite all the pertinent fields to be consistent.
+     * by calling `updateCurrentOwner()`.
      */
     @inline
     private def getNamesOfEnclosingScope: JavaSet[Name] = {

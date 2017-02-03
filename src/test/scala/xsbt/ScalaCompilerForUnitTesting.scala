@@ -62,8 +62,8 @@ class ScalaCompilerForUnitTesting {
 
     if (assertDefaultScope) for {
       (className, used) <- analysisCallback.usedNamesAndScopes
-      (name, scopes) <- used
-    } assert(scopes.size() == 1 && scopes.contains(UseScope.Default), s"$className uses $name if $scopes")
+      analysisCallback.TestUsedName(name, scopes) <- used
+    } assert(scopes.size() == 1 && scopes.contains(UseScope.Default), s"$className uses $name in $scopes")
 
     val classesInActualSrc = analysisCallback.classNames(tempSrcFile).map(_._1)
     classesInActualSrc.map(className => className -> analysisCallback.usedNames(className)).toMap

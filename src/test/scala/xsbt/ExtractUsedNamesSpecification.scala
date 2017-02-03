@@ -207,20 +207,20 @@ class ExtractUsedNamesSpecification extends UnitSpec {
         |object Usage2 extends $sealedClassName
       """.stripMargin
 
-    def findSealedUsages(in: String): Set[String] = {
+    def findPatMatUsages(in: String): Set[String] = {
       val compilerForTesting = new ScalaCompilerForUnitTesting
       val (_, callback) = compilerForTesting.compileSrcs(List(List(sealedClass, in)), reuseCompilerInstance = false)
-      val clientNames = callback.usedNamesAndScopes.filterNot(_._1.startsWith("base."))
+      val clientNames = callback.usedNamesAndScopes.filterKeys(!_.startsWith("base."))
 
       val names: Set[String] = clientNames.flatMap {
-        case (_, usags) =>
-          usags.filter(_._2.contains(UseScope.PatMatTarget)).map(_._1)
+        case (_, usages) =>
+          usages.filter(_.scopes.contains(UseScope.PatMatTarget)).map(_.name)
       }(collection.breakOut)
 
       names
     }
 
-    def clientClassSimple(tpe: String = sealedClassName) =
+    def classWithPatMatOfType(tpe: String = sealedClassName) =
       s"""package client
         |import base._
         |
@@ -231,9 +231,11 @@ class ExtractUsedNamesSpecification extends UnitSpec {
         |}
       """.stripMargin
 
-    findSealedUsages(clientClassSimple()) shouldEqual Set(sealedClassName)
-    findSealedUsages(clientClassSimple(s"Option[$sealedClassName]")) shouldEqual Set(sealedClassName, "Option")
-    findSealedUsages(clientClassSimple(s"Seq[Set[$sealedClassName]]")) shouldEqual Set(sealedClassName)
+    findPatMatUsages(classWithPatMatOfType()) shouldEqual Set(sealedClassName)
+    // Option is sealed
+    findPatMatUsages(classWithPatMatOfType(s"Option[$sealedClassName]")) shouldEqual Set(sealedClassName, "Option")
+    // Seq and Set is not
+    findPatMatUsages(classWithPatMatOfType(s"Seq[Set[$sealedClassName]]")) shouldEqual Set(sealedClassName)
 
     def inNestedCase(tpe: String = sealedClassName) =
       s"""package client
@@ -243,10 +245,9 @@ class ExtractUsedNamesSpecification extends UnitSpec {
           |  a match {
           |   case _: $tpe => 1
           |  }
-          |}
-      """.stripMargin
+          |}""".stripMargin
 
-    findSealedUsages(inNestedCase()) shouldEqual Set()
+    findPatMatUsages(inNestedCase()) shouldEqual Set()
 
     val notUsedInPatternMatch =
       s"""package client
@@ -257,10 +258,9 @@ class ExtractUsedNamesSpecification extends UnitSpec {
           |   case _ => 1
           |  }
           |  val aa: $sealedClassName = ???
-          |}
-      """.stripMargin
+          |}""".stripMargin
 
-    findSealedUsages(notUsedInPatternMatch) shouldEqual Set()
+    findPatMatUsages(notUsedInPatternMatch) shouldEqual Set()
   }
 
   /**
