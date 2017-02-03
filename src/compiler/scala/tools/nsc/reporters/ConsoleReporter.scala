@@ -20,6 +20,7 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
   var shortname: Boolean = false
 
   /** maximal number of error messages to be printed */
+  @deprecated("configured by settings.maxerrs", since="2.12.2")
   final val ERROR_LIMIT = 100
 
   private def label(severity: Severity): String = severity match {
@@ -63,9 +64,13 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
     if (  ERROR.count > 0) printMessage(getCountString(ERROR  ) + " found")
   }
 
-  def display(pos: Position, msg: String, severity: Severity) {
-    if (severity != ERROR || severity.count <= ERROR_LIMIT)
-      print(pos, msg, severity)
+  def display(pos: Position, msg: String, severity: Severity): Unit = {
+    val ok = severity match {
+      case ERROR   => ERROR.count <= settings.maxerrs.value
+      case WARNING => WARNING.count <= settings.maxwarns.value
+      case _     => true
+    }
+    if (ok) print(pos, msg, severity)
   }
 
   def displayPrompt(): Unit = {
