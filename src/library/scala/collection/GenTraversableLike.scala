@@ -249,30 +249,6 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
    *  @param bf     $bfinfo
    *  @return       a new collection of type `That` which contains all elements
    *                of this $coll followed by all elements of `that`.
-   *
-   *  @usecase def ++[B](that: GenTraversableOnce[B]): $Coll[B]
-   *    @inheritdoc
-   *
-   *    Example:
-   *    {{{
-   *      scala> val a = List(1)
-   *      a: List[Int] = List(1)
-   *
-   *      scala> val b = List(2)
-   *      b: List[Int] = List(2)
-   *
-   *      scala> val c = a ++ b
-   *      c: List[Int] = List(1, 2)
-   *
-   *      scala> val d = List('a')
-   *      d: List[Char] = List(a)
-   *
-   *      scala> val e = c ++ d
-   *      e: List[AnyVal] = List(1, 2, a)
-   *    }}}
-   *
-   *    @return       a new $coll which contains all elements of this $coll
-   *                  followed by all elements of `that`.
    */
   def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That
 
