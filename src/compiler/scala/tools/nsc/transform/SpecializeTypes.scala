@@ -198,6 +198,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new SpecializationPhase(prev)
   class SpecializationPhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
     override def checkable = false
+    override def run(): Unit = {
+      super.run()
+      exitingSpecialize {
+        FunctionClass.seq.map(_.info)
+        TupleClass.seq.map(_.info)
+      }
+    }
   }
 
   protected def newTransformer(unit: CompilationUnit): Transformer =
@@ -1199,22 +1206,33 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  If it is a 'no-specialization' run, it is applied only to loaded symbols.
    */
   override def transformInfo(sym: Symbol, tpe: Type): Type = {
-    if (settings.nospecialization && currentRun.compiles(sym)) tpe
-    else tpe.resultType match {
+    if (settings.nospecialization && currentRun.compiles(sym)) {
+      tpe
+    } else tpe.resultType match {
       case cinfo @ ClassInfoType(parents, decls, clazz) if !unspecializableClass(cinfo) =>
-        val tparams  = tpe.typeParams
-        if (tparams.isEmpty)
-          exitingSpecialize(parents map (_.typeSymbol.info))
+        if (!currentRun.compiles(sym) && isPast(ownPhase)) {
+          // Skip specialization info transform for third party classes that aren't referenced directly
+          // from the tree or by the specialization info transform itself that are run up to the end of
+          // the specialization phase.
+          //
+          // As a special case, we unconditionally specialize Function and Tuple classes above in `Phase#apply`
+          // as the backend needs to know about these for code it inlines to enable box- and null-check elimination.
+          tpe
+        } else {
+          val tparams = tpe.typeParams
+          if (tparams.isEmpty)
+            exitingSpecialize(parents map (_.typeSymbol.info))
 
-        val parents1 = parents mapConserve specializedType
-        if (parents ne parents1) {
-          debuglog("specialization transforms %s%s parents to %s".format(
-            if (tparams.nonEmpty) "(poly) " else "", clazz, parents1)
-          )
+          val parents1 = parents mapConserve specializedType
+          if (parents ne parents1) {
+            debuglog("specialization transforms %s%s parents to %s".format(
+              if (tparams.nonEmpty) "(poly) " else "", clazz, parents1)
+            )
+          }
+          val newScope = newScopeWith(specializeClass(clazz, typeEnv(clazz)) ++ specialOverrides(clazz): _*)
+          // If tparams.isEmpty, this is just the ClassInfoType.
+          GenPolyType(tparams, ClassInfoType(parents1, newScope, clazz))
         }
-        val newScope = newScopeWith(specializeClass(clazz, typeEnv(clazz)) ++ specialOverrides(clazz): _*)
-        // If tparams.isEmpty, this is just the ClassInfoType.
-        GenPolyType(tparams, ClassInfoType(parents1, newScope, clazz))
       case _ =>
         tpe
     }
