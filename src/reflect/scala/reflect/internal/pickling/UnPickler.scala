@@ -377,7 +377,7 @@ abstract class UnPickler {
 
       def readThisType(): Type = {
         val sym = readSymbolRef() match {
-          case stub: StubSymbol => stub.setFlag(PACKAGE)
+          case stub: StubSymbol => stub.setFlag(PACKAGE | MODULE)
           case sym => sym
         }
         ThisType(sym)
