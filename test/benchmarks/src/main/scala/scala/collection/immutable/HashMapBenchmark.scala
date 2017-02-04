@@ -6,8 +6,6 @@ import org.openjdk.jmh.runner.IterationType
 import benchmark._
 import java.util.concurrent.TimeUnit
 
-import scala.collection.mutable
-
 @BenchmarkMode(Array(Mode.AverageTime))
 @Fork(2)
 @Threads(1)
@@ -34,7 +32,7 @@ class HashMapBenchmark {
 
   var map: collection.immutable.HashMap[Any, Any] = null
 
-  @Setup(Level.Trial) def initializeMutable = {
+  @Setup(Level.Trial) def initialize = {
     map = collection.immutable.HashMap(existingKeys.map(x => (x, x)) : _*)
   }
 
