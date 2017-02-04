@@ -13,7 +13,7 @@ object Test extends App {
 
   def testIndyLambda(o: AnyRef, sp: Boolean = false) = {
     val isSpecialized = o.getClass.getInterfaces.exists(_.getName contains "$sp")
-    assert(sp == isSpecialized, o.getClass.getName)
+    assert(sp == isSpecialized, (o.getClass.getName, o.getClass.getInterfaces.toList))
   }
 
 
