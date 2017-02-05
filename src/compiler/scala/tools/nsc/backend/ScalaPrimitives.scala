@@ -446,9 +446,10 @@ abstract class ScalaPrimitives {
       inform(s"Unknown primitive method $cls.$method")
     else alts foreach (s =>
       addPrimitive(s,
-        s.info.paramTypes match {
-          case tp :: _ if code == ADD && tp =:= StringTpe => CONCAT
-          case _                                          => code
+        if (code != ADD) code
+        else exitingTyper(s.info).paramTypes match {
+          case tp :: _ if tp =:= StringTpe => CONCAT
+          case _                           => code
         }
       )
     )

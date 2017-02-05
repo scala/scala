@@ -953,10 +953,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
        definitions.isDefinitionsInitialized
     && rootMirror.isMirrorInitialized
   )
-  override def isPastTyper = (
+  override def isPastTyper = isPast(currentRun.typerPhase)
+  def isPast(phase: Phase) = (
        (curRun ne null)
     && isGlobalInitialized // defense against init order issues
-    && (globalPhase.id > currentRun.typerPhase.id)
+    && (globalPhase.id > phase.id)
   )
 
   // TODO - trim these to the absolute minimum.
