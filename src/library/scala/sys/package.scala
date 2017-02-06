@@ -59,6 +59,7 @@ package object sys {
    *
    *  @return   a Map containing the system environment variables.
    */
+  @deprecated("use `System.getenv().asScala` along with `import scala.collection.JavaConverters._`", "2.12.2")
   def env: immutable.Map[String, String] = immutable.Map(System.getenv().asScala.toSeq: _*)
 
   /** Register a shutdown hook to be run when the VM exits.
