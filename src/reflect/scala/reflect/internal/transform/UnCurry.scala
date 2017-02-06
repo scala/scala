@@ -18,19 +18,8 @@ trait UnCurry {
    */
   case class VarargsSymbolAttachment(varargMethod: Symbol)
 
-  /** Note: changing tp.normalize to tp.dealias in this method leads to a single
-   *  test failure: run/t5688.scala, where instead of the expected output
-   *    Vector(ta, tb, tab)
-   *  we instead get
-   *    Vector(tab, tb, tab)
-   *  I think that difference is not the product of sentience but of randomness.
-   *  Let us figure out why it is and then change this method.
-   */
-  private def expandAlias(tp: Type): Type = if (!tp.isHigherKinded) tp.normalize else tp
-
   val uncurry: TypeMap = new TypeMap {
-    def apply(tp0: Type): Type = {
-      val tp = expandAlias(tp0)
+    def apply(tp: Type): Type = {
       tp match {
         case MethodType(params, MethodType(params1, restpe)) =>
           // This transformation is described in UnCurryTransformer.dependentParamTypeErasure
@@ -50,7 +39,7 @@ trait UnCurry {
         case DesugaredParameterType(desugaredTpe) =>
           apply(desugaredTpe)
         case _ =>
-          expandAlias(mapOver(tp))
+          mapOver(tp)
       }
     }
   }
@@ -69,8 +58,7 @@ trait UnCurry {
   }
 
   private val uncurryType = new TypeMap {
-    def apply(tp0: Type): Type = {
-      val tp = expandAlias(tp0)
+    def apply(tp: Type): Type = {
       tp match {
         case ClassInfoType(parents, decls, clazz) if !clazz.isJavaDefined =>
           val parents1 = parents mapConserve uncurry

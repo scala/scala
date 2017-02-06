@@ -111,7 +111,7 @@ trait Erasure {
 
     protected def eraseDerivedValueClassRef(tref: TypeRef): Type = erasedValueClassArg(tref)
 
-    def apply(tp: Type): Type = tp match {
+    def apply(tp: Type): Type = tp.dealias match {
       case ConstantType(ct) =>
         // erase classOf[List[_]] to classOf[List]. special case for classOf[Unit], avoid erasing to classOf[BoxedUnit].
         if (ct.tag == ClazzTag && ct.typeValue.typeSymbol != UnitClass) ConstantType(Constant(apply(ct.typeValue)))
@@ -127,7 +127,7 @@ trait Erasure {
           else typeRef(apply(pre), sym, args map applyInArray)
         else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass) ObjectTpe
         else if (sym == UnitClass) BoxedUnitTpe
-        else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
+        else if (sym.isRefinementClass) apply(mergeParents(tp.normalize.parents))
         else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(tref)
         else if (sym.isClass) eraseNormalClassRef(tref)
         else apply(sym.info asSeenFrom (pre, sym.owner)) // alias type or abstract type
@@ -142,8 +142,8 @@ trait Erasure {
           // this replaces each typeref that refers to an argument
           // by the type `p.tpe` of the actual argument p (p in params)
           else apply(mt.resultType(mt.paramTypes)))
-      case RefinedType(parents, decls) =>
-        apply(mergeParents(parents))
+      case rt : RefinedType =>
+        apply(mergeParents(rt.normalize.parents))
       case AnnotatedType(_, atp) =>
         apply(atp)
       case ClassInfoType(parents, decls, clazz) =>
@@ -332,7 +332,7 @@ trait Erasure {
         // treat arrays specially
         arrayType(
           intersectionDominator(
-            parents filter (_.typeSymbol == ArrayClass) map (_.typeArgs.head)))
+            parents filter (_.typeSymbol == ArrayClass) map (_.baseType(ArrayClass).typeArgs.head)))
       } else {
         // implement new spec for erasure of refined types.
         def isUnshadowed(psym: Symbol) =
