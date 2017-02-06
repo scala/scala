@@ -186,7 +186,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       addDependency(tree.symbol)
       val tpe = tree.tpe
       if (!ignoredType(tpe))
-        foreachSymbolInType(tpe)(addDependency)
+        foreachNotPackageSymbolInType(tpe)(addDependency)
       ()
     }
     private def addDependency(dep: Symbol): Unit = {
@@ -271,7 +271,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
 
       // In some cases (eg. macro annotations), `typeTree.tpe` may be null. See sbt/sbt#1593 and sbt/sbt#1655.
       case typeTree: TypeTree if !ignoredType(typeTree.tpe) =>
-        foreachSymbolInType(typeTree.tpe)(addDependency)
+        foreachNotPackageSymbolInType(typeTree.tpe)(addDependency)
       case m @ MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
         traverse(original)
         super.traverse(m)
@@ -289,7 +289,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       addDependency(symbol)
     }
     val addSymbolsFromType: Type => Unit = { tpe =>
-      foreachSymbolInType(tpe)(addDependency)
+      foreachNotPackageSymbolInType(tpe)(addDependency)
     }
   }
 

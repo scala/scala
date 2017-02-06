@@ -154,7 +154,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       case t if t.hasSymbolField =>
         addSymbol(t.symbol)
         if (t.tpe != null)
-          foreachSymbolInType(t.tpe)(addSymbol)
+          foreachNotPackageSymbolInType(t.tpe)(addSymbol)
       case _ =>
     }
 

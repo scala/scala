@@ -20,7 +20,8 @@ trait GlobalHelpers {
       symbol == EmptyPackageClass
   }
 
-  def foreachSymbolInType(tpe: Type)(op: Symbol => Unit): Unit = {
+  /** Apply `op` on every type symbol which doesn't represent a package. */
+  def foreachNotPackageSymbolInType(tpe: Type)(op: Symbol => Unit): Unit = {
     new ForEachTypeTraverser(_ match {
       case null =>
       case tpe =>
