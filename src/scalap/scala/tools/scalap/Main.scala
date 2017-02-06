@@ -16,6 +16,8 @@ import scala.tools.nsc.util.ClassPath
 import scala.tools.util.PathResolver
 import scalax.rules.scalasig._
 
+import scala.io.AnsiColor.{BOLD, RESET}
+
 /**The main object used to execute scalap on the command-line.
  *
  * @author Matthias Zenger, Stephane Micheloud, Burak Emir, Ilya Sergey
@@ -110,7 +112,7 @@ class Main {
     path.findClassFile(encName) match {
       case Some(classFile) =>
         if (verbose) {
-          Console.println(Console.BOLD + "FILENAME" + Console.RESET + " = " + classFile.path)
+          Console.println(BOLD + "FILENAME" + RESET + " = " + classFile.path)
         }
         val bytes = classFile.toByteArray
         if (isScalaFile(bytes)) {
@@ -184,7 +186,7 @@ object Main extends Main {
 
       // print the classpath if output is verbose
       if (verbose)
-        Console.println(Console.BOLD + "CLASSPATH" + Console.RESET + " = " + path.asClassPathString)
+        Console.println(BOLD + "CLASSPATH" + RESET + " = " + path.asClassPathString)
 
       // process all given classes
       arguments.getOthers foreach process(arguments, path)
