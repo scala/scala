@@ -20,16 +20,6 @@ trait GlobalHelpers {
       symbol == EmptyPackageClass
   }
 
-  def symbolsInType(tp: Type): Set[Symbol] = {
-    val typeSymbolCollector =
-      new CollectTypeCollector({
-        case tpe if !ignoredType(tpe) && !tpe.typeSymbolDirect.hasPackageFlag =>
-          tpe.typeSymbolDirect
-      })
-
-    typeSymbolCollector.collect(tp).toSet
-  }
-
   def foreachSymbolInType(tpe: Type)(op: Symbol => Unit): Unit = {
     new ForEachTypeTraverser(_ match {
       case null =>
