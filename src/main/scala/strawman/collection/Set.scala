@@ -4,15 +4,23 @@ package collection
 import scala.{Any, Boolean, Equals, Int}
 import scala.util.hashing.MurmurHash3
 
+
+/** Base trait for set collections */
 trait Set[A]
   extends Iterable[A]
     with SetLike[A, Set]
 
+/** Base trait for set operations */
 trait SetLike[A, +C[X] <: Set[X]]
-  extends SetOps[A]
+  extends IterableLike[A, C]
+    with SetMonoTransforms[A, C[A]]
     with Equals {
 
   protected def coll: C[A]
+
+  def contains(elem: A): Boolean
+
+  def subsetOf(that: Set[A]): Boolean
 
   def canEqual(that: Any) = true
 
@@ -20,9 +28,9 @@ trait SetLike[A, +C[X] <: Set[X]]
     that match {
       case set: Set[A] =>
         (this eq set) ||
-        (set canEqual this) &&
-        (coll.size == set.size) &&
-        (this subsetOf set)
+          (set canEqual this) &&
+            (coll.size == set.size) &&
+            (this subsetOf set)
       case _ => false
     }
 
@@ -30,11 +38,12 @@ trait SetLike[A, +C[X] <: Set[X]]
 
 }
 
-trait SetOps[A] extends Any {
+/** Monomorphic transformation operations */
+trait SetMonoTransforms[A, +Repr] {
 
-  protected def coll: Set[A]
+  def & (that: Set[A]): Repr
 
-  def subsetOf(that: Set[A]): Boolean
+  def ++ (that: Set[A]): Repr
 
 }
 

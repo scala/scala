@@ -301,6 +301,12 @@ class StrawmanTest {
     assert(list.## != buffer.##)
   }
 
+  def sortedSets(xs: strawman.collection.immutable.SortedSet[Int]): Unit = {
+    val xs1 = xs.map((x: Int) => x.toString)
+    val xs2: SortedSet[String] = xs1
+    val xs3: strawman.collection.immutable.Set[String] = xs.map((x: Int) => x.toString)
+  }
+
   @Test
   def mainTest: Unit = {
     val ints = List(1, 2, 3)
