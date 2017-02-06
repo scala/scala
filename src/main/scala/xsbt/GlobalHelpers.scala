@@ -6,10 +6,25 @@ trait GlobalHelpers {
   val global: Global
   import global._
 
+  /** Return true if type shall be ignored, false otherwise. */
+  @inline def ignoredType(tpe: Type) = {
+    tpe == null ||
+      tpe == NoType ||
+      tpe.typeSymbol == EmptyPackageClass
+  }
+
+  /** Return true if symbol shall be ignored, false otherwise. */
+  @inline def ignoredSymbol(symbol: Symbol) = {
+    symbol == null ||
+      symbol == NoSymbol ||
+      symbol == EmptyPackageClass
+  }
+
   def symbolsInType(tp: Type): Set[Symbol] = {
     val typeSymbolCollector =
       new CollectTypeCollector({
-        case tpe if (tpe != null) && !tpe.typeSymbolDirect.hasPackageFlag => tpe.typeSymbolDirect
+        case tpe if !ignoredType(tpe) && !tpe.typeSymbolDirect.hasPackageFlag =>
+          tpe.typeSymbolDirect
       })
 
     typeSymbolCollector.collect(tp).toSet
