@@ -93,7 +93,7 @@ class ScriptRunner extends HasCompileSocket {
       val compiledPath = Directory makeTemp "scalascript"
 
       // delete the directory after the user code has finished
-      sys.addShutdownHook(compiledPath.deleteRecursively())
+      Runtime.getRuntime.addShutdownHook(new Thread(() => compiledPath.deleteRecursively()))
 
       settings.outdir.value = compiledPath.path
 

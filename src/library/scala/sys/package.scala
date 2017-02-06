@@ -45,6 +45,7 @@ package object sys {
    *
    *  @return   the result of `java.lang.Runtime.getRuntime()`
    */
+  @deprecated("use Runtime.getRuntime", "2.12.2")
   def runtime: Runtime = Runtime.getRuntime
 
   /** A bidirectional, mutable Map representing the current system Properties.
@@ -71,6 +72,7 @@ package object sys {
    *  @return   the   Thread which will run the shutdown hook.
    *  @see      [[scala.sys.ShutdownHookThread]]
    */
+  @deprecated("use `Runtime.getRuntime.addShutdownHook(new Thread(() => ...))` instead of `sys.addShutdownHook(...)`", "2.12.2")
   def addShutdownHook(body: => Unit): ShutdownHookThread = ShutdownHookThread(body)
 
   /** Returns all active thread in the current thread's thread group and subgroups.
