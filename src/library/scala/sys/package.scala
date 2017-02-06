@@ -79,6 +79,7 @@ package object sys {
    *
    *  @return   an IndexedSeq containing the threads.
    */
+  @deprecated("this method will be removed in 2.13", "2.12.2")
   def allThreads(): IndexedSeq[Thread] = {
     val num    = Thread.activeCount()
     val tarray = new Array[Thread](num)

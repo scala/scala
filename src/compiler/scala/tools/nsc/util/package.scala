@@ -35,13 +35,21 @@ package object util {
     result
   }
 
+
   /** Executes the code and returns the result and any threads
    *  which were created during its execution.
    */
   def trackingThreads[T](body: => T): (T, Seq[Thread]) = {
-    val ts1    = sys.allThreads()
+    def allThreads(): IndexedSeq[Thread] = {
+      val tarray = new Array[Thread](Thread.activeCount())
+      val got    = Thread.enumerate(tarray)
+
+      tarray take got
+    }
+
+    val ts1    = allThreads()
     val result = body
-    val ts2    = sys.allThreads()
+    val ts2    = allThreads()
 
     (result, ts2 filterNot (ts1 contains _))
   }
