@@ -22,11 +22,9 @@ import scala.collection.mutable
  * Names mentioned in Import nodes are handled properly but require some special logic for two
  * reasons:
  *
- *   1. import node itself has a term symbol associated with it with a name `<import`>.
- *      I (gkossakowski) tried to track down what role this symbol serves but I couldn't.
- *      It doesn't look like there are many places in Scala compiler that refer to
- *      that kind of symbols explicitly.
- *   2. ImportSelector is not subtype of Tree therefore is not processed by `Tree.foreach`
+ *   1. The `termSymbol` of Import nodes point to the symbol of the prefix it imports from
+ *      (not the actual members that we import, that are represented as names).
+ *   2. ImportSelector is not subtype of Tree therefore is not processed by `Tree.foreach`.
  *
  * Another type of tree nodes that requires special handling is TypeTree. TypeTree nodes
  * has a little bit odd representation:
@@ -106,7 +104,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
     }
 
     /** Returns mutable set with all names from given class used in current context */
-    def usedNamesFromClass(className: String): collection.mutable.Set[String] =
+    def usedNamesFromClass(className: String): collection.mutable.Set[String] = {
       usedNamesFromClasses.get(className) match {
         case None =>
           val emptySet = scala.collection.mutable.Set.empty[String]
@@ -114,6 +112,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
           emptySet
         case Some(setForClass) => setForClass
       }
+    }
 
     /*
      * Some macros appear to contain themselves as original tree.
@@ -130,10 +129,6 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
 
     private def handleClassicTreeNode(tree: Tree): Unit = tree match {
       case _: DefTree | _: Template => ()
-      // turns out that Import node has a TermSymbol associated with it
-      // I (Grzegorz) tried to understand why it's there and what does it represent but
-      // that logic was introduced in 2005 without any justification I'll just ignore the
-      // import node altogether and just process the selectors in the import node
       case Import(_, selectors: List[ImportSelector]) =>
         val enclosingNonLocalClass = resolveEnclosingNonLocalClass()
         def usedNameInImportSelector(name: Name): Unit =
@@ -205,22 +200,8 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       if (s.isModule) s.moduleClass else s.enclClass
   }
 
-  /**
-   * Needed for compatibility with Scala 2.8 which doesn't define `tpnme`
-   */
-  private object tpnme {
-    val EMPTY = nme.EMPTY.toTypeName
-    val EMPTY_PACKAGE_NAME = nme.EMPTY_PACKAGE_NAME.toTypeName
-  }
-
   private def eligibleAsUsedName(symbol: Symbol): Boolean = {
-    def emptyName(name: Name): Boolean = name match {
-      case nme.EMPTY | nme.EMPTY_PACKAGE_NAME | tpnme.EMPTY | tpnme.EMPTY_PACKAGE_NAME => true
-      case _ => false
-    }
-
     // Synthetic names are no longer included. See https://github.com/sbt/sbt/issues/2537
-    (symbol != NoSymbol) &&
-      !emptyName(symbol.name)
+    !ignoredSymbol(symbol) && !isEmptyName(symbol.name)
   }
 }

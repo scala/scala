@@ -20,6 +20,15 @@ trait GlobalHelpers {
       symbol == EmptyPackageClass
   }
 
+  /** Return true if name is empty, false otherwise. */
+  def isEmptyName(name: Name): Boolean = {
+    name match {
+      case nme.EMPTY | nme.EMPTY_PACKAGE_NAME |
+        tpnme.EMPTY | tpnme.EMPTY_PACKAGE_NAME => true
+      case _ => false
+    }
+  }
+
   /** Apply `op` on every type symbol which doesn't represent a package. */
   def foreachNotPackageSymbolInType(tpe: Type)(op: Symbol => Unit): Unit = {
     new ForEachTypeTraverser(_ match {
