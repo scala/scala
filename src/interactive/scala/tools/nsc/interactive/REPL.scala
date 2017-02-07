@@ -58,7 +58,7 @@ object REPL {
 
   def main(args: Array[String]) {
     process(args)
-    sys.exit(if (reporter.hasErrors) 1 else 0)
+    System.exit(if (reporter.hasErrors) 1 else 0)
   }
 
   def loop(action: (String) => Unit) {
@@ -129,7 +129,7 @@ object REPL {
           doComplete(makePos(file, off1, off1))
         case List("quit") =>
           comp.askShutdown()
-          sys.exit(1)
+          System.exit(1)
         case List("structure", file) =>
           doStructure(file)
         case _ =>
