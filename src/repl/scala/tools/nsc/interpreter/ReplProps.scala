@@ -8,8 +8,8 @@ package interpreter
 
 import Properties.{ javaVersion, javaVmName, shellPromptString, shellWelcomeString,
                     versionString, versionNumberString }
-import scala.sys._
-import Prop._
+import scala.sys.{BooleanProp, Prop}
+import scala.sys.Prop._
 import java.util.{ Formattable, FormattableFlags, Formatter }
 
 class ReplProps {

@@ -53,6 +53,7 @@ package object sys {
    *  @return   a SystemProperties.
    *  @see      [[scala.sys.SystemProperties]]
    */
+  @deprecated("use `System.getProperties().asScala` along with `import scala.collection.JavaConverters._`", "2.12.2")
   def props: SystemProperties = new SystemProperties
 
   /** An immutable Map representing the current system environment.

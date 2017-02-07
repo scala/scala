@@ -309,10 +309,8 @@ trait Logic extends Debugging  {
 
     }
 
-    // TODO: remove since deprecated
-    val budgetProp = scala.sys.Prop[String]("scalac.patmat.analysisBudget")
-    if (budgetProp.isSet) {
-      reportWarning(s"Please remove -D${budgetProp.key}, it is ignored.")
+    if (System.getProperty("scalac.patmat.analysisBudget") != null) {
+      reportWarning(s"Please remove -Dscalac.patmat.analysisBudget, it is ignored.")
     }
 
     // convert finite domain propositional logic with subtyping to pure boolean propositional logic

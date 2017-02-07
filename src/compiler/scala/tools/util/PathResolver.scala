@@ -47,8 +47,10 @@ object PathResolver {
   /** Values found solely by inspecting environment or property variables.
    */
   object Environment {
+    import scala.collection.JavaConverters._
+
     private def searchForBootClasspath =
-      systemProperties collectFirst { case (k, v) if k endsWith ".boot.class.path" => v } getOrElse ""
+      System.getProperties.asScala collectFirst { case (k, v) if k endsWith ".boot.class.path" => v } getOrElse ""
 
     /** Environment variables which java pays attention to so it
      *  seems we do as well.
