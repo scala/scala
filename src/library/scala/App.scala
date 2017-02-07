@@ -8,7 +8,7 @@
 
 package scala
 
-import scala.compat.Platform.currentTime
+import java.lang.System.{currentTimeMillis => currentTime}
 import scala.collection.mutable.ListBuffer
 
 /** The `App` trait can be used to quickly turn objects

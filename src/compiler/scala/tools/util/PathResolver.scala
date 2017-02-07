@@ -21,7 +21,7 @@ import scala.tools.nsc.classpath._
 object PathResolver {
   // Imports property/environment functions which suppress security exceptions.
   import AccessControl._
-  import scala.compat.Platform.EOL
+  import java.lang.System.{lineSeparator => EOL}
 
   implicit class MkLines(val t: TraversableOnce[_]) extends AnyVal {
     def mkLines: String = t.mkString("", EOL, EOL)

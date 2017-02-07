@@ -117,7 +117,7 @@ trait ResizableArray[A] extends IndexedSeq[A]
   /** Move parts of the array.
    */
   protected def copy(m: Int, n: Int, len: Int) {
-    scala.compat.Platform.arraycopy(array, m, array, n, len)
+    java.lang.System.arraycopy(array, m, array, n, len)
   }
 }
 
