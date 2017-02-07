@@ -1,0 +1,16 @@
+kind-poly2.scala:6: error: type arguments [Int] do not conform to trait X's type parameter bounds [F[_] <: AnyKind]
+  new X[Int] { }   // compiles and runs
+      ^
+kind-poly2.scala:7: error: type arguments [Int] do not conform to trait X's type parameter bounds [F[_] <: AnyKind]
+  new X[Int] { }.a // the compiler dies
+      ^
+kind-poly2.scala:8: error: type arguments [Either] do not conform to trait X's type parameter bounds [F[_] <: AnyKind]
+  new X[Either] { } // compiles and runs
+      ^
+kind-poly2.scala:9: error: type arguments [Either] do not conform to trait X's type parameter bounds [F[_] <: AnyKind]
+  new X[Either] { }.a // doesn't compile (error: erroneous or inaccessible type)
+      ^
+kind-poly2.scala:11: error: type arguments [[X, Y]X] do not conform to trait X's type parameter bounds [F[_] <: AnyKind]
+  new X[({ type l[X, Y] = X })#l] { }
+      ^
+5 errors found

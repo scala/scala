@@ -1,0 +1,43 @@
+kind-poly3.scala:59: error: Foo is already defined as trait Foo
+  trait Foo[A]
+        ^
+kind-poly3.scala:8: error: Double takes no type parameters, expected: one
+  val i0: X[Option, Double]#B = Some(5)
+                    ^
+kind-poly3.scala:11: error: [Kind-Polymorphic Error] X[Option, List]#B inferred to type List[Option] with illegally kinded type arguments Option applied to type List[A] (kind errors: type A[*]<=>Option[(*->*)])
+  val i1: X[Option, List]#B = Some(5)
+                          ^
+kind-poly3.scala:14: error: type mismatch;
+ found   : Some[Int]
+ required: List[Option[Double]]
+  val i2: X[Option[Double], List]#B = Some(5)
+                                          ^
+kind-poly3.scala:20: error: [Kind-Polymorphic Error] X[Double, scala.AnyRef {
+  type l[X[_] >: [_]Nothing <: [_]Any] = X[Int]
+}#l]#B inferred to type Double[Int] with illegally kinded type arguments Int applied to type Double
+  val i4: X[Double, ({ type l[X[_]] = X[Int] })#l]#B = 5.0
+                                                   ^
+kind-poly3.scala:26: error: [Kind-Polymorphic Error] X[Either, List]#B inferred to type List[[+A, +B]scala.util.Either[A,B]] with illegally kinded type arguments [+A, +B]scala.util.Either[A,B] applied to type List[A] (kind errors: type A[*]<=>[+A, +B]scala.util.Either[A,B][(*->*->*)])
+  val i7: X[Either, List]#B = Some(5)
+                          ^
+kind-poly3.scala:30: error: type mismatch;
+ found   : Some[Int]
+ required: Test.Foo[Int]
+  val i8: X[Foo, ({ type l[X[_]] = X[Int] })#l]#B = Some(5)
+                                                        ^
+kind-poly3.scala:37: error: [Kind-Polymorphism Error] Illegally trying to substitute type F by [X[_]]X[Int][type X] in F[Option[Double]] with kind-mismatching arguments (type X<(*->*)>!=Option[Double]<*>)
+      .asInstanceOf[X2[List, Option[Double]]].run[({ type l[X[_]] = X[Int] })#l]
+                                                 ^
+kind-poly3.scala:42: error: [Kind-Polymorphism Error] Illegally trying to substitute type F by List[type A] in F[List] with kind-mismatching arguments (type A<*>!=List<(*->*)>)
+      .asInstanceOf[X2[List, Option[Double]]].run[List]
+                                                 ^
+kind-poly3.scala:49: error: [Kind-Polymorphism Error] Illegally trying to substitute type F by Map[type A, type B] in F[List,String] with kind-mismatching arguments (type A<*>!=List<(*->*)>)
+      .asInstanceOf[X3[Option[Double], List, String]].run[Map]
+                                                         ^
+kind-poly3.scala:53: error: [Kind-Polymorphism Error] Illegally trying to substitute type F by Map[type A, type B] in F[List,String] with kind-mismatching arguments (type A<*>!=List<(*->*)>)
+      .asInstanceOf[X3[List, Option[Double], String]].run[Map]
+                                                         ^
+kind-poly3.scala:67: error: [Kind-Polymorphism Error] Illegally trying to substitute type F by Test.Bar2[type A, type B] in F[Test.Bar,Int] with kind-mismatching arguments (type A<*>!=Test.Bar<(*->*)>)
+      .asInstanceOf[X3[Bar, Bar, Int]].run[Bar2]
+                                          ^
+12 errors found

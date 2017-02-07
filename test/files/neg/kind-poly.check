@@ -1,0 +1,13 @@
+kind-poly.scala:21: error: inferred result type (=> List) takes type parameters
+  foo0[List]                // KO -> neg
+  ^
+kind-poly.scala:22: error: inferred result type (=> List) takes type parameters
+  val l = foo0[List]        // KO -> neg
+          ^
+kind-poly.scala:24: error: F does not take type parameters
+  def foo1[F <: AnyKind, A <: AnyKind]: F[A] = ??? // KO
+                                        ^
+kind-poly.scala:26: error: AnyKind can't be used as a real type
+  def foo3: AnyKind = ??? // KO
+            ^
+four errors found

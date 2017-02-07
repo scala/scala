@@ -1,0 +1,7 @@
+kind-poly-noflag.scala:3: error: AnyKind can't be used as a real type
+  def foo: AnyKind = ???
+           ^
+kind-poly-noflag.scala:4: error: AnyKind can't be used as a real type
+  val foo2: AnyKind = ???
+            ^
+two errors found

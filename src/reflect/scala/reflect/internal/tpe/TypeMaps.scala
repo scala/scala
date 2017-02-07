@@ -727,6 +727,8 @@ private[internal] trait TypeMaps {
       val tp1                   = if (boundSyms.nonEmpty && (boundSyms exists from.contains)) renameBoundSyms(tp0) else tp0
       val tp                    = mapOver(tp1)
       def substFor(sym: Symbol) = subst(tp, sym, from, to)
+      // true if $tp[..., _ <: AnyKind, ...]
+      def hasKindPolymorphicTypeParam = settings.YkindPolymorphism && tp.typeSymbol.typeParams.filter(tparam => isAnyKind(tparam.tpe)).nonEmpty
 
       tp match {
         // @M
@@ -743,6 +745,39 @@ private[internal] trait TypeMaps {
         case TypeRef(NoPrefix, sym, args) =>
           val tcon = substFor(sym)
           if ((tp eq tcon) || args.isEmpty) tcon
+          // if $tp[..., _ <: AnyKind, ...] we try to check args do not kind-mismatch with tcon args... cost???
+          else if(hasKindPolymorphicTypeParam) {
+            // recursively going in the structuer to check kinds matching
+            def doesKindsMismatch(tparams: List[Symbol], targs: List[Type]): Boolean = 
+              tparams.map(_.typeParams).zip(targs.map(targ => targ -> targ.typeParams)).filter { case (tps, (targ, targParams)) =>
+                if(tps.isEmpty && targParams.isEmpty) false
+                // kind match when same length or bar[A[_]] <=> L[a <: AnyKind]
+                else if(!sameLength(tps, targParams) && !isAnyKind(targ)) true
+                else {
+                  doesKindsMismatch(tps, targParams.map(_.tpe))
+                }
+              }.nonEmpty
+
+            def typeKindStr(tp: Type): String = {
+              if(tp.typeParams.isEmpty) "*"
+              else tp.typeParams.map(p => symKindStr(p)+"->").mkString("(", "", "*)")
+            }
+
+            def symKindStr(tp: Symbol): String = {
+              if(tp.typeParams.isEmpty) "*"
+              else tp.typeParams.map(p => symKindStr(p)+"->").mkString("(", "", "*)")
+            }
+
+            if(doesKindsMismatch(tcon.typeParams, args)) {
+              val kindMistmatchStr = tcon.typeParams.zip(args).collect { case (tparam, arg) if !sameLength(tparam.typeParams, arg.typeParams) =>
+                val kind1 = symKindStr(tparam)
+                val kind2 = typeKindStr(arg)
+                s"${tparam}<$kind1>!=${arg}<$kind2>"
+              }.mkString(", ")
+              throw new TypeError(s"[Kind-Polymorphism Error] Illegally trying to substitute $sym by ${tcon}${tcon.typeParams.mkString("[", ", ", "]")} in $tp with kind-mismatching arguments ($kindMistmatchStr)")
+            }
+            else appliedType(tcon.typeConstructor, args)
+          }
           else appliedType(tcon.typeConstructor, args)
         case SingleType(NoPrefix, sym) =>
           substFor(sym)
