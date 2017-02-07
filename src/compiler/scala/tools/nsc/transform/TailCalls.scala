@@ -396,7 +396,8 @@ abstract class TailCalls extends Transform {
         case Apply(fun, args) =>
           rewriteApply(fun, fun, Nil, args)
         case Alternative(_) | Star(_) | Bind(_, _) =>
-          sys.error("We should've never gotten inside a pattern")
+          assert(false, "We should've never gotten inside a pattern")
+          tree
         case Select(qual, name) =>
           treeCopy.Select(tree, noTailTransform(qual), name)
         case EmptyTree | Super(_, _) | This(_) | Ident(_) | Literal(_) | Function(_, _) | TypeTree() =>

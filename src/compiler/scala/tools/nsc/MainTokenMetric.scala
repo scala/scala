@@ -35,7 +35,7 @@ object MainTokenMetric {
   }
 
   def process(args: Array[String]) {
-    val settings = new Settings(sys.error)
+    val settings = new Settings(msg => throw new RuntimeException(msg))
     reporter = new ConsoleReporter(settings)
     val command = new CompilerCommand(args.toList, settings)
     try {

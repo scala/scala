@@ -10,6 +10,8 @@ package scala
 package collection
 package mutable
 
+import java.util.ConcurrentModificationException
+
 /**
  *  @define Coll `OpenHashMap`
  *  @define coll open hash map
@@ -219,7 +221,7 @@ extends AbstractMap[Key, Value]
     val initialModCount = modCount
 
     private[this] def advance() {
-      if (initialModCount != modCount) sys.error("Concurrent modification")
+      if (initialModCount != modCount) throw new ConcurrentModificationException
       while((index <= mask) && (table(index) == null || table(index).value == None)) index+=1
     }
 
@@ -252,7 +254,7 @@ extends AbstractMap[Key, Value]
   override def foreach[U](f : ((Key, Value)) => U) {
     val startModCount = modCount
     foreachUndeletedEntry(entry => {
-      if (modCount != startModCount) sys.error("Concurrent Modification")
+      if (modCount != startModCount) throw new ConcurrentModificationException
       f((entry.key, entry.value.get))}
     )
   }

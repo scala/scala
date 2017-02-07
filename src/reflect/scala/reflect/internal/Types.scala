@@ -4176,7 +4176,7 @@ trait Types
     case ThisType(sym)                         => !sym.isPackageClass   // excludes packages
     case TypeRef(_, sym, _)                    => !sym.isPackageClass   // excludes packages
     case PolyType(_, _)                        => true                  // poly-methods excluded earlier
-    case tp                                    => sys.error("isValueElseNonValue called with third-way type " + tp)
+    case tp                                    => throw new IllegalArgumentException("isValueElseNonValue called with third-way type " + tp)
   }
 
   /** SLS 3.2, Value Types

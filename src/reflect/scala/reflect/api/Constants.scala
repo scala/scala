@@ -153,7 +153,6 @@ trait Constants {
    *    def jarg(name: String) = jann(TermName(name)) match {
    *      // Constant is always wrapped into a Literal or LiteralArgument tree node
    *      case LiteralArgument(ct: Constant) => value
-   *      case _ => sys.error("Not a constant")
    *    }
    *
    *    val classRef = jarg("classRef").value.asInstanceOf[Type]

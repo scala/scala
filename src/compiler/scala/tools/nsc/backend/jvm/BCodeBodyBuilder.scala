@@ -306,7 +306,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           genLoadArguments(dynamicArgs, qual.symbol.info.params.map(param => typeToBType(param.info)))
           mnode.visitInvokeDynamicInsn(qual.symbol.name.encoded, descriptor.descriptor, bootstrapDescriptor, bootstrapArgs : _*)
 
-        case ApplyDynamic(qual, args) => sys.error("No invokedynamic support yet.")
+        case ApplyDynamic(qual, args) => abort("No invokedynamic support yet.")
 
         case This(qual) =>
           val symIsModuleClass = tree.symbol.isModuleClass
