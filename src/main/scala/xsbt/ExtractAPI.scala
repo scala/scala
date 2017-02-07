@@ -136,18 +136,15 @@ class ExtractAPI[GlobalType <: Global](
     def renaming(symbol: Symbol): Option[String] = renameTo.get(symbol)
   }
 
-  // call back to the xsbti.SafeLazy class in main sbt code to construct a SafeLazy instance
-  //   we pass a thunk, whose class is loaded by the interface class loader (this class's loader)
-  //   SafeLazy ensures that once the value is forced, the thunk is nulled out and so
-  //   references to the thunk's classes are not retained.  Specifically, it allows the interface classes
-  //   (those in this subproject) to be garbage collected after compilation.
-  private[this] val safeLazy = Class.forName("xsbti.SafeLazy").getMethod("apply", classOf[xsbti.F0[_]])
-  private def lzy[S <: AnyRef](s: => S): xsbti.api.Lazy[S] =
-    {
-      val z = safeLazy.invoke(null, Message(s)).asInstanceOf[xsbti.api.Lazy[S]]
-      pending += z
-      z
-    }
+  /**
+   * Construct a lazy instance from a by-name parameter that will null out references to once
+   * the value is forced and therefore references to thunk's classes will be garbage collected.
+   */
+  private def lzy[S <: AnyRef](s: => S): xsbti.api.Lazy[S] = {
+    val lazyImpl = xsbti.api.SafeLazy.apply(Message(s))
+    pending += lazyImpl
+    lazyImpl
+  }
 
   /**
    * Force all lazy structures.  This is necessary so that we see the symbols/types at this phase and
