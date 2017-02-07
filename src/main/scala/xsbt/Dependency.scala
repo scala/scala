@@ -58,7 +58,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
           dependencyExtractor.localInheritanceDependencies foreach processDependency(context = LocalDependencyByInheritance)
           processTopLevelImportDependencies(dependencyExtractor.topLevelImportDependencies)
         } else {
-          throw new UnsupportedOperationException("Turning off name hashing is not supported in class-based dependency trackging.")
+          throw new UnsupportedOperationException(Feedback.NameHashingDisabled)
         }
         /*
          * Registers top level import dependencies as coming from a first top level class/trait/object declared
@@ -75,13 +75,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
               deps foreach { dep =>
                 processDependency(context = DependencyByMemberRef)(ClassDependency(firstClassSymbol, dep))
               }
-            case None =>
-              reporter.warning(
-                unit.position(0),
-                """|Found top level imports but no class, trait or object is defined in the compilation unit.
-                  |The incremental compiler cannot record the dependency information in such case.
-                  |Some errors like unused import referring to a non-existent class might not be reported.""".stripMargin
-              )
+            case None => reporter.warning(unit.position(0), Feedback.OrphanTopLevelImports)
           }
         }
         /*
@@ -163,10 +157,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       }
     }
     private def addClassDependency(deps: HashSet[ClassDependency], fromClass: Symbol, dep: Symbol): Unit = {
-      assert(
-        fromClass.isClass,
-        s"The ${fromClass.fullName} defined at ${fromClass.fullLocationString} is not a class symbol."
-      )
+      assert(fromClass.isClass, Feedback.expectedClassSymbol(fromClass))
       val depClass = enclOrModuleClass(dep)
       if (fromClass.associatedFile != depClass.associatedFile) {
         deps += ClassDependency(fromClass, depClass)
@@ -191,10 +182,9 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
     }
     private def addDependency(dep: Symbol): Unit = {
       val fromClass = resolveDependencySource().fromClass
-      if (fromClass == NoSymbol || fromClass.hasPackageFlag) {
+      if (ignoredSymbol(fromClass) || fromClass.hasPackageFlag) {
         if (inImportNode) addTopLevelImportDependency(dep)
-        else
-          devWarning(s"No enclosing class. Discarding dependency on $dep (currentOwner = $currentOwner).")
+        else devWarning(Feedback.missingEnclosingClass(dep, currentOwner))
       } else {
         addClassDependency(_memberRefDependencies, fromClass, dep)
       }

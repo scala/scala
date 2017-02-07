@@ -63,12 +63,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
           val firstClassName = className(firstClassSymbol)
           traverser.usedNamesFromClass(firstClassName) ++= namesUsedAtTopLevel.map(decodeName)
         case None =>
-          reporter.warning(
-            unit.position(0),
-            """|Found names used at the top level but no class, trait or object is defined in the compilation unit.
-              |The incremental compiler cannot record used names in such case.
-              |Some errors like unused import referring to a non-existent class might not be reported.""".stripMargin
-          )
+          reporter.warning(unit.position(0), Feedback.OrphanNames)
       }
     }
 

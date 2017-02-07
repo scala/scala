@@ -60,4 +60,21 @@ trait GlobalHelpers {
       }.headOption
     }
   }
+
+  /** Define common error messages for error reporting and assertions. */
+  object Feedback {
+    val NameHashingDisabled = "Turning off name hashing is not supported in class-based dependency trackging."
+    val OrphanTopLevelImports = noTopLevelMember("top level imports")
+    val OrphanNames = noTopLevelMember("names")
+
+    def expectedClassSymbol(culprit: Symbol): String =
+      s"The ${culprit.fullName} defined at ${culprit.fullLocationString} is not a class symbol."
+    def missingEnclosingClass(culprit: Symbol, owner: Symbol): String =
+      s"No enclosing class. Discarding dependency on $culprit (currentOwner = $owner)."
+    def noTopLevelMember(found: String) = s"""
+      |Found $found but no class, trait or object is defined in the compilation unit.
+      |The incremental compiler cannot record the dependency information in such case.
+      |Some errors like unused import referring to a non-existent class might not be reported.
+    """.stripMargin
+  }
 }
