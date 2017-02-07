@@ -51,7 +51,7 @@ object MainTokenMetric {
 
   def main(args: Array[String]) {
     process(args)
-    sys.exit(if (reporter.hasErrors) 1 else 0)
+    System.exit(if (reporter.hasErrors) 1 else 0)
   }
 
 }

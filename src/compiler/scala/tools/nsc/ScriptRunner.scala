@@ -117,7 +117,7 @@ class ScriptRunner extends HasCompileSocket {
       cp.findClass(mainClass).isDefined
     }
 
-    /* The script runner calls sys.exit to communicate a return value, but this must
+    /* The script runner calls System.exit to communicate a return value, but this must
      * not take place until there are no non-daemon threads running.  Tickets #1955, #2006.
      */
     util.waitingForThreads {
