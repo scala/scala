@@ -138,7 +138,7 @@ abstract class SymbolTable extends macros.Universe
 
   /** Dump each symbol to stdout after shutdown.
    */
-  final val traceSymbolActivity = sys.props contains "scalac.debug.syms"
+  final val traceSymbolActivity = System.getProperty("scalac.debug.syms") != null
   object traceSymbols extends {
     val global: SymbolTable.this.type = SymbolTable.this
   } with util.TraceSymbolActivity

@@ -13,7 +13,7 @@ private[internal] trait GlbLubs {
   import definitions._
   import TypesStats._
 
-  private final val printLubs = scala.sys.props contains "scalac.debug.lub"
+  private final val printLubs = System.getProperty("scalac.debug.lub") != null
   private final val strictInference = settings.strictInference
 
   /** In case anyone wants to turn off lub verification without reverting anything. */
