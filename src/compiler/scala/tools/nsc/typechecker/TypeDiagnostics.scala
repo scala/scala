@@ -308,8 +308,11 @@ trait TypeDiagnostics {
       !found.typeSymbol.isTypeParameterOrSkolem && !req.typeSymbol.isTypeParameterOrSkolem
 
     if (easilyMistakable) {
-      ";\n found   : " + (foundWiden.nameAndArgsString + s" (in ${found.prefix.typeSymbol.fullNameString}) ") + explainAlias(found) +
-       "\n required: " + (reqWiden.nameAndArgsString + s" (in ${req.prefix.typeSymbol.fullNameString}) ") + explainAlias(req)
+      val longestNameLength = foundWiden.nameAndArgsString.length max reqWiden.nameAndArgsString.length
+      val paddedFoundName = foundWiden.nameAndArgsString.padTo(longestNameLength, ' ')
+      val paddedReqName = reqWiden.nameAndArgsString.padTo(longestNameLength, ' ')
+      ";\n found   : " + (paddedFoundName + s" (in ${found.prefix.typeSymbol.fullNameString}) ") + explainAlias(found) +
+       "\n required: " + (paddedReqName + s" (in ${req.prefix.typeSymbol.fullNameString}) ") + explainAlias(req)
     } else {
       def baseMessage = {
         ";\n found   : " + found.toLongString + existentialContext(found) + explainAlias(found) +
