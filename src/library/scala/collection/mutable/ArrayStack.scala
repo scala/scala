@@ -116,7 +116,7 @@ extends AbstractSeq[T]
    *  @return the element on top of the stack
    */
   def pop(): T = {
-    if (index == 0) sys.error("Stack empty")
+    if (index == 0) throw new IllegalStateException("Stack empty")
     index -= 1
     val x = table(index).asInstanceOf[T]
     table(index) = null

@@ -604,7 +604,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       case Some(root: PackageImpl) => root
       case _ => modelCreation.createTemplate(RootPackage, null) match {
         case Some(root: PackageImpl) => root
-        case _ => sys.error("Scaladoc: Unable to create root package!")
+        case _ => throw new IllegalStateException("Scaladoc: Unable to create root package!")
       }
     }
 
@@ -641,7 +641,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         else if (bSym.isClass || bSym == AnyRefClass)
           new DocTemplateImpl(bSym, inTpl) with Class {}
         else
-          sys.error("'" + bSym + "' isn't a class, trait or object thus cannot be built as a documentable template.")
+          throw new IllegalArgumentException(s"'$bSym' isn't a class, trait or object thus cannot be built as a documentable template.")
       }
 
       val bSym = normalizeTemplate(aSym)
@@ -681,7 +681,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
               } else
                 Some(pack)
             case _ =>
-              sys.error("'" + bSym + "' must be in a package")
+              throw new IllegalArgumentException(s"'$bSym' must be in a package")
           }
       else {
         // no class inheritance at this point
@@ -708,7 +708,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         else if (bSym.isClass || (bSym.isAliasType && bSym.tpe.typeSymbol.isClass))
           new MemberTemplateImpl(bSym, inTpl) with Class {}
         else
-          sys.error("'" + bSym + "' isn't a class, trait or object thus cannot be built as a member template.")
+          throw new IllegalArgumentException(s"'$bSym' isn't a class, trait or object thus cannot be built as a member template.")
       }
 
       assert(modelFinished)

@@ -13,7 +13,7 @@ import GenericRunnerCommand._
 object JarRunner extends CommonRunner {
   def runJar(settings: GenericRunnerSettings, jarPath: String, arguments: Seq[String]): Either[Throwable, Boolean] = {
     val jar       = new io.Jar(jarPath)
-    val mainClass = jar.mainClass getOrElse sys.error("Cannot find main class for jar: " + jarPath)
+    val mainClass = jar.mainClass getOrElse (throw new IllegalArgumentException(s"Cannot find main class for jar: $jarPath"))
     val jarURLs   = ClassPath expandManifestPath jarPath
     val urls      = if (jarURLs.isEmpty) File(jarPath).toURL +: settings.classpathURLs else jarURLs
 

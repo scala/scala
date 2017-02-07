@@ -796,7 +796,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     private def evalMethod(name: String) = evalClass.getMethods filter (_.getName == name) match {
       case Array()       => null
       case Array(method) => method
-      case xs            => sys.error("Internal error: eval object " + evalClass + ", " + xs.mkString("\n", "\n", ""))
+      case xs            => throw new IllegalStateException(s"Internal error: eval object $evalClass, ${xs.mkString("\n", "\n", "")}")
     }
     private def compileAndSaveRun(label: String, code: String) = {
       showCodeIfDebugging(code)

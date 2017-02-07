@@ -388,22 +388,17 @@ abstract class ExplicitOuter extends InfoTransform
           )
         case DefDef(_, _, _, vparamss, _, rhs) =>
           if (sym.isClassConstructor) {
-            rhs match {
-              case Literal(_) =>
-                sys.error("unexpected case") //todo: remove
-              case _ =>
-                val clazz = sym.owner
-                val vparamss1 =
-                  if (isInner(clazz)) { // (4)
-                    if (isUnderConstruction(clazz.outerClass)) {
-                      reporter.error(tree.pos, s"Implementation restriction: ${clazz.fullLocationString} requires premature access to ${clazz.outerClass}.")
-                    }
-                    val outerParam =
-                      sym.newValueParameter(nme.OUTER, sym.pos) setInfo clazz.outerClass.thisType
-                    ((ValDef(outerParam) setType NoType) :: vparamss.head) :: vparamss.tail
-                  } else vparamss
-                super.transform(copyDefDef(tree)(vparamss = vparamss1))
-            }
+            val clazz = sym.owner
+            val vparamss1 =
+              if (isInner(clazz)) { // (4)
+                if (isUnderConstruction(clazz.outerClass)) {
+                  reporter.error(tree.pos, s"Implementation restriction: ${clazz.fullLocationString} requires premature access to ${clazz.outerClass}.")
+                }
+                val outerParam =
+                  sym.newValueParameter(nme.OUTER, sym.pos) setInfo clazz.outerClass.thisType
+                ((ValDef(outerParam) setType NoType) :: vparamss.head) :: vparamss.tail
+              } else vparamss
+            super.transform(copyDefDef(tree)(vparamss = vparamss1))
           } else
             super.transform(tree)
 
