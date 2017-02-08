@@ -22,16 +22,11 @@ object Dependency {
 /**
  * Extracts dependency information from each compilation unit.
  *
- * This phase uses CompilationUnit.depends and CallbackGlobal.inheritedDependencies
- * to collect all symbols that given compilation unit depends on. Those symbols are
- * guaranteed to represent Class-like structures.
- *
- * The CallbackGlobal.inheritedDependencies is populated by the API phase. See,
- * ExtractAPI class.
+ * This phase detects all the dependencies both at the term and type level.
  *
  * When dependency symbol is processed, it is mapped back to either source file where
  * it's defined in (if it's available in current compilation run) or classpath entry
- * where it originates from. The Symbol->Classfile mapping is implemented by
+ * where it originates from. The Symbol -> Classfile mapping is implemented by
  * LocateClassFile that we inherit from.
  */
 final class Dependency(val global: CallbackGlobal) extends LocateClassFile with GlobalHelpers {
