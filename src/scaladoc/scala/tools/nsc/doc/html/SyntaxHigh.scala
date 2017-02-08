@@ -47,9 +47,9 @@ private[html] object SyntaxHigh {
     "Console", "Double", "Enumeration", "Float", "Function", "Int",
     "List", "Long", "Manifest", "Map",
     "NoManifest", "None", "Nothing", "Null", "Object", "Option", "OptManifest",
-    "Pair", "Predef",
+    "Predef",
     "Seq", "Set", "Short", "Some", "String", "Symbol",
-    "Triple", "TypeTag", "Unit", "WeakTypeTag").sorted
+    "TypeTag", "Unit", "WeakTypeTag").sorted
 
   def apply(data: String): NodeSeq = {
     val buf = data.toCharArray

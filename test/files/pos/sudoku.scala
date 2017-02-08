@@ -1,3 +1,5 @@
+import scala.io.StdIn.readLine
+
 object SudokuSolver extends App {
   // The board is represented by an array of strings (arrays of chars),
   // held in a global variable m. The program begins by reading 9 lines
