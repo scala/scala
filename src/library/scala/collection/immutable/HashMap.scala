@@ -52,6 +52,9 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
   def get(key: A): Option[B] =
     get0(key, computeHash(key), 0)
 
+  override final def contains(key: A): Boolean =
+    contains0(key, computeHash(key), 0)
+
   override def updated [B1 >: B] (key: A, value: B1): HashMap[A, B1] =
     updated0(key, computeHash(key), 0, value, null, null)
 
@@ -92,7 +95,7 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
   import HashMap.{Merger, MergeFunction, liftMerger}
 
   private[collection] def get0(key: A, hash: Int, level: Int): Option[B] = None
-
+  protected def contains0(key: A, hash: Int, level: Int): Boolean = false
   private[collection] def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] =
     new HashMap.HashMap1(key, hash, value, kv)
 
@@ -185,6 +188,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     }
   }
 
+  @deprecatedInheritance("This class will be made final in a future release.", "2.12.2")
   class HashMap1[A,+B](private[collection] val key: A, private[collection] val hash: Int, private[collection] val value: (B @uV), private[collection] var kv: (A,B @uV)) extends HashMap[A,B] {
     override def size = 1
 
@@ -195,6 +199,8 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     override def get0(key: A, hash: Int, level: Int): Option[B] =
       if (hash == this.hash && key == this.key) Some(value) else None
 
+    override protected def contains0(key: A, hash: Int, level: Int): Boolean =
+      hash == this.hash && key == this.key
     private[collection] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] =
       if (hash == this.hash && key == this.key ) {
         if (merger eq null) {
@@ -238,6 +244,9 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     override def get0(key: A, hash: Int, level: Int): Option[B] =
       if (hash == this.hash) kvs.get(key) else None
+
+    override protected def contains0(key: A, hash: Int, level: Int): Boolean =
+      hash == this.hash && kvs.contains(key)
 
     private[collection] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] =
       if (hash == this.hash) {
@@ -294,6 +303,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     }
   }
 
+  @deprecatedInheritance("This class will be made final in a future release.", "2.12.2")
   class HashTrieMap[A, +B](
     private[collection] val bitmap: Int,
     private[collection] val elems: Array[HashMap[A, B @uV]],
@@ -306,21 +316,41 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     override def size = size0
 
     override def get0(key: A, hash: Int, level: Int): Option[B] = {
+      // Note: this code is duplicated with `contains0`
       val index = (hash >>> level) & 0x1f
-      val mask = (1 << index)
       if (bitmap == - 1) {
-        elems(index & 0x1f).get0(key, hash, level + 5)
-      } else if ((bitmap & mask) != 0) {
-        val offset = Integer.bitCount(bitmap & (mask-1))
-        elems(offset).get0(key, hash, level + 5)
-      } else
-        None
+        elems(index).get0(key, hash, level + 5)
+      } else {
+        val mask = (1 << index)
+        if ((bitmap & mask) != 0) {
+          val offset = Integer.bitCount(bitmap & (mask - 1))
+          elems(offset).get0(key, hash, level + 5)
+        } else {
+          None
+        }
+      }
+    }
+
+    override protected def contains0(key: A, hash: Int, level: Int): Boolean = {
+      // Note: this code is duplicated from `get0`
+      val index = (hash >>> level) & 0x1f
+      if (bitmap == - 1) {
+        elems(index).contains0(key, hash, level + 5)
+      } else {
+        val mask = (1 << index)
+        if ((bitmap & mask) != 0) {
+          val offset = Integer.bitCount(bitmap & (mask - 1))
+          elems(offset).contains0(key, hash, level + 5)
+        } else {
+          false
+        }
+      }
     }
 
     private[collection] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
-      val offset = Integer.bitCount(bitmap & (mask-1))
+      val offset = Integer.bitCount(bitmap & (mask - 1))
       if ((bitmap & mask) != 0) {
         val sub = elems(offset)
         val subNew = sub.updated0(key, hash, level + 5, value, kv, merger)
@@ -342,7 +372,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     override def removed0(key: A, hash: Int, level: Int): HashMap[A, B] = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
-      val offset = Integer.bitCount(bitmap & (mask-1))
+      val offset = Integer.bitCount(bitmap & (mask - 1))
       if ((bitmap & mask) != 0) {
         val sub = elems(offset)
         val subNew = sub.removed0(key, hash, level + 5)
