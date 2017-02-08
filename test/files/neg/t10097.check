@@ -1,0 +1,10 @@
+t10097.scala:2: error: case classes must have a non-implicit parameter list; try 'case class C()(...)'
+case class C(implicit val c: Int)
+            ^
+t10097.scala:4: error: case classes must have a non-implicit parameter list; try 'case class D()(...)(...)'
+case class D(implicit c: Int)(s: String)
+            ^
+t10097.scala:4: error: an implicit parameter section must be last
+case class D(implicit c: Int)(s: String)
+             ^
+three errors found

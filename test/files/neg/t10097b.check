@@ -1,0 +1,6 @@
+t10097b.scala:2: warning: case classes should have a non-implicit parameter list; adapting to 'case class C()(...)'
+case class C(implicit val c: Int)
+            ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
