@@ -1,0 +1,3 @@
+t10097.scala:2: warning: case classes should have a non-implicit parameter list; adapting to 'case class C()(...)'
+case class C(implicit c: Int)
+            ^

@@ -1105,7 +1105,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
     def apply(line: String): Result = debugging(s"""parse("$line")""") {
       var isIncomplete = false
-      def parse = {
+      def parse = withoutWarnings {
         reporter.reset()
         val trees = newUnitParser(line, label).parseStats()
         if (reporter.hasErrors) Error(trees)

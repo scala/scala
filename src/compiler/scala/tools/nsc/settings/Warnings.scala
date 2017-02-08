@@ -25,6 +25,8 @@ trait Warnings {
   // currently considered too noisy for general use
   val warnUnusedImport     = BooleanSetting("-Ywarn-unused-import", "Warn when imports are unused.")
 
+  val warnExtraImplicit    = BooleanSetting("-Ywarn-extra-implicit", "Warn when more than one implicit parameter section is defined.")
+
   // Experimental lint warnings that are turned off, but which could be turned on programmatically.
   // They are not activated by -Xlint and can't be enabled on the command line because they are not
   // created using the standard factory methods.

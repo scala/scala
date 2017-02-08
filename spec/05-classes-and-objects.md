@@ -709,7 +709,7 @@ Here,
     value parameter may not form part of the types of any of the parent classes or members of the class template $t$.
     It is illegal to define two formal value parameters with the same name.
 
-    If no formal parameter sections are given, an empty parameter section `()` is assumed.
+    If a class has no formal parameter section that is not implicit, an empty parameter section `()` is assumed.
 
     If a formal parameter declaration $x: T$ is preceded by a `val`
     or `var` keyword, an accessor (getter) [definition](04-basic-declarations-and-definitions.html#variable-declarations-and-definitions)
@@ -842,12 +842,13 @@ TmplDef  ::=  ‘case’ ‘class’ ClassDef
 If a class definition is prefixed with `case`, the class is said
 to be a _case class_.
 
-The formal parameters in the first parameter section of a case class
-are called _elements_; they are treated
-specially. First, the value of such a parameter can be extracted as a
+A case class is required to have a parameter section that is not implicit.
+The formal parameters in the first parameter section 
+are called _elements_ and are treated specially.
+First, the value of such a parameter can be extracted as a
 field of a constructor pattern. Second, a `val` prefix is
-implicitly added to such a parameter, unless the parameter carries
-already a `val` or `var` modifier. Hence, an accessor
+implicitly added to such a parameter, unless the parameter already carries
+a `val` or `var` modifier. Hence, an accessor
 definition for the parameter is [generated](#class-definitions).
 
 A case class definition of `$c$[$\mathit{tps}\,$]($\mathit{ps}_1\,$)$\ldots$($\mathit{ps}_n$)` with type

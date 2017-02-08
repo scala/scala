@@ -106,6 +106,15 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     case _                               => super.:+(elem)(bf)
   }
 
+  override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Queue[A], B, That]): That = {
+    if (bf eq Queue.ReusableCBF) {
+      val thatQueue = that.asInstanceOf[Queue[B]]
+      new Queue[B](thatQueue.in ++ (thatQueue.out reverse_::: this.in), this.out).asInstanceOf[That]
+    } else {
+      super.++(that)(bf)
+    }
+  }
+
   /** Creates a new queue with element added at the end
    *  of the old queue.
    *
