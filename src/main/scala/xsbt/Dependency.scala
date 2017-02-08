@@ -160,7 +160,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
         case _ => newOne()
       }
     }
-    private def addClassDependency(deps: HashSet[ClassDependency], fromClass: Symbol, dep: Symbol): Unit = if (dep != NoSymbol)  {
+    private def addClassDependency(deps: HashSet[ClassDependency], fromClass: Symbol, dep: Symbol): Unit = if (dep != NoSymbol) {
       assert(fromClass.isClass, Feedback.expectedClassSymbol(fromClass))
       val depClass = enclOrModuleClass(dep)
       if (fromClass.associatedFile != depClass.associatedFile && !depClass.isRefinementClass) {
