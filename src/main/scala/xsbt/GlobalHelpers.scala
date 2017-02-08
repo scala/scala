@@ -74,6 +74,8 @@ trait GlobalHelpers {
     val OrphanTopLevelImports = noTopLevelMember("top level imports")
     val OrphanNames = noTopLevelMember("names")
 
+    def noOriginFileForExternalSymbol(symbol: Symbol) =
+      s"The symbol $symbol comes from an unknown source or compiled source -- ignoring."
     def expectedClassSymbol(culprit: Symbol): String =
       s"The ${culprit.fullName} defined at ${culprit.fullLocationString} is not a class symbol."
     def missingEnclosingClass(culprit: Symbol, owner: Symbol): String =
