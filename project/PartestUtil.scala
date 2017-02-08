@@ -64,9 +64,9 @@ object PartestUtil {
         }
         val matchingFileName = try {
           val filter = GlobFilter("*" + x + "*")
-          testFiles.allTestCases.filter(x => filter.accept(x._1.name))
+          testFiles.allTestCases.filter(x => filter.accept(x._1.asFile.getPath))
         } catch {
-          case t: Throwable => Nil
+          case _: Throwable => Nil
         }
         (matchingFileContent ++ matchingFileName).map(_._2).distinct.sorted
       }
