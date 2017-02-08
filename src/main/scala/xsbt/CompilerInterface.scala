@@ -217,8 +217,10 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
     override lazy val phaseDescriptors =
       {
         phasesSet += sbtAnalyzer
-        phasesSet += sbtDependency
-        phasesSet += apiExtractor
+        if (callback.enabled()) {
+          phasesSet += sbtDependency
+          phasesSet += apiExtractor
+        }
         superComputePhaseDescriptors
       }
     // Required because computePhaseDescriptors is private in 2.8 (changed to protected sometime later).
