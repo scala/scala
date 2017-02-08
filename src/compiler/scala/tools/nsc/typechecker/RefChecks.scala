@@ -1158,6 +1158,7 @@ abstract class RefChecks extends Transform {
         }
       }
       checkUndesiredProperties(rtpe.typeSymbol, tree.pos)
+      checkUndesiredProperties(rtpe.typeSymbol.primaryConstructor, tree.pos)
       tree
     }
 
