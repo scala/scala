@@ -86,7 +86,9 @@ final case class HtmlTag(data: String) extends Inline {
   }
 
   private val TagsNotToClose = Set("br", "img")
-  def close = tagName collect { case name if !TagsNotToClose(name) => HtmlTag(s"</$name>") }
+  def close = tagName collect {
+    case name if !TagsNotToClose(name) && !data.endsWith(s"</$name>") => HtmlTag(s"</$name>")
+  }
 }
 
 /** The summary of a comment, usually its first sentence. There must be exactly one summary per body. */
