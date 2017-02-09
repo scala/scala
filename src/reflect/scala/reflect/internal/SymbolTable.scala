@@ -49,6 +49,8 @@ abstract class SymbolTable extends macros.Universe
                               with Reporting
 {
 
+  object classpathUsage extends ClasspathUsage()
+
   val gen = new InternalTreeGen { val global: SymbolTable.this.type = SymbolTable.this }
 
   def log(msg: => AnyRef): Unit
