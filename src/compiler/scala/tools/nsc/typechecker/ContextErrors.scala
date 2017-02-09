@@ -1211,7 +1211,7 @@ trait ContextErrors {
             "pass-by-name arguments not allowed for case class parameters"
 
           case AbstractVar =>
-            "only classes can have declared but undefined members" + abstractVarMessage(sym)
+            "only traits and abstract classes can have declared but undefined members" + abstractVarMessage(sym)
 
         }
         issueSymbolTypeError(sym, msg)
