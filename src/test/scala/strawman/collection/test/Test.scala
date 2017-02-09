@@ -130,7 +130,7 @@ class StrawmanTest {
     val ys9: Seq[Int] = xs9
     val xs9a = xs.map(_.toUpper)
     val ys9a: String = xs9a
-    val xs10 = xs.flatMap((x: Char) => s"$x,$x")
+    val xs10 = xs.flatMap(x => s"$x,$x")
     val ys10: String = xs10
     val xs11 = xs ++ xs
     val ys11: String = xs11
@@ -305,6 +305,18 @@ class StrawmanTest {
     val xs1 = xs.map((x: Int) => x.toString)
     val xs2: SortedSet[String] = xs1
     val xs3: strawman.collection.immutable.Set[String] = xs.map((x: Int) => x.toString)
+  }
+
+  def mapOps(xs: strawman.collection.Map[Int, String]): Unit = {
+    val xs1 = xs.map((k, v) => (v, k))
+//    val xs1Bis = xs.map { case (k, v) => (v, k) } Does not compile :(
+    val xs2: strawman.collection.Map[String, Int] = xs1
+    val xs3 = xs.map(kv => (kv._2, kv._1))
+    val xs4: strawman.collection.Iterable[(String, Int)] = xs3
+    println(xs1)
+    println(xs2)
+    println(xs3)
+    println(xs4)
   }
 
   @Test
