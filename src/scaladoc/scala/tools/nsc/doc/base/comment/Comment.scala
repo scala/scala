@@ -12,7 +12,7 @@ import scala.collection._
 
 /** A Scaladoc comment and all its tags.
   *
-  * '''Note:''' the only instantiation site of this class is in [[CommentFactory]].
+  * '''Note:''' the only instantiation site of this class is in [[model.CommentFactory]].
   *
   * @author Manohar Jonnalagedda
   * @author Gilles Dubochet */
