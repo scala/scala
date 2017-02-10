@@ -129,5 +129,5 @@ object Platform {
 
   /** The name of the default character set encoding as a string */
   @inline
-  def defaultCharsetName: String = java.nio.charset.Charset.defaultCharset.name
+  def defaultCharsetName: String = "UTF-8"
 }

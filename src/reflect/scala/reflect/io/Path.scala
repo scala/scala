@@ -42,7 +42,7 @@ object Path {
       i -= 1
 
     if (i < 0) ""
-    else name.substring(i + 1).toLowerCase
+    else name.substring(i + 1).toLowerCase(java.util.Locale.ENGLISH)
   }
 
   // not certain these won't be problematic, but looks good so far
@@ -177,8 +177,8 @@ class Path private[io] (val jfile: JFile) {
   }
   // compares against extensions in a CASE INSENSITIVE way.
   def hasExtension(ext: String, exts: String*) = {
-    val lower = extension.toLowerCase
-    ext.toLowerCase == lower || exts.exists(_.toLowerCase == lower)
+    val lower = extension.toLowerCase(java.util.Locale.ENGLISH)
+    ext.toLowerCase(java.util.Locale.ENGLISH) == lower || exts.exists(_.toLowerCase(java.util.Locale.ENGLISH) == lower)
   }
   // returns the filename without the extension.
   def stripExtension: String = name stripSuffix ("." + extension)

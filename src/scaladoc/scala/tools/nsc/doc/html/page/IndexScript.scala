@@ -29,7 +29,7 @@ class IndexScript(universe: doc.Universe) extends Page {
       case (pack, templates) => {
         val merged = mergeByQualifiedName(templates)
 
-        val ary = merged.keys.toVector.sortBy(_.toLowerCase).map { key =>
+        val ary = merged.keys.toVector.sortBy(_.toLowerCase(java.util.Locale.ENGLISH)).map { key =>
           /** One pair is generated for the class/trait and one for the
            *  companion object, both will have the same {"name": key}
            *

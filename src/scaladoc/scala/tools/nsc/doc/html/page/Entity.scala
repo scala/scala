@@ -1124,5 +1124,5 @@ object EntityPage {
 
   /* Vlad: Lesson learned the hard way: don't put any stateful code that references the model here,
    * it won't be garbage collected and you'll end up filling the heap with garbage */
-  def lowerFirstLetter(s: String) = if (s.length >= 1) s.substring(0,1).toLowerCase() + s.substring(1) else s
+  def lowerFirstLetter(s: String) = if (s.length >= 1) s.substring(0,1).toLowerCase(java.util.Locale.ENGLISH) + s.substring(1) else s
 }
