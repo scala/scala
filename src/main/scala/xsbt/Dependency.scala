@@ -61,16 +61,18 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
   }
 
   private class DependencyProcessor(unit: CompilationUnit) {
-    private def firstClassOrModuleDef(tree: Tree): Option[Tree] = {
+    private def firstClassOrModuleClass(tree: Tree): Option[Symbol] = {
       tree foreach {
-        case t @ ((_: ClassDef) | (_: ModuleDef)) => return Some(t)
-        case _                                    => ()
+        case classOrModule @ ((_: ClassDef) | (_: ModuleDef)) =>
+          val sym = classOrModule.symbol
+          return Some(if (sym.isModule) sym.moduleClass else sym)
+        case _ => ()
       }
       None
     }
 
     private val sourceFile = unit.source.file.file
-    private val responsibleOfImports = firstClassOrModuleDef(unit.body)
+    private val responsibleOfImports = firstClassOrModuleClass(unit.body)
     private var orphanImportsReported = false
 
     /*
@@ -81,9 +83,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       if (!orphanImportsReported) {
         responsibleOfImports match {
           case Some(classOrModuleDef) =>
-            val sym = classOrModuleDef.symbol
-            val firstClassSymbol = if (sym.isModule) sym.moduleClass else sym
-            memberRef(ClassDependency(firstClassSymbol, dep))
+            memberRef(ClassDependency(classOrModuleDef, dep))
           case None =>
             reporter.warning(unit.position(0), Feedback.OrphanTopLevelImports)
             orphanImportsReported = true
