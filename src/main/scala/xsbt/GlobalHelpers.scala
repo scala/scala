@@ -30,7 +30,7 @@ trait GlobalHelpers {
   /** Return true if name is empty, false otherwise. */
   def isEmptyName(name: Name): Boolean = {
     name match {
-      case nme.EMPTY | nme.EMPTY_PACKAGE_NAME |
+      case null | nme.EMPTY | nme.EMPTY_PACKAGE_NAME |
         tpnme.EMPTY | tpnme.EMPTY_PACKAGE_NAME => true
       case _ => false
     }

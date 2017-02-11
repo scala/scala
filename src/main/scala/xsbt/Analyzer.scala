@@ -43,7 +43,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
               // Dependency phase has ran. For example, the implementation classes for traits.
               val isLocalClass = localToNonLocalClass.isLocal(sym).getOrElse(true)
               if (!isLocalClass) {
-                val srcClassName = className(sym)
+                val srcClassName = classNameAsString(sym)
                 val binaryClassName = flatclassName(sym, '.', separatorRequired)
                 callback.generatedNonLocalClass(sourceFile, classFile, binaryClassName, srcClassName)
               } else {

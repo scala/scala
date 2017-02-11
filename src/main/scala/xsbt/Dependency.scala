@@ -103,7 +103,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
      * run) or from class file and calls respective callback method.
      */
     def processDependency(context: DependencyContext)(dep: ClassDependency): Unit = {
-      val fromClassName = className(dep.from)
+      val fromClassName = classNameAsString(dep.from)
 
       def binaryDependency(file: File, binaryClassName: String) =
         callback.binaryDependency(file, binaryClassName, fromClassName, sourceFile, context)
@@ -136,7 +136,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
         }
       } else if (onSource.file != sourceFile) {
         // Dependency is internal -- but from other file / compilation unit
-        val onClassName = className(dep.to)
+        val onClassName = classNameAsString(dep.to)
         callback.classDependency(onClassName, fromClassName, context)
       } else () // Comes from the same file, ignore
     }
