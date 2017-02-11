@@ -142,7 +142,7 @@ abstract class AbstractRunner {
       val givenKinds = standardKinds filter config.parsed.isSet
       val kinds = (
         if (givenKinds.nonEmpty) givenKinds
-        else if (miscTests.isEmpty) standardKinds // If no kinds, --grep, or individual tests were given, assume --all
+        else if (miscTests.isEmpty && invalid.isEmpty) standardKinds // If no kinds, --grep, or individual tests were given, assume --all, unless there were invalid files specified
         else Nil
       )
       val kindsTests = kinds flatMap testsFor
