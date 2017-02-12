@@ -276,7 +276,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           // SelectFromTypeTree otherwise. See #3567.
           // Select nodes can be later
           // converted in the typechecker to SelectFromTypeTree if the class
-          // turns out to be an instance ionner class instead of a static inner class.
+          // turns out to be an instance inner class instead of a static inner class.
           def typeSelect(t: Tree, name: Name) = t match {
             case Ident(_) | Select(_, _) => Select(t, name)
             case _ => SelectFromTypeTree(t, name.toTypeName)

@@ -312,7 +312,7 @@ private[internal] trait TypeMaps {
     *  the corresponding class file might still not be read, so we do not
     *  know what the type parameters of the type are. Therefore
     *  the conversion of raw types to existential types might not have taken place
-    *  in ClassFileparser.sigToType (where it is usually done).
+    *  in ClassFileParser.sigToType (where it is usually done).
     */
   def rawToExistential = new TypeMap {
     private var expanded = immutable.Set[Symbol]()
@@ -404,7 +404,7 @@ private[internal] trait TypeMaps {
       case _ => super.mapOver(tp)
     }
 
-    // Do not discard the types of existential ident's. The
+    // Do not discard the types of existential idents. The
     // symbol of the Ident itself cannot be listed in the
     // existential's parameters, so the resulting existential
     // type would be ill-formed.
@@ -504,7 +504,7 @@ private[internal] trait TypeMaps {
         && isBaseClassOfEnclosingClass(sym.owner)
       )
 
-    private var capturedThisIds= 0
+    private var capturedThisIds = 0
     private def nextCapturedThisId() = { capturedThisIds += 1; capturedThisIds }
     /** Creates an existential representing a type parameter which appears
       *  in the prefix of a ThisType.

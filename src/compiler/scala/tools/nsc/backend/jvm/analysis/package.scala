@@ -110,7 +110,7 @@ package scala.tools.nsc.backend.jvm
  *  - Use YourKit for finding hotspots (cpu profiling). when it comes to drilling down into the details
  *    of a hotspot, don't pay too much attention to the percentages / time counts.
  *  - Should also try other profilers.
- *  - Use timers. When a method showed up as a hotspot, i added a timer around that method, and a
+ *  - Use timers. When a method showed up as a hotspot, I added a timer around that method, and a
  *    second one within the method to measure specific parts. The timers slow things down, but the
  *    relative numbers show what parts of a method are slow.
  *

@@ -113,7 +113,7 @@ abstract class LambdaLift extends InfoTransform {
      *
      * For DelayedInit subclasses, constructor statements end up in the synthetic init method
      * instead of the constructor itself, so the access should go to the field. This method changes
-     * `logicallyEnclosingMember` in this case to return a temprorary symbol corresponding to that
+     * `logicallyEnclosingMember` in this case to return a temporary symbol corresponding to that
      * method.
      */
     private def logicallyEnclosingMember(sym: Symbol): Symbol = {

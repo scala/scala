@@ -1198,7 +1198,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       first
     }
 
-    // --------------- Miscellania -------------------------------
+    // --------------- Miscellanea -------------------------------
 
     /** Progress tracking.  Measured in "progress units" which are 1 per
      *  compilation unit per phase completed.

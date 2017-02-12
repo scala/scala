@@ -382,7 +382,8 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
    * but not for writing in the classfile. We let the ClassWriter recompute max's.
    *
    * NOTE 2: the maxStack value computed here may be larger than the smallest correct value
-   * that would allow running an analyzer, see `InstructionStackEffect.forAsmAnalysisConservative`.
+   * that would allow running an analyzer, see `InstructionStackEffect.forAsmAnalysis` and
+   * `InstructionStackEffect.maxStackGrowth`.
    *
    * NOTE 3: the implementation doesn't look at instructions that cannot be reached, it computes
    * the max local / stack size in the reachable code. These max's work just fine for running an

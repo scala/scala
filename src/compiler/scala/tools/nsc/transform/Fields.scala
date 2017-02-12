@@ -58,7 +58,7 @@ import symtab.Flags._
   *
   * In the even longer term (Scala 3?), I agree with @DarkDimius that it would make sense
   * to hide the difference between strict and lazy vals. All vals are lazy,
-  * but the memoization overhead is removed when we statically know they are forced during initialiation.
+  * but the memoization overhead is removed when we statically know they are forced during initialization.
   * We could still expose the low-level field semantics through `private[this] val`s.
   *
   * In any case, the current behavior of overriding vals is pretty surprising.
