@@ -433,7 +433,6 @@ lazy val compiler = configureAsSubproject(project)
     Osgi.headers ++= Seq(
       "Import-Package" -> ("jline.*;resolution:=optional," +
                            "org.apache.tools.ant.*;resolution:=optional," +
-                           "scala.xml.*;version=\"${range;[====,====];"+versionNumber("scala-xml")+"}\";resolution:=optional," +
                            "scala.*;version=\"${range;[==,=+);${ver}}\"," +
                            "*"),
       "Class-Path" -> "scala-reflect.jar scala-library.jar"
