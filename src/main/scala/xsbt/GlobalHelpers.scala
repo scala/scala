@@ -42,7 +42,7 @@ trait GlobalHelpers {
       case null =>
       case tpe =>
         val sym = tpe.typeSymbolDirect
-        if (!sym.hasPackageFlag) op(sym)
+        if (sym != NoSymbol && !sym.hasPackageFlag) op(sym)
     }).traverse(tpe)
   }
 
