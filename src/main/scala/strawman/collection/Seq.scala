@@ -59,16 +59,8 @@ trait SeqLike[+A, +C[X] <: Seq[X]]
   /** Do the elements of this collection are the same (and in the same order)
     * as those of `that`?
     */
-  def sameElements[B >: A](that: IterableOnce[B]): Boolean = {
-    val these = coll.iterator()
-    val those = that.iterator()
-    while (these.hasNext && those.hasNext)
-      if (these.next() != those.next())
-        return false
-    // At that point we know that *at least one* iterator has no next element
-    // If *both* of them have no elements then the collections are the same
-    these.hasNext == those.hasNext
-  }
+  def sameElements[B >: A](that: IterableOnce[B]): Boolean =
+    coll.iterator().sameElements(that)
 
   /** Method called from equality methods, so that user-defined subclasses can
     *  refuse to be equal to other collections of the same kind.

@@ -97,6 +97,15 @@ trait Iterator[+A] extends IterableOnce[A] { self =>
     def hasNext = self.hasNext && thatIterator.hasNext
     def next() = (self.next(), thatIterator.next())
   }
+  def sameElements[B >: A](that: IterableOnce[B]): Boolean = {
+    val those = that.iterator()
+    while (hasNext && those.hasNext)
+      if (next() != those.next())
+        return false
+    // At that point we know that *at least one* iterator has no next element
+    // If *both* of them have no elements then the collections are the same
+    hasNext == those.hasNext
+  }
 }
 
 object Iterator {
