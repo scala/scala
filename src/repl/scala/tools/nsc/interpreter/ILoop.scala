@@ -1029,6 +1029,7 @@ object ILoop {
   // like if you'd just typed it into the repl.
   def runForTranscript(code: String, settings: Settings, inSession: Boolean = false): String = {
     import java.io.{ BufferedReader, StringReader, OutputStreamWriter }
+    import java.lang.System.{lineSeparator => EOL}
 
     stringFromStream { ostream =>
       Console.withOut(ostream) {
@@ -1036,10 +1037,9 @@ object ILoop {
           // skip margin prefix for continuation lines, unless preserving session text for test
           // should test for repl.paste.ContinueString or replProps.continueText.contains(ch)
           override def write(str: String) =
-            if (!inSession && (str forall (ch => ch.isWhitespace || ch == '|'))) ()
-            else super.write(str)
+            if (inSession || (str.exists(ch => ch != ' ' && ch != '|'))) super.write(str)
         }
-        val input = new BufferedReader(new StringReader(code.trim + "\n")) {
+        val input = new BufferedReader(new StringReader(s"${code.trim}${EOL}")) {
           override def readLine(): String = {
             mark(1)    // default buffer is 8k
             val c = read()
