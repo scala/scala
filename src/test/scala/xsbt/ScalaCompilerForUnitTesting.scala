@@ -150,7 +150,7 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
     srcFile
   }
 
-  private def prepareCompiler(outputDir: File, analysisCallback: AnalysisCallback, classpath: String = "."): CachedCompiler0#Compiler = {
+  private[xsbt] def prepareCompiler(outputDir: File, analysisCallback: AnalysisCallback, classpath: String = "."): CachedCompiler0#Compiler = {
     val args = Array.empty[String]
     object output extends SingleOutput {
       def outputDirectory: File = outputDir
