@@ -17,9 +17,19 @@ Prototype improvements for Scala collections.
   ~~~
 - Run the memory benchmark:
   ~~~
-  > memoryBenchmark/run
+  > memoryBenchmark/charts
   ~~~
 - Run the execution time benchmark:
   ~~~
-  > timeBenchmark/jmh:run
+  > timeBenchmark/charts
   ~~~
+
+## Use it in your project
+
+We publish snapshots on Sonatype:
+
+~~~ scala
+resolvers += Resolver.sonatypeRepo("snapshots")
+
+libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.1-SNAPSHOT"
+~~~
