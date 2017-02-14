@@ -17,7 +17,8 @@ trait SortedLike[A, +C[X] <: Sorted[X]]
 }
 
 /** Polymorphic transformation methods on sorted collections */
-trait SortedPolyTransforms[A, +C[X] <: Sorted[X]] {
+trait SortedPolyTransforms[A, +C[X] <: Sorted[X]]
+  extends IterablePolyTransforms[A, Iterable] {
 
   def map[B](f: A => B)(implicit ordering: Ordering[B]): C[B]
 
