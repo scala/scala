@@ -19,4 +19,4 @@ buildInfoKeys := Seq[BuildInfoKey](buildClasspath)
 
 buildInfoPackage := "scalabuild"
 
-libraryDependencies += "com.typesafe" %% "mima-reporter" % "0.1.13"
+libraryDependencies += "com.typesafe" %% "mima-reporter" % "0.1.14"
