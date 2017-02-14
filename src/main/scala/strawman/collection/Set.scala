@@ -39,7 +39,8 @@ trait SetLike[A, +C[X] <: Set[X]]
 }
 
 /** Monomorphic transformation operations */
-trait SetMonoTransforms[A, +Repr] {
+trait SetMonoTransforms[A, +Repr]
+  extends IterableMonoTransforms[A, Repr] {
 
   def & (that: Set[A]): Repr
 

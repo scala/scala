@@ -16,6 +16,7 @@ final class TreeSet[A]()(implicit val ordering: Ordering[A])
 
   // From IterablePolyTransforms
   def fromIterable[B](coll: strawman.collection.Iterable[B]): Set[B] = ???
+  protected[this] def fromIterableWithSameElemType(coll: strawman.collection.Iterable[A]): TreeSet[A] = TreeSet.builder[A].++=(coll).result
 
   // From SetLike
   def contains(elem: A): Boolean = ???

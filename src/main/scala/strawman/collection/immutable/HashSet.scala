@@ -13,6 +13,7 @@ class HashSet[A] extends Set[A] with SetLike[A, HashSet] {
 
   // From IterablePolyTransforms
   def fromIterable[B](coll: strawman.collection.Iterable[B]): HashSet[B] = ???
+  protected[this] def fromIterableWithSameElemType(coll: strawman.collection.Iterable[A]): HashSet[A] = fromIterable(coll)
 
   // From SetLike
   def contains(elem: A): Boolean = ???
