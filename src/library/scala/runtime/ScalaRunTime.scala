@@ -158,10 +158,6 @@ object ScalaRunTime {
     }
   }
 
-  /** Old implementation of `##`. */
-  @deprecated("Use scala.runtime.Statics.anyHash instead.", "2.12.0")
-  def hash(x: Any): Int = Statics.anyHash(x.asInstanceOf[Object])
-
   /** Given any Scala value, convert it to a String.
    *
    * The primary motivation for this method is to provide a means for

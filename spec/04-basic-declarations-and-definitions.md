@@ -372,8 +372,8 @@ objects of type $S$.
 
 ###### Example
 
-The `Predef` object contains a definition which establishes `Pair`
-as an alias of the parameterized class `Tuple2`:
+Suppose we make `Pair` an alias of the parameterized class `Tuple2`,
+as follows:
 
 ```scala
 type Pair[+A, +B] = Tuple2[A, B]
