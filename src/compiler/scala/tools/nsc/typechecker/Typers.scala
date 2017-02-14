@@ -3291,6 +3291,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // overloading resolution happens during type checking.
               // During erasure, the condition above (fun.symbol.isOverloaded) is false.
               functionType(vparams map (_ => AnyTpe), shapeType(body))
+            case Match(EmptyTree, _) => // A partial function literal
+              appliedType(PartialFunctionClass, AnyTpe :: NothingTpe :: Nil)
             case AssignOrNamedArg(Ident(name), rhs) =>
               NamedType(name, shapeType(rhs))
             case _ =>

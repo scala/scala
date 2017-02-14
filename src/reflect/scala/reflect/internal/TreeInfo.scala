@@ -265,6 +265,7 @@ abstract class TreeInfo {
 
   def isFunctionMissingParamType(tree: Tree): Boolean = tree match {
     case Function(vparams, _) => vparams.exists(_.tpt.isEmpty)
+    case Match(EmptyTree, _) => true
     case _ => false
   }
 
