@@ -178,8 +178,7 @@ sbtResolve() {
       'show update' >> $baseDir/logs/resolution 2>&1
 }
 
-# Oh boy... can't use scaladoc to document scala-xml/scala-parser-combinators
-# if scaladoc depends on the same version of scala-xml/scala-parser-combinators.
+# Oh boy... can't use scaladoc to document scala-xml if scaladoc depends on the same version of scala-xml.
 # Even if that version is available through the project's resolvers, sbt won't look past this project.
 # SOOOOO, we set the version to a dummy (-DOC), generate documentation,
 # then set the version to the right one and publish (which won't re-gen the docs).
@@ -216,17 +215,6 @@ buildXML() {
   fi
 }
 
-buildParsers() {
-  if [ "$PARSERS_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-parser-combinators" $PARSERS_VER )
-  then echo "Found scala-parser-combinators $PARSERS_VER; not building."
-  else
-    update scala scala-parser-combinators "$PARSERS_REF" && gfxd
-    doc="$(docTask $PARSERS_BUILT)"
-    sbtBuild 'set version := "'$PARSERS_VER'-DOC"' $clean "$doc" 'set version := "'$PARSERS_VER'"' test "${buildTasks[@]}"
-    PARSERS_BUILT="yes"
-  fi
-}
-
 buildPartest() {
   if [ "$PARTEST_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-partest" $PARTEST_VER )
   then echo "Found scala-partest $PARTEST_VER; not building."
@@ -235,17 +223,6 @@ buildPartest() {
     doc="$(docTask $PARTEST_BUILT)"
     sbtBuild 'set version :="'$PARTEST_VER'"' 'set VersionKeys.scalaXmlVersion := "'$XML_VER'"' $clean "$doc" test "${buildTasks[@]}"
     PARTEST_BUILT="yes"
-  fi
-}
-
-buildSwing() {
-  if [ "$SWING_BUILT" != "yes" ] && [ "$forceRebuild" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-swing" $SWING_VER )
-  then echo "Found scala-swing $SWING_VER; not building."
-  else
-    update scala scala-swing "$SWING_REF" && gfxd
-    doc="$(docTask $SWING_BUILT)"
-    sbtBuild 'set version := "'$SWING_VER'"' $clean "$doc" test "${buildTasks[@]}"
-    SWING_BUILT="yes"
   fi
 }
 
@@ -266,8 +243,6 @@ buildModules() {
   publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-private-repo")' "set every publishTo := Some(\"private-repo\" at \"$releaseTempRepoUrl\")")
   buildTasks=($publishPrivateTask)
   buildXML
-  buildParsers
-  buildSwing
   # buildScalaCheck
   buildPartest
 }
@@ -276,8 +251,6 @@ buildPublishedModules() {
   publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-sonatype")' "set pgpPassphrase := Some(Array.empty)")
   buildTasks=($publishSonatypeTaskModules)
   buildXML
-  buildParsers
-  buildSwing
   buildPartest
 }
 
@@ -381,36 +354,26 @@ deriveModuleVersions() {
   if [ "$moduleVersioning" == "versions.properties" ]; then
     # use versions.properties as defaults when no version specified on the command line
                   XML_VER=${XML_VER-$scala_xml_version_number}
-              PARSERS_VER=${PARSERS_VER-$scala_parser_combinators_version_number}
-                SWING_VER=${SWING_VER-$scala_swing_version_number}
               PARTEST_VER=${PARTEST_VER-$partest_version_number}
            SCALACHECK_VER=${SCALACHECK_VER-$scalacheck_version_number}
 
                   XML_REF="v$XML_VER"
-              PARSERS_REF="v$PARSERS_VER"
-                SWING_REF="v$SWING_VER"
               PARTEST_REF="v$PARTEST_VER"
            SCALACHECK_REF="$SCALACHECK_VER" # no `v` in their tags
    else
     # use HEAD as default when no revision is specified on the command line
                  XML_REF=${XML_REF-"HEAD"}
-             PARSERS_REF=${PARSERS_REF-"HEAD"}
-               SWING_REF=${SWING_REF-"HEAD"}
              PARTEST_REF=${PARTEST_REF-"HEAD"}
           SCALACHECK_REF=${SCALACHECK_REF-"HEAD"}
 
                  XML_VER=$(deriveVersion scala scala-xml "$XML_REF")
-             PARSERS_VER=$(deriveVersion scala scala-parser-combinators "$PARSERS_REF")
-               SWING_VER=$(deriveVersion scala scala-swing "$SWING_REF")
              PARTEST_VER=$(deriveVersion scala scala-partest "$PARTEST_REF")
           SCALACHECK_VER=$(deriveVersionAnyTag rickynils scalacheck "$SCALACHECK_REF")
   fi
 
   echo "Module versions (versioning strategy: $moduleVersioning):"
-  echo "PARSERS          = $PARSERS_VER at $PARSERS_REF"
   echo "PARTEST          = $PARTEST_VER at $PARTEST_REF"
   # echo "SCALACHECK       = $SCALACHECK_VER at $SCALACHECK_REF"
-  echo "SWING            = $SWING_VER at $SWING_REF"
   echo "XML              = $XML_VER at $XML_REF"
 
 }
@@ -444,8 +407,6 @@ constructUpdatedModuleVersions() {
   # force the new module versions for building the core. these may be different from the values in versions.properties,
   # either because the variables (XML_VER) were provided, or because we're building the modules from HEAD.
   # in the common case, the values are the same as in versions.properties.
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-parser-combinators.version.number=$PARSERS_VER")
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-swing.version.number=$SWING_VER")
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-xml.version.number=$XML_VER")
 
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dpartest.version.number=$PARTEST_VER")
