@@ -21,7 +21,7 @@ object Bencharts {
     * @param jmhReport JMH results report
     * @param targetDir Directory in which the images will be written
     */
-  def apply(jmhReport: File, targetDir: File): Unit = {
+  def apply(jmhReport: File, yAxisTitle: String, targetDir: File): Unit = {
     val json = Json.parse(IO.read(jmhReport))
 
     json.as[List[JsObject]]
@@ -53,7 +53,7 @@ object Bencharts {
         val xAxis = new LogAxis("Size")
         xAxis.setBase(2)
         xAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits())
-        val yAxis = new LogAxis("Execution time (lower is better)")
+        val yAxis = new LogAxis(yAxisTitle)
 
         val col = new YIntervalSeriesCollection()
         val renderer = new XYErrorRenderer

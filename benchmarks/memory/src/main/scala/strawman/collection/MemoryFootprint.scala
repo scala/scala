@@ -2,14 +2,17 @@ package bench
 
 import strawman.collection.immutable.{LazyList, List}
 
-import scala.{Any, AnyRef, App, Int, Long}
-import scala.Predef.{println, ArrowAssoc}
+import scala.{Any, AnyRef, App, Int, Long, Seq, StringContext}
+import scala.Predef.{ArrowAssoc, println}
 import scala.compat.Platform
 import java.lang.Runtime
+import java.nio.file.{Files, Paths}
 
 import strawman.collection.mutable.{ArrayBuffer, ListBuffer}
 
 object MemoryFootprint extends App {
+
+  val reportPath = Paths.get(args(0))
 
   val sizes = scala.List(8, 64, 512, 4096, 32768, 262144, 2097152)
 
@@ -41,10 +44,26 @@ object MemoryFootprint extends App {
       "ListBuffer"  -> benchmark(ListBuffer.fill(_)(obj))
     )
 
-  // Print the results as a CSV document
-  println("Collection;" + sizes.mkString(";"))
-  for ((name, values) <- memories) {
-    println(name + ";" + values.map(_._2).mkString(";"))
-  }
+  // We use a format similar to the one used by JMH so that
+  // our charts can be generated in the same way
+  import jawn.ast._
+  val report =
+    JArray.fromSeq(
+      memories.flatMap { case (name, values) =>
+        values.map { case (size, value) =>
+          JObject.fromSeq(Seq(
+            "benchmark" -> JString(s"$name.memory-footprint"),
+            "params" -> JObject.fromSeq(Seq(
+              "size" -> JString(size.toString)
+            )),
+            "primaryMetric" -> JObject.fromSeq(Seq(
+              "score" -> JNum(value),
+              "scoreConfidence" -> JArray.fromSeq(Seq(JNum(value), JNum(value)))
+            ))
+          ))
+        }
+      }.to[Seq]
+    )
+  Files.write(reportPath, FastRenderer.render(report).getBytes)
 
 }

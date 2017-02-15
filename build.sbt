@@ -35,10 +35,20 @@ val timeBenchmark =
         val jmhArgs = s" -rf json -rff ${jmhReport.absolutePath} $benchmarks"
         // HACK We should use `jmhArgs` here
         val _ = (run in Jmh).partialInput(" -rf json -rff target/scala-2.12/jmh-result.json").evaluated
-        strawman.collection.Bencharts(jmhReport, targetDir)
+        strawman.collection.Bencharts(jmhReport, "Execution time (lower is better)", targetDir)
       }
     )
 
 val memoryBenchmark =
   project.in(file("benchmarks/memory"))
     .dependsOn(collections)
+    .settings(
+      libraryDependencies += "org.spire-math" %% "jawn-ast" % "0.10.4",
+      InputKey[Unit]("charts") := {
+        val targetDir = crossTarget.value
+        val report = targetDir / "report.json"
+        // HACK We should use `report.absolutePath` here
+        val _ = (run in Compile).fullInput(" benchmarks/memory/target/scala-2.12/report.json").evaluated
+        strawman.collection.Bencharts(report, "Memory footprint (lower is better)", targetDir)
+      }
+    )
