@@ -44,8 +44,7 @@ Additional parts of the standard library are shipped as separate libraries. Thes
   - [[scala.reflect       `scala.reflect`]]   - Scala's reflection API (scala-reflect.jar)
   - [[scala.xml           `scala.xml`]]    - XML parsing, manipulation, and serialization (scala-xml.jar)
   - [[scala.swing         `scala.swing`]]  - A convenient wrapper around Java's GUI framework called Swing (scala-swing.jar)
-  - [[scala.util.parsing  `scala.util.parsing`]] - [[scala.util.parsing.combinator Parser combinators]], including an
-    example implementation of a [[scala.util.parsing.json JSON parser]] (scala-parser-combinators.jar)
+  - [[scala.util.parsing  `scala.util.parsing`]] - Parser combinators (scala-parser-combinators.jar)
 
 == Automatic imports ==
 
