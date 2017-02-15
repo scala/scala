@@ -327,20 +327,20 @@ object BytecodeUtils {
   def cloneLocalVariableNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], calleeMethodName: String, shift: Int): List[LocalVariableNode] = {
     methodNode.localVariables.iterator().asScala.map(localVariable => {
       val name =
-        if (calleeMethodName.length + localVariable.name.length < BTypes.InlinedLocalVariablePrefixMaxLenght) {
+        if (calleeMethodName.length + localVariable.name.length < BTypes.InlinedLocalVariablePrefixMaxLength) {
           calleeMethodName + "_" + localVariable.name
         } else {
           val parts = localVariable.name.split("_").toVector
           val (methNames, varName) = (calleeMethodName +: parts.init, parts.last)
           // keep at least 5 characters per method name
-          val maxNumMethNames = BTypes.InlinedLocalVariablePrefixMaxLenght / 5
+          val maxNumMethNames = BTypes.InlinedLocalVariablePrefixMaxLength / 5
           val usedMethNames =
             if (methNames.length < maxNumMethNames) methNames
             else {
               val half = maxNumMethNames / 2
               methNames.take(half) ++ methNames.takeRight(half)
             }
-          val charsPerMethod = BTypes.InlinedLocalVariablePrefixMaxLenght / usedMethNames.length
+          val charsPerMethod = BTypes.InlinedLocalVariablePrefixMaxLength / usedMethNames.length
           usedMethNames.foldLeft("")((res, methName) => res + methName.take(charsPerMethod) + "_") + varName
         }
       new LocalVariableNode(
