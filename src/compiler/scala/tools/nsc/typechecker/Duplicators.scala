@@ -240,10 +240,6 @@ abstract class Duplicators extends Analyzer {
             result.symbol.updateAttachment(DelambdafyTarget)
           result
 
-        case fun: Function =>
-          debuglog("Clearing the type and retyping Function: " + fun)
-          super.typed(fun.clearType, mode, pt)
-
         case vdef @ ValDef(mods, name, tpt, rhs) =>
           // log("vdef fixing tpe: " + tree.tpe + " with sym: " + tree.tpe.typeSymbol + " and " + invalidSyms)
           //if (mods.hasFlag(Flags.LAZY)) vdef.symbol.resetFlag(Flags.MUTABLE) // Martin to Iulian: lazy vars can now appear because they are no longer boxed; Please check that deleting this statement is OK.
