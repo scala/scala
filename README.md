@@ -71,7 +71,7 @@ You need the following tools:
   - sbt, we recommend the [sbt-extras](https://github.com/paulp/sbt-extras) runner
   script. It provides sensible default jvm options (stack and heap size).
   - curl (for `./pull-binary-libs.sh`, used by the sbt / ant build).
-  - Apache Ant (version 1.9.3 or above) if you need to use the (deprecated) ant build.
+  - Apache Ant (version 1.9.x, minimum 1.9.3; Ant 1.10+ doesn't work on Java 6) if you are using the ant build.
 
 Mac OS X and Linux work. Windows may work if you use Cygwin. Community help with keeping
 the build working on Windows is appreciated.
