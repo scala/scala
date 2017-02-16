@@ -273,7 +273,7 @@ class CopyProp[BT <: BTypes](val btypes: BT) {
       }
 
       /**
-       * Eliminate the `numArgs` inputs of the instruction `prod` (which was eliminated). Fo
+       * Eliminate the `numArgs` inputs of the instruction `prod` (which was eliminated). For
        * each input value
        *   - if the `prod` instruction is the single consumer, enqueue the producers of the input
        *   - otherwise, insert a POP instruction to POP the input value
@@ -465,7 +465,7 @@ class CopyProp[BT <: BTypes](val btypes: BT) {
   }
 
   /**
-   * Remove `xSTORE n; xLOAD n` paris if
+   * Remove `xSTORE n; xLOAD n` pairs if
    *   - the local variable n is not used anywhere else in the method (1), and
    *   - there are no executable instructions and no live labels (jump targets) between the two (2)
    *

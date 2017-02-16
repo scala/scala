@@ -975,10 +975,10 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     /** Given a class symbol C with type parameters T1, T2, ... Tn
-     *  which have upper/lower bounds LB1/UB1, LB1/UB2, ..., LBn/UBn,
+     *  which have upper/lower bounds LB1/UB1, LB2/UB2, ..., LBn/UBn,
      *  returns an existential type of the form
      *
-     *    C[E1, ..., En] forSome { E1 >: LB1 <: UB1 ... en >: LBn <: UBn }.
+     *    C[E1, ..., En] forSome { E1 >: LB1 <: UB1 ... En >: LBn <: UBn }.
      */
     // TODO Review the way this is used. I see two potential problems:
     //  1. `existentialAbstraction` here doesn't create fresh existential type symbols, it just

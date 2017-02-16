@@ -78,7 +78,7 @@ object Statistics {
 
   /** Create a new stackable that shows as `prefix` and is active
    *  in the same phases as its base timer. Stackable timers are subtimers
-   *  that can be stacked ina timerstack, and that print aggregate, as well as specific
+   *  that can be stacked in a timerstack, and that print aggregate, as well as specific
    *  durations.
    */
   def newStackableTimer(prefix: String, timer: Timer): StackableTimer = new StackableTimer(prefix, timer)

@@ -298,7 +298,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
           var e = lookupEntry(original.name.companionName)
           while (e != null) {
             // 1) Must be owned by the same Scope, to ensure that in
-            //   `{ class C; { ...; object C } }`, the class is not seen as a comaniopn of the object.
+            //   `{ class C; { ...; object C } }`, the class is not seen as a companion of the object.
             // 2) Must be a class and module symbol, so that `{ class C; def C }` or `{ type T; object T }` are not companions.
             def isClassAndModule(sym1: Symbol, sym2: Symbol) = sym1.isClass && sym2.isModule
             if ((e.owner eq entry.owner) && (isClassAndModule(original, e.sym) || isClassAndModule(e.sym, original))) {

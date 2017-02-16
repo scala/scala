@@ -152,7 +152,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       val resTpOk = (
            samResultType =:= UnitTpe
         || functionResultType =:= samResultType
-        || (isReferenceType(samResultType) && isReferenceType(functionResultType))) // yes, this is what the spec says -- no further correspondance required
+        || (isReferenceType(samResultType) && isReferenceType(functionResultType))) // yes, this is what the spec says -- no further correspondence required
       if (resTpOk && (samParamTypes corresponds functionParamTypes){ (samParamTp, funParamTp) =>
           funParamTp =:= samParamTp || (isReferenceType(funParamTp) && isReferenceType(samParamTp) && funParamTp <:< samParamTp) }) target
       else {
@@ -165,7 +165,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         // whenever a type in the sam's signature is (erases to) a primitive type, we must pick the sam's version,
         // as we don't implement the logic regarding widening that's performed by LMF -- we require =:= for primitives
         //
-        // We use the sam's type for the check whether we're dealin with a reference type, as it could be a generic type,
+        // We use the sam's type for the check whether we're dealing with a reference type, as it could be a generic type,
         // which means the function's parameter -- even if it expects a value class -- will need to be
         // boxed on the generic call to the sam method.
 

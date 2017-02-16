@@ -106,7 +106,7 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
     // as the type of `case class C(); case class D(); List(C(), D()).head`, rather than the opposite order.
     // On Mac, the HFS performs this sorting transparently, but on Linux the order is unspecified.
     //
-    // Note this behaviour can be enabled with in javac with `javac -XDsortfiles`, but that's only
+    // Note this behaviour can be enabled in javac with `javac -XDsortfiles`, but that's only
     // intended to improve determinism of the compiler for compiler hackers.
     util.Arrays.sort(listing, (o1: File, o2: File) => o1.getName.compareTo(o2.getName))
     listing
