@@ -130,8 +130,9 @@ trait SyntheticMethods extends ast.TreeDSL {
      */
     def canEqualMethod: Tree = {
       syntheticCanEqual = true
-      createMethod(nme.canEqual_, List(AnyTpe), BooleanTpe)(m =>
-        Ident(m.firstParam) IS_OBJ classExistentialType(clazz))
+      createMethod(nme.canEqual_, List(AnyTpe), BooleanTpe) { m =>
+        Ident(m.firstParam) IS_OBJ classExistentialType(context.prefix, clazz)
+      }
     }
 
     /* that match { case _: this.C => true ; case _ => false }

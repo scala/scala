@@ -3944,7 +3944,7 @@ trait Types
    *        any corresponding non-variant type arguments of bt1 and bt2 are the same
    */
   def isPopulated(tp1: Type, tp2: Type): Boolean = {
-    def isConsistent(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
+    def isConsistent(tp1: Type, tp2: Type): Boolean = (tp1.dealias, tp2.dealias) match {
       case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
         assert(sym1 == sym2, (sym1, sym2))
         (    pre1 =:= pre2
