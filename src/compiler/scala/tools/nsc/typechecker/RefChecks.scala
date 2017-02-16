@@ -189,7 +189,7 @@ abstract class RefChecks extends Transform {
         def varargBridge(member: Symbol, bridgetpe: Type): Tree = {
           log(s"Generating varargs bridge for ${member.fullLocationString} of type $bridgetpe")
 
-          val newFlags = (member.flags | VBRIDGE | ARTIFACT) & ~PRIVATE
+          val newFlags = (member.flags | VBRIDGE) & ~PRIVATE
           val bridge   = member.cloneSymbolImpl(clazz, newFlags) setPos clazz.pos
           bridge.setInfo(bridgetpe.cloneInfo(bridge))
           clazz.info.decls enter bridge
