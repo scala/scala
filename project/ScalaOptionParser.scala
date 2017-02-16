@@ -1,3 +1,5 @@
+package scala.build
+
 import ParserUtil._
 import sbt._
 import sbt.complete.Parser._
