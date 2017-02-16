@@ -27,16 +27,17 @@ val timeBenchmark =
     .dependsOn(collections)
     .enablePlugins(JmhPlugin)
     .settings(
-      // runs the benchmarks and produce charts
-      InputKey[Unit]("charts") := {
+      charts := Def.inputTaskDyn {
         val benchmarks = Def.spaceDelimited().parsed
         val targetDir = crossTarget.value
         val jmhReport = targetDir / "jmh-result.json"
-        val jmhArgs = s" -rf json -rff ${jmhReport.absolutePath} $benchmarks"
-        // HACK We should use `jmhArgs` here
-        val _ = (run in Jmh).partialInput(" -rf json -rff target/scala-2.12/jmh-result.json").evaluated
-        strawman.collection.Bencharts(jmhReport, "Execution time (lower is better)", targetDir)
-      }
+        val runTask = run in Jmh
+        Def.inputTask {
+          val _ = runTask.evaluated
+          strawman.collection.Bencharts(jmhReport, "Execution time (lower is better)", targetDir)
+          targetDir
+        }.toTask(s" -rf json -rff ${jmhReport.absolutePath} ${benchmarks.mkString(" ")}")
+      }.evaluated
     )
 
 val memoryBenchmark =
@@ -44,11 +45,16 @@ val memoryBenchmark =
     .dependsOn(collections)
     .settings(
       libraryDependencies += "org.spire-math" %% "jawn-ast" % "0.10.4",
-      InputKey[Unit]("charts") := {
+      charts := Def.inputTaskDyn {
         val targetDir = crossTarget.value
         val report = targetDir / "report.json"
-        // HACK We should use `report.absolutePath` here
-        val _ = (run in Compile).fullInput(" benchmarks/memory/target/scala-2.12/report.json").evaluated
-        strawman.collection.Bencharts(report, "Memory footprint (lower is better)", targetDir)
-      }
+        val runTask = run in Compile
+        Def.inputTask {
+          val _ = runTask.evaluated
+          strawman.collection.Bencharts(report, "Memory footprint (lower is better)", targetDir)
+          targetDir
+        }.toTask(s" ${report.absolutePath}")
+      }.evaluated
     )
+
+lazy val charts = inputKey[File]("Runs the benchmarks and produce charts")
