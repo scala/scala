@@ -351,9 +351,13 @@ trait ReificationSupport { self: SymbolTable =>
                                        List[Tree], List[Tree], ValDef, List[Tree])] = tree match {
         case ClassDef(mods, name, tparams, impl) =>
           val X = if (mods.isCase) UnMkTemplate.asCase else UnMkTemplate
-          val X(parents, selfType, ctorMods, vparamss, earlyDefs, body) = impl
-          if (ctorMods.isTrait || ctorMods.hasFlag(JAVA)) None
-          else Some((mods, name, tparams, ctorMods, vparamss, earlyDefs, parents, selfType, body))
+          impl match {
+            case X(parents, selfType, ctorMods, vparamss, earlyDefs, body)
+                if (!ctorMods.isTrait && !ctorMods.hasFlag(JAVA)) =>
+              Some((mods, name, tparams, ctorMods, vparamss, earlyDefs, parents, selfType, body))
+            case _ =>
+              None
+          }
         case _ =>
           None
       }
