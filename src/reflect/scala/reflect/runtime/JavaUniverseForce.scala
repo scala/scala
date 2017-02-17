@@ -459,8 +459,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.DoubleTpe
     definitions.BooleanTpe
     definitions.ScalaNumericValueClasses
-    definitions.ScalaValueClassesNoUnit
     definitions.ScalaValueClasses
+    definitions.ScalaValueClassesNoUnit
 
     uncurry.VarargsSymbolAttachment
     uncurry.DesugaredParameterType
