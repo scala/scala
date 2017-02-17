@@ -74,7 +74,7 @@ private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, priv
         Option(posIn) match {
           case None | Some(NoPosition) => None
           case Some(x: FakePos)        => None
-          case x                       => Option(posIn.finalPosition)
+          case x                       => Option(posIn.inUltimateSource(posIn.source))
         }
       posOpt match {
         case None      => position(None, None, None, "", None, None, None)
