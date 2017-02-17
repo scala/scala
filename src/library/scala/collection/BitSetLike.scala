@@ -77,26 +77,26 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
   def rangeImpl(from: Option[Int], until: Option[Int]): This = {
     val a = toBitMask
     val len = a.length
-    if(from.isDefined) {
+    if (from.isDefined) {
       var f = from.get
       var pos = 0
-      while(f >= 64 && pos < len) {
+      while (f >= 64 && pos < len) {
         f -= 64
         a(pos) = 0
         pos += 1
       }
-      if(f > 0 && pos < len) a(pos) &= ~((1L << f)-1)
+      if (f > 0 && pos < len) a(pos) &= ~((1L << f)-1)
     }
-    if(until.isDefined) {
+    if (until.isDefined) {
       val u = until.get
       val w = u / 64
       val b = u % 64
       var clearw = w+1
-      while(clearw < len) {
+      while (clearw < len) {
         a(clearw) = 0
         clearw += 1
       }
-      if(w < len) a(w) &= (1L << b)-1
+      if (w < len) a(w) &= (1L << b)-1
     }
     fromBitMaskNoCopy(a)
   }
@@ -220,7 +220,7 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     while (i >= 0) {
       val wi = word(i)
       if (wi != 0L) return WordLength*i + 63 - java.lang.Long.numberOfLeadingZeros(wi)
-      i += 1
+      i -= 1
     }
     throw new NoSuchElementException("Empty BitSet")
   }
@@ -230,7 +230,7 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     var pre = ""
     val max = nwords * WordLength
     var i = 0
-    while(i != max) {
+    while (i != max) {
       if (contains(i)) {
         sb append pre append i
         pre = sep
