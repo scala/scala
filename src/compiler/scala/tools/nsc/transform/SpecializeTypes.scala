@@ -365,7 +365,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   )
 
-  lazy val specializableTypes = ScalaValueClasses.map(_.tpe).sorted
+  private lazy val specializableTypes = ScalaValueClasses.map(_.tpe).sorted
 
   /** If the symbol is the companion of a value class, the value class.
    *  Otherwise, AnyRef.
