@@ -1,0 +1,27 @@
+t9675.scala:4: warning: comparing values of types Test.A and String using `!=' will always yield true
+  val func1 = (x: A) => { x != "x" }
+                            ^
+t9675.scala:6: warning: comparing values of types Test.A and String using `!=' will always yield true
+  val func2  = (x: A) => { x != "x" }: Boolean
+                             ^
+t9675.scala:8: warning: comparing values of types Test.A and String using `!=' will always yield true
+  val func3: Function1[A, Boolean] = (x) => { x != "x" }
+                                                ^
+t9675.scala:11: warning: comparing values of types Test.A and String using `!=' will always yield true
+    def apply(x: A): Boolean = { x != "x" }
+                                   ^
+t9675.scala:14: warning: comparing values of types Test.A and String using `!=' will always yield true
+  def method(x: A): Boolean = { x != "x" }
+                                  ^
+t9675.scala:18: warning: comparing values of types Test.A and String using `!=' will always yield true
+    A("x") != "x"
+           ^
+t9675.scala:20: warning: comparing values of types Test.A and String using `!=' will always yield true
+    val func5: Function1[A, Boolean] = (x) => { x != "x" }
+                                                  ^
+t9675.scala:22: warning: comparing values of types Test.A and String using `!=' will always yield true
+    List(A("x")).foreach((item: A) => item != "x")
+                                           ^
+error: No warnings can be incurred under -Xfatal-warnings.
+8 warnings found
+one error found

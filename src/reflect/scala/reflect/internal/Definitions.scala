@@ -975,10 +975,10 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     /** Given a class symbol C with type parameters T1, T2, ... Tn
-     *  which have upper/lower bounds LB1/UB1, LB1/UB2, ..., LBn/UBn,
+     *  which have upper/lower bounds LB1/UB1, LB2/UB2, ..., LBn/UBn,
      *  returns an existential type of the form
      *
-     *    C[E1, ..., En] forSome { E1 >: LB1 <: UB1 ... en >: LBn <: UBn }.
+     *    C[E1, ..., En] forSome { E1 >: LB1 <: UB1 ... En >: LBn <: UBn }.
      */
     def classExistentialType(prefix: Type, clazz: Symbol): Type = {
       val eparams = typeParamsToExistentials(clazz, clazz.unsafeTypeParams)
@@ -1416,6 +1416,8 @@ trait Definitions extends api.StandardDefinitions {
       case TypeRef(_, sym, _) => isNumericValueClass(sym)
       case _                  => false
     }
+
+    lazy val ShowAsInfixAnnotationClass = rootMirror.getClassIfDefined("scala.annotation.showAsInfix")
 
     // todo: reconcile with javaSignature!!!
     def signature(tp: Type): String = {

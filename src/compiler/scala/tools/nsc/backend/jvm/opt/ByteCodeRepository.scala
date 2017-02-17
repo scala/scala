@@ -167,7 +167,7 @@ class ByteCodeRepository[BT <: BTypes](val classPath: ClassPath, val btypes: BT)
    * the users (e.g. the inliner) have to be aware of method selection.
    *
    * Note that the returned method may be abstract (ACC_ABSTRACT), native (ACC_NATIVE) or signature
-   * polymorphic (methods `invoke` and `invokeExact` in class `MehtodHandles`).
+   * polymorphic (methods `invoke` and `invokeExact` in class `MethodHandles`).
    *
    * @return The [[MethodNode]] of the requested method and the [[InternalName]] of its declaring
    *         class, or an error message if the method could not be found. An error message is also
@@ -204,8 +204,8 @@ class ByteCodeRepository[BT <: BTypes](val classPath: ClassPath, val btypes: BT)
             visited += i
             // abstract and static methods are excluded, see jvms-5.4.3.3
             for (m <- findMethod(c) if !isPrivateMethod(m) && !isStaticMethod(m)) found += ((m, c))
-            val recusionResult = findIn(c)
-            if (recusionResult.isDefined) return recusionResult
+            val recursionResult = findIn(c)
+            if (recursionResult.isDefined) return recursionResult
         }
         None
       }

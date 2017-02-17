@@ -864,11 +864,24 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   case _ =>
                 }
                 debuglog(s"fallback on implicits: ${tree}/$resetTree")
-                val tree1 = typed(resetTree, mode)
-                // Q: `typed` already calls `pluginsTyped` and `adapt`. the only difference here is that
-                // we pass `EmptyTree` as the `original`. intended? added in 2009 (53d98e7d42) by martin.
-                tree1 setType pluginsTyped(tree1.tpe, this, tree1, mode, pt)
-                if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt, EmptyTree)
+                // SO-10066 Need to patch the enclosing tree in the context to make translation of Dynamic
+                //          work during fallback typechecking below.
+                val resetContext: Context = {
+                  object substResetForOriginal extends Transformer {
+                    override def transform(tree: Tree): Tree = {
+                      if (tree eq original) resetTree
+                      else super.transform(tree)
+                    }
+                  }
+                  context.make(substResetForOriginal.transform(context.tree))
+                }
+                typerWithLocalContext(resetContext) { typer1 =>
+                  val tree1 = typer1.typed(resetTree, mode)
+                  // Q: `typed` already calls `pluginsTyped` and `adapt`. the only difference here is that
+                  // we pass `EmptyTree` as the `original`. intended? added in 2009 (53d98e7d42) by martin.
+                  tree1 setType pluginsTyped(tree1.tpe, typer1, tree1, mode, pt)
+                  if (tree1.isEmpty) tree1 else typer1.adapt(tree1, mode, pt, EmptyTree)
+                }
               }
             )
             else
