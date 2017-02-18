@@ -1091,7 +1091,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
   extends AbstractIterator[Seq[B]]
      with Iterator[Seq[B]] {
 
-    require(size >= 1 && step >= 1, "size=%d and step=%d, but both must be positive".format(size, step))
+    require(size >= 1 && step >= 1, f"size=$size%d and step=$step%d, but both must be positive")
 
     private[this] var buffer: ArrayBuffer[B] = ArrayBuffer()  // the buffer
     private[this] var filled = false                          // whether the buffer is "hot"
@@ -1099,30 +1099,30 @@ trait Iterator[+A] extends TraversableOnce[A] {
     private[this] var pad: Option[() => B] = None             // what to pad short sequences with
 
     /** Public functions which can be used to configure the iterator before use.
-	 *
-	 *  Pads the last segment if necessary so that all segments will
-	 *  have the same size.
-	 *
-	 *  @param x The element that will be appended to the last segment, if necessary.
-	 *  @return  The same iterator, and ''not'' a new iterator.
-	 *  @note    This method mutates the iterator it is called on, which can be safely used afterwards.
-	 *  @note    This method is mutually exclusive with `withPartial(true)`.
- 	 */
+     *
+     *  Pads the last segment if necessary so that all segments will
+     *  have the same size.
+     *
+     *  @param x The element that will be appended to the last segment, if necessary.
+     *  @return  The same iterator, and ''not'' a new iterator.
+     *  @note    This method mutates the iterator it is called on, which can be safely used afterwards.
+     *  @note    This method is mutually exclusive with `withPartial(true)`.
+     */
     def withPadding(x: => B): this.type = {
       pad = Some(() => x)
       this
     }
-	/** Public functions which can be used to configure the iterator before use.
-  	 *
-	 *  Select whether the last segment may be returned with less than `size`
-	 *  elements. If not, some elements of the original iterator may not be
-	 *  returned at all.
-	 *
-	 *  @param x `true` if partial segments may be returned, `false` otherwise.
-	 *  @return  The same iterator, and ''not'' a new iterator.
-	 *  @note    This method mutates the iterator it is called on, which can be safely used afterwards.
-	 *  @note    This method is mutually exclusive with `withPadding`.
-	 */
+    /** Public functions which can be used to configure the iterator before use.
+     *
+     *  Select whether the last segment may be returned with less than `size`
+     *  elements. If not, some elements of the original iterator may not be
+     *  returned at all.
+     *
+     *  @param x `true` if partial segments may be returned, `false` otherwise.
+     *  @return  The same iterator, and ''not'' a new iterator.
+     *  @note    This method mutates the iterator it is called on, which can be safely used afterwards.
+     *  @note    This method is mutually exclusive with `withPadding`.
+     */
     def withPartial(x: Boolean): this.type = {
       _partial = x
       if (_partial == true) // reset pad since otherwise it will take precedence
@@ -1231,9 +1231,15 @@ trait Iterator[+A] extends TraversableOnce[A] {
     new GroupedIterator[B](self, size, size)
 
   /** Returns an iterator which presents a "sliding window" view of
-   *  another iterator.  The first argument is the window size, and
-   *  the second is how far to advance the window on each iteration;
-   *  defaults to `1`.  Example usages:
+   *  this iterator.  The first argument is the window size, and
+   *  the second argument `step` is how far to advance the window
+   *  on each iteration. The `step` defaults to `1`.
+   *
+   *  The default `GroupedIterator` can be configured to either
+   *  pad a partial result to size `size` or suppress the partial
+   *  result entirely.
+   *
+   *  Example usages:
    *  {{{
    *    // Returns List(List(1, 2, 3), List(2, 3, 4), List(3, 4, 5))
    *    (1 to 5).iterator.sliding(3).toList
@@ -1246,6 +1252,11 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *    val it2 = Iterator.iterate(20)(_ + 5)
    *    (1 to 5).iterator.sliding(4, 3).withPadding(it2.next).toList
    *  }}}
+   *
+   *  @return An iterator producing `Seq[B]`s of size `size`, except the
+   *          last element (which may be the only element) will be truncated
+   *          if there are fewer than `size` elements remaining to be grouped.
+   *          This behavior can be configured.
    *
    *  @note Reuse: $consumesAndProducesIterator
    */

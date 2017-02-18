@@ -10,6 +10,8 @@ package scala
 package collection
 package mutable
 
+import java.util
+
 import scala.reflect.ClassTag
 import parallel.mutable.ParArray
 
@@ -177,8 +179,23 @@ sealed trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomPara
     (a1, a2, a3)
   }
 
-
   def seq = thisCollection
+}
+
+/** to provide binary compat for 2.11 and 2.12 this class contains
+  * functionality that should be migrated to ArrayOps in 2.13
+  *
+  */
+private[mutable] sealed trait ArrayOpsImpl[T] extends Any with ArrayOps[T] {
+  override final def slice(from: Int, until: Int): Array[T] = {
+    val start = if (from < 0) 0 else from
+    if (until <= start || start >= repr.length)
+      return emptyImpl
+    val end = if (until > length) length else until
+    sliceImpl(start, end)
+  }
+  protected def emptyImpl: Array[T]
+  protected def sliceImpl(from: Int, until: Int): Array[T]
 
 }
 
@@ -189,120 +206,155 @@ sealed trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomPara
  */
 object ArrayOps {
 
-  /** A class of `ArrayOps` for arrays containing reference types. */
-  final class ofRef[T <: AnyRef](override val repr: Array[T]) extends AnyVal with ArrayOps[T] with ArrayLike[T, Array[T]] {
+  private val emptyByteArray = new Array[Byte](0)
+  private val emptyShortArray = new Array[Short](0)
+  private val emptyIntArray = new Array[Int](0)
+  private val emptyLongArray = new Array[Long](0)
+  private val emptyFloatArray = new Array[Float](0)
+  private val emptyDoubleArray = new Array[Double](0)
+  private val emptyUnitArray = new Array[Unit](0)
+  private val emptyCharArray = new Array[Char](0)
+  private val emptyBooleanArray = new Array[Boolean](0)
+
+  /** A subclass of `ArrayOps` for arrays containing reference types. */
+  final class ofRef[T <: AnyRef](override val repr: Array[T]) extends AnyVal with ArrayOpsImpl[T] with ArrayLike[T, Array[T]] {
 
     override protected[this] def thisCollection: WrappedArray[T] = new WrappedArray.ofRef[T](repr)
     override protected[this] def toCollection(repr: Array[T]): WrappedArray[T] = new WrappedArray.ofRef[T](repr)
     override protected[this] def newBuilder = new ArrayBuilder.ofRef[T]()(ClassTag[T](repr.getClass.getComponentType))
+    protected override def emptyImpl:Array[T] = util.Arrays.copyOf[T](repr,0)
+    protected override def sliceImpl(from: Int, until: Int): Array[T] = util.Arrays.copyOfRange[T](repr, from, until)
 
     def length: Int = repr.length
     def apply(index: Int): T = repr(index)
     def update(index: Int, elem: T) { repr(index) = elem }
   }
 
-  /** A class of `ArrayOps` for arrays containing `byte`s. */
-final class ofByte(override val repr: Array[Byte]) extends AnyVal with ArrayOps[Byte] with ArrayLike[Byte, Array[Byte]] {
+  /** A subclass of `ArrayOps` for arrays containing `Byte`s. */
+  final class ofByte(override val repr: Array[Byte]) extends AnyVal with ArrayOpsImpl[Byte] with ArrayLike[Byte, Array[Byte]] {
 
     override protected[this] def thisCollection: WrappedArray[Byte] = new WrappedArray.ofByte(repr)
     override protected[this] def toCollection(repr: Array[Byte]): WrappedArray[Byte] = new WrappedArray.ofByte(repr)
     override protected[this] def newBuilder = new ArrayBuilder.ofByte
+    protected override def emptyImpl = emptyByteArray
+    protected override def sliceImpl(from: Int, until: Int) = util.Arrays.copyOfRange(repr, from, until)
 
     def length: Int = repr.length
     def apply(index: Int): Byte = repr(index)
     def update(index: Int, elem: Byte) { repr(index) = elem }
   }
 
-  /** A class of `ArrayOps` for arrays containing `short`s. */
-final class ofShort(override val repr: Array[Short]) extends AnyVal with ArrayOps[Short] with ArrayLike[Short, Array[Short]] {
+  /** A subclass of `ArrayOps` for arrays containing `Short`s. */
+  final class ofShort(override val repr: Array[Short]) extends AnyVal with ArrayOpsImpl[Short] with ArrayLike[Short, Array[Short]] {
 
     override protected[this] def thisCollection: WrappedArray[Short] = new WrappedArray.ofShort(repr)
     override protected[this] def toCollection(repr: Array[Short]): WrappedArray[Short] = new WrappedArray.ofShort(repr)
     override protected[this] def newBuilder = new ArrayBuilder.ofShort
+    protected override def emptyImpl = emptyShortArray
+    protected override def sliceImpl(from: Int, until: Int) = util.Arrays.copyOfRange(repr, from, until)
 
     def length: Int = repr.length
     def apply(index: Int): Short = repr(index)
     def update(index: Int, elem: Short) { repr(index) = elem }
   }
 
-  /** A class of `ArrayOps` for arrays containing `char`s. */
-final class ofChar(override val repr: Array[Char]) extends AnyVal with ArrayOps[Char] with ArrayLike[Char, Array[Char]] {
+  /** A subclass of `ArrayOps` for arrays containing `Char`s. */
+  final class ofChar(override val repr: Array[Char]) extends AnyVal with ArrayOpsImpl[Char] with ArrayLike[Char, Array[Char]] {
 
     override protected[this] def thisCollection: WrappedArray[Char] = new WrappedArray.ofChar(repr)
     override protected[this] def toCollection(repr: Array[Char]): WrappedArray[Char] = new WrappedArray.ofChar(repr)
     override protected[this] def newBuilder = new ArrayBuilder.ofChar
+    protected override def emptyImpl = emptyCharArray
+    protected override def sliceImpl(from: Int, until: Int) = util.Arrays.copyOfRange(repr, from, until)
 
     def length: Int = repr.length
     def apply(index: Int): Char = repr(index)
     def update(index: Int, elem: Char) { repr(index) = elem }
   }
 
-  /** A class of `ArrayOps` for arrays containing `int`s. */
-final class ofInt(override val repr: Array[Int]) extends AnyVal with ArrayOps[Int] with ArrayLike[Int, Array[Int]] {
+  /** A subclass of `ArrayOps` for arrays containing `Int`s. */
+  final class ofInt(override val repr: Array[Int]) extends AnyVal with ArrayOpsImpl[Int] with ArrayLike[Int, Array[Int]] {
 
     override protected[this] def thisCollection: WrappedArray[Int] = new WrappedArray.ofInt(repr)
     override protected[this] def toCollection(repr: Array[Int]): WrappedArray[Int] = new WrappedArray.ofInt(repr)
     override protected[this] def newBuilder = new ArrayBuilder.ofInt
+    protected override def emptyImpl = emptyIntArray
+    protected override def sliceImpl(from: Int, until: Int) = util.Arrays.copyOfRange(repr, from, until)
 
     def length: Int = repr.length
     def apply(index: Int): Int = repr(index)
     def update(index: Int, elem: Int) { repr(index) = elem }
   }
 
-  /** A class of `ArrayOps` for arrays containing `long`s. */
-final class ofLong(override val repr: Array[Long]) extends AnyVal with ArrayOps[Long] with ArrayLike[Long, Array[Long]] {
+  /** A subclass of `ArrayOps` for arrays containing `Long`s. */
+  final class ofLong(override val repr: Array[Long]) extends AnyVal with ArrayOpsImpl[Long] with ArrayLike[Long, Array[Long]] {
 
     override protected[this] def thisCollection: WrappedArray[Long] = new WrappedArray.ofLong(repr)
     override protected[this] def toCollection(repr: Array[Long]): WrappedArray[Long] = new WrappedArray.ofLong(repr)
     override protected[this] def newBuilder = new ArrayBuilder.ofLong
+    protected override def emptyImpl = emptyLongArray
+    protected override def sliceImpl(from: Int, until: Int) = util.Arrays.copyOfRange(repr, from, until)
 
     def length: Int = repr.length
     def apply(index: Int): Long = repr(index)
     def update(index: Int, elem: Long) { repr(index) = elem }
   }
 
-  /** A class of `ArrayOps` for arrays containing `float`s. */
-final class ofFloat(override val repr: Array[Float]) extends AnyVal with ArrayOps[Float] with ArrayLike[Float, Array[Float]] {
+  /** A subclass of `ArrayOps` for arrays containing `Float`s. */
+  final class ofFloat(override val repr: Array[Float]) extends AnyVal with ArrayOpsImpl[Float] with ArrayLike[Float, Array[Float]] {
 
     override protected[this] def thisCollection: WrappedArray[Float] = new WrappedArray.ofFloat(repr)
     override protected[this] def toCollection(repr: Array[Float]): WrappedArray[Float] = new WrappedArray.ofFloat(repr)
     override protected[this] def newBuilder = new ArrayBuilder.ofFloat
+    protected override def emptyImpl = emptyFloatArray
+    protected override def sliceImpl(from: Int, until: Int) = util.Arrays.copyOfRange(repr, from, until)
 
     def length: Int = repr.length
     def apply(index: Int): Float = repr(index)
     def update(index: Int, elem: Float) { repr(index) = elem }
   }
 
-  /** A class of `ArrayOps` for arrays containing `double`s. */
-final class ofDouble(override val repr: Array[Double]) extends AnyVal with ArrayOps[Double] with ArrayLike[Double, Array[Double]] {
+  /** A subclass of `ArrayOps` for arrays containing `Double`s. */
+  final class ofDouble(override val repr: Array[Double]) extends AnyVal with ArrayOpsImpl[Double] with ArrayLike[Double, Array[Double]] {
 
     override protected[this] def thisCollection: WrappedArray[Double] = new WrappedArray.ofDouble(repr)
     override protected[this] def toCollection(repr: Array[Double]): WrappedArray[Double] = new WrappedArray.ofDouble(repr)
     override protected[this] def newBuilder = new ArrayBuilder.ofDouble
+    protected override def emptyImpl = emptyDoubleArray
+    protected override def sliceImpl(from: Int, until: Int) = util.Arrays.copyOfRange(repr, from, until)
 
     def length: Int = repr.length
     def apply(index: Int): Double = repr(index)
     def update(index: Int, elem: Double) { repr(index) = elem }
   }
 
-  /** A class of `ArrayOps` for arrays containing `boolean`s. */
-final class ofBoolean(override val repr: Array[Boolean]) extends AnyVal with ArrayOps[Boolean] with ArrayLike[Boolean, Array[Boolean]] {
+  /** A subclass of `ArrayOps` for arrays containing `Boolean`s. */
+  final class ofBoolean(override val repr: Array[Boolean]) extends AnyVal with ArrayOpsImpl[Boolean] with ArrayLike[Boolean, Array[Boolean]] {
 
     override protected[this] def thisCollection: WrappedArray[Boolean] = new WrappedArray.ofBoolean(repr)
     override protected[this] def toCollection(repr: Array[Boolean]): WrappedArray[Boolean] = new WrappedArray.ofBoolean(repr)
     override protected[this] def newBuilder = new ArrayBuilder.ofBoolean
+    protected override def emptyImpl = emptyBooleanArray
+    protected override def sliceImpl(from: Int, until: Int) = util.Arrays.copyOfRange(repr, from, until)
 
     def length: Int = repr.length
     def apply(index: Int): Boolean = repr(index)
     def update(index: Int, elem: Boolean) { repr(index) = elem }
   }
 
-  /** A class of `ArrayOps` for arrays of `Unit` types. */
-final class ofUnit(override val repr: Array[Unit]) extends AnyVal with ArrayOps[Unit] with ArrayLike[Unit, Array[Unit]] {
+  /** A subclass of `ArrayOps` for arrays of `Unit` types. */
+  final class ofUnit(override val repr: Array[Unit]) extends AnyVal with ArrayOpsImpl[Unit] with ArrayLike[Unit, Array[Unit]] {
 
     override protected[this] def thisCollection: WrappedArray[Unit] = new WrappedArray.ofUnit(repr)
     override protected[this] def toCollection(repr: Array[Unit]): WrappedArray[Unit] = new WrappedArray.ofUnit(repr)
     override protected[this] def newBuilder = new ArrayBuilder.ofUnit
+    protected override def emptyImpl = emptyUnitArray
+    protected override def sliceImpl(from: Int, until: Int) = {
+      // cant use util.Arrays.copyOfRange[Unit](repr, from, until) - Unit is special and doesnt compile
+      val res = new Array[Unit](until-from)
+      System.arraycopy(repr, from, res, 0, res.size)
+      res
+    }
 
     def length: Int = repr.length
     def apply(index: Int): Unit = repr(index)

@@ -655,9 +655,6 @@ trait ContextErrors {
       def ParentFinalInheritanceError(parent: Tree, mixin: Symbol) =
         NormalTypeError(parent, "illegal inheritance from final "+mixin)
 
-      def ParentSealedInheritanceError(parent: Tree, psym: Symbol) =
-        NormalTypeError(parent, "illegal inheritance from sealed " + psym )
-
       def ParentSelfTypeConformanceError(parent: Tree, selfType: Type) =
         NormalTypeError(parent,
           "illegal inheritance;\n self-type "+selfType+" does not conform to "+
@@ -1172,6 +1169,9 @@ trait ContextErrors {
       def MissingParameterOrValTypeError(vparam: Tree) =
         issueNormalTypeError(vparam, "missing parameter type")
 
+      def ParentSealedInheritanceError(parent: Tree, psym: Symbol) =
+        NormalTypeError(parent, "illegal inheritance from sealed " + psym )
+
       def RootImportError(tree: Tree) =
         issueNormalTypeError(tree, "_root_ cannot be imported")
 
@@ -1211,7 +1211,7 @@ trait ContextErrors {
             "pass-by-name arguments not allowed for case class parameters"
 
           case AbstractVar =>
-            "only classes can have declared but undefined members" + abstractVarMessage(sym)
+            "only traits and abstract classes can have declared but undefined members" + abstractVarMessage(sym)
 
         }
         issueSymbolTypeError(sym, msg)

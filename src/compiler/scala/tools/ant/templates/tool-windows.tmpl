@@ -156,7 +156,7 @@ rem (see http://support.microsoft.com/?kbid=833431)
 rem set _SCALA_HOME=%~dps0..
 :set_home
   set _BIN_DIR=
-  for %%i in (%~sf0) do set _BIN_DIR=%_BIN_DIR%%%~dpsi
+  for %%i in ("%~sf0") do set _BIN_DIR=%_BIN_DIR%%%~dpsi
   set _SCALA_HOME=%_BIN_DIR%..
 goto :eof
 

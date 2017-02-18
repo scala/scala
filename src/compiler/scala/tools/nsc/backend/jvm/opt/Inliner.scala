@@ -683,7 +683,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    *  (A2) C and D are members of the same run-time package
    */
   def classIsAccessible(accessed: BType, from: ClassBType): Either[OptimizerWarning, Boolean] = (accessed: @unchecked) match {
-    // TODO: A2 requires "same run-time package", which seems to be package + classloader (JMVS 5.3.). is the below ok?
+    // TODO: A2 requires "same run-time package", which seems to be package + classloader (JVMS 5.3.). is the below ok?
     case c: ClassBType     => c.isPublic.map(_ || c.packageInternalName == from.packageInternalName)
     case a: ArrayBType     => classIsAccessible(a.elementType, from)
     case _: PrimitiveBType => Right(true)
@@ -725,7 +725,7 @@ class Inliner[BT <: BTypes](val btypes: BT) {
    * type from there (https://github.com/scala-opt/scala/issues/13).
    */
   def memberIsAccessible(memberFlags: Int, memberDeclClass: ClassBType, memberRefClass: ClassBType, from: ClassBType): Either[OptimizerWarning, Boolean] = {
-    // TODO: B3 requires "same run-time package", which seems to be package + classloader (JMVS 5.3.). is the below ok?
+    // TODO: B3 requires "same run-time package", which seems to be package + classloader (JVMS 5.3.). is the below ok?
     def samePackageAsDestination = memberDeclClass.packageInternalName == from.packageInternalName
     def targetObjectConformsToDestinationClass = false // needs type propagation analysis, see above
 

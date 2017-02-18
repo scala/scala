@@ -39,20 +39,18 @@ import scala.annotation.meta._
  *  '''`@deprecated` in the Scala language and its standard library'''<br/>
  *
  *  A deprecated element of the Scala language or a definition in the Scala standard library will
- *  be preserved or at least another major version.
+ *  be preserved at least for the current major version.
  *
- *  This means that an element deprecated since 2.12 will be preserved in 2.13, but will very likely
- *  not be part of 2.14. Sometimes a deprecated element might be kept for more than a major
- *  release to ease migration and upgrades from older Scala versions.<br/>
- *  Developers should not rely on this.
+ *  This means that an element deprecated in some 2.12.x release will be preserved in
+ *  all 2.12.x releases, but may be removed in 2.13. (A deprecated element
+ *  might be kept longer to ease migration. Developers should not rely on this.)
  *
  *  '''Special deprecation policy for Scala 2.12'''<br>
- *  The Scala team has decided to enact a special deprecation policy for the 2.12 release:<br/>
+ *  The Scala team has decided to enact a special deprecation policy for Scala 2.12:<br/>
  *
- *  As an upgrade from Scala 2.11 to Scala 2.12 also requires upgrading from Java 6 to Java 8,
- *  no deprecated elements will be removed in this release to ease migration and upgrades
- *  from older Scala versions. This means that elements deprecated since 2.11 (or earlier)
- *  will not be removed in Scala 2.12.
+ *  As an upgrade from 2.11 to 2.12 also requires upgrading from Java 6 to Java 8,
+ *  deprecated elements will not normally be removed in this release, to ease migration
+ *  and cross-building.
  *
  *  @see    The official documentation on [[http://www.scala-lang.org/news/2.11.0/#binary-compatibility binary compatibility]].
  *  @param  message the message to print during compilation if the definition is accessed

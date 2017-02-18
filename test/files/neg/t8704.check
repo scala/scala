@@ -1,0 +1,11 @@
+t8704.scala:7: warning: 2 parameter sections are effectively implicit
+class D(private implicit val i: Int)(implicit s: String)
+                                                        ^
+t8704.scala:3: error: an implicit parameter section must be last
+class C(i: Int)(implicit j: Int)(implicit k: Int)(n: Int) {
+                ^
+t8704.scala:3: error: multiple implicit parameter sections are not allowed
+class C(i: Int)(implicit j: Int)(implicit k: Int)(n: Int) {
+                                 ^
+one warning found
+two errors found

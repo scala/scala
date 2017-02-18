@@ -1,0 +1,7 @@
+t10066.scala:33: error: could not find implicit value for parameter extractor: dynamicrash.Extractor[String]
+  println(storage.foo[String])
+          ^
+t10066.scala:37: error: could not find implicit value for parameter extractor: dynamicrash.Extractor[A]
+  println(storage.foo)
+          ^
+two errors found

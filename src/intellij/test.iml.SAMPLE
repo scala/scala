@@ -7,9 +7,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="forkjoin" />
     <orderEntry type="module" module-name="library" />
-    <orderEntry type="module" module-name="actors" />
     <orderEntry type="module" module-name="reflect" />
     <orderEntry type="module" module-name="compiler" />
     <orderEntry type="module" module-name="repl" />

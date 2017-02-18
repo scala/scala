@@ -2,28 +2,28 @@ abstract trait Bippy[A <: AnyRef, B] extends AnyRef
     extest.Bippy[_ <: AnyRef, _]
 
 abstract trait BippyBud[A <: AnyRef, B, C <: List[A]] extends AnyRef
-    extest.BippyBud[A,B,C] forSome { A <: AnyRef; B; C <: List[A] }
+    extest.BippyBud[?0,?1,?2] forSome { type ?0 <: AnyRef; type ?1; type ?2 <: List[?0] }
 
 abstract trait BippyLike[A <: AnyRef, B <: List[A], This <: extest.BippyLike[A,B,This] with extest.Bippy[A,B]] extends AnyRef
-    extest.BippyLike[A,B,This] forSome { A <: AnyRef; B <: List[A]; This <: extest.BippyLike[A,B,This] with extest.Bippy[A,B] }
+    extest.BippyLike[?0,?1,?2] forSome { type ?0 <: AnyRef; type ?1 <: List[?0]; type ?2 <: extest.BippyLike[?0,?1,?2] with extest.Bippy[?0,?1] }
 
 abstract trait Contra[-A >: AnyRef, -B] extends AnyRef
-    extest.Contra[AnyRef, _]
+    extest.Contra[_ >: AnyRef, _]
 
 abstract trait ContraLike[-A >: AnyRef, -B >: List[A]] extends AnyRef
-    extest.ContraLike[A,B] forSome { -A >: AnyRef; -B >: List[A] }
+    extest.ContraLike[?0,?1] forSome { type ?0 >: AnyRef; type ?1 >: List[?0] }
 
 abstract trait Cov01[+A <: AnyRef, +B] extends AnyRef
-    extest.Cov01[AnyRef,Any]
+    extest.Cov01[_ <: AnyRef, _]
 
 abstract trait Cov02[+A <: AnyRef, B] extends AnyRef
-    extest.Cov02[AnyRef, _]
+    extest.Cov02[_ <: AnyRef, _]
 
 abstract trait Cov03[+A <: AnyRef, -B] extends AnyRef
-    extest.Cov03[AnyRef, _]
+    extest.Cov03[_ <: AnyRef, _]
 
 abstract trait Cov04[A <: AnyRef, +B] extends AnyRef
-    extest.Cov04[_ <: AnyRef, Any]
+    extest.Cov04[_ <: AnyRef, _]
 
 abstract trait Cov05[A <: AnyRef, B] extends AnyRef
     extest.Cov05[_ <: AnyRef, _]
@@ -32,7 +32,7 @@ abstract trait Cov06[A <: AnyRef, -B] extends AnyRef
     extest.Cov06[_ <: AnyRef, _]
 
 abstract trait Cov07[-A <: AnyRef, +B] extends AnyRef
-    extest.Cov07[_ <: AnyRef, Any]
+    extest.Cov07[_ <: AnyRef, _]
 
 abstract trait Cov08[-A <: AnyRef, B] extends AnyRef
     extest.Cov08[_ <: AnyRef, _]
@@ -41,16 +41,16 @@ abstract trait Cov09[-A <: AnyRef, -B] extends AnyRef
     extest.Cov09[_ <: AnyRef, _]
 
 abstract trait Cov11[+A <: AnyRef, +B <: List[_]] extends AnyRef
-    extest.Cov11[AnyRef,List[_]]
+    extest.Cov11[_ <: AnyRef, _ <: List[_]]
 
 abstract trait Cov12[+A <: AnyRef, B <: List[_]] extends AnyRef
-    extest.Cov12[AnyRef, _ <: List[_]]
+    extest.Cov12[_ <: AnyRef, _ <: List[_]]
 
 abstract trait Cov13[+A <: AnyRef, -B <: List[_]] extends AnyRef
-    extest.Cov13[AnyRef, _ <: List[_]]
+    extest.Cov13[_ <: AnyRef, _ <: List[_]]
 
 abstract trait Cov14[A <: AnyRef, +B <: List[_]] extends AnyRef
-    extest.Cov14[_ <: AnyRef, List[_]]
+    extest.Cov14[_ <: AnyRef, _ <: List[_]]
 
 abstract trait Cov15[A <: AnyRef, B <: List[_]] extends AnyRef
     extest.Cov15[_ <: AnyRef, _ <: List[_]]
@@ -59,7 +59,7 @@ abstract trait Cov16[A <: AnyRef, -B <: List[_]] extends AnyRef
     extest.Cov16[_ <: AnyRef, _ <: List[_]]
 
 abstract trait Cov17[-A <: AnyRef, +B <: List[_]] extends AnyRef
-    extest.Cov17[_ <: AnyRef, List[_]]
+    extest.Cov17[_ <: AnyRef, _ <: List[_]]
 
 abstract trait Cov18[-A <: AnyRef, B <: List[_]] extends AnyRef
     extest.Cov18[_ <: AnyRef, _ <: List[_]]
@@ -68,16 +68,16 @@ abstract trait Cov19[-A <: AnyRef, -B <: List[_]] extends AnyRef
     extest.Cov19[_ <: AnyRef, _ <: List[_]]
 
 abstract trait Cov21[+A, +B] extends AnyRef
-    extest.Cov21[Any,Any]
+    extest.Cov21[_, _]
 
 abstract trait Cov22[+A, B] extends AnyRef
-    extest.Cov22[Any, _]
+    extest.Cov22[_, _]
 
 abstract trait Cov23[+A, -B] extends AnyRef
-    extest.Cov23[Any, _]
+    extest.Cov23[_, _]
 
 abstract trait Cov24[A, +B] extends AnyRef
-    extest.Cov24[_, Any]
+    extest.Cov24[_, _]
 
 abstract trait Cov25[A, B] extends AnyRef
     extest.Cov25[_, _]
@@ -86,7 +86,7 @@ abstract trait Cov26[A, -B] extends AnyRef
     extest.Cov26[_, _]
 
 abstract trait Cov27[-A, +B] extends AnyRef
-    extest.Cov27[_, Any]
+    extest.Cov27[_, _]
 
 abstract trait Cov28[-A, B] extends AnyRef
     extest.Cov28[_, _]
@@ -95,43 +95,43 @@ abstract trait Cov29[-A, -B] extends AnyRef
     extest.Cov29[_, _]
 
 abstract trait Cov31[+A, +B, C <: (A, B)] extends AnyRef
-    extest.Cov31[A,B,C] forSome { +A; +B; C <: (A, B) }
+    extest.Cov31[?0,?1,?2] forSome { type ?0; type ?1; type ?2 <: (?0, ?1) }
 
 abstract trait Cov32[+A, B, C <: (A, B)] extends AnyRef
-    extest.Cov32[A,B,C] forSome { +A; B; C <: (A, B) }
+    extest.Cov32[?0,?1,?2] forSome { type ?0; type ?1; type ?2 <: (?0, ?1) }
 
 abstract trait Cov33[+A, -B, C <: Tuple2[A, _]] extends AnyRef
-    extest.Cov33[A,B,C] forSome { +A; -B; C <: Tuple2[A, _] }
+    extest.Cov33[?0,?1,?2] forSome { type ?0; type ?1; type ?2 <: Tuple2[?0, _] }
 
 abstract trait Cov34[A, +B, C <: (A, B)] extends AnyRef
-    extest.Cov34[A,B,C] forSome { A; +B; C <: (A, B) }
+    extest.Cov34[?0,?1,?2] forSome { type ?0; type ?1; type ?2 <: (?0, ?1) }
 
 abstract trait Cov35[A, B, C <: (A, B)] extends AnyRef
-    extest.Cov35[A,B,C] forSome { A; B; C <: (A, B) }
+    extest.Cov35[?0,?1,?2] forSome { type ?0; type ?1; type ?2 <: (?0, ?1) }
 
 abstract trait Cov36[A, -B, C <: Tuple2[A, _]] extends AnyRef
-    extest.Cov36[A,B,C] forSome { A; -B; C <: Tuple2[A, _] }
+    extest.Cov36[?0,?1,?2] forSome { type ?0; type ?1; type ?2 <: Tuple2[?0, _] }
 
 abstract trait Cov37[-A, +B, C <: Tuple2[_, B]] extends AnyRef
-    extest.Cov37[A,B,C] forSome { -A; +B; C <: Tuple2[_, B] }
+    extest.Cov37[?0,?1,?2] forSome { type ?0; type ?1; type ?2 <: Tuple2[_, ?1] }
 
 abstract trait Cov38[-A, B, C <: Tuple2[_, B]] extends AnyRef
-    extest.Cov38[A,B,C] forSome { -A; B; C <: Tuple2[_, B] }
+    extest.Cov38[?0,?1,?2] forSome { type ?0; type ?1; type ?2 <: Tuple2[_, ?1] }
 
 abstract trait Cov39[-A, -B, C <: Tuple2[_, _]] extends AnyRef
     extest.Cov39[_, _, _ <: Tuple2[_, _]]
 
 abstract trait Cov41[+A >: Null, +B] extends AnyRef
-    extest.Cov41[Any,Any]
+    extest.Cov41[_ >: Null, _]
 
 abstract trait Cov42[+A >: Null, B] extends AnyRef
-    extest.Cov42[Any, _]
+    extest.Cov42[_ >: Null, _]
 
 abstract trait Cov43[+A >: Null, -B] extends AnyRef
-    extest.Cov43[Any, _]
+    extest.Cov43[_ >: Null, _]
 
 abstract trait Cov44[A >: Null, +B] extends AnyRef
-    extest.Cov44[_ >: Null, Any]
+    extest.Cov44[_ >: Null, _]
 
 abstract trait Cov45[A >: Null, B] extends AnyRef
     extest.Cov45[_ >: Null, _]
@@ -140,7 +140,7 @@ abstract trait Cov46[A >: Null, -B] extends AnyRef
     extest.Cov46[_ >: Null, _]
 
 abstract trait Cov47[-A >: Null, +B] extends AnyRef
-    extest.Cov47[_ >: Null, Any]
+    extest.Cov47[_ >: Null, _]
 
 abstract trait Cov48[-A >: Null, B] extends AnyRef
     extest.Cov48[_ >: Null, _]
@@ -149,8 +149,8 @@ abstract trait Cov49[-A >: Null, -B] extends AnyRef
     extest.Cov49[_ >: Null, _]
 
 abstract trait Covariant[+A <: AnyRef, +B] extends AnyRef
-    extest.Covariant[AnyRef,Any]
+    extest.Covariant[_ <: AnyRef, _]
 
 abstract trait CovariantLike[+A <: AnyRef, +B <: List[A], +This <: extest.CovariantLike[A,B,This] with extest.Covariant[A,B]] extends AnyRef
-    extest.CovariantLike[A,B,This] forSome { +A <: AnyRef; +B <: List[A]; +This <: extest.CovariantLike[A,B,This] with extest.Covariant[A,B] }
+    extest.CovariantLike[?0,?1,?2] forSome { type ?0 <: AnyRef; type ?1 <: List[?0]; type ?2 <: extest.CovariantLike[?0,?1,?2] with extest.Covariant[?0,?1] }
 

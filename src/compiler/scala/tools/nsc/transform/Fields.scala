@@ -58,7 +58,7 @@ import symtab.Flags._
   *
   * In the even longer term (Scala 3?), I agree with @DarkDimius that it would make sense
   * to hide the difference between strict and lazy vals. All vals are lazy,
-  * but the memoization overhead is removed when we statically know they are forced during initialiation.
+  * but the memoization overhead is removed when we statically know they are forced during initialization.
   * We could still expose the low-level field semantics through `private[this] val`s.
   *
   * In any case, the current behavior of overriding vals is pretty surprising.
@@ -176,14 +176,25 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
   // NOTE: this only considers type, filter on flags first!
   def fieldMemoizationIn(accessorOrField: Symbol, site: Symbol) = new FieldMemoization(accessorOrField, site)
 
-  // drop field-targeting annotations from getters
+  // drop field-targeting annotations from getters (done during erasure because we first need to create the field symbol)
   // (in traits, getters must also hold annotations that target the underlying field,
   //  because the latter won't be created until the trait is mixed into a class)
   // TODO do bean getters need special treatment to suppress field-targeting annotations in traits?
   def dropFieldAnnotationsFromGetter(sym: Symbol) =
-    if (sym.isGetter && sym.owner.isTrait) {
-      sym setAnnotations (sym.annotations filter AnnotationInfo.mkFilter(GetterTargetClass, defaultRetention = false))
-    }
+    sym setAnnotations (sym.annotations filter AnnotationInfo.mkFilter(GetterTargetClass, defaultRetention = false))
+
+  def symbolAnnotationsTargetFieldAndGetter(sym: Symbol): Boolean = sym.isGetter && (sym.isLazy || sym.owner.isTrait)
+
+  // A trait val/var or a lazy val does not receive an underlying field symbol until this phase.
+  // Since annotations need a carrier symbol from the beginning, both field- and getter-targeting annotations
+  // are kept on the getter symbol for these until they are dropped by dropFieldAnnotationsFromGetter
+  def getterTreeAnnotationsTargetFieldAndGetter(owner: Symbol, mods: Modifiers) = mods.isLazy || owner.isTrait
+
+  // Propagate field-targeting annotations from getter to field.
+  // By the way, we must keep them around long enough to see them here (now that we have created the field),
+  // which is why dropFieldAnnotationsFromGetter is not called until erasure.
+  private def propagateFieldAnnotations(getter: Symbol, field: TermSymbol): Unit =
+    field setAnnotations (getter.annotations filter AnnotationInfo.mkFilter(FieldTargetClass, defaultRetention = true))
 
 
   // can't use the referenced field since it already tracks the module's moduleClass
@@ -240,6 +251,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
     moduleOrLazyVarOf(member) = sym
     sym
   }
+
 
   private object synthFieldsAndAccessors extends TypeMap {
     private def newTraitSetter(getter: Symbol, clazz: Symbol) = {
@@ -388,10 +400,12 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         val accessorSymbolSynth = checkedAccessorSymbolSynth(tp.typeSymbol)
 
         // expand module def in class/object (if they need it -- see modulesNeedingExpansion above)
-        val expandedModulesAndLazyVals = (
+        val expandedModulesAndLazyVals =
           modulesAndLazyValsNeedingExpansion flatMap { member =>
             if (member.isLazy) {
-              List(newLazyVarMember(member), accessorSymbolSynth.newSlowPathSymbol(member))
+              val lazyVar = newLazyVarMember(member)
+              propagateFieldAnnotations(member, lazyVar)
+              List(lazyVar, accessorSymbolSynth.newSlowPathSymbol(member))
             }
             // expanding module def (top-level or nested in static module)
             else List(if (member.isStatic) { // implies m.isOverridingSymbol as per above filter
@@ -404,7 +418,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
               member setFlag NEEDS_TREES
               newModuleVarMember(member)
             })
-          })
+          }
 
 //        println(s"expanded modules for $clazz: $expandedModules")
 
@@ -419,8 +433,9 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
             val clonedAccessor = (member cloneSymbol clazz) setPos clazz.pos
             setMixedinAccessorFlags(member, clonedAccessor)
 
-            if (clonedAccessor.isGetter)
-              clonedAccessor setAnnotations (clonedAccessor.annotations filter AnnotationInfo.mkFilter(GetterTargetClass, defaultRetention = false))
+            // note: check original member when deciding how to triage annotations, then act on the cloned accessor
+            if (symbolAnnotationsTargetFieldAndGetter(member))  // this simplifies to member.isGetter, but the full formulation really ties the triage together
+              dropFieldAnnotationsFromGetter(clonedAccessor)
 
             // if we don't cloneInfo, method argument symbols are shared between trait and subclasses --> lambalift proxy crash
             // TODO: use derive symbol variant?
@@ -450,7 +465,11 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
           }
           else if (member hasFlag LAZY) {
             val mixedinLazy = cloneAccessor()
-            val lazyVar = newLazyVarMember(mixedinLazy)
+            val lazyVar = newLazyVarMember(mixedinLazy) // link lazy var member to the mixedin lazy accessor
+
+            // propagate from original member. since mixed in one has only retained the annotations targeting the getter
+            propagateFieldAnnotations(member, lazyVar)
+
             // println(s"mixing in lazy var: $lazyVar for $member")
             List(lazyVar, accessorSymbolSynth.newSlowPathSymbol(mixedinLazy), newSuperLazy(mixedinLazy, site, lazyVar))
           }
@@ -460,9 +479,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
             setFieldFlags(member, field)
 
-            // filter getter's annotations to exclude those only meant for the field
-            // we must keep them around long enough to see them here, though, when we create the field
-            field setAnnotations (member.annotations filter AnnotationInfo.mkFilter(FieldTargetClass, defaultRetention = true))
+            propagateFieldAnnotations(member, field)
 
             List(cloneAccessor(), field)
           } else List(cloneAccessor()) // no field needed (constant-typed getter has constant as its RHS)
