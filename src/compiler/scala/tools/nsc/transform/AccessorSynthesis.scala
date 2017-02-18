@@ -99,7 +99,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
   }
 
 
-  // TODO: better way to communicate from info transform to tree transfor?
+  // TODO: better way to communicate from info transform to tree transform?
   private[this] val _bitmapInfo  = perRunCaches.newMap[Symbol, BitmapInfo]
   private[this] val _slowPathFor = perRunCaches.newMap[Symbol, Symbol]()
 

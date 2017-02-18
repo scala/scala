@@ -25,12 +25,18 @@ object iq {
     assert(q2 == qb)
     val qc = 42 +: q :+ 0
     assert(q2 == qc)
+    assert(q ++ qa == qa)
+    val qdr =  1 +: 2 +: 3 +: 4 +: q
+    val qcon1 = 1 +: 2 +: q
+    val qcon2 = q :+ 3 :+ 4
+    val qd = qcon1 ++ qcon2
+    assert(qd == qdr)
 
     Console.println("q2: " + q2)
     Console.println("qa: " + qa)
     Console.println("qb: " + qb)
     Console.println("qc: " + qc)
-    
+
     /* Test is empty and dequeue.
      * Expected: Head: 42
      */

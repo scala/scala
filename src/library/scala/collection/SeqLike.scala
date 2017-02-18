@@ -113,13 +113,12 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
   }
 
   def indexWhere(p: A => Boolean, from: Int): Int = {
-    var i = from max 0
+    var i = math.max(from, 0)
     val it = iterator.drop(from)
     while (it.hasNext) {
       if (p(it.next())) return i
       else i += 1
     }
-
     -1
   }
 

@@ -2,15 +2,17 @@ package scala.tools.nsc
 package symtab
 
 import org.junit.Assert._
-import scala.tools.testing.AssertUtil._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.tools.testing.BytecodeTesting
+
 @RunWith(classOf[JUnit4])
-class FlagsTest {
+class FlagsTest extends BytecodeTesting {
   object symbolTable extends SymbolTableForUnitTesting
   import symbolTable._
+
   import Flags._
 
   def sym = NoSymbol.newTermSymbol(nme.EMPTY)
@@ -86,5 +88,39 @@ class FlagsTest {
     import scala.reflect.runtime.universe._
     val dep = typeOf[java.lang.Deprecated].typeSymbol
     assertTrue(dep.isJavaAnnotation && dep.isJava)
+  }
+
+  @Test
+  def interfaceFlag(): Unit = {
+    // scala traits are `isInterface` if they have only type defs and abstract methods / fields.
+    // java interfaces are always `isInterface`.
+    val scalaCode =
+      """package p
+        |trait T1 {
+        |  import scala.collection
+        |  def m: Int
+        |  val f: Int
+        |  type T <: AnyRef
+        |}
+        |trait T2 {
+        |  def m = 1
+        |}
+        |trait T3 {
+        |  val f = 1
+        |}
+        |trait T4 {
+        |  println()
+        |}
+      """.stripMargin
+    val javaI1 = "package p; interface I1 { int m(); }"
+    val javaI2 = "package p; interface I2 { default int m() { return 1; } }"
+    compiler.compileClasses(code = scalaCode, javaCode = (javaI1, "I1.java") :: (javaI2, "I2.java") :: Nil)
+    import compiler.global.rootMirror._
+    assert( getRequiredClass("p.T1").isInterface)
+    assert(!getRequiredClass("p.T2").isInterface)
+    assert(!getRequiredClass("p.T3").isInterface)
+    assert(!getRequiredClass("p.T4").isInterface)
+    assert( getRequiredClass("p.I1").isInterface)
+    assert( getRequiredClass("p.I2").isInterface)
   }
 }

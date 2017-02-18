@@ -52,7 +52,7 @@ trait CompilationUnits { global: Global =>
      *  To get their sourcefiles, you need to dereference with .sourcefile
      */
     private[this] val _depends = mutable.HashSet[Symbol]()
-    // SBT compatibility (SI-6875)
+    // sbt compatibility (SI-6875)
     //
     // imagine we have a file named A.scala, which defines a trait named Foo and a module named Main
     // Main contains a call to a macro, which calls compileLate to define a mock for Foo
@@ -63,12 +63,12 @@ trait CompilationUnits { global: Global =>
     // * Virt35af32 depends on A (because it extends Foo from A)
     // * A depends on Virt35af32 (because it contains a macro expansion referring to FooMock from Virt35af32)
     //
-    // after compiling A.scala, SBT will notice that it has a new source file named Virt35af32.
+    // after compiling A.scala, sbt will notice that it has a new source file named Virt35af32.
     // it will also think that this file hasn't yet been compiled and since A depends on it
     // it will think that A needs to be recompiled.
     //
     // recompilation will lead to another macro expansion. that another macro expansion might choose to create a fresh mock,
-    // producing another virtual file, say, Virtee509a, which will again trick SBT into thinking that A needs a recompile,
+    // producing another virtual file, say, Virtee509a, which will again trick sbt into thinking that A needs a recompile,
     // which will lead to another macro expansion, which will produce another virtual file and so on
     def depends = if (exists && !source.file.isVirtual) _depends else mutable.HashSet[Symbol]()
 

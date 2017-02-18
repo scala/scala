@@ -31,7 +31,7 @@ public class StepOne {
     // launch StepTwo
     URL[] launchURLs = new URL[launchPaths.length];
     for (int i = 0; i < launchPaths.length; i++) {
-      launchURLs[i] = new File(launchPaths[i]).toURL();
+      launchURLs[i] = new File(launchPaths[i]).toURI().toURL();
     }
     URLClassLoader classLoader = new URLClassLoader(launchURLs, Object.class.getClassLoader());
     Class<?> stepTwo = classLoader.loadClass("StepTwo");

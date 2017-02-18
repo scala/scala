@@ -18,70 +18,70 @@ import scala.language.implicitConversions
 trait DecorateAsScala extends AsScalaConverters {
   /**
    * Adds an `asScala` method that implicitly converts a Java `Iterator` to a Scala `Iterator`.
-   * See [[asScalaIterator]].
+   * @see [[asScalaIterator]]
    */
   implicit def asScalaIteratorConverter[A](i : ju.Iterator[A]): AsScala[Iterator[A]] =
     new AsScala(asScalaIterator(i))
 
   /**
    * Adds an `asScala` method that implicitly converts a Java `Enumeration` to a Scala `Iterator`.
-   * See [[enumerationAsScalaIterator]].
+   * @see [[enumerationAsScalaIterator]]
    */
   implicit def enumerationAsScalaIteratorConverter[A](i : ju.Enumeration[A]): AsScala[Iterator[A]] =
     new AsScala(enumerationAsScalaIterator(i))
 
   /**
    * Adds an `asScala` method that implicitly converts a Java `Iterable` to a Scala `Iterable`.
-   * See [[iterableAsScalaIterable]].
+   * @see [[iterableAsScalaIterable]]
    */
   implicit def iterableAsScalaIterableConverter[A](i : jl.Iterable[A]): AsScala[Iterable[A]] =
     new AsScala(iterableAsScalaIterable(i))
 
   /**
    * Adds an `asScala` method that implicitly converts a Java `Collection` to an Scala `Iterable`.
-   * See [[collectionAsScalaIterable]].
+   * @see [[collectionAsScalaIterable]]
    */
   implicit def collectionAsScalaIterableConverter[A](i : ju.Collection[A]): AsScala[Iterable[A]] =
     new AsScala(collectionAsScalaIterable(i))
 
   /**
    * Adds an `asScala` method that implicitly converts a Java `List` to a Scala mutable `Buffer`.
-   * See [[asScalaBuffer]].
+   * @see [[asScalaBuffer]]
    */
   implicit def asScalaBufferConverter[A](l : ju.List[A]): AsScala[mutable.Buffer[A]] =
     new AsScala(asScalaBuffer(l))
 
   /**
    * Adds an `asScala` method that implicitly converts a Java `Set` to a Scala mutable `Set`.
-   * See [[asScalaSet]].
+   * @see [[asScalaSet]]
    */
   implicit def asScalaSetConverter[A](s : ju.Set[A]): AsScala[mutable.Set[A]] =
     new AsScala(asScalaSet(s))
 
   /**
    * Adds an `asScala` method that implicitly converts a Java `Map` to a Scala mutable `Map`.
-   * See [[mapAsScalaMap]].
+   * @see [[mapAsScalaMap]]
    */
   implicit def mapAsScalaMapConverter[A, B](m : ju.Map[A, B]): AsScala[mutable.Map[A, B]] =
     new AsScala(mapAsScalaMap(m))
 
   /**
-   * Adds an `asScala` method that implicitly converts a Java `ConcurrentMap` to a Scala mutable
-   * `concurrent.Map`. See [[mapAsScalaConcurrentMap]].
+   * Adds an `asScala` method that implicitly converts a Java `ConcurrentMap` to a Scala mutable `concurrent.Map`.
+   * @see [[mapAsScalaConcurrentMap]]
    */
   implicit def mapAsScalaConcurrentMapConverter[A, B](m: juc.ConcurrentMap[A, B]): AsScala[concurrent.Map[A, B]] =
     new AsScala(mapAsScalaConcurrentMap(m))
 
   /**
    * Adds an `asScala` method that implicitly converts a Java `Dictionary` to a Scala mutable `Map`.
-   * See [[dictionaryAsScalaMap]].
+   * @see [[dictionaryAsScalaMap]]
    */
   implicit def dictionaryAsScalaMapConverter[A, B](p: ju.Dictionary[A, B]): AsScala[mutable.Map[A, B]] =
     new AsScala(dictionaryAsScalaMap(p))
 
   /**
-   * Adds an `asScala` method that implicitly converts a Java `Properties` to a Scala mutable
-   * `Map[String, String]`. See [[propertiesAsScalaMap]].
+   * Adds an `asScala` method that implicitly converts a Java `Properties` to a Scala mutable `Map[String, String]`.
+   * @see [[propertiesAsScalaMap]]
    */
   implicit def propertiesAsScalaMapConverter(p: ju.Properties): AsScala[mutable.Map[String, String]] =
     new AsScala(propertiesAsScalaMap(p))

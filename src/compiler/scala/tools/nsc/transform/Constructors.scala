@@ -462,7 +462,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
     // find and dissect primary constructor
     private val (primaryConstr, _primaryConstrParams, primaryConstrBody) = stats collectFirst {
-      case dd@DefDef(_, _, _, vps :: Nil, _, rhs: Block) if dd.symbol.isPrimaryConstructor || dd.symbol.isMixinConstructor => (dd, vps map (_.symbol), rhs)
+      case dd@DefDef(_, _, _, vps :: Nil, _, rhs: Block) if dd.symbol.isPrimaryConstructor => (dd, vps map (_.symbol), rhs)
     } getOrElse {
       abort("no constructor in template: impl = " + impl)
     }
@@ -646,14 +646,14 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
           stat match {
             // recurse on class definition, store in defBuf
-            case _: ClassDef if !statSym.isInterface =>
-              defBuf += new ConstructorTransformer(unit).transform(stat)
+            case _: ClassDef =>
+              if (statSym.isInterface) defBuf += stat
+              else defBuf += new ConstructorTransformer(unit).transform(stat)
 
             // primary constructor is already tracked as `primaryConstr`
             // non-primary constructors go to auxConstructorBuf
-            // mixin constructors are suppressed (!?!?)
             case _: DefDef if statSym.isConstructor =>
-              if ((statSym ne primaryConstrSym) && !statSym.isMixinConstructor) auxConstructorBuf += stat
+              if (statSym ne primaryConstrSym) auxConstructorBuf += stat
 
             // If a val needs a field, an empty valdef goes into the template.
             // Except for lazy and ConstantTyped vals, the field is initialized by an assignment in:

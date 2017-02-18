@@ -81,4 +81,10 @@ trait StdAttachments {
 
   /** An attachment carrying information between uncurry and erasure */
   case class TypeParamVarargsAttachment(val typeParamRef: Type)
+
+  /** Attached to a class symbol to indicate that its children have been observed
+    * via knownDirectSubclasses. Children added subsequently will trigger an
+    * error to indicate that the earlier observation was incomplete.
+    */
+  case object KnownDirectSubclassesCalled extends PlainAttachment
 }

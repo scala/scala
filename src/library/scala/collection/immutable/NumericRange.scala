@@ -114,15 +114,20 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
   import NumericRange.defaultOrdering
 
   override def min[T1 >: T](implicit ord: Ordering[T1]): T =
-    if (ord eq defaultOrdering(num)) {
-      if (num.signum(step) > 0) start
+    // We can take the fast path:
+    // - If the Integral of this NumericRange is also the requested Ordering
+    //   (Integral <: Ordering). This can happen for custom Integral types.
+    // - The Ordering is the default Ordering of a well-known Integral type.
+    if ((ord eq num) || defaultOrdering.get(num).exists(ord eq _)) {
+      if (num.signum(step) > 0) head
       else last
     } else super.min(ord)
 
   override def max[T1 >: T](implicit ord: Ordering[T1]): T =
-    if (ord eq defaultOrdering(num)) {
+    // See comment for fast path in min().
+    if ((ord eq num) || defaultOrdering.get(num).exists(ord eq _)) {
       if (num.signum(step) > 0) last
-      else start
+      else head
     } else super.max(ord)
 
   // Motivated by the desire for Double ranges with BigDecimal precision,

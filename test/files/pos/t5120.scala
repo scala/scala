@@ -1,4 +1,4 @@
-// An example extracted from SBT by Iulian
+// An example extracted from sbt by Iulian
 // that showed that the previous fix to t5120
 // was too strict.
 class Test {

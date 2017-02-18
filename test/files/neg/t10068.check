@@ -1,0 +1,13 @@
+t10068.scala:5: error: i : Only methods can be marked @elidable.
+  @elidable(INFO) val i: Int = 42
+                      ^
+t10068.scala:6: error: j: Only methods can be marked @elidable.
+  @elidable(INFO) lazy val j: Int = 42
+                           ^
+t10068.scala:7: error: k : Only methods can be marked @elidable.
+  @elidable(INFO) var k: Int = 42
+                      ^
+t10068.scala:9: error: D: Only methods can be marked @elidable.
+@elidable(INFO) class D
+                      ^
+four errors found

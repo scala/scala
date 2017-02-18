@@ -351,6 +351,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           }
 
           if ((expectedPrefix eq NoPrefix)
+            || expectedTp.typeSymbol.isJava
             || definedInStaticLocation(expectedTp)
             || testedPrefix =:= expectedPrefix) orig
           else gen.mkAttributedQualifierIfPossible(expectedPrefix) match {
@@ -563,11 +564,11 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           else scrut match {
             case Typed(tree, tpt) =>
               val suppressExhaustive = tpt.tpe hasAnnotation UncheckedClass
-              val supressUnreachable = tree match {
+              val suppressUnreachable = tree match {
                 case Ident(name) if name startsWith nme.CHECK_IF_REFUTABLE_STRING => true // SI-7183 don't warn for withFilter's that turn out to be irrefutable.
                 case _ => false
               }
-              val suppression = Suppression(suppressExhaustive, supressUnreachable)
+              val suppression = Suppression(suppressExhaustive, suppressUnreachable)
               val hasSwitchAnnotation = treeInfo.isSwitchAnnotation(tpt.tpe)
               // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
               // `case 1 | 2` is considered as two cases.

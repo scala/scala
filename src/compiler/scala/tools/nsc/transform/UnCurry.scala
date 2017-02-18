@@ -363,7 +363,7 @@ abstract class UnCurry extends InfoTransform
      *  mark the method symbol SYNCHRONIZED for bytecode generation.
      *
      *  Delambdafy targets are deemed ineligible as the Delambdafy phase will
-     *  replace `this.synchronized` with `$this.synchronzed` now that it emits
+     *  replace `this.synchronized` with `$this.synchronized` now that it emits
      *  all lambda impl methods as static.
      */
     private def translateSynchronized(tree: Tree) = tree match {
@@ -410,8 +410,17 @@ abstract class UnCurry extends InfoTransform
       def isLiftedLambdaMethod(funSym: Symbol) =
         funSym.isArtifact && funSym.name.containsName(nme.ANON_FUN_NAME) && funSym.isLocalToBlock
 
+      def checkIsElisible(sym: Symbol): Boolean =
+        (sym ne null) && sym.elisionLevel.exists { level =>
+          if (sym.isMethod) level < settings.elidebelow.value
+          else {
+            if (settings.isScala213) reporter.error(sym.pos, s"${sym.name}: Only methods can be marked @elidable!")
+            false
+          }
+        }
+
       val result =
-        if ((sym ne null) && sym.elisionLevel.exists(_ < settings.elidebelow.value))
+        if (checkIsElisible(sym))
           replaceElidableTree(tree)
         else translateSynchronized(tree) match {
           case dd @ DefDef(mods, name, tparams, _, tpt, rhs) =>
@@ -696,7 +705,7 @@ abstract class UnCurry extends InfoTransform
                 //
                 // So what we need to do is to use the pre-uncurry type when creating `l$1`, which is `c.Tree` and is
                 // correct. Now, there are two additional problems:
-                // 1. when varargs and byname params are involved, the uncurry transformation desugares these special
+                // 1. when varargs and byname params are involved, the uncurry transformation desugars these special
                 //    cases to actual typerefs, eg:
                 //    ```
                 //           T*  ~> Seq[T] (Scala-defined varargs)

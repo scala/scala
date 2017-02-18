@@ -386,6 +386,17 @@ trait Scanners extends ScannersCommon {
           next copyFrom this
           this copyFrom prev
         }
+      } else if (token == COMMA) {
+        // SIP-27 Trailing Comma (multi-line only) support
+        // If a comma is followed by a new line & then a closing paren, bracket or brace
+        // then it is a trailing comma and is ignored
+        val saved = new ScannerData {} copyFrom this
+        fetchToken()
+        if (afterLineEnd() && (token == RPAREN || token == RBRACKET || token == RBRACE)) {
+          /* skip the trailing comma */
+        } else if (token == EOF) { // e.g. when the REPL is parsing "val List(x, y, _*,"
+          /* skip the trailing comma */
+        } else this copyFrom saved
       }
 
 //      print("["+this+"]")
@@ -972,23 +983,45 @@ trait Scanners extends ScannersCommon {
 
     def intVal: Long = intVal(negated = false)
 
-    /** Convert current strVal, base to double value
+    /** Convert current strVal, base to float value.
      */
-    def floatVal(negated: Boolean): Double = {
-      val limit: Double = if (token == DOUBLELIT) Double.MaxValue else Float.MaxValue
+    def floatVal(negated: Boolean): Float = {
       try {
-        val value: Double = java.lang.Double.valueOf(strVal).doubleValue()
-        if (value > limit)
+        val value: Float = java.lang.Float.parseFloat(strVal)
+        if (value > Float.MaxValue)
           syntaxError("floating point number too large")
+        val zeroly = "0.fF"
+        if (value == 0.0f && strVal.exists(c => !zeroly.contains(c)))
+          syntaxError("floating point number too small")
         if (negated) -value else value
       } catch {
         case _: NumberFormatException =>
           syntaxError("malformed floating point number")
+          0.0f
+      }
+    }
+
+    def floatVal: Float = floatVal(negated = false)
+
+    /** Convert current strVal, base to double value.
+     */
+    def doubleVal(negated: Boolean): Double = {
+      try {
+        val value: Double = java.lang.Double.parseDouble(strVal)
+        if (value > Double.MaxValue)
+          syntaxError("double precision floating point number too large")
+        val zeroly = "0.dD"
+        if (value == 0.0d && strVal.exists(c => !zeroly.contains(c)))
+          syntaxError("double precision floating point number too small")
+        if (negated) -value else value
+      } catch {
+        case _: NumberFormatException =>
+          syntaxError("malformed double precision floating point number")
           0.0
       }
     }
 
-    def floatVal: Double = floatVal(negated = false)
+    def doubleVal: Double = doubleVal(negated = false)
 
     def checkNoLetter(): Unit = {
       if (isIdentifierPart(ch) && ch >= ' ')

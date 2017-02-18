@@ -16,8 +16,7 @@ quasiquotes-syntax-error-position.scala:9: error: '{' expected but end of quote 
 quasiquotes-syntax-error-position.scala:10: error: ';' expected but '@' found.
   q"foo@$a"
        ^
-quasiquotes-syntax-error-position.scala:11: error: case classes without a parameter list are not allowed;
-use either case objects or case classes with an explicit `()' as a parameter list.
+quasiquotes-syntax-error-position.scala:11: error: case classes must have a parameter list; try 'case class A()' or 'case object A'
   q"case class A"
                 ^
 quasiquotes-syntax-error-position.scala:12: error: identifier expected but ']' found.

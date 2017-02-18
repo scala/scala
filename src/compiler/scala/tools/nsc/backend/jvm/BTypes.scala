@@ -83,7 +83,7 @@ abstract class BTypes {
   val callsitePositions: concurrent.Map[MethodInsnNode, Position] = recordPerRunCache(TrieMap.empty)
 
   /**
-   * Stores callsite instructions of invocatinos annotated `f(): @inline/noinline`.
+   * Stores callsite instructions of invocations annotated `f(): @inline/noinline`.
    * Instructions are added during code generation (BCodeBodyBuilder). The maps are then queried
    * when building the CallGraph, every Callsite object has an annotated(No)Inline field.
    */
@@ -287,7 +287,7 @@ abstract class BTypes {
     }
 
     // The InlineInfo is built from the classfile (not from the symbol) for all classes that are NOT
-    // being compiled. For those classes, the info is only needed if the inliner is enabled, othewise
+    // being compiled. For those classes, the info is only needed if the inliner is enabled, otherwise
     // we can save the memory.
     if (!compilerSettings.optInlinerEnabled) BTypes.EmptyInlineInfo
     else fromClassfileAttribute getOrElse fromClassfileWithoutAttribute
@@ -653,7 +653,7 @@ abstract class BTypes {
    * Fields in the InnerClass entries:
    *  - inner class: the (nested) class C we are talking about
    *  - outer class: the class of which C is a member. Has to be null for non-members, i.e. for
-   *                 local and anonymous classes. NOTE: this co-incides with the presence of an
+   *                 local and anonymous classes. NOTE: this coincides with the presence of an
    *                 EnclosingMethod attribute (see below)
    *  - inner name:  A string with the simple name of the inner class. Null for anonymous classes.
    *  - flags:       access property flags, details in JVMS, table in 4.7.6. Static flag: see
@@ -702,7 +702,7 @@ abstract class BTypes {
    * local and anonymous classes, no matter if there is an enclosing method or not. Accordingly, the
    * "class" field (see below) must be always defined, while the "method" field may be null.
    *
-   * NOTE: When an EnclosingMethod attribute is requried (local and anonymous classes), the "outer"
+   * NOTE: When an EnclosingMethod attribute is required (local and anonymous classes), the "outer"
    * field in the InnerClass table must be null.
    *
    * Fields:
@@ -1144,7 +1144,7 @@ object BTypes {
   /**
    * Metadata about a ClassBType, used by the inliner.
    *
-   * More information may be added in the future to enable more elaborate inlinine heuristics.
+   * More information may be added in the future to enable more elaborate inline heuristics.
    * Note that this class should contain information that can only be obtained from the ClassSymbol.
    * Information that can be computed from the ClassNode should be added to the call graph instead.
    *

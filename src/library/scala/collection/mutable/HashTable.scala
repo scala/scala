@@ -12,6 +12,9 @@ package scala
 package collection
 package mutable
 
+import java.lang.Integer.rotateRight
+import scala.util.hashing.byteswap32
+
 /** This class can be used to construct data structures that are based
  *  on hashtables. Class `HashTable[A]` implements a hashtable
  *  that maps keys of type `A` to values of the fully abstract
@@ -424,11 +427,7 @@ private[collection] object HashTable {
       * }}}
       * the rest of the computation is due to SI-5293
       */
-    protected final def improve(hcode: Int, seed: Int): Int = {
-      val hash = scala.util.hashing.byteswap32(hcode)
-      val shift = seed & ((1 << 5) - 1)
-      (hash >>> shift) | (hash << (32 - shift))
-    }
+    protected final def improve(hcode: Int, seed: Int): Int = rotateRight(byteswap32(hcode), seed)
   }
 
   /**

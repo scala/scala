@@ -4,7 +4,9 @@
 package scala.tools.nsc.classpath
 
 import java.io.File
-import java.net.URL
+import java.net.{URI, URL}
+import java.nio.file.{FileSystems, Files, SimpleFileVisitor}
+import java.util.function.IntFunction
 import java.util
 import java.util.Comparator
 
@@ -104,7 +106,7 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
     // as the type of `case class C(); case class D(); List(C(), D()).head`, rather than the opposite order.
     // On Mac, the HFS performs this sorting transparently, but on Linux the order is unspecified.
     //
-    // Note this behaviour can be enabled with in javac with `javac -XDsortfiles`, but that's only
+    // Note this behaviour can be enabled in javac with `javac -XDsortfiles`, but that's only
     // intended to improve determinism of the compiler for compiler hackers.
     util.Arrays.sort(listing, (o1: File, o2: File) => o1.getName.compareTo(o2.getName))
     listing
@@ -117,6 +119,53 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
 
   def asURLs: Seq[URL] = Seq(dir.toURI.toURL)
   def asClassPathStrings: Seq[String] = Seq(dir.getPath)
+}
+
+object JImageDirectoryLookup {
+  import java.nio.file._, java.net.URI, scala.collection.JavaConverters._
+  def apply(): List[ClassPath] = {
+    try {
+      val fs = FileSystems.getFileSystem(URI.create("jrt:/"))
+      val dir: Path = fs.getPath("/modules")
+      val modules = Files.list(dir).iterator().asScala.toList
+      modules.map(m => new JImageDirectoryLookup(fs, m.getFileName.toString))
+    } catch {
+      case _: ProviderNotFoundException | _: FileSystemNotFoundException =>
+        Nil
+    }
+  }
+}
+class JImageDirectoryLookup(fs: java.nio.file.FileSystem, module: String) extends DirectoryLookup[ClassFileEntryImpl] with NoSourcePaths {
+  import java.nio.file.Path, java.nio.file._
+  type F = Path
+  val dir: Path = fs.getPath("/modules/" + module)
+
+  protected def emptyFiles: Array[Path] = Array.empty
+  protected def getSubDir(packageDirName: String): Option[Path] = {
+    val packageDir = dir.resolve(packageDirName)
+    if (Files.exists(packageDir) && Files.isDirectory(packageDir)) Some(packageDir)
+    else None
+  }
+  protected def listChildren(dir: Path, filter: Option[Path => Boolean]): Array[Path] = {
+    import scala.collection.JavaConverters._
+    val f = filter.getOrElse((p: Path) => true)
+    Files.list(dir).iterator().asScala.filter(f).toArray[Path]
+  }
+  protected def getName(f: Path): String = f.getFileName.toString
+  protected def toAbstractFile(f: Path): AbstractFile = new scala.reflect.io.PlainNioFile(f)
+  protected def isPackage(f: Path): Boolean = Files.isDirectory(f) && maybeValidPackage(f.getFileName.toString)
+
+  def asURLs: Seq[URL] = Seq(dir.toUri.toURL)
+  def asClassPathStrings: Seq[String] = asURLs.map(_.toString)
+
+  def findClassFile(className: String): Option[AbstractFile] = {
+    val relativePath = FileUtils.dirPath(className) + ".class"
+    val classFile = dir.resolve(relativePath)
+    if (Files.exists(classFile)) Some(new scala.reflect.io.PlainNioFile(classFile)) else None
+  }
+  override protected def createFileEntry(file: AbstractFile): ClassFileEntryImpl = ClassFileEntryImpl(file)
+  override protected def isMatchingFile(f: Path): Boolean = Files.isRegularFile(f) && f.getFileName.toString.endsWith(".class")
+  override private[nsc] def classes(inPackage: String): Seq[ClassFileEntry] = files(inPackage)
 }
 
 case class DirectoryClassPath(dir: File) extends JFileDirectoryLookup[ClassFileEntryImpl] with NoSourcePaths {

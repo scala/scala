@@ -36,6 +36,6 @@ object X {
   //      }
   //
   //   To make this visible to the macro implementation, it will need to be compiled in an earlier stage,
-  //   e.g a separate SBT sub-project.
+  //   e.g a separate sbt sub-project.
 
 }
