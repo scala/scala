@@ -983,6 +983,8 @@ trait Scanners extends ScannersCommon {
 
     def intVal: Long = intVal(negated = false)
 
+    private val zeroFloat = raw"[0.]+(?:[eE][+-]?[0-9]+)?[fFdD]?".r
+
     /** Convert current strVal, base to float value.
      */
     def floatVal(negated: Boolean): Float = {
@@ -990,8 +992,7 @@ trait Scanners extends ScannersCommon {
         val value: Float = java.lang.Float.parseFloat(strVal)
         if (value > Float.MaxValue)
           syntaxError("floating point number too large")
-        val zeroly = "0.fF"
-        if (value == 0.0f && strVal.exists(c => !zeroly.contains(c)))
+        if (value == 0.0f && !zeroFloat.pattern.matcher(strVal).matches)
           syntaxError("floating point number too small")
         if (negated) -value else value
       } catch {
@@ -1010,8 +1011,7 @@ trait Scanners extends ScannersCommon {
         val value: Double = java.lang.Double.parseDouble(strVal)
         if (value > Double.MaxValue)
           syntaxError("double precision floating point number too large")
-        val zeroly = "0.dD"
-        if (value == 0.0d && strVal.exists(c => !zeroly.contains(c)))
+        if (value == 0.0d && !zeroFloat.pattern.matcher(strVal).matches)
           syntaxError("double precision floating point number too small")
         if (negated) -value else value
       } catch {
