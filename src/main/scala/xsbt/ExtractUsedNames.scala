@@ -55,8 +55,8 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
     val namesUsedAtTopLevel = traverser.namesUsedAtTopLevel
 
     if (namesUsedAtTopLevel.nonEmpty) {
-      val classOrModuleDef = firstClassOrModuleDef(tree)
-      classOrModuleDef match {
+      val responsible = firstClassOrModuleDef(tree)
+      responsible match {
         case Some(classOrModuleDef) =>
           val sym = classOrModuleDef.symbol
           val firstClassSymbol = if (sym.isModule) sym.moduleClass else sym
@@ -93,12 +93,12 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
 
     val addSymbol: Symbol => Unit = {
       symbol =>
-        val enclosingNonLocalClass = resolveEnclosingNonLocalClass
+        val names = getNamesOfEnclosingScope
         if (!ignoredSymbol(symbol)) {
           val name = symbol.name
           // Synthetic names are no longer included. See https://github.com/sbt/sbt/issues/2537
-          if (!isEmptyName(name) && !enclosingNonLocalClass.containsName(name))
-            enclosingNonLocalClass.addName(name)
+          if (!isEmptyName(name) && !names.contains(name))
+            names += name
         }
     }
 
@@ -133,11 +133,10 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
     private def handleClassicTreeNode(tree: Tree): Unit = tree match {
       case _: DefTree | _: Template => ()
       case Import(_, selectors: List[ImportSelector]) =>
-        val enclosingNonLocalClass = resolveEnclosingNonLocalClass()
+        val names = getNamesOfEnclosingScope
         def usedNameInImportSelector(name: Name): Unit = {
-          if (!isEmptyName(name) && (name != nme.WILDCARD) &&
-            !enclosingNonLocalClass.containsName(name)) {
-            enclosingNonLocalClass.addName(name)
+          if (!isEmptyName(name) && (name != nme.WILDCARD) && !names.contains(name)) {
+            names += name
           }
         }
         selectors foreach { selector =>
@@ -162,59 +161,58 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       case _ =>
     }
 
-    private case class EnclosingNonLocalClass(currentOwner: Symbol) {
-      private val nonLocalClass: Symbol = {
-        val fromClass = enclOrModuleClass(currentOwner)
-        if (ignoredSymbol(fromClass) || fromClass.hasPackageFlag) null
-        else localToNonLocalClass.resolveNonLocal(fromClass)
-      }
+    import scala.collection.mutable
+    private var _currentOwner: Symbol = _
+    private var _currentNonLocalClass: Symbol = _
+    private var _currentNamesCache: mutable.Set[Name] = _
 
-      private val usedNamesSet: collection.mutable.Set[Name] = {
-        if (nonLocalClass == null) namesUsedAtTopLevel
-        else usedNamesFromClass(ExtractUsedNames.this.className(nonLocalClass))
-      }
-
-      def addName(name: Name): Unit = {
-        usedNamesSet += name
-        ()
-      }
-
-      def containsName(name: Name): Boolean =
-        usedNamesSet.contains(name)
+    @inline private def resolveNonLocal(from: Symbol): Symbol = {
+      val fromClass = enclOrModuleClass(from)
+      if (ignoredSymbol(fromClass) || fromClass.hasPackageFlag) NoSymbol
+      else localToNonLocalClass.resolveNonLocal(fromClass)
     }
 
-    private var _lastEnclosingNonLocalClass: EnclosingNonLocalClass = null
+    @inline private def getNames(nonLocalClass: Symbol): mutable.Set[Name] = {
+      if (nonLocalClass == NoSymbol) namesUsedAtTopLevel
+      else usedNamesFromClass(ExtractUsedNames.this.className(nonLocalClass))
+    }
 
     /**
-     * Resolves a class to which we attribute a used name by getting the enclosing class
-     * for `currentOwner` and then looking up the most inner enclosing class that is non local.
-     * The second returned value indicates if the enclosing class for `currentOwner`
-     * is a local class.
+     * Return the names associated with the closest non-local class owner
+     * of a tree given `currentOwner`, defined and updated by `Traverser`.
+     *
+     * This method modifies the state associated with the names variable
+     * `_currentNamesCache`, which is composed by `_currentOwner` and
+     * and `_currentNonLocalClass`.
+     *
+     * The used caching strategy works as follows:
+     * 1. Return previous non-local class if owners are referentially equal.
+     * 2. Otherwise, check if they resolve to the same non-local class.
+     *   1. If they do, overwrite `_isLocalSource` and return
+     *        `_currentNonLocalClass`.
+     *   2. Otherwise, overwrite all the pertinent fields to be consistent.
      */
-    private def resolveEnclosingNonLocalClass(): EnclosingNonLocalClass = {
-      /* Note that `currentOwner` is set by Global and points to the owner of
-       * the tree that we traverse. Therefore, it's not ensured to be a non local
-       * class. The non local class is resolved inside `EnclosingNonLocalClass`. */
-      def newOne(): EnclosingNonLocalClass = {
-        _lastEnclosingNonLocalClass = EnclosingNonLocalClass(currentOwner)
-        _lastEnclosingNonLocalClass
-      }
+    private def getNamesOfEnclosingScope: mutable.Set[Name] = {
+      if (_currentOwner == null) {
+        // Set the first state for the enclosing non-local class
+        _currentOwner = currentOwner
+        _currentNonLocalClass = resolveNonLocal(currentOwner)
+        _currentNamesCache = getNames(_currentNonLocalClass)
+        _currentNamesCache
+      } else {
+        if (_currentOwner == currentOwner) _currentNamesCache
+        else {
+          val nonLocalClass = resolveNonLocal(currentOwner)
+          if (_currentNonLocalClass == nonLocalClass) _currentNamesCache
+          else {
+            _currentNonLocalClass = nonLocalClass
+            _currentNamesCache = getNames(nonLocalClass)
+            _currentOwner = currentOwner
+            _currentNamesCache
+          }
+        }
 
-      _lastEnclosingNonLocalClass match {
-        case null =>
-          newOne()
-        case cached @ EnclosingNonLocalClass(owner) if owner == currentOwner =>
-          cached
-        case _ =>
-          newOne()
       }
     }
-
-    private def enclOrModuleClass(s: Symbol): Symbol =
-      if (s.isModule) s.moduleClass else s.enclClass
-  }
-
-  private def eligibleAsUsedName(symbol: Symbol): Boolean = {
-    !ignoredSymbol(symbol) && !isEmptyName(symbol.name)
   }
 }

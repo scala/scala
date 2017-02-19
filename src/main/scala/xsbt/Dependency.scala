@@ -155,42 +155,59 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
     private val _localInheritanceCache = HashSet.empty[ClassDependency]
     private val _topLevelImportCache = HashSet.empty[Symbol]
 
-    /** Return the enclosing class or the module class if it's a module. */
-    private def enclOrModuleClass(s: Symbol): Symbol =
-      if (s.isModule) s.moduleClass else s.enclClass
+    private var _currentDependencySource: Symbol = _
+    private var _currentNonLocalClass: Symbol = _
+    private var _isLocalSource: Boolean = false
 
-    case class DependencySource(owner: Symbol) {
-      val (fromClass: Symbol, isLocal: Boolean) = {
-        val fromClass = enclOrModuleClass(owner)
-        if (fromClass == NoSymbol || fromClass.hasPackageFlag)
-          (fromClass, false)
-        else {
-          val fromNonLocalClass = localToNonLocalClass.resolveNonLocal(fromClass)
-          assert(!(fromClass == NoSymbol || fromClass.hasPackageFlag))
-          (fromNonLocalClass, fromClass != fromNonLocalClass)
-        }
+    @inline def resolveNonLocalClass(from: Symbol): (Symbol, Boolean) = {
+      val fromClass = enclOrModuleClass(from)
+      if (fromClass == NoSymbol || fromClass.hasPackageFlag) (fromClass, false)
+      else {
+        val nonLocal = localToNonLocalClass.resolveNonLocal(fromClass)
+        (nonLocal, fromClass != nonLocal)
       }
     }
 
-    private var _currentDependencySource: DependencySource = null
-
     /**
-     * Resolves dependency source by getting the enclosing class for `currentOwner`
-     * and then looking up the most inner enclosing class that is non local.
-     * The second returned value indicates if the enclosing class for `currentOwner`
-     * is a local class.
+     * Resolves dependency source (that is, the closest non-local enclosing
+     * class from a given `currentOwner` set by the `Traverser`).
+     *
+     * This method modifies the value of `_currentDependencySource`,
+     * `_currentNonLocalClass` and `_isLocalSource` and it is not modeled
+     * as a case class for performance reasons.
+     *
+     * The used caching strategy works as follows:
+     * 1. Return previous non-local class if owners are referentially equal.
+     * 2. Otherwise, check if they resolve to the same non-local class.
+     *   1. If they do, overwrite `_isLocalSource` and return
+     *        `_currentNonLocalClass`.
+     *   2. Otherwise, overwrite all the pertinent fields to be consistent.
      */
-    private def resolveDependencySource(): DependencySource = {
-      def newOne(): DependencySource = {
-        val fresh = DependencySource(currentOwner)
-        _currentDependencySource = fresh
-        _currentDependencySource
-      }
-      _currentDependencySource match {
-        case null => newOne()
-        case cached if currentOwner == cached.owner =>
-          cached
-        case _ => newOne()
+    private def resolveDependencySource: Symbol = {
+      if (_currentDependencySource == null) {
+        // First time we access it, initialize it
+        _currentDependencySource = currentOwner
+        val (nonLocalClass, isLocal) = resolveNonLocalClass(currentOwner)
+        _currentNonLocalClass = nonLocalClass
+        _isLocalSource = isLocal
+        nonLocalClass
+      } else {
+        // Check if cached is equally referential
+        if (_currentDependencySource == currentOwner) _currentNonLocalClass
+        else {
+          // Check they resolve to the same nonLocalClass. If so, spare writes.
+          val (nonLocalClass, isLocal) = resolveNonLocalClass(currentOwner)
+          if (_currentNonLocalClass == nonLocalClass) {
+            // Resolution can be the same, but the origin affects `isLocal`
+            _isLocalSource = isLocal
+            _currentNonLocalClass
+          } else {
+            _currentDependencySource = _currentDependencySource
+            _currentNonLocalClass = nonLocalClass
+            _isLocalSource = isLocal
+            _currentNonLocalClass
+          }
+        }
       }
     }
 
@@ -238,7 +255,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
     }
 
     private def addDependency(dep: Symbol): Unit = {
-      val fromClass = resolveDependencySource().fromClass
+      val fromClass = resolveDependencySource
       if (ignoredSymbol(fromClass) || fromClass.hasPackageFlag) {
         if (inImportNode) addTopLevelImportDependency(dep)
         else devWarning(Feedback.missingEnclosingClass(dep, currentOwner))
@@ -248,9 +265,8 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
     }
 
     private def addInheritanceDependency(dep: Symbol): Unit = {
-      val dependencySource = resolveDependencySource()
-      val fromClass = dependencySource.fromClass
-      if (dependencySource.isLocal) {
+      val fromClass = resolveDependencySource
+      if (_isLocalSource) {
         addClassDependency(_localInheritanceCache, processor.localInheritance, fromClass, dep)
       } else {
         addClassDependency(_inheritanceCache, processor.inheritance, fromClass, dep)

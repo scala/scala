@@ -68,6 +68,10 @@ trait GlobalHelpers {
     }
   }
 
+  /** Return the enclosing class or the module class if it's a module. */
+  def enclOrModuleClass(s: Symbol): Symbol =
+    if (s.isModule) s.moduleClass else s.enclClass
+
   /** Define common error messages for error reporting and assertions. */
   object Feedback {
     val NameHashingDisabled = "Turning off name hashing is not supported in class-based dependency trackging."
