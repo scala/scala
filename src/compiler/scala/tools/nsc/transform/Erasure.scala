@@ -286,7 +286,18 @@ abstract class Erasure extends InfoTransform
               (
                 if (needsJavaSig(preRebound, Nil)) {
                   val s = jsig(preRebound, existentiallyBound)
-                  if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + "." + sym.javaSimpleName
+                  if (s.charAt(0) == 'L') {
+                    val withoutSemicolon = s.substring(0, s.length - 1)
+                    val withoutOwningModuleDollar =
+                      if (preRebound.typeSymbolDirect.isModuleClass && sym.isModuleOrModuleClass)
+                        // mimic the (questionable) choice of `ModuleSymbol#name` to use the owning module's
+                        // Scala name, rather than the javaSimpleName (which includes the $ suffix)
+                        // as the basis for the flat name of a nested module.
+                        withoutSemicolon.stripSuffix(nme.MODULE_SUFFIX_STRING)
+                      else withoutSemicolon
+
+                    withoutOwningModuleDollar + "." + sym.javaSimpleName
+                  }
                   else fullNameInSig(sym)
                 }
                 else fullNameInSig(sym)

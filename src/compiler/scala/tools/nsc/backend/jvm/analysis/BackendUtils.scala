@@ -263,7 +263,10 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
 
     def visitInternalName(internalName: InternalName): Unit = if (internalName != null) {
       val t = classBTypeFromParsedClassfile(internalName)
-      if (t.isNestedClass.get) innerClasses += t
+      t.isNestedClass match {
+        case Right(true) => innerClasses += t
+        case _ => // ignores absent classes
+      }
     }
 
     // either an internal/Name or [[Linternal/Name; -- there are certain references in classfiles
