@@ -543,24 +543,36 @@ trait Scanners extends ScannersCommon {
           }
           fetchDoubleQuote()
         case '\'' =>
+          def unclosedCharLit() = {
+            val msg = "unclosed character literal"
+            // previous token was Symbol contiguous with the orphan single quote at offset
+            if (token == SYMBOLLIT && offset == lastOffset) {
+              syntaxError(s"""$msg (or use " for string literal "$strVal")""")
+            } else {
+              syntaxError(msg)
+            }
+          }
           def fetchSingleQuote() = {
             nextChar()
             if (isIdentifierStart(ch))
               charLitOr(getIdentRest)
             else if (isOperatorPart(ch) && (ch != '\\'))
               charLitOr(getOperatorRest)
+            else if (ch == '\'') {
+              nextChar()
+              val advice = if (ch == '\'') { do nextChar() while (ch == '\''); " (use '\\'' for single quote)" } else ""
+              syntaxError(s"empty character literal${advice}")
+            }
             else if (!isAtEnd && (ch != SU && ch != CR && ch != LF || isUnicodeEscape)) {
               getLitChar()
-              if (ch == '\'') {
+              if (ch != '\'') unclosedCharLit()
+              else {
                 nextChar()
                 token = CHARLIT
                 setStrVal()
-              } else {
-                syntaxError("unclosed character literal")
               }
             }
-            else
-              syntaxError("unclosed character literal")
+            else unclosedCharLit()
           }
           fetchSingleQuote()
         case '.' =>
@@ -792,7 +804,7 @@ trait Scanners extends ScannersCommon {
             next.token = kwArray(idx)
           }
         } else {
-          syntaxError("invalid string interpolation: `$$', `$'ident or `$'BlockExpr expected")
+          syntaxError(s"invalid string interpolation $$$ch, expected: $$$$, $$identifier or $${expression}")
         }
       } else {
         val isUnclosedLiteral = !isUnicodeEscape && (ch == SU || (!multiLine && (ch == CR || ch == LF)))
