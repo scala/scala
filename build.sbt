@@ -32,6 +32,7 @@
  *   - to modularize the Scala compiler or library further
  */
 
+import scala.build._
 import VersionUtil._
 
 // Scala dependencies:
