@@ -64,15 +64,18 @@ trait Contexts { self: Analyzer =>
     for (imps <- allImportInfos.remove(unit)) {
       for (imp <- imps.reverse.distinct) {
         val used = allUsedSelectors(imp)
-        def isMask(s: ImportSelector) = s.name != nme.WILDCARD && s.rename == nme.WILDCARD
 
-        imp.tree.selectors filterNot (s => isMask(s) || used(s)) foreach { sel =>
+        imp.tree.selectors filterNot (s => isMaskImport(s) || used(s)) foreach { sel =>
           reporter.warning(imp posOf sel, "Unused import")
         }
       }
       allUsedSelectors --= imps
     }
   }
+
+  def isMaskImport(s: ImportSelector): Boolean = s.name != nme.WILDCARD && s.rename == nme.WILDCARD
+  def isIndividualImport(s: ImportSelector): Boolean = s.name != nme.WILDCARD && s.rename != nme.WILDCARD
+  def isWildcardImport(s: ImportSelector): Boolean = s.name == nme.WILDCARD
 
   var lastAccessCheckDetails: String = ""
 
