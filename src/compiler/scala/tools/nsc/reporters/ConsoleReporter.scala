@@ -14,8 +14,10 @@ import StringOps.{countElementsAsString => countAs, trimAllTrailingSpace => trim
 
 /** This class implements a Reporter that displays messages on a text console.
  */
-class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: PrintWriter) extends AbstractReporter {
-  def this(settings: Settings) = this(settings, Console.in, new PrintWriter(Console.err, true))
+class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: PrintWriter, echoWriter: PrintWriter) extends AbstractReporter {
+  def this(settings: Settings) = this(settings, Console.in, new PrintWriter(Console.err, true), new PrintWriter(Console.out, true))
+  def this(settings: Settings, reader: BufferedReader, writer: PrintWriter) =
+    this(settings, reader, writer, writer)
 
   /** Whether a short file name should be displayed before errors */
   var shortname: Boolean = false
@@ -39,6 +41,12 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
   def printMessage(msg: String): Unit = {
     writer.println(trimTrailing(msg))
     writer.flush()
+  }
+
+  /** Prints the message to the echoWriter, which is usually stdout. */
+  override def echo(msg: String): Unit = {
+    echoWriter.println(trimTrailing(msg))
+    echoWriter.flush()
   }
 
   /** Prints the message with the given position indication. */
