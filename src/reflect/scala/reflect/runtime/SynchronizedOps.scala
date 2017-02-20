@@ -18,6 +18,12 @@ private[reflect] trait SynchronizedOps extends internal.SymbolTable
     if (elems.exists(_.isInstanceOf[RefinedType])) new BaseTypeSeq(parents, elems) with SynchronizedBaseTypeSeq
     else new BaseTypeSeq(parents, elems)
 
+  override protected def newMappedBaseTypeSeq(orig: BaseTypeSeq, f: Type => Type) =
+    // MappedBaseTypeSeq's are used rarely enough that we unconditionally mixin the synchronized
+    // wrapper, rather than doing this conditionally. A previous attempt to do that broke the "late"
+    // part of the "lateMap" contract in inspecting the mapped elements.
+    new MappedBaseTypeSeq(orig, f) with SynchronizedBaseTypeSeq
+
   trait SynchronizedBaseTypeSeq extends BaseTypeSeq {
     override def apply(i: Int): Type = gilSynchronized { super.apply(i) }
     override def rawElem(i: Int) = gilSynchronized { super.rawElem(i) }
@@ -28,11 +34,6 @@ private[reflect] trait SynchronizedOps extends internal.SymbolTable
     override def exists(p: Type => Boolean): Boolean = gilSynchronized { super.exists(p) }
     override lazy val maxDepth = gilSynchronized { maxDepthOfElems }
     override def toString = gilSynchronized { super.toString }
-
-    override def lateMap(f: Type => Type): BaseTypeSeq =
-      // only need to synchronize BaseTypeSeqs if they contain refined types
-      if (map(f).toList.exists(_.isInstanceOf[RefinedType])) new MappedBaseTypeSeq(this, f) with SynchronizedBaseTypeSeq
-      else new MappedBaseTypeSeq(this, f)
   }
 
 // Scopes
