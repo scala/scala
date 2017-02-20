@@ -336,6 +336,11 @@ trait ScalaSettings extends AbsScalaSettings
 
   def YstatisticsEnabled = Ystatistics.value.nonEmpty
 
+  val YprofileEnabled = BooleanSetting("-Yprofile-enabled", "Enable profiling.")
+  val YprofileDestination = StringSetting("-Yprofile-destination", "file", "where to send profiling output - specify a file, default is to the console.", "").
+    withPostSetHook( _ => YprofileEnabled.value = true )
+
+
   /** Area-specific debug output.
    */
   val Ydocdebug               = BooleanSetting("-Ydoc-debug", "Trace all scaladoc activity.")
