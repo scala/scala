@@ -357,8 +357,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       _runtimeClassLoader
     })
 
-  // Set the current Java "context" class loader to this interpreter's class loader
-  def setContextClassLoader() = classLoader.setAsContext()
+  def setContextClassLoader() = ()
 
   def allDefinedNames: List[Name]  = exitingTyper(replScope.toList.map(_.name).sorted)
   def unqualifiedIds: List[String] = allDefinedNames map (_.decode) sorted

@@ -17,7 +17,6 @@ import scala.util.Properties.jdkHome
 import scala.tools.nsc.util.{ClassPath, stringFromStream}
 import scala.reflect.classTag
 import scala.reflect.internal.util.{BatchSourceFile, ScalaClassLoader, NoPosition}
-import ScalaClassLoader._
 import scala.reflect.io.{Directory, File, Path}
 import scala.tools.util._
 import io.AbstractFile
@@ -946,8 +945,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
   /** Start an interpreter with the given settings.
    *  @return true if successful
    */
-  def process(settings: Settings): Boolean = savingContextLoader {
-
+  def process(settings: Settings): Boolean = {
     // yes this is sad
     val runnerSettings = settings match {
       case generic: GenericRunnerSettings => Some(generic)

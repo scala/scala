@@ -112,4 +112,17 @@ class ScriptedTest {
       Thread.currentThread.setContextClassLoader(saved0)
     }
   }
+  @Test def `restore classloader script api`(): Unit = {
+    val saved0 = Thread.currentThread.getContextClassLoader
+    try {
+      Thread.currentThread.setContextClassLoader(ClassLoader.getSystemClassLoader)
+      val saved = Thread.currentThread.getContextClassLoader
+      val engine = new ScriptEngineManager().getEngineByName("scala")
+      assertNotNull(engine)
+      val now = Thread.currentThread.getContextClassLoader
+      assert(saved eq now)
+    } finally {
+      Thread.currentThread.setContextClassLoader(saved0)
+    }
+  }
 }
