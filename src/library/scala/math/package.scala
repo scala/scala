@@ -27,42 +27,57 @@ package scala
   * @groupname rounding Rounding
   * @groupprio rounding 30
   *
+  * @groupname scaling Scaling
+  * @groupdesc scaling Scaling with rounding guarantees
+  * @groupprio scaling 40
+  *
   * @groupname explog Exponential and Logarithmic
-  * @groupprio explog 40
+  * @groupprio explog 50
   *
   * @groupname trig Trigonometric
   * @groupdesc trig Arguments in radians
-  * @groupprio trig 50
+  * @groupprio trig 60
   *
   * @groupname angle-conversion Angular Measurement Conversion
-  * @groupprio angle-conversion 60
+  * @groupprio angle-conversion 70
   *
   * @groupname hyperbolic Hyperbolic
-  * @groupprio hyperbolic 70
+  * @groupprio hyperbolic 80
   *
   * @groupname abs Absolute Values
   * @groupdesc abs Determine the magnitude of a value by discarding the sign. Results are >= 0.
-  * @groupprio abs 80
+  * @groupprio abs 90
   *
-  * @groupname signum Signs
-  * @groupdesc signum Extract the sign of a value. Results are -1, 0 or 1.
-  * Note that these are not pure forwarders to the java versions.
-  * In particular, the return type of java.lang.Long.signum is Int,
-  * but here it is widened to Long so that each overloaded variant
+  * @groupname signs Signs
+  * @groupdesc signs For `signum` extract the sign of a value. Results are -1, 0 or 1.
+  * Note the `signum` methods are not pure forwarders to the Java versions.
+  * In particular, the return type of `java.lang.Long.signum` is `Int`,
+  * but here it is widened to `Long` so that each overloaded variant
   * will return the same numeric type it is passed.
-  * @groupprio signum 90
+  * @groupprio signs 100
   *
   * @groupname root-extraction Root Extraction
-  * @groupprio root-extraction 100
+  * @groupprio root-extraction 110
   *
   * @groupname polar-coords Polar Coordinates
-  * @groupprio polar-coords 110
+  * @groupprio polar-coords 120
   *
   * @groupname ulp Unit of Least Precision
-  * @groupprio ulp 120
+  * @groupprio ulp 130
   *
   * @groupname randomisation Pseudo Random Number Generation
-  * @groupprio randomisation 130
+  * @groupprio randomisation 140
+  *
+  * @groupname exact Exact Arithmetic
+  * @groupdesc exact Integral addition, multiplication, stepping and conversion throwing ArithmeticException instead of underflowing or overflowing
+  * @groupprio exact 150
+  *
+  * @groupname modquo Modulus and Quotient
+  * @groupdesc modquo Calculate quotient values by rounding to negative infinity
+  * @groupprio modquo 160
+  *
+  * @groupname adjacent-float Adjacent Floats
+  * @groupprio adjacent-float 170
   */
 package object math {
   /** The `Double` value that is closer than any other to `e`, the base of
@@ -206,18 +221,60 @@ package object math {
   /** @group minmax */
   def min(x: Double, y: Double): Double = java.lang.Math.min(x, y)
 
-  /** @group signum
+  /** @group signs
     * @note Forwards to [[java.lang.Integer]]
     */
   def signum(x: Int): Int       = java.lang.Integer.signum(x)
-  /** @group signum
+  /** @group signs
     * @note Forwards to [[java.lang.Long]]
     */
   def signum(x: Long): Long     = java.lang.Long.signum(x)
-  /** @group signum */
+  /** @group signs */
   def signum(x: Float): Float   = java.lang.Math.signum(x)
-  /** @group signum */
+  /** @group signs */
   def signum(x: Double): Double = java.lang.Math.signum(x)
+
+  /** @group modquo */
+  def floorDiv(x: Int, y: Int): Int = java.lang.Math.floorDiv(x, y)
+
+  /** @group modquo */
+  def floorDiv(x: Long, y: Long): Long = java.lang.Math.floorDiv(x, y)
+
+  /** @group modquo */
+  def floorMod(x: Int, y: Int): Int = java.lang.Math.floorMod(x, y)
+
+  /** @group modquo */
+  def floorMod(x: Long, y: Long): Long = java.lang.Math.floorMod(x, y)
+
+  /** @group signs */
+  def copySign(magnitude: Double, sign: Double): Double = java.lang.Math.copySign(magnitude, sign)
+
+  /** @group signs */
+  def copySign(magnitude: Float, sign: Float): Float = java.lang.Math.copySign(magnitude, sign)
+
+  /** @group adjacent-float */
+  def nextAfter(start: Double, direction: Double): Double = java.lang.Math.nextAfter(start, direction)
+
+  /** @group adjacent-float */
+  def nextAfter(start: Float, direction: Double): Float = java.lang.Math.nextAfter(start, direction)
+
+  /** @group adjacent-float */
+  def nextUp(d: Double): Double = java.lang.Math.nextUp(d)
+
+  /** @group adjacent-float */
+  def nextUp(f: Float): Float = java.lang.Math.nextUp(f)
+
+  /** @group adjacent-float */
+  def nextDown(d: Double): Double = java.lang.Math.nextDown(d)
+
+  /** @group adjacent-float */
+  def nextDown(f: Float): Float = java.lang.Math.nextDown(f)
+
+  /** @group scaling */
+  def scalb(d: Double, scaleFactor: Int): Double = java.lang.Math.scalb(d, scaleFactor)
+
+  /** @group scaling */
+  def scalb(f: Float, scaleFactor: Int): Float = java.lang.Math.scalb(f, scaleFactor)
 
   // -----------------------------------------------------------------------
   // root functions
@@ -266,6 +323,12 @@ package object math {
     *  @group explog
     */
   def expm1(x: Double): Double = java.lang.Math.expm1(x)
+
+  /** @group explog */
+  def getExponent(f: Float): Int = java.lang.Math.getExponent(f)
+
+  /** @group explog */
+  def getExponent(d: Double): Int = java.lang.Math.getExponent(d)
 
   // -----------------------------------------------------------------------
   // logarithmic functions
@@ -322,6 +385,50 @@ package object math {
     */
   def ulp(x: Float): Float = java.lang.Math.ulp(x)
 
-  /** @group rounding */
+  /** @group exact */
   def IEEEremainder(x: Double, y: Double): Double = java.lang.Math.IEEEremainder(x, y)
+
+  // -----------------------------------------------------------------------
+  // exact functions
+  // -----------------------------------------------------------------------
+
+  /** @group exact */
+  def addExact(x: Int, y: Int): Int = java.lang.Math.addExact(x, y)
+
+  /** @group exact */
+  def addExact(x: Long, y: Long): Long = java.lang.Math.addExact(x, y)
+
+  /** @group exact */
+  def subtractExact(x: Int, y: Int): Int = java.lang.Math.subtractExact(x, y)
+
+  /** @group exact */
+  def subtractExact(x: Long, y: Long): Long = java.lang.Math.subtractExact(x, y)
+
+  /** @group exact */
+  def multiplyExact(x: Int, y: Int): Int = java.lang.Math.multiplyExact(x, y)
+
+  /** @group exact */
+  def multiplyExact(x: Long, y: Long): Long = java.lang.Math.multiplyExact(x, y)
+
+  /** @group exact */
+  def incrementExact(x: Int): Int = java.lang.Math.incrementExact(x)
+
+  /** @group exact */
+  def incrementExact(x: Long) =  java.lang.Math.incrementExact(x)
+
+  /** @group exact */
+  def decrementExact(x: Int) =  java.lang.Math.decrementExact(x)
+
+  /** @group exact */
+  def decrementExact(x: Long) =  java.lang.Math.decrementExact(x)
+
+  /** @group exact */
+  def negateExact(x: Int) =  java.lang.Math.negateExact(x)
+
+  /** @group exact */
+  def negateExact(x: Long) =  java.lang.Math.negateExact(x)
+
+  /** @group exact */
+  def toIntExact(x: Long): Int = java.lang.Math.toIntExact(x)
+
 }

@@ -134,7 +134,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   protected def findEntry(key: A): Entry =
     findEntry0(key, index(elemHashCode(key)))
 
-  private[this] def findEntry0(key: A, h: Int): Entry = {
+  protected[this] final def findEntry0(key: A, h: Int): Entry = {
     var e = table(h).asInstanceOf[Entry]
     while (e != null && !elemEquals(e.key, key)) e = e.next
     e
@@ -148,7 +148,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     addEntry0(e, index(elemHashCode(e.key)))
   }
 
-  private[this] def addEntry0(e: Entry, h: Int) {
+  protected[this] final def addEntry0(e: Entry, h: Int) {
     e.next = table(h).asInstanceOf[Entry]
     table(h) = e
     tableSize = tableSize + 1

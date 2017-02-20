@@ -122,16 +122,15 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
    */
   def enqueue[B >: A](elem: B) = new Queue(elem :: in, out)
 
-  /** Returns a new queue with all elements provided by an `Iterable` object
-   *  added at the end of the queue.
+  /** Creates a new queue with all elements provided by an `Iterable` object
+   *  added at the end of the old queue.
    *
    *  The elements are appended in the order they are given out by the
    *  iterator.
    *
    *  @param  iter        an iterable object
    */
-  def enqueue[B >: A](iter: Iterable[B]) =
-    new Queue(iter.toList reverse_::: in, out)
+  def enqueue[B >: A](iter: scala.collection.Iterable[B]) = new Queue(iter.toList reverse_::: in, out)
 
   /** Returns a tuple with the first element in the queue,
    *  and a new queue with this element removed.

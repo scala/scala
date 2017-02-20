@@ -70,7 +70,7 @@ trait StdNames {
       val suffix = s takeRight edge
 
       val cs = s.toArray
-      val bytes = Codec toUTF8 cs
+      val bytes = Codec.toUTF8(new scala.runtime.ArrayCharSequence(cs, 0, cs.length))
       md5 update bytes
       val md5chars = (md5.digest() map (b => (b & 0xFF).toHexString)).mkString
 

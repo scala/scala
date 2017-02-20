@@ -153,7 +153,7 @@ class JImageDirectoryLookup(fs: java.nio.file.FileSystem, module: String) extend
   }
   protected def getName(f: Path): String = f.getFileName.toString
   protected def toAbstractFile(f: Path): AbstractFile = new scala.reflect.io.PlainNioFile(f)
-  protected def isPackage(f: Path): Boolean = Files.isDirectory(f) && mayBeValidPackage(f.getFileName.toString)
+  protected def isPackage(f: Path): Boolean = Files.isDirectory(f) && maybeValidPackage(f.getFileName.toString)
 
   def asURLs: Seq[URL] = Seq(dir.toUri.toURL)
   def asClassPathStrings: Seq[String] = asURLs.map(_.toString)

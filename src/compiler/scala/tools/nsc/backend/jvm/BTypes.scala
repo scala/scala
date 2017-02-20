@@ -1184,5 +1184,5 @@ object BTypes {
   val ScalaSigAttributeName = "ScalaSig"
 
   // when inlining, local variable names of the callee are prefixed with the name of the callee method
-  val InlinedLocalVariablePrefixMaxLenght = 128
+  val InlinedLocalVariablePrefixMaxLength = 128
 }
