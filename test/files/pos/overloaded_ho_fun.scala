@@ -49,3 +49,18 @@ object sorting {
 //   def andThen[C](g: Bijection[B, C]): Bijection[A, C] = ???
 //   def compose[T](g: Bijection[T, A]) = g andThen this
 // }
+
+object SI10194 {
+  trait X[A] {
+    def map[B](f: A => B): Unit
+  }
+
+  trait Y[A] extends X[A] {
+    def map[B](f: A => B)(implicit ordering: Ordering[B]): Unit
+  }
+
+  trait Z[A] extends Y[A]
+
+  (null: Y[Int]).map(x => x.toString) // compiled
+  (null: Z[Int]).map(x => x.toString) // didn't compile
+}
