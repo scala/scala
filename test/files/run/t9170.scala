@@ -48,8 +48,8 @@ object Y {
 def f[A](a: => A): Int at line 12 and
 def f[A](a: => Either[Exception,A]): Int at line 13
 have same type after erasure: (a: Function0)Int
-  def f[A](a: => Either[Exception, A]) = 2
-      ^
+         def f[A](a: => Either[Exception, A]) = 2
+             ^
 
 scala> :quit"""
 }
