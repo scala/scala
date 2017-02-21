@@ -57,9 +57,9 @@ trait TypeDebugging {
   /** Light color wrappers.
    */
   object typeDebug {
-    import scala.Console._
+    import scala.io.AnsiColor._
 
-    private val colorsOk = sys.props contains "scala.color"
+    private val colorsOk = System.getProperty("scala.color") != null
     private def inColor(s: String, color: String) = if (colorsOk && s != "") color +        s + RESET else s
     private def inBold(s: String, color: String)  = if (colorsOk && s != "") color + BOLD + s + RESET else s
 

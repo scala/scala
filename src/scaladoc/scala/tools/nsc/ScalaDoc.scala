@@ -88,8 +88,9 @@ object ScalaDoc extends ScalaDoc {
     )
   }
 
-  def main(args: Array[String]): Unit = sys exit {
-    if (process(args)) 0 else 1
+  def main(args: Array[String]): Unit = {
+    val ok = process(args)
+    System.exit(if (ok) 0 else 1)
   }
 
   implicit class SummaryReporter(val rep: Reporter) extends AnyVal {

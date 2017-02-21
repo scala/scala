@@ -8,7 +8,6 @@ package tools.nsc
 
 import settings.FscSettings
 import scala.tools.util.CompileOutputCommon
-import scala.sys.SystemProperties.preferIPv4Stack
 
 /** The client part of the fsc offline compiler.  Instead of compiling
  *  things itself, it send requests to a CompileServer.
@@ -27,7 +26,7 @@ class StandardCompileClient extends HasCompileSocket with CompileOutputCommon {
     val settings     = new FscSettings(Console.println)
     val command      = new OfflineCompilerCommand(args.toList, settings)
     val shutdown     = settings.shutdown.value
-    val extraVmArgs  = if (settings.preferIPv4) List("-D%s=true".format(preferIPv4Stack.key)) else Nil
+    val extraVmArgs  = if (settings.preferIPv4) List(s"-Djava.net.preferIPv4Stack=true") else Nil
 
     val vmArgs  = settings.jvmargs.unparse ++ settings.defines.unparse ++ extraVmArgs
     val fscArgs = args.toList ++ command.extraFscArgs
@@ -59,9 +58,9 @@ class StandardCompileClient extends HasCompileSocket with CompileOutputCommon {
 }
 
 object CompileClient extends StandardCompileClient {
-  def main(args: Array[String]): Unit = sys exit {
-    try   { if (process(args)) 0 else 1 }
-    catch { case _: Exception => 1 }
+  def main(args: Array[String]): Unit = {
+    val ok = try process(args) catch { case _: Exception => false }
+    System.exit(if (ok) 0 else 1)
   }
 }
 

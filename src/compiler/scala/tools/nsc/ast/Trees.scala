@@ -7,7 +7,7 @@ package scala.tools.nsc
 package ast
 
 import scala.reflect.ClassTag
-import scala.compat.Platform.EOL
+import java.lang.System.{lineSeparator => EOL}
 
 trait Trees extends scala.reflect.internal.Trees { self: Global =>
   // --- additional cases --------------------------------------------------------

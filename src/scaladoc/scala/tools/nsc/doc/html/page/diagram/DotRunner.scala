@@ -10,7 +10,6 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.io.BufferedWriter
 import java.io.BufferedReader
-import scala.sys.process._
 import scala.concurrent.SyncVar
 
 import model._
@@ -70,9 +69,9 @@ class DotRunner(settings: doc.Settings) {
 
 class DotProcess(settings: doc.Settings) {
 
-  @volatile var error: Boolean = false           // signal an error
-  val inputString = new SyncVar[String]                 // used for the dot process input
-  val outputString = new SyncVar[String]                // used for the dot process output
+  @volatile var error: Boolean = false    // signal an error
+  val inputString = new SyncVar[String]   // used for the dot process input
+  val outputString = new SyncVar[String]  // used for the dot process output
   val errorBuffer: StringBuffer = new StringBuffer() // buffer used for both dot process error console AND logging
 
   // set in only one place, in the main thread
@@ -86,12 +85,20 @@ class DotProcess(settings: doc.Settings) {
     templateInput = input
 
     try {
-
       // process creation
       if (process == null) {
-        val procIO = new ProcessIO(inputFn(_), outputFn(_), errorFn(_))
-        val processBuilder: ProcessBuilder = Seq(settings.docDiagramsDotPath.value, "-Tsvg")
-        process = processBuilder.run(procIO)
+        val processBuilder = new ProcessBuilder(settings.docDiagramsDotPath.value, "-Tsvg")
+        process = processBuilder.start()
+
+        def spawn(f: Runnable): Unit = {
+          val thread = new Thread(f)
+          thread.setDaemon(true)
+          thread.start()
+        }
+
+        spawn { () => inputFn(process.getOutputStream()) }
+        spawn { () => outputFn(process.getInputStream()) }
+        spawn { () => errorFn(process.getErrorStream()) }
       }
 
       // pass the input and wait for the output

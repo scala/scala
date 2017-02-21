@@ -45,6 +45,7 @@ package object sys {
    *
    *  @return   the result of `java.lang.Runtime.getRuntime()`
    */
+  @deprecated("use Runtime.getRuntime", "2.12.2")
   def runtime: Runtime = Runtime.getRuntime
 
   /** A bidirectional, mutable Map representing the current system Properties.
@@ -52,12 +53,14 @@ package object sys {
    *  @return   a SystemProperties.
    *  @see      [[scala.sys.SystemProperties]]
    */
+  //@deprecated("use `System.getProperties().asScala` along with `import scala.collection.JavaConverters._`", "2.12.2")
   def props: SystemProperties = new SystemProperties
 
   /** An immutable Map representing the current system environment.
    *
    *  @return   a Map containing the system environment variables.
    */
+  @deprecated("use `System.getenv().asScala` along with `import scala.collection.JavaConverters._`", "2.12.2")
   def env: immutable.Map[String, String] = immutable.Map(System.getenv().asScala.toSeq: _*)
 
   /** Register a shutdown hook to be run when the VM exits.
@@ -71,12 +74,14 @@ package object sys {
    *  @return   the   Thread which will run the shutdown hook.
    *  @see      [[scala.sys.ShutdownHookThread]]
    */
+  @deprecated("use `Runtime.getRuntime.addShutdownHook(new Thread(() => ...))` instead of `sys.addShutdownHook(...)`", "2.12.2")
   def addShutdownHook(body: => Unit): ShutdownHookThread = ShutdownHookThread(body)
 
   /** Returns all active thread in the current thread's thread group and subgroups.
    *
    *  @return   an IndexedSeq containing the threads.
    */
+  @deprecated("this method will be removed in 2.13", "2.12.2")
   def allThreads(): IndexedSeq[Thread] = {
     val num    = Thread.activeCount()
     val tarray = new Array[Thread](num)

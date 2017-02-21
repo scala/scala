@@ -16,7 +16,7 @@ private[scala] trait MarkupParserCommon {
   import Utility._
   import scala.reflect.internal.Chars.SU
 
-  protected def unreachable = scala.sys.error("Cannot be reached.")
+  protected def unreachable = throw new IllegalStateException("Cannot be reached.")
 
   type PositionType     // Int, Position
   type ElementType      // NodeSeq, Tree

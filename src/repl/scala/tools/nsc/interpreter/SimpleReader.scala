@@ -28,7 +28,7 @@ extends InteractiveReader
     echo(prompt)
     readOneLine()
   }
-  protected def readOneKey(prompt: String) = sys.error("No char-based input in SimpleReader")
+  protected def readOneKey(prompt: String) = throw new IllegalStateException("No char-based input in SimpleReader")
 
   protected def readOneLine(): String = in.readLine()
   protected def echo(s: String): Unit = if (interactive) {

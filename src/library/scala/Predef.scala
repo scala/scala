@@ -333,7 +333,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   }
 
   implicit final class RichException(private val self: Throwable) extends AnyVal {
-    import scala.compat.Platform.EOL
+    import java.lang.System.{lineSeparator => EOL}
     @deprecated("use Throwable#getStackTrace", "2.11.0") def getStackTraceString = self.getStackTrace().mkString("", EOL, EOL)
   }
 

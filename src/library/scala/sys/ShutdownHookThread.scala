@@ -16,8 +16,8 @@ package sys
  *  @version 2.9
  *  @since   2.9
  */
-class ShutdownHookThread private (name: String) extends Thread(name) {
-  def remove() = runtime removeShutdownHook this
+class ShutdownHookThread private (runnable: Runnable, name: String) extends Thread(runnable, name) {
+  def remove() = Runtime.getRuntime removeShutdownHook this
 }
 
 object ShutdownHookThread {
@@ -30,10 +30,8 @@ object ShutdownHookThread {
    *  given code.
    */
   def apply(body: => Unit): ShutdownHookThread = {
-    val t = new ShutdownHookThread(hookName()) {
-      override def run() = body
-    }
-    runtime addShutdownHook t
+    val t = new ShutdownHookThread(() => body, hookName)
+    Runtime.getRuntime addShutdownHook t
     t
   }
 }

@@ -239,7 +239,7 @@ package parallel {
           afterCombine(other)
           this
         case _ =>
-          sys.error("Unexpected combiner type.")
+          throw new IllegalArgumentException("Unexpected combiner type.")
       }
     }
   }

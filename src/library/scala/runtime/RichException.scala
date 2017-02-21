@@ -9,7 +9,7 @@
 package scala
 package runtime
 
-import scala.compat.Platform.EOL
+import java.lang.System.{lineSeparator => EOL}
 
 @deprecated("use Throwable#getStackTrace", "2.11.0")
 final class RichException(exc: Throwable) {

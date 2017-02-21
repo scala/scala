@@ -459,7 +459,7 @@ trait Future[+T] extends Awaitable[T] {
    *
    *  Example:
    *  {{{
-   *  val f = Future { sys.error("failed") }
+   *  val f = Future { throw new RuntimeException("failed") }
    *  val g = Future { 5 }
    *  val h = f fallbackTo g
    *  h foreach println // Eventually prints 5
@@ -511,7 +511,7 @@ trait Future[+T] extends Awaitable[T] {
    *  {{{
    *  val f = Future { 5 }
    *  f andThen {
-   *    case r => sys.error("runtime exception")
+   *    case r => throw new RuntimeException("runtime exception")
    *  } andThen {
    *    case Failure(t) => println(t)
    *    case Success(v) => println(v)

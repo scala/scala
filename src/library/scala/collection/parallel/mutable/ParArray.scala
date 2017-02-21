@@ -636,7 +636,7 @@ self =>
         new ScanToArray(left, z, op, targetarr),
         new ScanToArray(right, z, op, targetarr)
       )
-      case _ => sys.error("Can only split scan tree internal nodes.")
+      case _ => throw new IllegalStateException("Can only split scan tree internal nodes.")
     }
     def shouldSplitFurther = tree match {
       case ScanNode(_, _) => true

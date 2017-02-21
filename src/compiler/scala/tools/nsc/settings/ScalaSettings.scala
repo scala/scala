@@ -27,7 +27,7 @@ trait ScalaSettings extends AbsScalaSettings
    *  defaults to the value of CLASSPATH env var if it is set, as in Java,
    *  or else to `"."` for the current user directory.
    */
-  protected def defaultClasspath = sys.env.getOrElse("CLASSPATH", ".")
+  protected def defaultClasspath = Option(System.getenv("CLASSPATH")).getOrElse(".")
 
   /** Enabled under -Xexperimental. */
   protected def experimentalSettings = List[BooleanSetting](YpartialUnification)
