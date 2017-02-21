@@ -77,10 +77,10 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
     if (reader != null) {
       reader.read match {
         case 'a' | 'A' =>
-          new Throwable().printStackTrace()
+          new Throwable().printStackTrace(writer)
           System.exit(1)
         case 's' | 'S' =>
-          new Throwable().printStackTrace()
+          new Throwable().printStackTrace(writer)
           writer.println()
           writer.flush()
         case _ =>
