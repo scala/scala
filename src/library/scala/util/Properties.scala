@@ -154,6 +154,12 @@ private[scala] trait PropertiesTrait {
   /* Some runtime values. */
   private[scala] def isAvian = javaVmName contains "Avian"
 
+  private[scala] def coloredOutputEnabled: Boolean = propOrElse("scala.color", "auto") match {
+    case "auto" => System.console() != null && !isWin
+    case a if a.toLowerCase() == "true" => true
+    case _ => false
+  }
+
   // This is looking for javac, tools.jar, etc.
   // Tries JDK_HOME first, then the more common but likely jre JAVA_HOME,
   // and finally the system property based javaHome.
