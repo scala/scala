@@ -14,19 +14,15 @@ import scala.tools.nsc.Phase
 object Dependency {
   def name = "xsbt-dependency"
 }
+
 /**
  * Extracts dependency information from each compilation unit.
  *
- * This phase uses CompilationUnit.depends and CallbackGlobal.inheritedDependencies
- * to collect all symbols that given compilation unit depends on. Those symbols are
- * guaranteed to represent Class-like structures.
- *
- * The CallbackGlobal.inheritedDependencies is populated by the API phase. See,
- * ExtractAPI class.
+ * This phase detects all the dependencies both at the term and type level.
  *
  * When dependency symbol is processed, it is mapped back to either source file where
  * it's defined in (if it's available in current compilation run) or classpath entry
- * where it originates from. The Symbol->Classfile mapping is implemented by
+ * where it originates from. The Symbol -> Classfile mapping is implemented by
  * LocateClassFile that we inherit from.
  */
 final class Dependency(val global: CallbackGlobal) extends LocateClassFile with GlobalHelpers {
@@ -36,89 +32,143 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
   private class DependencyPhase(prev: Phase) extends GlobalPhase(prev) {
     override def description = "Extracts dependency information"
     def name = Dependency.name
+
+    override def run(): Unit = {
+      val start = System.currentTimeMillis
+      super.run()
+      callback.dependencyPhaseCompleted()
+      val stop = System.currentTimeMillis
+      debuglog("Dependency phase took : " + ((stop - start) / 1000.0) + " s")
+    }
+
     def apply(unit: CompilationUnit): Unit = {
       if (!unit.isJava) {
-        // build dependencies structure
-        val sourceFile = unit.source.file.file
+        // Process dependencies if name hashing is enabled, fail otherwise
         if (global.callback.nameHashing) {
-          val dependencyExtractor = new ExtractDependenciesTraverser
-          dependencyExtractor.traverse(unit.body)
-
-          dependencyExtractor.memberRefDependencies foreach processDependency(context = DependencyByMemberRef)
-          dependencyExtractor.inheritanceDependencies foreach processDependency(context = DependencyByInheritance)
-          dependencyExtractor.localInheritanceDependencies foreach processDependency(context = LocalDependencyByInheritance)
-          processTopLevelImportDependencies(dependencyExtractor.topLevelImportDependencies)
+          val dependencyProcessor = new DependencyProcessor(unit)
+          val dependencyTraverser = new DependencyTraverser(dependencyProcessor)
+          // Traverse symbols in compilation unit and register all dependencies
+          dependencyTraverser.traverse(unit.body)
         } else {
-          throw new UnsupportedOperationException("Turning off name hashing is not supported in class-based dependency trackging.")
-        }
-        /*
-         * Registers top level import dependencies as coming from a first top level class/trait/object declared
-         * in the compilation unit.
-         * If there's no top level template (class/trait/object def) declared in the compilation unit but `deps`
-         * is non-empty, a warning is issued.
-         */
-        def processTopLevelImportDependencies(deps: Iterator[Symbol]): Unit = if (deps.nonEmpty) {
-          val classOrModuleDef = firstClassOrModuleDef(unit.body)
-          classOrModuleDef match {
-            case Some(classOrModuleDef) =>
-              val sym = classOrModuleDef.symbol
-              val firstClassSymbol = if (sym.isModule) sym.moduleClass else sym
-              deps foreach { dep =>
-                processDependency(context = DependencyByMemberRef)(ClassDependency(firstClassSymbol, dep))
-              }
-            case None =>
-              reporter.warning(
-                unit.position(0),
-                """|Found top level imports but no class, trait or object is defined in the compilation unit.
-                  |The incremental compiler cannot record the dependency information in such case.
-                  |Some errors like unused import referring to a non-existent class might not be reported.""".stripMargin
-              )
-          }
-        }
-        /*
-         * Handles dependency on given symbol by trying to figure out if represents a term
-         * that is coming from either source code (not necessarily compiled in this compilation
-         * run) or from class file and calls respective callback method.
-         */
-        def processDependency(context: DependencyContext)(dep: ClassDependency): Unit = {
-          val fromClassName = className(dep.from)
-          def binaryDependency(file: File, onBinaryClassName: String) =
-            callback.binaryDependency(file, onBinaryClassName, fromClassName, sourceFile, context)
-          val onSource = dep.to.sourceFile
-          if (onSource == null) {
-            classFile(dep.to) match {
-              case Some((f, binaryClassName, inOutDir)) =>
-                if (inOutDir && dep.to.isJavaDefined) registerTopLevelSym(dep.to)
-                f match {
-                  case ze: ZipArchive#Entry =>
-                    for (zip <- ze.underlyingSource; zipFile <- Option(zip.file)) binaryDependency(zipFile, binaryClassName)
-                  case pf: PlainFile => binaryDependency(pf.file, binaryClassName)
-                  case _             => ()
-                }
-              case None => ()
-            }
-          } else if (onSource.file != sourceFile) {
-            val onClassName = className(dep.to)
-            callback.classDependency(onClassName, fromClassName, context)
-          }
+          throw new UnsupportedOperationException(Feedback.NameHashingDisabled)
         }
       }
     }
   }
 
+  private class DependencyProcessor(unit: CompilationUnit) {
+    private def firstClassOrModuleClass(tree: Tree): Option[Symbol] = {
+      tree foreach {
+        case classOrModule @ ((_: ClassDef) | (_: ModuleDef)) =>
+          val sym = classOrModule.symbol
+          return Some(if (sym.isModule) sym.moduleClass else sym)
+        case _ => ()
+      }
+      None
+    }
+
+    private val sourceFile = unit.source.file.file
+    private val responsibleOfImports = firstClassOrModuleClass(unit.body)
+    private var orphanImportsReported = false
+
+    /*
+     * Registers top level import dependencies as coming from a first top level
+     * class/trait/object declared in the compilation unit. Otherwise, issue warning.
+     */
+    def processTopLevelImportDependency(dep: Symbol): Unit = {
+      if (!orphanImportsReported) {
+        responsibleOfImports match {
+          case Some(classOrModuleDef) =>
+            memberRef(ClassDependency(classOrModuleDef, dep))
+          case None =>
+            reporter.warning(unit.position(0), Feedback.OrphanTopLevelImports)
+            orphanImportsReported = true
+        }
+      }
+      ()
+    }
+
+    // Define processor reusing `processDependency` definition
+    val memberRef = processDependency(DependencyByMemberRef) _
+    val inheritance = processDependency(DependencyByInheritance) _
+    val localInheritance = processDependency(LocalDependencyByInheritance) _
+
+    /*
+     * Handles dependency on given symbol by trying to figure out if represents a term
+     * that is coming from either source code (not necessarily compiled in this compilation
+     * run) or from class file and calls respective callback method.
+     */
+    def processDependency(context: DependencyContext)(dep: ClassDependency): Unit = {
+      val fromClassName = classNameAsString(dep.from)
+
+      def binaryDependency(file: File, binaryClassName: String) =
+        callback.binaryDependency(file, binaryClassName, fromClassName, sourceFile, context)
+
+      import scala.tools.nsc.io.AbstractFile
+      def processExternalDependency(binaryClassName: String, at: AbstractFile) = {
+        at match {
+          case zipEntry: ZipArchive#Entry =>
+            // The dependency comes from a JAR
+            for {
+              zip <- zipEntry.underlyingSource
+              classFile <- Option(zip.file)
+            } binaryDependency(classFile, binaryClassName)
+          case pf: PlainFile =>
+            // The dependency comes from a class file
+            binaryDependency(pf.file, binaryClassName)
+          case _ =>
+          // TODO: If this happens, scala internals have changed. Log error.
+        }
+      }
+
+      val onSource = dep.to.sourceFile
+      if (onSource == null) {
+        // Dependency is external -- source is undefined
+        classFile(dep.to) match {
+          case Some((at, binaryClassName)) =>
+            processExternalDependency(binaryClassName, at)
+          case None =>
+            debuglog(Feedback.noOriginFileForExternalSymbol(dep.to))
+        }
+      } else if (onSource.file != sourceFile) {
+        // Dependency is internal -- but from other file / compilation unit
+        val onClassName = classNameAsString(dep.to)
+        callback.classDependency(onClassName, fromClassName, context)
+      } else () // Comes from the same file, ignore
+    }
+  }
+
   private case class ClassDependency(from: Symbol, to: Symbol)
 
-  private class ExtractDependenciesTraverser extends Traverser {
-    import scala.collection.mutable.HashSet
+  private class DependencyTraverser(processor: DependencyProcessor) extends Traverser {
     // are we traversing an Import node at the moment?
     private var inImportNode = false
 
-    private val _memberRefDependencies = HashSet.empty[ClassDependency]
-    private val _inheritanceDependencies = HashSet.empty[ClassDependency]
-    private val _localInheritanceDependencies = HashSet.empty[ClassDependency]
-    private val _topLevelImportDependencies = HashSet.empty[Symbol]
+    // Define caches for dependencies that have already been processed
+    import scala.collection.mutable.HashSet
+    private val _memberRefCache = HashSet.empty[ClassDependency]
+    private val _inheritanceCache = HashSet.empty[ClassDependency]
+    private val _localInheritanceCache = HashSet.empty[ClassDependency]
+    private val _topLevelImportCache = HashSet.empty[Symbol]
+
+    /** Return the enclosing class or the module class if it's a module. */
     private def enclOrModuleClass(s: Symbol): Symbol =
       if (s.isModule) s.moduleClass else s.enclClass
+
+    case class DependencySource(owner: Symbol) {
+      val (fromClass: Symbol, isLocal: Boolean) = {
+        val fromClass = enclOrModuleClass(owner)
+        if (fromClass == NoSymbol || fromClass.hasPackageFlag)
+          (fromClass, false)
+        else {
+          val fromNonLocalClass = localToNonLocalClass.resolveNonLocal(fromClass)
+          assert(!(fromClass == NoSymbol || fromClass.hasPackageFlag))
+          (fromNonLocalClass, fromClass != fromNonLocalClass)
+        }
+      }
+    }
+
+    private var _currentDependencySource: DependencySource = null
 
     /**
      * Resolves dependency source by getting the enclosing class for `currentOwner`
@@ -126,63 +176,82 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
      * The second returned value indicates if the enclosing class for `currentOwner`
      * is a local class.
      */
-    private def resolveDependencySource: (Symbol, Boolean) = {
-      val fromClass = enclOrModuleClass(currentOwner)
-      if (fromClass == NoSymbol || fromClass.hasPackageFlag)
-        (fromClass, false)
-      else {
-        val fromNonLocalClass = localToNonLocalClass.resolveNonLocal(fromClass)
-        assert(!(fromClass == NoSymbol || fromClass.hasPackageFlag))
-        (fromNonLocalClass, fromClass != fromNonLocalClass)
+    private def resolveDependencySource(): DependencySource = {
+      def newOne(): DependencySource = {
+        val fresh = DependencySource(currentOwner)
+        _currentDependencySource = fresh
+        _currentDependencySource
+      }
+      _currentDependencySource match {
+        case null => newOne()
+        case cached if currentOwner == cached.owner =>
+          cached
+        case _ => newOne()
       }
     }
-    private def addClassDependency(deps: HashSet[ClassDependency], fromClass: Symbol, dep: Symbol): Unit = {
-      assert(
-        fromClass.isClass,
-        s"The ${fromClass.fullName} defined at ${fromClass.fullLocationString} is not a class symbol."
-      )
+
+    /**
+     * Process a given ClassDependency and add it to the cache.
+     *
+     * This class dependency can be of three different types:
+     *   1. Member reference;
+     *   2. Local inheritance; or,
+     *   3. Inheritance.
+     */
+    private def addClassDependency(
+      cache: HashSet[ClassDependency],
+      process: ClassDependency => Unit,
+      fromClass: Symbol,
+      dep: Symbol
+    ): Unit = {
+      assert(fromClass.isClass, Feedback.expectedClassSymbol(fromClass))
       val depClass = enclOrModuleClass(dep)
-      if (fromClass.associatedFile != depClass.associatedFile) {
-        deps += ClassDependency(fromClass, depClass)
+      val dependency = ClassDependency(fromClass, depClass)
+      if (!cache.contains(dependency) &&
+        fromClass.associatedFile != depClass.associatedFile &&
+        !depClass.isRefinementClass) {
+        process(dependency)
+        cache += dependency
         ()
       }
     }
 
     def addTopLevelImportDependency(dep: global.Symbol): Unit = {
       val depClass = enclOrModuleClass(dep)
-      if (!dep.hasPackageFlag) {
-        _topLevelImportDependencies += depClass
+      if (!_topLevelImportCache.contains(depClass) && !dep.hasPackageFlag) {
+        processor.processTopLevelImportDependency(depClass)
+        _topLevelImportCache += depClass
         ()
       }
     }
 
     private def addTreeDependency(tree: Tree): Unit = {
       addDependency(tree.symbol)
-      if (tree.tpe != null)
-        symbolsInType(tree.tpe).foreach(addDependency)
+      val tpe = tree.tpe
+      if (!ignoredType(tpe))
+        foreachNotPackageSymbolInType(tpe)(addDependency)
       ()
     }
+
     private def addDependency(dep: Symbol): Unit = {
-      val (fromClass, _) = resolveDependencySource
-      if (fromClass == NoSymbol || fromClass.hasPackageFlag) {
+      val fromClass = resolveDependencySource().fromClass
+      if (ignoredSymbol(fromClass) || fromClass.hasPackageFlag) {
         if (inImportNode) addTopLevelImportDependency(dep)
-        else
-          debugwarn(s"No enclosing class. Discarding dependency on $dep (currentOwner = $currentOwner).")
+        else debugwarn(Feedback.missingEnclosingClass(dep, currentOwner))
       } else {
-        addClassDependency(_memberRefDependencies, fromClass, dep)
+        addClassDependency(_memberRefCache, processor.memberRef, fromClass, dep)
       }
     }
+
     private def addInheritanceDependency(dep: Symbol): Unit = {
-      val (fromClass, isLocal) = resolveDependencySource
-      if (isLocal)
-        addClassDependency(_localInheritanceDependencies, fromClass, dep)
-      else
-        addClassDependency(_inheritanceDependencies, fromClass, dep)
+      val dependencySource = resolveDependencySource()
+      val fromClass = dependencySource.fromClass
+      if (dependencySource.isLocal) {
+        addClassDependency(_localInheritanceCache, processor.localInheritance, fromClass, dep)
+      } else {
+        addClassDependency(_inheritanceCache, processor.inheritance, fromClass, dep)
+      }
     }
-    def memberRefDependencies: Iterator[ClassDependency] = _memberRefDependencies.iterator
-    def inheritanceDependencies: Iterator[ClassDependency] = _inheritanceDependencies.iterator
-    def topLevelImportDependencies: Iterator[Symbol] = _topLevelImportDependencies.iterator
-    def localInheritanceDependencies: Iterator[ClassDependency] = _localInheritanceDependencies.iterator
 
     /*
      * Some macros appear to contain themselves as original tree.
@@ -236,19 +305,19 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
 
         debuglog("Parent types for " + tree.symbol + " (self: " + self.tpt.tpe + "): " + inheritanceTypes + " with symbols " + inheritanceSymbols.map(_.fullName))
 
-        inheritanceSymbols.foreach(addInheritanceDependency)
+        inheritanceSymbols.foreach(addSymbolFromParent)
+        inheritanceTypes.foreach(addSymbolsFromType)
+        addSymbolsFromType(self.tpt.tpe)
 
-        val allSymbols = (inheritanceTypes + self.tpt.tpe).flatMap(symbolsInType)
-        (allSymbols ++ inheritanceSymbols).foreach(addDependency)
         traverseTrees(body)
 
       // In some cases (eg. macro annotations), `typeTree.tpe` may be null. See sbt/sbt#1593 and sbt/sbt#1655.
-      case typeTree: TypeTree if typeTree.tpe != null =>
-        symbolsInType(typeTree.tpe) foreach addDependency
+      case typeTree: TypeTree if !ignoredType(typeTree.tpe) =>
+        foreachNotPackageSymbolInType(typeTree.tpe)(addDependency)
       case m @ MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
         traverse(original)
         super.traverse(m)
-      case _: ClassDef | _: ModuleDef if tree.symbol != null && tree.symbol != NoSymbol =>
+      case _: ClassDef | _: ModuleDef if !ignoredSymbol(tree.symbol) =>
         // make sure we cache lookups for all classes declared in the compilation unit; the recorded information
         // will be used in Analyzer phase
         val sym = if (tree.symbol.isModule) tree.symbol.moduleClass else tree.symbol
@@ -256,14 +325,13 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
         super.traverse(tree)
       case other => super.traverse(other)
     }
-  }
 
-  def firstClassOrModuleDef(tree: Tree): Option[Tree] = {
-    tree foreach {
-      case t @ ((_: ClassDef) | (_: ModuleDef)) => return Some(t)
-      case _                                    => ()
+    val addSymbolFromParent: Symbol => Unit = { symbol =>
+      addInheritanceDependency(symbol)
+      addDependency(symbol)
     }
-    None
+    val addSymbolsFromType: Type => Unit = { tpe =>
+      foreachNotPackageSymbolInType(tpe)(addDependency)
+    }
   }
-
 }

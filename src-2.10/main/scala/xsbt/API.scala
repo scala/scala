@@ -1,6 +1,7 @@
 /* sbt -- Simple Build Tool
  * Copyright 2008, 2009, 2010, 2011 Mark Harrah
  */
+
 package xsbt
 
 import scala.tools.nsc.Phase
@@ -11,7 +12,7 @@ object API {
   val name = "xsbt-api"
 }
 
-final class API(val global: CallbackGlobal) extends Compat {
+final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers {
   import global._
 
   def newPhase(prev: Phase) = new ApiPhase(prev)
@@ -39,12 +40,12 @@ final class API(val global: CallbackGlobal) extends Compat {
       if (global.callback.nameHashing) {
         val extractUsedNames = new ExtractUsedNames[global.type](global)
         val allUsedNames = extractUsedNames.extract(unit)
-        def showUsedNames(className: String, names: Set[String]): String =
+        def showUsedNames(className: String, names: Iterable[String]): String =
           s"$className:\n\t${names.mkString(", ")}"
         debuglog("The " + sourceFile + " contains the following used names:\n" +
           allUsedNames.map((showUsedNames _).tupled).mkString("\n"))
         allUsedNames foreach {
-          case (className: String, names: Set[String]) =>
+          case (className: String, names: Iterable[String]) =>
             names foreach { (name: String) => callback.usedName(className, name) }
         }
       }
@@ -73,9 +74,14 @@ final class API(val global: CallbackGlobal) extends Compat {
         case _ =>
       }
     }
-    def isTopLevel(sym: Symbol): Boolean =
-      (sym ne null) && (sym != NoSymbol) && !sym.isImplClass && !sym.isNestedClass && sym.isStatic &&
-        !sym.hasFlag(Flags.SYNTHETIC) && !sym.hasFlag(Flags.JAVA)
+    def isTopLevel(sym: Symbol): Boolean = {
+      !ignoredSymbol(sym) &&
+        sym.isStatic &&
+        !sym.isImplClass &&
+        !sym.hasFlag(Flags.SYNTHETIC) &&
+        !sym.hasFlag(Flags.JAVA) &&
+        !sym.isNestedClass
+    }
   }
 
 }

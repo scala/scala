@@ -1,5 +1,7 @@
 package xsbt
 
+import scala.collection.mutable
+
 /**
  * Extracts simple names used in given compilation unit.
  *
@@ -20,11 +22,9 @@ package xsbt
  * Names mentioned in Import nodes are handled properly but require some special logic for two
  * reasons:
  *
- *   1. import node itself has a term symbol associated with it with a name `<import`>.
- *      I (gkossakowski) tried to track down what role this symbol serves but I couldn't.
- *      It doesn't look like there are many places in Scala compiler that refer to
- *      that kind of symbols explicitly.
- *   2. ImportSelector is not subtype of Tree therefore is not processed by `Tree.foreach`
+ *   1. The `termSymbol` of Import nodes point to the symbol of the prefix it imports from
+ *      (not the actual members that we import, that are represented as names).
+ *   2. ImportSelector is not subtype of Tree therefore is not processed by `Tree.foreach`.
  *
  * Another type of tree nodes that requires special handling is TypeTree. TypeTree nodes
  * has a little bit odd representation:
@@ -41,11 +41,12 @@ package xsbt
 class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) extends Compat with ClassName with GlobalHelpers {
   import global._
 
-  def extract(unit: CompilationUnit): Map[String, Set[String]] = {
+  def extract(unit: CompilationUnit): Iterable[(String, Iterable[String])] = {
     val tree = unit.body
     val traverser = new ExtractUsedNamesTraverser
     traverser.traverse(tree)
     val namesUsedAtTopLevel = traverser.namesUsedAtTopLevel
+
     if (namesUsedAtTopLevel.nonEmpty) {
       val classOrModuleDef = firstClassOrModuleDef(tree)
       classOrModuleDef match {
@@ -53,18 +54,16 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
           val sym = classOrModuleDef.symbol
           val firstClassSymbol = if (sym.isModule) sym.moduleClass else sym
           val firstClassName = className(firstClassSymbol)
-          traverser.namesUsedInClasses(firstClassName) ++= namesUsedAtTopLevel
+          traverser.usedNamesFromClass(firstClassName) ++= namesUsedAtTopLevel
         case None =>
-          unit.warning(
-            NoPosition,
-            """|Found names used at the top level but no class, trait or object is defined in the compilation unit.
-               |The incremental compiler cannot record used names in such case.
-               |Some errors like unused import referring to a non-existent class might not be reported.""".stripMargin
-          )
+          reporter.warning(unit.position(0), Feedback.OrphanNames)
       }
     }
 
-    traverser.namesUsedInClasses.toMap
+    traverser.usedNamesFromClasses.map { tpl =>
+      // NOTE: We don't decode the full class name, only dependent names.
+      tpl._1.toString.trim -> tpl._2.map(_.decode.trim)
+    }
   }
 
   private def firstClassOrModuleDef(tree: Tree): Option[Tree] = {
@@ -76,8 +75,36 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
   }
 
   private class ExtractUsedNamesTraverser extends Traverser {
-    val namesUsedInClasses = collection.mutable.Map.empty[String, Set[String]].withDefaultValue(Set.empty)
-    val namesUsedAtTopLevel = collection.mutable.Set.empty[String]
+    val usedNamesFromClasses = mutable.Map.empty[Name, mutable.Set[Name]]
+    val namesUsedAtTopLevel = mutable.Set.empty[Name]
+
+    override def traverse(tree: Tree): Unit = {
+      handleClassicTreeNode(tree)
+      processMacroExpansion(tree)(handleMacroExpansion)
+      super.traverse(tree)
+    }
+
+    val addSymbol: Symbol => Unit = {
+      symbol =>
+        val enclosingNonLocalClass = resolveEnclosingNonLocalClass
+        if (!ignoredSymbol(symbol)) {
+          val name = symbol.name
+          // Synthetic names are no longer included. See https://github.com/sbt/sbt/issues/2537
+          if (!isEmptyName(name) && !enclosingNonLocalClass.containsName(name))
+            enclosingNonLocalClass.addName(name)
+        }
+    }
+
+    /** Returns mutable set with all names from given class used in current context */
+    def usedNamesFromClass(className: Name): collection.mutable.Set[Name] = {
+      usedNamesFromClasses.get(className) match {
+        case Some(setForClass) => setForClass
+        case None =>
+          val emptySet = scala.collection.mutable.Set.empty[Name]
+          usedNamesFromClasses.put(className, emptySet)
+          emptySet
+      }
+    }
 
     /*
      * Some macros appear to contain themselves as original tree.
@@ -89,46 +116,23 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
     private val inspectedOriginalTrees = collection.mutable.Set.empty[Tree]
     private val inspectedTypeTrees = collection.mutable.Set.empty[Tree]
 
-    override def traverse(tree: Tree): Unit = tree match {
-      case MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
-        handleClassicTreeNode(tree)
-        handleMacroExpansion(original)
-        super.traverse(tree)
-      case _ =>
-        handleClassicTreeNode(tree)
-        super.traverse(tree)
-    }
-
-    private def addSymbol(symbol: Symbol): Unit =
-      if (eligibleAsUsedName(symbol))
-        addName(symbol.name)
-
-    private def addName(name: Name, enclosingNonLocalClass: Symbol = resolveEnclosingNonLocalClass): Unit = {
-      val nameAsString = name.decode.trim
-      if (enclosingNonLocalClass == NoSymbol || enclosingNonLocalClass.isPackage) {
-        namesUsedAtTopLevel += nameAsString
-        ()
-      } else {
-        val className = ExtractUsedNames.this.className(enclosingNonLocalClass)
-        namesUsedInClasses(className) += nameAsString
-        ()
+    private val handleMacroExpansion: Tree => Unit = { original =>
+      if (!inspectedOriginalTrees.contains(original)) {
+        inspectedOriginalTrees += original
+        traverse(original)
       }
-    }
-
-    private def handleMacroExpansion(original: Tree): Unit = {
-      original.foreach(traverse)
     }
 
     private def handleClassicTreeNode(tree: Tree): Unit = tree match {
       case _: DefTree | _: Template => ()
-      // turns out that Import node has a TermSymbol associated with it
-      // I (Grzegorz) tried to understand why it's there and what does it represent but
-      // that logic was introduced in 2005 without any justification I'll just ignore the
-      // import node altogether and just process the selectors in the import node
       case Import(_, selectors: List[ImportSelector]) =>
-        val enclosingNonLocalClass = resolveEnclosingNonLocalClass
-        def usedNameInImportSelector(name: Name): Unit =
-          if ((name != null) && (name != nme.WILDCARD)) addName(name, enclosingNonLocalClass)
+        val enclosingNonLocalClass = resolveEnclosingNonLocalClass()
+        def usedNameInImportSelector(name: Name): Unit = {
+          if (!isEmptyName(name) && (name != nme.WILDCARD) &&
+            !enclosingNonLocalClass.containsName(name)) {
+            enclosingNonLocalClass.addName(name)
+          }
+        }
         selectors foreach { selector =>
           usedNameInImportSelector(selector.name)
           usedNameInImportSelector(selector.rename)
@@ -139,15 +143,40 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       // to types but that might be a bad thing because it might expand aliases eagerly which
       // not what we need
       case t: TypeTree if t.original != null =>
-        if (inspectedTypeTrees.add(t.original)) {
-          t.original.foreach(traverse)
+        val original = t.original
+        if (!inspectedTypeTrees.contains(original)) {
+          inspectedTypeTrees += original
+          original.foreach(traverse)
         }
       case t if t.hasSymbol =>
         addSymbol(t.symbol)
         if (t.tpe != null)
-          symbolsInType(t.tpe).foreach(addSymbol)
+          foreachNotPackageSymbolInType(t.tpe)(addSymbol)
       case _ =>
     }
+
+    private case class EnclosingNonLocalClass(currentOwner: Symbol) {
+      private val nonLocalClass: Symbol = {
+        val fromClass = enclOrModuleClass(currentOwner)
+        if (ignoredSymbol(fromClass) || fromClass.hasPackageFlag) null
+        else localToNonLocalClass.resolveNonLocal(fromClass)
+      }
+
+      private val usedNamesSet: collection.mutable.Set[Name] = {
+        if (nonLocalClass == null) namesUsedAtTopLevel
+        else usedNamesFromClass(ExtractUsedNames.this.className(nonLocalClass))
+      }
+
+      def addName(name: Name): Unit = {
+        usedNamesSet += name
+        ()
+      }
+
+      def containsName(name: Name): Boolean =
+        usedNamesSet.contains(name)
+    }
+
+    private var _lastEnclosingNonLocalClass: EnclosingNonLocalClass = null
 
     /**
      * Resolves a class to which we attribute a used name by getting the enclosing class
@@ -155,14 +184,22 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
      * The second returned value indicates if the enclosing class for `currentOwner`
      * is a local class.
      */
-    private def resolveEnclosingNonLocalClass: Symbol = {
-      val fromClass = enclOrModuleClass(currentOwner)
-      if (fromClass == NoSymbol || fromClass.isPackage)
-        fromClass
-      else {
-        val fromNonLocalClass = localToNonLocalClass.resolveNonLocal(fromClass)
-        assert(!(fromClass == NoSymbol || fromClass.isPackage))
-        fromNonLocalClass
+    private def resolveEnclosingNonLocalClass(): EnclosingNonLocalClass = {
+      /* Note that `currentOwner` is set by Global and points to the owner of
+       * the tree that we traverse. Therefore, it's not ensured to be a non local
+       * class. The non local class is resolved inside `EnclosingNonLocalClass`. */
+      def newOne(): EnclosingNonLocalClass = {
+        _lastEnclosingNonLocalClass = EnclosingNonLocalClass(currentOwner)
+        _lastEnclosingNonLocalClass
+      }
+
+      _lastEnclosingNonLocalClass match {
+        case null =>
+          newOne()
+        case cached @ EnclosingNonLocalClass(owner) if owner == currentOwner =>
+          cached
+        case _ =>
+          newOne()
       }
     }
 
@@ -170,22 +207,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       if (s.isModule) s.moduleClass else s.enclClass
   }
 
-  /**
-   * Needed for compatibility with Scala 2.8 which doesn't define `tpnme`
-   */
-  private object tpnme {
-    val EMPTY = nme.EMPTY.toTypeName
-    val EMPTY_PACKAGE_NAME = nme.EMPTY_PACKAGE_NAME.toTypeName
-  }
-
   private def eligibleAsUsedName(symbol: Symbol): Boolean = {
-    def emptyName(name: Name): Boolean = name match {
-      case nme.EMPTY | nme.EMPTY_PACKAGE_NAME | tpnme.EMPTY | tpnme.EMPTY_PACKAGE_NAME => true
-      case _ => false
-    }
-
-    // Synthetic names are no longer included
-    (symbol != NoSymbol) &&
-      !emptyName(symbol.name)
+    !ignoredSymbol(symbol) && !isEmptyName(symbol.name)
   }
 }

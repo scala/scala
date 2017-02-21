@@ -88,17 +88,10 @@ private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, priv
       val sourceFile = src.file.file
       val line = pos.line
       val lineContent = pos.lineContent.stripLineEnd
-      val offset = getOffset(pos)
+      val offset = pos.point
       val pointer = offset - src.lineToOffset(src.offsetToLine(offset))
       val pointerSpace = ((lineContent: Seq[Char]).take(pointer).map { case '\t' => '\t'; case x => ' ' }).mkString
       position(Option(sourcePath), Option(sourceFile), Option(line), lineContent, Option(offset), Option(pointer), Option(pointerSpace))
-    }
-  private[this] def getOffset(pos: Position): Int =
-    {
-      // for compatibility with 2.8
-      implicit def withPoint(p: Position): WithPoint = new WithPoint(pos)
-      final class WithPoint(val p: Position) { def point = p.offset.get }
-      pos.point
     }
   private[this] def position(sourcePath0: Option[String], sourceFile0: Option[File], line0: Option[Int], lineContent0: String, offset0: Option[Int], pointer0: Option[Int], pointerSpace0: Option[String]) =
     new PositionImpl(sourcePath0, sourceFile0, line0, lineContent0, offset0, pointer0, pointerSpace0)

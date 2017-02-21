@@ -18,7 +18,12 @@ trait ClassName {
   /**
    * Create a (source) name for a class symbol `s`.
    */
-  protected def className(s: Symbol): String = pickledName(s)
+  protected def className(s: Symbol): Name = pickledName(s)
+
+  /**
+   * Create a String (source) name for a class symbol `s`.
+   */
+  protected def classNameAsString(s: Symbol): String = pickledNameAsString(s)
 
   /**
    * Create a (source) name for the class symbol `s` with a prefix determined by the class symbol `in`.
@@ -35,8 +40,11 @@ trait ClassName {
       in.fullName + "." + s.name
   }
 
-  private def pickledName(s: Symbol): String =
-    atPhase(currentRun.picklerPhase) { s.fullName }
+  private def pickledName(s: Symbol): Name =
+    atPhase(currentRun.picklerPhase.next) { s.fullNameAsName('.') }
+
+  private def pickledNameAsString(s: Symbol): String =
+    atPhase(currentRun.picklerPhase.next) { s.fullName }
 
   protected def isTopLevelModule(sym: Symbol): Boolean =
     atPhase(currentRun.picklerPhase.next) {
