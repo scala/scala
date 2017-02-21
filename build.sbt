@@ -1,4 +1,4 @@
-organization in ThisBuild := "org.scala-lang"
+organization in ThisBuild := "ch.epfl.scala"
 
 version in ThisBuild := "0.1-SNAPSHOT"
 
@@ -9,17 +9,24 @@ scalacOptions in ThisBuild ++=
 
 testOptions in ThisBuild += Tests.Argument(TestFrameworks.JUnit, "-q", "-v", "-s", "-a")
 
-fork in Test := true
+fork in Test in ThisBuild := true
 
-parallelExecution in Test := false
+parallelExecution in Test in ThisBuild := false
 
 val collections =
   project.in(file("."))
     .settings(
+      name := "collection-strawman",
       libraryDependencies ++= Seq(
         "org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0",
         "com.novocode" % "junit-interface" % "0.11" % Test
-      )
+      ),
+      credentials ++= (
+        for {
+          username <- sys.env.get("SONATYPE_USERNAME")
+          password <- sys.env.get("SONATYPE_PASSWORD")
+        } yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)
+      ).toList
     )
 
 val timeBenchmark =
