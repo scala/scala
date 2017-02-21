@@ -3,31 +3,36 @@ import elidable._
 
 // runs -Xelide-below WARNING or 900
 
+object Fail {
+  def fail(msg: String): Unit = throw new IllegalStateException(s"Expected failure: $msg")
+}
+import Fail.fail
+
 trait T {
   @elidable(FINEST) def f1()
   @elidable(SEVERE) def f2()
-  @elidable(FINEST) def f3() = assert(false, "Should have been elided.")
+  @elidable(FINEST) def f3() = fail("Should have been elided.")
   def f4()
 }
 
 class C extends T {
   def f1() = println("Good for me, I was not elided. C.f1")
   def f2() = println("Good for me, I was not elided. C.f2")
-  @elidable(FINEST) def f4() = assert(false, "Should have been elided.")
+  @elidable(FINEST) def f4() = fail("Should have been elided.")
 }
 
 object O {
-  @elidable(FINEST) def f1() = assert(false, "Should have been elided.")
-  @elidable(INFO) def f2() = assert(false, "Should have been elided.")
+  @elidable(FINEST) def f1() = fail("Should have been elided.")
+  @elidable(INFO) def f2() = fail("Should have been elided.")
   @elidable(SEVERE) def f3() = println("Good for me, I was not elided. O.f3")
-  @elidable(INFO) def f4 = assert(false, "Should have been elided (no parens).")
+  @elidable(INFO) def f4 = fail("Should have been elided (no parens).")
 }
 
 object Test {
-  @elidable(FINEST) def f1() = assert(false, "Should have been elided.")
-  @elidable(INFO) def f2() = assert(false, "Should have been elided.")
+  @elidable(FINEST) def f1() = fail("Should have been elided.")
+  @elidable(INFO) def f2() = fail("Should have been elided.")
   @elidable(SEVERE) def f3() = println("Good for me, I was not elided. Test.f3")
-  @elidable(INFO) def f4 = assert(false, "Should have been elided (no parens).")
+  @elidable(INFO) def f4 = fail("Should have been elided (no parens).")
 
   @elidable(FINEST) def f5() = {}
   @elidable(FINEST) def f6() = true
@@ -38,12 +43,12 @@ object Test {
   @elidable(FINEST) def fb() = 1l
   @elidable(FINEST) def fc() = 1.0f
   @elidable(FINEST) def fd() = 1.0
-  @elidable(FINEST) def fe() = "s"
+  @elidable(FINEST) def fe() = { fail("Should have been elided to empty string.") ; "hello, world" }
 
   /* variable elisions? see test/files/neg/t10068.scala
-  @elidable(INFO) val goner1: Int      = { assert(false, "Should have been elided.") ; 42 }
-  @elidable(INFO) lazy val goner2: Int = { assert(false, "Should have been elided.") ; 42 }
-  @elidable(INFO) var goner3: Int      = { assert(false, "Should have been elided.") ; 42 }
+  @elidable(INFO) val goner1: Int      = { fail("Should have been elided.") ; 42 }
+  @elidable(INFO) lazy val goner2: Int = { fail("Should have been elided.") ; 42 }
+  @elidable(INFO) var goner3: Int      = { fail("Should have been elided.") ; 42 }
   @elidable(INFO) var goner4: Nothing  = _
   */
 
@@ -74,6 +79,19 @@ object Test {
     println(fc())
     println(fd())
     println(fe())
+    if (!fe().isEmpty) fail(s"Not empty: [${fe()}]")
+/*
+()
+false
+0
+0
+0
+0
+0
+0.0
+0.0
+   // was: null
+*/
 
     // this one won't show up in the output because a call to f1 is elidable when accessed through T
     (c:T).f1()
