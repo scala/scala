@@ -275,7 +275,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
         visitInternalName(internalName.toString)
       }
       override def raiseError(msg: String): Unit = {
-        // don't crash on invalid generic signatures
+        throw new FatalError(msg)
       }
     }
 
