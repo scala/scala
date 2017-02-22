@@ -26,15 +26,15 @@ final class TreeSet[A]()(implicit val ordering: Ordering[A])
   def & (that: strawman.collection.Set[A]): TreeSet[A] = ???
   def ++ (that: strawman.collection.Set[A]): TreeSet[A] = ???
 
+  // From immutable.SetMonoTransforms
+  def +(elem: A): TreeSet[A] = ???
+  def -(elem: A): TreeSet[A] = ???
+
   // From SortedLike
   def range(from: A, until: A): TreeSet[A] = ???
 
   // From SortedPolyTransforms
   def map[B](f: (A) => B)(implicit ordering: Ordering[B]): TreeSet[B] = ???
-
-  // From immutable.SetLike
-  def +(elem: A): TreeSet[A] = ???
-  def -(elem: A): TreeSet[A] = ???
 
 }
 

@@ -303,7 +303,7 @@ class StrawmanTest {
   }
 
   def sortedSets(xs: immutable.SortedSet[Int]): Unit = {
-    val xs1 = xs.map((x: Int) => x.toString)
+    val xs1 = xs.map((x: Int) => x.toString) // TODO Remove type annotation when https://github.com/scala/scala/pull/5708 is published
     val xs2: immutable.SortedSet[String] = xs1
   }
 
@@ -325,7 +325,7 @@ class StrawmanTest {
     val xs2: immutable.SortedMap[String, Int] = xs1
     val xs3 = xs.map(kv => kv._1)
     val xs4: immutable.Iterable[String] = xs3
-    val xs5 = xs.map((k: String, v: Int) => (v, k))
+    val xs5 = xs.map((k: String, v: Int) => (v, k)) // TODO Remove type annotation when https://github.com/scala/scala/pull/5708 is published
     val xs6: immutable.SortedMap[Int, String] = xs5
     class Foo
 //    val xs7 = xs.map((k: String, v: Int) => (new Foo, v)) Error: No implicit Ordering defined for Foo

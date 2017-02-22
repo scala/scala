@@ -1,6 +1,8 @@
 package strawman
 package collection.immutable
 
+import strawman.collection.IterableMonoTransforms
+
 /** Base type of immutable Maps */
 trait Map[K, +V]
   extends collection.Map[K, V]
@@ -9,20 +11,12 @@ trait Map[K, +V]
 /** Base trait of immutable Maps implementations */
 trait MapLike[K, +V, +C[X, +Y] <: Map[X, Y]]
   extends collection.MapLike[K, V, C]
-    with MapOps[K, V, C]
+    with MapMonoTransforms[K, V, C[K, V]]
     with Iterable[(K, V)]
 
 /** Immutable Map operations returning a self-like Map */
-trait MapOps[K, +V, +C[X, +Y] <: Map[X, Y]] {
-
-  /**
-    * Add a key/value pair to this map, returning a new map.
-    *
-    * @param kv the key/value pair.
-    * @tparam V1 the type of the value in the key/value pair.
-    * @return A new map with the new binding added to this map.
-    */
-  def + [V1 >: V](kv: (K, V1)): C[K, V1]
+trait MapMonoTransforms[K, +V, +Repr <: Map[K, V]]
+  extends IterableMonoTransforms[(K, V), Repr] {
 
   /**
     * Removes a key from this map, returning a new map.
@@ -30,6 +24,6 @@ trait MapOps[K, +V, +C[X, +Y] <: Map[X, Y]] {
     * @param key the key to be removed
     * @return a new map without a binding for ''key''
     */
-  def - (key: K): C[K, V]
+  def - (key: K): Repr
 
 }

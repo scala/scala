@@ -1,6 +1,6 @@
 package strawman.collection.immutable
 
-import strawman.collection.{SetMonoTransforms, Sorted, SortedLike, SortedPolyTransforms}
+import strawman.collection.{Sorted, SortedLike, SortedPolyTransforms}
 
 /** Base trait for sorted sets */
 trait SortedSet[A]
@@ -12,5 +12,4 @@ trait SortedSetLike[A, +C[X] <: SortedSet[X]]
   extends SortedLike[A, C[A]]
     with SortedPolyTransforms[A, C]
     with SetLike[A, Set] // Inherited Set operations return a `Set`
-    with SetOps[A, C[A]] // Override the return type of Set ops to return C[A]
-    with SetMonoTransforms[A, C[A]]
+    with SetMonoTransforms[A, C[A]] // Override the return type of Set ops to return C[A]

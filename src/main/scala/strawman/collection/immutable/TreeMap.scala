@@ -22,7 +22,7 @@ final class TreeMap[K, +V]
   // Members declared in collection.MapLike
   def get(key: K): Option[V] = ???
 
-  // Members declared in collection.immutable.MapLike
+  // Members declared in collection.immutable.MapMonoTransforms
   def -(key: K): TreeMap[K,V] = ???
   def +[V1 >: V](kv: (K, V1)): TreeMap[K,V1] = ???
 
