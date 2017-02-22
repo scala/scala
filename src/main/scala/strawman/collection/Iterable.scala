@@ -6,6 +6,7 @@ import scala.reflect.ClassTag
 import scala.{Int, Boolean, Array, Any, Unit, StringContext}
 import java.lang.{String, UnsupportedOperationException}
 import strawman.collection.mutable.{ArrayBuffer, StringBuilder}
+import java.lang.String
 
 /** Base trait for generic collections */
 trait Iterable[+A] extends IterableOnce[A] with IterableLike[A, Iterable] {
@@ -53,7 +54,7 @@ trait IterableFactory[+C[X] <: Iterable[X]] extends FromIterable[C] {
   */
 trait IterableOps[+A] extends Any {
   protected def coll: Iterable[A]
-  private def iterator() = coll.iterator()
+  private def iterator(): Iterator[A] = coll.iterator()
 
   /** Apply `f` to each element for its side effects
    *  Note: [U] parameter needed to help scalac's type inference.
@@ -138,7 +139,9 @@ trait IterableOps[+A] extends Any {
   }
 
   override def toString = s"$className(${mkString(", ")})"
+
 }
+
 
 /** Type-preserving transforms over iterables.
   *  Operations defined here return in their result iterables of the same type
