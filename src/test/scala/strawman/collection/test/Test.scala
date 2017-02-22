@@ -5,9 +5,9 @@ import java.lang.String
 import scala.{Int, Unit, Array, Option, StringContext, Boolean, Any, Char}
 import scala.Predef.{assert, println, charWrapper}
 
-import collection.immutable._
-import collection.mutable._
-import collection.{Seq, View, _}
+import collection._
+import collection.immutable.{List, Nil, LazyList}
+import collection.mutable.{ArrayBuffer, ListBuffer}
 import org.junit.Test
 
 class StrawmanTest {
@@ -302,15 +302,13 @@ class StrawmanTest {
     assert(list.## != buffer.##)
   }
 
-  def sortedSets(xs: strawman.collection.immutable.SortedSet[Int]): Unit = {
+  def sortedSets(xs: immutable.SortedSet[Int]): Unit = {
     val xs1 = xs.map((x: Int) => x.toString)
-    val xs2: SortedSet[String] = xs1
-    val xs3: strawman.collection.immutable.Set[String] = xs.map((x: Int) => x.toString)
+    val xs2: immutable.SortedSet[String] = xs1
   }
 
-  def mapOps(xs: strawman.collection.Map[Int, String]): Unit = {
+  def mapOps(xs: Map[Int, String]): Unit = {
     val xs1 = xs.map((k, v) => (v, k))
-//    val xs1Bis = xs.map { case (k, v) => (v, k) } Does not compile :(
     val xs2: strawman.collection.Map[String, Int] = xs1
     val xs3 = xs.map(kv => (kv._2, kv._1))
     val xs4: strawman.collection.Iterable[(String, Int)] = xs3
@@ -320,19 +318,19 @@ class StrawmanTest {
     println(xs4)
   }
 
-  def sortedMaps(xs: collection.immutable.SortedMap[String, Int]): Unit = {
+  def sortedMaps(xs: immutable.SortedMap[String, Int]): Unit = {
     val x1 = xs.get("foo")
     val x2: Option[Int] = x1
     val xs1 = xs + ("foo", 1)
-    val xs2: SortedMap[String, Int] = xs1
+    val xs2: immutable.SortedMap[String, Int] = xs1
     val xs3 = xs.map(kv => kv._1)
-    val xs4: collection.immutable.Iterable[String] = xs3
+    val xs4: immutable.Iterable[String] = xs3
     val xs5 = xs.map((k: String, v: Int) => (v, k))
-    val xs6: collection.immutable.SortedMap[Int, String] = xs5
+    val xs6: immutable.SortedMap[Int, String] = xs5
     class Foo
 //    val xs7 = xs.map((k: String, v: Int) => (new Foo, v)) Error: No implicit Ordering defined for Foo
-    val xs7 = (xs: collection.immutable.Map[String, Int]).map((k, v) => (new Foo, v))
-    val xs8: collection.immutable.Map[Foo, Int] = xs7
+    val xs7 = (xs: immutable.Map[String, Int]).map((k, v) => (new Foo, v))
+    val xs8: immutable.Map[Foo, Int] = xs7
   }
 
   @Test
