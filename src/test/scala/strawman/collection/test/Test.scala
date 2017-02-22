@@ -1,12 +1,13 @@
-package strawman.collection.test
+package strawman
+package collection.test
 
 import java.lang.String
-import scala.{Int, Unit, Array, StringContext, Boolean, Any, Char}
+import scala.{Int, Unit, Array, Option, StringContext, Boolean, Any, Char}
 import scala.Predef.{assert, println, charWrapper}
 
-import strawman.collection.immutable._
-import strawman.collection.mutable._
-import strawman.collection.{Seq, View, _}
+import collection.immutable._
+import collection.mutable._
+import collection.{Seq, View, _}
 import org.junit.Test
 
 class StrawmanTest {
@@ -317,6 +318,21 @@ class StrawmanTest {
     println(xs2)
     println(xs3)
     println(xs4)
+  }
+
+  def sortedMaps(xs: collection.immutable.SortedMap[String, Int]): Unit = {
+    val x1 = xs.get("foo")
+    val x2: Option[Int] = x1
+    val xs1 = xs + ("foo", 1)
+    val xs2: SortedMap[String, Int] = xs1
+    val xs3 = xs.map(kv => kv._1)
+    val xs4: collection.immutable.Iterable[String] = xs3
+    val xs5 = xs.map((k: String, v: Int) => (v, k))
+    val xs6: collection.immutable.SortedMap[Int, String] = xs5
+    class Foo
+//    val xs7 = xs.map((k: String, v: Int) => (new Foo, v)) Error: No implicit Ordering defined for Foo
+    val xs7 = (xs: collection.immutable.Map[String, Int]).map((k, v) => (new Foo, v))
+    val xs8: collection.immutable.Map[Foo, Int] = xs7
   }
 
   @Test

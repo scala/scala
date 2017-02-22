@@ -5,14 +5,13 @@ import strawman.collection.mutable.Builder
 import scala.Ordering
 
 /** Base trait for sorted collections */
-trait Sorted[A] extends SortedLike[A, Sorted]
+trait Sorted[A] extends SortedLike[A, Sorted[A]]
 
-trait SortedLike[A, +C[X] <: Sorted[X]]
-  extends SortedPolyTransforms[A, C] {
+trait SortedLike[A, +Repr] {
 
   def ordering: Ordering[A]
 
-  def range(from: A, until: A): C[A]
+  def range(from: A, until: A): Repr
 
 }
 

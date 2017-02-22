@@ -9,7 +9,11 @@ trait Map[K, +V]
 /** Base trait of immutable Maps implementations */
 trait MapLike[K, +V, +C[X, +Y] <: Map[X, Y]]
   extends collection.MapLike[K, V, C]
-    with Iterable[(K, V)] {
+    with MapOps[K, V, C]
+    with Iterable[(K, V)]
+
+/** Immutable Map operations returning a self-like Map */
+trait MapOps[K, +V, +C[X, +Y] <: Map[X, Y]] {
 
   /**
     * Add a key/value pair to this map, returning a new map.
