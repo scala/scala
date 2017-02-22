@@ -90,13 +90,13 @@ trait EntityPage extends HtmlPage {
                           mbr match {
                             case dtpl: DocTemplateEntity =>
                               dtpl.companion.fold(<span class="separator"></span>) { c: DocTemplateEntity =>
-                                <a class="object" href={relativeLinkTo(c)} title={c.comment.fold("")(com => inlineToStr(com.short))}></a>
+                                <a class="object" href={relativeLinkTo(c)} title={c.comment.fold("")(com => Page.inlineToStr(com.short))}></a>
                               }
                             case _ => <span class="separator"></span>
                           }
                         }
-                        <a class={mbr.kind} href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => inlineToStr(com.short))}></a>
-                        <a href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => inlineToStr(com.short))}>
+                        <a class={mbr.kind} href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => Page.inlineToStr(com.short))}></a>
+                        <a href={relativeLinkTo(mbr)} title={mbr.comment.fold("")(com => Page.inlineToStr(com.short))}>
                           {mbr.name}
                         </a>
                       </li>
@@ -897,7 +897,7 @@ trait EntityPage extends HtmlPage {
             }
           }
           if (!nameLink.isEmpty)
-            <a title={mbr.comment.fold("")(c => inlineToStr(c.short))} href={nameLink}>
+            <a title={mbr.comment.fold("")(c => Page.inlineToStr(c.short))} href={nameLink}>
               {nameHtml}
             </a>
           else nameHtml
@@ -1065,7 +1065,7 @@ trait EntityPage extends HtmlPage {
     body.blocks flatMap (blockToStr(_)) mkString ""
 
   private def blockToStr(block: comment.Block): String = block match {
-    case comment.Paragraph(in) => inlineToStr(in)
+    case comment.Paragraph(in) => Page.inlineToStr(in)
     case _ => block.toString
   }
 
