@@ -1,7 +1,7 @@
 baseurl: /files/archive/spec/2.12
 safe: true
 lsi: false
-highlighter: null
+highlighter: false
 markdown: redcarpet
 encoding: utf-8
 redcarpet:
