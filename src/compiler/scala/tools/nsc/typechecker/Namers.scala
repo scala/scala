@@ -103,14 +103,10 @@ trait Namers extends MethodSynthesis {
       else newNamer(cx)
     }
 
-    def enterValueParams(vparamss: List[List[ValDef]]): List[List[Symbol]] = {
+    def enterValueParams(vparamss: List[List[ValDef]]): List[List[Symbol]] =
       mmap(vparamss) { param =>
-        val sym = assignSymbol(param, param.name, mask = ValueParameterFlags)
-        setPrivateWithin(param, sym)
-        enterInScope(sym)
-        sym setInfo monoTypeCompleter(param)
+        enterInScope(assignMemberSymbol(param, mask = ValueParameterFlags)) setInfo monoTypeCompleter(param)
       }
-    }
 
     protected def owner       = context.owner
     def contextFile = context.unit.source.file
@@ -286,9 +282,7 @@ trait Namers extends MethodSynthesis {
           case tree @ DefDef(_, _, _, _, _, _)               => enterDefDef(tree)
           case tree @ TypeDef(_, _, _, _)                    => enterTypeDef(tree)
           case DocDef(_, defn)                               => enterSym(defn)
-          case tree @ Import(_, _)                           =>
-            assignSymbol(tree)
-            returnContext = context.make(tree)
+          case tree @ Import(_, _)                           => enterImport(tree); returnContext = context.make(tree)
           case _ =>
         }
         returnContext
@@ -299,25 +293,15 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-    /** Creates a new symbol and assigns it to the tree, returning the symbol
-     */
-    def assignSymbol(tree: Tree): Symbol =
-      logAssignSymbol(tree, tree match {
-        case PackageDef(pid, _) => createPackageSymbol(tree.pos, pid)
-        case imp: Import        => createImportSymbol(imp)
-        case mdef: MemberDef    => createMemberSymbol(mdef, mdef.name, -1L)
-        case _                  => abort("Unexpected tree: " + tree)
-      })
-    def assignSymbol(tree: MemberDef, name: Name, mask: Long): Symbol =
-      logAssignSymbol(tree, createMemberSymbol(tree, name, mask))
-
-    def assignAndEnterSymbol(tree: MemberDef): Symbol = {
-      val sym = assignSymbol(tree, tree.name, -1L)
+    def assignMemberSymbol(tree: MemberDef, mask: Long = -1L): Symbol = {
+      val sym = createMemberSymbol(tree, tree.name, mask)
       setPrivateWithin(tree, sym)
-      enterInScope(sym)
+      tree.symbol = sym
+      sym
     }
+
     def assignAndEnterFinishedSymbol(tree: MemberDef): Symbol = {
-      val sym = assignAndEnterSymbol(tree)
+      val sym = enterInScope(assignMemberSymbol(tree))
       sym setInfo completerOf(tree)
       // log("[+info] " + sym.fullLocationString)
       sym
@@ -326,19 +310,6 @@ trait Namers extends MethodSynthesis {
     def createMethod(accessQual: MemberDef, name: TermName, pos: Position, flags: Long): MethodSymbol = {
       val sym = owner.newMethod(name, pos, flags)
       setPrivateWithin(accessQual, sym)
-      sym
-    }
-
-    private def logAssignSymbol(tree: Tree, sym: Symbol): Symbol = {
-      if (isPastTyper) sym.name.toTermName match {
-        case nme.IMPORT | nme.OUTER | nme.ANON_CLASS_NAME | nme.ANON_FUN_NAME | nme.CONSTRUCTOR => ()
-        case _                                                                                  =>
-          tree match {
-            case md: DefDef => log("[+symbol] " + sym.debugLocationString)
-            case _          =>
-          }
-      }
-      tree.symbol = sym
       sym
     }
 
@@ -419,7 +390,7 @@ trait Namers extends MethodSynthesis {
           clearRenamedCaseAccessors(existing)
           existing
         }
-        else assignAndEnterSymbol(tree) setFlag inConstructorFlag
+        else enterInScope(assignMemberSymbol(tree)) setFlag inConstructorFlag
       }
       clazz match {
         case csym: ClassSymbol if csym.isTopLevel => enterClassSymbol(tree, csym)
@@ -466,9 +437,10 @@ trait Namers extends MethodSynthesis {
     /** Enter a module symbol.
      */
     def enterModuleSymbol(tree : ModuleDef): Symbol = {
-      var m: Symbol = context.scope lookupModule tree.name
       val moduleFlags = tree.mods.flags | MODULE
-      if (m.isModule && !m.hasPackageFlag && inCurrentScope(m) && (currentRun.canRedefine(m) || m.isSynthetic)) {
+
+      val existingModule = context.scope lookupModule tree.name
+      if (existingModule.isModule && !existingModule.hasPackageFlag && inCurrentScope(existingModule) && (currentRun.canRedefine(existingModule) || existingModule.isSynthetic)) {
         // This code accounts for the way the package objects found in the classpath are opened up
         // early by the completer of the package itself. If the `packageobjects` phase then finds
         // the same package object in sources, we have to clean the slate and remove package object
@@ -476,21 +448,24 @@ trait Namers extends MethodSynthesis {
         //
         // TODO SI-4695 Pursue the approach in https://github.com/scala/scala/pull/2789 that avoids
         //      opening up the package object on the classpath at all if one exists in source.
-        if (m.isPackageObject) {
-          val packageScope = m.enclosingPackageClass.rawInfo.decls
-          packageScope.foreach(mem => if (mem.owner != m.enclosingPackageClass) packageScope unlink mem)
+        if (existingModule.isPackageObject) {
+          val packageScope = existingModule.enclosingPackageClass.rawInfo.decls
+          packageScope.foreach(mem => if (mem.owner != existingModule.enclosingPackageClass) packageScope unlink mem)
         }
-        updatePosFlags(m, tree.pos, moduleFlags)
-        setPrivateWithin(tree, m)
-        m.moduleClass andAlso (setPrivateWithin(tree, _))
-        context.unit.synthetics -= m
-        tree.symbol = m
+        updatePosFlags(existingModule, tree.pos, moduleFlags)
+        setPrivateWithin(tree, existingModule)
+        existingModule.moduleClass andAlso (setPrivateWithin(tree, _))
+        context.unit.synthetics -= existingModule
+        tree.symbol = existingModule
       }
       else {
-        m = assignAndEnterSymbol(tree)
+        enterInScope(assignMemberSymbol(tree))
+        val m = tree.symbol
         m.moduleClass setFlag moduleClassFlags(moduleFlags)
         setPrivateWithin(tree, m.moduleClass)
       }
+
+      val m = tree.symbol
       if (m.isTopLevel && !m.hasPackageFlag) {
         m.moduleClass.associatedFile = contextFile
         currentRun.symSource(m) = m.moduleClass.sourceFile
@@ -751,17 +726,24 @@ trait Namers extends MethodSynthesis {
     }
 
     def enterPackage(tree: PackageDef) {
-      val sym = assignSymbol(tree)
+      val sym = createPackageSymbol(tree.pos, tree.pid)
+      tree.symbol = sym
       newNamer(context.make(tree, sym.moduleClass, sym.info.decls)) enterSyms tree.stats
     }
+
+    private def enterImport(tree: Import) = {
+      val sym = createImportSymbol(tree)
+      tree.symbol = sym
+    }
+
     def enterTypeDef(tree: TypeDef) = assignAndEnterFinishedSymbol(tree)
 
     def enterDefDef(tree: DefDef): Unit = tree match {
       case DefDef(_, nme.CONSTRUCTOR, _, _, _, _) =>
         assignAndEnterFinishedSymbol(tree)
-      case DefDef(mods, name, tparams, _, _, _) =>
+      case DefDef(mods, name, _, _, _, _) =>
         val bridgeFlag = if (mods hasAnnotationNamed tpnme.bridgeAnnot) BRIDGE | ARTIFACT else 0
-        val sym = assignAndEnterSymbol(tree) setFlag bridgeFlag
+        val sym = enterInScope(assignMemberSymbol(tree)) setFlag bridgeFlag
 
         val completer =
           if (sym hasFlag SYNTHETIC) {
