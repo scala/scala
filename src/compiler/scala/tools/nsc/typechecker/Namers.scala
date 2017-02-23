@@ -600,12 +600,10 @@ trait Namers extends MethodSynthesis {
     }
 
     def copyMethodCompleter(copyDef: DefDef): TypeCompleter = {
-      val sym      = copyDef.symbol
-      val lazyType = completerOf(copyDef)
-
       /* Assign the types of the class parameters to the parameters of the
-       * copy method. See comment in `Unapplies.caseClassCopyMeth` */
-      def assignParamTypes() {
+       * copy method. See comment in `Unapplies.caseClassCopyMeth`
+       */
+      def assignParamTypes(copyDef: DefDef, sym: Symbol) {
         val clazz = sym.owner
         val constructorType = clazz.primaryConstructor.tpe
         val subst = new SubstSymMap(clazz.typeParams, copyDef.tparams map (_.symbol))
@@ -618,9 +616,11 @@ trait Namers extends MethodSynthesis {
         )
       }
 
-      mkTypeCompleter(copyDef) { sym =>
-        assignParamTypes()
-        lazyType complete sym
+      new CompleterWrapper(completerOf(copyDef)) {
+        override def complete(sym: Symbol): Unit = {
+          assignParamTypes(tree.asInstanceOf[DefDef], sym)
+          super.complete(sym)
+        }
       }
     }
 
