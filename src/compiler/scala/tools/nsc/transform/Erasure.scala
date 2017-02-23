@@ -1064,21 +1064,20 @@ abstract class Erasure extends InfoTransform
             }
             else if (args.isEmpty && interceptedMethods(fn.symbol)) {
               if (poundPoundMethods.contains(fn.symbol)) {
-                val qual1 = preErase(qual)
                 // This is unattractive, but without it we crash here on ().## because after
                 // erasure the ScalaRunTime.hash overload goes from Unit => Int to BoxedUnit => Int.
                 // This must be because some earlier transformation is being skipped on ##, but so
                 // far I don't know what.  For null we now define null.## == 0.
                 def staticsCall(methodName: TermName): Tree = {
-                  val newTree = gen.mkMethodCall(RuntimeStaticsModule, methodName, qual1 :: Nil)
+                  val newTree = gen.mkMethodCall(RuntimeStaticsModule, methodName, qual :: Nil)
                   global.typer.typed(newTree)
                 }
 
-                qual1.tpe.typeSymbol match {
-                  case UnitClass | NullClass                    => BLOCK(qual1, LIT(0))
-                  case IntClass                                 => qual1
-                  case s @ (ShortClass | ByteClass | CharClass) => numericConversion(qual1, s)
-                  case BooleanClass                             => If(qual1, LIT(true.##), LIT(false.##))
+                qual.tpe.typeSymbol match {
+                  case UnitClass | NullClass                    => LIT(0)
+                  case IntClass                                 => qual
+                  case s @ (ShortClass | ByteClass | CharClass) => numericConversion(qual, s)
+                  case BooleanClass                             => If(qual, LIT(true.##), LIT(false.##))
                   case LongClass                                => staticsCall(nme.longHash)
                   case FloatClass                               => staticsCall(nme.floatHash)
                   case DoubleClass                              => staticsCall(nme.doubleHash)
