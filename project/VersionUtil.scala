@@ -2,8 +2,10 @@ package scala.build
 
 import sbt._
 import Keys._
-import java.util.Properties
+import java.util.{Date, Locale, Properties, TimeZone}
 import java.io.{File, FileInputStream}
+import java.text.SimpleDateFormat
+
 import scala.collection.JavaConverters._
 import BuildSettings.autoImport._
 
@@ -64,6 +66,7 @@ object VersionUtil {
     * suffix is used for releases. All other suffix values are treated as RC / milestone builds. The special suffix
     * value "SPLIT" is used to split the real suffix off from `baseVersion` instead and then apply the usual logic. */
   private lazy val versionPropertiesImpl: Def.Initialize[Versions] = Def.setting {
+    val log = sLog.value
 
     val (base, suffix) = {
       val (b, s) = (baseVersion.value, baseVersionSuffix.value)
@@ -74,16 +77,31 @@ object VersionUtil {
       } else (b, s)
     }
 
-    def executeTool(tool: String) = {
-      val cmd =
-        if (System.getProperty("os.name").toLowerCase.contains("windows"))
-          s"cmd.exe /c tools\\$tool.bat -p"
-        else s"tools/$tool"
-      Process(cmd).lines.head
+    val (dateObj, sha) = {
+      try {
+        // Use JGit to get the commit date and SHA
+        import org.eclipse.jgit.storage.file.FileRepositoryBuilder
+        import org.eclipse.jgit.revwalk.RevWalk
+        val db = new FileRepositoryBuilder().findGitDir.build
+        val head = db.resolve("HEAD")
+        if(head eq null) {
+          log.info("No git HEAD commit found -- Using current date and 'unknown' SHA")
+          (new Date, "unknown")
+        } else {
+          val commit = new RevWalk(db).parseCommit(head)
+          (new Date(commit.getCommitTime.toLong * 1000L), commit.getName.substring(0, 7))
+        }
+      } catch { case ex: Exception =>
+        log.error("Could not determine commit date + SHA: "+ex)
+        log.trace(ex)
+        (new Date, "unknown")
+      }
     }
-
-    val date = executeTool("get-scala-commit-date")
-    val sha = executeTool("get-scala-commit-sha").substring(0, 7)
+    val date = {
+      val df = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ENGLISH)
+      df.setTimeZone(TimeZone.getTimeZone("UTC"))
+      df.format(dateObj)
+    }
 
     val (canonicalV, mavenSuffix, osgiV, release) = suffix match {
       case "SNAPSHOT"     => (s"$base-$date-$sha",   s"-SNAPSHOT",      s"$base.v$date-$sha",         false)
