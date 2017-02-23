@@ -30,7 +30,7 @@ trait AestheticSettings {
   def target          = settings.target.value
   def unchecked       = settings.unchecked.value
   def verbose         = settings.verbose.value
-  def virtPatmat      = !settings.XoldPatmat.value
+//  def virtPatmat      = !settings.XoldPatmat.value
 
   def virtualize      = settings.Yvirtualize.value
 
