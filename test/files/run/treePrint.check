@@ -1,5 +1,5 @@
 def foo = {
-  var q: Boolean = false;
-  val x = 5;
-  ((x == 5) || (!q)) || (true)
+  var q: Boolean = __newVar(false);
+  val x = __ifThenElse(true, __ifThenElse(true, __ifThenElse(true, 5, __ifThenElse(true, 5, 10)), 20), 30);
+  ((__equal(x, 5)) || (!q)) || (true)
 }

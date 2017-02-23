@@ -1,0 +1,6 @@
+ResultOrMatchError(One(bar))
+ResultOrMatchError(OrElse(FlatMap(IfThenElse(false,One(7),Zero),x1,One(foo)),One(bar)))
+ResultOrMatchError(One(list))
+ResultOrMatchError(OrElse(FlatMap(Unapply(Nil,List(1, 2, 3)),x2,One(nil)),One(other)))
+ResultOrMatchError(OrElse(FlatMap(Unapply(Nil,List(1, 2, 3)),x3,One(nil)),FlatMap(Unapply(Cons,List(1, 2, 3)),x4,One(other))))
+ResultOrMatchError(OrElse(FlatMap(Unapply(Nil,List(1, 2, 3)),x5,One(default)),FlatMap(Unapply(Cons,List(1, 2, 3)),x6,One(x6._1))))

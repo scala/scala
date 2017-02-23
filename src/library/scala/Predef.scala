@@ -109,7 +109,11 @@ import scala.io.StdIn
  * @groupprio conversions-array-to-wrapped-array 110
  * @groupdesc conversions-array-to-wrapped-array Conversions from Arrays to WrappedArrays.
  */
+<<<<<<< HEAD
 object Predef extends LowPriorityImplicits with DeprecatedPredef {
+=======
+object Predef extends LowPriorityImplicits with EmbeddedControls  {
+>>>>>>> virt
   /**
    * Retrieve the runtime representation of a class type. `classOf[T]` is equivalent to
    * the class literal `T.class` in Java.

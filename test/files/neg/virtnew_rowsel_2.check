@@ -1,0 +1,4 @@
+virtnew_rowsel_2.scala:12: error: value xx is not a member of Test.Rep[Test.MyStruct{val xxx: Int}]
+  val x: Rep[Int] = qual.xx // becomes `applyDynamicOps[MyStruct{val xxx: Int}](qual).applyDynamic[Int]("xxx")()`
+                         ^
+one error found

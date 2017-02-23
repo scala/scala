@@ -1,0 +1,7 @@
+virtnew_update.scala:38: error: reassignment to val
+  foo.y = 3 // should be disallowed
+        ^
+virtnew_update.scala:39: error: value z is not a member of Test.Rep[Struct{def xx: Int; def xx_=(x$1: Int): Unit; val y: String}]
+  foo.z = 3 // should be disallowed
+      ^
+two errors found

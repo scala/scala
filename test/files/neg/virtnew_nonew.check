@@ -1,0 +1,5 @@
+virtnew_nonew.scala:4: error: There is no `__new` method in scope.
+See the definition of `trait Struct` in EmbeddedControls for details.
+  val foo: Rep[Struct { val x: Int; val y: String }] = new Struct { val x: Rep[Int] = 23; val y = "y" }
+                                                       ^
+one error found

@@ -238,6 +238,7 @@ trait ScalaSettings extends AbsScalaSettings
     private val defaultChoices = List(unreachableCode)
     val lDefault        = Choice("l:default",   "Enable default optimizations: "+ defaultChoices.mkString("", ",", "."),                                    expandsTo = defaultChoices)
 
+<<<<<<< HEAD
     private val methodChoices = List(unreachableCode, simplifyJumps, compactLocals, copyPropagation, redundantCasts, boxUnbox, nullnessTracking, closureInvocations)
     val lMethod         = Choice("l:method",    "Enable intra-method optimizations: "+ methodChoices.mkString("", ",", "."),                                expandsTo = methodChoices)
 
@@ -263,6 +264,12 @@ trait ScalaSettings extends AbsScalaSettings
       !opt.isSetByUser && optChoices.lDefault.expandsTo.contains(choice)
     }
   }
+=======
+  val Yvirtualize   = BooleanSetting    ("-Yvirtualize", "Virtualize control-structures.")
+  Yvirtualize.value = true
+
+  val exposeEmptyPackage = BooleanSetting("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
+>>>>>>> virt
 
   def optNone                    = opt.contains(optChoices.lNone)
   def optUnreachableCode         = optEnabled(optChoices.unreachableCode)

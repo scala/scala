@@ -1,4 +1,7 @@
 t691.scala:27: error: ambiguous parent class qualifier
     trait TiC extends super[Arrow].Ti2 with super[AssignArrow].Ti1;
                       ^
-one error found
+t691.scala:27: error: illegal cyclic reference involving trait TiC
+    trait TiC extends super[Arrow].Ti2 with super[AssignArrow].Ti1;
+                                   ^
+two errors found

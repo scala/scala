@@ -2,6 +2,7 @@ reload: CompletionOnEmptyArgMethod.scala
 
 askTypeCompletion at CompletionOnEmptyArgMethod.scala(2,17)
 ================================================================================
+<<<<<<< HEAD
 [response] askTypeCompletion at (2,17)
 retrieved 30 members
 def +(other: String): String
@@ -31,4 +32,9 @@ final def wait(x$1: Long): Unit
 final def wait(x$1: Long,x$2: Int): Unit
 protected[package lang] def clone(): Object
 protected[package lang] def finalize(): Unit
+=======
+[response] aksTypeCompletion at (2,17)
+retrieved 0 members
+
+>>>>>>> virt
 ================================================================================

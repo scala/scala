@@ -22,4 +22,13 @@ protected-constructors.scala:19: error: class Foo3 in object Ding cannot be acce
  object Ding in package dingus where target is defined
     val foo3 = new Ding.Foo3("abc")
                         ^
+<<<<<<< HEAD
+=======
+protected-constructors.scala:15: error: illegal cyclic reference involving class Bar3
+    class Bar3 extends Ding.Foo3("abc")
+                            ^
+protected-constructors.scala:15: error: too many arguments for constructor Object: ()Object
+    class Bar3 extends Ding.Foo3("abc")
+               ^
+>>>>>>> virt
 5 errors found

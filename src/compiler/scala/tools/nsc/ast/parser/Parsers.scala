@@ -1445,8 +1445,13 @@ self =>
           newLinesOpt()
           val thenp = expr()
           val elsep = if (in.token == ELSE) { in.nextToken(); expr() }
+<<<<<<< HEAD
           else literalUnit
           If(cond, thenp, elsep)
+=======
+                      else Literal(Constant())
+          makeIfThenElse(cond, thenp, elsep)
+>>>>>>> virt
         }
         parseIf
       case TRY =>
@@ -1481,19 +1486,23 @@ self =>
             val cond = condExpr()
             newLinesOpt()
             val body = expr()
-            makeWhile(start, cond, body)
+            makeWhileDo(start, cond, body)
           }
         }
         parseWhile
       case DO =>
         def parseDo = {
           atPos(in.skipToken()) {
-            val lname: Name = freshTermName(nme.DO_WHILE_PREFIX)
+            // val lname: Name = freshTermName(nme.DO_WHILE_PREFIX)
             val body = expr()
             if (isStatSep) in.nextToken()
             accept(WHILE)
             val cond = condExpr()
+<<<<<<< HEAD
             makeDoWhile(lname.toTermName, body, cond)
+=======
+            makeDoWhile(body, cond)
+>>>>>>> virt
           }
         }
         parseDo
@@ -1519,7 +1528,11 @@ self =>
       case RETURN =>
         def parseReturn =
           atPos(in.skipToken()) {
+<<<<<<< HEAD
             Return(if (isExprIntro) expr() else literalUnit)
+=======
+            makeReturn(if (isExprIntro) expr() else Literal(Constant()))
+>>>>>>> virt
           }
         parseReturn
       case THROW =>
@@ -1729,7 +1742,7 @@ self =>
               case _ =>
                 stripParens(t)
             }
-            Apply(sel, argumentExprs())
+            makeApply(sel, argumentExprs())
           }
           simpleExprRest(app, canApply = true)
         case USCORE =>
@@ -1745,9 +1758,20 @@ self =>
      *  }}}
      */
     def argumentExprs(): List[Tree] = {
+<<<<<<< HEAD
       def args(): List[Tree] = commaSeparated(
         if (isIdent) treeInfo.assignmentToMaybeNamedArg(expr()) else expr()
       )
+=======
+      def args(): List[Tree] = commaSeparated {
+        val maybeNamed = isIdent
+        expr() match {
+          case a @ LiftedAssign(id, rhs) if maybeNamed =>
+            atPos(a.pos) { AssignOrNamedArg(id, rhs) }
+          case e => e
+        }
+      }
+>>>>>>> virt
       in.token match {
         case LBRACE   => List(blockExpr())
         case LPAREN   => inParens(if (in.token == RPAREN) Nil else args())
@@ -2572,6 +2596,8 @@ self =>
             in.nextToken()
             newmods = newmods | Flags.DEFAULTINIT
             EmptyTree
+          } else if (newmods hasFlag Flags.MUTABLE) {
+            makeNewVar(expr())
           } else {
             expr()
           }

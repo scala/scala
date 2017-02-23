@@ -1,0 +1,32 @@
+line: 66
+binding: x
+method name: inspect
+contexts: List(List((x,66)))
+file name: sourcecontext.scala
+line: 43
+binding: null
+method name: withManifest
+contexts: List(List((null,43)), List((x,66)))
+file name: sourcecontext.scala
+line: 69
+binding: null
+method name: inspect
+contexts: List(List((null,69)))
+file name: sourcecontext.scala
+line: 43
+binding: null
+method name: withManifest
+contexts: List(List((null,43)), List((null,69)))
+file name: sourcecontext.scala
+invocation:
+method: testUpdate
+line: 73
+invocation:
+method: testUpdate2
+line: 56
+parent.line: 73
+enter numCols
+method: numCols
+receiver: Some(m)
+enter sum
+method: sum
