@@ -1,0 +1,6 @@
+virtnew_repping.scala:5: error: type mismatch;
+ found   : Int(1)
+ required: Test.Rep[Int]
+    val a = 1 // a should be forced to have type Rep[Int]
+            ^
+one error found

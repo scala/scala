@@ -1,0 +1,2 @@
+Self() DOT customerName = Const(me)
+Self() DOT customerName = Const(that other guy)

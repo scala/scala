@@ -1,0 +1,167 @@
+cond1
+1 : 0.5
+3 : 0.5
+
+coinModel1
+0 : 0.5
+3 : 0.5
+
+coinModel2
+0 : 0.5
+2 : 0.5
+
+coffeeModel1
+A and D should grab coffee : 0.5714285714285714
+B and D should grab coffee : 0.2857142857142857
+A and E should grab coffee : 0.14285714285714285
+
+trafficModel
+NoCrash : 0.9631000000000001
+Crash : 0.0369
+
+trafficModel2
+NoCrash : 0.9109
+Crash : 0.08910000000000001
+
+trafficModel3
+NoCrash : 0.9631000000000001
+Crash : 0.0369
+
+trafficModel4
+NoCrash : 0.9109
+Crash : 0.08910000000000001
+
+cond1
+1 : 0.5
+3 : 0.5
+
+coinModel1
+0 : 0.5
+3 : 0.5
+
+coinModel2
+0 : 0.5
+2 : 0.5
+
+coffeeModel1
+A and D should grab coffee : 0.5714285714285714
+B and D should grab coffee : 0.2857142857142857
+A and E should grab coffee : 0.14285714285714285
+
+trafficModel
+NoCrash : 0.9631000000000001
+Crash : 0.03690000000000001
+
+trafficModel2
+NoCrash : 0.9109
+Crash : 0.08910000000000001
+
+trafficModel3
+NoCrash : 0.9631000000000001
+Crash : 0.03690000000000001
+
+trafficModel4
+NoCrash : 0.9109
+Crash : 0.08910000000000001
+
+appendModel1
+List(true, true, true, false, false) : 1.0
+
+appendModel2
+List(false, false, false) : 0.5
+List(true, false, false) : 0.5
+
+appendModel3
+searching for min 5 solutions
+trying depth 1
+trying depth 2
+trying depth 3
+trying depth 4
+trying depth 5
+List(true, true, true) : 0.5714285714285714
+List(true, true, true, false) : 0.14285714285714285
+List(true, true, true, true) : 0.14285714285714285
+List(true, true, true, false, false) : 0.03571428571428571
+List(true, true, true, false, true) : 0.03571428571428571
+List(true, true, true, true, false) : 0.03571428571428571
+List(true, true, true, true, true) : 0.03571428571428571
+
+appendModel4
+searching for min 1 solutions
+trying depth 1
+trying depth 2
+trying depth 3
+trying depth 4
+trying depth 5
+trying depth 6
+trying depth 7
+(List(true, true, true),List(false, false),List(true, true, true, false, false)) : 1.0
+
+appendModel5
+searching for min 5 solutions
+trying depth 1
+trying depth 2
+trying depth 3
+trying depth 4
+trying depth 5
+trying depth 6
+trying depth 7
+trying depth 8
+trying depth 9
+trying depth 10
+trying depth 11
+trying depth 12
+(List(),List(true, true, true, false, false)) : 0.16666666666666666
+(List(true),List(true, true, false, false)) : 0.16666666666666666
+(List(true, true),List(true, false, false)) : 0.16666666666666666
+(List(true, true, true),List(false, false)) : 0.16666666666666666
+(List(true, true, true, false),List(false)) : 0.16666666666666666
+(List(true, true, true, false, false),List()) : 0.16666666666666666
+
+appendModel3b
+searching for min 5 solutions
+trying depth 1
+trying depth 2
+trying depth 3
+trying depth 4
+trying depth 5
+List(true, true, true) : 0.5714285714285714
+List(true, true, true, false) : 0.14285714285714285
+List(true, true, true, true) : 0.14285714285714285
+List(true, true, true, false, false) : 0.03571428571428571
+List(true, true, true, false, true) : 0.03571428571428571
+List(true, true, true, true, false) : 0.03571428571428571
+List(true, true, true, true, true) : 0.03571428571428571
+
+appendModel4b
+searching for min 1 solutions
+trying depth 1
+trying depth 2
+trying depth 3
+trying depth 4
+trying depth 5
+trying depth 6
+trying depth 7
+(List(true, true, true),List(false, false),List(true, true, true, false, false)) : 1.0
+
+appendModel5b
+searching for min 5 solutions
+trying depth 1
+trying depth 2
+trying depth 3
+trying depth 4
+trying depth 5
+trying depth 6
+trying depth 7
+trying depth 8
+trying depth 9
+trying depth 10
+trying depth 11
+trying depth 12
+(List(),List(true, true, true, false, false)) : 0.16666666666666666
+(List(true),List(true, true, false, false)) : 0.16666666666666666
+(List(true, true),List(true, false, false)) : 0.16666666666666666
+(List(true, true, true),List(false, false)) : 0.16666666666666666
+(List(true, true, true, false),List(false)) : 0.16666666666666666
+(List(true, true, true, false, false),List()) : 0.16666666666666666
+
