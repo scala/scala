@@ -122,69 +122,69 @@ object ClassPath {
     try Some(new URL(spec))
     catch { case _: MalformedURLException => None }
 
-<<<<<<< HEAD
+//<<<<<<< HEAD
   def manifests: List[java.net.URL] = {
     import scala.collection.JavaConverters._
     val resources = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF")
     resources.asScala.filter(_.getProtocol == "jar").toList
-=======
-  /** A class modeling aspects of a ClassPath which should be
-   *  propagated to any classpaths it creates.
-   */
-  abstract class ClassPathContext[T] {
-    /** A filter which can be used to exclude entities from the classpath
-     *  based on their name.
-     */
-    def isValidName(name: String): Boolean = true
-
-    /** From the representation to its identifier.
-     */
-    def toBinaryName(rep: T): String
-
-    /** Create a new classpath based on the abstract file.
-     */
-    def newClassPath(file: AbstractFile): ClassPath[T]
-
-    /** Creators for sub classpaths which preserve this context.
-     */
-    def sourcesInPath(path: String): List[ClassPath[T]] =
-      for (file <- expandPath(path, false) ; dir <- Option(AbstractFile getDirectory file)) yield
-        new SourcePath[T](dir, this)
-
-    def contentsOfDirsInPath(path: String): List[ClassPath[T]] =
-      for (dir <- expandPath(path, false) ; name <- expandDir(dir) ; entry <- Option(AbstractFile getDirectory name)) yield
-        newClassPath(entry)
-
-    def classesAtAllURLS(path: String): List[ClassPath[T]] =
-      (path split " ").toList flatMap classesAtURL
-
-    def classesAtURL(spec: String) =
-      for (url <- specToURL(spec).toList ; location <- Option(AbstractFile getURL url)) yield
-        newClassPath(location)
-
-    def classesInExpandedPath(path: String): IndexedSeq[ClassPath[T]] =
-      classesInPathImpl(path, true).toIndexedSeq
-
-    def classesInPath(path: String) = classesInPathImpl(path, false)
-
-    // Internal
-    private def classesInPathImpl(path: String, expand: Boolean) =
-      for (file <- expandPath(path, expand) ; dir <- Option(AbstractFile getDirectory file)) yield
-        newClassPath(dir)
-  }
-
-  class JavaContext extends ClassPathContext[AbstractFile] {
-    def toBinaryName(rep: AbstractFile) = {
-      val name = rep.name
-      assert(endsClass(name), name)
-      name.substring(0, name.length - 6)
-    }
-    def newClassPath(dir: AbstractFile) = new DirectoryClassPath(dir, this)
-  }
-
-  object DefaultJavaContext extends JavaContext {
-    override def isValidName(name: String) = !isTraitImplementation(name) //TR: imho this doesn't really make sense but is unsafe to turn off (#4784)
->>>>>>> virt
+//=======
+//  /** A class modeling aspects of a ClassPath which should be
+//   *  propagated to any classpaths it creates.
+//   */
+//  abstract class ClassPathContext[T] {
+//    /** A filter which can be used to exclude entities from the classpath
+//     *  based on their name.
+//     */
+//    def isValidName(name: String): Boolean = true
+//
+//    /** From the representation to its identifier.
+//     */
+//    def toBinaryName(rep: T): String
+//
+//    /** Create a new classpath based on the abstract file.
+//     */
+//    def newClassPath(file: AbstractFile): ClassPath[T]
+//
+//    /** Creators for sub classpaths which preserve this context.
+//     */
+//    def sourcesInPath(path: String): List[ClassPath[T]] =
+//      for (file <- expandPath(path, false) ; dir <- Option(AbstractFile getDirectory file)) yield
+//        new SourcePath[T](dir, this)
+//
+//    def contentsOfDirsInPath(path: String): List[ClassPath[T]] =
+//      for (dir <- expandPath(path, false) ; name <- expandDir(dir) ; entry <- Option(AbstractFile getDirectory name)) yield
+//        newClassPath(entry)
+//
+//    def classesAtAllURLS(path: String): List[ClassPath[T]] =
+//      (path split " ").toList flatMap classesAtURL
+//
+//    def classesAtURL(spec: String) =
+//      for (url <- specToURL(spec).toList ; location <- Option(AbstractFile getURL url)) yield
+//        newClassPath(location)
+//
+//    def classesInExpandedPath(path: String): IndexedSeq[ClassPath[T]] =
+//      classesInPathImpl(path, true).toIndexedSeq
+//
+//    def classesInPath(path: String) = classesInPathImpl(path, false)
+//
+//    // Internal
+//    private def classesInPathImpl(path: String, expand: Boolean) =
+//      for (file <- expandPath(path, expand) ; dir <- Option(AbstractFile getDirectory file)) yield
+//        newClassPath(dir)
+//  }
+//
+//  class JavaContext extends ClassPathContext[AbstractFile] {
+//    def toBinaryName(rep: AbstractFile) = {
+//      val name = rep.name
+//      assert(endsClass(name), name)
+//      name.substring(0, name.length - 6)
+//    }
+//    def newClassPath(dir: AbstractFile) = new DirectoryClassPath(dir, this)
+//  }
+//
+//  object DefaultJavaContext extends JavaContext {
+//    override def isValidName(name: String) = !isTraitImplementation(name) //TR: imho this doesn't really make sense but is unsafe to turn off (#4784)
+//>>>>>>> virt
   }
 
   @deprecated("shim for sbt's compiler interface", since = "2.12.0")

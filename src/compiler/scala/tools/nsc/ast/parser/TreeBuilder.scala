@@ -51,100 +51,100 @@ abstract class TreeBuilder {
   def makeSelfDef(name: TermName, tpt: Tree): ValDef =
     ValDef(Modifiers(PRIVATE), name, tpt, EmptyTree)
 
-<<<<<<< HEAD
+//<<<<<<< HEAD
   /** Tree for `od op`, start is start0 if od.pos is borked. */
   def makePostfixSelect(start0: Int, end: Int, od: Tree, op: Name): Tree = {
     val start = if (od.pos.isDefined) od.pos.start else start0
     atPos(r2p(start, end, end + op.length)) { new PostfixSelect(od, op.encode) }
   }
 
-=======
-  /** If tree is a variable pattern, return Some("its name and type").
-   *  Otherwise return none */
-  private def matchVarPattern(tree: Tree): Option[(Name, Tree)] = {
-    def wildType(t: Tree): Option[Tree] = t match {
-      case Ident(x) if x.toTermName == nme.WILDCARD             => Some(TypeTree())
-      case Typed(Ident(x), tpt) if x.toTermName == nme.WILDCARD => Some(tpt)
-      case _                                                    => None
-    }
-    tree match {
-      case Ident(name)             => Some((name, TypeTree()))
-      case Bind(name, body)        => wildType(body) map (x => (name, x))
-      case Typed(Ident(name), tpt) => Some((name, tpt))
-      case _                       => None
-    }
-  }
-
-  /** Create tree representing (unencoded) binary operation expression or pattern. */
-  def makeBinop(isExpr: Boolean, left: Tree, op: TermName, right: Tree, opPos: Position): Tree = {
-    def mkNamed(args: List[Tree]) =
-      if (isExpr) args map {
-        case a @ LiftedAssign(id @ Ident(name), rhs) =>
-          atPos(a.pos) { AssignOrNamedArg(id, rhs) }
-        case e => e
-      } else args
-    val arguments = right match {
-      case Parens(args) => mkNamed(args)
-      case _ => List(right)
-    }
-    if (isExpr) {
-      if (treeInfo.isLeftAssoc(op)) {
-        makeApply(atPos(opPos union left.pos) { Select(stripParens(left), op.encode) }, arguments)
-      } else {
-        val x = freshTermName()
-        Block(
-          List(ValDef(Modifiers(SYNTHETIC), x, TypeTree(), stripParens(left))),
-          Apply(atPos(opPos union right.pos) { Select(stripParens(right), op.encode) }, List(Ident(x))))
-      }
-    } else {
-      Apply(Ident(op.encode), stripParens(left) :: arguments)
-    }
-  }
-
-  /** Creates a tree representing new Object { stats }.
-   *  To make sure an anonymous subclass of Object is created,
-   *  if there are no stats, a () is added.
-   */
-  def makeAnonymousNew(stats: List[Tree]): Tree = {
-    val stats1 = if (stats.isEmpty) List(Literal(Constant(()))) else stats
-    makeNew(Nil, emptyValDef, stats1, ListOfNil, NoPosition, NoPosition)
-  }
-
-  /** Create positioned tree representing an object creation <new parents { stats }
-   *  @param npos  the position of the new
-   *  @param cpos  the position of the anonymous class starting with parents
-   */
-  def makeNew(parents: List[Tree], self: ValDef, stats: List[Tree], argss: List[List[Tree]],
-              npos: Position, cpos: Position): Tree =
-    if (parents.isEmpty)
-      makeNew(List(scalaAnyRefConstr), self, stats, argss, npos, cpos)
-    else if (parents.tail.isEmpty && stats.isEmpty)
-      atPos(npos union cpos) { New(parents.head, argss) }
-    else {
-      val x = tpnme.ANON_CLASS_NAME
-      atPos(npos union cpos) {
-        Block(
-          List(
-            atPos(cpos) {
-              ClassDef(
-                Modifiers(FINAL), x, Nil,
-                Template(parents, self, NoMods, ListOfNil, argss, stats, cpos.focus))
-            }),
-          atPos(npos) {
-            New(
-              Ident(x) setPos npos.focus,
-              ListOfNil)
-          }
-        )
-      }
-    }
-
-  /** A type tree corresponding to (possibly unary) intersection type */
-  def makeIntersectionTypeTree(tps: List[Tree]): Tree =
-    if (tps.tail.isEmpty) tps.head
-    else CompoundTypeTree(Template(tps, emptyValDef, Nil))
-
->>>>>>> virt
+//=======
+//  /** If tree is a variable pattern, return Some("its name and type").
+//   *  Otherwise return none */
+//  private def matchVarPattern(tree: Tree): Option[(Name, Tree)] = {
+//    def wildType(t: Tree): Option[Tree] = t match {
+//      case Ident(x) if x.toTermName == nme.WILDCARD             => Some(TypeTree())
+//      case Typed(Ident(x), tpt) if x.toTermName == nme.WILDCARD => Some(tpt)
+//      case _                                                    => None
+//    }
+//    tree match {
+//      case Ident(name)             => Some((name, TypeTree()))
+//      case Bind(name, body)        => wildType(body) map (x => (name, x))
+//      case Typed(Ident(name), tpt) => Some((name, tpt))
+//      case _                       => None
+//    }
+//  }
+//
+//  /** Create tree representing (unencoded) binary operation expression or pattern. */
+//  def makeBinop(isExpr: Boolean, left: Tree, op: TermName, right: Tree, opPos: Position): Tree = {
+//    def mkNamed(args: List[Tree]) =
+//      if (isExpr) args map {
+//        case a @ LiftedAssign(id @ Ident(name), rhs) =>
+//          atPos(a.pos) { AssignOrNamedArg(id, rhs) }
+//        case e => e
+//      } else args
+//    val arguments = right match {
+//      case Parens(args) => mkNamed(args)
+//      case _ => List(right)
+//    }
+//    if (isExpr) {
+//      if (treeInfo.isLeftAssoc(op)) {
+//        makeApply(atPos(opPos union left.pos) { Select(stripParens(left), op.encode) }, arguments)
+//      } else {
+//        val x = freshTermName()
+//        Block(
+//          List(ValDef(Modifiers(SYNTHETIC), x, TypeTree(), stripParens(left))),
+//          Apply(atPos(opPos union right.pos) { Select(stripParens(right), op.encode) }, List(Ident(x))))
+//      }
+//    } else {
+//      Apply(Ident(op.encode), stripParens(left) :: arguments)
+//    }
+//  }
+//
+//  /** Creates a tree representing new Object { stats }.
+//   *  To make sure an anonymous subclass of Object is created,
+//   *  if there are no stats, a () is added.
+//   */
+//  def makeAnonymousNew(stats: List[Tree]): Tree = {
+//    val stats1 = if (stats.isEmpty) List(Literal(Constant(()))) else stats
+//    makeNew(Nil, emptyValDef, stats1, ListOfNil, NoPosition, NoPosition)
+//  }
+//
+//  /** Create positioned tree representing an object creation <new parents { stats }
+//   *  @param npos  the position of the new
+//   *  @param cpos  the position of the anonymous class starting with parents
+//   */
+//  def makeNew(parents: List[Tree], self: ValDef, stats: List[Tree], argss: List[List[Tree]],
+//              npos: Position, cpos: Position): Tree =
+//    if (parents.isEmpty)
+//      makeNew(List(scalaAnyRefConstr), self, stats, argss, npos, cpos)
+//    else if (parents.tail.isEmpty && stats.isEmpty)
+//      atPos(npos union cpos) { New(parents.head, argss) }
+//    else {
+//      val x = tpnme.ANON_CLASS_NAME
+//      atPos(npos union cpos) {
+//        Block(
+//          List(
+//            atPos(cpos) {
+//              ClassDef(
+//                Modifiers(FINAL), x, Nil,
+//                Template(parents, self, NoMods, ListOfNil, argss, stats, cpos.focus))
+//            }),
+//          atPos(npos) {
+//            New(
+//              Ident(x) setPos npos.focus,
+//              ListOfNil)
+//          }
+//        )
+//      }
+//    }
+//
+//  /** A type tree corresponding to (possibly unary) intersection type */
+//  def makeIntersectionTypeTree(tps: List[Tree]): Tree =
+//    if (tps.tail.isEmpty) tps.head
+//    else CompoundTypeTree(Template(tps, emptyValDef, Nil))
+//
+//>>>>>>> virt
   /** Create tree representing a while loop */
   def makeWhile(startPos: Int, cond: Tree, body: Tree): Tree = {
     val lname = freshTermName(nme.WHILE_PREFIX)
@@ -194,12 +194,12 @@ abstract class TreeBuilder {
   @inline final def makeWhileDo(startPos: Int, cond: Tree, body: Tree): Tree = builder.makeWhileDo(startPos, cond, body)
 
   /** Create tree representing a do-while loop */
-<<<<<<< HEAD
-  def makeDoWhile(lname: TermName, body: Tree, cond: Tree): Tree = {
-    val continu = Apply(Ident(lname), Nil)
-    val rhs = Block(List(body), If(cond, continu, Literal(Constant(()))))
-    LabelDef(lname, Nil, rhs)
-=======
+//<<<<<<< HEAD
+//  def makeDoWhile(lname: TermName, body: Tree, cond: Tree): Tree = {
+//    val continu = Apply(Ident(lname), Nil)
+//    val rhs = Block(List(body), If(cond, continu, Literal(Constant(()))))
+//    LabelDef(lname, Nil, rhs)
+//=======
   @inline final def makeDoWhile(body: Tree, cond: Tree): Tree = builder.makeDoWhile(body, cond)
 
   /** Create tree representing a do-while loop */
@@ -259,7 +259,7 @@ abstract class TreeBuilder {
     /** Create a tree making an application node */
     def makeApply(sel: Tree, exprs: List[Tree]) =
       Apply(sel, exprs)
->>>>>>> virt
+//>>>>>>> virt
   }
 
   // build trees for virtualized scala

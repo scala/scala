@@ -1529,8 +1529,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
       if (!pclazz.isRoot) resetPackageClass(pclazz.owner)
     }
-<<<<<<< HEAD
-=======
+//<<<<<<< HEAD
+//=======
 
     /**
      * Re-orders the source files to
@@ -1570,7 +1570,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
       files sortBy rank
     }
->>>>>>> virt
+//>>>>>>> virt
   } // class Run
 
   def printAllUnits() {

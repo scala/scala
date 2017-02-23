@@ -58,7 +58,8 @@ abstract class MutableSettings extends AbsSettings {
 
   def Yrecursion: IntSetting
   def maxClassfileName: IntSetting
-<<<<<<< HEAD
+  def Yvirtualize: BooleanSetting
+//<<<<<<< HEAD
 
   def isScala211: Boolean
   def isScala212: Boolean
@@ -68,12 +69,12 @@ object MutableSettings {
   import scala.language.implicitConversions
   /** Support the common use case, `if (settings.debug) println("Hello, martin.")` */
   @inline implicit def reflectSettingToBoolean(s: MutableSettings#BooleanSetting): Boolean = s.value
-=======
-  def Xexperimental: BooleanSetting
-  def XoldPatmat: BooleanSetting
-  def XnoPatmatAnalysis: BooleanSetting
-  def XfullLubs: BooleanSetting
-
-  def Yvirtualize: BooleanSetting
->>>>>>> virt
+//=======
+//  def Xexperimental: BooleanSetting
+//  def XoldPatmat: BooleanSetting
+//  def XnoPatmatAnalysis: BooleanSetting
+//  def XfullLubs: BooleanSetting
+//
+//  def Yvirtualize: BooleanSetting
+//>>>>>>> virt
 }

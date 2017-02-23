@@ -1445,13 +1445,13 @@ self =>
           newLinesOpt()
           val thenp = expr()
           val elsep = if (in.token == ELSE) { in.nextToken(); expr() }
-<<<<<<< HEAD
+//<<<<<<< HEAD
           else literalUnit
-          If(cond, thenp, elsep)
-=======
-                      else Literal(Constant())
+//          If(cond, thenp, elsep)
+//=======
+//                      else Literal(Constant())
           makeIfThenElse(cond, thenp, elsep)
->>>>>>> virt
+//>>>>>>> virt
         }
         parseIf
       case TRY =>
@@ -1498,11 +1498,11 @@ self =>
             if (isStatSep) in.nextToken()
             accept(WHILE)
             val cond = condExpr()
-<<<<<<< HEAD
-            makeDoWhile(lname.toTermName, body, cond)
-=======
+//<<<<<<< HEAD
+//            makeDoWhile(lname.toTermName, body, cond)
+//=======
             makeDoWhile(body, cond)
->>>>>>> virt
+//>>>>>>> virt
           }
         }
         parseDo
@@ -1528,11 +1528,11 @@ self =>
       case RETURN =>
         def parseReturn =
           atPos(in.skipToken()) {
-<<<<<<< HEAD
-            Return(if (isExprIntro) expr() else literalUnit)
-=======
+//<<<<<<< HEAD
+//            Return(if (isExprIntro) expr() else literalUnit)
+//=======
             makeReturn(if (isExprIntro) expr() else Literal(Constant()))
->>>>>>> virt
+//>>>>>>> virt
           }
         parseReturn
       case THROW =>
@@ -1758,11 +1758,11 @@ self =>
      *  }}}
      */
     def argumentExprs(): List[Tree] = {
-<<<<<<< HEAD
-      def args(): List[Tree] = commaSeparated(
-        if (isIdent) treeInfo.assignmentToMaybeNamedArg(expr()) else expr()
-      )
-=======
+//<<<<<<< HEAD
+//      def args(): List[Tree] = commaSeparated(
+//        if (isIdent) treeInfo.assignmentToMaybeNamedArg(expr()) else expr()
+//      )
+//=======
       def args(): List[Tree] = commaSeparated {
         val maybeNamed = isIdent
         expr() match {
@@ -1771,7 +1771,7 @@ self =>
           case e => e
         }
       }
->>>>>>> virt
+//>>>>>>> virt
       in.token match {
         case LBRACE   => List(blockExpr())
         case LPAREN   => inParens(if (in.token == RPAREN) Nil else args())

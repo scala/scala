@@ -1389,23 +1389,23 @@ trait Implicits extends SourceContextUtils {
 
       var result = searchImplicit(context.implicitss, isLocalToCallsite = true)
 
-<<<<<<< HEAD
+//<<<<<<< HEAD
       if (stats) {
         if (result.isFailure) Statistics.stopTimer(inscopeFailNanos, failstart)
         else {
           Statistics.stopTimer(inscopeSucceedNanos, succstart)
           Statistics.incCounter(inscopeImplicitHits)
         }
-=======
-      // invoke update on implicitly found SourceContext
-      var updateSourceContext = true
-
-      if (result.isFailure) {
-        if (Statistics.canEnable) Statistics.stopTimer(inscopeFailNanos, failstart)
-      } else {
-        if (Statistics.canEnable) Statistics.stopTimer(inscopeSucceedNanos, succstart)
-        if (Statistics.canEnable) Statistics.incCounter(inscopeImplicitHits)
->>>>>>> virt
+//=======
+//      // invoke update on implicitly found SourceContext
+//      var updateSourceContext = true
+//
+//      if (result.isFailure) {
+//        if (Statistics.canEnable) Statistics.stopTimer(inscopeFailNanos, failstart)
+//      } else {
+//        if (Statistics.canEnable) Statistics.stopTimer(inscopeSucceedNanos, succstart)
+//        if (Statistics.canEnable) Statistics.incCounter(inscopeImplicitHits)
+//>>>>>>> virt
       }
 
       if (result.isFailure) {
@@ -1426,27 +1426,27 @@ trait Implicits extends SourceContextUtils {
         if (result.isFailure && !wasAmbiguous)
           result = searchImplicit(implicitsOfExpectedType, isLocalToCallsite = false)
 
-<<<<<<< HEAD
+//<<<<<<< HEAD
         if (result.isFailure)
           context.reporter ++= previousErrs
-=======
-        if (result.isFailure) {
-          pt.dealias match {
-            case TypeRef(_, SourceContextClass, _) =>
-              // construct new SourceContext instance
-              result = sourceInfo(this, context0, tree)
-              // there is no existing SourceContext to chain with
-              updateSourceContext = false
-            case _ =>
-          }
-          context.updateBuffer(previousErrs)
-          if (Statistics.canEnable) Statistics.stopTimer(oftypeFailNanos, failstart)
-        } else {
-          if (wasAmbigious && settings.lint.value)
-            reporter.warning(tree.pos,
-              "Search of in-scope implicits was ambiguous, and the implicit scope was searched. In Scala 2.11.0, this code will not compile. See SI-6667. \n" +
-                previousErrs.map(_.errMsg).mkString("\n"))
->>>>>>> virt
+//=======
+//        if (result.isFailure) {
+//          pt.dealias match {
+//            case TypeRef(_, SourceContextClass, _) =>
+//              // construct new SourceContext instance
+//              result = sourceInfo(this, context0, tree)
+//              // there is no existing SourceContext to chain with
+//              updateSourceContext = false
+//            case _ =>
+//          }
+//          context.updateBuffer(previousErrs)
+//          if (Statistics.canEnable) Statistics.stopTimer(oftypeFailNanos, failstart)
+//        } else {
+//          if (wasAmbigious && settings.lint.value)
+//            reporter.warning(tree.pos,
+//              "Search of in-scope implicits was ambiguous, and the implicit scope was searched. In Scala 2.11.0, this code will not compile. See SI-6667. \n" +
+//                previousErrs.map(_.errMsg).mkString("\n"))
+//>>>>>>> virt
 
         if (stats) {
           if (result.isFailure) Statistics.stopTimer(oftypeFailNanos, failstart)

@@ -938,7 +938,7 @@ trait ContextErrors {
         val WrongNumber, NoParams, ArgsDoNotConform = Value
       }
 
-<<<<<<< HEAD
+//<<<<<<< HEAD
       private def issueAmbiguousTypeErrorUnlessErroneous(pos: Position, pre: Type, sym1: Symbol, sym2: Symbol, rest: String): Unit = {
         // To avoid stack overflows (SI-8890), we MUST (at least) report when either `validTargets` OR `ambiguousSuppressed`
         // More details:
@@ -969,24 +969,24 @@ trait ContextErrors {
         AccessError(tree, sym, ctx.enclClass.owner.thisType, ctx.enclClass.owner, explanation)
 
       def AccessError(tree: Tree, sym: Symbol, pre: Type, owner0: Symbol, explanation: String): AbsTypeError = {
-=======
-      private def ambiguousErrorMsgPos(pos: Position, pre: Type, sym1: Symbol, sym2: Symbol, rest: String) =
-        if (sym1.hasDefault && sym2.hasDefault && sym1.enclClass == sym2.enclClass) {
-          val methodName = nme.defaultGetterToMethod(sym1.name)
-          (sym1.enclClass.pos,
-           "in "+ sym1.enclClass +", multiple overloaded alternatives of " + methodName +
-                     " define default arguments")
-        } else {
-          (pos,
-            ("ambiguous reference to overloaded definition,\n" +
-             "both " + sym1 + sym1.locationString + " of type " + nonEssentialTypeStr(pre.memberType(sym1)) +
-             "\nand  " + sym2 + sym2.locationString + " of type " + nonEssentialTypeStr(pre.memberType(sym2)) +
-             "\nmatch " + rest)
-          )
-        }
-
-      def AccessError(tree: Tree, sym: Symbol, pre: Type, owner0: Symbol, explanation: String) = {
->>>>>>> virt
+//=======
+//      private def ambiguousErrorMsgPos(pos: Position, pre: Type, sym1: Symbol, sym2: Symbol, rest: String) =
+//        if (sym1.hasDefault && sym2.hasDefault && sym1.enclClass == sym2.enclClass) {
+//          val methodName = nme.defaultGetterToMethod(sym1.name)
+//          (sym1.enclClass.pos,
+//           "in "+ sym1.enclClass +", multiple overloaded alternatives of " + methodName +
+//                     " define default arguments")
+//        } else {
+//          (pos,
+//            ("ambiguous reference to overloaded definition,\n" +
+//             "both " + sym1 + sym1.locationString + " of type " + nonEssentialTypeStr(pre.memberType(sym1)) +
+//             "\nand  " + sym2 + sym2.locationString + " of type " + nonEssentialTypeStr(pre.memberType(sym2)) +
+//             "\nmatch " + rest)
+//          )
+//        }
+//
+//      def AccessError(tree: Tree, sym: Symbol, pre: Type, owner0: Symbol, explanation: String) = {
+//>>>>>>> virt
         def errMsg = {
           val location = if (sym.isClassConstructor) owner0 else pre.widen.directObjectString
 
@@ -1035,20 +1035,20 @@ trait ContextErrors {
             firstCompeting: Symbol, argtpes: List[Type], pt: Type, lastTry: Boolean) = {
 
         if (!(argtpes exists (_.isErroneous)) && !pt.isErroneous) {
-<<<<<<< HEAD
+//<<<<<<< HEAD
           val msg0 =
             "argument types " + argtpes.mkString("(", ",", ")") +
            (if (pt == WildcardType) "" else " and expected result type " + pt)
           issueAmbiguousTypeErrorUnlessErroneous(tree.pos, pre, best, firstCompeting, msg0)
-=======
-          val (pos, msg) = if (suppressAmbiguityMsgs) (tree.pos, suppressedMsg) else {
-            val msg0 =
-              "argument types " + argtpes.mkString("(", ",", ")") +
-             (if (pt == WildcardType) "" else " and expected result type " + pt)
-            ambiguousErrorMsgPos(tree.pos, pre, best, firstCompeting, msg0)
-          }
-          issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(tree, pos, msg))
->>>>>>> virt
+//=======
+//          val (pos, msg) = if (suppressAmbiguityMsgs) (tree.pos, suppressedMsg) else {
+//            val msg0 =
+//              "argument types " + argtpes.mkString("(", ",", ")") +
+//             (if (pt == WildcardType) "" else " and expected result type " + pt)
+//            ambiguousErrorMsgPos(tree.pos, pre, best, firstCompeting, msg0)
+//          }
+//          issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(tree, pos, msg))
+//>>>>>>> virt
           setErrorOnLastTry(lastTry, tree)
         } else setError(tree) // do not even try further attempts because they should all fail
                               // even if this is not the last attempt (because of the SO's possibility on the horizon)
