@@ -1,12 +1,13 @@
-package strawman.collection.test
+package strawman
+package collection.test
 
 import java.lang.String
-import scala.{Int, Unit, Array, StringContext, Boolean, Any, Char}
+import scala.{Int, Unit, Array, Option, StringContext, Boolean, Any, Char}
 import scala.Predef.{assert, println, charWrapper}
 
-import strawman.collection.immutable._
-import strawman.collection.mutable._
-import strawman.collection.{Seq, View, _}
+import collection._
+import collection.immutable.{List, Nil, LazyList}
+import collection.mutable.{ArrayBuffer, ListBuffer}
 import org.junit.Test
 
 class StrawmanTest {
@@ -130,7 +131,7 @@ class StrawmanTest {
     val ys9: Seq[Int] = xs9
     val xs9a = xs.map(_.toUpper)
     val ys9a: String = xs9a
-    val xs10 = xs.flatMap((x: Char) => s"$x,$x")
+    val xs10 = xs.flatMap(x => s"$x,$x")
     val ys10: String = xs10
     val xs11 = xs ++ xs
     val ys11: String = xs11
@@ -299,6 +300,37 @@ class StrawmanTest {
     buffer += 4
     assert(list != buffer)
     assert(list.## != buffer.##)
+  }
+
+  def sortedSets(xs: immutable.SortedSet[Int]): Unit = {
+    val xs1 = xs.map((x: Int) => x.toString) // TODO Remove type annotation when https://github.com/scala/scala/pull/5708 is published
+    val xs2: immutable.SortedSet[String] = xs1
+  }
+
+  def mapOps(xs: Map[Int, String]): Unit = {
+    val xs1 = xs.map((k, v) => (v, k))
+    val xs2: strawman.collection.Map[String, Int] = xs1
+    val xs3 = xs.map(kv => (kv._2, kv._1))
+    val xs4: strawman.collection.Iterable[(String, Int)] = xs3
+    println(xs1)
+    println(xs2)
+    println(xs3)
+    println(xs4)
+  }
+
+  def sortedMaps(xs: immutable.SortedMap[String, Int]): Unit = {
+    val x1 = xs.get("foo")
+    val x2: Option[Int] = x1
+    val xs1 = xs + ("foo", 1)
+    val xs2: immutable.SortedMap[String, Int] = xs1
+    val xs3 = xs.map(kv => kv._1)
+    val xs4: immutable.Iterable[String] = xs3
+    val xs5 = xs.map((k: String, v: Int) => (v, k)) // TODO Remove type annotation when https://github.com/scala/scala/pull/5708 is published
+    val xs6: immutable.SortedMap[Int, String] = xs5
+    class Foo
+//    val xs7 = xs.map((k: String, v: Int) => (new Foo, v)) Error: No implicit Ordering defined for Foo
+    val xs7 = (xs: immutable.Map[String, Int]).map((k, v) => (new Foo, v))
+    val xs8: immutable.Map[Foo, Int] = xs7
   }
 
   @Test

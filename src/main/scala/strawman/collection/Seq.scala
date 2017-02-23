@@ -56,6 +56,8 @@ trait SeqLike[+A, +C[X] <: Seq[X]]
 
   protected def coll: C[A @uncheckedVariance]
 
+  protected[this] def fromIterableWithSameElemType(coll: Iterable[A]): C[A] = fromIterable(coll)
+
   /** Do the elements of this collection are the same (and in the same order)
     * as those of `that`?
     */

@@ -5,7 +5,11 @@ import strawman.collection.IterableOnce
 import scala.{Int, Boolean, Unit, Option, Some, None}
 import scala.Predef.???
 
-trait Set[A] extends collection.Set[A] with Growable[A] {
+/** Base trait for mutable sets */
+trait Set[A]
+  extends collection.Set[A]
+    with SetLike[A, Set]
+    with Growable[A] {
 
   def +=(elem: A): this.type
   def -=(elem: A): this.type
@@ -57,6 +61,10 @@ trait Set[A] extends collection.Set[A] with Growable[A] {
       -=(elem)
   }
 }
+
 object Set {
   def apply[A](xs: A*): Set[A] = ???
 }
+
+trait SetLike[A, +C[X] <: Set[X]]
+  extends collection.SetLike[A, C]
