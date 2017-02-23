@@ -64,16 +64,18 @@ class SBTRunner(val config: RunnerSpec.Config,
     javacCmdPath = Option(javacCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd,
     scalacExtraArgs = scalacArgs,
     javaOpts = javaOpts,
-    scalacOpts = scalacOpts) {
+    scalacOpts = scalacOpts) { self =>
 
       override def onFinishTest(testFile: File, result: TestState): TestState = {
-        eventHandler.handle(new Event {
-          def fullyQualifiedName: String = testFile.testIdent
-          def fingerprint: Fingerprint = partestFingerprint
-          def selector: Selector = new TestSelector(testFile.testIdent)
-          val (status, throwable) = makeStatus(result)
-          def duration: Long = -1
-        })
+        self.synchronized {
+          eventHandler.handle(new Event {
+            def fullyQualifiedName: String = testFile.testIdent
+            def fingerprint: Fingerprint = partestFingerprint
+            def selector: Selector = new TestSelector(testFile.testIdent)
+            val (status, throwable) = makeStatus(result)
+            def duration: Long = -1
+          })
+        }
         result
       }
     }
