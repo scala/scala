@@ -790,7 +790,19 @@ trait ContextErrors {
     }
   }
 
-  trait InferencerContextErrors {
+
+  trait SuppressCostlyErrorMessages { // temporary hack for SI-6149
+
+    val suppressAmbiguityMsgs = System.getProperty("showSuppressedErrors", "true") == "false"
+    val suppressedMsg = "[Suppressed for performance reasons (SI-6149). Compile with -DshowSuppressedErrors=true to show]."
+
+    @inline final def nonEssentialTypeStr(tp: => Type): String = {
+      if (suppressAmbiguityMsgs) suppressedMsg else tp.toString
+    }
+
+  }
+
+  trait InferencerContextErrors extends SuppressCostlyErrorMessages {
     self: Inferencer =>
 
     private def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) = {
@@ -823,8 +835,8 @@ trait ContextErrors {
         } else {
           (pos,
             ("ambiguous reference to overloaded definition,\n" +
-             "both " + sym1 + sym1.locationString + " of type " + pre.memberType(sym1) +
-             "\nand  " + sym2 + sym2.locationString + " of type " + pre.memberType(sym2) +
+             "both " + sym1 + sym1.locationString + " of type " + nonEssentialTypeStr(pre.memberType(sym1)) +
+             "\nand  " + sym2 + sym2.locationString + " of type " + nonEssentialTypeStr(pre.memberType(sym2)) +
              "\nmatch " + rest)
           )
         }
@@ -865,7 +877,8 @@ trait ContextErrors {
 
       def NoBestMethodAlternativeError(tree: Tree, argtpes: List[Type], pt: Type, lastTry: Boolean) = {
         issueNormalTypeError(tree,
-          applyErrorMsg(tree, " cannot be applied to ", argtpes, pt))
+          if (suppressAmbiguityMsgs) suppressedMsg
+          else applyErrorMsg(tree, " cannot be applied to ", argtpes, pt))
         // since inferMethodAlternative modifies the state of the tree
         // we have to set the type of tree to ErrorType only in the very last
         // fallback action that is done in the inference.
@@ -877,15 +890,16 @@ trait ContextErrors {
             firstCompeting: Symbol, argtpes: List[Type], pt: Type, lastTry: Boolean) = {
 
         if (!(argtpes exists (_.isErroneous)) && !pt.isErroneous) {
-          val msg0 =
-            "argument types " + argtpes.mkString("(", ",", ")") +
-           (if (pt == WildcardType) "" else " and expected result type " + pt)
-          val (pos, msg) = ambiguousErrorMsgPos(tree.pos, pre, best, firstCompeting, msg0)
+          val (pos, msg) = if (suppressAmbiguityMsgs) (tree.pos, suppressedMsg) else {
+            val msg0 =
+              "argument types " + argtpes.mkString("(", ",", ")") +
+             (if (pt == WildcardType) "" else " and expected result type " + pt)
+            ambiguousErrorMsgPos(tree.pos, pre, best, firstCompeting, msg0)
+          }
           issueAmbiguousTypeError(pre, best, firstCompeting, AmbiguousTypeError(tree, pos, msg))
           setErrorOnLastTry(lastTry, tree)
         } else setError(tree) // do not even try further attempts because they should all fail
                               // even if this is not the last attempt (because of the SO's possibility on the horizon)
-
       }
 
       def NoBestExprAlternativeError(tree: Tree, pt: Type, lastTry: Boolean) = {
@@ -1122,7 +1136,7 @@ trait ContextErrors {
     }
   }
 
-  trait ImplicitsContextErrors {
+  trait ImplicitsContextErrors extends SuppressCostlyErrorMessages {
     self: ImplicitSearch =>
 
     import definitions._
@@ -1132,8 +1146,8 @@ trait ContextErrors {
                                (isView: Boolean, pt: Type, tree: Tree)(implicit context0: Context) = {
       if (!info1.tpe.isErroneous && !info2.tpe.isErroneous) {
         def coreMsg =
-           sm"""| $pre1 ${info1.sym.fullLocationString} of type ${info1.tpe}
-                | $pre2 ${info2.sym.fullLocationString} of type ${info2.tpe}
+           sm"""| $pre1 ${info1.sym.fullLocationString} of type ${nonEssentialTypeStr(info1.tpe)}
+                | $pre2 ${info2.sym.fullLocationString} of type ${nonEssentialTypeStr(info2.tpe)}
                 | $trailer"""
         def viewMsg = {
           val found :: req :: _ = pt.typeArgs

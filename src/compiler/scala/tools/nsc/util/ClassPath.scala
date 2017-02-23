@@ -161,7 +161,7 @@ object ClassPath {
   }
 
   object DefaultJavaContext extends JavaContext {
-    override def isValidName(name: String) = !isTraitImplementation(name)
+    override def isValidName(name: String) = !isTraitImplementation(name) //TR: imho this doesn't really make sense but is unsafe to turn off (#4784)
   }
 
   private def endsClass(s: String) = s.length > 6 && s.substring(s.length - 6) == ".class"

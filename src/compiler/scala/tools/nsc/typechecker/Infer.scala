@@ -100,7 +100,7 @@ trait Infer extends Checkable {
     }
 
     // empty list --> error, otherwise length == 1
-    lazy val optionArgs = resTp.baseType(OptionClass).typeArgs
+    lazy val optionArgs = resTp.normalize/*baseType(OptionClass)*/.typeArgs
     // empty list --> not a ProductN, otherwise product element types
     def productArgs = getProductArgs(optionArgs.head)
 

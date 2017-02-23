@@ -1726,7 +1726,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         if (f.file.container.name != "scala") goLast
         else f.file.name match {
           case "LowPriorityImplicits.scala"   => 2
-          case "StandardEmbeddings.scala"     => 2
           case "EmbeddedControls.scala"       => 2
           case "Predef.scala"                 => 3 /* Predef.scala before Any.scala, etc. */
           case _                              => goLast

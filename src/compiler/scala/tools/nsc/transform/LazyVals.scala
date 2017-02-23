@@ -38,7 +38,8 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
 
           case ClassDef(_, _, _, _) | DefDef(_, _, _, _, _, _) | ModuleDef(_, _, _) =>
 
-          case LabelDef(name, _, _) if nme.isLoopHeaderLabel(name) =>
+          case LabelDef(name, _, _) if nme.isLoopHeaderLabel(name) => // TODO: encapsulate in extractor like LiftedAssign
+          case Apply(fun, _) if opt.virtualize && (fun.symbol == EmbeddedControls_doWhile || fun.symbol == EmbeddedControls_whileDo) =>
 
           case _ =>
             super.traverse(t)
@@ -160,6 +161,16 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
             deriveLabelDef(l)(_ => treeCopy.Block(block, typed(addBitmapDefs(sym.owner, stats1.head))::stats1.tail, expr))
           else
             l
+
+        case w@Apply(fun, args)
+          if opt.virtualize && (fun.symbol == EmbeddedControls_doWhile || fun.symbol == EmbeddedControls_whileDo) =>
+          val args1 = super.transformTrees(args)
+          val List(body, cond) = if (fun.symbol == EmbeddedControls_doWhile) args else args.reverse
+          if (!LocalLazyValFinder.find(body)) w // TODO: check cond as well??
+          else {
+            val body1 = typed(addBitmapDefs(sym.owner, body))
+            treeCopy.Apply(w, fun, if (fun.symbol == EmbeddedControls_doWhile) List(body1, cond) else List(cond, body1))
+          }
 
         case _ => super.transform(tree)
       }

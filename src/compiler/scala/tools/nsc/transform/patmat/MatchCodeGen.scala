@@ -20,7 +20,7 @@ import scala.reflect.internal.util.NoPosition
 trait MatchCodeGen extends Interface {
   import PatternMatchingStats._
   import global.{nme, treeInfo, definitions, gen, Tree, Type, Symbol, NoSymbol,
-    appliedType, NoType, MethodType, newTermName, Name,
+    appliedType, NoType, MethodType, WildcardType, newTermName, Name,
     Block, Literal, Constant, EmptyTree, Function, Typed, ValDef, LabelDef}
   import definitions._
 
@@ -94,9 +94,11 @@ trait MatchCodeGen extends Interface {
     }
   }
 
-  trait PureMatchMonadInterface extends MatchMonadInterface {
+  trait PureMatchMonadInterface extends MatchMonadInterface with scala.tools.nsc.typechecker.Modes {
     val matchStrategy: Tree
 
+
+    // TR: this may be assuming too much about the actual type signatures
     def inMatchMonad(tp: Type): Type = appliedType(oneSig, List(tp)).finalResultType
     def pureType(tp: Type): Type     = appliedType(oneSig, List(tp)).paramTypes.headOption getOrElse NoType // fail gracefully (otherwise we get crashes)
     protected def matchMonadSym      = oneSig.finalResultType.typeSymbol
@@ -104,6 +106,12 @@ trait MatchCodeGen extends Interface {
     import CODE._
     def _match(n: Name): SelectStart = matchStrategy DOT n
 
+    override def selectorType(selector: Tree): Type = {
+      // should we use newTyper.silent here? it seems no: propagating the errors is essential for the current tests
+      val tped = typer.typed(_match(vpmName.runOrElse) APPLY selector, EXPRmode, functionType(List(functionType(List(WildcardType), WildcardType)), WildcardType))
+      if (tped.tpe.isErroneous) super.selectorType(selector)
+      else tped.tpe.typeArgs.head.typeArgs.head
+    }
     private lazy val oneSig: Type = typer.typedOperator(_match(vpmName.one)).tpe  // TODO: error message
   }
 

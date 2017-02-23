@@ -175,6 +175,9 @@ trait Interface extends ast.TreeDSL {
       typer.context.unit.warning(pos, "match may not be exhaustive.\nIt would fail on the following "+ ceString)
     }
 
+    import global.definitions.repeatedToSeq;
+    import global.elimAnonymousClass;
+    def selectorType(selector: Tree): Type = pureType(repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations)))
     def inMatchMonad(tp: Type): Type
     def pureType(tp: Type): Type
     final def matchMonadResult(tp: Type): Type =

@@ -2,7 +2,7 @@ seq(ProguardPlugin.proguardSettings :_*)
 
 name := "jline"
 
-organization := "org.scala-lang"
+organization := "org.scala-lang.virtualized"
 
 version := "2.10.0-SNAPSHOT"
 

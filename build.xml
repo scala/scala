@@ -1968,6 +1968,38 @@ TODO:
   <target name="fastlocker" description="Buildlocker without extra fuss" depends="fastlocker.comp"/>
 
 <!-- ===========================================================================
+Binary compatibility testing for Scala-Virtualized
+============================================================================ -->
+
+  <target name="bcv.init" depends="init">
+    <property name="bc-build.dir" value="${build.dir}/bc"/>
+    <!-- Obtain mima -->
+    <mkdir dir="${bc-build.dir}"/>
+    <!-- Pull down MIMA -->
+    <artifact:dependencies pathId="mima.classpath">
+      <dependency groupId="com.typesafe" artifactId="mima-reporter_2.9.1" version="0.1.3"/>
+    </artifact:dependencies>
+    <artifact:dependencies pathId="old.bc.classpath">
+      <dependency groupId="org.scala-lang" artifactId="scala-library" version="2.10.2-RC1"/>
+    </artifact:dependencies>
+  </target>
+
+  <target name="bcv.run" depends="bcv.init, pack.lib">
+    <java
+       fork="true"
+       failonerror="true"
+       classname="com.typesafe.tools.mima.cli.Main">
+         <arg value="--prev"/>
+         <arg value="${org.scala-lang:scala-library:jar}"/>
+         <arg value="--curr"/>
+         <arg value="${build-pack.dir}/lib/scala-library.jar"/>
+         <classpath>
+           <path refid="mima.classpath"/>
+         </classpath>
+     </java>
+  </target>
+
+<!-- ===========================================================================
                                   VISUALIZATION
 ============================================================================ -->
 

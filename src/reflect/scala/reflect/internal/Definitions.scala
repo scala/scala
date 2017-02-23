@@ -322,6 +322,21 @@ trait Definitions extends api.StandardDefinitions {
       def Class_getMethod               = getMemberMethod(ClassClass, nme.getMethod_)
     lazy val DynamicClass               = requiredClass[Dynamic]
 
+    // embeddings
+    lazy val EmbeddedControlsClass  = getRequiredClass("scala.EmbeddedControls")
+      lazy val EmbeddedControls_ifThenElse = getMember(EmbeddedControlsClass, nme._ifThenElse)
+      lazy val EmbeddedControls_whileDo = getMember(EmbeddedControlsClass, nme._whileDo)
+      lazy val EmbeddedControls_doWhile = getMember(EmbeddedControlsClass, nme._doWhile)
+      lazy val EmbeddedControls_Struct = getMember(EmbeddedControlsClass, tpnme.Struct)
+      lazy val EmbeddedControls_Scope = getMember(EmbeddedControlsClass, tpnme.Scope)
+      lazy val EmbeddedControls_new = getMember(EmbeddedControlsClass, nme._new)
+      lazy val EmbeddedControls_newVar = getMember(EmbeddedControlsClass, nme._newVar)
+      lazy val EmbeddedControls_assign = getMember(EmbeddedControlsClass, nme._assign)
+      lazy val EmbeddedControls_return = getMember(EmbeddedControlsClass, nme._return)
+      lazy val EmbeddedControls_equal = getMember(EmbeddedControlsClass, nme._equal)
+    lazy val ProxyControlsClass  = getRequiredClass("scala.ProxyControls")
+    lazy val Symbol_result       = getMemberMethod(SymbolModule, nme.result)
+
     // fundamental modules
     lazy val SysPackage = getPackageObject("scala.sys")
       def Sys_error    = getMemberMethod(SysPackage, nme.error)
@@ -498,6 +513,10 @@ trait Definitions extends api.StandardDefinitions {
     lazy val FullManifestModule    = requiredModule[scala.reflect.ManifestFactory.type]
     lazy val OptManifestClass      = requiredClass[scala.reflect.OptManifest[_]]
     lazy val NoManifest            = requiredModule[scala.reflect.NoManifest.type]
+    lazy val SourceLocationClass   = requiredClass[scala.reflect.SourceLocation]
+    lazy val SourceLocationModule  = requiredModule[scala.reflect.SourceLocation]
+    lazy val SourceContextClass    = requiredClass[scala.reflect.SourceContext]
+    lazy val SourceContextModule   = requiredModule[scala.reflect.SourceContext]
 
     lazy val ExprsClass            = getClassIfDefined("scala.reflect.api.Exprs") // defined in scala-reflect.jar, so we need to be careful
     lazy val ExprClass             = if (ExprsClass != NoSymbol) getMemberClass(ExprsClass, tpnme.Expr) else NoSymbol

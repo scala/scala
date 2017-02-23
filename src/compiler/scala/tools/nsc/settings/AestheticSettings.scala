@@ -32,6 +32,8 @@ trait AestheticSettings {
   def verbose         = settings.verbose.value
   def virtPatmat      = !settings.XoldPatmat.value
 
+  def virtualize      = settings.Yvirtualize.value
+
   /** Derived values */
   def jvm           = target startsWith "jvm"
   def msil          = target == "msil"

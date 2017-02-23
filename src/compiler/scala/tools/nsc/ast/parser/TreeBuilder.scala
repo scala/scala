@@ -177,7 +177,7 @@ abstract class TreeBuilder {
   def makeBinop(isExpr: Boolean, left: Tree, op: TermName, right: Tree, opPos: Position): Tree = {
     def mkNamed(args: List[Tree]) =
       if (isExpr) args map {
-        case a @ Assign(id @ Ident(name), rhs) =>
+        case a @ LiftedAssign(id @ Ident(name), rhs) =>
           atPos(a.pos) { AssignOrNamedArg(id, rhs) }
         case e => e
       } else args
@@ -187,7 +187,7 @@ abstract class TreeBuilder {
     }
     if (isExpr) {
       if (treeInfo.isLeftAssoc(op)) {
-        Apply(atPos(opPos union left.pos) { Select(stripParens(left), op.encode) }, arguments)
+        makeApply(atPos(opPos union left.pos) { Select(stripParens(left), op.encode) }, arguments)
       } else {
         val x = freshTermName()
         Block(
@@ -237,14 +237,6 @@ abstract class TreeBuilder {
       }
     }
 
-  /** Create a tree representing an assignment <lhs = rhs> */
-  def makeAssign(lhs: Tree, rhs: Tree): Tree = lhs match {
-    case Apply(fn, args) =>
-      Apply(atPos(fn.pos) { Select(fn, nme.update) }, args ::: List(rhs))
-    case _ =>
-      Assign(lhs, rhs)
-  }
-
   /** A type tree corresponding to (possibly unary) intersection type */
   def makeIntersectionTypeTree(tps: List[Tree]): Tree =
     if (tps.tail.isEmpty) tps.head
@@ -262,12 +254,146 @@ abstract class TreeBuilder {
     LabelDef(lname, Nil, rhs)
   }
 
-  /** Create tree representing a do-while loop */
-  def makeDoWhile(lname: TermName, body: Tree, cond: Tree): Tree = {
-    val continu = Apply(Ident(lname), Nil)
-    val rhs = Block(List(body), If(cond, continu, Literal(Constant())))
-    LabelDef(lname, Nil, rhs)
+  /** Captures the difference in tree building between virtualized and non-virtualized scala */
+  // private commented out since it cause "error: private class TreeBuilderStrategy escapes its defining scope as part of type TreeBuilder.this.TreeBuilderStrategy"
+  /*private <-- BUG*/ abstract class TreeBuilderStrategy {
+    /** Create a tree representing an assignment <lhs = rhs> */
+    def makeAssign(lhs: Tree, rhs: Tree): Tree
+
+    /** Create tree representing a while loop */
+    def makeWhileDo(startPos: Int, cond: Tree, body: Tree): Tree
+
+    /** Create tree representing a do-while loop */
+    def makeDoWhile(body: Tree, cond: Tree): Tree
+
+    /** Create tree representing a do-while loop */
+    def makeIfThenElse(cond: Tree, thenp: Tree, elsep: Tree): Tree
+
+    /** Create tree representing a variable initializer */
+    def makeNewVar(expr: Tree): Tree
+
+    /** Create tree representing a return statement */
+    def makeReturn(expr: Tree): Tree
+
+    /** Create a tree making an application node */
+    def makeApply(sel: Tree, exprs: List[Tree]): Tree
   }
+
+  // the factory methods below delegate to methods on builder
+  private lazy val builder: TreeBuilderStrategy =
+    // help out the JIT by only ever instantiating one of the two subclasses (of the *private* TreeBuilderStrategy class, so it's effectively sealed)
+    if (!opt.virtualize) new DirectTreeBuilder else new VirtualizingTreeBuilder
+
+  /** Create a tree representing an assignment <lhs = rhs> */
+  @inline final def makeAssign(lhs: Tree, rhs: Tree): Tree = builder.makeAssign(lhs, rhs)
+
+  /** Create tree representing a while loop */
+  @inline final def makeWhileDo(startPos: Int, cond: Tree, body: Tree): Tree = builder.makeWhileDo(startPos, cond, body)
+
+  /** Create tree representing a do-while loop */
+  @inline final def makeDoWhile(body: Tree, cond: Tree): Tree = builder.makeDoWhile(body, cond)
+
+  /** Create tree representing a do-while loop */
+  @inline final def makeIfThenElse(cond: Tree, thenp: Tree, elsep: Tree): Tree = builder.makeIfThenElse(cond, thenp, elsep)
+
+  /** Create tree representing a variable initializer */
+  @inline final def makeNewVar(expr: Tree): Tree = builder.makeNewVar(expr)
+
+  /** Create tree representing a return statement */
+  @inline final def makeReturn(expr: Tree): Tree = builder.makeReturn(expr)
+
+  /** Create a tree making an application node */
+  @inline final def makeApply(sel: Tree, exprs: List[Tree]): Tree = builder.makeApply(sel, exprs)
+
+  // build trees for plain vanilla scala
+  /*private <-- BUG*/ class DirectTreeBuilder extends TreeBuilderStrategy {
+    /** Create a tree representing an assignment <lhs = rhs> */
+    def makeAssign(lhs: Tree, rhs: Tree): Tree = lhs match {
+      case Apply(fn, args) =>
+        Apply(atPos(fn.pos) { Select(fn, nme.update) }, args ::: List(rhs))
+      case _ =>
+        Assign(lhs, rhs)
+    }
+
+    /** Create tree representing a while loop */
+    def makeWhileDo(startPos: Int, cond: Tree, body: Tree): Tree = {
+      val lname = freshTermName(nme.WHILE_PREFIX)
+      def default = wrappingPos(List(cond, body)) match {
+        case p if p.isDefined => p.endOrPoint
+        case _                => startPos
+      }
+      val continu = atPos(o2p(body.pos pointOrElse default)) { Apply(Ident(lname), Nil) }
+      val rhs = If(cond, Block(List(body), continu), Literal(Constant()))
+      LabelDef(lname, Nil, rhs)
+    }
+
+    /** Create tree representing a do-while loop */
+    def makeDoWhile(body: Tree, cond: Tree): Tree = {
+      val lname: Name = freshTermName(nme.DO_WHILE_PREFIX)
+      val continu = Apply(Ident(lname), Nil)
+      val rhs = Block(List(body), If(cond, continu, Literal(Constant())))
+      LabelDef(lname, Nil, rhs)
+    }
+
+    /** Create tree representing a do-while loop */
+    def makeIfThenElse(cond: Tree, thenp: Tree, elsep: Tree): Tree =
+      If(cond, thenp, elsep)
+
+    /** Create tree representing a variable initializer */
+    def makeNewVar(expr: Tree): Tree =
+      expr
+
+    /** Create tree representing a return statement */
+    def makeReturn(expr: Tree): Tree =
+      Return(expr)
+
+    /** Create a tree making an application node */
+    def makeApply(sel: Tree, exprs: List[Tree]) =
+      Apply(sel, exprs)
+  }
+
+  // build trees for virtualized scala
+  /*private <-- BUG*/ class VirtualizingTreeBuilder extends TreeBuilderStrategy {
+    /** Create a tree representing an assignment <lhs = rhs> */
+    def makeAssign(lhs: Tree, rhs: Tree): Tree = lhs match {
+      case Apply(fn, args) =>
+        Apply(atPos(fn.pos) { Select(fn, nme.update) }, args ::: List(rhs))
+      case _ =>
+        Apply(Ident(nme._assign), List(lhs, rhs))
+    }
+
+    /** Create tree representing a while loop */
+    def makeWhileDo(startPos: Int, cond: Tree, body: Tree): Tree =
+      Apply(Ident(nme._whileDo), List(cond, body))
+
+    /** Create tree representing a do-while loop */
+    def makeDoWhile(body: Tree, cond: Tree): Tree =
+      Apply(Ident(nme._doWhile), List(body, cond))
+
+    /** Create tree representing a do-while loop */
+    def makeIfThenElse(cond: Tree, thenp: Tree, elsep: Tree): Tree =
+      Apply(Ident(nme._ifThenElse), List(cond, thenp, elsep))
+
+    /** Create tree representing a variable initializer */
+    def makeNewVar(expr: Tree): Tree =
+      Apply(Ident(nme._newVar) setPos expr.pos.makeTransparent, List(expr)) setPos expr.pos
+
+    /** Create tree representing a return statement */
+    def makeReturn(expr: Tree): Tree =
+      Apply(Ident(nme._return), List(expr))
+
+    /** Create a tree making an application node; treating == specially
+     */
+    def makeApply(sel: Tree, exprs: List[Tree]) = sel match {
+      case Select(qual, nme.EQ) => // reroute == to __equal
+        // don't tuple exprs, as we can't (easily) undo it when it turns out
+        // there was a regular == method that takes this number of args (see t3736 in pos/ and neg/)
+        Apply(Ident(nme._equal) setPos sel.pos, qual :: exprs)
+      case _ =>
+        Apply(sel, exprs)
+    }
+  }
+
 
   /** Create block of statements `stats`  */
   def makeBlock(stats: List[Tree]): Tree =

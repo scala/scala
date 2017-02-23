@@ -642,6 +642,28 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       if wrapArrayMeth.symbol == Predef_wrapArray(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) =>
         super.transform(treeCopy.ArrayValue(rest, rest.elemtpt, elem0 :: rest.elems))
 
+      // embeddings: transform calls to __while and __doWhile to jumps
+      case Apply(fn, List(arg1, arg2)) if opt.virtualize =>
+        def append(body: Tree, last: Tree) = body match {
+          case Block(stats, expr) =>
+            if (treeInfo.isPureExpr(expr)) Block(stats, last)
+            else Block(stats ::: List(expr), last)
+          case _ =>
+            Block(List(body), last)
+        }
+        def continu(lname: Name) =
+          atPos(arg2.pos.focusEnd)(Apply(Ident(lname), Nil))
+        def labelDef(lname: Name, rhs: Tree) =
+          typedWithPos(tree.pos)(LabelDef(lname, List(), rhs))
+        super.transform(
+          if (fn.symbol == EmbeddedControls_whileDo) {
+            val lname = unit.freshTermName("while$")
+            labelDef(lname, If(arg1, append(arg2, continu(lname)), Literal(Constant(()))))
+          } else if (fn.symbol == EmbeddedControls_doWhile) {
+            val lname = unit.freshTermName("doWhile$")
+            labelDef(lname, append(arg1, If(arg2, continu(lname), Literal(Constant(())))))
+          } else tree
+        )
       case _ =>
         super.transform(tree)
     }

@@ -119,7 +119,7 @@ names-defaults-neg.scala:98: error: unknown parameter name: m
 names-defaults-neg.scala:131: error: reference to var2 is ambiguous; it is both a method parameter and a variable in scope.
   delay(var2 = 40)
              ^
-names-defaults-neg.scala:134: error: missing parameter type for expanded function ((x$1) => a = x$1)
+names-defaults-neg.scala:134: error: missing parameter type for expanded function ((x$1) => __assign(a, x$1))
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                          ^
 names-defaults-neg.scala:135: error: parameter 'a' is already specified at parameter position 1

@@ -131,7 +131,7 @@ trait MatchTranslation { self: PatternMatching  =>
 
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatNanos) else null
 
-      val selectorTp = repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations))
+      val selectorTp = selectorType(selector)//repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations))
 
       val origPt  = match_.tpe
       // when one of the internal cps-type-state annotations is present, strip all CPS annotations
@@ -147,7 +147,7 @@ trait MatchTranslation { self: PatternMatching  =>
       val pt = repeatedToSeq(ptUnCPS)
 
       // val packedPt = repeatedToSeq(typer.packedType(match_, context.owner))
-      val selectorSym = freshSym(selector.pos, pureType(selectorTp)) setFlag treeInfo.SYNTH_CASE_FLAGS
+      val selectorSym = freshSym(selector.pos, /*pureType(*/selectorTp/*)*/) setFlag treeInfo.SYNTH_CASE_FLAGS
 
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
       val combined = combineCases(selector, selectorSym, nonSyntheticCases map translateCase(selectorSym, pt), pt, matchOwner, defaultOverride)

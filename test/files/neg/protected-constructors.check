@@ -13,10 +13,7 @@ protected-constructors.scala:19: error: class Foo3 in object Ding cannot be acce
  object Ding in package dingus where target is defined
     val foo3 = new Ding.Foo3("abc")
                         ^
-protected-constructors.scala:15: error: class Foo3 in object Ding cannot be accessed in object dingus.Ding
- Access to protected class Foo3 not permitted because
- enclosing object P in package hungus is not a subclass of 
- object Ding in package dingus where target is defined
+protected-constructors.scala:15: error: illegal cyclic reference involving class Bar3
     class Bar3 extends Ding.Foo3("abc")
                             ^
 protected-constructors.scala:15: error: too many arguments for constructor Object: ()Object
