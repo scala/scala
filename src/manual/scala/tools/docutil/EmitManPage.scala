@@ -169,19 +169,19 @@ object EmitManPage {
     case _                          => sys.exit(1)
   }
 
-  def emitManPage(classname: String, outStream: java.io.OutputStream = out.out) {
-    if(outStream != out.out) out setOut outStream
-    try {
-      val cl = this.getClass.getClassLoader()
-      val clasz = cl loadClass classname
-      val meth = clasz getDeclaredMethod "manpage"
-      val doc = meth.invoke(null).asInstanceOf[Document]
-      emitDocument(doc)
-    } catch {
-      case ex: Exception =>
-        ex.printStackTrace()
-        System.err println "Error in EmitManPage"
-        sys.exit(1)
+  def emitManPage(classname: String, outStream: java.io.OutputStream = out.out): Unit =
+    Console.withOut(outStream) {
+      try {
+        val cl = this.getClass.getClassLoader()
+        val clasz = cl loadClass classname
+        val meth = clasz getDeclaredMethod "manpage"
+        val doc = meth.invoke(null).asInstanceOf[Document]
+        emitDocument(doc)
+      } catch {
+        case ex: Exception =>
+          ex.printStackTrace()
+          System.err println "Error in EmitManPage"
+          sys.exit(1)
+      }
     }
-  }
 }
