@@ -146,16 +146,24 @@ abstract class TreeBuilder {
 //
 //>>>>>>> virt
   /** Create tree representing a while loop */
-  def makeWhile(startPos: Int, cond: Tree, body: Tree): Tree = {
-    val lname = freshTermName(nme.WHILE_PREFIX)
-    def default = wrappingPos(List(cond, body)) match {
-      case p if p.isDefined => p.end
-      case _                => startPos
-    }
-    val continu = atPos(o2p(body.pos pointOrElse default)) { Apply(Ident(lname), Nil) }
-    val rhs = If(cond, Block(List(body), continu), Literal(Constant(())))
-    LabelDef(lname, Nil, rhs)
-  }
+//  def makeWhile(startPos: Int, cond: Tree, body: Tree): Tree = {
+//    val lname = freshTermName(nme.WHILE_PREFIX)
+//    def default = wrappingPos(List(cond, body)) match {
+//      case p if p.isDefined => p.end
+//      case _                => startPos
+//    }
+//    val continu = atPos(o2p(body.pos pointOrElse default)) { Apply(Ident(lname), Nil) }
+//    val rhs = If(cond, Block(List(body), continu), Literal(Constant(())))
+//    LabelDef(lname, Nil, rhs)
+//  }
+
+  //<<<<<<< HEAD
+  //  def makeDoWhile(lname: TermName, body: Tree, cond: Tree): Tree = {
+  //    val continu = Apply(Ident(lname), Nil)
+  //    val rhs = Block(List(body), If(cond, continu, Literal(Constant(()))))
+  //    LabelDef(lname, Nil, rhs)
+  //=======
+  //>>>>>>> virt
 
   /** Captures the difference in tree building between virtualized and non-virtualized scala */
   // private commented out since it cause "error: private class TreeBuilderStrategy escapes its defining scope as part of type TreeBuilder.this.TreeBuilderStrategy"
@@ -194,12 +202,6 @@ abstract class TreeBuilder {
   @inline final def makeWhileDo(startPos: Int, cond: Tree, body: Tree): Tree = builder.makeWhileDo(startPos, cond, body)
 
   /** Create tree representing a do-while loop */
-//<<<<<<< HEAD
-//  def makeDoWhile(lname: TermName, body: Tree, cond: Tree): Tree = {
-//    val continu = Apply(Ident(lname), Nil)
-//    val rhs = Block(List(body), If(cond, continu, Literal(Constant(()))))
-//    LabelDef(lname, Nil, rhs)
-//=======
   @inline final def makeDoWhile(body: Tree, cond: Tree): Tree = builder.makeDoWhile(body, cond)
 
   /** Create tree representing a do-while loop */
@@ -238,7 +240,7 @@ abstract class TreeBuilder {
 
     /** Create tree representing a do-while loop */
     def makeDoWhile(body: Tree, cond: Tree): Tree = {
-      val lname: Name = freshTermName(nme.DO_WHILE_PREFIX)
+      val lname = freshTermName(nme.DO_WHILE_PREFIX)
       val continu = Apply(Ident(lname), Nil)
       val rhs = Block(List(body), If(cond, continu, Literal(Constant())))
       LabelDef(lname, Nil, rhs)
@@ -259,7 +261,6 @@ abstract class TreeBuilder {
     /** Create a tree making an application node */
     def makeApply(sel: Tree, exprs: List[Tree]) =
       Apply(sel, exprs)
-//>>>>>>> virt
   }
 
   // build trees for virtualized scala

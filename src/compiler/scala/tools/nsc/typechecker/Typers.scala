@@ -4710,21 +4710,21 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
         }
 //<<<<<<< HEAD (TODO)
-////      if (varsym.isVariable ||
-////        // setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
-////        (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
-//        if (varsym.isVariable || varsym.isValue && phase.assignsFields) {
-//          val rhs1 = typedByValueExpr(rhs, lhs1.tpe)
-//          treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitTpe
+//      if (varsym.isVariable ||
+//        // setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
+//        (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
+        if (varsym.isVariable || varsym.isValue && phase.assignsFields) {
+          val rhs1 = typedByValueExpr(rhs, lhs1.tpe)
+          treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitTpe
 //=======
-        // only under -Yvirtualize: setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
-        // if (varsym.isVariable || (phase.erasedTypes && varsym.isValue/* && !(opt.virtualize && varsym.isMethod)*/)) {
-        // if (varsym.isVariable ||
-        // // setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
-        // (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
-        if (varsym.isVariable || varsym.isValue && phase.erasedTypes) {
-          val rhs1 = typed(rhs, EXPRmode | BYVALmode, lhs1.tpe)
-          treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitClass.tpe
+//        // only under -Yvirtualize: setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
+//        // if (varsym.isVariable || (phase.erasedTypes && varsym.isValue/* && !(opt.virtualize && varsym.isMethod)*/)) {
+//        // if (varsym.isVariable ||
+//        // // setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
+//        // (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
+//        if (varsym.isVariable || varsym.isValue && phase.erasedTypes) {
+//          val rhs1 = typed(rhs, EXPRmode | BYVALmode, lhs1.tpe)
+//          treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitClass.tpe
 //>>>>>>> virt
         }
         else if(dyna.isDynamicallyUpdatable(lhs1)) {
@@ -4738,84 +4738,83 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
 //<<<<<<< HEAD
-//      def typedIf(tree: If): If = {
-//        val cond1 = checkDead(typedByValueExpr(tree.cond, BooleanTpe))
-//        // One-legged ifs don't need a lot of analysis
-//        if (tree.elsep.isEmpty)
-//          return treeCopy.If(tree, cond1, typed(tree.thenp, UnitTpe), tree.elsep) setType UnitTpe
-//
-//        val thenp1 = typed(tree.thenp, pt)
-//        val elsep1 = typed(tree.elsep, pt)
-//
-//        // in principle we should pack the types of each branch before lubbing, but lub doesn't really work for existentials anyway
-//        // in the special (though common) case where the types are equal, it pays to pack before comparing
-//        // especially virtpatmat needs more aggressive unification of skolemized types
-//        // this breaks src/library/scala/collection/immutable/TrieIterator.scala
-//        // annotated types need to be lubbed regardless (at least, continuations break if you bypass them like this)
-//        def samePackedTypes = (
-//             !isPastTyper
-//          && thenp1.tpe.annotations.isEmpty
-//          && elsep1.tpe.annotations.isEmpty
-//          && packedType(thenp1, context.owner) =:= packedType(elsep1, context.owner)
-//        )
-//        def finish(ownType: Type) = treeCopy.If(tree, cond1, thenp1, elsep1) setType ownType
-//        // TODO: skolemize (lub of packed types) when that no longer crashes on files/pos/t4070b.scala
-//        // @PP: This was doing the samePackedTypes check BEFORE the isFullyDefined check,
-//        // which based on everything I see everywhere else was a bug. I reordered it.
-//        if (isFullyDefined(pt))
-//          finish(pt)
-//        // Important to deconst, otherwise `if (???) 0 else 0` evaluates to 0 (SI-6331)
-//        else thenp1.tpe.deconst :: elsep1.tpe.deconst :: Nil match {
-//          case tp :: _ if samePackedTypes     => finish(tp)
-//          case tpes if sameWeakLubAsLub(tpes) => finish(lub(tpes))
-//          case tpes                           =>
-//            val lub = weakLub(tpes)
-//            treeCopy.If(tree, cond1, adapt(thenp1, mode, lub), adapt(elsep1, mode, lub)) setType lub
-//        }
-//      }
-//
-//      // When there's a suitable __match in scope, virtualize the pattern match
-//=======
-      def typedIf(tree: If) = {
-        val cond = tree.cond
-        val thenp = tree.thenp
-        val elsep = tree.elsep
-        typedIfParts(tree, cond, thenp, elsep)
-      }
+      def typedIf(tree: If): If = {
+        val cond1 = checkDead(typedByValueExpr(tree.cond, BooleanTpe))
+        // One-legged ifs don't need a lot of analysis
+        if (tree.elsep.isEmpty)
+          return treeCopy.If(tree, cond1, typed(tree.thenp, UnitTpe), tree.elsep) setType UnitTpe
 
-      def typedIfParts(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) = {
-        val cond1 = checkDead(typed(cond, EXPRmode | BYVALmode, BooleanClass.tpe))
-        if (elsep.isEmpty) { // in the future, should be unnecessary
-          val thenp1 = typed(thenp, UnitClass.tpe)
-          treeCopy.If(tree, cond1, thenp1, elsep) setType thenp1.tpe
-        } else {
-          var thenp1 = typed(thenp, pt)
-          var elsep1 = typed(elsep, pt)
-          def thenTp = packedType(thenp1, context.owner)
-          def elseTp = packedType(elsep1, context.owner)
+        val thenp1 = typed(tree.thenp, pt)
+        val elsep1 = typed(tree.elsep, pt)
 
-          // println("typedIf: "+(thenp1.tpe, elsep1.tpe, ptOrLub(List(thenp1.tpe, elsep1.tpe)),"\n", thenTp, elseTp, thenTp =:= elseTp))
-          val (owntype, needAdapt) =
-            // in principle we should pack the types of each branch before lubbing, but lub doesn't really work for existentials anyway
-            // in the special (though common) case where the types are equal, it pays to pack before comparing
-            // especially virtpatmat needs more aggressive unification of skolemized types
-            // this breaks src/library/scala/collection/immutable/TrieIterator.scala
-            if ( settings.Yvirtpatmat && !isPastTyper
-              && thenp1.tpe.annotations.isEmpty && elsep1.tpe.annotations.isEmpty // annotated types need to be lubbed regardless (at least, continations break if you by pass them like this)
-              && thenTp =:= elseTp
-               ) (thenp1.tpe.deconst, false) // use unpacked type. Important to deconst, as is done in ptOrLub, otherwise `if (???) 0 else 0` evaluates to 0 (SI-6331)
-            // TODO: skolemize (lub of packed types) when that no longer crashes on files/pos/t4070b.scala
-            else ptOrLub(thenp1.tpe :: elsep1.tpe :: Nil, pt)
-
-          if (needAdapt) { //isNumericValueType(owntype)) {
-            thenp1 = adapt(thenp1, mode, owntype)
-            elsep1 = adapt(elsep1, mode, owntype)
-          }
-          treeCopy.If(tree, cond1, thenp1, elsep1) setType owntype
+        // in principle we should pack the types of each branch before lubbing, but lub doesn't really work for existentials anyway
+        // in the special (though common) case where the types are equal, it pays to pack before comparing
+        // especially virtpatmat needs more aggressive unification of skolemized types
+        // this breaks src/library/scala/collection/immutable/TrieIterator.scala
+        // annotated types need to be lubbed regardless (at least, continuations break if you bypass them like this)
+        def samePackedTypes = (
+             !isPastTyper
+          && thenp1.tpe.annotations.isEmpty
+          && elsep1.tpe.annotations.isEmpty
+          && packedType(thenp1, context.owner) =:= packedType(elsep1, context.owner)
+        )
+        def finish(ownType: Type) = treeCopy.If(tree, cond1, thenp1, elsep1) setType ownType
+        // TODO: skolemize (lub of packed types) when that no longer crashes on files/pos/t4070b.scala
+        // @PP: This was doing the samePackedTypes check BEFORE the isFullyDefined check,
+        // which based on everything I see everywhere else was a bug. I reordered it.
+        if (isFullyDefined(pt))
+          finish(pt)
+        // Important to deconst, otherwise `if (???) 0 else 0` evaluates to 0 (SI-6331)
+        else thenp1.tpe.deconst :: elsep1.tpe.deconst :: Nil match {
+          case tpes if sameWeakLubAsLub(tpes) => finish(lub(tpes))
+          case tpes                           =>
+            val lub = weakLub(tpes)
+            treeCopy.If(tree, cond1, adapt(thenp1, mode, lub), adapt(elsep1, mode, lub)) setType lub
         }
       }
 
-      // under -Xexperimental (and not -Xoldpatmat), and when there's a suitable __match in scope, virtualize the pattern match
+      // When there's a suitable __match in scope, virtualize the pattern match
+//=======
+//      def typedIf(tree: If) = {
+//        val cond = tree.cond
+//        val thenp = tree.thenp
+//        val elsep = tree.elsep
+//        typedIfParts(tree, cond, thenp, elsep)
+//      }
+//
+//      def typedIfParts(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) = {
+//        val cond1 = checkDead(typed(cond, EXPRmode | BYVALmode, BooleanClass.tpe))
+//        if (elsep.isEmpty) { // in the future, should be unnecessary
+//          val thenp1 = typed(thenp, UnitClass.tpe)
+//          treeCopy.If(tree, cond1, thenp1, elsep) setType thenp1.tpe
+//        } else {
+//          var thenp1 = typed(thenp, pt)
+//          var elsep1 = typed(elsep, pt)
+//          def thenTp = packedType(thenp1, context.owner)
+//          def elseTp = packedType(elsep1, context.owner)
+//
+//          // println("typedIf: "+(thenp1.tpe, elsep1.tpe, ptOrLub(List(thenp1.tpe, elsep1.tpe)),"\n", thenTp, elseTp, thenTp =:= elseTp))
+//          val (owntype, needAdapt) =
+//            // in principle we should pack the types of each branch before lubbing, but lub doesn't really work for existentials anyway
+//            // in the special (though common) case where the types are equal, it pays to pack before comparing
+//            // especially virtpatmat needs more aggressive unification of skolemized types
+//            // this breaks src/library/scala/collection/immutable/TrieIterator.scala
+//            if ( settings.Yvirtpatmat && !isPastTyper
+//              && thenp1.tpe.annotations.isEmpty && elsep1.tpe.annotations.isEmpty // annotated types need to be lubbed regardless (at least, continations break if you by pass them like this)
+//              && thenTp =:= elseTp
+//               ) (thenp1.tpe.deconst, false) // use unpacked type. Important to deconst, as is done in ptOrLub, otherwise `if (???) 0 else 0` evaluates to 0 (SI-6331)
+//            // TODO: skolemize (lub of packed types) when that no longer crashes on files/pos/t4070b.scala
+//            else ptOrLub(thenp1.tpe :: elsep1.tpe :: Nil, pt)
+//
+//          if (needAdapt) { //isNumericValueType(owntype)) {
+//            thenp1 = adapt(thenp1, mode, owntype)
+//            elsep1 = adapt(elsep1, mode, owntype)
+//          }
+//          treeCopy.If(tree, cond1, thenp1, elsep1) setType owntype
+//        }
+//      }
+//
+//      // under -Xexperimental (and not -Xoldpatmat), and when there's a suitable __match in scope, virtualize the pattern match
 //>>>>>>> virt
       // otherwise, type the Match and leave it until phase `patmat` (immediately after typer)
       // empty-selector matches are transformed into synthetic PartialFunction implementations when the expected type demands it
