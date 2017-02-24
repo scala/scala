@@ -68,3 +68,7 @@ object Set {
 
 trait SetLike[A, +C[X] <: Set[X]]
   extends collection.SetLike[A, C]
+    with SetMonoTransforms[A, C[A]]
+
+trait SetMonoTransforms[A, +Repr]
+  extends collection.SetMonoTransforms[A, Repr]
