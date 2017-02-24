@@ -23,17 +23,21 @@ class ExtractUsedNamesSpecification extends UnitSpec {
                   |    class C { class D }
                   |  }
                   |  class B[T]
+                  |}
+                  |package c {
                   |  class BB
-                  |}""".stripMargin
+                  |}
+                  |
+                  |""".stripMargin
     val srcB = """|package b {
                   | abstract class X {
                   |     def foo: a.A#C#D
-                  |     def bar: a.B[a.BB]
+                  |     def bar: a.B[c.BB]
                   |   }
                   |}""".stripMargin
     val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(srcA, srcB)
-    val expectedNames = standardNames ++ Set("a", "A", "B", "C", "D", "b", "X", "BB")
+    val expectedNames = standardNames ++ Set("a", "c", "A", "B", "C", "D", "b", "X", "BB")
     assert(usedNames("b.X") === expectedNames)
   }
 
