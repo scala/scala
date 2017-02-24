@@ -3693,7 +3693,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 // Replace the Delegate-Chainer methods += and -= with corresponding
                 // + and - calls, which are translated in the code generator into
                 // Combine and Remove
-                if (forMSIL) {
+                if (target == "msil") {
                   fun match {
                     case Select(qual, name) =>
                       if (isSubType(qual.tpe, DelegateClass.tpe)
