@@ -2582,24 +2582,24 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     def packedTypes(trees: List[Tree]): List[Type] = trees map (c => packedType(c, context.owner).deconst)
 
-    // find the match translator for a given selector. non-null result means we will virtualize
-    def matchTranslator(selector: Tree): patmat.MatchTranslator = {
-      // TODO: add fallback __match sentinel to predef
-      import patmat.{vpmName, PureMatchTranslator, OptimizingMatchTranslator}
-      if (!(newPatternMatching && opt.experimental && context.isNameInScope(vpmName._match))) null    // fast path, avoiding the next line if there's no __match to be seen
-      else newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName._match), EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
-        case SilentResultValue(matchStrategy) => // matchStrategy is our __match object
-          new PureMatchTranslator(this.asInstanceOf[patmat.global.analyzer.Typer] /*TODO*/, matchStrategy)
-        case _                     => null
-      }
-    }
-
     // takes untyped sub-trees of a match and type checks them
 //<<<<<<< HEAD
     def typedMatch(selector: Tree, cases: List[CaseDef], mode: Mode, pt: Type, tree: Tree = EmptyTree): Match = {
       val selector1  = checkDead(typedByValueExpr(selector))
       val selectorTp = packCaptured(selector1.tpe.widen).skolemizeExistential(context.owner, selector)
 //=======
+//
+//  // find the match translator for a given selector. non-null result means we will virtualize
+//  def matchTranslator(selector: Tree): patmat.MatchTranslator = {
+//    // TODO: add fallback __match sentinel to predef
+//    import patmat.{vpmName, PureMatchTranslator, OptimizingMatchTranslator}
+//    if (!(newPatternMatching && opt.experimental && context.isNameInScope(vpmName._match))) null    // fast path, avoiding the next line if there's no __match to be seen
+//    else newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName._match), EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
+//      case SilentResultValue(matchStrategy) => // matchStrategy is our __match object
+//        new PureMatchTranslator(this.asInstanceOf[patmat.global.analyzer.Typer] /*TODO*/, matchStrategy)
+//      case _                     => null
+//    }
+//  }
 //    def typedMatch(selector: Tree, cases: List[CaseDef], mode: Int, pt: Type, tree: Tree = EmptyTree): Match =
 //      typedMatchWithStrategy(selector, cases, mode, pt, tree)._1
 //    def typedMatchWithStrategy(selector: Tree, cases: List[CaseDef], mode: Int, pt: Type, tree: Tree): (Match, patmat.MatchTranslator) = {
@@ -4388,7 +4388,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       /** Is `qual` a staged struct? (i.e., of type Rep[Struct[Rep]{decls}])?
        * Then what's the type of `name`?
        */
-      def structSelectedMember(qual: Tree, name: Name): Option[(Type, Symbol)] = if (opt.virtualize) {
+      def structSelectedMember(qual: Tree, name: Name): Option[(Type, Symbol)] = if (settings.Yvirtualize) {
         debuglog("[DNR] dynatype on struct for "+ qual +" : "+ qual.tpe +" <DOT> "+ name)
         val structTps =
           ((prefixInWith(context.owner, EmbeddedControlsClass).toList)
@@ -6592,7 +6592,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def typedHigherKindedType(tree: Tree, mode: Mode): Tree =
       context withinTypeConstructorAllowed typed(tree)
 
-    private def willReifyNew(tp: Type): Boolean = opt.virtualize && (phase.id <= currentRun.typerPhase.id) && {
+    private def willReifyNew(tp: Type): Boolean = settings.Yvirtualize && (phase.id <= currentRun.typerPhase.id) && {
       // don't run after typers
       //  (see pos/t0586 for a scenario that makes us run during cleanup, where Struct is no longer in EmbeddedControls)
       //  also, haven't figured out yet how to deal with varargs after erasure
