@@ -209,7 +209,7 @@ class ExtractAPI[GlobalType <: Global](
     }
 
   private def annotations(in: Symbol, s: Symbol): Array[xsbti.api.Annotation] =
-    enteringPhase(currentRun.typerPhase.next) {
+    enteringPhase(currentRun.typerPhase) {
       val base = if (s.hasFlag(Flags.ACCESSOR)) s.accessed else NoSymbol
       val b = if (base == NoSymbol) s else base
       // annotations from bean methods are not handled because:
