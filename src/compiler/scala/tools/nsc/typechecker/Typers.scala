@@ -1796,21 +1796,21 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       reenterTypeParams(cdef.tparams)
       val tparams1 = cdef.tparams mapConserve (typedTypeDef)
 //<<<<<<< HEAD
-      val impl1 = newTyper(context.make(cdef.impl, clazz, newScope)).typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
+//      val impl1 = newTyper(context.make(cdef.impl, clazz, newScope)).typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
 //=======
-//
-//      val impl1 =
-//        // could looking at clazz.typeOfThis before typing the template cause spurious illegal cycle errors?
-//        // OTOH, always typing silently and rethrowing if we're not going to reify causes other problems
-//        if (opt.virtualize && clazz.isAnonymousClass && willReifyNew(clazz.typeOfThis))
-//          newTyper(context.make(cdef.impl, clazz, newScope)).silent(_.typedTemplate(cdef.impl, parentTypes(cdef.impl)), false) match {
-//            case SilentResultValue(t: Template)   => t
-//            case _ => null // TODO: ensure clazz isn't used anywhere but in typedReifiedNew
-//        } else
-//          newTyper(context.make(cdef.impl, clazz, newScope)).typedTemplate(cdef.impl, parentTypes(cdef.impl))
-//
-//      if (opt.virtualize && impl1 == null) return EmptyTree
-//
+
+      val impl1 =
+        // could looking at clazz.typeOfThis before typing the template cause spurious illegal cycle errors?
+        // OTOH, always typing silently and rethrowing if we're not going to reify causes other problems
+        if (settings.Yvirtualize && clazz.isAnonymousClass && willReifyNew(clazz.typeOfThis))
+          newTyper(context.make(cdef.impl, clazz, newScope)).silent(_.typedTemplate(cdef.impl, parentTypes(cdef.impl)), false) match {
+            case SilentResultValue(t: Template)   => t
+            case _ => null // TODO: ensure clazz isn't used anywhere but in typedReifiedNew
+        } else
+          newTyper(context.make(cdef.impl, clazz, newScope)).typedTemplate(cdef.impl, parentTypes(cdef.impl))
+
+      if (settings.Yvirtualize && impl1 == null) return EmptyTree
+
 //>>>>>>> virt
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
       if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
@@ -2440,84 +2440,84 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // The block is an anonymous class definitions/instantiation pair
               //   -> members that are hidden by the type of the block are made private
 //<<<<<<< HEAD
-              classDecls foreach { toHide =>
-                if (toHide.isTerm
-                    && toHide.isPossibleInRefinement
-                    && toHide.isPublic
-                    && !matchesVisibleMember(toHide)) {
-                  (toHide
-                   resetFlag (PROTECTED | LOCAL)
-                   setFlag (PRIVATE | SYNTHETIC_PRIVATE)
-                   setPrivateWithin NoSymbol)
-
-                  syntheticPrivates += toHide
-                }
-              }
-
-            case _ =>
-          }
-        }
-        val statsTyped = typedStats(block.stats, context.owner, warnPure = false)
-        val expr1 = typed(block.expr, mode &~ (FUNmode | QUALmode), pt)
-
-        // sanity check block for unintended expr placement
-        if (!isPastTyper) {
-          val (count, result0, adapted) =
-            expr1 match {
-              case Block(expr :: Nil, Literal(Constant(()))) => (1, expr, true)
-              case Literal(Constant(()))                     => (0, EmptyTree, false)
-              case _                                         => (1, EmptyTree, false)
-            }
-          def checkPure(t: Tree, supple: Boolean): Unit =
-            if (treeInfo.isPureExprForWarningPurposes(t)) {
-              val msg = "a pure expression does nothing in statement position"
-              val parens = if (statsTyped.length + count > 1) "multiline expressions might require enclosing parentheses" else ""
-              val discard = if (adapted) "; a value can be silently discarded when Unit is expected" else ""
-              val text =
-                if (supple) s"${parens}${discard}"
-                else if (!parens.isEmpty) s"${msg}; ${parens}" else msg
-              context.warning(t.pos, text)
-            }
-          statsTyped.foreach(checkPure(_, supple = false))
-          if (result0.nonEmpty) checkPure(result0, supple = true)
-        }
-
-        treeCopy.Block(block, statsTyped, expr1)
-//=======
-//              val toHide = (
-//                classDecls filter (member =>
-//                     member.isTerm
-//                  && member.isPossibleInRefinement
-//                  && member.isPublic
-//                  && !matchesVisibleMember(member)
-//                ) map (member => member
-//                  resetFlag (PROTECTED | LOCAL)
-//                  setFlag (PRIVATE | SYNTHETIC_PRIVATE)
-//                  setPrivateWithin NoSymbol
-//                )
-//                // assert(pt ne WildcardType) // do we ever get here when pt == WildcardType?? if not, better skip the whole `case Block(...`
-//              )
-//              syntheticPrivates ++= toHide
-//            case _ =>
-//          }
-//	}
-//        val stats1 = if (isPastTyper) block.stats else
-//          block.stats.flatMap(stat => stat match {
-//            case vd@ValDef(_, _, _, _) if vd.symbol.isLazy =>
-//              namer.addDerivedTrees(Typer.this, vd)
-//            case _ => stat::Nil
-//            })
-//        var stats2 = typedStats(stats1, context.owner)
-//        var expr1 = typed(block.expr, mode & ~(FUNmode | QUALmode), pt)
-//        if (opt.virtualize) {
-//          (stats1, expr1) match {
-//            case (List(ClassDef(_, _, _, impl)), tree1@Apply(Select(New(tpt), _), Nil)) if tpt.tpe != null && willReifyNew(tpt.tpe) =>
-//              stats2 = Nil // drop the anonymous class -- its instantiation has been virtualized anyway (that call is in expr1)
-//              expr1 = typedReifiedNew(impl, tpt)
+//              classDecls foreach { toHide =>
+//                if (toHide.isTerm
+//                    && toHide.isPossibleInRefinement
+//                    && toHide.isPublic
+//                    && !matchesVisibleMember(toHide)) {
+//                  (toHide
+//                   resetFlag (PROTECTED | LOCAL)
+//                   setFlag (PRIVATE | SYNTHETIC_PRIVATE)
+//                   setPrivateWithin NoSymbol)
+//
+//                  syntheticPrivates += toHide
+//                }
+//              }
+//
 //            case _ =>
 //          }
 //        }
-//        treeCopy.Block(block, stats2, expr1)
+//        val statsTyped = typedStats(block.stats, context.owner, warnPure = false)
+//        val expr1 = typed(block.expr, mode &~ (FUNmode | QUALmode), pt)
+//
+//        // sanity check block for unintended expr placement
+//        if (!isPastTyper) {
+//          val (count, result0, adapted) =
+//            expr1 match {
+//              case Block(expr :: Nil, Literal(Constant(()))) => (1, expr, true)
+//              case Literal(Constant(()))                     => (0, EmptyTree, false)
+//              case _                                         => (1, EmptyTree, false)
+//            }
+//          def checkPure(t: Tree, supple: Boolean): Unit =
+//            if (treeInfo.isPureExprForWarningPurposes(t)) {
+//              val msg = "a pure expression does nothing in statement position"
+//              val parens = if (statsTyped.length + count > 1) "multiline expressions might require enclosing parentheses" else ""
+//              val discard = if (adapted) "; a value can be silently discarded when Unit is expected" else ""
+//              val text =
+//                if (supple) s"${parens}${discard}"
+//                else if (!parens.isEmpty) s"${msg}; ${parens}" else msg
+//              context.warning(t.pos, text)
+//            }
+//          statsTyped.foreach(checkPure(_, supple = false))
+//          if (result0.nonEmpty) checkPure(result0, supple = true)
+//        }
+//
+//        treeCopy.Block(block, statsTyped, expr1)
+//=======
+              val toHide = (
+                classDecls filter (member =>
+                     member.isTerm
+                  && member.isPossibleInRefinement
+                  && member.isPublic
+                  && !matchesVisibleMember(member)
+                ) map (member => member
+                  resetFlag (PROTECTED | LOCAL)
+                  setFlag (PRIVATE | SYNTHETIC_PRIVATE)
+                  setPrivateWithin NoSymbol
+                )
+                // assert(pt ne WildcardType) // do we ever get here when pt == WildcardType?? if not, better skip the whole `case Block(...`
+              )
+              syntheticPrivates ++= toHide
+            case _ =>
+          }
+	}
+        val stats1 = if (isPastTyper) block.stats else
+          block.stats.flatMap(stat => stat match {
+            case vd@ValDef(_, _, _, _) if vd.symbol.isLazy =>
+              namer.addDerivedTrees(Typer.this, vd)
+            case _ => stat::Nil
+            })
+        var stats2 = typedStats(stats1, context.owner)
+        var expr1 = typed(block.expr, mode & ~(FUNmode | QUALmode), pt)
+        if (settings.Yvirtualize) {
+          (stats1, expr1) match {
+            case (List(ClassDef(_, _, _, impl)), tree1@Apply(Select(New(tpt), _), Nil)) if tpt.tpe != null && willReifyNew(tpt.tpe) =>
+              stats2 = Nil // drop the anonymous class -- its instantiation has been virtualized anyway (that call is in expr1)
+              expr1 = typedReifiedNew(impl, tpt)
+            case _ =>
+          }
+        }
+        treeCopy.Block(block, stats2, expr1)
 //>>>>>>> virt
           .setType(if (treeInfo.isExprSafeToInline(block)) expr1.tpe else expr1.tpe.deconst)
       } finally {
@@ -3667,49 +3667,49 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 // val foo = "foo"; def precise(x: String)(y: x.type): x.type = {...}; val bar : foo.type = precise(foo)(foo)
                 // precise(foo) : foo.type => foo.type
 //<<<<<<< HEAD
-                val restpe = mt.resultType(mapList(args1)(arg => gen stableTypeFor arg orElse arg.tpe))
-                def ifPatternSkipFormals(tp: Type) = tp match {
-                  case MethodType(_, rtp) if (mode.inPatternMode) => rtp
-                  case _ => tp
+//                val restpe = mt.resultType(mapList(args1)(arg => gen stableTypeFor arg orElse arg.tpe))
+//                def ifPatternSkipFormals(tp: Type) = tp match {
+//                  case MethodType(_, rtp) if (mode.inPatternMode) => rtp
+//                  case _ => tp
+//                }
+//
+//                /*
+//                 * This is translating uses of List() into Nil.  This is less
+//=======
+                val restpe = mt.resultType(args1 map (arg => gen.stableTypeFor(arg) getOrElse arg.tpe))
+                def transformResultType(tree: Tree, tp: Type) = tp match {
+                  // skip formal arguments if in pattern mode (the args are subpatterns)
+                  case MethodType(_, rtp) if (inPatternMode(mode)) =>
+                    tree setType rtp
+                  case _ if settings.Yvirtualize && fun.symbol.isConstructor && willReifyNew(tp) =>
+                    val repTycon = inferRepTycon(tree)
+                    if (repTycon == NoType) tree else
+                    tree setType reifiedNewType(repTycon, tp)
+                  case _ =>
+                    tree setType tp
                 }
 
-                /*
-                 * This is translating uses of List() into Nil.  This is less
-//=======
-//                val restpe = mt.resultType(args1 map (arg => gen.stableTypeFor(arg) getOrElse arg.tpe))
-//                def transformResultType(tree: Tree, tp: Type) = tp match {
-//                  // skip formal arguments if in pattern mode (the args are subpatterns)
-//                  case MethodType(_, rtp) if (inPatternMode(mode)) =>
-//                    tree setType rtp
-//                  case _ if opt.virtualize && fun.symbol.isConstructor && willReifyNew(tp) =>
-//                    val repTycon = inferRepTycon(tree)
-//                    if (repTycon == NoType) tree else
-//                    tree setType reifiedNewType(repTycon, tp)
-//                  case _ =>
-//                    tree setType tp
-//                }
-//
-//                // Replace the Delegate-Chainer methods += and -= with corresponding
-//                // + and - calls, which are translated in the code generator into
-//                // Combine and Remove
-//                if (forMSIL) {
-//                  fun match {
-//                    case Select(qual, name) =>
-//                      if (isSubType(qual.tpe, DelegateClass.tpe)
-//                        && (name == encode("+=") || name == encode("-="))) {
-//                        val n = if (name == encode("+=")) nme.PLUS else nme.MINUS
-//                        val f = Select(qual, n)
-//                        // the compiler thinks, the PLUS method takes only one argument,
-//                        // but he thinks it's an instance method -> still two ref's on the stack
-//                        //  -> translated by backend
-//                        val rhs = treeCopy.Apply(tree, f, args)
-//                        return typed(Assign(qual, rhs))
-//                      }
-//                    case _ => ()
-//                  }
-//                }
-//
-//                / (TODO remove this for complete comment)** This is translating uses of List() into Nil.  This is less
+                // Replace the Delegate-Chainer methods += and -= with corresponding
+                // + and - calls, which are translated in the code generator into
+                // Combine and Remove
+                if (forMSIL) {
+                  fun match {
+                    case Select(qual, name) =>
+                      if (isSubType(qual.tpe, DelegateClass.tpe)
+                        && (name == encode("+=") || name == encode("-="))) {
+                        val n = if (name == encode("+=")) nme.PLUS else nme.MINUS
+                        val f = Select(qual, n)
+                        // the compiler thinks, the PLUS method takes only one argument,
+                        // but he thinks it's an instance method -> still two ref's on the stack
+                        //  -> translated by backend
+                        val rhs = treeCopy.Apply(tree, f, args)
+                        return typed(Assign(qual, rhs))
+                      }
+                    case _ => ()
+                  }
+                }
+
+                /** This is translating uses of List() into Nil.  This is less
 //>>>>>>> virt
                  *  than ideal from a consistency standpoint, but it shouldn't be
                  *  altered without due caution.
@@ -4710,21 +4710,21 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
         }
 //<<<<<<< HEAD (TODO)
-//      if (varsym.isVariable ||
-//        // setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
-//        (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
-        if (varsym.isVariable || varsym.isValue && phase.assignsFields) {
-          val rhs1 = typedByValueExpr(rhs, lhs1.tpe)
-          treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitTpe
+////      if (varsym.isVariable ||
+////        // setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
+////        (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
+//        if (varsym.isVariable || varsym.isValue && phase.assignsFields) {
+//          val rhs1 = typedByValueExpr(rhs, lhs1.tpe)
+//          treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitTpe
 //=======
-//        // only under -Yvirtualize: setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
-//        // if (varsym.isVariable || (phase.erasedTypes && varsym.isValue/* && !(opt.virtualize && varsym.isMethod)*/)) {
-//        // if (varsym.isVariable ||
-//        // // setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
-//        // (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
-//        if (varsym.isVariable || varsym.isValue && phase.erasedTypes) {
-//          val rhs1 = typed(rhs, EXPRmode | BYVALmode, lhs1.tpe)
-//          treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitClass.tpe
+        // only under -Yvirtualize: setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
+        // if (varsym.isVariable || (phase.erasedTypes && varsym.isValue/* && !(opt.virtualize && varsym.isMethod)*/)) {
+        // if (varsym.isVariable ||
+        // // setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
+        // (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
+        if (varsym.isVariable || varsym.isValue && phase.erasedTypes) {
+          val rhs1 = typed(rhs, EXPRmode | BYVALmode, lhs1.tpe)
+          treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitClass.tpe
 //>>>>>>> virt
         }
         else if(dyna.isDynamicallyUpdatable(lhs1)) {
@@ -4800,7 +4800,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // in the special (though common) case where the types are equal, it pays to pack before comparing
             // especially virtpatmat needs more aggressive unification of skolemized types
             // this breaks src/library/scala/collection/immutable/TrieIterator.scala
-            if ( opt.virtPatmat && !isPastTyper
+            if ( settings.Yvirtpatmat && !isPastTyper
               && thenp1.tpe.annotations.isEmpty && elsep1.tpe.annotations.isEmpty // annotated types need to be lubbed regardless (at least, continations break if you by pass them like this)
               && thenTp =:= elseTp
                ) (thenp1.tpe.deconst, false) // use unpacked type. Important to deconst, as is done in ptOrLub, otherwise `if (???) 0 else 0` evaluates to 0 (SI-6331)
@@ -5763,19 +5763,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
           // xml member to StringContext, which in turn has an unapply[Seq] method)
 //<<<<<<< HEAD
-          if (name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
-            val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
+//          if (name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
+//            val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
 //=======
-//          if (name != nme.CONSTRUCTOR && inExprModeOr(mode, PATTERNmode)) {
-//            if (opt.virtualize && (mode & FUNmode) == 0 && !isPastTyper) {
-//              typedApplyExternal(tree, treeCopy.Select(tree, qual, name), List(), false) match {
-//                case EmptyTree =>
-//                case tree1 => return tree1
-//              }
-//            }
-//            val qual1 =
-//              if (member(qual, name) != NoSymbol) qual
-//              else adaptToMemberWithArgs(tree, qual, name, mode, true, true)
+          if (name != nme.CONSTRUCTOR && inExprModeOr(mode, PATTERNmode)) {
+            if (settings.Yvirtualize && (mode & FUNmode) == 0 && !isPastTyper) {
+              typedApplyExternal(tree, treeCopy.Select(tree, qual, name), List(), false) match {
+                case EmptyTree =>
+                case tree1 => return tree1
+              }
+            }
+            val qual1 =
+              if (member(qual, name) != NoSymbol) qual
+              else adaptToMemberWithArgs(tree, qual, name, mode, true, true)
 //>>>>>>> virt
             if ((qual1 ne qual) && !qual1.isErrorTyped)
               return typed(treeCopy.Select(tree, qual1, name), mode, pt)
