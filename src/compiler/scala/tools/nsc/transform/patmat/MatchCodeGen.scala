@@ -107,9 +107,9 @@ trait MatchCodeGen extends Interface {
     }
   }
 
-  trait PureMatchMonadInterface extends MatchMonadInterface with scala.tools.nsc.typechecker.Modes {
+  //<<<<<<< HEAD
+  trait PureMatchMonadInterface extends MatchMonadInterface {
     val matchStrategy: Tree
-//<<<<<<< HEAD
     import CODE._
     def _match(n: Name): SelectStart = matchStrategy DOT n
 
@@ -117,6 +117,8 @@ trait MatchCodeGen extends Interface {
     private lazy val oneType              = typer.typedOperator(_match(vpmName.one)).tpe
     override def pureType(tp: Type): Type = firstParamType(appliedType(oneType, tp :: Nil))
 //=======
+//trait PureMatchMonadInterface extends MatchMonadInterface with scala.tools.nsc.typechecker.Modes {
+//  val matchStrategy: Tree
 //
 //
 //    // TR: this may be assuming too much about the actual type signatures

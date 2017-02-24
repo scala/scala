@@ -1484,7 +1484,11 @@ trait Implicits extends SourceContextUtils {
       if (result.isFailure && settings.debug) // debuglog is not inlined for some reason
         log(s"no implicits found for ${pt} ${pt.typeSymbol.info.baseClasses} ${implicitsOfExpectedType}")
 
-      updatedWithSourceContext(this, tree, pt, context0, result, updateSourceContext)
+      //<<<<<<< HEAD
+      result
+//      =======
+//      updatedWithSourceContext(this, tree, pt, context0, result, updateSourceContext)
+//      >>>>>>> virt
     }
 
     def allImplicits: List[SearchResult] = {
