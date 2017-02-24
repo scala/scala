@@ -1803,11 +1803,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // could looking at clazz.typeOfThis before typing the template cause spurious illegal cycle errors?
         // OTOH, always typing silently and rethrowing if we're not going to reify causes other problems
         if (settings.Yvirtualize && clazz.isAnonymousClass && willReifyNew(clazz.typeOfThis))
-          newTyper(context.make(cdef.impl, clazz, newScope)).silent(_.typedTemplate(cdef.impl, parentTypes(cdef.impl)), false) match {
+          newTyper(context.make(cdef.impl, clazz, newScope)).silent(_.typedTemplate(cdef.impl, typedParentTypes(cdef.impl)), false) match {
             case SilentResultValue(t: Template)   => t
             case _ => null // TODO: ensure clazz isn't used anywhere but in typedReifiedNew
         } else
-          newTyper(context.make(cdef.impl, clazz, newScope)).typedTemplate(cdef.impl, parentTypes(cdef.impl))
+          newTyper(context.make(cdef.impl, clazz, newScope)).typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
 
       if (settings.Yvirtualize && impl1 == null) return EmptyTree
 
@@ -2440,25 +2440,26 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // The block is an anonymous class definitions/instantiation pair
               //   -> members that are hidden by the type of the block are made private
 //<<<<<<< HEAD
-//              classDecls foreach { toHide =>
-//                if (toHide.isTerm
-//                    && toHide.isPossibleInRefinement
-//                    && toHide.isPublic
-//                    && !matchesVisibleMember(toHide)) {
-//                  (toHide
-//                   resetFlag (PROTECTED | LOCAL)
-//                   setFlag (PRIVATE | SYNTHETIC_PRIVATE)
-//                   setPrivateWithin NoSymbol)
-//
-//                  syntheticPrivates += toHide
-//                }
-//              }
-//
-//            case _ =>
-//          }
-//        }
-//        val statsTyped = typedStats(block.stats, context.owner, warnPure = false)
-//        val expr1 = typed(block.expr, mode &~ (FUNmode | QUALmode), pt)
+              classDecls foreach { toHide =>
+                if (toHide.isTerm
+                    && toHide.isPossibleInRefinement
+                    && toHide.isPublic
+                    && !matchesVisibleMember(toHide)) {
+                  (toHide
+                   resetFlag (PROTECTED | LOCAL)
+                   setFlag (PRIVATE | SYNTHETIC_PRIVATE)
+                   setPrivateWithin NoSymbol)
+
+                  syntheticPrivates += toHide
+                }
+              }
+
+            case _ =>
+          }
+        }
+        val stats1 = block.stats
+        var stats2 = typedStats(stats1, context.owner, warnPure = false)
+        var expr1 = typed(block.expr, mode &~ (FUNmode | QUALmode), pt)
 //
 //        // sanity check block for unintended expr placement
 //        if (!isPastTyper) {
@@ -2484,31 +2485,31 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 //
 //        treeCopy.Block(block, statsTyped, expr1)
 //=======
-              val toHide = (
-                classDecls filter (member =>
-                     member.isTerm
-                  && member.isPossibleInRefinement
-                  && member.isPublic
-                  && !matchesVisibleMember(member)
-                ) map (member => member
-                  resetFlag (PROTECTED | LOCAL)
-                  setFlag (PRIVATE | SYNTHETIC_PRIVATE)
-                  setPrivateWithin NoSymbol
-                )
-                // assert(pt ne WildcardType) // do we ever get here when pt == WildcardType?? if not, better skip the whole `case Block(...`
-              )
-              syntheticPrivates ++= toHide
-            case _ =>
-          }
-	}
-        val stats1 = if (isPastTyper) block.stats else
-          block.stats.flatMap(stat => stat match {
-            case vd@ValDef(_, _, _, _) if vd.symbol.isLazy =>
-              namer.addDerivedTrees(Typer.this, vd)
-            case _ => stat::Nil
-            })
-        var stats2 = typedStats(stats1, context.owner)
-        var expr1 = typed(block.expr, mode & ~(FUNmode | QUALmode), pt)
+//              val toHide = (
+//                classDecls filter (member =>
+//                     member.isTerm
+//                  && member.isPossibleInRefinement
+//                  && member.isPublic
+//                  && !matchesVisibleMember(member)
+//                ) map (member => member
+//                  resetFlag (PROTECTED | LOCAL)
+//                  setFlag (PRIVATE | SYNTHETIC_PRIVATE)
+//                  setPrivateWithin NoSymbol
+//                )
+//                // assert(pt ne WildcardType) // do we ever get here when pt == WildcardType?? if not, better skip the whole `case Block(...`
+//              )
+//              syntheticPrivates ++= toHide
+//            case _ =>
+//          }
+//	}
+//        val stats1 = if (isPastTyper) block.stats else
+//          block.stats.flatMap(stat => stat match {
+//            case vd@ValDef(_, _, _, _) if vd.symbol.isLazy =>
+//              namer.addDerivedTrees(Typer.this, vd)
+//            case _ => stat::Nil
+//            })
+//        var stats2 = typedStats(stats1, context.owner)
+//        var expr1 = typed(block.expr, mode & ~(FUNmode | QUALmode), pt)
         if (settings.Yvirtualize) {
           (stats1, expr1) match {
             case (List(ClassDef(_, _, _, impl)), tree1@Apply(Select(New(tpt), _), Nil)) if tpt.tpe != null && willReifyNew(tpt.tpe) =>
@@ -3667,19 +3668,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 // val foo = "foo"; def precise(x: String)(y: x.type): x.type = {...}; val bar : foo.type = precise(foo)(foo)
                 // precise(foo) : foo.type => foo.type
 //<<<<<<< HEAD
-//                val restpe = mt.resultType(mapList(args1)(arg => gen stableTypeFor arg orElse arg.tpe))
-//                def ifPatternSkipFormals(tp: Type) = tp match {
-//                  case MethodType(_, rtp) if (mode.inPatternMode) => rtp
-//                  case _ => tp
-//                }
+                val restpe = mt.resultType(mapList(args1)(arg => gen stableTypeFor arg orElse arg.tpe))
+                def ifPatternSkipFormals(tp: Type) = tp match {
+                  case MethodType(_, rtp) if (mode.inPatternMode) => rtp
+                  case _ => tp
+                }
 //
 //                /*
 //                 * This is translating uses of List() into Nil.  This is less
 //=======
-                val restpe = mt.resultType(args1 map (arg => gen.stableTypeFor(arg) getOrElse arg.tpe))
+//                val restpe = mt.resultType(args1 map (arg => gen.stableTypeFor(arg) getOrElse arg.tpe))
                 def transformResultType(tree: Tree, tp: Type) = tp match {
                   // skip formal arguments if in pattern mode (the args are subpatterns)
-                  case MethodType(_, rtp) if (inPatternMode(mode)) =>
+                  case MethodType(_, rtp) if (mode.inPatternMode) =>
                     tree setType rtp
                   case _ if settings.Yvirtualize && fun.symbol.isConstructor && willReifyNew(tp) =>
                     val repTycon = inferRepTycon(tree)
@@ -3905,61 +3906,61 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 //        case _ => None
 //    }
 //    }
-//
-//    private def toAccessed(sym: Symbol) = if(sym.isGetter || sym.isSetter) sym.accessed else sym
-//
-//    // if we filter out the getters but leave in the backing fields, member lookup breaks (e.g. when doing a selectDynamic)
-//    // and we get strange type errors...
-//    // found   : java.lang.Object with Struct{val x: Int; val y: java.lang.String}
-//    // required: Struct{val x: Int; val y: String}
-//    // to avoid duplicates, only retain methods
-//    // the fields will only be used indirectly, since the corresponding ValDef holds the RHS with the information we're after
-//    private def reifiedNewType(repTycon: Type, tp: Type) = {
-//      //val repTycon = if(phase.erasedTypes) AnyClass.tpe else tp.baseType(EmbeddedControls_Struct).typeArgs(0) // TODO
-//      val repSym = repTycon.typeSymbolDirect
-//      val ClassInfoType(parents, defSyms, origClass) = tp.typeSymbol.info
-//
-//      def unrepAndUnVar(varSym: Symbol) = new TypeMap {
-//        def apply(tp: Type) = mapOver(tp) match {
-//          case TypeRef(pre, sym, List(tp)) if (sym == repSym) || (sym == varSym) => tp
-//          case tp => tp
-//        }
-//      }
-//      val unrep = unrepAndUnVar(repSym)
-//
-//      val structTp = {
-//        val tp = refinedType(parents, origClass.owner)
-//        val thistp = tp.typeSymbol.thisType
-//        val oldsymbuf = new ListBuffer[Symbol]
-//        val newsymbuf = new ListBuffer[Symbol]
-//        for (sym <- defSyms) {
-//          if (sym.isMethod && !sym.isConstructor) { // must keep only methods
-//            oldsymbuf += sym
-//            val sym1 = sym.cloneSymbol(tp.typeSymbol)
-//            sym1.resetFlag(PRIVATE | PROTECTED) // TODO: why is this necessary? this is the getter, which is supposed to be public unless specified otherwise by the user, right?
-//            sym1.privateWithin = NoSymbol
-//
-//            // GROSS HACK: derive the Variable type symbol from the symbol accessed by a getter/setter (or from the var's symbol itself)
-//            // it's info will always be of the shape Variable[T]
-//            val accSym = toAccessed(sym) // toAccessed(sym1) doesn't work since we only retain methods
-//            // if(accSym.isMutable) println("var: "+(sym1, sym1.info, accSym.info.typeSymbol))
-//            val unwrap = if(accSym.isMutable) unrepAndUnVar(accSym.info.typeSymbol) else unrep
-//            sym1.setInfo(unwrap(sym1.info).substThis(origClass, thistp))
-//            // println("sym1.info"+ sym1.info)
-//
-//            newsymbuf += sym1
-//          }
-//        }
-//        val oldsyms = oldsymbuf.toList
-//        val newsyms = newsymbuf.toList
-//        for (sym <- newsyms) {
-//          addMember(thistp, tp, sym.setInfo(sym.info.substSym(oldsyms, newsyms)))
-//        }
-//        tp
-//      }
-//      appliedType(repTycon, List(structTp))
-//    }
-//
+
+    private def toAccessed(sym: Symbol) = if(sym.isGetter || sym.isSetter) sym.accessed else sym
+
+    // if we filter out the getters but leave in the backing fields, member lookup breaks (e.g. when doing a selectDynamic)
+    // and we get strange type errors...
+    // found   : java.lang.Object with Struct{val x: Int; val y: java.lang.String}
+    // required: Struct{val x: Int; val y: String}
+    // to avoid duplicates, only retain methods
+    // the fields will only be used indirectly, since the corresponding ValDef holds the RHS with the information we're after
+    private def reifiedNewType(repTycon: Type, tp: Type) = {
+      //val repTycon = if(phase.erasedTypes) AnyClass.tpe else tp.baseType(EmbeddedControls_Struct).typeArgs(0) // TODO
+      val repSym = repTycon.typeSymbolDirect
+      val ClassInfoType(parents, defSyms, origClass) = tp.typeSymbol.info
+
+      def unrepAndUnVar(varSym: Symbol) = new TypeMap {
+        def apply(tp: Type) = mapOver(tp) match {
+          case TypeRef(pre, sym, List(tp)) if (sym == repSym) || (sym == varSym) => tp
+          case tp => tp
+        }
+      }
+      val unrep = unrepAndUnVar(repSym)
+
+      val structTp = {
+        val tp = refinedType(parents, origClass.owner)
+        val thistp = tp.typeSymbol.thisType
+        val oldsymbuf = new ListBuffer[Symbol]
+        val newsymbuf = new ListBuffer[Symbol]
+        for (sym <- defSyms) {
+          if (sym.isMethod && !sym.isConstructor) { // must keep only methods
+            oldsymbuf += sym
+            val sym1 = sym.cloneSymbol(tp.typeSymbol)
+            sym1.resetFlag(PRIVATE | PROTECTED) // TODO: why is this necessary? this is the getter, which is supposed to be public unless specified otherwise by the user, right?
+            sym1.privateWithin = NoSymbol
+
+            // GROSS HACK: derive the Variable type symbol from the symbol accessed by a getter/setter (or from the var's symbol itself)
+            // it's info will always be of the shape Variable[T]
+            val accSym = toAccessed(sym) // toAccessed(sym1) doesn't work since we only retain methods
+            // if(accSym.isMutable) println("var: "+(sym1, sym1.info, accSym.info.typeSymbol))
+            val unwrap = if(accSym.isMutable) unrepAndUnVar(accSym.info.typeSymbol) else unrep
+            sym1.setInfo(unwrap(sym1.info).substThis(origClass, thistp))
+            // println("sym1.info"+ sym1.info)
+
+            newsymbuf += sym1
+          }
+        }
+        val oldsyms = oldsymbuf.toList
+        val newsyms = newsymbuf.toList
+        for (sym <- newsyms) {
+          addMember(thistp, tp, sym.setInfo(sym.info.substSym(oldsyms, newsyms)))
+        }
+        tp
+      }
+      appliedType(repTycon, List(structTp))
+    }
+
 //>>>>>>> virt
     /**
      * Convert an annotation constructor call into an AnnotationInfo.
@@ -4375,43 +4376,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
     }
 
-    def prefixInWith(owner: Symbol, member: Symbol): Option[Type] =
-      owner.ownerChain find (o => o.isClass && ThisType(o).baseClasses.contains(member)) map (ThisType(_))
-
     object dyna {
       import treeInfo.{isApplyDynamicName, DynamicUpdate, DynamicApplicationNamed}
-
-      @inline private def boolOpt(c: Boolean) = if(c) Some(()) else None
-      @inline private def listOpt[T](xs: List[T]) = xs match { case x :: Nil => Some(x) case _ => None }
-      @inline private def symOpt[T](sym: Symbol) = if(sym == NoSymbol) None else Some(sym) // TODO: handle overloading?
-
-      /** Is `qual` a staged struct? (i.e., of type Rep[Struct[Rep]{decls}])?
-       * Then what's the type of `name`?
-       */
-      def structSelectedMember(qual: Tree, name: Name): Option[(Type, Symbol)] = if (settings.Yvirtualize) {
-        debuglog("[DNR] dynatype on struct for "+ qual +" : "+ qual.tpe +" <DOT> "+ name)
-        val structTps =
-          ((prefixInWith(context.owner, EmbeddedControlsClass).toList)
-           ++ List(PredefModule.tpe)).map(_.memberType(EmbeddedControls_Struct))
-        debuglog("[DNR] context, tp "+ (context.owner.ownerChain, structTps))
-
-        val rep = NoSymbol.newTypeParameter(newTypeName("Rep"))
-        val repTpar = rep.newTypeParameter(newTypeName("T")).setFlag(COVARIANT).setInfo(TypeBounds.empty)
-        rep.setInfo(polyType(List(repTpar), TypeBounds.empty))
-        val repVar = TypeVar(rep)
-
-        for(
-          _ <- listOpt(structTps.filter(structTp => (qual.tpe ne null) && qual.tpe <:< repVar.applyArgs(List(structTp)))); // qual.tpe <:< ?Rep[Struct]
-          repTp <- listOpt(solvedTypes(List(repVar), List(rep), List(COVARIANT), false, -3)); // search for minimal solution
-          // _ <- Some(println("mkInvoke repTp="+ repTp));
-          // if so, generate an invocation and give it type `Rep[T]`, where T is the type given to member `name` in `decls`
-          repSym = repTp.typeSymbolDirect;
-          qualStructTp <- qual.tpe.baseType(repSym).typeArgs.headOption; // this specifies `decls`
-          member <- symOpt(qualStructTp.member(name))
-        ) yield {
-          (qualStructTp, member)
-        }
-      } else None
 
       def acceptsApplyDynamic(tp: Type) = tp.typeSymbol isNonBottomSubClass DynamicClass
 
@@ -4420,29 +4386,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        * NOTE: currently either returns None or Some(NoType) (scala-virtualized extends this to Some(t) for selections on staged Structs)
        */
       def acceptsApplyDynamicWithType(qual: Tree, name: Name): Option[Type] =
-        // don't selectDynamic selectDynamic
-        if (isApplyDynamicName(name)) None
-        else
-          structSelectedMember(qual, name) match {
-            // Some(tp) ==> do select dynamic and pass it `tp`, the type specified for `name` by the struct `qual`
-            case Some((pre, sym))                           => Some(pre.memberType(sym).finalResultType)
-            case _ if (acceptsApplyDynamic(qual.tpe.widen)) => Some(NoType)
-            case _                                          => None
-          }
+        // don't selectDynamic selectDynamic, do select dynamic at unknown type,
+        // in scala-virtualized, we may return a Some(tp) where tp ne NoType
+        if (!isApplyDynamicName(name) && acceptsApplyDynamic(qual.tpe.widen)) Some(NoType)
+        else None
 
       def isDynamicallyUpdatable(tree: Tree) = tree match {
         case DynamicUpdate(qual, name) =>
-          structSelectedMember(qual, newTermName(name.toString)) match {
-            case Some((pre, sym)) =>
-              pre.member(nme.getterToSetter(sym.name)) != NoSymbol // but does it have a setter? can't use sym.accessed.isMutable since sym.accessed does not exist
-            case _ =>
-              // println("IDU "+ (tree, qual.tpe, acceptsApplyDynamic(qual.tpe)))
           // if the qualifier is a Dynamic, that's all we need to know
           acceptsApplyDynamic(qual.tpe)
-      }
-        case _ =>
-          // println("IDU :-( "+ tree)
-          false
+        case _ => false
       }
 
       def isApplyDynamicNamed(fun: Tree): Boolean = fun match {

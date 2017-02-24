@@ -25,7 +25,7 @@ import scala.language.implicitConversions
  *  @author  Martin Odersky
  *  @version 1.0
  */
-trait Implicits extends SourceContextUtils {
+trait Implicits {
   self: Analyzer =>
 
   import global._
