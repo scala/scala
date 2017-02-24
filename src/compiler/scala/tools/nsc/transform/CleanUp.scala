@@ -473,7 +473,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         super.transform(treeCopy.ArrayValue(rest, rest.elemtpt, elem0 :: rest.elems))
 
       // embeddings: transform calls to __while and __doWhile to jumps
-      case Apply(fn, List(arg1, arg2)) if opt.virtualize =>
+      case Apply(fn, List(arg1, arg2)) if settings.Yvirtualize =>
         def append(body: Tree, last: Tree) = body match {
           case Block(stats, expr) =>
             if (treeInfo.isPureExpr(expr)) Block(stats, last)

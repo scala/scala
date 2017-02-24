@@ -185,7 +185,7 @@ abstract class TreeBuilder {
   // the factory methods below delegate to methods on builder
   private lazy val builder: TreeBuilderStrategy =
     // help out the JIT by only ever instantiating one of the two subclasses (of the *private* TreeBuilderStrategy class, so it's effectively sealed)
-    if (!opt.virtualize) new DirectTreeBuilder else new VirtualizingTreeBuilder
+    if (!settings.Yvirtualize) new DirectTreeBuilder else new VirtualizingTreeBuilder
 
   /** Create a tree representing an assignment <lhs = rhs> */
   @inline final def makeAssign(lhs: Tree, rhs: Tree): Tree = builder.makeAssign(lhs, rhs)

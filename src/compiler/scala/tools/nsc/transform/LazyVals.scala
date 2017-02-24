@@ -39,7 +39,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
           case ClassDef(_, _, _, _) | DefDef(_, _, _, _, _, _) | ModuleDef(_, _, _) =>
 
           case LabelDef(name, _, _) if nme.isLoopHeaderLabel(name) => // TODO: encapsulate in extractor like LiftedAssign
-          case Apply(fun, _) if opt.virtualize && (fun.symbol == EmbeddedControls_doWhile || fun.symbol == EmbeddedControls_whileDo) =>
+          case Apply(fun, _) if settings.Yvirtualize && (fun.symbol == EmbeddedControls_doWhile || fun.symbol == EmbeddedControls_whileDo) =>
 
           case _ =>
             super.traverse(t)
@@ -163,7 +163,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
             l
 
         case w@Apply(fun, args)
-          if opt.virtualize && (fun.symbol == EmbeddedControls_doWhile || fun.symbol == EmbeddedControls_whileDo) =>
+          if settings.Yvirtualize && (fun.symbol == EmbeddedControls_doWhile || fun.symbol == EmbeddedControls_whileDo) =>
           val args1 = super.transformTrees(args)
           val List(body, cond) = if (fun.symbol == EmbeddedControls_doWhile) args else args.reverse
           if (!LocalLazyValFinder.find(body)) w // TODO: check cond as well??
