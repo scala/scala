@@ -41,4 +41,10 @@ trait MapFactories[C[_, _]] {
   def apply[K, V](elems: (K, V)*): C[K, V] =
     newBuilder[K, V].++=(elems.toStrawman).result
 
+  implicit def canBuild[K, V]: CanBuild[(K, V), C[K, V]] = new CanBuildThisCollection[K, V]
+
+  class CanBuildThisCollection[K, V] extends CanBuild[(K, V), C[K, V]] {
+    def apply(): Builder[(K, V), C[K, V]] = newBuilder[K, V]
+  }
+
 }

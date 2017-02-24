@@ -43,4 +43,6 @@ object HashSet extends IterableFactory[HashSet] {
     result
   }
 
+  def newBuilder[A]: Builder[A, HashSet[A]] = new HashSet[A]
+
 }

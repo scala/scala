@@ -1,5 +1,8 @@
-package strawman.collection.immutable
+package strawman
 
+package collection.immutable
+
+import strawman.collection.mutable.Builder
 import strawman.collection.{IterableFactory, Iterator}
 
 import scala.Boolean
@@ -12,16 +15,16 @@ class HashSet[A] extends Set[A] with SetLike[A, HashSet] {
   def iterator(): Iterator[A] = ???
 
   // From IterablePolyTransforms
-  def fromIterable[B](coll: strawman.collection.Iterable[B]): HashSet[B] = ???
-  protected[this] def fromIterableWithSameElemType(coll: strawman.collection.Iterable[A]): HashSet[A] = fromIterable(coll)
+  def fromIterable[B](coll: collection.Iterable[B]): HashSet[B] = HashSet.fromIterable(coll)
+  protected[this] def fromIterableWithSameElemType(coll: collection.Iterable[A]): HashSet[A] = fromIterable(coll)
 
   // From SetLike
   def contains(elem: A): Boolean = ???
-  def subsetOf(that: strawman.collection.Set[A]): Boolean = ???
+  def subsetOf(that: collection.Set[A]): Boolean = ???
 
   // From SetMonoTransforms
-  def & (that: strawman.collection.Set[A]): HashSet[A] = ???
-  def ++ (that: strawman.collection.Set[A]): HashSet[A] = ???
+  def & (that: collection.Set[A]): HashSet[A] = ???
+  def ++ (that: collection.Set[A]): HashSet[A] = ???
 
   // From immutable.SetLike
   def + (elem: A): HashSet[A] = ???
@@ -31,6 +34,8 @@ class HashSet[A] extends Set[A] with SetLike[A, HashSet] {
 
 object HashSet extends IterableFactory[HashSet] {
 
-  def fromIterable[B](it: strawman.collection.Iterable[B]): HashSet[B] = ???
+  def fromIterable[A](it: collection.Iterable[A]): HashSet[A] = ???
+
+  def newBuilder[A]: Builder[A, HashSet[A]] = ???
 
 }

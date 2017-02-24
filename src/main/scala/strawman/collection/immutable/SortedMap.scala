@@ -1,7 +1,8 @@
 package strawman
 package collection.immutable
 
-import strawman.collection.{IterablePolyTransforms, MapPolyTransforms, Sorted, SortedLike}
+import strawman.collection.{CanBuild, IterablePolyTransforms, MapPolyTransforms, Sorted, SortedLike, toNewSeq}
+import strawman.collection.mutable.Builder
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.Ordering
@@ -41,3 +42,18 @@ trait SortedMapPolyTransforms[K, +V, +C[X, Y] <: Sorted[X]]
 
 }
 
+trait SortedMapFactory[C[_, _]] {
+
+  def newBuilder[K : Ordering, V]: Builder[(K, V), C[K, V]]
+
+  def empty[K : Ordering, V]: C[K, V] = newBuilder[K, V].result
+
+  def apply[K : Ordering, V](elems: (K, V)*): C[K, V] = newBuilder[K, V].++=(elems.toStrawman).result
+
+  implicit def canBuild[K : Ordering, V]: CanBuild[(K, V), C[K, V]] = new CanBuildThisCollection[K, V]
+
+  class CanBuildThisCollection[K : Ordering, V] extends CanBuild[(K, V), C[K, V]] {
+    def apply(): Builder[(K, V), C[K, V]] = newBuilder[K, V]
+  }
+
+}

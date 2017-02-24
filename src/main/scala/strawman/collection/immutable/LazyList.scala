@@ -1,8 +1,10 @@
 package strawman.collection.immutable
 
-import scala.{Option, Some, None, Nothing, StringContext}
+import scala.{None, Nothing, Option, Some, StringContext}
+import scala.Predef.???
 import strawman.collection
-import strawman.collection.{IterableFactory, LinearSeq, SeqLike, Iterator}
+import strawman.collection.mutable.Builder
+import strawman.collection.{IterableFactory, Iterator, LinearSeq, SeqLike}
 
 class LazyList[+A](expr: => LazyList.Evaluated[A])
   extends Seq[A] with SeqLike[A, LazyList] with LinearSeq[A] {
@@ -47,11 +49,14 @@ object LazyList extends IterableFactory[LazyList] {
     def unapply[A](s: LazyList[A]): Evaluated[A] = s.force
   }
 
-  def fromIterable[B](coll: collection.Iterable[B]): LazyList[B] = coll match {
-    case coll: LazyList[B] => coll
+  def fromIterable[A](coll: collection.Iterable[A]): LazyList[A] = coll match {
+    case coll: LazyList[A] => coll
     case _ => fromIterator(coll.iterator())
   }
 
-  def fromIterator[B](it: Iterator[B]): LazyList[B] =
+  def fromIterator[A](it: Iterator[A]): LazyList[A] =
     new LazyList(if (it.hasNext) Some(it.next(), fromIterator(it)) else None)
+
+  def newBuilder[A]: Builder[A, LazyList[A]] = ???
+
 }
