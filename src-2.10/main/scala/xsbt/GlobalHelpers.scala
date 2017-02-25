@@ -40,6 +40,94 @@ trait GlobalHelpers {
     }).traverse(tpe)
   }
 
+  private[xsbt] class TypeDependencyTraverser(addDependency: Symbol => Unit)
+    extends TypeTraverser {
+
+    /** Add type dependency ignoring packages and inheritance info from classes. */
+    @inline private def addTypeSymbolDependency(symbol: Symbol): Unit = {
+      addDependency(symbol)
+      if (!symbol.isClass) {
+        traverse(symbol.info)
+      }
+    }
+
+    /** Add type dependency *AND* traverse prefix iff is not a package. */
+    @inline private def addTypeDependency(tpe: Type): Unit = {
+      val symbol = tpe.typeSymbolDirect
+      if (!symbol.hasPackageFlag) {
+        addTypeSymbolDependency(symbol)
+        traverse(tpe.prefix)
+      }
+    }
+
+    // Define cache and populate it with known types at initialization time
+    private val visited = scala.collection.mutable.HashSet.empty[Type]
+
+    /** Clear the cache after every `traverse` invocation at the call-site. */
+    private[xsbt] def reinitializeVisited(): Unit = visited.clear()
+
+    /**
+     * Traverse the type and its info to track all type dependencies.
+     *
+     * Note that tpe cannot be either `NoSymbol` or `null`.
+     * Check that you don't pass those types at the call-site.
+     */
+    override def traverse(tpe: Type): Unit = {
+      if ((tpe ne NoType) && !visited.contains(tpe)) {
+        visited += tpe
+        tpe match {
+          case singleRef: SingleType =>
+            addTypeDependency(singleRef)
+
+          case typeRef: TypeRef =>
+            // Traverse materialized type arguments
+            typeRef.typeArguments.foreach(traverse)
+            addTypeDependency(typeRef)
+
+          case MethodType(_, _) =>
+            // Traverse the types of method parameters definitions
+            tpe.params.foreach(param => traverse(param.tpe))
+            // Traverse return type
+            traverse(tpe.resultType)
+
+          case PolyType(_, _) =>
+            // Traverse the symbols of poly types and their prefixes
+            tpe.typeParams.foreach { typeParam =>
+              addTypeSymbolDependency(typeParam)
+              val prefix = typeParam.info.prefix
+              if (!prefix.typeSymbolDirect.hasPackageFlag)
+                traverse(prefix)
+            }
+            // Traverse return type
+            traverse(tpe.resultType)
+
+          case TypeBounds(lo, hi) =>
+            // Ignore default types for lo and hi bounds
+            if (!(lo == definitions.NothingTpe)) traverse(lo)
+            if (!(hi == definitions.AnyTpe)) traverse(hi)
+
+          case RefinedType(parents, decls) =>
+            parents.foreach(traverse)
+            decls.toIterator.foreach { decl =>
+              if (decl.isType) addTypeSymbolDependency(decl)
+              else addDependency(decl)
+            }
+
+          case ExistentialType(quantified, underlying) =>
+            quantified.foreach(quantified => traverse(quantified.tpe))
+            traverse(underlying)
+
+          case ThisType(_) | ConstantType(_) =>
+            traverse(tpe.underlying)
+
+          case _ =>
+            mapOver(tpe)
+            ()
+        }
+      }
+    }
+  }
+
   /** Returns true if given tree contains macro attchment. In such case calls func on tree from attachment. */
   def processMacroExpansion(in: Tree)(func: Tree => Unit): Boolean = {
     // Hotspot

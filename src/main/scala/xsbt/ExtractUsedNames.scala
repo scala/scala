@@ -99,6 +99,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
           // Synthetic names are no longer included. See https://github.com/sbt/sbt/issues/2537
           if (!isEmptyName(name) && !names.contains(name))
             names += name
+          ()
         }
     }
 
@@ -130,6 +131,8 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       }
     }
 
+    object TypeDependencyTraverser extends TypeDependencyTraverser(addSymbol)
+
     private def handleClassicTreeNode(tree: Tree): Unit = tree match {
       case _: DefTree | _: Template => ()
       case Import(_, selectors: List[ImportSelector]) =>
@@ -156,8 +159,11 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
         }
       case t if t.hasSymbolField =>
         addSymbol(t.symbol)
-        if (t.tpe != null)
-          foreachNotPackageSymbolInType(t.tpe)(addSymbol)
+        val tpe = t.tpe
+        if (!ignoredType(tpe)) {
+          TypeDependencyTraverser.traverse(tpe)
+          TypeDependencyTraverser.reinitializeVisited()
+        }
       case _ =>
     }
 

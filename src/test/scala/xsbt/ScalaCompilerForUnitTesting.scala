@@ -60,6 +60,20 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
   }
 
   /**
+   * Extract used names from the last source file in `sources`.
+   *
+   * The previous source files are provided to successfully compile examples.
+   * Only the names used in the last src file are returned.
+   */
+  def extractUsedNamesFromSrc(sources: String*): Map[String, Set[String]] = {
+    val (srcFiles, analysisCallback) = compileSrcs(sources: _*)
+    srcFiles.map { srcFile =>
+      val classesInSrc = analysisCallback.classNames(srcFile).map(_._1)
+      classesInSrc.map(className => className -> analysisCallback.usedNames(className)).toMap
+    }.reduce(_ ++ _)
+  }
+
+  /**
    * Compiles given source code snippets (passed as Strings) using Scala compiler and returns extracted
    * dependencies between snippets. Source code snippets are identified by symbols. Each symbol should
    * be associated with one snippet only.

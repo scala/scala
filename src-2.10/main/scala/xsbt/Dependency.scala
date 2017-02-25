@@ -228,9 +228,17 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
     private def addTreeDependency(tree: Tree): Unit = {
       addDependency(tree.symbol)
       val tpe = tree.tpe
-      if (!ignoredType(tpe))
-        foreachNotPackageSymbolInType(tpe)(addDependency)
+      if (!ignoredType(tpe)) {
+        addTypeDependencies(tpe)
+      }
       ()
+    }
+
+    def addTypeDependencies(tpe: Type): Unit = {
+      // Defined in GlobalHelpers.scala
+      object TypeDependencyTraverser extends TypeDependencyTraverser(addDependency)
+      TypeDependencyTraverser.traverse(tpe)
+      TypeDependencyTraverser.reinitializeVisited()
     }
 
     private def addDependency(dep: Symbol): Unit = {
@@ -305,15 +313,19 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
 
         debuglog("Parent types for " + tree.symbol + " (self: " + self.tpt.tpe + "): " + inheritanceTypes + " with symbols " + inheritanceSymbols.map(_.fullName))
 
-        inheritanceSymbols.foreach(addSymbolFromParent)
-        inheritanceTypes.foreach(addSymbolsFromType)
-        addSymbolsFromType(self.tpt.tpe)
+        inheritanceSymbols.foreach { symbol =>
+          addInheritanceDependency(symbol)
+          addDependency(symbol)
+        }
+
+        inheritanceTypes.foreach(addTypeDependencies)
+        addTypeDependencies(self.tpt.tpe)
 
         traverseTrees(body)
 
       // In some cases (eg. macro annotations), `typeTree.tpe` may be null. See sbt/sbt#1593 and sbt/sbt#1655.
       case typeTree: TypeTree if !ignoredType(typeTree.tpe) =>
-        foreachNotPackageSymbolInType(typeTree.tpe)(addDependency)
+        addTypeDependencies(typeTree.tpe)
       case m @ MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
         traverse(original)
         super.traverse(m)
@@ -324,14 +336,6 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
         localToNonLocalClass.resolveNonLocal(sym)
         super.traverse(tree)
       case other => super.traverse(other)
-    }
-
-    val addSymbolFromParent: Symbol => Unit = { symbol =>
-      addInheritanceDependency(symbol)
-      addDependency(symbol)
-    }
-    val addSymbolsFromType: Type => Unit = { tpe =>
-      foreachNotPackageSymbolInType(tpe)(addDependency)
     }
   }
 }
