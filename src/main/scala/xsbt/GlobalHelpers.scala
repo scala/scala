@@ -36,18 +36,8 @@ trait GlobalHelpers {
     }
   }
 
-  /** Apply `op` on every type symbol which doesn't represent a package. */
-  def foreachNotPackageSymbolInType(tpe: Type)(op: Symbol => Unit): Unit = {
-    new ForEachTypeTraverser(_ match {
-      case null =>
-      case tpe =>
-        val sym = tpe.typeSymbolDirect
-        if (sym != NoSymbol && !sym.hasPackageFlag) op(sym)
-    }).traverse(tpe)
-  }
-
-  private[xsbt] class TypeDependencyTraverser(addDependency: Symbol => Unit)
-    extends TypeTraverser {
+  private[xsbt] abstract class TypeDependencyTraverser extends TypeTraverser {
+    def addDependency(symbol: Symbol): Unit
 
     /** Add type dependency ignoring packages and inheritance info from classes. */
     @inline private def addTypeSymbolDependency(symbol: Symbol): Unit = {
@@ -67,10 +57,10 @@ trait GlobalHelpers {
     }
 
     // Define cache and populate it with known types at initialization time
-    private val visited = scala.collection.mutable.HashSet.empty[Type]
+    protected var visited = scala.collection.mutable.HashSet.empty[Type]
 
     /** Clear the cache after every `traverse` invocation at the call-site. */
-    private[xsbt] def reinitializeVisited(): Unit = visited.clear()
+    protected def reinitializeVisited(): Unit = visited.clear()
 
     /**
      * Traverse the type and its info to track all type dependencies.

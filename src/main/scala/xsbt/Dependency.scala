@@ -144,7 +144,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
 
   private case class ClassDependency(from: Symbol, to: Symbol)
 
-  private class DependencyTraverser(processor: DependencyProcessor) extends Traverser {
+  private final class DependencyTraverser(processor: DependencyProcessor) extends Traverser {
     // are we traversing an Import node at the moment?
     private var inImportNode = false
 
@@ -255,13 +255,6 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       ()
     }
 
-    def addTypeDependencies(tpe: Type): Unit = {
-      // Defined in GlobalHelpers.scala
-      object TypeDependencyTraverser extends TypeDependencyTraverser(addDependency)
-      TypeDependencyTraverser.traverse(tpe)
-      TypeDependencyTraverser.reinitializeVisited()
-    }
-
     private def addDependency(dep: Symbol): Unit = {
       val fromClass = resolveDependencySource
       if (ignoredSymbol(fromClass) || fromClass.hasPackageFlag) {
@@ -270,6 +263,48 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       } else {
         addClassDependency(_memberRefCache, processor.memberRef, fromClass, dep)
       }
+    }
+
+    /** Define a type traverser to keep track of the type dependencies. */
+    object TypeDependencyTraverser extends TypeDependencyTraverser {
+      type Handler = Symbol => Unit
+      // Type dependencies are always added to member references
+      val memberRefHandler = processor.memberRef
+      def createHandler(fromClass: Symbol): Handler = { (dep: Symbol) =>
+        if (ignoredSymbol(fromClass) || fromClass.hasPackageFlag) {
+          if (inImportNode) addTopLevelImportDependency(dep)
+          else devWarning(Feedback.missingEnclosingClass(dep, currentOwner))
+        } else {
+          addClassDependency(_memberRefCache, memberRefHandler, fromClass, dep)
+        }
+      }
+
+      val cache = scala.collection.mutable.Map.empty[Symbol, (Handler, scala.collection.mutable.HashSet[Type])]
+      private var handler: Handler = _
+      private var visitedOwner: Symbol = _
+      def setOwner(owner: Symbol) = {
+        if (visitedOwner != owner) {
+          cache.get(owner) match {
+            case Some((h, ts)) =>
+              visited = ts
+              handler = h
+            case None =>
+              val newVisited = scala.collection.mutable.HashSet.empty[Type]
+              handler = createHandler(owner)
+              cache += owner -> (handler -> newVisited)
+              visited = newVisited
+              visitedOwner = owner
+          }
+        }
+      }
+
+      override def addDependency(symbol: global.Symbol) = handler(symbol)
+    }
+
+    def addTypeDependencies(tpe: Type): Unit = {
+      val fromClass = resolveDependencySource
+      TypeDependencyTraverser.setOwner(fromClass)
+      TypeDependencyTraverser.traverse(tpe)
     }
 
     private def addInheritanceDependency(dep: Symbol): Unit = {

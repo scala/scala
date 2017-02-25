@@ -91,9 +91,8 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       super.traverse(tree)
     }
 
-    val addSymbol: Symbol => Unit = {
-      symbol =>
-        val names = getNamesOfEnclosingScope
+    val addSymbol = {
+      (names: mutable.Set[Name], symbol: Symbol) =>
         if (!ignoredSymbol(symbol)) {
           val name = symbol.name
           // Synthetic names are no longer included. See https://github.com/sbt/sbt/issues/2537
@@ -131,7 +130,29 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       }
     }
 
-    object TypeDependencyTraverser extends TypeDependencyTraverser(addSymbol)
+    private object TypeDependencyTraverser extends TypeDependencyTraverser {
+      private var ownersCache = mutable.Map.empty[Symbol, mutable.HashSet[Type]]
+      private var nameCache: mutable.Set[Name] = _
+      private var ownerVisited: Symbol = _
+
+      def setCacheAndOwner(cache: mutable.Set[Name], owner: Symbol) = {
+        if (ownerVisited != owner) {
+          ownersCache.get(owner) match {
+            case Some(ts) =>
+              visited = ts
+            case None =>
+              val newVisited = mutable.HashSet.empty[Type]
+              visited = newVisited
+              ownersCache += owner -> newVisited
+          }
+          nameCache = cache
+          ownerVisited = owner
+        }
+      }
+
+      override def addDependency(symbol: global.Symbol) =
+        addSymbol(nameCache, symbol)
+    }
 
     private def handleClassicTreeNode(tree: Tree): Unit = tree match {
       case _: DefTree | _: Template => ()
@@ -158,11 +179,13 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
           original.foreach(traverse)
         }
       case t if t.hasSymbolField =>
-        addSymbol(t.symbol)
+        addSymbol(getNamesOfEnclosingScope, t.symbol)
         val tpe = t.tpe
         if (!ignoredType(tpe)) {
+          // Initialize _currentOwner if it's not
+          val cache = getNamesOfEnclosingScope
+          TypeDependencyTraverser.setCacheAndOwner(cache, _currentOwner)
           TypeDependencyTraverser.traverse(tpe)
-          TypeDependencyTraverser.reinitializeVisited()
         }
       case _ =>
     }
