@@ -15,7 +15,7 @@ import xsbti.api.DependencyContext._
  * Provides common functionality needed for unit tests that require compiling
  * source code using Scala compiler.
  */
-class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
+class ScalaCompilerForUnitTesting {
 
   /**
    * Compiles given source code using Scala compiler and returns API representation
@@ -125,7 +125,7 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = true) {
     reuseCompilerInstance: Boolean
   ): (Seq[File], TestCallback) = {
     withTemporaryDirectory { temp =>
-      val analysisCallback = new TestCallback(nameHashing)
+      val analysisCallback = new TestCallback
       val classesDir = new File(temp, "classes")
       classesDir.mkdir()
 

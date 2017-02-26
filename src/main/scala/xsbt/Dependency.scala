@@ -48,14 +48,10 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
     def apply(unit: CompilationUnit): Unit = {
       if (!unit.isJava) {
         // Process dependencies if name hashing is enabled, fail otherwise
-        if (global.callback.nameHashing) {
-          val dependencyProcessor = new DependencyProcessor(unit)
-          val dependencyTraverser = new DependencyTraverser(dependencyProcessor)
-          // Traverse symbols in compilation unit and register all dependencies
-          dependencyTraverser.traverse(unit.body)
-        } else {
-          throw new UnsupportedOperationException(Feedback.NameHashingDisabled)
-        }
+        val dependencyProcessor = new DependencyProcessor(unit)
+        val dependencyTraverser = new DependencyTraverser(dependencyProcessor)
+        // Traverse symbols in compilation unit and register all dependencies
+        dependencyTraverser.traverse(unit.body)
       }
     }
   }

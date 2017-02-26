@@ -38,7 +38,7 @@ class ExtractUsedNamesPerformanceSpecification extends UnitSpec {
     import org.scalatest.concurrent.Timeouts._
     import org.scalatest.time.SpanSugar._
     val usedNames = failAfter(20 seconds) {
-      val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+      val compilerForTesting = new ScalaCompilerForUnitTesting
       compilerForTesting.extractUsedNamesFromSrc(src)
     }
     val expectedNamesForTupler = Set("<init>", "Object", "scala", "tupler", "TuplerInstances", "DepFn1", "HNil", "$anon", "Out", "Out0", "Tupler", "hnilTupler", "acme", "L", "Aux", "HList", "Serializable", "Unit")
@@ -67,7 +67,7 @@ class ExtractUsedNamesPerformanceSpecification extends UnitSpec {
                  |trait TuplerInstances {
                  |  type Aux[L <: HList, Out0] = Tupler[L] { type Out = Out0 }
                  |}""".stripMargin
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(src)
     val expectedNamesForTuplerInstances = Set("Tupler", "AnyRef", "L", "Out0", "scala", "HList", "Object")
     val expectedNamesForTuplerInstancesRefinement = Set("Out0")
@@ -92,7 +92,7 @@ class ExtractUsedNamesPerformanceSpecification extends UnitSpec {
                  |class Bar {
                  |  def bar[Out] = macro Foo.foo_impl[Out]
                  |}""".stripMargin
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val (_, analysis) = compilerForTesting.compileSrcs(List(List(ext), List(cod)), true)
     val usedNames = analysis.usedNames.toMap
 
