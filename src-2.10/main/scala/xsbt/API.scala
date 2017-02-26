@@ -37,17 +37,15 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers {
       val extractApi = new ExtractAPI[global.type](global, sourceFile)
       val traverser = new TopLevelHandler(extractApi)
       traverser.apply(unit.body)
-      if (global.callback.nameHashing) {
-        val extractUsedNames = new ExtractUsedNames[global.type](global)
-        val allUsedNames = extractUsedNames.extract(unit)
-        def showUsedNames(className: String, names: Iterable[String]): String =
-          s"$className:\n\t${names.mkString(", ")}"
-        debuglog("The " + sourceFile + " contains the following used names:\n" +
-          allUsedNames.map((showUsedNames _).tupled).mkString("\n"))
-        allUsedNames foreach {
-          case (className: String, names: Iterable[String]) =>
-            names foreach { (name: String) => callback.usedName(className, name) }
-        }
+      val extractUsedNames = new ExtractUsedNames[global.type](global)
+      val allUsedNames = extractUsedNames.extract(unit)
+      def showUsedNames(className: String, names: Iterable[String]): String =
+        s"$className:\n\t${names.mkString(", ")}"
+      debuglog("The " + sourceFile + " contains the following used names:\n" +
+        allUsedNames.map((showUsedNames _).tupled).mkString("\n"))
+      allUsedNames foreach {
+        case (className: String, names: Iterable[String]) =>
+          names foreach { (name: String) => callback.usedName(className, name) }
       }
       val classApis = traverser.allNonLocalClasses
 

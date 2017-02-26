@@ -9,7 +9,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
                 |package b {
                 | import a.{A => A2}
                 |}""".stripMargin
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(src)
     val expectedNames = standardNames ++ Set("a", "A", "A2", "b")
     // names used at top level are attributed to the first class defined in a compilation unit
@@ -31,7 +31,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
                   |     def bar: a.B[a.BB]
                   |   }
                   |}""".stripMargin
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(srcA, srcB)
     val expectedNames = standardNames ++ Set("a", "A", "B", "C", "D", "b", "X", "BB")
     assert(usedNames("b.X") === expectedNames)
@@ -45,7 +45,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
     val srcB = """|class B {
                   |  def foo(a: A) = a.`=`
                   |}""".stripMargin
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(srcA, srcB)
     val expectedNames = standardNames ++ Set("A", "a", "B", "=", "Int")
     assert(usedNames("B") === expectedNames)
@@ -87,7 +87,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
                   |object Test_bar {
                   |  val x = B.bar(???)
                   |}""".stripMargin
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(src1, src2)
     val expectedNames_lista = standardNames ++ Set("Test_lista", "x", "B", "lista", "package", "List", "A")
     val expectedNames_at = standardNames ++ Set("Test_at", "x", "B", "at", "A", "T")
@@ -106,7 +106,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
   // test for https://github.com/gkossakowski/sbt/issues/3
   it should "extract used names from the same compilation unit" in {
     val src = "class A { def foo: Int = 0; def bar: Int = foo }"
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(src)
     val expectedNames = standardNames ++ Set("A", "foo", "Int")
     assert(usedNames("A") === expectedNames)
@@ -115,7 +115,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
   // pending test for https://issues.scala-lang.org/browse/SI-7173
   it should "extract names of constants" in pendingUntilFixed {
     val src = "class A { final val foo = 12; def bar: Int = foo }"
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(src)
     val expectedNames = standardNames ++ Set("A", "foo", "Int")
     assert(usedNames === expectedNames)
@@ -130,7 +130,7 @@ class ExtractUsedNamesSpecification extends UnitSpec {
                   | def selectDynamic(name: String): Int = name.length
                   |}""".stripMargin
     val srcB = "class B { def foo(a: A): Int = a.bla }"
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val usedNames = compilerForTesting.extractUsedNamesFromSrc(srcA, srcB)
     val expectedNames = standardNames ++ Set("B", "A", "a", "Int", "selectDynamic", "bla")
     assert(usedNames === expectedNames)

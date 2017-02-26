@@ -80,7 +80,7 @@ class DependencySpecification extends UnitSpec {
     val srcFoo = "object Outer {\n  class Inner { type Xyz }\n\n  type TypeInner = Inner { type Xyz = Int }\n}"
     val srcBar = "object Bar {\n  def bar: Outer.TypeInner = null\n}"
 
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val classDependencies =
       compilerForTesting.extractDependenciesFromSrcs(srcFoo, srcBar)
 
@@ -99,7 +99,7 @@ class DependencySpecification extends UnitSpec {
         |}""".stripMargin
     val srcB = "object B"
 
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val classDependencies =
       compilerForTesting.extractDependenciesFromSrcs(srcA, srcB)
 
@@ -134,7 +134,7 @@ class DependencySpecification extends UnitSpec {
       """.stripMargin
     val srcH = "class H { import abc.A }"
 
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val deps = compilerForTesting.extractDependenciesFromSrcs(srcA, srcB, srcC, srcD, srcE, srcF, srcG, srcH).memberRef
 
     assert(deps("A") === Set.empty)
@@ -162,7 +162,7 @@ class DependencySpecification extends UnitSpec {
     // E verifies the core type gets pulled out
     val srcH = "trait H extends G.T[Int] with (E[Int] @unchecked)"
 
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val classDependencies = compilerForTesting.extractDependenciesFromSrcs(srcA, srcB, srcC, srcD, srcE, srcF, srcG,
       srcH)
     classDependencies
@@ -175,7 +175,7 @@ class DependencySpecification extends UnitSpec {
     val srcD = "class D { def foo: Unit = { class Inner2 extends B } }"
     val srcE = "class E { def foo: Unit = { new B {} } }"
 
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val classDependencies =
       compilerForTesting.extractDependenciesFromSrcs(srcA, srcB, srcC, srcD, srcE)
     classDependencies
@@ -187,7 +187,7 @@ class DependencySpecification extends UnitSpec {
     val srcC = "trait C extends B"
     val srcD = "class D extends C"
 
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val classDependencies =
       compilerForTesting.extractDependenciesFromSrcs(srcA, srcB, srcC, srcD)
     classDependencies
@@ -208,7 +208,7 @@ class DependencySpecification extends UnitSpec {
 			|}""".stripMargin
     val srcC = "object C { val foo = 1 }"
 
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val classDependencies =
       compilerForTesting.extractDependenciesFromSrcs(List(List(srcB, srcC), List(srcA)))
     classDependencies

@@ -11,7 +11,7 @@ class ClassNameSpecification extends UnitSpec {
   "ClassName" should "create correct binary names for top level object" in {
     val src = "object A"
 
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val binaryClassNames = compilerForTesting.extractBinaryClassNamesFromSrc(src)
 
     assert(binaryClassNames === Set("A" -> "A", "A" -> "A$"))
@@ -20,7 +20,7 @@ class ClassNameSpecification extends UnitSpec {
   it should "create binary names for top level companions" in {
     val src = "class A; object A"
 
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val binaryClassNames = compilerForTesting.extractBinaryClassNamesFromSrc(src)
 
     assert(binaryClassNames === Set("A" -> "A", "A" -> "A$"))
@@ -38,7 +38,7 @@ class ClassNameSpecification extends UnitSpec {
          |}
       """.stripMargin
 
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val binaryClassNames = compilerForTesting.extractBinaryClassNamesFromSrc(src)
 
     assert(binaryClassNames === Set("A" -> "A$", "A" -> "A", "A.C" -> "A$C$", "A.C.D" -> "A$C$D$",
@@ -50,7 +50,7 @@ class ClassNameSpecification extends UnitSpec {
       """|trait A
       """.stripMargin
 
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val binaryClassNames = compilerForTesting.extractBinaryClassNamesFromSrc(src)
 
     // we do not track $impl classes because nobody can depend on them directly
@@ -71,7 +71,7 @@ class ClassNameSpecification extends UnitSpec {
       |
       |trait T
       |""".stripMargin
-    val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+    val compilerForTesting = new ScalaCompilerForUnitTesting
     val binaryClassNames = compilerForTesting.extractBinaryClassNamesFromSrc(src)
     assert(binaryClassNames === Set("Container" -> "Container", "T" -> "T"))
   }

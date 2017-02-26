@@ -70,7 +70,6 @@ trait GlobalHelpers {
 
   /** Define common error messages for error reporting and assertions. */
   object Feedback {
-    val NameHashingDisabled = "Turning off name hashing is not supported in class-based dependency trackging."
     val OrphanTopLevelImports = noTopLevelMember("top level imports")
     val OrphanNames = noTopLevelMember("names")
 
