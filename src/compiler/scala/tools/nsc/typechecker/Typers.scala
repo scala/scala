@@ -4442,12 +4442,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        *
        */
 //<<<<<<< HEAD
-      def mkInvoke(context: Context, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
-        val cxTree = context.enclosingNonImportContext.tree // SI-8364
-        debuglog(s"dyna.mkInvoke($cxTree, $tree, $qual, $name)")
+//      def mkInvoke(context: Context, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
+//        val cxTree = context.enclosingNonImportContext.tree // SI-8364
+//        debuglog(s"dyna.mkInvoke($cxTree, $tree, $qual, $name)")
 //=======
-//      def mkInvoke(cxTree: Tree, mode: Int, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
-//        log(s"dyna.mkInvoke($cxTree, $mode, $tree, $qual, $name)")
+      def mkInvoke(cxTree: Tree, mode: Int, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
+        debuglog(s"dyna.mkInvoke($cxTree, $mode, $tree, $qual, $name)")
 //>>>>>>> virt
         val treeInfo.Applied(treeSelection, _, _) = tree
         def isDesugaredApply = {
@@ -4486,17 +4486,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           findSelection(if (tp ne NoType) tree else cxTree) match {
             case Some((opName, treeInfo.Applied(_, targs, _))) =>
 //<<<<<<< HEAD
-              val fun = gen.mkTypeApply(Select(qual, opName), targs)
-              if (opName == nme.updateDynamic) suppressMacroExpansion(fun) // SI-7617
-              val nameStringLit = atPos(treeSelection.pos.withStart(treeSelection.pos.point).makeTransparent) {
-                Literal(Constant(name.decode))
-              }
-              markDynamicRewrite(atPos(qual.pos)(Apply(fun, List(nameStringLit))))
+//              val fun = gen.mkTypeApply(Select(qual, opName), targs)
+//              if (opName == nme.updateDynamic) suppressMacroExpansion(fun) // SI-7617
+//              val nameStringLit = atPos(treeSelection.pos.withStart(treeSelection.pos.point).makeTransparent) {
+//                Literal(Constant(name.decode))
+//              }
+//              markDynamicRewrite(atPos(qual.pos)(Apply(fun, List(nameStringLit))))
 //=======
-//              val sel = Select(qual, opName)
-//              val fun = gen.mkTypeApply(sel, if (tp ne NoType) List(TypeTree(tp)) else targs)
-//              val app = Apply(fun, Literal(Constant(name.decode)) :: Nil)
-//              atPos(qual.pos)(app)
+              val sel = Select(qual, opName)
+              val fun = gen.mkTypeApply(sel, if (tp ne NoType) List(TypeTree(tp)) else targs)
+              val app = Apply(fun, Literal(Constant(name.decode)) :: Nil)
+              atPos(qual.pos)(app)
 //>>>>>>> virt
             case _ =>
               setError(tree)
@@ -5702,10 +5702,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         t
       }
       def typedSelectInternal(tree: Tree, qual: Tree, name: Name): Tree = {
-        def asDynamicCall = dyna.mkInvoke(context, tree, qual, name) map { t =>
+//        def asDynamicCall = dyna.mkInvoke(context, tree, qual, name) map { t =>
 //=======
-//      def typedSelect(tree: Tree, qual: Tree, name: Name): Tree = {
-//        def asDynamicCall = dyna.mkInvoke(context.tree, mode, tree, qual, name) map { t =>
+        def typedSelect(tree: Tree, qual: Tree, name: Name): Tree = {
+          def asDynamicCall = dyna.mkInvoke(context.tree, mode, tree, qual, name) map { t =>
 //>>>>>>> virt
           dyna.wrapErrors(t, (_.typed1(t, mode, pt)))
         }
