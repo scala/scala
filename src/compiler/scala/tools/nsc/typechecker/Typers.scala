@@ -5011,11 +5011,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val funpt = if (mode.inPatternMode) pt else WildcardType
         val appStart = if (Statistics.canEnable) Statistics.startTimer(failedApplyNanos) else null
         val opeqStart = if (Statistics.canEnable) Statistics.startTimer(failedOpEqNanos) else null
-      
+
         def onError(reportError: => Tree): Tree = fun match {
           case Select(qual, name)
             if !mode.inPatternMode && nme.isOpAssignmentName(newTermName(name.decode)) && !qual.exists(_.isErroneous) =>
-      
+
             val qual1 = typedQualifier(qual)
             if (treeInfo.isVariableOrGetter(qual1)) {
               if (Statistics.canEnable) Statistics.stopTimer(failedOpEqNanos, opeqStart)
@@ -5055,7 +5055,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               tryTypedApply(fun2, args)
             else
               doTypedApply(tree, fun2, args, mode, pt)
-            
+
             res0 match { // TODO: is this ok?
               case treeInfo.DynamicApplication(_, _) if isImplicitMethod(res0.tpe) && inNoModes(mode, TAPPmode) =>
                 // adapt in EXPRmode so that implicits will be resolved now,
@@ -5466,32 +5466,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      def typedApply(tree: Apply) = {
-        val fun = tree.fun
-        val args = tree.args
-        fun match {
-          case Block(stats, expr) =>
-            typed1(atPos(tree.pos)(Block(stats, Apply(expr, args) setPos tree.pos.makeTransparent)), mode, pt)
-          case _ =>
-            typedApplyParts(tree, fun, args) match {
-              case Apply(Select(New(tpt), name), args)
-                if (tpt.tpe != null &&
-                  tpt.tpe.typeSymbol == ArrayClass &&
-                  args.length == 1 &&
-                  erasure.GenericArray.unapply(tpt.tpe).isDefined) => // !!! todo simplify by using extractor
-                // convert new Array[T](len) to evidence[ClassTag[T]].newArray(len)
-                // convert new Array^N[T](len) for N > 1 to evidence[ClassTag[Array[...Array[T]...]]].newArray(len), where Array HK gets applied (N-1) times
-                // [Eugene] no more MaxArrayDims. ClassTags are flexible enough to allow creation of arrays of arbitrary dimensionality (w.r.t JVM restrictions)
-                val Some((level, componentType)) = erasure.GenericArray.unapply(tpt.tpe)
-                val tagType = List.iterate(componentType, level)(tpe => appliedType(ArrayClass.toTypeConstructor, List(tpe))).last
-                atPos(tree.pos) {
-                  val tag = resolveClassTag(tree.pos, tagType)
-                  if (tag.isEmpty) MissingClassTagError(tree, tagType)
-                  else typed(new ApplyToImplicitArgs(Select(tag, nme.newArray), args))
-                }
-            }
-          case _ => None
-        }
+      def typedApply(tree: Apply) = tree match {
+        case Apply(Block(stats, expr), args) =>
+          typed1(atPos(tree.pos)(Block(stats, Apply(expr, args) setPos tree.pos.makeTransparent)), mode, pt)
+        case Apply(fun, args) =>
+          typedApplyParts(tree, fun, args) match {
+            case ArrayInstantiation(tree1)                                           => if (tree1.isErrorTyped) tree1 else typed(tree1, mode, pt)
+            case Apply(Select(fun, nme.apply), _) if treeInfo.isSuperConstrCall(fun) => TooManyArgumentListsForConstructor(tree) //SI-5696
+            case tree1                                                               => tree1
+          }
       }
 
       def convertToAssignment(fun: Tree, qual: Tree, name: Name, args: List[Tree]): Tree = {
