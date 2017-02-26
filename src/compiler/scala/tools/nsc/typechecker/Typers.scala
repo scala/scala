@@ -5718,7 +5718,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 //          if (name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
 //            val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
 //=======
-          if (name != nme.CONSTRUCTOR && inExprModeOr(mode, PATTERNmode)) {
+          if (name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
             if (settings.Yvirtualize && (mode & FUNmode) == 0 && !isPastTyper) {
               typedApplyExternal(tree, treeCopy.Select(tree, qual, name), List(), false) match {
                 case EmptyTree =>
