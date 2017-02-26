@@ -1799,11 +1799,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // could looking at clazz.typeOfThis before typing the template cause spurious illegal cycle errors?
       // OTOH, always typing silently and rethrowing if we're not going to reify causes other problems
         if (settings.Yvirtualize && clazz.isAnonymousClass && willReifyNew(clazz.typeOfThis))
-          newTyper(context.make(cdef.impl, clazz, newScope)).silent(_.typedTemplate(cdef.impl, parentTypes(cdef.impl)), false) match {
+          newTyper(context.make(cdef.impl, clazz, newScope)).silent(_.typedTemplate(cdef.impl, typedParentTypes(cdef.impl)), false) match {
             case SilentResultValue(t: Template)   => t
             case _ => null // TODO: ensure clazz isn't used anywhere but in typedReifiedNew
           } else
-          newTyper(context.make(cdef.impl, clazz, newScope)).typedTemplate(cdef.impl, parentTypes(cdef.impl))
+          newTyper(context.make(cdef.impl, clazz, newScope)).typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
 
       if (settings.Yvirtualize && impl1 == null) return EmptyTree
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
@@ -2450,12 +2450,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case _ =>
           }
         }
-        val stats1 = if (isPastTyper) block.stats else
-          block.stats.flatMap(stat => stat match {
-            case vd@ValDef(_, _, _, _) if vd.symbol.isLazy =>
-              namer.addDerivedTrees(Typer.this, vd)
-            case _ => stat::Nil
-          })
+        val stats1 = block.stats
+//          if (isPastTyper) block.stats else
+//          block.stats.flatMap(stat => stat match {
+//            case vd@ValDef(_, _, _, _) if vd.symbol.isLazy =>
+//              namer.addDerivedTrees(Typer.this, vd)
+//            case _ => stat::Nil
+//          })
         var statsTyped = typedStats(stats1, context.owner, warnPure = false)
         var expr1 = typed(block.expr, mode &~ (FUNmode | QUALmode), pt)
         if (settings.Yvirtualize) {
@@ -3724,7 +3725,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     def doTypedUnapply(tree: Tree, fun0: Tree, fun: Tree, args: List[Tree], mode: Int, pt: Type): Tree = {
       def duplErrTree = setError(treeCopy.Apply(tree, fun0, args))
-      def duplErrorTree(err: AbsTypeError) = { issue(err); duplErrTree }
+      def duplErrorTree(err: AbsTypeError) = { context.issue(err); duplErrTree }
 
       val otpe = fun.tpe
 
@@ -3824,7 +3825,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     // if there's a ClassTag that allows us to turn the unchecked type test for `pt` into a checked type test
     // return the corresponding extractor (an instance of ClassTag[`pt`])
-    def extractorForUncheckedType(pos: Position, pt: Type): Option[Tree] = if (!opt.virtPatmat || isPastTyper) None else {
+    def extractorForUncheckedType(pos: Position, pt: Type): Option[Tree] = if (!settings.Yvirtpatmat || isPastTyper) None else {
       // only look at top-level type, can't (reliably) do anything about unchecked type args (in general)
       pt.normalize.typeConstructor match {
         // if at least one of the types in an intersection is checkable, use the checkable ones

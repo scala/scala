@@ -63,52 +63,52 @@ trait Infer extends Checkable {
       || isBetter(sym1, sym2)
     )
 //=======
-//  def extractorFormalTypes(pos: Position, resTp: Type, nbSubPats: Int,
-//                           unappSym: Symbol, effectiveNbSubPats: Int): (List[Type], List[Type]) = {
-//    val isUnapplySeq     = unappSym.name == nme.unapplySeq
-//    val booleanExtractor = resTp.typeSymbolDirect == BooleanClass
-//
-//    def seqToRepeatedChecked(tp: Type) = {
-//      val toRepeated = seqToRepeated(tp)
-//      if (tp eq toRepeated) throw new TypeError("(the last tuple-component of) the result type of an unapplySeq must be a Seq[_]")
-//      else toRepeated
-//    }
-//
-//    // empty list --> error, otherwise length == 1
-//    lazy val optionArgs = resTp.normalize/*baseType(OptionClass)*/.typeArgs
-//    // empty list --> not a ProductN, otherwise product element types
-//    def productArgs = getProductArgs(optionArgs.head)
-//
-//    val formals =
-//      // convert Seq[T] to the special repeated argument type
-//      // so below we can use formalTypes to expand formals to correspond to the number of actuals
-//      if (isUnapplySeq) {
-//        if (optionArgs.nonEmpty)
-//          productArgs match {
-//            case Nil => List(seqToRepeatedChecked(optionArgs.head))
-//            case normalTps :+ seqTp => normalTps :+ seqToRepeatedChecked(seqTp)
-//          }
-//        else throw new TypeError(s"result type $resTp of unapplySeq defined in ${unappSym.fullLocationString} does not conform to Option[_]")
-//      } else {
-//        if (booleanExtractor && nbSubPats == 0) Nil
-//        else if (optionArgs.nonEmpty)
-//          if (nbSubPats == 1) {
-//            val productArity = productArgs.size
-//            if (settings.lint.value && productArity > 1 && productArity != effectiveNbSubPats)
-//              global.currentUnit.warning(pos,
-//                s"extractor pattern binds a single value to a Product${productArity} of type ${optionArgs.head}")
-//            optionArgs
-//          }
-//          // TODO: update spec to reflect we allow any ProductN, not just TupleN
-//          else productArgs
-//        else
-//          throw new TypeError(s"result type $resTp of unapply defined in ${unappSym.fullLocationString} does not conform to Option[_] or Boolean")
-//      }
-//
-//    // for unapplySeq, replace last vararg by as many instances as required by nbSubPats
-//    val formalsExpanded =
-//      if (isUnapplySeq && formals.nonEmpty) formalTypes(formals, nbSubPats)
-//      else formals
+  def extractorFormalTypes(pos: Position, resTp: Type, nbSubPats: Int,
+                           unappSym: Symbol, effectiveNbSubPats: Int): (List[Type], List[Type]) = {
+    val isUnapplySeq     = unappSym.name == nme.unapplySeq
+    val booleanExtractor = resTp.typeSymbolDirect == BooleanClass
+
+    def seqToRepeatedChecked(tp: Type) = {
+      val toRepeated = seqToRepeated(tp)
+      if (tp eq toRepeated) throw new TypeError("(the last tuple-component of) the result type of an unapplySeq must be a Seq[_]")
+      else toRepeated
+    }
+
+    // empty list --> error, otherwise length == 1
+    lazy val optionArgs = resTp.normalize/*baseType(OptionClass)*/.typeArgs
+    // empty list --> not a ProductN, otherwise product element types
+    def productArgs = getProductArgs(optionArgs.head)
+
+    val formals =
+      // convert Seq[T] to the special repeated argument type
+      // so below we can use formalTypes to expand formals to correspond to the number of actuals
+      if (isUnapplySeq) {
+        if (optionArgs.nonEmpty)
+          productArgs match {
+            case Nil => List(seqToRepeatedChecked(optionArgs.head))
+            case normalTps :+ seqTp => normalTps :+ seqToRepeatedChecked(seqTp)
+          }
+        else throw new TypeError(s"result type $resTp of unapplySeq defined in ${unappSym.fullLocationString} does not conform to Option[_]")
+      } else {
+        if (booleanExtractor && nbSubPats == 0) Nil
+        else if (optionArgs.nonEmpty)
+          if (nbSubPats == 1) {
+            val productArity = productArgs.size
+            if (settings.lint.value && productArity > 1 && productArity != effectiveNbSubPats)
+              global.currentUnit.warning(pos,
+                s"extractor pattern binds a single value to a Product${productArity} of type ${optionArgs.head}")
+            optionArgs
+          }
+          // TODO: update spec to reflect we allow any ProductN, not just TupleN
+          else productArgs
+        else
+          throw new TypeError(s"result type $resTp of unapply defined in ${unappSym.fullLocationString} does not conform to Option[_] or Boolean")
+      }
+
+    // for unapplySeq, replace last vararg by as many instances as required by nbSubPats
+    val formalsExpanded =
+      if (isUnapplySeq && formals.nonEmpty) formalTypes(formals, nbSubPats)
+      else formals
 //>>>>>>> virt
 
     alternatives sortWith improves match {
