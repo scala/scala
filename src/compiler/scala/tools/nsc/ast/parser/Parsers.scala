@@ -833,7 +833,7 @@ self =>
       }
       if (isExpr) {
         if (treeInfo.isLeftAssoc(op)) {
-          Apply(mkSelection(left), arguments)
+          makeApply(mkSelection(left), arguments)
         } else {
           val x = freshTermName()
           Block(
