@@ -16,7 +16,7 @@ sealed abstract class BackendReporting {
 }
 
 final class BackendReportingImpl(val global: Global) extends BackendReporting {
-  import global._
+  import global.{Position, currentRun}
 
   def inlinerWarning(pos: Position, message: String): Unit = {
     currentRun.reporting.inlinerWarning(pos, message)

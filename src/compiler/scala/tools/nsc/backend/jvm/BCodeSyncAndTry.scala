@@ -19,7 +19,7 @@ import scala.tools.asm
  *
  */
 abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
-  import global._
+  import global.{reporter => _, _}
   import bTypes._
   import coreBTypes._
 

@@ -21,10 +21,10 @@ import scala.tools.nsc.backend.jvm.BCodeHelpers.TestOp
  *  @version 1.0
  *
  */
-abstract class BCodeIdiomatic extends SubComponent {
+abstract class BCodeIdiomatic extends SubComponent with HasReporter {
   val bTypes = new BTypesFromSymbols[global.type](global)
 
-  import global._
+  import global.{reporter => _, _}
   import bTypes._
   import coreBTypes._
 

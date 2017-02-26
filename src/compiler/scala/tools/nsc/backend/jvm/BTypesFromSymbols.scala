@@ -27,7 +27,7 @@ import scala.reflect.internal.Flags.{DEFERRED, SYNTHESIZE_IMPL_IN_SUBCLASS}
  * not have access to the compiler instance.
  */
 class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
-  import global._
+  import global.{reporter => _, _}
   import definitions._
   import genBCode._
 

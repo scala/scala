@@ -22,7 +22,7 @@ import scala.tools.nsc.backend.jvm.BCodeHelpers.InvokeStyle
  *
  */
 abstract class BCodeSkelBuilder extends BCodeHelpers {
-  import global._
+  import global.{reporter => _, _}
   import bTypes._
   import coreBTypes._
 

@@ -29,7 +29,7 @@ import scala.tools.nsc.backend.jvm.BTypes.InternalName
  */
 class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
   import bTypes._
-  import global._
+  import global.{reporter => _, _}
   import rootMirror.{requiredClass, getRequiredClass, getClassIfDefined}
   import definitions._
 
@@ -351,7 +351,7 @@ trait CoreBTypesProxyGlobalIndependent[BTS <: BTypes] {
  */
 final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) extends CoreBTypesProxyGlobalIndependent[BTFS] {
   import bTypes._
-  import global._
+  import global.{reporter => _, _}
 
   private[this] var _coreBTypes: CoreBTypes[bTypes.type] = _
   def setBTypes(coreBTypes: CoreBTypes[BTFS]): Unit = {
