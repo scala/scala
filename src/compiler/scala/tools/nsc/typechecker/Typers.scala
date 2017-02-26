@@ -4446,7 +4446,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 //        val cxTree = context.enclosingNonImportContext.tree // SI-8364
 //        debuglog(s"dyna.mkInvoke($cxTree, $tree, $qual, $name)")
 //=======
-      def mkInvoke(cxTree: Tree, mode: Int, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
+      def mkInvoke(cxTree: Tree, mode: Mode, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
         debuglog(s"dyna.mkInvoke($cxTree, $mode, $tree, $qual, $name)")
 //>>>>>>> virt
         val treeInfo.Applied(treeSelection, _, _) = tree
@@ -5704,8 +5704,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def typedSelectInternal(tree: Tree, qual: Tree, name: Name): Tree = {
 //        def asDynamicCall = dyna.mkInvoke(context, tree, qual, name) map { t =>
 //=======
-        def typedSelect(tree: Tree, qual: Tree, name: Name): Tree = {
-          def asDynamicCall = dyna.mkInvoke(context.tree, mode, tree, qual, name) map { t =>
+//        def typedSelect(tree: Tree, qual: Tree, name: Name): Tree = {
+        def asDynamicCall = dyna.mkInvoke(context.tree, mode, tree, qual, name) map { t =>
 //>>>>>>> virt
           dyna.wrapErrors(t, (_.typed1(t, mode, pt)))
         }
