@@ -5005,92 +5005,72 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
 //<<<<<<< HEAD
-      def normalTypedApply(tree: Tree, fun: Tree, args: List[Tree]): Tree = {
+      def normalTypedApply(tree: Tree, fun: Tree, args: List[Tree]) : Tree = {
+        // TODO: replace `fun.symbol.isStable` by `treeInfo.isStableIdentifierPattern(fun)`
         val stableApplication = (fun.symbol ne null) && fun.symbol.isMethod && fun.symbol.isStable
-        if (args.isEmpty && stableApplication && mode.inPatternMode) {
-          // treat stable function applications f() as expressions.
-          //
-          // [JZ] According to Martin, this is related to the old pattern matcher, which
-          //      needs to typecheck after a the translation of `x.f` to `x.f()` in a prior
-          //      compilation phase. As part of SI-7377, this has been tightened with `args.isEmpty`,
-          //      but we should remove it altogether in Scala 2.11.
-          typed1(tree, mode & ~PATTERNmode | EXPRmode, pt)
-        } else {
-          val funpt = if (mode.inPatternMode) pt else WildcardType
-          val appStart = if (Statistics.canEnable) Statistics.startTimer(failedApplyNanos) else null
-          val opeqStart = if (Statistics.canEnable) Statistics.startTimer(failedOpEqNanos) else null
-
-          def onError(reportError: => Tree): Tree = {
-            fun match {
-              case Select(qual, name)
-                if !mode.inPatternMode && nme.isOpAssignmentName(newTermName(name.decode)) =>
-                val qual1 = typedQualifier(qual)
-                if (treeInfo.isVariableOrGetter(qual1)) {
-                  if (Statistics.canEnable) Statistics.stopTimer(failedOpEqNanos, opeqStart)
-                  convertToAssignment(fun, qual1, name, args)
-                } else {
-                  if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
-                  reportError
-                }
-              case _ =>
-                if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
-                reportError
+        val funpt = if (mode.inPatternMode) pt else WildcardType
+        val appStart = if (Statistics.canEnable) Statistics.startTimer(failedApplyNanos) else null
+        val opeqStart = if (Statistics.canEnable) Statistics.startTimer(failedOpEqNanos) else null
+      
+        def onError(reportError: => Tree): Tree = fun match {
+          case Select(qual, name)
+            if !mode.inPatternMode && nme.isOpAssignmentName(newTermName(name.decode)) && !qual.exists(_.isErroneous) =>
+      
+            val qual1 = typedQualifier(qual)
+            if (treeInfo.isVariableOrGetter(qual1)) {
+              if (Statistics.canEnable) Statistics.stopTimer(failedOpEqNanos, opeqStart)
+              convertToAssignment(fun, qual1, name, args)
             }
-          }
-          silent(_.typed(fun, mode.forFunMode, funpt),
-            if ((mode & EXPRmode) != 0) false else context.ambiguousErrors,
-            if ((mode & EXPRmode) != 0) tree else context.tree) match {
-            case SilentResultValue(fun1) =>
-              val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
-
-              if (Statistics.canEnable) Statistics.incCounter(typedApplyCount)
-
-              val unvirt = unvirtualize(tree.pos, fun.pos, fun2.symbol, fun2.tpe, args)
-              if (unvirt ne EmptyTree)
-                return unvirt
-
-              def isImplicitMethod(tpe: Type) = tpe match {
-                case mt: MethodType => mt.isImplicit
-                case _ => false
-              }
-              val useTry = (
-                !isPastTyper
-                  && fun2.isInstanceOf[Select]
-                  && !isImplicitMethod(fun2.tpe)
-                  && ((fun2.symbol eq null) || !fun2.symbol.isConstructor)
-                  && (mode & (EXPRmode | SNDTRYmode)) == EXPRmode
-                )
-              val res0 =
-                if (useTry) tryTypedApply(fun2, args)
-                else doTypedApply(tree, fun2, args, mode, pt)
-              val res = res0 match { // TODO: is this ok?
-                case treeInfo.DynamicApplication(_, _) if isImplicitMethod(res0.tpe) && inNoModes(mode, TAPPmode) =>
-                  // adapt in EXPRmode so that implicits will be resolved now,
-                  // before any chained apply/update's are called (to support def selectDynamic[T: Manifest])
-                  // see test/files/run/applydynamic_row.scala
-                  adapt(res0, EXPRmode, pt)
-                case _ => res0
-              }
-              /*
-                if (fun2.hasSymbol && fun2.symbol.isConstructor && (mode & EXPRmode) != 0) {
-                  res.tpe = res.tpe.notNull
-                }
-                */
-              // TODO: In theory we should be able to call:
-              //if (fun2.hasSymbol && fun2.symbol.name == nme.apply && fun2.symbol.owner == ArrayClass) {
-              // But this causes cyclic reference for Array class in Cleanup. It is easy to overcome this
-              // by calling ArrayClass.info here (or some other place before specialize).
-              if (fun2.symbol == Array_apply && !res.isErrorTyped) {
-                val checked = gen.mkCheckInit(res)
-                // this check is needed to avoid infinite recursion in Duplicators
-                // (calling typed1 more than once for the same tree)
-                if (checked ne res) typed { atPos(tree.pos)(checked) }
-                else res
-              } else
-                res
-            case SilentTypeError(err) =>
-              onError({issue(err); setError(tree)})
-          }
+            else {
+              if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
+              reportError
+            }
+          case _ =>
+            if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
+            reportError
+        }
+        val silentResult = silent(
+          op                    = _.typed(fun, mode.forFunMode, funpt),
+          reportAmbiguousErrors = !mode.inExprMode && context.ambiguousErrors,
+          newtree               = if (mode.inExprMode) tree else context.tree
+        )
+        silentResult match {
+          case SilentResultValue(fun1) =>
+            val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
+            if (Statistics.canEnable) Statistics.incCounter(typedApplyCount)
+            val unvirt = unvirtualize(tree.pos, fun.pos, fun2.symbol, fun2.tpe, args)
+            if (unvirt ne EmptyTree)
+              return unvirt
+            val noSecondTry = (
+              isPastTyper
+                || context.inSecondTry
+                || (fun2.symbol ne null) && fun2.symbol.isConstructor
+                || isImplicitMethodType(fun2.tpe)
+              )
+            val isFirstTry = fun2 match {
+              case Select(_, _) => !noSecondTry && mode.inExprMode
+              case _            => false
+            }
+            val res0 = if (isFirstTry)
+              tryTypedApply(fun2, args)
+            else
+              doTypedApply(tree, fun2, args, mode, pt)
+            
+            res0 match { // TODO: is this ok?
+              case treeInfo.DynamicApplication(_, _) if isImplicitMethod(res0.tpe) && inNoModes(mode, TAPPmode) =>
+                // adapt in EXPRmode so that implicits will be resolved now,
+                // before any chained apply/update's are called (to support def selectDynamic[T: Manifest])
+                // see test/files/run/applydynamic_row.scala
+                adapt(res0, EXPRmode, pt)
+              case _ => res0
+            }
+          case err: SilentTypeError =>
+            onError({
+              err.reportableErrors foreach context.issue
+              err.warnings foreach { case (p, m) => context.warning(p, m) }
+              args foreach (arg => typed(arg, mode, ErrorType))
+              setError(tree)
+            })
         }
       }
 
