@@ -26,7 +26,7 @@ import scala.tools.nsc.backend.jvm.BCodeHelpers.{InvokeStyle, TestOp}
  *
  */
 abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
-  import global._
+  import global.{reporter => _, _}
   import definitions._
   import bTypes._
   import coreBTypes._

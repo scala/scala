@@ -15,6 +15,7 @@ object BackendStats {
 
   val bcodeInitTimer  = newSubTimer("bcode initialization", bcodeTimer)
   val bcodeGenStat    = newSubTimer("code generation", bcodeTimer)
+  val bytesGenStat    = newSubTimer("classfile generation", bcodeTimer)
   val methodOptTimer  = newSubTimer("intra-method optimizations", bcodeTimer)
   val bcodeWriteTimer = newSubTimer("classfile writing", bcodeTimer)
 

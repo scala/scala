@@ -18,9 +18,9 @@ class FileConflictException(msg: String, val file: AbstractFile) extends IOExcep
  *  something you can use.  Has implementations for writing to class
  *  files, jars, and disassembled/javap output.
  */
-trait BytecodeWriters {
+trait BytecodeWriters extends HasReporter{
   val global: Global
-  import global._
+  import global.{reporter => _, _}
 
   def outputDirectory(sym: Symbol): AbstractFile =
     settings.outputDirs outputDirFor enteringFlatten(sym.sourceFile)
@@ -54,6 +54,9 @@ trait BytecodeWriters {
   trait BytecodeWriter {
     def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile): Unit
     def close(): Unit = ()
+        //TODO
+    def isSingleThreaded = true
+
   }
 
   class DirectToJarfileWriter(jfile: JFile) extends BytecodeWriter {

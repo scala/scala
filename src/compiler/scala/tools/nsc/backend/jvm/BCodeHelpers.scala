@@ -20,8 +20,8 @@ import scala.reflect.internal.Flags
  *  @version 1.0
  *
  */
-abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
-  import global._
+abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters with HasReporter {
+  import global.{reporter => _, _}
   import definitions._
   import bTypes._
   import coreBTypes._
@@ -228,14 +228,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
   def completeSilentlyAndCheckErroneous(sym: Symbol): Boolean =
     if (sym.hasCompleteInfo) false
     else {
-      val originalReporter = global.reporter
-      val storeReporter = new reporters.StoreReporter()
-      global.reporter = storeReporter
-      try {
-        sym.info
-      } finally {
-        global.reporter = originalReporter
-      }
+      withoutReporting(sym.info)
       sym.isErroneous
     }
 
