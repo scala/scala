@@ -1018,6 +1018,9 @@ commands += Command("partest")(_ => PartestUtil.partestParser((baseDirectory in 
   ("test/it:testOnly -- " + parsed) :: state
 }
 
+// Watch the test files also so ~partest triggers on test case changes
+watchSources ++= PartestUtil.testFilePaths((baseDirectory in ThisBuild).value, (baseDirectory in ThisBuild).value / "test")
+
 // Add tab completion to scalac et al.
 commands ++= {
   val commands =
