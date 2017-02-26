@@ -1445,13 +1445,8 @@ self =>
           newLinesOpt()
           val thenp = expr()
           val elsep = if (in.token == ELSE) { in.nextToken(); expr() }
-//<<<<<<< HEAD
           else literalUnit
-//          If(cond, thenp, elsep)
-//=======
-//                      else Literal(Constant())
           makeIfThenElse(cond, thenp, elsep)
-//>>>>>>> virt
         }
         parseIf
       case TRY =>
@@ -1493,16 +1488,11 @@ self =>
       case DO =>
         def parseDo = {
           atPos(in.skipToken()) {
-            // val lname: Name = freshTermName(nme.DO_WHILE_PREFIX)
             val body = expr()
             if (isStatSep) in.nextToken()
             accept(WHILE)
             val cond = condExpr()
-//<<<<<<< HEAD
-//            makeDoWhile(lname.toTermName, body, cond)
-//=======
             makeDoWhile(body, cond)
-//>>>>>>> virt
           }
         }
         parseDo
@@ -1528,11 +1518,7 @@ self =>
       case RETURN =>
         def parseReturn =
           atPos(in.skipToken()) {
-//<<<<<<< HEAD
-//            Return(if (isExprIntro) expr() else literalUnit)
-//=======
-            makeReturn(if (isExprIntro) expr() else Literal(Constant()))
-//>>>>>>> virt
+            makeReturn(if (isExprIntro) expr() else literalUnit)
           }
         parseReturn
       case THROW =>
