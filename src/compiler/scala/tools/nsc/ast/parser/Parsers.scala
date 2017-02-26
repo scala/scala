@@ -1744,20 +1744,9 @@ self =>
      *  }}}
      */
     def argumentExprs(): List[Tree] = {
-//<<<<<<< HEAD
-//      def args(): List[Tree] = commaSeparated(
-//        if (isIdent) treeInfo.assignmentToMaybeNamedArg(expr()) else expr()
-//      )
-//=======
-      def args(): List[Tree] = commaSeparated {
-        val maybeNamed = isIdent
-        expr() match {
-          case a @ LiftedAssign(id, rhs) if maybeNamed =>
-            atPos(a.pos) { AssignOrNamedArg(id, rhs) }
-          case e => e
-        }
-      }
-//>>>>>>> virt
+      def args(): List[Tree] = commaSeparated(
+        if (isIdent) treeInfo.assignmentToMaybeNamedArg(expr()) else expr()
+      )
       in.token match {
         case LBRACE   => List(blockExpr())
         case LPAREN   => inParens(if (in.token == RPAREN) Nil else args())
