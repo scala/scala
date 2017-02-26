@@ -76,4 +76,5 @@ class SimplePerRunSettings extends PerRunSettings {
   override val YoptLogInline_isSetByUser = false
   override val YoptInlineHeuristics = "???"
   override val debug = false
+  override val Xexperimental = false
 }

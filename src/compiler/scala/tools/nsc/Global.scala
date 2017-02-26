@@ -1551,6 +1551,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val isScala213: Boolean = settings.isScala213
     val debug = settings.debug.boolValue
 
+    override val Xexperimental = settings.Xexperimental
+
     val current = settings
     //optimise settings
     private def optEnabled(choice: current.optChoice) = {
