@@ -217,6 +217,7 @@ abstract class SymbolTable extends macros.Universe
   protected def PerRunSettings: PerRunSettings
 
   def currentRun: RunSettings with RunReporting
+  def currentRunSettings = currentRun.runSettings
 
   /** The phase identifier of the given period. */
   final def phaseId(period: Period): Phase#Id = period & 0xFF

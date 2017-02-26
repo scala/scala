@@ -3,8 +3,8 @@ package scala.reflect.internal
 abstract class PerRunSettings {
 
   val isScala211: Boolean
-
   val isScala212: Boolean
+  val isScala213: Boolean
 
   //optimise settings
   val optNone: Boolean
@@ -35,15 +35,20 @@ abstract class PerRunSettings {
   val optWarningNoInlineMissingScalaInlineInfoAttr : Boolean
   val optWarningAnyInlineFailed                    : Boolean
 
+  val Xexperimental : Boolean
+
   //---
   val YoptLogInline : String
   val YoptLogInline_isSetByUser : Boolean
   val YoptInlineHeuristics : String
 
+  val debug : Boolean
+
 }
 class SimplePerRunSettings extends PerRunSettings {
   override val isScala211: Boolean = true
   override val isScala212: Boolean = true
+  override val isScala213: Boolean = true
   override val optNone: Boolean = true
   override val optUnreachableCode: Boolean = true
   override val optSimplifyJumps: Boolean = true
@@ -70,4 +75,5 @@ class SimplePerRunSettings extends PerRunSettings {
   override val YoptLogInline = ""
   override val YoptLogInline_isSetByUser = false
   override val YoptInlineHeuristics = "???"
+  override val debug = false
 }

@@ -75,6 +75,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // alternate constructors ------------------------------------------
 
   override def settings = currentSettings
+  def currentRunSettings = curRun.runSettings
 
   /** Switch to turn on detailed type logs */
   var printTypings = settings.Ytyperdebug.value
@@ -1547,6 +1548,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   class PerRunSettingsGlobal extends PerRunSettings {
     override val isScala211: Boolean = settings.isScala211
     override val isScala212: Boolean = settings.isScala212
+    val isScala213: Boolean = settings.isScala213
+    val debug = settings.debug.boolValue
 
     val current = settings
     //optimise settings
