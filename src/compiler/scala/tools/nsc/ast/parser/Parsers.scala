@@ -1535,7 +1535,7 @@ self =>
           if (in.token == EQUALS) {
             t match {
               case Ident(_) | Select(_, _) | Apply(_, _) =>
-                t = atPos(t.pos.start, in.skipToken()) { gen.mkAssign(t, expr()) }
+                t = atPos(t.pos.start, in.skipToken()) { makeAssign(t, expr()) }
               case _ =>
             }
           } else if (in.token == COLON) {

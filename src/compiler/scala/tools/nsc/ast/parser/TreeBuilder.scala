@@ -110,6 +110,11 @@ abstract class TreeBuilder {
 
 
   /*private <-- BUG*/ class DirectTreeBuilder extends TreeBuilderStrategy {
+    /** Create a tree representing an assignment <lhs = rhs> */
+    def makeAssign(lhs: Tree, rhs: Tree): Tree = lhs match {
+      case Apply(fn, args) => Apply(atPos(fn.pos)(Select(fn, nme.update)), args :+ rhs)
+      case _               => Assign(lhs, rhs)
+    }
 
     /** Create tree representing a while loop */
     def makeWhile(startPos: Int, cond: Tree, body: Tree): Tree = {
