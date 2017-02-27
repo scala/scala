@@ -209,11 +209,7 @@ trait MatchTranslation {
 
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatNanos) else null
 
-//    <<<<<<< HEAD
-      val selectorTp = repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations))
-//    =======
-//    val selectorTp = selectorType(selector)//repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations))
-//    >>>>>>> virt
+      val selectorTp = selectorType(selector)//repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations))
 
       // when one of the internal cps-type-state annotations is present, strip all CPS annotations
       val origPt  = removeCPSFromPt(match_.tpe)

@@ -183,22 +183,10 @@ trait Interface extends ast.TreeDSL {
 
       reporter.warning(pos, "match may not be exhaustive.\nIt would fail on the following "+ ceString)
     }
-//<<<<<<< HEAD
-//=======
-//
-//    import global.definitions.repeatedToSeq;
-//    import global.elimAnonymousClass;
-//    def selectorType(selector: Tree): Type = pureType(repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations)))
-//    def inMatchMonad(tp: Type): Type
-//    def pureType(tp: Type): Type
-//    final def matchMonadResult(tp: Type): Type =
-//      tp.baseType(matchMonadSym).typeArgs match {
-//        case arg :: Nil => arg
-//        case _ => ErrorType
-//      }
-//
-//    protected def matchMonadSym: Symbol
-//>>>>>>> virt
+
+    import global.definitions.repeatedToSeq;
+    import global.elimAnonymousClass;
+    def selectorType(selector: Tree): Type = pureType(repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations)))
   }
 
 
