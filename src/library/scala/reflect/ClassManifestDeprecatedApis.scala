@@ -224,26 +224,17 @@ object ClassManifestFactory {
     * todo: remove after next bootstrap
     */
   def abstractType[T](prefix: OptManifest[_], name: String, upperbound: ClassManifest[_], args: OptManifest[_]*): ClassManifest[T] =
-//<<<<<<< HEAD
     new AbstractTypeClassManifest(prefix, name, upperbound.runtimeClass)
-//=======
-//    new ClassManifest[T] {
-//      override def runtimeClass = upperbound.runtimeClass
-//      override val typeArguments = args.toList
-//      override def toString = prefix.toString+"#"+name+argString
-//    }
-//
-//  /** Manifest for the refined type
-//    * `parent { val fieldNames(0) : fieldTypes(0) ; ... ; val fieldNames(n) : fieldTypes(n) }`.
-//    */
-//  def refinedType[T](parent: Manifest[_], fieldNames: List[String], fieldTypes: List[Manifest[_]]): Manifest[T] =
-//    new RefinedManifest[T] {
-//      override def runtimeClass = parent.runtimeClass
-//      def fields = fieldNames zip fieldTypes
-//      override def toString = parent + (fieldNames zip fieldTypes).map{case(n, t) => "val "+ n +" : "+ t}.mkString("{","; ", "}")
-//    }
-//
-//>>>>>>> virt
+
+  /** Manifest for the refined type
+    * `parent { val fieldNames(0) : fieldTypes(0) ; ... ; val fieldNames(n) : fieldTypes(n) }`.
+    */
+  def refinedType[T](parent: Manifest[_], fieldNames: List[String], fieldTypes: List[Manifest[_]]): Manifest[T] =
+    new RefinedManifest[T] {
+      override def runtimeClass = parent.runtimeClass
+      def fields = fieldNames zip fieldTypes
+      override def toString = parent + (fieldNames zip fieldTypes).map{case(n, t) => "val "+ n +" : "+ t}.mkString("{","; ", "}")
+    }
 }
 
 /** Manifest for the class type `clazz[args]`, where `clazz` is
