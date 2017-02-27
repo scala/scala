@@ -15,7 +15,7 @@ object API {
   val name = "xsbt-api"
 }
 
-final class API(val global: CallbackGlobal) extends GlobalHelpers {
+final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers {
   import global._
 
   def newPhase(prev: Phase) = new ApiPhase(prev)

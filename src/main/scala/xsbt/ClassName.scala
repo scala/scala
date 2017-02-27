@@ -12,7 +12,7 @@ import scala.tools.nsc.Global
 /**
  * Utility methods for creating (source|binary) class names for a Symbol.
  */
-trait ClassName {
+trait ClassName extends Compat {
   val global: Global
   import global._
 

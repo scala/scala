@@ -1,7 +1,10 @@
 package xsbt
 
-import scala.tools.nsc.Global
-import scala.tools.nsc.symtab.Flags
+import scala.reflect.{ internal => sri }
+import scala.reflect.internal.{ util => sriu }
+import scala.tools.nsc.{ Global, Settings }
+import scala.tools.nsc.interactive.RangePositions
+import scala.tools.nsc.symtab.Flags, Flags._
 
 /**
  * Collection of hacks that make it possible for the compiler interface
@@ -76,6 +79,20 @@ abstract class Compat {
     def enclosingTopLevelClass: Symbol = sym.toplevelClass
     def toplevelClass: Symbol = sourceCompatibilityOnly
     def asMethod: MethodSymbol = sym.asInstanceOf[MethodSymbol]
+
+    // Not present in 2.10
+    @inline final def getterIn(base: Symbol): Symbol = sym.getter(base)
+    @inline final def setterIn(base: Symbol, hasExpandedName: Boolean = needsExpandedSetterName): Symbol =
+      sym.setter(base, hasExpandedName)
+
+    // copied from 2.12.1 sources
+    private def needsExpandedSetterName: Boolean = (
+      if (sym.isMethod) sym.hasStableFlag && !sym.isLazy
+      else sym.hasNoFlags(LAZY | MUTABLE)
+    )
+
+    // unexpandedName replaces originalName in 2.11
+    @inline final def unexpandedName: Name = sym.originalName
   }
 
   val DummyValue = 0
@@ -85,6 +102,12 @@ abstract class Compat {
       MACRO != DummyValue && s.hasFlag(MACRO.toLong)
     }
   def moduleSuffix(s: Symbol): String = s.moduleSuffix
+
+  // Not present in 2.10
+  @inline final def devWarning(msg: => String): Unit = debugwarn(msg)
+
+  // Not present in 2.10
+  @inline final def enteringPhase[T](ph: sri.Phase)(op: => T): T = atPhase[T](ph)(op)
 
   private[this] def sourceCompatibilityOnly: Nothing = throw new RuntimeException("For source compatibility only: should not get here.")
 
@@ -101,41 +124,33 @@ abstract class Compat {
     }
   }
 
-  object MacroExpansionOf {
-    def unapply(tree: Tree): Option[Tree] = {
-
-      // MacroExpansionAttachment (MEA) compatibility for 2.8.x and 2.9.x
-      object Compat {
-        class MacroExpansionAttachment(val original: Tree)
-
-        // Trees have no attachments in 2.8.x and 2.9.x
-        implicit def withAttachments(tree: Tree): WithAttachments = new WithAttachments(tree)
-        class WithAttachments(val tree: Tree) {
-          object EmptyAttachments {
-            def all = Set.empty[Any]
-          }
-          val attachments = EmptyAttachments
-        }
-      }
-      import Compat._
-
-      locally {
-        // Wildcard imports are necessary since 2.8.x and 2.9.x don't have `MacroExpansionAttachment` at all
-        import global._ // this is where MEA lives in 2.10.x
-
-        // `original` has been renamed to `expandee` in 2.11.x
-        implicit def withExpandee(att: MacroExpansionAttachment): WithExpandee = new WithExpandee(att)
-        class WithExpandee(att: MacroExpansionAttachment) {
-          def expandee: Tree = att.original
-        }
-
-        locally {
-          import analyzer._ // this is where MEA lives in 2.11.x
-          tree.attachments.all.collect {
-            case att: MacroExpansionAttachment => att.expandee
-          }.headOption
-        }
-      }
-    }
+  implicit class MacroExpansionAttachmentCompat(self: MacroExpansionAttachment) {
+    // `original` has been renamed to `expandee` in 2.11.x
+    @inline final def expandee: Tree = self.original
   }
+}
+
+object Compat {
+  implicit final class TreeOps(val tree: sri.Trees#Tree) extends AnyVal {
+    // Introduced in 2.11
+    @inline final def hasSymbolField: Boolean = tree.hasSymbol
+  }
+
+  implicit final class SettingsCompat(val settings: Settings) extends AnyVal {
+    // Introduced in 2.11
+    @inline final def fatalWarnings = settings.Xwarnfatal
+  }
+
+  implicit final class PositionOps(val self: sriu.Position) extends AnyVal {
+    // Missing in 2.10
+    @inline final def finalPosition: sriu.Position = self.source positionInUltimateSource self
+  }
+}
+
+private trait CachedCompilerCompat { self: CachedCompiler0 =>
+  def newCompiler: Compiler =
+    if (command.settings.Yrangepos.value)
+      new Compiler() with RangePositions // unnecessary in 2.11
+    else
+      new Compiler()
 }

@@ -9,7 +9,7 @@ package xsbt
 
 import scala.tools.nsc.Global
 
-trait GlobalHelpers {
+trait GlobalHelpers { self: Compat =>
   val global: Global
   import global._
 
@@ -126,11 +126,12 @@ trait GlobalHelpers {
 
   /** Returns true if given tree contains macro attchment. In such case calls func on tree from attachment. */
   def processMacroExpansion(in: Tree)(func: Tree => Unit): Boolean = {
+    import analyzer._ // this is where MEA lives in 2.11.x
     // Hotspot
     var seen = false
     in.attachments.all.foreach {
       case _ if seen =>
-      case macroAttachment: analyzer.MacroExpansionAttachment =>
+      case macroAttachment: MacroExpansionAttachment =>
         func(macroAttachment.expandee)
         seen = true
       case _ =>
@@ -140,8 +141,9 @@ trait GlobalHelpers {
 
   object MacroExpansionOf {
     def unapply(tree: Tree): Option[Tree] = {
+      import analyzer._ // this is where MEA lives in 2.11.x
       tree.attachments.all.collect {
-        case att: analyzer.MacroExpansionAttachment => att.expandee
+        case att: MacroExpansionAttachment => att.expandee
       }.headOption
     }
   }
