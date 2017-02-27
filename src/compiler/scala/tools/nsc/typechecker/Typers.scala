@@ -3271,6 +3271,34 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def typedArgs(args: List[Tree], mode: Mode) =
       args mapConserve (arg => typedArg(arg, mode, NOmode, WildcardType))
 
+    /** Type trees in `args0` against corresponding expected type in `adapted0`.
+      *
+      * The mode in which each argument is typed is derived from `mode` and
+      * whether the arg was originally by-name or var-arg (need `formals0` for that)
+      * the default is by-val, of course.
+      *
+      * (docs reverse-engineered -- AM)
+      */
+    def typedArgs(args0: List[Tree], mode: Mode, formals0: List[Type], adapted0: List[Type]): List[Tree] = {
+      val sticky = mode.onlySticky
+      def loop(args: List[Tree], formals: List[Type], adapted: List[Type]): List[Tree] = {
+        if (args.isEmpty || adapted.isEmpty) Nil
+        else {
+          // No formals left or * indicates varargs.
+          val isVarArgs = formals.isEmpty || formals.tail.isEmpty && isRepeatedParamType(formals.head)
+          val typedMode = sticky | (
+            if (isVarArgs) BYVALmode //STARmode | BYVALmode
+            else if (isByNameParamType(formals.head)) NOmode
+            else BYVALmode
+            )
+          val tree = typedArg(args.head, mode, typedMode, adapted.head)
+          // formals may be empty, so don't call tail
+          tree :: loop(args.tail, formals drop 1, adapted.tail)
+        }
+      }
+      loop(args0, formals0, adapted0)
+    }
+
     /** Does function need to be instantiated, because a missing parameter
      *  in an argument closure overlaps with an uninstantiated formal?
      */
@@ -4304,7 +4332,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       /** Is `qual` a staged struct? (i.e., of type Rep[Struct[Rep]{decls}])?
         * Then what's the type of `name`?
         */
-      def structSelectedMember(qual: Tree, name: Name): Option[(Type, Symbol)] = if (opt.virtualize) {
+      def structSelectedMember(qual: Tree, name: Name): Option[(Type, Symbol)] = if (settings.Yvirtualize) {
         debuglog("[DNR] dynatype on struct for "+ qual +" : "+ qual.tpe +" <DOT> "+ name)
         val structTps =
           ((prefixInWith(context.owner, EmbeddedControlsClass).toList)
@@ -4318,7 +4346,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         for(
           _ <- listOpt(structTps.filter(structTp => (qual.tpe ne null) && qual.tpe <:< repVar.applyArgs(List(structTp)))); // qual.tpe <:< ?Rep[Struct]
-          repTp <- listOpt(solvedTypes(List(repVar), List(rep), List(COVARIANT), false, -3)); // search for minimal solution
+          repTp <- listOpt(solvedTypes(List(repVar), List(rep), List(Variance.Covariant), false, scala.reflect.internal.Depth.AnyDepth)); // search for minimal solution
           // _ <- Some(println("mkInvoke repTp="+ repTp));
           // if so, generate an invocation and give it type `Rep[T]`, where T is the type given to member `name` in `decls`
           repSym = repTp.typeSymbolDirect;
@@ -4350,7 +4378,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case DynamicUpdate(qual, name) =>
           structSelectedMember(qual, newTermName(name.toString)) match {
             case Some((pre, sym)) =>
-              pre.member(nme.getterToSetter(sym.name)) != NoSymbol // but does it have a setter? can't use sym.accessed.isMutable since sym.accessed does not exist
+              pre.member(nme.getterToSetter(sym.name.toTermName)) != NoSymbol // but does it have a setter? can't use sym.accessed.isMutable since sym.accessed does not exist
             case _ =>
               // println("IDU "+ (tree, qual.tpe, acceptsApplyDynamic(qual.tpe)))
               // if the qualifier is a Dynamic, that's all we need to know
@@ -4640,11 +4668,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def typedIfParts(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) : If = {
         val cond1 = checkDead(typedByValueExpr(cond, BooleanTpe))
         // One-legged ifs don't need a lot of analysis
-        if (tree.elsep.isEmpty)
-          return treeCopy.If(tree, cond1, typed(tree.thenp, UnitTpe), tree.elsep) setType UnitTpe
+        if (elsep.isEmpty)
+          return treeCopy.If(tree, cond1, typed(thenp, UnitTpe), elsep) setType UnitTpe
 
-        val thenp1 = typed(tree.thenp, pt)
-        val elsep1 = typed(tree.elsep, pt)
+        val thenp1 = typed(thenp, pt)
+        val elsep1 = typed(elsep, pt)
 
         // in principle we should pack the types of each branch before lubbing, but lub doesn't really work for existentials anyway
         // in the special (though common) case where the types are equal, it pays to pack before comparing
@@ -4945,6 +4973,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val unvirt = unvirtualize(tree.pos, fun.pos, fun2.symbol, fun2.tpe, args)
             if (unvirt ne EmptyTree)
               return unvirt
+            def isImplicitMethod(tpe: Type) = tpe match {
+              case mt: MethodType => mt.isImplicit
+              case _ => false
+            }
             val noSecondTry = (
                  isPastTyper
               || context.inSecondTry
@@ -5286,7 +5318,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val scopeParents = parentTypes(ifaceTp)
             scopeClass.setInfo(new ClassInfoType(scopeParents, newScope, scopeClass))
 
-            val applyMethod = scopeClass.newMethod(body.pos, nme.apply)
+            val applyMethod = scopeClass.newMethod(nme.apply, body.pos)
               .setFlag(FINAL)
               .setInfo(NullaryMethodType(AnyClass.tpe))
             // can't do better than AnyClass.tpe until we type the body
@@ -5309,7 +5341,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               sym = scopeClass,
               constrMods = Modifiers(0),
               vparamss = Nil,
-              argss = List(Nil),
               body = List(applyMethodDef),
               superPos = body.pos)))
 
@@ -5342,7 +5373,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 sym = scopeAnonCls,
                 constrMods = Modifiers(0),
                 vparamss = Nil,
-                argss = List(Nil),
                 body = List(),
                 superPos = body.pos),
               Select(Typed(Apply(Select(New(TypeTree(scopeAnonCls.tpe)), nme.CONSTRUCTOR), Nil), TypeTree(newTp)), nme.result)
@@ -6421,7 +6451,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // println("selfSym "+ selfSym)
         val selfRef = Ident(selfName) setSymbol selfSym setType repStructTp
         def selNameOnSelf(n: Name): Tree = Select(selfRef, n)
-        def selOnSelf(d: Symbol): Tree = selNameOnSelf(nme.getterName(d.name))
+        def selOnSelf(d: Symbol): Tree = selNameOnSelf(nme.getterName(d.name.toTermName))
 
         // println("def: "+ origDef)
 
