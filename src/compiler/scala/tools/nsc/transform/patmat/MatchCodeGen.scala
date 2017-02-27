@@ -100,7 +100,7 @@ trait MatchCodeGen extends Interface {
     }
   }
 
-  trait PureMatchMonadInterface extends MatchMonadInterface with scala.tools.nsc.typechecker.Modes {
+  trait PureMatchMonadInterface extends MatchMonadInterface { //with scala.tools.nsc.typechecker.Modes
     val matchStrategy: Tree
     import CODE._
     def _match(n: Name): SelectStart = matchStrategy DOT n

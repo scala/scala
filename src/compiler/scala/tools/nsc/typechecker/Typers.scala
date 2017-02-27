@@ -2553,42 +2553,35 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     def packedTypes(trees: List[Tree]): List[Type] = trees map (c => packedType(c, context.owner).deconst)
 
+    // find the match translator for a given selector. non-null result means we will virtualize
+    def matchTranslator(selector: Tree): patmat.MatchTranslator = {
+      // TODO: add fallback __match sentinel to predef
+      import patmat.{vpmName, PureMatchTranslator, OptimizingMatchTranslator}
+      if (!(newPatternMatching && opt.experimental && context.isNameInScope(vpmName._match))) null    // fast path, avoiding the next line if there's no __match to be seen
+      else newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName._match), EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
+        case SilentResultValue(matchStrategy) => // matchStrategy is our __match object
+          new PureMatchTranslator(this.asInstanceOf[patmat.global.analyzer.Typer] /*TODO*/, matchStrategy)
+        case _                     => null
+      }
+    }
+
+    def typedMatch(selector: Tree, cases: List[CaseDef], mode: Int, pt: Type, tree: Tree = EmptyTree): Match =
+      typedMatchWithStrategy(selector, cases, mode, pt, tree)._1
     // takes untyped sub-trees of a match and type checks them
-//<<<<<<< HEAD
-    def typedMatch(selector: Tree, cases: List[CaseDef], mode: Mode, pt: Type, tree: Tree = EmptyTree): Match = {
+    def typedMatchWithStrategy(selector: Tree, cases: List[CaseDef], mode: Int, pt: Type, tree: Tree): (Match, patmat.MatchTranslator) = {
       val selector1  = checkDead(typedByValueExpr(selector))
-      val selectorTp = packCaptured(selector1.tpe.widen).skolemizeExistential(context.owner, selector)
-//=======
-//
-//  // find the match translator for a given selector. non-null result means we will virtualize
-//  def matchTranslator(selector: Tree): patmat.MatchTranslator = {
-//    // TODO: add fallback __match sentinel to predef
-//    import patmat.{vpmName, PureMatchTranslator, OptimizingMatchTranslator}
-//    if (!(newPatternMatching && opt.experimental && context.isNameInScope(vpmName._match))) null    // fast path, avoiding the next line if there's no __match to be seen
-//    else newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName._match), EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
-//      case SilentResultValue(matchStrategy) => // matchStrategy is our __match object
-//        new PureMatchTranslator(this.asInstanceOf[patmat.global.analyzer.Typer] /*TODO*/, matchStrategy)
-//      case _                     => null
-//    }
-//  }
-//    def typedMatch(selector: Tree, cases: List[CaseDef], mode: Int, pt: Type, tree: Tree = EmptyTree): Match =
-//      typedMatchWithStrategy(selector, cases, mode, pt, tree)._1
-//    def typedMatchWithStrategy(selector: Tree, cases: List[CaseDef], mode: Int, pt: Type, tree: Tree): (Match, patmat.MatchTranslator) = {
-//      val selector1  = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
-//      // check whether we will be virtualizing this match or not
-//      val matchTrans = matchTranslator(selector)
-//
-//      val selectorTp =
-//        if (matchTrans ne null) matchTrans.selectorType(selector1)
-//        else packCaptured(selector1.tpe.widen).skolemizeExistential(context.owner, selector)
-//
-//>>>>>>> virt
+      // check whether we will be virtualizing this match or not
+      val matchTrans = matchTranslator(selector)
+
+      val selectorTp =
+        if (matchTrans ne null) matchTrans.selectorType(selector1)
+        else packCaptured(selector1.tpe.widen).skolemizeExistential(context.owner, selector)
+
       val casesTyped = typedCases(cases, selectorTp, pt)
 
       def finish(cases: List[CaseDef], matchType: Type) =
         treeCopy.Match(tree, selector1, cases) setType matchType
 
-//<<<<<<< HEAD
       if (isFullyDefined(pt))
         finish(casesTyped, pt)
       else packedTypes(casesTyped) match {
@@ -2597,38 +2590,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val lub = weakLub(packed)
           finish(casesTyped map (adaptCase(_, mode, lub)), lub)
       }
+      (matchTyped, matchTrans)
     }
 
     // match has been typed -- virtualize it during type checking so the full context is available
-    def virtualizedMatch(match_ : Match, mode: Mode, pt: Type) = {
-      import patmat.{ vpmName, PureMatchTranslator }
-
-      // TODO: add fallback __match sentinel to predef
-      val matchStrategy: Tree =
-        if (!(settings.Yvirtpatmat && context.isNameInScope(vpmName._match))) null    // fast path, avoiding the next line if there's no __match to be seen
-        else newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName._match)), reportAmbiguousErrors = false) orElse (_ => null)
-
+    def virtualizedMatch(match_ : Match, mode: Int, pt: Type) =
+      virtualizedMatchWithStrategy((match_, matchTranslator(match_.selector)), mode, pt)
+    def virtualizedMatchWithStrategy(matchAndStrategy: (Match, patmat.MatchTranslator), mode: Int, pt: Type) = {
+      val (match_, matchTrans) = matchAndStrategy
       if (matchStrategy ne null) // virtualize
-        typed((new PureMatchTranslator(this.asInstanceOf[patmat.global.analyzer.Typer] /*TODO*/, matchStrategy)).translateMatch(match_), mode, pt)
-//=======
-//      val casesAdapted = if (!needAdapt) casesTyped else casesTyped map (adaptCase(_, mode, resTp))
-//
-//      val matchTyped = treeCopy.Match(tree, selector1, casesAdapted) setType resTp
-//      if (!newPatternMatching) // TODO: remove this in 2.11 -- only needed for old pattern matcher
-//        new TypeMapTreeSubstituter(deskolemizeGADTSkolems).traverse(matchTyped)
-//      (matchTyped, matchTrans)
-//    }
-//
-//    // match has been typed -- virtualize it if we're feeling experimental
-//    // (virtualized matches are expanded during type checking so they have the full context available)
-//    // otherwise, do nothing: matches are translated during phase `patmat` (unless -Xoldpatmat)
-//    def virtualizedMatch(match_ : Match, mode: Int, pt: Type) =
-//      virtualizedMatchWithStrategy((match_, matchTranslator(match_.selector)), mode, pt)
-//    def virtualizedMatchWithStrategy(matchAndStrategy: (Match, patmat.MatchTranslator), mode: Int, pt: Type) = {
-//      val (match_, matchTrans) = matchAndStrategy
-//      if (matchTrans ne null) // virtualize
-//        typed(matchTrans.translateMatch(match_), mode, pt)
-//>>>>>>> virt
+        typed(matchTrans.translateMatch(match_), mode, pt)
       else
         match_ // will be translated in phase `patmat`
     }
@@ -4313,8 +4284,43 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
     }
 
+    def prefixInWith(owner: Symbol, member: Symbol): Option[Type] =
+      owner.ownerChain find (o => o.isClass && ThisType(o).baseClasses.contains(member)) map (ThisType(_))
+
     object dyna {
       import treeInfo.{isApplyDynamicName, DynamicUpdate, DynamicApplicationNamed}
+
+      @inline private def boolOpt(c: Boolean) = if(c) Some(()) else None
+      @inline private def listOpt[T](xs: List[T]) = xs match { case x :: Nil => Some(x) case _ => None }
+      @inline private def symOpt[T](sym: Symbol) = if(sym == NoSymbol) None else Some(sym) // TODO: handle overloading?
+
+      /** Is `qual` a staged struct? (i.e., of type Rep[Struct[Rep]{decls}])?
+        * Then what's the type of `name`?
+        */
+      def structSelectedMember(qual: Tree, name: Name): Option[(Type, Symbol)] = if (opt.virtualize) {
+        debuglog("[DNR] dynatype on struct for "+ qual +" : "+ qual.tpe +" <DOT> "+ name)
+        val structTps =
+          ((prefixInWith(context.owner, EmbeddedControlsClass).toList)
+            ++ List(PredefModule.tpe)).map(_.memberType(EmbeddedControls_Struct))
+        debuglog("[DNR] context, tp "+ (context.owner.ownerChain, structTps))
+
+        val rep = NoSymbol.newTypeParameter(newTypeName("Rep"))
+        val repTpar = rep.newTypeParameter(newTypeName("T")).setFlag(COVARIANT).setInfo(TypeBounds.empty)
+        rep.setInfo(polyType(List(repTpar), TypeBounds.empty))
+        val repVar = TypeVar(rep)
+
+        for(
+          _ <- listOpt(structTps.filter(structTp => (qual.tpe ne null) && qual.tpe <:< repVar.applyArgs(List(structTp)))); // qual.tpe <:< ?Rep[Struct]
+          repTp <- listOpt(solvedTypes(List(repVar), List(rep), List(COVARIANT), false, -3)); // search for minimal solution
+          // _ <- Some(println("mkInvoke repTp="+ repTp));
+          // if so, generate an invocation and give it type `Rep[T]`, where T is the type given to member `name` in `decls`
+          repSym = repTp.typeSymbolDirect;
+          qualStructTp <- qual.tpe.baseType(repSym).typeArgs.headOption; // this specifies `decls`
+          member <- symOpt(qualStructTp.member(name))
+        ) yield {
+          (qualStructTp, member)
+        }
+      } else None
 
       def acceptsApplyDynamic(tp: Type) = tp.typeSymbol isNonBottomSubClass DynamicClass
 
@@ -4323,16 +4329,29 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        * NOTE: currently either returns None or Some(NoType) (scala-virtualized extends this to Some(t) for selections on staged Structs)
        */
       def acceptsApplyDynamicWithType(qual: Tree, name: Name): Option[Type] =
-        // don't selectDynamic selectDynamic, do select dynamic at unknown type,
-        // in scala-virtualized, we may return a Some(tp) where tp ne NoType
-        if (!isApplyDynamicName(name) && acceptsApplyDynamic(qual.tpe.widen)) Some(NoType)
-        else None
+      // don't selectDynamic selectDynamic
+        if (isApplyDynamicName(name)) None
+        else
+          structSelectedMember(qual, name) match {
+            // Some(tp) ==> do select dynamic and pass it `tp`, the type specified for `name` by the struct `qual`
+            case Some((pre, sym))                           => Some(pre.memberType(sym).finalResultType)
+            case _ if (acceptsApplyDynamic(qual.tpe.widen)) => Some(NoType)
+            case _                                          => None
+          }
 
       def isDynamicallyUpdatable(tree: Tree) = tree match {
         case DynamicUpdate(qual, name) =>
-          // if the qualifier is a Dynamic, that's all we need to know
-          acceptsApplyDynamic(qual.tpe)
-        case _ => false
+          structSelectedMember(qual, newTermName(name.toString)) match {
+            case Some((pre, sym)) =>
+              pre.member(nme.getterToSetter(sym.name)) != NoSymbol // but does it have a setter? can't use sym.accessed.isMutable since sym.accessed does not exist
+            case _ =>
+              // println("IDU "+ (tree, qual.tpe, acceptsApplyDynamic(qual.tpe)))
+              // if the qualifier is a Dynamic, that's all we need to know
+              acceptsApplyDynamic(qual.tpe)
+          }
+        case _ =>
+          // println("IDU :-( "+ tree)
+          false
       }
 
       def isApplyDynamicNamed(fun: Tree): Boolean = fun match {
