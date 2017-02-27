@@ -28,10 +28,12 @@ trait SortedPolyTransforms[A, +C[X] <: Sorted[X]]
   */
 trait OrderingGuidedFactories[C[_]] {
 
-  def builder[A](implicit ordering: Ordering[A]): Builder[A, C[A]]
+  def newBuilder[A](implicit ordering: Ordering[A]): Builder[A, C[A]]
 
-  def empty[A : Ordering]: C[A] = builder[A].result
+  def empty[A : Ordering]: C[A] = newBuilder[A].result
 
-  def apply[A : Ordering](as: A*): C[A] = (builder[A] ++= as.toStrawman).result
+  def apply[A : Ordering](as: A*): C[A] = (newBuilder[A] ++= as.toStrawman).result
+
+  implicit def canBuild[A : Ordering]: () => Builder[A, C[A]] = () => newBuilder[A]
 
 }

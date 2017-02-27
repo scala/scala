@@ -1,9 +1,11 @@
 package strawman.collection.mutable
 
 import java.lang.IndexOutOfBoundsException
-import scala.{Array, Exception, Int, Long, Boolean, math, StringContext, Unit, AnyRef}
+
+import scala.{AnyRef, Array, Boolean, Exception, Int, Long, StringContext, Unit, math}
 import strawman.collection
-import strawman.collection.{IterableFactory, IterableOnce, SeqLike, IndexedView}
+import strawman.collection.{IndexedView, IterableFactories, IterableOnce, SeqLike}
+
 import scala.Predef.intWrapper
 
 /** Concrete collection type: ArrayBuffer */
@@ -122,7 +124,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   override def className = "ArrayBuffer"
 }
 
-object ArrayBuffer extends IterableFactory[ArrayBuffer] {
+object ArrayBuffer extends IterableFactories[ArrayBuffer] {
 
   /** Avoid reallocation of buffer if length is known. */
   def fromIterable[B](coll: collection.Iterable[B]): ArrayBuffer[B] =
@@ -133,6 +135,9 @@ object ArrayBuffer extends IterableFactory[ArrayBuffer] {
       new ArrayBuffer[B](array, array.length)
     }
     else new ArrayBuffer[B] ++= coll
+
+  def newBuilder[A]: Builder[A, ArrayBuffer[A]] = new ArrayBuffer[A]()
+
 }
 
 class ArrayBufferView[A](val array: Array[AnyRef], val length: Int) extends IndexedView[A] {

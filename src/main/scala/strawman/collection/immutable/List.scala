@@ -4,8 +4,8 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.Nothing
 import scala.Predef.???
 import strawman.collection
-import strawman.collection.{IterableFactory, IterableOnce, LinearSeq, SeqLike}
-import strawman.collection.mutable.{Buildable, ListBuffer}
+import strawman.collection.{IterableFactories, IterableOnce, LinearSeq, SeqLike}
+import strawman.collection.mutable.{Buildable, Builder, ListBuffer}
 
 
 /** Concrete collection type: List */
@@ -17,7 +17,7 @@ sealed trait List[+A]
 
   def fromIterable[B](c: collection.Iterable[B]): List[B] = List.fromIterable(c)
 
-  protected[this] def newBuilder = new ListBuffer[A].mapResult(_.toList)
+  protected[this] def newBuilder = List.newBuilder
 
   /** Prepend element */
   def :: [B >: A](elem: B): List[B] =  new ::(elem, this)
@@ -51,9 +51,13 @@ case object Nil extends List[Nothing] {
   override def tail = ???
 }
 
-object List extends IterableFactory[List] {
+object List extends IterableFactories[List] {
+
   def fromIterable[B](coll: collection.Iterable[B]): List[B] = coll match {
     case coll: List[B] => coll
     case _ => ListBuffer.fromIterable(coll).toList
   }
+
+  def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A].mapResult(_.toList)
+
 }

@@ -3,8 +3,9 @@ package collection
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.reflect.ClassTag
-import scala.{Int, Boolean, Array, Any, Unit, StringContext}
+import scala.{Any, Array, Boolean, Int, StringContext, Unit}
 import java.lang.{String, UnsupportedOperationException}
+
 import strawman.collection.mutable.{ArrayBuffer, StringBuilder}
 import java.lang.String
 
@@ -35,18 +36,6 @@ trait IterableLike[+A, +C[X] <: Iterable[X]]
     *  the same element type as this collection. Overridden in StringOps and ArrayOps.
     */
   protected[this] def fromIterableWithSameElemType(coll: Iterable[A]): C[A]
-}
-
-/** Base trait for instances that can construct a collection from an iterable */
-trait FromIterable[+C[X] <: Iterable[X]] {
-  def fromIterable[B](it: Iterable[B]): C[B]
-}
-
-/** Base trait for companion objects of collections */
-trait IterableFactory[+C[X] <: Iterable[X]] extends FromIterable[C] {
-  def empty[X]: C[X] = fromIterable(View.Empty)
-  def apply[A](xs: A*): C[A] = fromIterable(View.Elems(xs: _*))
-  def fill[A](n: Int)(elem: => A): C[A] = fromIterable(View.Fill(n)(elem))
 }
 
 /** Operations over iterables. No operation defined here is generic in the

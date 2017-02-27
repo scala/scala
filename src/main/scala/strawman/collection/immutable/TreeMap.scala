@@ -2,6 +2,7 @@ package strawman
 package collection.immutable
 
 import strawman.collection.SortedLike
+import strawman.collection.mutable.Builder
 
 import scala.{Option, Ordering}
 import scala.Predef.???
@@ -36,5 +37,11 @@ final class TreeMap[K, +V]
   // Members declared in collection.SortedLike
   def ordering: Ordering[K] = ???
   def range(from: K,until: K): TreeMap[K,V] = ???
+
+}
+
+object TreeMap extends SortedMapFactories[TreeMap] {
+
+  def newBuilder[K : Ordering, V]: Builder[(K, V), TreeMap[K, V]] = ???
 
 }
