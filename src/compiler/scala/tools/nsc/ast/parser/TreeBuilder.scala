@@ -130,6 +130,7 @@ abstract class TreeBuilder {
 
     /** Create tree representing a do-while loop */
     def makeDoWhile(body: Tree, cond: Tree): Tree = {
+      val lname: Name = freshTermName(nme.DO_WHILE_PREFIX)
       val continu = Apply(Ident(lname), Nil)
       val rhs = Block(List(body), If(cond, continu, Literal(Constant(()))))
       LabelDef(lname, Nil, rhs)
