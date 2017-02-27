@@ -4935,7 +4935,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               doTypedApply(tree, fun2, args, mode, pt)
 
             res0 match { // TODO: is this ok?
-              case treeInfo.DynamicApplication(_, _) if isImplicitMethod(res0.tpe) && inNoModes(mode, TAPPmode) =>
+              case treeInfo.DynamicApplication(_, _) if isImplicitMethod(res0.tpe) && mode.inNone(TAPPmode) =>
                 // adapt in EXPRmode so that implicits will be resolved now,
                 // before any chained apply/update's are called (to support def selectDynamic[T: Manifest])
                 // see test/files/run/applydynamic_row.scala
@@ -4952,7 +4952,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      def unvirtualize(pos: Position, funpos: Position, funsym: Symbol, funTp: Type, origArgs: List[Tree]): Tree = if (opt.virtualize) {
+      def unvirtualize(pos: Position, funpos: Position, funsym: Symbol, funTp: Type, origArgs: List[Tree]): Tree = if (settings.Yvirtualize) {
         /** TODO:
          - need to do overload resolution to be sure whether we resolve to EmbeddedControls_XXX or not
          - overload resolution is done in full by doTypedApply, but it is enough we pick the same symbol here
@@ -5016,11 +5016,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val Select(qual, name) = fun
         val extname            = newTermName("infix_" + name)
 
-        if (infixDebug) println("contemplating " + mode.toHexString + "/" + fun.symbol + ": " + Apply(fun, args) + " ---> " + Apply(Ident(extname), qual::args) + " at " + fun.pos)
+        if (infixDebug) println("contemplating " + mode + "/" + fun.symbol + ": " + Apply(fun, args) + " ---> " + Apply(Ident(extname), qual::args) + " at " + fun.pos)
         //println("fun.tpe: "+fun.tpe)
         //println("qual.tpe: "+qual.tpe)
 
-        val ealts = silent(_.typed(Ident(extname).setPos(fun.pos), forFunMode(mode), WildcardType), false, tree) match {
+        val ealts = silent(_.typed(Ident(extname).setPos(fun.pos), mode.forFunMode, WildcardType), false, tree) match {
           case SilentResultValue(ext) =>
             ext.symbol.alternatives.filter { s =>
               s.isMethod &&
@@ -5050,7 +5050,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val prevRetyping = context.retyping
         context.retyping = true
         try {
-          val qual1 = if (isApply) silent(t => checkDead(t.typedQualifier(qual, forFunMode(mode))), false, tree) match {
+          val qual1 = if (isApply) silent(t => checkDead(t.typedQualifier(qual, mode.forFunMode)), false, tree) match {
             case SilentResultValue(qual1) => qual1
             case SilentTypeError(ex) =>
               ErrorUtils.issueTypeError(ex) // fun.pos
@@ -5256,7 +5256,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
             // println("generating:\ntrait DSLprog extends %s {\n def apply: %s = %s \n } \n (new DSLprog with %s) : %s with %s".format(ifaceTp, bodyType, body, implTp, ifaceTp, implTp))
 
-            val scopeClass = context.owner.newClass(body.pos, newTypeName("DSLprog")) setFlag (ABSTRACT | SYNTHETIC) // trait --> addInterfaces:implMethodDef complains "Error: implMethod missing for method apply"
+            val scopeClass = context.owner.newClass(newTypeName("DSLprog") setFlag (ABSTRACT | SYNTHETIC), body.pos)  // trait --> addInterfaces:implMethodDef complains "Error: implMethod missing for method apply"
             val scopeParents = parentTypes(ifaceTp)
             scopeClass.setInfo(new ClassInfoType(scopeParents, newScope, scopeClass))
 
@@ -5305,7 +5305,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
             // mix the scope class with the implementation trait and `() => $bodyFunType`
             val scopeAnonCls = {
-              val clazz = context.owner.newClass(body.pos, newTypeName("DSLrun")) setFlag (SYNTHETIC)
+              val clazz = context.owner.newClass(newTypeName("DSLrun"), body.pos) setFlag (SYNTHETIC)
               clazz.setInfo(ClassInfoType(List(scopeClass.tpe, instantiatedImplTp/*, bodyFunType*/), newScope, clazz))
               clazz
             }
