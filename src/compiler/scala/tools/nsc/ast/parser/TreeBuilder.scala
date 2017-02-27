@@ -117,7 +117,7 @@ abstract class TreeBuilder {
     }
 
     /** Create tree representing a while loop */
-    def makeWhile(startPos: Int, cond: Tree, body: Tree): Tree = {
+    def makeWhileDo(startPos: Int, cond: Tree, body: Tree): Tree = {
       val lname = freshTermName(nme.WHILE_PREFIX)
       def default = wrappingPos(List(cond, body)) match {
         case p if p.isDefined => p.end

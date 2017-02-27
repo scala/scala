@@ -3729,7 +3729,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    def doTypedUnapply(tree: Tree, fun0: Tree, fun: Tree, args: List[Tree], mode: Mode, pt: Type): Tree = {
+    override def doTypedUnapply(tree: Tree, fun0: Tree, fun: Tree, args: List[Tree], mode: Mode, pt: Type): Tree = {
       def duplErrTree = setError(treeCopy.Apply(tree, fun0, args))
       def duplErrorTree(err: AbsTypeError) = { context.issue(err); duplErrTree }
 
@@ -3760,7 +3760,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       val uncheckedTypeExtractor =
         if (unappType.paramTypes.nonEmpty)
-          extractorForUncheckedType(tree.pos, unappType.paramTypes.head)
+          extractorForUncheckedType2(tree.pos, unappType.paramTypes.head)
         else None
 
       if (!isApplicableSafe(Nil, unappType, List(pt), WildcardType)) {
@@ -3808,7 +3808,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    def wrapClassTagUnapply(uncheckedPattern: Tree, classTagExtractor: Tree, pt: Type): Tree = {
+    override def wrapClassTagUnapply(uncheckedPattern: Tree, classTagExtractor: Tree, pt: Type): Tree = {
       // TODO: disable when in unchecked match
       // we don't create a new Context for a Match, so find the CaseDef, then go out one level and navigate back to the match that has this case
       // val thisCase = context.nextEnclosing(_.tree.isInstanceOf[CaseDef])
@@ -3831,7 +3831,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     // if there's a ClassTag that allows us to turn the unchecked type test for `pt` into a checked type test
     // return the corresponding extractor (an instance of ClassTag[`pt`])
-    def extractorForUncheckedType(pos: Position, pt: Type): Option[Tree] = if (!settings.Yvirtpatmat || isPastTyper) None else {
+     def extractorForUncheckedType2(pos: Position, pt: Type): Option[Tree] = if (!settings.Yvirtpatmat || isPastTyper) None else {
       // only look at top-level type, can't (reliably) do anything about unchecked type args (in general)
       pt.normalize.typeConstructor match {
         // if at least one of the types in an intersection is checkable, use the checkable ones
@@ -5543,7 +5543,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
           // xml member to StringContext, which in turn has an unapply[Seq] method)
           if (name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
-            if (settings.Yvirtualize && (mode & FUNmode) == 0 && !isPastTyper) {
+            if (settings.Yvirtualize && !mode.inFunMode && !isPastTyper) {
               typedApplyExternal(tree, treeCopy.Select(tree, qual, name), List(), false) match {
                 case EmptyTree =>
                 case tree1 => return tree1

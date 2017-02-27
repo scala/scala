@@ -66,7 +66,7 @@ trait MemberHandlers {
     case member: ModuleDef                     => new ModuleHandler(member)
     case member: ClassDef                      => new ClassHandler(member)
     case member: TypeDef                       => new TypeAliasHandler(member)
-    case member@LiftedAssign(lhs, rhs)         => new AssignHandler(member)
+    case member@LiftedAssign(lhs, rhs)         => new AssignHandler(member, lhs, rhs)
     case member: Import                        => new ImportHandler(member)
     case DocDef(_, documented)                 => chooseHandler(documented)
     case member                                => new GenericHandler(member)
