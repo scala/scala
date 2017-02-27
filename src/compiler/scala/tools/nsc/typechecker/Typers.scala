@@ -109,6 +109,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   private final val InterpolatorCodeRegex  = """\$\{\s*(.*?)\s*\}""".r
   private final val InterpolatorIdentRegex = """\$[$\w]+""".r // note that \w doesn't include $
 
+  // when true:
+  //  - we may virtualize matches (if -Xexperimental and there's a suitable __match in scope)
+  //  - we synthesize PartialFunction implementations for `x => x match {...}` and `match {...}` when the expected type is PartialFunction
+  // this is disabled by: -Xoldpatmat or interactive compilation (we run it for scaladoc due to SI-5933)
+  private def newPatternMatching = settings.Yvirtpatmat && !forInteractive //&& !forScaladoc && (phase.id < currentRun.uncurryPhase.id)
+
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with PatternTyper with TyperContextErrors {
     import context0.unit
     import typeDebug.ptTree
@@ -2557,7 +2563,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def matchTranslator(selector: Tree): patmat.MatchTranslator = {
       // TODO: add fallback __match sentinel to predef
       import patmat.{vpmName, PureMatchTranslator, OptimizingMatchTranslator}
-      if (!(newPatternMatching && opt.experimental && context.isNameInScope(vpmName._match))) null    // fast path, avoiding the next line if there's no __match to be seen
+      if (!(newPatternMatching && settings.Xexperimental && context.isNameInScope(vpmName._match))) null    // fast path, avoiding the next line if there's no __match to be seen
       else newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName._match), EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
         case SilentResultValue(matchStrategy) => // matchStrategy is our __match object
           new PureMatchTranslator(this.asInstanceOf[patmat.global.analyzer.Typer] /*TODO*/, matchStrategy)
@@ -2565,10 +2571,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    def typedMatch(selector: Tree, cases: List[CaseDef], mode: Int, pt: Type, tree: Tree = EmptyTree): Match =
+    def typedMatch(selector: Tree, cases: List[CaseDef], mode: Mode, pt: Type, tree: Tree = EmptyTree): Match =
       typedMatchWithStrategy(selector, cases, mode, pt, tree)._1
     // takes untyped sub-trees of a match and type checks them
-    def typedMatchWithStrategy(selector: Tree, cases: List[CaseDef], mode: Int, pt: Type, tree: Tree): (Match, patmat.MatchTranslator) = {
+    def typedMatchWithStrategy(selector: Tree, cases: List[CaseDef], mode: Mode, pt: Type, tree: Tree): (Match, patmat.MatchTranslator) = {
       val selector1  = checkDead(typedByValueExpr(selector))
       // check whether we will be virtualizing this match or not
       val matchTrans = matchTranslator(selector)
@@ -2582,7 +2588,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def finish(cases: List[CaseDef], matchType: Type) =
         treeCopy.Match(tree, selector1, cases) setType matchType
 
-      if (isFullyDefined(pt))
+      val matchTyped = if (isFullyDefined(pt))
         finish(casesTyped, pt)
       else packedTypes(casesTyped) match {
         case packed if sameWeakLubAsLub(packed) => finish(casesTyped, lub(packed))
@@ -2590,15 +2596,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val lub = weakLub(packed)
           finish(casesTyped map (adaptCase(_, mode, lub)), lub)
       }
+
       (matchTyped, matchTrans)
     }
 
     // match has been typed -- virtualize it during type checking so the full context is available
-    def virtualizedMatch(match_ : Match, mode: Int, pt: Type) =
+    def virtualizedMatch(match_ : Match, mode: Mode, pt: Type) =
       virtualizedMatchWithStrategy((match_, matchTranslator(match_.selector)), mode, pt)
-    def virtualizedMatchWithStrategy(matchAndStrategy: (Match, patmat.MatchTranslator), mode: Int, pt: Type) = {
+    def virtualizedMatchWithStrategy(matchAndStrategy: (Match, patmat.MatchTranslator), mode: Mode, pt: Type) = {
       val (match_, matchTrans) = matchAndStrategy
-      if (matchStrategy ne null) // virtualize
+      if (matchTrans ne null) // virtualize
         typed(matchTrans.translateMatch(match_), mode, pt)
       else
         match_ // will be translated in phase `patmat`
@@ -3694,7 +3701,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    def doTypedUnapply(tree: Tree, fun0: Tree, fun: Tree, args: List[Tree], mode: Int, pt: Type): Tree = {
+    def doTypedUnapply(tree: Tree, fun0: Tree, fun: Tree, args: List[Tree], mode: Mode, pt: Type): Tree = {
       def duplErrTree = setError(treeCopy.Apply(tree, fun0, args))
       def duplErrorTree(err: AbsTypeError) = { context.issue(err); duplErrTree }
 
@@ -5275,7 +5282,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
             // println("generating:\ntrait DSLprog extends %s {\n def apply: %s = %s \n } \n (new DSLprog with %s) : %s with %s".format(ifaceTp, bodyType, body, implTp, ifaceTp, implTp))
 
-            val scopeClass = context.owner.newClass(newTypeName("DSLprog") setFlag (ABSTRACT | SYNTHETIC), body.pos)  // trait --> addInterfaces:implMethodDef complains "Error: implMethod missing for method apply"
+            val scopeClass = context.owner.newClass(newTypeName("DSLprog"), body.pos, ABSTRACT | SYNTHETIC)  // trait --> addInterfaces:implMethodDef complains "Error: implMethod missing for method apply"
             val scopeParents = parentTypes(ifaceTp)
             scopeClass.setInfo(new ClassInfoType(scopeParents, newScope, scopeClass))
 
