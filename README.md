@@ -26,7 +26,16 @@ Prototype improvements for Scala collections.
 
 ## Use it in your project
 
-We publish snapshots on Sonatype:
+We published a 0.1.0 version so that you can experiment with the new design.
+Note that most of the collection implementations are incomplete!
+
+~~~ scala
+libraryDependencies += "ch.epfl.scala" %% "collection-strawman" % "0.1.0"
+~~~
+
+Only Scala 2.12 is supported so far.
+
+We also automatically publish snapshots on Sonatype:
 
 ~~~ scala
 resolvers += Resolver.sonatypeRepo("snapshots")

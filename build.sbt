@@ -1,6 +1,6 @@
 organization in ThisBuild := "ch.epfl.scala"
 
-version in ThisBuild := "0.1-SNAPSHOT"
+version in ThisBuild := "0.1.0"
 
 scalaVersion in ThisBuild := "2.12.1"
 
@@ -21,6 +21,22 @@ val collections =
         "org.scala-lang.modules" %% "scala-java8-compat" % "0.8.0",
         "com.novocode" % "junit-interface" % "0.11" % Test
       ),
+      pomExtra :=
+        <developers>
+          <developer><id>ichoran</id><name>Rex Kerr</name></developer>
+          <developer><id>odersky</id><name>Martin Odersky</name></developer>
+          <developer><id>julienrf</id><name>Julien Richard-Foy</name></developer>
+          <developer><id>szeiger</id><name>Stefan Szeiger</name></developer>
+        </developers>,
+      homepage := Some(url("https://github.com/scala/collection-strawman")),
+      licenses := Seq("BSD 3-clause" -> url("http://opensource.org/licenses/BSD-3-Clause")),
+      scmInfo := Some(
+        ScmInfo(
+          url("https://github.com/scala/collection-strawman"),
+          "scm:git:git@github.com:scala/collection-strawman.git"
+        )
+      ),
+      // For publishing snapshots
       credentials ++= (
         for {
           username <- sys.env.get("SONATYPE_USERNAME")
