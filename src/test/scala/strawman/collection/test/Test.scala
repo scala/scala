@@ -2,7 +2,7 @@ package strawman
 package collection.test
 
 import java.lang.String
-import scala.{Int, Unit, Array, Option, StringContext, Boolean, Any, Char}
+import scala.{Either, Int, Left, Nothing, Unit, Array, Option, StringContext, Boolean, Any, Char}
 import scala.Predef.{assert, println, charWrapper}
 
 import collection._
@@ -331,6 +331,22 @@ class StrawmanTest {
 //    val xs7 = xs.map((k: String, v: Int) => (new Foo, v)) Error: No implicit Ordering defined for Foo
     val xs7 = (xs: immutable.Map[String, Int]).map((k, v) => (new Foo, v))
     val xs8: immutable.Map[Foo, Int] = xs7
+  }
+
+  def bitSets(xs: immutable.BitSet, ys: BitSet, zs: Set[Int]): Unit = {
+    val xs1 = xs & zs
+    val xs2: immutable.BitSet = xs1
+    val xs3 = xs ^ ys
+    val xs4: immutable.BitSet = xs3
+    val b = xs.subsetOf(zs)
+    val xs5 = xs.map((x: Int) => x + 1) // TODO Remove type annotation when SI-5708 is fixed
+    val xs6: immutable.BitSet = xs5
+    val xs7 = (xs: immutable.SortedSet[Int]).map((x: Int) => x.toString)
+    val xs8: immutable.SortedSet[String] = xs7
+    val xs9 = (xs: immutable.Set[Int]).map(x => Left(x): Either[Int, Nothing])
+    val xs10: immutable.Set[Either[Int, Nothing]] = xs9
+    val xs11 = xs + 42
+    val xs12: immutable.BitSet = xs11
   }
 
   @Test
