@@ -1,0 +1,13 @@
+userdefined_apply.scala:3: error: overloaded method apply needs result type
+  private def apply(x: Int) = if (x > 0) new ClashOverloadNoSig(x) else apply("")
+                                                                             ^
+userdefined_apply.scala:12: error: overloaded method apply needs result type
+  private def apply(x: Int) = if (x > 0) ClashRecNoSig(1) else ???
+                                         ^
+userdefined_apply.scala:19: error: overloaded method apply needs result type
+  private def apply(x: Boolean) = if (x) NoClashNoSig(1) else ???
+                                         ^
+userdefined_apply.scala:26: error: overloaded method apply needs result type
+  private def apply(x: Boolean) = if (x) NoClashOverload(1) else apply("")
+                                                        ^
+four errors found

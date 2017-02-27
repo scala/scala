@@ -613,7 +613,15 @@ trait Namers extends MethodSynthesis {
       noDuplicates(selectors map (_.rename), AppearsTwice)
     }
 
-    def enterCopyMethod(copyDef: DefDef): Symbol = {
+    class CompleterWrapper(completer: TypeCompleter) extends TypeCompleter {
+      val tree = completer.tree
+
+      override def complete(sym: Symbol): Unit = {
+        completer.complete(sym)
+      }
+    }
+
+    def copyMethodCompleter(copyDef: DefDef): TypeCompleter = {
       val sym      = copyDef.symbol
       val lazyType = completerOf(copyDef)
 
@@ -632,13 +640,62 @@ trait Namers extends MethodSynthesis {
         )
       }
 
-      sym setInfo {
-        mkTypeCompleter(copyDef) { sym =>
-          assignParamTypes()
-          lazyType complete sym
-        }
+      mkTypeCompleter(copyDef) { sym =>
+        assignParamTypes()
+        lazyType complete sym
       }
     }
+
+    // for apply/unapply, which may need to disappear when they clash with a user-defined method of matching signature
+    def applyUnapplyMethodCompleter(un_applyDef: DefDef, companionContext: Context): TypeCompleter =
+      new CompleterWrapper(completerOf(un_applyDef)) {
+        override def complete(sym: Symbol): Unit = {
+          super.complete(sym)
+
+          // don't propagate e.g. @volatile annot to apply's argument
+          def retainOnlyParamAnnots(param: Symbol) =
+            param setAnnotations (param.annotations filter AnnotationInfo.mkFilter(ParamTargetClass, defaultRetention = false))
+
+          sym.info.paramss.foreach(_.foreach(retainOnlyParamAnnots))
+
+          // If there's a same-named locked symbol, we're currently completing its signature.
+          // This means it (may) refer to us, and is thus either overloaded or recursive without a signature.
+          // rule out locked symbols from the owner.info.member call
+          val scopePartiallyCompleted =
+            companionContext.scope.lookupAll(sym.name).exists(existing => existing != sym && existing.hasFlag(LOCKED))
+
+          val suppress =
+            scopePartiallyCompleted || {
+            val userDefined = companionContext.owner.info.member(sym.name).filter(_ != sym)
+            (userDefined != NoSymbol) && {
+              userDefined.info match {
+                // TODO: do we have something for this already? the synthetic symbol can't be overloaded, right?
+                case OverloadedType(pre, alternatives) =>
+                  // pre probably relevant because of inherited overloads?
+                  alternatives.exists(_.isErroneous) || alternatives.exists(alt => pre.memberInfo(alt) matches pre.memberInfo(sym))
+                case tp =>
+                  (tp eq ErrorType) || tp.matches(sym.info)
+              }
+            }
+          }
+
+          if (suppress) {
+            sym setInfo ErrorType
+            sym setFlag IS_ERROR
+
+            // Don't unlink in an error situation to generate less confusing error messages.
+            // Ideally, our error reporting would distinguish overloaded from recursive user-defined apply methods without signature,
+            // but this would require some form of partial-completion of method signatures, so that we can
+            // know what the argument types were, even though we can't complete the result type, because
+            // we hit a cycle while trying to compute it (when we get here with locked user-defined symbols, we
+            // are in the complete for that symbol, and thus the locked symbol has not yet received enough info;
+            // I hesitate to provide more info, because it would involve a WildCard or something for its result type,
+            // which could upset other code paths)
+            if (!scopePartiallyCompleted)
+              companionContext.scope.unlink(sym)
+          }
+        }
+      }
 
     def completerOf(tree: MemberDef): TypeCompleter = {
       val mono = namerOf(tree.symbol) monoTypeCompleter tree
@@ -687,13 +744,17 @@ trait Namers extends MethodSynthesis {
         val bridgeFlag = if (mods hasAnnotationNamed tpnme.bridgeAnnot) BRIDGE | ARTIFACT else 0
         val sym = assignAndEnterSymbol(tree) setFlag bridgeFlag
 
-        if (name == nme.copy && sym.isSynthetic)
-          enterCopyMethod(tree)
-        else if (name == nme.apply && sym.hasAllFlags(SYNTHETIC | CASE))
-          sym setInfo caseApplyMethodCompleter(tree, completerOf(tree).asInstanceOf[LockingTypeCompleter])
-        else
-          sym setInfo completerOf(tree)
-    }
+        // copy/apply/unapply synthetics are added using the addIfMissing mechanism,
+        // which ensures the owner has its preliminary info (we may add another decl here)
+        val completer =
+          if (sym hasFlag SYNTHETIC) {
+            if (name == nme.copy) copyMethodCompleter(tree)
+            else if (sym hasFlag CASE) applyUnapplyMethodCompleter(tree, context)
+            else completerOf(tree)
+          } else completerOf(tree)
+
+        sym setInfo completer
+      }
 
     def enterClassDef(tree: ClassDef) {
       val ClassDef(mods, _, _, impl) = tree
@@ -816,16 +877,6 @@ trait Namers extends MethodSynthesis {
 
       methSym setAnnotations (annotations filter annotationFilter(MethodTargetClass, defaultRetention = false))
       classSym setAnnotations (annotations filter annotationFilter(ClassTargetClass, defaultRetention = true))
-    }
-
-    def caseApplyMethodCompleter(tree: DefDef, sigCompleter: LockingTypeCompleter) = mkTypeCompleter(tree) { methSym =>
-      sigCompleter.completeImpl(methSym)
-
-      // don't propagate e.g. @volatile annot to apply's argument
-      def retainOnlyParamAnnots(param: Symbol) =
-        param setAnnotations (param.annotations filter AnnotationInfo.mkFilter(ParamTargetClass, defaultRetention = false))
-
-      methSym.info.paramss.foreach(_.foreach(retainOnlyParamAnnots))
     }
 
     // complete the type of a value definition (may have a method symbol, for those valdefs that never receive a field,
@@ -1464,7 +1515,7 @@ trait Namers extends MethodSynthesis {
 
             val defTpt =
               // don't mess with tpt's of case copy default getters, because assigning something other than TypeTree()
-              // will break the carefully orchestrated naming/typing logic that involves enterCopyMethod and caseClassCopyMeth
+              // will break the carefully orchestrated naming/typing logic that involves copyMethodCompleter and caseClassCopyMeth
               if (meth.isCaseCopy) TypeTree()
               else {
                 // If the parameter type mentions any type parameter of the method, let the compiler infer the
