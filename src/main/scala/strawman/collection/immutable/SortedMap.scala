@@ -42,7 +42,7 @@ trait SortedMapPolyTransforms[K, +V, +C[X, Y] <: Sorted[X]]
 
 }
 
-trait SortedMapFactory[C[_, _]] {
+trait SortedMapFactories[C[_, _]] {
 
   def newBuilder[K : Ordering, V]: Builder[(K, V), C[K, V]]
 

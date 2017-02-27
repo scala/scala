@@ -40,7 +40,7 @@ final class TreeMap[K, +V]
 
 }
 
-object TreeMap extends SortedMapFactory[TreeMap] {
+object TreeMap extends SortedMapFactories[TreeMap] {
 
   def newBuilder[K : Ordering, V]: Builder[(K, V), TreeMap[K, V]] = ???
 

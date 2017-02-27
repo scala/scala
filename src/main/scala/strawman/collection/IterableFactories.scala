@@ -11,7 +11,7 @@ trait FromIterable[+C[X] <: Iterable[X]] {
 }
 
 /** Base trait for companion objects of collections */
-trait IterableFactory[+C[X] <: Iterable[X]] extends FromIterable[C] {
+trait IterableFactories[+C[X] <: Iterable[X]] extends FromIterable[C] {
 
   def empty[A]: C[A] = fromIterable(View.Empty)
 

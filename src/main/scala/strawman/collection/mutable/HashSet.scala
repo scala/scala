@@ -1,6 +1,6 @@
 package strawman.collection.mutable
 
-import strawman.collection.{IterableFactory, Iterator}
+import strawman.collection.{IterableFactories, Iterator}
 
 import scala.{Boolean, Option, Unit}
 import scala.Predef.???
@@ -33,7 +33,7 @@ final class HashSet[A]
 
 }
 
-object HashSet extends IterableFactory[HashSet] {
+object HashSet extends IterableFactories[HashSet] {
 
   def fromIterable[B](it: strawman.collection.Iterable[B]): HashSet[B] = {
     val result = new HashSet[B]

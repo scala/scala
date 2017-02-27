@@ -4,7 +4,7 @@ import java.lang.IndexOutOfBoundsException
 
 import scala.{AnyRef, Array, Boolean, Exception, Int, Long, StringContext, Unit, math}
 import strawman.collection
-import strawman.collection.{IndexedView, IterableFactory, IterableOnce, SeqLike}
+import strawman.collection.{IndexedView, IterableFactories, IterableOnce, SeqLike}
 
 import scala.Predef.intWrapper
 
@@ -124,7 +124,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
   override def className = "ArrayBuffer"
 }
 
-object ArrayBuffer extends IterableFactory[ArrayBuffer] {
+object ArrayBuffer extends IterableFactories[ArrayBuffer] {
 
   /** Avoid reallocation of buffer if length is known. */
   def fromIterable[B](coll: collection.Iterable[B]): ArrayBuffer[B] =

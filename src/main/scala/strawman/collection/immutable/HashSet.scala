@@ -3,7 +3,7 @@ package strawman
 package collection.immutable
 
 import strawman.collection.mutable.Builder
-import strawman.collection.{IterableFactory, Iterator}
+import strawman.collection.{IterableFactories, Iterator}
 
 import scala.Boolean
 import scala.Predef.???
@@ -32,7 +32,7 @@ class HashSet[A] extends Set[A] with SetLike[A, HashSet] {
 
 }
 
-object HashSet extends IterableFactory[HashSet] {
+object HashSet extends IterableFactories[HashSet] {
 
   def fromIterable[A](it: collection.Iterable[A]): HashSet[A] = ???
 
