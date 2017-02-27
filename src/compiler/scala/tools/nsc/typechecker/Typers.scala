@@ -4666,19 +4666,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val qual1 = typedQualifier(qual)
             if (treeInfo.isVariableOrGetter(qual1)) {
               if (Statistics.canEnable) Statistics.stopTimer(failedOpEqNanos, opeqStart)
-              val erred = qual1.isErroneous || args.exists(_.isErroneous)
+              val erred = qual1.exists(_.isErroneous) || args.exists(_.isErroneous)
               if (erred) reportError(error) else {
                 val convo = convertToAssignment(fun, qual1, name, args)
                 silent(op = _.typed1(convo, mode, pt)) match {
                   case SilentResultValue(t) => t
-                  case err: SilentTypeError => reportError(SilentTypeError(advice1(convo, error.errors, err), error.warnings))
+                  case err: SilentTypeError => reportError(
+                    SilentTypeError(advice1(convo, error.errors, err), error.warnings)
+                  )
                 }
               }
-            }
-            else {
+            } else {
               if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
               val Apply(Select(qual2, _), args2) = tree
-              val erred = qual2.isErroneous || args2.exists(_.isErroneous)
+              val erred = qual2.exists(_.isErroneous) || args2.exists(_.isErroneous)
               reportError {
                 if (erred) error else SilentTypeError(advice2(error.errors), error.warnings)
               }
