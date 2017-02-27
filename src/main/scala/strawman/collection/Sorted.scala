@@ -34,10 +34,6 @@ trait OrderingGuidedFactories[C[_]] {
 
   def apply[A : Ordering](as: A*): C[A] = (newBuilder[A] ++= as.toStrawman).result
 
-  implicit def canBuild[A : Ordering]: CanBuild[A, C[A]] = new CanBuildThisCollection[A]
-
-  class CanBuildThisCollection[A : Ordering] extends CanBuild[A, C[A]] {
-    def apply(): Builder[A, C[A]] = newBuilder[A]
-  }
+  implicit def canBuild[A : Ordering]: () => Builder[A, C[A]] = () => newBuilder[A]
 
 }
