@@ -22,7 +22,7 @@ import scala.tools.nsc.backend.jvm.BTypes.InternalName
  * constructor will actually go through the proxy. The lazy vals make sure the instance is assigned
  * in the proxy before the fields are initialized.
  *
- * Note: if we did not re-create the core BTypes on each compiler run, BType.classBTypeFromInternalNameMap
+ * Note: if we did not re-create the core BTypes on each compiler run, BType.classBTypeCacheFromSymbol
  * could not be a perRunCache anymore: the classes defined here need to be in that map, they are
  * added when the ClassBTypes are created. The per run cache removes them, so they would be missing
  * in the second run.

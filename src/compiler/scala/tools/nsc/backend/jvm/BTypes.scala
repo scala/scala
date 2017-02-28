@@ -64,17 +64,19 @@ abstract class BTypes {
   def compilerSettings: ScalaSettings
 
   /**
-   * A map from internal names to ClassBTypes. Every ClassBType is added to this map on its
-   * construction.
+   * Every ClassBType is cached on construction and accessible through this method.
    *
-   * This map is used when computing stack map frames. The asm.ClassWriter invokes the method
+   * The cache is used when computing stack map frames. The asm.ClassWriter invokes the method
    * `getCommonSuperClass`. In this method we need to obtain the ClassBType for a given internal
-   * name. The method assumes that every class type that appears in the bytecode exists in the map.
-   *
-   * Concurrent because stack map frames are computed when in the class writer, which might run
-   * on multiple classes concurrently.
+   * name. The method assumes that every class type that appears in the bytecode exists in the map
    */
-  val classBTypeFromInternalName: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
+  def cachedClassBType(internalName: InternalName): Option[ClassBType] =
+    classBTypeCacheFromSymbol.get(internalName).orElse(classBTypeCacheFromClassfile.get(internalName))
+
+  // Concurrent maps because stack map frames are computed when in the class writer, which
+  // might run on multiple classes concurrently.
+  val classBTypeCacheFromSymbol: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
+  val classBTypeCacheFromClassfile: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(TrieMap.empty)
 
   /**
    * Store the position of every MethodInsnNode during code generation. This allows each callsite
@@ -173,8 +175,8 @@ abstract class BTypes {
    * be found in the `byteCodeRepository`, the `info` of the resulting ClassBType is undefined.
    */
   def classBTypeFromParsedClassfile(internalName: InternalName): ClassBType = {
-    classBTypeFromInternalName.getOrElse(internalName, {
-      val res = ClassBType(internalName)
+    cachedClassBType(internalName).getOrElse({
+      val res = ClassBType(internalName)(classBTypeCacheFromClassfile)
       byteCodeRepository.classNode(internalName) match {
         case Left(msg) => res.info = Left(NoClassBTypeInfoMissingBytecode(msg)); res
         case Right(c)  => setClassInfoFromClassNode(c, res)
@@ -186,8 +188,8 @@ abstract class BTypes {
    * Construct the [[ClassBType]] for a parsed classfile.
    */
   def classBTypeFromClassNode(classNode: ClassNode): ClassBType = {
-    classBTypeFromInternalName.getOrElse(classNode.name, {
-      setClassInfoFromClassNode(classNode, ClassBType(classNode.name))
+    cachedClassBType(classNode.name).getOrElse({
+      setClassInfoFromClassNode(classNode, ClassBType(classNode.name)(classBTypeCacheFromClassfile))
     })
   }
 
@@ -847,7 +849,7 @@ abstract class BTypes {
    * a missing info. In order not to crash the compiler unnecessarily, the inliner does not force
    * infos using `get`, but it reports inliner warnings for missing infos that prevent inlining.
    */
-  final case class ClassBType(internalName: InternalName) extends RefBType {
+  final case class ClassBType(internalName: InternalName)(cache: mutable.Map[InternalName, ClassBType]) extends RefBType {
     /**
      * Write-once variable allows initializing a cyclic graph of infos. This is required for
      * nested classes. Example: for the definition `class A { class B }` we have
@@ -868,7 +870,7 @@ abstract class BTypes {
       checkInfoConsistency()
     }
 
-    classBTypeFromInternalName(internalName) = this
+    cache(internalName) = this
 
     private def checkInfoConsistency(): Unit = {
       if (info.isLeft) return

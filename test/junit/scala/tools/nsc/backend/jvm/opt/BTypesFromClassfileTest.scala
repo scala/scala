@@ -27,7 +27,10 @@ class BTypesFromClassfileTest extends BytecodeTesting {
   duringBackend(global.scalaPrimitives.init()) // needed: it's only done when running the backend, and we don't actually run the compiler
   duringBackend(bTypes.initializeCoreBTypes())
 
-  def clearCache() = bTypes.classBTypeFromInternalName.clear()
+  def clearCache() = {
+    bTypes.classBTypeCacheFromSymbol.clear()
+    bTypes.classBTypeCacheFromClassfile.clear()
+  }
 
   def sameBType(fromSym: ClassBType, fromClassfile: ClassBType, checked: Set[InternalName] = Set.empty): Set[InternalName] = {
     if (checked(fromSym.internalName)) checked

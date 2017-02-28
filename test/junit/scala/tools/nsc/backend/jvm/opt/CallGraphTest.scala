@@ -22,7 +22,8 @@ class CallGraphTest extends BytecodeTesting {
   import compiler._
   import global.genBCode.bTypes
   val notPerRun: List[Clearable] = List(
-    bTypes.classBTypeFromInternalName,
+    bTypes.classBTypeCacheFromSymbol,
+    bTypes.classBTypeCacheFromClassfile,
     bTypes.byteCodeRepository.compilingClasses,
     bTypes.byteCodeRepository.parsedClasses,
     bTypes.callGraph.callsites)
@@ -145,7 +146,7 @@ class CallGraphTest extends BytecodeTesting {
     val m = getAsmMethod(c, "m")
     val List(fn) = callsInMethod(m)
     val forNameMeth = byteCodeRepository.methodNode("java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;").get._1
-    val classTp = classBTypeFromInternalName("java/lang/Class")
+    val classTp = cachedClassBType("java/lang/Class").get
     val r = callGraph.callsites(m)(fn)
     checkCallsite(fn, m, forNameMeth, classTp, safeToInline = false, atInline = false, atNoInline = false)
   }

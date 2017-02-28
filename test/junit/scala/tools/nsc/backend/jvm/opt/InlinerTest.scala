@@ -27,7 +27,8 @@ class InlinerTest extends BytecodeTesting {
   import global.genBCode.bTypes
   // allows inspecting the caches after a compilation run
   def notPerRun: List[Clearable] = List(
-    bTypes.classBTypeFromInternalName,
+    bTypes.classBTypeCacheFromSymbol,
+    bTypes.classBTypeCacheFromClassfile,
     bTypes.byteCodeRepository.compilingClasses,
     bTypes.byteCodeRepository.parsedClasses,
     bTypes.callGraph.callsites)

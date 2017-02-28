@@ -115,17 +115,22 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     else if (classSym == NullClass) srNullRef
     else {
       val internalName = classSym.javaBinaryNameString
-      classBTypeFromInternalName.getOrElse(internalName, {
-        // The new ClassBType is added to the map in its constructor, before we set its info. This
-        // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
-        val res = ClassBType(internalName)
-        if (completeSilentlyAndCheckErroneous(classSym)) {
-          res.info = Left(NoClassBTypeInfoClassSymbolInfoFailedSI9111(classSym.fullName))
-          res
-        } else {
-          setClassInfo(classSym, res)
-        }
-      })
+      cachedClassBType(internalName) match {
+        case Some(bType) =>
+          if (currentRun.compiles(classSym))
+            assert(classBTypeCacheFromSymbol.contains(internalName), s"ClassBType for class being compiled was already created from a classfile: ${classSym.fullName}")
+          bType
+        case None =>
+          // The new ClassBType is added to the map in its constructor, before we set its info. This
+          // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
+          val res = ClassBType(internalName)(classBTypeCacheFromSymbol)
+          if (completeSilentlyAndCheckErroneous(classSym)) {
+            res.info = Left(NoClassBTypeInfoClassSymbolInfoFailedSI9111(classSym.fullName))
+            res
+          } else {
+            setClassInfo(classSym, res)
+          }
+      }
     }
   }
 
@@ -626,8 +631,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   def mirrorClassClassBType(moduleClassSym: Symbol): ClassBType = {
     assert(isTopLevelModuleClass(moduleClassSym), s"not a top-level module class: $moduleClassSym")
     val internalName = moduleClassSym.javaBinaryNameString.stripSuffix(nme.MODULE_SUFFIX_STRING)
-    classBTypeFromInternalName.getOrElse(internalName, {
-      val c = ClassBType(internalName)
+    cachedClassBType(internalName).getOrElse({
+      val c = ClassBType(internalName)(classBTypeCacheFromSymbol)
       // class info consistent with BCodeHelpers.genMirrorClass
       val nested = exitingPickler(memberClassesForInnerClassTable(moduleClassSym)) map classBTypeFromSymbol
       c.info = Right(ClassInfo(
@@ -643,8 +648,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
   def beanInfoClassClassBType(mainClass: Symbol): ClassBType = {
     val internalName = mainClass.javaBinaryNameString + "BeanInfo"
-    classBTypeFromInternalName.getOrElse(internalName, {
-      val c = ClassBType(internalName)
+    cachedClassBType(internalName).getOrElse({
+      val c = ClassBType(internalName)(classBTypeCacheFromSymbol)
       c.info = Right(ClassInfo(
         superClass = Some(sbScalaBeanInfoRef),
         interfaces = Nil,
