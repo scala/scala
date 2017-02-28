@@ -78,8 +78,6 @@ abstract class TreeBuilder {
     /** Create tree representing a return statement */
     def makeReturn(expr: Tree): Tree
 
-    /** Create a tree making an application node */
-    def makeApply(sel: Tree, exprs: List[Tree]): Tree
   }
 
   // the factory methods below delegate to methods on builder
@@ -104,9 +102,6 @@ abstract class TreeBuilder {
 
   /** Create tree representing a return statement */
   @inline final def makeReturn(expr: Tree): Tree = builder.makeReturn(expr)
-
-  /** Create a tree making an application node */
-  @inline final def makeApply(sel: Tree, exprs: List[Tree]): Tree = builder.makeApply(sel, exprs)
 
 
   /*private <-- BUG*/ class DirectTreeBuilder extends TreeBuilderStrategy {
@@ -147,9 +142,6 @@ abstract class TreeBuilder {
     def makeReturn(expr: Tree): Tree =
       Return(expr)
 
-    /** Create a tree making an application node */
-    def makeApply(sel: Tree, exprs: List[Tree]) =
-      Apply(sel, exprs)
   }
 
   // build trees for virtualized scala
@@ -182,16 +174,6 @@ abstract class TreeBuilder {
     def makeReturn(expr: Tree): Tree =
       Apply(Ident(nme._return), List(expr))
 
-    /** Create a tree making an application node; treating == specially
-      */
-    def makeApply(sel: Tree, exprs: List[Tree]) = sel match {
-      case Select(qual, nme.EQ) => // reroute == to __equal
-        // don't tuple exprs, as we can't (easily) undo it when it turns out
-        // there was a regular == method that takes this number of args (see t3736 in pos/ and neg/)
-        Apply(Ident(nme._equal) setPos sel.pos, qual :: exprs)
-      case _ =>
-        Apply(sel, exprs)
-    }
   }
 
   /** Create block of statements `stats`  */

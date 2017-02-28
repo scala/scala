@@ -183,10 +183,6 @@ trait Interface extends ast.TreeDSL {
 
       reporter.warning(pos, "match may not be exhaustive.\nIt would fail on the following "+ ceString)
     }
-
-    import global.definitions.repeatedToSeq;
-    import global.elimAnonymousClass;
-    def selectorType(selector: Tree): Type = pureType(repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations)))
   }
 
 

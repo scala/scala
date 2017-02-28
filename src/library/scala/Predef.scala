@@ -692,49 +692,4 @@ trait EmbeddedControls {
   def __equal(expr1: Any, expr2: Any): Boolean =
     throw new UnsupportedOperationException("__equal")
 
-  /** Struct is a marker trait used to indicate that `new C { ... }` should be reified.
-    *
-    * Selections on the result `e` of the reified object creation, `e.x_i`,
-    * are treated specially, as outlined below.
-    *
-    * If there's a type constructor `Rep` (of kind `* -> *`) so that `C <:< Struct`,
-    * the expression `new C { (val x_i: T_i = v_i)* }` is turned into
-    * the call `__new(("x_i", (self_i: Rep[C{ (val x_i: T_i')* }]) => v_i')*)`,
-    * which is typed with expected type `Rep[C{ (val x_i: T_i')* }]`
-    *
-    * For all i,
-    *   - there must be some T_i' so that T_i = Rep[T_i'] -- or, if that previous equality is not unifiable, T_i = T_i'
-    *   - the v_i' result from retyping v_i with expected type Rep[T_i'],
-    *     after replacing `this` by a fresh variable `self_i` (with type `Rep[C{ (val x_i: T_i')* }]`)
-    *
-    * This assumes there is a method in scope similar to: `def __new[T](args: (String, Rep[T] => Rep[_])*): Rep[T]`
-    *
-    * When a selection `e.x_i` does not type check according to the normal typing rules,
-    * and `e` has type `Rep[C{ (val x_i: T_i')* }]` (where `C` meets the criteria outlined above),
-    * `e.x_i` is turned into `e.selectDynamic[T_i]("x_i")`
-    */
-  trait Struct
-
-  /**
-    * given `def OptiML[R](b: => R) = new Scope[OptiML, OptiMLExp, R](b)`
-    *
-    * `OptiML { body }` is expanded to:
-    *
-    *  trait DSLprog$ extends OptiML {
-    *    def apply = body
-    *  }
-    *  (new DSLprog$ with OptiMLExp): OptiML with OptiMLExp
-    *
-    *
-    */
-  class Scope[Interface, Implementation, Result](body: => Result)
 }
-
-trait ProxyControlsBase extends EmbeddedControls {
-  type TransparentProxy[+T]
-
-  def __forward[A,B,C](self: TransparentProxy[A], method: String, x: TransparentProxy[B]*): TransparentProxy[C] =
-    throw new UnsupportedOperationException("__forward")
-}
-
-trait ProxyControls extends ProxyControlsBase

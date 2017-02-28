@@ -833,7 +833,7 @@ self =>
       }
       if (isExpr) {
         if (treeInfo.isLeftAssoc(op)) {
-          makeApply(mkSelection(left), arguments)
+          Apply(mkSelection(left), arguments)
         } else {
           val x = freshTermName()
           Block(
@@ -1728,7 +1728,7 @@ self =>
               case _ =>
                 stripParens(t)
             }
-            makeApply(sel, argumentExprs())
+            Apply(sel, argumentExprs())
           }
           simpleExprRest(app, canApply = true)
         case USCORE =>

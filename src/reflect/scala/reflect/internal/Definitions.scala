@@ -340,15 +340,10 @@ trait Definitions extends api.StandardDefinitions {
       lazy val EmbeddedControls_ifThenElse = getMember(EmbeddedControlsClass, nme._ifThenElse)
       lazy val EmbeddedControls_whileDo = getMember(EmbeddedControlsClass, nme._whileDo)
       lazy val EmbeddedControls_doWhile = getMember(EmbeddedControlsClass, nme._doWhile)
-      lazy val EmbeddedControls_Struct = getMember(EmbeddedControlsClass, tpnme.Struct)
-      lazy val EmbeddedControls_Scope = getMember(EmbeddedControlsClass, tpnme.Scope)
-      lazy val EmbeddedControls_new = getMember(EmbeddedControlsClass, nme._new)
       lazy val EmbeddedControls_newVar = getMember(EmbeddedControlsClass, nme._newVar)
       lazy val EmbeddedControls_assign = getMember(EmbeddedControlsClass, nme._assign)
       lazy val EmbeddedControls_return = getMember(EmbeddedControlsClass, nme._return)
       lazy val EmbeddedControls_equal = getMember(EmbeddedControlsClass, nme._equal)
-    lazy val ProxyControlsClass  = getRequiredClass("scala.ProxyControls")
-    lazy val Symbol_result       = getMemberMethod(SymbolModule, nme.result)
 
     // fundamental modules
     lazy val SysPackage = getPackageObject("scala.sys")

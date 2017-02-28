@@ -435,7 +435,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
         case TypeApply(fun, targs) =>
           print(fun); printRow(targs, "[", ", ", "]")
 
-        case Apply(fun, vargs) => // TODO: do same rewriting as in typedApply1?
+        case Apply(fun, vargs) =>
           print(fun); printRow(vargs, "(", ", ", ")")
 
         case ApplyDynamic(qual, vargs) =>

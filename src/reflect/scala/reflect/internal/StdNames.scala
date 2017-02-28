@@ -281,11 +281,6 @@ trait StdNames {
     final val QUASIQUOTE_MODS: NameType         = "$quasiquote$mods$"
     final val QUASIQUOTE_TUPLE: NameType        = "$quasiquote$tuple$"
 
-    // embedding information
-    val TransparentProxy: NameType       = "TransparentProxy"
-    val Struct: NameType                 = "Struct"
-    val Scope: NameType                  = "Scope"
-
     // Annotation simple names, used in Namer
     final val BeanPropertyAnnot: NameType = "BeanProperty"
     final val BooleanBeanPropertyAnnot: NameType = "BooleanBeanProperty"
@@ -862,12 +857,10 @@ trait StdNames {
     val _doWhile = newTermName("__doWhile")
     val _equal = newTermName("__equal")
     val _ifThenElse = newTermName("__ifThenElse")
-    val _new = newTermName("__new")
     val _newVar = newTermName("__newVar")
     val _assign = newTermName("__assign")
     val _return = newTermName("__return")
     val _whileDo = newTermName("__whileDo")
-    val _forward = newTermName("__forward")
     val result: NameType               = "result"
 
     // unencoded operators

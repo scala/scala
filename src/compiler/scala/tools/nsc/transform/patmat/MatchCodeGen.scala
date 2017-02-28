@@ -105,12 +105,6 @@ trait MatchCodeGen extends Interface {
     import CODE._
     def _match(n: Name): SelectStart = matchStrategy DOT n
 
-    override def selectorType(selector: Tree): Type = {
-      // should we use newTyper.silent here? it seems no: propagating the errors is essential for the current tests
-      val tped = typer.typed(_match(vpmName.runOrElse) APPLY selector, scala.tools.nsc.Mode.EXPRmode, functionType(List(functionType(List(WildcardType), WildcardType)), WildcardType))
-      if (tped.tpe.isErroneous) super.selectorType(selector)
-      else tped.tpe.typeArgs.head.typeArgs.head
-    }
     // TODO: error message
     private lazy val oneType              = typer.typedOperator(_match(vpmName.one)).tpe
     override def pureType(tp: Type): Type = firstParamType(appliedType(oneType, tp :: Nil))
