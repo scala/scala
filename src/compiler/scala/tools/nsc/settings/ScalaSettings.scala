@@ -267,7 +267,6 @@ trait ScalaSettings extends AbsScalaSettings
     }
   }
   val Yvirtualize   = BooleanSetting    ("-Yvirtualize", "Virtualize control-structures.")
-  Yvirtualize.value = true
 
   def optNone                    = opt.contains(optChoices.lNone)
   def optUnreachableCode         = optEnabled(optChoices.unreachableCode)

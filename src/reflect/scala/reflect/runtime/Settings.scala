@@ -55,5 +55,5 @@ private[reflect] class Settings extends MutableSettings {
   def isScala211        = true
   def isScala212        = true
 
-  val Yvirtualize       = new BooleanSetting(true)
+  val Yvirtualize       = new BooleanSetting(false)
 }
