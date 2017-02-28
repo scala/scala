@@ -2,7 +2,6 @@ reload: CrashOnLoad.scala, TestIterable.java
 
 askTypeCompletion at CrashOnLoad.scala(6,11)
 ================================================================================
-<<<<<<< HEAD
 [response] askTypeCompletion at (6,11)
 retrieved 30 members
 [inaccessible] protected[package lang] def clone(): Object
@@ -33,9 +32,4 @@ final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
 final def wait(x$1: Long,x$2: Int): Unit
-=======
-[response] aksTypeCompletion at (6,12)
-retrieved 0 members
-
->>>>>>> virt
 ================================================================================
