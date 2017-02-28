@@ -876,10 +876,9 @@ If a type parameter section is missing in the class, it is also missing in the `
 
 If the companion object $c$ is already defined,
 the  `apply` and `unapply` methods are added to the existing object.
+If the object $c$ already has a [matching](#definition-matching)
+`apply` (or `unapply`) member, no new definition is added.
 The definition of `apply` is omitted if class $c$ is `abstract`.
-If the object $c$ already defines a [matching](#definition-matching) member of the
-same name as the synthetic member to be added, the synthetic member
-is not added (overloading or mutual recursion is allowed, however).
 
 If the case class definition contains an empty value parameter list, the
 `unapply` method returns a `Boolean` instead of an `Option` type and

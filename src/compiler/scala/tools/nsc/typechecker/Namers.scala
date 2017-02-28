@@ -650,6 +650,8 @@ trait Namers extends MethodSynthesis {
     def applyUnapplyMethodCompleter(un_applyDef: DefDef, companionContext: Context): TypeCompleter =
       new CompleterWrapper(completerOf(un_applyDef)) {
         override def complete(sym: Symbol): Unit = {
+          assert(sym hasAllFlags CASE | SYNTHETIC, sym.defString)
+
           super.complete(sym)
 
           // don't propagate e.g. @volatile annot to apply's argument
@@ -658,23 +660,37 @@ trait Namers extends MethodSynthesis {
 
           sym.info.paramss.foreach(_.foreach(retainOnlyParamAnnots))
 
-          // If there's a same-named locked symbol, we're currently completing its signature.
-          // This means it (may) refer to us, and is thus either overloaded or recursive without a signature.
-          // rule out locked symbols from the owner.info.member call
-          val scopePartiallyCompleted =
-            companionContext.scope.lookupAll(sym.name).exists(existing => existing != sym && existing.hasFlag(LOCKED))
+          // owner won't be locked
+          val ownerInfo = companionContext.owner.info
 
-          val suppress =
-            scopePartiallyCompleted || {
-            val userDefined = companionContext.owner.info.member(sym.name).filter(_ != sym)
+          // If there's a same-named locked symbol, we're currently completing its signature.
+          // If `scopePartiallyCompleted`, the program is known to have a type error, since
+          // this means a user-defined method is missing a result type while its rhs refers to `sym` or an overload.
+          // This is an error because overloaded/recursive methods must have a result type.
+          // The method would be overloaded if its signature, once completed, would not match the synthetic method's,
+          // or recursive if it turned out we should unlink our synthetic method (matching sig).
+          // In any case, error out. We don't unlink the symbol so that `symWasOverloaded` says yes,
+          // which would be wrong if the method is in fact recursive, but it seems less confusing.
+          val scopePartiallyCompleted = new HasMember(ownerInfo, sym.name, BridgeFlags | SYNTHETIC, LOCKED).apply()
+
+          // Check `scopePartiallyCompleted` first to rule out locked symbols from the owner.info.member call,
+          // as FindMember will call info on a locked symbol (while checking type matching to assemble an overloaded type),
+          // and throw a TypeError, so that we are aborted.
+          // Do not consider deferred symbols, as suppressing our concrete implementation would be an error regardless
+          // of whether the signature matches (if it matches, we omitted a valid implementation, if it doesn't,
+          // we would get an error for the missing implementation it isn't implemented by some overload other than our synthetic one)
+          val suppress = scopePartiallyCompleted || {
+            // can't exclude deferred members using DEFERRED flag here (TODO: why?)
+            val userDefined = ownerInfo.memberBasedOnName(sym.name, BridgeFlags | SYNTHETIC)
+
             (userDefined != NoSymbol) && {
-              userDefined.info match {
-                // TODO: do we have something for this already? the synthetic symbol can't be overloaded, right?
-                case OverloadedType(pre, alternatives) =>
-                  // pre probably relevant because of inherited overloads?
-                  alternatives.exists(_.isErroneous) || alternatives.exists(alt => pre.memberInfo(alt) matches pre.memberInfo(sym))
-                case tp =>
-                  (tp eq ErrorType) || tp.matches(sym.info)
+              assert(userDefined != sym)
+              val alts = userDefined.alternatives // could be just the one, if this member isn't overloaded
+              // don't compute any further `memberInfo`s if there's an error somewhere
+              alts.exists(_.isErroneous) || {
+                val self = companionContext.owner.thisType
+                val memberInfo = self.memberInfo(sym)
+                alts.exists(alt => !alt.isDeferred && (self.memberInfo(alt) matches memberInfo))
               }
             }
           }
@@ -744,8 +760,6 @@ trait Namers extends MethodSynthesis {
         val bridgeFlag = if (mods hasAnnotationNamed tpnme.bridgeAnnot) BRIDGE | ARTIFACT else 0
         val sym = assignAndEnterSymbol(tree) setFlag bridgeFlag
 
-        // copy/apply/unapply synthetics are added using the addIfMissing mechanism,
-        // which ensures the owner has its preliminary info (we may add another decl here)
         val completer =
           if (sym hasFlag SYNTHETIC) {
             if (name == nme.copy) copyMethodCompleter(tree)
