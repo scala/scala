@@ -12,14 +12,17 @@ Prototype improvements for Scala collections.
 
 - Compile the collections and run the
   tests:
+  
   ~~~
   >; compile; test
   ~~~
 - Run the memory benchmark:
+  
   ~~~
   > memoryBenchmark/charts
   ~~~
 - Run the execution time benchmark:
+  
   ~~~
   > timeBenchmark/charts
   ~~~
