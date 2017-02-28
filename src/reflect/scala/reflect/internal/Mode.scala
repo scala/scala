@@ -99,7 +99,6 @@ final class Mode private (val bits: Int) extends AnyVal {
   def &(other: Mode): Mode  = new Mode(bits & other.bits)
   def |(other: Mode): Mode  = new Mode(bits | other.bits)
   def &~(other: Mode): Mode = new Mode(bits & ~(other.bits))
-  def unary_~ : Mode = new Mode(~bits)
 
   def onlyTypePat = this & TYPEPATmode
   def onlySticky  = this & Mode.StickyModes

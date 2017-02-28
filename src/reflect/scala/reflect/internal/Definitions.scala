@@ -503,10 +503,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val FullManifestModule    = requiredModule[scala.reflect.ManifestFactory.type]
     lazy val OptManifestClass      = requiredClass[scala.reflect.OptManifest[_]]
     lazy val NoManifest            = requiredModule[scala.reflect.NoManifest.type]
-    lazy val SourceLocationClass   = requiredClass[scala.reflect.SourceLocation]
-    lazy val SourceLocationModule  = requiredModule[scala.reflect.SourceLocation]
-    lazy val SourceContextClass    = requiredClass[scala.reflect.SourceContext]
-    lazy val SourceContextModule   = requiredModule[scala.reflect.SourceContext]
 
     lazy val TreesClass            = getClassIfDefined("scala.reflect.api.Trees") // defined in scala-reflect.jar, so we need to be careful
 
