@@ -516,9 +516,10 @@ object RedBlackTree {
        *
        * According to {@see Integer#numberOfLeadingZeros} ceil(log_2(n)) = (32 - Integer.numberOfLeadingZeros(n - 1))
        *
-       * We also don't store the deepest nodes in the path so the maximum path length is further reduced by one.
+       * Although we don't store the deepest nodes in the path during iteration,
+       * we potentially do so in `startFrom`.
        */
-      val maximumHeight = 2 * (32 - Integer.numberOfLeadingZeros(root.count + 2 - 1)) - 2 - 1
+      val maximumHeight = 2 * (32 - Integer.numberOfLeadingZeros(root.count + 2 - 1)) - 2
       new Array[Tree[A, B]](maximumHeight)
     }
     private[this] var index = 0

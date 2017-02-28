@@ -932,6 +932,33 @@ extends scala.collection.concurrent.Map[K, V]
     if (nonReadOnly) readOnlySnapshot().iterator
     else new TrieMapIterator(0, this)
 
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  // SI-10177 These methods need overrides as the inherited implementations
+  // call `.iterator` more than once, which doesn't guarantee a coherent
+  // view of the data if there is a concurrent writer
+  // Note that the we don't need overrides for keysIterator or valuesIterator
+  // TrieMapTest validates the behaviour.
+  override def values: Iterable[V] = {
+    if (nonReadOnly) readOnlySnapshot().values
+    else super.values
+  }
+  override def keySet: Set[K] = {
+    if (nonReadOnly) readOnlySnapshot().keySet
+    else super.keySet
+  }
+  override def filterKeys(p: K => Boolean): collection.Map[K, V] = {
+    if (nonReadOnly) readOnlySnapshot().filterKeys(p)
+    else super.filterKeys(p)
+  }
+  override def mapValues[W](f: V => W): collection.Map[K, W] = {
+    if (nonReadOnly) readOnlySnapshot().mapValues(f)
+    else super.mapValues(f)
+  }
+  // END extra overrides
+  ///////////////////////////////////////////////////////////////////
+
+
   private def cachedSize() = {
     val r = RDCSS_READ_ROOT()
     r.cachedSize(this)

@@ -3676,9 +3676,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   val AllOps = SymbolOps(isFlagRelated = false, mask = 0L)
   def FlagOps(mask: Long) = SymbolOps(isFlagRelated = true, mask = mask)
 
-  private def relevantSymbols(syms: Seq[Symbol]) = syms.flatMap(sym => List(sym, sym.moduleClass, sym.sourceModule))
-  def markFlagsCompleted(syms: Symbol*)(mask: Long): Unit = relevantSymbols(syms).foreach(_.markFlagsCompleted(mask))
-  def markAllCompleted(syms: Symbol*): Unit = relevantSymbols(syms).foreach(_.markAllCompleted)
+  private def forEachRelevantSymbols(syms: Seq[Symbol], fn: Symbol => Unit): Unit =
+    syms.foreach { sym =>
+          fn(sym)
+          fn(sym.moduleClass)
+          fn(sym.sourceModule)
+    }
+
+  def markFlagsCompleted(syms: Symbol*)(mask: Long): Unit = forEachRelevantSymbols(syms, _.markFlagsCompleted(mask))
+  def markAllCompleted(syms: Symbol*): Unit = forEachRelevantSymbols(syms, _.markAllCompleted)
 }
 
 object SymbolsStats {

@@ -25,7 +25,7 @@ private[internal] trait TypeConstraints {
     // register with the auto-clearing cache manager
     perRunCaches.recordCache(this)
 
-    /** Undo all changes to constraints to type variables upto `limit`. */
+    /** Undo all changes to constraints to type variables up to `limit`. */
     //OPT this method is public so we can do `manual inlining`
     def undoTo(limit: UndoPairs) {
       assertCorrectThread()

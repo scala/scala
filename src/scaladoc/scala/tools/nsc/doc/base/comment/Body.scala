@@ -11,8 +11,9 @@ package comment
 import scala.collection._
 
 /** A body of text. A comment has a single body, which is composed of
-  * at least one block. Inside every body is exactly one summary (see
-  * [[scala.tools.nsc.doc.model.comment.Summary]]). */
+  * at least one block. Inside every body is exactly one summary.
+  * @see [[Summary]]
+  */
 final case class Body(blocks: Seq[Block]) {
 
   /** The summary text of the comment body. */
@@ -73,9 +74,8 @@ object EntityLink {
   def unapply(el: EntityLink): Option[(Inline, LinkTo)] = Some((el.title, el.link))
 }
 final case class HtmlTag(data: String) extends Inline {
-  private val Pattern = """(?ms)\A<(/?)(.*?)[\s>].*\z""".r
   private val (isEnd, tagName) = data match {
-    case Pattern(s1, s2) =>
+    case HtmlTag.Pattern(s1, s2) =>
       (! s1.isEmpty, Some(s2.toLowerCase))
     case _ =>
       (false, None)
@@ -85,8 +85,13 @@ final case class HtmlTag(data: String) extends Inline {
     isEnd && tagName == open.tagName
   }
 
+  def close = tagName collect {
+    case name if !HtmlTag.TagsNotToClose(name) && !data.endsWith(s"</$name>") => HtmlTag(s"</$name>")
+  }
+}
+object HtmlTag {
+  private val Pattern = """(?ms)\A<(/?)(.*?)[\s>].*\z""".r
   private val TagsNotToClose = Set("br", "img")
-  def close = tagName collect { case name if !TagsNotToClose(name) => HtmlTag(s"</$name>") }
 }
 
 /** The summary of a comment, usually its first sentence. There must be exactly one summary per body. */

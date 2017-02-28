@@ -222,7 +222,7 @@ private[util] trait InternalPositionImpl {
 private[util] trait DeprecatedPosition {
   self: Position =>
 
-  @deprecated("use `point`", "2.9.0") // Used in SBT 0.12.4
+  @deprecated("use `point`", "2.9.0") // Used in sbt 0.12.4
   def offset: Option[Int] = if (isDefined) Some(point) else None
 
   @deprecated("use `focus`", "2.11.0")

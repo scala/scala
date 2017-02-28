@@ -1,0 +1,4 @@
+Chain(List(Chain(List(Text(Demonstrates a scala issue in which the closing link tag is duplicated), Text(
+), HtmlTag(<a href="https://link">title</a>), Text(
+), Text()))))
+Done.

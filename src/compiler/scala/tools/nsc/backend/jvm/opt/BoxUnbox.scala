@@ -69,7 +69,7 @@ class BoxUnbox[BT <: BTypes](val btypes: BT) {
    * E1: M1 only works if there's a single boxing operation.
    *   def e1(b: Boolean) = {
    *     val i: Integer = box(10) // 10 is stored into a new local, box operation and i removed
-   *     val j: Integer = box(20) // 20 is stored into a new local, box operation adn j removed
+   *     val j: Integer = box(20) // 20 is stored into a new local, box operation and j removed
    *     val r = if (b) i else j  // loads and stores of the box are eliminated, r no longer exists
    *     unbox(r)                 // cannot rewrite: we don't know which local to load
    *   }
@@ -138,7 +138,7 @@ class BoxUnbox[BT <: BTypes](val btypes: BT) {
    *   - note that the MatchError creation is dead code: local2 is never null. However, our nullness
    *     analysis cannot identify this: it does not track nullness through tuple stores and loads.
    *   - if we re-write the non-escaping consumers of the outer tuple, but keep the tuple allocation
-   *     and the escaping consumer, we get the follwoing:
+   *     and the escaping consumer, we get the following:
    *
    *   load 1, load 2
    *   val newLocal1 = new Tuple2; load newLocal1  // stack: Tuple2
@@ -188,7 +188,7 @@ class BoxUnbox[BT <: BTypes](val btypes: BT) {
 
       var maxStackGrowth = 0
 
-      /** Mehtod M1 for eliminating box-unbox pairs (see doc comment in the beginning of this file) */
+      /** Method M1 for eliminating box-unbox pairs (see doc comment in the beginning of this file) */
       def replaceBoxOperationsSingleCreation(creation: BoxCreation, finalCons: Set[BoxConsumer], boxKind: BoxKind, keepBox: Boolean): Unit = {
         /**
          * If the box is eliminated, all copy operations (loads, stores, others) of the box need to

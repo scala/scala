@@ -10,9 +10,10 @@ import java.util.function.IntFunction
 import java.util
 import java.util.Comparator
 
-import scala.reflect.io.{AbstractFile, PlainFile}
+import scala.reflect.io.{AbstractFile, PlainFile, PlainNioFile}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 import FileUtils._
+import scala.collection.JavaConverters._
 
 /**
  * A trait allowing to look for classpath entries in directories. It provides common logic for
@@ -106,7 +107,7 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
     // as the type of `case class C(); case class D(); List(C(), D()).head`, rather than the opposite order.
     // On Mac, the HFS performs this sorting transparently, but on Linux the order is unspecified.
     //
-    // Note this behaviour can be enabled with in javac with `javac -XDsortfiles`, but that's only
+    // Note this behaviour can be enabled in javac with `javac -XDsortfiles`, but that's only
     // intended to improve determinism of the compiler for compiler hackers.
     util.Arrays.sort(listing, (o1: File, o2: File) => o1.getName.compareTo(o2.getName))
     listing
@@ -121,51 +122,78 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
   def asClassPathStrings: Seq[String] = Seq(dir.getPath)
 }
 
-object JImageDirectoryLookup {
-  import java.nio.file._, java.net.URI, scala.collection.JavaConverters._
-  def apply(): List[ClassPath] = {
+object JrtClassPath {
+  import java.nio.file._, java.net.URI
+  def apply(): Option[ClassPath] = {
     try {
       val fs = FileSystems.getFileSystem(URI.create("jrt:/"))
-      val dir: Path = fs.getPath("/modules")
-      val modules = Files.list(dir).iterator().asScala.toList
-      modules.map(m => new JImageDirectoryLookup(fs, m.getFileName.toString))
+      Some(new JrtClassPath(fs))
     } catch {
       case _: ProviderNotFoundException | _: FileSystemNotFoundException =>
-        Nil
+        None
     }
   }
 }
-class JImageDirectoryLookup(fs: java.nio.file.FileSystem, module: String) extends DirectoryLookup[ClassFileEntryImpl] with NoSourcePaths {
+
+/**
+  * Implementation `ClassPath` based on the JDK 9 encapsulated runtime modules (JEP-220)
+  *
+  * https://bugs.openjdk.java.net/browse/JDK-8066492 is the most up to date reference
+  * for the structure of the jrt:// filesystem.
+  *
+  * The implementation assumes that no classes exist in the empty package.
+  */
+final class JrtClassPath(fs: java.nio.file.FileSystem) extends ClassPath with NoSourcePaths {
   import java.nio.file.Path, java.nio.file._
   type F = Path
-  val dir: Path = fs.getPath("/modules/" + module)
+  private val dir: Path = fs.getPath("/packages")
 
-  protected def emptyFiles: Array[Path] = Array.empty
-  protected def getSubDir(packageDirName: String): Option[Path] = {
-    val packageDir = dir.resolve(packageDirName)
-    if (Files.exists(packageDir) && Files.isDirectory(packageDir)) Some(packageDir)
-    else None
+  // e.g. "java.lang" -> Seq("/modules/java.base")
+  private val packageToModuleBases: Map[String, Seq[Path]] = {
+    val ps = Files.newDirectoryStream(dir).iterator().asScala
+    def lookup(pack: Path): Seq[Path] = {
+      Files.list(pack).iterator().asScala.map(l => if (Files.isSymbolicLink(l)) Files.readSymbolicLink(l) else l).toList
+    }
+    ps.map(p => (p.toString.stripPrefix("/packages/"), lookup(p))).toMap
   }
-  protected def listChildren(dir: Path, filter: Option[Path => Boolean]): Array[Path] = {
-    import scala.collection.JavaConverters._
-    val f = filter.getOrElse((p: Path) => true)
-    Files.list(dir).iterator().asScala.filter(f).toArray[Path]
+
+  override private[nsc] def packages(inPackage: String): Seq[PackageEntry] = {
+    def matches(packageDottedName: String) =
+      if (packageDottedName.contains("."))
+        packageOf(packageDottedName) == inPackage
+      else inPackage == ""
+    packageToModuleBases.keysIterator.filter(matches).map(PackageEntryImpl(_)).toVector
   }
-  protected def getName(f: Path): String = f.getFileName.toString
-  protected def toAbstractFile(f: Path): AbstractFile = new scala.reflect.io.PlainNioFile(f)
-  protected def isPackage(f: Path): Boolean = Files.isDirectory(f) && mayBeValidPackage(f.getFileName.toString)
+  private[nsc] def classes(inPackage: String): Seq[ClassFileEntry] = {
+    if (inPackage == "") Nil
+    else {
+      packageToModuleBases.getOrElse(inPackage, Nil).flatMap(x =>
+        Files.list(x.resolve(inPackage.replace('.', '/'))).iterator().asScala.filter(_.getFileName.toString.endsWith(".class"))).map(x =>
+        ClassFileEntryImpl(new PlainNioFile(x))).toVector
+    }
+  }
+
+  override private[nsc] def list(inPackage: String): ClassPathEntries =
+    if (inPackage == "") ClassPathEntries(packages(inPackage), Nil)
+    else ClassPathEntries(packages(inPackage), classes(inPackage))
 
   def asURLs: Seq[URL] = Seq(dir.toUri.toURL)
-  def asClassPathStrings: Seq[String] = asURLs.map(_.toString)
+  // We don't yet have a scheme to represent the JDK modules in our `-classpath`.
+  // java models them as entries in the new "module path", we'll probably need to follow this.
+  def asClassPathStrings: Seq[String] = Nil
 
   def findClassFile(className: String): Option[AbstractFile] = {
-    val relativePath = FileUtils.dirPath(className) + ".class"
-    val classFile = dir.resolve(relativePath)
-    if (Files.exists(classFile)) Some(new scala.reflect.io.PlainNioFile(classFile)) else None
+    if (!className.contains(".")) None
+    else {
+      val inPackage = packageOf(className)
+      packageToModuleBases.getOrElse(inPackage, Nil).iterator.flatMap{x =>
+        val file = x.resolve(className.replace('.', '/') + ".class")
+        if (Files.exists(file)) new scala.reflect.io.PlainNioFile(file) :: Nil else Nil
+      }.take(1).toList.headOption
+    }
   }
-  override protected def createFileEntry(file: AbstractFile): ClassFileEntryImpl = ClassFileEntryImpl(file)
-  override protected def isMatchingFile(f: Path): Boolean = Files.isRegularFile(f) && f.getFileName.toString.endsWith(".class")
-  override private[nsc] def classes(inPackage: String): Seq[ClassFileEntry] = files(inPackage)
+  private def packageOf(dottedClassName: String): String =
+    dottedClassName.substring(0, dottedClassName.lastIndexOf("."))
 }
 
 case class DirectoryClassPath(dir: File) extends JFileDirectoryLookup[ClassFileEntryImpl] with NoSourcePaths {

@@ -1,0 +1,9 @@
+t9834.scala:5: error: value += is not a member of Int
+  Expression does not convert to assignment because:
+    type mismatch;
+     found   : String
+     required: Int
+    expansion: x.update(x.apply().+("42"))
+  x() += "42"
+      ^
+one error found

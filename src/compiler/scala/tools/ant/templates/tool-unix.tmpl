@@ -197,14 +197,11 @@ fi
 # to java to suppress "." from materializing.
 if [[ "$usebootcp" == "true" ]]; then
   classpath_args=("-Xbootclasspath/a:$TOOL_CLASSPATH" -classpath "\"\"")
-  # Note that the version numbers go 1.7, 1.8, 9, 10, ...
-  java_release="$(cat $JAVA_HOME/release | grep JAVA_VERSION)"
-  if [[ ! "$java_release" =~ JAVA_VERSION=\"1\. ]]; then
-    # Java 9 removed sun.boot.class.path, and the supposed replacement to at least see
-    # the appended boot classpath (jdk.boot.class.path.append) is not visible.
-    # So we have to pass a custom system property that PathResolver will find.
-    classpath_args+=("-Dscala.boot.class.path=$TOOL_CLASSPATH")
-  fi
+  # Java 9 removed sun.boot.class.path, and the supposed replacement to at least see
+  # the appended boot classpath (jdk.boot.class.path.append) is not visible.
+  # So we have to pass a custom system property that PathResolver will find.
+  # We do this for all JVM versions, rather than getting into the business of JVM version detection.
+  classpath_args+=("-Dscala.boot.class.path=$TOOL_CLASSPATH")
 else
   classpath_args=(-classpath "$TOOL_CLASSPATH")
 fi

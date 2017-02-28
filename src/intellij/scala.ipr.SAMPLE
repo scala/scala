@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CompilerConfiguration">
-    <option name="DEFAULT_COMPILER" value="Javac" />
-    <resourceExtensions />
     <wildcardResourcePatterns>
       <entry name="!?*.java" />
       <entry name="!?*.form" />
@@ -13,18 +11,137 @@
       <entry name="!?*.kt" />
       <entry name="!?*.clj" />
     </wildcardResourcePatterns>
-    <annotationProcessing>
-      <profile default="true" name="Default" enabled="false">
-        <processorPath useClasspath="true" />
-      </profile>
-    </annotationProcessing>
   </component>
   <component name="CopyrightManager" default="" />
   <component name="Encoding">
     <file url="PROJECT" charset="UTF-8" />
   </component>
-  <component name="EntryPointsManager">
-    <entry_points version="2.0" />
+  <component name="InspectionProjectProfileManager">
+    <profile version="1.0">
+      <option name="myName" value="Project Default" />
+    </profile>
+    <version value="1.0" />
+  </component>
+  <component name="Palette2">
+    <group name="Swing">
+      <item class="com.intellij.uiDesigner.HSpacer" tooltip-text="Horizontal Spacer" icon="/com/intellij/uiDesigner/icons/hspacer.png" removable="false" auto-create-binding="false" can-attach-label="false">
+        <default-constraints vsize-policy="1" hsize-policy="6" anchor="0" fill="1" />
+      </item>
+      <item class="com.intellij.uiDesigner.VSpacer" tooltip-text="Vertical Spacer" icon="/com/intellij/uiDesigner/icons/vspacer.png" removable="false" auto-create-binding="false" can-attach-label="false">
+        <default-constraints vsize-policy="6" hsize-policy="1" anchor="0" fill="2" />
+      </item>
+      <item class="javax.swing.JPanel" icon="/com/intellij/uiDesigner/icons/panel.png" removable="false" auto-create-binding="false" can-attach-label="false">
+        <default-constraints vsize-policy="3" hsize-policy="3" anchor="0" fill="3" />
+      </item>
+      <item class="javax.swing.JScrollPane" icon="/com/intellij/uiDesigner/icons/scrollPane.png" removable="false" auto-create-binding="false" can-attach-label="true">
+        <default-constraints vsize-policy="7" hsize-policy="7" anchor="0" fill="3" />
+      </item>
+      <item class="javax.swing.JButton" icon="/com/intellij/uiDesigner/icons/button.png" removable="false" auto-create-binding="true" can-attach-label="false">
+        <default-constraints vsize-policy="0" hsize-policy="3" anchor="0" fill="1" />
+        <initial-values>
+          <property name="text" value="Button" />
+        </initial-values>
+      </item>
+      <item class="javax.swing.JRadioButton" icon="/com/intellij/uiDesigner/icons/radioButton.png" removable="false" auto-create-binding="true" can-attach-label="false">
+        <default-constraints vsize-policy="0" hsize-policy="3" anchor="8" fill="0" />
+        <initial-values>
+          <property name="text" value="RadioButton" />
+        </initial-values>
+      </item>
+      <item class="javax.swing.JCheckBox" icon="/com/intellij/uiDesigner/icons/checkBox.png" removable="false" auto-create-binding="true" can-attach-label="false">
+        <default-constraints vsize-policy="0" hsize-policy="3" anchor="8" fill="0" />
+        <initial-values>
+          <property name="text" value="CheckBox" />
+        </initial-values>
+      </item>
+      <item class="javax.swing.JLabel" icon="/com/intellij/uiDesigner/icons/label.png" removable="false" auto-create-binding="false" can-attach-label="false">
+        <default-constraints vsize-policy="0" hsize-policy="0" anchor="8" fill="0" />
+        <initial-values>
+          <property name="text" value="Label" />
+        </initial-values>
+      </item>
+      <item class="javax.swing.JTextField" icon="/com/intellij/uiDesigner/icons/textField.png" removable="false" auto-create-binding="true" can-attach-label="true">
+        <default-constraints vsize-policy="0" hsize-policy="6" anchor="8" fill="1">
+          <preferred-size width="150" height="-1" />
+        </default-constraints>
+      </item>
+      <item class="javax.swing.JPasswordField" icon="/com/intellij/uiDesigner/icons/passwordField.png" removable="false" auto-create-binding="true" can-attach-label="true">
+        <default-constraints vsize-policy="0" hsize-policy="6" anchor="8" fill="1">
+          <preferred-size width="150" height="-1" />
+        </default-constraints>
+      </item>
+      <item class="javax.swing.JFormattedTextField" icon="/com/intellij/uiDesigner/icons/formattedTextField.png" removable="false" auto-create-binding="true" can-attach-label="true">
+        <default-constraints vsize-policy="0" hsize-policy="6" anchor="8" fill="1">
+          <preferred-size width="150" height="-1" />
+        </default-constraints>
+      </item>
+      <item class="javax.swing.JTextArea" icon="/com/intellij/uiDesigner/icons/textArea.png" removable="false" auto-create-binding="true" can-attach-label="true">
+        <default-constraints vsize-policy="6" hsize-policy="6" anchor="0" fill="3">
+          <preferred-size width="150" height="50" />
+        </default-constraints>
+      </item>
+      <item class="javax.swing.JTextPane" icon="/com/intellij/uiDesigner/icons/textPane.png" removable="false" auto-create-binding="true" can-attach-label="true">
+        <default-constraints vsize-policy="6" hsize-policy="6" anchor="0" fill="3">
+          <preferred-size width="150" height="50" />
+        </default-constraints>
+      </item>
+      <item class="javax.swing.JEditorPane" icon="/com/intellij/uiDesigner/icons/editorPane.png" removable="false" auto-create-binding="true" can-attach-label="true">
+        <default-constraints vsize-policy="6" hsize-policy="6" anchor="0" fill="3">
+          <preferred-size width="150" height="50" />
+        </default-constraints>
+      </item>
+      <item class="javax.swing.JComboBox" icon="/com/intellij/uiDesigner/icons/comboBox.png" removable="false" auto-create-binding="true" can-attach-label="true">
+        <default-constraints vsize-policy="0" hsize-policy="2" anchor="8" fill="1" />
+      </item>
+      <item class="javax.swing.JTable" icon="/com/intellij/uiDesigner/icons/table.png" removable="false" auto-create-binding="true" can-attach-label="false">
+        <default-constraints vsize-policy="6" hsize-policy="6" anchor="0" fill="3">
+          <preferred-size width="150" height="50" />
+        </default-constraints>
+      </item>
+      <item class="javax.swing.JList" icon="/com/intellij/uiDesigner/icons/list.png" removable="false" auto-create-binding="true" can-attach-label="false">
+        <default-constraints vsize-policy="6" hsize-policy="2" anchor="0" fill="3">
+          <preferred-size width="150" height="50" />
+        </default-constraints>
+      </item>
+      <item class="javax.swing.JTree" icon="/com/intellij/uiDesigner/icons/tree.png" removable="false" auto-create-binding="true" can-attach-label="false">
+        <default-constraints vsize-policy="6" hsize-policy="6" anchor="0" fill="3">
+          <preferred-size width="150" height="50" />
+        </default-constraints>
+      </item>
+      <item class="javax.swing.JTabbedPane" icon="/com/intellij/uiDesigner/icons/tabbedPane.png" removable="false" auto-create-binding="true" can-attach-label="false">
+        <default-constraints vsize-policy="3" hsize-policy="3" anchor="0" fill="3">
+          <preferred-size width="200" height="200" />
+        </default-constraints>
+      </item>
+      <item class="javax.swing.JSplitPane" icon="/com/intellij/uiDesigner/icons/splitPane.png" removable="false" auto-create-binding="false" can-attach-label="false">
+        <default-constraints vsize-policy="3" hsize-policy="3" anchor="0" fill="3">
+          <preferred-size width="200" height="200" />
+        </default-constraints>
+      </item>
+      <item class="javax.swing.JSpinner" icon="/com/intellij/uiDesigner/icons/spinner.png" removable="false" auto-create-binding="true" can-attach-label="true">
+        <default-constraints vsize-policy="0" hsize-policy="6" anchor="8" fill="1" />
+      </item>
+      <item class="javax.swing.JSlider" icon="/com/intellij/uiDesigner/icons/slider.png" removable="false" auto-create-binding="true" can-attach-label="false">
+        <default-constraints vsize-policy="0" hsize-policy="6" anchor="8" fill="1" />
+      </item>
+      <item class="javax.swing.JSeparator" icon="/com/intellij/uiDesigner/icons/separator.png" removable="false" auto-create-binding="false" can-attach-label="false">
+        <default-constraints vsize-policy="6" hsize-policy="6" anchor="0" fill="3" />
+      </item>
+      <item class="javax.swing.JProgressBar" icon="/com/intellij/uiDesigner/icons/progressbar.png" removable="false" auto-create-binding="true" can-attach-label="false">
+        <default-constraints vsize-policy="0" hsize-policy="6" anchor="0" fill="1" />
+      </item>
+      <item class="javax.swing.JToolBar" icon="/com/intellij/uiDesigner/icons/toolbar.png" removable="false" auto-create-binding="false" can-attach-label="false">
+        <default-constraints vsize-policy="0" hsize-policy="6" anchor="0" fill="1">
+          <preferred-size width="-1" height="20" />
+        </default-constraints>
+      </item>
+      <item class="javax.swing.JToolBar$Separator" icon="/com/intellij/uiDesigner/icons/toolbarSeparator.png" removable="false" auto-create-binding="false" can-attach-label="false">
+        <default-constraints vsize-policy="0" hsize-policy="0" anchor="0" fill="1" />
+      </item>
+      <item class="javax.swing.JScrollBar" icon="/com/intellij/uiDesigner/icons/scrollbar.png" removable="false" auto-create-binding="true" can-attach-label="false">
+        <default-constraints vsize-policy="6" hsize-policy="0" anchor="0" fill="2" />
+      </item>
+    </group>
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="false">
     <OptionsSetting value="true" id="Add" />
@@ -38,9 +155,7 @@
   </component>
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/actors.iml" filepath="$PROJECT_DIR$/actors.iml" />
       <module fileurl="file://$PROJECT_DIR$/compiler.iml" filepath="$PROJECT_DIR$/compiler.iml" />
-      <module fileurl="file://$PROJECT_DIR$/forkjoin.iml" filepath="$PROJECT_DIR$/forkjoin.iml" />
       <module fileurl="file://$PROJECT_DIR$/interactive.iml" filepath="$PROJECT_DIR$/interactive.iml" />
       <module fileurl="file://$PROJECT_DIR$/junit.iml" filepath="$PROJECT_DIR$/junit.iml" />
       <module fileurl="file://$PROJECT_DIR$/library.iml" filepath="$PROJECT_DIR$/library.iml" />
@@ -52,12 +167,13 @@
       <module fileurl="file://$PROJECT_DIR$/repl-jline.iml" filepath="$PROJECT_DIR$/repl-jline.iml" />
       <module fileurl="file://$PROJECT_DIR$/scala.iml" filepath="$PROJECT_DIR$/scala.iml" />
       <module fileurl="file://$PROJECT_DIR$/scala-build.iml" filepath="$PROJECT_DIR$/scala-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/scalacheck.iml" filepath="$PROJECT_DIR$/scalacheck.iml" />
       <module fileurl="file://$PROJECT_DIR$/scaladoc.iml" filepath="$PROJECT_DIR$/scaladoc.iml" />
       <module fileurl="file://$PROJECT_DIR$/scalap.iml" filepath="$PROJECT_DIR$/scalap.iml" />
       <module fileurl="file://$PROJECT_DIR$/test.iml" filepath="$PROJECT_DIR$/test.iml" />
     </modules>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="false" assert-keyword="true" jdk-15="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/../../out" />
   </component>
   <component name="ScalaCompilerConfiguration">
@@ -75,8 +191,8 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.1.0-scala-1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M5/bundles/scala-xml_2.12.0-M5-1.0.5.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.1.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/bundles/scala-xml_2.12-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.3.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -86,7 +202,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.1.0-scala-1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M5/bundles/scala-xml_2.12.0-M5-1.0.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/bundles/scala-xml_2.12-1.0.6.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -96,22 +212,24 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.1.0-scala-1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M5/bundles/scala-xml_2.12.0-M5-1.0.5.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.12.0-M5/jars/scala-partest_2.12.0-M5-1.0.17.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/bundles/scala-xml_2.12-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.3.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.12/jars/scala-partest_2.12-1.1.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/junit/junit/jars/junit-4.12.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/junit/junit/jars/junit-4.11.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.hamcrest/hamcrest-core/jars/hamcrest-core-1.3.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.openjdk.jol/jol-core/jars/jol-core-0.5.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
     </library>
     <library name="manual-deps">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M5/bundles/scala-xml_2.12.0-M5-1.0.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/bundles/scala-xml_2.12-1.0.6.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang/scala-library/jars/scala-library-2.12.1.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -121,9 +239,9 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.1.0-scala-1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M5/bundles/scala-xml_2.12.0-M5-1.0.5.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.12.0-M5/jars/scala-partest_2.12.0-M5-1.0.17.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/bundles/scala-xml_2.12-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.3.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.12/jars/scala-partest_2.12-1.1.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar!/" />
       </CLASSES>
@@ -142,7 +260,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.1.0-scala-1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M5/bundles/scala-xml_2.12.0-M5-1.0.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/bundles/scala-xml_2.12-1.0.6.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -152,32 +270,36 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.1.0-scala-1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M5/bundles/scala-xml_2.12.0-M5-1.0.5.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.1.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/bundles/scala-xml_2.12-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.3.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
     </library>
     <library name="scala-build-deps">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.typesafe.sbt/sbt-git/jars/sbt-git-0.8.5.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.eclipse.jgit/org.eclipse.jgit.pgm/jars/org.eclipse.jgit.pgm-3.7.0.201502260915-r.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/net.virtual-void/sbt-dependency-graph/jars/sbt-dependency-graph-0.8.2.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/com.github.mdr/ascii-graphs_2.10/jars/ascii-graphs_2.10-0.0.3.jar!/" />
+        <root url="jar://$USER_HOME$/.sbt/boot/scala-2.10.6/lib/scala-library.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.github.tototoshi/sbt-build-files-watcher/jars/sbt-build-files-watcher-0.1.1.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.scalapenos/sbt-prompt/jars/sbt-prompt-0.2.1.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.typesafe.sbt/sbt-git/jars/sbt-git-0.6.4.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.eclipse.jgit/org.eclipse.jgit.pgm/jars/org.eclipse.jgit.pgm-3.3.2.201404171909-r.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/args4j/args4j/jars/args4j-2.0.12.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.commons/commons-compress/jars/commons-compress-1.6.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.tukaani/xz/jars/xz-1.4.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.eclipse.jgit/org.eclipse.jgit.archive/jars/org.eclipse.jgit.archive-3.7.0.201502260915-r.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.eclipse.jgit/org.eclipse.jgit/jars/org.eclipse.jgit-3.7.0.201502260915-r.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.eclipse.jgit/org.eclipse.jgit.archive/jars/org.eclipse.jgit.archive-3.3.2.201404171909-r.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.eclipse.jgit/org.eclipse.jgit/jars/org.eclipse.jgit-3.3.2.201404171909-r.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/com.jcraft/jsch/jars/jsch-0.1.50.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.javaewah/JavaEWAH/bundles/JavaEWAH-0.7.9.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.httpcomponents/httpclient/jars/httpclient-4.1.3.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.httpcomponents/httpcore/jars/httpcore-4.1.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/commons-logging/commons-logging/jars/commons-logging-1.1.1.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/commons-codec/commons-codec/jars/commons-codec-1.4.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.slf4j/slf4j-api/jars/slf4j-api-1.7.2.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.osgi/org.osgi.core/jars/org.osgi.core-4.3.1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.eclipse.jgit/org.eclipse.jgit.ui/jars/org.eclipse.jgit.ui-3.7.0.201502260915-r.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.eclipse.jgit/org.eclipse.jgit.ui/jars/org.eclipse.jgit.ui-3.3.2.201404171909-r.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.commons/commons-lang3/jars/commons-lang3-3.3.2.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.pantsbuild/jarjar/jars/jarjar-1.6.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.pantsbuild/jarjar/jars/jarjar-1.6.3.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.6.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.6.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.ow2.asm/asm/jars/asm-5.0.4.jar!/" />
@@ -195,35 +317,37 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.codehaus.plexus/plexus-component-annotations/jars/plexus-component-annotations-1.5.5.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.codehaus.plexus/plexus-classworlds/bundles/plexus-classworlds-2.5.2.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/biz.aQute.bnd/biz.aQute.bnd/jars/biz.aQute.bnd-2.4.1.jar!/" />
-        <root url="jar://$USER_HOME$/.sbt/boot/scala-2.10.6/lib/scala-library.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/sbt/jars/sbt-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/main/jars/main-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/actions/jars/actions-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/classpath/jars/classpath-0.13.11.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/com.typesafe/mima-reporter_2.10/jars/mima-reporter_2.10-0.1.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/com.typesafe/mima-core_2.10/jars/mima-core_2.10-0.1.13.jar!/" />
         <root url="jar://$USER_HOME$/.sbt/boot/scala-2.10.6/lib/scala-compiler.jar!/" />
         <root url="jar://$USER_HOME$/.sbt/boot/scala-2.10.6/lib/scala-reflect.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/interface/jars/interface-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/io/jars/io-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/control/jars/control-0.13.11.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/com.typesafe/config/bundles/config-1.0.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/sbt/jars/sbt-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/main/jars/main-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/actions/jars/actions-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/classpath/jars/classpath-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/interface/jars/interface-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/io/jars/io-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/control/jars/control-0.13.13.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/launcher-interface/jars/launcher-interface-1.0.0-M1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/completion/jars/completion-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/collections/jars/collections-0.13.11.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/completion/jars/completion-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/collections/jars/collections-0.13.13.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.13.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.fusesource.jansi/jansi/jars/jansi-1.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/api/jars/api-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/classfile/jars/classfile-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/logging/jars/logging-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/process/jars/process-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/compiler-integration/jars/compiler-integration-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/incremental-compiler/jars/incremental-compiler-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/relation/jars/relation-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/compile/jars/compile-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/persist/jars/persist-0.13.11.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/api/jars/api-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/classfile/jars/classfile-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/logging/jars/logging-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/process/jars/process-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/compiler-integration/jars/compiler-integration-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/incremental-compiler/jars/incremental-compiler-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/relation/jars/relation-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/compile/jars/compile-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/persist/jars/persist-0.13.13.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-tools.sbinary/sbinary_2.10/jars/sbinary_2.10-0.4.2.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/compiler-ivy-integration/jars/compiler-ivy-integration-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/ivy/jars/ivy-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/cross/jars/cross-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt.ivy/ivy/jars/ivy-2.3.0-sbt-2cc8d2761242b072cedb0a04cb39435c4fa24f9a.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/compiler-ivy-integration/jars/compiler-ivy-integration-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/ivy/jars/ivy-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/cross/jars/cross-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt.ivy/ivy/jars/ivy-2.3.0-sbt-2cf13e211b2cb31f0d3b317289dca70eca3362f6.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/serialization_2.10/jars/serialization_2.10-0.1.2.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-pickling_2.10/jars/scala-pickling_2.10-0.10.1.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scalamacros/quasiquotes_2.10/jars/quasiquotes_2.10-2.0.1.jar!/" />
@@ -232,19 +356,30 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/com.thoughtworks.paranamer/paranamer/jars/paranamer-2.6.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.spire-math/jawn-parser_2.10/jars/jawn-parser_2.10-0.6.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.spire-math/json4s-support_2.10/jars/json4s-support_2.10-0.6.0.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/run/jars/run-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/task-system/jars/task-system-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/tasks/jars/tasks-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/tracking/jars/tracking-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/cache/jars/cache-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/testing/jars/testing-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-agent/jars/test-agent-0.13.11.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/run/jars/run-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/task-system/jars/task-system-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/tasks/jars/tasks-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/tracking/jars/tracking-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/cache/jars/cache-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/testing/jars/testing-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-agent/jars/test-agent-0.13.13.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/main-settings/jars/main-settings-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/apply-macro/jars/apply-macro-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/command/jars/command-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/logic/jars/logic-0.13.11.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/compiler-interface/jars/compiler-interface-0.13.11.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/main-settings/jars/main-settings-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/apply-macro/jars/apply-macro-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/command/jars/command-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/template-resolver/jars/template-resolver-0.1.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/logic/jars/logic-0.13.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/compiler-interface/jars/compiler-interface-0.13.13.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="scalacheck-deps">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.1.0-scala-1.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/bundles/scala-xml_2.12-1.0.6.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -254,10 +389,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.1.0-scala-1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M5/bundles/scala-xml_2.12.0-M5-1.0.5.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.12.0-M5/jars/scala-partest_2.12.0-M5-1.0.17.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/bundles/scala-xml_2.12-1.0.6.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -267,7 +399,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.1.0-scala-1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M5/bundles/scala-xml_2.12.0-M5-1.0.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/bundles/scala-xml_2.12-1.0.6.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -276,11 +408,11 @@
       <properties>
         <option name="languageLevel" value="Scala_2_12" />
         <compiler-classpath>
-          <root url="file://$USER_HOME$/.sbt/boot/scala-2.12.0-M5/lib/scala-library.jar" />
-          <root url="file://$USER_HOME$/.sbt/boot/scala-2.12.0-M5/lib/scala-compiler.jar" />
-          <root url="file://$USER_HOME$/.sbt/boot/scala-2.12.0-M5/lib/scala-reflect.jar" />
-          <root url="file://$USER_HOME$/.sbt/boot/scala-2.12.0-M5/lib/scala-xml_2.12.0-M5.jar" />
-          <root url="file://$USER_HOME$/.sbt/boot/scala-2.12.0-M5/lib/jline.jar" />
+          <root url="file://$USER_HOME$/.ivy2/cache/org.scala-lang/scala-library/jars/scala-library-2.12.1.jar" />
+          <root url="file://$USER_HOME$/.ivy2/cache/org.scala-lang/scala-compiler/jars/scala-compiler-2.12.1.jar" />
+          <root url="file://$USER_HOME$/.ivy2/cache/org.scala-lang/scala-reflect/jars/scala-reflect-2.12.1.jar" />
+          <root url="file://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/bundles/scala-xml_2.12-1.0.6.jar" />
+          <root url="file://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.1.jar" />
         </compiler-classpath>
       </properties>
       <CLASSES />
@@ -292,11 +424,18 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-5.1.0-scala-1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12.0-M5/bundles/scala-xml_2.12.0-M5-1.0.5.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.12.0-M5/jars/scala-partest_2.12.0-M5-1.0.17.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/bundles/scala-xml_2.12-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.3.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-partest_2.12/jars/scala-partest_2.12-1.1.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.scala-sha-bootstrap.test.files.lib/annotations/jars/annotations-02fe2ed93766323a13f22c7a7e2ecdcd84259b6c.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.scala-sha-bootstrap.test.files.lib/enums/jars/enums-981392dbd1f727b152cd1c908c5fce60ad9d07f7.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.scala-sha-bootstrap.test.files.lib/genericNest/jars/genericNest-b1ec8a095cec4902b3609d74d274c04365c59c04.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.scala-sha-bootstrap.test.files.lib/jsoup-1.3.1/jars/jsoup-1.3.1-346d3dff4088839d6b4d163efa2892124039d216.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.scala-sha-bootstrap.test.files.lib/macro210/jars/macro210-3794ec22d9b27f2b179bd34e9b46db771b934ec3.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.scala-sha-bootstrap.test.files.lib/methvsfield/jars/methvsfield-be8454d5e7751b063ade201c225dcedefd252775.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.scala-sha-bootstrap.test.files.lib/nest/jars/nest-cd33e0a0ea249eb42363a2f8ba531186345ff68c.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />

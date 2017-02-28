@@ -385,7 +385,7 @@ abstract class UnPickler {
 
       // We're stuck with the order types are pickled in, but with judicious use
       // of named parameters we can recapture a declarative flavor in a few cases.
-      // But it's still a rat's nest of adhockery.
+      // But it's still a rat's nest of ad-hockery.
       (tag: @switch) match {
         case NOtpe                     => NoType
         case NOPREFIXtpe               => NoPrefix

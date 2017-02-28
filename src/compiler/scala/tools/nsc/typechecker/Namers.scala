@@ -220,7 +220,10 @@ trait Namers extends MethodSynthesis {
 
     private def inCurrentScope(m: Symbol): Boolean = {
       if (owner.isClass) owner == m.owner
-      else m.owner.isClass && context.scope == m.owner.info.decls
+      else context.scope.lookupSymbolEntry(m) match {
+        case null => false
+        case entry => entry.owner eq context.scope
+      }
     }
 
     /** Enter symbol into context's scope and return symbol itself */
@@ -1952,12 +1955,12 @@ trait Namers extends MethodSynthesis {
     //         Doing this generally would trigger cycles; that's what we also
     //         use the lower-level scan through the current Context as a fall back.
     if (!currentRun.compiles(owner)) owner.initialize
-    original.companionSymbol orElse {
-      ctx.lookup(original.name.companionName, owner).suchThat(sym =>
-        (original.isTerm || sym.hasModuleFlag) &&
-        (sym isCoDefinedWith original)
-      )
-    }
+
+    if (original.isModuleClass) original.sourceModule
+    else if (!owner.isTerm && owner.hasCompleteInfo)
+      original.companionSymbol
+    else
+      ctx.lookupCompanionInIncompleteOwner(original)
   }
 
   /** A version of `Symbol#linkedClassOfClass` that works with local companions, ala `companionSymbolOf`. */

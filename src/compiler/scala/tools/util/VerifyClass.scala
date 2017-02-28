@@ -31,7 +31,7 @@ object VerifyClass {
     if (name endsWith ".jar")  checkClassesInJar(name, cl)
     else checkClassesInDir(name, cl)
 
-  /** Attempts to load all classes on the classpath defined in the args string array.  This method is meant to be used via reflection from tools like SBT or Ant. */
+  /** Attempts to load all classes on the classpath defined in the args string array.  This method is meant to be used via reflection from tools like sbt or Ant. */
   def run(args: Array[String]): java.util.Map[String, String] = {
     val urls = args.map(Path.apply).map(_.toFile.toURI.toURL).toArray
     println("As urls: " + urls.mkString(","))

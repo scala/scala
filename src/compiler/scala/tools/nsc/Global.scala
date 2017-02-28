@@ -341,12 +341,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       s"[search path for class files: ${classPath.asClassPathString}]"
     )
 
-  // The current division between scala.reflect.* and scala.tools.nsc.* is pretty
-  // clunky.  It is often difficult to have a setting influence something without having
-  // to create it on that side.  For this one my strategy is a constant def at the file
-  // where I need it, and then an override in Global with the setting.
-  override protected val etaExpandKeepsStar = settings.etaExpandKeepsStar.value
-
   def getSourceFile(f: AbstractFile): BatchSourceFile = new BatchSourceFile(f, reader read f)
 
   def getSourceFile(name: String): SourceFile = {
@@ -995,7 +989,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   )
 
   private def formatExplain(pairs: (String, Any)*): String = (
-    pairs.toList collect { case (k, v) if v != null => "%20s: %s".format(k, v) } mkString "\n"
+    pairs collect { case (k, v) if v != null => f"$k%20s: $v" } mkString "\n"
   )
 
   /** Don't want to introduce new errors trying to report errors,
@@ -1008,9 +1002,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val site      = lastSeenContext.enclClassOrMethod.owner
     val pos_s     = if (tree.pos.isDefined) s"line ${tree.pos.line} of ${tree.pos.source.file}" else "<unknown>"
     val context_s = try {
+      import scala.reflect.io.{File => SFile}
       // Taking 3 before, 3 after the fingered line.
-      val start = 0 max (tree.pos.line - 3)
-      val xs = scala.reflect.io.File(tree.pos.source.file.file).lines drop start take 7
+      val start = 1 max (tree.pos.line - 3)
+      val xs = SFile(tree.pos.source.file.file).lines.drop(start-1).take(7)
       val strs = xs.zipWithIndex map { case (line, idx) => f"${start + idx}%6d $line" }
       strs.mkString("== Source file context for tree position ==\n\n", "\n", "")
     }
@@ -1203,7 +1198,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       first
     }
 
-    // --------------- Miscellania -------------------------------
+    // --------------- Miscellanea -------------------------------
 
     /** Progress tracking.  Measured in "progress units" which are 1 per
      *  compilation unit per phase completed.

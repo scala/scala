@@ -309,6 +309,9 @@ trait Types
     /** Is this type completed (i.e. not a lazy type)? */
     def isComplete: Boolean = true
 
+    /** Should this be printed as an infix type (@showAsInfix class &&[T, U])? */
+    def isShowAsInfixType: Boolean = false
+
     /** If this is a lazy type, assign a new type to `sym`. */
     def complete(sym: Symbol) {}
 
@@ -2102,6 +2105,15 @@ trait Types
         trivial = fromBoolean(!sym.isTypeParameter && pre.isTrivial && areTrivialTypes(args))
       toBoolean(trivial)
     }
+
+    /* It only makes sense to show 2-ary type constructors infix.
+     * By default we do only if it's a symbolic name. */
+    override def isShowAsInfixType: Boolean =
+      hasLength(args, 2) &&
+        sym.getAnnotation(ShowAsInfixAnnotationClass)
+         .map(_ booleanArg 0 getOrElse true)
+         .getOrElse(!Character.isUnicodeIdentifierStart(sym.decodedName.head))
+
     private[Types] def invalidateTypeRefCaches(): Unit = {
       parentsCache = null
       parentsPeriod = NoPeriod
@@ -2327,6 +2339,22 @@ trait Types
       case arg :: Nil => s"($arg,)"
       case _          => args.mkString("(", ", ", ")")
     }
+    private def infixTypeString: String = {
+      /* SLS 3.2.8: all infix types have the same precedence.
+       * In A op B op' C, op and op' need the same associativity.
+       * Therefore, if op is left associative, anything on its right
+       * needs to be parenthesized if it's an infix type, and vice versa. */
+      // we should only get here after `isShowInfixType` says we have 2 args
+      val l :: r :: Nil = args
+
+      val isRightAssoc = typeSymbol.decodedName endsWith ":"
+
+      val lstr = if (isRightAssoc && l.isShowAsInfixType) s"($l)" else l.toString
+
+      val rstr = if (!isRightAssoc && r.isShowAsInfixType) s"($r)" else r.toString
+
+      s"$lstr ${sym.decodedName} $rstr"
+    }
     private def customToString = sym match {
       case RepeatedParamClass | JavaRepeatedParamClass => args.head + "*"
       case ByNameParamClass   => "=> " + args.head
@@ -2350,6 +2378,8 @@ trait Types
               xs.init.mkString("(", ", ", ")") + " => " + xs.last
           }
         }
+        else if (isShowAsInfixType)
+          infixTypeString
         else if (isTupleTypeDirect(this))
           tupleTypeString
         else if (sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic) && (this ne dealias))
@@ -3944,7 +3974,7 @@ trait Types
    *        any corresponding non-variant type arguments of bt1 and bt2 are the same
    */
   def isPopulated(tp1: Type, tp2: Type): Boolean = {
-    def isConsistent(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
+    def isConsistent(tp1: Type, tp2: Type): Boolean = (tp1.dealias, tp2.dealias) match {
       case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
         assert(sym1 == sym2, (sym1, sym2))
         (    pre1 =:= pre2
@@ -4152,7 +4182,7 @@ trait Types
    *  The specification-enumerated non-value types are method types, polymorphic
    *  method types, and type constructors.  Supplements to the specified set of
    *  non-value types include: types which wrap non-value symbols (packages
-   *  abd statics), overloaded types. Varargs and by-name types T* and (=>T) are
+   *  and statics), overloaded types. Varargs and by-name types T* and (=>T) are
    *  not designated non-value types because there is code which depends on using
    *  them as type arguments, but their precise status is unclear.
    */
@@ -4251,7 +4281,7 @@ trait Types
       case mt1 @ MethodType(params1, res1) =>
         tp2 match {
           case mt2 @ MethodType(params2, res2) =>
-            // sameLength(params1, params2) was used directly as pre-screening optimization (now done by matchesQuantified -- is that ok, performancewise?)
+            // sameLength(params1, params2) was used directly as pre-screening optimization (now done by matchesQuantified -- is that ok, performance-wise?)
             mt1.isImplicit == mt2.isImplicit &&
             matchingParams(params1, params2, mt1.isJava, mt2.isJava) &&
             matchesQuantified(params1, params2, res1, res2)
@@ -4696,7 +4726,7 @@ trait Types
     case _                                => Depth(1)
   }
 
-  //OPT replaced with tailrecursive function to save on #closures
+  //OPT replaced with tail recursive function to save on #closures
   // was:
   //    var d = 0
   //    for (tp <- tps) d = d max by(tp) //!!!OPT!!!

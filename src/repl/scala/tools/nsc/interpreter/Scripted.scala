@@ -331,7 +331,7 @@ class WriterOutputStream(writer: Writer) extends OutputStream {
     byteBuffer.flip()
     val result = decoder.decode(byteBuffer, charBuffer, /*eoi=*/ false)
     if (byteBuffer.remaining == 0) byteBuffer.clear()
-    if (charBuffer.position > 0) {
+    if (charBuffer.position() > 0) {
       charBuffer.flip()
       writer write charBuffer.toString
       charBuffer.clear()

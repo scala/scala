@@ -19,6 +19,18 @@ literals.scala:23: error: missing integer number
 literals.scala:27: error: Decimal integer literals may not have a leading zero. (Octal syntax is obsolete.)
   def tooManyZeros: Int  = 00            // line 26: no leading zero
                            ^
+literals.scala:40: error: floating point number too small
+  def tooTiny: Float     = { 0.7e-45f }      // floating point number too small
+                             ^
+literals.scala:42: error: double precision floating point number too small
+  def twoTiny: Double    = { 2.0e-324 }      // double precision floating point number too small
+                             ^
+literals.scala:44: error: floating point number too large
+  def tooHuge: Float     = { 3.4028236E38f } // floating point number too large
+                             ^
+literals.scala:46: error: double precision floating point number too large
+  def twoHuge: Double    = { 1.7976931348623159e308 } // double precision floating point number too large
+                             ^
 literals.scala:14: error: identifier expected but '}' found.
   def orphanDot: Int     = { 9. }        // line 12: ident expected
                                 ^
@@ -37,4 +49,4 @@ literals.scala:29: error: ';' expected but 'def' found.
 literals.scala:33: error: identifier expected but 'def' found.
   def zeroOfNineDot: Int = 09.           // line 32: malformed integer, ident expected
   ^
-13 errors found
+17 errors found

@@ -323,7 +323,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.QuasiquoteClass_api_unapply
     definitions.ScalaSignatureAnnotation
     definitions.ScalaLongSignatureAnnotation
-    definitions.MethodHandle
+    definitions.MethodHandleClass
+    definitions.VarHandleClass
     definitions.OptionClass
     definitions.OptionModule
     definitions.SomeClass
@@ -428,6 +429,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.hijackedCoreClasses
     definitions.symbolsNotPresentInBytecode
     definitions.isPossibleSyntheticParent
+    definitions.ShowAsInfixAnnotationClass
     definitions.abbrvTag
     definitions.numericWeight
     definitions.boxedModule
@@ -457,8 +459,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.DoubleTpe
     definitions.BooleanTpe
     definitions.ScalaNumericValueClasses
-    definitions.ScalaValueClassesNoUnit
     definitions.ScalaValueClasses
+    definitions.ScalaValueClassesNoUnit
 
     uncurry.VarargsSymbolAttachment
     uncurry.DesugaredParameterType
