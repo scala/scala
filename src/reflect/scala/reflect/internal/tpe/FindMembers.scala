@@ -285,4 +285,18 @@ trait FindMembers {
       initBaseClasses.head.newOverloaded(tpe, members)
     }
   }
+
+  private[scala] final class HasMember(tpe: Type, name: Name, excludedFlags: Long, requiredFlags: Long) extends FindMemberBase[Boolean](tpe, name, excludedFlags, requiredFlags) {
+    private[this] var _result = false
+    override protected def result: Boolean = _result
+
+    protected def shortCircuit(sym: Symbol): Boolean = {
+      _result = true
+      true // prevents call to addMemberIfNew
+    }
+
+    // Not used
+    protected def addMemberIfNew(sym: Symbol): Unit = {}
+  }
+
 }
