@@ -1,8 +1,0 @@
-foo.method(blah)
-curried.method(blah)
-foo.field
-foo.varia = 10
-foo.arr
-foo.arr(10) = 13
-foo.arr
-foo.arr(a, 20) = new
