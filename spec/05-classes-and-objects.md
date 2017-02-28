@@ -851,9 +851,8 @@ already a `val` or `var` modifier. Hence, an accessor
 definition for the parameter is [generated](#class-definitions).
 
 A case class definition of `$c$[$\mathit{tps}\,$]($\mathit{ps}_1\,$)$\ldots$($\mathit{ps}_n$)` with type
-parameters $\mathit{tps}$ and value parameters $\mathit{ps}$ implicitly
-generates an [extractor object](08-pattern-matching.html#extractor-patterns) which is
-defined as follows:
+parameters $\mathit{tps}$ and value parameters $\mathit{ps}$ implies
+the definition of a companion object, which serves as an [extractor object](08-pattern-matching.html#extractor-patterns). It has the following shape:
 
 ```scala
 object $c$ {
@@ -870,11 +869,14 @@ each $\mathit{xs}\_i$ denotes the parameter names of the parameter
 section $\mathit{ps}\_i$, and
 $\mathit{xs}\_{11}, \ldots , \mathit{xs}\_{1k}$ denote the names of all parameters
 in the first parameter section $\mathit{xs}\_1$.
-If a type parameter section is missing in the
-class, it is also missing in the `apply` and
-`unapply` methods.
-The definition of `apply` is omitted if class $c$ is
-`abstract`.
+If a type parameter section is missing in the class, it is also missing in the `apply` and `unapply` methods.
+
+If the companion object $c$ is already defined,
+the  `apply` and `unapply` methods are added to the existing object.
+The definition of `apply` is omitted if class $c$ is `abstract`.
+If the object $c$ already defines a [matching](#definition-matching) member of the
+same name as the synthetic member to be added, the synthetic member
+is not added (overloading or mutual recursion is allowed, however).
 
 If the case class definition contains an empty value parameter list, the
 `unapply` method returns a `Boolean` instead of an `Option` type and
@@ -887,9 +889,6 @@ def unapply[$\mathit{tps}\,$]($x$: $c$[$\mathit{tps}\,$]) = x ne null
 The name of the `unapply` method is changed to `unapplySeq` if the first
 parameter section $\mathit{ps}_1$ of $c$ ends in a
 [repeated parameter](04-basic-declarations-and-definitions.html#repeated-parameters).
-If a companion object $c$ exists already, no new object is created,
-but the `apply` and `unapply` methods are added to the existing
-object instead.
 
 A method named `copy` is implicitly added to every case class unless the
 class already has a member (directly defined or inherited) with that name, or the
