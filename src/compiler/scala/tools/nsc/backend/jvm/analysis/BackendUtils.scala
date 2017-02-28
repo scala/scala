@@ -324,7 +324,7 @@ class BackendUtils[BT <: BTypes](val btypes: BT) {
     }
 
     visitInternalName(classNode.name)
-    innerClasses ++= classBTypeFromParsedClassfile(classNode.name).info.get.nestedClasses
+    innerClasses ++= classBTypeFromParsedClassfile(classNode.name).info.get.nestedClasses.force
 
     visitInternalName(classNode.superName)
     classNode.interfaces.asScala foreach visitInternalName

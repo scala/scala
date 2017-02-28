@@ -32,6 +32,11 @@ import scala.tools.nsc.settings.ScalaSettings
 abstract class BTypes {
   import BTypes.InternalName
 
+  // Stages after code generation in the backend (optimizations, classfile writing) are prepared
+  // to run in parallel on multiple classes. This object should be used for synchronizing operations
+  // that may access the compiler frontend during these late stages.
+  val frontendLock: AnyRef = new Object()
+
   val backendUtils: BackendUtils[this.type]
 
   // Some core BTypes are required here, in class BType, where no Global instance is available.
@@ -223,13 +228,13 @@ abstract class BTypes {
       })
     }
 
-    val nestedClasses: List[ClassBType] = classNode.innerClasses.asScala.collect({
+    def nestedClasses: List[ClassBType] = classNode.innerClasses.asScala.collect({
       case i if nestedInCurrentClass(i) => classBTypeFromParsedClassfile(i.name)
     })(collection.breakOut)
 
     // if classNode is a nested class, it has an innerClass attribute for itself. in this
     // case we build the NestedInfo.
-    val nestedInfo = classNode.innerClasses.asScala.find(_.name == classNode.name) map {
+    def nestedInfo = classNode.innerClasses.asScala.find(_.name == classNode.name) map {
       case innerEntry =>
         val enclosingClass =
           if (innerEntry.outerName != null) {
@@ -248,7 +253,7 @@ abstract class BTypes {
 
     val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(classBTypeFromParsedClassfile)(collection.breakOut)
 
-    classBType.info = Right(ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo, inlineInfo))
+    classBType.info = Right(ClassInfo(superClass, interfaces, flags, Lazy(nestedClasses), Lazy(nestedInfo), inlineInfo))
     classBType
   }
 
@@ -895,7 +900,9 @@ abstract class BTypes {
         s"Invalid interfaces in $this: ${info.get.interfaces}"
       )
 
-      assert(info.get.nestedClasses.forall(c => ifInit(c)(_.isNestedClass.get)), info.get.nestedClasses)
+      info.get.nestedClasses.onForce { cs =>
+        assert(cs.forall(c => ifInit(c)(_.isNestedClass.get)), cs)
+      }
     }
 
     /**
@@ -923,17 +930,17 @@ abstract class BTypes {
 
     def isPublic: Either[NoClassBTypeInfo, Boolean] = info.map(i => (i.flags & asm.Opcodes.ACC_PUBLIC) != 0)
 
-    def isNestedClass: Either[NoClassBTypeInfo, Boolean] = info.map(_.nestedInfo.isDefined)
+    def isNestedClass: Either[NoClassBTypeInfo, Boolean] = info.map(_.nestedInfo.force.isDefined)
 
     def enclosingNestedClassesChain: Either[NoClassBTypeInfo, List[ClassBType]] = {
       isNestedClass.flatMap(isNested => {
         // if isNested is true, we know that info.get is defined, and nestedInfo.get is also defined.
-        if (isNested) info.get.nestedInfo.get.enclosingClass.enclosingNestedClassesChain.map(this :: _)
+        if (isNested) info.get.nestedInfo.force.get.enclosingClass.enclosingNestedClassesChain.map(this :: _)
         else Right(Nil)
       })
     }
 
-    def innerClassAttributeEntry: Either[NoClassBTypeInfo, Option[InnerClassEntry]] = info.map(i => i.nestedInfo map {
+    def innerClassAttributeEntry: Either[NoClassBTypeInfo, Option[InnerClassEntry]] = info.map(i => i.nestedInfo.force map {
       case NestedInfo(_, outerName, innerName, isStaticNestedClass) =>
         InnerClassEntry(
           internalName,
@@ -1066,8 +1073,48 @@ abstract class BTypes {
    * @param inlineInfo    Information about this class for the inliner.
    */
   final case class ClassInfo(superClass: Option[ClassBType], interfaces: List[ClassBType], flags: Int,
-                             nestedClasses: List[ClassBType], nestedInfo: Option[NestedInfo],
+                             nestedClasses: Lazy[List[ClassBType]], nestedInfo: Lazy[Option[NestedInfo]],
                              inlineInfo: InlineInfo)
+
+  object Lazy {
+    def apply[T <: AnyRef](t: => T): Lazy[T] = new Lazy[T](() => t)
+  }
+
+  final class Lazy[T <: AnyRef](t: () => T) {
+    private var value: T = null.asInstanceOf[T]
+
+    private var function = {
+      val tt = t // prevent allocating a field for t
+      () => { value = tt() }
+    }
+
+    override def toString = if (value == null) "<?>" else value.toString
+
+    def onForce(f: T => Unit): Unit = {
+      if (value != null) f(value)
+      else frontendLock.synchronized {
+        if (value != null) f(value)
+        else {
+          val prev = function
+          function = () => {
+            prev()
+            f(value)
+          }
+        }
+      }
+    }
+
+    def force: T = {
+      if (value != null) value
+      else frontendLock.synchronized {
+        if (value == null) {
+          function()
+          function = null
+        }
+        value
+      }
+    }
+  }
 
   /**
    * Information required to add a class to an InnerClass table.
