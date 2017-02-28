@@ -54,7 +54,6 @@ trait BytecodeWriters extends HasReporter{
   trait BytecodeWriter {
     def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile): Unit
     def close(): Unit = ()
-        //TODO
     def isSingleThreaded = true
 
   }
@@ -127,6 +126,8 @@ trait BytecodeWriters extends HasReporter{
       finally outstream.close()
       informProgress("wrote '" + label + "' to " + outfile)
     }
+
+    override def isSingleThreaded: Boolean = false
   }
 
   trait DumpBytecodeWriter extends BytecodeWriter {
