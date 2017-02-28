@@ -11,18 +11,21 @@ package jvm
 
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
-
 import scala.tools.asm
 import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository
-
 import java.util.concurrent.BlockingQueue
+
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
 import java.util.{concurrent => juc}
+import java.nio.file.{Path => JNPath}
+
+import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.util.RunnableInPhase
 
 /*
  *  Prepare in-memory representations of classfiles using the ASM Tree API, and serialize them to disk.
@@ -75,8 +78,9 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
     private var mirrorCodeGen   : JMirrorBuilder   = null
     private var beanInfoCodeGen : JBeanInfoBuilder = null
 
-    private val allData = new ArrayBuffer[Item1]
-    abstract class ParallelWorker[I <: AnyRef, O](val id: Int, val queue: BlockingQueue[Workflow], val timer: Statistics.Timer) extends Runnable {
+    private val allData = new ArrayBuffer[Workflow]
+    abstract class ParallelWorker[I <: AnyRef, O](val queue: BlockingQueue[Workflow],
+                                                  val timer: Statistics.Timer, comment: String) extends RunnableInPhase(global, BCodePhase.this,comment) {
 
       import scala.concurrent.{Await, Future}
       import scala.concurrent.duration.Duration
@@ -90,12 +94,18 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
 
       def nextStageFailed(workflow: Workflow, ex: Throwable): Unit
 
+      def waitReady : Unit
+
       var currentWork: Workflow = _
 
-      //FIXME should be final
-      def run(): Unit = doRun
-      @tailrec final def doRun(): Unit = {
-        currentWork = queue.poll()
+      final def doRun(): Unit = {
+        waitReady
+        doRunAll
+      }
+      // seperated for profiling
+      def getNext() = queue.poll()
+      @tailrec final def doRunAll(): Unit = {
+        currentWork = getNext
         if (currentWork ne null) {
           withReporterOverride(currentWork) {
             val work = getWork(currentWork)
@@ -107,6 +117,8 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
                   nextStageSuccess(currentWork, process(item))
                 } catch {
                   case t: Throwable =>
+                    currentWork.pending.error(currentWork.cunit.body.pos, t.getMessage)
+                    t.printStackTrace()
                     nextStageFailed(currentWork, t)
                 }
                 timer.stop(start)
@@ -114,22 +126,58 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
                 nextStageFailed(currentWork, f)
             }
           }
-          doRun()
+          doRunAll()
         }
       }
     }
 
-    case class Item1(cd: ClassDef, cunit: CompilationUnit, workflow: Workflow)
+    case class Item1(cd: ClassDef, cunit: CompilationUnit)
 
     private val optimise:juc.BlockingQueue[Workflow] = new juc.LinkedBlockingQueue[Workflow]
     private val q2:juc.BlockingQueue[Workflow] = new juc.LinkedBlockingQueue[Workflow]
     private val q3:juc.BlockingQueue[Workflow] = new juc.LinkedBlockingQueue[Workflow]
 
+
+    class Workflow(val cunit:CompilationUnit,
+                   val item1:List[Item1])  extends AsyncReporter {
+      //we hold the promises as vars. Once read the values are nulled
+      var optimize = Promise[List[Item2]]
+      var item2 = Promise[List[Item2]]
+      var item3 = Promise[List[Item3]]
+
+      override def toString: String = s"Workflow optimizeComplete: ${optimize == null || optimize.isCompleted} item2Complete: ${item2 == null || item2.isCompleted} item3Complete: ${item3 == null || item3.isCompleted}"
+    }
+    case class Item2(mirror:         asm.tree.ClassNode,
+                     plain:          asm.tree.ClassNode,
+                     bean:           asm.tree.ClassNode,
+                     sourceFilePath: String,
+                     outPath:        DirInfo)
+    /*
+     *  An item of queue-3 (the last queue before serializing to disk) contains three of these
+     *  (one for each of mirror, plain, and bean classes).
+     *
+     *  @param jclassName  internal name of the class
+     *  @param jclassBytes bytecode emitted for the class SubItem3 represents
+     */
+    case class SubItem3(
+                         jclassName:  String,
+                         jclassBytes: Array[Byte]
+                       )
+
+    case class Item3(mirror:     SubItem3,
+                     plain:      SubItem3,
+                     bean:       SubItem3,
+                     outPath:    DirInfo)
+
+
+
     /*
      *  Pipeline that takes ClassDefs from queue-1, lowers them into an intermediate form, placing them on queue-2
      */
-    class Worker1(needsOutFolder: Boolean) {
+    abstract class Worker1() {
       import scala.util.{Try, Success, Failure}
+
+      protected def outputFolder(workflow: Workflow) : DirInfo
 
       //TODO should be a scalac param
       val checkCaseInsensitively = true
@@ -137,25 +185,22 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
       val caseInsensitively = mutable.Map.empty[String, Symbol]
 
       def run() {
-        allData foreach { item1 =>
-          val item2Try = Try {
-            withAstTreeLock(withCurrentUnitNoLog(item1.cunit)(visit(item1)))
+        for (workflow <- allData) withCurrentUnitNoLog(workflow.cunit){
+          val item2Builder = List.newBuilder[Item2]
+          val outFolder = outputFolder(workflow)
+          for (item1 <- workflow.item1) {
+            try {
+              item2Builder += visit(item1,workflow.cunit, outFolder)
+            } catch {
+              case ex: Throwable =>
+                ex.printStackTrace()
+                //we can report directly to the reporter - this is not parallelised
+                reporter.error(NoPosition, s"Error while emitting ${workflow.cunit.source}\n${ex.getMessage}")
+            }
           }
-          item2Try match {
-            case Failure(ex: Throwable) =>
-              ex.printStackTrace()
-              //we can report directly to the reporter - this is not parallelised
-              reporter.error(NoPosition, s"Error while emitting ${item1.cunit.source}\n${ex.getMessage}")
-            case _ =>
-          }
-          startPipeline(item1, item2Try)
+          workflow.optimize.success(item2Builder.result())
         }
       }
-      def startPipeline(item1:Item1, item2:Try[Item2]) = {
-        trace("push to item2")
-        item1.workflow.item2.complete(item2)
-      }
-
 
       /*
        *  Checks for duplicate internal names case-insensitively,
@@ -163,8 +208,8 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
        *  returns an Item2.
        *
        */
-      def visit(item: Item1) = {
-        val Item1(cd, cunit, _) = item
+      def visit(item: Item1, cunit:CompilationUnit, outFolder:DirInfo) = {
+        val cd = item.cd
         val claszSymbol = cd.symbol
 
         if (checkCaseInsensitively) {
@@ -201,7 +246,6 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
         // -------------- "plain" class --------------
         val pcb = new PlainClassBuilder(cunit)
         pcb.genPlainClass(cd)
-        val outF = if (needsOutFolder) getOutFolder(claszSymbol, pcb.thisBType.internalName, cunit) else null
         val plainC = pcb.cnode
 
         // -------------- bean info class, if needed --------------
@@ -218,63 +262,122 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
 
         Item2(mirrorC, plainC, beanC,
           cunit.source.file.canonicalPath,
-          outF)
+          outFolder)
 
 
       } // end of method visit(Item1)
 
     } // end of class BCodePhase.Worker1
-
-    class OptimisationWorkflow(allData: ArrayBuffer[Item1]) extends Runnable {
-      private val optAddToBytecodeRepository = settings.optAddToBytecodeRepository
-      private val optBuildCallGraph = settings.optBuildCallGraph
-      private val optInlinerEnabled = settings.optInlinerEnabled
-      private val optClosureInvocations = settings.optClosureInvocations
-
-      override def run(): Unit = {
-        try {
-          // add classes to the bytecode repo before building the call graph: the latter needs to
-          // look up classes and methods in the code repo.
-          if (optAddToBytecodeRepository) {
-            val downstreams = allData map { item1: Item1 =>
-              val workflow = item1.workflow
-              val item2 = Await.result(workflow.optimize.future, Duration.Inf)
-              trace("start optimise1")
-              val Item2(mirror, plain, bean, sourceFilePath, _) = item2
-              val someSourceFilePath = Some(sourceFilePath)
-              if (mirror != null) byteCodeRepository.add(mirror, someSourceFilePath)
-              if (plain != null) byteCodeRepository.add(plain, someSourceFilePath)
-              if (bean != null) byteCodeRepository.add(bean, someSourceFilePath)
-
-            }
-          }
-
-          if (optBuildCallGraph) {
-            val downstreams = allData map { item1: Item1 =>
-              val workflow = item1.workflow
-              val item = Await.result(workflow.optimize.future, Duration.Inf)
-              trace("start optimise2")
-              // skip call graph for mirror / bean: wd don't inline into tem, and they are not used in the plain class
-              if (item.plain != null) callGraph.addClass(item.plain)
-            }
-          }
-          if (settings.optInlinerEnabled)
-            bTypes.inliner.runInliner()
-          if (settings.optClosureInvocations)
-            closureOptimizer.rewriteClosureApplyInvocations()
-          allData foreach { item1 =>
-            item1.workflow.item2.completeWith(item1.workflow.optimize.future)
-          }
-        } catch {
-          case t: Throwable =>
-            val fail = scala.util.Failure(t)
-            allData foreach {
-              _.workflow.item2.tryComplete(fail)
-            }
-            throw t
-        }
+    def newWorker1(): Worker1 = {
+      if (!bytecodeWriter.needsOutputFile)
+        new SingleOutputWorker1(null)
+      else settings.outputDirs.getSingleOutput match {
+        case Some(dir) =>
+          new SingleOutputWorker1(new DirInfo(dir))
+        case _ => new MultiOutputWorker1()
       }
-    }// end of class BCodePhase.OptimisationWorkflow
+    }
+    class SingleOutputWorker1(val folder : DirInfo) extends Worker1 {
+      override protected def outputFolder(workflow: Workflow): DirInfo = folder
+    }
+    class MultiOutputWorker1() extends Worker1 {
+      val knownDirectories = mutable.Map[AbstractFile, DirInfo]()
+
+      override protected def outputFolder(workflow: Workflow): DirInfo =
+        if (workflow.item1.nonEmpty) {
+          try {
+            val dir = outputDirectory(workflow.cunit.source)
+            knownDirectories.getOrElseUpdate(outputDirectory(workflow.cunit.source), new DirInfo(dir))
+          } catch {
+            case t: Throwable =>
+              reporter.error(workflow.cunit.body.pos, s"Couldn't create file for ${workflow.cunit.source}\n${t.getMessage}")
+              null
+          }
+        } else null
+    }
+
+  class OptimisationWorkflow(allData: ArrayBuffer[Workflow]) extends RunnableInPhase(global, BCodePhase.this, "Optimisation") {
+
+    import scala.util.{Try, Success, Failure}
+
+    val compilerSettings = bTypes.compilerSettings
+    val byteCodeRepository = bTypes.byteCodeRepository
+    val callGraph = bTypes.callGraph
+
+    val optAddToBytecodeRepository = compilerSettings.optAddToBytecodeRepository
+    val optBuildCallGraph = compilerSettings.optBuildCallGraph
+    val optInlinerEnabled  = compilerSettings.optInlinerEnabled
+    val optClosureInvocations =  compilerSettings.optClosureInvocations
+    val hasGlobalOptimisations = optInlinerEnabled || optClosureInvocations
+
+    override def doRun(): Unit = {
+      val oldName = Thread.currentThread.getName
+      try {
+        try Thread.currentThread().setName("GenBcode - OptimisationWorkflow")
+        catch { case _ : SecurityException => /*ignore*/ }
+
+        val downstreams = allData map { workflow: Workflow =>
+          Await.ready(workflow.optimize.future, Duration.Inf)
+          val upstream = workflow.optimize.future.value.get
+          workflow.optimize = null //release memory
+          try {
+            upstream match {
+              case Success(items) =>
+                for (item <- items) {
+                  // add classes to the bytecode repo before building the call graph: the latter needs to
+                  // look up classes and methods in the code repo.
+                  if (optAddToBytecodeRepository) {
+                    val someSourceFilePath = Some(item.sourceFilePath)
+                    //byteCodeRepository.add is threadsafe and doesnt access tree
+                    if (item.mirror != null) byteCodeRepository.add(item.mirror, someSourceFilePath)
+                    if (item.plain != null) byteCodeRepository.add(item.plain, someSourceFilePath)
+                    if (item.bean != null) byteCodeRepository.add(item.bean, someSourceFilePath)
+                  }
+                  if (optBuildCallGraph) {
+                    // skip call graph for mirror / bean: wd don't inline into them, and they are not used in the plain class
+                    if (item.plain != null) callGraph.addClass(item.plain)
+                  }
+                }
+              case _ =>
+            }
+            if (!hasGlobalOptimisations) {
+              workflow.item2.complete(upstream)
+            }
+            upstream
+          } catch {
+            case NonFatal(t) =>
+              val downstream = Failure(t)
+              if (!hasGlobalOptimisations) {
+                workflow.item2.complete(downstream)
+              }
+              downstream
+          }
+        }
+        //we dont need a tree lock here as the this is a global operation -
+        //globally blocking already
+        if (hasGlobalOptimisations) {
+          if (optInlinerEnabled)
+            bTypes.inliner.runInliner()
+          if (optClosureInvocations)
+            bTypes.closureOptimizer.rewriteClosureApplyInvocations()
+          for (i <- 0 to allData.size) {
+            allData(i).item2.complete(downstreams(i))
+          }
+        }
+
+      } catch {
+        case t: Throwable =>
+          val fail = Failure(t)
+          allData map {
+            _.item2.tryComplete(fail)
+          }
+          throw t
+      } finally {
+        try Thread.currentThread().setName(oldName)
+        catch { case _ : SecurityException => /*ignore */ }
+      }
+    }
+  }
 
 
           /*
@@ -283,22 +386,27 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
            *    (a) no optimization involves:
            *          - converting the plain ClassNode to byte array and placing it on queue-3
            */
-    class Worker2 (id: Int, q2: BlockingQueue[Workflow]) extends ParallelWorker[Item2, Item3](id, q2, BackendStats.bytesGenStat) {
+    class Worker2 (q2: BlockingQueue[Workflow]) extends ParallelWorker[List[Item2], List[Item3]](q2, BackendStats.bytesGenStat, "Worker2") {
       val localOpt = bTypes.localOpt
       val backendUtils = bTypes.backendUtils
 
-      override def getWork(workflow: Workflow): Future[Item2] = workflow.item2.future
+      override def getWork(workflow: Workflow): Future[List[Item2]] = {
+        workflow.item2.future
+      }
 
-      override def nextStageSuccess(workflow: Workflow, result: Item3): Unit = {
-        trace("push to Worker3")
+      override def nextStageSuccess(workflow: Workflow, result: List[Item3]): Unit = {
+        workflow.item2 = null //release memory
         workflow.item3.success(result)
       }
 
       override def nextStageFailed(workflow: Workflow, ex: Throwable): Unit = {
-        trace("push to Worker3")
+        workflow.item2 = null //release memory
         workflow.item3.failure(ex)
       }
 
+      override def waitReady: Unit = {
+        Option(allData.last.optimize) foreach {p => Await.ready(p.future, Duration.Inf)}
+      }
 
       def localOptimizations(classNode: ClassNode): Unit = {
         BackendStats.timed(BackendStats.methodOptTimer)(localOpt.methodOptimizations(classNode))
@@ -309,27 +417,28 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
         addInnerClasses(classNode, bTypes.backendUtils.collectNestedClasses(classNode))
       }
 
-      override def process(item: Item2): Item3 = {
-        try {
-          trace(s"start Worker2 ${item.sourceFilePath}")
-          localOptimizations(item.plain)
-          setInnerClasses(item.plain)
-          val lambdaImplMethods = getIndyLambdaImplMethods(item.plain.name)
-          if (lambdaImplMethods.nonEmpty)
-            backendUtils.addLambdaDeserialize(item.plain, lambdaImplMethods)
-          setInnerClasses(item.mirror)
-          setInnerClasses(item.bean)
-          makeItem3(item)
-        } catch {
-          case e: java.lang.RuntimeException if e.getMessage != null && (e.getMessage contains "too large!") =>
-            reporter.error(NoPosition,
-              s"Could not write class ${item.plain.name} because it exceeds JVM code size limits. ${e.getMessage}")
-            throw e
-          case ex: Throwable =>
-            ex.printStackTrace()
-            reporter.error(NoPosition,
-              s"Error while emitting ${item.plain.name}\n${ex.getMessage}")
-            throw ex
+      override def process(items: List[Item2]): List[Item3] = {
+        items map { item =>
+          try {
+            localOptimizations(item.plain)
+            setInnerClasses(item.plain)
+            val lambdaImplMethods = getIndyLambdaImplMethods(item.plain.name)
+            if (lambdaImplMethods.nonEmpty)
+              backendUtils.addLambdaDeserialize(item.plain, lambdaImplMethods)
+            setInnerClasses(item.mirror)
+            setInnerClasses(item.bean)
+            makeItem3(item)
+          } catch {
+            case e: java.lang.RuntimeException if e.getMessage != null && (e.getMessage contains "too large!") =>
+              reporter.error(NoPosition,
+                s"Could not write class ${item.plain.name} because it exceeds JVM code size limits. ${e.getMessage}")
+              throw e
+            case ex: Throwable =>
+              ex.printStackTrace()
+              reporter.error(NoPosition,
+                s"Error while emitting ${item.plain.name}\n${ex.getMessage}")
+              throw ex
+          }
         }
       }
 
@@ -391,8 +500,7 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
       mirrorCodeGen   = new JMirrorBuilder
       beanInfoCodeGen = new JBeanInfoBuilder
 
-      val needsOutfileForSymbol = bytecodeWriter.isInstanceOf[ClassBytecodeWriter]
-      buildAndSendToDisk(needsOutfileForSymbol)
+      buildAndSendToDisk()
 
       // closing output files.
       bytecodeWriter.close()
@@ -412,6 +520,25 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
        */
     }
 
+    private def onWorkerError(workerFailed: Throwable): Unit = {
+      workerFailed.printStackTrace()
+      reporter.error(NoPosition, workerFailed.toString)
+    }
+    private def exec(name:String, priorityDelta:Int): ExecutionContext = {
+      import java.util.concurrent.{Executors, ThreadFactory}
+      import java.util.concurrent.atomic.AtomicInteger
+      object BoostThreadFactory extends ThreadFactory {
+        final private val group = Thread.currentThread.getThreadGroup
+        final private val threadNumber = new AtomicInteger(1)
+
+        def newThread(r: Runnable): Thread = {
+          val t = new Thread(group, r, name + threadNumber.getAndIncrement, 0)
+          t.setPriority(Thread.NORM_PRIORITY + priorityDelta)
+          t
+        }
+      }
+      ExecutionContext.fromExecutorService(Executors.newCachedThreadPool(BoostThreadFactory), onWorkerError)
+    }
     /*
      *  Sequentially:
      *    (a) place all ClassDefs in queue-1
@@ -420,49 +547,48 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
      *    (c) seperate threads dequeue one at a time from queue-2, convert it to byte-array,    place in queue-3
      *    (d) seperate threads dequeue one at a time serialize to disk by draining queue-3.
      */
-    private def buildAndSendToDisk(needsOutFolder: Boolean) {
+    private def buildAndSendToDisk() {
 
       import scala.concurrent.Future
-      val runInParallel = false
+      val runInParallel = settings.YgenBcodeParallel.value
 
       feedPipeline1()
       if (runInParallel) {
-        def onWorkerError(workerFailed: Throwable): Unit = {
-          workerFailed.printStackTrace()
-          reporter.error(NoPosition, workerFailed.toString)
-        }
+        reporter.echo(NoPosition, "running GenBCode in parallel")
 
-        val ec = scala.concurrent.ExecutionContext.fromExecutorService(
-          java.util.concurrent.Executors.newCachedThreadPool(), onWorkerError
-        )
-        val workerOpt: Future[Unit] = Future(new OptimisationWorkflow(allData).run)(ec)
-        val workers2: List[Future[Unit]] = (1 to 3).map { i => Future(new Worker2(i, q2).run)(ec) }(scala.collection.breakOut)
-        val workers3: List[Future[Unit]] = (1 to (if (bytecodeWriter.isSingleThreaded) 1 else 3)).map {
-          i => Future(new Worker3(i, q3, bytecodeWriter).run)(ec)
+        def checkWorker(worker: Future[Unit]) = Await.result(worker, Duration.Inf)
+
+        val ecOptimise = exec("GenBCode:optimise-",1)
+        val ecWorker2 = exec("GenBCode:worker2-",2)
+        val ecWorker3 = exec("GenBCode:worker3-",3)
+
+        val workerOpt: Future[Unit] = Future(new OptimisationWorkflow(allData).run)(ecOptimise)
+        val workers2: List[Future[Unit]] = (1 to 4).map { i => Future(new Worker2(q2).run)(ecWorker2) }(scala.collection.breakOut)
+        val workers3: List[Future[Unit]] = (1 to (if (bytecodeWriter.isSingleThreaded) 1 else 4)).map {
+          i => Future(new Worker3(q3, bytecodeWriter).run)(ecWorker3)
         }(scala.collection.breakOut)
 
         val genStart = Statistics.startTimer(BackendStats.bcodeGenStat)
-        (new Worker1(needsOutFolder)).run()
+        newWorker1().run()
         Statistics.stopTimer(BackendStats.bcodeGenStat, genStart)
-        (workerOpt :: workers2 ::: workers3) foreach {
-          Await.result(_, Duration.Inf)
-        }
+        // check for any exception during the operation of the background threads
+        checkWorker(workerOpt)
+        workers2 foreach checkWorker
+        workers3 foreach checkWorker
       } else {
         val genStart = Statistics.startTimer(BackendStats.bcodeGenStat)
-        (new Worker1(needsOutFolder)).run()
+        newWorker1().run()
         Statistics.stopTimer(BackendStats.bcodeGenStat, genStart)
         new OptimisationWorkflow(allData).run
-        new Worker2(99, q2).run
+        new Worker2(q2).run
         val writeStart = Statistics.startTimer(BackendStats.bcodeWriteTimer)
-        new Worker3(99, q3, bytecodeWriter).run
+        new Worker3(q3, bytecodeWriter).run
         Statistics.stopTimer(BackendStats.bcodeWriteTimer, writeStart)
 
       }
       //report any deferred messages
       val globalReporter = reporter
-      allData foreach {
-        data => data.workflow.relayReports(globalReporter)
-      }
+      allData foreach { _.relayReports(globalReporter) }
       allData.clear()
 
 
@@ -478,31 +604,34 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
     }
 
     /* Pipeline that writes classfile representations to disk. */
-    private class Worker3(id: Int, q3: BlockingQueue[Workflow], bytecodeWriter: BytecodeWriters#BytecodeWriter)
-      extends ParallelWorker[Item3, Unit](id, q3, BackendStats.bcodeWriteTimer) {
+    private class Worker3(q3: BlockingQueue[Workflow], bytecodeWriter: BytecodeWriters#BytecodeWriter)
+      extends ParallelWorker[List[Item3], Unit](q3, BackendStats.bcodeWriteTimer, "Worker3") {
 
       val localOpt = bTypes.localOpt
       val backendUtils = bTypes.backendUtils
 
-      override def getWork(workflow: Workflow): Future[Item3] = workflow.item3.future
+      override def getWork(workflow: Workflow): Future[List[Item3]] = {
+        workflow.item3.future
+      }
 
       override def nextStageSuccess(workflow: Workflow, result: Unit): Unit = {
-        trace("done Worker3")
+        workflow.item3 = null //release memory
       }
 
       override def nextStageFailed(workflow: Workflow, ex: Throwable): Unit = {
-        trace("done Worker3")
+        workflow.item3 = null //release memory
       }
 
+      override def waitReady: Unit = ()
 
-      def sendToDisk(cfr: SubItem3, outFolder: scala.tools.nsc.io.AbstractFile) {
+      def sendToDisk(cfr: SubItem3, outFolder: DirInfo) {
         if (cfr != null) {
           val SubItem3(jclassName, jclassBytes) = cfr
           try {
-            val outFile =
+            val path =
               if (outFolder == null) null
-              else getFileForClassfile(outFolder, jclassName, ".class")
-            bytecodeWriter.writeClass(jclassName, jclassName, jclassBytes, outFile)
+              else getFile(outFolder, jclassName, ".class")
+            bytecodeWriter.writeClass(jclassName, jclassName, jclassBytes, path)
           }
           catch {
             case e: FileConflictException =>
@@ -511,38 +640,39 @@ abstract class GenBCode extends BCodeSyncAndTry with BCodeParallel with HasRepor
         }
       }
 
-      override def process(item: Item3): Unit = {
-        trace("start Worker3")
-        val outFolder = item.outFolder
-        sendToDisk(item.mirror, outFolder)
-        sendToDisk(item.plain, outFolder)
-        sendToDisk(item.bean, outFolder)
+      override def process(items: List[Item3]): Unit = {
+        for (item <- items) {
+          val outFolder = item.outPath
+          sendToDisk(item.mirror, outFolder)
+          sendToDisk(item.plain, outFolder)
+          sendToDisk(item.bean, outFolder)
+        }
       }
     }
 
     override def apply(cunit: CompilationUnit): Unit = {
 
+      val classesInCompilation = List.newBuilder[Item1]
       def gen(tree: Tree) {
         tree match {
           case EmptyTree            => ()
           case PackageDef(_, stats) => stats foreach gen
           case cd: ClassDef         =>
-            val workflow = new Workflow
-            allData += Item1(cd, cunit, workflow)
-            q2 add workflow
-            q3 add workflow
-            optimise add workflow
+            classesInCompilation += Item1(cd, cunit)
         }
       }
 
       gen(cunit.body)
+      val workflow = new Workflow(cunit, classesInCompilation.result())
+
+      allData += workflow
+      q2 add workflow
+      q3 add workflow
+      optimise add workflow
     }
 
   } // end of class BCodePhase
 
-  def trace(s:String): Unit = {
-//    println(s)
-  }
 
 } // end of class GenBCode
 
@@ -555,31 +685,3 @@ object GenBCode {
   val CLASS_CONSTRUCTOR_NAME    = "<clinit>"
   val INSTANCE_CONSTRUCTOR_NAME = "<init>"
 }
-class Workflow extends AsyncReporter {
-  val optimize = Promise[Item2]
-  val item2 = Promise[Item2]
-  val item3 = Promise[Item3]
-
-  override def toString: String = s"Workflow optimizeComplete: ${optimize.isCompleted} item2Complete: ${item2.isCompleted} item2Complete: ${item2.isCompleted}"
-}
-case class Item2(mirror:         asm.tree.ClassNode,
-                 plain:          asm.tree.ClassNode,
-                 bean:           asm.tree.ClassNode,
-                 sourceFilePath: String,
-                 outFolder:      scala.tools.nsc.io.AbstractFile)
-/*
- *  An item of queue-3 (the last queue before serializing to disk) contains three of these
- *  (one for each of mirror, plain, and bean classes).
- *
- *  @param jclassName  internal name of the class
- *  @param jclassBytes bytecode emitted for the class SubItem3 represents
- */
-case class SubItem3(
-                     jclassName:  String,
-                     jclassBytes: Array[Byte]
-                   )
-
-case class Item3(mirror:     SubItem3,
-                 plain:      SubItem3,
-                 bean:       SubItem3,
-                 outFolder:  scala.tools.nsc.io.AbstractFile)
