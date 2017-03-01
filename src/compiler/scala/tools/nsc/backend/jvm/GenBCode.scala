@@ -157,7 +157,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
         val claszSymbol = cd.symbol
 
         // GenASM checks this before classfiles are emitted, https://github.com/scala/scala/commit/e4d1d930693ac75d8eb64c2c3c69f2fc22bec739
-        val lowercaseJavaClassName = claszSymbol.javaClassName.toLowerCase
+        val lowercaseJavaClassName = claszSymbol.javaClassName.toLowerCase(java.util.Locale.ENGLISH)
         caseInsensitively.get(lowercaseJavaClassName) match {
           case None =>
             caseInsensitively.put(lowercaseJavaClassName, claszSymbol)

@@ -48,7 +48,7 @@ object ClassPathMemoryConsumptionTester {
     println("Memory consumption can be now measured")
 
     var textFromStdIn = ""
-    while (textFromStdIn.toLowerCase != "exit")
+    while (textFromStdIn.toLowerCase(java.util.Locale.ENGLISH) != "exit")
       textFromStdIn = readLine("Type 'exit' to close application: ")
   }
 

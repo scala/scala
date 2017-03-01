@@ -164,10 +164,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   /** Search the history */
   def searchHistory(_cmdline: String) {
-    val cmdline = _cmdline.toLowerCase
+    val cmdline = _cmdline.toLowerCase(java.util.Locale.ENGLISH)
     val offset  = history.index - history.size + 1
 
-    for ((line, index) <- history.asStrings.zipWithIndex ; if line.toLowerCase contains cmdline)
+    for ((line, index) <- history.asStrings.zipWithIndex ; if line.toLowerCase(java.util.Locale.ENGLISH) contains cmdline)
       echo("%d %s".format(index + offset, line))
   }
 

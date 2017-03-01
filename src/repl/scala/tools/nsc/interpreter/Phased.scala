@@ -52,7 +52,7 @@ trait Phased {
     if (str == "") NoPhaseName
     else if (str forall (_.isDigit)) PhaseName(str.toInt)
     else {
-      val (name, rest) = str.toLowerCase span (_.isLetter)
+      val (name, rest) = str.toLowerCase(java.util.Locale.ENGLISH) span (_.isLetter)
       val start        = PhaseName(name)
       val change       = parsePhaseChange(rest)
 
@@ -99,7 +99,7 @@ trait Phased {
   }
   sealed abstract class PhaseName {
     lazy val id   = phase.id
-    lazy val name = toString.toLowerCase
+    lazy val name = toString.toLowerCase(java.util.Locale.ENGLISH)
     def phase     = currentRun.phaseNamed(name)
     def isEmpty   = this eq NoPhaseName
   }

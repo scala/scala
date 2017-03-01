@@ -99,7 +99,7 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
   def canonicalPath: String = if (file == null) path else file.getCanonicalPath
 
   /** Checks extension case insensitively. */
-  def hasExtension(other: String) = extension == other.toLowerCase
+  def hasExtension(other: String) = extension == other.toLowerCase(java.util.Locale.ENGLISH)
   private lazy val extension: String = Path.extension(name)
 
   /** The absolute file, if this is a relative file. */

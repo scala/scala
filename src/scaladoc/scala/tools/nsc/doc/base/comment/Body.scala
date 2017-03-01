@@ -77,7 +77,7 @@ final case class HtmlTag(data: String) extends Inline {
   private val Pattern = """(?ms)\A<(/?)(.*?)[\s>].*\z""".r
   private val (isEnd, tagName) = data match {
     case Pattern(s1, s2) =>
-      (! s1.isEmpty, Some(s2.toLowerCase))
+      (!s1.isEmpty, Some(s2.toLowerCase(java.util.Locale.ENGLISH)))
     case _ =>
       (false, None)
   }
