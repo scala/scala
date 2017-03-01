@@ -314,19 +314,19 @@ object Predef extends LowPriorityImplicits {
     def +(other: String): String = String.valueOf(self) + other
   }
 
-  private[scala] implicit final class SeqCharSequence(val __sequenceOfChars: scala.collection.IndexedSeq[Char]) extends CharSequence {
-    def length: Int                                     = __sequenceOfChars.length
-    def charAt(index: Int): Char                        = __sequenceOfChars(index)
-    def subSequence(start: Int, end: Int): CharSequence = new SeqCharSequence(__sequenceOfChars.slice(start, end))
-    override def toString                               = __sequenceOfChars mkString ""
+  implicit final class SeqCharSequence(sequenceOfChars: scala.collection.IndexedSeq[Char]) extends CharSequence {
+    def length: Int                                     = sequenceOfChars.length
+    def charAt(index: Int): Char                        = sequenceOfChars(index)
+    def subSequence(start: Int, end: Int): CharSequence = new SeqCharSequence(sequenceOfChars.slice(start, end))
+    override def toString                               = sequenceOfChars mkString ""
   }
 
   /** @group implicit-classes-char */
-  private[scala] implicit final class ArrayCharSequence(val __arrayOfChars: Array[Char]) extends CharSequence {
-    def length: Int                                     = __arrayOfChars.length
-    def charAt(index: Int): Char                        = __arrayOfChars(index)
-    def subSequence(start: Int, end: Int): CharSequence = new runtime.ArrayCharSequence(__arrayOfChars, start, end)
-    override def toString                               = __arrayOfChars mkString ""
+  implicit final class ArrayCharSequence(arrayOfChars: Array[Char]) extends CharSequence {
+    def length: Int                                     = arrayOfChars.length
+    def charAt(index: Int): Char                        = arrayOfChars(index)
+    def subSequence(start: Int, end: Int): CharSequence = new runtime.ArrayCharSequence(arrayOfChars, start, end)
+    override def toString                               = arrayOfChars mkString ""
   }
 
   implicit val StringCanBuildFrom: CanBuildFrom[String, Char, String] = new CanBuildFrom[String, Char, String] {
