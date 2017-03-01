@@ -116,6 +116,7 @@ import java.util.regex.{ Pattern, Matcher }
  *  while (mi.hasNext) {
  *    val d = mi.next
  *    if (mi.group(1).toInt < 1960) println(s"$d: An oldie but goodie.")
+ *  }
  *  }}}
  *
  *  Note that `findAllIn` finds matches that don't overlap. (See [[findAllIn]] for more examples.)
@@ -132,11 +133,13 @@ import java.util.regex.{ Pattern, Matcher }
  *  {{{
  *  val ns = num.findAllIn("1 2 3")
  *  ns.start    // 0
+ *  ns.next     // 1
  *  ns.hasNext  // true
  *  ns.start    // 2
  *  val ms = num.findAllMatchIn("1 2 3")
  *  val m  = ms.next()
  *  m.start     // 0
+ *  ms.next     // 2
  *  ms.hasNext  // true
  *  m.start     // still 0
  *  }}}
