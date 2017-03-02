@@ -180,7 +180,10 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
           original.foreach(traverse)
         }
       case t if t.hasSymbolField =>
-        addSymbol(getNamesOfEnclosingScope, t.symbol)
+        val symbol = t.symbol
+        if (symbol != rootMirror.RootPackage)
+          addSymbol(getNamesOfEnclosingScope, t.symbol)
+
         val tpe = t.tpe
         if (!ignoredType(tpe)) {
           // Initialize _currentOwner if it's not
