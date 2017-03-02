@@ -1,11 +1,11 @@
 no-predef.scala:2: error: type mismatch;
- found   : scala.Long(5L)
- required: java.lang.Long
+ found   : Long (in scala)
+ required: Long (in java.lang)
   def f1 = 5L: java.lang.Long
            ^
 no-predef.scala:3: error: type mismatch;
- found   : java.lang.Long
- required: scala.Long
+ found   : Long (in java.lang)
+ required: Long (in scala)
   def f2 = new java.lang.Long(5) : Long
            ^
 no-predef.scala:4: error: value map is not a member of String
