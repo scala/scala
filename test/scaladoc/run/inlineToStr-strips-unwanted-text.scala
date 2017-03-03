@@ -21,6 +21,9 @@ object Test extends ScaladocModelTest {
 
     /** This comment contains nested <strong>html<br> tags</strong> */
     def quuz = ???
+
+    /** This comment contains a [[corge ,,link with a subscript title,,]] */
+    def corge = ???
   }
   """
   def scaladocSettings = ""
@@ -30,22 +33,26 @@ object Test extends ScaladocModelTest {
     import access._
 
     val foo = root._class("Foo")
-    val bar = foo._method("bar")
-    val baz = foo._method("baz")
-    val qux = foo._method("qux")
-    val quux = foo._method("quux")
-    val quuz = foo._method("quuz")
-    println(foo.comment.get.short)
-    println(bar.comment.get.short)
-    println(baz.comment.get.short)
-    println(qux.comment.get.short)
-    println(quux.comment.get.short)
-    println(quuz.comment.get.short)
-    println(Page.inlineToStr(foo.comment.get.short))
-    println(Page.inlineToStr(bar.comment.get.short))
-    println(Page.inlineToStr(baz.comment.get.short))
-    println(Page.inlineToStr(qux.comment.get.short))
-    println(Page.inlineToStr(quux.comment.get.short))
-    println(Page.inlineToStr(quuz.comment.get.short))
+
+    val fooStr = Page.inlineToStr(foo.comment.get.short)
+    assert(fooStr == "This comment contains superscript", fooStr)
+
+    val barStr = Page.inlineToStr(foo._method("bar").comment.get.short)
+    assert(barStr == "This comment contains subscript", barStr)
+
+    val bazStr = Page.inlineToStr(foo._method("baz").comment.get.short)
+    assert(bazStr == "This comment contains a link https://scala.epfl.ch/", bazStr)
+
+    val quxStr = Page.inlineToStr(foo._method("qux").comment.get.short)
+    assert(quxStr == "This comment contains an html tag", quxStr)
+
+    val quuxStr = Page.inlineToStr(foo._method("quux").comment.get.short)
+    assert(quuxStr == "This comment contains a single html tag", quuxStr)
+
+    val quuzStr = Page.inlineToStr(foo._method("quuz").comment.get.short)
+    assert(quuzStr == "This comment contains nested html tags", quuzStr)
+
+    val corgeStr = Page.inlineToStr(foo._method("corge").comment.get.short)
+    assert(corgeStr == "This comment contains a link with a subscript title", corgeStr)
   }
 }
